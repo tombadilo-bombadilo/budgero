@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Budgero Server</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #0f1115;
+        color: #f3f4f6;
+      }
+      main {
+        max-width: 640px;
+        padding: 24px;
+        border: 1px solid #2f3540;
+        border-radius: 12px;
+        background: #171b22;
+      }
+      code {
+        background: #232a33;
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Budgero server is running</h1>
+      <p>
+        Frontend assets were not embedded in this build. Run <code>bun run build:app</code> or
+        <code>bun run build:with-frontend</code> to package the web UI into <code>dist/</code>.
+      </p>
+    </main>
+  </body>
+</html>

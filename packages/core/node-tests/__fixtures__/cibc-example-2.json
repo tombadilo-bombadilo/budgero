@@ -1,0 +1,4397 @@
+{
+  "source": "user_31_example_2.pdf",
+  "pages": [
+    {
+      "pageNumber": 1,
+      "viewportWidth": 612,
+      "viewportHeight": 792,
+      "items": [
+        {
+          "x": 367.2,
+          "y": 698.5,
+          "width": 87.23994786000004,
+          "height": 9,
+          "text": "PO BOX 4595 STN A",
+          "fontSize": 9,
+          "fontName": "g_d0_f1",
+          "transform": [9, 0, 0, 9, 367.2, 93.47987]
+        },
+        {
+          "x": 367.2,
+          "y": 708.2,
+          "width": 92.36337147000005,
+          "height": 9,
+          "text": "TORONTO ON M5W 4X9",
+          "fontSize": 9,
+          "fontName": "g_d0_f1",
+          "transform": [9, 0, 0, 9, 367.2, 83.80987000000005]
+        },
+        {
+          "x": 546.9,
+          "y": 578.5,
+          "width": 24.890286780000068,
+          "height": 9,
+          "text": "$10.00",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 546.9499, 213.46356000000003]
+        },
+        {
+          "x": 510.4,
+          "y": 593.5,
+          "width": 55.49697603000007,
+          "height": 9,
+          "text": "$_____________",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 510.44998, 198.48356]
+        },
+        {
+          "x": 72,
+          "y": 548,
+          "width": 35.12643780000002,
+          "height": 12,
+          "text": "World",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 72, 244.0170999999999]
+        },
+        {
+          "x": 72,
+          "y": 564.3,
+          "width": 67.37608824000002,
+          "height": 12,
+          "text": "Mastercard",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 72, 227.67712999999992]
+        },
+        {
+          "x": 534.2,
+          "y": 548.2,
+          "width": 35.21984903999993,
+          "height": 9,
+          "text": "$1,343.10",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 534.19997, 243.76785000000007]
+        },
+        {
+          "x": 228.2,
+          "y": 549.7,
+          "width": 2.562,
+          "height": 6,
+          "text": "•",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 228.19995, 242.26973999999996]
+        },
+        {
+          "x": 228.2,
+          "y": 558.1,
+          "width": 2.562,
+          "height": 6,
+          "text": "•",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 228.19995, 233.86971999999992]
+        },
+        {
+          "x": 238.1,
+          "y": 553.7,
+          "width": 123.86802521999992,
+          "height": 6,
+          "text": "Telephone Banking: 1 800 465-CIBC (2422) CIBC",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 238.05, 238.27241000000004]
+        },
+        {
+          "x": 238.1,
+          "y": 562.3,
+          "width": 115.45084745999978,
+          "height": 6,
+          "text": "bank machines and most financial institutions",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 238.05, 229.66243000000009]
+        },
+        {
+          "x": 228.2,
+          "y": 574.9,
+          "width": 2.562,
+          "height": 6,
+          "text": "•",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 228.19995, 217.0697399999999]
+        },
+        {
+          "x": 392.1,
+          "y": 564.8,
+          "width": 92.12863455000003,
+          "height": 9,
+          "text": "Minimum Payment due",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 392.1499, 227.20972000000006]
+        },
+        {
+          "x": 392.1,
+          "y": 576.4,
+          "width": 9.695692890000045,
+          "height": 9,
+          "text": "by",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 392.1499, 215.57974000000002]
+        },
+        {
+          "x": 404.2,
+          "y": 576.4,
+          "width": 53.05807539000003,
+          "height": 9,
+          "text": "Dec 15, 2025",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 404.21081, 215.57974000000002]
+        },
+        {
+          "x": 238.1,
+          "y": 574.7,
+          "width": 122.84683481999986,
+          "height": 6,
+          "text": "Mail: Return completed slip with your cheque or",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 238.05, 217.30241]
+        },
+        {
+          "x": 238.1,
+          "y": 583.4,
+          "width": 76.12682832,
+          "height": 6,
+          "text": "money order payable toCIBC.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 238.05, 208.58241999999996]
+        },
+        {
+          "x": 392.1,
+          "y": 592.9,
+          "width": 56.603820420000055,
+          "height": 9,
+          "text": "Total payment",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 392.1499, 199.11784]
+        },
+        {
+          "x": 392.1,
+          "y": 604.9,
+          "width": 34.944746490000064,
+          "height": 9,
+          "text": "enclosed",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 392.1499, 187.14783999999997]
+        },
+        {
+          "x": 72,
+          "y": 681,
+          "width": 82.11652425000005,
+          "height": 9,
+          "text": "name and address",
+          "fontSize": 9,
+          "fontName": "g_d0_f1",
+          "transform": [9, 0, 0, 9, 72, 110.97152999999992]
+        },
+        {
+          "x": 367.2,
+          "y": 690.3,
+          "width": 20.635299180000004,
+          "height": 9,
+          "text": "CIBC",
+          "fontSize": 9,
+          "fontName": "g_d0_f1",
+          "transform": [9, 0, 0, 9, 367.2, 101.71210000000008]
+        },
+        {
+          "x": 251.5,
+          "y": 661.7,
+          "width": 9.859237830000003,
+          "height": 9,
+          "text": "06",
+          "fontSize": 9,
+          "fontName": "g_d0_f4",
+          "transform": [9, 0, 0, 9, 251.5, 130.30732]
+        },
+        {
+          "x": 261.2,
+          "y": 661.7,
+          "width": 4.986000000000001,
+          "height": 9,
+          "text": "8",
+          "fontSize": 9,
+          "fontName": "g_d0_f5",
+          "transform": [9, 0, 0, 9, 261.2105, 130.30732]
+        },
+        {
+          "x": 266,
+          "y": 661.7,
+          "width": 9.859266179999983,
+          "height": 9,
+          "text": "53",
+          "fontSize": 9,
+          "fontName": "g_d0_f4",
+          "transform": [9, 0, 0, 9, 266.0483, 130.30732]
+        },
+        {
+          "x": 275.8,
+          "y": 661.7,
+          "width": 4.986000000000001,
+          "height": 9,
+          "text": "8",
+          "fontSize": 9,
+          "fontName": "g_d0_f5",
+          "transform": [9, 0, 0, 9, 275.75883, 130.30732]
+        },
+        {
+          "x": 392.1,
+          "y": 533.2,
+          "width": 32.58286299000004,
+          "height": 9,
+          "text": "Account",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 392.1499, 258.8157100000001]
+        },
+        {
+          "x": 392.1,
+          "y": 547.6,
+          "width": 31.20250392000007,
+          "height": 9,
+          "text": "number",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 392.1499, 244.43572000000006]
+        },
+        {
+          "x": 392.1,
+          "y": 561.9,
+          "width": 50.81744403000004,
+          "height": 9,
+          "text": "Amount Due",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 392.1499, 230.05573000000004]
+        },
+        {
+          "x": 228.2,
+          "y": 541.3,
+          "width": 2.562,
+          "height": 6,
+          "text": "•",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 228.19995, 250.66972999999996]
+        },
+        {
+          "x": 238.1,
+          "y": 541.3,
+          "width": 78.8246740800001,
+          "height": 6,
+          "text": "Online Banking: www.cibc.com",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 238.05, 250.66972999999996]
+        },
+        {
+          "x": 72,
+          "y": 534.1,
+          "width": 26.87542679999997,
+          "height": 12,
+          "text": "CIBC",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 72, 257.9171]
+        },
+        {
+          "x": 72,
+          "y": 550.4,
+          "width": 39.09768192000001,
+          "height": 12,
+          "text": "Costco",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 72, 241.57713]
+        },
+        {
+          "x": 192.2,
+          "y": 520,
+          "width": 157.34302688999998,
+          "height": 7,
+          "text": "Please turn over - Transactions begin on page 2",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 192.19997, 271.98697]
+        },
+        {
+          "x": 228.2,
+          "y": 532.3,
+          "width": 74.3017463099999,
+          "height": 9,
+          "text": "Payment options",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 228.19988, 259.69291000000004]
+        },
+        {
+          "x": 527.2,
+          "y": 517.4,
+          "width": 19.989481860000023,
+          "height": 9,
+          "text": "Page",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 527.2499, 274.58209000000005]
+        },
+        {
+          "x": 549.6,
+          "y": 517.4,
+          "width": 5.130000000000001,
+          "height": 9,
+          "text": "1",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 549.6059300000001, 274.58209000000005]
+        },
+        {
+          "x": 556.8,
+          "y": 517.4,
+          "width": 15.351222060000097,
+          "height": 9,
+          "text": "of 3",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 556.78079, 274.58209000000005]
+        },
+        {
+          "x": 482.6,
+          "y": 531,
+          "width": 89.25240464999997,
+          "height": 9,
+          "text": "5268 XXXX XXXX 0000",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 482.59998, 261.0121000000001]
+        },
+        {
+          "x": 72,
+          "y": 518.2,
+          "width": 27.70290708000001,
+          "height": 6,
+          "text": "Tear Off here",
+          "fontSize": 6,
+          "fontName": "g_d0_f6",
+          "transform": [6, 0, 0, 6, 72, 273.79553999999996]
+        },
+        {
+          "x": 72,
+          "y": 382,
+          "width": 296.94296690999977,
+          "height": 9,
+          "text": "Your pre-authorized payment will be withdrawn from your bank account on",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 72, 410.02306999999996]
+        },
+        {
+          "x": 72,
+          "y": 392.3,
+          "width": 296.36031959999997,
+          "height": 9,
+          "text": "or shortly after the due date, and applied to your credit card account by the",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 72, 399.66309]
+        },
+        {
+          "x": 72,
+          "y": 402.7,
+          "width": 285.22343618999986,
+          "height": 9,
+          "text": "due date. The payment amount is based on the pre-authorized payment",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 72, 389.30311000000006]
+        },
+        {
+          "x": 72,
+          "y": 413.1,
+          "width": 91.11984110999992,
+          "height": 9,
+          "text": "service option selected.",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 72, 378.9431300000001]
+        },
+        {
+          "x": 555.8,
+          "y": 411.4,
+          "width": 19.940163840000103,
+          "height": 8,
+          "text": "84.43",
+          "fontSize": 8,
+          "fontName": "g_d0_f3",
+          "transform": [8, 0, 0, 8, 555.79992, 380.59515]
+        },
+        {
+          "x": 228.2,
+          "y": 615.6,
+          "width": 59.079581100000084,
+          "height": 6,
+          "text": "Do not staple or attach",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 228.19995, 176.42864999999995]
+        },
+        {
+          "x": 228.2,
+          "y": 623.6,
+          "width": 43.166985900000086,
+          "height": 6,
+          "text": "correspondence.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 228.19995, 168.44867]
+        },
+        {
+          "x": 228.2,
+          "y": 592.1,
+          "width": 69.19297503999996,
+          "height": 7,
+          "text": "For general inquiries",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 228.19995, 199.94700999999998]
+        },
+        {
+          "x": 228.2,
+          "y": 601.1,
+          "width": 61.052466230000064,
+          "height": 7,
+          "text": "call 1 866 346-2999",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 228.19995, 190.85700999999995]
+        },
+        {
+          "x": 418.3,
+          "y": 90.5,
+          "width": 62.42133552,
+          "height": 12,
+          "text": "FIRST LAST",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 418.29996, 701.4611]
+        },
+        {
+          "x": 418.3,
+          "y": 107,
+          "width": 72.92667383999992,
+          "height": 9,
+          "text": "Account number",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 418.29996, 685.00894]
+        },
+        {
+          "x": 418.3,
+          "y": 117.8,
+          "width": 66.53755738000022,
+          "height": 7,
+          "text": "1234 XXXX XXXX 1234",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 418.29996, 674.1549100000001]
+        },
+        {
+          "x": 418.3,
+          "y": 133.1,
+          "width": 46.29920300999998,
+          "height": 9,
+          "text": "Statement",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 418.29996, 658.91472]
+        },
+        {
+          "x": 418.3,
+          "y": 144.2,
+          "width": 20.864551139999996,
+          "height": 9,
+          "text": "Date",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 418.29996, 647.77298]
+        },
+        {
+          "x": 441.6,
+          "y": 144.2,
+          "width": 43.89910084000009,
+          "height": 7,
+          "text": "November 23,",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 441.62365, 647.77298]
+        },
+        {
+          "x": 418.3,
+          "y": 155.5,
+          "width": 15.120881860000013,
+          "height": 7,
+          "text": "2025",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 418.29996, 636.5407]
+        },
+        {
+          "x": 72.7,
+          "y": 116.2,
+          "width": 267.43665834000006,
+          "height": 18,
+          "text": "CIBC Costco World Mastercard",
+          "fontSize": 18,
+          "fontName": "g_d0_f3",
+          "transform": [18, 0, 0, 18, 72.6999, 675.8246200000001]
+        },
+        {
+          "x": 340,
+          "y": 113.4,
+          "width": 4.16,
+          "height": 5,
+          "text": "®",
+          "fontSize": 5,
+          "fontName": "g_d0_f3",
+          "transform": [5, 0, 0, 5, 340.00106, 678.6246000000001]
+        },
+        {
+          "x": 72.7,
+          "y": 155.7,
+          "width": 217.42868988,
+          "height": 18,
+          "text": "Your account at a glance",
+          "fontSize": 18,
+          "fontName": "g_d0_f3",
+          "transform": [18, 0, 0, 18, 72.6999, 636.2746300000001]
+        },
+        {
+          "x": 418.3,
+          "y": 159.5,
+          "width": 94.06655415000016,
+          "height": 9,
+          "text": "November statement",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 418.29996, 632.5147300000001]
+        },
+        {
+          "x": 418.3,
+          "y": 170.6,
+          "width": 28.356321240000035,
+          "height": 9,
+          "text": "period",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 418.29996, 621.3729900000001]
+        },
+        {
+          "x": 448.7,
+          "y": 170.6,
+          "width": 88.13833867999983,
+          "height": 7,
+          "text": "October 24 to November 23,",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 448.70128, 621.3729900000001]
+        },
+        {
+          "x": 418.3,
+          "y": 181.9,
+          "width": 15.120881860000013,
+          "height": 7,
+          "text": "2025",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 418.29996, 610.1407100000001]
+        },
+        {
+          "x": 418.3,
+          "y": 186.5,
+          "width": 34.19798724000003,
+          "height": 9,
+          "text": "Contact",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 418.29996, 605.5418]
+        },
+        {
+          "x": 418.3,
+          "y": 198.7,
+          "width": 10.23796062,
+          "height": 9,
+          "text": "us",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 418.29996, 593.2918199999999]
+        },
+        {
+          "x": 72.7,
+          "y": 176.4,
+          "width": 42.15204730000001,
+          "height": 10,
+          "text": "Previous",
+          "fontSize": 10,
+          "fontName": "g_d0_f3",
+          "transform": [10, 0, 0, 10, 72.6999, 615.56791]
+        },
+        {
+          "x": 90,
+          "y": 190.4,
+          "width": 38.173829899999966,
+          "height": 10,
+          "text": "balance",
+          "fontSize": 10,
+          "fontName": "g_d0_f3",
+          "transform": [10, 0, 0, 10, 89.99988, 601.5879199999999]
+        },
+        {
+          "x": 90,
+          "y": 203.5,
+          "width": 42.56359030000003,
+          "height": 10,
+          "text": "Payments",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 89.99988, 588.4939499999999]
+        },
+        {
+          "x": 90,
+          "y": 217.5,
+          "width": 56.867099000000024,
+          "height": 10,
+          "text": "Other credits",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 89.99988, 574.5139599999999]
+        },
+        {
+          "x": 248.4,
+          "y": 189.9,
+          "width": 32.803048899999965,
+          "height": 10,
+          "text": "$357.71",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 248.39991, 602.12024]
+        },
+        {
+          "x": 264.9,
+          "y": 203.6,
+          "width": 18.63043779999993,
+          "height": 10,
+          "text": "0.00",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 264.9499, 588.4002399999999]
+        },
+        {
+          "x": 418.3,
+          "y": 197,
+          "width": 52.73114804999997,
+          "height": 7,
+          "text": "Customer Service",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 418.29996, 595.0296]
+        },
+        {
+          "x": 418.3,
+          "y": 207.2,
+          "width": 33.813039399999965,
+          "height": 7,
+          "text": "Lost/Stolen",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 418.29996, 584.79962]
+        },
+        {
+          "x": 306.7,
+          "y": 220,
+          "width": 4.29,
+          "height": 10,
+          "text": "-",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 306.6999, 571.98095]
+        },
+        {
+          "x": 345.8,
+          "y": 190,
+          "width": 32.80304890000002,
+          "height": 10,
+          "text": "$357.71",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 345.79996, 601.95677]
+        },
+        {
+          "x": 345.8,
+          "y": 219.1,
+          "width": 32.80304890000002,
+          "height": 10,
+          "text": "$357.71",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 345.79996, 572.88677]
+        },
+        {
+          "x": 418.3,
+          "y": 217.1,
+          "width": 11.512250400000003,
+          "height": 7,
+          "text": "TTY",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 418.29996, 574.8796]
+        },
+        {
+          "x": 418.3,
+          "y": 227.4,
+          "width": 20.01783468999998,
+          "height": 7,
+          "text": "Online",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 418.29996, 564.64962]
+        },
+        {
+          "x": 490,
+          "y": 196.9,
+          "width": 51.40189606999985,
+          "height": 7,
+          "text": "1 866 346-2999 1",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 490.04991, 595.08273]
+        },
+        {
+          "x": 490,
+          "y": 207.1,
+          "width": 46.937442510000146,
+          "height": 7,
+          "text": "866 346-2999 1",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 490.04991, 584.93274]
+        },
+        {
+          "x": 490,
+          "y": 217.2,
+          "width": 40.91885034999986,
+          "height": 7,
+          "text": "877 331-3338",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 490.04991, 574.78275]
+        },
+        {
+          "x": 490,
+          "y": 227.4,
+          "width": 43.363012629999844,
+          "height": 7,
+          "text": "www.cibc.com",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 490.04991, 564.63276]
+        },
+        {
+          "x": 418.3,
+          "y": 245.9,
+          "width": 45.778343379999946,
+          "height": 11,
+          "text": "Summar",
+          "fontSize": 11,
+          "fontName": "g_d0_f3",
+          "transform": [11, 0, 0, 11, 418.29996, 546.13066]
+        },
+        {
+          "x": 418.3,
+          "y": 260.8,
+          "width": 6.247999999999999,
+          "height": 11,
+          "text": "y",
+          "fontSize": 11,
+          "fontName": "g_d0_f3",
+          "transform": [11, 0, 0, 11, 418.29996, 531.16067]
+        },
+        {
+          "x": 497.3,
+          "y": 245.9,
+          "width": 28.219037769999883,
+          "height": 11,
+          "text": "Credi",
+          "fontSize": 11,
+          "fontName": "g_d0_f3",
+          "transform": [11, 0, 0, 11, 497.25, 546.13066]
+        },
+        {
+          "x": 497.3,
+          "y": 260.8,
+          "width": 4.774,
+          "height": 11,
+          "text": "t",
+          "fontSize": 11,
+          "fontName": "g_d0_f3",
+          "transform": [11, 0, 0, 11, 497.25, 531.16067]
+        },
+        {
+          "x": 72.7,
+          "y": 220.5,
+          "width": 52.9803463,
+          "height": 10,
+          "text": "Total credits",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 72.6999, 571.5083599999999]
+        },
+        {
+          "x": 90,
+          "y": 234.4,
+          "width": 43.7710361,
+          "height": 10,
+          "text": "Purchases",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 89.99988, 557.5583599999999]
+        },
+        {
+          "x": 90,
+          "y": 248.4,
+          "width": 21.570195299999998,
+          "height": 10,
+          "text": "Cash",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 89.99988, 543.6083599999998]
+        },
+        {
+          "x": 90,
+          "y": 262.3,
+          "width": 40.7862108,
+          "height": 10,
+          "text": "advances",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 89.99988, 529.6583599999998]
+        },
+        {
+          "x": 90,
+          "y": 276.3,
+          "width": 32.26705189999999,
+          "height": 10,
+          "text": "Interest",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 89.99988, 515.7083599999997]
+        },
+        {
+          "x": 494.1,
+          "y": 262.8,
+          "width": 29.40622040999991,
+          "height": 7,
+          "text": "$5,000.00",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 494.14992, 529.22063]
+        },
+        {
+          "x": 494.1,
+          "y": 273.7,
+          "width": 29.40622040999991,
+          "height": 7,
+          "text": "$3,656.90",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 494.14992, 518.2906300000001]
+        },
+        {
+          "x": 418.3,
+          "y": 262.8,
+          "width": 14.419593719999934,
+          "height": 7,
+          "text": "Limit",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 418.29996, 529.22063]
+        },
+        {
+          "x": 418.3,
+          "y": 273.7,
+          "width": 27.155642569999998,
+          "height": 7,
+          "text": "Available",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 418.29996, 518.2906300000001]
+        },
+        {
+          "x": 90,
+          "y": 276.7,
+          "width": 15.623486599999996,
+          "height": 10,
+          "text": "Fee",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 89.99997, 515.3310100000001]
+        },
+        {
+          "x": 90,
+          "y": 290,
+          "width": 4.19,
+          "height": 10,
+          "text": "s",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 89.99997, 502.03102000000007]
+        },
+        {
+          "x": 245.5,
+          "y": 234.6,
+          "width": 33.855574800000056,
+          "height": 10,
+          "text": "1,343.10",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 245.49999, 557.35843]
+        },
+        {
+          "x": 264.9,
+          "y": 248.6,
+          "width": 18.63043779999993,
+          "height": 10,
+          "text": "0.00",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 264.94991, 543.40843]
+        },
+        {
+          "x": 264.9,
+          "y": 262.5,
+          "width": 18.63043779999993,
+          "height": 10,
+          "text": "0.00",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 264.94991, 529.4584299999999]
+        },
+        {
+          "x": 264.9,
+          "y": 276.5,
+          "width": 18.63043779999993,
+          "height": 10,
+          "text": "0.00",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 264.94991, 515.5084299999999]
+        },
+        {
+          "x": 337.4,
+          "y": 290.8,
+          "width": 39.267083499999956,
+          "height": 10,
+          "text": "$1,343.10",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 337.39991, 501.18094]
+        },
+        {
+          "x": 306.7,
+          "y": 290.8,
+          "width": 7.01,
+          "height": 10,
+          "text": "+",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 306.6999, 501.18094]
+        },
+        {
+          "x": 418.3,
+          "y": 292.4,
+          "width": 42.83028034999998,
+          "height": 11,
+          "text": "Interest",
+          "fontSize": 11,
+          "fontName": "g_d0_f3",
+          "transform": [11, 0, 0, 11, 418.29996, 499.58057]
+        },
+        {
+          "x": 418.3,
+          "y": 307.4,
+          "width": 27.779771689999986,
+          "height": 11,
+          "text": "rates",
+          "fontSize": 11,
+          "fontName": "g_d0_f3",
+          "transform": [11, 0, 0, 11, 418.29996, 484.61057999999997]
+        },
+        {
+          "x": 504.9,
+          "y": 295.3,
+          "width": 22.25923791000001,
+          "height": 7,
+          "text": "Annua",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 504.94992, 496.703]
+        },
+        {
+          "x": 504.9,
+          "y": 304.8,
+          "width": 2.1350000000000002,
+          "height": 7,
+          "text": "l",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 504.94992, 487.17301]
+        },
+        {
+          "x": 306.7,
+          "y": 305,
+          "width": 7.01,
+          "height": 10,
+          "text": "=",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 306.6999, 487.03101000000004]
+        },
+        {
+          "x": 337.4,
+          "y": 305,
+          "width": 39.267083499999956,
+          "height": 10,
+          "text": "$1,343.10",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 337.39991, 487.03101000000004]
+        },
+        {
+          "x": 72.7,
+          "y": 291.2,
+          "width": 58.67370380000001,
+          "height": 10,
+          "text": "Total charges",
+          "fontSize": 10,
+          "fontName": "g_d0_f2",
+          "transform": [10, 0, 0, 10, 72.6999, 500.78105999999997]
+        },
+        {
+          "x": 72.7,
+          "y": 305.9,
+          "width": 65.28619509999997,
+          "height": 10,
+          "text": "Total balance",
+          "fontSize": 10,
+          "fontName": "g_d0_f3",
+          "transform": [10, 0, 0, 10, 72.6999, 486.0805]
+        },
+        {
+          "x": 501.3,
+          "y": 309.3,
+          "width": 21.10283146999998,
+          "height": 7,
+          "text": "21.75%",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 501.34997, 482.67064999999997]
+        },
+        {
+          "x": 501.3,
+          "y": 320.3,
+          "width": 22.541782620000124,
+          "height": 7,
+          "text": "22.49%",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 501.34997, 471.74065]
+        },
+        {
+          "x": 418.3,
+          "y": 309.3,
+          "width": 55.35265659000002,
+          "height": 7,
+          "text": "Regular purchases",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 418.29996, 482.67064999999997]
+        },
+        {
+          "x": 418.3,
+          "y": 320.3,
+          "width": 44.970993760000034,
+          "height": 7,
+          "text": "Cash advances",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 418.29996, 471.74065]
+        },
+        {
+          "x": 72.7,
+          "y": 325,
+          "width": 133.53289164,
+          "height": 12,
+          "text": "Your payment due this",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 72.69987, 466.96707999999995]
+        },
+        {
+          "x": 72.7,
+          "y": 341.4,
+          "width": 39.592261440000016,
+          "height": 12,
+          "text": "month",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 72.69987, 450.62710999999996]
+        },
+        {
+          "x": 72.7,
+          "y": 345.1,
+          "width": 61.51744889999997,
+          "height": 10,
+          "text": "Amount Due",
+          "fontSize": 10,
+          "fontName": "g_d0_f3",
+          "transform": [10, 0, 0, 10, 72.6999, 446.9321]
+        },
+        {
+          "x": 134.1,
+          "y": 343,
+          "width": 2.2800000000000002,
+          "height": 4,
+          "text": "1",
+          "fontSize": 4,
+          "fontName": "g_d0_f3",
+          "transform": [4, 0, 0, 4, 134.07556, 449.03211999999996]
+        },
+        {
+          "x": 337.4,
+          "y": 343.5,
+          "width": 44.49901410000004,
+          "height": 10,
+          "text": "$1,343.10",
+          "fontSize": 10,
+          "fontName": "g_d0_f3",
+          "transform": [10, 0, 0, 10, 337.39991, 448.50960000000003]
+        },
+        {
+          "x": 384.2,
+          "y": 343.5,
+          "width": 100.77852905999987,
+          "height": 11,
+          "text": "Rewards Summary",
+          "fontSize": 11,
+          "fontName": "g_d0_f3",
+          "transform": [11, 0, 0, 11, 384.20441999999997, 448.50960000000003]
+        },
+        {
+          "x": 532.8,
+          "y": 356.4,
+          "width": 4.907,
+          "height": 7,
+          "text": "+",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 532.79992, 435.5828199999999]
+        },
+        {
+          "x": 414,
+          "y": 356.4,
+          "width": 58.80314321000009,
+          "height": 7,
+          "text": "As at last statement",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 413.99991, 435.5828199999999]
+        },
+        {
+          "x": 556.5,
+          "y": 356.4,
+          "width": 16.768096029999796,
+          "height": 7,
+          "text": "69.94",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 556.54991, 435.5828199999999]
+        },
+        {
+          "x": 351.3,
+          "y": 359.5,
+          "width": 30.63289130000002,
+          "height": 10,
+          "text": "$10.00",
+          "fontSize": 10,
+          "fontName": "g_d0_f3",
+          "transform": [10, 0, 0, 10, 351.34991, 432.5321]
+        },
+        {
+          "x": 72.7,
+          "y": 359.5,
+          "width": 47.40607569999999,
+          "height": 10,
+          "text": "Minimum",
+          "fontSize": 10,
+          "fontName": "g_d0_f3",
+          "transform": [10, 0, 0, 10, 72.69987, 432.53615]
+        },
+        {
+          "x": 72.7,
+          "y": 373.1,
+          "width": 43.74749910000001,
+          "height": 10,
+          "text": "Payment",
+          "fontSize": 10,
+          "fontName": "g_d0_f3",
+          "transform": [10, 0, 0, 10, 72.69987, 418.92617000000007]
+        },
+        {
+          "x": 116.3,
+          "y": 371,
+          "width": 2.2800000000000002,
+          "height": 4,
+          "text": "2",
+          "fontSize": 4,
+          "fontName": "g_d0_f3",
+          "transform": [4, 0, 0, 4, 116.29811000000001, 421.02619000000004]
+        },
+        {
+          "x": 414,
+          "y": 369.4,
+          "width": 17.896379579999987,
+          "height": 9,
+          "text": "This",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 413.99991, 422.64178000000004]
+        },
+        {
+          "x": 414,
+          "y": 381.6,
+          "width": 45.81581084999997,
+          "height": 9,
+          "text": "statement",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 413.99991, 410.3918]
+        },
+        {
+          "x": 72.7,
+          "y": 370.1,
+          "width": 102.62447711999995,
+          "height": 9,
+          "text": "Please pay this amount by",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 72.6999, 421.94996]
+        },
+        {
+          "x": 177.7,
+          "y": 370.1,
+          "width": 30.928762260000013,
+          "height": 9,
+          "text": "Dec 15,",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 177.68956, 421.94996]
+        },
+        {
+          "x": 72.7,
+          "y": 383,
+          "width": 20.09128814999999,
+          "height": 9,
+          "text": "2025",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 72.6999, 408.99179999999996]
+        },
+        {
+          "x": 528.7,
+          "y": 382.6,
+          "width": 4.907,
+          "height": 7,
+          "text": "+",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 528.7, 409.43424]
+        },
+        {
+          "x": 528.7,
+          "y": 394.5,
+          "width": 4.907,
+          "height": 7,
+          "text": "+",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 528.7, 397.52425]
+        },
+        {
+          "x": 417.6,
+          "y": 382.6,
+          "width": 90.16788815999996,
+          "height": 7,
+          "text": "Earned on net card purchases",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 417.6, 409.43424]
+        },
+        {
+          "x": 417.6,
+          "y": 394.5,
+          "width": 46.18433539999997,
+          "height": 7,
+          "text": "Bonus Rewards",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 417.6, 397.52425]
+        },
+        {
+          "x": 556.5,
+          "y": 382.6,
+          "width": 15.688152689999946,
+          "height": 7,
+          "text": "13.44",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 556.54991, 409.43424]
+        },
+        {
+          "x": 560.8,
+          "y": 394.5,
+          "width": 11.706466100000075,
+          "height": 7,
+          "text": "1.05",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 560.8498099999999, 397.52425]
+        },
+        {
+          "x": 414,
+          "y": 410.9,
+          "width": 19.73020471999993,
+          "height": 8,
+          "text": "Total",
+          "fontSize": 8,
+          "fontName": "g_d0_f3",
+          "transform": [8, 0, 0, 8, 413.99991, 381.09736]
+        },
+        {
+          "x": 414,
+          "y": 421.8,
+          "width": 33.458270880000036,
+          "height": 8,
+          "text": "Rewards",
+          "fontSize": 8,
+          "fontName": "g_d0_f3",
+          "transform": [8, 0, 0, 8, 413.99991, 370.20736]
+        },
+        {
+          "x": 528.7,
+          "y": 411.4,
+          "width": 4.5600000000000005,
+          "height": 8,
+          "text": "=",
+          "fontSize": 8,
+          "fontName": "g_d0_f3",
+          "transform": [8, 0, 0, 8, 528.7, 380.59515]
+        }
+      ]
+    },
+    {
+      "pageNumber": 2,
+      "viewportWidth": 612,
+      "viewportHeight": 792,
+      "items": [
+        {
+          "x": 14.4,
+          "y": 668.1,
+          "width": 177.0430774199999,
+          "height": 6,
+          "text": "If you choose to convert an eligible Purchase into an Installment Plan,",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.4, 123.87297000000001]
+        },
+        {
+          "x": 14.4,
+          "y": 675.2,
+          "width": 180.30564101999997,
+          "height": 6,
+          "text": "interest will be charged on that Installment Plan at the interest rate you",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.4, 116.76297]
+        },
+        {
+          "x": 14.4,
+          "y": 682.3,
+          "width": 174.7035876599999,
+          "height": 6,
+          "text": "agreed to at the time of conversion and in the manner set out in the",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.4, 109.65296999999998]
+        },
+        {
+          "x": 14.4,
+          "y": 689.5,
+          "width": 99.58323803999998,
+          "height": 6,
+          "text": "Installment Plan Terms and Conditions.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.4, 102.54296999999997]
+        },
+        {
+          "x": 206.4,
+          "y": 654.2,
+          "width": 176.65210416,
+          "height": 6,
+          "text": "**Foreign currency Transactions (except CIBC Convenience Cheques)",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 137.7706300000001]
+        },
+        {
+          "x": 206.4,
+          "y": 661,
+          "width": 181.08883469999972,
+          "height": 6,
+          "text": "are converted to Canadian dollars on or after the Transaction date and",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 130.98063000000013]
+        },
+        {
+          "x": 206.4,
+          "y": 667.8,
+          "width": 178.2750993000002,
+          "height": 6,
+          "text": "no later than the Transaction posting date. You are charged the same",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 124.19063000000017]
+        },
+        {
+          "x": 206.4,
+          "y": 674.6,
+          "width": 171.79558127999996,
+          "height": 6,
+          "text": "conversion rate CIBC must pay, on both debits and credits. You are",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 117.4006300000002]
+        },
+        {
+          "x": 206.4,
+          "y": 681.4,
+          "width": 174.13992749999974,
+          "height": 6,
+          "text": "charged a fee of 2.5% of the converted amount, on both debits and",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 110.61063000000024]
+        },
+        {
+          "x": 206.4,
+          "y": 688.2,
+          "width": 178.91506788000027,
+          "height": 6,
+          "text": "credits. This fee is charged on currency conversion. A foreign currency",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 103.82063000000028]
+        },
+        {
+          "x": 206.4,
+          "y": 695,
+          "width": 180.51303311999993,
+          "height": 6,
+          "text": "Convenience Cheque or payment is converted at CIBC’s branch selling",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 97.03063000000031]
+        },
+        {
+          "x": 206.4,
+          "y": 701.8,
+          "width": 174.84478109999972,
+          "height": 6,
+          "text": "rate for Canadian dollars in effect at the time it is processed by CIBC.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 90.24063000000035]
+        },
+        {
+          "x": 14.4,
+          "y": 700.9,
+          "width": 102.88109789999996,
+          "height": 7,
+          "text": "Payment period extensions:",
+          "fontSize": 7,
+          "fontName": "g_d0_f1",
+          "transform": [7, 0, 0, 7, 14.39997, 91.10798]
+        },
+        {
+          "x": 121.1,
+          "y": 700.9,
+          "width": 73.82628659999999,
+          "height": 6,
+          "text": "If you didn't pay the Amount",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 121.08896999999999, 91.10798]
+        },
+        {
+          "x": 14.4,
+          "y": 708.2,
+          "width": 179.54331971999991,
+          "height": 6,
+          "text": "Due on your last monthly statement, we have extended your payment",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 83.76801]
+        },
+        {
+          "x": 14.4,
+          "y": 715.6,
+          "width": 170.8135750799999,
+          "height": 6,
+          "text": "due date this month to give you extra time to make your payment.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 76.42804000000001]
+        },
+        {
+          "x": 14.4,
+          "y": 722.9,
+          "width": 28.34144892000001,
+          "height": 6,
+          "text": "Interest will",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 69.08807000000002]
+        },
+        {
+          "x": 14.4,
+          "y": 616.1,
+          "width": 172.10719391999996,
+          "height": 6,
+          "text": "Interest is charged on Cash Advances from the date they are taken.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 175.91428999999994]
+        },
+        {
+          "x": 14.4,
+          "y": 622.9,
+          "width": 172.12491030000004,
+          "height": 6,
+          "text": "Interest is charged on Convenience Cheques and Balance Transfers",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 169.0742899999999]
+        },
+        {
+          "x": 14.4,
+          "y": 629.8,
+          "width": 172.38420485999987,
+          "height": 6,
+          "text": "from the date they are posted to your credit card account. We stop",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 162.23428999999987]
+        },
+        {
+          "x": 14.4,
+          "y": 636.6,
+          "width": 174.1951088999999,
+          "height": 6,
+          "text": "charging interest on the day we receive a payment which covers the",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 155.39428999999984]
+        },
+        {
+          "x": 14.4,
+          "y": 643.4,
+          "width": 153.4206708,
+          "height": 6,
+          "text": "amount of the Purchase, Cash Advance, Balance Transfer or",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 148.5542899999998]
+        },
+        {
+          "x": 14.4,
+          "y": 650.3,
+          "width": 158.18862971999997,
+          "height": 6,
+          "text": "Convenience Cheque, as the case may be, as described in the",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 141.71428999999978]
+        },
+        {
+          "x": 14.4,
+          "y": 657.1,
+          "width": 178.44086933999995,
+          "height": 6,
+          "text": "Application of Payments section of your CIBC Cardholder Agreement.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 134.87428999999975]
+        },
+        {
+          "x": 206.4,
+          "y": 576.4,
+          "width": 173.17536419999982,
+          "height": 6,
+          "text": "Your statement (including the Balance and Minimum Payment) only",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 215.59865000000002]
+        },
+        {
+          "x": 206.4,
+          "y": 583.1,
+          "width": 178.78712135999965,
+          "height": 6,
+          "text": "reflects Transactions that were posted as of the Statement Date. If you",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 208.88868000000002]
+        },
+        {
+          "x": 206.4,
+          "y": 589.8,
+          "width": 179.34908976000023,
+          "height": 6,
+          "text": "made a payment but it has not yet been posted, it will appear on your",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 202.17871000000002]
+        },
+        {
+          "x": 206.4,
+          "y": 596.5,
+          "width": 183.07467413999987,
+          "height": 6,
+          "text": "next monthly statement and any interest charges will be adjusted based",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 195.46874000000003]
+        },
+        {
+          "x": 206.4,
+          "y": 603.2,
+          "width": 178.52701422000015,
+          "height": 6,
+          "text": "on the transaction date and payment amount. The payment due date",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 188.75877000000003]
+        },
+        {
+          "x": 206.4,
+          "y": 610,
+          "width": 176.66269620000017,
+          "height": 6,
+          "text": "is determined under Eastern Standard Time (EST) meaning payments",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 182.04880000000003]
+        },
+        {
+          "x": 206.4,
+          "y": 616.7,
+          "width": 172.55630544000002,
+          "height": 6,
+          "text": "are considered received by us on the payment due date if made by",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 175.33883000000003]
+        },
+        {
+          "x": 206.4,
+          "y": 623.4,
+          "width": 169.5401669399998,
+          "height": 6,
+          "text": "11:59pm EST. Payments made by mail or through another financial",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 168.62886000000003]
+        },
+        {
+          "x": 206.4,
+          "y": 630.1,
+          "width": 181.90137636000006,
+          "height": 6,
+          "text": "institution can take several days to be received by us. Please make your",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 161.91889000000003]
+        },
+        {
+          "x": 206.4,
+          "y": 636.8,
+          "width": 171.21920328,
+          "height": 6,
+          "text": "payments accordingly. Check CIBC Online Banking for the status of",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 155.20892000000003]
+        },
+        {
+          "x": 206.4,
+          "y": 643.5,
+          "width": 128.63733545999983,
+          "height": 6,
+          "text": "your payments and your most up to date Balance.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 148.49895000000004]
+        },
+        {
+          "x": 398.4,
+          "y": 627.8,
+          "width": 81.66625512000019,
+          "height": 6,
+          "text": "The CIBC logo is a trademark of",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 398.39998, 164.17858999999999]
+        },
+        {
+          "x": 398.4,
+          "y": 635.8,
+          "width": 13.885379459999987,
+          "height": 6,
+          "text": "CIBC.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 398.39998, 156.19861000000003]
+        },
+        {
+          "x": 398.4,
+          "y": 609.4,
+          "width": 176.7726517799998,
+          "height": 6,
+          "text": "COSTCO and COSTCO WHOLESALE are trademarks owned by Price",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 398.39998, 182.56198000000006]
+        },
+        {
+          "x": 398.4,
+          "y": 615.9,
+          "width": 174.25874657999984,
+          "height": 6,
+          "text": "Costco International Inc. and are used under licence. Mastercard is a",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 398.39998, 176.07200000000012]
+        },
+        {
+          "x": 398.4,
+          "y": 622.4,
+          "width": 155.14628051999938,
+          "height": 6,
+          "text": "registered trademark and the circles design is a trademark of",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 398.39998, 169.58202000000017]
+        },
+        {
+          "x": 398.4,
+          "y": 628.9,
+          "width": 98.60537009999987,
+          "height": 6,
+          "text": "Mastercard International Incorporated.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 398.39998, 163.09204000000022]
+        },
+        {
+          "x": 14.4,
+          "y": 583.8,
+          "width": 91.02677975999997,
+          "height": 7,
+          "text": "How we charge interest:",
+          "fontSize": 7,
+          "fontName": "g_d0_f1",
+          "transform": [7, 0, 0, 7, 14.39997, 208.19746999999995]
+        },
+        {
+          "x": 109.2,
+          "y": 583.8,
+          "width": 64.45517478000008,
+          "height": 6,
+          "text": "If interest is charged on a",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 109.23463, 208.19746999999995]
+        },
+        {
+          "x": 14.4,
+          "y": 590.8,
+          "width": 170.7705449999999,
+          "height": 6,
+          "text": "Purchase, it is charged retroactively from the Transaction date. You",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 201.21749999999997]
+        },
+        {
+          "x": 14.4,
+          "y": 597.8,
+          "width": 177.68132597999994,
+          "height": 6,
+          "text": "have a minimum 21 day interest-free grace period for new Purchases.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 194.23753]
+        },
+        {
+          "x": 14.4,
+          "y": 604.7,
+          "width": 172.9041923399999,
+          "height": 6,
+          "text": "You can avoid interest on those new Purchases by paying your new",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 187.25756]
+        },
+        {
+          "x": 14.4,
+          "y": 611.7,
+          "width": 103.09782983999999,
+          "height": 6,
+          "text": "balance in full by the payment due date.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 180.27759000000003]
+        },
+        {
+          "x": 398.4,
+          "y": 592.2,
+          "width": 149.22491333999963,
+          "height": 6,
+          "text": "For more information, please refer to the CIBC Cardholder",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 398.39998, 199.77195999999992]
+        },
+        {
+          "x": 398.4,
+          "y": 601.3,
+          "width": 30.46420158000011,
+          "height": 6,
+          "text": "Agreement.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 398.39998, 190.73195999999996]
+        },
+        {
+          "x": 398.4,
+          "y": 565.7,
+          "width": 64.79188988999996,
+          "height": 7,
+          "text": "Minimum Payment",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 398.39998, 226.34642999999994]
+        },
+        {
+          "x": 464.7,
+          "y": 565.7,
+          "width": 97.85743944000002,
+          "height": 6,
+          "text": "is the minimum amount you must pay",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 464.66759, 226.34642999999994]
+        },
+        {
+          "x": 398.4,
+          "y": 573,
+          "width": 169.0458900599998,
+          "height": 6,
+          "text": "this month and it includes your monthly installment payments due",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 398.39998, 218.98397999999997]
+        },
+        {
+          "x": 398.4,
+          "y": 580.4,
+          "width": 35.16512117999987,
+          "height": 6,
+          "text": "(if applicable).",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 398.39998, 211.57398999999998]
+        },
+        {
+          "x": 14.4,
+          "y": 550.7,
+          "width": 175.23675587999995,
+          "height": 6,
+          "text": "If you find an error or irregularity (including possible unauthorized or",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 241.26065999999992]
+        },
+        {
+          "x": 14.4,
+          "y": 557.9,
+          "width": 171.23563499999997,
+          "height": 6,
+          "text": "fraudulent Transactions) in this statement you must tell us within 30",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 234.14067999999986]
+        },
+        {
+          "x": 14.4,
+          "y": 565,
+          "width": 158.24543639999993,
+          "height": 6,
+          "text": "days of this Statement Date. If you do not, we may regard this",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 227.0206999999998]
+        },
+        {
+          "x": 14.4,
+          "y": 572.1,
+          "width": 134.39659853999993,
+          "height": 6,
+          "text": "statement as final (except for credits posted in error).",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 14.39997, 219.90071999999975]
+        },
+        {
+          "x": 206.4,
+          "y": 550.9,
+          "width": 170.58703013999963,
+          "height": 6,
+          "text": "continue to accrue for the extended period. When we receive your",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 241.09572000000003]
+        },
+        {
+          "x": 206.4,
+          "y": 558.2,
+          "width": 160.60071503999995,
+          "height": 6,
+          "text": "Amount Due, your payment due date will change back to your",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 233.75575000000003]
+        },
+        {
+          "x": 206.4,
+          "y": 565.6,
+          "width": 68.49936372000008,
+          "height": 6,
+          "text": "regular payment due date.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 206.39991, 226.41578000000004]
+        },
+        {
+          "x": 398.4,
+          "y": 551.7,
+          "width": 42.65705842999994,
+          "height": 7,
+          "text": "Amount Due",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 398.39998, 240.32101]
+        },
+        {
+          "x": 442.5,
+          "y": 551.7,
+          "width": 123.86062686000042,
+          "height": 6,
+          "text": "is the amount you must pay if you want to avoid",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 442.53802, 240.32101]
+        },
+        {
+          "x": 398.4,
+          "y": 559.6,
+          "width": 152.98977666000008,
+          "height": 6,
+          "text": "interest on your regular purchases shown on this statement.",
+          "fontSize": 6,
+          "fontName": "g_d0_f2",
+          "transform": [6, 0, 0, 6, 398.39998, 232.38226999999995]
+        },
+        {
+          "x": 14.4,
+          "y": 536.2,
+          "width": 318.4040034,
+          "height": 12,
+          "text": "Information about your CIBC Costco World Mastercard",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 14.39997, 255.7670999999999]
+        },
+        {
+          "x": 14.4,
+          "y": 552.6,
+          "width": 47.09859227999999,
+          "height": 12,
+          "text": "account",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 14.39997, 239.42712999999992]
+        },
+        {
+          "x": 481.6,
+          "y": 516.5,
+          "width": 19.989481859999966,
+          "height": 9,
+          "text": "Page",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 481.64998, 275.54995]
+        },
+        {
+          "x": 504,
+          "y": 516.5,
+          "width": 5.130000000000001,
+          "height": 9,
+          "text": "2",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 504.00601, 275.54995]
+        },
+        {
+          "x": 511.2,
+          "y": 516.5,
+          "width": 7.976537009999964,
+          "height": 9,
+          "text": "of",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 511.18087, 275.54995]
+        },
+        {
+          "x": 481.6,
+          "y": 528.7,
+          "width": 5.0040000000000004,
+          "height": 9,
+          "text": "3",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 481.64998, 263.29997]
+        },
+        {
+          "x": 36.7,
+          "y": 396.3,
+          "width": 115.48867088000004,
+          "height": 8,
+          "text": "Total for5268 XXXX XXXX 0000",
+          "fontSize": 8,
+          "fontName": "g_d0_f3",
+          "transform": [8, 0, 0, 8, 36.69999, 395.74511]
+        },
+        {
+          "x": 504.9,
+          "y": 396.3,
+          "width": 35.35941743999993,
+          "height": 8,
+          "text": "$1,343.10",
+          "fontSize": 8,
+          "fontName": "g_d0_f3",
+          "transform": [8, 0, 0, 8, 504.94992, 395.74511]
+        },
+        {
+          "x": 122.8,
+          "y": 213.8,
+          "width": 159.4485734800001,
+          "height": 7,
+          "text": "COSTCO WHOLESALE W251 CALGARY AB COSTCO",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 578.16411]
+        },
+        {
+          "x": 122.8,
+          "y": 226.8,
+          "width": 129.90138916999996,
+          "height": 7,
+          "text": "WHOLESALE W251 CALGARY AB COSTCO",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 565.1541400000001]
+        },
+        {
+          "x": 122.8,
+          "y": 239.9,
+          "width": 144.92906162000003,
+          "height": 7,
+          "text": "WHOLESALE W251 CALGARY AB COSTCO GAS",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 552.1441700000001]
+        },
+        {
+          "x": 122.8,
+          "y": 252.9,
+          "width": 148.46583325000014,
+          "height": 7,
+          "text": "W251 CALGARY AB COSTCO WHOLESALE W251",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 539.1342000000002]
+        },
+        {
+          "x": 122.8,
+          "y": 265.9,
+          "width": 129.8979119899999,
+          "height": 7,
+          "text": "CALGARY AB COSTCO WHOLESALE W251",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 526.1242300000002]
+        },
+        {
+          "x": 122.8,
+          "y": 278.9,
+          "width": 146.0760490699998,
+          "height": 7,
+          "text": "CALGARY AB COSTCO GAS W251 CALGARY AB",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 513.1142600000003]
+        },
+        {
+          "x": 122.8,
+          "y": 291.9,
+          "width": 129.2621198399999,
+          "height": 7,
+          "text": "WAL-MART #3009 CALGARY AB COSTCO",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 500.10429000000033]
+        },
+        {
+          "x": 122.8,
+          "y": 304.9,
+          "width": 129.90138916999996,
+          "height": 7,
+          "text": "WHOLESALE W251 CALGARY AB COSTCO",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 487.0943200000004]
+        },
+        {
+          "x": 122.8,
+          "y": 317.9,
+          "width": 156.30431670000007,
+          "height": 7,
+          "text": "WHOLESALE W251 CALGARY AB FLA*AF6MVOL6G",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 474.0843500000004]
+        },
+        {
+          "x": 122.8,
+          "y": 330.9,
+          "width": 129.8979119899999,
+          "height": 7,
+          "text": "CALGARY AB COSTCO WHOLESALE W251",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 461.0743800000005]
+        },
+        {
+          "x": 122.8,
+          "y": 343.9,
+          "width": 129.8979119899999,
+          "height": 7,
+          "text": "CALGARY AB COSTCO WHOLESALE W251",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 448.0644100000005]
+        },
+        {
+          "x": 122.8,
+          "y": 356.9,
+          "width": 146.0760490699998,
+          "height": 7,
+          "text": "CALGARY AB COSTCO GAS W251 CALGARY AB",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 435.05444000000057]
+        },
+        {
+          "x": 122.8,
+          "y": 370,
+          "width": 131.7803356100001,
+          "height": 7,
+          "text": "COSTCO CANADA LIQUOR 1 CALGARY AB",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 122.84992, 422.0444700000006]
+        },
+        {
+          "x": 520.9,
+          "y": 200.8,
+          "width": 19.191831469999922,
+          "height": 7,
+          "text": "172.54",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 520.862, 591.17409]
+        },
+        {
+          "x": 524.6,
+          "y": 213.8,
+          "width": 15.44944561999997,
+          "height": 7,
+          "text": "61.35",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 524.6051199999999, 578.1641200000001]
+        },
+        {
+          "x": 528.3,
+          "y": 226.8,
+          "width": 11.706466100000075,
+          "height": 7,
+          "text": "1.58",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 528.3480999999999, 565.1541500000001]
+        },
+        {
+          "x": 525.8,
+          "y": 239.9,
+          "width": 14.245445620000087,
+          "height": 7,
+          "text": "20.11",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 525.8048, 552.1441800000002]
+        },
+        {
+          "x": 522.1,
+          "y": 252.9,
+          "width": 17.99274637999995,
+          "height": 7,
+          "text": "193.13",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 522.06182, 539.1342100000002]
+        },
+        {
+          "x": 527.1,
+          "y": 265.9,
+          "width": 12.90557954000003,
+          "height": 7,
+          "text": "0.74",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 527.14825, 526.1242400000003]
+        },
+        {
+          "x": 525.9,
+          "y": 278.9,
+          "width": 14.130795210000032,
+          "height": 7,
+          "text": "18.17",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 525.9243399999999, 513.1142700000003]
+        },
+        {
+          "x": 523.4,
+          "y": 291.9,
+          "width": 16.64985979999996,
+          "height": 7,
+          "text": "64.87",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 523.40528, 500.10430000000036]
+        },
+        {
+          "x": 520.9,
+          "y": 304.9,
+          "width": 19.188075550000033,
+          "height": 7,
+          "text": "208.81",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 520.86218, 487.0943300000004]
+        },
+        {
+          "x": 528.3,
+          "y": 317.9,
+          "width": 11.706466099999847,
+          "height": 7,
+          "text": "1.58",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 528.3481099999999, 474.08436000000046]
+        },
+        {
+          "x": 524.7,
+          "y": 330.9,
+          "width": 15.32555906000004,
+          "height": 7,
+          "text": "37.01",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 524.7247, 461.0743900000005]
+        },
+        {
+          "x": 521,
+          "y": 343.9,
+          "width": 19.07285982000002,
+          "height": 7,
+          "text": "537.12",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 520.98172, 448.06442000000055]
+        },
+        {
+          "x": 528.2,
+          "y": 356.9,
+          "width": 11.825466099999847,
+          "height": 7,
+          "text": "1.04",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 528.22838, 435.0544500000006]
+        },
+        {
+          "x": 524.6,
+          "y": 370,
+          "width": 15.45018104000004,
+          "height": 7,
+          "text": "14.67",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 524.60497, 422.04448000000065]
+        },
+        {
+          "x": 524.6,
+          "y": 383,
+          "width": 15.449445620000084,
+          "height": 7,
+          "text": "10.38",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 524.60514, 409.0345100000007]
+        },
+        {
+          "x": 341.5,
+          "y": 383.3,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 408.6828299999999]
+        },
+        {
+          "x": 36.7,
+          "y": 240.4,
+          "width": 11.052233080000008,
+          "height": 7,
+          "text": "Oct",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 551.60926]
+        },
+        {
+          "x": 54.3,
+          "y": 240.4,
+          "width": 6.430951169999995,
+          "height": 7,
+          "text": "31",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 54.279978889999995, 551.60926]
+        },
+        {
+          "x": 36.7,
+          "y": 253.4,
+          "width": 24.015319719999994,
+          "height": 7,
+          "text": "Nov 05",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 538.6492599999999]
+        },
+        {
+          "x": 36.7,
+          "y": 266.3,
+          "width": 24.015319719999994,
+          "height": 7,
+          "text": "Nov 05",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 525.6892599999999]
+        },
+        {
+          "x": 36.7,
+          "y": 279.3,
+          "width": 24.015319719999994,
+          "height": 7,
+          "text": "Nov 05",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 512.7292599999998]
+        },
+        {
+          "x": 36.7,
+          "y": 292.2,
+          "width": 24.015319719999994,
+          "height": 7,
+          "text": "Nov 05",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 499.7692599999998]
+        },
+        {
+          "x": 36.7,
+          "y": 305.2,
+          "width": 12.723812639999993,
+          "height": 7,
+          "text": "Nov",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 486.80925999999977]
+        },
+        {
+          "x": 55.5,
+          "y": 305.2,
+          "width": 5.231272409999998,
+          "height": 7,
+          "text": "11",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 55.47965764999999, 486.80925999999977]
+        },
+        {
+          "x": 36.7,
+          "y": 318.2,
+          "width": 12.723812639999993,
+          "height": 7,
+          "text": "Nov",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 473.84925999999973]
+        },
+        {
+          "x": 55.5,
+          "y": 318.2,
+          "width": 5.231272409999998,
+          "height": 7,
+          "text": "11",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 55.47965764999999, 473.84925999999973]
+        },
+        {
+          "x": 36.7,
+          "y": 331.1,
+          "width": 12.723812639999993,
+          "height": 7,
+          "text": "Nov",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 460.8892599999997]
+        },
+        {
+          "x": 54.3,
+          "y": 331.1,
+          "width": 6.435300759999999,
+          "height": 7,
+          "text": "13",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 54.279978959999994, 460.8892599999997]
+        },
+        {
+          "x": 36.7,
+          "y": 344.1,
+          "width": 12.723812639999993,
+          "height": 7,
+          "text": "Nov",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 447.92925999999966]
+        },
+        {
+          "x": 54.4,
+          "y": 344.1,
+          "width": 6.316300760000006,
+          "height": 7,
+          "text": "17",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 54.39951593, 447.92925999999966]
+        },
+        {
+          "x": 36.7,
+          "y": 357,
+          "width": 12.723812639999993,
+          "height": 7,
+          "text": "Nov",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 434.9692599999996]
+        },
+        {
+          "x": 54.4,
+          "y": 357,
+          "width": 6.316300760000006,
+          "height": 7,
+          "text": "17",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 54.39951593, 434.9692599999996]
+        },
+        {
+          "x": 36.7,
+          "y": 370,
+          "width": 12.723812639999993,
+          "height": 7,
+          "text": "Nov",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 422.0092599999996]
+        },
+        {
+          "x": 54.4,
+          "y": 370,
+          "width": 6.316300760000006,
+          "height": 7,
+          "text": "17",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 54.39951593, 422.0092599999996]
+        },
+        {
+          "x": 36.7,
+          "y": 383,
+          "width": 20.813047289999997,
+          "height": 7,
+          "text": "Nov 17",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 409.04925999999955]
+        },
+        {
+          "x": 78.7,
+          "y": 383.3,
+          "width": 20.932047289999996,
+          "height": 7,
+          "text": "Nov 18",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 408.6828299999999]
+        },
+        {
+          "x": 78.7,
+          "y": 370.4,
+          "width": 20.932047289999996,
+          "height": 7,
+          "text": "Nov 18",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 421.6328199999999]
+        },
+        {
+          "x": 341.5,
+          "y": 370.1,
+          "width": 44.16666779000001,
+          "height": 7,
+          "text": "Transportation",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 421.88283999999993]
+        },
+        {
+          "x": 78.7,
+          "y": 356.9,
+          "width": 20.932047289999996,
+          "height": 7,
+          "text": "Nov 18",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 435.0828199999999]
+        },
+        {
+          "x": 341.5,
+          "y": 356.9,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 435.0828199999999]
+        },
+        {
+          "x": 341.5,
+          "y": 343.7,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 448.28282999999993]
+        },
+        {
+          "x": 78.7,
+          "y": 343.7,
+          "width": 20.932047289999996,
+          "height": 7,
+          "text": "Nov 18",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 448.28282999999993]
+        },
+        {
+          "x": 78.7,
+          "y": 330.5,
+          "width": 21.051047289999996,
+          "height": 7,
+          "text": "Nov 14",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 461.48283999999995]
+        },
+        {
+          "x": 341.5,
+          "y": 330.5,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 461.48283999999995]
+        },
+        {
+          "x": 341.5,
+          "y": 317.3,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 474.68281999999994]
+        },
+        {
+          "x": 78.7,
+          "y": 317.3,
+          "width": 20.932047289999996,
+          "height": 7,
+          "text": "Nov 12",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 474.68281999999994]
+        },
+        {
+          "x": 341.5,
+          "y": 304.1,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 487.88282999999996]
+        },
+        {
+          "x": 78.7,
+          "y": 304.1,
+          "width": 20.932047289999996,
+          "height": 7,
+          "text": "Nov 12",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 487.88282999999996]
+        },
+        {
+          "x": 341.5,
+          "y": 290.9,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 501.0828399999999]
+        },
+        {
+          "x": 78.7,
+          "y": 290.9,
+          "width": 22.012726049999987,
+          "height": 7,
+          "text": "Nov 07",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 501.0828399999999]
+        },
+        {
+          "x": 78.7,
+          "y": 278,
+          "width": 22.131726049999987,
+          "height": 7,
+          "text": "Nov 06",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 514.0328299999999]
+        },
+        {
+          "x": 341.5,
+          "y": 277.7,
+          "width": 44.16666779000001,
+          "height": 7,
+          "text": "Transportation",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 514.2828199999999]
+        },
+        {
+          "x": 341.5,
+          "y": 264.5,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 527.4828299999999]
+        },
+        {
+          "x": 78.7,
+          "y": 264.5,
+          "width": 22.131726049999987,
+          "height": 7,
+          "text": "Nov 06",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 527.4828299999999]
+        },
+        {
+          "x": 341.5,
+          "y": 251.3,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 540.6828399999999]
+        },
+        {
+          "x": 78.7,
+          "y": 251.3,
+          "width": 22.131726049999987,
+          "height": 7,
+          "text": "Nov 06",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 540.6828399999999]
+        },
+        {
+          "x": 78.7,
+          "y": 238.4,
+          "width": 22.131726049999987,
+          "height": 7,
+          "text": "Nov 03",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 553.63283]
+        },
+        {
+          "x": 341.5,
+          "y": 238.1,
+          "width": 44.16666779000001,
+          "height": 7,
+          "text": "Transportation",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 553.8828199999999]
+        },
+        {
+          "x": 36.7,
+          "y": 224.9,
+          "width": 19.259877140000008,
+          "height": 7,
+          "text": "Oct 31",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 567.08283]
+        },
+        {
+          "x": 78.7,
+          "y": 224.9,
+          "width": 22.131726049999987,
+          "height": 7,
+          "text": "Nov 03",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 567.08283]
+        },
+        {
+          "x": 341.5,
+          "y": 224.9,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 567.08283]
+        },
+        {
+          "x": 78.7,
+          "y": 211.7,
+          "width": 22.131726049999987,
+          "height": 7,
+          "text": "Nov 03",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 580.28284]
+        },
+        {
+          "x": 341.5,
+          "y": 211.7,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 580.28284]
+        },
+        {
+          "x": 36.7,
+          "y": 199.6,
+          "width": 22.767196830000003,
+          "height": 7,
+          "text": "Oct 25",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69999, 592.4092499999999]
+        },
+        {
+          "x": 36.7,
+          "y": 211.4,
+          "width": 19.259877139999993,
+          "height": 7,
+          "text": "Oct 31",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69999, 580.6292599999999]
+        },
+        {
+          "x": 78.7,
+          "y": 198.5,
+          "width": 20.344877139999994,
+          "height": 7,
+          "text": "Oct 27",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 593.48282]
+        },
+        {
+          "x": 341.5,
+          "y": 198.5,
+          "width": 55.586603099999984,
+          "height": 7,
+          "text": "Retail and Grocery",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 341.49988, 593.48282]
+        },
+        {
+          "x": 36.7,
+          "y": 183.2,
+          "width": 153.02100446999998,
+          "height": 9,
+          "text": "Card number 1111 XXXX XXXX 1111",
+          "fontSize": 9,
+          "fontName": "g_d0_f3",
+          "transform": [9, 0, 0, 9, 36.69999, 608.77525]
+        },
+        {
+          "x": 504.5,
+          "y": 170.9,
+          "width": 33.58854813999999,
+          "height": 7,
+          "text": "Amount($",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 504.45, 621.0529799999999]
+        },
+        {
+          "x": 504.5,
+          "y": 180.5,
+          "width": 2.366,
+          "height": 7,
+          "text": ")",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 504.45, 611.5229899999999]
+        },
+        {
+          "x": 325.4,
+          "y": 170.9,
+          "width": 58.099900949999935,
+          "height": 7,
+          "text": "Spend Categories",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 325.39992, 621.05165]
+        },
+        {
+          "x": 122.4,
+          "y": 170.9,
+          "width": 34.29781264,
+          "height": 7,
+          "text": "Descriptio",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 122.4, 621.0529799999999]
+        },
+        {
+          "x": 122.4,
+          "y": 180.5,
+          "width": 4.599,
+          "height": 7,
+          "text": "n",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 122.4, 611.5229899999999]
+        },
+        {
+          "x": 78.7,
+          "y": 162.4,
+          "width": 15.130570070000001,
+          "height": 7,
+          "text": "Post",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 78.7, 629.5966]
+        },
+        {
+          "x": 78.7,
+          "y": 171.1,
+          "width": 11.395555919999996,
+          "height": 7,
+          "text": "dat",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 78.7, 620.88661]
+        },
+        {
+          "x": 78.7,
+          "y": 179.8,
+          "width": 4.13,
+          "height": 7,
+          "text": "e",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 78.7, 612.1766200000001]
+        },
+        {
+          "x": 36.7,
+          "y": 162.4,
+          "width": 15.609188979999999,
+          "height": 7,
+          "text": "Tran",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 36.69999, 629.5966]
+        },
+        {
+          "x": 36.7,
+          "y": 171.1,
+          "width": 3.479,
+          "height": 7,
+          "text": "s",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 36.69999, 620.88661]
+        },
+        {
+          "x": 36.7,
+          "y": 179.8,
+          "width": 15.376003160000003,
+          "height": 7,
+          "text": "date",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 36.69999, 612.1766200000001]
+        },
+        {
+          "x": 50.5,
+          "y": 137.9,
+          "width": 492.05967893999946,
+          "height": 9,
+          "text": "Identifies transactions that have earned bonus Rewards, see your Benefit Guide for details. Any returns/credits are deducted at",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 50.5129, 654.09159]
+        },
+        {
+          "x": 39.6,
+          "y": 149.3,
+          "width": 55.80820646999999,
+          "height": 9,
+          "text": "the same rate.",
+          "fontSize": 9,
+          "fontName": "g_d0_f2",
+          "transform": [9, 0, 0, 9, 39.59991, 642.71159]
+        },
+        {
+          "x": 36.7,
+          "y": 119.8,
+          "width": 129.30904272000004,
+          "height": 12,
+          "text": "Your new charges and",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 36.69999, 672.1672]
+        },
+        {
+          "x": 36.7,
+          "y": 136.2,
+          "width": 40.23736068,
+          "height": 12,
+          "text": "credits",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 36.69999, 655.82723]
+        },
+        {
+          "x": 36.7,
+          "y": 104.7,
+          "width": 60.192948080000015,
+          "height": 8,
+          "text": "Total payments",
+          "fontSize": 8,
+          "fontName": "g_d0_f3",
+          "transform": [8, 0, 0, 8, 36.69996, 687.34511]
+        },
+        {
+          "x": 511.4,
+          "y": 104.7,
+          "width": 28.77280640000017,
+          "height": 8,
+          "text": "$357.71",
+          "fontSize": 8,
+          "fontName": "g_d0_f3",
+          "transform": [8, 0, 0, 8, 511.3999, 687.34511]
+        },
+        {
+          "x": 504.2,
+          "y": 83.1,
+          "width": 33.58854813999999,
+          "height": 7,
+          "text": "Amount($",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 504.1999, 708.92229]
+        },
+        {
+          "x": 515.7,
+          "y": 92,
+          "width": 2.366,
+          "height": 7,
+          "text": ")",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 515.74989, 700.02802]
+        },
+        {
+          "x": 519.6,
+          "y": 92,
+          "width": 18.948973259999857,
+          "height": 7,
+          "text": "357.71",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 519.6402400000001, 700.02802]
+        },
+        {
+          "x": 118.8,
+          "y": 91.7,
+          "width": 134.98444260000014,
+          "height": 7,
+          "text": "PRE-AUTHORIZED PAYMENT - THANK YOU",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 118.79994, 700.28283]
+        },
+        {
+          "x": 78.7,
+          "y": 74.7,
+          "width": 14.796818960000007,
+          "height": 7,
+          "text": "Post",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 78.7, 717.25972]
+        },
+        {
+          "x": 78.7,
+          "y": 83.7,
+          "width": 15.37600315999999,
+          "height": 7,
+          "text": "date",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 78.7, 708.31973]
+        },
+        {
+          "x": 78.7,
+          "y": 92.1,
+          "width": 20.932047289999996,
+          "height": 7,
+          "text": "Nov 12",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 78.7, 699.8965800000001]
+        },
+        {
+          "x": 36.7,
+          "y": 74.7,
+          "width": 18.93978114,
+          "height": 7,
+          "text": "Trans",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 36.69996, 717.25972]
+        },
+        {
+          "x": 36.7,
+          "y": 83.7,
+          "width": 15.376003160000003,
+          "height": 7,
+          "text": "date",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 36.69996, 708.31973]
+        },
+        {
+          "x": 36.7,
+          "y": 92.1,
+          "width": 20.932047289999996,
+          "height": 7,
+          "text": "Nov 12",
+          "fontSize": 7,
+          "fontName": "g_d0_f2",
+          "transform": [7, 0, 0, 7, 36.69996, 699.8965800000001]
+        },
+        {
+          "x": 118.8,
+          "y": 83.1,
+          "width": 34.29781264,
+          "height": 7,
+          "text": "Descriptio",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 118.79997, 708.85298]
+        },
+        {
+          "x": 118.8,
+          "y": 92.7,
+          "width": 4.599,
+          "height": 7,
+          "text": "n",
+          "fontSize": 7,
+          "fontName": "g_d0_f3",
+          "transform": [7, 0, 0, 7, 118.79997, 699.32299]
+        },
+        {
+          "x": 36.7,
+          "y": 60.8,
+          "width": 27.802469400000003,
+          "height": 12,
+          "text": "Your",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 36.69999, 731.2171199999999]
+        },
+        {
+          "x": 36.7,
+          "y": 77.1,
+          "width": 58.55007876,
+          "height": 12,
+          "text": "payments",
+          "fontSize": 12,
+          "fontName": "g_d0_f3",
+          "transform": [12, 0, 0, 12, 36.69999, 714.8771499999999]
+        },
+        {
+          "x": 36.7,
+          "y": 40.8,
+          "width": 113.95037484,
+          "height": 18,
+          "text": "Transactions",
+          "fontSize": 18,
+          "fontName": "g_d0_f3",
+          "transform": [18, 0, 0, 18, 36.69999, 751.22564]
+        },
+        {
+          "x": 155,
+          "y": 40.8,
+          "width": 162.09934160000012,
+          "height": 10,
+          "text": "from October 24 to November 23,",
+          "fontSize": 10,
+          "fontName": "g_d0_f3",
+          "transform": [10, 0, 0, 10, 155.02723, 751.22564]
+        },
+        {
+          "x": 36.7,
+          "y": 67.6,
+          "width": 22.373612599999998,
+          "height": 10,
+          "text": "2025",
+          "fontSize": 10,
+          "fontName": "g_d0_f3",
+          "transform": [10, 0, 0, 10, 36.69999, 724.37247]
+        }
+      ]
+    },
+    {
+      "pageNumber": 3,
+      "viewportWidth": 612,
+      "viewportHeight": 792,
+      "items": [
+        {
+          "x": 15.1,
+          "y": 748.6,
+          "width": 1.7,
+          "height": 5,
+          "text": "-",
+          "fontSize": 5,
+          "fontName": "g_d0_f7",
+          "transform": [0, 5, -5, 0, 15.099999, 43.399967]
+        },
+        {
+          "x": 15.1,
+          "y": 746.9,
+          "width": 13.104,
+          "height": 7.8,
+          "text": "188",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [0, 7.8, -7.8, 0, 15.099999, 45.099983]
+        },
+        {
+          "x": 15.1,
+          "y": 734,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [0, 7.8, -7.8, 0, 15.099999, 58.049999]
+        },
+        {
+          "x": 15.1,
+          "y": 731.3,
+          "width": 26.207999999999995,
+          "height": 7.8,
+          "text": "068538",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [0, 7.8, -7.8, 0, 15.099999, 60.700008]
+        },
+        {
+          "x": 72.7,
+          "y": 80.4,
+          "width": 167.04000000000002,
+          "height": 9,
+          "text": "Prepared for: ANDRE OLIVEIRA October 24",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 72.699997, 711.599976]
+        },
+        {
+          "x": 244.2,
+          "y": 80.4,
+          "width": 255.41999999999993,
+          "height": 9,
+          "text": "to November 23, 2025 Account number: 5268 XXXX XXXX 0000",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 244.169994, 711.599976]
+        },
+        {
+          "x": 510.5,
+          "y": 779,
+          "width": 18.540000000000003,
+          "height": 9,
+          "text": "Page",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 510.450012, 13.000008]
+        },
+        {
+          "x": 531.8,
+          "y": 779,
+          "width": 5.040000000000001,
+          "height": 9,
+          "text": "3",
+          "fontSize": 9,
+          "fontName": "g_d0_f10",
+          "transform": [9, 0, 0, 9, 531.799988, 13.000008]
+        },
+        {
+          "x": 539.5,
+          "y": 779,
+          "width": 15.659999999999984,
+          "height": 9,
+          "text": "of 3",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 539.5, 13.000008]
+        },
+        {
+          "x": 72.7,
+          "y": 109.2,
+          "width": 96.24000000000001,
+          "height": 12,
+          "text": "CIBC CreditSmart",
+          "fontSize": 12,
+          "fontName": "g_d0_f11",
+          "transform": [12, 0, 0, 12, 72.699997, 682.799988]
+        },
+        {
+          "x": 168.9,
+          "y": 104.8,
+          "width": 12.36,
+          "height": 6,
+          "text": "TM*",
+          "fontSize": 6,
+          "fontName": "g_d0_f12",
+          "transform": [6, 0, 0, 6, 168.949997, 687.150024]
+        },
+        {
+          "x": 184.8,
+          "y": 109.2,
+          "width": 77.28000000000002,
+          "height": 12,
+          "text": "Spend Report",
+          "fontSize": 12,
+          "fontName": "g_d0_f11",
+          "transform": [12, 0, 0, 12, 184.799988, 682.799988]
+        },
+        {
+          "x": 316.8,
+          "y": 122.6,
+          "width": 37.09999999999998,
+          "height": 7,
+          "text": "This month",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 316.799988, 669.400024]
+        },
+        {
+          "x": 501.8,
+          "y": 122.6,
+          "width": 41.72,
+          "height": 7,
+          "text": "Year-to-date",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 501.799988, 669.400024]
+        },
+        {
+          "x": 72.7,
+          "y": 130.5,
+          "width": 57.96,
+          "height": 7,
+          "text": "Spend Categories",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 72.699997, 661.450012]
+        },
+        {
+          "x": 218.6,
+          "y": 130.5,
+          "width": 41.3,
+          "height": 7,
+          "text": "Transactions",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 218.599991, 661.450012]
+        },
+        {
+          "x": 284.4,
+          "y": 131.3,
+          "width": 35.56,
+          "height": 7,
+          "text": "Amount($)",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 284.399994, 660.75]
+        },
+        {
+          "x": 350.1,
+          "y": 131.3,
+          "width": 34.579999999999984,
+          "height": 7,
+          "text": "Budget ($)",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 350.149994, 660.75]
+        },
+        {
+          "x": 404.8,
+          "y": 131.3,
+          "width": 44.79999999999999,
+          "height": 7,
+          "text": "Difference ($)",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 404.849976, 660.75]
+        },
+        {
+          "x": 469.7,
+          "y": 131.3,
+          "width": 41.3,
+          "height": 7,
+          "text": "Transactions",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 469.650024, 660.75]
+        },
+        {
+          "x": 538,
+          "y": 131.3,
+          "width": 37.52000000000004,
+          "height": 7,
+          "text": "Amount ($)",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 538.049988, 660.75]
+        },
+        {
+          "x": 96.4,
+          "y": 142.8,
+          "width": 113.10000000000001,
+          "height": 7.8,
+          "text": "Professional and Financial Services",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 96.449997, 649.200012]
+        },
+        {
+          "x": 255.4,
+          "y": 142.8,
+          "width": 4.367999999999999,
+          "height": 7.8,
+          "text": "0",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 255.350006, 649.200012]
+        },
+        {
+          "x": 304.8,
+          "y": 142.8,
+          "width": 15.287999999999997,
+          "height": 7.8,
+          "text": "0.00",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 304.799988, 649.200012]
+        },
+        {
+          "x": 364,
+          "y": 142.8,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 364.049988, 649.200012]
+        },
+        {
+          "x": 419.8,
+          "y": 142.8,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 419.750031, 649.200012]
+        },
+        {
+          "x": 506.4,
+          "y": 142.8,
+          "width": 4.367999999999999,
+          "height": 7.8,
+          "text": "3",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 506.400024, 649.200012]
+        },
+        {
+          "x": 556,
+          "y": 142.8,
+          "width": 19.655999999999995,
+          "height": 7.8,
+          "text": "17.50",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 556.049988, 649.200012]
+        },
+        {
+          "x": 96.4,
+          "y": 158.6,
+          "width": 61.308,
+          "height": 7.8,
+          "text": "Retail and Grocery",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 96.449997, 633.400024]
+        },
+        {
+          "x": 251,
+          "y": 158.6,
+          "width": 8.735999999999999,
+          "height": 7.8,
+          "text": "12",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 251, 633.400024]
+        },
+        {
+          "x": 289.6,
+          "y": 158.6,
+          "width": 30.575999999999993,
+          "height": 7.8,
+          "text": "1,290.15",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 289.649994, 633.400024]
+        },
+        {
+          "x": 364,
+          "y": 158.6,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 364.049988, 633.400024]
+        },
+        {
+          "x": 419.8,
+          "y": 158.6,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 419.750031, 633.400024]
+        },
+        {
+          "x": 502,
+          "y": 158.6,
+          "width": 8.735999999999999,
+          "height": 7.8,
+          "text": "92",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 502.049988, 633.400024]
+        },
+        {
+          "x": 545.3,
+          "y": 158.6,
+          "width": 30.575999999999993,
+          "height": 7.8,
+          "text": "6,430.15",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 545.25, 633.400024]
+        },
+        {
+          "x": 96.4,
+          "y": 174.5,
+          "width": 48.828,
+          "height": 7.8,
+          "text": "Transportation",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 96.449997, 617.549988]
+        },
+        {
+          "x": 255.4,
+          "y": 174.5,
+          "width": 4.367999999999999,
+          "height": 7.8,
+          "text": "3",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 255.350006, 617.549988]
+        },
+        {
+          "x": 300.5,
+          "y": 174.5,
+          "width": 19.655999999999995,
+          "height": 7.8,
+          "text": "52.95",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 300.450012, 617.549988]
+        },
+        {
+          "x": 364,
+          "y": 174.5,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 364.049988, 617.549988]
+        },
+        {
+          "x": 419.8,
+          "y": 174.5,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 419.750031, 617.549988]
+        },
+        {
+          "x": 502,
+          "y": 174.5,
+          "width": 8.735999999999999,
+          "height": 7.8,
+          "text": "34",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 502.049988, 617.549988]
+        },
+        {
+          "x": 551.8,
+          "y": 174.5,
+          "width": 24.023999999999997,
+          "height": 7.8,
+          "text": "599.12",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 551.75, 617.549988]
+        },
+        {
+          "x": 96.4,
+          "y": 190.3,
+          "width": 38.687999999999995,
+          "height": 7.8,
+          "text": "Restaurants",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 96.449997, 601.700012]
+        },
+        {
+          "x": 255.4,
+          "y": 190.3,
+          "width": 4.367999999999999,
+          "height": 7.8,
+          "text": "0",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 255.350006, 601.700012]
+        },
+        {
+          "x": 304.8,
+          "y": 190.3,
+          "width": 15.287999999999997,
+          "height": 7.8,
+          "text": "0.00",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 304.799988, 601.700012]
+        },
+        {
+          "x": 364,
+          "y": 190.3,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 364.049988, 601.700012]
+        },
+        {
+          "x": 419.8,
+          "y": 190.3,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 419.750031, 601.700012]
+        },
+        {
+          "x": 506.4,
+          "y": 190.3,
+          "width": 4.367999999999999,
+          "height": 7.8,
+          "text": "2",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 506.400024, 601.700012]
+        },
+        {
+          "x": 556,
+          "y": 190.3,
+          "width": 19.655999999999995,
+          "height": 7.8,
+          "text": "59.20",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 556.049988, 601.700012]
+        },
+        {
+          "x": 96.4,
+          "y": 206.4,
+          "width": 71.75999999999999,
+          "height": 7.8,
+          "text": "Health and Education",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 96.449997, 585.600037]
+        },
+        {
+          "x": 255.4,
+          "y": 206.4,
+          "width": 4.367999999999999,
+          "height": 7.8,
+          "text": "0",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 255.350006, 585.600037]
+        },
+        {
+          "x": 304.8,
+          "y": 206.4,
+          "width": 15.287999999999997,
+          "height": 7.8,
+          "text": "0.00",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 304.799988, 585.600037]
+        },
+        {
+          "x": 364,
+          "y": 206.4,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 364.049988, 585.600037]
+        },
+        {
+          "x": 419.8,
+          "y": 206.4,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 419.750031, 585.600037]
+        },
+        {
+          "x": 506.4,
+          "y": 206.4,
+          "width": 4.367999999999999,
+          "height": 7.8,
+          "text": "2",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 506.400024, 585.600037]
+        },
+        {
+          "x": 556,
+          "y": 206.4,
+          "width": 19.655999999999995,
+          "height": 7.8,
+          "text": "32.27",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 556.049988, 585.600037]
+        },
+        {
+          "x": 96.4,
+          "y": 222.2,
+          "width": 19.200000000000003,
+          "height": 8,
+          "text": "Total",
+          "fontSize": 8,
+          "fontName": "g_d0_f15",
+          "transform": [8, 0, 0, 8, 96.449997, 569.799988]
+        },
+        {
+          "x": 249.8,
+          "y": 222.2,
+          "width": 8.96,
+          "height": 8,
+          "text": "15",
+          "fontSize": 8,
+          "fontName": "g_d0_f15",
+          "transform": [8, 0, 0, 8, 249.800003, 569.799988]
+        },
+        {
+          "x": 289.4,
+          "y": 222.2,
+          "width": 31.360000000000007,
+          "height": 8,
+          "text": "1,343.10",
+          "fontSize": 8,
+          "fontName": "g_d0_f15",
+          "transform": [8, 0, 0, 8, 289.400024, 569.799988]
+        },
+        {
+          "x": 497.5,
+          "y": 222.2,
+          "width": 13.440000000000001,
+          "height": 8,
+          "text": "133",
+          "fontSize": 8,
+          "fontName": "g_d0_f15",
+          "transform": [8, 0, 0, 8, 497.5, 569.799988]
+        },
+        {
+          "x": 540.7,
+          "y": 222.2,
+          "width": 35.84,
+          "height": 8,
+          "text": "$7,138.24",
+          "fontSize": 8,
+          "fontName": "g_d0_f15",
+          "transform": [8, 0, 0, 8, 540.700012, 569.799988]
+        },
+        {
+          "x": 99.3,
+          "y": 239.5,
+          "width": 476.9600000000006,
+          "height": 8,
+          "text": "Transactions are assigned a spend category based on where the goods or services are purchased, not on what was purchased. For example,",
+          "fontSize": 8,
+          "fontName": "g_d0_f16",
+          "transform": [8, 0, 0, 8, 99.349998, 552.5]
+        },
+        {
+          "x": 99.3,
+          "y": 248.8,
+          "width": 386.4000000000004,
+          "height": 8,
+          "text": "items purchased at a convenience store in a gas station will appear under Transportation, not Retail and Grocery.",
+          "fontSize": 8,
+          "fontName": "g_d0_f16",
+          "transform": [8, 0, 0, 8, 99.349998, 543.150024]
+        },
+        {
+          "x": 99.3,
+          "y": 268,
+          "width": 234.39999999999995,
+          "height": 8,
+          "text": "A negative difference (–) means you spent more than you budgeted.",
+          "fontSize": 8,
+          "fontName": "g_d0_f16",
+          "transform": [8, 0, 0, 8, 99.349998, 523.950012]
+        },
+        {
+          "x": 284.4,
+          "y": 283.4,
+          "width": 35.56,
+          "height": 7,
+          "text": "Amount($)",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 284.399994, 508.599976]
+        },
+        {
+          "x": 350.2,
+          "y": 283.4,
+          "width": 34.579999999999984,
+          "height": 7,
+          "text": "Budget ($)",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 350.15998199999996, 508.599976]
+        },
+        {
+          "x": 404.8,
+          "y": 283.4,
+          "width": 44.79999999999999,
+          "height": 7,
+          "text": "Difference ($)",
+          "fontSize": 7,
+          "fontName": "g_d0_f14",
+          "transform": [7, 0, 0, 7, 404.849976, 508.599976]
+        },
+        {
+          "x": 96.4,
+          "y": 295.6,
+          "width": 83.2,
+          "height": 8,
+          "text": "Total Monthly Budget",
+          "fontSize": 8,
+          "fontName": "g_d0_f15",
+          "transform": [8, 0, 0, 8, 96.449997, 496.350006]
+        },
+        {
+          "x": 289.4,
+          "y": 295.6,
+          "width": 30.575999999999993,
+          "height": 7.8,
+          "text": "1,343.10",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 289.400024, 496.350006]
+        },
+        {
+          "x": 359.8,
+          "y": 295.6,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 359.75, 496.350006]
+        },
+        {
+          "x": 420.7,
+          "y": 295.6,
+          "width": 2.6519999999999997,
+          "height": 7.8,
+          "text": "-",
+          "fontSize": 7.8,
+          "fontName": "g_d0_f8",
+          "transform": [7.8, 0, 0, 7.8, 420.700012, 496.350006]
+        },
+        {
+          "x": 72,
+          "y": 326.1,
+          "width": 40.68000000000001,
+          "height": 9,
+          "text": "Reminder",
+          "fontSize": 9,
+          "fontName": "g_d0_f10",
+          "transform": [9, 0, 0, 9, 72, 465.850006]
+        },
+        {
+          "x": 113,
+          "y": 326.1,
+          "width": 454.14000000000004,
+          "height": 9,
+          "text": ": If you only make the minimum payment every month, it will take approximately 11 year(s) and 3 month(s) to pay the",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 113, 465.850006]
+        },
+        {
+          "x": 72,
+          "y": 336.9,
+          "width": 492.6600000000002,
+          "height": 9,
+          "text": "total balance shown on this statement. This estimate assumes each statement period is 30 days and that you pay your minimum",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 72, 455.050018]
+        },
+        {
+          "x": 72,
+          "y": 347.8,
+          "width": 119.16000000000003,
+          "height": 9,
+          "text": "payment on time every month.",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 72, 444.249969]
+        },
+        {
+          "x": 75.6,
+          "y": 372.5,
+          "width": 177.12000000000003,
+          "height": 18,
+          "text": "Your message centre",
+          "fontSize": 18,
+          "fontName": "g_d0_f17",
+          "transform": [18, 0, 0, 18, 75.599998, 419.549988]
+        },
+        {
+          "x": 75.6,
+          "y": 392.6,
+          "width": 473.94000000000005,
+          "height": 9,
+          "text": "No payment required. As you requested, your payment will be withdrawn from your bank account on (or shortly after) the",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 399.399994]
+        },
+        {
+          "x": 75.6,
+          "y": 403.4,
+          "width": 483.8400000000001,
+          "height": 9,
+          "text": "due date. This payment will be applied to your Credit Card Account as of the due date based on the Auto Pay Service Option",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 388.600006]
+        },
+        {
+          "x": 75.6,
+          "y": 414.2,
+          "width": 50.040000000000006,
+          "height": 9,
+          "text": "you selected.",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 377.800018]
+        },
+        {
+          "x": 75.6,
+          "y": 432.5,
+          "width": 266.9400000000001,
+          "height": 9,
+          "text": "Important information regarding your cash back gift certificate",
+          "fontSize": 9,
+          "fontName": "g_d0_f10",
+          "transform": [9, 0, 0, 9, 75.599998, 359.549988]
+        },
+        {
+          "x": 75.6,
+          "y": 454,
+          "width": 471.06,
+          "height": 9,
+          "text": "Your cash back earned during the 2025 calendar year will be issued as a gift certificate with your January 2026 statement.",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 337.950012]
+        },
+        {
+          "x": 75.6,
+          "y": 464.9,
+          "width": 464.0400000000002,
+          "height": 9,
+          "text": "When your January statement is issued, you’ll also be able to access and download your gift certificate through the CIBC",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 327.149994]
+        },
+        {
+          "x": 75.6,
+          "y": 475.6,
+          "width": 78.66000000000001,
+          "height": 9,
+          "text": "Mobile Banking App",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 316.350006]
+        },
+        {
+          "x": 154.8,
+          "y": 472.8,
+          "width": 4.8,
+          "height": 6,
+          "text": "®",
+          "fontSize": 6,
+          "fontName": "g_d0_f18",
+          "transform": [6, 0, 0, 6, 154.800003, 319.200012]
+        },
+        {
+          "x": 162.1,
+          "y": 475.6,
+          "width": 90.72000000000006,
+          "height": 9,
+          "text": "or CIBC Online Banking",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 162.12000600000002, 316.350006]
+        },
+        {
+          "x": 253.4,
+          "y": 472.8,
+          "width": 4.8,
+          "height": 6,
+          "text": "®",
+          "fontSize": 6,
+          "fontName": "g_d0_f18",
+          "transform": [6, 0, 0, 6, 253.400009, 319.200012]
+        },
+        {
+          "x": 258.2,
+          "y": 475.6,
+          "width": 284.5799999999998,
+          "height": 9,
+          "text": ". Once you receive your gift certificate, you may visit any Canadian Costco",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 258.200012, 316.350006]
+        },
+        {
+          "x": 75.6,
+          "y": 486.5,
+          "width": 94.50000000000003,
+          "height": 9,
+          "text": "warehouse to redeem it.",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 305.549988]
+        },
+        {
+          "x": 75.6,
+          "y": 508,
+          "width": 478.8000000000003,
+          "height": 9,
+          "text": "To receive your gift certificate for the 2025 calendar year, your account must be in good standing as of December 31, 2025.",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 283.950012]
+        },
+        {
+          "x": 75.6,
+          "y": 529.6,
+          "width": 475.73999999999995,
+          "height": 9,
+          "text": "Please note that your cash back rewards will reset on the first day in January, to reflect cash back rewards that you will earn",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 262.350006]
+        },
+        {
+          "x": 75.6,
+          "y": 540.4,
+          "width": 119.16000000000003,
+          "height": 9,
+          "text": "during the 2026 calendar year.",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 251.550003]
+        },
+        {
+          "x": 75.6,
+          "y": 562.3,
+          "width": 194.22000000000006,
+          "height": 9,
+          "text": "Have you redeemed last year’s cash back yet?",
+          "fontSize": 9,
+          "fontName": "g_d0_f10",
+          "transform": [9, 0, 0, 9, 75.599998, 229.699966]
+        },
+        {
+          "x": 75.6,
+          "y": 573.1,
+          "width": 487.43999999999994,
+          "height": 9,
+          "text": "If not, easily redeem your gift certificate by showing your digital copy or paper version the next time you check out at a Costco",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 218.900009]
+        },
+        {
+          "x": 75.6,
+          "y": 583.9,
+          "width": 44.64000000000001,
+          "height": 9,
+          "text": "warehouse.",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 208.100006]
+        },
+        {
+          "x": 75.6,
+          "y": 608.4,
+          "width": 335.8800000000001,
+          "height": 9,
+          "text": "You can view all available unredeemed gift certificates in the CIBC Mobile Banking App",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 183.600006]
+        },
+        {
+          "x": 415.2,
+          "y": 605.5,
+          "width": 4.8,
+          "height": 6,
+          "text": "®",
+          "fontSize": 6,
+          "fontName": "g_d0_f18",
+          "transform": [6, 0, 0, 6, 415.200012, 186.499969]
+        },
+        {
+          "x": 422.5,
+          "y": 608.4,
+          "width": 97.19999999999997,
+          "height": 9,
+          "text": "and CIBC Online Banking",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 422.52, 183.600006]
+        },
+        {
+          "x": 520.3,
+          "y": 605.5,
+          "width": 4.8,
+          "height": 6,
+          "text": "®",
+          "fontSize": 6,
+          "fontName": "g_d0_f18",
+          "transform": [6, 0, 0, 6, 520.300049, 186.499969]
+        },
+        {
+          "x": 525.1,
+          "y": 608.4,
+          "width": 36.71999999999997,
+          "height": 9,
+          "text": ". You can",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 525.100037, 183.600006]
+        },
+        {
+          "x": 75.6,
+          "y": 619.2,
+          "width": 484.20000000000005,
+          "height": 9,
+          "text": "also access any unredeemed gift certificate on the last page of your paper or digital January credit card statement for the year",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 172.800003]
+        },
+        {
+          "x": 75.6,
+          "y": 630,
+          "width": 86.04000000000002,
+          "height": 9,
+          "text": "in which it was issued.",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 162]
+        },
+        {
+          "x": 75.6,
+          "y": 651.6,
+          "width": 404.2799999999999,
+          "height": 9,
+          "text": "For more information about your cash back or gift certificate, please visit www.cibc.com/costcocashback.",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 140.399994]
+        },
+        {
+          "x": 75.6,
+          "y": 669.6,
+          "width": 462.7800000000002,
+          "height": 9,
+          "text": "Did you know that your CIBC Costco Mastercard offers special Installment Plan interest rates with no installment fees on",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 122.400002]
+        },
+        {
+          "x": 75.6,
+          "y": 680.4,
+          "width": 392.2200000000001,
+          "height": 9,
+          "text": "eligible Costco purchases in Canada and at Costco.ca? Pay off your larger purchases with CIBC Pace It",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 111.599998]
+        },
+        {
+          "x": 473.8,
+          "y": 676.8,
+          "width": 6.9,
+          "height": 5,
+          "text": "TM",
+          "fontSize": 5,
+          "fontName": "g_d0_f7",
+          "transform": [5, 0, 0, 5, 473.750031, 115.199997]
+        },
+        {
+          "x": 483.5,
+          "y": 680.4,
+          "width": 76.85999999999999,
+          "height": 9,
+          "text": "low-rate Installment",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 483.46998199999996, 111.599998]
+        },
+        {
+          "x": 75.6,
+          "y": 691.2,
+          "width": 482.40000000000026,
+          "height": 9,
+          "text": "Plans, spreading payments over a fixed term. To get started, go to your credit card transaction history in CIBC Online Banking",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 100.800003]
+        },
+        {
+          "x": 75.6,
+          "y": 702,
+          "width": 375.11999999999995,
+          "height": 9,
+          "text": "or the Mobile Banking app and choose an eligible purchase. To learn more, visit CIBC.com/paceit.",
+          "fontSize": 9,
+          "fontName": "g_d0_f9",
+          "transform": [9, 0, 0, 9, 75.599998, 90]
+        },
+        {
+          "x": 18,
+          "y": 304.6,
+          "width": 167.03999999999996,
+          "height": 10,
+          "text": "*0000000001*",
+          "fontSize": 10,
+          "fontName": "g_d0_f19",
+          "transform": [0, -10, 10, 0, 18, 487.449982]
+        },
+        {
+          "x": 54,
+          "y": 441.4,
+          "width": 51.84,
+          "height": 9,
+          "text": "*0000000001*",
+          "fontSize": 9,
+          "fontName": "g_d0_f20",
+          "transform": [0, 9, -9, 0, 54, 350.600006]
+        }
+      ]
+    },
+    { "pageNumber": 4, "viewportWidth": 612, "viewportHeight": 792, "items": [] }
+  ]
+}

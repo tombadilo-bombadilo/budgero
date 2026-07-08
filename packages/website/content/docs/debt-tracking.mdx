@@ -1,0 +1,272 @@
+---
+title: Debt Tracking
+summary: Track credit cards, loans, and mortgages in Budgero. Learn how each debt type affects your budget differently and how to pay down debt intentionally.
+section: accounts-and-imports
+topicId: debt-tracking
+takeaways:
+  - Understand how credit cards differ from loans and mortgages.
+  - Learn how CC Payment categories automatically track money set aside for your card.
+  - Master debt payoff by budgeting for loan categories.
+---
+
+Budgero handles debt accounts, but credit cards work fundamentally differently from loans and mortgages. Understanding this distinction helps you budget accurately.
+
+## Credit cards vs loans
+
+The key difference comes down to **when spending hits your budget**:
+
+<table>
+  <thead>
+    <tr>
+      <th>Debt type</th>
+      <th>When spending is recorded</th>
+      <th>Payment effect</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Credit card</strong></td>
+      <td>When you swipe the card</td>
+      <td>Neutral transfer</td>
+    </tr>
+    <tr>
+      <td><strong>Loan / mortgage</strong></td>
+      <td>When you make a payment</td>
+      <td>Creates spending in the linked category</td>
+    </tr>
+  </tbody>
+</table>
+
+### Credit cards
+
+When you buy groceries with your credit card, that $50 immediately appears as spending in your Groceries category. The credit card is just a payment method—the budget impact happens at the point of purchase.
+
+Paying off your credit card bill later is simply moving money to cover expenses you already recorded. It does not create additional spending in your budget.
+
+### Loans and mortgages
+
+Loans work the opposite way. You do not buy groceries with your mortgage. The monthly payment itself is the expense. Budgero creates a linked category (like "Home Mortgage" or "Car Loan") and records each payment as spending in that category.
+
+## Credit Card Payment categories
+
+When you create a credit card account, Budgero automatically sets up a **Credit Card Payment** category for that card. This category uses YNAB-style mechanics to track how much money you have available to pay your card.
+
+### How it works
+
+1. **Automatic setup:** When you create a credit card, Budgero creates a "Credit Card Payments" category group and a payment category named after your card (e.g., "Chase CC").
+
+2. **Auto-funding from spending:** When you make purchases on the card, money is automatically "funded" from your spending categories to the CC Payment category. This shows you exactly how much you have set aside to pay the bill.
+
+3. **Only budgeted spending funds the category:** If you overspend in a category, only the budgeted portion funds your CC Payment. The overspent amount becomes credit card debt.
+
+### Funding examples
+
+<table>
+  <thead>
+    <tr>
+      <th>Category budget</th>
+      <th>CC spend</th>
+      <th>Funded to CC Payment</th>
+      <th>CC debt created</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>$100</td>
+      <td>$50</td>
+      <td>$50</td>
+      <td>$0</td>
+    </tr>
+    <tr>
+      <td>$100</td>
+      <td>$150</td>
+      <td>$100</td>
+      <td>$50</td>
+    </tr>
+    <tr>
+      <td>$0</td>
+      <td>$50</td>
+      <td>$0</td>
+      <td>$50</td>
+    </tr>
+    <tr>
+      <td>$30</td>
+      <td>$50</td>
+      <td>$30</td>
+      <td>$20</td>
+    </tr>
+  </tbody>
+</table>
+
+When multiple credit cards spend in the same category, the funded amount is split between their CC Payment categories in proportion to each card's share of that category's spending.
+
+### Reading the CC Payment category
+
+The CC Payment category shows:
+
+- **Assigned:** Money you manually budgeted to pay down debt
+- **Activity:** Payments made to the card (shown as negative)
+- **Available:** How much you have ready to pay the card
+
+Click the info icon next to the Available amount to see a **funding breakdown**—exactly which categories contributed and how much. For each card, the breakdown reflects only that card's own spending.
+
+<Callout variant="tip" title="Funding breakdown">
+The funding breakdown helps you understand where your CC payment money came from. If you spent $60 on groceries and $30 on gas using your card, you'll see both categories listed with their contributions.
+</Callout>
+
+## How initial balances work
+
+When you set up any debt account, the opening balance represents money you already owe. This initial debt does not affect your budget categories or Ready to Assign.
+
+**Example:** You create a credit card with a $2,000 balance. Budgero shows -$2,000 in the account, but your category balances and Ready to Assign stay unchanged. The debt existed before you started budgeting.
+
+<Callout variant="note" title="Starting fresh">
+If you already paid down part of a debt before using Budgero, enter the original debt amount and the amount paid so far when creating the account. Budgero will calculate your current balance automatically.
+</Callout>
+
+## Credit card workflow
+
+Here's how a typical credit card cycle works:
+
+1. **Swipe your card** for a $50 grocery purchase
+2. **Categorize the transaction** to Groceries (or let auto-categorization handle it)
+3. **Groceries category** shows -$50 activity, Available decreases
+4. **CC Payment category** gains $50 in Available (auto-funded from Groceries)
+5. **Credit card balance** shows -$50
+
+When you pay the card:
+
+1. **Transfer** $50 from Checking to Credit Card
+2. **CC Payment category** shows -$50 activity (the payment)
+3. **CC Payment Available** returns to $0
+4. **Credit card balance** returns to $0
+
+The key insight: your spending categories already reflect the actual spending. The CC Payment category just tracks the money set aside to cover it.
+
+## Paying down legacy debt
+
+If you have existing credit card debt when you start using Budgero:
+
+1. The initial debt is recorded as an outflow against the "Transfers" category. If you fill in "Paid So Far" when creating the account, Budgero also records that as an inflow so the remaining balance equals original − paid.
+2. Both entries affect only the account balance, not any budget category.
+3. Your CC Payment category starts at $0 (no spending has been funded yet).
+
+**To pay down legacy debt:**
+
+1. Assign money directly to the CC Payment category
+2. Transfer that money to the credit card
+3. Watch your CC balance decrease
+
+When you pay more than what's been "funded" from spending, the CC Payment Available goes negative. This is expected—it shows you're paying down old debt, not just covering current spending.
+
+## Loan and mortgage workflow
+
+Loans and mortgages work differently because the payment itself IS the expense:
+
+1. **Budgero creates a linked category** when you add the loan (e.g., "Car Loan")
+2. **Budget for payments** by assigning money to that category monthly
+3. **Make the payment** by transferring from Checking to the loan account
+4. **Payment appears as spending** in the linked category
+
+**Example:** You have a $10,000 car loan with $300 monthly payments.
+
+1. Assign $300 to "Car Loan" category when you get paid
+2. Transfer $300 from Checking to Car Loan account
+3. "Car Loan" category shows -$300 activity
+4. Loan balance decreases by $300
+
+### The spending cap
+
+For loans and mortgages, Budgero caps spending at the actual debt amount. If you overpay:
+
+**Example:** Your car loan balance is -$100. You transfer $300 to pay it off early.
+- The account receives $300, bringing the balance to +$200
+- Only $100 counts as spending in the "Car Loan" category
+- The remaining $200 is recorded as a regular transfer (no category spending)
+
+This keeps your spending reports accurate when you pay off debt early.
+
+## Account and category lifecycle
+
+### Credit Card Payment categories
+
+When you create a credit card:
+- A "Credit Card Payments" category group is created (if it doesn't exist)
+- A payment category named after your card is created
+- The category is deleted automatically when you delete the account
+
+### Linked categories (loans/mortgages only)
+
+When you create a loan or mortgage, Budgero creates a linked category under the **Liabilities** group. This category:
+- Shares the account name (rename the account and the category updates)
+- Gets deleted automatically when you delete the account
+- Cannot be deleted while the account exists
+
+### Renaming accounts
+
+When you rename any debt account, Budgero updates all transfer memos that reference the old name. For credit cards, the CC Payment category name also updates.
+
+## On-budget vs off-budget
+
+Most debt accounts should stay **on-budget**. For loans and mortgages, this means payments create spending in the linked category. Credit cards and loans default to on-budget; mortgages default to off-budget but can be flipped.
+
+Off-budget debt accounts:
+- Still track your debt balance accurately
+- Payments are always neutral transfers — no spending is recorded against any category
+- For loans/mortgages, the linked category is still created at setup but stays empty as long as the account remains off-budget
+
+Use off-budget for debts you don't want to budget for month-to-month (for example, a mortgage you only want to see on the net-worth side).
+
+## Budgeting for debt payoff
+
+### Credit cards
+
+For current spending, no special budgeting is needed. Just budget for your spending categories (groceries, gas, etc.) and the CC Payment category automatically shows what you have available to pay.
+
+**To pay down existing debt faster:**
+1. Assign extra money to the CC Payment category
+2. Transfer that money to the card
+3. The CC Payment Available going negative shows you're paying beyond current spending
+
+### Loans and mortgages
+
+1. **Set a funding target** on the linked category for your monthly payment amount
+2. **Assign money** to the category each month when you get paid
+3. **Make the transfer** from your checking account to the debt account
+4. **Watch the balance drop** as your payments reduce what you owe
+
+The linked category acts like any other spending category. Budget for it, fund it, and spend from it by making payments.
+
+## Common questions
+
+### Why doesn't my credit card payment show as spending?
+
+Because the spending already happened when you used the card. Paying the bill just moves money to cover expenses you already recorded. This prevents double-counting.
+
+### What does a negative CC Payment Available mean?
+
+It means you've paid more to the card than was funded from your budgeted spending. This typically happens when:
+- You're paying down legacy debt from before you started budgeting
+- You overspent in categories and are now covering that debt
+- You made an extra payment beyond your current month's spending
+
+### My CC Payment Available doesn't match my card balance. Is that wrong?
+
+That's expected. Your CC Payment Available shows money set aside from **budgeted** spending. Your card balance includes:
+- Current month spending (may include overspending not yet funded)
+- Legacy debt from before you started budgeting
+- Interest charges
+
+The difference represents debt you still need to budget for.
+
+### Can I track a loan without creating budget spending?
+
+Yes. Mark the account as off-budget when creating it, or edit an existing account to toggle the setting. Off-budget loans track balances without affecting your budget categories.
+
+### Where do I see which categories funded my CC Payment?
+
+Click the info icon next to the Available amount in the CC Payment row. A popover shows the funding breakdown with each contributing category and amount, scoped to that specific card.
+
+## Next steps
+
+Debt tracking works best alongside goals and regular budget reviews. For credit cards, watch your CC Payment Available to ensure you can cover the bill. For loans and mortgages, set up monthly funding targets and watch your balances shrink over time.

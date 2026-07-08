@@ -1,0 +1,107 @@
+---
+title: Accounts
+summary: Add checking, savings, cash, credit, and tracking accounts with confidence. Learn how balances, currencies, and reconciliation work together.
+section: accounts-and-imports
+topicId: accounts
+takeaways:
+  - Which account types live on-budget, off-budget, or let you choose.
+  - How multi-currency accounts convert into your budget currency.
+  - The reconciliation workflow and what archiving an account preserves.
+---
+
+Accounts are where your money physically lives; the budget is the plan laid over them. Budgero keeps that distinction sharp — which is why picking the right account type matters more than it first appears.
+
+## Account types
+
+<table>
+  <thead>
+    <tr>
+      <th>Type</th>
+      <th>Kind</th>
+      <th>Budget participation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Checking</strong></td>
+      <td>Asset</td>
+      <td>Always on-budget</td>
+    </tr>
+    <tr>
+      <td><strong>Savings</strong></td>
+      <td>Asset</td>
+      <td>Always on-budget</td>
+    </tr>
+    <tr>
+      <td><strong>Cash</strong></td>
+      <td>Asset</td>
+      <td>Always on-budget</td>
+    </tr>
+    <tr>
+      <td><strong>Credit Card</strong></td>
+      <td>Liability</td>
+      <td>Your choice</td>
+    </tr>
+    <tr>
+      <td><strong>Loan</strong></td>
+      <td>Liability</td>
+      <td>Your choice</td>
+    </tr>
+    <tr>
+      <td><strong>Mortgage</strong></td>
+      <td>Liability</td>
+      <td>Always off-budget</td>
+    </tr>
+    <tr>
+      <td><strong>Investment / Retirement</strong></td>
+      <td>Asset</td>
+      <td>Always off-budget</td>
+    </tr>
+    <tr>
+      <td><strong>Real Estate / Other Asset</strong></td>
+      <td>Asset</td>
+      <td>Always off-budget</td>
+    </tr>
+  </tbody>
+</table>
+
+**On-budget** accounts feed your budget: their money shows up in [Ready to Assign](/docs/ready-to-assign) and their spending hits categories. **Off-budget** (tracking) accounts contribute to net worth but stay out of the envelope math — you don't budget your retirement fund's market swings.
+
+Credit cards and loans are **flexible**: on-budget if you want Budgero's debt machinery managing payments and payoff (see [Debt tracking](/docs/debt-tracking)), off-budget if you only want the balance tracked.
+
+## Starting balances
+
+When you create an account with a balance, Budgero records it as an opening transaction so the books balance from day one:
+
+- **Asset accounts** get an inflow ("Initial Balance") that lands in Income — meaning your existing money becomes assignable immediately.
+- **Debt accounts** can record both the total borrowed and what you've already paid, so the balance reflects what you actually owe today.
+
+## Multi-currency accounts
+
+Any account can be denominated in any of 168 currencies, independent of your [budget currency](/docs/budget-currency). For a foreign-currency account, each transaction stores two amounts: the **original** (what actually happened, in the account's currency) and the **converted** value (what your budget sees), along with the exchange rate used.
+
+Rates resolve in a defined order:
+
+1. **Custom rates** you've pinned to a date range — useful when you moved money at a known rate.
+2. **Fetched rates** — Budgero retrieves month-averaged rates automatically.
+3. **Manual rates** you've entered — these also make multi-currency work fully offline and on self-hosted setups without a rate API.
+4. **Adjacent month fallback** when nothing else covers the date.
+
+You can also override the rate on any individual transaction — the right tool when your card's actual settlement rate differs from the market average and you want the converted amount to match your statement to the cent.
+
+## Reconciliation
+
+Reconciling is the habit that keeps a manual-first budget trustworthy: comparing Budgero's balance against your bank's and confirming they agree.
+
+1. Open the account and compare its balance to your bank app or statement.
+2. If they differ, find the gap — usually a missed transaction, a duplicate, or a pending charge the bank hasn't settled.
+3. Add an adjustment transaction if a small discrepancy isn't worth archaeology.
+4. **Reconcile** the account — Budgero marks all transactions up to that date as reconciled and stamps the account with the reconciliation time.
+
+Reconciled transactions are your verified history; the stamp tells you how fresh that verification is. Weekly reconciliation takes about two minutes per account. Monthly works too. "Never" is how manual budgets die — see [Ready to Assign](/docs/ready-to-assign) for how unreconciled drift shows up in your numbers.
+
+## Closing an account
+
+Accounts are **archived**, not deleted. An archived account disappears from pickers and day-to-day lists, but every transaction it ever held stays in your reports and history — close your old bank account without losing five years of records. Archiving is reversible; unarchive it and it returns exactly as it was.
+
+Before archiving, bring the balance to zero (transfer remaining funds to another account) so your net worth and Ready to Assign aren't carrying a ghost balance.

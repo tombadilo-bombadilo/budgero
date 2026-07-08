@@ -1,0 +1,82 @@
+{
+  "name": "budgero",
+  "version": "1.5.0",
+  "license": "FSL-1.1-ALv2",
+  "description": "Personal budget management application",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.1.2",
+  "scripts": {
+    "build:all": "pnpm run clean && pnpm run build:core && pnpm run build:app && pnpm run build:website",
+    "build:core": "cd packages/core && pnpm run build",
+    "build:runtime": "cd packages/runtime && pnpm run build",
+    "build:app": "pnpm run build:runtime && cd packages/app && pnpm run build && cd ../server && pnpm run build",
+    "build:website": "cd packages/website && pnpm run build",
+    "build:server": "cd packages/server && pnpm run build",
+    "clean": "rm -rf build/ && rm -rf packages/*/dist && rm -rf packages/server/budgero",
+    "clean:deps": "rm -rf node_modules packages/*/node_modules",
+    "dev:cloud": "node scripts/dev-cloud.mjs",
+    "dev:selfhost": "node scripts/dev-selfhost.mjs",
+    "dev:website": "cd packages/website && pnpm run dev",
+    "dev:server": "cd packages/server && pnpm run dev",
+    "install:all": "pnpm install",
+    "setup:dev": "bash scripts/first-time-setup.sh",
+    "test:core": "cd packages/core && pnpm run test:node",
+    "test:core:coverage": "cd packages/core && pnpm run test:node:coverage",
+    "test:app": "cd packages/app && pnpm run test",
+    "test:app:coverage": "cd packages/app && pnpm run test:coverage",
+    "test:server": "cd packages/server && pnpm run test",
+    "type-check:app": "cd packages/app && pnpm run type-check",
+    "type-check:app:solution": "cd packages/app && pnpm run type-check:solution",
+    "type-check:runtime": "cd packages/runtime && pnpm exec tsc -p tsconfig.json --noEmit --pretty false",
+    "type-check:core": "cd packages/core && pnpm exec tsc -p tsconfig.json --noEmit --pretty false",
+    "type-check:all": "pnpm run type-check:core && pnpm run type-check:runtime && pnpm run type-check:app",
+    "lint:app": "cd packages/app && pnpm exec eslint --max-warnings 0 .",
+    "lint:core": "cd packages/core && pnpm exec eslint --max-warnings 0 .",
+    "lint:runtime": "cd packages/runtime && pnpm exec eslint --max-warnings 0 .",
+    "lint:server": "cd packages/server && golangci-lint run ./...",
+    "cloc": "cloc . --exclude-dir=node_modules,dist,dev-dist,build,.git,.idea,.next --exclude-ext=yaml,yml,xml,json,html --timeout 0",
+    "prepare": "husky",
+    "sync:version": "node scripts/sync-version.mjs",
+    "release:selfhost": "node scripts/release-selfhost.mjs",
+    "release:sas": "node scripts/release-sas.mjs",
+    "release:sdk-python": "TWINE_USERNAME=${TWINE_USERNAME:-__token__} TWINE_PASSWORD=${TWINE_PASSWORD:-} TWINE_REPOSITORY=${TWINE_REPOSITORY:-pypi} ./scripts/release-python-sdk.sh",
+    "security": "pnpm run security:deps; pnpm run security:go",
+    "security:deps": "osv-scanner -r .",
+    "security:go": "cd packages/server && go run golang.org/x/vuln/cmd/govulncheck@latest ./..."
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
+    "prettier": "^3.6.2"
+  },
+  "lint-staged": {
+    "packages/app/src/**/*.{js,jsx,ts,tsx}": [
+      "bash -c 'cd packages/app && pnpm exec eslint --max-warnings 0 --no-warn-ignored \"$@\"' _",
+      "prettier --write"
+    ],
+    "packages/app/**/*.{css,scss,html,json}": [
+      "prettier --write"
+    ],
+    "packages/core/**/*.{js,ts}": [
+      "bash -c 'cd packages/core && pnpm exec eslint --max-warnings 0'",
+      "prettier --write"
+    ],
+    "packages/core/**/*.json": [
+      "prettier --write"
+    ],
+    "packages/runtime/src/**/*.ts": [
+      "bash -c 'cd packages/runtime && pnpm exec eslint --max-warnings 0'",
+      "prettier --write"
+    ],
+    "packages/server/**/*.go": [
+      "bash -c 'cd packages/server && golangci-lint run ./...'"
+    ],
+    "*.{json,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "workspaces": [
+    "packages/*"
+  ]
+}

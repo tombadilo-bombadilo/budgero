@@ -1,0 +1,69 @@
+---
+title: Sharing Budgets
+summary: Invite your partner or household, keep everyone in sync, and understand how encryption keys are shared without ever touching the server.
+section: collaboration
+topicId: sharing
+takeaways:
+  - How invite links work and why the secret never reaches the server.
+  - What Owners and Members can each do in a shared budget.
+  - Practical conventions that keep a shared budget from becoming a shared mess.
+---
+
+Budgets are a team sport for most households — and sharing is where most "private" apps quietly give up their privacy story. Budgero shares budgets without weakening the encryption: your data stays end-to-end encrypted, and the keys travel in a way the server can't intercept.
+
+## How sharing works
+
+1. The budget **Owner** opens the sharing panel and generates an **invite link**.
+2. The link carries a one-time secret in its **URL fragment** — the part after `#`. Fragments are never sent in HTTP requests, so the server relays the invitation without ever seeing the secret.
+3. The invitee opens the link, signs in, and sets up their own [master password](/docs/master-password) if they haven't already.
+4. Their device uses the invite secret to decrypt the budget's shared key, then re-wraps it under their own master password.
+
+The result: every member unlocks the same budget with their *own* master password, the server stores only wrapped keys it cannot open, and no passwords were shared between humans. Treat the invite link itself as sensitive while it's live — anyone holding it can redeem it — and send it over a channel you trust.
+
+Each Budgero subscription includes **5 seats**, which covers a household with room to spare.
+
+## Roles
+
+<table>
+  <thead>
+    <tr>
+      <th>Role</th>
+      <th>Who</th>
+      <th>What they can do</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Owner</strong></td>
+      <td>Whoever created the budget</td>
+      <td>Everything — plus generating invites and removing members</td>
+    </tr>
+    <tr>
+      <td><strong>Member</strong></td>
+      <td>Everyone invited</td>
+      <td>Day-to-day budgeting: transactions, assignments, categories</td>
+    </tr>
+  </tbody>
+</table>
+
+Membership and invitations are managed from the sharing panel; the Owner can revoke a member's access at any time, which removes their ability to sync new data.
+
+## Everyone syncs, everywhere
+
+Once joined, members see the same live budget. A grocery transaction your partner enters at the checkout appears on your laptop when it syncs; the assignment you change at your desk shows up on their phone. [Offline mode](/docs/offline) works per-device — both of you can record spending on a plane and the changes merge when you reconnect.
+
+## Conventions that keep shared budgets healthy
+
+The software handles synchronization; the humans still have to handle agreement. Three conventions do most of the work:
+
+1. **Make the plan visible in the budget itself.** Attach a [goal](/docs/goals) to every category you've agreed a number for — the target and its progress bar are the contract, synced and visible to both of you. For finer conventions, encode them in the category name ("Eating Out (excl. trips)").
+2. **One person owns assigning.** Both partners recording transactions works great; both partners independently moving money around generally doesn't. Agree on who runs the [assignment routine](/docs/assign-money) — or do it together monthly.
+3. **Enter spending at the moment it happens.** Shared budgets amplify staleness: if one person's Tuesday spending shows up Friday, the other person made Wednesday's decisions on wrong numbers. The faster everyone records, the more the shared Available numbers can be trusted.
+
+## Leaving and removing
+
+When a member is removed (or leaves), their access to future syncs ends. Bear in mind the honest limits of any sharing system: data a member already synced to their device was, by definition, theirs to see — encryption protects you from the server, not from people you chose to trust. Share accordingly.
+
+## What sharing doesn't change
+
+Sharing adds zero server-side visibility. The server's view of a shared budget is the same ciphertext as a solo one, plus the minimal metadata needed to route it: who's a member and which encrypted blobs belong to which workspace. The full picture of what the server can and cannot see is in the [Security model](/docs/security).

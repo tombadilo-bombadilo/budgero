@@ -1,0 +1,42 @@
+{{define "edition"}}No. 04 · 2 days left{{end}}
+
+{{define "content"}}
+<p class="eyebrow">Trial ending soon</p>
+
+<h1 class="hed">Two days left{{if .FirstName}}, {{.FirstName}}{{end}}.</h1>
+
+<p class="dek">
+  Your Budgero trial wraps up in a couple of days. If you've been on
+  the fence, this is the gentle nudge.
+</p>
+
+{{if .UnlockCode}}
+<div class="classified">
+  <p class="classified-label">Your earned code</p>
+  <p class="classified-code">{{.UnlockCode}}</p>
+  <p class="classified-sub">{{.PercentOff}}% off for 2 years · Annual plan{{if .ValidUntilDate}} · Valid through {{.ValidUntilDate}}{{end}}</p>
+</div>
+
+<p class="body">
+  Apply this at checkout. The discount applies for 24 months — your
+  subscription renews at the regular price after that. The code stays
+  valid for seven days after your trial ends, so there's no rush — but
+  the trial itself wraps in two.
+</p>
+{{else}}
+<p class="body">
+  Subscribing now keeps your encrypted budget, your rules, and your
+  history exactly where they are. Cancel any time; we don't make that
+  hard.
+</p>
+{{end}}
+
+<div class="btn-wrap">
+  <a href="{{.AppURL}}/settings/subscription" target="_blank" rel="noopener">Subscribe →</a>
+</div>
+{{end}}
+
+{{define "footer"}}
+You're getting this because your Budgero trial ends in two days.
+Questions: <a href="mailto:hello@budgero.app">hello@budgero.app</a>.
+{{end}}

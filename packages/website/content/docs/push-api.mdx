@@ -1,0 +1,111 @@
+---
+title: Push API overview
+summary: Send encrypted transactions into Budgero from any system using the Push API or the Python SDK.
+section: integrations
+topicId: push-api
+badge: New
+order: 10
+takeaways:
+  - Generate a Push API token and export your space encryption key from Settings → Integrations → Push API.
+  - Encrypt a transactions.add payload with AES-GCM, Base64-encode it, and POST to /api/v1/push with a bearer token; use message_id to dedupe retries.
+  - Use the Python SDK to handle encryption, message ids, and queue visibility (pending/processed/failed).
+---
+
+The Push API lets you send transactions into Budgero from other systems while keeping everything end-to-end encrypted. You generate a token, encrypt the payload with your space key, and POST it to the push endpoint over HTTPS.
+
+## Quick setup
+
+1. In **Settings → Integrations → Push API**, generate a Push API token.  
+2. Export your **space encryption key** (Budgero never stores it server-side).  
+3. Build a JSON payload (see format below), encrypt it with **AES-256-GCM**, Base64-encode it, and POST it to the push endpoint with your bearer token.  
+4. Optionally include a **message_id** so retries are deduped.  
+5. Monitor queue stats in the app or via the API to confirm processing.
+
+## Endpoint and payload spec
+
+- Endpoint: `POST /api/v1/push` (use your base URL; default is `https://my.budgero.app`)
+- Auth: `Authorization: Bearer <push-api-token>`
+- Body fields:
+  - `encrypted_payload` (string, Base64): AES-GCM encrypted JSON payload (IV + ciphertext + auth tag).
+  - `message_id` (string, optional): Client-generated id to dedupe retries.
+
+### Decrypted payload shape (before encryption)
+
+```json
+{
+  "v": 2,
+  "op": "transactions.add",
+  "args": {
+    "accountId": 1,
+    "categoryId": 5,
+    "budgetId": 1,
+    "date": "2024-11-27",
+    "inflow": 0,
+    "outflow": 42500,
+    "memo": "API push",
+    "payee": "Vendor",
+    "transferId": ""
+  },
+  "message_id": "optional-unique-id"
+}
+```
+
+Monetary values are integer milliunits (1/1000 of a currency unit), so 42.50 is sent as `42500`. Always include `"v": 2`; legacy payloads without it are treated as format 1 (decimal amounts) and upgraded on import, but new integrations should send format 2. The Python SDK handles both the format flag and the conversion for you.
+
+### Supported operation today
+
+- `transactions.add` — send an income or expense. Use `inflow` for income and `outflow` for expenses (only one should be non-zero). Supply your existing budget, account, and category IDs.
+
+## Encryption requirements
+
+- Algorithm: AES-256-GCM  
+- IV: 12 bytes (prepend to ciphertext)  
+- Auth tag: 16 bytes (append after ciphertext)  
+- Encoding: Base64 of IV + ciphertext + tag  
+- Key: Your **space encryption key** (exported from Settings).
+
+## Python SDK quick start
+
+```python
+from budgero import BudgeroClient
+
+client = BudgeroClient(
+    api_key="your-push-token",
+    encryption_key="your-space-key",
+    base_url="https://my.budgero.app",
+)
+
+result = client.add_transaction(
+    account_id=1,
+    category_id=5,
+    budget_id=1,
+    date="2024-11-27",
+    outflow=42.50,
+    memo="Example push",
+    payee="API Demo",
+)
+
+print("Queued id:", result.queue_id)
+```
+
+SDK helpers:
+
+- `get_queue()` — list pending items  
+- `get_queue_stats()` — pending/processed/failed counts  
+- `clear_queue()` — clear pending items (or all with a flag)
+
+## Operational notes and security tips
+
+- **Deduplication:** Provide a stable `message_id` when retrying to prevent double inserts.  
+- **Queue visibility:** Check queue stats in-app or via `/push/queue` and `/push/stats` to verify delivery.  
+- **Token hygiene:** Rotate/regenerate if exposed. Disable or revoke from Settings as needed.  
+- **Key hygiene:** Keep the token/key out of source control.  
+  <figure>
+    <img src="/gandalf_keep_it_secret.gif" alt="“Keep it secret, keep it safe” — Gandalf reminding Frodo" />
+    <figcaption>Keep it secret, keep it safe.</figcaption>
+  </figure>
+  
+  Use env vars (e.g., `BUDGERO_PUSH_TOKEN`, `BUDGERO_SPACE_KEY`) or your OS secret manager, restrict file perms, and avoid logging them.  
+- **Transport:** Always use HTTPS so the bearer token and metadata stay protected.  
+- **Access control:** Restrict who can read the token/key. Treat them like credentials with scope to your budget.  
+- **Error handling:** On 409 with message_id, treat it as a deduped retry. On 401/403, regenerate/enable the token. Monitor queue failures and clear or requeue as needed.

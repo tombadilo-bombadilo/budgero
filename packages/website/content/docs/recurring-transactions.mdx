@@ -1,0 +1,109 @@
+---
+title: Recurring transactions
+summary: Plan bills, paycheques, and future spending before they happen. Set up recurring schedules with reminders, or date a one-off transaction in the future — and see both coming on the dashboard.
+section: integrations
+topicId: recurring-transactions
+takeaways:
+  - How recurring templates, occurrences, and the Mark ready flow work together.
+  - Scheduling a one-off future transaction straight from the transaction form.
+  - What the dashboard Upcoming transactions card shows and how far it looks ahead.
+  - How projected rows and future date ranges turn the account register and reports into a cashflow forecast.
+---
+
+Most money movements aren't surprises. Rent is due on the first, the paycheque lands on the 25th, and you already know about the dentist appointment next month. Budgero gives you two ways to put that knowledge into the budget before the money moves — **recurring transactions** for things that repeat, and **scheduled one-offs** for things that happen once. Both show up on your dashboard so the next few weeks are never a mystery.
+
+True to Budgero's manual-first philosophy, neither posts anything behind your back: recurring transactions wait for your confirmation, and one-offs are entries you created yourself.
+
+## Recurring transactions
+
+A recurring transaction is a template: what to pay (or receive), from which account, in which category, and on what rhythm. You manage them in **Settings → Recurring Transactions**.
+
+Each template defines:
+
+- **Name and memo** — "Rent", "Salary", "Gym membership".
+- **Direction** — a **Bill** (outflow) or **Income** (inflow).
+- **Amount, account, and category** — exactly like a normal transaction.
+- **Schedule** — daily, weekly, every 2 weeks, monthly, every 2 months, quarterly, every 6 months, or yearly, anchored to a start date.
+- **Reminder** — how many days before the due date you want a notification.
+
+From the schedule, Budgero generates **occurrences** — the individual upcoming due dates — about six months into the future. The settings page lists what's coming up next, and for each occurrence you have two choices:
+
+- **Mark ready** creates the real transaction and runs your [continuous rules](/docs/rules-engine) on it automatically — so the payee, category, and memo cleanup you've automated applies to recurring entries too. The transaction is always dated on the occurrence's due date, even if you confirm it a few days early.
+- **Skip this time** drops a single occurrence without touching the schedule. The series continues with the next date.
+
+Nothing is ever posted automatically. A recurring transaction is a reminder with a one-click "make it real" button, not a standing order — you stay the final checkpoint between the plan and the ledger.
+
+Templates can be **paused** and **resumed** at any time, and deleting one removes upcoming reminders without touching transactions that were already posted.
+
+### Reminders
+
+Enable notifications on the Recurring Transactions page and Budgero will remind you before each due date, using the per-template "days before" setting. Notifications are local to your device — consistent with the [zero-knowledge model](/docs/security), no server ever learns what your bills are.
+
+## Scheduled one-off transactions
+
+Not everything repeats. For a single known future expense — a flight payment, an annual insurance premium, a planned purchase — just enter a normal transaction and give it a **future date**. There's no separate feature to learn: the regular transaction form on any account page is all it takes.
+
+A future-dated transaction is a real ledger entry that simply hasn't reached its date yet. You can edit or delete it like any other transaction, and it appears on the dashboard as **Scheduled** so it doesn't catch you off guard.
+
+## The Upcoming transactions card
+
+The dashboard's **Upcoming transactions** card merges both kinds of planned activity into one timeline:
+
+- **Recurring series** show only their *next* occurrence — a monthly bill appears once, not six times. Recurring items carry a **Recurring** badge (or **Ready to post** once you've marked them ready).
+- **Scheduled one-offs** show every future-dated transaction within the **next 3 months**, marked with a **Scheduled** badge.
+
+The card shows the soonest six items, each with its amount, account, and a due-in countdown. Items are interactive:
+
+- Click a **recurring** item to jump to its account page.
+- Click a **scheduled** item to open a quick-edit dialog where you can adjust the date, amount, payee, or category — or delete it — without leaving the dashboard.
+
+The **Manage automations** link at the bottom takes you to the recurring settings page.
+
+## Forecasting your cashflow
+
+Knowing what's scheduled is half the picture — the other half is seeing what it does to your balance. Budgero projects recurring transactions that haven't been marked ready yet into two read surfaces, so you can look a few months ahead without posting anything.
+
+### On the account page
+
+Each account page has a compact **Upcoming transactions** bar above the register showing how many recurring and scheduled entries are coming up, along with their combined inflows and outflows. Click it to expand the full list — from there you can mark occurrences ready or skip them. It remembers whether you left it open or closed.
+
+The register itself becomes a forecast when you ask it to. Extend the page's date range past today and upcoming recurring occurrences appear inline as **projected rows** — marked with a badge, shown alongside your real transactions, but read-only: a projection isn't a record, so there's nothing to edit. To change one, edit the recurring template or mark the occurrence ready. An occurrence whose due date has passed without being marked ready stays in the register too, flagged **Overdue** in the upcoming panel until you post or skip it.
+
+Projected rows flow into the register's **balance column**, so you can scroll into next month and read off where the account is heading. Projected balance values are marked with **≈** to make clear they're estimates. The account's headline balance and the sidebar balances never include projections or future-dated transactions — those always show realized money, as of today.
+
+### In reports
+
+The reports page accepts future date ranges — the picker includes **Next 30 days** and **Next 3 months** presets. When your range extends past today, recurring occurrences that aren't marked ready are counted as if they had posted on their due dates, and the page shows an **Includes projected recurring transactions** notice. Spending trends, category and payee breakdowns, and the period summary all incorporate them, so "what does my cashflow look like through the end of the quarter?" is a date selection, not a spreadsheet exercise.
+
+Projections are self-correcting: they're computed live from your recurring templates, so marking an occurrence ready, skipping it, or editing the template updates every forecast instantly. A projection is only as exact as the template's amount — variable bills will drift a little until they post, then the real number takes over.
+
+## Which tool for which job?
+
+<table>
+  <thead>
+    <tr>
+      <th>You know…</th>
+      <th>Use</th>
+      <th>Why</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>It repeats on a rhythm (rent, salary, subscriptions)</td>
+      <td><strong>Recurring transaction</strong></td>
+      <td>One template covers every future instance, with reminders</td>
+    </tr>
+    <tr>
+      <td>It happens once, on a known date</td>
+      <td><strong>Future-dated transaction</strong></td>
+      <td>A real entry, already in the ledger, visible on the dashboard</td>
+    </tr>
+    <tr>
+      <td>You're saving toward it but haven't committed to a date or payee</td>
+      <td><strong>A goal</strong></td>
+      <td>It's a funding plan, not a transaction yet — see <a href="/docs/goals">Goals</a></td>
+    </tr>
+  </tbody>
+</table>
+
+A common pattern combines all three: a target-date goal accumulates the money, a recurring reminder nudges you when the bill is near, and marking it ready posts the transaction against the category the goal has been filling all along.

@@ -1,0 +1,60 @@
+packages:
+  - 'packages/*'
+
+# Allow install scripts ONLY for packages that download/compile native binaries
+# or require essential patching (e.g. Clerk) to function. Do NOT add packages
+# here merely for convenience or non-essential postinstall messages.
+allowBuilds:
+  '@clerk/shared': true
+  '@parcel/watcher': true
+  '@tailwindcss/oxide': true
+  contentlayer2: true
+  core-js: true
+  esbuild: true
+  onnxruntime-node: true
+  protobufjs: true
+  sharp: true
+  unrs-resolver: true
+
+# Security overrides for transitive vulnerabilities
+overrides:
+  '@babel/plugin-transform-modules-systemjs@<7.29.4': ^7.29.4
+  '@clerk/clerk-react@<5.61.6': ^5.61.7
+  '@clerk/shared@<3.47.5': ^3.47.7
+  '@eslint/plugin-kit@<0.3.4': ^0.3.4
+  '@protobufjs/utf8@<1.1.1': ^1.1.1
+  ajv@<6.14.0: ^6.14.0
+  ajv@>=7.0.0-alpha.0 <8.20.0: ^8.20.0
+  brace-expansion@<1.1.13: ^1.1.13
+  brace-expansion@^2.0.0: ^2.0.3
+  defu@<6.1.5: ^6.1.5
+  dompurify@<3.4.0: ^3.4.7
+  esbuild@<0.25.0: ^0.25.0
+  fast-uri@<3.1.2: ^3.1.2
+  flatted@<3.4.2: ^3.4.2
+  js-cookie@<3.0.6: ^3.0.6
+  lodash@<4.18.0: ^4.18.1
+  lodash-es@<4.18.0: ^4.18.1
+  mermaid@<11.15.0: ^11.15.0
+  minimatch@<3.1.4: ^3.1.4
+  minimatch@^5.0.0: ^5.1.8
+  minimatch@^9.0.0: ^9.0.7
+  picomatch@<2.3.2: ^2.3.2
+  picomatch@<4.0.4: ^4.0.4
+  postcss@<8.5.10: ^8.5.15
+  protobufjs@<7.5.8: ^7.5.8
+  react-router@<7.12.0: ^7.15.1
+  rollup@<2.80.0: ^2.80.0
+  rollup@<4.59.0: ^4.59.0
+  serialize-javascript@<7.0.5: ^7.0.5
+  tar@<7.5.11: ^7.5.11
+  uuid@<11.1.1: ^11.1.1
+  vite@<5.4.20: ^5.4.21
+  vite@<6.4.2: ^6.4.2
+  yaml@<1.10.3: ^1.10.3
+  yaml@<2.8.3: ^2.8.3
+
+# Prevent pnpm from auto-running `pnpm install` before every `pnpm exec`/`pnpm run`
+# in non-TTY contexts (husky hooks). This stops cascading failures from
+# ERR_PNPM_IGNORED_BUILDS and other install-time prompts.
+verifyDepsBeforeRun: false

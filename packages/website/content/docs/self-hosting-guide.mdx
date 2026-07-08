@@ -1,0 +1,331 @@
+---
+title: Self-Hosting Guide
+summary: Complete guide to deploying Budgero on your own infrastructure with Docker, native binaries, environment configuration, and optional integrations.
+section: getting-started
+topicId: self-hosting-guide
+takeaways:
+  - Deploy Budgero using Docker or native binaries on any platform.
+  - Zero configuration required - admin account auto-created on first run.
+  - Optionally configure currency conversion API for multi-currency support.
+---
+
+This guide walks you through deploying Budgero on your own infrastructure. Whether you prefer Docker containers or native binaries, you'll have a fully functional budget server running in minutes.
+
+## Deployment options
+
+Budgero self-hosted can be deployed three ways:
+
+- **Docker** - Recommended for most users. Single command, works on any platform with Docker.
+- **Native binary** - Direct install on macOS, Linux, or Windows. Ideal for minimal setups or when Docker isn't available.
+- **Docker Compose** - Best for production deployments with persistent storage and easy updates.
+
+## Quick start with Docker
+
+```bash
+docker run -d \
+  --name budgero \
+  -p 127.0.0.1:3001:3001 \
+  -v budgero_data:/data \
+  budgero/budgero
+```
+
+On first startup, check the logs for your admin credentials:
+
+```bash
+docker logs budgero
+```
+
+```
+  Admin account created:
+    Username: admin
+    Password: <randomly-generated-password>
+
+  ⚠️  Save this password now - it will NOT be shown again.
+```
+
+- **App**: `http://localhost:3001`
+- **Admin UI**: `http://localhost:3001/admin`
+
+Use a reverse proxy (Caddy/nginx) if you need external access with HTTPS.
+
+Budgero persists all self-host data under `/data`:
+
+- Metadata DB: `/data/budgero.db`
+- Encrypted budget blobs: `/data/budget_spaces/`
+
+## Docker Compose
+
+```yaml
+services:
+  budgero:
+    image: budgero/budgero:latest
+    ports:
+      - "127.0.0.1:3001:3001"
+    volumes:
+      - budgero_data:/data
+    restart: unless-stopped
+
+volumes:
+  budgero_data:
+```
+
+```bash
+docker compose up -d
+docker compose logs budgero  # get admin credentials on first run
+```
+
+### With Caddy for HTTPS
+
+```yaml
+services:
+  budgero:
+    image: budgero/budgero:latest
+    expose:
+      - "3001"
+    volumes:
+      - budgero_data:/data
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    restart: unless-stopped
+
+volumes:
+  budgero_data:
+  caddy_data:
+```
+
+```
+# Caddyfile
+budget.yourdomain.com {
+    reverse_proxy budgero:3001
+}
+```
+
+## Native binary installation
+
+### macOS and Linux
+
+```bash
+curl -fsSL https://budgero.app/install.sh | bash
+```
+
+### Windows (PowerShell)
+
+```powershell
+irm https://budgero.app/install.ps1 | iex
+```
+
+After installation, start the server:
+
+```bash
+budgero serve
+```
+
+The server runs on port 3001 by default. Your database is stored in `./data/budgero.db`.
+
+## Environment variables
+
+<table>
+  <thead>
+    <tr>
+      <th>Variable</th>
+      <th>Default</th>
+      <th>Description</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>PORT</code></td>
+      <td><code>3001</code></td>
+      <td>HTTP server port</td>
+    </tr>
+    <tr>
+      <td><code>DB_PATH</code></td>
+      <td><code>data/budgero.db</code></td>
+      <td>SQLite database file path</td>
+    </tr>
+    <tr>
+      <td><code>LOG_LEVEL</code></td>
+      <td><code>info</code></td>
+      <td><code>debug</code>, <code>info</code>, <code>warn</code>, <code>error</code></td>
+    </tr>
+    <tr>
+      <td><code>CURRENCYLAYER_API_KEY</code></td>
+      <td>-</td>
+      <td>Optional: enables multi-currency conversion</td>
+    </tr>
+  </tbody>
+</table>
+
+### First-run admin setup
+
+On first startup (when no users exist), Budgero automatically creates an admin account with a random password and prints it once:
+
+- **Docker**: `docker logs budgero`
+- **Foreground**: Prints directly to your terminal
+- **Daemon mode**: Check `data/logs/<name>.log`
+
+## Currency conversion (optional)
+
+For multi-currency accounts, get a free API key from [currencylayer.com](https://currencylayer.com) (100 requests/month, 168 currencies). Add it to your environment:
+
+```bash
+CURRENCYLAYER_API_KEY=your_api_key_here
+```
+
+Single-currency users can skip this—Budgero works fine without it.
+
+## User management
+
+### Admin UI
+
+Access the admin dashboard at `/admin` to manage users, view activity, and configure settings through a web interface.
+
+### CLI
+
+Alternatively, manage users via command line:
+
+```bash
+# Create a user
+budgero admin create-user --username johndoe --name "John" --password "secret"
+
+# List all users
+budgero admin list-users
+
+# Reset a password
+budgero admin reset-password --username johndoe --password "new-password"
+
+# Block a user
+budgero admin block-user --username johndoe
+```
+
+## Running as a background service
+
+### Using the built-in daemon (all platforms)
+
+```bash
+budgero daemon start --port 3001 --name production
+```
+
+Check running daemons:
+
+```bash
+budgero daemon list
+```
+
+Stop a daemon:
+
+```bash
+budgero daemon stop production
+```
+
+### Using systemd (Linux)
+
+Create `/etc/systemd/system/budgero.service`:
+
+```ini
+[Unit]
+Description=Budgero Budget Server
+After=network.target
+
+[Service]
+Type=simple
+User=budgero
+WorkingDirectory=/opt/budgero
+ExecStart=/opt/budgero/budgero serve
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+
+```bash
+sudo systemctl enable budgero
+sudo systemctl start budgero
+```
+
+## Updating
+
+### Docker
+
+```bash
+docker pull budgero/budgero:latest
+docker compose down
+docker compose up -d
+```
+
+### Native binary
+
+```bash
+budgero update
+```
+
+This checks for the latest release and replaces the binary automatically.
+
+## Reverse proxy setup
+
+For production, run Budgero behind a reverse proxy like nginx or Caddy for HTTPS.
+
+### Caddy (automatic HTTPS)
+
+```
+budget.yourdomain.com {
+    reverse_proxy localhost:3001
+}
+```
+
+### nginx
+
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name budget.yourdomain.com;
+
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location / {
+        proxy_pass http://localhost:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+## Troubleshooting
+
+### Database locked errors
+
+SQLite doesn't handle concurrent writes well. If you see lock errors:
+1. Ensure only one Budgero instance is running
+2. Check that `DB_PATH` points to a local filesystem (not a network share)
+
+### Port already in use
+
+Change the port with `PORT=4000` or `--port 4000`.
+
+### Container won't start
+
+Check logs with `docker logs budgero`. Common issues:
+- Volume permissions (ensure the container can write to `/data`)
+- Port conflicts (another service using port 3001)
+
+## FAQ
+
+- **Do I need to set up a database?** No. Budgero uses SQLite plus encrypted blob files. Just mount `/data` and Budgero handles the rest.
+- **Can I migrate from Budgero Cloud to self-hosted?** Yes. Export your data from Cloud and import it into your self-hosted instance.
+- **Is there a mobile app?** Access your self-hosted instance from any browser. Add it to your home screen for an app-like experience.
+- **How do I back up my data?** Back up the entire `/data` volume (includes `budgero.db` and `budget_spaces/`).

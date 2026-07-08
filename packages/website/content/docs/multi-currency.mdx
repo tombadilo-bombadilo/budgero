@@ -1,0 +1,98 @@
+---
+title: Multi-Currency
+summary: Hold accounts in 168 currencies inside one budget. Learn how conversion works, where rates come from, and how to override them when reality disagrees.
+section: accounts-and-imports
+topicId: multi-currency
+takeaways:
+  - How every foreign transaction stores both an original and a converted amount.
+  - The rate hierarchy - per-transaction overrides, custom rates, fetched rates, manual rates.
+  - Workflows for matching statements, travel spending, and offline budgeting.
+---
+
+Multi-currency is not a display option in Budgero — it's core accounting. You can hold accounts in any of 168 currencies inside a single budget, and every number still adds up in one place. This guide covers the conversion machinery; for choosing and changing the anchor currency itself, see [Budget currency](/docs/budget-currency).
+
+## Two amounts per transaction
+
+Every transaction on a foreign-currency account stores two values:
+
+- the **original amount** — what actually happened, in the account's currency. This is the ground truth and never changes.
+- the **converted amount** — the same transaction expressed in your budget currency, which is what categories, [Ready to Assign](/docs/ready-to-assign), and reports consume.
+
+Alongside them, Budgero records the **exchange rate** used and whether you overrode it. Your CHF account's history stays in francs; your budget reads in euros; nothing is lost in between. Account balances work the same way — each foreign account knows both its native balance and its converted contribution to your net worth.
+
+## Where rates come from
+
+When a transaction needs converting, Budgero resolves the rate through a strict hierarchy — the first source that applies wins:
+
+<table>
+  <thead>
+    <tr>
+      <th>Priority</th>
+      <th>Source</th>
+      <th>When it applies</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td><strong>Per-transaction override</strong></td>
+      <td>You set the exact rate on that one transaction</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td><strong>Custom rates</strong></td>
+      <td>A rate you defined for a date range that covers the transaction</td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td><strong>Fetched rates</strong></td>
+      <td>Month-averaged rates Budgero retrieves automatically</td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td><strong>Manual rates</strong></td>
+      <td>Standing rates you entered yourself — no internet required</td>
+    </tr>
+    <tr>
+      <td>5</td>
+      <td><strong>Adjacent month fallback</strong></td>
+      <td>The nearest month's rate, when nothing else covers the date</td>
+    </tr>
+  </tbody>
+</table>
+
+For most people, fetched rates do all the work invisibly. The layers above them exist for the moments when "the market average" isn't your truth.
+
+## Custom rates: your rate, your date range
+
+**Settings → Currencies** is the control room. There you define **Custom Exchange Rates**: a currency pair, a rate, and a date range. Within that range, your rate beats the fetched one.
+
+Typical uses:
+
+- **You moved money at a known rate.** You converted €10,000 at 1.0845 on March 3rd — pin that rate to that week and the books match the wire receipt.
+- **A managed or pegged currency.** If you deal in a currency where the official rate and the practical rate differ, set the one that reflects your reality.
+- **Historical cleanup.** Imported years of foreign transactions? Define custom rates per period instead of editing rows one by one.
+
+Custom rates are live settings, not one-time stamps: when you add, edit, or delete one, Budgero **recalculates the converted amounts** of every transaction in that range — except transactions you've individually overridden, which always keep their pinned rate.
+
+## Per-transaction overrides: matching the statement
+
+Market rates are averages; your card's settlement rate never quite is. When the converted amount needs to match a statement to the cent, override the rate on the individual transaction — enter either the rate or the exact settled amount, and the transaction is exempt from all automatic recalculation from then on.
+
+This is the tool for: card purchases abroad (banks add their own spread), transfers where the receipt shows the exact rate, and any line your accountant will eventually compare against a statement.
+
+## Manual rates: budgeting without a rate feed
+
+Manual rates are standing rates you enter yourself, used when fetched rates aren't available — [offline](/docs/offline), or on a [self-hosted](/docs/self-hosting-guide) instance you haven't connected to a rate API. Set them once for the pairs you use and multi-currency keeps working with no network at all; you can always true up individual transactions with overrides later.
+
+## Day-to-day workflows
+
+**The cross-border household.** Salary lands in GBP, rent leaves in EUR. Each account keeps its own currency; assignment and spending decisions all happen in the budget currency. No mental FX math at any point — the rate hierarchy handles it.
+
+**Travel.** Spend on your home card abroad and the transaction arrives in the account's currency as usual — enter what the terminal showed in the foreign currency or what your bank app shows settled, whichever you have; an override reconciles the difference when the statement lands.
+
+**Reconciling foreign accounts.** [Reconciliation](/docs/accounts) compares *original* amounts against your bank — francs against francs. Conversion never interferes with whether your account balance is right; it only determines how that balance reads in your budget currency.
+
+## What conversion never touches
+
+A principle worth knowing: rates affect how foreign amounts are *expressed*, never what *happened*. Original amounts are immutable facts; converted amounts are interpretations that improve as your rate data does. Deleting a custom rate doesn't corrupt history — it just sends those transactions back down the hierarchy to the next applicable rate.

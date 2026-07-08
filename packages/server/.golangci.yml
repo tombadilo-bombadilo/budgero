@@ -1,0 +1,103 @@
+version: '2'
+
+run:
+  timeout: 5m
+  modules-download-mode: readonly
+
+linters:
+  default: none
+  enable:
+    # Default linters
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    # Additional strict linters
+    - bodyclose
+    - contextcheck
+    - durationcheck
+    - errorlint
+    - exhaustive
+    - forcetypeassert
+    - goconst
+    - gocritic
+    - gosec
+    - misspell
+    - nilerr
+    - prealloc
+    - predeclared
+    - revive
+    - rowserrcheck
+    - sqlclosecheck
+    - unconvert
+    - unparam
+    - wastedassign
+    - whitespace
+    - zerologlint
+
+  exclusions:
+    rules:
+      # LemonSqueezy API uses British spelling "cancelled"
+      - linters: [misspell]
+        text: 'cancelled|Cancelled'
+      # DOUB is prefix for DOUBLE SQL type, not a misspelling
+      - linters: [misspell]
+        text: 'DOUB'
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: false
+
+    govet:
+      enable-all: true
+      disable:
+        - fieldalignment
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: dot-imports
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: exported
+        - name: increment-decrement
+        - name: var-naming
+        - name: var-declaration
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: indent-error-flow
+        - name: errorf
+        - name: empty-block
+        - name: superfluous-else
+        - name: unreachable-code
+        - name: redefines-builtin-id
+
+    staticcheck:
+      checks:
+        - all
+
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+
+    misspell:
+      locale: US
+
+    exhaustive:
+      default-signifies-exhaustive: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

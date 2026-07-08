@@ -1,0 +1,35 @@
+{{define "edition"}}No. 02 · Trial reward{{end}}
+
+{{define "content"}}
+<p class="eyebrow">Earn 10% off</p>
+
+<h1 class="hed">Your first 10% off is 5 transactions away{{if .FirstName}}, {{.FirstName}}{{end}}.</h1>
+
+<p class="dek">
+  Budgero rewards the habit, not your credit card. Log 5 transactions during
+  your trial and we'll take 10% off your first two years — automatically, no
+  code to hunt for.
+</p>
+
+<p class="body">
+  It's also the fastest way to feel why Budgero works: drop in a handful of
+  transactions and watch every coin get a job. No spreadsheets, no fiddly
+  configuration, no bank connections — just you and your money.
+</p>
+
+<div class="btn-wrap">
+  <a href="{{.AppURL}}" target="_blank" rel="noopener">Log your transactions →</a>
+</div>
+
+<p class="section-label">There's more on the table</p>
+<p class="body">
+  Reconcile an account and fund a goal to reach 20%, then keep budgeting
+  across two months for the full 35% off. Track your progress anytime on
+  your <a href="{{.RewardsURL}}">rewards page</a>.
+</p>
+{{end}}
+
+{{define "footer"}}
+You're getting this because you're in your Budgero trial and haven't earned
+your first reward yet. Questions or opt out: <a href="mailto:hello@budgero.app">hello@budgero.app</a>.
+{{end}}

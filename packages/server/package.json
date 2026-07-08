@@ -1,0 +1,17 @@
+{
+  "name": "@budgero/server",
+  "version": "1.5.0",
+  "license": "FSL-1.1-ALv2",
+  "description": "Go backend server for Budgero web app",
+  "private": true,
+  "scripts": {
+    "dev": "node dev.js",
+    "dev:air": "air",
+    "dev:go": "go run ./cmd/saas",
+    "build": "go build -o budgero-server ./cmd/saas",
+    "build:with-frontend": "rm -rf dist && mkdir -p dist && cp -r ../app/dist/* dist/ && go build -o budgero-server ./cmd/saas",
+    "build:production": "CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o budgero-server ./cmd/saas",
+    "test": "go test ./...",
+    "clean": "rm -f budgero-server && rm -rf dist && rm -rf tmp"
+  }
+}

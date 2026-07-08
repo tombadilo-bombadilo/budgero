@@ -1,0 +1,74 @@
+name: release-selfhost
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+concurrency:
+  group: release-selfhost-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release-selfhost:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Docker CLI + Buildx
+        run: |
+          curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /usr/share/keyrings/docker.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable" > /etc/apt/sources.list.d/docker.list
+          apt-get update && apt-get install -y docker-ce-cli docker-buildx-plugin
+
+      - name: Setup QEMU for cross-platform builds
+        run: docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: packages/server/go.mod
+
+      - name: Install GoReleaser
+        run: |
+          go install github.com/goreleaser/goreleaser/v2@v2.7.0
+          GOBIN="$(go env GOPATH)/bin"
+          echo "$GOBIN" >> "$GITHUB_PATH"
+          "$GOBIN/goreleaser" --version
+
+      - name: Authenticate to Google Cloud (JSON key)
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}'
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          install_components: gsutil
+
+      - name: Release selfhost artifacts
+        run: pnpm run release:selfhost
+        env:
+          DOCKER_USERNAME: budgero
+          DOCKER_TOKEN: ${{ secrets.DOCKER_TOKEN }}
+          DOCKER_PLATFORMS: linux/amd64,linux/arm64

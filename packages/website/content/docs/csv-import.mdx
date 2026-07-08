@@ -1,0 +1,77 @@
+---
+title: CSV Import & Export
+summary: Bring in transaction history from your banks and export complete backups you can use for tax season, accountants, or deeper analysis.
+section: accounts-and-imports
+topicId: csv-import
+takeaways:
+  - Supported file formats and how the column-mapping preview works.
+  - How to avoid duplicates when combining imports with manual entry.
+  - What the export produces - a full CSV bundle plus a database backup.
+---
+
+Budgero is manual-first, but "manual" doesn't mean typing every line. The importer turns your bank's exports into transactions in a couple of minutes — and the exporter guarantees your data is never locked in.
+
+## Supported formats
+
+The importer accepts more than CSV:
+
+- **CSV / TSV / TXT** — the universal bank export
+- **OFX / QFX / QIF** — classic bank and Quicken formats
+- **CAMT.053** — the XML statement format common with European banks
+- **PDF** — Budgero extracts tables from statement PDFs; you pick the table, then map columns exactly like a CSV
+
+That last one matters more than it sounds: plenty of banks only offer statements as PDFs, and table extraction means you don't need to retype them. (This is table extraction, not receipt scanning — point it at statements, not crumpled grocery receipts.)
+
+## Mapping your file
+
+Bank exports never agree on column names, so the importer shows a preview and lets you map columns yourself:
+
+1. **Pick the header row.** If your bank pads the file with logo lines and disclaimers, skip rows until the real headers show.
+2. **Map the columns.** Required: a **date** column and either a single **amount** column or an **inflow/outflow** pair. Optional: payee, memo/description, category, and account.
+3. **Set the formats.** Dates are auto-detected across the common patterns (`YYYY-MM-DD`, `DD/MM/YYYY`, `MM/DD/YYYY`, `DD.MM.YYYY`, and more), and number formats cover US/UK (`1,234.56`), European (`1.234,56`), Swiss, and French conventions — so a Deutsche Bank export and a Chase export both land correctly.
+4. **Review the preview** and import.
+
+If the file doesn't carry an account column, you choose the destination account up front — the usual case, since most banks export one account per file.
+
+## Avoiding duplicates
+
+The importer does **not** automatically deduplicate against existing transactions — combining imports with manual entry is where duplicates come from, so adopt one of two disciplines:
+
+- **Import-only accounts:** for accounts you import regularly, don't also enter transactions by hand. Import in non-overlapping date ranges (e.g., export "last month" on the 1st) and duplicates simply can't occur.
+- **Manual-first with backfill:** if you enter as you spend, treat imports as a checking mechanism instead — reconcile against the bank (see [Accounts](/docs/accounts)) rather than importing the same period twice.
+
+If you do double-import a range, sort the account's transactions by date and delete one side — and reconcile after, so the verified balance confirms you removed the right ones.
+
+## Categorizing what arrives
+
+Imported transactions without a category land in **Uncategorized** — the system holding pen. Work the list down to zero soon after each import; an accurate budget with a fat Uncategorized balance is an oxymoron. If your bank's export includes a category column that roughly matches your structure, map it during import and you'll only need to fix the stragglers.
+
+## Exporting your data
+
+Everything goes out the same door it came in. **Settings → Data Management → Export Data** offers two formats:
+
+<table>
+  <thead>
+    <tr>
+      <th>Export</th>
+      <th>Contents</th>
+      <th>Best for</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>CSV bundle</strong> (zip)</td>
+      <td>budgets, accounts, categories, category groups, transactions, assignments, goals — one CSV each</td>
+      <td>Accountants, spreadsheets, tax season, analysis</td>
+    </tr>
+    <tr>
+      <td><strong>Database backup</strong> (.db)</td>
+      <td>Your complete budget as a SQLite database</td>
+      <td>Full backups, migrating to self-host</td>
+    </tr>
+  </tbody>
+</table>
+
+Because your data is end-to-end encrypted, exports happen on your device after you unlock with your master password — the server never sees the plaintext at any point (see the [Security model](/docs/security) for why that matters).
+
+A sane backup habit: export the CSV bundle quarterly and before any big restructuring. It costs one click, and it means even a worst-case mistake — a deleted category, a botched import — is recoverable from the last snapshot of the truth.

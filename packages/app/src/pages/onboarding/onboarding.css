@@ -1,0 +1,79 @@
+/* Onboarding-only styles: the apply-progress pulse, the IBM Plex font
+   fallback, and all mobile-responsive overrides. These collocate here
+   rather than living in the mostly inline-styled step components — only
+   the parts that need to react to viewport width get class names. */
+
+@keyframes budgero-onboarding-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+.budgero-onboarding-font {
+  font-family: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+
+/* Mobile breakpoint — anything narrower than ~640px is treated as a
+   phone. Above that we keep the desktop layout. */
+@media (max-width: 640px) {
+  .bo-page {
+    padding: 16px 12px 32px !important;
+  }
+  .bo-card {
+    padding: 24px 18px !important;
+  }
+  .bo-header-stack > .bo-header-step {
+    font-size: 10px !important;
+    letter-spacing: 1px !important;
+  }
+  .bo-progress-track {
+    gap: 4px !important;
+  }
+  .bo-progress-track > span {
+    width: 14px !important;
+  }
+  .bo-card-stamp {
+    display: none !important;
+  }
+  .bo-title {
+    font-size: 24px !important;
+    line-height: 1.15 !important;
+  }
+  .bo-title-sub {
+    font-size: 13px !important;
+  }
+
+  /* Generic stack-on-mobile helper — any 2-col grid that opts in. */
+  .bo-stack-mobile {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Accounts step: collapse the 4-column row to a stacked layout —
+     type select sits next to the × remove button on the first row,
+     then name and balance each span both columns underneath. The
+     explicit 'order' values pair type+remove on row 1 since the
+     JSX order is type → name → balance → ×. */
+  .bo-account-row {
+    grid-template-columns: 1fr 24px !important;
+    row-gap: 8px;
+  }
+  .bo-account-row > .bo-account-type {
+    order: 1;
+  }
+  .bo-account-row > .bo-account-remove {
+    order: 2;
+  }
+  .bo-account-row > .bo-account-name {
+    order: 3;
+    grid-column: 1 / -1;
+  }
+  .bo-account-row > .bo-account-balance {
+    order: 4;
+    grid-column: 1 / -1;
+  }
+}

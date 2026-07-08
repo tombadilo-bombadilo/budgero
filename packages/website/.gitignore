@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Next.js builds and caches
+.next
+.next/cache
+out
+
+# Other build artifacts
+dist/
+coverage/
+.eslintcache
+
+# Environment files
+.env*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Hosting/platform
+.vercel

@@ -1,0 +1,225 @@
+{{define "layout"}}<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Intentionally no color-scheme meta: we force the Budgero light/paper
+         palette in every inbox so the brand stays consistent. -->
+    <title>{{.Subject}}</title>
+    <!--[if mso]>
+    <style type="text/css">
+      body, table, td, a { font-family: Consolas, "Courier New", monospace !important; }
+    </style>
+    <![endif]-->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      /* ---------- Resets ---------- */
+      body, table, td, p, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+      img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+      body { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+
+      /* ---------- Typography ---------- */
+      body, td, div, p, a, span {
+        font-family: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+      }
+
+      /* ---------- Budgero "paper" palette (forced; no dark-mode override) ---------- */
+      body { background-color: #fbf7eb; color: #141414; }
+      .page { background-color: #fbf7eb; }
+      .frame { background-color: #fbf7eb; border: 1px solid #9e9e9e; }
+      .frame-inner { border: 1px solid #9e9e9e; }
+      .card {
+        background-color: #fffdf8;
+        border: 1px dashed rgba(57, 57, 57, 0.55);
+      }
+      .masthead { color: #141414; border-bottom: 1px solid rgba(158, 158, 158, 0.55); }
+      .edition { color: #64748b; }
+      .eyebrow { color: #404040; }
+      .hed { color: #141414; }
+      .dek { color: #141414; }
+      .body { color: #2a2a2a; }
+      .muted { color: #64748b; }
+      .rule-dashed { border-top: 1px dashed rgba(57, 57, 57, 0.4); }
+      .btn-wrap a { background-color: #111c34; color: #f8fafc; }
+      .link, .body a { color: #111c34; }
+      .classified {
+        background-color: #fbf7eb;
+        border: 1px dashed rgba(57, 57, 57, 0.55);
+        color: #141414;
+      }
+      .corner-mark { color: #9e9e9e; }
+      .footer-note { color: #64748b; }
+
+      /* ---------- Layout helpers ---------- */
+      .wrap { width: 100%; background-color: #fbf7eb; padding: 40px 16px; }
+      .container { width: 100%; max-width: 620px; margin: 0 auto; }
+      .pad-lg { padding: 36px 44px 8px 44px; }
+      .masthead-pad { padding: 20px 44px; }
+      .foot-pad { padding: 28px 44px 4px 44px; }
+
+      /* Typography scale */
+      .edition { font-size: 11px; letter-spacing: 1.4px; text-transform: uppercase; font-weight: 500; }
+      .brand { font-size: 16px; letter-spacing: 0.5px; font-weight: 600; vertical-align: middle; }
+      .logo-img { display: inline-block; vertical-align: middle; margin-right: 10px; border-radius: 6px; }
+      .eyebrow {
+        font-size: 11px;
+        letter-spacing: 2.2px;
+        text-transform: uppercase;
+        font-weight: 500;
+        margin: 0 0 18px 0;
+      }
+      .hed {
+        font-size: 30px;
+        line-height: 1.15;
+        letter-spacing: -0.5px;
+        font-weight: 700;
+        margin: 0 0 18px 0;
+      }
+      .dek {
+        font-size: 16px;
+        line-height: 1.55;
+        font-weight: 400;
+        margin: 0 0 18px 0;
+      }
+      .body {
+        font-size: 15px;
+        line-height: 1.65;
+        margin: 0 0 14px 0;
+      }
+      .body a {
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 3px;
+      }
+      .muted { font-size: 13px; line-height: 1.6; }
+      .footer-note {
+        font-size: 12px;
+        line-height: 1.7;
+        letter-spacing: 0.2px;
+      }
+      .footer-note a {
+        color: inherit;
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 3px;
+      }
+
+      /* Button */
+      .btn-wrap { margin: 22px 0 4px 0; }
+      .btn-wrap a {
+        display: inline-block;
+        padding: 14px 24px;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+        text-decoration: none;
+        border-radius: 0;
+        border: 1px solid #111c34;
+        mso-padding-alt: 0;
+      }
+
+      /* Link list (arrow-prefixed) */
+      .link-list { margin: 0; padding: 0; list-style: none; }
+      .link-list li { font-size: 15px; line-height: 1.8; padding-left: 0; }
+      .link-list a {
+        text-decoration: underline;
+        text-decoration-style: dotted;
+        text-underline-offset: 3px;
+        color: inherit;
+      }
+      .arrow { display: inline-block; width: 16px; color: #9e9e9e; }
+
+      /* Section label */
+      .section-label {
+        font-size: 11px;
+        letter-spacing: 2.2px;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin: 26px 0 10px 0;
+        color: #404040;
+      }
+
+      /* Discount "classified ad" block */
+      .classified { text-align: center; padding: 28px 24px; margin: 24px 0; }
+      .classified-label {
+        font-size: 10px;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        margin: 0 0 10px 0;
+      }
+      .classified-code {
+        font-size: 34px;
+        letter-spacing: 6px;
+        font-weight: 700;
+        margin: 0;
+        line-height: 1;
+      }
+      .classified-sub {
+        font-size: 11px;
+        letter-spacing: 1.8px;
+        text-transform: uppercase;
+        margin: 12px 0 0 0;
+      }
+
+      /* Responsive */
+      @media only screen and (max-width: 560px) {
+        .wrap { padding: 20px 10px !important; }
+        .pad-lg { padding: 26px 22px 4px 22px !important; }
+        .masthead-pad { padding: 16px 22px !important; }
+        .foot-pad { padding: 22px 22px 0 22px !important; }
+        .hed { font-size: 24px !important; }
+        .classified-code { font-size: 26px !important; letter-spacing: 4px !important; }
+      }
+    </style>
+  </head>
+  <body class="page">
+    <center class="wrap">
+      <div class="container">
+
+        <!-- Outer double frame (echoes the website's border-2 outer frame) -->
+        <div class="frame" style="padding: 6px;">
+          <div class="frame-inner">
+
+            <!-- Card -->
+            <div class="card">
+
+              <!-- Masthead: logo + brand + edition marker -->
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" class="masthead">
+                <tr>
+                  <td class="masthead-pad" style="text-align: left; vertical-align: middle;">
+                    <img src="{{.LogoURL}}" width="28" height="28" alt="" class="logo-img">
+                    <span class="brand">Budgero</span>
+                  </td>
+                  <td class="masthead-pad" style="text-align: right; vertical-align: middle;">
+                    <span class="edition">{{template "edition" .}}</span>
+                  </td>
+                </tr>
+              </table>
+
+              <!-- Main content -->
+              <div class="pad-lg">
+                {{template "content" .}}
+              </div>
+
+              <!-- Footer inside card (colophon style) -->
+              <div class="foot-pad">
+                <div class="rule-dashed" style="height: 0; margin: 0 0 18px 0;"></div>
+                <p class="footer-note" style="margin: 0 0 18px 0;">
+                  {{template "footer" .}}
+                </p>
+                <p class="footer-note" style="margin: 0 0 24px 0;">
+                  Budgero · Private budgeting · No bank connections
+                </p>
+              </div>
+
+            </div>
+            <!-- /card -->
+
+          </div>
+        </div>
+        <!-- /frame -->
+
+      </div>
+    </center>
+  </body>
+</html>{{end}}

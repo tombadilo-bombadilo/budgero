@@ -1,0 +1,42 @@
+{{define "edition"}}No. 03 · Offer{{end}}
+
+{{define "content"}}
+<p class="eyebrow">A one-time offer</p>
+
+<h1 class="hed">30% off, twelve months{{if .FirstName}}, {{.FirstName}}{{end}}.</h1>
+
+<p class="dek">
+  Your Budgero trial wrapped up a couple of days ago. If you were on the fence
+  about subscribing, here's a nudge in the form of a small discount.
+</p>
+
+<!-- Discount code, presented like a classified-ad block -->
+<div class="classified">
+  <p class="classified-label">Redemption code</p>
+  <p class="classified-code">{{.DiscountCode}}</p>
+  <p class="classified-sub">30% off · First 12 months</p>
+</div>
+
+<p class="body">
+  Use the code above at checkout, monthly or yearly, your pick. It's going
+  out only to people who finished a trial, and it's one-time per account.
+</p>
+
+<div class="btn-wrap">
+  <a href="{{.AppURL}}/settings/subscription" target="_blank" rel="noopener">Subscribe with {{.DiscountCode}} →</a>
+</div>
+
+<p class="section-label">Not the right fit?</p>
+<p class="body">
+  No hard feelings. Your encrypted data stays where it is and you can pick up
+  the thread whenever. If there's a specific reason you didn't subscribe
+  that we could fix (an integration, a platform, a missing feature), I'd
+  genuinely like to hear it:
+  <a href="mailto:hello@budgero.app">hello@budgero.app</a>.
+</p>
+{{end}}
+
+{{define "footer"}}
+You're getting this because your Budgero trial recently ended.
+Questions or opt out: <a href="mailto:hello@budgero.app">hello@budgero.app</a>.
+{{end}}

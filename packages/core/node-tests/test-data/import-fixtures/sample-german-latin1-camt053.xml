@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02">
+  <BkToCstmrStmt>
+    <GrpHdr>
+      <MsgId>SAMPLE-LATIN1-001</MsgId>
+      <CreDtTm>2024-03-15T17:00:00</CreDtTm>
+    </GrpHdr>
+    <Stmt>
+      <Id>STMT-2024-03-15</Id>
+      <Acct>
+        <Id><IBAN>DE89370400440532013000</IBAN></Id>
+        <Ccy>EUR</Ccy>
+      </Acct>
+      <Ntry>
+        <Amt Ccy="EUR">42.50</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2024-03-15</Dt></BookgDt>
+        <ValDt><Dt>2024-03-15</Dt></ValDt>
+        <NtryDtls><TxDtls>
+          <Refs><EndToEndId>EREF-77821</EndToEndId></Refs>
+          <RltdPties><Cdtr><Nm>BÄCKEREI ÉTOILE</Nm></Cdtr></RltdPties>
+          <RmtInf><Ustrd>Wocheneinkauf für Familie Müller, Straßenfest</Ustrd></RmtInf>
+        </TxDtls></NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">2500.00</Amt>
+        <CdtDbtInd>CRDT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2024-03-10</Dt></BookgDt>
+        <ValDt><Dt>2024-03-10</Dt></ValDt>
+        <NtryDtls><TxDtls>
+          <Refs><EndToEndId>SAL-2024-03</EndToEndId></Refs>
+          <RltdPties><Dbtr><Nm>LÖHNE & GEHÄLTER GMBH</Nm></Dbtr></RltdPties>
+          <RmtInf><Ustrd>Gehältszahlung März - Vielen Dank für Ihre Arbeit</Ustrd></RmtInf>
+        </TxDtls></NtryDtls>
+      </Ntry>
+      <Ntry>
+        <Amt Ccy="EUR">15.99</Amt>
+        <CdtDbtInd>DBIT</CdtDbtInd>
+        <Sts>BOOK</Sts>
+        <BookgDt><Dt>2024-03-12</Dt></BookgDt>
+        <ValDt><Dt>2024-03-12</Dt></ValDt>
+        <NtryDtls><TxDtls>
+          <Refs><EndToEndId>EREF-99001</EndToEndId></Refs>
+          <RltdPties><Cdtr><Nm>CAFÉ ZUR ÖSTERREICHISCHEN ECKE</Nm></Cdtr></RltdPties>
+          <RmtInf><Ustrd>Mittagessen mit Kollegähen</Ustrd></RmtInf>
+        </TxDtls></NtryDtls>
+      </Ntry>
+    </Stmt>
+  </BkToCstmrStmt>
+</Document>

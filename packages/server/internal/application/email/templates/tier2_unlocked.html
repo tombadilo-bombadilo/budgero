@@ -1,0 +1,36 @@
+{{define "edition"}}Tier 2 · Discipline{{end}}
+
+{{define "content"}}
+<p class="eyebrow">You unlocked Tier 2</p>
+
+<h1 class="hed">20% off, earned{{if .FirstName}}, {{.FirstName}}{{end}}.</h1>
+
+<p class="dek">
+  Reconciled an account and fully funded a goal. Reconciliation keeps
+  the budget honest — only money you actually have. Goals give every
+  dollar a job. These are the two practices that turn a budget from a
+  spreadsheet into a tool.
+</p>
+
+<div class="classified">
+  <p class="classified-label">Your code</p>
+  <p class="classified-code">{{.UnlockCode}}</p>
+  <p class="classified-sub">20% off for 2 years · Annual plan{{if .ValidUntilDate}} · Valid through {{.ValidUntilDate}}{{end}}</p>
+</div>
+
+<p class="body">
+  This replaces your Tier 1 code at checkout — the new one's the better
+  deal. The discount applies for 24 months; your subscription renews at
+  the regular price after that. One tier left: stick with the budget
+  into your second calendar month and Tier 3 (35%) unlocks itself.
+</p>
+
+<div class="btn-wrap">
+  <a href="{{.RewardsURL}}" target="_blank" rel="noopener">View your rewards →</a>
+</div>
+{{end}}
+
+{{define "footer"}}
+You're getting this because you reached Tier 2 in your Budgero trial.
+Questions: <a href="mailto:hello@budgero.app">hello@budgero.app</a>.
+{{end}}

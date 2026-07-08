@@ -1,0 +1,62 @@
+{
+  "name": "@budgero/core",
+  "version": "1.0.0",
+  "description": "Shared TypeScript domain logic for Budgero — database schema/migrations, SQL services, and business calculations. Runs in Node and the browser (sql.js / SQLite).",
+  "type": "module",
+  "private": true,
+  "license": "FSL-1.1-ALv2",
+  "author": "tombadilo-bombadilo",
+  "keywords": [
+    "budgero",
+    "budgeting",
+    "personal-finance",
+    "sqlite",
+    "typescript"
+  ],
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "browser": "./dist/browser.js",
+      "node": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./browser": {
+      "import": "./dist/browser.js",
+      "require": "./dist/browser.js",
+      "types": "./dist/browser.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types/index.js",
+      "require": "./dist/types/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:node": "vitest run",
+    "test:node:coverage": "vitest run --coverage",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "debug": "^4.4.1",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "@budgero/eslint-config": "workspace:*",
+    "@types/debug": "^4.1.12",
+    "@types/node": "^20.0.0",
+    "@types/sql.js": "^1.4.9",
+    "@vitest/coverage-v8": "^1.6.1",
+    "eslint": "^9.30.1",
+    "globals": "^15.15.0",
+    "sql.js": "^1.13.0",
+    "typescript": "^5.0.0",
+    "vitest": "^1.0.0"
+  },
+  "files": [
+    "dist"
+  ]
+}

@@ -1,0 +1,162 @@
+---
+title: Rules Engine
+summary: Automate transaction cleanup with rules — match on payee, memo, amount, or account, then categorize, rename, and adjust automatically.
+section: integrations
+topicId: rules-engine
+takeaways:
+  - The three rule modes - Continuous, One Time, and Autofill - and when each runs.
+  - Every condition and action available, and how multiple rules combine.
+  - Retro runs, run history, and the one-click undo safety net.
+---
+
+Manual-first budgeting doesn't have to mean repetitive. The Rules Engine watches transactions as they arrive — from imports, manual entry, or the [Push API](/docs/push-api) — and applies the cleanup you'd otherwise do by hand: fixing payee names, assigning categories, trimming memo noise. You define the pattern once; Budgero applies it forever.
+
+Rules live in **Settings → Rules**.
+
+## The three modes
+
+Every rule runs in one of three modes:
+
+<table>
+  <thead>
+    <tr>
+      <th>Mode</th>
+      <th>When it runs</th>
+      <th>Use it for</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Continuous</strong></td>
+      <td>Automatically, on every new matching transaction</td>
+      <td>The standing cleanup: "AMZN Mktp*" → Amazon, category Shopping</td>
+    </tr>
+    <tr>
+      <td><strong>One Time</strong></td>
+      <td>Once, retroactively across existing transactions</td>
+      <td>Migrations and corrections: recategorize last year's gym charges</td>
+    </tr>
+    <tr>
+      <td><strong>Autofill</strong></td>
+      <td>While you type in the Add Transaction form</td>
+      <td>Suggestions, not changes — you accept or reject each one</td>
+    </tr>
+  </tbody>
+</table>
+
+Continuous rules fire on every entry path — CSV/PDF imports, manual entry, Push API. One Time rules mark themselves consumed after their run and won't fire again until reset. Autofill rules never modify anything on their own; they pre-fill fields as suggestions in the entry form, once per form session.
+
+## Conditions: what a rule matches
+
+A rule needs at least one condition. When it has several, **all must match** (AND logic — there is no OR; if you need "this payee or that payee", make two rules).
+
+<table>
+  <thead>
+    <tr>
+      <th>Field</th>
+      <th>Operators</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Payee</strong></td>
+      <td>equals · contains · regex</td>
+      <td>Case-insensitive by default; toggle for case-sensitive</td>
+    </tr>
+    <tr>
+      <td><strong>Memo</strong></td>
+      <td>equals · contains · regex</td>
+      <td>Same case-sensitivity toggle</td>
+    </tr>
+    <tr>
+      <td><strong>Amount</strong></td>
+      <td>= · ≠ · &gt; · ≥ · &lt; · ≤</td>
+      <td>Compares the net amount (inflow − outflow); for foreign-currency accounts, the original amount, not the converted one</td>
+    </tr>
+    <tr>
+      <td><strong>Account</strong></td>
+      <td>is · is not</td>
+      <td>Scope a rule to (or away from) specific accounts</td>
+    </tr>
+  </tbody>
+</table>
+
+Regex unlocks the messy cases — bank exports that suffix payees with store numbers (`MIGROS M-0451`), reference codes in memos — with full JavaScript pattern syntax.
+
+## Actions: what a rule does
+
+A matching rule applies one or more actions, **in the order you list them** — each action sees the result of the previous one.
+
+<table>
+  <thead>
+    <tr>
+      <th>Action</th>
+      <th>What it does</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Set category</strong></td>
+      <td>Assigns the transaction to a category</td>
+    </tr>
+    <tr>
+      <td><strong>Set payee</strong></td>
+      <td>Replaces (or clears) the payee — the normalization workhorse</td>
+    </tr>
+    <tr>
+      <td><strong>Set memo</strong></td>
+      <td>Replaces the memo with fixed text</td>
+    </tr>
+    <tr>
+      <td><strong>Remove from memo (regex)</strong></td>
+      <td>Strips matching patterns — reference numbers, card suffixes, noise</td>
+    </tr>
+    <tr>
+      <td><strong>Set amount</strong></td>
+      <td>Replaces the amount outright</td>
+    </tr>
+    <tr>
+      <td><strong>Adjust amount by value</strong></td>
+      <td>Adds or subtracts a fixed amount (e.g. −5)</td>
+    </tr>
+    <tr>
+      <td><strong>Adjust amount by percent</strong></td>
+      <td>Scales the amount (e.g. −10%)</td>
+    </tr>
+    <tr>
+      <td><strong>Set account</strong></td>
+      <td>Reroutes the transaction to a different account</td>
+    </tr>
+  </tbody>
+</table>
+
+The amount and account actions are powerful enough to deserve respect: a percent adjustment on a too-broad condition rewrites a lot of history on a retro run. Scope aggressive rules tightly — an account condition plus a payee condition is a good habit.
+
+## Ordering: when several rules match
+
+Rules don't stop at first match — **every matching rule runs**, in ascending **run order** (a numeric field on each rule; ties break by age). Later rules see the transaction as earlier rules left it, which enables deliberate pipelines: rule 1 normalizes the payee, rule 2 matches the *clean* payee name and sets the category.
+
+Each rule also has an **enabled** toggle — pause one without deleting it.
+
+## Running rules on existing transactions
+
+Two buttons on every rule card go beyond waiting for new transactions:
+
+- **Run now** executes the rule across the budget on demand — the same logic as continuous mode, triggered manually.
+- **Retro run** applies the rule to **all past transactions**, after a confirmation dialog. This is the apply-to-existing flow, and the natural second step after creating a rule you wish you'd had a year ago.
+
+After any run, the result overlay shows how many transactions were evaluated and changed.
+
+## History and undo
+
+Every execution is recorded. The **History** drawer on each rule lists past runs with the changes they made — and the most recent completed run can be **undone** in one click, restoring the affected transactions. Undoing a One Time rule's run also resets its consumed flag so it can fire again.
+
+This is the safety net that makes experimentation cheap: write the rule, retro run it, inspect the result, undo if it grabbed more than you intended, tighten the conditions, run again.
+
+## Patterns worth stealing
+
+- **The import janitor.** Your bank's CSV says `CARD PURCHASE 4421 TESCO STORES 2284`. One rule: memo contains `TESCO` → set payee "Tesco", set category Groceries, remove the reference junk from the memo via regex. Every future [import](/docs/csv-import) arrives pre-cleaned.
+- **The subscription tagger.** Payee contains "Spotify" and account is your billing card → category Subscriptions. Repeat per service; ten minutes of setup ends category drift permanently.
+- **The salary splitter's helper.** Amount ≥ your salary and account is checking → set payee "Employer", category Income — so payday lands labeled even when the bank's memo is gibberish.
+- **The autofill assistant.** An Autofill rule on payee contains "Shell" suggesting category Fuel turns manual entry at the pump into two taps — while leaving you the final say.

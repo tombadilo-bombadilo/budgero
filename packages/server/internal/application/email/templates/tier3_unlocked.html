@@ -1,0 +1,35 @@
+{{define "edition"}}Tier 3 · Persistence{{end}}
+
+{{define "content"}}
+<p class="eyebrow">You unlocked Tier 3</p>
+
+<h1 class="hed">35% off, all three{{if .FirstName}}, {{.FirstName}}{{end}}.</h1>
+
+<p class="dek">
+  You stuck with the practice across two calendar months — assigning
+  money and logging transactions on both sides of the boundary. That's
+  the hardest tier to fake and the strongest signal that budgeting is
+  becoming a habit. This one's earned.
+</p>
+
+<div class="classified">
+  <p class="classified-label">Your code</p>
+  <p class="classified-code">{{.UnlockCode}}</p>
+  <p class="classified-sub">35% off for 2 years · Annual plan{{if .ValidUntilDate}} · Valid through {{.ValidUntilDate}}{{end}}</p>
+</div>
+
+<p class="body">
+  Use it at checkout whenever you're ready. The discount applies for
+  24 months — your subscription renews at the regular price after that.
+  One-time per account.
+</p>
+
+<div class="btn-wrap">
+  <a href="{{.RewardsURL}}" target="_blank" rel="noopener">View your rewards →</a>
+</div>
+{{end}}
+
+{{define "footer"}}
+You're getting this because you reached Tier 3 in your Budgero trial.
+Questions: <a href="mailto:hello@budgero.app">hello@budgero.app</a>.
+{{end}}

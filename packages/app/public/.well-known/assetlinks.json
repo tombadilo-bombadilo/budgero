@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.budgero.my.twa",
+      "sha256_cert_fingerprints": [
+        "86:92:44:4F:B9:79:69:6C:20:EF:08:D5:78:6D:94:0F:AA:EC:17:C6:25:4D:C6:5F:D7:61:FD:63:8C:FC:D0:5E"
+      ]
+    }
+  }
+]

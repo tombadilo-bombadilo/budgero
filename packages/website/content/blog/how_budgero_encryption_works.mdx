@@ -1,0 +1,96 @@
+---
+title: "How Budgero Zero Knowledge Architecture Works"
+description: "How Budgero secures your financial data using AES-256-GCM, PBKDF2 key derivation (600,000 iterations), and zero-knowledge design."
+date: 2025-09-20
+tags: ["budgero", "encryption", "security", "pbkdf2", "zero-knowledge"]
+published: true
+---
+
+# How Budgero Zero Knowledge Architecture Works
+
+When I say Budgero is *private by design*, I mean it.  
+For users who want to know **how it actually works under the hood**, here’s the breakdown.
+
+---
+
+## Key Principles
+
+1. **End-to-End Encryption (E2EE)**  
+   - Data is encrypted on the client **before** it ever leaves your device.  
+   - Servers only store ciphertext, never plaintext.  
+
+2. **Zero-Knowledge**  
+   - The encryption keys are derived from your master password.  
+   - Budgero servers never see, transmit, or store your keys.  
+   - Without your password, your data cannot be decrypted — not even by me as the developer.
+
+---
+
+## Encryption Algorithms
+
+Budgero uses industry-proven cryptography:
+
+- **AES-256-GCM** for encrypting all budget data.  
+  - *AES-256* = Advanced Encryption Standard with 256-bit keys.  
+  - *GCM mode* = ensures both confidentiality and integrity (it’s authenticated encryption).  
+
+- **PBKDF2-HMAC-SHA256** for key derivation (**600,000 iterations**).  
+  - This protects against brute-force attacks by making password guessing computationally expensive.  
+  - Every time you enter your password, PBKDF2 derives the encryption key from your password + salt.  
+
+---
+
+## How Key Derivation Works
+
+1. You choose a master password during setup.  
+2. Budgero combines this password with a **unique random salt** generated on your device.  
+3. PBKDF2-HMAC-SHA256 runs the password + salt through 600,000 iterations, producing a strong 256-bit key.  
+4. That key is then used by AES-256-GCM to encrypt your budget database.  
+
+The salt is stored alongside the ciphertext, but the password is never stored. This way, even if someone stole the database, they couldn’t brute-force it cheaply.
+
+---
+
+<TrialCta
+  campaign="encryption-blog"
+  location="mid-post"
+  heading="See zero-knowledge encryption in action"
+  body="Start a 35-day Budgero Cloud trial — your password never leaves your device, your data never leaves it readable. No credit card required."
+/>
+
+## Local Storage & Sync
+
+- Locally, Budgero keeps an **encrypted SQLite database**.  
+- When syncing to the cloud, only the **ciphertext** is transmitted.  
+
+👉 That means your data is *never* decrypted in transit or on the server. The only place it’s readable is on **your device with your password**.
+
+---
+
+## Limitations & Trade-offs
+
+- If you forget your master password, your data is unrecoverable.  
+- Strong passwords are strongly recommended (use a password manager).  
+- PBKDF2 adds a small delay during login, but that’s the cost of stronger password hardening.  
+
+I believe this trade-off is worth it: a tiny slowdown at login for **much stronger privacy**.
+
+---
+
+## Conclusion
+
+Budgero’s encryption design is built around **proven algorithms** (AES-256-GCM, PBKDF2-HMAC-SHA256) and a **zero-knowledge model** where your keys never leave your device.  
+
+The result:  
+- Your budget is always encrypted at rest.  
+- Always encrypted in transit.  
+- Always under your control.  
+
+🔒 Privacy isn’t a feature here — it’s the foundation.
+
+---
+
+👉 Curious? [Try Budgero](https://my.budgero.app).
+Your money, your data — **and nobody else’s.**
+
+<TrialCta campaign="encryption-blog" location="post-end" />

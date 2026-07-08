@@ -1,0 +1,84 @@
+---
+title: Security Model
+summary: Dig into Budgero's end-to-end encryption design, what the server can and cannot see, and what happens if you lose a device.
+section: collaboration
+topicId: security
+takeaways:
+  - How envelope encryption turns your master password into working keys.
+  - Exactly which metadata the server sees - and which data it never can.
+  - What losing a device means in practice, and how to prepare for it.
+---
+
+Most finance apps ask you to trust their intentions. Budgero is built so you don't have to: the architecture makes reading your data impossible for us, not just forbidden. This guide explains the design precisely — because "trust us, it's encrypted" is exactly the claim you shouldn't accept without details.
+
+## The encryption pipeline
+
+Budgero uses **envelope encryption**, the same pattern used in serious key-management systems:
+
+1. Your [master password](/docs/master-password) is run through **PBKDF2-HMAC-SHA256 with 600,000 iterations** on your device, producing a **key-encryption key (KEK)**. The iteration count exists to make each password guess computationally expensive.
+2. A randomly generated **data-encryption key (DEK)** does the actual work of encrypting your budget.
+3. The KEK wraps (encrypts) the DEK. Only the wrapped DEK is stored — unlocking means deriving the KEK from your password and unwrapping the DEK, after which the expensive derivation doesn't need to run again for the session.
+4. All data encryption uses **AES-256-GCM**, an authenticated cipher — it doesn't just hide data, it detects tampering.
+
+Every budget change is encrypted on your device *before* it's synced. The server receives, stores, and relays ciphertext.
+
+## What the server sees — and what it can't
+
+Honest zero-knowledge claims require saying both halves out loud:
+
+<table>
+  <thead>
+    <tr>
+      <th>The server can see</th>
+      <th>The server can never see</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>That you have an account (email, login identity)</td>
+      <td>Transactions — amounts, payees, memos, dates</td>
+    </tr>
+    <tr>
+      <td>Workspace membership and roles (who shares with whom)</td>
+      <td>Account balances and account names</td>
+    </tr>
+    <tr>
+      <td>Timestamps and version numbers of synced changes</td>
+      <td>Categories, assignments, goals — the budget itself</td>
+    </tr>
+    <tr>
+      <td>The size and frequency of encrypted blobs</td>
+      <td>Your master password or any derived key</td>
+    </tr>
+  </tbody>
+</table>
+
+That left column is the minimum needed to operate a sync service: routing ciphertext to the right people and billing the right account. The right column is your financial life, and it exists in readable form only on your unlocked devices.
+
+This architecture also defines the breach story. If Budgero's servers were fully compromised, the attacker would obtain wrapped keys and AES-256-GCM ciphertext — and would still face per-user, 600,000-iteration PBKDF2 against each master password to get anywhere. With a strong passphrase, "anywhere" is nowhere.
+
+## Where your data lives
+
+Budgero Cloud is hosted in **Finland, under EU jurisdiction** — and the app sends **no telemetry unless you explicitly opt in**. If even encrypted blobs on our infrastructure is more trust than you want to extend, [Budgero Self-Host](/docs/self-hosting-guide) runs the identical encryption pipeline on hardware you control. The encryption isn't a Cloud feature — it's how the product works.
+
+## Sharing without weakening the model
+
+Shared budgets keep the same guarantees: keys for shared members are exchanged via invite-link secrets carried in URL fragments (never sent to the server) and re-wrapped under each member's own master password. The server learns that two accounts share a workspace — never what's inside it. Details in [Sharing budgets](/docs/sharing).
+
+## Losing a device
+
+What a thief gets from your device is what your device-side choices left there:
+
+- The local budget data is encrypted at rest; without your master password it's ciphertext.
+- If you enabled **session unlock** with a long duration and the device has no passcode, an unlocked session is the realistic exposure. The mitigations are ordinary but effective: device passcode/biometrics, and shorter session durations on portable devices (see [Master password](/docs/master-password)).
+- Your account login (which gates sync access) can be reset through normal identity recovery without losing anything. The master password is different: it can be changed if you know it, or reset if you don't — but a reset wipes the encrypted data, because nothing can decrypt it without the old password (see [Master password](/docs/master-password)).
+
+After losing a device, change your *account* password to cut the device off from future syncs, and carry on. The encryption did its job.
+
+## Support and your data
+
+A consequence of this design worth stating plainly: when you contact support, we can see service-side facts — sync status, subscription, error logs — and nothing inside your budget. Support will never ask for your master password; nothing we operate has a use for it.
+
+## The audit trail
+
+Every synced change is an encrypted entry in an append-only mutation log — that's both how sync and [offline merging](/docs/offline) work, and a tamper-evident history of your budget. Like everything else, its contents are opaque to the server.

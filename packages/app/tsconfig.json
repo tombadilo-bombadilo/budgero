@@ -1,0 +1,16 @@
+{
+  "files": [],
+  "references": [{ "path": "./tsconfig.app.json" }, { "path": "./tsconfig.node.json" }],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@budgero/core": ["../core/dist/index.d.ts"],
+      "@budgero/core/src": ["../core/dist/index.d.ts"],
+      "@budgero/core/src/browser.ts": ["../core/dist/browser.d.ts"],
+      "@budgero/core/src/browser": ["../core/dist/browser"],
+      "@budgero/core/src/*": ["../core/dist/*"],
+      "@budgero/core/*": ["../core/dist/*"],
+      "@/*": ["./src/*"]
+    }
+  }
+}

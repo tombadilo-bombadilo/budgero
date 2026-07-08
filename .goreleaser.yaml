@@ -1,0 +1,52 @@
+version: 2
+project_name: budgero
+
+before:
+  hooks:
+    - bash -c "corepack enable && pnpm install --frozen-lockfile"
+    - bash -c "cd packages/runtime && pnpm run build"
+    - bash -c "cd packages/core && pnpm run build"
+    - bash -c "cd packages/app && VITE_SELF_HOSTABLE=true pnpm run build"
+    - bash -c "rm -rf packages/server/dist && cp -r packages/app/dist packages/server/"
+    - bash -c "cd packages/server && go mod tidy"
+
+env:
+  - CGO_ENABLED=0
+
+builds:
+  - id: budgero
+    dir: packages/server
+    main: ./cmd/selfhost
+    binary: budgero
+    goos: [linux, darwin, windows]
+    goarch: [amd64, arm64]
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{.Tag}}
+
+archives:
+  - id: default
+    name_template: '{{ .ProjectName }}_{{ .Os }}_{{ .Arch | replace "_v1" "" | replace "_v8.0" "" }}'
+    formats:
+      - zip
+    builds:
+      - budgero
+    files:
+      - README.md
+      - docs/selfhost-cli.md
+      - docs/build-flags.md
+
+checksum:
+  name_template: 'checksums.txt'
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^chore:'
+      - '^test:'
+
+release:
+  draft: true

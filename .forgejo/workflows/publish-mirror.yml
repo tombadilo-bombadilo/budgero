@@ -1,0 +1,41 @@
+name: publish-mirror
+
+# Manual: publish master + the release tag to the public GitHub mirror.
+# Forgejo stays canonical (full private history in pre-oss-history); master's
+# public-safe lineage (rooted at the OSS baseline) accumulates on the mirror.
+# Run deliberately after a release is cut and verified.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to publish (defaults to v<root package.json version>)'
+        required: false
+        default: ''
+
+concurrency:
+  group: publish-mirror
+  cancel-in-progress: false
+
+jobs:
+  publish-mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+
+      - name: Configure GitHub credentials
+        run: |
+          git config --global credential.helper store
+          printf 'https://x-access-token:%s@github.com\n' "${{ secrets.MIRROR_GITHUB_TOKEN }}" > ~/.git-credentials
+          chmod 600 ~/.git-credentials
+
+      - name: Publish to GitHub mirror
+        run: bash scripts/publish-mirror.sh "${{ secrets.MIRROR_REMOTE }}" "${{ inputs.tag }}"

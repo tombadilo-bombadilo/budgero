@@ -1,0 +1,66 @@
+# IDE and editor files
+/.vscode
+/.idea
+.claude/
+
+# Development artifacts
+/app.db
+usage_tracking2.json
+
+# Build directories
+build/
+packages/web/dist/
+packages/web/budgero-server
+packages/app/dist/
+packages/server/dist/
+packages/core/dist/
+
+# Legacy build artifacts (from old structure)
+cmd/web/dist/
+cmd/web/migrations/
+frontend/wailsjs/
+data/
+web-server
+
+
+# Dependencies
+node_modules
+**/node_modules
+
+# Environment files, secrets, keys, and databases — matched at ANY depth so
+# per-package secrets (e.g. packages/server/.env, offline.dev.pem, dev DBs)
+# never enter the build context. The prior root-anchored patterns missed them.
+.env
+.env.local
+.env.production
+**/.env
+**/.env.*
+**/*.pem
+**/*.key
+**/*.db
+**/*.db-shm
+**/*.db-wal
+packages/server/data/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Docker files (except the ones we need)
+Dockerfile*
+docker-compose*
+!Dockerfile.frontend
+!Dockerfile.backend
+!docker-compose.yml
+!docker-compose.prod.yml

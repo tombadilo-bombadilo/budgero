@@ -1,0 +1,35 @@
+{{define "edition"}}Tier 1 · Foundation{{end}}
+
+{{define "content"}}
+<p class="eyebrow">You unlocked Tier 1</p>
+
+<h1 class="hed">10% off, locked in{{if .FirstName}}, {{.FirstName}}{{end}}.</h1>
+
+<p class="dek">
+  You logged your first 5 transactions. That's the habit that makes
+  budgeting actually work, and we want to reward it.
+</p>
+
+<div class="classified">
+  <p class="classified-label">Your code</p>
+  <p class="classified-code">{{.UnlockCode}}</p>
+  <p class="classified-sub">10% off for 2 years · Annual plan{{if .ValidUntilDate}} · Valid through {{.ValidUntilDate}}{{end}}</p>
+</div>
+
+<p class="body">
+  Apply this code at checkout when you're ready to subscribe. The discount
+  applies for 24 months — your subscription renews at the regular price
+  after that. Two more tiers are still on the table: reconcile an account
+  and create + fund a goal to bump it up to 20%, and stick with the
+  budget across two months for the full 35%.
+</p>
+
+<div class="btn-wrap">
+  <a href="{{.RewardsURL}}" target="_blank" rel="noopener">View your rewards →</a>
+</div>
+{{end}}
+
+{{define "footer"}}
+You're getting this because you reached Tier 1 in your Budgero trial.
+Questions: <a href="mailto:hello@budgero.app">hello@budgero.app</a>.
+{{end}}

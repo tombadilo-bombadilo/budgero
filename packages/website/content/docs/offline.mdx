@@ -1,0 +1,59 @@
+---
+title: Offline Mode
+summary: Budget on flights or rural getaways. Understand how Budgero queues changes, merges concurrent edits, and keeps ledgers consistent once you reconnect.
+section: collaboration
+topicId: offline
+takeaways:
+  - How offline edits are queued locally and replayed on reconnect.
+  - What happens when two people edit the same budget offline.
+  - The few things that genuinely need a connection - and their workarounds.
+---
+
+Budgero is an offline-first app, not an online app with a cache. The full budget lives on your device, every feature works without a connection, and sync is something that happens *to* your changes — not something your changes wait for.
+
+## How it works
+
+Budgero runs as a Progressive Web App with your budget stored locally (in your browser's IndexedDB). Every action — adding a transaction, moving money, editing a category — applies to the local database immediately. That's true whether you're online or not; the only difference connectivity makes is what happens next:
+
+- **Online:** each change is encrypted and shipped to the server right away, where other devices pick it up.
+- **Offline:** changes accumulate in a local **queue of encrypted mutations**. When the connection returns, the queue replays to the server in order, and your other devices receive the changes as if they'd been made live.
+
+There's no "offline mode" to switch on, no read-only degradation, and no limit on how much you can do while disconnected. A two-week trip's worth of transactions syncs the same way two minutes' worth does.
+
+## What syncing looks like
+
+Sync is designed to be boring. Changes are deduplicated by unique IDs — so a flaky connection that retries a sync can't create duplicate transactions — and applied in a deterministic order. Periodically, Budgero also snapshots the whole encrypted database to the server, which keeps fresh devices from replaying years of history to catch up.
+
+All of it is end-to-end encrypted before leaving your device; offline queueing changes nothing about the [security model](/docs/security).
+
+## Two people, both offline
+
+The interesting case for [shared budgets](/docs/sharing): you're on a plane recording lunch, your partner is at home reassigning categories, and neither device can see the other.
+
+When both reconnect, their queued changes merge by replaying in sequence:
+
+- **Different things edited** — by far the common case — and everything simply combines. Your transactions land, their assignments land, nobody notices a seam.
+- **The same thing edited** — you both changed *the same* category's assignment, say — and the most recent change wins. There's no conflict dialog to resolve; the budget converges to one consistent state, and the three-number math (Assigned, Activity, Available) recomputes from the merged history.
+
+Practical advice for households where simultaneous offline editing is routine: let everyone *record transactions* freely (those never conflict — they're separate entries), and keep *restructuring* — renaming categories, bulk reassigning — for moments when you're online and synced. That's less about data safety and more about not surprising each other.
+
+## The few things that need a connection
+
+Everything core works offline. The honest list of exceptions:
+
+- **Fetched exchange rates.** Live rate lookups need the network. If you budget across currencies and travel, set **manual rates** for the currencies you use (see [Accounts](/docs/accounts)) — manual rates work entirely offline, and you can true things up with per-transaction overrides later.
+- **Inviting new members.** Generating and redeeming invite links is an online operation.
+- **The Push API.** Server-side by nature — though pushes sent while your device is offline simply wait in the server queue until you next sync.
+
+## Before you disconnect deliberately
+
+Going somewhere connectivity-free? Two habits make it seamless:
+
+1. **Open the app once while online** on the device you're taking, so it holds the latest synced state — especially if someone else has been budgeting recently.
+2. **Reconnect that device first** when you're back, before doing major reorganizing from another one.
+
+Neither is required — the merge handles disorder — but they keep the timeline tidy.
+
+## If sync seems stuck
+
+Offline edits are durable: they live in the local queue until acknowledged by the server, surviving app restarts and reboots. If changes don't appear on another device, the cause is almost always that one of the two devices hasn't actually been online with the app open. Open Budgero on both, give them a moment, and the queues drain. Your data isn't in limbo — it's encrypted, local, and waiting.

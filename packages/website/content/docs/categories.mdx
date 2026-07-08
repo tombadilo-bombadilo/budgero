@@ -1,0 +1,80 @@
+---
+title: Categories
+summary: Translate real-life jobs for your money into actionable categories with clear intentions and balances you can check at a glance.
+section: budget-basics
+topicId: categories
+takeaways:
+  - How Available balances roll over month to month, including overspending.
+  - Why cash overspending and credit overspending behave differently.
+  - What deleting a category really does — and when Budgero will stop you.
+---
+
+A category is a job description for your money. "Groceries", "Rent", "Vacation" — each one holds an assigned amount, tracks the spending against it, and shows you what's still **Available**. This guide covers how categories behave over time, which is where most budgeting surprises come from.
+
+## Anatomy of a category
+
+Each category has:
+
+- **Name** — keep it short; it's a row label you'll scan dozens of times a month. If a category needs explaining, fold the convention into the name itself ("Eating Out (excl. trips)").
+- **Group** — where it lives in the budget table. Moving a category between [groups](/docs/category-groups) changes nothing about its history.
+- **Exclude from budget pace** — an option for categories that shouldn't count toward your month-progress indicators, like annual lump sums that would otherwise make mid-month pace look alarming.
+
+## The three numbers
+
+Every category row shows the same trio for the selected month:
+
+<table>
+  <thead>
+    <tr>
+      <th>Column</th>
+      <th>Meaning</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><strong>Assigned</strong></td>
+      <td>What you gave this category this month</td>
+    </tr>
+    <tr>
+      <td><strong>Activity</strong></td>
+      <td>Spending (and inflows) recorded in this category this month</td>
+    </tr>
+    <tr>
+      <td><strong>Available</strong></td>
+      <td>Everything left: prior months' balance + Assigned − Activity</td>
+    </tr>
+  </tbody>
+</table>
+
+The key word in the Available formula is *prior months*. Leftover money **rolls over automatically**. Assign €100 to Auto Maintenance every month and spend nothing, and by June the category quietly holds €600 — which is exactly the point of funding true expenses early.
+
+## Overspending: cash vs. credit
+
+When Activity exceeds what's Available, the balance goes negative and the row flags it. What happens next depends on how you paid:
+
+- **Cash overspending** (debit, cash, bank transfer): the negative Available carries into the next month until you cover it. Use the **Cover Overspending** quick action in the Assign menu, or move money from another category. Don't let red linger — a negative category means your other categories are collectively overstating what you can spend.
+- **Credit overspending** (paid by credit card): the spending doesn't take money you don't have — it creates debt. Budgero's credit card handling moves budgeted spending into your card's payment category automatically; *unbudgeted* card spending becomes an unfunded balance on the card instead. The mechanics are covered in depth in [Debt tracking](/docs/debt-tracking).
+
+The practical rule: cover cash overspending this month; decide deliberately whether credit overspending becomes debt or gets funded.
+
+## Seasonal and irregular categories
+
+Two patterns work well for non-monthly spending:
+
+1. **Fund monthly, spend rarely.** Give "Gifts" €25 every month and let rollover do the work. Attach a [goal](/docs/goals) so Budgero computes the monthly amount for you.
+2. **Fund when visible.** For genuinely unpredictable costs, keep the category at zero and move money in when the expense appears — taking it consciously from a flexible category like Eating Out. This keeps trade-offs explicit, which is the whole zero-based idea.
+
+## Renaming, moving, and deleting
+
+**Renaming** and **moving between groups** are free operations — history, assignments, and reports follow the category wherever it goes and whatever it's called.
+
+**Deleting is destructive.** Budgero has no category archive: deleting a category removes it along with its budget history, and its transactions no longer have that category to report under. Before deleting, ask whether you'll ever want to see that spending broken out historically. If yes, keep the category and simply stop assigning to it — an unfunded, unused category costs nothing. If you must consolidate, recategorize the transactions you care about first.
+
+Two guard rails to know about:
+
+- Categories **linked to a debt account** (a credit card payment category, or a loan's linked category) can't be deleted while the account exists. Budgero will tell you to delete the account first — usually a sign you didn't actually want to delete that category.
+- **System categories** (Income, Uncategorized, Transfers) are managed by Budgero and aren't yours to remove.
+
+## Keeping the list honest
+
+A category you haven't assigned to or spent from in six months is noise. Merge it, or delete it if its history doesn't matter. The budget table is a tool you read weekly — every row should earn its place.

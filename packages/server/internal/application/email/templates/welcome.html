@@ -1,0 +1,43 @@
+{{define "edition"}}No. 01 · Welcome{{end}}
+
+{{define "content"}}
+<p class="eyebrow">The first dispatch</p>
+
+<h1 class="hed">Welcome to Budgero{{if .FirstName}}, {{.FirstName}}{{end}}.</h1>
+
+<p class="dek">
+  Budgero is a zero-based budgeting app built for people who'd rather not hand
+  their bank logins to a third party. Your financial data is encrypted
+  end-to-end, so only you hold the key.
+</p>
+
+<p class="body">
+  Here's how to get up and running. The whole setup takes about ten minutes;
+  most of that is you deciding how to name your categories.
+</p>
+
+<div class="btn-wrap">
+  <a href="{{.AppURL}}" target="_blank" rel="noopener">Open Budgero →</a>
+</div>
+
+<p class="section-label">Keep in a pocket</p>
+<ul class="link-list">
+  <li><span class="arrow">→</span> <a href="{{.DocsURL}}" target="_blank" rel="noopener">Read the docs</a></li>
+  <li><span class="arrow">→</span> <a href="{{.DiscordURL}}" target="_blank" rel="noopener">Join the Discord</a></li>
+  <li><span class="arrow">→</span> <a href="{{.RedditURL}}" target="_blank" rel="noopener">Subscribe to r/budgero</a></li>
+</ul>
+
+<p class="section-label">On replies</p>
+<p class="body">
+  This inbox is staffed by a human (me). If you've got a question, a bug
+  report, a feature idea, or a gripe about the category names in the sample
+  budget, hit reply or write to
+  <a href="mailto:hello@budgero.app">hello@budgero.app</a>. Every message gets
+  read and most get answered within a day.
+</p>
+{{end}}
+
+{{define "footer"}}
+You're getting this dispatch because you just created a Budgero account.
+Questions? <a href="mailto:hello@budgero.app">hello@budgero.app</a>.
+{{end}}

@@ -1,0 +1,51 @@
+---
+title: Budget Currency
+summary: Choose the currency that anchors your budget and learn how Budgero keeps multi-currency accounts and reports in sync.
+section: getting-started
+topicId: budget-currency
+takeaways:
+  - Know what the budget currency controls across Ready to Assign, dashboards, and reports.
+  - Understand how Budgero converts multi-currency accounts using monthly exchange rates and manual fallbacks.
+  - Change the budget currency confidently and learn how the recalculation behaves in cloud and desktop builds.
+---
+
+Your budget currency is the single unit Budgero uses for totals, insights, and Ready to Assign. Even if your money lives in accounts across currencies, Budgero converts everything back to this anchor so every decision happens in one language.
+
+## What the budget currency controls
+
+- **Ready to Assign and category balances.** All budget totals appear in the budget currency, even when the underlying account uses another currency.
+- **Dashboards and reports.** Net worth, cash-flow charts, and spending reports roll up to the budget currency so comparisons stay consistent month to month.
+- **Account overviews.** Each account shows both the original balance and a converted balance benchmarked to the budget currency for quick apples-to-apples checks.
+
+## Choosing the right currency
+
+- Match the currency you use to run your household or business. Most people pick their home-country currency so values line up with bills and paychecks.
+- When importing from YNAB, use the same display currency you relied on there. Budgero will mirror totals more closely and make migrating goals simpler.
+- If you routinely spend in multiple currencies, set the budget currency to the one you want to evaluate performance in—usually the currency you earn or pay taxes in.
+
+## Working with multi-currency accounts
+
+Budgero lets each account keep its native currency. When transactions post, Budgero stores both the original amount and a converted amount in the budget currency:
+
+- Budgero pulls official exchange rates per month and caches them for the budget. If you already fetched the rate for a currency pair, it reuses the stored figure.
+- When a fresh rate is needed, Budgero fetches it from the exchange-rate service and stores it. If you're offline and no cached rate exists, you can supply a manual rate so the conversion can proceed; that manual rate is replaced automatically the next time Budgero fetches the official rate.
+- Converted balances update automatically when you edit a transaction, reconcile an account, or import history so Ready to Assign and reports stay accurate.
+
+## Changing the budget currency later
+
+You can switch the budget currency at any time:
+
+Budgero wipes cached exchange rates, recalculates every transaction, and converts assignments and goal targets into the new currency. The app shows a brief conversion status overlay while it works. After the change, Budgero fetches fresh exchange rates the next time you view a month that needs them.
+
+Expect large histories to take a moment while conversions refresh. You can keep working in the budget once the overlay disappears.
+
+## Offline and manual exchange rates
+
+- Heading offline? Enter manual exchange rates so Budgero can keep conversions accurate without a network call. Budgero stores both the rate and its reciprocal for easy re-use.
+- When you reconnect, Budgero replaces manual conversions with official rates automatically unless you choose to keep your manual entries.
+- If a rate is missing, Budgero searches up to three months on either side for a known value before falling back to the original amount. This keeps reports moving even when a provider is delayed.
+
+## Troubleshooting
+
+- **Converted totals look off:** Check that the month-specific exchange rate exists. Reopen the account or refresh the dashboard to prompt Budgero to fetch or recalculate the rate.
+- **Assignments changed after switching currencies:** Budgero multiplies assignments and goal targets by the new currency rate so their purchasing power stays intact. Adjust categories manually if you want to lock in a different number.

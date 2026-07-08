@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "budgero"
+dynamic = ["version"]
+description = "Official Python SDK for Budgero - Privacy-First Zero Based Budget Manager"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Budgero", email = "hello@budgero.app" }
+]
+keywords = ["budgero", "budget", "finance", "api", "sdk"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Typing :: Typed",
+]
+dependencies = [
+    "httpx>=0.25.0",
+    "pycryptodome>=3.19.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "mypy>=1.0.0",
+]
+
+[project.urls]
+Homepage = "https://budgero.app"
+Documentation = "https://budgero.app"
+
+[tool.hatch.version]
+path = "src/budgero/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/budgero"]
+
+[tool.mypy]
+strict = true
+warn_return_any = true
+warn_unused_configs = true

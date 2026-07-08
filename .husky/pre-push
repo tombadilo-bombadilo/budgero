@@ -1,0 +1,1 @@
+pnpm run test:core && pnpm run test:app && pnpm run test:server

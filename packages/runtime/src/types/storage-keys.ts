@@ -1,0 +1,15 @@
+export const SPACE_KEY_STORAGE_PREFIX = 'budgero_space_key_v1:';
+export const SPACE_CACHE_STORAGE = 'budgero_space_cache_v1';
+export const ACTIVE_SPACE_STORAGE = 'budgero_active_space_v1';
+export const ENCRYPTION_KEY_VERSION_PREFIX = 'budgero_key_version_';
+export const BLOB_VERSION_STORAGE_PREFIX = 'budgero_blob_version_';
+export const MUTATION_CURSOR_STORAGE_PREFIX = 'budgero_mutation_cursor_';
+export const PASSWORD_CHANGED_REASON_KEY = 'budgero_password_changed_reason';
+export const APPLIED_IDS_PREFIX = 'budgero_applied_mutations_v1';
+export const DEFAULT_SPACE_KEY = 'budgero_default_space_v1';
+export const MASTER_PASSWORD_STATUS_KEY = 'master_password_status';
+export const MASTER_PASSWORD_PERSISTENCE_KEY = 'master_password_persistence_v1';
+export const MASTER_PASSWORD_SESSION_CACHE_KEY = 'master_password_session_cache_v1';
+export const MASTER_PASSWORD_INDEXEDDB_NAME = 'budgero_secure_cache_v1';
+export const MASTER_PASSWORD_INDEXEDDB_STORE = 'master_password';
+export const MASTER_PASSWORD_INDEXEDDB_RECORD_KEY = 'session_cache';

@@ -1,0 +1,7 @@
+Date,Payee,Category,Amount
+06/01/2026,Vet Clinic,Veterinarian,-120.00
+not-a-date,Grocery Store,Groceries,-45.50
+,No Date Payee,Shopping,-10.00
+06/04/2026,,Dining,-22.00
+06/05/2026,Refund Co,Income,50.00
+06/06/2026,Hardware Store,Home Improvement,-89.99

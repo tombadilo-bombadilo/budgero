@@ -1,0 +1,95 @@
+# IDE and editor files
+/.vscode
+/.idea
+.claude/
+
+# Development artifacts
+/app.db
+usage_tracking2.json
+.config/
+
+# Build directories
+build/
+dist/
+packages/web/dist/
+packages/web/budgero-server
+packages/core/dist/
+
+# Compiled Go binaries and test binaries
+packages/server/budgero-server
+packages/server/budgero-selfhost
+packages/server/*.test
+packages/server/*.exe*
+packages/server/*.exe~
+main
+
+# Content layer (generated at build time)
+packages/website/.contentlayer/
+
+.pytest_cache/
+# Test artifacts (Playwright/Vitest)
+packages/core/playwright-report/
+packages/core/test-results/
+packages/*/playwright-report/
+packages/*/test-results/
+playwright-report/
+test-results/
+coverage/
+.vitest/
+
+# Generated assets for browser tests
+packages/core/sql.js/
+packages/core/workers/
+packages/core/test-results.png
+
+# Legacy build artifacts (from old structure)
+cmd/web/dist/
+cmd/web/migrations/
+frontend/wailsjs/
+data/
+web-server
+
+
+# Dependencies
+node_modules
+.pnpm-store/
+.gocache/
+
+# Environment files
+.env
+.env.local
+.env.production
+*.ts.net.*
+gha-creds-*.json
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows alternate data streams
+*.Zone.Identifier
+
+# Windows null device files
+packages/app/nul
+# Dev offline signing key (generated)
+packages/server/offline.dev.pem
+TASKS.md
+packages/runtime/dist
+*.tsbuildinfo
+
+
+CLAUDE.md
+.tmp-crypto-compat
+.config
+AGENTS.md

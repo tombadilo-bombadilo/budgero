@@ -1,0 +1,93 @@
+---
+title: "Does YNAB Work Offline? (And What to Do If You Need It)"
+description: "An honest answer to whether YNAB works without internet — what works on the mobile app, what breaks on the web, and the practical alternatives if offline budgeting is non-negotiable."
+date: "2026-05-08"
+tags: ["YNAB", "offline budgeting", "ynab alternative", "budgeting", "privacy"]
+published: true
+---
+
+# Does YNAB Work Offline?
+
+The short answer: **partially, and only on mobile**. The YNAB iOS and Android apps let you record transactions while offline, but the full app experience — reviewing your budget, moving money between categories, looking at reports, reconciling accounts — needs an internet connection. The YNAB web app needs internet for everything.
+
+If you only ever budget while sitting on Wi-Fi, this is a non-issue. If you travel, fly, commute on the metro, work in a basement office, or live somewhere with patchy connectivity, it's worth understanding exactly what does and doesn't work.
+
+## What works offline in YNAB
+
+YNAB's mobile apps cache enough data that you can:
+
+- **Add a transaction** while you're offline. The transaction queues locally and uploads when you reconnect.
+- **See your most recent budget** as it was the last time the app synced.
+
+That's roughly it for offline functionality. It is genuinely useful — you can record a coffee purchase on a plane and trust that it'll appear in your budget when you land — but it's a narrow slice of what YNAB actually does.
+
+## What doesn't work offline in YNAB
+
+The list of things that require an internet connection is longer:
+
+- **The web app does nothing offline.** No transactions, no edits, no read-only mode. If your Wi-Fi drops in the middle of moving money between categories on the web, you're stuck.
+- **Moving money between categories** on mobile generally needs to sync first.
+- **Reports and analytics** are not cached. Spending Trends, Net Worth, Income vs. Expense — all require connectivity.
+- **Account reconciliation** uses bank-sync data that pulls live, so reconciling without internet isn't really possible.
+- **Adding new accounts or categories** requires sync.
+- **Multi-device consistency** requires a connection — if you're on your laptop in airplane mode, you can't see the transaction your spouse just added on their phone.
+
+A useful mental model: YNAB's mobile apps are an *online-first product with a thin offline buffer*, not an offline-first product with optional sync. The buffer protects you from a 30-minute connection drop, not a 12-hour transatlantic flight or a week with bad rural internet.
+
+## Why this matters more than it sounds
+
+For most US-based YNAB users on home Wi-Fi and LTE, this is a non-problem. But for a meaningful chunk of users it's the reason they eventually leave:
+
+- **Frequent travelers and digital nomads.** International data costs money or doesn't work; hotel Wi-Fi is unreliable. People who budget in multiple currencies tend to also be people who travel a lot, and they hit YNAB's offline limits frequently.
+- **Privacy-conscious users.** If you don't want your budgeting tool *requiring* internet — i.e., requiring data to flow to a third-party server — you have a different relationship with the offline question. "Does it require internet to function" becomes a privacy question, not a convenience question.
+- **People in poor connectivity regions.** Rural users in any country, basement offices, fly-over flights, train commutes through tunnels — the cumulative drag of "the budget app needs to phone home" gets old.
+- **Air-gapped or self-hosted preferences.** Some people genuinely want their financial data to never touch the public internet. YNAB cannot accommodate this; the architecture assumes their cloud is available.
+
+If you're in any of those buckets, "YNAB works offline... kind of" probably isn't enough.
+
+<TrialCta
+  campaign="ynab-offline-blog"
+  location="mid-post"
+  heading="Looking for a budgeting app that actually works offline?"
+  body="Budgero is offline-first by design — the full app works without internet, on every device. Try the 35-day Cloud trial, no credit card, or self-host for free."
+/>
+
+## What "offline-first" actually looks like
+
+There's a meaningful difference between "offline support" (some features cached, some queued) and "offline-first" (the app assumes no internet by default and treats sync as a nice-to-have). The latter is what you want if offline is a real requirement.
+
+A truly offline-first budgeting app should let you:
+
+1. **Use the entire app** — add, edit, delete transactions; move money between categories; view reports; check balances — with the network disabled.
+2. **Run on a plane, a train, a remote cabin, an air-gapped laptop** without degraded behavior.
+3. **Sync transparently** when you reconnect, with conflict resolution that doesn't require you to think about it.
+4. **Optionally never sync at all** if you self-host on a fully isolated network.
+
+This is a higher bar than YNAB clears. Tools that meet it tend to be either local-first (the data lives on your device, sync is optional) or self-hosted (you run the server, you decide whether it touches the internet).
+
+## Alternatives if offline budgeting is a hard requirement
+
+A few options, sorted by how strictly they hold to offline-first:
+
+**[Budgero](/vs-ynab)** — A privacy-first budgeting app built around offline-first as a core design principle. The web app is a Progressive Web App with full offline support, including budgeting workflows, reports, and category moves. Multi-device sync uses zero-knowledge encryption (so even when sync runs, the server can't read your data). You can also [self-host Budgero](/self-hostable) on your own server, NAS, or homelab — including in a fully air-gapped network. Imports YNAB data via CSV.
+
+**Actual Budget** — Open-source, local-first by design, optional E2EE on sync. Strong fit for users who want a free, audit-able tool and don't mind the smaller feature set or the slightly rougher UX. No managed hosting; you self-host or use the (separate) PikaPods managed option.
+
+**Buckets** — A native desktop app where the budget lives in a file on your computer. No cloud at all. Closest spiritual successor to YNAB 4 (the desktop-only YNAB before they moved to subscriptions). One-time payment, you decide what feels fair.
+
+**Spreadsheets** — Worth mentioning. Google Sheets has offline mode; Excel works fully offline. The tradeoff is you give up structured features (envelopes, automation, reporting) for total control.
+
+If you came here looking for "is there a way to make YNAB work better offline," the honest answer is: not really. YNAB has architected itself around continuous connectivity. If you genuinely need offline-first behavior, the cleanest fix is to switch tools rather than fight the architecture of one that wasn't built for it.
+
+## How to decide
+
+A quick decision framework:
+
+- **You're online 95%+ of the time, and a 30-minute outage on a flight is the worst case** → YNAB's offline buffer is fine. No need to switch.
+- **You travel internationally, work from coffee shops with bad Wi-Fi, or live in a poor-connectivity area** → consider [Budgero](/vs-ynab) or Actual. Both work fully offline.
+- **You want privacy on top of offline** — meaning the app shouldn't need to phone home at all → [self-host Budgero](/self-hostable), Actual, or use Buckets.
+- **You're an air-gapped, fully-isolated-network kind of person** → self-hosted Budgero or Buckets.
+
+YNAB is a great tool. The offline-first part of the budgeting market is just not its design center. If that part matters to you, there are better-fitting tools — and the migration path is short, since CSV exports work in both directions.
+
+<TrialCta campaign="ynab-offline-blog" location="post-end" />

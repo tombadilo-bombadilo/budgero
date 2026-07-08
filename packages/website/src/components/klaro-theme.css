@@ -1,0 +1,185 @@
+/*
+ * Klaro theme override — matches the Budgero marketing-site aesthetic
+ * (cream background, IBM Plex Mono, dark navy CTA buttons).
+ *
+ * Imported AFTER Klaro's default stylesheet in `KlaroProvider.tsx` so these
+ * declarations win without `!important`. Targets `.budgero-klaro` (set via
+ * `additionalClass` in klaro-config.ts) to avoid leaking into other Klaro
+ * instances if someone embeds one.
+ */
+
+/* ---------- Banner (bottom-right floating card) ---------- */
+.budgero-klaro.klaro .cookie-notice:not(.cookie-modal-notice) {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  left: auto;
+  top: auto;
+  width: calc(100vw - 2.5rem);
+  max-width: 420px;
+  background: #fbf7eb;
+  background-image: linear-gradient(180deg, #fbf7eb 0%, #f5f0e3 100%);
+  color: #141414;
+  border: 1px dashed rgb(57 57 57 / 0.4);
+  border-radius: 10px;
+  box-shadow: 0 24px 60px -24px rgb(20 20 20 / 0.35);
+  font-family: var(--font-ibm-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 1rem 1.1rem;
+}
+
+@media (max-width: 480px) {
+  .budgero-klaro.klaro .cookie-notice:not(.cookie-modal-notice) {
+    bottom: 0.75rem;
+    right: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+    max-width: none;
+  }
+}
+
+.budgero-klaro.klaro .cookie-notice .cn-body {
+  margin: 0;
+  max-width: none;
+  padding: 0;
+}
+
+.budgero-klaro.klaro .cookie-notice .cn-body p,
+.budgero-klaro.klaro .cookie-notice .cn-body p.description {
+  color: #141414;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.budgero-klaro.klaro .cookie-notice .cn-body p.cn-changes {
+  color: #4b5563;
+  font-size: 0.78rem;
+  margin-top: 0.4rem;
+}
+
+.budgero-klaro.klaro .cookie-notice .cn-ok {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  margin-top: 0.85rem;
+}
+
+/* ---------- Buttons ---------- */
+.budgero-klaro.klaro .cm-btn,
+.budgero-klaro.klaro .cookie-notice .cm-btn {
+  font-family: var(--font-ibm-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-weight: 500;
+  font-size: 0.85rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+  letter-spacing: 0.01em;
+}
+
+/* Accept — solid dark navy, mirrors the "Start 35-day free trial" CTA */
+.budgero-klaro.klaro .cm-btn.cm-btn-success,
+.budgero-klaro.klaro .cm-btn.cm-btn-success-var,
+.budgero-klaro.klaro .cm-btn.cn-decline + .cm-btn,
+.budgero-klaro.klaro .cookie-notice .cm-btn.cm-btn-accept-all,
+.budgero-klaro.klaro .cookie-notice .cm-btn.cm-btn-accept {
+  background: #0f172a;
+  color: #f5f0e3;
+  border-color: #0f172a;
+}
+.budgero-klaro.klaro .cm-btn.cm-btn-success:hover,
+.budgero-klaro.klaro .cm-btn.cm-btn-success-var:hover,
+.budgero-klaro.klaro .cookie-notice .cm-btn.cm-btn-accept-all:hover,
+.budgero-klaro.klaro .cookie-notice .cm-btn.cm-btn-accept:hover {
+  background: #1e293b;
+  border-color: #1e293b;
+  color: #ffffff;
+}
+
+/* Decline — outlined, neutral */
+.budgero-klaro.klaro .cm-btn.cm-btn-danger,
+.budgero-klaro.klaro .cm-btn.cn-decline,
+.budgero-klaro.klaro .cookie-notice .cm-btn.cm-btn-decline {
+  background: transparent;
+  color: #141414;
+  border-color: rgb(57 57 57 / 0.45);
+}
+.budgero-klaro.klaro .cm-btn.cm-btn-danger:hover,
+.budgero-klaro.klaro .cm-btn.cn-decline:hover,
+.budgero-klaro.klaro .cookie-notice .cm-btn.cm-btn-decline:hover {
+  background: rgb(20 20 20 / 0.06);
+  border-color: rgb(57 57 57 / 0.7);
+}
+
+/* Learn more / Let me choose — text link */
+.budgero-klaro.klaro .cm-btn.cm-btn-info,
+.budgero-klaro.klaro .cookie-notice .cm-btn.cm-btn-info,
+.budgero-klaro.klaro .cookie-notice .cn-learn-more {
+  background: transparent;
+  color: #141414;
+  border-color: transparent;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  padding: 0.55rem 0.4rem;
+}
+.budgero-klaro.klaro .cm-btn.cm-btn-info:hover,
+.budgero-klaro.klaro .cookie-notice .cn-learn-more:hover {
+  color: #0f172a;
+  background: transparent;
+}
+
+/* ---------- Modal ---------- */
+.budgero-klaro.klaro .cookie-modal .cm-modal,
+.budgero-klaro.klaro .cookie-modal .cm-modal.cm-klaro {
+  background: #fbf7eb;
+  color: #141414;
+  border: 1px dashed rgb(57 57 57 / 0.4);
+  border-radius: 10px;
+  box-shadow: 0 24px 80px -32px rgb(20 20 20 / 0.35);
+  font-family: var(--font-ibm-plex-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  max-width: 640px;
+}
+
+.budgero-klaro.klaro .cookie-modal .cm-bg {
+  background: rgb(20 20 20 / 0.45);
+}
+
+.budgero-klaro.klaro .cookie-modal .cm-header,
+.budgero-klaro.klaro .cookie-modal .cm-body,
+.budgero-klaro.klaro .cookie-modal .cm-footer {
+  background: transparent;
+  border-color: rgb(57 57 57 / 0.18);
+}
+
+.budgero-klaro.klaro .cookie-modal h1,
+.budgero-klaro.klaro .cookie-modal h2,
+.budgero-klaro.klaro .cookie-modal .title {
+  color: #141414;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.budgero-klaro.klaro .cookie-modal .cm-list-label .slider {
+  background: rgb(57 57 57 / 0.35);
+}
+.budgero-klaro.klaro .cookie-modal .cm-list-input:checked + .cm-list-label .slider {
+  background: #0f172a;
+}
+
+.budgero-klaro.klaro .cookie-modal a,
+.budgero-klaro.klaro .cookie-notice a {
+  color: #0f172a;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.budgero-klaro.klaro .cookie-modal a:hover,
+.budgero-klaro.klaro .cookie-notice a:hover {
+  color: #1e293b;
+}
+
+/* Hide the powered-by even if Klaro re-enables it */
+.budgero-klaro.klaro .cm-powered-by {
+  display: none;
+}

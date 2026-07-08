@@ -1,0 +1,69 @@
+---
+type: "Post"
+title: "Switching from Monarch Money: The 2026 Migration Guide"
+description: "How to leave Monarch Money without losing your data: export your full history, pick the right replacement for your situation, and migrate in under an hour. Includes the CSV-to-Budgero walkthrough."
+date: "2026-06-11"
+tags: ["Monarch Money alternative", "migration", "budgeting", "Budgero", "CSV export"]
+published: true
+---
+
+## Switching from Monarch Money: The 2026 Migration Guide
+
+People leave Monarch Money for predictable reasons: the price ($99.99/year and $14.99/month put it at the expensive end of budgeting apps), Plaid sync that breaks for their specific bank one time too many, a move abroad (Monarch only works in the US and Canada), a need for [multi-currency support that Monarch doesn't offer](/monarch-money-multi-currency), or growing discomfort with a third party holding their complete financial picture in readable form.
+
+Whatever your reason, the actual switch is easier than you'd expect — if you do the export *before* you cancel. This guide covers the whole path: getting your data out, choosing where to go, and importing without losing history.
+
+## Step 1: Export everything from Monarch first
+
+Do this while your subscription is still active. Monarch lets you download your data as CSV files:
+
+1. Log in to Monarch on the web (not the mobile app).
+2. Go to **Settings → Data** (Monarch has moved this between "Data" and "Account" over the years — look for "Download transactions").
+3. Download your **transactions CSV**. This is the file that matters most: every transaction with date, merchant, amount, category, and account.
+4. Also download **account balances** if offered, and screenshot your category structure and any rules you've built — categories and rules don't export cleanly anywhere, in any app.
+
+Two warnings from people who learned the hard way: export *all dates*, not the default range, and check that the file actually contains your investment and manual accounts if you care about them. Monarch's export covers transactions, but recurring rules, goals, and notes stay behind.
+
+## Step 2: Pick your destination
+
+Where you should go depends on why you're leaving:
+
+- **Leaving over price, privacy, or because you've moved abroad** → [Budgero](/monarch-money-alternative). Zero-based budgeting, 168 currencies, end-to-end encryption, works in any country, at roughly half Monarch's price — or free if you [self-host](/self-hostable). The trade-off: no automatic bank sync, by design.
+- **Leaving because Plaid keeps breaking, but you still want sync** → another sync-based app will inherit the same plumbing. Simplifi uses its own Quicken connections and PocketSmith offers feeds in many countries; both still hold your data server-side.
+- **Leaving for multi-currency reasons specifically** → your shortlist is Budgero, PocketSmith, or Lunch Money. We compare all of them in the [9-app comparison](/best-ynab-alternatives).
+- **Just want free** → EveryDollar's manual tier, Actual Budget (self-hosted), or Budgero Self-Host.
+
+## Step 3: Import into Budgero (the 30-minute version)
+
+If you've picked Budgero, here's the full path from Monarch CSV to a working budget:
+
+1. **Create your account** at [my.budgero.app](https://my.budgero.app/auth?mode=signup) — the 35-day trial needs no card.
+2. **Create your accounts** to mirror your real-world ones (checking, credit cards, savings). If some of them are in different currencies, set each account's currency now — this is the part Monarch couldn't do.
+3. **Import the Monarch CSV.** Settings → Import → drop in the transactions file. Budgero maps the columns (date, payee, amount, category) and shows you a preview before anything is written. Monarch's category names come across as-is; you can merge or rename them after import.
+4. **Reconcile balances.** Compare each account's imported balance against the real one and add an adjustment transaction where they differ — this is also the moment to catch anything the export missed.
+5. **Build your first budget.** Budgero is zero-based, so unlike Monarch's reporting-first approach you'll give every unit of money a job. If you're new to envelope budgeting, the [docs cover Ready to Assign](/docs/ready-to-assign).
+
+Your transaction history — years of it — survives the move. Recurring rules and goals need to be rebuilt by hand in any destination app, which realistically takes one evening.
+
+<TrialCta
+  campaign="switching-from-monarch-blog"
+  location="mid-post"
+  heading="Bring your Monarch history with you"
+  body="Start a 35-day free trial of Budgero and import your Monarch CSV in minutes. Zero-knowledge encryption, 168 currencies, no credit card required."
+/>
+
+## What you'll miss, honestly
+
+Switching has real costs, and pretending otherwise helps nobody:
+
+- **Automatic bank sync.** If you go to Budgero or Actual, transactions are entered manually or via CSV import. Many people find this *improves* their awareness of spending — it's the original YNAB thesis — but it is a habit change.
+- **Investment tracking.** Monarch's portfolio view is genuinely good. Budgero tracks account balances, not holdings. If daily portfolio analytics matter to you, keep a brokerage app for that job.
+- **The polish of a US-funded product.** Monarch ships fast and looks great. Smaller alternatives trade some of that for privacy, price, or geography.
+
+## After the switch
+
+Run both apps in parallel for one month if you're nervous — import the same CSV into the new app while Monarch keeps syncing, and compare at month's end. Then cancel Monarch from Settings → Billing, and download one final export the day before your subscription lapses.
+
+If you're still deciding between destinations, the [Monarch Money alternative comparison](/monarch-money-alternative) covers the head-to-head against Budgero, and the [Europe guide](/monarch-money-europe-alternative) covers the case where Monarch simply doesn't work in your country.
+
+<TrialCta campaign="switching-from-monarch-blog" location="post-end" />

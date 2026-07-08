@@ -1,0 +1,392 @@
+---
+title: "Zero-Knowledge Bridge: Auto-Import Bank Emails"
+summary: Forward bank alert emails straight into Budgero via the Push API using a local Python helper—no coding background required, no bank passwords shared.
+section: integrations
+topicId: push-api-email-bridge
+badge: New
+order: 20
+takeaways:
+  - Install Python + VS Code, generate a Budgero Push API token and encryption key, and save them in a local .env file.
+  - Use the starter bridge script to read bank alert emails, let AI craft a parser for your bank, and test safely in dry-run mode.
+  - Push encrypted transactions into Budgero with the Python SDK; schedule the script to run automatically once it’s validated.
+---
+
+**"If you want something done right, do it yourself."**  
+Budgero won’t ask for your bank password or hand data to third-party aggregators. Instead, you can bridge bank emails directly into Budgero on your own machine. Your data flows: **Bank email → Your script → Budgero (encrypted)**. No middleman sees unencrypted data.
+
+Follow this beginner-friendly recipe (zero coding experience required). Keep everything local and private.
+
+---
+
+## Part 1: Install the tools
+
+1. **Python 3.12+**  
+   - Windows: [Download Python](https://www.python.org/downloads/windows/) and check **“Add python.exe to PATH.”**  
+   - Mac: [Download Python](https://www.python.org/downloads/macos/).
+2. **VS Code**  
+   - Install [VS Code](https://code.visualstudio.com/download) and open it.
+
+---
+
+## Part 2: Prepare your email (app password)
+
+Use an app password so you never store your main email password.
+
+- Gmail: Enable 2-Step Verification → create an **[App Password](https://myaccount.google.com/apppasswords)** (name it “Budgero Bridge”) → copy the 16-character code.  
+- Other providers (Outlook/Yahoo/iCloud): search “Generate app password for your provider” and follow their steps.
+
+---
+
+## Part 3: Configure your project
+
+1. **Create a folder:** `BudgeroBridge` on your Desktop. Open it in VS Code (File → Open Folder).  
+2. **Open a Terminal:** VS Code → Terminal → New Terminal.
+3. **Install libraries:**
+
+```bash
+pip install budgero rich pandas python-dotenv imap-tools
+```
+
+(On Mac, use `pip3` if needed.)
+
+4. **Create your config file (`.env`)**  
+   The script needs to know who you are and where to put the data. We use a `.env` file to store this safely.
+   - In VS Code, click **New File** and name it exactly `.env` (just dot-env).
+   - Copy/paste the text below and fill it in:
+
+```bash
+# --- EMAIL SETTINGS ---
+EMAIL_ADDRESS="your_email@gmail.com"
+EMAIL_APP_PASSWORD="paste_16_char_app_password_here"
+
+# --- BANK FILTER SETTINGS ---
+BANK_SENDER_EMAIL="alerts@chase.com"
+BANK_SUBJECT_KEYWORD="Transaction Alert"
+
+# --- BUDGERO SECURITY ---
+BUDGERO_API_KEY="paste_your_api_token_here"
+BUDGERO_ENCRYPTION_KEY="paste_your_space_key_here"
+
+# --- DESTINATION SETTINGS ---
+TARGET_BUDGET_ID="1"
+TARGET_ACCOUNT_ID="1"
+TARGET_CATEGORY_ID="5"
+```
+
+**What these mean:**
+
+<table>
+  <thead>
+    <tr>
+      <th>Setting</th>
+      <th>What to put there</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>EMAIL_ADDRESS</code></td>
+      <td>Your full email address (e.g., <code>john.doe@gmail.com</code>).</td>
+    </tr>
+    <tr>
+      <td><code>EMAIL_APP_PASSWORD</code></td>
+      <td>The 16-character app password from Step 2 (not your normal login password).</td>
+    </tr>
+    <tr>
+      <td><code>BANK_SENDER_EMAIL</code></td>
+      <td>Open a recent bank receipt and copy the exact "From" address (e.g., <code>no-reply@bank.com</code>).</td>
+    </tr>
+    <tr>
+      <td><code>BANK_SUBJECT_KEYWORD</code></td>
+      <td>A word/phrase always in the Subject (e.g., <code>Transaction Alert</code>, <code>Your Receipt</code>, <code>Purchase</code>).</td>
+    </tr>
+    <tr>
+      <td><code>BUDGERO_API_KEY</code></td>
+      <td>Your Push API token from <strong>Settings → Push API</strong> in Budgero.</td>
+    </tr>
+    <tr>
+      <td><code>BUDGERO_ENCRYPTION_KEY</code></td>
+      <td>Your space encryption key from <strong>Settings → Push API</strong> in Budgero.</td>
+    </tr>
+  </tbody>
+</table>
+
+📍 **Finding your target IDs (easy mode)**  
+- In Budgero, go to **Settings → Push API** and scroll to the bottom.  
+- The **Your IDs** table lists every Budget, Account, and Category with its ID.  
+- Copy the IDs you need:
+  - `TARGET_BUDGET_ID`: The budget you want to import into.  
+  - `TARGET_ACCOUNT_ID`: The bank account (e.g., “Chase Checking”) where these transactions should land.  
+  - `TARGET_CATEGORY_ID` (important): Use your “Uncategorized”/“To Be Budgeted” category ID to start.
+
+💡 **Pro tip:** Send all email imports to your Uncategorized category. Then create Rules in Budgero (e.g., “If Payee contains Netflix, set Category to Subscriptions”) so the app does the sorting. This keeps the Python script simple.
+
+> **Keep it secret, keep it safe.** Store `.env` locally; never share or upload it.
+
+---
+
+## Part 4: Add the starter script
+
+Create `bridge.py` and paste this entire script:
+
+```python
+import os
+import imaplib
+import email
+import re
+from datetime import datetime, timedelta
+from dotenv import load_dotenv
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from budgero import BudgeroClient
+from budgero.exceptions import APIError, EncryptionError
+
+# --- CONFIGURATION & SAFETY ---
+load_dotenv()
+console = Console()
+
+# 1. SETUP_MODE: Set to True to generate the AI Prompt. Set False to run the bridge.
+SETUP_MODE = False 
+
+# 2. DRY_RUN: If True, prints a table but DOES NOT upload to Budgero.
+DRY_RUN = True  
+
+# 3. NUM_SAMPLES: How many emails to send to ChatGPT for training (5 is usually fine, if you get incosistent results you can use more sample so LLM can detect more edge cases).
+NUM_SAMPLES = 5
+
+# 4. Lookback in days: How far in the past do you want to search for transaction emails.
+LOOKBACK_DAYS =  7
+
+# --- PASTE YOUR AI-GENERATED FUNCTION BELOW THIS LINE ---
+
+def extract_transaction_info(body):
+    """
+    DEFAULT PLACEHOLDER.
+    Run this script in SETUP_MODE = True to generate the code for this function.
+    """
+    return None, None, None, None, None
+
+# --- END OF PARSING LOGIC ---
+
+def imap_since_days(days: int) -> str:
+    d = datetime.today() - timedelta(days=days)
+    return d.strftime('%d-%b-%Y')  # IMAP-friendly format
+
+
+def connect_imap():
+    """Helper to connect to Gmail"""
+    mail = imaplib.IMAP4_SSL('imap.gmail.com')
+    mail.login(os.getenv('EMAIL_ADDRESS'), os.getenv('EMAIL_APP_PASSWORD'))
+    mail.select('inbox')
+    return mail
+
+def generate_llm_prompt():
+    """Fetches real emails and creates a ChatGPT prompt"""
+    sender = os.getenv('BANK_SENDER_EMAIL')
+    keyword = os.getenv('BANK_SUBJECT_KEYWORD')
+    
+    console.print(f"[yellow]📡 Connecting to IMAP... Fetching last {NUM_SAMPLES} emails from: {sender}[/yellow]")
+
+    try:
+        mail = connect_imap()
+        
+        # Search for ANY email from sender (Read or Unread) to get samples
+        status, messages = mail.search(None, f'(FROM "{sender}" SUBJECT "{keyword}")')
+        email_ids = messages[0].split()[-NUM_SAMPLES:] # Get last N
+        
+        if not email_ids:
+            console.print("[red]❌ No emails found! Check your .env sender/keyword.[/red]")
+            return
+
+        samples = []
+        for num in email_ids:
+            _, data = mail.fetch(num, '(RFC822)')
+            msg = email.message_from_bytes(data[0][1])
+            body = msg.get_payload(decode=True).decode(errors='ignore')
+            # Clean up: remove newlines/tabs to save tokens, keep it readable
+            clean_body = body[:2500].replace("\r", "").replace("\n", " ") 
+            samples.append(f"--- EMAIL SAMPLE ---\n{clean_body}\n")
+
+        mail.logout()
+
+        # Construct the Prompt
+        prompt = f"""
+I am writing a Python script to parse transaction emails from my bank.
+I need you to write a Python function called `extract_transaction_info(body)` that takes the raw HTML/text body of an email and returns the transaction details.
+
+**Important:** You must import `datetime` inside the function or assume `from datetime import datetime` is available.
+
+The Function Signature must be exactly:
+`return tx_date, amount, note, tx_type, currency`
+
+Requirements:
+1. `tx_date`: **Python datetime object**. Parse the date string found in the email into a real object.
+2. `amount`: Float. If format is "1.200,50" (European), convert to standard float 1200.50.
+3. `note`: String. The Merchant Name/Payee. Remove HTML tags like &nbsp; or <br>. Clean extra whitespace.
+4. `tx_type`: String. "Outflow" or "Inflow".
+5. `currency`: String (USD, EUR, RSD, etc).
+6. Return `None, None, None, None, None` if the email is not a transaction receipt.
+
+Here are {len(samples)} real samples of my bank emails:
+{ "".join(samples) }
+        """
+
+        console.print(Panel.fit("✅ SAMPLES FETCHED! COPY THE TEXT BELOW INTO CHATGPT:", border_style="green"))
+        print(prompt) 
+        console.print(Panel.fit("AFTER CHATGPT REPLIES: Copy the code it gives you and replace the `extract_transaction_info` function in this script.", border_style="blue"))
+
+    except Exception as e:
+        console.print(f"[red]Connection Error: {e}[/red]")
+
+
+def run_bridge():
+    """The Main Loop"""
+    sender = os.getenv('BANK_SENDER_EMAIL')
+    keyword = os.getenv('BANK_SUBJECT_KEYWORD')
+    
+    console.print(f"[green]🚀 Starting Budgero Bridge for {sender}...[/green]")
+    if DRY_RUN:
+        console.print("[bold yellow]⚠️ DRY RUN MODE ACTIVE: No data will be uploaded.[/bold yellow]")
+
+    mail = connect_imap()
+    since = imap_since_days(LOOKBACK_DAYS)  # last 7 days
+
+    
+    # Fetch UNREAD only for the actual run
+    status, messages = mail.search(
+        None,
+        'FROM', f'"{sender}"',
+        'SUBJECT', f'"{keyword}"',
+        'SINCE', since,
+    )
+    email_ids = messages[0].split()
+
+    found_transactions = []
+
+    # 1. PARSE STAGE
+    for num in email_ids:
+        _, data = mail.fetch(num, '(RFC822)')
+        msg = email.message_from_bytes(data[0][1])
+        body = msg.get_payload(decode=True).decode(errors='ignore')
+
+        # --- CALL THE AI GENERATED FUNCTION ---
+        try:
+            tx_date, amount, note, tx_type, currency = extract_transaction_info(body)
+            
+            if amount and tx_date:
+                found_transactions.append({
+                    "date": tx_date,
+                    "amount": amount,
+                    "note": note,
+                    "type": tx_type,
+                    "currency": currency,
+                    "id": num # Keep email ID to mark as read later if needed
+                })
+        except Exception as e:
+             console.print(f"[red]Parsing Error on email {num.decode()}: {e}[/red]")
+
+    mail.logout()
+
+    if not found_transactions:
+        console.print("[blue]No new transactions found.[/blue]")
+        return
+
+    # 2. DISPLAY STAGE (The "Nice Table")
+    table = Table(title=f"📥 Found {len(found_transactions)} New Transactions")
+    table.add_column("Date", style="cyan")
+    table.add_column("Amount", style="magenta", justify="right")
+    table.add_column("Currency", style="blue")
+    table.add_column("Payee / Note", style="green")
+    table.add_column("Type", style="yellow")
+
+    for tx in found_transactions:
+        table.add_row(
+            tx["date"].strftime("%Y-%m-%d"),
+            f"{tx['amount']:.2f}",
+            tx["currency"],
+            tx["note"],
+            tx["type"]
+        )
+    
+    console.print(table)
+
+    # 3. UPLOAD STAGE
+    if DRY_RUN:
+        console.print("\n[bold yellow]✋ Dry Run Complete. Set DRY_RUN = False to upload.[/bold yellow]")
+        return
+
+    console.print("\n[bold green]🚀 Uploading to Budgero...[/bold green]")
+    
+    client = BudgeroClient(
+        api_key=os.getenv('BUDGERO_API_KEY'), 
+        encryption_key=os.getenv('BUDGERO_ENCRYPTION_KEY')
+    )
+
+    success_count = 0
+    for tx in found_transactions:
+        try:
+            client.add_transaction(
+                account_id=int(os.getenv('TARGET_ACCOUNT_ID')),
+                category_id=int(os.getenv('TARGET_CATEGORY_ID')),
+                budget_id=int(os.getenv('TARGET_BUDGET_ID')),
+                date=tx["date"],
+                outflow=float(tx["amount"]) if tx["type"] == "Outflow" else 0,
+                inflow=float(tx["amount"]) if tx["type"] == "Inflow" else 0,
+                memo=tx["note"],
+                payee=tx["note"]
+            )
+            success_count += 1
+            # Optional: Mark email as read on server after success
+            # mail = connect_imap()
+            # mail.store(tx['id'], '+FLAGS', '\\Seen')
+            # mail.logout()
+        except Exception as e:
+            console.print(f"[red]❌ Upload Error for {tx['note']}: {e}[/red]")
+    
+    console.print(f"[blue]✨ Sync Complete. Successfully imported {success_count} transactions.[/blue]")
+
+if __name__ == '__main__':
+    if SETUP_MODE:
+        generate_llm_prompt()
+    else:
+        run_bridge()
+```
+
+---
+
+## Part 5: Teach the script your bank format
+
+1. Open `bridge.py` and set `SETUP_MODE = True`.  
+2. Run `python bridge.py` (or `python3 bridge.py`).  
+3. The script prints an AI prompt with sample emails. Copy it.  
+4. Paste into ChatGPT/Claude/Gemini. Ask it to write `extract_transaction_info(body)` per the prompt.  
+5. Replace the placeholder `extract_transaction_info` function in `bridge.py` with the AI’s version.  
+6. Set `SETUP_MODE = False` and save.
+
+---
+
+## Part 6: Test in dry-run, then go live
+
+1. Ensure `DRY_RUN = True`. Run `python bridge.py`.  
+2. Review the table output. If amounts/dates look right, set `DRY_RUN = False` and run again to push into Budgero.  
+3. Not right? Re-run setup with more samples by setting `NUM_SAMPLES = 10` before `SETUP_MODE = True`.
+
+---
+
+## Automate it daily
+
+- **Windows:** Use Task Scheduler to run `python bridge.py` once a day.  
+- **Mac/Linux:** Use `cron` (e.g., `0 7 * * * /usr/bin/python3 /path/to/bridge.py`).  
+- Leave DRY_RUN off once you trust the parser.
+
+---
+
+## Safety checklist
+
+- Keep `.env` local; never commit or share it.  
+- Rotate your email app password and Budgero Push API token if you ever suspect exposure.  
+- Use HTTPS (default) so tokens stay protected in transit.  
+- If Budgero returns a 409 with `message_id`, that means a retry was deduped—no duplicate insert.  
+- If you change banks or formats, rerun setup to refresh the parser.
+
+You now have a zero-knowledge bridge: your bank never shares passwords, your data stays encrypted, and Budgero receives transactions automatically. Enjoy the privacy-friendly automation.

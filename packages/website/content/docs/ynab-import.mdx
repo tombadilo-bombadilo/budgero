@@ -1,0 +1,107 @@
+---
+title: YNAB Import
+summary: Import your YNAB data without losing momentum. Understand what comes over automatically, what needs rebuilding, and how to land cleanly.
+section: accounts-and-imports
+topicId: ynab-import
+takeaways:
+  - What Budgero imports from your YNAB export — and what it can't.
+  - The post-import checklist - account types, debt linking, and goals.
+  - Why you should export from YNAB before your subscription lapses.
+---
+
+Switching budgeting apps shouldn't mean abandoning years of history. Budgero reads YNAB's export format directly and rebuilds your budget — accounts, categories, transactions, and even your monthly assignments — in a few minutes.
+
+## Before anything else: export from YNAB
+
+In YNAB, open your budget settings and choose **Export Budget**. You'll get a ZIP file containing two CSVs — your transaction register and your budget (plan) file. Budgero accepts the ZIP as-is; no unpacking or editing needed.
+
+Do this **while your YNAB subscription is active**. Export access normally goes away when your subscription lapses — YNAB support may be able to help after the fact, but don't bet your history on it. Exporting first costs nothing.
+
+## What comes over
+
+<table>
+  <thead>
+    <tr>
+      <th>Data</th>
+      <th>Imported?</th>
+      <th>Notes</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Accounts</td>
+      <td>✓</td>
+      <td>Created from your register; types need review after import</td>
+    </tr>
+    <tr>
+      <td>Category groups &amp; categories</td>
+      <td>✓</td>
+      <td>Full hierarchy preserved</td>
+    </tr>
+    <tr>
+      <td>Transactions</td>
+      <td>✓</td>
+      <td>Dates, payees, memos, amounts — complete history</td>
+    </tr>
+    <tr>
+      <td>Transfers</td>
+      <td>✓</td>
+      <td>Detected and recreated as proper two-sided transfers</td>
+    </tr>
+    <tr>
+      <td>Monthly assignments</td>
+      <td>✓</td>
+      <td>Your budgeted amounts, month by month</td>
+    </tr>
+    <tr>
+      <td>Starting balances</td>
+      <td>✓</td>
+      <td>YNAB's "Starting Balance" entries become opening transactions</td>
+    </tr>
+    <tr>
+      <td>Goals / targets</td>
+      <td>✗</td>
+      <td>YNAB's export doesn't carry them — rebuild in Budgero</td>
+    </tr>
+    <tr>
+      <td>Scheduled transactions</td>
+      <td>✗</td>
+      <td>Not part of YNAB's export</td>
+    </tr>
+    <tr>
+      <td>Flags</td>
+      <td>✗</td>
+      <td>Not carried over</td>
+    </tr>
+  </tbody>
+</table>
+
+YNAB's special plumbing is translated rather than copied: inflows to **"Inflow: Ready to Assign"** are mapped into Budgero's **Income** category, so your income history feeds [Ready to Assign](/docs/ready-to-assign) correctly from the first sync.
+
+## Running the import
+
+1. During onboarding (or from Settings if your budget already exists), choose **Import from YNAB**.
+2. Drop in the ZIP. Budgero parses both files and shows a preview — accounts found, categories mapped, transaction counts.
+3. Confirm. Import typically completes in under a minute even for decade-old budgets.
+
+If you import during onboarding, Budgero skips the setup steps the import already covered — you won't be asked to create accounts and categories you just brought with you.
+
+## The post-import checklist
+
+Three things deserve ten minutes of attention after any import:
+
+1. **Review account types.** Imported accounts arrive as Checking by default, because YNAB's export doesn't say what kind of account each one is. Reassign your credit cards, savings, and cash accounts to their proper [account types](/docs/accounts) — this matters most for credit cards, since Budgero's debt handling activates per account type.
+2. **Link your debt categories.** YNAB's credit card payment categories arrive as ordinary categories. Once you've set an account's type to Credit Card, connect it per the [Debt tracking guide](/docs/debt-tracking) so payments stay budget-neutral.
+3. **Rebuild goals.** Your YNAB targets didn't survive the trip — YNAB doesn't export them. Recreating them in Budgero takes a few minutes and the [Goals guide](/docs/goals) maps YNAB's target types to Budgero's four goal types almost one-to-one.
+
+Finally, reconcile each account against your bank once (see [Accounts](/docs/accounts)) to confirm balances landed where reality says they should.
+
+## If something looks off
+
+The most common post-import surprises, in order:
+
+- **Ready to Assign doesn't match what YNAB showed** — usually not an error. Budgero calculates [Ready to Assign](/docs/ready-to-assign) differently from YNAB: it's one static, all-time number (total income minus total assignments), not a figure that shifts with the month you're viewing. We think that's easier to reason about, but it means the two apps will legitimately disagree right after import. If the number still looks off once you account for that, check for an account whose type needs correcting or a transfer YNAB recorded one-sided — reconciling each account surfaces these fast.
+- **Duplicate-looking transactions** — YNAB split transactions export as multiple rows; check the memos before deleting anything.
+- **Currency questions** — YNAB budgets are single-currency, so everything imports in that currency. If you're switching to a multi-currency setup, see [Budget currency](/docs/budget-currency) before changing anything.
+
+Your YNAB data stays untouched by all of this — the import only reads the export file, so you can re-run it into a fresh budget if you ever want a clean second attempt.

@@ -1,0 +1,1293 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin '@tailwindcss/typography';
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-fira-code);
+  --font-mono: var(--font-fira-code);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-account-checking: var(--account-checking);
+  --color-account-savings: var(--account-savings);
+  --color-account-cash: var(--account-cash);
+  --color-account-credit: var(--account-credit);
+  --color-account-loan: var(--account-loan);
+  --color-account-mortgage: var(--account-mortgage);
+  --color-account-real-estate: var(--account-real-estate);
+  --color-account-other-asset: var(--account-other-asset);
+  --color-account-investment: var(--account-investment);
+  --color-account-retirement: var(--account-retirement);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* ─── Budgero Classic (default) — Light ─── */
+:root {
+  --font-fira-code:
+    'Poppins', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-sans:
+    'Poppins', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:
+    'Poppins', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-serif: Georgia, serif;
+  --radius: 0.625rem;
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.141 0.005 285.823);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.141 0.005 285.823);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.141 0.005 285.823);
+  --primary: oklch(0.21 0.006 285.885);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.967 0.001 286.375);
+  --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.967 0.001 286.375);
+  --muted-foreground: oklch(0.552 0.016 285.938);
+  --accent: oklch(0.967 0.001 286.375);
+  --accent-foreground: oklch(0.21 0.006 285.885);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --success: oklch(0.646 0.2 145);
+  --success-foreground: oklch(0.985 0 0);
+  --border: oklch(0.92 0.004 286.32);
+  --input: oklch(0.92 0.004 286.32);
+  --ring: oklch(0.705 0.015 286.067);
+  --chart-1: oklch(0.646 0.2 145);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --account-checking: oklch(0.6 0.118 184.704);
+  --account-savings: oklch(0.646 0.2 145);
+  --account-cash: oklch(0.6 0.118 184.704);
+  --account-credit: oklch(0.704 0.191 22.216);
+  --account-loan: oklch(0.828 0.189 84.429);
+  --account-mortgage: oklch(0.627 0.265 303.9);
+  --account-real-estate: oklch(0.627 0.265 303.9);
+  --account-other-asset: oklch(0.398 0.07 227.392);
+  --account-investment: oklch(0.7 0.15 250);
+  --account-retirement: oklch(0.65 0.18 45);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.141 0.005 285.823);
+  --sidebar-primary: oklch(0.21 0.006 285.885);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.967 0.001 286.375);
+  --sidebar-accent-foreground: oklch(0.21 0.006 285.885);
+  --sidebar-border: oklch(0.92 0.004 286.32);
+  --sidebar-ring: oklch(0.705 0.015 286.067);
+}
+
+/* ─── Budgero Classic (default) — Dark ─── */
+.dark {
+  --background: oklch(0.141 0.005 285.823);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.21 0.006 285.885);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.21 0.006 285.885);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.92 0.004 286.32);
+  --primary-foreground: oklch(0.21 0.006 285.885);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.274 0.006 286.033);
+  --muted-foreground: oklch(0.705 0.015 286.067);
+  --accent: oklch(0.274 0.006 286.033);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.141 0.005 285.823);
+  --success: oklch(0.769 0.2 145);
+  --success-foreground: oklch(0.141 0.005 285.823);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.552 0.016 285.938);
+  --chart-1: oklch(0.769 0.2 145);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  --account-checking: oklch(0.696 0.17 162.48);
+  --account-savings: oklch(0.769 0.2 145);
+  --account-cash: oklch(0.696 0.17 162.48);
+  --account-credit: oklch(0.704 0.191 22.216);
+  --account-loan: oklch(0.769 0.188 70.08);
+  --account-mortgage: oklch(0.627 0.265 303.9);
+  --account-real-estate: oklch(0.627 0.265 303.9);
+  --account-other-asset: oklch(0.769 0.188 70.08);
+  --account-investment: oklch(0.75 0.15 250);
+  --account-retirement: oklch(0.7 0.18 45);
+  --sidebar: oklch(0.21 0.006 285.885);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.274 0.006 286.033);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.552 0.016 285.938);
+}
+
+/* ─── Budgero Classic font overrides ─── */
+:root:not([data-theme])[data-classic-font='fira-code'] {
+  --font-fira-code:
+    'Fira Code', 'Fira Code Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+  --font-sans:
+    'Fira Code', 'Fira Code Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+  --font-mono:
+    'Fira Code', 'Fira Code Variable', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+}
+
+:root:not([data-theme])[data-classic-font='ibm-plex-mono'] {
+  --font-fira-code:
+    'IBM Plex Mono', 'Fira Code', 'Fira Code Variable', ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-sans:
+    'IBM Plex Mono', 'Fira Code', 'Fira Code Variable', ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-mono:
+    'IBM Plex Mono', 'Fira Code', 'Fira Code Variable', ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+:root:not([data-theme])[data-classic-font='montserrat'] {
+  --font-fira-code:
+    'Montserrat', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans:
+    'Montserrat', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Montserrat', 'Fira Code', 'Courier New', monospace;
+}
+
+:root:not([data-theme])[data-classic-font='exo-2'] {
+  --font-fira-code:
+    'Exo 2', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Exo 2', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Exo 2', 'Fira Code', 'Courier New', monospace;
+}
+
+:root:not([data-theme])[data-classic-font='azeret'] {
+  --font-fira-code:
+    'Azeret Mono', 'Fira Code', 'Fira Code Variable', ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-sans:
+    'Azeret Mono', 'Fira Code', 'Fira Code Variable', ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New', monospace;
+  --font-mono:
+    'Azeret Mono', 'Fira Code', 'Fira Code Variable', ui-monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+:root:not([data-theme])[data-classic-font='inter'] {
+  --font-fira-code:
+    'Inter', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Inter', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Inter', 'Fira Code', 'Courier New', monospace;
+}
+
+:root:not([data-theme])[data-classic-font='roboto'] {
+  --font-fira-code:
+    'Roboto', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Roboto', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Roboto', 'Fira Code', 'Courier New', monospace;
+}
+
+:root:not([data-theme])[data-classic-font='poppins'] {
+  --font-fira-code:
+    'Poppins', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Poppins', 'Fira Code', 'Fira Code Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Poppins', 'Fira Code', 'Courier New', monospace;
+}
+
+/* ─── Phosphor — base (dark only, duplicated for both modes) ─── */
+:root[data-theme='phosphor'] {
+  --background: oklch(0.13 0 0);
+  --foreground: oklch(0.75 0.2 145);
+  --card: oklch(0.16 0.005 145);
+  --card-foreground: oklch(0.75 0.2 145);
+  --popover: oklch(0.16 0.005 145);
+  --popover-foreground: oklch(0.75 0.2 145);
+  --primary: oklch(0.75 0.2 145);
+  --primary-foreground: oklch(0.13 0 0);
+  --secondary: oklch(0.22 0.02 145);
+  --secondary-foreground: oklch(0.7 0.18 145);
+  --muted: oklch(0.2 0.01 145);
+  --muted-foreground: oklch(0.58 0.12 145);
+  --accent: oklch(0.24 0.04 145);
+  --accent-foreground: oklch(0.8 0.2 145);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.9 0.05 145);
+  --success: oklch(0.75 0.2 145);
+  --success-foreground: oklch(0.13 0 0);
+  --border: oklch(0.3 0.06 145);
+  --input: oklch(0.18 0.01 145);
+  --ring: oklch(0.65 0.17 145);
+  --chart-1: oklch(0.75 0.2 145);
+  --chart-2: oklch(0.72 0.15 80);
+  --chart-3: oklch(0.55 0.12 200);
+  --chart-4: oklch(0.6 0.15 25);
+  --chart-5: oklch(0.5 0.1 145);
+  --account-checking: oklch(0.65 0.17 145);
+  --account-savings: oklch(0.75 0.2 145);
+  --account-cash: oklch(0.72 0.15 80);
+  --account-credit: oklch(0.6 0.15 25);
+  --account-loan: oklch(0.72 0.15 80);
+  --account-mortgage: oklch(0.55 0.12 200);
+  --account-real-estate: oklch(0.55 0.12 200);
+  --account-other-asset: oklch(0.5 0.1 145);
+  --account-investment: oklch(0.55 0.12 200);
+  --account-retirement: oklch(0.6 0.15 25);
+  --sidebar: oklch(0.1 0 0);
+  --sidebar-foreground: oklch(0.75 0.2 145);
+  --sidebar-primary: oklch(0.75 0.2 145);
+  --sidebar-primary-foreground: oklch(0.1 0 0);
+  --sidebar-accent: oklch(0.24 0.04 145);
+  --sidebar-accent-foreground: oklch(0.8 0.2 145);
+  --sidebar-border: oklch(0.25 0.04 145);
+  --sidebar-ring: oklch(0.65 0.17 145);
+  --radius: 0px;
+  --font-fira-code:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-serif: 'JetBrains Mono', ui-monospace, monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --shadow-2xs: 0 0 2px 0 oklch(0.75 0.2 145 / 0.06);
+  --shadow-xs: 0 0 4px 0 oklch(0.75 0.2 145 / 0.08);
+  --shadow-sm: 0 0 6px 0 oklch(0.75 0.2 145 / 0.1), 0 0 2px 0 oklch(0.75 0.2 145 / 0.06);
+  --shadow: 0 0 8px 0 oklch(0.75 0.2 145 / 0.1), 0 0 3px 0 oklch(0.75 0.2 145 / 0.06);
+  --shadow-md: 0 0 12px 0 oklch(0.75 0.2 145 / 0.12), 0 0 4px 0 oklch(0.75 0.2 145 / 0.08);
+  --shadow-lg: 0 0 18px 0 oklch(0.75 0.2 145 / 0.15), 0 0 6px 0 oklch(0.75 0.2 145 / 0.1);
+  --shadow-xl: 0 0 28px 0 oklch(0.75 0.2 145 / 0.18), 0 0 10px 0 oklch(0.75 0.2 145 / 0.12);
+}
+
+:root.dark[data-theme='phosphor'],
+.dark[data-theme='phosphor'] {
+  --background: oklch(0.13 0 0);
+  --foreground: oklch(0.75 0.2 145);
+  --card: oklch(0.16 0.005 145);
+  --card-foreground: oklch(0.75 0.2 145);
+  --popover: oklch(0.16 0.005 145);
+  --popover-foreground: oklch(0.75 0.2 145);
+  --primary: oklch(0.75 0.2 145);
+  --primary-foreground: oklch(0.13 0 0);
+  --secondary: oklch(0.22 0.02 145);
+  --secondary-foreground: oklch(0.7 0.18 145);
+  --muted: oklch(0.2 0.01 145);
+  --muted-foreground: oklch(0.58 0.12 145);
+  --accent: oklch(0.24 0.04 145);
+  --accent-foreground: oklch(0.8 0.2 145);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.9 0.05 145);
+  --success: oklch(0.75 0.2 145);
+  --success-foreground: oklch(0.13 0 0);
+  --border: oklch(0.3 0.06 145);
+  --input: oklch(0.18 0.01 145);
+  --ring: oklch(0.65 0.17 145);
+  --chart-1: oklch(0.75 0.2 145);
+  --chart-2: oklch(0.72 0.15 80);
+  --chart-3: oklch(0.55 0.12 200);
+  --chart-4: oklch(0.6 0.15 25);
+  --chart-5: oklch(0.5 0.1 145);
+  --account-checking: oklch(0.65 0.17 145);
+  --account-savings: oklch(0.75 0.2 145);
+  --account-cash: oklch(0.72 0.15 80);
+  --account-credit: oklch(0.6 0.15 25);
+  --account-loan: oklch(0.72 0.15 80);
+  --account-mortgage: oklch(0.55 0.12 200);
+  --account-real-estate: oklch(0.55 0.12 200);
+  --account-other-asset: oklch(0.5 0.1 145);
+  --account-investment: oklch(0.55 0.12 200);
+  --account-retirement: oklch(0.6 0.15 25);
+  --sidebar: oklch(0.1 0 0);
+  --sidebar-foreground: oklch(0.75 0.2 145);
+  --sidebar-primary: oklch(0.75 0.2 145);
+  --sidebar-primary-foreground: oklch(0.1 0 0);
+  --sidebar-accent: oklch(0.24 0.04 145);
+  --sidebar-accent-foreground: oklch(0.8 0.2 145);
+  --sidebar-border: oklch(0.25 0.04 145);
+  --sidebar-ring: oklch(0.65 0.17 145);
+  --radius: 0px;
+  --font-fira-code:
+    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-sans: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --font-serif: 'JetBrains Mono', ui-monospace, monospace;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --shadow-2xs: 0 0 2px 0 oklch(0.75 0.2 145 / 0.06);
+  --shadow-xs: 0 0 4px 0 oklch(0.75 0.2 145 / 0.08);
+  --shadow-sm: 0 0 6px 0 oklch(0.75 0.2 145 / 0.1), 0 0 2px 0 oklch(0.75 0.2 145 / 0.06);
+  --shadow: 0 0 8px 0 oklch(0.75 0.2 145 / 0.1), 0 0 3px 0 oklch(0.75 0.2 145 / 0.06);
+  --shadow-md: 0 0 12px 0 oklch(0.75 0.2 145 / 0.12), 0 0 4px 0 oklch(0.75 0.2 145 / 0.08);
+  --shadow-lg: 0 0 18px 0 oklch(0.75 0.2 145 / 0.15), 0 0 6px 0 oklch(0.75 0.2 145 / 0.1);
+  --shadow-xl: 0 0 28px 0 oklch(0.75 0.2 145 / 0.18), 0 0 10px 0 oklch(0.75 0.2 145 / 0.12);
+}
+
+/* ─── Mesa — base (light only, duplicated for both modes) ─── */
+:root[data-theme='mesa'] {
+  --background: oklch(0.95 0.02 75);
+  --foreground: oklch(0.3 0.04 40);
+  --card: oklch(0.97 0.015 80);
+  --card-foreground: oklch(0.3 0.04 40);
+  --popover: oklch(0.97 0.015 80);
+  --popover-foreground: oklch(0.3 0.04 40);
+  --primary: oklch(0.62 0.14 40);
+  --primary-foreground: oklch(0.98 0.01 75);
+  --secondary: oklch(0.88 0.04 75);
+  --secondary-foreground: oklch(0.35 0.04 40);
+  --muted: oklch(0.92 0.025 80);
+  --muted-foreground: oklch(0.5 0.04 50);
+  --accent: oklch(0.65 0.08 155);
+  --accent-foreground: oklch(0.98 0.01 75);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.98 0.01 75);
+  --success: oklch(0.6 0.12 155);
+  --success-foreground: oklch(0.98 0.01 75);
+  --border: oklch(0.85 0.04 60);
+  --input: oklch(0.92 0.02 75);
+  --ring: oklch(0.58 0.12 40);
+  --chart-1: oklch(0.62 0.14 40);
+  --chart-2: oklch(0.65 0.08 155);
+  --chart-3: oklch(0.7 0.1 350);
+  --chart-4: oklch(0.75 0.1 85);
+  --chart-5: oklch(0.5 0.06 230);
+  --account-checking: oklch(0.65 0.08 155);
+  --account-savings: oklch(0.62 0.14 40);
+  --account-cash: oklch(0.75 0.1 85);
+  --account-credit: oklch(0.55 0.15 25);
+  --account-loan: oklch(0.75 0.1 85);
+  --account-mortgage: oklch(0.6 0.12 300);
+  --account-real-estate: oklch(0.6 0.12 300);
+  --account-other-asset: oklch(0.5 0.06 230);
+  --account-investment: oklch(0.5 0.06 230);
+  --account-retirement: oklch(0.7 0.1 350);
+  --sidebar: oklch(0.93 0.025 70);
+  --sidebar-foreground: oklch(0.3 0.04 40);
+  --sidebar-primary: oklch(0.62 0.14 40);
+  --sidebar-primary-foreground: oklch(0.98 0.01 75);
+  --sidebar-accent: oklch(0.88 0.04 155);
+  --sidebar-accent-foreground: oklch(0.3 0.04 40);
+  --sidebar-border: oklch(0.85 0.04 60);
+  --sidebar-ring: oklch(0.58 0.12 40);
+  --radius: 1rem;
+  --font-fira-code: 'Sora', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: 'Sora', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: 'Sora', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --shadow-2xs: 0 1px 2px 0 oklch(0.4 0.06 40 / 0.06);
+  --shadow-xs: 0 1px 3px 0 oklch(0.4 0.06 40 / 0.1);
+  --shadow-sm: 0 2px 4px 0 oklch(0.4 0.06 40 / 0.12), 0 1px 2px -1px oklch(0.4 0.06 40 / 0.08);
+  --shadow: 0 3px 6px 0 oklch(0.4 0.06 40 / 0.12), 0 1px 3px -1px oklch(0.4 0.06 40 / 0.08);
+  --shadow-md: 0 5px 10px -1px oklch(0.4 0.06 40 / 0.14), 0 3px 5px -2px oklch(0.4 0.06 40 / 0.08);
+  --shadow-lg: 0 10px 16px -3px oklch(0.4 0.06 40 / 0.16), 0 5px 8px -4px oklch(0.4 0.06 40 / 0.08);
+  --shadow-xl: 0 18px 28px -5px oklch(0.4 0.06 40 / 0.18), 0 8px 12px -6px oklch(0.4 0.06 40 / 0.1);
+}
+
+:root.dark[data-theme='mesa'],
+.dark[data-theme='mesa'] {
+  --background: oklch(0.95 0.02 75);
+  --foreground: oklch(0.3 0.04 40);
+  --card: oklch(0.97 0.015 80);
+  --card-foreground: oklch(0.3 0.04 40);
+  --popover: oklch(0.97 0.015 80);
+  --popover-foreground: oklch(0.3 0.04 40);
+  --primary: oklch(0.62 0.14 40);
+  --primary-foreground: oklch(0.98 0.01 75);
+  --secondary: oklch(0.88 0.04 75);
+  --secondary-foreground: oklch(0.35 0.04 40);
+  --muted: oklch(0.92 0.025 80);
+  --muted-foreground: oklch(0.5 0.04 50);
+  --accent: oklch(0.65 0.08 155);
+  --accent-foreground: oklch(0.98 0.01 75);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.98 0.01 75);
+  --success: oklch(0.6 0.12 155);
+  --success-foreground: oklch(0.98 0.01 75);
+  --border: oklch(0.85 0.04 60);
+  --input: oklch(0.92 0.02 75);
+  --ring: oklch(0.58 0.12 40);
+  --chart-1: oklch(0.62 0.14 40);
+  --chart-2: oklch(0.65 0.08 155);
+  --chart-3: oklch(0.7 0.1 350);
+  --chart-4: oklch(0.75 0.1 85);
+  --chart-5: oklch(0.5 0.06 230);
+  --account-checking: oklch(0.65 0.08 155);
+  --account-savings: oklch(0.62 0.14 40);
+  --account-cash: oklch(0.75 0.1 85);
+  --account-credit: oklch(0.55 0.15 25);
+  --account-loan: oklch(0.75 0.1 85);
+  --account-mortgage: oklch(0.6 0.12 300);
+  --account-real-estate: oklch(0.6 0.12 300);
+  --account-other-asset: oklch(0.5 0.06 230);
+  --account-investment: oklch(0.5 0.06 230);
+  --account-retirement: oklch(0.7 0.1 350);
+  --sidebar: oklch(0.93 0.025 70);
+  --sidebar-foreground: oklch(0.3 0.04 40);
+  --sidebar-primary: oklch(0.62 0.14 40);
+  --sidebar-primary-foreground: oklch(0.98 0.01 75);
+  --sidebar-accent: oklch(0.88 0.04 155);
+  --sidebar-accent-foreground: oklch(0.3 0.04 40);
+  --sidebar-border: oklch(0.85 0.04 60);
+  --sidebar-ring: oklch(0.58 0.12 40);
+  --radius: 1rem;
+  --font-fira-code: 'Sora', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: 'Sora', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: 'Sora', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --shadow-2xs: 0 1px 2px 0 oklch(0.4 0.06 40 / 0.06);
+  --shadow-xs: 0 1px 3px 0 oklch(0.4 0.06 40 / 0.1);
+  --shadow-sm: 0 2px 4px 0 oklch(0.4 0.06 40 / 0.12), 0 1px 2px -1px oklch(0.4 0.06 40 / 0.08);
+  --shadow: 0 3px 6px 0 oklch(0.4 0.06 40 / 0.12), 0 1px 3px -1px oklch(0.4 0.06 40 / 0.08);
+  --shadow-md: 0 5px 10px -1px oklch(0.4 0.06 40 / 0.14), 0 3px 5px -2px oklch(0.4 0.06 40 / 0.08);
+  --shadow-lg: 0 10px 16px -3px oklch(0.4 0.06 40 / 0.16), 0 5px 8px -4px oklch(0.4 0.06 40 / 0.08);
+  --shadow-xl: 0 18px 28px -5px oklch(0.4 0.06 40 / 0.18), 0 8px 12px -6px oklch(0.4 0.06 40 / 0.1);
+}
+
+/* ─── Obsidian — base (dark only, duplicated for both modes) ─── */
+:root[data-theme='obsidian'] {
+  --background: oklch(0.15 0.01 270);
+  --foreground: oklch(0.9 0.01 75);
+  --card: oklch(0.19 0.012 270);
+  --card-foreground: oklch(0.9 0.01 75);
+  --popover: oklch(0.19 0.012 270);
+  --popover-foreground: oklch(0.9 0.01 75);
+  --primary: oklch(0.72 0.11 55);
+  --primary-foreground: oklch(0.15 0.01 270);
+  --secondary: oklch(0.25 0.015 270);
+  --secondary-foreground: oklch(0.85 0.01 75);
+  --muted: oklch(0.23 0.01 270);
+  --muted-foreground: oklch(0.6 0.02 75);
+  --accent: oklch(0.28 0.025 55);
+  --accent-foreground: oklch(0.88 0.03 55);
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(0.15 0.01 270);
+  --success: oklch(0.65 0.15 155);
+  --success-foreground: oklch(0.15 0.01 270);
+  --border: oklch(0.3 0.015 270);
+  --input: oklch(0.3 0.015 270);
+  --ring: oklch(0.65 0.1 55);
+  --chart-1: oklch(0.72 0.11 55);
+  --chart-2: oklch(0.65 0.15 155);
+  --chart-3: oklch(0.68 0.1 25);
+  --chart-4: oklch(0.7 0.08 220);
+  --chart-5: oklch(0.78 0.1 85);
+  --account-checking: oklch(0.7 0.08 220);
+  --account-savings: oklch(0.65 0.15 155);
+  --account-cash: oklch(0.72 0.11 55);
+  --account-credit: oklch(0.68 0.1 25);
+  --account-loan: oklch(0.78 0.1 85);
+  --account-mortgage: oklch(0.6 0.15 300);
+  --account-real-estate: oklch(0.6 0.15 300);
+  --account-other-asset: oklch(0.7 0.08 220);
+  --account-investment: oklch(0.55 0.12 200);
+  --account-retirement: oklch(0.68 0.1 25);
+  --sidebar: oklch(0.12 0.01 270);
+  --sidebar-foreground: oklch(0.9 0.01 75);
+  --sidebar-primary: oklch(0.72 0.11 55);
+  --sidebar-primary-foreground: oklch(0.12 0.01 270);
+  --sidebar-accent: oklch(0.28 0.025 55);
+  --sidebar-accent-foreground: oklch(0.88 0.03 55);
+  --sidebar-border: oklch(0.28 0.015 270);
+  --sidebar-ring: oklch(0.65 0.1 55);
+  --radius: 0.5rem;
+  --font-fira-code: 'Montserrat', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: 'Montserrat', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: 'Montserrat', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.12);
+  --shadow-xs: 0 1px 3px 0 oklch(0 0 0 / 0.16);
+  --shadow-sm: 0 2px 4px 0 oklch(0 0 0 / 0.2), 0 1px 2px -1px oklch(0.72 0.11 55 / 0.06);
+  --shadow: 0 2px 6px 0 oklch(0 0 0 / 0.22), 0 1px 3px -1px oklch(0.72 0.11 55 / 0.06);
+  --shadow-md: 0 4px 8px -1px oklch(0 0 0 / 0.25), 0 2px 4px -2px oklch(0.72 0.11 55 / 0.08);
+  --shadow-lg: 0 8px 14px -2px oklch(0 0 0 / 0.3), 0 4px 6px -3px oklch(0.72 0.11 55 / 0.08);
+  --shadow-xl: 0 16px 24px -4px oklch(0 0 0 / 0.35), 0 8px 12px -5px oklch(0.72 0.11 55 / 0.1);
+}
+
+:root.dark[data-theme='obsidian'],
+.dark[data-theme='obsidian'] {
+  --background: oklch(0.15 0.01 270);
+  --foreground: oklch(0.9 0.01 75);
+  --card: oklch(0.19 0.012 270);
+  --card-foreground: oklch(0.9 0.01 75);
+  --popover: oklch(0.19 0.012 270);
+  --popover-foreground: oklch(0.9 0.01 75);
+  --primary: oklch(0.72 0.11 55);
+  --primary-foreground: oklch(0.15 0.01 270);
+  --secondary: oklch(0.25 0.015 270);
+  --secondary-foreground: oklch(0.85 0.01 75);
+  --muted: oklch(0.23 0.01 270);
+  --muted-foreground: oklch(0.6 0.02 75);
+  --accent: oklch(0.28 0.025 55);
+  --accent-foreground: oklch(0.88 0.03 55);
+  --destructive: oklch(0.6 0.2 25);
+  --destructive-foreground: oklch(0.15 0.01 270);
+  --success: oklch(0.65 0.15 155);
+  --success-foreground: oklch(0.15 0.01 270);
+  --border: oklch(0.3 0.015 270);
+  --input: oklch(0.3 0.015 270);
+  --ring: oklch(0.65 0.1 55);
+  --chart-1: oklch(0.72 0.11 55);
+  --chart-2: oklch(0.65 0.15 155);
+  --chart-3: oklch(0.68 0.1 25);
+  --chart-4: oklch(0.7 0.08 220);
+  --chart-5: oklch(0.78 0.1 85);
+  --account-checking: oklch(0.7 0.08 220);
+  --account-savings: oklch(0.65 0.15 155);
+  --account-cash: oklch(0.72 0.11 55);
+  --account-credit: oklch(0.68 0.1 25);
+  --account-loan: oklch(0.78 0.1 85);
+  --account-mortgage: oklch(0.6 0.15 300);
+  --account-real-estate: oklch(0.6 0.15 300);
+  --account-other-asset: oklch(0.7 0.08 220);
+  --account-investment: oklch(0.55 0.12 200);
+  --account-retirement: oklch(0.68 0.1 25);
+  --sidebar: oklch(0.12 0.01 270);
+  --sidebar-foreground: oklch(0.9 0.01 75);
+  --sidebar-primary: oklch(0.72 0.11 55);
+  --sidebar-primary-foreground: oklch(0.12 0.01 270);
+  --sidebar-accent: oklch(0.28 0.025 55);
+  --sidebar-accent-foreground: oklch(0.88 0.03 55);
+  --sidebar-border: oklch(0.28 0.015 270);
+  --sidebar-ring: oklch(0.65 0.1 55);
+  --radius: 0.5rem;
+  --font-fira-code: 'Montserrat', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-sans: 'Montserrat', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: 'Montserrat', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --shadow-2xs: 0 1px 2px 0 oklch(0 0 0 / 0.12);
+  --shadow-xs: 0 1px 3px 0 oklch(0 0 0 / 0.16);
+  --shadow-sm: 0 2px 4px 0 oklch(0 0 0 / 0.2), 0 1px 2px -1px oklch(0.72 0.11 55 / 0.06);
+  --shadow: 0 2px 6px 0 oklch(0 0 0 / 0.22), 0 1px 3px -1px oklch(0.72 0.11 55 / 0.06);
+  --shadow-md: 0 4px 8px -1px oklch(0 0 0 / 0.25), 0 2px 4px -2px oklch(0.72 0.11 55 / 0.08);
+  --shadow-lg: 0 8px 14px -2px oklch(0 0 0 / 0.3), 0 4px 6px -3px oklch(0.72 0.11 55 / 0.08);
+  --shadow-xl: 0 16px 24px -4px oklch(0 0 0 / 0.35), 0 8px 12px -5px oklch(0.72 0.11 55 / 0.1);
+}
+
+/* ─── Paper — base (light only, duplicated for both modes) ─── */
+:root[data-theme='paper'] {
+  --background: #fbf7eb;
+  --foreground: #141414;
+  --card: #fffdf8;
+  --card-foreground: #141414;
+  --popover: #ffffff;
+  --popover-foreground: #141414;
+  --primary: #1e293b;
+  --primary-foreground: #f8fafc;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #ebe7dc;
+  --accent-foreground: #1e293b;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #2f7d31;
+  --success-foreground: #ffffff;
+  --border: #9e9e9e;
+  --input: #fbf7eb;
+  --ring: #94a3b8;
+  --chart-1: #f97316;
+  --chart-2: #14b8a6;
+  --chart-3: #334155;
+  --chart-4: #facc15;
+  --chart-5: #fb923c;
+  --account-checking: #14b8a6;
+  --account-savings: #2f7d31;
+  --account-cash: #facc15;
+  --account-credit: #c6392c;
+  --account-loan: #fb923c;
+  --account-mortgage: #6b7280;
+  --account-real-estate: #f97316;
+  --account-other-asset: #334155;
+  --account-investment: #2563eb;
+  --account-retirement: #9333ea;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #141414;
+  --sidebar-primary: #1e293b;
+  --sidebar-primary-foreground: #f8fafc;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #1e293b;
+  --sidebar-border: #9e9e9e;
+  --sidebar-ring: #94a3b8;
+  --radius: 0.625rem;
+  --font-fira-code:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --font-sans:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --font-serif: Georgia, serif;
+  --font-mono:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --shadow-2xs: 0 1px 1px 0 rgb(20 20 20 / 0.04);
+  --shadow-xs: 0 1px 2px 0 rgb(20 20 20 / 0.06);
+  --shadow-sm: 0 2px 4px 0 rgb(20 20 20 / 0.08), 0 1px 2px -1px rgb(20 20 20 / 0.05);
+  --shadow: 0 3px 6px 0 rgb(20 20 20 / 0.08), 0 2px 4px -1px rgb(20 20 20 / 0.05);
+  --shadow-md: 0 8px 14px -6px rgb(20 20 20 / 0.14), 0 4px 8px -4px rgb(20 20 20 / 0.08);
+  --shadow-lg: 0 14px 24px -8px rgb(20 20 20 / 0.18), 0 6px 12px -6px rgb(20 20 20 / 0.1);
+  --shadow-xl: 0 22px 34px -12px rgb(20 20 20 / 0.22), 0 10px 16px -8px rgb(20 20 20 / 0.14);
+}
+
+:root.dark[data-theme='paper'],
+.dark[data-theme='paper'] {
+  --background: #fbf7eb;
+  --foreground: #141414;
+  --card: #fffdf8;
+  --card-foreground: #141414;
+  --popover: #ffffff;
+  --popover-foreground: #141414;
+  --primary: #1e293b;
+  --primary-foreground: #f8fafc;
+  --secondary: #f1f5f9;
+  --secondary-foreground: #1e293b;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --accent: #ebe7dc;
+  --accent-foreground: #1e293b;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #2f7d31;
+  --success-foreground: #ffffff;
+  --border: #9e9e9e;
+  --input: #fbf7eb;
+  --ring: #94a3b8;
+  --chart-1: #f97316;
+  --chart-2: #14b8a6;
+  --chart-3: #334155;
+  --chart-4: #facc15;
+  --chart-5: #fb923c;
+  --account-checking: #14b8a6;
+  --account-savings: #2f7d31;
+  --account-cash: #facc15;
+  --account-credit: #c6392c;
+  --account-loan: #fb923c;
+  --account-mortgage: #6b7280;
+  --account-real-estate: #f97316;
+  --account-other-asset: #334155;
+  --account-investment: #2563eb;
+  --account-retirement: #9333ea;
+  --sidebar: #f8fafc;
+  --sidebar-foreground: #141414;
+  --sidebar-primary: #1e293b;
+  --sidebar-primary-foreground: #f8fafc;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #1e293b;
+  --sidebar-border: #9e9e9e;
+  --sidebar-ring: #94a3b8;
+  --radius: 0.625rem;
+  --font-fira-code:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --font-sans:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --font-serif: Georgia, serif;
+  --font-mono:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  --shadow-2xs: 0 1px 1px 0 rgb(20 20 20 / 0.04);
+  --shadow-xs: 0 1px 2px 0 rgb(20 20 20 / 0.06);
+  --shadow-sm: 0 2px 4px 0 rgb(20 20 20 / 0.08), 0 1px 2px -1px rgb(20 20 20 / 0.05);
+  --shadow: 0 3px 6px 0 rgb(20 20 20 / 0.08), 0 2px 4px -1px rgb(20 20 20 / 0.05);
+  --shadow-md: 0 8px 14px -6px rgb(20 20 20 / 0.14), 0 4px 8px -4px rgb(20 20 20 / 0.08);
+  --shadow-lg: 0 14px 24px -8px rgb(20 20 20 / 0.18), 0 6px 12px -6px rgb(20 20 20 / 0.1);
+  --shadow-xl: 0 22px 34px -12px rgb(20 20 20 / 0.22), 0 10px 16px -8px rgb(20 20 20 / 0.14);
+}
+
+/* ═══════════════════════════════════════════════
+   Theme-specific animations & effects
+   ═══════════════════════════════════════════════ */
+
+/* ─── Phosphor: CRT scanline overlay ─── */
+@keyframes phosphor-flicker {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+[data-theme='phosphor'] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    oklch(0 0 0 / 0.18) 2px,
+    oklch(0 0 0 / 0.18) 4px
+  );
+  animation: phosphor-flicker 4s ease-in-out infinite;
+}
+
+/* Phosphor: green text glow */
+[data-theme='phosphor'] body {
+  text-shadow: 0 0 4px oklch(0.75 0.2 145 / 0.25);
+}
+
+/* Phosphor: card border glow on hover */
+[data-theme='phosphor'] [data-slot='card'] {
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
+  border: 1px solid oklch(0.3 0.06 145);
+}
+[data-theme='phosphor'] [data-slot='card']:hover {
+  border-color: oklch(0.75 0.2 145 / 0.5);
+  box-shadow:
+    0 0 12px 0 oklch(0.75 0.2 145 / 0.2),
+    inset 0 0 8px 0 oklch(0.75 0.2 145 / 0.05);
+}
+
+/* Phosphor: blinking cursor on focused inputs */
+@keyframes phosphor-cursor-blink {
+  0%,
+  100% {
+    border-color: oklch(0.75 0.2 145);
+  }
+  50% {
+    border-color: oklch(0.75 0.2 145 / 0.3);
+  }
+}
+
+[data-theme='phosphor'] input:focus,
+[data-theme='phosphor'] textarea:focus {
+  animation: phosphor-cursor-blink 1s step-end infinite;
+  box-shadow: 0 0 6px 0 oklch(0.75 0.2 145 / 0.3);
+}
+
+/* ─── Mesa: warm desert gradient background ─── */
+[data-theme='mesa'] body {
+  background: linear-gradient(
+    175deg,
+    oklch(0.95 0.02 75) 0%,
+    oklch(0.93 0.03 65) 50%,
+    oklch(0.94 0.025 80) 100%
+  );
+}
+
+/* Mesa: card hover lift with warm shadows */
+[data-theme='mesa'] [data-slot='card'] {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+[data-theme='mesa'] [data-slot='card']:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 20px -4px oklch(0.4 0.08 40 / 0.15),
+    0 4px 8px -3px oklch(0.4 0.08 40 / 0.1);
+}
+
+/* ─── Obsidian: copper-tinted card glow on hover ─── */
+[data-theme='obsidian'] [data-slot='card'] {
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+[data-theme='obsidian'] [data-slot='card']:hover {
+  box-shadow:
+    0 4px 16px -2px oklch(0.72 0.11 55 / 0.12),
+    0 0 0 1px oklch(0.72 0.11 55 / 0.06);
+}
+
+/* ─── Paper: editorial parchment background + hard-border cards ─── */
+[data-theme='paper'] body {
+  background:
+    linear-gradient(180deg, #fbf7eb 0%, #f6f1e3 100%),
+    radial-gradient(circle at 14% 12%, rgb(255 255 255 / 0.5), transparent 32%);
+}
+
+[data-theme='paper'] [data-slot='card'] {
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+  border: 1px dashed rgb(57 57 57 / 0.45);
+  background: #fffdf8;
+}
+[data-theme='paper'] [data-slot='card']:hover {
+  transform: translateY(-1px);
+  border-color: #393939;
+  box-shadow:
+    0 12px 20px -14px rgb(20 20 20 / 0.32),
+    0 5px 8px -6px rgb(20 20 20 / 0.2);
+}
+
+[data-theme='paper'] [data-mobile-top-bar],
+[data-theme='paper'] [data-desktop-top-bar] {
+  border-bottom: 1px dashed rgb(57 57 57 / 0.5);
+  background: rgb(251 247 235 / 0.96);
+  backdrop-filter: blur(6px);
+}
+
+[data-theme='paper'] input:not([data-slot='command-input']):focus,
+[data-theme='paper'] textarea:focus,
+[data-theme='paper'] button:focus-visible {
+  box-shadow: 0 0 0 3px rgb(148 163 184 / 0.36);
+}
+
+/* Paper: command/combobox search should look flat and editorial, not glossy */
+[data-theme='paper'] [data-slot='command-input-wrapper'] {
+  border-bottom: 1px dashed rgb(57 57 57 / 0.45);
+  background: rgb(255 253 248 / 0.9);
+}
+[data-theme='paper'] [data-slot='command-input-wrapper'] svg {
+  color: rgb(57 57 57 / 0.68);
+  opacity: 1;
+}
+[data-theme='paper'] [data-slot='command-input'] {
+  background: transparent;
+  border-radius: 0;
+  color: #141414;
+}
+[data-theme='paper'] [data-slot='command-input']::placeholder {
+  color: rgb(57 57 57 / 0.62);
+}
+[data-theme='paper'] [data-slot='command-input']:focus {
+  box-shadow: none;
+}
+
+/* Paper: improve control legibility (unchecked/checked contrast) */
+[data-theme='paper'] [data-slot='checkbox'][data-state='unchecked'] {
+  background: #f5efdf;
+  border-color: rgb(57 57 57 / 0.55);
+}
+[data-theme='paper'] [data-slot='checkbox'][data-state='checked'] {
+  background: #1e293b;
+  border-color: #1e293b;
+  color: #f8fafc;
+}
+
+[data-theme='paper'] [data-slot='switch'][data-state='unchecked'] {
+  background: #dfd8c8;
+  border-color: rgb(57 57 57 / 0.38);
+}
+[data-theme='paper'] [data-slot='switch'][data-state='checked'] {
+  background: #1e293b;
+  border-color: #1e293b;
+}
+[data-theme='paper'] [data-slot='switch-thumb'][data-state='unchecked'] {
+  background: #fffdf8;
+  box-shadow:
+    0 0 0 1px rgb(57 57 57 / 0.3),
+    0 1px 2px rgb(20 20 20 / 0.16);
+}
+[data-theme='paper'] [data-slot='switch-thumb'][data-state='checked'] {
+  background: #f8fafc;
+  box-shadow: 0 1px 2px rgb(20 20 20 / 0.22);
+}
+
+/* Paper: radio buttons — --input matches --background, so the default
+   border-input outline is invisible. Mirror the checkbox treatment so the
+   unchecked circle reads as a clear outline and the checked state pops. */
+[data-theme='paper'] [data-slot='radio-group-item'] {
+  background: #f5efdf;
+  border-color: rgb(57 57 57 / 0.55);
+}
+[data-theme='paper'] [data-slot='radio-group-item'][data-state='checked'] {
+  background: #1e293b;
+  border-color: #1e293b;
+}
+[data-theme='paper'] [data-slot='radio-group-indicator'] svg {
+  fill: #f8fafc;
+  color: #f8fafc;
+}
+
+/* Paper: calculator sheet needs stronger structure/contrast on mobile */
+[data-theme='paper'] [data-calculator-sheet='true'] {
+  border-top: 1px dashed rgb(57 57 57 / 0.55);
+  background: linear-gradient(180deg, #fffdf8 0%, #f7f1e3 100%);
+  box-shadow:
+    0 -16px 28px -20px rgb(20 20 20 / 0.36),
+    0 -6px 10px -8px rgb(20 20 20 / 0.26);
+}
+
+[data-theme='paper'] [data-calculator-sheet='true'] [data-calculator-display='true'] {
+  background: #f8f2e4;
+  border: 1px dashed rgb(57 57 57 / 0.46);
+}
+
+[data-theme='paper'] [data-calculator-sheet='true'] [data-calculator-key='true'] {
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.72) inset,
+    0 1px 2px rgb(20 20 20 / 0.08);
+}
+
+[data-theme='paper']
+  [data-calculator-sheet='true']
+  [data-calculator-key='true'][data-key-type='number'] {
+  background: #fffdf8;
+  border-color: rgb(57 57 57 / 0.28);
+  color: #1a1a1a;
+}
+
+[data-theme='paper']
+  [data-calculator-sheet='true']
+  [data-calculator-key='true'][data-key-type='operator'] {
+  background: #e4e9f1;
+  border-color: rgb(57 57 57 / 0.22);
+  color: #223147;
+}
+
+[data-theme='paper']
+  [data-calculator-sheet='true']
+  [data-calculator-key='true'][data-key-type='utility'] {
+  background: #ece7dc;
+  border-color: rgb(57 57 57 / 0.24);
+  color: #1f2937;
+}
+
+[data-theme='paper']
+  [data-calculator-sheet='true']
+  [data-calculator-key='true'][data-key-type='enter'] {
+  background: #1e293b;
+  border: 1px solid #111827;
+  color: #f8fafc;
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.12) inset,
+    0 2px 5px rgb(20 20 20 / 0.22);
+}
+
+[data-theme='paper']
+  [data-calculator-sheet='true']
+  [data-calculator-key='true'][data-key-type='enter']:hover {
+  background: #172236;
+}
+
+/* ═══════════════════════════════════════════════
+   Base layer & layout
+   ═══════════════════════════════════════════════ */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+  }
+
+  /* Prevent mobile viewport shift when keyboard appears/disappears */
+  #root,
+  body,
+  html {
+    height: 100%;
+    overflow-x: hidden;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+  }
+
+  /* Allow scrolling within the app container */
+  #root {
+    position: relative;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Fix iOS viewport height issues */
+  @supports (-webkit-touch-callout: none) {
+    #root,
+    body,
+    html {
+      height: -webkit-fill-available;
+    }
+  }
+
+  /* Prevent layout shifts when virtual keyboard appears */
+  .input-active {
+    position: relative;
+  }
+
+  /* Stable viewport for mobile devices */
+  @viewport {
+    height: device-height;
+    width: device-width;
+  }
+
+  /* Prevent visual viewport resize when keyboard appears */
+  @media (max-width: 768px) {
+    html {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    #root {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* When input is active, allow body to scroll to keep input in view */
+    body.input-active {
+      position: absolute;
+    }
+
+    /* Prevent zoom on input focus */
+    input,
+    textarea,
+    select {
+      font-size: 16px !important;
+      transform: scale(1);
+      transform-origin: 0 0;
+    }
+
+    /* Prevent content jump when keyboard appears */
+    .input-active #root {
+      height: 100vh;
+      height: -webkit-fill-available;
+    }
+  }
+}
+
+/* Sidebar scrollbar — thin, subtle, theme-aware */
+[data-slot='sidebar-content'] {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sidebar-border) transparent;
+}
+
+[data-slot='sidebar-content']::-webkit-scrollbar {
+  width: 5px;
+}
+
+[data-slot='sidebar-content']::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+[data-slot='sidebar-content']::-webkit-scrollbar-thumb {
+  background: var(--sidebar-border);
+  border-radius: 9999px;
+}
+
+[data-slot='sidebar-content']::-webkit-scrollbar-thumb:hover {
+  background: var(--sidebar-ring);
+}
+
+/* Mobile spending drawer scrollbar — match desktop shell treatment */
+.spending-drawer-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sidebar-border) transparent;
+}
+
+.spending-drawer-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.spending-drawer-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.spending-drawer-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--sidebar-border);
+  border-radius: 9999px;
+}
+
+.spending-drawer-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--sidebar-ring);
+}
+
+/* Category selector search list scrollbar — subtle and theme-aligned */
+.category-selector-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+.category-selector-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.category-selector-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.category-selector-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 9999px;
+}
+
+.category-selector-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--ring));
+}
+
+/* CodeMirror minimal theme overrides */
+.cm-focused {
+  outline: none !important;
+}
+
+/* Fix the bluish active line background */
+.cm-activeLine {
+  background-color: rgba(128, 128, 128, 0.1) !important;
+}
+
+.dark .cm-activeLine {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Prism.js dark mode overrides with higher specificity */
+.dark code[class*='language-'] .token.keyword,
+.dark pre[class*='language-'] .token.keyword,
+.dark .token.keyword {
+  color: #569cd6 !important;
+  /* Light blue for keywords */
+  font-weight: 600 !important;
+}
+
+.dark code[class*='language-'] .token.string,
+.dark pre[class*='language-'] .token.string,
+.dark .token.string {
+  color: #ce9178 !important;
+  /* Orange for strings */
+}
+
+.dark code[class*='language-'] .token.number,
+.dark pre[class*='language-'] .token.number,
+.dark .token.number {
+  color: #b5cea8 !important;
+  /* Light green for numbers */
+}
+
+.dark code[class*='language-'] .token.comment,
+.dark pre[class*='language-'] .token.comment,
+.dark .token.comment {
+  color: #6a9955 !important;
+  /* Green for comments */
+  font-style: italic !important;
+}
+
+.dark code[class*='language-'] .token.operator,
+.dark code[class*='language-'] .token.punctuation,
+.dark pre[class*='language-'] .token.operator,
+.dark pre[class*='language-'] .token.punctuation,
+.dark .token.operator,
+.dark .token.punctuation {
+  color: #d4d4d4 !important;
+  /* Light gray for operators */
+}
+
+.dark code[class*='language-'] .token.function,
+.dark pre[class*='language-'] .token.function,
+.dark .token.function {
+  color: #dcdcaa !important;
+  /* Yellow for functions */
+}
+
+/* Override any specific Prism theme colors in dark mode */
+.dark code[class*='language-'],
+.dark pre[class*='language-'] {
+  color: #d4d4d4 !important;
+  background: transparent !important;
+}
+
+.budgero-route-loader {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 32px;
+  text-align: center;
+  background: #000000;
+  color: rgba(226, 232, 240, 0.94);
+}
+
+.budgero-route-loader__logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  object-fit: cover;
+}
+
+.budgero-route-loader__text {
+  margin: 0;
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.7);
+}
+
+.budgero-route-loader__progress {
+  position: relative;
+  width: 200px;
+  height: 6px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.24);
+}
+
+.budgero-route-loader__progress::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.08),
+    rgba(59, 130, 246, 0.95),
+    rgba(56, 189, 248, 0.28)
+  );
+  transform: translateX(-100%);
+  animation: budgero-progress 1.3s ease-in-out infinite;
+}
+
+@keyframes budgero-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  60% {
+    transform: translateX(0%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
