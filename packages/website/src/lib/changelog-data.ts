@@ -16,11 +16,31 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.5.1',
+    date: 'July 8, 2026',
+    summary:
+      'Fixes a self-host login loop introduced in v1.5.0 — all self-hosters should upgrade.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Self-host login loop',
+        description:
+          'Signing in on a self-hosted instance could immediately bounce back to the login screen even with correct credentials. Sessions are now established reliably after signing in.',
+      },
+      {
+        type: 'fixed',
+        title: 'Failed sign-ins now show an error',
+        description:
+          'Entering a wrong username or password on a self-hosted instance now shows an invalid-credentials message instead of silently reloading the page.',
+      },
+    ],
+  },
+  {
     version: 'v1.5.0',
     date: 'July 8, 2026',
     summary:
       'Budgero goes source-available: a precision money engine, opt-in analytics, hardened multi-device sync that delivers imports everywhere instantly, and a long list of fixes.',
-    isLatest: true,
     items: [
       {
         type: 'new',
