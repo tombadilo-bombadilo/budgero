@@ -13,8 +13,9 @@ import (
 	"os"
 	"time"
 
-	"budgero-server/internal/config"
 	"budgero-server/internal/adapter/driving/http/middleware"
+	"budgero-server/internal/config"
+	"budgero-server/internal/domain"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
 )
@@ -157,37 +158,58 @@ func (h *Handlers) IssueOfflineEntitlement(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "user not found"})
 	}
 
-	// Determine eligibility: founding member OR beta access (and not expired) OR active subscription
 	eligible := false
+	hasOpenEndedGrant := false
+	var latestGrantEnd time.Time
 	nowTime := time.Now()
-	if user.IsFoundingMember {
+	grant := func(end *time.Time) {
 		eligible = true
+		if end == nil {
+			hasOpenEndedGrant = true
+		} else if end.After(latestGrantEnd) {
+			latestGrantEnd = *end
+		}
+	}
+	if user.IsFoundingMember {
+		grant(nil)
+	}
+	if user.SubscriptionStatus == domain.SubscriptionLifetime {
+		grant(nil)
 	}
 	if user.HasBetaAccess {
-		// If beta has expiry, ensure it's still in the future
 		if user.BetaExpiresAt == nil || user.BetaExpiresAt.After(nowTime) {
-			eligible = true
+			grant(user.BetaExpiresAt)
 		}
 	}
-	if user.SubscriptionStatus == "active" {
-		eligible = true
+	if user.SubscriptionStatus == domain.SubscriptionActive {
+		grant(nil)
 	}
-	if user.SubscriptionStatus == "past_due" {
+	if user.SubscriptionStatus == domain.SubscriptionTrialing || user.SubscriptionStatus == domain.SubscriptionOnTrial {
+		if user.TrialEndsAt != nil && user.TrialEndsAt.After(nowTime) {
+			grant(user.TrialEndsAt)
+		}
+	}
+	if user.SubscriptionStatus == domain.SubscriptionPastDue {
 		if user.CurrentPeriodEnd != nil && user.CurrentPeriodEnd.After(nowTime) {
-			eligible = true
+			grant(user.CurrentPeriodEnd)
 		}
 	}
-	if user.SubscriptionStatus == "cancelled" {
+	if user.SubscriptionStatus == domain.SubscriptionCancelled {
 		if user.SubscriptionEndsAt != nil && user.SubscriptionEndsAt.After(nowTime) {
-			eligible = true
+			grant(user.SubscriptionEndsAt)
 		}
 	}
 	if !eligible {
 		return c.JSON(http.StatusForbidden, map[string]string{"error": "access not eligible for offline entitlement"})
 	}
 
-	now := time.Now().Unix()
-	exp := time.Now().Add(14 * 24 * time.Hour).Unix()
+	// Token must not outlive a time-limited entitlement
+	expTime := nowTime.Add(14 * 24 * time.Hour)
+	if !hasOpenEndedGrant && latestGrantEnd.Before(expTime) {
+		expTime = latestGrantEnd
+	}
+	now := nowTime.Unix()
+	exp := expTime.Unix()
 	claims := OfflineEntitlementClaims{Sub: uid, Iat: now, Exp: exp}
 	claims.Ent.Founding = user.IsFoundingMember
 	claims.Ent.Beta = user.HasBetaAccess

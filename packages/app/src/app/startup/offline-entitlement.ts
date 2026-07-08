@@ -146,7 +146,12 @@ export async function verifyOfflineEntitlement(
 export function subscriptionGrantsAccess(status?: string | null): boolean {
   if (!status) return false;
   const normalized = status.toLowerCase();
-  return normalized === 'active' || normalized === 'trialing' || normalized === 'on_trial';
+  return (
+    normalized === 'active' ||
+    normalized === 'trialing' ||
+    normalized === 'on_trial' ||
+    normalized === 'lifetime'
+  );
 }
 
 export function claimsGrantAccess(claims: OfflineEntitlementClaims): boolean {
