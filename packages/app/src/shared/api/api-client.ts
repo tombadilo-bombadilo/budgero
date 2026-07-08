@@ -29,9 +29,12 @@ class ApiClient {
     this.baseUrl = import.meta.env.VITE_API_BASE_URL || '/api/v1';
   }
 
-  private handleUnauthorized(status: number): void {
+  private handleUnauthorized(status: number, endpoint: string): void {
     if (!IS_SELF_HOSTABLE_BUILD) return;
     if (status !== 401) return;
+    // A 401 from the auth endpoints means bad credentials, not a stale
+    // session — let the form show the error instead of reloading.
+    if (endpoint.startsWith('/auth/local/')) return;
     try {
       useSelfHostAuth.getState().clearSession();
     } catch {
@@ -76,7 +79,7 @@ class ApiClient {
 
       if (!response.ok) {
         if (response.status === 401) {
-          this.handleUnauthorized(response.status);
+          this.handleUnauthorized(response.status, endpoint);
         }
         if (response.status === 426) {
           // Server refused to sync: this build doesn't understand the
@@ -92,7 +95,7 @@ class ApiClient {
       if (timeoutId !== null) clearTimeout(timeoutId);
       if (error instanceof ApiError) {
         if (error.status === 401) {
-          this.handleUnauthorized(error.status);
+          this.handleUnauthorized(error.status, endpoint);
         }
         throw error;
       }

@@ -299,10 +299,11 @@ function AppContentAuthed() {
 }
 
 function AppContentSelfHost() {
-  const token = useSelfHostAuth((state) => state.token);
   useEffect(() => {
-    setGlobalTokenGetter(async () => token || null);
-  }, [token]);
+    // Read the store directly so requests fired in the same commit as a
+    // login (before this effect would re-run) still see the fresh token.
+    setGlobalTokenGetter(async () => useSelfHostAuth.getState().token || null);
+  }, []);
   useRecurringNotifications();
 
   return <AppContentBase />;
