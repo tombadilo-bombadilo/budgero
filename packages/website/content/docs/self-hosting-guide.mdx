@@ -5,7 +5,8 @@ section: getting-started
 topicId: self-hosting-guide
 takeaways:
   - Deploy Budgero using Docker or native binaries on any platform.
-  - Zero configuration required - admin account auto-created on first run.
+  - Zero configuration for localhost - admin account auto-created on first run.
+  - Set WEBSOCKET_ALLOWED_ORIGINS when accessing Budgero via a LAN IP or domain - sync requires it.
   - Optionally configure currency conversion API for multi-currency support.
 ---
 
@@ -48,6 +49,8 @@ docker logs budgero
 
 Use a reverse proxy (Caddy/nginx) if you need external access with HTTPS.
 
+The quick-start command binds to `127.0.0.1`, so it works out of the box. If you access Budgero from **any other origin** — a LAN IP, a hostname, or a domain behind a reverse proxy — you must also set `WEBSOCKET_ALLOWED_ORIGINS` (see [WebSocket origins](#websocket-origins-required-for-non-localhost-access)), or real-time sync will not connect.
+
 Budgero persists all self-host data under `/data`:
 
 - Metadata DB: `/data/budgero.db`
@@ -61,6 +64,9 @@ services:
     image: budgero/budgero:latest
     ports:
       - "127.0.0.1:3001:3001"
+    # environment:
+    #   # Required if you access Budgero from anywhere other than localhost:
+    #   - WEBSOCKET_ALLOWED_ORIGINS=http://192.168.1.50:3001
     volumes:
       - budgero_data:/data
     restart: unless-stopped
@@ -82,6 +88,8 @@ services:
     image: budgero/budgero:latest
     expose:
       - "3001"
+    environment:
+      - WEBSOCKET_ALLOWED_ORIGINS=https://budget.yourdomain.com
     volumes:
       - budgero_data:/data
     restart: unless-stopped
@@ -130,6 +138,22 @@ budgero serve
 
 The server runs on port 3001 by default. Your database is stored in `./data/budgero.db`.
 
+## WebSocket origins (required for non-localhost access)
+
+Budgero syncs your budget in real time over a WebSocket, and the server only accepts WebSocket connections from origins it knows. Out of the box, only `localhost` / `127.0.0.1` origins are allowed. If you open Budgero from anything else — a LAN IP like `http://192.168.1.50:3001`, or `https://budget.yourdomain.com` behind a reverse proxy — the sync connection is rejected and the app cannot load your budget.
+
+Set `WEBSOCKET_ALLOWED_ORIGINS` to the exact origin(s) you use in the browser, comma-separated:
+
+```bash
+# Single origin (reverse proxy with HTTPS)
+WEBSOCKET_ALLOWED_ORIGINS=https://budget.yourdomain.com
+
+# Multiple origins (domain + direct LAN access)
+WEBSOCKET_ALLOWED_ORIGINS=https://budget.yourdomain.com,http://192.168.1.50:3001
+```
+
+Each entry must match the browser's origin exactly: scheme, host, and port (when non-default). Wildcards are not supported. If it's missing or mismatched, the server logs `WebSocket connection rejected due to CORS` with the origin it saw and the list it allowed — copy the rejected origin from that log line verbatim.
+
 ## Environment variables
 
 <table>
@@ -150,6 +174,11 @@ The server runs on port 3001 by default. Your database is stored in `./data/budg
       <td><code>DB_PATH</code></td>
       <td><code>data/budgero.db</code></td>
       <td>SQLite database file path</td>
+    </tr>
+    <tr>
+      <td><code>WEBSOCKET_ALLOWED_ORIGINS</code></td>
+      <td>localhost origins only</td>
+      <td>Comma-separated list of browser origins allowed to connect to sync. <strong>Required for any non-localhost access</strong> — see <a href="#websocket-origins-required-for-non-localhost-access">WebSocket origins</a></td>
     </tr>
     <tr>
       <td><code>LOG_LEVEL</code></td>
@@ -276,6 +305,8 @@ This checks for the latest release and replaces the binary automatically.
 
 For production, run Budgero behind a reverse proxy like nginx or Caddy for HTTPS.
 
+Remember to set `WEBSOCKET_ALLOWED_ORIGINS` on the Budgero server to the public origin the proxy serves (e.g. `https://budget.yourdomain.com`), and make sure the proxy forwards WebSocket upgrades (both configs below do).
+
 ### Caddy (automatic HTTPS)
 
 ```
@@ -306,6 +337,16 @@ server {
 ```
 
 ## Troubleshooting
+
+### App loads but the budget never appears (sync won't connect)
+
+If you can log in but the app hangs loading your budget — or devices stop seeing each other's changes — the sync WebSocket is almost certainly being rejected. Check the server logs for:
+
+```
+WebSocket connection rejected due to CORS
+```
+
+The log line includes the origin the browser sent and the origins the server allowed. Add the rejected origin to `WEBSOCKET_ALLOWED_ORIGINS` exactly as logged (scheme, host, and port must all match) and restart the server.
 
 ### Database locked errors
 

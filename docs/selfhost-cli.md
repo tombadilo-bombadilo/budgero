@@ -38,6 +38,7 @@ The process still loads `.env` from the working directory (using `godotenv`) bef
 |----------------------------|--------------------|-------------------------------------------------|
 | `PORT`                     | `3001`             | HTTP server port                               |
 | `DB_PATH`                  | `data/budgero.db`  | SQLite database file path                      |
+| `WEBSOCKET_ALLOWED_ORIGINS` | localhost origins only | Comma-separated browser origins allowed to connect to sync (e.g. `https://budget.example.com,http://192.168.1.50:3001`). **Required for any non-localhost access** — without it the sync WebSocket is rejected and the app can't load the budget. Exact match on scheme/host/port, no wildcards. |
 | `LOG_LEVEL`                | `info`             | `debug`, `info`, `warn`, `error`               |
 | `CURRENCYLAYER_API_KEY`    | -                  | Optional: multi-currency conversion            |
 
