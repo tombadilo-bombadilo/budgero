@@ -16,11 +16,30 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.5.2',
+    date: 'July 10, 2026',
+    summary: 'Timezone-safe date handling across app and core.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Timezone-safe date handling',
+        description:
+          'Dates could shift by one day depending on your timezone — affecting month labels, spending charts, date filters, statement imports, and recurring schedules. All date handling is now timezone-safe. If you use recurring transactions, take a moment to confirm your bill dates are still correct.',
+      },
+      {
+        type: 'improved',
+        title: 'Offline access for trial and lifetime users',
+        description:
+          'Trial and lifetime plans now include the offline entitlement, so the app keeps working without a connection for the full length of your plan.',
+      },
+    ],
+  },
+  {
     version: 'v1.5.1',
     date: 'July 8, 2026',
     summary:
       'Fixes a self-host login loop introduced in v1.5.0 — all self-hosters should upgrade.',
-    isLatest: true,
     items: [
       {
         type: 'fixed',

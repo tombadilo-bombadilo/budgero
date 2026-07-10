@@ -1,6 +1,6 @@
 {
   "name": "@budgero/app",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "license": "FSL-1.1-ALv2",
   "description": "Main application for Budgero",
   "private": true,
