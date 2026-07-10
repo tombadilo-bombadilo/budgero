@@ -42,6 +42,27 @@ class FakeIndexedDBDatabase {
             });
             return request as IDBRequest;
           },
+          add: (value: unknown, key?: IDBValidKey) => {
+            const request: Partial<IDBRequest> = {};
+            queueMicrotask(() => {
+              if (store.has(String(key))) {
+                // Real IndexedDB aborts the transaction on key collision.
+                request.onerror?.call(
+                  request as IDBRequest,
+                  new Event('error') as Event & { target: IDBRequest }
+                );
+                tx.onabort?.call(tx as IDBTransaction, new Event('abort'));
+                return;
+              }
+              store.set(String(key), value);
+              request.onsuccess?.call(
+                request as IDBRequest,
+                new Event('success') as Event & { target: IDBRequest }
+              );
+              tx.oncomplete?.call(tx as IDBTransaction, new Event('complete'));
+            });
+            return request as IDBRequest;
+          },
           put: (value: unknown, key?: IDBValidKey) => {
             const request: Partial<IDBRequest> = {};
             queueMicrotask(() => {
@@ -77,6 +98,13 @@ class FakeIndexedDBDatabase {
   read(storeName: string, key: string): unknown {
     return this.stores.get(storeName)?.get(key);
   }
+
+  write(storeName: string, key: string, value: unknown): void {
+    if (!this.stores.has(storeName)) {
+      this.stores.set(storeName, new Map<string, unknown>());
+    }
+    this.stores.get(storeName)!.set(key, value);
+  }
 }
 
 export class FakeIndexedDBFactory {
@@ -110,5 +138,9 @@ export class FakeIndexedDBFactory {
 
   read(storeName: string, key: string): unknown {
     return this.db.read(storeName, key);
+  }
+
+  write(storeName: string, key: string, value: unknown): void {
+    this.db.write(storeName, key, value);
   }
 }

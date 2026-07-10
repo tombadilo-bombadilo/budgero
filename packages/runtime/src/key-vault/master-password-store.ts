@@ -22,6 +22,14 @@ import {
   MASTER_PASSWORD_INDEXEDDB_RECORD_KEY,
 } from '../types/storage-keys';
 import { readStoredVersion, writeStoredVersion } from '../utils/stored-version';
+import { toBase64, fromBase64 } from '../crypto/base64';
+import {
+  DEVICE_ENCRYPTED_PREFIX,
+  getOrCreateDeviceKey,
+  deleteDeviceKeyRecord,
+  encryptWithDeviceKey,
+  decryptWithDeviceKey,
+} from './device-crypto';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -31,8 +39,24 @@ export type MasterPasswordPersistenceSetting =
 
 const DEFAULT_PERSISTENCE_SETTING: MasterPasswordPersistenceSetting = { mode: 'memory' };
 
+/**
+ * Legacy (v1) session cache record — the password sat in IndexedDB (or
+ * sessionStorage) in plaintext. Still READ for migration; never written.
+ */
 type SessionCachePayload = {
   password: string;
+  expiresAt: number;
+};
+
+/**
+ * v2 session cache record — password encrypted under the non-extractable
+ * device key. `expiresAt` stays outside the ciphertext: it gates cheap expiry
+ * checks and has no confidentiality value.
+ */
+type EncryptedSessionCachePayload = {
+  v: 2;
+  iv: Uint8Array;
+  ciphertext: Uint8Array;
   expiresAt: number;
 };
 
@@ -211,6 +235,62 @@ export class MasterPasswordStore {
     return typeof record.password === 'string' && typeof record.expiresAt === 'number';
   }
 
+  private isEncryptedSessionCachePayload(value: unknown): value is EncryptedSessionCachePayload {
+    if (!value || typeof value !== 'object') {
+      return false;
+    }
+    const record = value as Partial<EncryptedSessionCachePayload>;
+    return (
+      record.v === 2 &&
+      record.iv instanceof Uint8Array &&
+      record.ciphertext instanceof Uint8Array &&
+      typeof record.expiresAt === 'number'
+    );
+  }
+
+  // ---- Internals: Device Key Crypto ----
+
+  private async getDeviceKey(): Promise<CryptoKey | null> {
+    const db = await this.openIndexedDB();
+    return getOrCreateDeviceKey(db);
+  }
+
+  /**
+   * Encrypt a string under the device key into an `enc1:` token for string
+   * storage (used by KeyVault for cached space keys). Null when device-key
+   * crypto is unavailable — callers must NOT fall back to plaintext.
+   */
+  async encryptStringForDevice(value: string): Promise<string | null> {
+    const key = await this.getDeviceKey();
+    if (!key) return null;
+    const record = await encryptWithDeviceKey(key, new TextEncoder().encode(value));
+    if (!record) return null;
+    return `${DEVICE_ENCRYPTED_PREFIX}${toBase64(record.iv)}.${toBase64(record.ciphertext)}`;
+  }
+
+  /** Decrypt an `enc1:` token produced by encryptStringForDevice. */
+  async decryptStringForDevice(token: string): Promise<string | null> {
+    if (!token.startsWith(DEVICE_ENCRYPTED_PREFIX)) return null;
+    const body = token.slice(DEVICE_ENCRYPTED_PREFIX.length);
+    const dot = body.indexOf('.');
+    if (dot <= 0) return null;
+
+    let iv: Uint8Array;
+    let ciphertext: Uint8Array;
+    try {
+      iv = fromBase64(body.slice(0, dot));
+      ciphertext = fromBase64(body.slice(dot + 1));
+    } catch {
+      return null;
+    }
+
+    const key = await this.getDeviceKey();
+    if (!key) return null;
+    const plaintext = await decryptWithDeviceKey(key, { iv, ciphertext });
+    if (!plaintext) return null;
+    return new TextDecoder().decode(plaintext);
+  }
+
   private isIndexedDBAvailable(): boolean {
     return typeof indexedDB !== 'undefined';
   }
@@ -253,7 +333,7 @@ export class MasterPasswordStore {
     return this.indexedDBPromise;
   }
 
-  private async readSessionCacheFromIndexedDB(): Promise<SessionCachePayload | null> {
+  private async readRawSessionRecord(): Promise<unknown> {
     const db = await this.openIndexedDB();
     if (!db) {
       return null;
@@ -264,14 +344,7 @@ export class MasterPasswordStore {
         const tx = db.transaction(MASTER_PASSWORD_INDEXEDDB_STORE, 'readonly');
         const store = tx.objectStore(MASTER_PASSWORD_INDEXEDDB_STORE);
         const request = store.get(MASTER_PASSWORD_INDEXEDDB_RECORD_KEY);
-        request.onsuccess = () => {
-          const value = request.result;
-          if (!this.isValidSessionCachePayload(value)) {
-            resolve(null);
-            return;
-          }
-          resolve(value);
-        };
+        request.onsuccess = () => resolve(request.result);
         request.onerror = () => resolve(null);
       } catch {
         resolve(null);
@@ -279,7 +352,7 @@ export class MasterPasswordStore {
     });
   }
 
-  private async writeSessionCacheToIndexedDB(payload: SessionCachePayload): Promise<boolean> {
+  private async putSessionRecord(payload: EncryptedSessionCachePayload): Promise<boolean> {
     const db = await this.openIndexedDB();
     if (!db) {
       return false;
@@ -297,6 +370,47 @@ export class MasterPasswordStore {
         resolve(false);
       }
     });
+  }
+
+  /**
+   * Encrypt the password under the device key and persist as a v2 record.
+   * When device-key crypto is unavailable the password is NOT persisted —
+   * degrading to memory-only beats writing plaintext anywhere.
+   */
+  private async writeEncryptedSessionRecord(password: string, expiresAt: number): Promise<boolean> {
+    const key = await this.getDeviceKey();
+    if (!key) return false;
+
+    const record = await encryptWithDeviceKey(
+      key,
+      new TextEncoder().encode(JSON.stringify({ password }))
+    );
+    if (!record) return false;
+
+    return this.putSessionRecord({
+      v: 2,
+      iv: record.iv,
+      ciphertext: record.ciphertext,
+      expiresAt,
+    });
+  }
+
+  private async decryptSessionRecord(
+    payload: EncryptedSessionCachePayload
+  ): Promise<string | null> {
+    const key = await this.getDeviceKey();
+    if (!key) return null;
+    const plaintext = await decryptWithDeviceKey(key, {
+      iv: payload.iv,
+      ciphertext: payload.ciphertext,
+    });
+    if (!plaintext) return null;
+    try {
+      const parsed = JSON.parse(new TextDecoder().decode(plaintext));
+      return typeof parsed?.password === 'string' ? parsed.password : null;
+    } catch {
+      return null;
+    }
   }
 
   private async clearSessionCacheFromIndexedDB(): Promise<void> {
@@ -319,37 +433,11 @@ export class MasterPasswordStore {
     });
   }
 
-  private writeLegacySessionCache(payload: SessionCachePayload): void {
-    try {
-      if (typeof sessionStorage !== 'undefined') {
-        sessionStorage.setItem(MASTER_PASSWORD_SESSION_CACHE_KEY, JSON.stringify(payload));
-      }
-    } catch {
-      /* no-op */
-    }
-  }
-
-  private readLegacySessionCache(): SessionCachePayload | null {
-    try {
-      if (typeof sessionStorage === 'undefined') {
-        return null;
-      }
-      const raw = sessionStorage.getItem(MASTER_PASSWORD_SESSION_CACHE_KEY);
-      if (!raw) {
-        return null;
-      }
-      const parsed = JSON.parse(raw);
-      if (!this.isValidSessionCachePayload(parsed)) {
-        this.clearLegacySessionCache();
-        return null;
-      }
-      return parsed;
-    } catch {
-      this.clearLegacySessionCache();
-      return null;
-    }
-  }
-
+  /**
+   * Delete the pre-IndexedDB plaintext sessionStorage cache. The read/migrate
+   * path for it was removed (no clients that old remain) — this is pure
+   * hygiene so any stray plaintext copy gets destroyed, never used.
+   */
   private clearLegacySessionCache(): void {
     try {
       if (typeof sessionStorage !== 'undefined') {
@@ -361,18 +449,13 @@ export class MasterPasswordStore {
   }
 
   private async writeSessionCache(password: string, days: number): Promise<void> {
-    const payload: SessionCachePayload = {
-      password,
-      expiresAt: Date.now() + this.normalizeSessionDays(days) * DAY_IN_MS,
-    };
-
-    const persisted = await this.writeSessionCacheToIndexedDB(payload);
+    const expiresAt = Date.now() + this.normalizeSessionDays(days) * DAY_IN_MS;
+    const persisted = await this.writeEncryptedSessionRecord(password, expiresAt);
     if (persisted) {
       this.clearLegacySessionCache();
-      return;
     }
-
-    this.writeLegacySessionCache(payload);
+    // No plaintext fallback: environments without IndexedDB/WebCrypto degrade
+    // to memory-only persistence rather than writing the password readable.
   }
 
   private async readSessionCache(): Promise<string | null> {
@@ -382,37 +465,44 @@ export class MasterPasswordStore {
     // Reading it unconditionally means we survive the case where localStorage
     // is temporarily out of sync with the server preference (e.g. on a fresh
     // device that just hydrated its setting from the profile).
-    const indexedDBPayload = await this.readSessionCacheFromIndexedDB();
-    if (indexedDBPayload) {
-      if (Date.now() > indexedDBPayload.expiresAt) {
+    const raw = await this.readRawSessionRecord();
+
+    if (this.isEncryptedSessionCachePayload(raw)) {
+      if (Date.now() > raw.expiresAt) {
         await this.clearPersistedPassword();
         return null;
       }
-      return indexedDBPayload.password;
+      return this.decryptSessionRecord(raw);
     }
 
-    // Backward compatibility: migrate existing sessionStorage cache to IndexedDB.
-    const legacyPayload = this.readLegacySessionCache();
-    if (!legacyPayload) {
-      return null;
+    // Migration: v1 record stored the password in plaintext. Re-persist
+    // encrypted (preserving the original expiry), overwriting the plaintext.
+    // v1 is what releases <= 1.5.2 wrote — keep this path until all active
+    // installs have opened the app once on a hardened release, then remove.
+    if (this.isValidSessionCachePayload(raw)) {
+      if (Date.now() > raw.expiresAt) {
+        await this.clearPersistedPassword();
+        return null;
+      }
+      const migrated = await this.writeEncryptedSessionRecord(raw.password, raw.expiresAt);
+      if (!migrated) {
+        // Could not encrypt: remove the plaintext record rather than leave it.
+        await this.clearSessionCacheFromIndexedDB();
+      }
+      return raw.password;
     }
 
-    if (Date.now() > legacyPayload.expiresAt) {
-      this.clearLegacySessionCache();
-      return null;
-    }
-
-    const migrated = await this.writeSessionCacheToIndexedDB(legacyPayload);
-    if (migrated) {
-      this.clearLegacySessionCache();
-    }
-    return legacyPayload.password;
+    // Destroy any stray pre-IndexedDB plaintext cache without reading it.
+    this.clearLegacySessionCache();
+    return null;
   }
 
   private async clearPersistedPassword(): Promise<void> {
     await this.clearSessionCacheFromIndexedDB();
     this.clearLegacySessionCache();
     this.clearSpaceKeyCaches();
+    const db = await this.openIndexedDB();
+    await deleteDeviceKeyRecord(db);
   }
 
   private clearSpaceKeyCaches(): void {

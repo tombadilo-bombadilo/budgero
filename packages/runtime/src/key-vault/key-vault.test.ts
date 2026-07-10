@@ -4,6 +4,7 @@ import { KeyVault } from './key-vault';
 import { masterPasswordStore } from './master-password-store';
 import { generateSpaceKey, wrapSpaceKeyWithMaster } from '../crypto';
 import { createStorageMock } from '../__tests__/storage-mock';
+import { FakeIndexedDBFactory } from '../__tests__/indexeddb-mock';
 import * as cryptoModule from '../crypto';
 
 /**
@@ -38,16 +39,19 @@ const memberSpace = {
 describe('KeyVault', () => {
   const localStorageMock = createStorageMock();
   const sessionStorageMock = createStorageMock();
+  const fakeIndexedDB = new FakeIndexedDBFactory();
 
   function stubStorages(): void {
     vi.stubGlobal('localStorage', localStorageMock as unknown as Storage);
     vi.stubGlobal('sessionStorage', sessionStorageMock as unknown as Storage);
+    vi.stubGlobal('indexedDB', fakeIndexedDB as unknown as IDBFactory);
   }
 
   afterEach(() => {
     resetSharedMasterPasswordState();
     localStorageMock.clear();
     sessionStorageMock.clear();
+    fakeIndexedDB.reset();
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -90,7 +94,9 @@ describe('KeyVault', () => {
     expect(await next.resolveMasterPassword()).toBe('master');
     expect(await next.get()).toBe('master');
 
-    // corrupt cache is ignored
+    // corrupt cache is ignored (reset the IndexedDB record so only the
+    // corrupt legacy sessionStorage entry remains)
+    fakeIndexedDB.reset();
     sessionStorage.setItem('master_password_session_cache_v1', '{bad}');
     resetSharedMasterPasswordState();
     const broken = new KeyVault();
@@ -182,7 +188,16 @@ describe('KeyVault', () => {
 
     expect(loaded).toEqual(key);
     expect(localStorageMock.getItem(`${SPACE_KEY_STORAGE_PREFIX}s1`)).toBeNull();
-    expect(sessionStorageMock.getItem(`${SPACE_KEY_STORAGE_PREFIX}s1`)).toBe(encoded);
+    const persisted = sessionStorageMock.getItem(`${SPACE_KEY_STORAGE_PREFIX}s1`);
+    expect(persisted).toMatch(/^enc1:/);
+    expect(persisted).not.toContain(encoded);
+
+    // A fresh vault restores the key from the encrypted token.
+    const fresh = new KeyVault();
+    const reloaded = await fresh.ensureSpaceKey('s1', 'master', [
+      { ...ownerSpace, encrypted_space_key: '' },
+    ]);
+    expect(reloaded).toEqual(key);
   });
 
   it('normalizes decryption failures and handles provisioning lock concurrency', async () => {
@@ -219,7 +234,7 @@ describe('KeyVault', () => {
     expect(provisionSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('clears stale shared-key caches when persistence mode is memory', () => {
+  it('clears stale shared-key caches when persistence mode is memory', async () => {
     stubStorages();
     const key = generateSpaceKey();
     const encoded = btoa(String.fromCharCode(...Array.from(key)));
@@ -228,9 +243,9 @@ describe('KeyVault', () => {
     localStorageMock.setItem('master_password_persistence_v1', JSON.stringify({ mode: 'memory' }));
 
     const vault = new KeyVault();
-    const loaded = (
+    const loaded = await (
       vault as unknown as {
-        loadStoredSpaceKeyByKey: (storageKey: string) => Uint8Array | null;
+        loadStoredSpaceKeyByKey: (storageKey: string) => Promise<Uint8Array | null>;
       }
     ).loadStoredSpaceKeyByKey(`${SPACE_KEY_STORAGE_PREFIX}s1`);
 
@@ -362,7 +377,7 @@ describe('KeyVault', () => {
     unwrapSpy.mockRestore();
   });
 
-  it('covers private storage helper catch branches', () => {
+  it('covers private storage helper catch branches', async () => {
     const badSession = {
       getItem: () => {
         throw new Error('get');
@@ -388,12 +403,12 @@ describe('KeyVault', () => {
     const vault = new KeyVault();
 
     expect(
-      (
+      await (
         vault as unknown as {
           readSpaceKeyFromStorage(
             storageType: 'session' | 'local',
             storageKey: string
-          ): Uint8Array | null;
+          ): Promise<Uint8Array | null>;
         }
       ).readSpaceKeyFromStorage('session', 'k')
     ).toBeNull();
@@ -418,13 +433,13 @@ describe('KeyVault', () => {
       ).clearSpaceKeyCaches();
     }).not.toThrow();
 
-    expect(
+    await expect(
       (
         vault as unknown as {
-          persistStoredSpaceKeyByKey(storageKey: string, spaceKey: Uint8Array): void;
+          persistStoredSpaceKeyByKey(storageKey: string, spaceKey: Uint8Array): Promise<void>;
         }
       ).persistStoredSpaceKeyByKey(`${SPACE_KEY_STORAGE_PREFIX}s1`, new Uint8Array([1, 2, 3]))
-    ).toBeUndefined();
+    ).resolves.toBeUndefined();
   });
 
   it('covers undefined-storage and non-Error branches for key persistence', async () => {

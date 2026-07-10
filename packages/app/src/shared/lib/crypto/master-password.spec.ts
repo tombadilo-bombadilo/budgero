@@ -74,6 +74,26 @@ class FakeIndexedDBDatabase {
             });
             return request as IDBRequest;
           },
+          add: (value: unknown, key?: IDBValidKey) => {
+            const request: Partial<IDBRequest> = {};
+            queueMicrotask(() => {
+              if (store.has(String(key))) {
+                request.onerror?.call(
+                  request as IDBRequest,
+                  new Event('error') as Event & { target: IDBRequest }
+                );
+                tx.onabort?.call(tx as IDBTransaction, new Event('abort') as Event);
+                return;
+              }
+              store.set(String(key), value);
+              request.onsuccess?.call(
+                request as IDBRequest,
+                new Event('success') as Event & { target: IDBRequest }
+              );
+              tx.oncomplete?.call(tx as IDBTransaction, new Event('complete') as Event);
+            });
+            return request as IDBRequest;
+          },
           put: (value: unknown, key?: IDBValidKey) => {
             const request: Partial<IDBRequest> = {};
             queueMicrotask(() => {
@@ -229,7 +249,10 @@ describe('MasterPasswordManager IndexedDB persistence', () => {
     await MasterPasswordManager.store('secret-123');
     const payload = fakeIndexedDB.getSessionPayload();
 
-    expect(payload?.password).toBe('secret-123');
+    // Hardened at-rest format: encrypted under the non-extractable device
+    // key — never a readable password field.
+    expect(payload?.password).toBeUndefined();
+    expect((payload as { v?: number } | undefined)?.v).toBe(2);
     expect(typeof payload?.expiresAt).toBe('number');
     expect(sessionStorage.getItem(MASTER_PASSWORD_SESSION_CACHE_KEY)).toBeNull();
 
@@ -238,7 +261,7 @@ describe('MasterPasswordManager IndexedDB persistence', () => {
     expect(cached).toBe('secret-123');
   });
 
-  it('migrates legacy sessionStorage cache into IndexedDB', async () => {
+  it('destroys the pre-IndexedDB sessionStorage cache without using it', async () => {
     MasterPasswordManager.setPersistenceSetting({ mode: 'session', days: 7 });
     await flushAsyncStorageWork();
 
@@ -254,12 +277,14 @@ describe('MasterPasswordManager IndexedDB persistence', () => {
     setManagerInternal('inMemoryPassword', null);
     const cached = await MasterPasswordManager.get();
 
-    expect(cached).toBe('legacy-secret');
+    // The legacy migration path was removed: the stray plaintext entry is
+    // deleted, never read back.
+    expect(cached).toBeNull();
     expect(sessionStorage.getItem(MASTER_PASSWORD_SESSION_CACHE_KEY)).toBeNull();
-    expect(fakeIndexedDB.getSessionPayload()?.password).toBe('legacy-secret');
+    expect(fakeIndexedDB.getSessionPayload()).toBeUndefined();
   });
 
-  it('falls back to sessionStorage when IndexedDB is unavailable', async () => {
+  it('degrades to memory-only (never plaintext) when IndexedDB is unavailable', async () => {
     setGlobalIndexedDB(undefined);
     setManagerInternal('indexedDBPromise', null);
 
@@ -267,12 +292,14 @@ describe('MasterPasswordManager IndexedDB persistence', () => {
     await flushAsyncStorageWork();
     await MasterPasswordManager.store('fallback-secret');
 
-    const raw = sessionStorage.getItem(MASTER_PASSWORD_SESSION_CACHE_KEY);
-    expect(raw).toContain('fallback-secret');
+    // Hardened behavior: without device-key crypto nothing is persisted;
+    // the old code wrote the password to sessionStorage in plaintext.
+    expect(sessionStorage.getItem(MASTER_PASSWORD_SESSION_CACHE_KEY)).toBeNull();
+    expect(await MasterPasswordManager.get()).toBe('fallback-secret');
 
     setManagerInternal('inMemoryPassword', null);
     const cached = await MasterPasswordManager.get();
-    expect(cached).toBe('fallback-secret');
+    expect(cached).toBeNull();
   });
 
   it('clears IndexedDB cache on clear()', async () => {
@@ -280,7 +307,8 @@ describe('MasterPasswordManager IndexedDB persistence', () => {
     await flushAsyncStorageWork();
     await MasterPasswordManager.store('to-clear');
 
-    expect(fakeIndexedDB.getSessionPayload()?.password).toBe('to-clear');
+    expect(fakeIndexedDB.getSessionPayload()?.password).toBeUndefined();
+    expect(fakeIndexedDB.getSessionPayload()).toBeDefined();
 
     MasterPasswordManager.clear();
     await flushAsyncStorageWork();

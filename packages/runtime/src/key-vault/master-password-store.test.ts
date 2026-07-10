@@ -10,7 +10,13 @@ import { FakeIndexedDBFactory } from '../__tests__/indexeddb-mock';
 import { MasterPasswordStore } from './master-password-store';
 import { KeyVault } from './key-vault';
 
-type SessionPayload = { password: string; expiresAt: number };
+type EncryptedSessionPayload = {
+  v: 2;
+  iv: Uint8Array;
+  ciphertext: Uint8Array;
+  expiresAt: number;
+  password?: undefined;
+};
 
 async function flushAsyncStorageWork(): Promise<void> {
   await Promise.resolve();
@@ -32,11 +38,21 @@ describe('MasterPasswordStore', () => {
     );
   }
 
-  function readIndexedDBPayload(): SessionPayload | undefined {
+  function readIndexedDBPayload(): EncryptedSessionPayload | undefined {
     return fakeIndexedDB.read(
       MASTER_PASSWORD_INDEXEDDB_STORE,
       MASTER_PASSWORD_INDEXEDDB_RECORD_KEY
-    ) as SessionPayload | undefined;
+    ) as EncryptedSessionPayload | undefined;
+  }
+
+  /** The record must never contain the password in any readable form. */
+  function expectRecordIsEncrypted(secret: string): EncryptedSessionPayload {
+    const payload = readIndexedDBPayload();
+    expect(payload?.v).toBe(2);
+    expect(payload?.password).toBeUndefined();
+    expect(payload?.ciphertext).toBeInstanceOf(Uint8Array);
+    expect(new TextDecoder().decode(payload?.ciphertext)).not.toContain(secret);
+    return payload as EncryptedSessionPayload;
   }
 
   afterEach(() => {
@@ -55,9 +71,8 @@ describe('MasterPasswordStore', () => {
 
     await store.store('secret-123');
 
-    const payload = readIndexedDBPayload();
-    expect(payload?.password).toBe('secret-123');
-    expect(typeof payload?.expiresAt).toBe('number');
+    const payload = expectRecordIsEncrypted('secret-123');
+    expect(typeof payload.expiresAt).toBe('number');
     expect(sessionStorageMock.getItem(MASTER_PASSWORD_SESSION_CACHE_KEY)).toBeNull();
 
     // Fresh store instance = new page load / runtime context. This is the
@@ -98,7 +113,7 @@ describe('MasterPasswordStore', () => {
     expect(shared.hasPassword()).toBe(false);
   });
 
-  it('migrates legacy sessionStorage cache into IndexedDB', async () => {
+  it('destroys the pre-IndexedDB sessionStorage cache without using it', async () => {
     stubEnvironment();
     localStorageMock.setItem(MASTER_PASSWORD_STATUS_KEY, 'true');
     localStorageMock.setItem(
@@ -111,24 +126,51 @@ describe('MasterPasswordStore', () => {
     );
 
     const store = new MasterPasswordStore();
-    expect(await store.get()).toBe('legacy-secret');
+    // The legacy migration path was removed: the stray plaintext entry is
+    // deleted, never read back.
+    expect(await store.get()).toBeNull();
     expect(sessionStorageMock.getItem(MASTER_PASSWORD_SESSION_CACHE_KEY)).toBeNull();
-    expect(readIndexedDBPayload()?.password).toBe('legacy-secret');
+    expect(readIndexedDBPayload()).toBeUndefined();
   });
 
-  it('falls back to sessionStorage when IndexedDB is unavailable', async () => {
+  it('migrates a v1 plaintext IndexedDB record to an encrypted one on read', async () => {
+    stubEnvironment();
+    localStorageMock.setItem(MASTER_PASSWORD_STATUS_KEY, 'true');
+    localStorageMock.setItem(
+      'master_password_persistence_v1',
+      JSON.stringify({ mode: 'session', days: 7 })
+    );
+    const expiresAt = Date.now() + 3 * 24 * 60 * 60 * 1000;
+    fakeIndexedDB.write(MASTER_PASSWORD_INDEXEDDB_STORE, MASTER_PASSWORD_INDEXEDDB_RECORD_KEY, {
+      password: 'v1-plaintext',
+      expiresAt,
+    });
+
+    const store = new MasterPasswordStore();
+    expect(await store.get()).toBe('v1-plaintext');
+    await flushAsyncStorageWork();
+
+    const migrated = expectRecordIsEncrypted('v1-plaintext');
+    // get() refreshes the session TTL (pre-existing behavior), so the migrated
+    // record's expiry is at least the original.
+    expect(migrated.expiresAt).toBeGreaterThanOrEqual(expiresAt);
+    expect(await new MasterPasswordStore().get()).toBe('v1-plaintext');
+  });
+
+  it('degrades to memory-only (never plaintext) when IndexedDB is unavailable', async () => {
     stubEnvironment({ indexedDB: false });
     const store = new MasterPasswordStore();
     store.setPersistenceSetting({ mode: 'session', days: 7 });
     await flushAsyncStorageWork();
 
     await store.store('fallback-secret');
-    expect(sessionStorageMock.getItem(MASTER_PASSWORD_SESSION_CACHE_KEY)).toContain(
-      'fallback-secret'
-    );
+    // The old behavior wrote the password to sessionStorage in plaintext.
+    // Hardened behavior: no encryption available -> nothing persisted at all.
+    expect(sessionStorageMock.getItem(MASTER_PASSWORD_SESSION_CACHE_KEY)).toBeNull();
+    expect(await store.get()).toBe('fallback-secret');
 
     const restored = new MasterPasswordStore();
-    expect(await restored.get()).toBe('fallback-secret');
+    expect(await restored.get()).toBeNull();
   });
 
   it('clears status marker and IndexedDB cache on clear()', async () => {
@@ -137,7 +179,7 @@ describe('MasterPasswordStore', () => {
     store.setPersistenceSetting({ mode: 'session', days: 7 });
     await flushAsyncStorageWork();
     await store.store('to-clear');
-    expect(readIndexedDBPayload()?.password).toBe('to-clear');
+    expectRecordIsEncrypted('to-clear');
 
     store.clear();
     await flushAsyncStorageWork();
@@ -154,12 +196,9 @@ describe('MasterPasswordStore', () => {
     await flushAsyncStorageWork();
     await writer.store('will-expire');
 
-    const payload = readIndexedDBPayload();
-    expect(payload?.password).toBe('will-expire');
+    const payload = expectRecordIsEncrypted('will-expire');
 
-    const dateSpy = vi
-      .spyOn(Date, 'now')
-      .mockReturnValue((payload?.expiresAt ?? 0) + 1);
+    const dateSpy = vi.spyOn(Date, 'now').mockReturnValue((payload?.expiresAt ?? 0) + 1);
 
     const reader = new MasterPasswordStore();
     expect(await reader.get()).toBeNull();

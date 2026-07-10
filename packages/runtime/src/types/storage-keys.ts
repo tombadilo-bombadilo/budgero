@@ -13,3 +13,4 @@ export const MASTER_PASSWORD_SESSION_CACHE_KEY = 'master_password_session_cache_
 export const MASTER_PASSWORD_INDEXEDDB_NAME = 'budgero_secure_cache_v1';
 export const MASTER_PASSWORD_INDEXEDDB_STORE = 'master_password';
 export const MASTER_PASSWORD_INDEXEDDB_RECORD_KEY = 'session_cache';
+export const MASTER_PASSWORD_DEVICE_KEY_RECORD_KEY = 'device_key_v1';

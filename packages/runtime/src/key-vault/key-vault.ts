@@ -189,7 +189,7 @@ export class KeyVault {
     spaces: SpaceSummary[]
   ): Promise<Uint8Array> {
     // 1. Check persisted storage
-    const persisted = this.loadPersistedSpaceKey(spaceId);
+    const persisted = await this.loadPersistedSpaceKey(spaceId);
     if (persisted) {
       this.spaceKeys.set(spaceId, persisted);
       return persisted;
@@ -206,7 +206,7 @@ export class KeyVault {
       try {
         const spaceKey = await unwrapSpaceKeyWithMaster(encryptedKey, masterPassword);
         this.spaceKeys.set(spaceId, spaceKey);
-        this.persistSpaceKey(spaceId, spaceKey);
+        await this.persistSpaceKey(spaceId, spaceKey);
         return spaceKey;
       } catch (error) {
         if (isDecryptionError(error)) {
@@ -238,7 +238,7 @@ export class KeyVault {
       }
 
       this.spaceKeys.set(spaceId, newKey);
-      this.persistSpaceKey(spaceId, newKey);
+      await this.persistSpaceKey(spaceId, newKey);
       return newKey;
     }
 
@@ -247,15 +247,15 @@ export class KeyVault {
 
   // ---- Internals: Space Key Storage ----
 
-  private loadPersistedSpaceKey(spaceId: string): Uint8Array | null {
+  private async loadPersistedSpaceKey(spaceId: string): Promise<Uint8Array | null> {
     return this.loadStoredSpaceKeyByKey(`${SPACE_KEY_STORAGE_PREFIX}${spaceId}`);
   }
 
-  private persistSpaceKey(spaceId: string, spaceKey: Uint8Array): void {
-    this.persistStoredSpaceKeyByKey(`${SPACE_KEY_STORAGE_PREFIX}${spaceId}`, spaceKey);
+  private async persistSpaceKey(spaceId: string, spaceKey: Uint8Array): Promise<void> {
+    await this.persistStoredSpaceKeyByKey(`${SPACE_KEY_STORAGE_PREFIX}${spaceId}`, spaceKey);
   }
 
-  private loadStoredSpaceKeyByKey(storageKey: string): Uint8Array | null {
+  private async loadStoredSpaceKeyByKey(storageKey: string): Promise<Uint8Array | null> {
     const isSharedSpaceKey = storageKey.startsWith(SPACE_KEY_STORAGE_PREFIX);
     const persistence = this.masterPassword.getPersistenceSetting();
 
@@ -264,14 +264,14 @@ export class KeyVault {
       return null;
     }
 
-    const fromSession = this.readSpaceKeyFromStorage('session', storageKey);
+    const fromSession = await this.readSpaceKeyFromStorage('session', storageKey);
     if (fromSession) return fromSession;
 
-    const legacy = this.readSpaceKeyFromStorage('local', storageKey);
+    const legacy = await this.readSpaceKeyFromStorage('local', storageKey);
     if (legacy) {
       this.removeSpaceKeyFromStorage('local', storageKey);
       if (isSharedSpaceKey && persistence.mode === 'session') {
-        this.writeSpaceKeyToStorage('session', storageKey, encodeSpaceKey(legacy));
+        await this.writeEncryptedSpaceKeyToStorage('session', storageKey, legacy);
       }
       return legacy;
     }
@@ -279,8 +279,10 @@ export class KeyVault {
     return null;
   }
 
-  private persistStoredSpaceKeyByKey(storageKey: string, spaceKey: Uint8Array): void {
-    const encoded = encodeSpaceKey(spaceKey);
+  private async persistStoredSpaceKeyByKey(
+    storageKey: string,
+    spaceKey: Uint8Array
+  ): Promise<void> {
     const isSharedSpaceKey = storageKey.startsWith(SPACE_KEY_STORAGE_PREFIX);
 
     if (isSharedSpaceKey) {
@@ -292,11 +294,30 @@ export class KeyVault {
         return;
       }
 
-      this.writeSpaceKeyToStorage('session', storageKey, encoded);
+      await this.writeEncryptedSpaceKeyToStorage('session', storageKey, spaceKey);
       return;
     }
 
-    this.writeSpaceKeyToStorage('local', storageKey, encoded);
+    await this.writeEncryptedSpaceKeyToStorage('local', storageKey, spaceKey);
+  }
+
+  /**
+   * Persist a space key encrypted under the device key (`enc1:` token).
+   * If device-key crypto is unavailable, the key is NOT persisted — the
+   * in-memory copy still serves this session, and the next session
+   * re-provisions from the server. Never writes plaintext key material.
+   */
+  private async writeEncryptedSpaceKeyToStorage(
+    storageType: 'session' | 'local',
+    storageKey: string,
+    spaceKey: Uint8Array
+  ): Promise<void> {
+    const token = await this.masterPassword.encryptStringForDevice(encodeSpaceKey(spaceKey));
+    if (!token) {
+      this.removeSpaceKeyFromStorage(storageType, storageKey);
+      return;
+    }
+    this.writeSpaceKeyToStorage(storageType, storageKey, token);
   }
 
   private getStorage(storageType: 'session' | 'local'): Storage | null {
@@ -313,16 +334,35 @@ export class KeyVault {
     }
   }
 
-  private readSpaceKeyFromStorage(
+  private async readSpaceKeyFromStorage(
     storageType: 'session' | 'local',
     storageKey: string
-  ): Uint8Array | null {
+  ): Promise<Uint8Array | null> {
     try {
       const storage = this.getStorage(storageType);
       if (!storage) return null;
       const raw = storage.getItem(storageKey);
       if (!raw) return null;
-      return this.decodeStoredSpaceKey(raw);
+
+      // Device-key-encrypted value (enc1: token).
+      if (raw.startsWith('enc1:')) {
+        const decrypted = await this.masterPassword.decryptStringForDevice(raw);
+        if (!decrypted) {
+          // Undecryptable (device key rotated/cleared): drop the stale token.
+          this.removeSpaceKeyFromStorage(storageType, storageKey);
+          return null;
+        }
+        return this.decodeStoredSpaceKey(decrypted);
+      }
+
+      // Legacy plaintext base64 value (written by releases <= 1.5.2): use it,
+      // then re-persist encrypted. Keep until all active installs have opened
+      // the app once on a hardened release, then remove.
+      const legacy = this.decodeStoredSpaceKey(raw);
+      if (legacy) {
+        await this.writeEncryptedSpaceKeyToStorage(storageType, storageKey, legacy);
+      }
+      return legacy;
     } catch {
       return null;
     }
