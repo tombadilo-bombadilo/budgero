@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import { getLocalDateString } from '../src/utils/date';
 import { NodeSqlJsAdapter, ServiceManager, DatabaseAdapter } from '../src';
 
 describe('Rules payee actions (Node/sql.js)', () => {
@@ -39,7 +40,7 @@ describe('Rules payee actions (Node/sql.js)', () => {
   });
 
   it('applies and undoes payee.set actions', async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateString();
     const transactionId = await services.transactions.addTransaction(
       0,
       25,
@@ -98,7 +99,7 @@ describe('Rules payee actions (Node/sql.js)', () => {
       500000 // $500 in milliunits
     );
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateString();
     const checkingTxId = await services.transactions.addTransaction(
       0,
       12500, // $12.50 in milliunits

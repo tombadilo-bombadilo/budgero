@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { getLocalDateString } from '../src/utils/date';
 import {
   NodeSqlJsAdapter,
   ServiceManager,
@@ -105,7 +106,7 @@ describe('Transactions (Node/sql.js)', () => {
     const spendCategoryId =
       categories.find((c: Category) => c.Name !== 'Income')?.ID ?? categories[0].ID;
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateString();
     const txnId = await services.transactions.addTransaction(
       0,
       50,
@@ -132,7 +133,7 @@ describe('Transactions (Node/sql.js)', () => {
       'EUR',
       'USD',
       EURUSD,
-      new Date().toISOString().slice(0, 7),
+      getLocalDateString().slice(0, 7),
       budgetId
     );
 
@@ -176,7 +177,7 @@ describe('Transactions (Node/sql.js)', () => {
     const rate = await services.currency.getOrFetchRate(
       'EUR',
       'USD',
-      new Date().toISOString().slice(0, 7),
+      getLocalDateString().slice(0, 7),
       budgetId
     );
     if (!rate) {
@@ -231,7 +232,7 @@ describe('Transactions (Node/sql.js)', () => {
   // CRUD Operations Tests
   describe('CRUD Operations', () => {
     it('should get all transactions for a budget', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       // Add multiple transactions
       await services.transactions.addTransaction(
@@ -270,7 +271,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should persist payee values and expose distinct payees', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       const initialPayee = 'Coffee Shop';
 
       const txnId = await services.transactions.addTransaction(
@@ -336,7 +337,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should manage labels and transaction label assignment lifecycle', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       const groceriesLabelId = services.labels.addLabel(budgetId, 'Groceries', '#22AA44');
       const travelLabelId = services.labels.addLabel(budgetId, 'Travel', '#3355CC');
@@ -398,7 +399,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should get transactions by account', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       // Create second account
       const account2 = await services.accounts.createAccount(
@@ -447,10 +448,10 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should get transactions by account and month', async () => {
-      const thisMonth = new Date().toISOString().slice(0, 7);
-      const lastMonth = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
-        .toISOString()
-        .slice(0, 7);
+      const thisMonth = getLocalDateString().slice(0, 7);
+      const lastMonth = getLocalDateString(
+        new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
+      ).slice(0, 7);
 
       // Add transactions in different months
       await services.transactions.addTransaction(
@@ -493,7 +494,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should get transactions by category', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       // Create new category
       const categoryGroupId = services.categories.addCategoryGroup('Test Group', budgetId);
@@ -532,7 +533,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should update a transaction', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       const txnId = await services.transactions.addTransaction(
         0,
         100,
@@ -565,7 +566,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should delete a transaction and update balances', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       const txnId = await services.transactions.addTransaction(
         0,
         100,
@@ -592,7 +593,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should move transaction to new category', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       const categoryGroupId = services.categories.addCategoryGroup('New Group', budgetId);
       const newCategoryId = services.categories.addCategory(
         categoryGroupId,
@@ -618,7 +619,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should reassign all transactions from one category to another', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       const categoryGroupId = services.categories.addCategoryGroup('Group', budgetId);
       const oldCategoryId = services.categories.addCategory(
         categoryGroupId,
@@ -661,7 +662,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should update specific transaction column', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       const txnId = await services.transactions.addTransaction(
         0,
         100,
@@ -690,7 +691,7 @@ describe('Transactions (Node/sql.js)', () => {
   // Transfer Transactions Tests
   describe('Transfer Transactions', () => {
     it('should create a transfer between accounts', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       const savingsAccount = await services.accounts.createAccount(
         'Savings',
         budgetId,
@@ -735,7 +736,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should handle paired transfer transactions', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       const savingsAccount = await services.accounts.createAccount(
         'Savings',
         budgetId,
@@ -786,7 +787,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should handle mortgage category for liability accounts', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       // Create a liability account (mortgage)
       const _mortgageAccount = await services.accounts.createAccount(
@@ -836,7 +837,7 @@ describe('Transactions (Node/sql.js)', () => {
     await sm.initialize(adapter);
     const services = sm.getServices();
 
-    const month = new Date().toISOString().slice(0, 7);
+    const month = getLocalDateString().slice(0, 7);
 
     // Budget in USD
     const bId = await services.budgets.createBudget({
@@ -905,7 +906,7 @@ describe('Transactions (Node/sql.js)', () => {
     }
     const catId = jpyNonIncomeCat.ID;
 
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateString();
     const txId = await services.transactions.addTransaction(
       0,
       1000, // 1000 JPY outflow
@@ -927,7 +928,7 @@ describe('Transactions (Node/sql.js)', () => {
   });
 
   it('moves a transaction between accounts with currency conversion of originals', async () => {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getLocalDateString();
     const month = today.slice(0, 7);
 
     // Budget in USD
@@ -990,7 +991,7 @@ describe('Transactions (Node/sql.js)', () => {
   // Split Transactions Tests (methods exist but implementation may differ)
   describe('Split Transactions', () => {
     it('should get splits for a transaction', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       // Create main transaction
       const mainTxnId = await services.transactions.addTransaction(
@@ -1009,7 +1010,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('refuses to split a transfer transaction', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       // A transfer is any transaction with a TransferID (money moved between
       // your own accounts, mirrored as a linked pair).
@@ -1039,7 +1040,7 @@ describe('Transactions (Node/sql.js)', () => {
   // Multi-Currency Tests
   describe('Multi-Currency Transactions', () => {
     it('should handle transactions in foreign currency accounts', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       const month = today.slice(0, 7);
 
       // Set up exchange rate
@@ -1083,7 +1084,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should update transactions when account currency changes', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       const month = today.slice(0, 7);
 
       // Set up exchange rates
@@ -1124,7 +1125,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should handle missing exchange rates gracefully', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       // Create account with currency that has no rate
       const jpyAccount = await services.accounts.createAccount(
@@ -1158,10 +1159,10 @@ describe('Transactions (Node/sql.js)', () => {
   // Filtering and Search Tests
   describe('Filtering and Search', () => {
     it('should get transactions by category and month', async () => {
-      const thisMonth = new Date().toISOString().slice(0, 7);
-      const lastMonth = new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
-        .toISOString()
-        .slice(0, 7);
+      const thisMonth = getLocalDateString().slice(0, 7);
+      const lastMonth = getLocalDateString(
+        new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1)
+      ).slice(0, 7);
 
       // Create test category
       const categoryGroupId = services.categories.addCategoryGroup('Filter Group', budgetId);
@@ -1209,8 +1210,8 @@ describe('Transactions (Node/sql.js)', () => {
   // Account Reconciliation Tests
   describe('Account Reconciliation', () => {
     it('should reconcile account transactions', async () => {
-      const today = new Date().toISOString().slice(0, 10);
-      const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+      const today = getLocalDateString();
+      const yesterday = getLocalDateString(new Date(Date.now() - 86400000));
 
       // Add cleared and uncleared transactions
       const txn1 = await services.transactions.addTransaction(
@@ -1251,7 +1252,7 @@ describe('Transactions (Node/sql.js)', () => {
   // Edge Cases and Error Handling
   describe('Edge Cases', () => {
     it('should handle negative amounts correctly', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       // Negative outflow (refund)
       const txnId = await services.transactions.addTransaction(
@@ -1276,7 +1277,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should handle zero amounts', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       const txnId = await services.transactions.addTransaction(
         0,
@@ -1297,7 +1298,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should handle transactions without memos', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       const txnId = await services.transactions.addTransaction(
         0,
@@ -1315,7 +1316,7 @@ describe('Transactions (Node/sql.js)', () => {
     });
 
     it('should handle updating transaction to different account', async () => {
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
       const account2 = await services.accounts.createAccount(
         'Account 2',
         budgetId,
@@ -1360,7 +1361,7 @@ describe('Transactions (Node/sql.js)', () => {
         0
       );
 
-      const today = new Date().toISOString().slice(0, 10);
+      const today = getLocalDateString();
 
       // Use values that cause IEEE 754 floating point drift (0.1 + 0.2 !== 0.3)
       const txn1 = await services.transactions.addTransaction(

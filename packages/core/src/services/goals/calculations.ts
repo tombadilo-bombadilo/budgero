@@ -1,5 +1,5 @@
 import { Goal, GoalType, GoalPurpose } from './types.js';
-import { getLocalDateString } from '../../utils/date.js';
+import { getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
 import { MILLIS_PER_CENT } from '../../money/index.js';
 
 /**
@@ -434,7 +434,7 @@ export class GoalCalculations {
       recommendation,
       breakdown,
       timeMetrics: {
-        startDate: new Date(goal.StartDate),
+        startDate: parseDateOnlyLocal(goal.StartDate) ?? new Date(),
         monthsActive: historicalStats.monthsTracked,
         successfulMonths: historicalStats.successfulMonths,
         currentStreak: historicalStats.currentStreak,
@@ -491,9 +491,8 @@ export class GoalCalculations {
       return date;
     }
 
-    // Try parsing as ISO date
-    const parsed = new Date(targetDate);
-    return isNaN(parsed.getTime()) ? new Date() : parsed;
+    // ISO date: local anchor for date-only strings, instant for timestamps
+    return parseDateOnlyLocal(targetDate) ?? new Date();
   }
 
   private static calculateMonthsRemaining(from: Date, to: Date): number {
@@ -540,7 +539,7 @@ export class GoalCalculations {
       return 0;
     }
 
-    const target = targetDate ? new Date(targetDate) : null;
+    const target = targetDate ? parseDateOnlyLocal(targetDate) : null;
     const targetMonthStr = target ? this.dateToMonth(target) : null;
 
     return plannedAssignments
@@ -740,7 +739,10 @@ export class GoalCalculations {
     const [year, month] = currentMonth.split('-').map(Number);
     const today = new Date(year, month - 1, 1);
     const monthsRemaining = this.calculateMonthsRemaining(today, cycleTargetDate);
-    const daysRemaining = Math.ceil(
+    // Both anchors are local midnight, so the quotient is a whole number of
+    // days ± a DST hour; round() absorbs the DST drift where ceil() would
+    // overcount by a day.
+    const daysRemaining = Math.round(
       (cycleTargetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
     );
 
@@ -922,7 +924,7 @@ export class GoalCalculations {
       timeMetrics: {
         monthsRemaining,
         daysRemaining,
-        startDate: new Date(goal.StartDate),
+        startDate: parseDateOnlyLocal(goal.StartDate) ?? new Date(),
         targetDate: cycleTargetDate,
       },
     };
@@ -1057,9 +1059,9 @@ export class GoalCalculations {
     }
 
     if (goal.TargetDate && goal.StartDate) {
-      const start = new Date(goal.StartDate);
-      const target = new Date(goal.TargetDate);
-      if (target <= start) {
+      const start = parseDateOnlyLocal(goal.StartDate);
+      const target = parseDateOnlyLocal(goal.TargetDate);
+      if (start && target && target <= start) {
         errors.push('Target date must be after start date');
       }
     }

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { getLocalDateString } from '../src/utils/date';
 import {
   dateStringLacksYear,
   detectDelimiter,
@@ -151,7 +152,7 @@ describe('parseDate', () => {
   });
 
   it('returns today for empty input', () => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     expect(parseDate('', 'DD.MM.YYYY')).toBe(today);
   });
 

@@ -46,7 +46,7 @@ function firstOfMonth(month: string): Date {
 }
 
 function daysUntil(currentMonth: string, target: Date): number {
-  return Math.ceil(
+  return Math.round(
     (target.getTime() - firstOfMonth(currentMonth).getTime()) / (1000 * 60 * 60 * 24)
   );
 }
@@ -54,13 +54,13 @@ function daysUntil(currentMonth: string, target: Date): number {
 // Fixed cycle used by the non-recurring scenarios: Jan 2026 → Dec 31 2026,
 // evaluated in July 2026 (6 months remaining including July).
 const MONTH = '2026-07';
-const TARGET_DATE = new Date('2026-12-31');
-const START_DATE = new Date('2026-01-15');
+const TARGET_DATE = new Date(2026, 11, 31);
+const START_DATE = new Date(2026, 0, 15);
 
 // Recurring scenarios: target date 2026-03-31 has passed by July 2026, so the
 // cycle advances to 2027-03-31 with a 2026-05 … 2027-03 window (9 months left).
 const RECURRING_TARGET = (() => {
-  const d = new Date('2026-03-31');
+  const d = new Date(2026, 2, 31);
   d.setFullYear(2027);
   return d;
 })();
@@ -413,7 +413,7 @@ describe('Yearly allocation goal (savings, target-date)', () => {
       timeMetrics: {
         monthsRemaining: 9,
         daysRemaining: daysUntil(MONTH, RECURRING_TARGET),
-        startDate: new Date('2025-06-10'),
+        startDate: new Date(2025, 5, 10),
         targetDate: RECURRING_TARGET,
       },
     });
@@ -782,7 +782,7 @@ describe('Yearly available goal (spending, yearly with target date)', () => {
       timeMetrics: {
         monthsRemaining: 9,
         daysRemaining: daysUntil(MONTH, RECURRING_TARGET),
-        startDate: new Date('2025-06-10'),
+        startDate: new Date(2025, 5, 10),
         targetDate: RECURRING_TARGET,
       },
     });

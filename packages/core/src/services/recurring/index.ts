@@ -3,7 +3,7 @@ import { getRow, allRows, run } from '../../database/sql.js';
 import { asMilli, ZERO_MILLI } from '../../money/index.js';
 import { ValidationError, NotFoundError } from '../../types/index.js';
 import { safeParseJSON } from '../../utils/json.js';
-import { getLocalDateString } from '../../utils/date.js';
+import { getLocalDateString, getUTCDateString } from '../../utils/date.js';
 import { TransactionService } from '../transactions/index.js';
 import type {
   CreateRecurringTransactionInput,
@@ -134,6 +134,9 @@ function parseDate(value: string, field: string): Date {
   if (!value || typeof value !== 'string') {
     throw new ValidationError(`Missing ${field}`, field);
   }
+  // Deliberate UTC anchor: this module does all interval math in UTC and
+  // serializes back with getUTCDateString, so the round trip is symmetric.
+  // eslint-disable-next-line no-restricted-syntax
   const date = new Date(`${value}T00:00:00Z`);
   if (Number.isNaN(date.getTime())) {
     throw new ValidationError(`Invalid ${field}: ${value}`, field);
@@ -173,14 +176,14 @@ function normalizeSchedule(schedule: RecurringSchedule): RecurringSchedule {
   }
 
   const normalized: RecurringSchedule = {
-    startDate: getLocalDateString(start),
+    startDate: getUTCDateString(start),
     intervalUnit: unit,
     intervalCount,
     metadata,
   };
 
   if (schedule.endDate) {
-    normalized.endDate = getLocalDateString(parseDate(schedule.endDate, 'schedule.endDate'));
+    normalized.endDate = getUTCDateString(parseDate(schedule.endDate, 'schedule.endDate'));
   } else {
     normalized.endDate = null;
   }
@@ -429,12 +432,12 @@ export class RecurringTransactionService {
 
     if (options.fromDate) {
       clauses.push('o.DueDate >= ?');
-      params.push(getLocalDateString(parseDate(options.fromDate, 'fromDate')));
+      params.push(getUTCDateString(parseDate(options.fromDate, 'fromDate')));
     }
 
     if (options.toDate) {
       clauses.push('o.DueDate <= ?');
-      params.push(getLocalDateString(parseDate(options.toDate, 'toDate')));
+      params.push(getUTCDateString(parseDate(options.toDate, 'toDate')));
     }
 
     if (options.accountId) {
@@ -477,11 +480,11 @@ export class RecurringTransactionService {
 
     if (options.fromDate) {
       clauses.push('o.DueDate >= ?');
-      params.push(getLocalDateString(parseDate(options.fromDate, 'fromDate')));
+      params.push(getUTCDateString(parseDate(options.fromDate, 'fromDate')));
     }
     if (options.toDate) {
       clauses.push('o.DueDate <= ?');
-      params.push(getLocalDateString(parseDate(options.toDate, 'toDate')));
+      params.push(getUTCDateString(parseDate(options.toDate, 'toDate')));
     }
     if (options.accountId) {
       clauses.push('r.AccountID = ?');
@@ -566,7 +569,7 @@ export class RecurringTransactionService {
     }
 
     const transactionDate = options.transactionDate
-      ? getLocalDateString(parseDate(options.transactionDate, 'transactionDate'))
+      ? getUTCDateString(parseDate(options.transactionDate, 'transactionDate'))
       : occurrence.dueDate;
     const memo = options.memoOverride?.trim() || template.memo || template.name;
 
@@ -683,7 +686,7 @@ export class RecurringTransactionService {
     referenceDate: string,
     budgetId?: number
   ): RecurringOccurrenceWithTemplate[] {
-    const targetDate = getLocalDateString(parseDate(referenceDate, 'referenceDate'));
+    const targetDate = getUTCDateString(parseDate(referenceDate, 'referenceDate'));
     const params: (string | number)[] = [targetDate, targetDate];
     let budgetClause = '';
     if (budgetId) {
@@ -774,7 +777,7 @@ export class RecurringTransactionService {
       if (nextDate > horizon) {
         break;
       }
-      insert.run(template.id, template.budgetId, getLocalDateString(nextDate));
+      insert.run(template.id, template.budgetId, getUTCDateString(nextDate));
       const candidate = addInterval(nextDate, schedule);
       if (candidate.getTime() === nextDate.getTime()) {
         break;

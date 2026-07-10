@@ -3,7 +3,7 @@
  * Pure functions — no DB or UI dependencies.
  */
 
-import { getLocalDateString } from '../../utils/date.js';
+import { getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
 import { isCreditAccountType, isLiabilityAccountType } from './types.js';
 
 export interface LiabilityInfo {
@@ -81,11 +81,13 @@ export function computeLiabilityInfo(
 
   let originalLoanTerm: number | undefined;
   if (loanStartDate && targetDate) {
-    const startDate = new Date(loanStartDate);
-    const endDate = new Date(targetDate);
-    originalLoanTerm =
-      (endDate.getFullYear() - startDate.getFullYear()) * 12 +
-      (endDate.getMonth() - startDate.getMonth());
+    const startDate = parseDateOnlyLocal(loanStartDate);
+    const endDate = parseDateOnlyLocal(targetDate);
+    if (startDate && endDate) {
+      originalLoanTerm =
+        (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+        (endDate.getMonth() - startDate.getMonth());
+    }
   }
 
   // Calculate adjusted minimum payment based on current balance
@@ -117,8 +119,8 @@ export function computeLiabilityInfo(
   if (monthlyRate !== undefined && outstanding > 0 && termYears && termYears > 0) {
     const totalMonths = Math.max(1, Math.round(termYears * 12));
     let remainingMonths = totalMonths;
-    if (loanStartDate) {
-      const startDate = new Date(loanStartDate);
+    const startDate = loanStartDate ? parseDateOnlyLocal(loanStartDate) : null;
+    if (startDate) {
       const elapsed = Math.max(
         0,
         (new Date().getFullYear() - startDate.getFullYear()) * 12 +
@@ -143,12 +145,12 @@ export function computeLiabilityInfo(
     minPayment !== undefined
   ) {
     // If we have the original loan term, maintain it and recalculate payment
-    if (originalLoanTerm !== undefined && loanStartDate) {
-      const startDate = new Date(loanStartDate);
+    const planStartDate = loanStartDate ? parseDateOnlyLocal(loanStartDate) : null;
+    if (originalLoanTerm !== undefined && planStartDate) {
       const monthsElapsed = Math.max(
         0,
-        (new Date().getFullYear() - startDate.getFullYear()) * 12 +
-          (new Date().getMonth() - startDate.getMonth())
+        (new Date().getFullYear() - planStartDate.getFullYear()) * 12 +
+          (new Date().getMonth() - planStartDate.getMonth())
       );
       const remainingMonths = Math.max(1, originalLoanTerm - monthsElapsed);
 

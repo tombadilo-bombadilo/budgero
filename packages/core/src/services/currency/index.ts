@@ -6,6 +6,7 @@ import { CurrencyQueries } from './queries.js';
 
 import { createLogger } from '../../logger.js';
 import { getRow, allRows, run } from '../../database/sql.js';
+import { getLocalDateString } from '../../utils/date.js';
 
 const debugLog = createLogger('services:currency');
 
@@ -423,7 +424,9 @@ export class CurrencyService {
     for (const offset of [-1, -2, -3, 1, 2, 3]) {
       const checkDate = new Date(targetDate);
       checkDate.setMonth(checkDate.getMonth() + offset);
-      const checkMonth = checkDate.toISOString().substring(0, 7);
+      // Local getters: checkDate is a local month anchor, so toISOString()
+      // would shift it into the previous month for UTC-positive timezones.
+      const checkMonth = getLocalDateString(checkDate).slice(0, 7);
 
       const rate = this.resolveAndCacheRate(fromCurrency, toCurrency, checkMonth, budgetId);
       if (rate) {
@@ -621,7 +624,7 @@ export class CurrencyService {
 
     if (uniqueCurrencies.length > 0) {
       // 4. Fetch new rates for current month (other months will be fetched during recalculation)
-      const currentMonth = new Date().toISOString().substring(0, 7);
+      const currentMonth = getLocalDateString().slice(0, 7);
       try {
         await this.fetchAndStoreRates(uniqueCurrencies, newCurrency, currentMonth, budgetId);
         debugLog(`Fetched new rates for budget currency change`, {
@@ -680,7 +683,7 @@ export class CurrencyService {
       );
 
       // Use current month for conversion of targets (most consistent baseline)
-      const currentMonth = new Date().toISOString().substring(0, 7);
+      const currentMonth = getLocalDateString().slice(0, 7);
       const rateForGoals = await this.getOrFetchRate(
         oldCurrency,
         newCurrency,

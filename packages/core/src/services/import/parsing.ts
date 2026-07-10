@@ -7,6 +7,7 @@
  */
 
 import type { ColumnMapping } from './types.js';
+import { getLocalDateString } from '../../utils/date.js';
 
 const DELIMITER_CANDIDATES = [',', ';', '\t', '|'] as const;
 type SupportedDelimiter = (typeof DELIMITER_CANDIDATES)[number];
@@ -149,7 +150,7 @@ export function parseAmount(
  * yearless date is encountered, the current year is used.
  */
 export function parseDate(dateStr: string, dateFormat: string, defaultYear?: number): string {
-  if (!dateStr) return new Date().toISOString().split('T')[0];
+  if (!dateStr) return getLocalDateString();
 
   const trimmed = dateStr.trim();
 
@@ -162,15 +163,22 @@ export function parseDate(dateStr: string, dateFormat: string, defaultYear?: num
   const yearless = parseYearlessDate(trimmed, defaultYear ?? new Date().getFullYear());
   if (yearless) return yearless;
 
-  // 3) Fall back to JS Date for other formats (e.g. ISO timestamps,
-  //    full date strings like "2024-01-31T12:34:56Z" or "Jan 31, 2024").
+  // 3) ISO-leading dates ("2024-01-31", "2024-01-31T12:34:56Z"): return the
+  //    written calendar date verbatim. Parsing via new Date() would anchor
+  //    date-only strings to UTC and shift them for users west of UTC.
+  const isoDateOnly = trimmed.match(/^(\d{4}-\d{2}-\d{2})(?:$|[T ])/);
+  if (isoDateOnly) return isoDateOnly[1];
+
+  // 4) Fall back to JS Date for textual formats (e.g. "Jan 31, 2024"), which
+  //    parse as LOCAL midnight — so serialize with local getters, never
+  //    toISOString() (UTC), which shifts the day for users east of UTC.
   const date = new Date(trimmed);
   if (!isNaN(date.getTime())) {
-    return date.toISOString().split('T')[0];
+    return getLocalDateString(date);
   }
 
-  // 4) Last-ditch: today.
-  return new Date().toISOString().split('T')[0];
+  // 5) Last-ditch: today.
+  return getLocalDateString();
 }
 
 const MONTH_NAMES: Record<string, number> = {

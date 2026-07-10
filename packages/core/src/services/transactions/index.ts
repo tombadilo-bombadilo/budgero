@@ -20,6 +20,7 @@ import {
 
 import { createLogger } from '../../logger.js';
 import { asMilli, convertAtRate, ZERO_MILLI, type MilliUnits } from '../../money/index.js';
+import { getLocalDateString } from '../../utils/date.js';
 
 export type {
   Transaction,
@@ -1430,7 +1431,7 @@ export class TransactionService {
    * @returns void
    */
   reconcileAccount(accountId: number, reconcileDate?: string): void {
-    const date = reconcileDate || new Date().toISOString().split('T')[0];
+    const date = reconcileDate || getLocalDateString();
     const timestamp = new Date().toISOString();
 
     this.db.transaction(() => {

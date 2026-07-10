@@ -14,6 +14,7 @@ import { CurrencyService } from '../currency/index.js';
 import { CategoryService } from '../categories/index.js';
 
 import { createLogger } from '../../logger.js';
+import { getLocalDateString } from '../../utils/date.js';
 
 const debugLog = createLogger('services:accounts');
 
@@ -94,7 +95,7 @@ export class AccountService {
     // - Standard accounts: positive initial inflow sets opening balance
     // - Liability accounts (credit/loan/mortgage): record an initial outflow equal to total debt
     //   so the running balance starts negative and payments (inflows) reduce the debt
-    const currentDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
+    const currentDate = getLocalDateString(); // YYYY-MM-DD, user's local calendar day
 
     // Pre-fetch the rate so the initial-balance transaction can be converted immediately.
     const budget = this.queries.getBudget(budgetId);
