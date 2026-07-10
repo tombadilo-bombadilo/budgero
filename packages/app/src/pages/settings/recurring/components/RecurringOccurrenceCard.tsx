@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Card, CardContent } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
@@ -44,7 +44,7 @@ export function RecurringOccurrenceCard({
 }: RecurringOccurrenceCardProps) {
   const { template } = occurrence;
   const amountDisplay = formatRecurringAmount(template, localizer);
-  const dueDate = new Date(`${occurrence.dueDate}T00:00:00Z`);
+  const dueDate = parseISO(occurrence.dueDate);
   const dueLabel = formatDistanceToNow(dueDate, { addSuffix: true });
 
   return (

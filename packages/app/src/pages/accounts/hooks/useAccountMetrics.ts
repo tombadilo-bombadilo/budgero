@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
-import { startOfDay, endOfDay, isValid, parseISO } from 'date-fns';
+import { isValid, parseISO } from 'date-fns';
 import type { DateRange } from 'react-day-picker';
 import type { GetTransactionsByAccountRow } from '@budgero/core/browser';
-import { getTodayISO } from '@shared/lib/date-utils';
+import { extractDateKey, formatDateISO, getTodayISO } from '@shared/lib/date-utils';
 
 /**
  * Normalizes various date inputs to a Date object or null.
@@ -113,9 +113,11 @@ export function useAccountMetrics({
       return undefined;
     }
 
-    const from = dateRange?.from ? startOfDay(dateRange.from) : undefined;
+    // YYYY-MM-DD keys; string comparison avoids UTC-anchored Date parsing,
+    // which excludes range-edge days for users west of UTC.
+    const from = dateRange?.from ? formatDateISO(dateRange.from) : undefined;
     const toSource = dateRange?.to ?? dateRange?.from ?? undefined;
-    const to = toSource ? endOfDay(toSource) : undefined;
+    const to = toSource ? formatDateISO(toSource) : undefined;
 
     return from ? { from, to } : undefined;
   }, [dateRange]);
@@ -125,14 +127,14 @@ export function useAccountMetrics({
     if (!normalizedDateRange?.from) return allTransactionsData;
 
     return allTransactionsData.filter((tx) => {
-      const txDate = new Date(tx.Date);
-      if (Number.isNaN(txDate.getTime())) {
+      const dayKey = extractDateKey(tx.Date);
+      if (dayKey === 'unknown') {
         return false;
       }
-      if (txDate < normalizedDateRange.from) {
+      if (dayKey < normalizedDateRange.from) {
         return false;
       }
-      if (normalizedDateRange.to && txDate > normalizedDateRange.to) {
+      if (normalizedDateRange.to && dayKey > normalizedDateRange.to) {
         return false;
       }
       return true;

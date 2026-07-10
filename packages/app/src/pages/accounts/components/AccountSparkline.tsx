@@ -8,6 +8,7 @@ import { useAccountBalanceHistory } from '@entities/account/api/useAccountBalanc
 import { useUiStore } from '@shared/store/useUiStore';
 import { ResponsiveContainer, LineChart, Line, Tooltip } from 'recharts';
 import { cn } from '@shared/lib/utils';
+import { parseISO } from 'date-fns';
 import { trendTextClass } from '@shared/lib/amount-color';
 import { asMilli, toDecimal } from '@shared/lib/currency/milli';
 
@@ -40,7 +41,7 @@ export function AccountSparkline({
   // Transform data for recharts; chart values are decimal currency units.
   const chartData = sparklineData.map((point) => ({
     value: toDecimal(asMilli(point.balance)),
-    date: new Date(point.date).toLocaleDateString('en-US', {
+    date: parseISO(point.date).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
     }),

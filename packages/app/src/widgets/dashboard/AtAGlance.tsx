@@ -9,7 +9,7 @@ import {
   useReadyToAssign,
 } from '@entities/budget/api/useMonthlyBudget';
 import { useGoals } from '@entities/goal/api/useGoals';
-import { format, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import { Progress } from '@shared/ui/progress';
 import { TrendingDown, Target, Calendar, PiggyBank, Info } from 'lucide-react';
 import {
@@ -50,9 +50,8 @@ export function AtAGlance() {
     .sort((a, b) => (b.Outflow || 0) - (a.Outflow || 0))
     .slice(0, 5);
 
-  const monthDate = new Date(`${currentMonthString}-01`);
-  const start = startOfMonth(monthDate);
-  const end = endOfMonth(monthDate);
+  const start = startOfMonth(today);
+  const end = endOfMonth(today);
   const now = new Date();
   const effectiveToday = now > end ? end : now < start ? start : now;
   const elapsedPct = Math.min(
@@ -154,7 +153,7 @@ export function AtAGlance() {
                   >
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span className="truncate" title={t.Category || 'Uncategorized'}>
-                        {format(new Date(t.Date), 'MMM d')} • {t.Category || 'Uncategorized'}
+                        {format(parseISO(t.Date), 'MMM d')} • {t.Category || 'Uncategorized'}
                       </span>
                       <span className="ml-3 font-semibold text-red-600 whitespace-nowrap">
                         {formatMaskedMilli(globalLocalizer, t.Outflow || 0, privacyMaskNumbers)}

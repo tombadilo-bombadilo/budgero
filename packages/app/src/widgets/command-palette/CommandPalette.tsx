@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { parseISO } from 'date-fns';
 import {
   Calculator,
   Clock,
@@ -565,7 +566,7 @@ export function CommandPalette() {
                   // Format the absolute value and add sign manually to ensure it's on the same line
                   const formattedAmount = formatMilli(globalLocalizer, rawAmount);
                   const amount = isPositive ? `+${formattedAmount}` : `-${formattedAmount}`;
-                  const date = new Date(transaction.Date).toLocaleDateString();
+                  const date = parseISO(transaction.Date).toLocaleDateString();
 
                   return (
                     <CommandItem
@@ -630,7 +631,7 @@ export function CommandPalette() {
           selectedTransaction ? (
             <div className="pt-3 pb-4">
               <div className="text-center text-xs text-muted-foreground">
-                Transaction from {new Date(selectedTransaction.Date).toLocaleDateString()}
+                Transaction from {parseISO(selectedTransaction.Date).toLocaleDateString()}
               </div>
             </div>
           ) : null

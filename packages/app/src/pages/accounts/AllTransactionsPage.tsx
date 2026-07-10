@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useUiStore } from '@shared/store/useUiStore';
 
-import { startOfDay, endOfDay } from 'date-fns';
+import { extractDateKey, formatDateISO } from '@shared/lib/date-utils';
 import { List, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { TooltipProvider } from '@shared/ui/tooltip';
 import { useLoading } from '@shared/contexts/LoadingContext';
@@ -49,12 +49,14 @@ export default function AllTransactionsPage() {
   const transactionsData = useMemo(() => {
     if (!dateRange?.from || !dateRange?.to) return allTransactionsData;
 
-    const fromDate = startOfDay(dateRange.from);
-    const toDate = endOfDay(dateRange.to);
+    // Compare YYYY-MM-DD keys as strings — parsing t.Date with new Date()
+    // anchors it to UTC and excludes range-edge days west of UTC.
+    const fromKey = formatDateISO(dateRange.from);
+    const toKey = formatDateISO(dateRange.to);
 
     return allTransactionsData.filter((t) => {
-      const txDate = new Date(t.Date);
-      return txDate >= fromDate && txDate <= toDate;
+      const dayKey = extractDateKey(t.Date);
+      return dayKey >= fromKey && dayKey <= toKey;
     });
   }, [allTransactionsData, dateRange]);
 

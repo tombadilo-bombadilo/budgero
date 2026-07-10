@@ -1,5 +1,5 @@
 import { useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Calendar as CalendarIcon, Coins, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
@@ -55,10 +55,10 @@ function toDateString(date: Date | null): string {
   return date.toLocaleDateString('en-CA'); // "2025-09-26"
 }
 
-/** Parse a YYYY-MM-DD string to Date */
+/** Parse a YYYY-MM-DD string to Date (local midnight) */
 function fromDateString(str: string): Date | null {
   if (!str) return null;
-  const d = new Date(`${str}T00:00:00`);
+  const d = parseISO(str);
   return isNaN(d.getTime()) ? null : d;
 }
 

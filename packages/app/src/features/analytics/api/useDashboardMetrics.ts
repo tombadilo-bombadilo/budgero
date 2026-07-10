@@ -6,6 +6,7 @@ import {
   endOfMonth,
   eachMonthOfInterval,
   differenceInDays,
+  parseISO,
 } from 'date-fns';
 import {
   useOnBudgetBalance,
@@ -87,7 +88,7 @@ export function useDashboardMetrics(
   const balanceChartData = useMemo<BalanceChartPoint[]>(() => {
     if (!balanceData || balanceData.length === 0) return [];
     return balanceData.map((item) => ({
-      date: format(new Date(item.Date), 'MMM d'),
+      date: format(parseISO(item.Date), 'MMM d'),
       balance: item.Balance,
     }));
   }, [balanceData]);

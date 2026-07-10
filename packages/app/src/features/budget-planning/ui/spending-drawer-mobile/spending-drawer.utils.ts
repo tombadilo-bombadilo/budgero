@@ -8,6 +8,7 @@ import {
   format,
 } from 'date-fns';
 import type { GetTransactionsByAccountRow } from '@budgero/core/browser';
+import { extractDateKey, getMonthKey, getTodayISO } from '@shared/lib/date-utils';
 import { asMilli, toDecimal, ZERO_MILLI, type MilliUnits } from '@shared/lib/currency/milli';
 import { roundMilli } from '@shared/lib/currency/round-amount';
 import type { Transaction, CumulativeDataPoint, GoalStatus } from './types';
@@ -59,22 +60,15 @@ export function filterTransactionsByDate(
 ): Transaction[] {
   if (!transactions || transactions.length === 0) return [];
 
-  const [year, month] = currentMonth.split('-');
-  const baseDate = new Date(Number(year), Number(month) - 1, 1);
-  const now = new Date();
-  const isCurrent = isSameMonth(now, baseDate);
-
-  if (!isCurrent) {
+  // Not the current month: the query already scoped rows to the month.
+  if (currentMonth !== getMonthKey(new Date())) {
     return transactions;
   }
 
-  const start = startOfMonth(baseDate);
-  const end = endOfToday();
-
-  return transactions.filter((tx) => {
-    const date = new Date(tx.Date);
-    return date >= start && date <= end;
-  });
+  // Compare YYYY-MM-DD keys as strings — parsing tx.Date with new Date()
+  // anchors it to UTC and drops 1st-of-month transactions west of UTC.
+  const todayKey = getTodayISO();
+  return transactions.filter((tx) => extractDateKey(tx.Date) <= todayKey);
 }
 
 /**
@@ -107,11 +101,12 @@ export function calculateCumulativeData(
   // Float milliunits — only ever compared or converted to decimal for the chart.
   const dailyBudgetPace = shouldShowBudgetPace ? monthlyGoal / totalDaysInMonth : 0;
 
-  // Map of spending by local date string (YYYY-MM-DD) to avoid UTC shift issues.
-  // Values are exact integer milliunit sums.
+  // Map of spending by date key (YYYY-MM-DD), read straight off the stored
+  // string so no timezone shift is possible. Values are exact integer
+  // milliunit sums.
   const dailySpendMap: Record<string, number> = {};
   filteredTransactions.forEach((tx) => {
-    const dayKey = format(new Date(tx.Date), 'yyyy-MM-dd');
+    const dayKey = extractDateKey(tx.Date);
     dailySpendMap[dayKey] = (dailySpendMap[dayKey] || 0) + tx.Outflow;
   });
 

@@ -1,4 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
+import { parseISO } from 'date-fns';
 import { Badge } from '@shared/ui/badge';
 
 export type WarrantyStatus = 'active' | 'expiring' | 'expired';
@@ -6,7 +7,7 @@ export type WarrantyStatus = 'active' | 'expiring' | 'expired';
 export function getStatus(expiresAt: string): WarrantyStatus {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const expiry = new Date(`${expiresAt}T00:00:00`);
+  const expiry = parseISO(expiresAt);
   const diffMs = expiry.getTime() - today.getTime();
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
   if (diffDays < 0) return 'expired';

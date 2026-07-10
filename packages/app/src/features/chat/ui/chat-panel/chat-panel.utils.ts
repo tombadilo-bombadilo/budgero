@@ -1,4 +1,5 @@
 import type { ChatConversation } from '@budgero/core/browser';
+import { normalizeUtcString } from '@shared/lib/date-utils';
 
 /**
  * Tailwind `prose` classes shared by every rendered-markdown chat bubble
@@ -59,7 +60,8 @@ export function formatTokenCount(tokens: number): string {
  * interchangeable.
  */
 export function formatMessageTime(dateString: string): string {
-  const date = new Date(dateString);
+  // SQLite datetime('now') is timezone-naive UTC; anchor it before local display.
+  const date = new Date(normalizeUtcString(dateString));
   return date.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
@@ -70,7 +72,8 @@ export function formatMessageTime(dateString: string): string {
  * Format a date string into a relative time (e.g., "5m ago", "2h ago")
  */
 export function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
+  // SQLite datetime('now') is timezone-naive UTC; anchor it before diffing with local now.
+  const date = new Date(normalizeUtcString(dateStr));
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);

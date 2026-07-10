@@ -7,6 +7,7 @@
 // Styling is intentionally inline (paper/editorial) — distinct from the
 // post-onboarding shadcn dashboard.
 import React from 'react';
+import { parseISO } from 'date-fns';
 import { CURRENCIES, type OnboardingFormState, type OnboardingStepDef } from '../onboarding-data';
 
 // Repeated palette tokens. Centralized because the same handful of hex
@@ -24,7 +25,7 @@ export function getCurrencySym(code: string): string {
 // Inclusive month count between today and an ISO date, clamped at >= 1 so
 // monthly math never divides by zero when the user picks today / yesterday.
 export function monthsBetweenNow(iso: string): number {
-  const target = new Date(iso);
+  const target = parseISO(iso);
   const now = new Date();
   if (Number.isNaN(target.getTime())) return 1;
   const months =
@@ -35,7 +36,7 @@ export function monthsBetweenNow(iso: string): number {
 }
 
 export function formatDateLabel(iso: string): string {
-  const d = new Date(iso);
+  const d = parseISO(iso);
   if (Number.isNaN(d.getTime())) return iso;
   return d.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 }

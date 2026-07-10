@@ -201,7 +201,7 @@ export function formatUtcTimestamp(value: string): string {
  *
  * @returns The `YYYY-MM-DD` key, or `'unknown'` when the value can't be parsed.
  */
-function extractDateKey(value: unknown): string {
+export function extractDateKey(value: unknown): string {
   if (!value) return 'unknown';
 
   if (typeof value === 'string') {
@@ -227,13 +227,43 @@ function extractDateKey(value: unknown): string {
 }
 
 /** Parse a `YYYY-MM-DD` date key into a Date at local noon (avoids DST edge cases). */
-function parseDateKey(dateKey: string): Date | null {
+export function parseDateKey(dateKey: string): Date | null {
   if (dateKey === 'unknown') return null;
   const match = dateKey.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (!match) return null;
   const [, year, month, day] = match;
   const date = new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0);
   return isValid(date) ? date : null;
+}
+
+/**
+ * Parse a `YYYY-MM` month key into a Date anchored at local noon on the 1st.
+ *
+ * Never build a month anchor with `new Date(`${month}-01`)`: date-only strings
+ * parse as UTC midnight, which reads back as the last day of the *previous*
+ * month for users west of UTC.
+ *
+ * @returns The anchor Date, or null when the key isn't `YYYY-MM`.
+ */
+export function parseMonthKey(monthKey: string): Date | null {
+  const match = monthKey?.match(/^(\d{4})-(\d{2})$/);
+  if (!match) return null;
+  const [, year, month] = match;
+  const date = new Date(Number(year), Number(month) - 1, 1, 12, 0, 0);
+  return isValid(date) ? date : null;
+}
+
+/**
+ * Format a `YYYY-MM` month key as a month-name label (e.g. "June 2026"),
+ * timezone-safe. Falls back to the raw key if it can't be parsed.
+ */
+export function formatMonthLabel(
+  monthKey: string,
+  options: Intl.DateTimeFormatOptions = { month: 'long', year: 'numeric' }
+): string {
+  const date = parseMonthKey(monthKey);
+  if (!date) return monthKey;
+  return date.toLocaleDateString('en-US', options);
 }
 
 export interface DateKeyGroup<T> {

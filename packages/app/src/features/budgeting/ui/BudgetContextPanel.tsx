@@ -50,6 +50,7 @@ import {
 import { useMaskedLocalizer } from '@shared/lib/privacy/useMaskedLocalizer';
 import { useFormatMaskedMilli } from '@features/budget-planning/lib/useFormatMaskedMilli';
 import { cn } from '@shared/lib/utils';
+import { extractDateKey } from '@shared/lib/date-utils';
 import { toastError } from '@shared/lib/errors';
 
 interface BudgetContextPanelProps {
@@ -225,11 +226,14 @@ export function BudgetContextPanel({
     const totalDaysInMonth = differenceInDays(monthEnd, startDate) + 1;
     const dailyBudgetPace = (monthlyGoal as number) / totalDaysInMonth;
 
+    // Compare YYYY-MM-DD keys as strings — parsing tx.Date with new Date()
+    // anchors it to UTC and shifts/drops days for users west of UTC.
+    const startKey = format(startDate, 'yyyy-MM-dd');
+    const endKey = format(actualEndDate, 'yyyy-MM-dd');
     const dailySpendMap: Record<string, number> = {};
     categoryTransactions.forEach((tx) => {
-      const txDate = new Date(tx.Date);
-      if (txDate >= startDate && txDate <= actualEndDate) {
-        const dayKey = format(txDate, 'yyyy-MM-dd');
+      const dayKey = extractDateKey(tx.Date);
+      if (dayKey >= startKey && dayKey <= endKey) {
         dailySpendMap[dayKey] = (dailySpendMap[dayKey] || 0) + (tx.Outflow || 0);
       }
     });
@@ -298,7 +302,7 @@ export function BudgetContextPanel({
   const spendingTotalsMap = useMemo(() => {
     const map = new Map<string, number>();
     spendingQuery.data?.forEach((row) => {
-      const key = row.Period || format(new Date(row.PeriodStart), 'yyyy-MM');
+      const key = row.Period || extractDateKey(row.PeriodStart).slice(0, 7);
       map.set(key, Math.abs(row.TotalSpending || 0));
     });
     return map;

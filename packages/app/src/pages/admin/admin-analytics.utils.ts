@@ -7,5 +7,7 @@ export function toDateInputValue(d: Date): string {
 
 /** Convert a YYYY-MM-DD input value to an RFC3339 UTC midnight timestamp. */
 export function dateInputToISO(d: string): string {
+  // Deliberate UTC anchor: admin analytics windows are server-aligned (UTC).
+  // eslint-disable-next-line no-restricted-syntax
   return new Date(`${d}T00:00:00Z`).toISOString();
 }

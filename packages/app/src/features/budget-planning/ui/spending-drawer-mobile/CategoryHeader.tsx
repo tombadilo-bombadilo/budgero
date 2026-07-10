@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { cn } from '@shared/lib/utils';
+import { formatMonthLabel } from '@shared/lib/date-utils';
 import { asMilli, formatMilli } from '@shared/lib/currency/milli';
 import type { CategoryHeaderProps } from './types';
 
@@ -17,10 +18,7 @@ export const CategoryHeader = memo(function CategoryHeader({
         <div className="flex items-center justify-between gap-2">
           <h3 className="text-base md:text-lg font-semibold truncate">{selectedCategory?.name}</h3>
           <span className="px-2 py-0.5 rounded-full text-[10px] md:text-xs bg-muted/60 dark:bg-white/10 border border-border/30 dark:border-white/10 whitespace-nowrap">
-            {new Date(`${currentMonth}-01`).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-            })}
+            {formatMonthLabel(currentMonth)}
           </span>
         </div>
 

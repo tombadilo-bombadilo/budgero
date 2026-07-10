@@ -104,7 +104,7 @@ export function CategoryTransactionCell({
                     className="rounded-md border border-border/60 bg-muted/20 p-2"
                   >
                     <div className="flex items-center justify-between gap-2 text-xs font-medium">
-                      <span>{format(new Date(transaction.Date), 'MMM d, yyyy')}</span>
+                      <span>{format(parseISO(transaction.Date), 'MMM d, yyyy')}</span>
                       <span className={cn('font-semibold', netClass)}>{netLabel}</span>
                     </div>
                     <div className="mt-1 flex flex-col gap-1 text-[11px] text-muted-foreground">

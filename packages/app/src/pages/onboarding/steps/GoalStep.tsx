@@ -1,7 +1,7 @@
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { MonthYearCalendar } from '@shared/ui/MonthYearCalendar';
 import { Calendar as CalendarIcon } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { formatDateISO } from '@shared/lib/date-utils';
 import React from 'react';
 import { GOAL_TEMPLATES, addMonthsIso, type GoalMode } from '../onboarding-data';
@@ -28,7 +28,7 @@ export const GoalStep: React.FC<StepProps> = ({ cur, state, set }) => {
   // Robust to empty / malformed values (falls back to today) so the picker
   // never receives Invalid Date.
   const targetDateObj = (() => {
-    const d = new Date(state.goal.targetDate);
+    const d = parseISO(state.goal.targetDate);
     if (Number.isNaN(d.getTime())) return new Date();
     return d;
   })();

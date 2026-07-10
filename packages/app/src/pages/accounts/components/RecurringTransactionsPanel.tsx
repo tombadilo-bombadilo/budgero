@@ -12,7 +12,7 @@ import {
   Loader2,
   Repeat,
 } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { cn } from '@shared/lib/utils';
 import { getTodayISO } from '@shared/lib/date-utils';
 import { asMilli, formatMilli } from '@shared/lib/currency/milli';
@@ -217,7 +217,7 @@ export const RecurringTransactionsPanel = React.memo(function RecurringTransacti
                   formatter,
                   asMilli(template.amount)
                 )}`;
-                const dueDate = new Date(`${occurrence.dueDate}T00:00:00Z`);
+                const dueDate = parseISO(occurrence.dueDate);
                 const dueLabel = formatDistanceToNow(dueDate, { addSuffix: true });
                 const isOverdue = occurrence.dueDate < todayKey;
                 const busy = processingOccurrenceId === occurrence.id;

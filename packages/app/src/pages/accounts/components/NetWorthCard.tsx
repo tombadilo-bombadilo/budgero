@@ -9,6 +9,7 @@ import { ChartConfig, ChartContainer } from '@shared/ui/chart';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Area, AreaChart, XAxis, YAxis, Tooltip } from 'recharts';
 import { cn } from '@shared/lib/utils';
+import { parseISO } from 'date-fns';
 import { trendTextClass } from '@shared/lib/amount-color';
 import { asMilli, fromDecimal, toDecimal } from '@shared/lib/currency/milli';
 
@@ -135,7 +136,7 @@ export function NetWorthCard({
                 tickMargin={8}
                 interval="preserveStartEnd"
                 tickFormatter={(value) => {
-                  const date = new Date(value);
+                  const date = parseISO(value);
                   return `${date.getMonth() + 1}/${date.getDate()}`;
                 }}
               />
@@ -151,7 +152,7 @@ export function NetWorthCard({
                   strokeOpacity: 0.3,
                 }}
                 labelFormatter={(value) => {
-                  const date = new Date(value);
+                  const date = parseISO(value);
                   return date.toLocaleDateString('en-US', {
                     weekday: 'short',
                     month: 'short',

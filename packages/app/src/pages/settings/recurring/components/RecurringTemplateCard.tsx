@@ -1,4 +1,4 @@
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, parseISO } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
@@ -69,7 +69,7 @@ export function RecurringTemplateCard({
   onDelete,
 }: RecurringTemplateCardProps) {
   const dueLabel = nextOccurrence
-    ? formatDistanceToNow(new Date(`${nextOccurrence.dueDate}T00:00:00Z`), { addSuffix: true })
+    ? formatDistanceToNow(parseISO(nextOccurrence.dueDate), { addSuffix: true })
     : 'No upcoming dates';
   const amountDisplay = formatRecurringAmount(template, localizer);
   const frequencyLabel = frequencyLabelFor(template.schedule);

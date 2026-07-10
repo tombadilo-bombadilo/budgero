@@ -5,6 +5,7 @@ import { Calendar as CalendarIcon, Tag } from 'lucide-react';
 import type { GetTransactionsByAccountRow } from '@budgero/core/browser';
 import { hexToRgba } from '@shared/lib/color/hex';
 import { formatShortDate } from '@shared/lib/date-utils';
+import { parseISO } from 'date-fns';
 import { asMilli, formatMilli } from '@shared/lib/currency/milli';
 import { StatusIndicatorPopover } from '@features/transactions/ui/StatusIndicatorPopover';
 
@@ -30,7 +31,7 @@ export const TransactionCardHeader = React.memo(function TransactionCardHeader({
   const displayDate = useMemo(() => {
     const rawDate = transaction.Date;
     if (!rawDate) return 'No date';
-    const dateObj = new Date(rawDate);
+    const dateObj = parseISO(rawDate);
     if (isNaN(dateObj.getTime())) return 'No date';
     return formatShortDate(dateObj, { hideCurrentYear: true });
   }, [transaction]);
