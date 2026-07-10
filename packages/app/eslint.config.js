@@ -78,6 +78,26 @@ export default [
       // The app may write to the console (it's the top-level binary, not a library).
       'no-console': 'off',
 
+      // Timezone-shift guards. Date-only strings ("YYYY-MM-DD") parse as UTC
+      // midnight in new Date(), and toISOString() reads back the UTC calendar
+      // day — both shift dates by a day for users away from UTC. Use parseISO
+      // or the helpers in @shared/lib/date-utils (parseDateKey, parseMonthKey,
+      // extractDateKey, formatDateISO, getTodayISO) instead.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "NewExpression[callee.name='Date'][arguments.length=1] > TemplateLiteral.arguments",
+          message:
+            'new Date(`...`) parses date-only strings as UTC midnight. Use parseISO or the date-utils helpers (parseDateKey/parseMonthKey).',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name=/^(split|slice|substring)$/][callee.object.callee.property.name='toISOString']",
+          message:
+            'toISOString().split/slice gives the UTC calendar day, not the local one. Use formatDateISO/getTodayISO/getMonthKey from @shared/lib/date-utils.',
+        },
+      ],
+
       // Core must be consumed through its public entry points only. The bare
       // '@budgero/core' specifier resolves to the Node entry (types) but the
       // browser bundle at runtime, and 'src/*' deep imports bypass the package

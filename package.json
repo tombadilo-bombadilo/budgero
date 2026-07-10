@@ -26,6 +26,7 @@
     "test:app": "cd packages/app && pnpm run test",
     "test:app:coverage": "cd packages/app && pnpm run test:coverage",
     "test:server": "cd packages/server && pnpm run test",
+    "test:tz": "TZ=America/New_York pnpm run test:core && TZ=Pacific/Auckland pnpm run test:core && TZ=America/New_York pnpm run test:app && TZ=Pacific/Auckland pnpm run test:app",
     "type-check:app": "cd packages/app && pnpm run type-check",
     "type-check:app:solution": "cd packages/app && pnpm run type-check:solution",
     "type-check:runtime": "cd packages/runtime && pnpm exec tsc -p tsconfig.json --noEmit --pretty false",

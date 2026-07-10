@@ -22,6 +22,27 @@ export default [
       // Libraries must not write to stdout — use the `debug`-based logger (src/logger.ts).
       // console.warn / console.error are allowed for genuine, surfacing problems.
       'no-console': ['error', { allow: ['warn', 'error'] }],
+
+      // Timezone-shift guards. Date-only strings ("YYYY-MM-DD") parse as UTC
+      // midnight in new Date(), and toISOString() reads back the UTC calendar
+      // day — both shift dates by a day for users away from UTC. Use the
+      // helpers in src/utils/date.ts (getLocalDateString, getUTCDateString,
+      // parseDateOnlyLocal) instead; annotate deliberate UTC anchors.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "NewExpression[callee.name='Date'][arguments.length=1] > TemplateLiteral.arguments",
+          message:
+            'new Date(`...`) parses date-only strings as UTC midnight. Use parseDateOnlyLocal, or disable with a comment for deliberate UTC anchors.',
+        },
+        {
+          selector:
+            "CallExpression[callee.property.name=/^(split|slice|substring)$/][callee.object.callee.property.name='toISOString']",
+          message:
+            'toISOString().split/slice gives the UTC calendar day, not the local one. Use getLocalDateString from utils/date.ts.',
+        },
+      ],
     },
   },
 
