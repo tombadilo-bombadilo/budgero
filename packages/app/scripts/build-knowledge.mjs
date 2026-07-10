@@ -144,5 +144,13 @@ export interface KnowledgeDoc {
 
 export const KNOWLEDGE_DOCS: KnowledgeDoc[] = ${JSON.stringify(docs, null, 2)};
 `;
-writeFileSync(outFile, header, 'utf8');
+
+// Format with prettier so the output matches what lint-staged commits —
+// otherwise every regeneration flips the file between JSON-style and
+// prettified quoting and it shows up as perpetually modified.
+const { format, resolveConfig } = await import('prettier');
+const prettierOptions = (await resolveConfig(outFile)) ?? {};
+const formatted = await format(header, { ...prettierOptions, filepath: outFile });
+
+writeFileSync(outFile, formatted, 'utf8');
 console.log(`[build-knowledge] Wrote ${docs.length} docs to ${outFile}`);
