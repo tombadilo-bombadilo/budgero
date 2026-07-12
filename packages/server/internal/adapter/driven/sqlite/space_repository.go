@@ -371,6 +371,18 @@ func (r *SpaceRepository) UpdateMemberEncryptedKey(ctx context.Context, spaceID,
 	})
 }
 
+// UpdateMemberEncryptedKeys atomically updates encrypted keys for a member.
+func (r *SpaceRepository) UpdateMemberEncryptedKeys(ctx context.Context, userID string, encryptedKeys map[string]string) error {
+	updated, err := r.queries.UpdateMemberEncryptedKeys(ctx, userID, encryptedKeys)
+	if err != nil {
+		return err
+	}
+	if updated != int64(len(encryptedKeys)) {
+		return domain.ErrSpaceAccessDenied
+	}
+	return nil
+}
+
 // DeleteMember removes a member from a space.
 func (r *SpaceRepository) DeleteMember(ctx context.Context, spaceID, userID string) error {
 	return r.queries.DeleteSpaceMember(ctx, sqlc.DeleteSpaceMemberParams{

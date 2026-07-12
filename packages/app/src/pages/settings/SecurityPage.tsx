@@ -219,13 +219,16 @@ export default function SecurityPage() {
       // local OPFS at-rest cipher. So the flow is: re-wrap, re-key OPFS,
       // notify this user's other devices, reload.
 
-      // Step 3: Re-wrap workspace keys with the new master password
+      // Step 3: Re-wrap every workspace key locally, then commit the complete
+      // set atomically. A sequential update can strand an account with some
+      // spaces under the old password and others under the new one.
       toast.info('Updating workspace access credentials...');
       const apis = await import('@shared/api/api-client');
+      const wrappedKeys: Record<string, string> = {};
       for (const entry of workspaceKeys) {
-        const wrappedKey = await wrapSpaceKeyWithMaster(entry.key, newPassword);
-        await apis.spaceApi.updateEncryptedKey(entry.spaceId, wrappedKey);
+        wrappedKeys[entry.spaceId] = await wrapSpaceKeyWithMaster(entry.key, newPassword);
       }
+      await apis.spaceApi.updateEncryptedKeys(wrappedKeys);
 
       // Step 4: Update stored master password locally
       await MasterPasswordManager.store(newPassword);

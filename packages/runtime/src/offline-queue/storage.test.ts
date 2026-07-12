@@ -5,7 +5,7 @@ import { createStorageMock } from '../__tests__/storage-mock';
 
 /** The device-key store caches its IndexedDB handle; reset between tests. */
 function resetDeviceKeyDbCache(): void {
-  (masterPasswordStore as unknown as { indexedDBPromise: unknown }).indexedDBPromise = null;
+  (masterPasswordStore as unknown as { indexedDBStore: unknown }).indexedDBStore = null;
 }
 
 function sample(spaceId: string) {
@@ -60,10 +60,10 @@ describe('queue storage', () => {
     expect(loaded).toHaveLength(1);
     expect(loaded[0]?.timestamp).toBeInstanceOf(Date);
 
-    // With IndexedDB down the device key is unavailable, so save() persists
-    // nothing — and in particular never writes plaintext to localStorage.
+    // With IndexedDB down, save() reports that durability failed and never
+    // writes a plaintext localStorage fallback.
     localStorageMock.clear();
-    await storage.save('s1', [sample('s1')]);
+    await expect(storage.save('s1', [sample('s1')])).rejects.toThrow();
     expect(localStorageMock.getItem('budgero_offline_mutation_queue_s1')).toBeNull();
 
     Object.defineProperty(globalThis, 'indexedDB', {

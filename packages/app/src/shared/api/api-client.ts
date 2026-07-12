@@ -459,6 +459,10 @@ export const spaceApi = {
     apiClient.put(`/budget-spaces/${spaceId}/members/me/encrypted-key`, {
       encrypted_space_key: encryptedSpaceKey,
     }),
+  updateEncryptedKeys: (encryptedSpaceKeys: Record<string, string>) =>
+    apiClient.put('/budget-spaces/members/me/encrypted-keys', {
+      encrypted_space_keys: encryptedSpaceKeys,
+    }),
   // NOTE: incrementEncryptionKeyVersion moved to WebSocket for proper sender exclusion
   inspectInvite: (inviteSecret: string) =>
     apiClient.post<SpaceInviteInspection>(`/budget-space-invites/inspect`, {

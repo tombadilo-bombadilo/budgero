@@ -3,6 +3,8 @@ import { RuntimeCoordinator } from './runtime-coordinator';
 import { createStorageMock } from '../__tests__/storage-mock';
 import { CancellationError } from '../utils/diagnostics';
 import { BLOB_VERSION_STORAGE_PREFIX, MUTATION_CURSOR_STORAGE_PREFIX } from '../types/storage-keys';
+import { FakeIndexedDBFactory } from '../__tests__/indexeddb-mock';
+import { masterPasswordStore } from '../key-vault/master-password-store';
 
 function createDb() {
   return {
@@ -20,6 +22,7 @@ describe('RuntimeCoordinator', () => {
   const sessionStorageMock = createStorageMock();
 
   afterEach(() => {
+    (masterPasswordStore as unknown as { indexedDBStore: unknown }).indexedDBStore = null;
     localStorageMock.clear();
     sessionStorageMock.clear();
     vi.unstubAllGlobals();
@@ -79,6 +82,7 @@ describe('RuntimeCoordinator', () => {
   it('initializes the runtime and exposes accessors', async () => {
     vi.stubGlobal('localStorage', localStorageMock as unknown as Storage);
     vi.stubGlobal('sessionStorage', sessionStorageMock as unknown as Storage);
+    vi.stubGlobal('indexedDB', new FakeIndexedDBFactory() as unknown as IDBFactory);
 
     const { coordinator, queryClient } = createCoordinator();
     const states: string[] = [];

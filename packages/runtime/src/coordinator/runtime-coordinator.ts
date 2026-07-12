@@ -74,6 +74,7 @@ export class RuntimeCoordinator {
 
     this.keyVault = new KeyVault({
       uploadEncryptedKey: deps.uploadEncryptedKey,
+      allowUnpersistedOwnerKey: deps.isE2E === true,
     });
 
     this.connectivity = new ConnectivityMonitor({

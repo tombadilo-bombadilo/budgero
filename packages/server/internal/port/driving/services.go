@@ -100,6 +100,9 @@ type SpaceService interface {
 	// UpdateMemberEncryptedKey updates a member's encrypted space key.
 	UpdateMemberEncryptedKey(ctx context.Context, userID, spaceID, encryptedKey string) error
 
+	// UpdateMemberEncryptedKeys atomically updates encrypted keys across a member's spaces.
+	UpdateMemberEncryptedKeys(ctx context.Context, userID string, encryptedKeys map[string]string) error
+
 	// IsOwner checks if a user is the owner of a space.
 	IsOwner(ctx context.Context, userID, spaceID string) (bool, error)
 

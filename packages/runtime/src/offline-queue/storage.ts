@@ -1,7 +1,8 @@
 /**
  * Storage interface for OfflineQueue.
  * Default implementation uses IndexedDB for crash-resilient, async storage.
- * Falls back to localStorage if IndexedDB is unavailable.
+ * If IndexedDB/device encryption is unavailable, persistence fails explicitly;
+ * plaintext localStorage is read only for legacy migration and never written.
  *
  * Queue entries hold decrypted mutation payloads (amounts, payees, memos), so
  * they are persisted AES-GCM-encrypted under the non-extractable device key
@@ -15,6 +16,7 @@ import type { MutationPayload } from '../types';
 import { MUTATION_FORMAT_VERSION, upgradeLegacyMoneyValues } from '../sync-format.js';
 import { masterPasswordStore } from '../key-vault/master-password-store';
 import { DEVICE_ENCRYPTED_PREFIX } from '../key-vault/device-crypto';
+import { IndexedDBStore } from '../key-vault/indexeddb-store';
 
 export interface QueueStorage {
   load(spaceId: string): Promise<MutationPayload[]>;
@@ -43,43 +45,15 @@ const DB_NAME = 'budgero_offline_queue';
 const DB_VERSION = 1;
 const STORE_NAME = 'mutations';
 
-function openDb(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
-}
-
 /**
  * IndexedDB-backed queue storage.
  */
 export class IndexedDBQueueStorage implements QueueStorage {
-  private dbPromise: Promise<IDBDatabase> | null = null;
-
-  private getDb(): Promise<IDBDatabase> {
-    if (!this.dbPromise) {
-      this.dbPromise = openDb();
-    }
-    return this.dbPromise;
-  }
+  private readonly store = new IndexedDBStore(DB_NAME, DB_VERSION, STORE_NAME);
 
   async load(spaceId: string): Promise<MutationPayload[]> {
     try {
-      const db = await this.getDb();
-      const raw = await new Promise<unknown>((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const store = tx.objectStore(STORE_NAME);
-        const request = store.get(spaceId);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
+      const raw = await this.store.get(spaceId);
 
       const mutations = await this.decodeStoredQueue(raw, spaceId);
 
@@ -87,7 +61,12 @@ export class IndexedDBQueueStorage implements QueueStorage {
       // writes under the same key, so the plaintext copy is replaced only
       // when encryption succeeds — otherwise migration retries next load.
       if (Array.isArray(raw) && mutations.length > 0) {
-        await this.save(spaceId, mutations);
+        try {
+          await this.save(spaceId, mutations);
+        } catch {
+          // Keep serving the legacy queue and leave the plaintext record in
+          // place so migration can retry without hiding queued work.
+        }
         return mutations;
       }
 
@@ -107,34 +86,18 @@ export class IndexedDBQueueStorage implements QueueStorage {
   }
 
   async save(spaceId: string, queue: MutationPayload[]): Promise<void> {
-    try {
-      const db = await this.getDb();
-      if (queue.length === 0) {
-        return await new Promise((resolve, reject) => {
-          const tx = db.transaction(STORE_NAME, 'readwrite');
-          tx.objectStore(STORE_NAME).delete(spaceId);
-          tx.oncomplete = () => resolve();
-          tx.onerror = () => reject(tx.error);
-        });
-      }
-
-      const token = await masterPasswordStore.encryptStringForDevice(JSON.stringify(queue));
-      if (!token) {
-        // Never write plaintext. The in-memory queue still serves this
-        // session; only crash-resilience is degraded until encryption works.
-        return;
-      }
-
-      return await new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readwrite');
-        tx.objectStore(STORE_NAME).put(token, spaceId);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-    } catch {
-      // No localStorage fallback: it could only ever hold plaintext (the
-      // device key lives in IndexedDB), and plaintext is never written.
+    if (queue.length === 0) {
+      return this.store.delete(spaceId);
     }
+
+    const token = await masterPasswordStore.encryptStringForDevice(JSON.stringify(queue));
+    if (!token) {
+      // Never claim durability when encryption was unavailable. Callers keep
+      // their in-memory queue, but can now surface/retry the failed persist.
+      throw new Error('Offline queue encryption unavailable; mutation was not persisted');
+    }
+
+    return this.store.put(spaceId, token);
   }
 
   /** Decode a stored value: `enc1:` token, legacy plaintext array, or empty. */
@@ -188,13 +151,7 @@ export class IndexedDBQueueStorage implements QueueStorage {
 
     try {
       await this.save(spaceId, mutations);
-      const db = await this.getDb();
-      const persisted = await new Promise<unknown>((resolve, reject) => {
-        const tx = db.transaction(STORE_NAME, 'readonly');
-        const request = tx.objectStore(STORE_NAME).get(spaceId);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
+      const persisted = await this.store.get(spaceId);
       if (typeof persisted === 'string' && persisted.startsWith(DEVICE_ENCRYPTED_PREFIX)) {
         localStorage.removeItem(`budgero_offline_mutation_queue_${spaceId}`);
       }

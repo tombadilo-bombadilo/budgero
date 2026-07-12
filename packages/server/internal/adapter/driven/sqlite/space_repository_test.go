@@ -497,6 +497,40 @@ func TestSpaceRepository_UpdateMemberEncryptedKey(t *testing.T) {
 	}
 }
 
+func TestSpaceRepository_UpdateMemberEncryptedKeysAtomic(t *testing.T) {
+	sqlDB, queries := testkit.NewTestDB(t, false)
+	repo := sqlite.NewSpaceRepository(queries)
+	ctx := context.Background()
+
+	ownerID := testkit.SeedUser(t, queries, "owner-batch@example.com")
+	spaceOne := testkit.SeedSpace(t, sqlDB, queries, ownerID, "One")
+	spaceTwo := testkit.SeedSpace(t, sqlDB, queries, ownerID, "Two")
+
+	if err := repo.UpdateMemberEncryptedKeys(ctx, ownerID, map[string]string{
+		spaceOne: "new-one",
+		spaceTwo: "new-two",
+	}); err != nil {
+		t.Fatalf("UpdateMemberEncryptedKeys() error = %v", err)
+	}
+	for spaceID, want := range map[string]string{spaceOne: "new-one", spaceTwo: "new-two"} {
+		members, _ := repo.ListMembers(ctx, spaceID)
+		if members[0].EncryptedSpaceKey != want {
+			t.Fatalf("space %s key = %q, want %q", spaceID, members[0].EncryptedSpaceKey, want)
+		}
+	}
+
+	if err := repo.UpdateMemberEncryptedKeys(ctx, ownerID, map[string]string{
+		spaceOne:  "must-not-land",
+		"missing": "missing-key",
+	}); !errors.Is(err, domain.ErrSpaceAccessDenied) {
+		t.Fatalf("partial batch error = %v, want access denied", err)
+	}
+	members, _ := repo.ListMembers(ctx, spaceOne)
+	if members[0].EncryptedSpaceKey != "new-one" {
+		t.Fatalf("partial batch changed existing key to %q", members[0].EncryptedSpaceKey)
+	}
+}
+
 func TestSpaceRepository_DeleteMember(t *testing.T) {
 	sqlDB, queries := testkit.NewTestDB(t, false)
 	repo := sqlite.NewSpaceRepository(queries)

@@ -18,10 +18,8 @@
  */
 
 import { getGlobalCrypto, getSubtleCrypto } from '../crypto/subtle';
-import {
-  MASTER_PASSWORD_INDEXEDDB_STORE,
-  MASTER_PASSWORD_DEVICE_KEY_RECORD_KEY,
-} from '../types/storage-keys';
+import { MASTER_PASSWORD_DEVICE_KEY_RECORD_KEY } from '../types/storage-keys';
+import { IndexedDBStore } from './indexeddb-store';
 
 /** Prefix marking a device-key-encrypted value in string storage. */
 export const DEVICE_ENCRYPTED_PREFIX = 'enc1:';
@@ -48,50 +46,18 @@ async function generateDeviceKey(): Promise<CryptoKey> {
   ]) as Promise<CryptoKey>;
 }
 
-function readDeviceKeyRecord(db: IDBDatabase): Promise<CryptoKey | null> {
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(MASTER_PASSWORD_INDEXEDDB_STORE, 'readonly');
-      const request = tx
-        .objectStore(MASTER_PASSWORD_INDEXEDDB_STORE)
-        .get(MASTER_PASSWORD_DEVICE_KEY_RECORD_KEY);
-      request.onsuccess = () => {
-        resolve(isCryptoKeyLike(request.result) ? request.result : null);
-      };
-      request.onerror = () => resolve(null);
-    } catch {
-      resolve(null);
-    }
-  });
-}
-
-/** add() so a concurrent tab's key wins; returns whether OUR write landed. */
-function addDeviceKeyRecord(db: IDBDatabase, key: CryptoKey): Promise<boolean> {
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(MASTER_PASSWORD_INDEXEDDB_STORE, 'readwrite');
-      tx.objectStore(MASTER_PASSWORD_INDEXEDDB_STORE).add(
-        key,
-        MASTER_PASSWORD_DEVICE_KEY_RECORD_KEY
-      );
-      tx.oncomplete = () => resolve(true);
-      tx.onabort = () => resolve(false);
-      tx.onerror = () => resolve(false);
-    } catch {
-      resolve(false);
-    }
-  });
-}
-
 /**
  * Load the device key, creating it on first use. Races between tabs resolve
  * to a single winner via add(); the loser re-reads the stored key.
  */
-export async function getOrCreateDeviceKey(db: IDBDatabase | null): Promise<CryptoKey | null> {
-  if (!db) return null;
+export async function getOrCreateDeviceKey(
+  store: IndexedDBStore | null,
+  recordKey = MASTER_PASSWORD_DEVICE_KEY_RECORD_KEY
+): Promise<CryptoKey | null> {
+  if (!store) return null;
 
-  const existing = await readDeviceKeyRecord(db);
-  if (existing) return existing;
+  const existing = await store.get(recordKey).catch(() => null);
+  if (isCryptoKeyLike(existing)) return existing;
 
   let generated: CryptoKey;
   try {
@@ -100,24 +66,20 @@ export async function getOrCreateDeviceKey(db: IDBDatabase | null): Promise<Cryp
     return null;
   }
 
-  const won = await addDeviceKeyRecord(db, generated);
-  if (won) return generated;
-  return readDeviceKeyRecord(db);
+  try {
+    await store.add(recordKey, generated);
+    return generated;
+  } catch {
+    const winner = await store.get(recordKey).catch(() => null);
+    return isCryptoKeyLike(winner) ? winner : null;
+  }
 }
 
-export function deleteDeviceKeyRecord(db: IDBDatabase | null): Promise<void> {
-  if (!db) return Promise.resolve();
-  return new Promise((resolve) => {
-    try {
-      const tx = db.transaction(MASTER_PASSWORD_INDEXEDDB_STORE, 'readwrite');
-      tx.objectStore(MASTER_PASSWORD_INDEXEDDB_STORE).delete(MASTER_PASSWORD_DEVICE_KEY_RECORD_KEY);
-      tx.oncomplete = () => resolve();
-      tx.onabort = () => resolve();
-      tx.onerror = () => resolve();
-    } catch {
-      resolve();
-    }
-  });
+export async function deleteDeviceKeyRecord(
+  store: IndexedDBStore | null,
+  recordKey = MASTER_PASSWORD_DEVICE_KEY_RECORD_KEY
+): Promise<void> {
+  await store?.delete(recordKey).catch(() => undefined);
 }
 
 export async function encryptWithDeviceKey(

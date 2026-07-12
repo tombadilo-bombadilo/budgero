@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { masterPasswordStore } from '@budgero/runtime';
+import { FakeIndexedDBFactory } from '@/test/indexeddb-mock';
 
 import { MasterPasswordManager } from './master-password';
 
@@ -32,157 +33,6 @@ function createStorageMock(state: StorageState): Storage {
       state.set(key, String(value));
     },
   };
-}
-
-class FakeIndexedDBDatabase {
-  private stores = new Map<string, Map<string, unknown>>();
-
-  objectStoreNames = {
-    contains: (name: string) => this.stores.has(name),
-  } as unknown as DOMStringList;
-
-  createObjectStore(name: string): IDBObjectStore {
-    if (!this.stores.has(name)) {
-      this.stores.set(name, new Map<string, unknown>());
-    }
-    return {} as IDBObjectStore;
-  }
-
-  transaction(name: string, _mode: IDBTransactionMode): IDBTransaction {
-    const store = this.stores.get(name);
-    if (!store) {
-      throw new Error(`missing object store: ${name}`);
-    }
-
-    const tx: Partial<IDBTransaction> & { objectStore: (storeName: string) => IDBObjectStore } = {
-      objectStore: () => {
-        const objectStore: Partial<IDBObjectStore> = {
-          get: (key: IDBValidKey) => {
-            const request: Partial<IDBRequest> = {};
-            queueMicrotask(() => {
-              Object.defineProperty(request, 'result', {
-                configurable: true,
-                value: store.get(String(key)),
-              });
-              const cb = request.onsuccess;
-              if (cb) {
-                cb.call(
-                  request as IDBRequest,
-                  new Event('success') as Event & { target: IDBRequest }
-                );
-              }
-            });
-            return request as IDBRequest;
-          },
-          add: (value: unknown, key?: IDBValidKey) => {
-            const request: Partial<IDBRequest> = {};
-            queueMicrotask(() => {
-              if (store.has(String(key))) {
-                request.onerror?.call(
-                  request as IDBRequest,
-                  new Event('error') as Event & { target: IDBRequest }
-                );
-                tx.onabort?.call(tx as IDBTransaction, new Event('abort') as Event);
-                return;
-              }
-              store.set(String(key), value);
-              request.onsuccess?.call(
-                request as IDBRequest,
-                new Event('success') as Event & { target: IDBRequest }
-              );
-              tx.oncomplete?.call(tx as IDBTransaction, new Event('complete') as Event);
-            });
-            return request as IDBRequest;
-          },
-          put: (value: unknown, key?: IDBValidKey) => {
-            const request: Partial<IDBRequest> = {};
-            queueMicrotask(() => {
-              store.set(String(key), value);
-              const reqCb = request.onsuccess;
-              if (reqCb) {
-                reqCb.call(
-                  request as IDBRequest,
-                  new Event('success') as Event & { target: IDBRequest }
-                );
-              }
-              const txCb = tx.oncomplete;
-              if (txCb) {
-                txCb.call(tx as IDBTransaction, new Event('complete') as Event);
-              }
-            });
-            return request as IDBRequest;
-          },
-          delete: (key: IDBValidKey) => {
-            const request: Partial<IDBRequest> = {};
-            queueMicrotask(() => {
-              store.delete(String(key));
-              const reqCb = request.onsuccess;
-              if (reqCb) {
-                reqCb.call(
-                  request as IDBRequest,
-                  new Event('success') as Event & { target: IDBRequest }
-                );
-              }
-              const txCb = tx.oncomplete;
-              if (txCb) {
-                txCb.call(tx as IDBTransaction, new Event('complete') as Event);
-              }
-            });
-            return request as IDBRequest;
-          },
-        };
-        return objectStore as IDBObjectStore;
-      },
-    };
-
-    return tx as IDBTransaction;
-  }
-
-  read(storeName: string, key: string): unknown {
-    return this.stores.get(storeName)?.get(key);
-  }
-}
-
-class FakeIndexedDBFactory {
-  private initialized = false;
-
-  private db = new FakeIndexedDBDatabase();
-
-  open(_name: string, _version?: number): IDBOpenDBRequest {
-    const request: Partial<IDBOpenDBRequest> = {};
-    queueMicrotask(() => {
-      Object.defineProperty(request, 'result', {
-        configurable: true,
-        value: this.db as unknown as IDBDatabase,
-      });
-      if (!this.initialized) {
-        this.initialized = true;
-        const upgradeCb = request.onupgradeneeded;
-        if (upgradeCb) {
-          upgradeCb.call(
-            request as IDBOpenDBRequest,
-            new Event('upgradeneeded') as IDBVersionChangeEvent
-          );
-        }
-      }
-      const successCb = request.onsuccess;
-      if (successCb) {
-        successCb.call(request as IDBOpenDBRequest, new Event('success') as Event);
-      }
-    });
-    return request as IDBOpenDBRequest;
-  }
-
-  reset(): void {
-    this.initialized = false;
-    this.db = new FakeIndexedDBDatabase();
-  }
-
-  getSessionPayload(): SessionPayload | undefined {
-    return this.db.read(MASTER_PASSWORD_INDEXEDDB_STORE, MASTER_PASSWORD_INDEXEDDB_RECORD_KEY) as
-      | SessionPayload
-      | undefined;
-  }
 }
 
 function setGlobalIndexedDB(value: IDBFactory | undefined): void {
@@ -220,6 +70,10 @@ describe('MasterPasswordManager IndexedDB persistence', () => {
   const originalSessionStorage = globalThis.sessionStorage;
   const localStorageState = new Map<string, string>();
   const sessionStorageState = new Map<string, string>();
+  const getSessionPayload = () =>
+    fakeIndexedDB.read(MASTER_PASSWORD_INDEXEDDB_STORE, MASTER_PASSWORD_INDEXEDDB_RECORD_KEY) as
+      | SessionPayload
+      | undefined;
 
   beforeAll(() => {
     setGlobalStorage('localStorage', createStorageMock(localStorageState));
@@ -232,7 +86,7 @@ describe('MasterPasswordManager IndexedDB persistence', () => {
     sessionStorageState.clear();
     fakeIndexedDB.reset();
     setManagerInternal('inMemoryPassword', null);
-    setManagerInternal('indexedDBPromise', null);
+    setManagerInternal('indexedDBStore', null);
     setGlobalIndexedDB(fakeIndexedDB as unknown as IDBFactory);
   });
 
@@ -247,7 +101,7 @@ describe('MasterPasswordManager IndexedDB persistence', () => {
     await flushAsyncStorageWork();
 
     await MasterPasswordManager.store('secret-123');
-    const payload = fakeIndexedDB.getSessionPayload();
+    const payload = getSessionPayload();
 
     // Hardened at-rest format: encrypted under the non-extractable device
     // key — never a readable password field.
@@ -281,12 +135,12 @@ describe('MasterPasswordManager IndexedDB persistence', () => {
     // deleted, never read back.
     expect(cached).toBeNull();
     expect(sessionStorage.getItem(MASTER_PASSWORD_SESSION_CACHE_KEY)).toBeNull();
-    expect(fakeIndexedDB.getSessionPayload()).toBeUndefined();
+    expect(getSessionPayload()).toBeUndefined();
   });
 
   it('degrades to memory-only (never plaintext) when IndexedDB is unavailable', async () => {
     setGlobalIndexedDB(undefined);
-    setManagerInternal('indexedDBPromise', null);
+    setManagerInternal('indexedDBStore', null);
 
     MasterPasswordManager.setPersistenceSetting({ mode: 'session', days: 7 });
     await flushAsyncStorageWork();
@@ -307,14 +161,14 @@ describe('MasterPasswordManager IndexedDB persistence', () => {
     await flushAsyncStorageWork();
     await MasterPasswordManager.store('to-clear');
 
-    expect(fakeIndexedDB.getSessionPayload()?.password).toBeUndefined();
-    expect(fakeIndexedDB.getSessionPayload()).toBeDefined();
+    expect(getSessionPayload()?.password).toBeUndefined();
+    expect(getSessionPayload()).toBeDefined();
 
     MasterPasswordManager.clear();
     await flushAsyncStorageWork();
 
     expect(localStorage.getItem(MASTER_PASSWORD_STATUS_KEY)).toBeNull();
-    expect(fakeIndexedDB.getSessionPayload()).toBeUndefined();
+    expect(getSessionPayload()).toBeUndefined();
 
     setManagerInternal('inMemoryPassword', null);
     const cached = await MasterPasswordManager.get();

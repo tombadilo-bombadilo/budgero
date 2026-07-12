@@ -163,6 +163,7 @@ func SetupRoutes(e *echo.Echo, h *handler.Handlers, services *application.Servic
 	protected.DELETE("/budget-spaces/:spaceID/invites/:inviteID", h.CancelBudgetSpaceInvite)
 	protected.PUT("/budget-spaces/:spaceID/invites/:inviteID/bundle", h.AttachInviteBundle)
 	protected.PUT("/budget-spaces/:spaceID/members/me/encrypted-key", h.UpdateMyEncryptedSpaceKey)
+	protected.PUT("/budget-spaces/members/me/encrypted-keys", h.UpdateMyEncryptedSpaceKeys)
 	// NOTE: encryption-key-version is now handled via WebSocket for proper sender exclusion
 
 	// Legacy routes for backward compatibility (can be removed later)

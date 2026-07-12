@@ -17,11 +17,9 @@ import { writePendingSpaceInvite } from '@features/budget-sharing/lib/pending-sp
 // module load (before createRoot) gets ahead of every render. The fragment
 // stays client-side either way: never sent to the server, never logged.
 //
-// We mirror the secret to BOTH sessionStorage (preferred — clears on tab
-// close) AND localStorage (fallback). localStorage matters for the Clerk
-// email-verification path: that link opens in a new tab, where sessionStorage
-// is empty, so without localStorage a brand new invitee falls through to
-// standard onboarding. The redeem flow clears both on success.
+// The handoff helper immediately creates a bounded same-tab fallback, then
+// persists an AES-GCM-encrypted cross-tab record for Clerk email verification.
+// The redeem flow destroys both the ciphertext and its non-extractable key.
 (function captureJoinHashOnBoot() {
   if (typeof window === 'undefined') return;
   if (!window.location.pathname.startsWith('/join')) return;
@@ -31,7 +29,7 @@ import { writePendingSpaceInvite } from '@features/budget-sharing/lib/pending-sp
   if (!raw) return;
   const code = new URLSearchParams(raw).get('code');
   if (!code || code.trim().length === 0) return;
-  writePendingSpaceInvite(code.trim());
+  void writePendingSpaceInvite(code.trim());
   try {
     window.history.replaceState(null, '', window.location.pathname);
   } catch {

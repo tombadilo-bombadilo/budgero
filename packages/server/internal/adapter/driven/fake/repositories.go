@@ -709,6 +709,23 @@ func (r *SpaceRepository) UpdateMemberEncryptedKey(ctx context.Context, spaceID,
 	return domain.ErrSpaceAccessDenied
 }
 
+// UpdateMemberEncryptedKeys atomically updates encrypted keys for a member.
+func (r *SpaceRepository) UpdateMemberEncryptedKeys(ctx context.Context, userID string, encryptedKeys map[string]string) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	for spaceID := range encryptedKeys {
+		members, ok := r.members[spaceID]
+		if !ok || members[userID] == nil {
+			return domain.ErrSpaceAccessDenied
+		}
+	}
+	for spaceID, encryptedKey := range encryptedKeys {
+		r.members[spaceID][userID].EncryptedSpaceKey = encryptedKey
+	}
+	return nil
+}
+
 // DeleteMember removes a member from a space.
 func (r *SpaceRepository) DeleteMember(ctx context.Context, spaceID, userID string) error {
 	r.mu.Lock()

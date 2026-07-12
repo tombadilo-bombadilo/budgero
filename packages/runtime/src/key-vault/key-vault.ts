@@ -15,8 +15,7 @@ import {
   unwrapSpaceKeyWithMaster,
 } from '../crypto';
 import { SPACE_KEY_STORAGE_PREFIX } from '../types/storage-keys';
-import { errorMessage, isDecryptionError } from '../utils/diagnostics';
-import { logRuntime } from '../logging';
+import { isDecryptionError } from '../utils/diagnostics';
 import type { SpaceSummary } from '../types';
 import {
   MasterPasswordStore,
@@ -32,6 +31,8 @@ export type { MasterPasswordPersistenceSetting };
 export interface KeyVaultDeps {
   /** Upload a newly generated encrypted space key to the server. */
   uploadEncryptedKey?(spaceId: string, wrappedKey: string): Promise<void>;
+  /** Explicit escape hatch for local-only/E2E runtimes with no remote key store. */
+  allowUnpersistedOwnerKey?: boolean;
   /** Master-password state owner. Defaults to the shared singleton. */
   masterPasswordStore?: MasterPasswordStore;
 }
@@ -223,17 +224,14 @@ export class KeyVault {
       const newKey = generateSpaceKey();
       const wrapped = await wrapSpaceKeyWithMaster(newKey, masterPassword);
 
-      try {
-        await this.deps.uploadEncryptedKey?.(spaceId, wrapped);
-      } catch (error) {
-        logRuntime(
-          'warn',
-          'KeyVault',
-          'Failed to upload encrypted workspace key; will retry later',
-          {
-            spaceId,
-            error: errorMessage(error),
-          }
+      // Fail closed: data must never be encrypted with a key that exists only
+      // in process memory. Once this upload succeeds, a later local-persistence
+      // failure is recoverable by unwrapping the server copy.
+      if (this.deps.uploadEncryptedKey) {
+        await this.deps.uploadEncryptedKey(spaceId, wrapped);
+      } else if (!this.deps.allowUnpersistedOwnerKey) {
+        throw new Error(
+          'Cannot provision workspace encryption key while key storage is unavailable'
         );
       }
 

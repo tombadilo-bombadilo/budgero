@@ -264,6 +264,31 @@ func (s *SpaceService) UpdateMemberEncryptedKey(ctx context.Context, userID, spa
 	return s.spaceRepo.UpdateMemberEncryptedKey(ctx, resolvedID, userID, encryptedKey)
 }
 
+// UpdateMemberEncryptedKeys validates access to every requested space before
+// committing all wrapped-key replacements in one repository operation.
+func (s *SpaceService) UpdateMemberEncryptedKeys(ctx context.Context, userID string, encryptedKeys map[string]string) error {
+	if len(encryptedKeys) == 0 {
+		return domain.ErrSpaceAccessDenied
+	}
+
+	resolved := make(map[string]string, len(encryptedKeys))
+	for spaceID, encryptedKey := range encryptedKeys {
+		if spaceID == "" || encryptedKey == "" {
+			return domain.ErrSpaceAccessDenied
+		}
+		resolvedID, err := s.ResolveSpaceID(ctx, userID, spaceID)
+		if err != nil {
+			return err
+		}
+		if _, exists := resolved[resolvedID]; exists {
+			return domain.ErrSpaceAccessDenied
+		}
+		resolved[resolvedID] = encryptedKey
+	}
+
+	return s.spaceRepo.UpdateMemberEncryptedKeys(ctx, userID, resolved)
+}
+
 // IsOwner checks if the user is the owner of the space.
 func (s *SpaceService) IsOwner(ctx context.Context, userID, spaceID string) (bool, error) {
 	ownerID, err := s.spaceRepo.GetOwner(ctx, spaceID)

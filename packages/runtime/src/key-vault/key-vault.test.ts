@@ -14,10 +14,10 @@ import * as cryptoModule from '../crypto';
 function resetSharedMasterPasswordState(): void {
   const internals = masterPasswordStore as unknown as {
     inMemoryPassword: string | null;
-    indexedDBPromise: unknown;
+    indexedDBStore: unknown;
   };
   internals.inMemoryPassword = null;
-  internals.indexedDBPromise = null;
+  internals.indexedDBStore = null;
 }
 
 const ownerSpace = {
@@ -131,17 +131,16 @@ describe('KeyVault', () => {
     expect(vault.exportSpaceKey('s1')).toBe(vault.getSpacePassphrase('s1'));
   });
 
-  it('generates owner key and tolerates upload failures', async () => {
+  it('fails closed when the initial wrapped-key upload fails', async () => {
     stubStorages();
     const uploadEncryptedKey = vi.fn(async () => {
       throw new Error('offline');
     });
     const vault = new KeyVault({ uploadEncryptedKey });
 
-    const key = await vault.ensureSpaceKey('s1', 'master', [ownerSpace]);
+    await expect(vault.ensureSpaceKey('s1', 'master', [ownerSpace])).rejects.toThrow('offline');
 
-    expect(key.length).toBe(32);
-    expect(vault.getSpacePassphrase('s1')).toBeTruthy();
+    expect(vault.getSpacePassphrase('s1')).toBeNull();
     expect(uploadEncryptedKey).toHaveBeenCalledTimes(1);
   });
 
@@ -160,7 +159,7 @@ describe('KeyVault', () => {
 
   it('prunes key maps to active spaces', async () => {
     stubStorages();
-    const vault = new KeyVault();
+    const vault = new KeyVault({ allowUnpersistedOwnerKey: true });
     await vault.ensureSpaceKey('s1', 'master', [ownerSpace]);
     await vault.ensureSpaceKey('s2', 'master', [{ ...ownerSpace, space_id: 's2' }]);
 
@@ -459,7 +458,7 @@ describe('KeyVault', () => {
 
     await expect(
       vault.ensureSpaceKey('s1', 'master', [{ ...ownerSpace, encrypted_space_key: '' }])
-    ).resolves.toBeInstanceOf(Uint8Array);
+    ).rejects.toBe('upload failed');
 
     expect(
       (

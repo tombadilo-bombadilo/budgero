@@ -68,22 +68,34 @@ export default function JoinWorkspacePage() {
 
   // Resolve the secret once, on first mount. Fragment gets scrubbed so a
   // back-navigation or share of the current tab URL won't expose it.
-  const [secret, setSecret] = useState<string | null>(() => {
+  const [{ secret, secretLoading }, setSecretState] = useState(() => {
     const fromHash = readCodeFromHash();
     if (fromHash) {
       scrubFragment();
-      writePendingSpaceInvite(fromHash);
-      return fromHash;
+      void writePendingSpaceInvite(fromHash);
+      return { secret: fromHash, secretLoading: false };
     }
-    return readPendingSpaceInvite();
+    return { secret: null as string | null, secretLoading: true };
   });
+
+  useEffect(() => {
+    if (!secretLoading) return;
+    let active = true;
+    void readPendingSpaceInvite().then((pending) => {
+      if (!active) return;
+      setSecretState({ secret: pending, secretLoading: false });
+    });
+    return () => {
+      active = false;
+    };
+  }, [secretLoading]);
 
   const [localError, setLocalError] = useState<string | null>(null);
   const redeemInvite = useRedeemSpaceInvite();
 
   // If the visitor isn't signed in yet, bounce them to /auth. The secret is
-  // already in sessionStorage from the setState above, so the redirect
-  // companion will bring them back here after login/signup. Wait for the
+  // already in the encrypted invite vault from the setState above, so the
+  // redirect companion will bring them back here after login/signup. Wait for the
   // auth provider to actually settle before deciding — otherwise an
   // already-signed-in user gets bounced to /auth during Clerk's load.
   useEffect(() => {
@@ -105,13 +117,21 @@ export default function JoinWorkspacePage() {
       toast.success('Workspace joined', {
         description: 'You now have access to the shared budget space.',
       });
-      clearPendingSpaceInvite();
+      await clearPendingSpaceInvite();
       void navigate('/', { replace: true });
     } catch (err) {
       const message = getErrorMessage(err, 'Could not join workspace. Try again.');
       setLocalError(message);
     }
   };
+
+  if (!secret && secretLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-4">
+        <Loader2 className="h-6 w-6 animate-spin" />
+      </div>
+    );
+  }
 
   if (!secret) {
     return (
@@ -184,8 +204,8 @@ export default function JoinWorkspacePage() {
             <Button
               variant="outline"
               onClick={() => {
-                clearPendingSpaceInvite();
-                setSecret(null);
+                void clearPendingSpaceInvite();
+                setSecretState({ secret: null, secretLoading: false });
                 void navigate('/');
               }}
               disabled={redeemInvite.isPending}

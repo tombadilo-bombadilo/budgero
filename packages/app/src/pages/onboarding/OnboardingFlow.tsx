@@ -14,7 +14,7 @@
 // `runOnboardingApply` (./apply-onboarding.ts) — a plain, React-free function
 // so it's unit-testable without rendering this component.
 
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -71,16 +71,20 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   const { setThemeId } = useThemePreset();
   const { mutateAsync: updateOnboardingAsync } = useUpdateOnboarding();
 
-  const [state, setState] = useState<OnboardingFormState>(() => {
-    // If storage has an invite secret stashed by the /join boot capture in
-    // main.tsx, prime the form into the invitee shortcut path. The apply
-    // pipeline clears the secret after a successful redeem.
-    const pending = readPendingSpaceInvite();
-    if (pending) {
-      return { ...INITIAL_STATE, joinSecret: pending };
-    }
-    return INITIAL_STATE;
-  });
+  const [state, setState] = useState<OnboardingFormState>(INITIAL_STATE);
+  // Cross-tab invite handoff is encrypted in IndexedDB, so hydration is
+  // asynchronous. Prime the invitee shortcut as soon as the vault resolves.
+  useEffect(() => {
+    let active = true;
+    void readPendingSpaceInvite().then((pending) => {
+      if (active && pending) {
+        setState((current) => ({ ...current, joinSecret: pending }));
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
   const [stepIndex, setStepIndex] = useState(0);
   const [applyStatus, setApplyStatus] = useState<'idle' | 'running' | 'error'>('idle');
   const [applyError, setApplyError] = useState<string | null>(null);

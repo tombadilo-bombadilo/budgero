@@ -30,6 +30,7 @@ import {
   encryptWithDeviceKey,
   decryptWithDeviceKey,
 } from './device-crypto';
+import { IndexedDBStore } from './indexeddb-store';
 
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
@@ -63,7 +64,7 @@ type EncryptedSessionCachePayload = {
 export class MasterPasswordStore {
   private inMemoryPassword: string | null = null;
 
-  private indexedDBPromise: Promise<IDBDatabase | null> | null = null;
+  private indexedDBStore: IndexedDBStore | null = null;
 
   // ---- Master Password ----
 
@@ -251,8 +252,7 @@ export class MasterPasswordStore {
   // ---- Internals: Device Key Crypto ----
 
   private async getDeviceKey(): Promise<CryptoKey | null> {
-    const db = await this.openIndexedDB();
-    return getOrCreateDeviceKey(db);
+    return getOrCreateDeviceKey(this.getIndexedDBStore());
   }
 
   /**
@@ -291,85 +291,35 @@ export class MasterPasswordStore {
     return new TextDecoder().decode(plaintext);
   }
 
-  private isIndexedDBAvailable(): boolean {
-    return typeof indexedDB !== 'undefined';
-  }
-
-  private openIndexedDB(): Promise<IDBDatabase | null> {
-    if (!this.isIndexedDBAvailable()) {
-      return Promise.resolve(null);
+  private getIndexedDBStore(): IndexedDBStore | null {
+    if (typeof indexedDB === 'undefined') return null;
+    if (!this.indexedDBStore) {
+      this.indexedDBStore = new IndexedDBStore(
+        MASTER_PASSWORD_INDEXEDDB_NAME,
+        1,
+        MASTER_PASSWORD_INDEXEDDB_STORE
+      );
     }
-
-    if (this.indexedDBPromise) {
-      return this.indexedDBPromise;
-    }
-
-    this.indexedDBPromise = new Promise<IDBDatabase | null>((resolve) => {
-      try {
-        const request = indexedDB.open(MASTER_PASSWORD_INDEXEDDB_NAME, 1);
-        request.onupgradeneeded = () => {
-          try {
-            const db = request.result;
-            if (!db.objectStoreNames.contains(MASTER_PASSWORD_INDEXEDDB_STORE)) {
-              db.createObjectStore(MASTER_PASSWORD_INDEXEDDB_STORE);
-            }
-          } catch {
-            /* no-op */
-          }
-        };
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => resolve(null);
-        request.onblocked = () => resolve(null);
-      } catch {
-        resolve(null);
-      }
-    }).then((db) => {
-      if (!db) {
-        this.indexedDBPromise = null;
-      }
-      return db;
-    });
-
-    return this.indexedDBPromise;
+    return this.indexedDBStore;
   }
 
   private async readRawSessionRecord(): Promise<unknown> {
-    const db = await this.openIndexedDB();
-    if (!db) {
-      return null;
-    }
-
-    return new Promise((resolve) => {
-      try {
-        const tx = db.transaction(MASTER_PASSWORD_INDEXEDDB_STORE, 'readonly');
-        const store = tx.objectStore(MASTER_PASSWORD_INDEXEDDB_STORE);
-        const request = store.get(MASTER_PASSWORD_INDEXEDDB_RECORD_KEY);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => resolve(null);
-      } catch {
-        resolve(null);
-      }
-    });
+    return (
+      (await this.getIndexedDBStore()
+        ?.get(MASTER_PASSWORD_INDEXEDDB_RECORD_KEY)
+        .catch(() => null)) ?? null
+    );
   }
 
   private async putSessionRecord(payload: EncryptedSessionCachePayload): Promise<boolean> {
-    const db = await this.openIndexedDB();
-    if (!db) {
+    const store = this.getIndexedDBStore();
+    if (!store) return false;
+    try {
+      await store.put(MASTER_PASSWORD_INDEXEDDB_RECORD_KEY, payload);
+      return true;
+    } catch {
       return false;
     }
-
-    return new Promise((resolve) => {
-      try {
-        const tx = db.transaction(MASTER_PASSWORD_INDEXEDDB_STORE, 'readwrite');
-        const store = tx.objectStore(MASTER_PASSWORD_INDEXEDDB_STORE);
-        store.put(payload, MASTER_PASSWORD_INDEXEDDB_RECORD_KEY);
-        tx.oncomplete = () => resolve(true);
-        tx.onabort = () => resolve(false);
-        tx.onerror = () => resolve(false);
-      } catch {
-        resolve(false);
-      }
-    });
   }
 
   /**
@@ -414,23 +364,9 @@ export class MasterPasswordStore {
   }
 
   private async clearSessionCacheFromIndexedDB(): Promise<void> {
-    const db = await this.openIndexedDB();
-    if (!db) {
-      return;
-    }
-
-    await new Promise<void>((resolve) => {
-      try {
-        const tx = db.transaction(MASTER_PASSWORD_INDEXEDDB_STORE, 'readwrite');
-        const store = tx.objectStore(MASTER_PASSWORD_INDEXEDDB_STORE);
-        store.delete(MASTER_PASSWORD_INDEXEDDB_RECORD_KEY);
-        tx.oncomplete = () => resolve();
-        tx.onabort = () => resolve();
-        tx.onerror = () => resolve();
-      } catch {
-        resolve();
-      }
-    });
+    await this.getIndexedDBStore()
+      ?.delete(MASTER_PASSWORD_INDEXEDDB_RECORD_KEY)
+      .catch(() => undefined);
   }
 
   /**
@@ -501,8 +437,7 @@ export class MasterPasswordStore {
     await this.clearSessionCacheFromIndexedDB();
     this.clearLegacySessionCache();
     this.clearSpaceKeyCaches();
-    const db = await this.openIndexedDB();
-    await deleteDeviceKeyRecord(db);
+    await deleteDeviceKeyRecord(this.getIndexedDBStore());
   }
 
   private clearSpaceKeyCaches(): void {

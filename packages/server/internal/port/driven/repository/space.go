@@ -72,6 +72,9 @@ type SpaceRepository interface {
 	// UpdateMemberEncryptedKey updates a member's encrypted space key.
 	UpdateMemberEncryptedKey(ctx context.Context, spaceID, userID, encryptedKey string) error
 
+	// UpdateMemberEncryptedKeys atomically updates all supplied encrypted space keys for a member.
+	UpdateMemberEncryptedKeys(ctx context.Context, userID string, encryptedKeys map[string]string) error
+
 	// DeleteMember removes a member from a space.
 	DeleteMember(ctx context.Context, spaceID, userID string) error
 

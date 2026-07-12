@@ -35,6 +35,10 @@ type updateEncryptedKeyRequest struct {
 	EncryptedSpaceKey string `json:"encrypted_space_key"`
 }
 
+type updateEncryptedKeysRequest struct {
+	EncryptedSpaceKeys map[string]string `json:"encrypted_space_keys"`
+}
+
 type inviteSecretRequest struct {
 	InviteSecret string `json:"invite_secret"`
 }
@@ -403,5 +407,36 @@ func (h *Handlers) UpdateMyEncryptedSpaceKey(c echo.Context) error {
 		return mapServiceError(err)
 	}
 
+	return c.JSON(http.StatusOK, map[string]any{"success": true})
+}
+
+// UpdateMyEncryptedSpaceKeys atomically replaces the current user's wrapped
+// keys across all supplied workspaces during a master-password rotation.
+func (h *Handlers) UpdateMyEncryptedSpaceKeys(c echo.Context) error {
+	userID := middleware.GetUserIDFromContext(c)
+	if userID == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "user not authenticated")
+	}
+
+	var req updateEncryptedKeysRequest
+	if err := c.Bind(&req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
+	}
+	if len(req.EncryptedSpaceKeys) == 0 || len(req.EncryptedSpaceKeys) > 100 {
+		return echo.NewHTTPError(http.StatusBadRequest, "between 1 and 100 encrypted space keys are required")
+	}
+	for spaceID, encryptedKey := range req.EncryptedSpaceKeys {
+		if strings.TrimSpace(spaceID) == "" || strings.TrimSpace(encryptedKey) == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, "space ids and encrypted keys are required")
+		}
+	}
+
+	if err := h.services.Space.UpdateMemberEncryptedKeys(
+		c.Request().Context(),
+		userID,
+		req.EncryptedSpaceKeys,
+	); err != nil {
+		return mapServiceError(err)
+	}
 	return c.JSON(http.StatusOK, map[string]any{"success": true})
 }

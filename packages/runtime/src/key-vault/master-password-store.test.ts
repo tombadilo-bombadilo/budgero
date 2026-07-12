@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  MASTER_PASSWORD_INDEXEDDB_NAME,
   MASTER_PASSWORD_INDEXEDDB_STORE,
   MASTER_PASSWORD_INDEXEDDB_RECORD_KEY,
   MASTER_PASSWORD_SESSION_CACHE_KEY,
@@ -141,10 +142,15 @@ describe('MasterPasswordStore', () => {
       JSON.stringify({ mode: 'session', days: 7 })
     );
     const expiresAt = Date.now() + 3 * 24 * 60 * 60 * 1000;
-    fakeIndexedDB.write(MASTER_PASSWORD_INDEXEDDB_STORE, MASTER_PASSWORD_INDEXEDDB_RECORD_KEY, {
-      password: 'v1-plaintext',
-      expiresAt,
-    });
+    fakeIndexedDB.write(
+      MASTER_PASSWORD_INDEXEDDB_STORE,
+      MASTER_PASSWORD_INDEXEDDB_RECORD_KEY,
+      {
+        password: 'v1-plaintext',
+        expiresAt,
+      },
+      MASTER_PASSWORD_INDEXEDDB_NAME
+    );
 
     const store = new MasterPasswordStore();
     expect(await store.get()).toBe('v1-plaintext');

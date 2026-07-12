@@ -161,7 +161,7 @@ export async function runOnboardingApply(
       // OnboardingFlow itself stays mounted across the URL change —
       // the intro gate is the thing that holds it on screen, and that
       // doesn't unblock until acknowledgeIntro fires below.
-      clearPendingSpaceInvite();
+      await clearPendingSpaceInvite();
       if (typeof window !== 'undefined' && window.location.hash) {
         try {
           window.history.replaceState(null, '', window.location.pathname);

@@ -96,7 +96,16 @@ export type {
 } from './logging';
 
 // Components
-export { KeyVault, MasterPasswordStore, masterPasswordStore } from './key-vault';
+export {
+  KeyVault,
+  MasterPasswordStore,
+  masterPasswordStore,
+  IndexedDBStore,
+  getOrCreateDeviceKey,
+  deleteDeviceKeyRecord,
+  encryptWithDeviceKey,
+  decryptWithDeviceKey,
+} from './key-vault';
 export type { KeyVaultDeps, MasterPasswordPersistenceSetting } from './key-vault';
 
 export { ConnectivityMonitor } from './connectivity';

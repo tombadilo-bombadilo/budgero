@@ -15,9 +15,14 @@ export default function SpaceInviteRedirect({ user }: { user: User }) {
   useEffect(() => {
     if (!user?.id) return;
     if (location.pathname.startsWith('/join')) return;
-    const pending = readPendingSpaceInvite();
-    if (!pending) return;
-    void navigate(`/join#code=${encodeURIComponent(pending)}`, { replace: true });
+    let active = true;
+    void readPendingSpaceInvite().then((pending) => {
+      if (!active || !pending) return;
+      void navigate(`/join#code=${encodeURIComponent(pending)}`, { replace: true });
+    });
+    return () => {
+      active = false;
+    };
   }, [user?.id, location.pathname, navigate]);
 
   return null;

@@ -108,19 +108,30 @@ class FakeIndexedDBDatabase {
 }
 
 export class FakeIndexedDBFactory {
-  private initialized = false;
+  private databases = new Map<string, { initialized: boolean; database: FakeIndexedDBDatabase }>();
 
-  private db = new FakeIndexedDBDatabase();
+  private getOrCreateDatabase(name: string): {
+    initialized: boolean;
+    database: FakeIndexedDBDatabase;
+  } {
+    let state = this.databases.get(name);
+    if (!state) {
+      state = { initialized: false, database: new FakeIndexedDBDatabase() };
+      this.databases.set(name, state);
+    }
+    return state;
+  }
 
-  open(_name: string, _version?: number): IDBOpenDBRequest {
+  open(name: string, _version?: number): IDBOpenDBRequest {
+    const state = this.getOrCreateDatabase(name);
     const request: Partial<IDBOpenDBRequest> = {};
     queueMicrotask(() => {
       Object.defineProperty(request, 'result', {
         configurable: true,
-        value: this.db as unknown as IDBDatabase,
+        value: state.database as unknown as IDBDatabase,
       });
-      if (!this.initialized) {
-        this.initialized = true;
+      if (!state.initialized) {
+        state.initialized = true;
         request.onupgradeneeded?.call(
           request as IDBOpenDBRequest,
           new Event('upgradeneeded') as IDBVersionChangeEvent
@@ -132,15 +143,21 @@ export class FakeIndexedDBFactory {
   }
 
   reset(): void {
-    this.initialized = false;
-    this.db = new FakeIndexedDBDatabase();
+    this.databases.clear();
   }
 
-  read(storeName: string, key: string): unknown {
-    return this.db.read(storeName, key);
+  read(storeName: string, key: string, databaseName?: string): unknown {
+    const database = databaseName
+      ? this.databases.get(databaseName)?.database
+      : this.databases.values().next().value?.database;
+    return database?.read(storeName, key);
   }
 
-  write(storeName: string, key: string, value: unknown): void {
-    this.db.write(storeName, key, value);
+  write(storeName: string, key: string, value: unknown, databaseName?: string): void {
+    const database = databaseName
+      ? this.getOrCreateDatabase(databaseName).database
+      : this.databases.values().next().value?.database;
+    if (!database) throw new Error('no fake IndexedDB database has been opened');
+    database.write(storeName, key, value);
   }
 }

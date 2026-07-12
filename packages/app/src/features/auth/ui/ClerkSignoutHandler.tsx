@@ -2,7 +2,10 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { resetAnalytics } from '@shared/lib/analytics/analytics';
-import { PENDING_SPACE_INVITE_KEY } from '@features/budget-sharing/lib/pending-space-invite';
+import {
+  PENDING_SPACE_INVITE_DB_NAME,
+  PENDING_SPACE_INVITE_KEY,
+} from '@features/budget-sharing/lib/pending-space-invite';
 
 /**
  * Component that listens to Clerk auth state changes and performs cleanup on signout
@@ -110,11 +113,9 @@ interface NavigatorWithStorage {
   };
 }
 
-// Keys that must survive an aggressive storage wipe — a brand new visitor
-// landing on /join#code=… stashes the invite secret here in main.tsx's boot
-// capture, BEFORE Clerk has resolved. The signout-cleanup below would
-// otherwise wipe the secret on first paint and the invitee would fall into
-// the standard onboarding instead of the join shortcut.
+// The session-only fallback must survive the initial signed-out cleanup. The
+// normal cross-tab copy is encrypted in the dedicated invite IndexedDB, which
+// is likewise excluded from the database wipe below.
 const PRESERVE_KEYS = [PENDING_SPACE_INVITE_KEY];
 
 async function runStorageCleanup() {
@@ -171,7 +172,9 @@ async function runStorageCleanup() {
   try {
     const databases = indexedDB.databases ? await indexedDB.databases() : [];
     for (const db of databases) {
-      if (db?.name) await indexedDB.deleteDatabase(db.name);
+      if (db?.name && db.name !== PENDING_SPACE_INVITE_DB_NAME) {
+        await indexedDB.deleteDatabase(db.name);
+      }
     }
   } catch (e) {
     console.warn('[runStorageCleanup] IndexedDB clear failed:', e);

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { RuntimeContextFactory } from './runtime-context-factory';
 import { createStorageMock } from '../__tests__/storage-mock';
+import { FakeIndexedDBFactory } from '../__tests__/indexeddb-mock';
+import { masterPasswordStore } from '../key-vault/master-password-store';
 
 function createDeps() {
   return {
@@ -45,6 +47,7 @@ function createDb() {
 
 describe('RuntimeContextFactory', () => {
   afterEach(() => {
+    (masterPasswordStore as unknown as { indexedDBStore: unknown }).indexedDBStore = null;
     vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
@@ -348,6 +351,7 @@ describe('RuntimeContextFactory', () => {
   });
 
   it('preserves offline queue entries across unsafe catch-up recovery', async () => {
+    vi.stubGlobal('indexedDB', new FakeIndexedDBFactory() as unknown as IDBFactory);
     vi.stubGlobal('localStorage', createStorageMock() as unknown as Storage);
     const FakeWS = class {
       static OPEN = 1;
