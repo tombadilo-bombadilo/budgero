@@ -21,6 +21,18 @@ export interface RecurringTransaction {
   id: number;
   budgetId: number;
   accountId: number;
+  /**
+   * Destination account for recurring transfers. When set, the template is a
+   * transfer: `direction` is always 'outflow' (money leaves `accountId`) and
+   * marking an occurrence ready posts two paired legs sharing a TransferID.
+   */
+  toAccountId: number | null;
+  /**
+   * For transfers, `amount` converted into the destination account's currency
+   * at the latest known rate (1:1 when unknown or currencies match). Only
+   * populated by occurrence queries; null elsewhere and for non-transfers.
+   */
+  destinationAmount?: MilliUnits | null;
   categoryId: number | null;
   name: string;
   memo: string;
@@ -37,6 +49,7 @@ export interface RecurringTransaction {
 export interface CreateRecurringTransactionInput {
   budgetId: number;
   accountId: number;
+  toAccountId?: number | null;
   categoryId?: number | null;
   name: string;
   memo?: string;
@@ -49,6 +62,7 @@ export interface CreateRecurringTransactionInput {
 
 export interface UpdateRecurringTransactionInput {
   accountId?: number;
+  toAccountId?: number | null;
   categoryId?: number | null;
   name?: string;
   memo?: string;

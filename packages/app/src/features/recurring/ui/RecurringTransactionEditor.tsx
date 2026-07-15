@@ -40,13 +40,16 @@ import { Calendar as CalendarIcon } from 'lucide-react';
 import { MonthYearCalendar } from '@shared/ui/MonthYearCalendar';
 
 type RecurringDirection = 'inflow' | 'outflow';
+/** UI-level type: 'transfer' maps to direction 'outflow' plus a destination account. */
+type RecurringEditorType = RecurringDirection | 'transfer';
 
 interface RecurringFormValues {
   name: string;
   memo: string;
   amount: string;
-  direction: RecurringDirection;
+  type: RecurringEditorType;
   accountId: string;
+  toAccountId: string;
   categoryId: string;
   frequency: string;
   startDate: string;
@@ -60,6 +63,7 @@ export interface RecurringTransactionEditorSubmit {
   amount: MilliUnits;
   direction: RecurringDirection;
   accountId: number | null;
+  toAccountId: number | null;
   categoryId: number | null;
   schedule: RecurringSchedule;
   notifyDaysBefore: number;
@@ -78,6 +82,7 @@ export interface RecurringTransactionEditorProps {
     amount: MilliUnits;
     direction: RecurringDirection;
     accountId: number | null;
+    toAccountId: number | null;
     categoryId: number | null;
     schedule: RecurringSchedule;
     notifyDaysBefore: number;
@@ -145,8 +150,9 @@ function defaultFormValues(): RecurringFormValues {
     name: '',
     memo: '',
     amount: '',
-    direction: 'outflow',
+    type: 'outflow',
     accountId: '',
+    toAccountId: '',
     categoryId: '',
     frequency: 'month:1',
     startDate: today,
@@ -184,11 +190,16 @@ export function RecurringTransactionEditor({
           typeof initialValues?.amount === 'number'
             ? String(Math.abs(toDecimal(initialValues.amount)))
             : base.amount,
-        direction: initialValues?.direction ?? base.direction,
+        type:
+          initialValues?.toAccountId != null ? 'transfer' : (initialValues?.direction ?? base.type),
         accountId:
           initialValues?.accountId !== undefined && initialValues.accountId !== null
             ? String(initialValues.accountId)
             : base.accountId,
+        toAccountId:
+          initialValues?.toAccountId !== undefined && initialValues.toAccountId !== null
+            ? String(initialValues.toAccountId)
+            : base.toAccountId,
         categoryId:
           initialValues?.categoryId !== undefined && initialValues.categoryId !== null
             ? String(initialValues.categoryId)
@@ -251,18 +262,23 @@ export function RecurringTransactionEditor({
     setStartDateOpen(false);
   };
 
+  const isTransfer = formValues.type === 'transfer';
+
   const handleSubmit = async () => {
     const amount = Number(formValues.amount);
     const accountId = formValues.accountId ? Number(formValues.accountId) : null;
-    const categoryId = formValues.categoryId ? Number(formValues.categoryId) : null;
+    const toAccountId =
+      isTransfer && formValues.toAccountId ? Number(formValues.toAccountId) : null;
+    const categoryId = !isTransfer && formValues.categoryId ? Number(formValues.categoryId) : null;
     const notifyDaysBefore = Math.max(0, Number(formValues.notifyDaysBefore || '0'));
 
     await onSubmit({
       name: formValues.name.trim(),
       memo: formValues.memo.trim(),
       amount: fromDecimal(Math.abs(amount) || 0),
-      direction: formValues.direction,
+      direction: formValues.type === 'transfer' ? 'outflow' : formValues.type,
       accountId,
+      toAccountId,
       categoryId,
       schedule: frequencyToSchedule(formValues.frequency, formValues.startDate),
       notifyDaysBefore,
@@ -302,24 +318,31 @@ export function RecurringTransactionEditor({
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Type" className="space-y-2">
             <Select
-              value={formValues.direction}
-              onValueChange={(value: RecurringDirection) =>
-                setFormValues((prev) => ({ ...prev, direction: value }))
+              value={formValues.type}
+              onValueChange={(value: RecurringEditorType) =>
+                setFormValues((prev) => ({ ...prev, type: value }))
               }
             >
-              <SelectTrigger>
+              <SelectTrigger data-testid="recurring-type-select">
                 <SelectValue placeholder="Select type" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="inflow">Income / deposit</SelectItem>
                 <SelectItem value="outflow">Bill / payment</SelectItem>
+                <SelectItem value="transfer">Transfer</SelectItem>
               </SelectContent>
             </Select>
           </Field>
-          <Field label="Account" className="space-y-2">
+          <Field label={isTransfer ? 'From account' : 'Account'} className="space-y-2">
             <Select
               value={formValues.accountId}
-              onValueChange={(value) => setFormValues((prev) => ({ ...prev, accountId: value }))}
+              onValueChange={(value) =>
+                setFormValues((prev) => ({
+                  ...prev,
+                  accountId: value,
+                  toAccountId: prev.toAccountId === value ? '' : prev.toAccountId,
+                }))
+              }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Choose account" />
@@ -335,23 +358,49 @@ export function RecurringTransactionEditor({
           </Field>
         </div>
 
-        <Field label="Category" className="space-y-2">
-          <Select
-            value={formValues.categoryId}
-            onValueChange={(value) => setFormValues((prev) => ({ ...prev, categoryId: value }))}
+        {isTransfer ? (
+          <Field
+            label="To account"
+            className="space-y-2"
+            hint="The transfer is categorized automatically."
           >
-            <SelectTrigger data-testid="recurring-category-select">
-              <SelectValue placeholder="Choose category" />
-            </SelectTrigger>
-            <SelectContent className="max-h-72">
-              {categories.map((category) => (
-                <SelectItem key={category.ID} value={String(category.ID)}>
-                  {category.Name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </Field>
+            <Select
+              value={formValues.toAccountId}
+              onValueChange={(value) => setFormValues((prev) => ({ ...prev, toAccountId: value }))}
+            >
+              <SelectTrigger data-testid="recurring-to-account-select">
+                <SelectValue placeholder="Choose destination account" />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts
+                  .filter((account) => String(account.ID) !== formValues.accountId)
+                  .map((account) => (
+                    <SelectItem key={account.ID} value={String(account.ID)}>
+                      {account.Name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        ) : (
+          <Field label="Category" className="space-y-2">
+            <Select
+              value={formValues.categoryId}
+              onValueChange={(value) => setFormValues((prev) => ({ ...prev, categoryId: value }))}
+            >
+              <SelectTrigger data-testid="recurring-category-select">
+                <SelectValue placeholder="Choose category" />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                {categories.map((category) => (
+                  <SelectItem key={category.ID} value={String(category.ID)}>
+                    {category.Name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Cadence" className="space-y-2">
@@ -456,7 +505,7 @@ export function RecurringTransactionEditor({
       </Button>
       <Button
         onClick={handleSubmit}
-        disabled={isSubmitting}
+        disabled={isSubmitting || (isTransfer && !formValues.toAccountId)}
         className="w-full sm:w-auto"
         data-testid="recurring-submit"
       >

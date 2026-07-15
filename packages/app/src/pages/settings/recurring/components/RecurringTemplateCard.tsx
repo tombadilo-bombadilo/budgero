@@ -46,6 +46,7 @@ function frequencyLabelFor(schedule: RecurringTransaction['schedule']): string {
 interface RecurringTemplateCardProps {
   template: RecurringTransaction;
   accountName: string;
+  toAccountName?: string;
   categoryName: string | undefined;
   nextOccurrence: RecurringOccurrenceWithTemplate | undefined;
   localizer: { format: (n: number) => string };
@@ -59,6 +60,7 @@ interface RecurringTemplateCardProps {
 export function RecurringTemplateCard({
   template,
   accountName,
+  toAccountName,
   categoryName,
   nextOccurrence,
   localizer,
@@ -84,7 +86,11 @@ export function RecurringTemplateCard({
             <CardTitle className="text-xl font-semibold flex items-center gap-2">
               {template.name}
               <Badge variant={template.direction === 'inflow' ? 'default' : 'secondary'}>
-                {template.direction === 'inflow' ? 'Income' : 'Bill'}
+                {template.toAccountId != null
+                  ? 'Transfer'
+                  : template.direction === 'inflow'
+                    ? 'Income'
+                    : 'Bill'}
               </Badge>
             </CardTitle>
             <CardDescription>{template.memo || 'No memo provided'}</CardDescription>
@@ -116,11 +122,21 @@ export function RecurringTemplateCard({
       <CardContent className="space-y-4">
         <div className="grid gap-2 text-sm text-muted-foreground">
           <div>
-            <span className="font-medium text-foreground">Account:</span> {accountName}
+            <span className="font-medium text-foreground">
+              {template.toAccountId != null ? 'From account:' : 'Account:'}
+            </span>{' '}
+            {accountName}
           </div>
-          <div>
-            <span className="font-medium text-foreground">Category:</span> {categoryName}
-          </div>
+          {template.toAccountId != null ? (
+            <div>
+              <span className="font-medium text-foreground">To account:</span>{' '}
+              {toAccountName ?? 'Unknown account'}
+            </div>
+          ) : (
+            <div>
+              <span className="font-medium text-foreground">Category:</span> {categoryName}
+            </div>
+          )}
           <div>
             <span className="font-medium text-foreground">Remind me:</span>{' '}
             {template.notifyDaysBefore || 0} day(s) before

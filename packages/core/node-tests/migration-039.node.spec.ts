@@ -76,8 +76,10 @@ describe('migration 039: REAL money -> INTEGER milliunits', () => {
     new MigrationRunner(db).runMigrations();
   });
 
-  it('reaches schema version 39', () => {
-    expect(one(db, 'SELECT MAX(version) FROM schema_migrations')).toBe(39);
+  it('reaches the latest schema version', () => {
+    const latest = Math.max(...migrations.map((m) => m.version));
+    expect(latest).toBeGreaterThanOrEqual(39);
+    expect(one(db, 'SELECT MAX(version) FROM schema_migrations')).toBe(latest);
   });
 
   it('stores every money value as round(old * 1000), typed INTEGER', () => {
@@ -146,8 +148,9 @@ describe('migration 039: REAL money -> INTEGER milliunits', () => {
   });
 
   it('refuses to run against a database from a newer app version', () => {
-    db.exec(`INSERT OR REPLACE INTO schema_migrations (version) VALUES (40)`);
+    const newerVersion = Math.max(...migrations.map((m) => m.version)) + 1;
+    db.exec(`INSERT OR REPLACE INTO schema_migrations (version) VALUES (${newerVersion})`);
     expect(() => new MigrationRunner(db).runMigrations()).toThrow(DatabaseNewerThanAppError);
-    db.exec(`DELETE FROM schema_migrations WHERE version = 40`);
+    db.exec(`DELETE FROM schema_migrations WHERE version = ${newerVersion}`);
   });
 });

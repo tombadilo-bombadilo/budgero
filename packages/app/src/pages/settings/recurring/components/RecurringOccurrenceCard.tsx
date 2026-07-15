@@ -20,6 +20,7 @@ import { formatRecurringAmount } from './format-recurring-amount';
 interface RecurringOccurrenceCardProps {
   occurrence: RecurringOccurrenceWithTemplate;
   accountName: string;
+  toAccountName?: string;
   categoryName: string;
   localizer: { format: (n: number) => string };
   isProcessing: boolean;
@@ -33,6 +34,7 @@ interface RecurringOccurrenceCardProps {
 export function RecurringOccurrenceCard({
   occurrence,
   accountName,
+  toAccountName,
   categoryName,
   localizer,
   isProcessing,
@@ -53,7 +55,11 @@ export function RecurringOccurrenceCard({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Badge variant={template.direction === 'inflow' ? 'default' : 'secondary'}>
-              {template.direction === 'inflow' ? 'Income' : 'Bill'}
+              {template.toAccountId != null
+                ? 'Transfer'
+                : template.direction === 'inflow'
+                  ? 'Income'
+                  : 'Bill'}
             </Badge>
             <span className="text-sm text-muted-foreground">{template.name}</span>
           </div>
@@ -65,11 +71,21 @@ export function RecurringOccurrenceCard({
             <span className="font-medium text-foreground">Amount:</span> {amountDisplay}
           </div>
           <div className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Account:</span> {accountName}
+            <span className="font-medium text-foreground">
+              {template.toAccountId != null ? 'From account:' : 'Account:'}
+            </span>{' '}
+            {accountName}
           </div>
-          <div className="text-sm text-muted-foreground">
-            <span className="font-medium text-foreground">Category:</span> {categoryName}
-          </div>
+          {template.toAccountId != null ? (
+            <div className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">To account:</span>{' '}
+              {toAccountName ?? 'Unknown account'}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Category:</span> {categoryName}
+            </div>
+          )}
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <AlertDialog>

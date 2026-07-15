@@ -107,6 +107,7 @@ export function RecurringTransactionsSection() {
       amount: template.amount,
       direction: template.direction,
       accountId: template.accountId,
+      toAccountId: template.toAccountId ?? null,
       categoryId: template.categoryId ?? null,
       schedule: template.schedule,
       notifyDaysBefore: template.notifyDaysBefore ?? 0,
@@ -129,7 +130,12 @@ export function RecurringTransactionsSection() {
       toast.error('Select an account');
       return;
     }
-    if (!values.categoryId) {
+    if (values.toAccountId != null) {
+      if (values.toAccountId === values.accountId) {
+        toast.error('Pick two different accounts for a transfer');
+        return;
+      }
+    } else if (!values.categoryId) {
       toast.error('Select a category');
       return;
     }
@@ -143,6 +149,7 @@ export function RecurringTransactionsSection() {
         await createRecurring.mutateAsync({
           budgetId,
           accountId: values.accountId,
+          toAccountId: values.toAccountId,
           categoryId: values.categoryId,
           name: values.name,
           memo: values.memo,
@@ -162,6 +169,7 @@ export function RecurringTransactionsSection() {
           budgetId,
           patch: {
             accountId: values.accountId,
+            toAccountId: values.toAccountId,
             categoryId: values.categoryId,
             name: values.name,
             memo: values.memo,
@@ -332,6 +340,9 @@ export function RecurringTransactionsSection() {
             key={template.id}
             template={template}
             accountName={accountsById.get(template.accountId) ?? 'Unknown account'}
+            toAccountName={
+              template.toAccountId != null ? accountsById.get(template.toAccountId) : undefined
+            }
             categoryName={
               template.categoryId ? categoriesById.get(template.categoryId) : 'Unassigned category'
             }
@@ -396,6 +407,9 @@ export function RecurringTransactionsSection() {
               key={occurrence.id}
               occurrence={occurrence}
               accountName={accountsById.get(template.accountId) ?? 'Unknown account'}
+              toAccountName={
+                template.toAccountId != null ? accountsById.get(template.toAccountId) : undefined
+              }
               categoryName={categoryName}
               localizer={globalLocalizer}
               isProcessing={processingOccurrenceId === occurrence.id}

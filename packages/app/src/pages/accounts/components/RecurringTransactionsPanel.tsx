@@ -28,6 +28,8 @@ export interface RecurringOccurrence {
     direction: 'inflow' | 'outflow';
     categoryId: number | null;
     accountId: number;
+    toAccountId: number | null;
+    destinationAmount?: number | null;
   };
 }
 
@@ -39,6 +41,8 @@ export interface UpcomingScheduledTransaction {
 export interface RecurringTransactionsPanelProps {
   isLoading: boolean;
   isFetching: boolean;
+  /** Account whose page hosts the panel — decides which way transfers flow. */
+  accountId: number;
   upcomingRecurringOccurrences: RecurringOccurrence[];
   upcomingScheduledTransactions: UpcomingScheduledTransaction[];
   categoriesById: Map<number, string>;
@@ -61,6 +65,7 @@ const MAX_VISIBLE_ITEMS = 4;
 export const RecurringTransactionsPanel = React.memo(function RecurringTransactionsPanel({
   isLoading,
   isFetching,
+  accountId,
   upcomingRecurringOccurrences,
   upcomingScheduledTransactions,
   categoriesById,
@@ -103,14 +108,32 @@ export const RecurringTransactionsPanel = React.memo(function RecurringTransacti
 
   const upcomingCount = upcomingRecurringOccurrences.length + upcomingScheduledTransactions.length;
 
+  // A transfer occurrence is an outflow on its source account and an inflow
+  // on its destination account — same as the two legs of a posted transfer.
+  const isOccurrenceOutflow = React.useCallback(
+    (template: RecurringOccurrence['template']) =>
+      template.toAccountId === accountId ? false : template.direction === 'outflow',
+    [accountId]
+  );
+
+  // On the destination side of a transfer, show the amount in this account's
+  // currency (converted at the latest known rate by the occurrence query).
+  const occurrenceAmount = React.useCallback(
+    (template: RecurringOccurrence['template']) =>
+      template.toAccountId === accountId
+        ? (template.destinationAmount ?? template.amount)
+        : template.amount,
+    [accountId]
+  );
+
   const totals = React.useMemo(() => {
     let inflow = 0;
     let outflow = 0;
     for (const occurrence of upcomingRecurringOccurrences) {
-      if (occurrence.template.direction === 'outflow') {
-        outflow += occurrence.template.amount;
+      if (isOccurrenceOutflow(occurrence.template)) {
+        outflow += occurrenceAmount(occurrence.template);
       } else {
-        inflow += occurrence.template.amount;
+        inflow += occurrenceAmount(occurrence.template);
       }
     }
     for (const { transaction } of upcomingScheduledTransactions) {
@@ -126,7 +149,13 @@ export const RecurringTransactionsPanel = React.memo(function RecurringTransacti
       outflow += outflowValue ?? 0;
     }
     return { inflow, outflow };
-  }, [upcomingRecurringOccurrences, upcomingScheduledTransactions, transactionCurrencyDisplay]);
+  }, [
+    upcomingRecurringOccurrences,
+    upcomingScheduledTransactions,
+    transactionCurrencyDisplay,
+    isOccurrenceOutflow,
+    occurrenceAmount,
+  ]);
 
   const todayKey = getTodayISO();
   const visibleOccurrences = upcomingRecurringOccurrences.slice(0, MAX_VISIBLE_ITEMS);
@@ -212,10 +241,10 @@ export const RecurringTransactionsPanel = React.memo(function RecurringTransacti
                 const categoryName = template.categoryId
                   ? categoriesById.get(template.categoryId) || 'Unassigned category'
                   : 'Unassigned category';
-                const isOutflow = template.direction === 'outflow';
+                const isOutflow = isOccurrenceOutflow(template);
                 const amountLabel = `${isOutflow ? '-' : '+'}${formatMilli(
                   formatter,
-                  asMilli(template.amount)
+                  asMilli(occurrenceAmount(template))
                 )}`;
                 const dueDate = parseISO(occurrence.dueDate);
                 const dueLabel = formatDistanceToNow(dueDate, { addSuffix: true });
