@@ -15,6 +15,14 @@ Switching budgeting apps shouldn't mean abandoning years of history. Budgero rea
 
 In YNAB, open your budget settings and choose **Export Budget**. You'll get a ZIP file containing two CSVs — your transaction register and your budget (plan) file. Budgero accepts the ZIP as-is; no unpacking or editing needed.
 
+**Set your formats before exporting.** YNAB writes the CSVs in whatever display format your plan settings use, and ambiguous formats are the number-one cause of broken imports (dates like `01/05/2025` can mean January 5 *or* May 1). In the YNAB web app, open **Plan Settings** and set:
+
+- **Date Format** to `2025-12-30` (ISO — unambiguous)
+- **Number Format** to `123,456.78`
+- **Currency Placement** to **"Don't Show"**
+
+Then export. Budgero detects other date and number formats where it can, but the settings above are the only ones that import losslessly.
+
 Do this **while your YNAB subscription is active**. Export access normally goes away when your subscription lapses — YNAB support may be able to help after the fact, but don't bet your history on it. Exporting first costs nothing.
 
 ## What comes over
@@ -101,6 +109,7 @@ Finally, reconcile each account against your bank once (see [Accounts](/docs/acc
 The most common post-import surprises, in order:
 
 - **Ready to Assign doesn't match what YNAB showed** — usually not an error. Budgero calculates [Ready to Assign](/docs/ready-to-assign) differently from YNAB: it's one static, all-time number (total income minus total assignments), not a figure that shifts with the month you're viewing. We think that's easier to reason about, but it means the two apps will legitimately disagree right after import. If the number still looks off once you account for that, check for an account whose type needs correcting or a transfer YNAB recorded one-sided — reconciling each account surfaces these fast.
+- **Dates or amounts look wrong** — almost always an export-format issue. Re-export from YNAB with Date Format `2025-12-30`, Number Format `123,456.78`, and Currency Placement "Don't Show" (see above), then import into a fresh budget.
 - **Duplicate-looking transactions** — YNAB split transactions export as multiple rows; check the memos before deleting anything.
 - **Currency questions** — YNAB budgets are single-currency, so everything imports in that currency. If you're switching to a multi-currency setup, see [Budget currency](/docs/budget-currency) before changing anything.
 

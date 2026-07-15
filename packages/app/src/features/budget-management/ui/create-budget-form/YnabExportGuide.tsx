@@ -43,18 +43,35 @@ const YNAB_GUIDE_STEPS: ReactNode[] = [
   <>Upload the ZIP file above</>,
 ];
 
+const FULL_GUIDE_LINK = (
+  <a
+    href="https://budgero.app/docs/ynab-import"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="font-medium text-primary underline underline-offset-2 hover:text-primary/80"
+  >
+    full import guide
+  </a>
+);
+
 export function YnabExportGuide() {
   return (
+    // The guide item ships open on purpose: users who skipped it exported
+    // with locale date/number formats and got silently shifted dates and
+    // wrong amounts.
     <Accordion
       type="single"
       collapsible
+      defaultValue="guide"
       className="mt-2 rounded-lg border border-border/60 bg-muted/30 px-4"
     >
       <AccordionItem value="guide">
         <AccordionTrigger className="text-xs sm:text-sm">How to export from YNAB</AccordionTrigger>
         <AccordionContent className="text-xs sm:text-sm">
           <p className="mb-3 text-xs text-muted-foreground">
-            Export is only available on the {YNAB_WEB_APP_LINK} (not the mobile app).
+            Export is only available on the {YNAB_WEB_APP_LINK} (not the mobile app). Please follow
+            these steps — the format settings decide whether your dates and amounts import
+            correctly. See the {FULL_GUIDE_LINK} for details on what is and isn&apos;t imported.
           </p>
           <ol className="list-none space-y-2.5 text-muted-foreground">
             {YNAB_GUIDE_STEPS.map((step, index) => (
@@ -67,17 +84,18 @@ export function YnabExportGuide() {
             ))}
           </ol>
           <p className="mt-3 text-[11px] text-muted-foreground/70">
-            Budgero can import files with different format settings, but results may vary. For the
-            most accurate import, we recommend following the steps above.
+            Budgero tries to detect other format settings, but exports made with the settings above
+            are the only ones that import losslessly.
           </p>
         </AccordionContent>
       </AccordionItem>
       <AccordionItem value="limitations">
         <AccordionTrigger className="text-xs sm:text-sm">Import limitations</AccordionTrigger>
         <AccordionContent className="text-xs sm:text-sm text-muted-foreground">
-          YNAB exports do not include goals or account types (on-budget vs off-budget). All accounts
-          will be imported as on-budget by default. You can correct account types and set up goals
-          manually after the import is complete.
+          YNAB exports do not include goals or account types, so every account arrives as an
+          on-budget Checking account. After the import, edit each account to set its real type
+          (savings, credit card, …) and set up goals manually. See the {FULL_GUIDE_LINK} for the
+          complete post-import checklist.
         </AccordionContent>
       </AccordionItem>
     </Accordion>

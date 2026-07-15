@@ -13,6 +13,32 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({ cur, state, onFileSele
     <div>
       <Title h={cur.title} sub={cur.subtitle} />
       {!file && (
+        <div
+          style={{
+            marginTop: 12,
+            padding: 10,
+            fontSize: 11,
+            color: '#393939',
+            lineHeight: 1.6,
+            border: '1px dashed rgba(57,57,57,0.3)',
+          }}
+        >
+          <span style={{ fontWeight: 700, color: '#141414' }}>Before you export:</span> in YNAB’s{' '}
+          <em>Plan Settings</em>, set Date Format to <code>2025-12-30</code>, Number Format to{' '}
+          <code>123,456.78</code> and Currency Placement to “Don’t Show”. Skipping this can shift
+          dates and break amounts. Details in the{' '}
+          <a
+            href="https://budgero.app/docs/ynab-import"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#141414', fontWeight: 700 }}
+          >
+            import guide
+          </a>
+          .
+        </div>
+      )}
+      {!file && (
         // Presentation wrapper: the click merely widens the hit area of the
         // fully keyboard-accessible "Browse files" button inside.
         <div
@@ -122,8 +148,9 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({ cur, state, onFileSele
             }}
           >
             <span style={{ fontWeight: 700, color: '#141414' }}>Heads up:</span> YNAB’s “Age of
-            Money” and scheduled transactions don’t carry over. Everything else does — accounts,
-            categories, assignments, and transaction history.
+            Money”, scheduled transactions, goals, and account types don’t carry over — accounts
+            arrive as Checking, so review their types after the import. Everything else does —
+            accounts, categories, assignments, and transaction history.
           </div>
         </div>
       )}
