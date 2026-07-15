@@ -16,10 +16,53 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.5.3',
+    date: 'July 15, 2026',
+    summary: 'Recurring transfers between accounts, smarter YNAB imports, and security hardening.',
+    isLatest: true,
+    items: [
+      {
+        type: 'new',
+        title: 'Recurring transfers',
+        description:
+          "Recurring transactions now support a third type alongside Income and Bill: Transfer. Schedule money to move between two accounts on a cadence — both sides show up in each account's register and upcoming panel, cross-currency amounts are converted automatically, and marking an occurrence ready posts both sides as a regular linked transfer.",
+      },
+      {
+        type: 'new',
+        title: 'Create recurring transactions from existing ones',
+        description:
+          'Select a transaction on the All Transactions page and turn it into a recurring template straight from the toolbar — the editor opens prefilled with the amount, account, and category. Previously this was only available on individual account pages.',
+      },
+      {
+        type: 'improved',
+        title: 'YNAB export guide is front and center',
+        description:
+          'The export instructions now open by default when importing from YNAB, appear during onboarding, and link to the full guide — so the format settings that make an import lossless are hard to miss.',
+      },
+      {
+        type: 'improved',
+        title: 'Security hardening',
+        description:
+          'The offline mutation queue and your remembered master password are now encrypted at rest under a non-extractable device key, and key handling has been tightened across the board.',
+      },
+      {
+        type: 'fixed',
+        title: 'US date formats in YNAB imports',
+        description:
+          'YNAB exports using MM/DD/YYYY dates were parsed day-first, silently shifting transaction dates. Budgero now detects the date order from the file itself, so imports come through correctly regardless of your YNAB date format.',
+      },
+      {
+        type: 'fixed',
+        title: 'Push API panel on mobile',
+        description:
+          'The "Show Budget, Account, Category & Payee IDs" button no longer overflows its card on small screens.',
+      },
+    ],
+  },
+  {
     version: 'v1.5.2',
     date: 'July 10, 2026',
     summary: 'Timezone-safe date handling across app and core.',
-    isLatest: true,
     items: [
       {
         type: 'fixed',
