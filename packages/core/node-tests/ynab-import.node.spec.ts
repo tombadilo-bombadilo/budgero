@@ -351,3 +351,66 @@ for (const testCase of sharedImportCases) {
     });
   });
 }
+
+describe('YNAB import date-order detection', () => {
+  async function importWithRegisterDates(dates: string[]): Promise<string[]> {
+    const JSZip = (await import('jszip')).default;
+
+    const registerHeader =
+      '"Account","Flag","Date","Payee","Category Group/Category","Category Group","Category","Memo","Outflow","Inflow","Cleared"';
+    const registerRows = dates.map(
+      (date, index) =>
+        `"Checking","","${date}","Grocer","Everyday: Food","Everyday","Food","row ${index}","10.00","0.00","Cleared"`
+    );
+    const budgetCsv = [
+      '"Month","Category Group/Category","Category Group","Category","Assigned","Activity","Available"',
+      '"Jan 2025","Everyday: Food","Everyday","Food","10.00","0.00","0.00"',
+    ].join('\n');
+
+    const zip = new JSZip();
+    zip.file('Test Budget - Register.csv', [registerHeader, ...registerRows].join('\n'));
+    zip.file('Test Budget - Budget.csv', budgetCsv);
+    const zipData = await zip.generateAsync({ type: 'uint8array' });
+
+    const adapter = await NodeSqlJsAdapter.create();
+    try {
+      const service = new YNABImportService(adapter);
+      const budgetId = await service.importYNABFromZip(zipData, {
+        budgetName: 'Date Order Test',
+        currency: 'USD',
+        numberFormat: '123,456.78',
+        badgeIcon: 'HelpCircle',
+      });
+
+      const stmt = adapter.prepare(
+        `SELECT Date FROM transactions WHERE BudgetID = ? ORDER BY Memo`
+      );
+      const rows = stmt.all(budgetId) as { Date: string }[];
+      stmt.finalize();
+      return rows.map((row) => row.Date);
+    } finally {
+      adapter.close();
+    }
+  }
+
+  it('detects US month-first dates from unambiguous rows (regression)', async () => {
+    // 01/25/2025 can only be month-first — 02/03/2025 must follow that order.
+    const dates = await importWithRegisterDates(['01/25/2025', '02/03/2025']);
+    expect(dates).toEqual(['2025-01-25', '2025-02-03']);
+  });
+
+  it('keeps day-first parsing when the file says so', async () => {
+    const dates = await importWithRegisterDates(['25/01/2025', '03/02/2025']);
+    expect(dates).toEqual(['2025-01-25', '2025-02-03']);
+  });
+
+  it('parses ISO dates regardless of detection', async () => {
+    const dates = await importWithRegisterDates(['2025-01-25', '2025-02-03']);
+    expect(dates).toEqual(['2025-01-25', '2025-02-03']);
+  });
+
+  it('parses single-digit day/month components', async () => {
+    const dates = await importWithRegisterDates(['1/25/2025', '2/3/2025']);
+    expect(dates).toEqual(['2025-01-25', '2025-02-03']);
+  });
+});

@@ -15,6 +15,9 @@ import { createLogger } from '../../logger.js';
 
 const debugLog = createLogger('services:import:ynab-import-service');
 
+/** Matches DD/MM/YYYY and MM/DD/YYYY style dates with -, / or . separators. */
+const AMBIGUOUS_DATE_REGEX = /^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/;
+
 export class YNABImportService {
   private budgetService: BudgetService;
 
@@ -29,6 +32,13 @@ export class YNABImportService {
   private csvParser: CSVParser;
 
   private currencyParser: CurrencyParser;
+
+  /**
+   * Whether ambiguous two-number date formats (01/05/2025) in the current
+   * file read day-first (DD/MM) or month-first (MM/DD). Decided once per
+   * import by detectAmbiguousDateOrder; day-first is the historical default.
+   */
+  private ambiguousDayFirst = true;
 
   constructor(private db: DatabaseAdapter) {
     this.budgetService = new BudgetService(db);
@@ -82,6 +92,8 @@ export class YNABImportService {
 
     const registerRows = this.csvParser.parseRegisterCSV(registerData);
     debugLog(`Parsed ${registerRows.length} register rows`);
+
+    this.detectAmbiguousDateOrder(registerRows.map((row) => row.Date));
 
     const budgetRows = this.csvParser.parseBudgetCSV(budgetData);
     debugLog(`Parsed ${budgetRows.length} budget rows`);
@@ -505,42 +517,64 @@ export class YNABImportService {
     return payee.includes('transfer') || category.includes('transfer') || memo.includes('transfer');
   }
 
+  /**
+   * Two-number date formats (01/05/2025) are ambiguous between day-first
+   * (DD/MM, e.g. European YNAB settings) and month-first (MM/DD, US
+   * settings). One export file is always internally consistent, so scan all
+   * dates once for a leading or middle component that can only be a day
+   * (> 12) and lock the order in for the whole import.
+   */
+  private detectAmbiguousDateOrder(dates: (string | undefined)[]): void {
+    let dayFirstEvidence = 0;
+    let monthFirstEvidence = 0;
+
+    for (const raw of dates) {
+      const match = raw?.trim().match(AMBIGUOUS_DATE_REGEX);
+      if (!match) continue;
+      const first = Number(match[1]);
+      const second = Number(match[2]);
+      if (first > 12 && second <= 12) dayFirstEvidence++;
+      else if (second > 12 && first <= 12) monthFirstEvidence++;
+    }
+
+    // Ties (no evidence either way) keep the historical day-first default.
+    this.ambiguousDayFirst = monthFirstEvidence <= dayFirstEvidence;
+    debugLog(
+      `Ambiguous date order: ${this.ambiguousDayFirst ? 'day-first' : 'month-first'} ` +
+        `(day-first evidence: ${dayFirstEvidence}, month-first evidence: ${monthFirstEvidence})`
+    );
+  }
+
   private parseYNABDate(dateStr: string): string {
     const trimmed = dateStr.trim();
     if (!trimmed) {
       return '';
     }
 
-    const formats = [
-      { regex: /^(\d{4})-(\d{2})-(\d{2})$/, format: 'YYYY-MM-DD' },
-      { regex: /^(\d{4})\/(\d{2})\/(\d{2})$/, format: 'YYYY/MM/DD' },
-      { regex: /^(\d{2})-(\d{2})-(\d{4})$/, format: 'DD-MM-YYYY' },
-      { regex: /^(\d{2})\/(\d{2})\/(\d{4})$/, format: 'DD/MM/YYYY' },
-      { regex: /^(\d{2})\.(\d{2})\.(\d{4})$/, format: 'DD.MM.YYYY' },
-      { regex: /^(\d{4})\.(\d{2})\.(\d{2})$/, format: 'YYYY.MM.DD' },
-    ];
+    const yearFirst = trimmed.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+    const yearLast = trimmed.match(AMBIGUOUS_DATE_REGEX);
 
-    for (const { regex, format } of formats) {
-      const match = trimmed.match(regex);
-      if (match) {
-        let year: string, month: string, day: string;
-
-        if (format.startsWith('YYYY')) {
-          [, year, month, day] = match;
-        } else if (format.startsWith('DD')) {
-          [, day, month, year] = match;
-        } else {
-          // MM/DD/YYYY
-          [, month, day, year] = match;
-        }
-
-        // Return in standard format (YYYY-MM-DD)
-        return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    let year: string, month: string, day: string;
+    if (yearFirst) {
+      [, year, month, day] = yearFirst;
+    } else if (yearLast) {
+      if (this.ambiguousDayFirst) {
+        [, day, month, year] = yearLast;
+      } else {
+        [, month, day, year] = yearLast;
       }
+      // A month above 12 means the detected order is wrong for this row
+      // (possible when a short file had no disambiguating dates) — swap.
+      if (Number(month) > 12 && Number(day) <= 12) {
+        [day, month] = [month, day];
+      }
+    } else {
+      debugLog(`Could not parse date '${dateStr}' with any known format`);
+      return '';
     }
 
-    debugLog(`Could not parse date '${dateStr}' with any known format`);
-    return '';
+    // Return in standard format (YYYY-MM-DD)
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
 
   private parseYNABMonth(monthStr: string): string {
