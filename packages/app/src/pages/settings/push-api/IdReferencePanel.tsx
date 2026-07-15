@@ -71,8 +71,11 @@ export function IdReferencePanel({ state }: IdReferencePanelProps) {
       <CardContent>
         <Collapsible open={showIds} onOpenChange={setShowIds}>
           <CollapsibleTrigger asChild>
-            <Button variant="outline" className="w-full justify-between">
-              <span>Show Budget, Account, Category & Payee IDs</span>
+            <Button
+              variant="outline"
+              className="h-auto min-h-9 w-full justify-between whitespace-normal"
+            >
+              <span className="text-left">Show Budget, Account, Category & Payee IDs</span>
               {showIds ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
             </Button>
           </CollapsibleTrigger>
