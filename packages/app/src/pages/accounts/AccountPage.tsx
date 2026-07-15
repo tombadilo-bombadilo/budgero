@@ -5,7 +5,6 @@ import { useCategories } from '@entities/category/api/useCategories';
 import { useAccounts } from '@entities/account/api/useAccounts';
 import { useTransactions } from '@entities/transaction/api/useTransactions';
 import {
-  useCreateRecurringTransaction,
   useMarkRecurringOccurrenceReady,
   useProjectedTransactions,
   useRecurringOccurrences,
@@ -19,14 +18,9 @@ import { Wallet, ArrowUpRight, ArrowDownRight, CheckCircle2 } from 'lucide-react
 import { TooltipProvider } from '@shared/ui/tooltip';
 import { PayoffSimulator } from '@features/debt/ui/PayoffSimulator';
 import { useLoading } from '@shared/contexts/LoadingContext';
-import type { GetTransactionsByAccountRow } from '@budgero/core/browser';
-import {
-  RecurringTransactionEditor,
-  type RecurringTransactionEditorProps,
-  type RecurringTransactionEditorSubmit,
-} from '@features/recurring/ui/RecurringTransactionEditor';
+import { RecurringTransactionEditor } from '@features/recurring/ui/RecurringTransactionEditor';
 import { getAccountTypeDefinition } from '@entities/account/model/accountTypes';
-import { formatDateISO, getTodayISO } from '@shared/lib/date-utils';
+import { formatDateISO } from '@shared/lib/date-utils';
 import { asMilli, toDecimal } from '@shared/lib/currency/milli';
 import { useFormatMaskedAmount } from '@shared/lib/privacy/useMaskedLocalizer';
 import { getErrorMessage } from '@shared/lib/errors';
@@ -36,6 +30,7 @@ import { toast } from 'sonner';
 import { useAccountDateRange } from './hooks/useAccountDateRange';
 import { useAccountMetrics, normalizeToDate } from './hooks/useAccountMetrics';
 import { useJumpToTransaction } from './hooks/useJumpToTransaction';
+import { useRecurringEditorFromTransaction } from './hooks/useRecurringEditorFromTransaction';
 import { useTransactionStatsCallbacks } from './hooks/useTransactionStatsCallbacks';
 import { mergeProjectedTransactions } from './hooks/projected-register';
 import {
@@ -116,7 +111,6 @@ export default function AccountPage() {
   });
   const markRecurringReady = useMarkRecurringOccurrenceReady();
   const skipRecurring = useSkipRecurringOccurrence();
-  const createRecurring = useCreateRecurringTransaction();
 
   // Scheduled occurrences projected into the register as non-editable rows.
   // The date filter mirrors the register range, so future occurrences only
@@ -140,9 +134,10 @@ export default function AccountPage() {
     [transactionsData, allTransactionsData, projectedTransactions]
   );
   const [processingOccurrenceId, setProcessingOccurrenceId] = useState<number | null>(null);
-  const [recurringEditorOpen, setRecurringEditorOpen] = useState(false);
-  const [recurringEditorInitialValues, setRecurringEditorInitialValues] =
-    useState<RecurringTransactionEditorProps['initialValues']>();
+  const recurringEditor = useRecurringEditorFromTransaction({
+    budgetId: selectedAccount?.BudgetID || selectedBudget?.ID || 0,
+    accountId: numericId,
+  });
 
   const currentFormatter =
     transactionCurrencyDisplay === 'budget' ? globalLocalizer : accountLocalizer;
@@ -188,7 +183,9 @@ export default function AccountPage() {
     const scheduled = recurringOccurrences
       .filter(
         (occurrence) =>
-          occurrence.status === 'scheduled' && occurrence.template.accountId === numericId
+          occurrence.status === 'scheduled' &&
+          (occurrence.template.accountId === numericId ||
+            occurrence.template.toAccountId === numericId)
       )
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
 
@@ -243,71 +240,6 @@ export default function AccountPage() {
         return a.parsedDate.getTime() - b.parsedDate.getTime();
       });
   }, [allTransactionsData, recurringPostedTransactionIds]);
-
-  const handleCreateRecurringFromTransaction = (transaction: GetTransactionsByAccountRow) => {
-    const direction = transaction.Outflow > 0 ? 'outflow' : 'inflow';
-    const rawAmount = direction === 'outflow' ? transaction.Outflow : transaction.Inflow;
-    const startDate = transaction.Date || getTodayISO();
-
-    setRecurringEditorInitialValues({
-      name: transaction.Memo || 'Recurring transaction',
-      memo: transaction.Memo || '',
-      // Outflow/Inflow are stored milliunits; Math.abs drops the brand only.
-      amount: asMilli(Math.abs(rawAmount)),
-      direction,
-      accountId: numericId,
-      categoryId: transaction.CategoryID ?? null,
-      schedule: {
-        startDate,
-        intervalUnit: 'month',
-        intervalCount: 1,
-      },
-      notifyDaysBefore: 0,
-      active: true,
-    });
-    setRecurringEditorOpen(true);
-  };
-
-  const handleRecurringEditorSubmit = async (values: RecurringTransactionEditorSubmit) => {
-    const budgetForCreate = selectedAccount?.BudgetID || selectedBudget?.ID || 0;
-    if (!budgetForCreate) return;
-    if (!values.accountId) {
-      toast.error('Select an account');
-      return;
-    }
-    if (!values.categoryId) {
-      toast.error('Select a category');
-      return;
-    }
-    if (!values.amount || Number.isNaN(values.amount)) {
-      toast.error('Enter a valid amount');
-      return;
-    }
-
-    try {
-      await createRecurring.mutateAsync({
-        budgetId: budgetForCreate,
-        accountId: values.accountId,
-        categoryId: values.categoryId,
-        name: values.name,
-        memo: values.memo,
-        amount: values.amount,
-        direction: values.direction,
-        schedule: values.schedule,
-        notifyDaysBefore: values.notifyDaysBefore,
-        active: values.active,
-      });
-      toast.success('Recurring transaction created', {
-        description: 'We will remind you when it is almost due.',
-      });
-      setRecurringEditorOpen(false);
-    } catch (error) {
-      const message = getErrorMessage(error, 'Something went wrong.');
-      toast.error('Unable to save recurring transaction', {
-        description: message,
-      });
-    }
-  };
 
   const handleOccurrenceAction = async (occurrenceId: number, action: 'ready' | 'skip') => {
     try {
@@ -525,6 +457,7 @@ export default function AccountPage() {
             <RecurringTransactionsPanel
               isLoading={recurringLoading}
               isFetching={recurringFetching}
+              accountId={numericId}
               upcomingRecurringOccurrences={upcomingRecurringOccurrences}
               upcomingScheduledTransactions={upcomingScheduledTransactions}
               categoriesById={categoriesById}
@@ -543,7 +476,7 @@ export default function AccountPage() {
             transactionsData={registerRows}
             accountId={numericId}
             onMobilePageChange={handleMobilePageChange}
-            onCreateRecurringFromSelection={handleCreateRecurringFromTransaction}
+            onCreateRecurringFromSelection={recurringEditor.openFromTransaction}
             categories={categories}
             onDateRangeChange={handleDateRangeChange}
             onFilteredStatsChange={handleFilteredStatsChange}
@@ -559,14 +492,14 @@ export default function AccountPage() {
         </div>
       </div>
       <RecurringTransactionEditor
-        open={recurringEditorOpen}
+        open={recurringEditor.open}
         mode="create"
-        onOpenChange={setRecurringEditorOpen}
+        onOpenChange={recurringEditor.setOpen}
         accounts={accounts.filter((a) => !a.Archived)}
         categories={categories}
-        initialValues={recurringEditorInitialValues}
-        onSubmit={handleRecurringEditorSubmit}
-        isSubmitting={createRecurring.isPending}
+        initialValues={recurringEditor.initialValues}
+        onSubmit={recurringEditor.handleSubmit}
+        isSubmitting={recurringEditor.isSubmitting}
       />
     </TooltipProvider>
   );

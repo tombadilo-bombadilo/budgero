@@ -193,6 +193,7 @@ export class TransactionQueries {
       this.db,
       `
       SELECT${TX_ROW_COLUMNS},
+        t.AccountID,
         a.Name as Account
       FROM transactions t
       LEFT JOIN categories c ON t.CategoryID = c.ID

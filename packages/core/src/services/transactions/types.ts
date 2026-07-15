@@ -61,6 +61,8 @@ export interface GetTransactionsByAccountRow {
   RunningBalance: MilliUnits | null;
   RunningBalanceOriginal?: MilliUnits | null;
   TransferID?: string;
+  /** Only populated by budget-wide queries (getAllTransactionsDetailed) */
+  AccountID?: number;
   Account?: string;
   Payee?: string;
   /** True for scheduled recurring occurrences shown as non-editable projected rows */

@@ -8,6 +8,8 @@ import { useLoading } from '@shared/contexts/LoadingContext';
 import { TransactionsTable } from '@features/transactions';
 import { useAllTransactionsDetailed } from '@entities/transaction/api/useTransactions';
 import { useCategories } from '@entities/category/api/useCategories';
+import { useAccounts } from '@entities/account/api/useAccounts';
+import { RecurringTransactionEditor } from '@features/recurring/ui/RecurringTransactionEditor';
 import { useFormatMaskedAmount } from '@shared/lib/privacy/useMaskedLocalizer';
 import { asMilli, toDecimal } from '@shared/lib/currency/milli';
 import { CenteredLoader } from '@shared/ui/CenteredLoader';
@@ -15,6 +17,7 @@ import { AccountDateRangeControls } from './components/AccountDateRangeControls'
 import { FlowStat } from './components/FlowStat';
 import { useAccountDateRange } from './hooks/useAccountDateRange';
 import { useJumpToTransaction } from './hooks/useJumpToTransaction';
+import { useRecurringEditorFromTransaction } from './hooks/useRecurringEditorFromTransaction';
 import { useTransactionStatsCallbacks } from './hooks/useTransactionStatsCallbacks';
 
 export default function AllTransactionsPage() {
@@ -45,6 +48,11 @@ export default function AllTransactionsPage() {
 
   // Fetch categories for semantic search
   const { data: categories = [] } = useCategories(selectedBudget?.ID || 0);
+  const { data: accounts = [] } = useAccounts(selectedBudget?.ID || 0);
+
+  const recurringEditor = useRecurringEditorFromTransaction({
+    budgetId: selectedBudget?.ID || 0,
+  });
 
   const transactionsData = useMemo(() => {
     if (!dateRange?.from || !dateRange?.to) return allTransactionsData;
@@ -200,10 +208,21 @@ export default function AllTransactionsPage() {
               categories={categories}
               onDateRangeChange={handleDateRangeChange}
               onFilteredStatsChange={handleFilteredStatsChange}
+              onCreateRecurringFromSelection={recurringEditor.openFromTransaction}
             />
           )}
         </div>
       </div>
+      <RecurringTransactionEditor
+        open={recurringEditor.open}
+        mode="create"
+        onOpenChange={recurringEditor.setOpen}
+        accounts={accounts.filter((a) => !a.Archived)}
+        categories={categories}
+        initialValues={recurringEditor.initialValues}
+        onSubmit={recurringEditor.handleSubmit}
+        isSubmitting={recurringEditor.isSubmitting}
+      />
     </TooltipProvider>
   );
 }
