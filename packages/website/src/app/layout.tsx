@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { IBM_Plex_Mono, Poppins } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { SiteHeader } from '@/components/site-header';
@@ -90,6 +91,16 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${poppins.variable} ${ibmPlexMono.variable} font-sans antialiased`}>
+        {/* Umami — cookieless, self-hosted, no consent required (no device
+            storage). Proxied through /stats (see next.config.ts rewrites) so
+            adblockers don't filter the third-party hostname. data-domains
+            keeps localhost/preview traffic out of production stats. */}
+        <Script
+          src="/stats/script.js"
+          data-website-id="76a1a09b-2dbc-4291-9c0b-d3f4e9eb2caa"
+          data-domains="budgero.app"
+          strategy="afterInteractive"
+        />
         <Providers>
           <SiteHeader />
           {children}

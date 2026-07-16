@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { posthog } from '@/lib/posthog';
+import { track } from '@/lib/analytics';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,7 +82,7 @@ export function SiteHeader() {
                 href="https://feedback.budgero.app"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => posthog.capture('Feedback Clicked - Desktop Header')}
+                onClick={() => track('Feedback Clicked - Desktop Header')}
                 className="font-medium text-foreground/70 hover:text-foreground transition-colors"
               >
                 Feedback
@@ -91,7 +91,7 @@ export function SiteHeader() {
                 href="https://discord.gg/ZgWnzaPqae"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => posthog.capture('Community Clicked - Discord (Desktop Header)')}
+                onClick={() => track('Community Clicked - Discord (Desktop Header)')}
                 className="inline-flex items-center gap-2 font-medium text-foreground/70 hover:text-foreground transition-colors"
               >
                 <Image src="/Discord-Symbol-Blurple.svg" alt="" width={16} height={16} aria-hidden="true" />
@@ -101,7 +101,7 @@ export function SiteHeader() {
                 href="https://www.reddit.com/r/budgero/"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => posthog.capture('Community Clicked - Reddit (Desktop Header)')}
+                onClick={() => track('Community Clicked - Reddit (Desktop Header)')}
                 className="inline-flex items-center gap-2 font-medium text-foreground/70 hover:text-foreground transition-colors"
               >
                 <Image src="/Reddit_Logo.webp" alt="" width={16} height={16} aria-hidden="true" />
@@ -111,7 +111,7 @@ export function SiteHeader() {
                 href={GITHUB_REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => posthog.capture('Community Clicked - GitHub (Desktop Header)')}
+                onClick={() => track('Community Clicked - GitHub (Desktop Header)')}
                 aria-label="View source on GitHub"
                 className="inline-flex items-center gap-2 font-medium text-foreground/70 hover:text-foreground transition-colors"
               >
@@ -125,7 +125,7 @@ export function SiteHeader() {
                 href="https://discord.gg/ZgWnzaPqae"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => posthog.capture('Community Clicked - Discord (Mobile Header)')}
+                onClick={() => track('Community Clicked - Discord (Mobile Header)')}
                 aria-label="Join Discord community"
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground/70 hover:text-foreground transition-colors"
               >
@@ -135,7 +135,7 @@ export function SiteHeader() {
                 href="https://www.reddit.com/r/budgero/"
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => posthog.capture('Community Clicked - Reddit (Mobile Header)')}
+                onClick={() => track('Community Clicked - Reddit (Mobile Header)')}
                 aria-label="Join Reddit community"
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground/70 hover:text-foreground transition-colors"
               >
@@ -145,7 +145,7 @@ export function SiteHeader() {
                 href={GITHUB_REPO_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => posthog.capture('Community Clicked - GitHub (Mobile Header)')}
+                onClick={() => track('Community Clicked - GitHub (Mobile Header)')}
                 aria-label="View source on GitHub"
                 className="inline-flex h-8 w-8 items-center justify-center rounded-md text-foreground/70 hover:text-foreground transition-colors"
               >
@@ -192,7 +192,7 @@ export function SiteHeader() {
                       href="https://feedback.budgero.app"
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => posthog.capture('Feedback Clicked - Mobile Header')}
+                      onClick={() => track('Feedback Clicked - Mobile Header')}
                     >
                       Feedback
                     </a>

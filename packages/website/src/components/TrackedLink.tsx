@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { posthog } from '@/lib/posthog';
+import { track } from '@/lib/analytics';
 
 interface TrackedLinkProps {
   event: string;
@@ -17,7 +17,7 @@ interface TrackedLinkProps {
 }
 
 /**
- * Anchor / Link wrapper that fires `posthog.capture(event)` on click.
+ * Anchor / Link wrapper that fires `track(event)` (PostHog + Umami) on click.
  *
  * Why: server-rendered pages on the marketing site can't attach onClick
  * handlers, so we wrap the link in a small client component to keep the
@@ -35,7 +35,7 @@ export function TrackedLink({
   'aria-label': ariaLabel,
 }: TrackedLinkProps) {
   const onClick = () => {
-    posthog.capture(event);
+    track(event);
   };
 
   if (external) {

@@ -21,7 +21,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { ResettingGif } from '@/components/ui/resetting-media';
-import { posthog } from '@/lib/posthog';
+import { track } from '@/lib/analytics';
 import { pricing } from '@/lib/pricing';
 import { TestimonialsSection } from '@/components/landing/Testimonials';
 // Newsletter signup coming soon
@@ -62,7 +62,7 @@ export default function LandingPage() {
 
   const goToApp = () => {
     if (typeof window !== 'undefined') {
-      posthog.capture('CTA Clicked - Cloud');
+      track('CTA Clicked - Cloud');
       window.location.href =
         'https://my.budgero.app/auth?mode=signup&utm_source=website&utm_medium=cta&utm_campaign=home&utm_content=hero';
     }
@@ -70,7 +70,7 @@ export default function LandingPage() {
 
   const goToSelfHost = () => {
     if (typeof window !== 'undefined') {
-      posthog.capture('CTA Clicked - Self Host');
+      track('CTA Clicked - Self Host');
       window.location.href = '/self-hostable';
     }
   };

@@ -2,6 +2,21 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   output: 'standalone',
+  async rewrites() {
+    // Serve the Umami tracker from our own origin so adblockers don't eat it.
+    // Only the script and the ingest endpoint are proxied — never the
+    // dashboard/login UI.
+    return [
+      {
+        source: '/stats/script.js',
+        destination: 'https://stats.budgero.app/script.js',
+      },
+      {
+        source: '/stats/api/send',
+        destination: 'https://stats.budgero.app/api/send',
+      },
+    ];
+  },
   async redirects() {
     return [
       {

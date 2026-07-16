@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Check, Copy, ChevronDown } from 'lucide-react';
-import { posthog } from '@/lib/posthog';
+import { track } from '@/lib/analytics';
 
 type InstallMethod = 'unix' | 'windows' | 'docker';
 
@@ -64,7 +64,7 @@ export default function SelfHostInstaller() {
     await navigator.clipboard.writeText(installCommands[selectedMethod]);
     setCopied(true);
     if (typeof window !== 'undefined') {
-      posthog.capture('Self-Host - Install Command Copied', { method: selectedMethod });
+      track('Self-Host - Install Command Copied', { method: selectedMethod });
     }
     setTimeout(() => setCopied(false), 2000);
   };
