@@ -28,6 +28,7 @@ import type { GetTransactionsByAccountRow, TransactionSplit } from '@budgero/cor
 import { useUiStore } from '@shared/store/useUiStore';
 import { formatMaskedMilli } from '@shared/lib/privacy/mask-numbers';
 import { asMilli } from '@shared/lib/currency/milli';
+import { withEditPrecision } from '@shared/lib/number-format';
 import type { SplitLine } from './useMobileTransactionCardState';
 
 /** Combined split type supporting both TransactionSplit and SplitLine properties */
@@ -133,6 +134,8 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
   // Split/transaction amounts are stored milliunits.
   const formatAmount = (formatter: Intl.NumberFormat, value: number) =>
     formatMaskedMilli(formatter, value, privacyMaskNumbers);
+  // Edit surfaces must show real cents even under a zero-decimal display format.
+  const editFormatter = withEditPrecision(currentFormatter);
 
   const categoryValue = displayCategoryOverride || transaction.Category;
   const isSplit = categoryValue === 'Split' || editSplits !== null;
@@ -431,7 +434,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                               s.amount ?? s.inflow ?? s.Inflow ?? s.outflow ?? s.Outflow ?? 0
                             )}
                             onCommit={(val) => onUpdateSplitLine(idx, { amount: val })}
-                            formatter={(val) => currentFormatter.format(val)}
+                            formatter={(val) => editFormatter.format(val)}
                             localizer={currentFormatter}
                             inputAlign="right"
                             placeholder="0.00"
@@ -478,7 +481,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                 <CalculatorCell
                   value={asMilli(splitTarget)}
                   onCommit={(val) => onSplitTargetChange(Math.abs(val) || 0)}
-                  formatter={(val) => currentFormatter.format(val)}
+                  formatter={(val) => editFormatter.format(val)}
                   localizer={currentFormatter}
                   inputAlign="right"
                   placeholder="0.00"
@@ -491,7 +494,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
             {(editSplits || splits).length > 0 && (
               <div className="flex items-center justify-between text-xs text-muted-foreground px-2">
                 <div>Remaining</div>
-                <div className="font-mono">{formatAmount(currentFormatter, remainingAmount)}</div>
+                <div className="font-mono">{formatAmount(editFormatter, remainingAmount)}</div>
               </div>
             )}
           </div>

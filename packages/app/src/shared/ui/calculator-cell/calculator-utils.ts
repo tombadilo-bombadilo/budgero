@@ -1,3 +1,5 @@
+import { withEditPrecision } from '@shared/lib/number-format';
+
 /**
  * Safe expression evaluator for basic math operations.
  * Supports: +, -, *, /, parentheses
@@ -85,6 +87,13 @@ export function getSeparators(localizer?: Intl.NumberFormat): {
       const parts = localizer.formatToParts(12345.6);
       groupSep = parts.find((p) => p.type === 'group')?.value;
       decimalSep = parts.find((p) => p.type === 'decimal')?.value;
+      if (!decimalSep) {
+        // A zero-decimal display format emits no decimal part, but users must
+        // still be able to type fractional amounts — derive the separator
+        // from the full-precision variant of the same locale.
+        const editParts = withEditPrecision(localizer).formatToParts(1.1);
+        decimalSep = editParts.find((p) => p.type === 'decimal')?.value;
+      }
     }
   } catch {
     // formatToParts may fail - use defaults
@@ -153,10 +162,12 @@ export function formatNumberForInput(
   groupSep: string | undefined,
   decimalSep: string | undefined
 ): string {
-  // Prefer formatToParts reconstruction without currency
+  // Prefer formatToParts reconstruction without currency. Always seed edit
+  // text at full precision — a zero-decimal display format must not silently
+  // truncate the value being edited.
   try {
     if (localizer && typeof localizer.formatToParts === 'function') {
-      const parts = localizer.formatToParts(val);
+      const parts = withEditPrecision(localizer).formatToParts(val);
       const filtered = parts
         .filter(
           (p) =>

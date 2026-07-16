@@ -22,6 +22,7 @@ import { SearchableCategorySelect } from '@features/category-management/ui/Searc
 import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
 import { asMilli, formatMilli } from '@shared/lib/currency/milli';
+import { withEditPrecision } from '@shared/lib/number-format';
 import {
   type SplitLike,
   type EditableSplit,
@@ -54,6 +55,9 @@ export function SplitDetailsDialog({
 }: SplitDetailsDialogProps) {
   const open = Boolean(transaction);
   const transactionId = transaction ? transaction.ID : null;
+  // Edit surfaces must show real cents even under a zero-decimal display format.
+  const editGlobalLocalizer = withEditPrecision(globalLocalizer);
+  const editFormatter = withEditPrecision(currentFormatter);
   const { data: splits = [], isLoading } = useTransactionSplits(transactionId);
   const upsertSplits = useUpsertSplits();
   const clearSplits = useClearSplits();
@@ -263,7 +267,7 @@ export function SplitDetailsDialog({
                     <CalculatorCell
                       value={asMilli(targetTotal)}
                       onCommit={(val) => setEditTotal(Math.abs(val) || 0)}
-                      formatter={(val) => globalLocalizer.format(val)}
+                      formatter={(val) => editGlobalLocalizer.format(val)}
                       localizer={globalLocalizer}
                       inputAlign="left"
                       placeholder="0.00"
@@ -311,14 +315,14 @@ export function SplitDetailsDialog({
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 px-3 py-2 text-xs text-primary">
                 <span>
                   {remaining >= 0 ? 'Remaining' : 'Over by'}{' '}
-                  <strong>{formatMilli(globalLocalizer, asMilli(Math.abs(remaining)))}</strong>
+                  <strong>{formatMilli(editGlobalLocalizer, asMilli(Math.abs(remaining)))}</strong>
                 </span>
                 <span>
                   Total:{' '}
                   <strong className={remaining === 0 ? 'text-green-600' : 'text-red-600'}>
-                    {formatMilli(globalLocalizer, asMilli(draftTotal))}
+                    {formatMilli(editGlobalLocalizer, asMilli(draftTotal))}
                   </strong>{' '}
-                  / {formatMilli(globalLocalizer, asMilli(targetTotal))}
+                  / {formatMilli(editGlobalLocalizer, asMilli(targetTotal))}
                 </span>
               </div>
             )}
@@ -432,7 +436,7 @@ export function SplitDetailsDialog({
                                       });
                                     }
                                   }}
-                                  formatter={(val) => currentFormatter.format(val)}
+                                  formatter={(val) => editFormatter.format(val)}
                                   localizer={currentFormatter}
                                   inputAlign="right"
                                   placeholder="0.00"
@@ -475,7 +479,7 @@ export function SplitDetailsDialog({
                   Add split line
                 </Button>
                 <span className="text-xs text-muted-foreground">
-                  Splits must total {formatMilli(globalLocalizer, asMilli(targetTotal))}.
+                  Splits must total {formatMilli(editGlobalLocalizer, asMilli(targetTotal))}.
                 </span>
               </div>
             )}

@@ -27,3 +27,27 @@ export const formatOptions: { key: string; settings: FormatSettings }[] = [
 export function getFormatOptionFromLabel(key: string): FormatSettings | undefined {
   return formatOptions.find((option) => option.key === key)?.settings;
 }
+
+const editPrecisionCache = new WeakMap<Intl.NumberFormat, Intl.NumberFormat>();
+
+/**
+ * Full-precision variant of a display formatter for edit surfaces.
+ *
+ * Display precision and edit precision are different jobs: a zero-decimal
+ * display preference must not hide real cents while the user is editing or
+ * balancing amounts (split remainders, reconciliation). Keeps the locale and
+ * currency styling, but raises maximumFractionDigits so any stored milliunit
+ * amount (up to 3 decimals) renders exactly.
+ */
+export function withEditPrecision(formatter: Intl.NumberFormat): Intl.NumberFormat {
+  let edit = editPrecisionCache.get(formatter);
+  if (!edit) {
+    const options = formatter.resolvedOptions();
+    edit = new Intl.NumberFormat(options.locale, {
+      ...options,
+      maximumFractionDigits: Math.max(options.maximumFractionDigits ?? 0, 3),
+    });
+    editPrecisionCache.set(formatter, edit);
+  }
+  return edit;
+}
