@@ -35,6 +35,14 @@ interface AccountsListProps {
   globalLocalizer: { format: (value: number) => string };
 }
 
+// Realized as-of-today balance: future-dated scheduled transactions are
+// excluded so the sidebar always reflects actual funds.
+function realizedBalance(account: Account): number {
+  return typeof account.BalanceConverted === 'number'
+    ? account.BalanceConverted - (account.FutureImpactConverted ?? 0)
+    : (account.Balance ?? 0) - (account.FutureImpactOriginal ?? 0);
+}
+
 const AccountItem = React.memo(function AccountItem({
   account,
   uncategorizedCount,
@@ -105,12 +113,7 @@ const AccountSection = React.memo(function AccountSection({
         </div>
       </div>
       {accounts.map((account) => {
-        // Realized as-of-today balance: future-dated scheduled transactions
-        // are excluded so the sidebar always reflects actual funds.
-        const balanceValue =
-          typeof account.BalanceConverted === 'number'
-            ? account.BalanceConverted - (account.FutureImpactConverted ?? 0)
-            : (account.Balance ?? 0) - (account.FutureImpactOriginal ?? 0);
+        const balanceValue = realizedBalance(account);
         const formattedBalance = formatMaskedMilli(
           globalLocalizer,
           balanceValue,
@@ -168,17 +171,22 @@ export const AccountsList = React.memo(function AccountsList({
   const matchedOnBudget = isSearching ? onBudgetAccounts.filter(matchesQuery) : onBudgetAccounts;
   const matchedOffBudget = isSearching ? offBudgetAccounts.filter(matchesQuery) : offBudgetAccounts;
 
-  // While searching, show every match. Otherwise cap each section and offer "Show All".
-  const displayOnBudget = isSearching
-    ? matchedOnBudget
-    : showAllAccounts
-      ? matchedOnBudget
-      : matchedOnBudget.slice(0, MAX_ACCOUNTS_PER_SECTION);
-  const displayOffBudget = isSearching
-    ? matchedOffBudget
-    : showAllAccounts
-      ? matchedOffBudget
-      : matchedOffBudget.slice(0, MAX_ACCOUNTS_PER_SECTION);
+  // While searching, show every match. Otherwise cap each section and offer
+  // "Show All". Truncation hides zero-balance accounts first: active accounts
+  // (positive or negative balance) claim the slots, zeroed ones fill what's
+  // left, and the picks keep their original order.
+  const truncatePreferringActive = (list: Account[]): Account[] => {
+    if (list.length <= MAX_ACCOUNTS_PER_SECTION) return list;
+    const active = list.filter((account) => realizedBalance(account) !== 0);
+    const zeroed = list.filter((account) => realizedBalance(account) === 0);
+    const picked = new Set([...active, ...zeroed].slice(0, MAX_ACCOUNTS_PER_SECTION));
+    return list.filter((account) => picked.has(account));
+  };
+
+  const displayOnBudget =
+    isSearching || showAllAccounts ? matchedOnBudget : truncatePreferringActive(matchedOnBudget);
+  const displayOffBudget =
+    isSearching || showAllAccounts ? matchedOffBudget : truncatePreferringActive(matchedOffBudget);
   const hasMoreAccounts =
     !isSearching &&
     (onBudgetAccounts.length > MAX_ACCOUNTS_PER_SECTION ||
