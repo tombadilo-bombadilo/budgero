@@ -21,6 +21,7 @@ export interface UseCalculatorStateOptions {
   onEditingChange?: (editing: boolean) => void;
   focusSignal?: number;
   commitPrecision?: number;
+  commitUnchanged?: boolean;
 }
 
 export interface CalculatorState {
@@ -62,6 +63,7 @@ export function useCalculatorState({
   onEditingChange,
   focusSignal = 0,
   commitPrecision = 2,
+  commitUnchanged = false,
 }: UseCalculatorStateOptions): CalculatorState {
   const { groupSep, decimalSep } = getSeparators(localizer);
 
@@ -234,7 +236,10 @@ export function useCalculatorState({
 
     finalValue = roundForCommit(finalValue);
 
-    if (finalValue !== value) {
+    // Skipping no-op commits avoids redundant updates for cells bound to
+    // stored values, but parents that seed the cell with a fallback (e.g. 0)
+    // need the commit to learn the user confirmed that exact value.
+    if (commitUnchanged || finalValue !== value) {
       onCommit(finalValue);
     }
 
@@ -250,6 +255,7 @@ export function useCalculatorState({
     onEditingChange,
     parseLocalizedValue,
     roundForCommit,
+    commitUnchanged,
   ]);
 
   const startEditing = useCallback(() => {

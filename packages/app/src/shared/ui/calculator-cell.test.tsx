@@ -91,3 +91,44 @@ describe('CalculatorCell Mobile Behavior', () => {
     expect(screen.getAllByText('100').length).toBeGreaterThan(0);
   });
 });
+
+describe('CalculatorCell commitUnchanged', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    useUiStore.getState().setPrivacyMaskNumbers(false);
+    vi.spyOn(useIsMobileModule, 'useIsMobile').mockReturnValue(false);
+  });
+
+  const editAndSave = (text: string) => {
+    fireEvent.click(screen.getByRole('button'));
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: text } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+  };
+
+  it('commits an entered value equal to the seeded one when commitUnchanged is set', () => {
+    const onCommit = vi.fn();
+    render(
+      <CalculatorCell
+        value={asMilli(0)}
+        onCommit={onCommit}
+        placeholder="0.00"
+        zeroAsEmpty
+        commitUnchanged
+      />
+    );
+
+    editAndSave('0');
+    expect(onCommit).toHaveBeenCalledWith(asMilli(0));
+  });
+
+  it('still skips no-op commits by default', () => {
+    const onCommit = vi.fn();
+    render(
+      <CalculatorCell value={asMilli(0)} onCommit={onCommit} placeholder="0.00" zeroAsEmpty />
+    );
+
+    editAndSave('0');
+    expect(onCommit).not.toHaveBeenCalled();
+  });
+});

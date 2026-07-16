@@ -32,6 +32,9 @@ export interface CalculatorCellProps {
   focusSignal?: number;
   useFormatterForDisplay?: boolean;
   commitPrecision?: number;
+  /** Fire onCommit on save even when the value equals the seeded one, so
+   * parents can tell "user confirmed this value" apart from "never touched". */
+  commitUnchanged?: boolean;
   'data-testid'?: string;
 }
 
@@ -55,6 +58,7 @@ export function CalculatorCell({
   focusSignal = 0,
   useFormatterForDisplay = false,
   commitPrecision = 2,
+  commitUnchanged = false,
   'data-testid': testId,
 }: CalculatorCellProps) {
   const displayFormatterFn = displayFormatter ?? formatter;
@@ -77,6 +81,7 @@ export function CalculatorCell({
     onEditingChange,
     focusSignal,
     commitPrecision,
+    commitUnchanged,
   });
 
   const { isEditing } = state;

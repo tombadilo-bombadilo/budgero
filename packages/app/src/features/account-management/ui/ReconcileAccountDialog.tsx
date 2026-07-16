@@ -214,6 +214,7 @@ export function ReconcileAccountDialog({ account, budgetId }: ReconcileAccountDi
               localizer={accountLocalizer}
               placeholder="0.00"
               zeroAsEmpty
+              commitUnchanged
               inputAlign="right"
               displayClassName="h-9 flex items-center justify-end rounded-md border border-input bg-background px-3 text-sm"
               inputClassName="text-right"
