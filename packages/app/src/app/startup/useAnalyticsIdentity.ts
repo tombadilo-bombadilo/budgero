@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { identifyUser, trackTrialStarted } from '@shared/lib/analytics/analytics';
+import { sendTrialStartedToUmami } from '@shared/lib/analytics/umami';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import type { AuthStartupSnapshot } from './hooks';
 
@@ -66,5 +67,7 @@ export function useAnalyticsIdentity(auth: AuthStartupSnapshot): void {
 
     writeFiredFlag(userId);
     trackTrialStarted();
+    // Cookieless anonymous counterpart (not consent-gated — see umami.ts).
+    sendTrialStartedToUmami();
   }, [auth.status, auth.user]);
 }
