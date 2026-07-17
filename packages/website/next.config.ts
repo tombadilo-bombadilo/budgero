@@ -3,9 +3,9 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   output: 'standalone',
   async rewrites() {
-    // Serve the Umami tracker from our own origin so adblockers don't eat it.
-    // Only the script and the ingest endpoint are proxied — never the
-    // dashboard/login UI.
+    // Proxy the tracker script and the collect endpoint through Cloudflare so
+    // Umami receives the real client IP + geo (cf headers); a direct hit to
+    // stats.budgero.app bypasses Cloudflare and loses both.
     return [
       {
         source: '/stats/script.js',

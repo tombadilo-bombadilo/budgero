@@ -19,7 +19,11 @@
 
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 
-const UMAMI_ENDPOINT = 'https://stats.budgero.app/api/send';
+// Send via the marketing site's Cloudflare-fronted proxy, not stats.budgero.app
+// directly: Umami reads the real client IP + geo from Cloudflare headers, and a
+// direct hit (no Cloudflare) lands as an isolated, geo-less session that can't
+// stitch to the visitor's marketing-site pageviews.
+const UMAMI_ENDPOINT = 'https://budgero.app/stats/api/send';
 const UMAMI_WEBSITE_ID = '76a1a09b-2dbc-4291-9c0b-d3f4e9eb2caa';
 
 /** Fire-and-forget `Trial Started` to Umami. Never throws, never blocks. */
