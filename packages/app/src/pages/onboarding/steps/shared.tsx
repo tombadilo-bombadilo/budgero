@@ -19,7 +19,19 @@ export const INK = '#141414';
 export const INK_MUTED = '#393939';
 
 export function getCurrencySym(code: string): string {
-  return CURRENCIES.find((c) => c.code === code)?.sym ?? '$';
+  const quickPick = CURRENCIES.find((c) => c.code === code)?.sym;
+  if (quickPick) return quickPick;
+  // Long-tail currencies come from the 168-entry dropdown, which carries no
+  // symbol data — derive it via Intl, falling back to the code itself.
+  try {
+    const parts = new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: code,
+    }).formatToParts(0);
+    return parts.find((p) => p.type === 'currency')?.value ?? code;
+  } catch {
+    return code;
+  }
 }
 
 // Inclusive month count between today and an ISO date, clamped at >= 1 so
