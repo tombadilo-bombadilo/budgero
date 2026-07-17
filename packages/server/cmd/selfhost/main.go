@@ -35,14 +35,22 @@ const osWindows = "windows"
 const releaseBucketHost = "https://storage.googleapis.com/budgero_releases"
 
 func main() {
+	// The whole binary is self-host: every subcommand must resolve the
+	// self-host database path, not just `serve` (which sets this again in
+	// shared.Run). Without it, admin commands silently open and migrate an
+	// empty data/budgero.db next to the server's data/budgero_self_host.db.
+	_ = os.Setenv("SELF_HOSTABLE", "true")
 	cobra.CheckErr(newRootCmd().Execute())
 }
 
 func newRootCmd() *cobra.Command {
 	rootCmd := &cobra.Command{
-		Use:          "budgero",
-		Short:        "Budgero self-host server and admin CLI",
-		SilenceUsage: true,
+		Use:   "budgero",
+		Short: "Budgero self-host server and admin CLI",
+		// CheckErr in main prints the returned error; without SilenceErrors
+		// cobra prints it too and every failure shows up twice.
+		SilenceErrors: true,
+		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return cmd.Help()
 		},
