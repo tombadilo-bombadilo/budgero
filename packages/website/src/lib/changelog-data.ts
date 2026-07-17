@@ -16,10 +16,48 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.5.4',
+    date: 'July 18, 2026',
+    summary:
+      'Precision fixes for no-decimal currency formats, zero-balance reconciliation, and self-host CLI repairs.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Amount entry under no-decimal display formats',
+        description:
+          'With a whole-number display format selected (like RSD 4,585), edit fields silently dropped cents: decimals couldn\'t be typed, editing an amount truncated its fraction, and split transactions with a fractional remainder showed "Remaining 0" while refusing to save. Edit surfaces now always accept and show full precision — your display format stays whole-number everywhere else.',
+      },
+      {
+        type: 'fixed',
+        title: 'Reconciling accounts with zero balance',
+        description:
+          'Confirming a balance of 0 in the reconcile dialog never enabled the Reconcile button. Entering the seeded value now counts as confirming it, so empty accounts can be reconciled again.',
+      },
+      {
+        type: 'fixed',
+        title: 'Currency symbols during onboarding',
+        description:
+          'Picking a currency from the full-list dropdown (rather than the quick-pick tiles) showed "$" on the accounts, goal, and summary steps regardless of your choice. All 168 currencies now display their correct symbol or code.',
+      },
+      {
+        type: 'fixed',
+        title: 'Self-host admin CLI',
+        description:
+          'Admin commands (list-users, reset-password, …) opened a fresh empty database instead of the server\'s, reporting "user not found" for accounts that exist. They now target the self-host database, and errors print once instead of twice.',
+      },
+      {
+        type: 'improved',
+        title: 'Sidebar shows active accounts first',
+        description:
+          'When the account list is truncated behind "Show All", accounts with a zero balance are now hidden first, so accounts you actually use stay visible.',
+      },
+    ],
+  },
+  {
     version: 'v1.5.3',
     date: 'July 15, 2026',
     summary: 'Recurring transfers between accounts, smarter YNAB imports, and security hardening.',
-    isLatest: true,
     items: [
       {
         type: 'new',
