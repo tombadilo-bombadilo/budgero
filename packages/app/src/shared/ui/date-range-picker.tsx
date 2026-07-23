@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import {
   addDays,
+  format,
   addMonths,
   endOfMonth,
   endOfYear,
@@ -14,6 +15,7 @@ import {
 } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 
+import { cn } from '@shared/lib/utils';
 import { Button } from '@shared/ui/button';
 import { Calendar } from '@shared/ui/calendar';
 
@@ -136,26 +138,32 @@ export function DateRangePicker({
     onChange?.(coerced, preset);
   };
 
-  // Nearest-edge selection: an existing range is ADJUSTED, never restarted.
-  // Clicking before the range moves the start, after it moves the end, and
-  // inside it moves whichever edge is closer (tie → end). This replaces the
-  // react-day-picker default where any click on a complete range throws the
-  // whole selection away and starts over from a new start date.
+  // Explicit-field selection: Start and End are visible fields above the
+  // calendar; a calendar click sets whichever field is armed, then arms the
+  // other. Predictable — no restart-on-click, no nearest-edge guessing.
+  const [armed, setArmed] = useState<'from' | 'to'>('from');
+
+  const armField = (field: 'from' | 'to') => {
+    setArmed(field);
+    // Bring the armed edge's month into view so it can be adjusted directly.
+    const target = field === 'from' ? date?.from : date?.to;
+    if (target) setMonth(target);
+  };
+
   const handleDayClick = (day: Date) => {
-    const from = date?.from;
-    const to = date?.to;
-    let next: DateRange;
-    if (from && to) {
-      const distanceToStart = Math.abs(day.getTime() - from.getTime());
-      const distanceToEnd = Math.abs(day.getTime() - to.getTime());
-      next = distanceToStart < distanceToEnd ? { from: day, to } : { from, to: day };
-    } else if (from) {
-      next = day < from ? { from: day, to: from } : { from, to: day };
-    } else {
-      next = { from: day, to: day };
+    if (armed === 'from') {
+      const keepEnd = date?.to && date.to >= day ? date.to : undefined;
+      onChange?.({ from: day, to: keepEnd });
+      setArmed('to');
+      return;
     }
-    // Keep the calendar on the month the user is looking at — no view jump.
-    onChange?.(coerceRange(next));
+    const from = date?.from;
+    if (from && day < from) {
+      // Picking an "end" before the start restarts the range from that day.
+      onChange?.({ from: day, to: undefined });
+      return;
+    }
+    onChange?.({ from: from ?? day, to: day });
   };
 
   const disabledRules = disableFuture ? [{ after: today }] : undefined;
@@ -164,7 +172,7 @@ export function DateRangePicker({
     <div className={className}>
       <div className="rounded-md border">
         <div className="flex max-sm:flex-col">
-          <div className="relative py-4 max-sm:order-1 max-sm:border-t sm:w-32">
+          <div className="relative py-4 max-sm:order-1 max-sm:border-t sm:w-44">
             <div className="h-full sm:border-e">
               <div className="grid grid-cols-2 gap-1 px-2 sm:flex sm:flex-col sm:gap-0">
                 {(Object.keys(PRESET_LABELS) as PresetKey[])
@@ -176,7 +184,7 @@ export function DateRangePicker({
                         key={presetKey}
                         variant="ghost"
                         size="sm"
-                        className="justify-start sm:w-full"
+                        className="justify-start whitespace-nowrap sm:w-full"
                         onClick={() => handlePreset(presetRange, presetKey)}
                       >
                         {PRESET_LABELS[presetKey]}
@@ -186,18 +194,46 @@ export function DateRangePicker({
               </div>
             </div>
           </div>
-          <Calendar
-            mode="range"
-            selected={date}
-            // Selection is fully controlled by onDayClick (nearest-edge);
-            // react-day-picker's own range proposals are ignored.
-            onSelect={() => {}}
-            onDayClick={handleDayClick}
-            month={month}
-            onMonthChange={setMonth}
-            className="p-2"
-            disabled={disabledRules}
-          />
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 border-b px-3 py-2">
+              {(['from', 'to'] as const).map((field) => {
+                const label = field === 'from' ? 'Start' : 'End';
+                const fieldDate = field === 'from' ? date?.from : date?.to;
+                const isArmed = armed === field;
+                return (
+                  <button
+                    key={field}
+                    type="button"
+                    onClick={() => armField(field)}
+                    aria-pressed={isArmed}
+                    className={cn(
+                      'flex-1 rounded-md border px-3 py-1.5 text-left text-sm transition-colors',
+                      isArmed
+                        ? 'border-primary bg-primary/5 font-medium'
+                        : 'border-border/70 text-muted-foreground hover:bg-muted'
+                    )}
+                  >
+                    <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                      {label}
+                    </span>
+                    {fieldDate ? format(fieldDate, 'PP') : 'Pick a date'}
+                  </button>
+                );
+              })}
+            </div>
+            <Calendar
+              mode="range"
+              selected={date}
+              // Selection is fully controlled by onDayClick (armed field);
+              // react-day-picker's own range proposals are ignored.
+              onSelect={() => {}}
+              onDayClick={handleDayClick}
+              month={month}
+              onMonthChange={setMonth}
+              className="p-2"
+              disabled={disabledRules}
+            />
+          </div>
         </div>
       </div>
     </div>
