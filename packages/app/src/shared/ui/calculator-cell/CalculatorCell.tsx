@@ -1,6 +1,8 @@
-// Boundary contract: `value`/`onCommit`/`onValueChange` speak integer
-// MilliUnits (like every stored amount); the editing/calculator internals and
-// the formatter props keep working in decimal currency units.
+// Two boundary contracts over the same calculator internals:
+// - CalculatorCell: `value`/`onCommit`/`onValueChange` speak integer
+//   MilliUnits (like every stored amount) — 3 decimal places max.
+// - CalculatorCellDecimal: plain decimal numbers, for dimensionless values
+//   that need more precision (exchange rates, percentages).
 
 import { useEffect, useMemo } from 'react';
 import { fromDecimal, toDecimal, type MilliUnits } from '@budgero/core/browser';
@@ -10,9 +12,9 @@ import { CalculatorDisplay } from './CalculatorDisplay';
 import { CalculatorInput } from './CalculatorInput';
 import { CalculatorSheet, MobileTrigger } from './CalculatorSheet';
 
-export interface CalculatorCellProps {
-  value: MilliUnits;
-  onCommit: (value: MilliUnits) => void;
+export interface CalculatorCellDecimalProps {
+  value: number;
+  onCommit: (value: number) => void;
   /** Formats a DECIMAL currency value (the cell converts from milliunits internally). */
   formatter?: (value: number) => string;
   localizer?: Intl.NumberFormat;
@@ -27,7 +29,7 @@ export interface CalculatorCellProps {
   editOnFocus?: boolean;
   onEditingChange?: (editing: boolean) => void;
   /** Fires with the live evaluated value while the user types (null when empty/invalid or not editing). */
-  onValueChange?: (value: MilliUnits | null) => void;
+  onValueChange?: (value: number | null) => void;
   zeroAsEmpty?: boolean;
   focusSignal?: number;
   useFormatterForDisplay?: boolean;
@@ -38,7 +40,7 @@ export interface CalculatorCellProps {
   'data-testid'?: string;
 }
 
-export function CalculatorCell({
+export function CalculatorCellDecimal({
   value,
   onCommit,
   formatter = (val) => val.toString(),
@@ -60,19 +62,14 @@ export function CalculatorCell({
   commitPrecision = 2,
   commitUnchanged = false,
   'data-testid': testId,
-}: CalculatorCellProps) {
+}: CalculatorCellDecimalProps) {
   const displayFormatterFn = displayFormatter ?? formatter;
 
-  // Internal editing/eval is decimal; convert at this boundary only.
-  const decimalValue = toDecimal(value);
-  const commitMilli = useMemo(
-    () => (decimal: number) => onCommit(fromDecimal(decimal)),
-    [onCommit]
-  );
+  const decimalValue = value;
 
   const state = useCalculatorState({
     value: decimalValue,
-    onCommit: commitMilli,
+    onCommit,
     localizer,
     zeroAsEmpty,
     useFormatterForDisplay,
@@ -89,9 +86,7 @@ export function CalculatorCell({
 
   // Surface the live evaluated value to the parent as the user types.
   useEffect(() => {
-    onValueChange?.(
-      isEditing && state.evaluatedValue != null ? fromDecimal(state.evaluatedValue) : null
-    );
+    onValueChange?.(isEditing && state.evaluatedValue != null ? state.evaluatedValue : null);
   }, [onValueChange, isEditing, state.evaluatedValue]);
 
   if (isMobile) {
@@ -182,5 +177,35 @@ export function CalculatorCell({
         onCancel={state.cancelEditing}
       />
     </div>
+  );
+}
+
+export interface CalculatorCellProps
+  extends Omit<CalculatorCellDecimalProps, 'value' | 'onCommit' | 'onValueChange'> {
+  value: MilliUnits;
+  onCommit: (value: MilliUnits) => void;
+  onValueChange?: (value: MilliUnits | null) => void;
+}
+
+/** The MilliUnits-contract cell every stored amount uses. */
+export function CalculatorCell({ value, onCommit, onValueChange, ...rest }: CalculatorCellProps) {
+  const commitMilli = useMemo(
+    () => (decimal: number) => onCommit(fromDecimal(decimal)),
+    [onCommit]
+  );
+  const liveMilli = useMemo(
+    () =>
+      onValueChange
+        ? (decimal: number | null) => onValueChange(decimal == null ? null : fromDecimal(decimal))
+        : undefined,
+    [onValueChange]
+  );
+  return (
+    <CalculatorCellDecimal
+      value={toDecimal(value)}
+      onCommit={commitMilli}
+      onValueChange={liveMilli}
+      {...rest}
+    />
   );
 }

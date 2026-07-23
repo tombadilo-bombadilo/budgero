@@ -1,2 +1,2 @@
-export { CalculatorCell } from './CalculatorCell';
-export type { CalculatorCellProps } from './CalculatorCell';
+export { CalculatorCell, CalculatorCellDecimal } from './CalculatorCell';
+export type { CalculatorCellProps, CalculatorCellDecimalProps } from './CalculatorCell';
