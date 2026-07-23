@@ -88,26 +88,41 @@ export function UserPreferencesSync() {
     if (appliedSignatureRef.current === signature) return;
     appliedSignatureRef.current = signature;
 
+    // A locally-changed preference that hasn't flushed to the server yet
+    // (debounce window, or the PUT is failing/retrying) must NOT be
+    // clobbered by a stale server snapshot — otherwise a failed save makes
+    // the UI revert the user's click on the next profile refetch.
+    const pending = pendingPatchRef.current;
+
     withUserPreferencesPersistenceSuspended(() => {
-      if (theme !== prefs.theme_mode) {
+      if (!('theme_mode' in pending) && theme !== prefs.theme_mode) {
         setTheme(prefs.theme_mode);
       }
-      if (themeId !== prefs.theme_preset) {
+      if (!('theme_preset' in pending) && themeId !== prefs.theme_preset) {
         setThemeId(prefs.theme_preset);
       }
-      if (classicFont !== prefs.classic_font) {
+      if (!('classic_font' in pending) && classicFont !== prefs.classic_font) {
         setClassicFont(prefs.classic_font);
       }
-      if (homePage !== prefs.home_page) {
+      if (!('home_page' in pending) && homePage !== prefs.home_page) {
         setHomePage(prefs.home_page);
       }
-      if (desktopBudgetLayout !== prefs.desktop_budget_layout) {
+      if (
+        !('desktop_budget_layout' in pending) &&
+        desktopBudgetLayout !== prefs.desktop_budget_layout
+      ) {
         setDesktopBudgetLayout(prefs.desktop_budget_layout);
       }
-      if (compactMobileLayout !== prefs.compact_mobile_layout) {
+      if (
+        !('compact_mobile_layout' in pending) &&
+        compactMobileLayout !== prefs.compact_mobile_layout
+      ) {
         setCompactMobileLayout(prefs.compact_mobile_layout);
       }
-      if (mobileBudgetLayout !== prefs.mobile_budget_layout) {
+      if (
+        !('mobile_budget_layout' in pending) &&
+        mobileBudgetLayout !== prefs.mobile_budget_layout
+      ) {
         setMobileBudgetLayout(prefs.mobile_budget_layout);
       }
 
