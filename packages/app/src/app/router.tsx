@@ -10,7 +10,7 @@ import AdminLayout from '@/app/layout/AdminLayout';
 import AccountPage from '@pages/accounts/AccountPage';
 import AccountsPage from '@pages/accounts/AccountsPage';
 import AllTransactionsPage from '@pages/accounts/AllTransactionsPage';
-import PrebuiltReportsPage from '@pages/prebuilt-reports/PrebuiltReportsPage';
+import AnalyticsPage from '@pages/analytics/AnalyticsPage';
 import ExplorerPage from '@pages/explorer-page/ExplorerPage';
 import CustomDashboardsPage from '@pages/custom-dashboards/CustomDashboardsPage';
 import AppearancePage from '@pages/settings/AppearancePage';
@@ -104,7 +104,7 @@ function AppRouter() {
             <Route path="/accounts/all" element={<AllTransactionsPage />} />
             <Route path="/accounts/:accountId" element={<AccountPage />} />
             <Route path="/warranties" element={<WarrantiesPage />} />
-            <Route path="/reports/prebuilt" element={<PrebuiltReportsPage />} />
+            <Route path="/reports/prebuilt" element={<AnalyticsPage />} />
             <Route path="/reports/explorer" element={<ExplorerPage />} />
             <Route path="/reports/dashboards" element={<CustomDashboardsPage />} />
             <Route path="/reports/dashboards/:dashboardId" element={<CustomDashboardsPage />} />

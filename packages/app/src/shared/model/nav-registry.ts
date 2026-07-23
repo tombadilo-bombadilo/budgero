@@ -33,7 +33,7 @@ export interface NavRouteItem {
 
 /** Reports submenu links (all indented `ml-4 mr-2`). */
 export const NAV_REPORTS: NavRouteItem[] = [
-  { to: '/reports/prebuilt', icon: FileText, label: 'Prebuilt Reports' },
+  { to: '/reports/prebuilt', icon: FileText, label: 'Prebuilt' },
   { to: '/reports/explorer', icon: TrendingUp, label: 'Explorer' },
   { to: '/reports/dashboards', icon: LayoutGrid, label: 'Custom Dashboards', exact: false },
 ];
