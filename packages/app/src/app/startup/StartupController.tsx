@@ -82,7 +82,11 @@ export default function StartupController() {
   const markedRef = useRef<Set<string>>(new Set());
   const postReadyStartedRef = useRef(false);
   const runtimeInitInFlightRef = useRef(false);
-  const bypassStartupGuards = isRecoveryRoute(location.pathname) && auth.status === 'ready';
+  // Intro must be done before bypassing: a brand-new user landing on /join
+  // belongs in the onboarding invitee path (which sets up their master
+  // password), not on the bare join page.
+  const bypassStartupGuards =
+    isRecoveryRoute(location.pathname) && auth.status === 'ready' && intro.status === 'ready';
 
   const resolution = useMemo(
     () =>

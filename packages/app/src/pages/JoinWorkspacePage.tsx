@@ -10,16 +10,20 @@
 //   2. If the visitor isn't signed in, stash the secret and bounce to /auth.
 //      A companion <SpaceInviteRedirect /> in StartupController re-routes
 //      them back here once Clerk hands them off.
-//   3. Sits inside StartupController so by the time we render, master
-//      password is already unlocked and runtime is initialized — we just
-//      need a one-click confirmation to redeem.
+//   3. /join is a startup recovery route: it renders without an active plan
+//      and BEFORE the master-password/runtime gates (so lapsed users can
+//      redeem shared access). When the master password isn't cached on this
+//      device, the card asks for it inline; useRedeemSpaceInvite initializes
+//      the runtime itself after redeeming.
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Alert, AlertDescription } from '@shared/ui/alert';
+import { Input } from '@shared/ui/input';
 import { Loader2 } from 'lucide-react';
+import { MasterPasswordManager } from '@shared/lib/crypto';
 import { useOptionalClerkAuth, useProfile } from '@entities/user/api/useAuth';
 import { useRedeemSpaceInvite } from '@features/budget-sharing/api/useBudgetSpaceSharing';
 import { useSelfHostAuth } from '@shared/model/useSelfHostAuth';
@@ -93,6 +97,21 @@ export default function JoinWorkspacePage() {
   const [localError, setLocalError] = useState<string | null>(null);
   const redeemInvite = useRedeemSpaceInvite();
 
+  // The startup master-password gate is bypassed on /join, so the password
+  // may not be unlocked on this device. Ask for it inline when it isn't.
+  const [needsMasterPassword, setNeedsMasterPassword] = useState(false);
+  const [masterPasswordInput, setMasterPasswordInput] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    void MasterPasswordManager.get().then((cached) => {
+      if (active && !cached) setNeedsMasterPassword(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // If the visitor isn't signed in yet, bounce them to /auth. The secret is
   // already in the encrypted invite vault from the setState above, so the
   // redirect companion will bring them back here after login/signup. Wait for the
@@ -110,10 +129,12 @@ export default function JoinWorkspacePage() {
     if (!secret) return;
     setLocalError(null);
     try {
-      // Master password is already unlocked at this point (StartupController
-      // gates upstream guarantee it). useRedeemSpaceInvite reads it from
-      // MasterPasswordManager.get() when no override is passed.
-      await redeemInvite.mutateAsync({ inviteSecret: secret });
+      // Without an explicit override, useRedeemSpaceInvite falls back to the
+      // device-cached password via MasterPasswordManager.get().
+      await redeemInvite.mutateAsync({
+        inviteSecret: secret,
+        masterPassword: masterPasswordInput.trim() || undefined,
+      });
       toast.success('Workspace joined', {
         description: 'You now have access to the shared budget space.',
       });
@@ -121,6 +142,9 @@ export default function JoinWorkspacePage() {
       void navigate('/', { replace: true });
     } catch (err) {
       const message = getErrorMessage(err, 'Could not join workspace. Try again.');
+      if (message.toLowerCase().includes('master password')) {
+        setNeedsMasterPassword(true);
+      }
       setLocalError(message);
     }
   };
@@ -195,6 +219,23 @@ export default function JoinWorkspacePage() {
               {secret}
             </div>
           </div>
+          {needsMasterPassword ? (
+            <div className="space-y-1">
+              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Master password
+              </div>
+              <Input
+                type="password"
+                value={masterPasswordInput}
+                onChange={(event) => setMasterPasswordInput(event.target.value)}
+                placeholder="Your Budgero master password"
+                autoComplete="current-password"
+              />
+              <p className="text-xs text-muted-foreground">
+                Needed to encrypt the shared space key on this device.
+              </p>
+            </div>
+          ) : null}
           {localError ? (
             <Alert variant="destructive">
               <AlertDescription>{localError}</AlertDescription>
@@ -212,7 +253,13 @@ export default function JoinWorkspacePage() {
             >
               Cancel
             </Button>
-            <Button onClick={handleRedeem} disabled={redeemInvite.isPending} autoFocus>
+            <Button
+              onClick={handleRedeem}
+              disabled={
+                redeemInvite.isPending || (needsMasterPassword && !masterPasswordInput.trim())
+              }
+              autoFocus
+            >
               {redeemInvite.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

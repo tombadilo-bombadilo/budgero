@@ -349,4 +349,23 @@ describe('StartupController', () => {
     expect(screen.queryByTestId('workspace-required-screen')).not.toBeInTheDocument();
     expect(runtimeMock.init).not.toHaveBeenCalled();
   });
+
+  it('allows /join through the startup guards so lapsed users can redeem invites', async () => {
+    workspaceSnapshot = createWorkspaceSnapshot({ status: 'required', accessibleSpaces: [] });
+
+    renderController('/join');
+
+    expect(await screen.findByTestId('app-route')).toBeInTheDocument();
+    expect(screen.queryByTestId('workspace-required-screen')).not.toBeInTheDocument();
+    expect(runtimeMock.init).not.toHaveBeenCalled();
+  });
+
+  it('keeps new users on the onboarding flow when landing on /join before intro', async () => {
+    introSnapshot = createIntroSnapshot({ status: 'intro_required' });
+
+    renderController('/join');
+
+    expect(await screen.findByTestId('intro-required-screen')).toBeInTheDocument();
+    expect(screen.queryByTestId('app-route')).not.toBeInTheDocument();
+  });
 });
