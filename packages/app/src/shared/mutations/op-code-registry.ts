@@ -15,6 +15,7 @@ import { customDashboardOps } from './op-code-registry/domains/custom-dashboards
 import { recurringOps } from './op-code-registry/domains/recurring';
 import { reportOps } from './op-code-registry/domains/reports';
 import { ruleOps } from './op-code-registry/domains/rules';
+import { scenarioOps } from './op-code-registry/domains/scenarios';
 import { transactionOps } from './op-code-registry/domains/transactions';
 import { userPreferenceOps } from './op-code-registry/domains/user-preferences';
 import { warrantyOps } from './op-code-registry/domains/warranties';
@@ -32,6 +33,7 @@ const flatOpCodeRegistry = {
   ...goalOps,
   ...reportOps,
   ...customDashboardOps,
+  ...scenarioOps,
   ...currencyOps,
   ...importHistoryOps,
   ...warrantyOps,

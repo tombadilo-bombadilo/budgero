@@ -67,6 +67,7 @@ export type {
   ChartConfiguration,
   UnifiedReportService,
 } from './services/reports/index.js';
+export type { ScenarioRecord, SaveScenarioInput } from './services/scenarios/index.js';
 export type {
   CustomDashboard,
   CustomDashboardWidget,

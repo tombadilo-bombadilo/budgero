@@ -3,6 +3,7 @@ export * from './categories/index.js';
 export * from './accounts/index.js';
 export * from './transactions/index.js';
 export * from './goals/index.js';
+export * from './scenarios/index.js';
 export * from './monthly-budgets/index.js';
 export * from './analytics/index.js';
 export * from './import/index.js';

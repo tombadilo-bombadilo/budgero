@@ -38,6 +38,7 @@ import { migration037 } from './037-add-enabledtools-column-to-chat-settings-for
 import { migration038 } from './038-add-transactions-budget-account-date-index.js';
 import { migration039 } from './039-convert-money-columns-to-integer-milliunits.js';
 import { migration040 } from './040-add-toaccountid-to-recurring-transactions.js';
+import { migration041 } from './041-add-scenarios-table.js';
 
 import type { Migration } from '../migrations.js';
 
@@ -83,4 +84,5 @@ export const migrations: Migration[] = [
   migration038,
   migration039,
   migration040,
+  migration041,
 ];

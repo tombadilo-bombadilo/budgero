@@ -14,6 +14,7 @@ import { PayeeService } from './transactions/payee-service.js';
 import { LabelService } from './transactions/label-service.js';
 import { SplitService } from './transactions/split-service.js';
 import { GoalService } from './goals/index.js';
+import { ScenarioService } from './scenarios/index.js';
 import { MonthlyBudgetService } from './monthly-budgets/index.js';
 import { AnalyticsService } from './analytics/index.js';
 import { CurrencyService } from './currency/index.js';
@@ -53,6 +54,7 @@ export interface Services {
   labels: LabelService;
   splits: SplitService;
   goals: GoalService;
+  scenarios: ScenarioService;
   monthlyBudgets: MonthlyBudgetService;
   analytics: AnalyticsService;
   currency: CurrencyService;
@@ -136,6 +138,7 @@ export class ServiceManager {
       labels: new LabelService(this.db),
       splits: new SplitService(this.db),
       goals: new GoalService(this.db),
+      scenarios: new ScenarioService(this.db),
       monthlyBudgets: new MonthlyBudgetService(this.db),
       analytics: new AnalyticsService(this.db),
       currency: new CurrencyService(this.db),
