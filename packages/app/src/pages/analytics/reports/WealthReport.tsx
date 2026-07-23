@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
-import { Layers, ArrowUpDown, Route } from 'lucide-react';
 import { EChart } from '@shared/ui/echart';
 import { AnimatedNumber } from '@shared/ui/animated-number';
 import { trendTextClass } from '@shared/lib/amount-color';
@@ -349,9 +348,9 @@ export function WealthReport({ data, months, accountIds }: WealthReportProps) {
           onChange={setMode}
           ariaLabel="Wealth chart mode"
           options={[
-            { value: 'assets-debt', label: 'Assets vs Debt', icon: Layers },
-            { value: 'change', label: 'Change', icon: ArrowUpDown },
-            { value: 'forecast', label: 'Forecast', icon: Route },
+            { value: 'assets-debt', label: 'Assets vs Debt' },
+            { value: 'change', label: 'Change' },
+            { value: 'forecast', label: 'Forecast' },
           ]}
         />
       }

@@ -93,7 +93,7 @@ export function ReportShell({
                 <div className="mt-1 text-sm text-muted-foreground">{subtitle}</div>
               ) : null}
             </div>
-            <div className="flex flex-wrap items-center gap-3">{controls}</div>
+            <div className="flex min-w-0 flex-wrap items-center justify-end gap-3">{controls}</div>
           </div>
           {insights}
           {legend ? <div className="mt-3">{legend}</div> : null}
