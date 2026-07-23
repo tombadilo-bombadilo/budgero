@@ -130,31 +130,32 @@ export function DateRangePicker({
     }
   }
 
-  const handleSelect = (range: DateRange | undefined, preset?: PresetKey) => {
+  const handlePreset = (range: DateRange, preset: PresetKey) => {
     const coerced = coerceRange(range);
+    if (coerced?.to) setMonth(coerced.to);
+    onChange?.(coerced, preset);
+  };
 
-    const normalized = (() => {
-      if (
-        coerced?.from &&
-        coerced?.to &&
-        date?.from &&
-        date?.to &&
-        coerced.to.getTime() === date.from.getTime() &&
-        coerced.from.getTime() !== date.from.getTime()
-      ) {
-        return { from: coerced.from, to: date.to } satisfies DateRange;
-      }
-
-      return coerced;
-    })();
-
-    if (normalized?.to) {
-      setMonth(normalized.to);
-    } else if (normalized?.from) {
-      setMonth(normalized.from);
+  // Nearest-edge selection: an existing range is ADJUSTED, never restarted.
+  // Clicking before the range moves the start, after it moves the end, and
+  // inside it moves whichever edge is closer (tie → end). This replaces the
+  // react-day-picker default where any click on a complete range throws the
+  // whole selection away and starts over from a new start date.
+  const handleDayClick = (day: Date) => {
+    const from = date?.from;
+    const to = date?.to;
+    let next: DateRange;
+    if (from && to) {
+      const distanceToStart = Math.abs(day.getTime() - from.getTime());
+      const distanceToEnd = Math.abs(day.getTime() - to.getTime());
+      next = distanceToStart < distanceToEnd ? { from: day, to } : { from, to: day };
+    } else if (from) {
+      next = day < from ? { from: day, to: from } : { from, to: day };
+    } else {
+      next = { from: day, to: day };
     }
-    // Notify parent - date is derived from parent's value prop
-    onChange?.(normalized, preset);
+    // Keep the calendar on the month the user is looking at — no view jump.
+    onChange?.(coerceRange(next));
   };
 
   const disabledRules = disableFuture ? [{ after: today }] : undefined;
@@ -176,7 +177,7 @@ export function DateRangePicker({
                         variant="ghost"
                         size="sm"
                         className="justify-start sm:w-full"
-                        onClick={() => handleSelect(presetRange, presetKey)}
+                        onClick={() => handlePreset(presetRange, presetKey)}
                       >
                         {PRESET_LABELS[presetKey]}
                       </Button>
@@ -188,7 +189,10 @@ export function DateRangePicker({
           <Calendar
             mode="range"
             selected={date}
-            onSelect={(newDate) => handleSelect(newDate ?? undefined)}
+            // Selection is fully controlled by onDayClick (nearest-edge);
+            // react-day-picker's own range proposals are ignored.
+            onSelect={() => {}}
+            onDayClick={handleDayClick}
             month={month}
             onMonthChange={setMonth}
             className="p-2"
