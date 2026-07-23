@@ -190,6 +190,19 @@ async function ensureInitialized(): Promise<void> {
 
     duckDb = instance;
     duckDbConnection = await instance.connect();
+
+    // DuckDB ≥ 0.10 dropped implicit VARCHAR↔DATE casting, which breaks
+    // AI-generated and saved report SQL that compares the analytics views'
+    // TEXT date columns against DATE literals (`t.date >= DATE '2025-06-01'`
+    // → binder error). Restore the old casting behavior — this is a
+    // read-only reporting surface, so the looser casts carry no integrity
+    // risk. Guarded: if a future DuckDB removes the setting, init must
+    // still succeed (the AI prompt also steers away from DATE literals).
+    try {
+      await duckDbConnection.query(`SET old_implicit_casting = true`);
+    } catch (error) {
+      console.warn('[DuckDB] old_implicit_casting unavailable; DATE-literal SQL may fail', error);
+    }
   })();
 
   try {

@@ -30,6 +30,7 @@ RULES
 - ALWAYS scope to the active budget: include "WHERE budget_id = ${budgetId}" (or "b.budget_id = ${budgetId}" / "t.budget_id = ${budgetId}" when joining).
 - Use double quotes for identifiers only if needed; the snake_case columns below need no quoting.
 - This is DuckDB SQL (Postgres-like). Use DuckDB functions (date_trunc, strftime, generate_series, ILIKE) — not SQLite/MySQL-only ones.
+- date/week/month/quarter/year are TEXT, not DATE. Compare them against plain string literals ("t.date >= '2025-06-01'"), NEVER typed DATE literals ("DATE '2025-06-01'").
 - In any JOIN or multi-CTE query, QUALIFY every column with its table/CTE alias (e.g. h.month, combined.total) to avoid "ambiguous reference" errors, and alias your aggregates.
 - Use ONLY the transactions_analytics view. Do NOT SELECT from raw tables like accounts/categories/budgets — they use different (PascalCase) column names and querying them will fail. The view already contains account_name, account_currency, account_on_budget, category_name, etc.
 - The "User's Budget Context" / ACCOUNTS summary in the system prompt is a human-readable digest, NOT the database schema. Column names there (e.g. balance_in_RSD, native_balance) are NOT SQL columns. ONLY the columns listed below / in LIVE SCHEMA exist.
