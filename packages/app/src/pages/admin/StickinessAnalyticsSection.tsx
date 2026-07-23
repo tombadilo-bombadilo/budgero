@@ -4,15 +4,9 @@ import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Label } from '@shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from 'recharts';
+import type { EChartsCoreOption } from 'echarts/core';
+import { EChart } from '@shared/ui/echart';
+import { tooltipBase, tooltipHtml, useChartPalette } from '@shared/lib/charts/echarts-chrome';
 import { Activity, Users } from 'lucide-react';
 import { useAdminApi } from '@features/admin/api/useAdminApi';
 import type {
@@ -94,8 +88,60 @@ export default function StickinessAnalyticsSection() {
   const dayColumns = useMemo(() => pickDayColumns(maxDayN), [maxDayN]);
   const lookup = useMemo(() => indexCells(data?.cohorts.cells ?? []), [data]);
 
-  const series = data?.series ?? [];
+  const series = useMemo(() => data?.series ?? [], [data]);
   const current = data?.current;
+
+  const palette = useChartPalette();
+
+  const stickinessOption = useMemo<EChartsCoreOption>(() => {
+    const { chrome } = palette;
+    const lineColor = palette.series[0];
+    return {
+      grid: { left: 8, right: 16, top: 16, bottom: 4, containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: series.map((p) => p.day),
+        axisLine: { lineStyle: { color: chrome.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: chrome.axisText, fontSize: 11, hideOverlap: true },
+      },
+      yAxis: {
+        type: 'value',
+        axisLine: { show: false },
+        splitLine: { lineStyle: { color: chrome.grid, width: 1 } },
+        axisLabel: {
+          color: chrome.axisText,
+          fontSize: 11,
+          formatter: (v: number) => `${v.toFixed(0)}%`,
+        },
+      },
+      tooltip: {
+        ...tooltipBase(chrome),
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: chrome.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { dataIndex: number }[];
+          const point = series[items[0]?.dataIndex ?? 0];
+          if (!point) return '';
+          return tooltipHtml(`Day ${point.day}`, [
+            { color: lineColor, name: 'DAU/MAU', value: pct(point.stickiness) },
+          ]);
+        },
+      },
+      series: [
+        {
+          name: 'DAU/MAU',
+          type: 'line',
+          data: series.map((p) => p.stickiness * 100),
+          lineStyle: { color: lineColor, width: 2 },
+          itemStyle: { color: lineColor, borderColor: chrome.surface, borderWidth: 2 },
+          symbol: 'circle',
+          symbolSize: 8,
+          showSymbol: series.length <= 30,
+        },
+      ],
+    };
+  }, [series, palette]);
 
   return (
     <Card>
@@ -197,30 +243,11 @@ export default function StickinessAnalyticsSection() {
               {series.length === 0 ? (
                 <p className="text-sm text-muted-foreground">No activity in the selected window.</p>
               ) : (
-                <ResponsiveContainer width="100%" height={180}>
-                  <LineChart data={series.map((p) => ({ ...p, ratioPct: p.stickiness * 100 }))}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" tick={{ fontSize: 11 }} />
-                    <YAxis
-                      tick={{ fontSize: 11 }}
-                      tickFormatter={(v: number) => `${v.toFixed(0)}%`}
-                    />
-                    <Tooltip
-                      formatter={(v: number, name: string) =>
-                        name === 'ratioPct' ? `${v.toFixed(1)}%` : v
-                      }
-                      labelFormatter={(label: string) => `Day ${label}`}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="ratioPct"
-                      stroke="#3b82f6"
-                      strokeWidth={2}
-                      dot={false}
-                      name="DAU/MAU"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+                <EChart
+                  option={stickinessOption}
+                  className="h-[180px]"
+                  ariaLabel="DAU/MAU stickiness over time"
+                />
               )}
             </CardContent>
           </Card>

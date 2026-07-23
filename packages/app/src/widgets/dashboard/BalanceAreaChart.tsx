@@ -1,10 +1,7 @@
-import { useId } from 'react';
-import { Area, AreaChart, XAxis, YAxis } from 'recharts';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@shared/ui/chart';
-
-const chartConfig = {
-  balance: { label: 'Balance', color: 'var(--color-chart-1)' },
-};
+import { useMemo } from 'react';
+import type { EChartsCoreOption } from 'echarts/core';
+import { EChart } from '@shared/ui/echart';
+import { tooltipBase, tooltipHtml, useChartPalette } from '@shared/lib/charts/echarts-chrome';
 
 interface BalanceAreaChartProps {
   data: { date: string; balance: number }[];
@@ -21,39 +18,49 @@ export function BalanceAreaChart({
   className,
   tickFontSize,
 }: BalanceAreaChartProps) {
-  // useId can emit characters that are invalid in url(#…) references; strip them.
-  const gradientId = `balance-gradient-${useId().replace(/[^a-zA-Z0-9_-]/g, '')}`;
+  const palette = useChartPalette();
 
-  return (
-    <ChartContainer config={chartConfig} className={className}>
-      <AreaChart data={data}>
-        <defs>
-          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="var(--color-chart-1)" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="var(--color-chart-1)" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-        <XAxis
-          dataKey="date"
-          stroke="var(--color-muted-foreground)"
-          fontSize={12}
-          tickLine={false}
-          axisLine={false}
-          tick={tickFontSize === undefined ? undefined : { fontSize: tickFontSize }}
-          interval="preserveStartEnd"
-        />
-        <YAxis hide />
-        <ChartTooltip
-          content={<ChartTooltipContent formatter={(value) => formatAmount(value as number)} />}
-        />
-        <Area
-          type="monotone"
-          dataKey="balance"
-          stroke="var(--color-chart-1)"
-          strokeWidth={2}
-          fill={`url(#${gradientId})`}
-        />
-      </AreaChart>
-    </ChartContainer>
-  );
+  const option = useMemo<EChartsCoreOption>(() => {
+    const { chrome } = palette;
+    const color = palette.series[0];
+    return {
+      grid: { left: 8, right: 16, top: 16, bottom: 4, containLabel: true },
+      xAxis: {
+        type: 'category' as const,
+        data: data.map((point) => point.date),
+        axisLine: { lineStyle: { color: chrome.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: chrome.axisText, fontSize: tickFontSize ?? 11, hideOverlap: true },
+      },
+      yAxis: { type: 'value' as const, show: false },
+      tooltip: {
+        ...tooltipBase(chrome),
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: chrome.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { dataIndex: number }[];
+          const point = data[items[0]?.dataIndex ?? 0];
+          if (!point) return '';
+          return tooltipHtml(point.date, [
+            { color, name: 'Balance', value: formatAmount(point.balance) },
+          ]);
+        },
+      },
+      series: [
+        {
+          name: 'Balance',
+          type: 'line' as const,
+          data: data.map((point) => point.balance),
+          lineStyle: { color, width: 2 },
+          itemStyle: { color, borderColor: chrome.surface, borderWidth: 2 },
+          symbol: 'circle',
+          symbolSize: 8,
+          showSymbol: data.length <= 30,
+          areaStyle: { color, opacity: 0.1 },
+        },
+      ],
+    };
+  }, [data, formatAmount, palette, tickFontSize]);
+
+  return <EChart option={option} className={className} ariaLabel="Cash balance over time" />;
 }

@@ -6,7 +6,7 @@ import { Input } from '@shared/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { maskFormattedIfEnabled } from '@shared/lib/privacy/mask-numbers';
 import { useUiStore } from '@shared/store/useUiStore';
-import { CHART_COLORS } from './chart-viewer.utils';
+import { useChartPalette } from '@shared/lib/charts/echarts-chrome';
 
 interface ChartLegendProps {
   legendItems: string[];
@@ -26,6 +26,7 @@ export function ChartLegend({
   showSummary = true,
 }: ChartLegendProps) {
   const privacyMaskNumbers = useUiStore((state) => state.privacyMaskNumbers);
+  const palette = useChartPalette();
   const [searchTerm, setSearchTerm] = useState('');
   const legendItemIdBase = useId();
 
@@ -138,8 +139,8 @@ export function ChartLegend({
               <div className="space-y-1">
                 {filteredItems.map((item, index) => {
                   const isHidden = hiddenGroups.has(item);
-                  const colorIndex = getColorIndex(item);
-                  const color = CHART_COLORS[colorIndex % CHART_COLORS.length];
+                  const colorIndex = Math.max(0, getColorIndex(item));
+                  const color = palette.series[colorIndex % palette.series.length];
                   const checkboxId = `${legendItemIdBase}-${index}`;
                   return (
                     <label

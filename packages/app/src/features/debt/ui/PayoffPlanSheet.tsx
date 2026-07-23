@@ -14,17 +14,14 @@ import { Label } from '@shared/ui/label';
 import { Separator } from '@shared/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { Info, X } from 'lucide-react';
+import type { EChartsCoreOption } from 'echarts/core';
+import { EChart } from '@shared/ui/echart';
 import {
-  ComposedChart,
-  Line,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip as ReTooltip,
-  Legend,
-  CartesianGrid,
-  ResponsiveContainer,
-} from 'recharts';
+  tooltipBase,
+  tooltipHtml,
+  useChartPalette,
+  BAR_MAX_WIDTH,
+} from '@shared/lib/charts/echarts-chrome';
 import { computePayoffDate } from '@shared/lib/date-utils';
 import { roundMilli } from '@shared/lib/currency/round-amount';
 import {
@@ -50,65 +47,6 @@ type PayoffPlanSheetProps = {
   suggestedMin: number; // milliunits
   maxPayment: number; // milliunits
 };
-
-interface TooltipPayloadItem {
-  value: number;
-  name: string;
-  color?: string;
-  payload?: { monthLabel?: string; idx?: number };
-}
-
-function CurrencyTooltip({
-  active,
-  payload,
-  label,
-  formatter,
-}: {
-  active?: boolean;
-  payload?: TooltipPayloadItem[];
-  label?: string | number;
-  formatter: Intl.NumberFormat;
-}) {
-  if (!active || !payload || payload.length === 0) return null;
-
-  // Prefer monthLabel stored on each datum; fallback to recharts label string.
-  let displayLabel = '';
-  try {
-    const first = payload[0];
-    const datum = first?.payload;
-    const monthLabel = datum?.monthLabel || '';
-    const idx = typeof datum?.idx === 'number' ? datum.idx : Number(datum?.idx);
-    if (!Number.isNaN(idx) && monthLabel) {
-      displayLabel = `Month ${idx + 1} — ${monthLabel}`;
-    } else if (monthLabel) {
-      displayLabel = monthLabel;
-    } else {
-      displayLabel = String(label ?? '');
-    }
-  } catch {
-    displayLabel = String(label ?? '');
-  }
-
-  return (
-    <div className="text-popover-foreground border border-border rounded-lg shadow-xl p-2 text-xs backdrop-blur-md bg-popover/80">
-      <div className="font-medium mb-1">{displayLabel}</div>
-      <div className="grid gap-1">
-        {payload.map((p, idx) => (
-          <div className="flex items-center justify-between gap-4" key={idx}>
-            <div className="flex items-center gap-2">
-              <span
-                className="inline-block w-2 h-2 rounded-sm"
-                style={{ backgroundColor: p.color || '#999' }}
-              />
-              <span className="text-muted-foreground">{p.name}</span>
-            </div>
-            <span className="font-mono">{formatter.format(Number(p.value || 0))}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function PayoffPlanSheet({
   trigger,
@@ -186,49 +124,82 @@ export function PayoffPlanSheet({
     remaining: toDecimal(roundMilli(r.remaining)),
   }));
 
-  // Adaptive X-axis label density to avoid overlap (especially on mobile)
-  const chartWrapperRef = React.useRef<HTMLDivElement | null>(null);
-  const [xAxisTicks, setXAxisTicks] = React.useState<number[]>([]);
-  const measureAttempts = React.useRef(0);
-  const recomputeTicks = React.useCallback(() => {
-    const el = chartWrapperRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const w = rect.width || (el as HTMLElement).offsetWidth || (el as HTMLElement).clientWidth || 0;
-    const points = chartData.length || 1;
-    if (w <= 0 && measureAttempts.current < 10) {
-      measureAttempts.current += 1;
-      requestAnimationFrame(recomputeTicks);
-      return;
-    }
-    measureAttempts.current = 0;
-    const isSmall = w < 640; // approx tailwind sm breakpoint
-    const targetLabelWidth = isSmall ? 64 : 110; // px per label; slightly wider on desktop
-    const maxTicks = Math.max(2, Math.floor(w / targetLabelWidth));
-    const step = Math.max(1, Math.ceil(points / maxTicks));
-    const ticks: number[] = [];
-    for (let i = 0; i < points; i += step) ticks.push(i);
-    if (ticks[ticks.length - 1] !== points - 1) ticks.push(points - 1);
-    setXAxisTicks(ticks);
-  }, [chartData.length]);
-
-  React.useLayoutEffect(() => {
-    const el = chartWrapperRef.current;
-    if (!el) return;
-    const ro = new ResizeObserver(() => recomputeTicks());
-    ro.observe(el);
-    recomputeTicks();
-    return () => ro.disconnect();
-  }, [recomputeTicks]);
-
-  React.useEffect(() => {
-    // Recompute on open to capture size after sheet animation as well
-    if (open) {
-      recomputeTicks();
-      const t = setTimeout(recomputeTicks, 250);
-      return () => clearTimeout(t);
-    }
-  }, [open, recomputeTicks]);
+  const palette = useChartPalette();
+  const chartOption = React.useMemo<EChartsCoreOption>(() => {
+    const { chrome } = palette;
+    const principalColor = palette.series[0];
+    const interestColor = palette.series[3];
+    const remainingColor = palette.series[6];
+    return {
+      grid: { left: 8, right: 16, top: 16, bottom: 4, containLabel: true },
+      xAxis: {
+        type: 'category' as const,
+        data: chartData.map((row) => row.monthLabel),
+        axisLine: { lineStyle: { color: chrome.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: chrome.axisText, fontSize: 11, hideOverlap: true },
+      },
+      // Two value axes like the original: bars on the left scale, the
+      // remaining-balance line on a hidden right scale.
+      yAxis: [
+        {
+          type: 'value' as const,
+          axisLabel: {
+            color: chrome.axisText,
+            fontSize: 11,
+            formatter: (value: number) => formatter.format(value),
+          },
+          splitLine: { lineStyle: { color: chrome.grid, width: 1 } },
+          axisLine: { show: false },
+        },
+        { type: 'value' as const, show: false },
+      ],
+      tooltip: {
+        ...tooltipBase(chrome),
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: chrome.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { dataIndex: number }[];
+          const row = chartData[items[0]?.dataIndex ?? 0];
+          if (!row) return '';
+          return tooltipHtml(`Month ${row.idx + 1} — ${row.monthLabel}`, [
+            { color: principalColor, name: 'Principal', value: formatter.format(row.principal) },
+            { color: interestColor, name: 'Interest', value: formatter.format(row.interest) },
+            { color: remainingColor, name: 'Remaining', value: formatter.format(row.remaining) },
+          ]);
+        },
+      },
+      series: [
+        {
+          name: 'Principal',
+          type: 'bar' as const,
+          stack: 'payment',
+          data: chartData.map((row) => row.principal),
+          barMaxWidth: BAR_MAX_WIDTH,
+          itemStyle: { color: principalColor, borderColor: chrome.surface, borderWidth: 1 },
+        },
+        {
+          name: 'Interest',
+          type: 'bar' as const,
+          stack: 'payment',
+          data: chartData.map((row) => row.interest),
+          barMaxWidth: BAR_MAX_WIDTH,
+          itemStyle: { color: interestColor, borderColor: chrome.surface, borderWidth: 1 },
+        },
+        {
+          name: 'Remaining',
+          type: 'line' as const,
+          yAxisIndex: 1,
+          data: chartData.map((row) => row.remaining),
+          lineStyle: { color: remainingColor, width: 2 },
+          itemStyle: { color: remainingColor, borderColor: chrome.surface, borderWidth: 2 },
+          symbol: 'circle',
+          symbolSize: 8,
+          showSymbol: chartData.length <= 30,
+        },
+      ],
+    };
+  }, [chartData, palette, formatter]);
 
   return (
     <Drawer open={open} onOpenChange={setOpen} direction="right">
@@ -414,55 +385,31 @@ export function PayoffPlanSheet({
                 .
               </div>
             )}
-            <div className="h-64" ref={chartWrapperRef}>
-              <ResponsiveContainer width="100%" height="100%">
-                <ComposedChart data={chartData} margin={{ top: 10, right: 10, bottom: 0, left: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" />
-                  <XAxis
-                    dataKey="idx"
-                    hide={false}
-                    tick={{ fontSize: 11 }}
-                    ticks={xAxisTicks}
-                    interval={0}
-                    minTickGap={10}
-                    tickFormatter={(v) => chartData[Number(v)]?.monthLabel || ''}
-                  />
-                  <YAxis
-                    yAxisId="left"
-                    orientation="left"
-                    tickFormatter={(v) => formatter.format(Number(v))}
-                    width={70}
-                  />
-                  <YAxis yAxisId="right" orientation="right" hide />
-                  <ReTooltip content={<CurrencyTooltip formatter={formatter} />} />
-                  <Legend />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="principal"
-                    name="Principal"
-                    stackId="a"
-                    fill="var(--color-chart-2)"
-                  />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="interest"
-                    name="Interest"
-                    stackId="a"
-                    fill="var(--color-chart-3)"
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="remaining"
-                    name="Remaining"
-                    stroke="var(--color-chart-5)"
-                    strokeWidth={2.25}
-                    dot={{ r: 2.2 }}
-                    activeDot={{ r: 4 }}
-                    connectNulls
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
+            <div>
+              <EChart
+                option={chartOption}
+                ariaLabel="Debt payoff schedule chart"
+                className="h-64 w-full"
+              />
+              <div className="mt-1 flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                {[
+                  { color: palette.series[0], label: 'Principal' },
+                  { color: palette.series[3], label: 'Interest' },
+                  { color: palette.series[6], label: 'Remaining' },
+                ].map((item) => (
+                  <span
+                    key={item.label}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground"
+                  >
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: item.color }}
+                      aria-hidden
+                    />
+                    {item.label}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
 

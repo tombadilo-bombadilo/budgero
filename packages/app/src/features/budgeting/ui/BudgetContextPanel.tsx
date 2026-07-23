@@ -1,7 +1,15 @@
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/card';
-import { ChartContainer, ChartTooltip } from '@shared/ui/chart';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Area, AreaChart } from 'recharts';
+import type { EChartsCoreOption } from 'echarts/core';
+import { EChart } from '@shared/ui/echart';
+import {
+  useChartPalette,
+  tooltipBase,
+  tooltipHtml,
+  BAR_MAX_WIDTH,
+  BAR_RADIUS_TOP,
+  type TooltipRow,
+} from '@shared/lib/charts/echarts-chrome';
 import { Button } from '@shared/ui/button';
 import { Skeleton } from '@shared/ui/skeleton';
 import { toast } from 'sonner';
@@ -67,17 +75,6 @@ const headerClass = 'px-3';
 const contentClass = 'px-3';
 const titleClass = 'text-sm';
 
-const COMBINED_CHART_CONFIG = {
-  spending: {
-    label: 'Spending',
-    color: 'hsl(0, 84%, 60%)',
-  },
-  assigned: {
-    label: 'Assigned',
-    color: 'hsl(142, 71%, 45%)',
-  },
-};
-
 interface QuickActionButtonProps {
   icon: LucideIcon;
   label: string;
@@ -125,6 +122,7 @@ export function BudgetContextPanel({
   // stored milliunits; this formatter converts to decimal at display time.
   const formatAmount = useFormatMaskedMilli(globalLocalizer);
   const maskedFormatter = useMaskedLocalizer(globalLocalizer);
+  const palette = useChartPalette();
 
   const allCategoryRows = useMemo(
     () => transformedRows.filter((row) => !row.isGroup && row.categoryId > 0),
@@ -344,6 +342,118 @@ export function BudgetContextPanel({
       };
     });
   }, [monthsRange, spendingTotalsMap, assignmentsMap]);
+
+  const pacingOption = useMemo<EChartsCoreOption | null>(() => {
+    if (!budgetPacingData) return null;
+    const { chrome } = palette;
+    const cumulativeColor = palette.series[0];
+    const paceColor = palette.series[1];
+    const points = budgetPacingData.data;
+
+    return {
+      grid: { left: 8, right: 8, top: 8, bottom: 4, containLabel: true },
+      xAxis: {
+        type: 'category' as const,
+        data: points.map((datum) => format(parseISO(datum.date), 'd')),
+        boundaryGap: false,
+        axisLine: { lineStyle: { color: chrome.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: chrome.axisText, fontSize: 11, hideOverlap: true },
+      },
+      yAxis: { type: 'value' as const, show: false },
+      tooltip: {
+        ...tooltipBase(chrome),
+        // Narrow container — render the tooltip into <body> so it isn't clipped.
+        appendToBody: true,
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: chrome.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { dataIndex: number }[];
+          const datum = points[items[0]?.dataIndex ?? 0];
+          if (!datum) return '';
+          const rows: TooltipRow[] = [
+            { color: cumulativeColor, name: 'Cumulative', value: formatAmount(datum.cumulative) },
+            { color: paceColor, name: 'Budget Pace', value: formatAmount(datum.budgetPace) },
+            {
+              color: datum.isOverPace ? palette.flow.negative : palette.flow.positive,
+              name: datum.isOverPace ? 'Over pace' : 'Under pace',
+              value: formatAmount(Math.abs(datum.budgetPace - datum.cumulative)),
+            },
+          ];
+          return tooltipHtml(format(parseISO(datum.date), 'MMM d'), rows);
+        },
+      },
+      series: [
+        {
+          name: 'Cumulative Spending',
+          type: 'line' as const,
+          data: points.map((datum) => datum.cumulative),
+          lineStyle: { color: cumulativeColor, width: 2 },
+          itemStyle: { color: cumulativeColor, borderColor: chrome.surface, borderWidth: 2 },
+          symbol: 'none',
+          areaStyle: { color: cumulativeColor, opacity: 0.1 },
+        },
+        {
+          name: 'Budget Pace',
+          type: 'line' as const,
+          data: points.map((datum) => datum.budgetPace),
+          lineStyle: { color: paceColor, width: 2, opacity: 0.7, type: [5, 5] },
+          itemStyle: { color: paceColor, borderColor: chrome.surface, borderWidth: 2 },
+          symbol: 'none',
+        },
+      ],
+    };
+  }, [budgetPacingData, palette, formatAmount]);
+
+  const historyOption = useMemo<EChartsCoreOption>(() => {
+    const { chrome } = palette;
+    const spendingColor = palette.flow.negative;
+    const assignedColor = palette.flow.positive;
+
+    return {
+      grid: { left: 8, right: 8, top: 8, bottom: 4, containLabel: true },
+      xAxis: {
+        type: 'category' as const,
+        data: combinedChartData.map((datum) => datum.month),
+        axisLine: { lineStyle: { color: chrome.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: chrome.axisText, fontSize: 11, hideOverlap: true },
+      },
+      yAxis: { type: 'value' as const, show: false },
+      tooltip: {
+        ...tooltipBase(chrome),
+        // Narrow container — render the tooltip into <body> so it isn't clipped.
+        appendToBody: true,
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: chrome.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { dataIndex: number }[];
+          const datum = combinedChartData[items[0]?.dataIndex ?? 0];
+          if (!datum) return '';
+          return tooltipHtml(datum.month, [
+            { color: spendingColor, name: 'Spending', value: formatAmount(datum.spending) },
+            { color: assignedColor, name: 'Assigned', value: formatAmount(datum.assigned) },
+          ]);
+        },
+      },
+      series: [
+        {
+          name: 'Spending',
+          type: 'bar' as const,
+          data: combinedChartData.map((datum) => datum.spending),
+          barMaxWidth: BAR_MAX_WIDTH,
+          itemStyle: { color: spendingColor, borderRadius: BAR_RADIUS_TOP },
+        },
+        {
+          name: 'Assigned',
+          type: 'bar' as const,
+          data: combinedChartData.map((datum) => datum.assigned),
+          barMaxWidth: BAR_MAX_WIDTH,
+          itemStyle: { color: assignedColor, borderRadius: BAR_RADIUS_TOP },
+        },
+      ],
+    };
+  }, [combinedChartData, palette, formatAmount]);
 
   const handleApplyAssignments = (
     assignments: { categoryId: number; amount: number }[],
@@ -598,93 +708,13 @@ export function BudgetContextPanel({
                 </span>
               </div>
             </div>
-            <ChartContainer
-              config={{
-                cumulative: { label: 'Cumulative Spending', color: 'var(--color-chart-1)' },
-                budgetPace: { label: 'Budget Pace', color: 'var(--color-chart-3)' },
-              }}
-              className="h-[160px] w-full aspect-auto"
-            >
-              <AreaChart data={budgetPacingData.data}>
-                <defs>
-                  <linearGradient id="colorCumulative" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-chart-1)" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="var(--color-chart-1)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(d) => format(parseISO(d), 'd')}
-                  stroke="var(--color-muted-foreground)"
-                  fontSize={10}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis hide />
-                <ChartTooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    const data = payload[0].payload;
-                    return (
-                      <div className="rounded-lg border bg-background p-2 shadow-sm text-xs max-w-[200px]">
-                        <div className="font-medium mb-2 truncate">
-                          {format(parseISO(data.date), 'MMM d')}
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between gap-2 min-w-0">
-                            <span className="text-muted-foreground flex-shrink-0">Cumulative:</span>
-                            <span className="font-mono font-medium truncate">
-                              {formatAmount(data.cumulative)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 min-w-0">
-                            <span className="text-muted-foreground flex-shrink-0">
-                              Budget Pace:
-                            </span>
-                            <span className="font-mono font-medium truncate">
-                              {formatAmount(data.budgetPace)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between gap-2 min-w-0">
-                            <span
-                              className={`flex-shrink-0 ${
-                                data.isOverPace ? 'text-red-600' : 'text-green-600'
-                              }`}
-                            >
-                              {data.isOverPace ? 'Over pace:' : 'Under pace:'}
-                            </span>
-                            <span
-                              className={`font-mono font-medium truncate ${
-                                data.isOverPace ? 'text-red-600' : 'text-green-600'
-                              }`}
-                            >
-                              {formatAmount(Math.abs(data.budgetPace - data.cumulative))}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="cumulative"
-                  stroke="var(--color-chart-1)"
-                  fill="url(#colorCumulative)"
-                  strokeWidth={2}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="budgetPace"
-                  stroke="var(--color-chart-3)"
-                  fill="none"
-                  strokeWidth={2}
-                  strokeOpacity={0.7}
-                  strokeDasharray="5 5"
-                />
-              </AreaChart>
-            </ChartContainer>
+            {pacingOption ? (
+              <EChart
+                option={pacingOption}
+                ariaLabel="Budget pacing chart"
+                className="h-[160px] w-full"
+              />
+            ) : null}
           </CardContent>
         </Card>
       )}
@@ -703,49 +733,11 @@ export function BudgetContextPanel({
           {spendingQuery.isLoading || assignmentsQuery.isLoading ? (
             <Skeleton className="h-[200px] w-full" />
           ) : (
-            <ChartContainer config={COMBINED_CHART_CONFIG} className="h-[200px] w-full aspect-auto">
-              <BarChart data={combinedChartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
-                  axisLine={false}
-                  stroke="var(--color-muted-foreground)"
-                />
-                <YAxis hide />
-                <ChartTooltip
-                  content={({ active, payload }) => {
-                    if (!active || !payload?.length) return null;
-                    return (
-                      <div className="rounded-lg border bg-background p-2 shadow-sm">
-                        <div className="font-medium mb-2">{payload[0].payload.month}</div>
-                        <div className="space-y-1">
-                          {payload.map((entry) => (
-                            <div
-                              key={entry.dataKey}
-                              className="flex items-center justify-between gap-4"
-                            >
-                              <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                <span
-                                  className="h-2 w-2 rounded-full"
-                                  style={{ backgroundColor: entry.color }}
-                                />
-                                {entry.dataKey === 'spending' ? 'Spending' : 'Assigned'}:
-                              </span>
-                              <span className="text-sm font-medium font-mono">
-                                {formatAmount(entry.value as number)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  }}
-                />
-                <Bar dataKey="spending" fill="hsl(0, 84%, 60%)" radius={6} />
-                <Bar dataKey="assigned" fill="hsl(142, 71%, 45%)" radius={6} />
-              </BarChart>
-            </ChartContainer>
+            <EChart
+              option={historyOption}
+              ariaLabel="Spending and assignments history chart"
+              className="h-[200px] w-full"
+            />
           )}
         </CardContent>
       </Card>

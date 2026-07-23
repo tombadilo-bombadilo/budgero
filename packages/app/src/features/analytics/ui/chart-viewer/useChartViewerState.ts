@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import type { ChartConfiguration } from '@budgero/core/browser';
-import { ChartConfig } from '@shared/ui/chart';
-import { QueryResult, processChartData, getValueKey, CHART_COLORS } from './chart-viewer.utils';
+import { QueryResult, processChartData, getValueKey } from './chart-viewer.utils';
 
 interface UseChartViewerStateProps {
   queryResult: QueryResult;
@@ -43,34 +42,6 @@ export function useChartViewerState({ queryResult, chartConfig }: UseChartViewer
     return processChartData(queryResult, chartConfig, valueKey, isSmallScreen);
   }, [queryResult, chartConfig, valueKey, isSmallScreen]);
 
-  const shadcnChartConfig = useMemo(() => {
-    const config: ChartConfig = {};
-
-    if (chartConfig.chartType === 'pie' && chartData.length > 0) {
-      chartData.forEach((item, index) => {
-        const key = String(item[chartConfig.xAxisColumn] ?? '');
-        config[key] = {
-          label: key,
-          color: CHART_COLORS[index % CHART_COLORS.length],
-        };
-      });
-    } else if (groups.length > 0) {
-      groups.forEach((group, index) => {
-        config[group] = {
-          label: group,
-          color: CHART_COLORS[index % CHART_COLORS.length],
-        };
-      });
-    } else {
-      config[valueKey] = {
-        label: `${chartConfig.aggregateFunction}(${chartConfig.yAxisColumn})`,
-        color: CHART_COLORS[0],
-      };
-    }
-
-    return config;
-  }, [chartData, chartConfig, groups, valueKey]);
-
   const toggleGroup = useCallback((group: string) => {
     setHiddenGroups((prev) => {
       const newHidden = new Set(prev);
@@ -93,7 +64,6 @@ export function useChartViewerState({ queryResult, chartConfig }: UseChartViewer
     chartData,
     groups,
     visibleGroups,
-    shadcnChartConfig,
     toggleGroup,
   };
 }

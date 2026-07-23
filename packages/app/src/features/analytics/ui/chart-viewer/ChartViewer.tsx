@@ -26,15 +26,8 @@ export function ChartViewer({
   compactToolbar = false,
   showLegendSummary = true,
 }: ChartViewerProps) {
-  const {
-    hiddenGroups,
-    valueKey,
-    chartData,
-    groups,
-    visibleGroups,
-    shadcnChartConfig,
-    toggleGroup,
-  } = useChartViewerState({ queryResult, chartConfig: chartConfig as ChartConfiguration });
+  const { hiddenGroups, valueKey, chartData, groups, visibleGroups, toggleGroup } =
+    useChartViewerState({ queryResult, chartConfig: chartConfig as ChartConfiguration });
 
   const handleExport = useCallback(() => {
     exportChartData(chartData, groups, visibleGroups, chartConfig as ChartConfiguration, valueKey);
@@ -110,7 +103,6 @@ export function ChartViewer({
         queryResult={queryResult}
         chartData={chartData}
         chartConfig={chartConfig}
-        shadcnChartConfig={shadcnChartConfig}
         groups={groups}
         visibleGroups={visibleGroups}
         hiddenGroups={hiddenGroups}

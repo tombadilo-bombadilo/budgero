@@ -1,10 +1,13 @@
-import { Bar, BarChart, XAxis, YAxis, Legend, ReferenceLine } from 'recharts';
+import { useMemo } from 'react';
+import type { EChartsCoreOption } from 'echarts/core';
+import { EChart } from '@shared/ui/echart';
 import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from '@shared/ui/chart';
+  useChartPalette,
+  tooltipBase,
+  tooltipHtml,
+  BAR_MAX_WIDTH,
+  type TooltipRow,
+} from '@shared/lib/charts/echarts-chrome';
 import type { MonthlyAssetPoint } from '@entities/account/api/useMonthlyAssetHistory';
 import { asMilli, fromDecimal, toDecimal } from '@shared/lib/currency/milli';
 
@@ -17,44 +20,128 @@ interface AssetLiabilityHistoryChartProps {
   formatCurrency: (milli: number) => string;
 }
 
+const SERIES_LABELS = {
+  cash: 'Cash',
+  investments: 'Investments',
+  retirement: 'Retirement',
+  realEstate: 'Real Estate',
+  otherAssets: 'Other Assets',
+  loans: 'Loans',
+  credit: 'Credit',
+} as const;
+
+type SeriesKey = keyof typeof SERIES_LABELS;
+
+/** Assets stacked above zero, then liabilities stacked below (negative values). */
+const SERIES_ORDER: SeriesKey[] = [
+  'cash',
+  'investments',
+  'retirement',
+  'realEstate',
+  'otherAssets',
+  'loans',
+  'credit',
+];
+
 /** Stacked assets-vs-liabilities bar chart for the Accounts page sidebar "history" tab. */
 export function AssetLiabilityHistoryChart({
   monthlyAssetHistory,
   netWorth,
   formatCurrency,
 }: AssetLiabilityHistoryChartProps) {
-  const historyColors = {
-    cash: 'var(--color-chart-1)',
-    investments: 'var(--color-chart-2)',
-    retirement: 'var(--color-chart-3)',
-    realEstate: 'var(--color-chart-4)',
-    otherAssets: 'var(--color-chart-5)',
-    credit: 'var(--color-destructive)',
-    loans: 'var(--color-warning)',
-  };
+  const palette = useChartPalette();
 
-  const historyChartConfig = {
-    cash: { label: 'Cash', color: historyColors.cash },
-    investments: { label: 'Investments', color: historyColors.investments },
-    retirement: { label: 'Retirement', color: historyColors.retirement },
-    realEstate: { label: 'Real Estate', color: historyColors.realEstate },
-    otherAssets: { label: 'Other Assets', color: historyColors.otherAssets },
-    credit: { label: 'Credit', color: historyColors.credit },
-    loans: { label: 'Loans', color: historyColors.loans },
-  } satisfies ChartConfig;
+  // Asset categories take the validated series slots in fixed order; liability
+  // reds/oranges keep the original destructive/warning semantics.
+  const seriesColors: Record<SeriesKey, string> = useMemo(
+    () => ({
+      cash: palette.series[0],
+      investments: palette.series[1],
+      retirement: palette.series[2],
+      realEstate: palette.series[3],
+      otherAssets: palette.series[4],
+      loans: palette.series[5],
+      credit: palette.flow.negative,
+    }),
+    [palette]
+  );
 
-  // Transform data: decimal currency units for axes/tooltips, and liabilities
-  // become negative for display below the X axis.
-  const chartData = monthlyAssetHistory.map((point) => ({
-    ...point,
-    cash: toDecimal(asMilli(point.cash)),
-    investments: toDecimal(asMilli(point.investments)),
-    retirement: toDecimal(asMilli(point.retirement)),
-    realEstate: toDecimal(asMilli(point.realEstate)),
-    otherAssets: toDecimal(asMilli(point.otherAssets)),
-    credit: -toDecimal(asMilli(point.credit)), // Negative for below-axis display
-    loans: -toDecimal(asMilli(point.loans)), // Negative for below-axis display
-  }));
+  const option = useMemo<EChartsCoreOption>(() => {
+    const { chrome } = palette;
+    // Transform data: decimal currency units for axes/tooltips, and liabilities
+    // become negative for display below the X axis.
+    const chartData = monthlyAssetHistory.map((point) => ({
+      label: point.label,
+      cash: toDecimal(asMilli(point.cash)),
+      investments: toDecimal(asMilli(point.investments)),
+      retirement: toDecimal(asMilli(point.retirement)),
+      realEstate: toDecimal(asMilli(point.realEstate)),
+      otherAssets: toDecimal(asMilli(point.otherAssets)),
+      loans: -toDecimal(asMilli(point.loans)), // Negative for below-axis display
+      credit: -toDecimal(asMilli(point.credit)), // Negative for below-axis display
+    }));
+    return {
+      grid: { left: 8, right: 16, top: 16, bottom: 4, containLabel: true },
+      xAxis: {
+        type: 'category' as const,
+        data: chartData.map((point) => point.label),
+        axisLine: { lineStyle: { color: chrome.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: chrome.axisText, fontSize: 11, hideOverlap: true },
+      },
+      yAxis: {
+        type: 'value' as const,
+        axisLine: { show: false },
+        splitLine: { lineStyle: { color: chrome.grid, width: 1 } },
+        axisLabel: {
+          color: chrome.axisText,
+          fontSize: 11,
+          formatter: (value: number) => {
+            const absValue = Math.abs(value);
+            if (absValue >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
+            if (absValue >= 1000) return `${(value / 1000).toFixed(0)}K`;
+            return value.toString();
+          },
+        },
+      },
+      tooltip: {
+        ...tooltipBase(chrome),
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: chrome.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { dataIndex: number }[];
+          const point = chartData[items[0]?.dataIndex ?? 0];
+          if (!point) return '';
+          // Plotted values are decimal; formatCurrency is milli-in.
+          const rows: TooltipRow[] = SERIES_ORDER.map((key) => ({
+            color: seriesColors[key],
+            name: SERIES_LABELS[key],
+            value: formatCurrency(fromDecimal(Math.abs(point[key]))),
+          }));
+          return tooltipHtml(point.label, rows);
+        },
+      },
+      series: SERIES_ORDER.map((key, index) => ({
+        name: SERIES_LABELS[key],
+        type: 'bar' as const,
+        stack: 'history',
+        data: chartData.map((point) => point[key]),
+        barMaxWidth: BAR_MAX_WIDTH,
+        itemStyle: { color: seriesColors[key], borderColor: chrome.surface, borderWidth: 1 },
+        ...(index === 0
+          ? {
+              markLine: {
+                silent: true,
+                symbol: 'none',
+                label: { show: false },
+                lineStyle: { color: chrome.axisLine, type: 'solid' as const, width: 1 },
+                data: [{ yAxis: 0 }],
+              },
+            }
+          : {}),
+      })),
+    };
+  }, [monthlyAssetHistory, palette, seriesColors, formatCurrency]);
 
   return (
     <div className="space-y-4">
@@ -67,87 +154,25 @@ export function AssetLiabilityHistoryChart({
           No historical data available
         </div>
       ) : (
-        <ChartContainer config={historyChartConfig} className="h-[320px] w-full">
-          <BarChart
-            data={chartData}
-            stackOffset="sign"
-            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-          >
-            <XAxis
-              dataKey="label"
-              tick={{ fontSize: 10 }}
-              interval="preserveStartEnd"
-              tickLine={false}
-              axisLine={false}
-            />
-            <YAxis
-              tick={{ fontSize: 10 }}
-              tickFormatter={(value) => {
-                const absValue = Math.abs(value);
-                if (absValue >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-                if (absValue >= 1000) return `${(value / 1000).toFixed(0)}K`;
-                return value.toString();
-              }}
-              tickLine={false}
-              axisLine={false}
-            />
-            <ReferenceLine y={0} stroke="var(--color-border)" />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  formatter={(value, name) => {
-                    // Plotted values are decimal; formatCurrency is milli-in.
-                    const absMilli = fromDecimal(Math.abs(value as number));
-                    return (
-                      <div className="flex items-center justify-between gap-8">
-                        <span className="text-muted-foreground">
-                          {historyChartConfig[name as keyof typeof historyChartConfig]?.label ||
-                            name}
-                        </span>
-                        <span className="font-mono font-medium">{formatCurrency(absMilli)}</span>
-                      </div>
-                    );
-                  }}
+        <>
+          <EChart
+            option={option}
+            className="h-[320px] w-full"
+            ariaLabel="Asset and liability history"
+          />
+          <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+            {SERIES_ORDER.map((key) => (
+              <span key={key} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <span
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: seriesColors[key] }}
+                  aria-hidden
                 />
-              }
-            />
-            <Legend
-              wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }}
-              formatter={(value) =>
-                historyChartConfig[value as keyof typeof historyChartConfig]?.label || value
-              }
-            />
-            {/* Assets - stacked above zero */}
-            <Bar dataKey="cash" stackId="a" fill={historyColors.cash} radius={[0, 0, 0, 0]} />
-            <Bar
-              dataKey="investments"
-              stackId="a"
-              fill={historyColors.investments}
-              radius={[0, 0, 0, 0]}
-            />
-            <Bar
-              dataKey="retirement"
-              stackId="a"
-              fill={historyColors.retirement}
-              radius={[0, 0, 0, 0]}
-            />
-            <Bar
-              dataKey="realEstate"
-              stackId="a"
-              fill={historyColors.realEstate}
-              radius={[0, 0, 0, 0]}
-            />
-            <Bar
-              dataKey="otherAssets"
-              stackId="a"
-              fill={historyColors.otherAssets}
-              radius={[4, 4, 0, 0]}
-            />
-            {/* Liabilities - stacked below zero (negative values) */}
-            <Bar dataKey="loans" stackId="a" fill={historyColors.loans} radius={[0, 0, 0, 0]} />
-            <Bar dataKey="credit" stackId="a" fill={historyColors.credit} radius={[0, 0, 4, 4]} />
-          </BarChart>
-        </ChartContainer>
+                {SERIES_LABELS[key]}
+              </span>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Net Worth trend line */}

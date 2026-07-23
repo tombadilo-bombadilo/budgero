@@ -4,10 +4,12 @@
  * Displays net worth summary with area chart.
  */
 
+import { useMemo } from 'react';
+import type { EChartsCoreOption } from 'echarts/core';
 import { Card, CardContent } from '@shared/ui/card';
-import { ChartConfig, ChartContainer } from '@shared/ui/chart';
+import { EChart } from '@shared/ui/echart';
+import { tooltipBase, tooltipHtml, useChartPalette } from '@shared/lib/charts/echarts-chrome';
 import { TrendingUp, TrendingDown } from 'lucide-react';
-import { Area, AreaChart, XAxis, YAxis, Tooltip } from 'recharts';
 import { cn } from '@shared/lib/utils';
 import { parseISO } from 'date-fns';
 import { trendTextClass } from '@shared/lib/amount-color';
@@ -32,41 +34,6 @@ interface NetWorthCardProps {
   formatCurrency: (milli: number) => string;
 }
 
-const chartConfig: ChartConfig = {
-  netWorth: {
-    label: 'Net Worth',
-    color: 'var(--color-chart-1)',
-  },
-};
-
-function CustomTooltip({
-  active,
-  payload,
-  label,
-  formatter,
-}: {
-  active?: boolean;
-  payload?: { value: number; payload: unknown }[];
-  label?: string;
-  formatter?: (value: number) => string;
-}) {
-  if (active && payload && payload.length) {
-    const { value } = payload[0];
-    const formattedValue = formatter ? formatter(value) : String(value);
-
-    return (
-      <div
-        className="text-popover-foreground border border-border rounded-lg shadow-xl p-3 text-sm backdrop-blur-md bg-popover/80"
-        style={{ zIndex: 9999 }}
-      >
-        <div className="text-muted-foreground mb-1">{label}</div>
-        <div className="font-semibold">{formattedValue}</div>
-      </div>
-    );
-  }
-  return null;
-}
-
 export function NetWorthCard({
   netWorth,
   netWorthChange,
@@ -77,11 +44,63 @@ export function NetWorthCard({
   const changePercent =
     netWorth - netWorthChange !== 0 ? (netWorthChange / (netWorth - netWorthChange)) * 100 : 0;
 
-  // Chart values are decimal currency units; stored points are milliunits.
-  const chartDataDecimal = chartData.map((point) => ({
-    ...point,
-    netWorth: toDecimal(asMilli(point.netWorth)),
-  }));
+  const palette = useChartPalette();
+
+  const option = useMemo<EChartsCoreOption>(() => {
+    const { chrome } = palette;
+    const color = palette.series[0];
+    // Chart values are decimal currency units; stored points are milliunits.
+    const points = chartData.map((point) => ({
+      date: point.date,
+      value: toDecimal(asMilli(point.netWorth)),
+    }));
+    return {
+      grid: { left: 8, right: 16, top: 16, bottom: 4, containLabel: true },
+      xAxis: {
+        type: 'category' as const,
+        data: points.map((point) => {
+          const date = parseISO(point.date);
+          return `${date.getMonth() + 1}/${date.getDate()}`;
+        }),
+        axisLine: { lineStyle: { color: chrome.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: chrome.axisText, fontSize: 11, hideOverlap: true },
+      },
+      yAxis: { type: 'value' as const, show: false },
+      tooltip: {
+        ...tooltipBase(chrome),
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: chrome.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { dataIndex: number }[];
+          const point = points[items[0]?.dataIndex ?? 0];
+          if (!point) return '';
+          const title = parseISO(point.date).toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+          });
+          // Plotted values are decimal; formatCurrency is milli-in.
+          return tooltipHtml(title, [
+            { color, name: 'Net Worth', value: formatCurrency(fromDecimal(point.value)) },
+          ]);
+        },
+      },
+      series: [
+        {
+          name: 'Net Worth',
+          type: 'line' as const,
+          data: points.map((point) => point.value),
+          lineStyle: { color, width: 2 },
+          itemStyle: { color, borderColor: chrome.surface, borderWidth: 2 },
+          symbol: 'circle',
+          symbolSize: 8,
+          showSymbol: points.length <= 30,
+          areaStyle: { color, opacity: 0.1 },
+        },
+      ],
+    };
+  }, [chartData, formatCurrency, palette]);
 
   return (
     <Card>
@@ -115,61 +134,7 @@ export function NetWorthCard({
 
         {/* Net Worth Chart */}
         <div className="h-32 sm:h-48 w-full">
-          <ChartContainer config={chartConfig} className="h-full w-full">
-            <AreaChart
-              accessibilityLayer
-              data={chartDataDecimal}
-              margin={{ left: 8, right: 8, top: 8, bottom: 8 }}
-            >
-              <defs>
-                <linearGradient id="netWorthGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="var(--color-netWorth)" stopOpacity={0.8} />
-                  <stop offset="50%" stopColor="var(--color-netWorth)" stopOpacity={0.3} />
-                  <stop offset="100%" stopColor="var(--color-netWorth)" stopOpacity={0.1} />
-                </linearGradient>
-              </defs>
-              <XAxis
-                dataKey="date"
-                axisLine={false}
-                tickLine={false}
-                tick={{ fontSize: 10 }}
-                tickMargin={8}
-                interval="preserveStartEnd"
-                tickFormatter={(value) => {
-                  const date = parseISO(value);
-                  return `${date.getMonth() + 1}/${date.getDate()}`;
-                }}
-              />
-              <YAxis hide />
-              <Tooltip
-                content={
-                  // Plotted values are decimal; formatCurrency is milli-in.
-                  <CustomTooltip formatter={(value) => formatCurrency(fromDecimal(value))} />
-                }
-                cursor={{
-                  strokeDasharray: '3 3',
-                  stroke: 'var(--color-netWorth)',
-                  strokeOpacity: 0.3,
-                }}
-                labelFormatter={(value) => {
-                  const date = parseISO(value);
-                  return date.toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  });
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="netWorth"
-                stroke="var(--color-netWorth)"
-                fillOpacity={1}
-                fill="url(#netWorthGradient)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ChartContainer>
+          <EChart option={option} className="h-full w-full" ariaLabel="Net worth performance" />
         </div>
       </CardContent>
     </Card>

@@ -1,10 +1,19 @@
 import { useMemo } from 'react';
 import { format, parseISO, differenceInCalendarDays, subDays } from 'date-fns';
 import { TrendingUp, TrendingDown, ArrowUpRight } from 'lucide-react';
-import { Area, Bar, Cell, ComposedChart, Legend, XAxis, YAxis, CartesianGrid } from 'recharts';
+import type { EChartsCoreOption } from 'echarts/core';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@shared/ui/card';
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@shared/ui/chart';
+import { EChart } from '@shared/ui/echart';
+import {
+  useChartPalette,
+  tooltipBase,
+  tooltipHtml,
+  BAR_MAX_WIDTH,
+  BAR_RADIUS_TOP,
+  BAR_RADIUS_BOTTOM,
+  type TooltipRow,
+} from '@shared/lib/charts/echarts-chrome';
 import { useIncomeExpenseByPeriod } from '@features/analytics/api/useAnalyticsQueries';
 import { useFormatMaskedAmount } from '@shared/lib/privacy/useMaskedLocalizer';
 import { useCompactNumberFormat } from '@shared/lib/useCompactNumberFormat';
@@ -82,14 +91,79 @@ export function CashflowTrendCard({
   const DeltaIcon = netPositive ? TrendingUp : TrendingDown;
   const netClass = netPositive ? 'text-green-600' : 'text-red-600 dark:text-red-300';
 
-  const chartConfig = {
-    income: { label: 'Income', color: 'var(--color-chart-2)' },
-    expense: { label: 'Spending', color: 'var(--color-chart-3)' },
-  };
-
-  const positiveNetColor = '#22c55e';
-  const negativeNetColor = '#ef4444';
+  const palette = useChartPalette();
   const formatAmount = useFormatMaskedAmount(globalLocalizer);
+
+  const option = useMemo<EChartsCoreOption>(() => {
+    const { chrome, flow } = palette;
+    return {
+      grid: { left: 8, right: 16, top: 16, bottom: 4, containLabel: true },
+      xAxis: {
+        type: 'category' as const,
+        data: chartData.map((item) => item.label),
+        axisLine: { lineStyle: { color: chrome.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: chrome.axisText, fontSize: 11, hideOverlap: true },
+      },
+      yAxis: {
+        type: 'value' as const,
+        axisLine: { show: false },
+        splitLine: { lineStyle: { color: chrome.grid, width: 1 } },
+        axisLabel: {
+          color: chrome.axisText,
+          fontSize: 11,
+          formatter: (value: number) => compactFormatter.format(value),
+        },
+      },
+      tooltip: {
+        ...tooltipBase(chrome),
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: chrome.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { dataIndex: number }[];
+          const point = chartData[items[0]?.dataIndex ?? 0];
+          if (!point) return '';
+          const rows: TooltipRow[] = [
+            { color: chrome.inkPrimary, name: 'Net', value: formatAmount(point.net) },
+            { color: flow.positive, name: 'Money in', value: formatAmount(point.income) },
+            { color: flow.negative, name: 'Money out', value: formatAmount(-point.expense) },
+          ];
+          return tooltipHtml(point.label, rows);
+        },
+      },
+      // One encoding, mirrored around zero: income grows up, spending grows
+      // down, and the net line rides on top — the same form as the Cash Flow
+      // report, so the dashboard and analytics read identically.
+      series: [
+        {
+          name: 'Money in',
+          type: 'bar' as const,
+          stack: 'flow',
+          data: chartData.map((item) => item.income),
+          barMaxWidth: BAR_MAX_WIDTH,
+          itemStyle: { color: flow.positive, borderRadius: BAR_RADIUS_TOP },
+        },
+        {
+          name: 'Money out',
+          type: 'bar' as const,
+          stack: 'flow',
+          data: chartData.map((item) => -item.expense),
+          barMaxWidth: BAR_MAX_WIDTH,
+          itemStyle: { color: flow.negative, borderRadius: BAR_RADIUS_BOTTOM },
+        },
+        {
+          name: 'Net',
+          type: 'line' as const,
+          data: chartData.map((item) => item.net),
+          lineStyle: { color: chrome.inkPrimary, width: 2 },
+          itemStyle: { color: chrome.inkPrimary, borderColor: chrome.surface, borderWidth: 2 },
+          symbol: 'circle',
+          symbolSize: 8,
+          z: 3,
+        },
+      ],
+    };
+  }, [chartData, palette, compactFormatter, formatAmount]);
 
   return (
     <Card className="h-full">
@@ -125,71 +199,27 @@ export function CashflowTrendCard({
           </div>
         </div>
 
-        <ChartContainer config={chartConfig} className="h-[260px] w-full">
-          <ComposedChart data={chartData} margin={{ top: 5, right: 5, bottom: 5, left: -10 }}>
-            <defs>
-              <linearGradient id="cashflowIncome" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-chart-2)" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="var(--color-chart-2)" stopOpacity={0} />
-              </linearGradient>
-              <linearGradient id="cashflowExpense" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-chart-3)" stopOpacity={0.35} />
-                <stop offset="95%" stopColor="var(--color-chart-3)" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-            <XAxis
-              dataKey="label"
-              stroke="var(--color-muted-foreground)"
-              fontSize={12}
-              tickLine={false}
-              axisLine={false}
-              interval="preserveStartEnd"
-            />
-            <YAxis
-              tickFormatter={(value) => compactFormatter.format(value as number)}
-              stroke="var(--color-muted-foreground)"
-              fontSize={10}
-              width={45}
-              tickLine={false}
-              axisLine={false}
-            />
-            <ChartTooltip
-              content={
-                <ChartTooltipContent
-                  formatter={(value, name) => (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="capitalize">{name}</span>
-                      <span className="font-medium">{formatAmount(value as number)}</span>
-                    </div>
-                  )}
-                />
-              }
-            />
-            <Legend />
-            <Area
-              type="monotone"
-              dataKey="income"
-              stroke="var(--color-chart-2)"
-              strokeWidth={2}
-              fill="url(#cashflowIncome)"
-              fillOpacity={0.3}
-            />
-            <Area
-              type="monotone"
-              dataKey="expense"
-              stroke="var(--color-chart-3)"
-              strokeWidth={2}
-              fill="url(#cashflowExpense)"
-              fillOpacity={0.3}
-            />
-            <Bar dataKey="net" radius={[6, 6, 0, 0]} barSize={24} legendType="none">
-              {chartData.map((item) => (
-                <Cell key={item.label} fill={item.net >= 0 ? positiveNetColor : negativeNetColor} />
-              ))}
-            </Bar>
-          </ComposedChart>
-        </ChartContainer>
+        <EChart option={option} className="h-[260px] w-full" ariaLabel="Cashflow trends chart" />
+
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+          {[
+            { color: palette.flow.positive, label: 'Money in' },
+            { color: palette.flow.negative, label: 'Money out' },
+            { color: palette.chrome.inkPrimary, label: 'Net' },
+          ].map((item) => (
+            <span
+              key={item.label}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground"
+            >
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: item.color }}
+                aria-hidden
+              />
+              {item.label}
+            </span>
+          ))}
+        </div>
 
         {isLoading && (
           <div className="text-xs text-muted-foreground text-center">Loading cashflow data…</div>

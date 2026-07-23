@@ -5,16 +5,14 @@ import { Input } from '@shared/ui/input';
 import { Label } from '@shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
+import type { EChartsCoreOption } from 'echarts/core';
+import { EChart } from '@shared/ui/echart';
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-  Legend,
-} from 'recharts';
+  tooltipBase,
+  tooltipHtml,
+  useChartPalette,
+  type TooltipRow,
+} from '@shared/lib/charts/echarts-chrome';
 import { Sparkles, TrendingUp } from 'lucide-react';
 import { useAdminApi } from '@features/admin/api/useAdminApi';
 import type {
@@ -67,6 +65,16 @@ function pct(num: number, den: number): string {
   return `${((num / den) * 100).toFixed(1)}%`;
 }
 
+/** Chart series in fixed palette-slot order (colors come from palette.series). */
+const REWARDS_SERIES = [
+  { key: 'signups', name: 'Signups' },
+  { key: 'subscriptions', name: 'New subs' },
+  { key: 'tier1', name: 'Tier 1' },
+  { key: 'tier2', name: 'Tier 2' },
+  { key: 'tier3', name: 'Tier 3' },
+  { key: 'redemptions', name: 'Redemptions' },
+] as const;
+
 export default function RewardsAnalyticsSection() {
   const adminApi = useAdminApi();
 
@@ -97,6 +105,58 @@ export default function RewardsAnalyticsSection() {
   }, [data]);
 
   const chartData = useMemo(() => (data ? combineSeries(data) : []), [data]);
+
+  const palette = useChartPalette();
+
+  const chartOption = useMemo<EChartsCoreOption>(() => {
+    const { chrome } = palette;
+    const seriesColor = (index: number) => palette.series[index % palette.series.length];
+    const readCount = (row: Record<string, number | string>, key: string): number =>
+      Number(row[key] ?? 0);
+    return {
+      grid: { left: 8, right: 16, top: 16, bottom: 4, containLabel: true },
+      xAxis: {
+        type: 'category',
+        data: chartData.map((row) => String(row.period)),
+        axisLine: { lineStyle: { color: chrome.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: chrome.axisText, fontSize: 11, hideOverlap: true },
+      },
+      yAxis: {
+        type: 'value',
+        minInterval: 1,
+        axisLine: { show: false },
+        splitLine: { lineStyle: { color: chrome.grid, width: 1 } },
+        axisLabel: { color: chrome.axisText, fontSize: 11 },
+      },
+      tooltip: {
+        ...tooltipBase(chrome),
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: chrome.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { dataIndex: number }[];
+          const row = chartData[items[0]?.dataIndex ?? 0];
+          if (!row) return '';
+          const rows: TooltipRow[] = REWARDS_SERIES.map((def, index) => ({
+            color: seriesColor(index),
+            name: def.name,
+            value: readCount(row, def.key).toLocaleString(),
+          }));
+          return tooltipHtml(String(row.period), rows);
+        },
+      },
+      series: REWARDS_SERIES.map((def, index) => ({
+        name: def.name,
+        type: 'line' as const,
+        data: chartData.map((row) => readCount(row, def.key)),
+        lineStyle: { color: seriesColor(index), width: 2 },
+        itemStyle: { color: seriesColor(index), borderColor: chrome.surface, borderWidth: 2 },
+        symbol: 'circle',
+        symbolSize: 8,
+        showSymbol: chartData.length <= 30,
+      })),
+    };
+  }, [chartData, palette]);
 
   return (
     <Card>
@@ -175,63 +235,24 @@ export default function RewardsAnalyticsSection() {
               No data in the selected range.
             </p>
           ) : (
-            <ResponsiveContainer width="100%" height={320}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(127,127,127,0.2)" />
-                <XAxis dataKey="period" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line
-                  type="monotone"
-                  dataKey="signups"
-                  stroke="#3b82f6"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Signups"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="subscriptions"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  dot={false}
-                  name="New subs"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="tier1"
-                  stroke="#fde047"
-                  strokeWidth={1.5}
-                  dot={false}
-                  name="Tier 1"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="tier2"
-                  stroke="#fbbf24"
-                  strokeWidth={1.5}
-                  dot={false}
-                  name="Tier 2"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="tier3"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Tier 3"
-                />
-                <Line
-                  type="monotone"
-                  dataKey="redemptions"
-                  stroke="#a855f7"
-                  strokeWidth={2}
-                  dot={false}
-                  name="Redemptions"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            <>
+              <EChart
+                option={chartOption}
+                className="h-[320px]"
+                ariaLabel="Rewards time series: signups, subscriptions, tier unlocks and redemptions"
+              />
+              <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                {REWARDS_SERIES.map((def, index) => (
+                  <span key={def.key} className="inline-flex items-center gap-1.5">
+                    <span
+                      className="inline-block h-[3px] w-3 rounded-sm"
+                      style={{ backgroundColor: palette.series[index % palette.series.length] }}
+                    />
+                    {def.name}
+                  </span>
+                ))}
+              </div>
+            </>
           )}
         </div>
 

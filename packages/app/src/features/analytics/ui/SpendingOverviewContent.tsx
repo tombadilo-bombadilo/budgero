@@ -1,5 +1,11 @@
-import { Area, AreaChart, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { ChartConfig, ChartContainer, ChartTooltip } from '@shared/ui/chart';
+import type { EChartsCoreOption } from 'echarts/core';
+import { EChart } from '@shared/ui/echart';
+import {
+  useChartPalette,
+  tooltipBase,
+  tooltipHtml,
+  type TooltipRow,
+} from '@shared/lib/charts/echarts-chrome';
 import { ChartEmptyState } from '@shared/ui/ChartEmptyState';
 import { useSpendingByDates } from '@features/analytics/api/useAnalyticsQueries';
 import { useUiStore } from '@shared/store/useUiStore';
@@ -11,6 +17,7 @@ export function SpendingOverviewContent() {
   const selectedBudget = useUiStore((state) => state.selectedBudget);
   const globalLocalizer = useUiStore((state) => state.globalLocalizer);
   const dateRange = useUiStore((state) => state.dateRange);
+  const palette = useChartPalette();
 
   const budgetId = selectedBudget?.ID || 0;
 
@@ -38,20 +45,6 @@ export function SpendingOverviewContent() {
     previousPeriodRange?.to ? format(previousPeriodRange.to, 'yyyy-MM-dd') : '',
     budgetId
   );
-
-  const chartConfig = useMemo(() => {
-    const config: ChartConfig = {
-      amount: {
-        label: 'Current Period',
-        color: 'var(--color-chart-1)',
-      },
-      previousAmount: {
-        label: 'Previous Period',
-        color: 'var(--color-chart-3)',
-      },
-    };
-    return config;
-  }, []);
 
   const formattedData = useMemo(() => {
     if (!spendingData || spendingData.length === 0 || !dateRange?.from || !dateRange?.to) return [];
@@ -104,6 +97,77 @@ export function SpendingOverviewContent() {
     });
   }, [spendingData, previousSpendingData, dateRange, previousPeriodRange]);
 
+  const option = useMemo<EChartsCoreOption>(() => {
+    const { chrome } = palette;
+    const currentColor = palette.series[0];
+    const previousColor = palette.series[1];
+    const lastIndex = formattedData.length - 1;
+
+    return {
+      grid: { left: 8, right: 16, top: 16, bottom: 4, containLabel: true },
+      xAxis: {
+        type: 'category' as const,
+        data: formattedData.map((datum) => datum.date),
+        boundaryGap: false,
+        axisLine: { lineStyle: { color: chrome.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: chrome.axisText, fontSize: 11, hideOverlap: true },
+      },
+      yAxis: { type: 'value' as const, show: false },
+      tooltip: {
+        ...tooltipBase(chrome),
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: chrome.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { dataIndex: number }[];
+          const datum = formattedData[items[0]?.dataIndex ?? 0];
+          if (!datum) return '';
+          const rows: TooltipRow[] = [
+            { color: currentColor, name: 'Current', value: globalLocalizer.format(datum.amount) },
+          ];
+          if (datum.previousAmount > 0) {
+            rows.push({
+              color: previousColor,
+              name: 'Previous',
+              value: globalLocalizer.format(datum.previousAmount),
+            });
+          }
+          rows.push({
+            color: chrome.inkPrimary,
+            name: 'Daily',
+            value: globalLocalizer.format(datum.dailySpending),
+          });
+          return tooltipHtml(datum.date, rows);
+        },
+      },
+      series: [
+        // Previous period line - rendered first so it appears behind
+        {
+          name: 'Previous Period',
+          type: 'line' as const,
+          data: formattedData.map((datum) => datum.previousAmount),
+          lineStyle: { color: previousColor, width: 2, opacity: 0.5 },
+          itemStyle: { color: previousColor, borderColor: chrome.surface, borderWidth: 2 },
+          symbol: 'none',
+          areaStyle: { color: previousColor, opacity: 0.05 },
+        },
+        {
+          name: 'Current Period',
+          type: 'line' as const,
+          data: formattedData.map((datum) => datum.amount),
+          lineStyle: { color: currentColor, width: 2 },
+          itemStyle: { color: currentColor, borderColor: chrome.surface, borderWidth: 2 },
+          // Only show a dot on the last point
+          symbol: 'circle',
+          symbolSize: (_value: unknown, params: { dataIndex: number }) =>
+            params.dataIndex === lastIndex ? 8 : 0,
+          areaStyle: { color: currentColor, opacity: 0.1 },
+          z: 3,
+        },
+      ],
+    };
+  }, [formattedData, palette, globalLocalizer]);
+
   if (isLoadingSpending) {
     return (
       <div className="flex items-center justify-center h-[300px]">
@@ -118,113 +182,7 @@ export function SpendingOverviewContent() {
 
   return (
     <div className="h-[300px]">
-      <ChartContainer config={chartConfig} className="h-full w-full relative">
-        <AreaChart
-          accessibilityLayer
-          data={formattedData}
-          margin={{ left: 8, right: 8, top: 40, bottom: 8 }}
-        >
-          <defs>
-            <linearGradient id="spendingGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-chart-1)" stopOpacity={0.8} />
-              <stop offset="50%" stopColor="var(--color-chart-1)" stopOpacity={0.3} />
-              <stop offset="100%" stopColor="var(--color-chart-1)" stopOpacity={0.1} />
-            </linearGradient>
-            <linearGradient id="previousGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="var(--color-chart-3)" stopOpacity={0.3} />
-              <stop offset="50%" stopColor="var(--color-chart-3)" stopOpacity={0.15} />
-              <stop offset="100%" stopColor="var(--color-chart-3)" stopOpacity={0.05} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.4} />
-          <XAxis
-            dataKey="date"
-            tickLine={false}
-            axisLine={false}
-            tickMargin={8}
-            fontSize={10}
-            interval="preserveStartEnd"
-          />
-          <YAxis hide />
-          <ChartTooltip
-            cursor={{
-              stroke: 'var(--color-muted-foreground)',
-              strokeWidth: 1,
-              strokeDasharray: '3 3',
-            }}
-            content={({ active, payload, label }) => {
-              if (!active || !payload?.length) return null;
-
-              const data = payload[0].payload;
-              return (
-                <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
-                  <div className="font-medium mb-2">{label}</div>
-                  <div className="grid gap-1.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-muted-foreground">Current:</span>
-                      <span className="font-mono font-medium">
-                        {globalLocalizer.format(data.amount)}
-                      </span>
-                    </div>
-                    {data.previousAmount > 0 && (
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-muted-foreground">Previous:</span>
-                        <span className="font-mono font-medium text-muted-foreground">
-                          {globalLocalizer.format(data.previousAmount)}
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-muted-foreground">Daily:</span>
-                      <span className="font-mono font-medium">
-                        {globalLocalizer.format(data.dailySpending)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            }}
-          />
-          {/* Previous period line - rendered first so it appears behind */}
-          <Area
-            key="previousAmount"
-            dataKey="previousAmount"
-            type="monotone"
-            fill="url(#previousGradient)"
-            stroke="var(--color-chart-3)"
-            strokeWidth={1.5}
-            strokeOpacity={0.4}
-            dot={false}
-          />
-          <Area
-            key="amount"
-            dataKey="amount"
-            type="monotone"
-            fill="url(#spendingGradient)"
-            stroke="var(--color-chart-1)"
-            strokeWidth={2}
-            dot={(props) => {
-              const { cx, cy, index } = props;
-              // Only show dot on the last point
-              if (index === formattedData.length - 1) {
-                return (
-                  <g>
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r={4}
-                      fill="var(--color-chart-1)"
-                      stroke="white"
-                      strokeWidth={2}
-                    />
-                  </g>
-                );
-              }
-              return <g />;
-            }}
-          />
-        </AreaChart>
-      </ChartContainer>
+      <EChart option={option} ariaLabel="Cumulative spending overview" className="h-[300px]" />
     </div>
   );
 }

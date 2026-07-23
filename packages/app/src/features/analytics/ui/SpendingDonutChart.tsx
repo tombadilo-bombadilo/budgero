@@ -1,11 +1,16 @@
 import { useCallback, useMemo } from 'react';
-import { Cell, Pie, PieChart } from 'recharts';
+import type { EChartsCoreOption } from 'echarts/core';
 import { buttonizeProps } from '@shared/lib/a11y';
-import { ChartConfig, ChartContainer, ChartTooltip } from '@shared/ui/chart';
+import { EChart } from '@shared/ui/echart';
+import {
+  resolveCssColor,
+  tooltipBase,
+  tooltipHtml,
+  useChartPalette,
+} from '@shared/lib/charts/echarts-chrome';
 import { ChartEmptyState } from '@shared/ui/ChartEmptyState';
 import { useUiStore } from '@shared/store/useUiStore';
 import { formatMaskedAmount } from '@shared/lib/privacy/mask-numbers';
-import { CHART_COLORS } from './chart-viewer/chart-viewer.utils';
 
 export interface SpendingDonutDatum {
   /** Display name (legend + tooltip). */
@@ -41,6 +46,7 @@ export function SpendingDonutChart<T extends SpendingDonutDatum>({
 }: SpendingDonutChartProps<T>) {
   const globalLocalizer = useUiStore((state) => state.globalLocalizer);
   const privacyMaskNumbers = useUiStore((state) => state.privacyMaskNumbers);
+  const palette = useChartPalette();
 
   const chartData = useMemo(
     () => data.filter((item) => item.value > 0).sort((a, b) => b.value - a.value),
@@ -48,17 +54,54 @@ export function SpendingDonutChart<T extends SpendingDonutDatum>({
   );
 
   const colorFor = useCallback(
-    (item: T, index: number) => item.color || CHART_COLORS[index % CHART_COLORS.length],
-    []
+    (item: T, index: number) => item.color || palette.series[index % palette.series.length],
+    [palette]
   );
 
-  const chartConfig = useMemo<ChartConfig>(() => {
-    const config: ChartConfig = {};
-    chartData.forEach((item, index) => {
-      config[item.name] = { label: item.name, color: colorFor(item, index) };
-    });
-    return config;
-  }, [chartData, colorFor]);
+  const option = useMemo<EChartsCoreOption>(() => {
+    const { chrome } = palette;
+    // resolveCssColor: entity colors may be CSS vars, which canvas ignores.
+    const sliceColor = (item: SpendingDonutDatum, index: number) =>
+      item.color ? resolveCssColor(item.color) : palette.series[index % palette.series.length];
+
+    return {
+      tooltip: {
+        ...tooltipBase(chrome),
+        trigger: 'item' as const,
+        formatter: (params: unknown) => {
+          const item = params as { name: string; value: number; color?: string };
+          return tooltipHtml(item.name, [
+            {
+              color: typeof item.color === 'string' ? item.color : chrome.other,
+              name: '',
+              value: formatMaskedAmount(globalLocalizer, item.value, privacyMaskNumbers),
+            },
+          ]);
+        },
+      },
+      series: [
+        {
+          type: 'pie' as const,
+          radius: ['48%', '76%'],
+          padAngle: 1,
+          data: chartData.map((item, index) => ({
+            name: item.name,
+            value: item.value,
+            itemStyle: {
+              color: sliceColor(item, index),
+              borderColor: chrome.surface,
+              borderWidth: 2,
+            },
+          })),
+          // No slice labels: this card already has a full legend below and a
+          // tooltip — leader-line labels just collide on the small canvas.
+          label: { show: false },
+          labelLine: { show: false },
+          emphasis: { scaleSize: 4 },
+        },
+      ],
+    };
+  }, [chartData, palette, globalLocalizer, privacyMaskNumbers]);
 
   if (isLoading) {
     return (
@@ -77,52 +120,19 @@ export function SpendingDonutChart<T extends SpendingDonutDatum>({
   return (
     <div className="space-y-3">
       <div className="h-[250px]">
-        <ChartContainer config={chartConfig} className="h-full w-full">
-          <PieChart>
-            <Pie
-              data={chartData}
-              cx="50%"
-              cy="50%"
-              innerRadius={50}
-              outerRadius={90}
-              paddingAngle={2}
-              dataKey="value"
-            >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${entry.name}`}
-                  fill={colorFor(entry, index)}
-                  style={interactive ? { cursor: 'pointer' } : undefined}
-                  onClick={interactive ? () => onSliceClick?.(entry) : undefined}
-                />
-              ))}
-            </Pie>
-            <ChartTooltip
-              content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const slice = payload[0];
-                return (
-                  <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="h-2 w-2 rounded-full"
-                        style={{ backgroundColor: slice.color }}
-                      />
-                      <span className="font-medium">{slice.name}</span>
-                    </div>
-                    <div className="mt-1 font-mono text-sm">
-                      {formatMaskedAmount(
-                        globalLocalizer,
-                        slice.value as number,
-                        privacyMaskNumbers
-                      )}
-                    </div>
-                  </div>
-                );
-              }}
-            />
-          </PieChart>
-        </ChartContainer>
+        <EChart
+          option={option}
+          ariaLabel="Spending breakdown donut chart"
+          className="h-[250px]"
+          onMarkClick={
+            onSliceClick
+              ? ({ dataIndex }) => {
+                  const item = chartData[dataIndex];
+                  if (item) onSliceClick(item);
+                }
+              : undefined
+          }
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-2">

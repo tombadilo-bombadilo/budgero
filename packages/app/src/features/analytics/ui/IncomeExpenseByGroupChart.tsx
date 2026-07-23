@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { parseISO, format } from 'date-fns';
-import {
-  ResponsiveContainer,
-  ComposedChart,
-  Bar,
-  Line,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-} from 'recharts';
+import type { EChartsCoreOption } from 'echarts/core';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
-import { ChartContainer, ChartConfig, ChartTooltip } from '@shared/ui/chart';
+import { EChart } from '@shared/ui/echart';
+import {
+  useChartPalette,
+  tooltipBase,
+  tooltipHtml,
+  BAR_MAX_WIDTH,
+  BAR_RADIUS_TOP,
+  BAR_RADIUS_BOTTOM,
+  type TooltipRow,
+} from '@shared/lib/charts/echarts-chrome';
 import { useUiStore } from '@shared/store/useUiStore';
 import { useIncomeExpenseByPeriod } from '@features/analytics/api/useAnalyticsQueries';
 import { useAccounts } from '@entities/account/api/useAccounts';
@@ -40,10 +41,6 @@ const groupingOptions: { value: Grouping; label: string }[] = [
 ];
 
 type Grouping = 'day' | 'week' | 'month' | 'quarter';
-
-const incomeColor = 'var(--color-chart-1)';
-const expenseColor = 'var(--color-destructive)';
-const netWorthColor = 'var(--color-chart-4)';
 
 interface ChartDatum {
   periodKey: string;
@@ -220,24 +217,121 @@ export function IncomeExpenseByGroupChart() {
   }, [data, grouping, currentNetWorth]);
 
   const compactFormatter = useCompactNumberFormat();
+  const palette = useChartPalette();
 
-  const chartConfig = useMemo<ChartConfig>(
-    () => ({
-      income: {
-        label: 'Income',
-        color: incomeColor,
+  const option = useMemo<EChartsCoreOption>(() => {
+    const { chrome } = palette;
+    const incomeColor = palette.flow.positive;
+    const expenseColor = palette.flow.negative;
+    const netWorthColor = palette.series[0];
+
+    const axisValueLabel = (value: number) =>
+      maskFormattedIfEnabled(compactFormatter.format(value), privacyMaskNumbers);
+
+    const valueAxisBase = {
+      type: 'value' as const,
+      axisLine: { show: false },
+      axisLabel: {
+        color: chrome.axisText,
+        fontSize: 11,
+        formatter: axisValueLabel,
       },
-      expense: {
-        label: 'Expense',
-        color: expenseColor,
+    };
+
+    return {
+      grid: { left: 8, right: 16, top: 16, bottom: 4, containLabel: true },
+      xAxis: {
+        type: 'category' as const,
+        data: chartData.map((datum) => datum.label),
+        axisLine: { lineStyle: { color: chrome.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: chrome.axisText, fontSize: 11, hideOverlap: true },
       },
-      netWorth: {
-        label: 'Net Worth',
-        color: netWorthColor,
+      yAxis: [
+        {
+          ...valueAxisBase,
+          splitLine: { lineStyle: { color: chrome.grid, width: 1 } },
+        },
+        {
+          ...valueAxisBase,
+          position: 'right' as const,
+          splitLine: { show: false },
+        },
+      ],
+      tooltip: {
+        ...tooltipBase(chrome),
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: chrome.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { dataIndex: number }[];
+          const datum = chartData[items[0]?.dataIndex ?? 0];
+          if (!datum) return '';
+          const rows: TooltipRow[] = [
+            {
+              color: incomeColor,
+              name: 'Income',
+              value: formatMaskedAmount(globalLocalizer, datum.income, privacyMaskNumbers),
+            },
+            {
+              color: expenseColor,
+              name: 'Expense',
+              value: formatMaskedAmount(
+                globalLocalizer,
+                Math.abs(datum.expense),
+                privacyMaskNumbers
+              ),
+            },
+            {
+              color: chrome.inkPrimary,
+              name: 'Net',
+              value: formatMaskedAmount(globalLocalizer, datum.net, privacyMaskNumbers),
+            },
+          ];
+          if (typeof datum.netWorth === 'number') {
+            rows.push({
+              color: netWorthColor,
+              name: 'Net worth',
+              value: formatMaskedAmount(globalLocalizer, datum.netWorth, privacyMaskNumbers),
+            });
+          }
+          return tooltipHtml(datum.rangeLabel, rows);
+        },
       },
-    }),
-    []
-  );
+      series: [
+        {
+          name: 'Income',
+          type: 'bar' as const,
+          stack: 'net',
+          yAxisIndex: 0,
+          data: chartData.map((datum) => datum.income),
+          barMaxWidth: BAR_MAX_WIDTH,
+          itemStyle: { color: incomeColor, borderRadius: BAR_RADIUS_TOP },
+        },
+        {
+          name: 'Expense',
+          type: 'bar' as const,
+          stack: 'net',
+          yAxisIndex: 0,
+          data: chartData.map((datum) => datum.expense),
+          barMaxWidth: BAR_MAX_WIDTH,
+          itemStyle: { color: expenseColor, borderRadius: BAR_RADIUS_BOTTOM },
+        },
+        {
+          name: 'Net worth',
+          type: 'line' as const,
+          yAxisIndex: 1,
+          data: chartData.map((datum) => datum.netWorth),
+          connectNulls: true,
+          lineStyle: { color: netWorthColor, width: 2 },
+          itemStyle: { color: netWorthColor, borderColor: chrome.surface, borderWidth: 2 },
+          symbol: 'circle',
+          symbolSize: 8,
+          showSymbol: chartData.length <= 30,
+          z: 3,
+        },
+      ],
+    };
+  }, [chartData, palette, compactFormatter, privacyMaskNumbers, globalLocalizer]);
 
   return (
     <Card className="shadow-sm">
@@ -342,137 +436,11 @@ export function IncomeExpenseByGroupChart() {
           </div>
         ) : (
           <div className="h-[320px]">
-            <ChartContainer config={chartConfig} className="h-full w-full -mx-1 sm:mx-0">
-              <ResponsiveContainer>
-                <ComposedChart
-                  data={chartData}
-                  margin={{ top: 32, bottom: 24, left: 0, right: 12 }}
-                  stackOffset="sign"
-                >
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.4} />
-                  <XAxis
-                    dataKey="label"
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={8}
-                    fontSize={11}
-                  />
-                  <YAxis
-                    yAxisId="flows"
-                    tickLine={false}
-                    axisLine={false}
-                    width={56}
-                    fontSize={11}
-                    tickFormatter={(value: number) =>
-                      maskFormattedIfEnabled(compactFormatter.format(value), privacyMaskNumbers)
-                    }
-                  />
-                  <YAxis
-                    yAxisId="netWorth"
-                    orientation="right"
-                    tickLine={false}
-                    axisLine={false}
-                    width={56}
-                    fontSize={11}
-                    tickFormatter={(value: number) =>
-                      maskFormattedIfEnabled(compactFormatter.format(value), privacyMaskNumbers)
-                    }
-                  />
-                  <ChartTooltip
-                    cursor={{ fill: 'var(--color-muted)', opacity: 0.1 }}
-                    content={({ active, payload }) => {
-                      if (!active || !payload?.length) return null;
-                      const datum = payload[0].payload as ChartDatum;
-
-                      return (
-                        <div className="rounded-lg border border-border/50 bg-background px-3 py-2 text-xs shadow-xl">
-                          <div className="font-medium text-foreground">{datum.rangeLabel}</div>
-                          <div className="mt-2 grid gap-1.5">
-                            <div className="flex items-center justify-between gap-4">
-                              <span className="text-muted-foreground">Income</span>
-                              <span className="font-mono">
-                                {formatMaskedAmount(
-                                  globalLocalizer,
-                                  datum.income,
-                                  privacyMaskNumbers
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between gap-4">
-                              <span className="text-muted-foreground">Expense</span>
-                              <span className="font-mono">
-                                {formatMaskedAmount(
-                                  globalLocalizer,
-                                  Math.abs(datum.expense),
-                                  privacyMaskNumbers
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between gap-4 border-t border-border/60 pt-1">
-                              <span className="text-muted-foreground">Net</span>
-                              <span className="font-mono">
-                                {formatMaskedAmount(globalLocalizer, datum.net, privacyMaskNumbers)}
-                              </span>
-                            </div>
-                            {typeof datum.netWorth === 'number' && (
-                              <div className="flex items-center justify-between gap-4">
-                                <span className="text-muted-foreground">Net worth</span>
-                                <span className="font-mono">
-                                  {formatMaskedAmount(
-                                    globalLocalizer,
-                                    datum.netWorth,
-                                    privacyMaskNumbers
-                                  )}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    }}
-                  />
-                  <Bar
-                    yAxisId="flows"
-                    dataKey="income"
-                    stackId="net"
-                    fill={incomeColor}
-                    radius={[4, 4, 0, 0]}
-                    fillOpacity={0.95}
-                    name="Income"
-                  />
-                  <Bar
-                    yAxisId="flows"
-                    dataKey="expense"
-                    stackId="net"
-                    fill={expenseColor}
-                    radius={[0, 0, 4, 4]}
-                    fillOpacity={0.95}
-                    name="Expense"
-                  />
-                  <Line
-                    yAxisId="netWorth"
-                    type="monotone"
-                    dataKey="netWorth"
-                    stroke={netWorthColor}
-                    strokeWidth={2.5}
-                    dot={{
-                      r: 3,
-                      stroke: netWorthColor,
-                      strokeWidth: 2,
-                      fill: 'var(--color-background)',
-                    }}
-                    activeDot={{
-                      r: 5,
-                      stroke: netWorthColor,
-                      strokeWidth: 2,
-                      fill: 'var(--color-background)',
-                    }}
-                    name="Net worth"
-                    connectNulls
-                  />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </ChartContainer>
+            <EChart
+              option={option}
+              ariaLabel="Income vs expense trend chart"
+              className="h-[320px] w-full"
+            />
           </div>
         )}
       </CardContent>
