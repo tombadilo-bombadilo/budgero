@@ -566,3 +566,118 @@ describe('Analytics projections', () => {
     expect(byPayees.some((row) => row.Payee === 'Streaming' && row.Spending > 0)).toBe(true);
   });
 });
+
+describe('Recurring transfers to off-budget accounts', () => {
+  async function setupWithOffBudget() {
+    const base = await setup();
+    const brokerage = await base.services.accounts.createAccount(
+      'Brokerage',
+      base.budgetId,
+      'investment',
+      'USD',
+      0,
+      {},
+      false
+    );
+    return { ...base, brokerage };
+  }
+
+  it('keeps a custom category when the destination is off-budget', async () => {
+    const { services, budgetId, account, categoryId, brokerage } = await setupWithOffBudget();
+    const today = new Date();
+
+    const template = await services.recurring.createRecurringTransaction({
+      budgetId,
+      accountId: account.ID,
+      toAccountId: brokerage.ID,
+      categoryId,
+      name: 'Monthly investing',
+      amount: 300,
+      direction: 'outflow',
+      schedule: { startDate: isoDate(today), intervalUnit: 'month', intervalCount: 1 },
+    });
+
+    // Custom category survives: on-budget → off-budget books as spending.
+    expect(template.categoryId).toBe(categoryId);
+    expect(template.direction).toBe('outflow');
+  });
+
+  it('posts the source leg with the custom category', async () => {
+    const { services, budgetId, account, categoryId, brokerage } = await setupWithOffBudget();
+    const today = new Date();
+
+    await services.recurring.createRecurringTransaction({
+      budgetId,
+      accountId: account.ID,
+      toAccountId: brokerage.ID,
+      categoryId,
+      name: 'Monthly investing',
+      amount: 300,
+      direction: 'outflow',
+      schedule: { startDate: isoDate(today), intervalUnit: 'month', intervalCount: 1 },
+    });
+
+    const occurrences = services.recurring.listOccurrences(budgetId, { status: 'scheduled' });
+    const result = await services.recurring.markOccurrenceReady({
+      occurrenceId: occurrences[0].id,
+    });
+
+    const sourceLeg = services.transactions
+      .getTransactionsByAccount(account.ID)
+      .find((tx) => tx.ID === result.transactionId);
+    expect(sourceLeg?.Category).toBe('Utilities');
+    expect(sourceLeg?.TransferID).toBeTruthy();
+  });
+
+  it('still coerces to Transfers without a custom category, and on updates that land on-budget', async () => {
+    const { services, budgetId, account, brokerage } = await setupWithOffBudget();
+    const savings = await services.accounts.createAccount(
+      'Savings2',
+      budgetId,
+      'savings',
+      'USD',
+      0,
+      {},
+      true
+    );
+    const today = new Date();
+
+    const template = await services.recurring.createRecurringTransaction({
+      budgetId,
+      accountId: account.ID,
+      toAccountId: brokerage.ID,
+      name: 'Uncategorized move',
+      amount: 100,
+      direction: 'outflow',
+      schedule: { startDate: isoDate(today), intervalUnit: 'month', intervalCount: 1 },
+    });
+    const transfersCategory = services.categories.getCategoryByName('Transfers', budgetId);
+    expect(template.categoryId).toBe(transfersCategory?.ID);
+
+    // Repoint an on→off categorized transfer at an on-budget destination:
+    // the stale custom category must coerce back to Transfers.
+    const { categoryId } = await setupCategory(services, budgetId);
+    const categorized = await services.recurring.createRecurringTransaction({
+      budgetId,
+      accountId: account.ID,
+      toAccountId: brokerage.ID,
+      categoryId,
+      name: 'Repointed',
+      amount: 100,
+      direction: 'outflow',
+      schedule: { startDate: isoDate(today), intervalUnit: 'month', intervalCount: 1 },
+    });
+    const repointed = await services.recurring.updateRecurringTransaction(categorized.id, {
+      toAccountId: savings.ID,
+    });
+    expect(repointed.categoryId).toBe(transfersCategory?.ID);
+  });
+});
+
+async function setupCategory(
+  services: Awaited<ReturnType<typeof setup>>['services'],
+  budgetId: number
+) {
+  const groupId = services.categories.addCategoryGroup('Investing Group', budgetId);
+  return { categoryId: services.categories.addCategory(groupId, budgetId, 'Investing') };
+}

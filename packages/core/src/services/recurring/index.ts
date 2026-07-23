@@ -310,7 +310,8 @@ export class RecurringTransactionService {
   private normalizeTransferFields(
     budgetId: number,
     accountId: number,
-    toAccountId: number | null
+    toAccountId: number | null,
+    requestedCategoryId: number | null = null
   ): { direction: 'outflow'; categoryId: number } | null {
     if (toAccountId == null) return null;
     if (toAccountId === accountId) {
@@ -319,10 +320,22 @@ export class RecurringTransactionService {
         'toAccountId'
       );
     }
-    return {
-      direction: 'outflow',
-      categoryId: ensureTransferCategory(this.categories, budgetId),
-    };
+    const transfersCategory = ensureTransferCategory(this.categories, budgetId);
+    // A custom category is only meaningful when the money LEAVES the budget:
+    // an on-budget → off-budget transfer books as categorized spending (the
+    // posted source leg carries this category). Every other combination
+    // coerces to the Transfers category so budget math stays intact.
+    if (requestedCategoryId != null && requestedCategoryId !== transfersCategory) {
+      const isOnBudget = (id: number) =>
+        Number(
+          getRow<{ OnBudget: number }>(this.db, 'SELECT OnBudget FROM accounts WHERE ID = ?', id)
+            ?.OnBudget ?? 0
+        ) === 1;
+      if (isOnBudget(accountId) && !isOnBudget(toAccountId)) {
+        return { direction: 'outflow', categoryId: requestedCategoryId };
+      }
+    }
+    return { direction: 'outflow', categoryId: transfersCategory };
   }
 
   listRecurringTransactions(budgetId: number, includeInactive = false): RecurringTransaction[] {
@@ -358,7 +371,8 @@ export class RecurringTransactionService {
     const transferFields = this.normalizeTransferFields(
       input.budgetId,
       input.accountId,
-      toAccountId
+      toAccountId,
+      input.categoryId ?? null
     );
 
     const result = run(
@@ -410,7 +424,8 @@ export class RecurringTransactionService {
     const transferFields = this.normalizeTransferFields(
       existing.budgetId,
       effectiveAccountId,
-      effectiveToAccountId
+      effectiveToAccountId,
+      patch.categoryId !== undefined ? (patch.categoryId ?? null) : existing.categoryId
     );
 
     const fields: string[] = [];
@@ -425,7 +440,8 @@ export class RecurringTransactionService {
       params.push(patch.toAccountId ?? null);
     }
     if (transferFields) {
-      // Transfers pin direction and category; ignore whatever the patch says.
+      // Transfers pin the direction; category comes from normalizeTransferFields
+      // (custom only for on-budget → off-budget, else coerced to Transfers).
       fields.push('Direction = ?');
       params.push(transferFields.direction);
       fields.push('CategoryID = ?');

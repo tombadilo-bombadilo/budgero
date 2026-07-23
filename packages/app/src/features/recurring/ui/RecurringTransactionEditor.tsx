@@ -264,12 +264,30 @@ export function RecurringTransactionEditor({
 
   const isTransfer = formValues.type === 'transfer';
 
+  // A category on a transfer is only meaningful when money leaves the budget
+  // (on-budget source → off-budget destination); it then books as spending.
+  const sourceAccount = accounts.find((account) => String(account.ID) === formValues.accountId);
+  const destinationAccount = accounts.find(
+    (account) => String(account.ID) === formValues.toAccountId
+  );
+  const allowTransferCategory =
+    isTransfer &&
+    Boolean(sourceAccount?.OnBudget) &&
+    destinationAccount !== undefined &&
+    !destinationAccount.OnBudget;
+
   const handleSubmit = async () => {
     const amount = Number(formValues.amount);
     const accountId = formValues.accountId ? Number(formValues.accountId) : null;
     const toAccountId =
       isTransfer && formValues.toAccountId ? Number(formValues.toAccountId) : null;
-    const categoryId = !isTransfer && formValues.categoryId ? Number(formValues.categoryId) : null;
+    const categoryId = isTransfer
+      ? allowTransferCategory && formValues.categoryId
+        ? Number(formValues.categoryId)
+        : null
+      : formValues.categoryId
+        ? Number(formValues.categoryId)
+        : null;
     const notifyDaysBefore = Math.max(0, Number(formValues.notifyDaysBefore || '0'));
 
     await onSubmit({
@@ -359,29 +377,66 @@ export function RecurringTransactionEditor({
         </div>
 
         {isTransfer ? (
-          <Field
-            label="To account"
-            className="space-y-2"
-            hint="The transfer is categorized automatically."
-          >
-            <Select
-              value={formValues.toAccountId}
-              onValueChange={(value) => setFormValues((prev) => ({ ...prev, toAccountId: value }))}
+          <>
+            <Field
+              label="To account"
+              className="space-y-2"
+              hint={
+                allowTransferCategory
+                  ? 'Money leaving the budget — you can book it as spending below.'
+                  : 'The transfer is categorized automatically.'
+              }
             >
-              <SelectTrigger data-testid="recurring-to-account-select">
-                <SelectValue placeholder="Choose destination account" />
-              </SelectTrigger>
-              <SelectContent>
-                {accounts
-                  .filter((account) => String(account.ID) !== formValues.accountId)
-                  .map((account) => (
-                    <SelectItem key={account.ID} value={String(account.ID)}>
-                      {account.Name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </Field>
+              <Select
+                value={formValues.toAccountId}
+                onValueChange={(value) =>
+                  setFormValues((prev) => ({ ...prev, toAccountId: value }))
+                }
+              >
+                <SelectTrigger data-testid="recurring-to-account-select">
+                  <SelectValue placeholder="Choose destination account" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts
+                    .filter((account) => String(account.ID) !== formValues.accountId)
+                    .map((account) => (
+                      <SelectItem key={account.ID} value={String(account.ID)}>
+                        {account.Name}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </Field>
+            {allowTransferCategory ? (
+              <Field
+                label="Spending category (optional)"
+                className="space-y-2"
+                hint="Leave empty to reduce Ready to Assign instead of a category."
+              >
+                <Select
+                  value={formValues.categoryId || 'transfers-default'}
+                  onValueChange={(value) =>
+                    setFormValues((prev) => ({
+                      ...prev,
+                      categoryId: value === 'transfers-default' ? '' : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger data-testid="recurring-transfer-category-select">
+                    <SelectValue placeholder="None — reduce Ready to Assign" />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-72">
+                    <SelectItem value="transfers-default">None — reduce Ready to Assign</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.ID} value={String(category.ID)}>
+                        {category.Name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            ) : null}
+          </>
         ) : (
           <Field label="Category" className="space-y-2">
             <Select
