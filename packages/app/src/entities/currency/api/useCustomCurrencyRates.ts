@@ -11,6 +11,7 @@ type AddCustomCurrencyRateInput = {
   startDate: string;
   endDate: string | null;
   budgetId: number;
+  alsoReverse?: boolean;
 };
 
 type UpdateCustomCurrencyRateInput = {
@@ -53,6 +54,7 @@ export function useAddCustomCurrencyRate() {
           startDate: input.startDate,
           endDate: input.endDate,
           budgetId: input.budgetId,
+          alsoReverse: input.alsoReverse ?? false,
         },
         meta: { label: 'useAddCustomCurrencyRate' },
       });

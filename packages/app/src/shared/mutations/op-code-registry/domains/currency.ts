@@ -15,7 +15,8 @@ export const currencyOps = {
         args.rate as number,
         args.startDate as string,
         (args.endDate as string | null) ?? null,
-        args.budgetId as number
+        args.budgetId as number,
+        (args.alsoReverse as boolean | undefined) ?? false
       );
     },
     invalidates: CURRENCY_INVALIDATION_KEYS,

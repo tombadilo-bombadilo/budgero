@@ -450,8 +450,12 @@ export class CurrencyService {
     rate: number,
     startDate: string,
     endDate: string | null,
-    budgetId: number
-  ): Promise<{ id: number; recalculated: number }> {
+    budgetId: number,
+    /** Also store the explicit reverse pair (to→from at 1/rate) as its own
+     * visible row. Lookups derive the reverse either way; this makes it
+     * editable and listed. */
+    alsoReverse = false
+  ): Promise<{ id: number; reverseId: number | null; recalculated: number }> {
     const id = this.queries.insertCustomCurrencyRate(
       fromCurrency,
       toCurrency,
@@ -460,6 +464,17 @@ export class CurrencyService {
       endDate,
       budgetId
     );
+    let reverseId: number | null = null;
+    if (alsoReverse && isFinite(rate) && rate > 0) {
+      reverseId = this.queries.insertCustomCurrencyRate(
+        toCurrency,
+        fromCurrency,
+        1 / rate,
+        startDate,
+        endDate,
+        budgetId
+      );
+    }
     const recalculated = await this.recalculateTransactionsForDateRange(
       fromCurrency,
       toCurrency,
@@ -467,7 +482,16 @@ export class CurrencyService {
       endDate,
       budgetId
     );
-    return { id, recalculated };
+    const reverseRecalculated = alsoReverse
+      ? await this.recalculateTransactionsForDateRange(
+          toCurrency,
+          fromCurrency,
+          startDate,
+          endDate,
+          budgetId
+        )
+      : 0;
+    return { id, reverseId, recalculated: recalculated + reverseRecalculated };
   }
 
   async updateCustomRate(

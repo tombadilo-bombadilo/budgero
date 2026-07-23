@@ -4,8 +4,8 @@ import { toast } from 'sonner';
 import { Calendar as CalendarIcon, Coins, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
-import { Input } from '@shared/ui/input';
 import { Label } from '@shared/ui/label';
+import { Checkbox } from '@shared/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { MonthYearCalendar } from '@shared/ui/MonthYearCalendar';
 import {
@@ -18,6 +18,7 @@ import {
 } from '@shared/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { ConfirmDialog } from '@shared/ui/confirm-dialog';
+import { CalculatorCellDecimal } from '@shared/ui/calculator-cell';
 import { CurrencySelector } from '@features/currencies/ui/CurrencySelector';
 import { SettingsPageHeader } from '@pages/settings/SettingsPageHeader';
 import { useUiStore } from '@shared/store/useUiStore';
@@ -39,6 +40,8 @@ interface RateFormData {
   rate: string;
   startDate: Date | null;
   endDate: Date | null;
+  /** Add flow only: also store the explicit reverse pair (on by default). */
+  alsoReverse: boolean;
 }
 
 const emptyForm: RateFormData = {
@@ -47,6 +50,7 @@ const emptyForm: RateFormData = {
   rate: '',
   startDate: new Date(),
   endDate: null,
+  alsoReverse: true,
 };
 
 /** Format a Date to YYYY-MM-DD string for storage */
@@ -180,31 +184,77 @@ function RateFormDialog({
           {/* Rate section */}
           <div className="space-y-1.5">
             <Label className="text-sm">Exchange Rate</Label>
-            {/* Plain decimal input: exchange rates are dimensionless (up to
-                EXCHANGE_RATE_PRECISION decimals), while CalculatorCell speaks
-                integer MilliUnits and would round rates to 3 decimals. */}
-            <Input
-              value={formData.rate}
-              onChange={(e) => setFormData((f) => ({ ...f, rate: e.target.value }))}
-              onBlur={() => {
-                const parsed = Number.parseFloat(formData.rate);
-                if (Number.isFinite(parsed)) {
-                  setFormData((f) => ({
-                    ...f,
-                    rate: String(Number(parsed.toFixed(EXCHANGE_RATE_PRECISION))),
-                  }));
-                }
-              }}
+            {/* Decimal-contract calculator cell: rates are dimensionless and
+                need EXCHANGE_RATE_PRECISION decimals — the MilliUnits cell
+                would round them to 3. */}
+            <CalculatorCellDecimal
+              value={Number.parseFloat(formData.rate) || 0}
+              onCommit={(value) =>
+                setFormData((f) => ({
+                  ...f,
+                  rate: value > 0 ? String(Number(value.toFixed(EXCHANGE_RATE_PRECISION))) : '',
+                }))
+              }
+              commitPrecision={EXCHANGE_RATE_PRECISION}
+              formatter={(value) => formatExchangeRate(value)}
               placeholder="e.g. 1.0845"
-              inputMode="decimal"
-              className="h-9 text-right"
+              inputAlign="right"
+              zeroAsEmpty
+              className="w-full"
               data-testid="rate-input"
             />
             {formData.fromCurrency && formData.toCurrency && formData.rate && (
               <p className="text-xs text-muted-foreground mt-1">
                 1 {formData.fromCurrency} = {formData.rate} {formData.toCurrency}
+                {editing &&
+                  (() => {
+                    const parsed = Number.parseFloat(formData.rate);
+                    if (!Number.isFinite(parsed) || parsed <= 0) return null;
+                    return (
+                      <>
+                        {' · '}the reverse (1 {formData.toCurrency} ={' '}
+                        {Number((1 / parsed).toFixed(EXCHANGE_RATE_PRECISION))}{' '}
+                        {formData.fromCurrency}) is applied automatically
+                      </>
+                    );
+                  })()}
               </p>
             )}
+            {!editing &&
+              formData.fromCurrency &&
+              formData.toCurrency &&
+              (() => {
+                const parsed = Number.parseFloat(formData.rate);
+                const reverseValue =
+                  Number.isFinite(parsed) && parsed > 0
+                    ? Number((1 / parsed).toFixed(EXCHANGE_RATE_PRECISION))
+                    : null;
+                return (
+                  <div className="mt-2 flex items-start gap-2">
+                    <Checkbox
+                      id="also-reverse-rate"
+                      checked={formData.alsoReverse}
+                      onCheckedChange={(checked) =>
+                        setFormData((f) => ({ ...f, alsoReverse: checked === true }))
+                      }
+                    />
+                    <div>
+                      <Label htmlFor="also-reverse-rate" className="text-sm font-normal">
+                        Also add the reverse rate
+                        {reverseValue !== null
+                          ? ` (1 ${formData.toCurrency} = ${reverseValue} ${formData.fromCurrency})`
+                          : ''}
+                      </Label>
+                      {!formData.alsoReverse && (
+                        <p className="text-xs text-muted-foreground">
+                          Conversions still derive the reverse automatically; unchecking only skips
+                          the visible second entry.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
           </div>
 
           {/* Date range section */}
@@ -274,6 +324,7 @@ export default function CurrencySettingsPage() {
       rate: rate.Rate.toString(),
       startDate: fromDateString(rate.StartDate),
       endDate: rate.EndDate ? fromDateString(rate.EndDate) : null,
+      alsoReverse: false,
     });
     setDialogOpen(true);
   };
@@ -322,6 +373,7 @@ export default function CurrencySettingsPage() {
           startDate: startDateStr,
           endDate: endDateStr,
           budgetId,
+          alsoReverse: formData.alsoReverse,
         });
         const count = (result as { recalculatedCount?: number })?.recalculatedCount ?? 0;
         toast.success('Rate added', {
