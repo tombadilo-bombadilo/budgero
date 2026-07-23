@@ -266,11 +266,13 @@ export default function AccountsPage() {
           <h1 className="text-xl sm:text-2xl font-bold">Accounts</h1>
           <PeriodTabs value={dateRange} onChange={setDateRange} defaultPeriod="1M" />
         </div>
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {uncategorizedData && uncategorizedData.total > 0 && (
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-destructive/10 text-destructive rounded-md">
-              <AlertCircle className="h-4 w-4" />
-              <span className="text-sm font-medium">{uncategorizedData.total} uncategorized</span>
+            <div className="flex shrink-0 items-center gap-2 rounded-md bg-destructive/10 px-3 py-1.5 text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span className="whitespace-nowrap text-sm font-medium">
+                {uncategorizedData.total} uncategorized
+              </span>
             </div>
           )}
           {archivedAccountsData.length > 0 && (
