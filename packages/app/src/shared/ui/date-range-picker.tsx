@@ -216,7 +216,9 @@ export function DateRangePicker({
                     <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
                       {label}
                     </span>
-                    {fieldDate ? format(fieldDate, 'PP') : 'Pick a date'}
+                    <span className="whitespace-nowrap">
+                      {fieldDate ? format(fieldDate, "MMM d, ''yy") : 'Pick a date'}
+                    </span>
                   </button>
                 );
               })}
