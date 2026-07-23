@@ -16,11 +16,79 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.6.0',
+    date: 'July 23, 2026',
+    summary:
+      'A rebuilt Analytics experience: question-based reports, a scenario planner for stress-testing your finances, and smoother charts everywhere.',
+    isLatest: true,
+    items: [
+      {
+        type: 'new',
+        title: 'Prebuilt reports, rebuilt around your questions',
+        description:
+          'The Prebuilt page now answers the questions a household actually asks: Wealth (am I growing?), Spending (where does it go?), In vs Out (within our means?), Plan vs Reality (did the budget hold?), Money Map, and Ledger. Each report opens with plain-language insights computed from your data, and the Wealth forecast shows an honest 95% confidence band with real statistics.',
+      },
+      {
+        type: 'new',
+        title: 'Scenario Planner',
+        description:
+          "Stress-test your finances: start from your selected accounts' balance, scale monthly income and spending with sliders, drop in dated one-off inflows or outflows (a car repair, a bonus), and see exactly when — or whether — your balance would break. Choose between four baseline models, from flat average to seasonal patterns, and save scenarios to revisit later.",
+      },
+      {
+        type: 'new',
+        title: 'Plan vs Reality report',
+        description:
+          'The report only a budgeting app can make: what you assigned each month against what you actually spent, which categories chronically run over their assignment, and how well your goals are being funded.',
+      },
+      {
+        type: 'new',
+        title: 'Categories on recurring transfers to off-budget accounts',
+        description:
+          'A recurring transfer that leaves your budget (like monthly investing) can now book as spending in a category of your choice, instead of always reducing Ready to Assign.',
+      },
+      {
+        type: 'new',
+        title: 'Automatic reverse exchange rates',
+        description:
+          'Adding a custom exchange rate now shows the computed reverse rate and creates it as its own entry by default — no more entering both directions by hand.',
+      },
+      {
+        type: 'improved',
+        title: 'Faster, theme-native charts everywhere',
+        description:
+          'Every chart in the app moved to a new rendering engine: noticeably smoother interactions, tooltips and colors that follow all five themes and your chosen typeface, and a consistent visual language across analytics, dashboards, and AI-generated charts.',
+      },
+      {
+        type: 'improved',
+        title: 'Date range picker',
+        description:
+          "Explicit Start and End fields above the calendar — click a field, then a date, and you always know which end you're setting. Presets no longer truncate.",
+      },
+      {
+        type: 'fixed',
+        title: 'Saved report and AI chart date errors',
+        description:
+          'Dashboard widgets and AI charts whose queries compared dates with typed DATE literals failed with a binder error. They run again, including previously saved ones.',
+      },
+      {
+        type: 'fixed',
+        title: 'Theme toggle reverting itself',
+        description:
+          "Switching light/dark could silently revert if the preference save hadn't reached the server yet. Your choice now sticks.",
+      },
+      {
+        type: 'fixed',
+        title: 'Layout polish for monospace themes',
+        description:
+          'Badges, toggles, and dropdowns no longer truncate or wrap awkwardly under the wider monospace typefaces.',
+      },
+    ],
+  },
+  {
     version: 'v1.5.4',
     date: 'July 18, 2026',
     summary:
       'Precision fixes for no-decimal currency formats, zero-balance reconciliation, and self-host CLI repairs.',
-    isLatest: true,
     items: [
       {
         type: 'fixed',

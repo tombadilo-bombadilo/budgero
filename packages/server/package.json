@@ -1,6 +1,6 @@
 {
   "name": "@budgero/server",
-  "version": "1.5.4",
+  "version": "1.6.0",
   "license": "FSL-1.1-ALv2",
   "description": "Go backend server for Budgero web app",
   "private": true,
