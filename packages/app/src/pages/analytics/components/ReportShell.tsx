@@ -1,7 +1,6 @@
 import type { ComponentType, ReactNode } from 'react';
 import { Card } from '@shared/ui/card';
 import { Skeleton } from '@shared/ui/skeleton';
-import { ToggleGroup, ToggleGroupItem } from '@shared/ui/toggle-group';
 import { cn } from '@shared/lib/utils';
 
 export interface ModeOption<T extends string> {
@@ -21,25 +20,35 @@ export function ModeToggle<T extends string>({
   options: ModeOption<T>[];
   ariaLabel: string;
 }) {
+  // Same pill language as the report switcher: bordered card strip,
+  // primary-filled active pill — reads cleanly in every theme/typeface.
   return (
-    <ToggleGroup
-      type="single"
-      size="sm"
-      variant="outline"
-      className="flex-wrap justify-end"
-      value={value}
-      onValueChange={(next) => {
-        if (next) onChange(next as T);
-      }}
+    <div
+      role="group"
       aria-label={ariaLabel}
+      className="inline-flex flex-wrap items-center gap-1 rounded-lg border border-border/70 bg-card p-1"
     >
-      {options.map((option) => (
-        <ToggleGroupItem key={option.value} value={option.value} className="gap-1.5 px-3">
-          {option.icon ? <option.icon className="h-3.5 w-3.5" /> : null}
-          {option.label}
-        </ToggleGroupItem>
-      ))}
-    </ToggleGroup>
+      {options.map((option) => {
+        const active = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              'inline-flex items-center gap-1.5 whitespace-nowrap rounded-md px-3 py-1 text-sm transition-colors',
+              active
+                ? 'bg-primary font-medium text-primary-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+            )}
+          >
+            {option.icon ? <option.icon className="h-3.5 w-3.5" /> : null}
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
