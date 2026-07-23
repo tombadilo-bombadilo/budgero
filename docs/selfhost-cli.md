@@ -41,6 +41,14 @@ The process still loads `.env` from the working directory (using `godotenv`) bef
 | `WEBSOCKET_ALLOWED_ORIGINS` | localhost origins only | Comma-separated browser origins allowed to connect to sync (e.g. `https://budget.example.com,http://192.168.1.50:3001`). **Required for any non-localhost access** — without it the sync WebSocket is rejected and the app can't load the budget. Exact match on scheme/host/port, no wildcards. |
 | `LOG_LEVEL`                | `info`             | `debug`, `info`, `warn`, `error`               |
 | `CURRENCYLAYER_API_KEY`    | -                  | Optional: multi-currency conversion            |
+| `UPDATE_CHECK_DISABLED`    | `false`            | Set `true` to disable the update check entirely (see below) |
+| `UPDATE_CHECK_URL`         | Budgero cloud endpoint | Override the update-check source URL       |
+
+### Update check
+
+When someone opens the app, the server checks whether a newer Budgero release exists by calling `https://my.budgero.app/api/v1/version/latest` — at most once every 12 hours, cached in between. The request carries exactly three values: your install's version, its build sha, and the string `selfhost`. No instance ID, no user data, no cookies. On the receiving side these are aggregated into daily version counters so we know roughly how many installs exist and which versions are in use — nothing per-instance is stored.
+
+Set `UPDATE_CHECK_DISABLED=true` to turn this off completely; the app then reports its own version as latest and makes no unsolicited outbound calls. Air-gapped installs need no configuration — a failed check is cached quietly and the app behaves as if up to date.
 
 ### Docker deployment
 

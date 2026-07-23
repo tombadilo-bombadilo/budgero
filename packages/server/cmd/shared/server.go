@@ -19,6 +19,7 @@ import (
 	serverpkg "budgero-server"
 	"budgero-server/internal/adapter/driven/lemonsqueezy"
 	"budgero-server/internal/adapter/driven/sqlite"
+	"budgero-server/internal/adapter/driven/updatecheck"
 	"budgero-server/internal/adapter/driven/sqlite/sqlc"
 	"budgero-server/internal/adapter/driving/http/handler"
 	appmw "budgero-server/internal/adapter/driving/http/middleware"
@@ -26,6 +27,7 @@ import (
 	synchub "budgero-server/internal/adapter/driving/http/websocket"
 	"budgero-server/internal/application"
 	emailpkg "budgero-server/internal/application/email"
+	"budgero-server/internal/appmeta"
 	"budgero-server/internal/config"
 
 	"github.com/joho/godotenv"
@@ -206,7 +208,12 @@ func Run(selfHost bool) {
 		}
 	}
 
-	h := handler.NewHandlers(services, hub, handler.Options{SelfHost: selfHost, Config: cfg, Email: emailSvc})
+	h := handler.NewHandlers(services, hub, handler.Options{
+		SelfHost:      selfHost,
+		Config:        cfg,
+		Email:         emailSvc,
+		LatestVersion: newLatestVersionSource(cfg, selfHost),
+	})
 	if !selfHost {
 		h.StartProviderSyncLoop(context.Background(), time.Hour)
 	}
@@ -226,6 +233,36 @@ func Run(selfHost bool) {
 	log.Fatal().Err(server.ListenAndServe()).Msg("Server failed to start")
 }
 
+const (
+	defaultReleaseBucketLatestURL = "https://storage.googleapis.com/budgero_releases/latest.txt"
+	defaultCloudVersionURL        = "https://my.budgero.app/api/v1/version/latest"
+)
+
+// newLatestVersionSource builds the cached latest-version fetcher, or nil when
+// the update check is disabled or APP_LATEST_VERSION pins the answer. On
+// self-host the lookup runs at most every 12h and carries only version, build
+// sha and type — it is the app's sole unsolicited outbound call, documented as
+// such in docs/selfhost-cli.md.
+func newLatestVersionSource(cfg *config.Config, selfHost bool) handler.LatestVersionSource {
+	if cfg.UpdateCheck.Disabled || appmeta.HasLatestVersionOverride() {
+		return nil
+	}
+	url := cfg.UpdateCheck.URL
+	if selfHost {
+		if url == "" {
+			url = defaultCloudVersionURL
+		}
+		return updatecheck.NewServerProvider(
+			url, appmeta.BuildVersion(), os.Getenv("APP_BUILD_SHA"), "selfhost",
+			12*time.Hour, time.Hour,
+		)
+	}
+	if url == "" {
+		url = defaultReleaseBucketLatestURL
+	}
+	return updatecheck.NewBucketProvider(url, 10*time.Minute, time.Minute)
+}
+
 // WireServices creates all repositories and services (composition root).
 func WireServices(dbConn *sql.DB, cfg *config.Config, selfHost bool) *application.Services {
 	queries := sqlc.New(dbConn)
@@ -243,6 +280,7 @@ func WireServices(dbConn *sql.DB, cfg *config.Config, selfHost bool) *applicatio
 		DatabaseBrowser: sqlite.NewDatabaseBrowserRepository(dbConn),
 		TrialRewards:    sqlite.NewTrialRewardsRepository(queries),
 		Feedback:        sqlite.NewFeedbackRepository(dbConn),
+		UpdatePing:      sqlite.NewUpdatePingRepository(dbConn),
 		Queries:         queries,
 	}
 

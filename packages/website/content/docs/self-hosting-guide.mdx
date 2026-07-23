@@ -190,8 +190,19 @@ Each entry must match the browser's origin exactly: scheme, host, and port (when
       <td>-</td>
       <td>Optional: enables multi-currency conversion</td>
     </tr>
+    <tr>
+      <td><code>UPDATE_CHECK_DISABLED</code></td>
+      <td><code>false</code></td>
+      <td>Set <code>true</code> to disable the update check — see <a href="#update-check">Update check</a></td>
+    </tr>
   </tbody>
 </table>
+
+### Update check
+
+When someone opens the app, the server checks whether a newer Budgero release exists — at most once every 12 hours, cached in between. The request to <code>budgero.app</code> carries exactly three values: your install's version, its build sha, and the string <code>selfhost</code>. No instance ID, no user data, no cookies. We aggregate these into daily version counters to know roughly how many installs exist and which versions are in use — nothing per-instance is stored.
+
+Set <code>UPDATE_CHECK_DISABLED=true</code> to turn it off completely; the app then makes no unsolicited outbound calls. Air-gapped installs need no configuration — a failed check is cached quietly and the app just behaves as if it's up to date.
 
 ### First-run admin setup
 

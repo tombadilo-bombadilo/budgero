@@ -305,6 +305,16 @@ type FeedbackSubmission struct {
 	UserAgent   string
 }
 
+// UpdatePingService aggregates anonymous update-check pings into daily
+// (version, build, type) counters. Recording only happens on SaaS — the
+// /version/latest handler skips it in self-host mode — but the service is
+// wired in both builds.
+type UpdatePingService interface {
+	// Record counts one update check. Unknown client types are silently
+	// dropped — the endpoint is public and unauthenticated.
+	Record(ctx context.Context, version, build, clientType string) error
+}
+
 // TrialRewardsService defines trial behavior tracking and tiered-reward
 // operations (SaaS-only — gated off in self-host builds).
 type TrialRewardsService interface {

@@ -52,7 +52,7 @@ const comparisonData = [
     feature: 'Open source',
     budgero: false,
     firefly: true,
-    budgeroNote: 'Proprietary, self-hostable',
+    budgeroNote: 'Source-available (FSL), self-hostable',
     fireflyNote: 'AGPL, community-driven',
   },
   {
@@ -120,7 +120,7 @@ const faqs = [
   },
   {
     q: 'Is Budgero open source like Firefly III?',
-    a: 'No. Budgero is proprietary software that you can self-host for free with the full feature set. If open-source licensing is a hard requirement, Firefly III and Actual Budget are the right choices — and we genuinely recommend them for that case. If what you actually want is "my data on my server, no subscription", Budgero Self-Host delivers that without the license.',
+    a: 'Not OSI open source — Budgero is source-available. The full code is public on GitHub under the Functional Source License (read, audit, modify, self-host for free; no competing hosted services; converts to Apache 2.0 after two years). If OSI open-source licensing is a hard requirement, Firefly III and Actual Budget are the right choices — and we genuinely recommend them for that case. If what you actually want is "my data on my server, auditable code, no subscription", Budgero Self-Host delivers that.',
   },
   {
     q: 'How does multi-currency compare between Budgero and Firefly III?',

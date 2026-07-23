@@ -114,6 +114,7 @@ func NewTestServices(t *testing.T, selfHost bool) (*sql.DB, *sqlc.Queries, *appl
 		DatabaseBrowser: sqlite.NewDatabaseBrowserRepository(sqlDB),
 		TrialRewards:    sqlite.NewTrialRewardsRepository(queries),
 		Feedback:        sqlite.NewFeedbackRepository(sqlDB),
+		UpdatePing:      sqlite.NewUpdatePingRepository(sqlDB),
 		Queries:         queries,
 	}
 

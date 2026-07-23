@@ -21,6 +21,7 @@ type Config struct {
 	External     ExternalConfig
 	WebSocket    WebSocketConfig
 	Email        EmailConfig
+	UpdateCheck  UpdateCheckConfig
 }
 
 // ServerConfig contains HTTP server settings.
@@ -111,6 +112,19 @@ type ExternalConfig struct {
 	// Offline mode signing
 	OfflineECDSAPrivPEM  string `env:"OFFLINE_ECDSA_PRIV_PEM"`
 	OfflineECDSAPrivPath string `env:"OFFLINE_ECDSA_PRIV_PATH"`
+}
+
+// UpdateCheckConfig controls the outbound "is there a newer release" lookup.
+// Self-host servers ask the Budgero cloud endpoint (sending only their
+// version, build sha and type — that request is also the anonymous install
+// ping); the cloud server reads the release bucket directly.
+type UpdateCheckConfig struct {
+	// Disabled turns the outbound lookup off entirely; /version/latest then
+	// reports the running build as latest and nothing ever leaves the server.
+	Disabled bool `env:"UPDATE_CHECK_DISABLED" envDefault:"false"`
+	// URL overrides the default source (cloud version endpoint on self-host,
+	// release bucket on SaaS).
+	URL string `env:"UPDATE_CHECK_URL"`
 }
 
 // WebSocketConfig contains WebSocket settings.

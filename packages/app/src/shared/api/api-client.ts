@@ -485,6 +485,18 @@ export const betaApi = {
     apiClient.post<{ success: boolean; message: string }>('/newsletter/subscribe', { email, name }),
 };
 
+export interface LatestVersionInfo {
+  latest_version: string;
+  build_version: string;
+}
+
+// Version metadata (public). On self-host, the server answers from its cached
+// daily lookup against the Budgero cloud endpoint — this call never triggers
+// a network fetch per request.
+export const versionApi = {
+  getLatest: () => apiClient.get<LatestVersionInfo>('/version/latest'),
+};
+
 export interface TrialProgress {
   user_id: string;
   trial_started_at: string;

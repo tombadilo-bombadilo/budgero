@@ -22,6 +22,7 @@ type Services struct {
 	DatabaseBrowser driving.DatabaseBrowserService
 	TrialRewards    driving.TrialRewardsService
 	Feedback        driving.FeedbackService
+	UpdatePing      driving.UpdatePingService
 }
 
 // Repositories is a container for all repository dependencies.
@@ -41,7 +42,10 @@ type Repositories struct {
 	// (cheap to construct, no external deps) but the route that uses it is
 	// only registered in SaaS builds.
 	Feedback repository.FeedbackRepository
-	Queries  *sqlc.Queries
+	// UpdatePing aggregates anonymous update-check counts. Same deal as
+	// Feedback: wired in both modes, only ever written on SaaS.
+	UpdatePing repository.UpdatePingRepository
+	Queries    *sqlc.Queries
 
 	// DiscountIssuer is optional. When nil, the trial-rewards service mints
 	// local codes only; it does not register them with the payment provider.
@@ -64,5 +68,6 @@ func NewServices(repos *Repositories, cfg *config.Config) *Services {
 		DatabaseBrowser: NewDatabaseBrowserService(repos.DatabaseBrowser, repos.Queries),
 		TrialRewards:    NewTrialRewardsService(repos.TrialRewards, repos.User, repos.DiscountIssuer, cfg),
 		Feedback:        NewFeedbackService(repos.Feedback),
+		UpdatePing:      NewUpdatePingService(repos.UpdatePing),
 	}
 }

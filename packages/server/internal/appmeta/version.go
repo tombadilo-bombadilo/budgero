@@ -42,6 +42,14 @@ func LatestVersion() string {
 	return latestVersion
 }
 
+// HasLatestVersionOverride reports whether APP_LATEST_VERSION is set. When it
+// is, the operator has pinned the advertised latest version and the remote
+// update check should not run at all.
+func HasLatestVersionOverride() bool {
+	ensureEnvLoaded()
+	return strings.TrimSpace(os.Getenv("APP_LATEST_VERSION")) != ""
+}
+
 func detectLatestVersion() string {
 	ensureEnvLoaded()
 

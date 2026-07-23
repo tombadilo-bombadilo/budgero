@@ -31,6 +31,10 @@ type Options struct {
 	// disabled (self-host, missing RESEND_API_KEY). When present, it's wired
 	// into ClerkSync so the welcome email fires on user creation.
 	Email *email.Service
+	// LatestVersion resolves the latest published release. Optional — nil
+	// (update check disabled, APP_LATEST_VERSION pinned, tests) makes
+	// /version/latest fall back to the build version.
+	LatestVersion LatestVersionSource
 }
 
 // Handlers contains HTTP request handlers for the API.
@@ -45,6 +49,7 @@ type Handlers struct {
 	legacyVariantIDs     map[string]struct{}
 	subscriptionsEnabled bool
 	selfHostMode         bool
+	latestVersion        LatestVersionSource
 }
 
 // NewHandlers creates a new Handlers instance.
@@ -83,6 +88,7 @@ func NewHandlers(services *application.Services, syncHub *synchub.Hub, opts Opti
 		legacyVariantIDs:     legacyVariants,
 		subscriptionsEnabled: !opts.SelfHost,
 		selfHostMode:         opts.SelfHost,
+		latestVersion:        opts.LatestVersion,
 	}
 }
 

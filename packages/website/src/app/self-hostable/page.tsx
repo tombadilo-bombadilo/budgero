@@ -128,11 +128,11 @@ const faqs = [
   },
   {
     q: 'How do updates work for self-hosted Budgero?',
-    a: "Pull the latest Docker image and restart the container. Database migrations run automatically on startup. You decide when to upgrade — the running container will keep working on the version you deployed for as long as you want. The Self-Hostable changelog is published alongside Cloud releases.",
+    a: "Pull the latest Docker image and restart the container. Database migrations run automatically on startup. The app shows a dismissable notice when a newer release is available, but you decide when to upgrade — the running container will keep working on the version you deployed for as long as you want. The Self-Hostable changelog is published alongside Cloud releases.",
   },
   {
     q: 'Can I run Budgero air-gapped (fully offline)?',
-    a: "Yes. Budgero does not phone home. There is no telemetry, no license check, no analytics. The only optional outbound calls are to currencylayer.com for currency exchange rates — you bring your own API key (free tier available) or disable FX entirely. You can run Budgero on a fully isolated network indefinitely.",
+    a: "Yes. There is no telemetry, no license check, no analytics. The only routine outbound call is a daily update check against budgero.app that carries the version number of your install and nothing else — set UPDATE_CHECK_DISABLED=true and it never fires, with no loss of functionality. Optional currency exchange rates (currencylayer.com, your own API key) are the only other outbound call. You can run Budgero on a fully isolated network indefinitely.",
   },
   {
     q: 'How do I import my YNAB data into self-hosted Budgero?',
@@ -144,7 +144,7 @@ const faqs = [
   },
   {
     q: 'Is Budgero open source?',
-    a: "No — Budgero is closed-source. We are a small commercial project funded by the Cloud edition. What self-hosters do get is a free Docker image with the full feature set, no license keys, no feature gating, and no telemetry. The binaries are free to use forever and you have full operational control over your instance. We have publicly committed to open-sourcing the codebase if Budgero ever shuts down, so your ability to keep running it doesn't depend on our continued operation.",
+    a: "Budgero is source-available, not OSI open source. The full source code is published in a public read-only GitHub mirror under the Functional Source License (FSL-1.1-Apache-2.0): you can read, audit, modify, and self-host it — the only restriction is offering it as a competing hosted service, and each release automatically converts to Apache 2.0 two years after publication. We are a small commercial project funded by the Cloud edition; self-hosters get a free Docker image with the full feature set, no license keys, no feature gating, and no telemetry beyond a disable-able daily update check (a version number, nothing else). Between the public source and the automatic Apache 2.0 conversion, your ability to keep running Budgero doesn't depend on our continued operation.",
   },
 ];
 
@@ -242,7 +242,8 @@ export default function SelfHostablePage() {
                 </p>
 
                 <p className="text-base text-foreground/60 mb-10 max-w-xl mx-auto">
-                  No telemetry. No data leaves your server.
+                  No analytics, no tracking. The only outbound call is a daily version check —
+                  one env var disables it.
                 </p>
 
                 {/* Install Command */}
