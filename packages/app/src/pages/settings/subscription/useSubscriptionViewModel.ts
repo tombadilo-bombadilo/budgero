@@ -24,6 +24,7 @@ import {
 import { trackSubscriptionCanceled } from '@shared/lib/analytics/analytics';
 import {
   getEffectiveSubscriptionStatus,
+  hasActiveBetaAccess,
   hasBillingPortalAccess,
   shouldOfferCheckoutForStatus,
 } from '@pages/settings/subscription/subscription-status';
@@ -156,7 +157,7 @@ export function useSubscriptionViewModel() {
   const isPastDue = effectiveSubscriptionStatus === 'past_due';
   const isUnpaid = effectiveSubscriptionStatus === 'unpaid';
   const isFoundingMember = user?.is_founding_member ?? false;
-  const hasBetaAccess = user?.has_beta_access ?? false;
+  const hasBetaAccess = hasActiveBetaAccess(user, currentTime);
   const billingPortalAvailable = hasBillingPortalAccess(user);
   const isSelfManagedTrial = isTrialing && !billingPortalAvailable;
   const canStartSubscription =
@@ -174,19 +175,19 @@ export function useSubscriptionViewModel() {
   const getStatusColor = useCallback(
     (status: string) => {
       if (user?.is_founding_member) return STATUS_COLORS.founding_member;
-      if (user?.has_beta_access) return STATUS_COLORS.beta_access;
+      if (hasBetaAccess) return STATUS_COLORS.beta_access;
       return STATUS_COLORS[status] || STATUS_COLORS.default;
     },
-    [user?.is_founding_member, user?.has_beta_access]
+    [user?.is_founding_member, hasBetaAccess]
   );
 
   const getStatusText = useCallback(
     (status: string) => {
       if (user?.is_founding_member) return STATUS_TEXT.founding_member;
-      if (user?.has_beta_access) return STATUS_TEXT.beta_access;
+      if (hasBetaAccess) return STATUS_TEXT.beta_access;
       return STATUS_TEXT[status] || status;
     },
-    [user?.is_founding_member, user?.has_beta_access]
+    [user?.is_founding_member, hasBetaAccess]
   );
 
   const getPlanNameFromVariant = useCallback(
@@ -194,11 +195,11 @@ export function useSubscriptionViewModel() {
       const plan = plans.find((p) => p.id === variantId);
       if (plan) return plan.name;
       if (user?.is_founding_member) return 'Founding Member';
-      if (user?.has_beta_access) return 'Free Access';
+      if (hasBetaAccess) return 'Free Access';
       if (variantId) return `Plan ${variantId}`;
       return 'Plan not set';
     },
-    [plans, user?.is_founding_member, user?.has_beta_access]
+    [plans, user?.is_founding_member, hasBetaAccess]
   );
 
   const planName = subscriptionDetails?.variant_name ?? getPlanNameFromVariant(user?.variant_id);

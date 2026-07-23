@@ -14,7 +14,7 @@ import { SettingsPageHeader } from '@pages/settings/SettingsPageHeader';
 export default function SubscriptionPage() {
   const vm = useSubscriptionViewModel();
 
-  const { user, userLoading, appConfig, requiresOnline } = vm;
+  const { user, userLoading, appConfig, requiresOnline, hasBetaAccess } = vm;
 
   if (requiresOnline) {
     return (
@@ -53,7 +53,7 @@ export default function SubscriptionPage() {
       />
 
       {/* Early Access Mode Banner */}
-      {appConfig?.early_access_mode && !user.has_beta_access && !user.is_founding_member && (
+      {appConfig?.early_access_mode && !hasBetaAccess && !user.is_founding_member && (
         <EarlyAccessBanner message={appConfig.early_access_message} />
       )}
 

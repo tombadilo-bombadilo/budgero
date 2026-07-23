@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   getEffectiveSubscriptionStatus,
+  hasActiveBetaAccess,
   hasBillingPortalAccess,
   shouldOfferCheckoutForStatus,
 } from '@pages/settings/subscription/subscription-status';
@@ -50,6 +51,29 @@ describe('subscription-status', () => {
     expect(hasBillingPortalAccess({ customer_id: undefined, subscription_id: undefined })).toBe(
       false
     );
+  });
+
+  it('treats beta access as active only until beta_expires_at', () => {
+    const now = new Date('2026-07-01T00:00:00.000Z').getTime();
+    expect(
+      hasActiveBetaAccess(
+        { has_beta_access: true, beta_expires_at: '2026-08-01T00:00:00.000Z' },
+        now
+      )
+    ).toBe(true);
+    expect(
+      hasActiveBetaAccess(
+        { has_beta_access: true, beta_expires_at: '2026-06-01T00:00:00.000Z' },
+        now
+      )
+    ).toBe(false);
+    expect(hasActiveBetaAccess({ has_beta_access: true, beta_expires_at: undefined }, now)).toBe(
+      true
+    );
+    expect(hasActiveBetaAccess({ has_beta_access: false, beta_expires_at: undefined }, now)).toBe(
+      false
+    );
+    expect(hasActiveBetaAccess(null, now)).toBe(false);
   });
 
   it('offers checkout for inactive, expired, and trialing states', () => {

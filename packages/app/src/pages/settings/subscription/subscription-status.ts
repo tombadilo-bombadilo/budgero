@@ -51,6 +51,17 @@ export function getEffectiveSubscriptionStatus(
   }
 }
 
+// has_beta_access is a permanent grant marker — it never flips back to false.
+// Whether the grant still applies is decided by beta_expires_at (absent =
+// unlimited free access), mirroring getUserAccessStatus in shared/model/access.
+export function hasActiveBetaAccess(
+  user: Pick<User, 'has_beta_access' | 'beta_expires_at'> | null | undefined,
+  now: number
+): boolean {
+  if (!user?.has_beta_access) return false;
+  return !user.beta_expires_at || new Date(user.beta_expires_at).getTime() > now;
+}
+
 export function hasBillingPortalAccess(
   user: Pick<User, 'customer_id' | 'subscription_id'> | null | undefined
 ): boolean {
