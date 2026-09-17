@@ -72,6 +72,9 @@ export default function MonthPickerPopover({
     setOpen(false);
   };
 
+  const isFullMonthFormat = labelFormat.includes('MMMM');
+  const defaultWidthClass = isFullMonthFormat ? 'w-[140px]' : 'w-[96px]';
+
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
@@ -80,6 +83,7 @@ export default function MonthPickerPopover({
           aria-label={t`Change month — currently ${fullLabel}`}
           className={cn(
             'inline-flex min-w-0 items-center justify-center gap-1 rounded-md px-1.5 py-1 font-medium hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            defaultWidthClass,
             triggerClassName
           )}
         >

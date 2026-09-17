@@ -111,8 +111,8 @@ describe('DateRangePicker', () => {
     const captionBtn = screen.getByRole('button', { name: /Change month and year/i });
     fireEvent.click(captionBtn);
 
-    // Click Choose a day
-    const backBtn = screen.getByRole('button', { name: /Choose a day/i });
+    // Click Day picker
+    const backBtn = screen.getByRole('button', { name: /Day picker/i });
     fireEvent.click(backBtn);
     expect(screen.getByRole('button', { name: /Change month and year/i })).toBeInTheDocument();
 

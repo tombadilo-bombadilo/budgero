@@ -156,7 +156,7 @@ export function BudgetingPageDesktop() {
       <MonthPickerPopover
         value={currentMonth}
         onChange={setCurrentMonth}
-        triggerClassName="h-8 rounded-none px-2 text-sm font-medium hover:bg-muted/60 hover:text-foreground max-w-[clamp(92px,16vw,160px)]"
+        triggerClassName="h-8 rounded-none px-2 text-sm font-medium hover:bg-muted/60 hover:text-foreground w-[160px]"
       />
       <div className="h-4 w-px bg-border/70" />
       <Button
