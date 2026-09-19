@@ -31,6 +31,7 @@ from budgero.models import (
     AmountLike,
     PushQueueItem,
     PushResult,
+    SplitLine,
     TransactionInput,
     to_milliunits,
 )
@@ -248,6 +249,7 @@ class BudgeroClient:
         memo: str = "",
         payee: Optional[str] = None,
         transfer_id: Optional[str] = None,
+        splits: Optional[list[SplitLine]] = None,
     ) -> PushResult:
         """
         Add a new transaction to your budget.
@@ -275,6 +277,9 @@ class BudgeroClient:
             memo: Optional description or note.
             payee: Optional payee name.
             transfer_id: Optional transfer ID for linked transfers.
+            splits: Optional list of SplitLine to create a split
+                (multi-category) transaction. When set, category_id is
+                ignored and the lines must sum to outflow (or inflow).
 
         Returns:
             PushResult with the queue ID and status.
@@ -343,6 +348,7 @@ class BudgeroClient:
             memo=memo,
             payee=payee,
             transfer_id=transfer_id,
+            splits=splits,
         )
 
         return self.push_transaction(tx)

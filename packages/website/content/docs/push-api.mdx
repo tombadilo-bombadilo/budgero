@@ -56,6 +56,42 @@ Monetary values are integer milliunits (1/1000 of a currency unit), so 42.50 is 
 
 - `transactions.add` — send an income or expense. Use `inflow` for income and `outflow` for expenses (only one should be non-zero). Supply your existing budget, account, and category IDs.
 
+#### Split transactions (multi-category)
+
+Add an optional `splits` array to split the transaction across several categories. Each line carries its own `inflow`/`outflow` (integer milliunits) and `categoryId` (or `transferAccountId` for a transfer line); `memo` and `payee` are optional per line. The parent's `categoryId` becomes irrelevant — omit it — and the parent's `inflow`/`outflow` **must equal the sum of the lines**, or the item is rejected on apply with "Split amounts must sum to parent total".
+
+```json
+{
+  "v": 2,
+  "op": "transactions.add",
+  "args": {
+    "accountId": 1,
+    "budgetId": 1,
+    "date": "2024-11-27",
+    "outflow": 42500,
+    "payee": "Whole Foods",
+    "splits": [
+      { "outflow": 35000, "categoryId": 5, "memo": "Groceries" },
+      { "outflow": 7500, "categoryId": 9, "memo": "Household" }
+    ]
+  }
+}
+```
+
+With the Python SDK, pass `SplitLine` objects to `add_transaction`:
+
+```python
+from budgero import SplitLine
+client.add_transaction(
+    account_id=1, category_id=None, budget_id=1, date="2024-11-27",
+    outflow=42.50, payee="Whole Foods",
+    splits=[
+        SplitLine(category_id=5, outflow=35.00),
+        SplitLine(category_id=9, outflow=7.50),
+    ],
+)
+```
+
 ## Encryption requirements
 
 - Algorithm: AES-256-GCM  

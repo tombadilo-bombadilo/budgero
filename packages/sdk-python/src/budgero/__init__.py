@@ -27,6 +27,7 @@ from budgero._version import __version__
 from budgero.client import BudgeroClient
 from budgero.models import (
     Transaction,
+    SplitLine,
     TransactionInput,
     Account,
     Category,
@@ -50,6 +51,7 @@ from budgero.exceptions import (
 __all__ = [
     "BudgeroClient",
     "Transaction",
+    "SplitLine",
     "TransactionInput",
     "Account",
     "Category",

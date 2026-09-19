@@ -92,7 +92,7 @@ async function addTransactionFromArgs(args: Record<string, unknown>): Promise<nu
     asMilli(Number(args.inflow ?? 0)),
     asMilli(Number(args.outflow ?? 0)),
     args.accountId as number,
-    args.categoryId as number,
+    (args.categoryId as number | null | undefined) ?? null,
     args.budgetId as number,
     args.date as string,
     args.memo as string,
@@ -108,6 +108,33 @@ async function addTransactionFromArgs(args: Record<string, unknown>): Promise<nu
         args.importIdentities as ImportIdentity[]
       )
     : S().transactions!.addTransaction(...parameters);
+}
+
+/**
+ * Normalize a Push API v2 `splits` array (camelCase args, integer milliunits,
+ * categoryId or transferAccountId per line) to the core split shape.
+ * Returns undefined when the caller sent no splits (plain single-category add).
+ */
+function normalizePushSplits(raw: unknown): NormalizedSplit[] | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!Array.isArray(raw)) {
+    throw new Error('"splits" must be an array of split lines.');
+  }
+  if (raw.length === 0) {
+    throw new Error('"splits" must contain at least one line.');
+  }
+  return (raw as Record<string, unknown>[]).map((line, idx) => ({
+    CategoryID: (line.categoryId ?? null) as number | null,
+    TransferAccountID: (line.transferAccountId ?? null) as number | null,
+    Memo: String(line.memo ?? ''),
+    Payee: String(line.payee ?? ''),
+    InflowConverted: asMilli(Number(line.inflow ?? 0)),
+    OutflowConverted: asMilli(Number(line.outflow ?? 0)),
+    InflowNative: null,
+    OutflowNative: null,
+    PairID: null,
+    OrderIndex: Number(line.orderIndex ?? idx),
+  }));
 }
 
 function withImportIdentities(tx: TransactionSnapshot): TransactionSnapshot {
@@ -137,8 +164,21 @@ export const transactionOps = {
     },
   },
   'transactions.add': {
-    execute: addTransactionFromArgs,
-    invalidates: [...TRANSACTION_INVALIDATION_KEYS],
+    execute: async (args) => {
+      const transactionId = await addTransactionFromArgs(args);
+      // Push API v2 split support: an optional `splits` array turns the call
+      // into a split transaction. Each line carries its own inflow/outflow
+      // (integer milliunits) and categoryId (or transferAccountId); the
+      // split-service enforces that the lines sum to the parent amount and
+      // that every line has exactly one of category/transfer — a bad payload
+      // fails the item with the service's message instead of corrupting data.
+      const splits = normalizePushSplits(args.splits);
+      if (splits) {
+        await S().splits!.upsertSplits(transactionId, splits);
+      }
+      return transactionId;
+    },
+    invalidates: [...TRANSACTION_INVALIDATION_KEYS, ...SPLIT_INVALIDATION_KEYS],
     undo: {
       // add -> delete the created transaction
       build: (_args, result) => {
