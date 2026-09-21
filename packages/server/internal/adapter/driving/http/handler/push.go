@@ -317,7 +317,7 @@ func (h *Handlers) GetPushEncryptionInfo(c echo.Context) error {
 			"key_derivation":    "The same key used for your budget encryption",
 			"payload_format":    "JSON with op and args fields, then encrypted",
 			"encoding":          "Base64",
-			"supported_opcodes": "transactions.add",
+			"supported_opcodes": "transactions.add, transactions.updateByRef, transactions.deleteByRef",
 		},
 	})
 }
@@ -374,6 +374,20 @@ func (h *Handlers) GetPushAPISpec(c echo.Context) error {
 					"date":       map[string]string{"type": "string", "format": "YYYY-MM-DD", "description": "Transaction date"},
 					"memo":       map[string]string{"type": "string", "description": "Transaction description/memo"},
 					"payee":      map[string]string{"type": "string", "description": "Payee name (optional)"},
+					"splits":     map[string]string{"type": "array", "description": "Optional split lines (multi-category): each with inflow/outflow (integer milliunits) and categoryId; lines must sum to the parent amount"},
+				},
+			},
+			"transactions.updateByRef": map[string]interface{}{
+				"description": "Update a transaction previously created via the Push API, referenced by the message_id of the original push",
+				"args": map[string]interface{}{
+					"messageId": map[string]string{"type": "string", "description": "The message_id sent with the original transactions.add push"},
+					"fields":    map[string]string{"type": "object", "description": "Fields to change: inflow, outflow (integer milliunits), date, memo, payee, categoryId, accountId"},
+				},
+			},
+			"transactions.deleteByRef": map[string]interface{}{
+				"description": "Delete a transaction previously created via the Push API, referenced by the message_id of the original push",
+				"args": map[string]interface{}{
+					"messageId": map[string]string{"type": "string", "description": "The message_id sent with the original transactions.add push"},
 				},
 			},
 		},
@@ -382,7 +396,7 @@ func (h *Handlers) GetPushAPISpec(c echo.Context) error {
 			"key_source": "Your budget encryption key (same key used by the Budgero app)",
 			"iv_length":  12,
 			"tag_length": 16,
-			"format":     "IV (12 bytes) + Ciphertext + Auth Tag (16 bytes), then Base64 encoded",
+			"format":     "Salt (32 bytes, SHA-256 of the key) + IV (12 bytes) + Ciphertext + Auth Tag (16 bytes), then Base64 encoded",
 		},
 		"responses": map[string]interface{}{
 			"202": map[string]string{

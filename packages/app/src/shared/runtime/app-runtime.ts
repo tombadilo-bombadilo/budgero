@@ -39,6 +39,7 @@ import { createRuntimeDeps } from '@shared/runtime/runtime-bridge';
 import { getInvalidatesForOp } from '@shared/mutations/op-code-registry';
 import { getErrorMessage } from '@shared/lib/errors';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
+import { withPushIdentity } from './push-identity';
 
 export class AppRuntime {
   private coordinator: RuntimeCoordinator;
@@ -486,6 +487,11 @@ export class AppRuntime {
             continue;
           }
 
+          if (op === 'transactions.add' && item.message_id && args) {
+            args = withPushIdentity(args, item.message_id);
+            parsedArgs = args;
+          }
+
           const invalidates = getInvalidatesForOp(op);
 
           // Deterministic ID derived from the queue item: processing is
@@ -809,6 +815,13 @@ export class AppRuntime {
       }
     };
 
+    if (
+      (op === 'transactions.updateByRef' || op === 'transactions.deleteByRef') &&
+      typeof payload.messageId === 'string'
+    ) {
+      const id = services.importHistory.duplicates.findOperation(`push:${payload.messageId}`);
+      return byTransactionId(id ?? null);
+    }
     if (op.startsWith('transactions.')) {
       return (
         byTransactionId(transactionId) ??

@@ -326,3 +326,40 @@ def test_plain_transaction_has_no_split_field():
     ).to_api_dict()
     assert "splits" not in payload
     assert payload["categoryId"] == 5
+
+
+def test_referenced_updates_and_deletes_wire_payload(key, b64_key):
+    captured = []
+
+    def handler(request):
+        captured.append(json.loads(request.content))
+        return httpx.Response(200, json={"id": "q-ref", "message": "queued"})
+
+    from datetime import date
+    with make_client(b64_key, handler) as client:
+        added = client.add_transaction(account_id=1, category_id=5, budget_id=1,
+                                       date="2026-09-19", outflow=10)
+        assert added.message_id == captured[0]["message_id"]
+        updated = client.update_transaction(added.message_id, outflow=Decimal("9.001"),
+                                            date=date(2026, 9, 20), memo="fixed")
+        deleted = client.delete_transaction(added.message_id)
+    update_payload = decrypt_payload(captured[1]["encrypted_payload"], key)
+    assert update_payload["op"] == "transactions.updateByRef"
+    assert update_payload["args"] == {"messageId": added.message_id, "fields": {
+        "outflow": 9001, "date": "2026-09-20", "memo": "fixed",
+    }}
+    assert updated.message_id != added.message_id
+    assert updated.message_id == captured[1]["message_id"]
+    delete_payload = decrypt_payload(captured[2]["encrypted_payload"], key)
+    assert delete_payload["op"] == "transactions.deleteByRef"
+    assert delete_payload["args"] == {"messageId": added.message_id}
+    assert deleted.message_id == captured[2]["message_id"]
+
+
+@pytest.mark.parametrize("fields", [{}, {"bogus": 1}, {"outflow": -1}])
+def test_invalid_reference_updates_are_not_sent(b64_key, fields):
+    def handler(request):
+        pytest.fail("Invalid update must not be sent")
+    with make_client(b64_key, handler) as client:
+        with pytest.raises(ValidationError):
+            client.update_transaction("original", **fields)

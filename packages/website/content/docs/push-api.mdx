@@ -52,9 +52,17 @@ The Push API lets you send transactions into Budgero from other systems while ke
 
 Monetary values are integer milliunits (1/1000 of a currency unit), so 42.50 is sent as `42500`. Always include `"v": 2`; legacy payloads without it are treated as format 1 (decimal amounts) and upgraded on import, but new integrations should send format 2. The Python SDK handles both the format flag and the conversion for you.
 
-### Supported operation today
+### Supported operations today
 
 - `transactions.add` — send an income or expense. Use `inflow` for income and `outflow` for expenses (only one should be non-zero). Supply your existing budget, account, and category IDs.
+- `transactions.updateByRef` — change fields of a transaction previously created via the Push API, referenced by the `message_id` of the original push: `{"messageId": "...", "fields": {"outflow": 45000, "memo": "corrected"}}`. Accepted fields: `inflow`, `outflow` (integer milliunits), `date`, `memo`, `payee`, `categoryId`, `accountId`.
+- `transactions.deleteByRef` — permanently delete a transaction previously created via the Push API: `{"messageId": "..."}`. Missing references are successful no-ops, including when the transaction is already gone.
+
+Updates use account-currency milliunits and apply all fields together. Transfers cannot be patched through this operation. Split parents support memo and payee edits; their amounts, categories, dates, and accounts cannot be patched. Unknown update fields are rejected.
+
+**Store the `message_id` of every add you push**: under end-to-end encryption the server never sees transaction ids, so the original push's `message_id` is the only stable reference an integration can use to update or delete later. The app records it as provenance when it applies the add (adds pushed before this feature cannot be referenced retroactively).
+
+With the Python SDK: `result = client.add_transaction(...)`, then `client.update_transaction(result.message_id, outflow=45.00)` or `client.delete_transaction(result.message_id)`.
 
 #### Split transactions (multi-category)
 

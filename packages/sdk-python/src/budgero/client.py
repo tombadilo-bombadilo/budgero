@@ -405,6 +405,102 @@ class BudgeroClient:
             success=True,
             queue_id=response.get("id"),
             message=response.get("message"),
+            message_id=message_id,
+        )
+
+    def update_transaction(
+        self,
+        message_id: str,
+        **fields: Any,
+    ) -> PushResult:
+        """
+        Update a transaction previously created via the Push API.
+
+        The transaction is referenced by the ``message_id`` returned by
+        ``add_transaction()`` / ``push_transaction()`` — the only stable
+        handle an integration can hold, since the ledger is end-to-end
+        encrypted and server-side ids are never visible.
+
+        Accepted fields: ``inflow``, ``outflow`` (currency units, converted
+        to milliunits), ``date`` (YYYY-MM-DD), ``memo``, ``payee``,
+        ``category_id``, ``account_id``. Only the fields you pass change.
+
+        Example:
+            >>> result = client.add_transaction(..., outflow=50.00)
+            >>> client.update_transaction(result.message_id, outflow=45.00, memo="corrected")
+        """
+        if not message_id:
+            raise ValidationError("message_id is required")
+        key_map = {
+            "inflow": ("inflow", True),
+            "outflow": ("outflow", True),
+            "date": ("date", False),
+            "memo": ("memo", False),
+            "payee": ("payee", False),
+            "category_id": ("categoryId", False),
+            "account_id": ("accountId", False),
+        }
+        wire_fields: dict[str, Any] = {}
+        for key, value in fields.items():
+            if key not in key_map:
+                raise ValidationError(
+                    f"Unknown field '{key}'. Accepted: {', '.join(key_map)}"
+                )
+            wire_key, is_money = key_map[key]
+            if key == "date" and isinstance(value, date):
+                value = value.isoformat()
+            wire_fields[wire_key] = to_milliunits(value) if is_money else value
+            if is_money and wire_fields[wire_key] < 0:
+                raise ValidationError(f"{key} must be non-negative")
+        if not wire_fields:
+            raise ValidationError("Pass at least one field to update")
+
+        ref_id, encrypted = self._encrypt_mutation(
+            "transactions.updateByRef",
+            {"messageId": message_id, "fields": wire_fields},
+        )
+        response = self._make_request(
+            "POST",
+            "/api/v1/push",
+            json_data={"encrypted_payload": encrypted, "message_id": ref_id},
+            headers={"X-Data-Format-Version": str(PROTOCOL_VERSION)},
+        )
+        return PushResult(
+            success=True,
+            queue_id=response.get("id"),
+            message=response.get("message"),
+            message_id=ref_id,
+        )
+
+    def delete_transaction(self, message_id: str) -> PushResult:
+        """
+        Delete a transaction previously created via the Push API.
+
+        References the transaction by the ``message_id`` of the original
+        ``add_transaction()`` push. True removal; idempotent if the
+        transaction is already gone.
+
+        Example:
+            >>> result = client.add_transaction(..., outflow=50.00)
+            >>> client.delete_transaction(result.message_id)
+        """
+        if not message_id:
+            raise ValidationError("message_id is required")
+        ref_id, encrypted = self._encrypt_mutation(
+            "transactions.deleteByRef",
+            {"messageId": message_id},
+        )
+        response = self._make_request(
+            "POST",
+            "/api/v1/push",
+            json_data={"encrypted_payload": encrypted, "message_id": ref_id},
+            headers={"X-Data-Format-Version": str(PROTOCOL_VERSION)},
+        )
+        return PushResult(
+            success=True,
+            queue_id=response.get("id"),
+            message=response.get("message"),
+            message_id=ref_id,
         )
 
     def get_queue(self) -> list[PushQueueItem]:

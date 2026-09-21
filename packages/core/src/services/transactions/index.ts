@@ -30,7 +30,7 @@ import {
   convertScaled,
   isCryptoCurrency,
 } from '../../currencies/index.js';
-import { getLocalDateString } from '../../utils/date.js';
+import { getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
 import {
   applyTransferRate as applyDirectTransferRate,
   getTransferRateDetails as loadTransferRateDetails,
@@ -799,6 +799,111 @@ export class TransactionService {
     await this.syncTransferPartnerAmounts(id);
   }
 
+  /** Apply a Push API patch in account currency, committing all fields together. */
+  async updatePushedTransaction(id: number, fields: Record<string, unknown>): Promise<string[]> {
+    const allowed = ['inflow', 'outflow', 'date', 'memo', 'payee', 'categoryId', 'accountId'];
+    const keys = Object.keys(fields);
+    if (!keys.length || keys.some((key) => !allowed.includes(key))) {
+      throw new ValidationError(
+        `"fields" must set at least one of: ${allowed.join(', ')}; unknown fields are not allowed.`
+      );
+    }
+    const previous = this.getTransactionByID(id);
+    const structural = keys.some((key) => !['memo', 'payee'].includes(key));
+    if (previous.TransferID || (structural && this.queries.getSplitsForTransaction(id).length)) {
+      throw new ValidationError(
+        'Transfer transactions cannot be patched; split transactions only support memo and payee.'
+      );
+    }
+    const amount = (key: string, fallback: number) => {
+      const value = fields[key] === undefined ? fallback : fields[key];
+      if (typeof value !== 'number' || value < 0)
+        throw new ValidationError(`${key} must be non-negative integer milliunits.`);
+      return asMilli(value);
+    };
+    const inflow = amount('inflow', previous.InflowNative ?? previous.InflowConverted);
+    const outflow = amount('outflow', previous.OutflowNative ?? previous.OutflowConverted);
+    if (structural && ((inflow > 0 && outflow > 0) || (inflow === 0 && outflow === 0))) {
+      throw new ValidationError('Exactly one of inflow or outflow must be non-zero.');
+    }
+    const identifier = (key: string, fallback: number) => {
+      const value = fields[key] === undefined ? fallback : fields[key];
+      if (typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0) {
+        throw new ValidationError(`${key} must be a positive integer.`);
+      }
+      return value;
+    };
+    const accountId = identifier('accountId', previous.AccountID);
+    const categoryId = identifier('categoryId', previous.CategoryID);
+    const { account, budget } = this.queries.getAccountAndBudget(accountId, previous.BudgetID);
+    if (!account || !budget || account.BudgetID !== previous.BudgetID) {
+      throw new ValidationError('Account must belong to the transaction budget.');
+    }
+    if (this.categoryService.getCategory(categoryId).BudgetID !== previous.BudgetID) {
+      throw new ValidationError('Category must belong to the transaction budget.');
+    }
+    const date = fields.date === undefined ? previous.Date : fields.date;
+    if (
+      typeof date !== 'string' ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      !Number.isFinite(Date.parse(date)) ||
+      getLocalDateString(parseDateOnlyLocal(date)!) !== date
+    ) {
+      throw new ValidationError('date must be a valid YYYY-MM-DD date.');
+    }
+    if (fields.memo !== undefined && typeof fields.memo !== 'string')
+      throw new ValidationError('memo must be a string.');
+    if (fields.payee !== undefined && fields.payee !== null && typeof fields.payee !== 'string')
+      throw new ValidationError('payee must be a string or null.');
+    const memo = fields.memo === undefined ? (previous.Memo ?? '') : (fields.memo as string);
+    const payee =
+      fields.payee === undefined ? previous.Payee : (fields.payee as string | null)?.trim() || null;
+    let inflowConverted = previous.InflowConverted;
+    let outflowConverted = previous.OutflowConverted;
+    let rate = previous.ExchangeRate;
+    let pinned = previous.ExchangeRateOverride;
+    const reprice = keys.some((key) => ['inflow', 'outflow', 'accountId', 'date'].includes(key));
+    if (reprice) {
+      if (account.Currency === budget.DisplayCurrency) {
+        rate = 1;
+        pinned = false;
+      } else if (!(pinned && rate && accountId === previous.AccountID && date === previous.Date)) {
+        rate = await this.currencyService.resolveRate(
+          account.Currency,
+          budget.DisplayCurrency,
+          date,
+          previous.BudgetID
+        );
+        pinned = false;
+        if (!rate) throw new ValidationError('No exchange rate available for this update.');
+      }
+      inflowConverted = asMilli(
+        convertScaled(inflow, rate || 1, account.Currency, budget.DisplayCurrency)
+      );
+      outflowConverted = asMilli(
+        convertScaled(outflow, rate || 1, account.Currency, budget.DisplayCurrency)
+      );
+    }
+    this.db.transaction(() => {
+      this.queries.updateTransactionWithOriginal(
+        id,
+        inflow,
+        outflow,
+        inflowConverted,
+        outflowConverted,
+        categoryId,
+        accountId,
+        date,
+        memo,
+        payee ?? null
+      );
+      if (reprice && rate) this.queries.setExchangeRate(id, rate, Boolean(pinned));
+      if (payee) this.queries.insertPayee(previous.BudgetID, payee);
+      this.queries.recalculateBalancesForAccounts([...new Set([previous.AccountID, accountId])]);
+    });
+    return keys;
+  }
+
   /**
    * DeleteTransaction - Deletes a transaction with proper balance cleanup
    * If the transaction is part of a transfer, deletes both sides automatically
@@ -816,6 +921,15 @@ export class TransactionService {
           .getTransactionsByTransferID(txn.TransferID)
           .filter((t) => t.ID !== id);
         debugLog(`Found ${partnerTransactions.length} partner transaction(s) to delete`);
+      }
+
+      if (
+        !txn.TransferID &&
+        this.queries.getSplitsForTransaction(id).some((line) => line.TransferAccountID)
+      ) {
+        partnerTransactions = this.queries.getTransactionsByTransferID(
+          `split_transfer_${txn.ID}_${txn.Date}`
+        );
       }
 
       // 3. Delete the main transaction
@@ -901,7 +1015,15 @@ export class TransactionService {
   getTransactionsForDelete(ids: number[]): Transaction[] {
     const selected = this.queries.getTransactionsByIDs(ids);
     const transferIds = selected
-      .map((transaction) => transaction.TransferID)
+      .map(
+        (transaction) =>
+          transaction.TransferID ||
+          (this.queries
+            .getSplitsForTransaction(transaction.ID)
+            .some((line) => line.TransferAccountID)
+            ? `split_transfer_${transaction.ID}_${transaction.Date}`
+            : undefined)
+      )
       .filter((transferId): transferId is string => Boolean(transferId));
     const transferTransactions = this.queries.getTransactionsByTransferIDs(transferIds);
 

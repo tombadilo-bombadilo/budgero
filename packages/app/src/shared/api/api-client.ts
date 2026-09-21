@@ -512,6 +512,10 @@ export interface PushQueueItem {
   id: string;
   user_id: string;
   space_id: string;
+  /** Client-generated dedup id from the original POST /push (omitted when the
+   *  sender did not provide one). Doubles as the stable external reference for
+   *  transactions.updateByRef / deleteByRef. */
+  message_id?: string;
   encrypted_payload: string;
   status: 'pending' | 'processed' | 'failed';
   created_at: string;
