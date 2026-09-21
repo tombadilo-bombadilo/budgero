@@ -410,13 +410,18 @@ describe('YNAB API import', () => {
     expect(normalizeYNABMilliunitPrecision(-9_876, 2)).toBe(-9_880);
   });
 
-  it('rejects a source snapshot whose Money Movements disagree with monthly assignments', () => {
+  it('warns when a source snapshot Money Movements disagree with monthly assignments', () => {
     const snapshot = snapshotFixture();
     snapshot.moneyMovements![0].amount = 4_000;
 
-    expect(() => normalizeYNABApiSnapshot(snapshot)).toThrow(
-      /source integrity check failed.*Money Movements disagree.*Food/i
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const normalized = normalizeYNABApiSnapshot(snapshot);
+    expect(normalized.categoryMonthSpecs[0].expectedAssigned).toBe(5_000);
+    expect(normalized.source.categoryAssignmentsVerified).toBe(0);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/YNAB Money Movements warning.*Money Movements disagree/i)
     );
+    warnSpy.mockRestore();
   });
 
   it.each(['2026-04-01', '2026-08-01', '2026-10-01'])(
@@ -472,15 +477,21 @@ describe('YNAB API import', () => {
     });
   });
 
-  it('rejects a missing category movement within a month that has movement history', () => {
+  it('warns but does not reject when Money Movements disagree with category assignments', () => {
     const snapshot = snapshotFixture();
     const rent = category('category-rent', 'group-everyday', 'Rent', 2_000);
     snapshot.plan.categories.push(rent);
     snapshot.plan.months[0].categories.push(rent);
 
-    expect(() => normalizeYNABApiSnapshot(snapshot)).toThrow(
-      /Money Movements disagree with 1 monthly category assignment.*Rent: monthly assignment 2000, Money Movements 0/i
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const normalized = normalizeYNABApiSnapshot(snapshot);
+    expect(normalized.categoryMonthSpecs).toHaveLength(2);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /YNAB Money Movements warning: Money Movements disagree with 1 monthly category assignment/i
+      )
     );
+    warnSpy.mockRestore();
   });
 
   it('verifies zero assignments in a covered month, including movements that cancel out', () => {
@@ -1239,6 +1250,8 @@ describe('YNAB API import', () => {
     try {
       const snapshot = snapshotFixture();
       snapshot.plan.months[0].to_be_budgeted = 94_000;
+      // Missing movement history must not bypass post-import reconciliation.
+      snapshot.moneyMovements![0].amount = 4_000;
       const importer = new YNABImportService(adapter);
 
       const result = await importer.importYNABFromApiSnapshotWithSummary(snapshot, {
