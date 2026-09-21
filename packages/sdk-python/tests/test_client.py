@@ -280,3 +280,49 @@ def test_transaction_from_api_dict_converts_milliunits():
     assert tx.outflow == Decimal("0")
     assert tx.running_balance == Decimal("100.5")
     assert isinstance(tx.inflow, Decimal)
+
+
+def test_split_transaction_wire_payload(key, b64_key):
+    captured = {}
+
+    def handler(request):
+        captured.update(json.loads(request.content))
+        return httpx.Response(200, json={"id": "q-split", "message": "queued"})
+
+    with make_client(b64_key, handler) as client:
+        client.add_transaction(
+            account_id=1, category_id=99, budget_id=1, date="2026-09-19",
+            outflow=Decimal("10.001"), payee="Store",
+            splits=[
+                budgero.SplitLine(category_id=5, outflow=Decimal("7.001"), memo="Food"),
+                budgero.SplitLine(category_id=6, outflow=3, payee="Household"),
+            ],
+        )
+    payload = decrypt_payload(captured["encrypted_payload"], key)
+    assert payload["op"] == "transactions.add"
+    assert payload["args"]["categoryId"] is None
+    assert payload["args"]["outflow"] == 10001
+    assert payload["args"]["splits"] == [
+        {"categoryId": 5, "inflow": 0, "outflow": 7001, "memo": "Food"},
+        {"categoryId": 6, "inflow": 0, "outflow": 3000, "memo": "", "payee": "Household"},
+    ]
+
+
+def test_empty_split_transaction_rejected_before_request(b64_key):
+    def handler(request):
+        pytest.fail("Invalid split must not be sent")
+
+    with make_client(b64_key, handler) as client:
+        with pytest.raises(ValidationError, match="at least one"):
+            client.add_transaction(
+                account_id=1, category_id=None, budget_id=1, date="2026-09-19",
+                outflow=10, splits=[],
+            )
+
+
+def test_plain_transaction_has_no_split_field():
+    payload = TransactionInput(
+        account_id=1, category_id=5, budget_id=1, date="2026-09-19", outflow=10,
+    ).to_api_dict()
+    assert "splits" not in payload
+    assert payload["categoryId"] == 5

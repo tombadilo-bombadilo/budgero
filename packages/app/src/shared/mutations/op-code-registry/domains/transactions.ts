@@ -92,10 +92,10 @@ async function addTransactionFromArgs(args: Record<string, unknown>): Promise<nu
     asMilli(Number(args.inflow ?? 0)),
     asMilli(Number(args.outflow ?? 0)),
     args.accountId as number,
-    args.categoryId as number,
+    (args.categoryId as number | null | undefined) ?? 0,
     args.budgetId as number,
     args.date as string,
-    args.memo as string,
+    (args.memo as string | undefined) ?? '',
     (args.transferId as string | undefined) || '',
     (args.payee as string | undefined) ?? '',
     (args.labelId as number | null | undefined) ?? null,
@@ -108,6 +108,55 @@ async function addTransactionFromArgs(args: Record<string, unknown>): Promise<nu
         args.importIdentities as ImportIdentity[]
       )
     : S().transactions!.addTransaction(...parameters);
+}
+
+/**
+ * Normalize a Push API v2 `splits` array (camelCase args, integer milliunits,
+ * categoryId or transferAccountId per line) to the core split shape.
+ * Returns undefined when the caller sent no splits (plain single-category add).
+ */
+function normalizePushSplits(raw: unknown): NormalizedSplit[] | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (!Array.isArray(raw)) {
+    throw new Error('"splits" must be an array of split lines.');
+  }
+  if (raw.length === 0) {
+    throw new Error('"splits" must contain at least one line.');
+  }
+  return raw.map((line: unknown, idx) => {
+    if (!line || typeof line !== 'object' || Array.isArray(line)) {
+      throw new Error('Each split line must be an object.');
+    }
+    const entry = line as Record<string, unknown>;
+    const inflow = asMilli(Number(entry.inflow ?? 0));
+    const outflow = asMilli(Number(entry.outflow ?? 0));
+    if (inflow < 0 || outflow < 0 || (inflow > 0 && outflow > 0)) {
+      throw new Error('Split amounts must be non-negative with only one direction.');
+    }
+    const categoryId = entry.categoryId ?? null;
+    const transferAccountId = entry.transferAccountId ?? null;
+    if ((categoryId === null) === (transferAccountId === null)) {
+      throw new Error('Each split must have either categoryId or transferAccountId exclusively.');
+    }
+    const targetId = categoryId ?? transferAccountId;
+    if (typeof targetId !== 'number' || !Number.isSafeInteger(targetId) || targetId <= 0) {
+      throw new Error('Split categoryId or transferAccountId must be a positive integer.');
+    }
+    return {
+      CategoryID: categoryId as number | null,
+      TransferAccountID: transferAccountId as number | null,
+      Memo: String(entry.memo ?? ''),
+      Payee: String(entry.payee ?? ''),
+      // Push amounts use account currency, like the parent. The split service
+      // projects native amounts onto the parent's exact converted total.
+      InflowConverted: inflow,
+      OutflowConverted: outflow,
+      InflowNative: inflow,
+      OutflowNative: outflow,
+      PairID: null,
+      OrderIndex: idx,
+    };
+  });
 }
 
 function withImportIdentities(tx: TransactionSnapshot): TransactionSnapshot {
@@ -137,8 +186,32 @@ export const transactionOps = {
     },
   },
   'transactions.add': {
-    execute: addTransactionFromArgs,
-    invalidates: [...TRANSACTION_INVALIDATION_KEYS],
+    execute: async (args) => {
+      const splits = normalizePushSplits(args.splits);
+      if (splits) {
+        if (args.transferId) throw new Error('Transfer transactions cannot be split.');
+        const parentNet = asMilli(Number(args.inflow ?? 0)) - asMilli(Number(args.outflow ?? 0));
+        const splitNet = splits.reduce(
+          (sum, line) => sum + Number(line.InflowNative) - Number(line.OutflowNative),
+          0
+        );
+        if (splitNet !== parentNet) throw new Error('Split amounts must sum to parent total.');
+      }
+      const transactionId = await addTransactionFromArgs(
+        splits ? { ...args, categoryId: null } : args
+      );
+      if (splits) {
+        try {
+          await S().splits!.upsertSplits(transactionId, splits);
+        } catch (error) {
+          // Parent creation commits independently; compensate on split failure.
+          await S().transactions!.deleteTransaction(transactionId);
+          throw error;
+        }
+      }
+      return transactionId;
+    },
+    invalidates: [...TRANSACTION_INVALIDATION_KEYS, ...SPLIT_INVALIDATION_KEYS],
     undo: {
       // add -> delete the created transaction
       build: (_args, result) => {

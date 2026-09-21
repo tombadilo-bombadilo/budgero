@@ -115,6 +115,47 @@ class RecurringDirection(str, Enum):
 
 
 @dataclass
+class SplitLine:
+    """
+    One line of a split (multi-category) transaction.
+
+    A split transaction has a single parent amount (the sum of its lines)
+    and each line carries its own category and amount.
+
+    Attributes:
+        category_id: ID of the category for this line.
+        inflow: Amount flowing into the account (positive), in currency
+            units. Converted to integer milliunits on the wire.
+        outflow: Amount flowing out of the account (positive), in currency
+            units. Converted to integer milliunits on the wire.
+        memo: Optional description for this line.
+        payee: Optional payee name for this line (defaults to the
+            transaction's payee when omitted).
+
+    Example:
+        >>> line = SplitLine(category_id=5, outflow=12.50)
+    """
+
+    category_id: int
+    inflow: AmountLike = 0
+    outflow: AmountLike = 0
+    memo: str = ""
+    payee: Optional[str] = None
+
+    def to_api_dict(self) -> dict[str, Any]:
+        """Convert to the Push API `splits[]` payload entry (milliunits)."""
+        result: dict[str, Any] = {
+            "categoryId": self.category_id,
+            "inflow": to_milliunits(self.inflow),
+            "outflow": to_milliunits(self.outflow),
+            "memo": self.memo,
+        }
+        if self.payee is not None:
+            result["payee"] = self.payee
+        return result
+
+
+@dataclass
 class TransactionInput:
     """
     Input data for creating a new transaction.
@@ -132,6 +173,9 @@ class TransactionInput:
         memo: Optional description or note for the transaction.
         payee: Optional payee name.
         transfer_id: Optional transfer ID for linked transfer transactions.
+        splits: Optional list of :class:`SplitLine` to create a split
+            (multi-category) transaction. When set, ``category_id`` is
+            ignored and the lines must sum to ``inflow``/``outflow``.
 
     Example:
         >>> tx = TransactionInput(
@@ -153,6 +197,7 @@ class TransactionInput:
     memo: str = ""
     payee: Optional[str] = None
     transfer_id: Optional[str] = None
+    splits: Optional[list[SplitLine]] = None
 
     def to_api_dict(self) -> dict[str, Any]:
         """
@@ -178,6 +223,14 @@ class TransactionInput:
             result["payee"] = self.payee
         if self.transfer_id is not None:
             result["transferId"] = self.transfer_id
+        if self.splits is not None:
+            if not self.splits:
+                raise ValidationError("splits must contain at least one SplitLine")
+            # A split parent has no single category of its own: every line
+            # carries one. The split-service rejects the item if the lines
+            # do not sum to the parent amount.
+            result["categoryId"] = None
+            result["splits"] = [line.to_api_dict() for line in self.splits]
         return result
 
 
