@@ -363,3 +363,51 @@ def test_invalid_reference_updates_are_not_sent(b64_key, fields):
     with make_client(b64_key, handler) as client:
         with pytest.raises(ValidationError):
             client.update_transaction("original", **fields)
+
+
+@pytest.mark.parametrize("destination_amount, expected", [(None, 10001), (Decimal("12.345"), 12345)])
+def test_transfer_wire_payload_and_distinct_handles(key, b64_key, destination_amount, expected):
+    captured = []
+
+    def handler(request):
+        assert request.headers["X-Data-Format-Version"] == "2"
+        captured.append(json.loads(request.content))
+        return httpx.Response(200, json={"id": "q-transfer", "message": "queued"})
+
+    from datetime import date
+    with make_client(b64_key, handler) as client:
+        added = client.add_transfer(1, 2, 3, date(2026, 9, 21), Decimal("10.001"),
+                                    destination_amount=destination_amount, transfer_id="transfer-1")
+        deleted = client.delete_transfer(added.transfer_id)
+    payload = decrypt_payload(captured[0]["encrypted_payload"], key)
+    assert payload["op"] == "transactions.addTransfer"
+    assert payload["args"]["transferId"] == added.transfer_id == "transfer-1"
+    assert payload["args"]["source"]["outflow"] == 10001
+    assert payload["args"]["destination"]["inflow"] == expected
+    assert payload["args"]["source"]["inflow"] == 0
+    assert payload["args"]["destination"]["outflow"] == 0
+    assert payload["args"]["source"]["date"] == "2026-09-21"
+    assert added.message_id == captured[0]["message_id"]
+    assert added.message_id != added.transfer_id
+    payload = decrypt_payload(captured[1]["encrypted_payload"], key)
+    assert payload["op"] == "transactions.deleteTransfer"
+    assert payload["args"] == {"transferId": "transfer-1"}
+    assert deleted.message_id == captured[1]["message_id"]
+    assert deleted.message_id != added.message_id
+    assert deleted.transfer_id == added.transfer_id
+
+
+@pytest.mark.parametrize("overrides", [
+    {"amount": 0}, {"amount": -1}, {"amount": float("nan")},
+    {"destination_amount": -1}, {"source_account_id": 2},
+    {"transfer_id": " "}, {"budget_id": 0},
+])
+def test_invalid_transfers_not_sent(b64_key, overrides):
+    def handler(request):
+        pytest.fail("Invalid transfer must not be sent")
+    args = dict(source_account_id=1, destination_account_id=2, budget_id=3,
+                date="2026-09-21", amount=10)
+    args.update(overrides)
+    with make_client(b64_key, handler) as client:
+        with pytest.raises(ValidationError):
+            client.add_transfer(**args)

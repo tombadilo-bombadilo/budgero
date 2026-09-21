@@ -317,7 +317,7 @@ func (h *Handlers) GetPushEncryptionInfo(c echo.Context) error {
 			"key_derivation":    "The same key used for your budget encryption",
 			"payload_format":    "JSON with op and args fields, then encrypted",
 			"encoding":          "Base64",
-			"supported_opcodes": "transactions.add, transactions.updateByRef, transactions.deleteByRef",
+			"supported_opcodes": "transactions.add, transactions.updateByRef, transactions.deleteByRef, transactions.addTransfer, transactions.deleteTransfer",
 		},
 	})
 }
@@ -388,6 +388,21 @@ func (h *Handlers) GetPushAPISpec(c echo.Context) error {
 				"description": "Delete a transaction previously created via the Push API, referenced by the message_id of the original push",
 				"args": map[string]interface{}{
 					"messageId": map[string]string{"type": "string", "description": "The message_id sent with the original transactions.add push"},
+				},
+			},
+			"transactions.addTransfer": map[string]interface{}{
+				"description": "Move money between two of your own accounts as a linked transfer; the app attempts to remove the source leg if destination creation fails",
+				"args": map[string]interface{}{
+					"budgetId":    map[string]string{"type": "integer", "description": "Budget ID"},
+					"transferId":  map[string]string{"type": "string", "description": "Client-generated unique id linking the two legs; store it to delete the transfer later"},
+					"source":      map[string]string{"type": "object", "description": "Outflow leg: inflow=0, outflow=<source-account milliunits>, accountId, categoryId (0 = auto Transfers), date, memo, payee"},
+					"destination": map[string]string{"type": "object", "description": "Inflow leg: inflow=<destination-account milliunits>, outflow=0, accountId, categoryId (0 = auto Transfers), date, memo, payee"},
+				},
+			},
+			"transactions.deleteTransfer": map[string]interface{}{
+				"description": "Delete both legs of a transfer by its transferId",
+				"args": map[string]interface{}{
+					"transferId": map[string]string{"type": "string", "description": "The transferId used when the transfer was created"},
 				},
 			},
 		},

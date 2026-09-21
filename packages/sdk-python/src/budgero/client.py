@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import uuid
 from datetime import date
 from typing import Any, Optional
 
@@ -501,6 +502,95 @@ class BudgeroClient:
             queue_id=response.get("id"),
             message=response.get("message"),
             message_id=ref_id,
+        )
+
+    def add_transfer(
+        self,
+        source_account_id: int,
+        destination_account_id: int,
+        budget_id: int,
+        date: str | date,
+        amount: AmountLike,
+        *,
+        destination_amount: Optional[AmountLike] = None,
+        memo: str = "",
+        payee: str = "Transfer",
+        transfer_id: Optional[str] = None,
+    ) -> PushResult:
+        """
+        Move money between two of your own accounts as a true linked
+        transfer (the same operation the app UI performs) — not two
+        unrelated transactions.
+
+        Amount is in source-account currency units and must be positive.
+        For accounts in different currencies, pass destination_amount in
+        destination-account currency units. It defaults to amount for
+        same-currency transfers. The app assigns the transfer categories.
+
+        Store the result's ``transfer_id`` for ``delete_transfer()``.
+        ``message_id`` is the distinct queue deduplication identifier.
+        """
+        amt = to_milliunits(amount)
+        if amt <= 0:
+            raise ValidationError("amount must be positive for a transfer")
+        destination_milli = to_milliunits(amount if destination_amount is None else destination_amount)
+        if destination_milli <= 0:
+            raise ValidationError("destination_amount must be positive for a transfer")
+        for name, value in (("source_account_id", source_account_id),
+                            ("destination_account_id", destination_account_id),
+                            ("budget_id", budget_id)):
+            if type(value) is not int or value <= 0:
+                raise ValidationError(f"{name} must be a positive integer")
+        if transfer_id is not None and (not isinstance(transfer_id, str) or not transfer_id.strip()):
+            raise ValidationError("transfer_id must be a non-empty string")
+        if source_account_id == destination_account_id:
+            raise ValidationError("source and destination accounts must differ")
+        date_str = date if isinstance(date, str) else date.isoformat()
+        tid = transfer_id or str(uuid.uuid4())
+        leg = {"categoryId": 0, "date": date_str, "memo": memo, "payee": payee}
+        ref_id, encrypted = self._encrypt_mutation(
+            "transactions.addTransfer",
+            {
+                "budgetId": budget_id,
+                "transferId": tid,
+                "source": {**leg, "inflow": 0, "outflow": amt, "accountId": source_account_id},
+                "destination": {**leg, "inflow": destination_milli, "outflow": 0, "accountId": destination_account_id},
+            },
+        )
+        response = self._make_request(
+            "POST",
+            "/api/v1/push",
+            json_data={"encrypted_payload": encrypted, "message_id": ref_id},
+            headers={"X-Data-Format-Version": str(PROTOCOL_VERSION)},
+        )
+        return PushResult(
+            success=True,
+            queue_id=response.get("id"),
+            message=response.get("message"),
+            message_id=ref_id,
+            transfer_id=tid,
+        )
+
+    def delete_transfer(self, transfer_id: str) -> PushResult:
+        """Delete both legs of a transfer created with ``add_transfer()``."""
+        if not isinstance(transfer_id, str) or not transfer_id.strip():
+            raise ValidationError("transfer_id is required")
+        ref_id, encrypted = self._encrypt_mutation(
+            "transactions.deleteTransfer",
+            {"transferId": transfer_id},
+        )
+        response = self._make_request(
+            "POST",
+            "/api/v1/push",
+            json_data={"encrypted_payload": encrypted, "message_id": ref_id},
+            headers={"X-Data-Format-Version": str(PROTOCOL_VERSION)},
+        )
+        return PushResult(
+            success=True,
+            queue_id=response.get("id"),
+            message=response.get("message"),
+            message_id=ref_id,
+            transfer_id=transfer_id,
         )
 
     def get_queue(self) -> list[PushQueueItem]:

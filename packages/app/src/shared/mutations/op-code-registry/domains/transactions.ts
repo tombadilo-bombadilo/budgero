@@ -244,6 +244,27 @@ export const transactionOps = {
       const source = args.source as Record<string, unknown>;
       const destination = args.destination as Record<string, unknown>;
 
+      if (typeof transferId !== 'string' || !transferId.trim()) {
+        throw new Error('"transferId" is required.');
+      }
+      if (
+        !source ||
+        !destination ||
+        typeof source !== 'object' ||
+        typeof destination !== 'object' ||
+        Array.isArray(source) ||
+        Array.isArray(destination)
+      ) {
+        throw new Error('Source and destination transfer legs are required.');
+      }
+      if (source.accountId === destination.accountId) {
+        throw new Error('Source and destination accounts must differ.');
+      }
+      // Reusing an ID could merge unrelated transfers, and compensating a
+      // failed insert would delete the earlier transfer along with the new leg.
+      const existing = await S().transactions!.getTransactionsByTransferID(transferId);
+      if (existing.length) throw new Error('This transferId is already in use.');
+
       let sourceId: number | null = null;
       try {
         sourceId = await addTransactionFromArgs({ ...source, budgetId, transferId });
@@ -335,6 +356,9 @@ export const transactionOps = {
   'transactions.deleteTransfer': {
     execute: async (args) => {
       const transferId = args.transferId as string;
+      if (typeof transferId !== 'string' || !transferId.trim()) {
+        throw new Error('"transferId" is required.');
+      }
       const transactions = await S().transactions!.getTransactionsByTransferID(transferId);
       const [first] = transactions;
       if (!first) return;

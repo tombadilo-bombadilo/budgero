@@ -52,7 +52,7 @@ describe('transactions.addTransfer', () => {
   beforeEach(() => {
     transactionMocks.addTransaction.mockReset();
     transactionMocks.deleteTransaction.mockReset();
-    transactionMocks.getTransactionsByTransferID.mockReset();
+    transactionMocks.getTransactionsByTransferID.mockReset().mockResolvedValue([]);
     runtimeMocks.executeMutation.mockReset();
     useUndoStore.getState().clear();
   });
@@ -78,8 +78,11 @@ describe('transactions.addTransfer', () => {
     });
     runtimeMocks.executeMutation.mockImplementation((spec) => executor.execute(spec));
     transactionMocks.getTransactionsByTransferID
+      .mockResolvedValueOnce([])
       .mockResolvedValueOnce([{ ID: 202 }])
-      .mockResolvedValueOnce([{ ID: 404 }]);
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ ID: 404 }])
+      .mockResolvedValueOnce([]);
 
     await executor.execute({ op: 'transactions.addTransfer', payload: transferPayload });
 
@@ -129,7 +132,7 @@ describe('transactions.addTransfer', () => {
 
     expect(transactionMocks.deleteTransaction).toHaveBeenCalledTimes(2);
     expect(transactionMocks.deleteTransaction.mock.calls).toEqual([[202], [404]]);
-    expect(transactionMocks.getTransactionsByTransferID).toHaveBeenCalledTimes(2);
+    expect(transactionMocks.getTransactionsByTransferID).toHaveBeenCalledTimes(5);
     expect(transactionMocks.getTransactionsByTransferID).toHaveBeenCalledWith(
       transferPayload.transferId
     );
@@ -180,5 +183,37 @@ describe('transactions.addTransfer', () => {
     expect(transactionMocks.deleteTransaction).toHaveBeenCalledOnce();
     expect(transactionMocks.deleteTransaction).toHaveBeenCalledWith(101);
     consoleError.mockRestore();
+  });
+  it('rejects duplicate transfer IDs without inserting or deleting any leg', async () => {
+    transactionMocks.getTransactionsByTransferID.mockResolvedValueOnce([{ ID: 99 }]);
+    await expect(executeMutationOp('transactions.addTransfer', transferPayload)).rejects.toThrow(
+      /already in use/
+    );
+    expect(transactionMocks.addTransaction).not.toHaveBeenCalled();
+    expect(transactionMocks.deleteTransaction).not.toHaveBeenCalled();
+  });
+
+  it.each(['', ' ', null, 123])('rejects invalid transfer handles: %j', async (transferId) => {
+    await expect(
+      executeMutationOp('transactions.addTransfer', { ...transferPayload, transferId })
+    ).rejects.toThrow(/transferId/);
+    await expect(executeMutationOp('transactions.deleteTransfer', { transferId })).rejects.toThrow(
+      /transferId/
+    );
+    expect(transactionMocks.addTransaction).not.toHaveBeenCalled();
+    expect(transactionMocks.deleteTransaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects transfers to the same account before writing', async () => {
+    await expect(
+      executeMutationOp('transactions.addTransfer', {
+        ...transferPayload,
+        destination: {
+          ...transferPayload.destination,
+          accountId: transferPayload.source.accountId,
+        },
+      })
+    ).rejects.toThrow(/must differ/);
+    expect(transactionMocks.addTransaction).not.toHaveBeenCalled();
   });
 });

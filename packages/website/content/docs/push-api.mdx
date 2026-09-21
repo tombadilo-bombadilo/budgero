@@ -100,6 +100,37 @@ client.add_transaction(
 )
 ```
 
+#### Transfers
+
+- `transactions.addTransfer` — move money between two of your own accounts as a **true linked transfer** (same operation the app UI uses), not two loose transactions. Args: `budgetId`, a client-generated `transferId` (any unique string — store it, it is the handle for deletion), and two legs `source` / `destination`, each with `inflow`/`outflow` (integer milliunits), `accountId`, `categoryId` (use `0` — the app assigns the Transfers category automatically for on-budget transfers), `date`, `memo`, `payee`. Each leg uses its own account currency: the source carries the `outflow`, and the destination carries the received `inflow`. Use equal amounts only for same-currency transfers. If creating the second leg fails, the app attempts to remove the first leg.
+- `transactions.deleteTransfer` — delete **both legs** of a transfer by its `transferId`.
+
+```json
+{
+  "v": 2,
+  "op": "transactions.addTransfer",
+  "args": {
+    "budgetId": 1,
+    "transferId": "3f6f3f6e-0b6e-4f0a-9c2e-transfer-0001",
+    "source":      { "inflow": 0, "outflow": 480000, "accountId": 3, "categoryId": 0, "date": "2026-09-21", "memo": "", "payee": "Transfer" },
+    "destination": { "inflow": 480000, "outflow": 0, "accountId": 7, "categoryId": 0, "date": "2026-09-21", "memo": "", "payee": "Transfer" }
+  }
+}
+```
+
+With the Python SDK, keep the transfer handle separately from the queue message ID:
+
+```python
+result = client.add_transfer(
+    source_account_id=3, destination_account_id=7, budget_id=1,
+    date="2026-09-21", amount=480,
+    # destination_amount=520,  # required when the received currency amount differs
+)
+client.delete_transfer(result.transfer_id)
+```
+
+`result.message_id` identifies the push message; `result.transfer_id` links the two ledger entries. A transfer ID must be unique within the space.
+
 ## Encryption requirements
 
 - Algorithm: AES-256-GCM  

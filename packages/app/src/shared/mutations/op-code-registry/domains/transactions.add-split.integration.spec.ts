@@ -115,4 +115,29 @@ describe('pushed splits with real services', () => {
     expect(await executeMutationOp('transactions.add', args)).toBe(id);
     expect(services.splits.getSplits(id)[0].Memo).toBe('edited');
   });
+  it('creates and deletes both transfer legs while preserving account balances', async () => {
+    const destinationId = (
+      await services.accounts.createAccount('Savings', budgetId, 'savings', 'EUR', asMilli(0))
+    ).ID;
+    const leg = { categoryId: 0, date: '2026-09-21', memo: '', exchangeRateOverride: 1.25 };
+    const args = {
+      budgetId,
+      transferId: 'sdk-transfer',
+      source: { ...leg, accountId, inflow: 0, outflow: 10000 },
+      destination: { ...leg, accountId: destinationId, inflow: 10000, outflow: 0 },
+    };
+    await executeMutationOp('transactions.addTransfer', args);
+    expect(services.transactions.getTransactionsByTransferID('sdk-transfer')).toHaveLength(2);
+    expect(services.accounts.getAccount(accountId).BalanceNative).toBe(-10000);
+    expect(services.accounts.getAccount(destinationId).BalanceNative).toBe(10000);
+    await expect(executeMutationOp('transactions.addTransfer', args)).rejects.toThrow(
+      /already in use/
+    );
+    expect(services.transactions.getTransactionsByTransferID('sdk-transfer')).toHaveLength(2);
+    await executeMutationOp('transactions.deleteTransfer', { transferId: 'sdk-transfer' });
+    await executeMutationOp('transactions.deleteTransfer', { transferId: 'sdk-transfer' });
+    expect(services.transactions.getTransactionsByTransferID('sdk-transfer')).toHaveLength(0);
+    expect(services.accounts.getAccount(accountId).BalanceNative).toBe(0);
+    expect(services.accounts.getAccount(destinationId).BalanceNative).toBe(0);
+  });
 });

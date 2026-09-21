@@ -627,9 +627,12 @@ class PushResult:
         message: Optional message.
         message_id: Client-generated dedup id of the push. Store it: it is
             the reference for ``update_transaction()`` / ``delete_transaction()``.
+        transfer_id: Linked-transfer identifier returned by transfer operations.
+            Pass it to ``delete_transfer()``.
     """
 
     success: bool
     queue_id: Optional[str] = None
     message: Optional[str] = None
     message_id: Optional[str] = None
+    transfer_id: Optional[str] = None
