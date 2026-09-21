@@ -1,16 +1,22 @@
+import * as React from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import type {
   YNABImportProgressUpdate,
   YNABImportStage,
   YNABImportSummary,
+  YNABReadyToAssignCategoryCause,
+  YNABReadyToAssignMismatch,
   YNABReconciliationReport,
 } from '@budgero/core/browser';
 import { Alert, AlertDescription, AlertTitle } from '@shared/ui/alert';
 import { Button } from '@shared/ui/button';
 import { Progress } from '@shared/ui/progress';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Circle,
   Loader2,
   RotateCcw,
@@ -66,6 +72,212 @@ function formatMilli(amount: number, currency: string): string {
   } catch {
     return `${(amount / 1000).toFixed(3)} ${currency}`;
   }
+}
+
+function ReadyToAssignMismatchesTable({
+  mismatches,
+  currency,
+}: {
+  mismatches: YNABReadyToAssignMismatch[];
+  currency: string;
+}) {
+  const { t } = useLingui();
+  const tableContainerRef = React.useRef<HTMLDivElement>(null);
+
+  const scrollLeft = () => {
+    tableContainerRef.current?.scrollBy({ left: -320, behavior: 'smooth' });
+  };
+
+  const scrollRight = () => {
+    tableContainerRef.current?.scrollBy({ left: 320, behavior: 'smooth' });
+  };
+
+  // Extract unique root causes across all mismatches
+  const rootCausesMap = new Map<string, YNABReadyToAssignCategoryCause>();
+
+  for (const m of mismatches) {
+    if (m.affectedCategories) {
+      for (const cause of m.affectedCategories) {
+        const key = `category::${cause.categoryGroup}::${cause.category}::${cause.month}::${cause.reason}`;
+        if (!rootCausesMap.has(key)) {
+          rootCausesMap.set(key, cause);
+        }
+      }
+    }
+  }
+
+  const rootCauses = [...rootCausesMap.values()].sort((a, b) => {
+    const monthA = a.month;
+    const monthB = b.month;
+    const monthCmp = monthA.localeCompare(monthB);
+    if (monthCmp !== 0) return monthCmp;
+    return Math.abs(b.amount) - Math.abs(a.amount);
+  });
+
+  return (
+    <div className="space-y-2">
+      {rootCauses.length > 0 && (
+        <div className="rounded-md border border-amber-500/30 bg-background/90 p-2.5 text-xs space-y-1.5">
+          <p className="font-semibold text-foreground">
+            <Trans>Discrepancy Causes by Origin Month</Trans>
+          </p>
+          <p className="text-[11px] text-muted-foreground">
+            <Trans>
+              Ready to Assign differences across months originate from the following discrepancies:
+            </Trans>
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
+            {rootCauses.map((cause, i) => (
+              <div
+                key={i}
+                className="flex items-center justify-between rounded border bg-muted/30 px-2 py-1 text-[11px]"
+              >
+                <span className="font-medium truncate mr-2">
+                  `${cause.categoryGroup} › ${cause.category}`
+                </span>
+                <span className="shrink-0 font-mono font-medium text-amber-700 dark:text-amber-400">
+                  {formatMilli(cause.amount, currency)}{' '}
+                  <span className="text-[10px] text-muted-foreground font-sans font-normal">
+                    ({cause.month} ·{' '}
+                    {cause.reason === 'cash_overspend' ? 'cash overspend' : 'assigned'})
+                  </span>
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-2 px-0.5">
+        <span className="text-[11px] text-muted-foreground font-medium flex items-center gap-1">
+          <Trans>Scroll horizontally to view all columns →</Trans>
+        </span>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-6 w-6"
+            onClick={scrollLeft}
+            aria-label={t`Scroll left`}
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-6 w-6"
+            onClick={scrollRight}
+            aria-label={t`Scroll right`}
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      <div className="w-full overflow-hidden rounded-md border bg-background/80 shadow-2xs">
+        <Table
+          containerRef={tableContainerRef}
+          containerClassName="max-h-80 overflow-x-auto overflow-y-auto [scrollbar-width:auto] [&::-webkit-scrollbar]:h-3 [&::-webkit-scrollbar]:w-3 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/35 hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/55 [&::-webkit-scrollbar-track]:bg-muted/40"
+          className="min-w-[1120px] text-xs"
+        >
+          <TableHeader className="sticky top-0 bg-muted/95 backdrop-blur-xs z-10">
+            <TableRow>
+              <TableHead className="h-8 font-semibold whitespace-nowrap">
+                <Trans>YEAR-MONTH</Trans>
+              </TableHead>
+              <TableHead className="h-8 font-semibold text-right whitespace-nowrap">
+                <Trans>DIFFERENCE</Trans>
+              </TableHead>
+              <TableHead className="h-8 font-semibold whitespace-nowrap">
+                <Trans>CATEGORY</Trans>
+              </TableHead>
+              <TableHead className="h-8 font-semibold text-right whitespace-nowrap">
+                <Trans>YNAB VALUE</Trans>
+              </TableHead>
+              <TableHead className="h-8 font-semibold text-right whitespace-nowrap">
+                <Trans>Budgero VALUE</Trans>
+              </TableHead>
+              <TableHead className="h-8 font-semibold text-right whitespace-nowrap">
+                <Trans>Income</Trans>
+              </TableHead>
+              <TableHead className="h-8 font-semibold text-right whitespace-nowrap">
+                <Trans>Assigned</Trans>
+              </TableHead>
+              <TableHead className="h-8 font-semibold text-right whitespace-nowrap">
+                <Trans>Off-budget</Trans>
+              </TableHead>
+              <TableHead className="h-8 font-semibold text-right whitespace-nowrap">
+                <Trans>Prior cash overspend</Trans>
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {mismatches.map((m) => (
+              <TableRow key={m.month}>
+                <TableCell className="py-1.5 font-medium whitespace-nowrap">{m.month}</TableCell>
+                <TableCell className="py-1.5 text-right font-medium text-amber-700 dark:text-amber-400 whitespace-nowrap font-mono">
+                  {formatMilli(m.difference, currency)}
+                </TableCell>
+                <TableCell className="py-1.5 min-w-[220px]">
+                  {m.affectedCategories && m.affectedCategories.length > 0 ? (
+                    <div className="space-y-1">
+                      {m.affectedCategories.map((cause, idx) => (
+                        <div key={idx} className="text-[11px] leading-tight">
+                          <span className="font-medium">
+                            {cause.categoryGroup} › {cause.category}
+                          </span>
+                          <div className="text-[10px] text-muted-foreground font-mono">
+                            <span
+                              className={
+                                cause.amount < 0
+                                  ? 'text-amber-700 dark:text-amber-400 font-medium'
+                                  : 'font-medium'
+                              }
+                            >
+                              {formatMilli(cause.amount, currency)}
+                            </span>{' '}
+                            <span className="font-sans">
+                              (
+                              {cause.reason === 'cash_overspend'
+                                ? `cash overspend in ${cause.month}`
+                                : `assigned diff in ${cause.month}`}
+                              )
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground">No Category (possible Transfer)</span>
+                  )}
+                </TableCell>
+                <TableCell className="py-1.5 text-right whitespace-nowrap font-mono">
+                  {formatMilli(m.expectedReadyToAssign, currency)}
+                </TableCell>
+                <TableCell className="py-1.5 text-right whitespace-nowrap font-mono">
+                  {formatMilli(m.computedReadyToAssign, currency)}
+                </TableCell>
+                <TableCell className="py-1.5 text-right whitespace-nowrap font-mono">
+                  {formatMilli(m.breakdown.income, currency)}
+                </TableCell>
+                <TableCell className="py-1.5 text-right whitespace-nowrap font-mono">
+                  {formatMilli(m.breakdown.assignments, currency)}
+                </TableCell>
+                <TableCell className="py-1.5 text-right whitespace-nowrap font-mono">
+                  {formatMilli(m.breakdown.offBudgetTransfers, currency)}
+                </TableCell>
+                <TableCell className="py-1.5 text-right whitespace-nowrap font-mono">
+                  {formatMilli(m.breakdown.priorCashOverspend, currency)}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
 }
 
 export function YnabImportStatus({
@@ -284,32 +496,10 @@ export function YnabImportStatus({
               <Trans>Budgero did not alter the ledger to force these values to match.</Trans>
             </p>
           </div>
-          <div className="max-h-52 space-y-2 overflow-y-auto pr-1">
-            {verification.readyToAssign.mismatches.map((mismatch) => (
-              <div key={mismatch.month} className="rounded border bg-background/80 p-2 text-[11px]">
-                <div className="flex flex-wrap justify-between gap-2 font-medium">
-                  <span>{mismatch.month}</span>
-                  <span className="text-amber-700 dark:text-amber-400">
-                    Δ {formatMilli(mismatch.difference, currency)}
-                  </span>
-                </div>
-                <p className="mt-1 text-muted-foreground">
-                  <Trans>
-                    YNAB {formatMilli(mismatch.expectedReadyToAssign, currency)} · Budgero{' '}
-                    {formatMilli(mismatch.computedReadyToAssign, currency)}
-                  </Trans>
-                </p>
-                <p className="mt-1 text-muted-foreground">
-                  <Trans>
-                    Income {formatMilli(mismatch.breakdown.income, currency)} · Assigned{' '}
-                    {formatMilli(mismatch.breakdown.assignments, currency)} · Off-budget{' '}
-                    {formatMilli(mismatch.breakdown.offBudgetTransfers, currency)} · Prior cash
-                    overspend {formatMilli(mismatch.breakdown.priorCashOverspend, currency)}
-                  </Trans>
-                </p>
-              </div>
-            ))}
-          </div>
+          <ReadyToAssignMismatchesTable
+            mismatches={verification.readyToAssign.mismatches}
+            currency={currency}
+          />
         </div>
       )}
 

@@ -344,8 +344,8 @@ export function normalizeYNABApiSnapshot(snapshot: YNABApiPlanSnapshot): Normali
         )
         .join('; ');
       const omitted = mismatches.length - Math.min(mismatches.length, 6);
-      throw new Error(
-        `YNAB source integrity check failed: Money Movements disagree with ${mismatches.length} monthly category assignment${mismatches.length === 1 ? '' : 's'} (${visible}${omitted > 0 ? `; and ${omitted} more` : ''}).`
+      console.warn(
+        `YNAB Money Movements warning: Money Movements disagree with ${mismatches.length} monthly category assignment${mismatches.length === 1 ? '' : 's'} (${visible}${omitted > 0 ? `; and ${omitted} more` : ''}). Continuing import using monthly category assignments.`
       );
     }
     categoryAssignmentsVerified = verifiedAssignments;

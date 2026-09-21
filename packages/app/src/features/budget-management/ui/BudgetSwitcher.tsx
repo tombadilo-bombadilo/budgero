@@ -86,7 +86,7 @@ export function BudgetSwitcher() {
             setCreateDialogOpen(open);
           }}
         >
-          <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-x-hidden overflow-y-auto p-2 sm:p-4">
+          <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto p-2 sm:p-4 sm:max-w-3xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl w-[95vw]">
             <DialogTitle className="sr-only">Create New Budget</DialogTitle>
             <DialogDescription className="sr-only">
               <Trans>Set up a new budget to track your finances</Trans>

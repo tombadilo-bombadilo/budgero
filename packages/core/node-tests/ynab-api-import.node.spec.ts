@@ -410,13 +410,16 @@ describe('YNAB API import', () => {
     expect(normalizeYNABMilliunitPrecision(-9_876, 2)).toBe(-9_880);
   });
 
-  it('rejects a source snapshot whose Money Movements disagree with monthly assignments', () => {
+  it('warns when a source snapshot Money Movements disagree with monthly assignments', () => {
     const snapshot = snapshotFixture();
     snapshot.moneyMovements![0].amount = 4_000;
 
-    expect(() => normalizeYNABApiSnapshot(snapshot)).toThrow(
-      /source integrity check failed.*Money Movements disagree.*Food/i
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    normalizeYNABApiSnapshot(snapshot);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(/YNAB Money Movements warning.*Money Movements disagree/i)
     );
+    warnSpy.mockRestore();
   });
 
   it.each(['2026-04-01', '2026-08-01', '2026-10-01'])(
@@ -472,15 +475,21 @@ describe('YNAB API import', () => {
     });
   });
 
-  it('rejects a missing category movement within a month that has movement history', () => {
+  it('warns but does not reject when Money Movements disagree with category assignments', () => {
     const snapshot = snapshotFixture();
     const rent = category('category-rent', 'group-everyday', 'Rent', 2_000);
     snapshot.plan.categories.push(rent);
     snapshot.plan.months[0].categories.push(rent);
 
-    expect(() => normalizeYNABApiSnapshot(snapshot)).toThrow(
-      /Money Movements disagree with 1 monthly category assignment.*Rent: monthly assignment 2000, Money Movements 0/i
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const normalized = normalizeYNABApiSnapshot(snapshot);
+    expect(normalized.categoryMonthSpecs).toHaveLength(2);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringMatching(
+        /YNAB Money Movements warning: Money Movements disagree with 1 monthly category assignment/i
+      )
     );
+    warnSpy.mockRestore();
   });
 
   it('verifies zero assignments in a covered month, including movements that cancel out', () => {
@@ -1132,7 +1141,9 @@ describe('YNAB API import', () => {
         currency: 'USD',
         numberFormat: '123,456.78',
         badgeIcon: 'HelpCircle',
-        onProgress: (update) => updates.push(update),
+        onProgress: (update) => {
+          updates.push(update);
+        },
       });
 
       expect(updates).toEqual(
@@ -1265,6 +1276,86 @@ describe('YNAB API import', () => {
         },
       });
       expect(adapter.prepare('SELECT COUNT(*) AS Count FROM budgets').get()).toEqual({ Count: 1 });
+    } finally {
+      adapter.close();
+    }
+  });
+
+  it('attributes Ready to Assign discrepancies caused by cash overspending', async () => {
+    const adapter = await NodeSqlJsAdapter.create();
+    try {
+      const snapshot = snapshotFixture();
+      snapshot.plan.first_month = '2026-08-01';
+      snapshot.plan.accounts[0].balance = -15_000;
+      snapshot.plan.transactions.push({
+        id: 'transaction-food-overspend',
+        account_id: 'account-checking',
+        date: '2026-08-15',
+        amount: -10_000,
+        memo: 'Overspent dinner',
+        cleared: 'cleared',
+        approved: true,
+        payee_id: 'payee-store',
+        category_id: 'category-food',
+        transfer_account_id: null,
+        transfer_transaction_id: null,
+        deleted: false,
+      });
+      snapshot.plan.months.unshift({
+        month: '2026-08-01',
+        deleted: false,
+        budgeted: 0,
+        activity: -10_000,
+        income: 0,
+        to_be_budgeted: 0,
+        categories: [
+          {
+            id: 'category-income',
+            category_group_id: 'group-income',
+            name: 'Inflow: Ready to Assign',
+            budgeted: 0,
+            activity: 0,
+            balance: 0,
+            deleted: false,
+            internal: true,
+            hidden: false,
+          },
+          {
+            id: 'category-food',
+            category_group_id: 'group-everyday',
+            name: 'Food',
+            budgeted: 0,
+            activity: -10_000,
+            balance: -10_000,
+            deleted: false,
+            internal: false,
+            hidden: false,
+          },
+        ],
+      });
+      snapshot.plan.months[1].to_be_budgeted = 95_000;
+
+      const importer = new YNABImportService(adapter);
+
+      const result = await importer.importYNABFromApiSnapshotWithSummary(snapshot, {
+        spaceId: SPACE_ID,
+        budgetName: 'Category RTA cause test',
+        currency: 'USD',
+        numberFormat: '123,456.78',
+        badgeIcon: 'HelpCircle',
+      });
+
+      expect(result.verification?.readyToAssign.mismatches).toHaveLength(1);
+      const mismatch = result.verification!.readyToAssign.mismatches[0];
+      expect(mismatch.month).toBe('2026-09');
+      expect(mismatch.affectedCategories).toBeDefined();
+      const cause = mismatch.affectedCategories?.find((c) => c.reason === 'cash_overspend');
+      expect(cause).toBeDefined();
+      expect(cause).toMatchObject({
+        category: 'Food',
+        reason: 'cash_overspend',
+        month: '2026-08',
+      });
     } finally {
       adapter.close();
     }

@@ -409,7 +409,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       <div
         className="bo-header-stack"
         style={{
-          maxWidth: 880,
+          maxWidth: isShowingYnabStatus ? 1240 : 880,
           margin: '0 auto 20px',
           display: 'flex',
           justifyContent: 'space-between',
@@ -452,7 +452,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 
       {/* Progress */}
       <div
-        style={{ maxWidth: 880, margin: '0 auto 28px', display: 'flex', justifyContent: 'center' }}
+        style={{
+          maxWidth: isShowingYnabStatus ? 1240 : 880,
+          margin: '0 auto 28px',
+          display: 'flex',
+          justifyContent: 'center',
+        }}
       >
         <div
           className="bo-progress-track"
@@ -477,7 +482,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       <div
         className="bo-card"
         style={{
-          maxWidth: 880,
+          maxWidth: isShowingYnabStatus ? 1240 : 880,
           margin: '0 auto',
           background: '#fffdf8',
           border: '1px dashed rgba(57,57,57,0.55)',

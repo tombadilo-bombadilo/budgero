@@ -336,6 +336,21 @@ export class MonthlyBudgetService {
     return this.queries.readyToAssign(budgetId, getLocalDateString());
   }
 
+  getReadyToAssignBreakdownMap(
+    budgetId: number,
+    months: string[]
+  ): Map<string, ReadyToAssignBreakdown> {
+    if (this.queries.getRtaMode(budgetId) === 'monthly') {
+      return this.queries.readyToAssignMonthlyBatch(budgetId, months);
+    }
+    const single = this.queries.readyToAssign(budgetId, getLocalDateString());
+    const map = new Map<string, ReadyToAssignBreakdown>();
+    for (const m of months) {
+      map.set(m, { ...single, month: m });
+    }
+    return map;
+  }
+
   /**
    * GetAssignedLastMonthByCategoryIds - Gets total assigned for multiple categories in a month
    */

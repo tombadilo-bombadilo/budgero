@@ -48,11 +48,11 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
       budgetId,
       'checking',
       'USD',
-      0
+      asMilli(0)
     );
     await services.transactions.addTransaction(
       asMilli(1000),
-      0,
+      asMilli(0),
       checking.ID,
       incomeId,
       budgetId,
@@ -75,11 +75,11 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
       budgetId,
       'checking',
       'USD',
-      0
+      asMilli(0)
     );
     await services.transactions.addTransaction(
       asMilli(50000),
-      0,
+      asMilli(0),
       checking.ID,
       incomeId,
       budgetId,
@@ -103,12 +103,12 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
       budgetId,
       'checking',
       'USD',
-      0
+      asMilli(0)
     );
     // Income is dated in February.
     await services.transactions.addTransaction(
       asMilli(1000),
-      0,
+      asMilli(0),
       checking.ID,
       incomeId,
       budgetId,
@@ -131,11 +131,11 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
       budgetId,
       'checking',
       'USD',
-      0
+      asMilli(0)
     );
     await services.transactions.addTransaction(
       asMilli(1000),
-      0,
+      asMilli(0),
       checking.ID,
       incomeId,
       budgetId,
@@ -183,11 +183,11 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
       budgetId,
       'checking',
       'USD',
-      0
+      asMilli(0)
     );
     await services.transactions.addTransaction(
       asMilli(1150),
-      0,
+      asMilli(0),
       checking.ID,
       incomeId,
       budgetId,
@@ -195,7 +195,7 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
       'pay'
     );
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(250),
       checking.ID,
       food,
@@ -205,7 +205,7 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
     );
     await services.transactions.addTransaction(
       asMilli(1000),
-      0,
+      asMilli(0),
       checking.ID,
       incomeId,
       budgetId,
@@ -236,11 +236,11 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
       budgetId,
       'checking',
       'USD',
-      0
+      asMilli(0)
     );
     await services.transactions.addTransaction(
       asMilli(1000),
-      0,
+      asMilli(0),
       checking.ID,
       incomeId,
       budgetId,
@@ -250,7 +250,7 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
     // Assign 150, spend 200 cash -> Food overspent by 50 in January.
     services.monthlyBudgets.upsertMonthlyAssignment(food, asMilli(150), '2024-01', budgetId);
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(200),
       checking.ID,
       food,
@@ -282,12 +282,18 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
       budgetId,
       'checking',
       'USD',
-      0
+      asMilli(0)
     );
-    const card = await services.accounts.createAccount('Card', budgetId, 'credit', 'USD', 0);
+    const card = await services.accounts.createAccount(
+      'Card',
+      budgetId,
+      'credit',
+      'USD',
+      asMilli(0)
+    );
     await services.transactions.addTransaction(
       asMilli(1000),
-      0,
+      asMilli(0),
       checking.ID,
       incomeId,
       budgetId,
@@ -297,7 +303,7 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
     // Assign 100, spend 150 on the CREDIT card -> 50 over, but on credit.
     services.monthlyBudgets.upsertMonthlyAssignment(food, asMilli(100), '2024-01', budgetId);
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(150),
       card.ID,
       food,
@@ -318,11 +324,11 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
       budgetId,
       'checking',
       'USD',
-      0
+      asMilli(0)
     );
     await services.transactions.addTransaction(
       asMilli(1000),
-      0,
+      asMilli(0),
       checking.ID,
       incomeId,
       budgetId,
@@ -331,7 +337,7 @@ describe('Ready to Assign — monthly (YNAB-style) mode', () => {
     );
     services.monthlyBudgets.upsertMonthlyAssignment(food, asMilli(150), '2024-01', budgetId);
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(200),
       checking.ID,
       food,
@@ -358,19 +364,19 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
       base.budgetId,
       'checking',
       'USD',
-      0
+      asMilli(0)
     );
     const card = await base.services.accounts.createAccount(
       'Card',
       base.budgetId,
       'credit',
       'USD',
-      0
+      asMilli(0)
     );
     base.services.budgets.updateRtaMode(base.budgetId, 'monthly');
     await base.services.transactions.addTransaction(
       asMilli(1000),
-      0,
+      asMilli(0),
       checking.ID,
       base.incomeId,
       base.budgetId,
@@ -384,7 +390,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     const { services, budgetId, food, card } = await setupWithCard();
     services.monthlyBudgets.upsertMonthlyAssignment(food, asMilli(100), '2024-01', budgetId);
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(60),
       card.ID,
       food,
@@ -402,7 +408,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     const { services, budgetId, food, card } = await setupWithCard();
     services.monthlyBudgets.upsertMonthlyAssignment(food, asMilli(100), '2024-01', budgetId);
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(140),
       card.ID,
       food,
@@ -423,7 +429,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     const { services, budgetId, food, card } = await setupWithCard();
     services.monthlyBudgets.upsertMonthlyAssignment(food, asMilli(100), '2024-01', budgetId);
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(140),
       card.ID,
       food,
@@ -442,7 +448,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     const { services, budgetId, food, card, checking } = await setupWithCard();
     services.monthlyBudgets.upsertMonthlyAssignment(food, asMilli(100), '2024-01', budgetId);
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(140),
       card.ID,
       food,
@@ -451,7 +457,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
       'credit groceries'
     );
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(50),
       checking.ID,
       food,
@@ -471,7 +477,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     const { services, budgetId, food, card } = await setupWithCard();
     services.monthlyBudgets.upsertMonthlyAssignment(food, asMilli(100), '2024-01', budgetId);
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(140),
       card.ID,
       food,
@@ -481,7 +487,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     );
     await services.transactions.addTransaction(
       asMilli(20),
-      0,
+      asMilli(0),
       card.ID,
       food,
       budgetId,
@@ -499,7 +505,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     const { services, budgetId, food, card } = await setupWithCard();
     // January: credit spend with nothing assigned -> pure credit overspend.
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(50),
       card.ID,
       food,
@@ -525,7 +531,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
       .find((c: { Name: string }) => c.Name === 'Transfers')!.ID;
     services.monthlyBudgets.upsertMonthlyAssignment(food, asMilli(100), '2024-01', budgetId);
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(60),
       card.ID,
       food,
@@ -535,7 +541,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     );
     // Pay the card $60: transfer checking -> card (two linked legs).
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(60),
       checking.ID,
       transfersId,
@@ -546,7 +552,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     );
     await services.transactions.addTransaction(
       asMilli(60),
-      0,
+      asMilli(0),
       card.ID,
       transfersId,
       budgetId,
@@ -572,7 +578,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     const { services, budgetId, food, card } = await setupWithCard();
     services.monthlyBudgets.upsertMonthlyAssignment(food, asMilli(100), '2024-01', budgetId);
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(140),
       card.ID,
       food,
@@ -592,7 +598,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
   it('splits category activity into cash and credit', async () => {
     const { services, budgetId, food, card, checking } = await setupWithCard();
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(90),
       card.ID,
       food,
@@ -601,7 +607,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
       'credit buy'
     );
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(30),
       checking.ID,
       food,
@@ -639,7 +645,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
 
     await services.transactions.addTransaction(
       asMilli(1000),
-      0,
+      asMilli(0),
       checking.ID,
       incomeId,
       budgetId,
@@ -653,7 +659,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     const tId = `xfer_in_${Date.now()}`;
     await services.transactions.addTransaction(
       asMilli(200),
-      0,
+      asMilli(0),
       checking.ID,
       transfersCat,
       budgetId,
@@ -662,7 +668,7 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
       tId
     );
     await services.transactions.addTransaction(
-      0,
+      asMilli(0),
       asMilli(200),
       tracking.ID,
       transfersCat,
@@ -680,5 +686,56 @@ describe('Ready to Assign — monthly mode, credit-card behaviour', () => {
     // Monthly (YNAB-style): same, counted in the month it lands.
     services.budgets.updateRtaMode(budgetId, 'monthly');
     expect(services.monthlyBudgets.getReadyToAssign(budgetId, '2024-01')).toBe(asMilli(1200));
+  });
+
+  it('batches monthly breakdowns across multiple months matching individual calculations', async () => {
+    const { services, budgetId, incomeId, food } = await setup();
+    services.budgets.updateRtaMode(budgetId, 'monthly');
+    const checking = await services.accounts.createAccount(
+      'Checking',
+      budgetId,
+      'checking',
+      'USD',
+      asMilli(0)
+    );
+
+    await services.transactions.addTransaction(
+      asMilli(1000),
+      asMilli(0),
+      checking.ID,
+      incomeId,
+      budgetId,
+      '2024-01-05',
+      'pay'
+    );
+    await services.transactions.addTransaction(
+      asMilli(500),
+      asMilli(0),
+      checking.ID,
+      incomeId,
+      budgetId,
+      '2024-02-05',
+      'pay'
+    );
+
+    // Overspend food in Jan
+    await services.transactions.addTransaction(
+      asMilli(0),
+      asMilli(100),
+      checking.ID,
+      food,
+      budgetId,
+      '2024-01-15',
+      'food'
+    );
+
+    const months = ['2024-01', '2024-02', '2024-03'];
+    const batchMap = services.monthlyBudgets.getReadyToAssignBreakdownMap(budgetId, months);
+
+    for (const m of months) {
+      const single = services.monthlyBudgets.getReadyToAssignBreakdown(budgetId, m);
+      const batch = batchMap.get(m);
+      expect(batch).toEqual(single);
+    }
   });
 });
