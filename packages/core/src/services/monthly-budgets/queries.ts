@@ -59,7 +59,7 @@ export class MonthlyBudgetQueries {
     run(
       this.db,
       `
-      INSERT INTO assignments (CategoryID, Amount, Month, BudgetID) 
+      INSERT INTO assignments (CategoryID, Amount, Month, BudgetID)
       VALUES (?, ?, ?, ?)
     `,
       categoryId,
@@ -77,8 +77,8 @@ export class MonthlyBudgetQueries {
     run(
       this.db,
       `
-      UPDATE assignments 
-      SET Amount = ? 
+      UPDATE assignments
+      SET Amount = ?
       WHERE CategoryID = ? AND Month = ?
     `,
       amount,
@@ -95,7 +95,7 @@ export class MonthlyBudgetQueries {
     return getRow<Assignment>(
       this.db,
       `
-      SELECT * FROM assignments 
+      SELECT * FROM assignments
       WHERE CategoryID = ? AND Month = ?
     `,
       categoryId,
@@ -174,8 +174,7 @@ export class MonthlyBudgetQueries {
 
       for (const old of oldAssignments) {
         const existing = checkStmt.get(newCategoryId, old.Month) as
-          | { ID: number; Amount: number }
-          | undefined;
+          { ID: number; Amount: number } | undefined;
         if (existing) {
           // Merge: add old amount to existing, then delete old row
           updateStmt.run(existing.Amount + old.Amount, existing.ID);
@@ -199,7 +198,7 @@ export class MonthlyBudgetQueries {
     const result = getRow<{ Amount: number }>(
       this.db,
       `
-      SELECT Amount FROM assignments 
+      SELECT Amount FROM assignments
       WHERE Month = ? AND CategoryID = ?
     `,
       month,
@@ -282,8 +281,8 @@ export class MonthlyBudgetQueries {
     const result = getRow<{ total_amount: number }>(
       this.db,
       `
-      SELECT SUM(IFNULL(Amount,0)) as total_amount 
-      FROM assignments 
+      SELECT SUM(IFNULL(Amount,0)) as total_amount
+      FROM assignments
       WHERE Month = ? AND CategoryID IN (${placeholders})
     `,
       month,
@@ -332,8 +331,8 @@ export class MonthlyBudgetQueries {
     const result = getRow(
       this.db,
       `
-      SELECT COUNT(*) as count 
-      FROM assignments 
+      SELECT COUNT(*) as count
+      FROM assignments
       WHERE CategoryID = ? AND Amount != 0
     `,
       categoryId
@@ -355,8 +354,8 @@ export class MonthlyBudgetQueries {
       INNER JOIN accounts acc ON t.AccountID = acc.ID
       INNER JOIN categories c ON t.CategoryID = c.ID
       INNER JOIN category_groups cg ON c.CategoryGroupID = cg.ID
-      WHERE t.BudgetID = ?1 
-        AND acc.OnBudget = TRUE 
+      WHERE t.BudgetID = ?1
+        AND acc.OnBudget = TRUE
         AND cg.Name = 'Income'
         AND (t.TransferID IS NULL OR t.TransferID = '')
         AND DATE(t.Date) <= DATE(?2)
@@ -515,35 +514,65 @@ export class MonthlyBudgetQueries {
    * deducted here.
    */
   readyToAssignMonthly(budgetId: number, month: string): ReadyToAssignBreakdown {
-    const income =
-      getRow<{ total: number }>(
-        this.db,
-        `
+    const result = this.readyToAssignMonthlyBatch(budgetId, [month]).get(month);
+    if (!result) {
+      throw new Error(`Failed to calculate monthly Ready to Assign for ${month}`);
+    }
+    return result;
+  }
+
+  /**
+   * ReadyToAssignMonthlyBatch - Calculates YNAB-style Ready to Assign across multiple months
+   * in a single pass (O(N) instead of O(N^2)).
+   */
+  readyToAssignMonthlyBatch(
+    budgetId: number,
+    months: string[]
+  ): Map<string, ReadyToAssignBreakdown> {
+    const result = new Map<string, ReadyToAssignBreakdown>();
+    if (months.length === 0) return result;
+
+    const maxMonth = months.reduce((max, m) => (m > max ? m : max), months[0]);
+
+    // 1. Grouped monthly income
+    const incomeRows = allRows<{ Month: string; total: number }>(
+      this.db,
+      `
       WITH ${MONTHLY_ACTIVITY_CTE}
-      SELECT IFNULL(SUM(CASE WHEN line.AccountType = 'credit' THEN line.Cash ELSE line.Amount END), 0) AS total
+      SELECT line.Month, IFNULL(SUM(CASE WHEN line.AccountType = 'credit' THEN line.Cash ELSE line.Amount END), 0) AS total
       FROM monthly_activity line
       JOIN categories c ON line.CategoryID = c.ID
       JOIN category_groups cg ON c.CategoryGroupID = cg.ID
       WHERE cg.Name = 'Income'
         OR (line.AccountType = 'credit' AND cg.Name = 'Transfers')
+      GROUP BY line.Month
     `,
-        budgetId,
-        month
-      )?.total ?? 0;
+      budgetId,
+      maxMonth
+    );
+    const monthlyIncome = new Map<string, number>();
+    for (const r of incomeRows) monthlyIncome.set(r.Month, r.total);
 
-    const assignments =
-      getRow<{ total: number }>(
-        this.db,
-        `SELECT IFNULL(SUM(Amount), 0) as total FROM assignments WHERE BudgetID = ?1 AND Month <= ?2`,
-        budgetId,
-        month
-      )?.total ?? 0;
+    // 2. Grouped monthly assignments
+    const assignmentRows = allRows<{ Month: string; total: number }>(
+      this.db,
+      `
+      SELECT Month, IFNULL(SUM(Amount), 0) as total
+      FROM assignments
+      WHERE BudgetID = ?1 AND Month <= ?2
+      GROUP BY Month
+    `,
+      budgetId,
+      maxMonth
+    );
+    const monthlyAssignments = new Map<string, number>();
+    for (const r of assignmentRows) monthlyAssignments.set(r.Month, r.total);
 
-    const offBudgetTransfers =
-      getRow<{ total: number }>(
-        this.db,
-        `
-      SELECT IFNULL(SUM(t.OutflowConverted), 0) as total
+    // 3. Grouped monthly off-budget transfers
+    const offBudgetRows = allRows<{ Month: string; total: number }>(
+      this.db,
+      `
+      SELECT t.Month, IFNULL(SUM(t.OutflowConverted), 0) as total
       FROM transactions t
       INNER JOIN accounts src ON t.AccountID = src.ID
       INNER JOIN categories c ON t.CategoryID = c.ID
@@ -564,16 +593,19 @@ export class MonthlyBudgetQueries {
             AND dest.OnBudget = FALSE
             AND LOWER(dest.Type) NOT IN ('credit', 'loan', 'mortgage')
         )
+      GROUP BY t.Month
     `,
-        budgetId,
-        month
-      )?.total ?? 0;
+      budgetId,
+      maxMonth
+    );
+    const monthlyOffBudget = new Map<string, number>();
+    for (const r of offBudgetRows) monthlyOffBudget.set(r.Month, r.total);
 
-    const inBudgetTransfers =
-      getRow<{ total: number }>(
-        this.db,
-        `
-      SELECT IFNULL(SUM(t.InflowConverted), 0) as total
+    // 4. Grouped monthly in-budget transfers
+    const inBudgetRows = allRows<{ Month: string; total: number }>(
+      this.db,
+      `
+      SELECT t.Month, IFNULL(SUM(t.InflowConverted), 0) as total
       FROM transactions t
       INNER JOIN accounts dst ON t.AccountID = dst.ID
       INNER JOIN categories c ON t.CategoryID = c.ID
@@ -594,57 +626,125 @@ export class MonthlyBudgetQueries {
             AND src.OnBudget = FALSE
             AND LOWER(src.Type) NOT IN ('credit', 'loan', 'mortgage')
         )
+      GROUP BY t.Month
     `,
-        budgetId,
-        month
-      )?.total ?? 0;
+      budgetId,
+      maxMonth
+    );
+    const monthlyInBudget = new Map<string, number>();
+    for (const r of inBudgetRows) monthlyInBudget.set(r.Month, r.total);
 
-    const revaluations =
-      getRow<{ total: number }>(
-        this.db,
-        `
-      SELECT IFNULL(SUM(r.DeltaConverted), 0) as total
+    // 5. Grouped monthly revaluations
+    const revalRows = allRows<{ Month: string; total: number }>(
+      this.db,
+      `
+      SELECT strftime('%Y-%m', r.Date) as Month, IFNULL(SUM(r.DeltaConverted), 0) as total
       FROM account_revaluations r
       INNER JOIN accounts a ON r.AccountID = a.ID
       WHERE r.BudgetID = ?1 AND a.OnBudget = TRUE AND strftime('%Y-%m', r.Date) <= ?2
+      GROUP BY strftime('%Y-%m', r.Date)
     `,
-        budgetId,
-        month
-      )?.total ?? 0;
+      budgetId,
+      maxMonth
+    );
+    const monthlyReval = new Map<string, number>();
+    for (const r of revalRows) monthlyReval.set(r.Month, r.total);
 
-    const { priorCashOverspend } = this.computeMonthlyRollforward(budgetId, month);
+    // 6. Single-pass rollforward across the timeline
+    const nextMonth = (() => {
+      const [yearStr, monthStr] = maxMonth.split('-');
+      let y = parseInt(yearStr, 10);
+      let mon = parseInt(monthStr, 10);
+      mon++;
+      if (mon > 12) {
+        mon = 1;
+        y++;
+      }
+      return `${y}-${String(mon).padStart(2, '0')}`;
+    })();
 
-    const leftover =
-      income -
-      assignments -
-      offBudgetTransfers +
-      inBudgetTransfers +
-      revaluations -
-      priorCashOverspend;
-    const futureAssignments = 0;
-    const readyToAssign = leftover;
+    const { priorCashOverspendDetails: allPriorCashOverspendDetails } =
+      this.computeMonthlyRollforward(budgetId, nextMonth);
 
-    debugLog(`Ready to Assign (monthly, through ${month}):`);
-    debugLog(`  Income: ${income.toLocaleString()}`);
-    debugLog(`  Assignments: ${assignments.toLocaleString()}`);
-    debugLog(`  Future assignments: ${futureAssignments.toLocaleString()}`);
-    debugLog(`  Off-budget transfers: ${offBudgetTransfers.toLocaleString()}`);
-    debugLog(`  On-budget transfers: ${inBudgetTransfers.toLocaleString()}`);
-    debugLog(`  Prior cash overspend: ${priorCashOverspend.toLocaleString()}`);
-    debugLog(`  Ready to Assign: ${readyToAssign.toLocaleString()}`);
+    // Collect all distinct months in chronological order
+    const allMonthsSet = new Set<string>(months);
+    for (const m of monthlyIncome.keys()) allMonthsSet.add(m);
+    for (const m of monthlyAssignments.keys()) allMonthsSet.add(m);
+    for (const m of monthlyOffBudget.keys()) allMonthsSet.add(m);
+    for (const m of monthlyInBudget.keys()) allMonthsSet.add(m);
+    for (const m of monthlyReval.keys()) allMonthsSet.add(m);
+    const timeline = [...allMonthsSet].filter((m) => m <= maxMonth).sort();
 
-    return {
-      mode: 'monthly',
-      month,
-      income: asMilli(income),
-      assignments: asMilli(assignments),
-      futureAssignments: asMilli(futureAssignments),
-      offBudgetTransfers: asMilli(offBudgetTransfers),
-      inBudgetTransfers: asMilli(inBudgetTransfers),
-      revaluations: asMilli(revaluations),
-      priorCashOverspend: asMilli(priorCashOverspend),
-      readyToAssign: asMilli(readyToAssign),
-    };
+    // Running cumulative totals across timeline
+    const cumIncome = new Map<string, number>();
+    const cumAssignments = new Map<string, number>();
+    const cumOffBudget = new Map<string, number>();
+    const cumInBudget = new Map<string, number>();
+    const cumReval = new Map<string, number>();
+
+    let runningIncome = 0;
+    let runningAssignments = 0;
+    let runningOffBudget = 0;
+    let runningInBudget = 0;
+    let runningReval = 0;
+
+    for (const m of timeline) {
+      runningIncome += monthlyIncome.get(m) ?? 0;
+      runningAssignments += monthlyAssignments.get(m) ?? 0;
+      runningOffBudget += monthlyOffBudget.get(m) ?? 0;
+      runningInBudget += monthlyInBudget.get(m) ?? 0;
+      runningReval += monthlyReval.get(m) ?? 0;
+
+      cumIncome.set(m, runningIncome);
+      cumAssignments.set(m, runningAssignments);
+      cumOffBudget.set(m, runningOffBudget);
+      cumInBudget.set(m, runningInBudget);
+      cumReval.set(m, runningReval);
+    }
+
+    for (const month of months) {
+      const inc = cumIncome.get(month) ?? runningIncome;
+      const ass = cumAssignments.get(month) ?? runningAssignments;
+      const off = cumOffBudget.get(month) ?? runningOffBudget;
+      const inB = cumInBudget.get(month) ?? runningInBudget;
+      const rev = cumReval.get(month) ?? runningReval;
+
+      const overspendsForMonth = allPriorCashOverspendDetails.filter((o) => o.month < month);
+      const priorCashOverspend = overspendsForMonth.reduce((sum, o) => sum + o.amount, 0);
+
+      const leftover = inc - ass - off + inB + rev - priorCashOverspend;
+      const readyToAssign = leftover;
+
+      debugLog(`Ready to Assign (batch, through ${month}):`);
+      debugLog(`  Income: ${inc.toLocaleString()}`);
+      debugLog(`  Assignments: ${ass.toLocaleString()}`);
+      debugLog(`  Off-budget transfers: ${off.toLocaleString()}`);
+      debugLog(`  On-budget transfers: ${inB.toLocaleString()}`);
+      debugLog(`  Prior cash overspend: ${priorCashOverspend.toLocaleString()}`);
+      debugLog(`  Ready to Assign: ${readyToAssign.toLocaleString()}`);
+
+      result.set(month, {
+        mode: 'monthly',
+        month,
+        income: asMilli(inc),
+        assignments: asMilli(ass),
+        futureAssignments: asMilli(0),
+        offBudgetTransfers: asMilli(off),
+        inBudgetTransfers: asMilli(inB),
+        revaluations: asMilli(rev),
+        priorCashOverspend: asMilli(priorCashOverspend),
+        readyToAssign: asMilli(readyToAssign),
+        priorCashOverspendDetails: overspendsForMonth.map((o) => ({
+          categoryId: o.categoryId,
+          categoryName: o.categoryName,
+          categoryGroupName: o.categoryGroupName,
+          month: o.month,
+          amount: asMilli(o.amount),
+        })),
+      });
+    }
+
+    return result;
   }
 
   /**
@@ -840,7 +940,29 @@ export class MonthlyBudgetQueries {
     currentFundingByPaymentCategory: Map<number, Map<number, number>>;
     debtBreakdownByPaymentCat: Map<number, { categoryId: number; month: string; amount: number }[]>;
     priorCashOverspend: number;
+    priorCashOverspendDetails: {
+      categoryId: number;
+      categoryName: string;
+      categoryGroupName: string;
+      month: string;
+      amount: number;
+    }[];
   } {
+    const categoryMeta = new Map<number, { name: string; groupName: string }>();
+    const catRows = allRows<{ ID: number; Name: string; GroupName: string }>(
+      this.db,
+      `
+      SELECT c.ID, c.Name, cg.Name AS GroupName
+      FROM categories c
+      JOIN category_groups cg ON cg.ID = c.CategoryGroupID
+      WHERE c.BudgetID = ?
+    `,
+      budgetId
+    );
+    for (const r of catRows) {
+      categoryMeta.set(r.ID, { name: r.Name, groupName: r.GroupName });
+    }
+
     const series = this.getCategoryMonthlySeries(budgetId, month);
     const creditSpend = this.getCreditPurchasesInFundingOrder(budgetId, month);
     const cardPayments = this.getCardPaymentsByMonth(budgetId, month);
@@ -906,6 +1028,13 @@ export class MonthlyBudgetQueries {
       else byKey.set(key, { categoryId, month: m, amount });
     };
     let priorCashOverspend = 0;
+    const priorCashOverspendDetails: {
+      categoryId: number;
+      categoryName: string;
+      categoryGroupName: string;
+      month: string;
+      amount: number;
+    }[] = [];
 
     // Spending-category pass: displayed available + per-card funding attribution.
     for (const [categoryId, byMonth] of seriesByCat) {
@@ -953,7 +1082,18 @@ export class MonthlyBudgetQueries {
         if (m === month) {
           availableByCategory.set(categoryId, displayed);
         } else {
-          if (rawCash < 0) priorCashOverspend += -rawCash;
+          if (rawCash < 0) {
+            const overspent = -rawCash;
+            priorCashOverspend += overspent;
+            const meta = categoryMeta.get(categoryId);
+            priorCashOverspendDetails.push({
+              categoryId,
+              categoryName: meta?.name ?? `Category #${categoryId}`,
+              categoryGroupName: meta?.groupName ?? 'Unknown Group',
+              month: m,
+              amount: overspent,
+            });
+          }
           carryTotal = Math.max(0, displayed);
           // Credit spending consumes positive category cash before becoming
           // debt. Carrying rawCash independently would make that funded amount
@@ -1008,7 +1148,18 @@ export class MonthlyBudgetQueries {
             refunds: refunded,
           });
         } else {
-          if (raw < 0) priorCashOverspend += -raw; // overpaid card = cash overspend
+          if (raw < 0) {
+            const overspent = -raw;
+            priorCashOverspend += overspent; // overpaid card = cash overspend
+            const meta = categoryMeta.get(paymentCatId);
+            priorCashOverspendDetails.push({
+              categoryId: paymentCatId,
+              categoryName: meta?.name ?? `Payment Category #${paymentCatId}`,
+              categoryGroupName: meta?.groupName ?? 'Credit Card Payments',
+              month: m,
+              amount: overspent,
+            });
+          }
           carry = Math.max(0, raw);
         }
       }
@@ -1033,6 +1184,7 @@ export class MonthlyBudgetQueries {
       currentFundingByPaymentCategory,
       debtBreakdownByPaymentCat,
       priorCashOverspend,
+      priorCashOverspendDetails,
     };
   }
 
@@ -1192,18 +1344,18 @@ export class MonthlyBudgetQueries {
     // Use a transaction for atomicity and performance
     this.db.transaction(() => {
       const checkStmt = this.db.prepare(`
-        SELECT ID FROM assignments 
+        SELECT ID FROM assignments
         WHERE CategoryID = ? AND Month = ?
       `);
 
       const updateStmt = this.db.prepare(`
-        UPDATE assignments 
+        UPDATE assignments
         SET Amount = ?, BudgetID = ?
         WHERE CategoryID = ? AND Month = ?
       `);
 
       const insertStmt = this.db.prepare(`
-        INSERT INTO assignments (CategoryID, Amount, Month, BudgetID) 
+        INSERT INTO assignments (CategoryID, Amount, Month, BudgetID)
         VALUES (?, ?, ?, ?)
       `);
 

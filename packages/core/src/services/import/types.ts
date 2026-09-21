@@ -125,6 +125,19 @@ export interface YNABImportResult {
   verification?: YNABReconciliationReport;
 }
 
+export interface YNABReadyToAssignCategoryCause {
+  categoryGroup: string;
+  category: string;
+  reason: 'cash_overspend' | 'assigned_diff';
+  month: string;
+  amount: number;
+  expectedAmount?: number;
+  computedAmount?: number;
+  details?: string;
+}
+
+export type YNABReadyToAssignCause = YNABReadyToAssignCategoryCause;
+
 export interface YNABReadyToAssignMismatch {
   month: string;
   expectedReadyToAssign: number;
@@ -137,7 +150,17 @@ export interface YNABReadyToAssignMismatch {
     inBudgetTransfers: number;
     revaluations: number;
     priorCashOverspend: number;
+    priorCashOverspendDetails?: {
+      categoryId: number;
+      categoryName: string;
+      categoryGroupName: string;
+      month: string;
+      amount: number;
+    }[];
   };
+  /** Potential contributors from Budgero's calculation, not a proven decomposition
+   * of the difference: YNAB may already include the same cash overspending. */
+  affectedCategories?: YNABReadyToAssignCategoryCause[];
 }
 
 export type YNABCategoryMonthField = 'assigned' | 'activity' | 'available';
@@ -178,6 +201,7 @@ export interface YNABReconciliationReport {
     checked: number;
     matched: number;
     mismatches: YNABCategoryMonthMismatch[];
+    allMismatches?: YNABCategoryMonthMismatch[];
     omittedMismatches: number;
   };
   readyToAssign: {

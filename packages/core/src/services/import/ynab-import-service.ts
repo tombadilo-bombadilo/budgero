@@ -24,6 +24,7 @@ import {
   YNABImportProgressUpdate,
   YNABImportReadyToAssignSpec,
   YNABReadyToAssignMismatch,
+  YNABReadyToAssignCategoryCause,
   YNABReconciliationReport,
 } from './types.js';
 import { CSVParser } from './csv-parser.js';
@@ -700,8 +701,7 @@ export class YNABImportService {
       });
 
       let accountVerification:
-        | { verified: number; debtBalanceAdjustments: YNABDebtBalanceAdjustment[] }
-        | undefined;
+        { verified: number; debtBalanceAdjustments: YNABDebtBalanceAdjustment[] } | undefined;
       if (accountSpecs) {
         await reportProgress({
           stage: 'account-verification',
@@ -732,6 +732,7 @@ export class YNABImportService {
             checked: number;
             matched: number;
             mismatches: YNABCategoryMonthMismatch[];
+            allMismatches?: YNABCategoryMonthMismatch[];
             omittedMismatches: number;
           }
         | undefined;
@@ -770,8 +771,7 @@ export class YNABImportService {
       }
 
       let readyToAssignVerification:
-        | { checked: number; matched: number; mismatches: YNABReadyToAssignMismatch[] }
-        | undefined;
+        { checked: number; matched: number; mismatches: YNABReadyToAssignMismatch[] } | undefined;
       if (readyToAssignSpecs) {
         await reportProgress({
           stage: 'rta-verification',
@@ -782,6 +782,7 @@ export class YNABImportService {
         readyToAssignVerification = await this.verifyYNABReadyToAssign(
           budgetId,
           readyToAssignSpecs,
+          categoryVerification?.allMismatches,
           async (processed, total, month) => {
             const progress = Math.min(98, 95 + Math.floor((processed / total) * 3));
             await reportProgress({
@@ -794,14 +795,39 @@ export class YNABImportService {
           }
         );
         const rtaWarning = readyToAssignVerification.mismatches.length > 0;
+        let rtaDetail = `${readyToAssignVerification.matched} months match YNAB`;
+        if (rtaWarning) {
+          const formatAmt = (milli: number) =>
+            (milli / 1000).toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            });
+          rtaDetail = `${readyToAssignVerification.mismatches.length} of ${readyToAssignVerification.checked} months differ from YNAB`;
+
+          for (const m of readyToAssignVerification.mismatches) {
+            const causesSummary =
+              m.affectedCategories && m.affectedCategories.length > 0
+                ? ` | Causes: ${m.affectedCategories
+                    .map(
+                      (c) =>
+                        `${c.categoryGroup} › ${c.category} (${formatAmt(c.amount)} in ${c.month}: ${c.reason})`
+                    )
+                    .join(', ')}`
+                : '';
+            console.warn(
+              `[YNAB RTA Mismatch] ${m.month}: YNAB ${formatAmt(m.expectedReadyToAssign)} | Budgero ${formatAmt(m.computedReadyToAssign)} (Δ ${formatAmt(m.difference)}) ` +
+                `[Income: ${formatAmt(m.breakdown.income)}, Assigned: ${formatAmt(m.breakdown.assignments)}, ` +
+                `OffBudget: ${formatAmt(m.breakdown.offBudgetTransfers)}, InBudget: ${formatAmt(m.breakdown.inBudgetTransfers)}, ` +
+                `PriorOverspend: ${formatAmt(m.breakdown.priorCashOverspend)}]${causesSummary}`
+            );
+          }
+        }
         await reportProgress({
           stage: 'rta-verification',
           status: rtaWarning ? 'warning' : 'passed',
           progress: 98,
           label: rtaWarning ? 'Ready to Assign differences found' : 'Ready to Assign verified',
-          detail: rtaWarning
-            ? `${readyToAssignVerification.mismatches.length} of ${readyToAssignVerification.checked} months differ from YNAB`
-            : `${readyToAssignVerification.matched} months match YNAB`,
+          detail: rtaDetail,
         });
       }
 
@@ -970,10 +996,11 @@ export class YNABImportService {
     checked: number;
     matched: number;
     mismatches: YNABCategoryMonthMismatch[];
+    allMismatches: YNABCategoryMonthMismatch[];
     omittedMismatches: number;
   }> {
     const MAX_VISIBLE_MISMATCHES = 100;
-    const mismatches: YNABCategoryMonthMismatch[] = [];
+    const allMismatches: YNABCategoryMonthMismatch[] = [];
     let mismatchCount = 0;
     const specsByMonth = new Map<string, YNABImportCategoryMonthSpec[]>();
 
@@ -1011,17 +1038,15 @@ export class YNABImportService {
         for (const [field, expectedAmount, computedAmount] of comparisons) {
           if (expectedAmount === computedAmount) continue;
           mismatchCount++;
-          if (mismatches.length < MAX_VISIBLE_MISMATCHES) {
-            mismatches.push({
-              month: spec.month,
-              categoryGroup: spec.categoryGroup,
-              category: spec.category,
-              field,
-              expectedAmount,
-              computedAmount,
-              difference: computedAmount - expectedAmount,
-            });
-          }
+          allMismatches.push({
+            month: spec.month,
+            categoryGroup: spec.categoryGroup,
+            category: spec.category,
+            field,
+            expectedAmount,
+            computedAmount,
+            difference: computedAmount - expectedAmount,
+          });
         }
       }
 
@@ -1033,23 +1058,87 @@ export class YNABImportService {
     return {
       checked,
       matched: checked - mismatchCount,
-      mismatches,
-      omittedMismatches: Math.max(0, mismatchCount - mismatches.length),
+      mismatches: allMismatches.slice(0, MAX_VISIBLE_MISMATCHES),
+      allMismatches,
+      omittedMismatches: Math.max(0, mismatchCount - MAX_VISIBLE_MISMATCHES),
     };
   }
 
   private async verifyYNABReadyToAssign(
     budgetId: number,
     specs: YNABImportReadyToAssignSpec[],
+    categoryMismatches?: YNABCategoryMonthMismatch[],
     onMonth?: (processed: number, total: number, month: string) => void | Promise<void>
   ): Promise<{ checked: number; matched: number; mismatches: YNABReadyToAssignMismatch[] }> {
     const mismatches: YNABReadyToAssignMismatch[] = [];
+    if (specs.length === 0) {
+      return { checked: 0, matched: 0, mismatches };
+    }
 
+    const months = specs.map((s) => s.month);
+    const breakdownMap = this.monthlyBudgetService.getReadyToAssignBreakdownMap(budgetId, months);
+
+    let lastProgressReportTime = 0;
     for (let index = 0; index < specs.length; index++) {
       const spec = specs[index];
-      const breakdown = this.monthlyBudgetService.getReadyToAssignBreakdown(budgetId, spec.month);
+      const breakdown =
+        breakdownMap.get(spec.month) ??
+        this.monthlyBudgetService.getReadyToAssignBreakdown(budgetId, spec.month);
       const computedReadyToAssign = Number(breakdown.readyToAssign);
       if (computedReadyToAssign !== spec.expectedReadyToAssign) {
+        const affectedCategories: YNABReadyToAssignCategoryCause[] = [];
+        const causesKeySet = new Set<string>();
+
+        // 1. Cash overspends prior to spec.month
+        if (breakdown.priorCashOverspendDetails) {
+          for (const o of breakdown.priorCashOverspendDetails) {
+            const key = `cash_overspend:${o.categoryGroupName}:${o.categoryName}:${o.month}`;
+            if (!causesKeySet.has(key)) {
+              causesKeySet.add(key);
+              affectedCategories.push({
+                categoryGroup: o.categoryGroupName,
+                category: o.categoryName,
+                reason: 'cash_overspend',
+                month: o.month,
+                amount: -Number(o.amount),
+                details: `Cash overspend in ${o.month}`,
+              });
+            }
+          }
+        }
+
+        // 2. Category assignment differences in or before spec.month
+        if (categoryMismatches) {
+          for (const cm of categoryMismatches) {
+            if (cm.field === 'assigned' && cm.month <= spec.month) {
+              const key = `assigned_diff:${cm.categoryGroup}:${cm.category}:${cm.month}`;
+              if (!causesKeySet.has(key)) {
+                causesKeySet.add(key);
+                affectedCategories.push({
+                  categoryGroup: cm.categoryGroup,
+                  category: cm.category,
+                  reason: 'assigned_diff',
+                  month: cm.month,
+                  amount: -cm.difference,
+                  expectedAmount: cm.expectedAmount,
+                  computedAmount: cm.computedAmount,
+                  details:
+                    cm.month === spec.month
+                      ? `Assigned mismatch in ${cm.month}`
+                      : `Assigned mismatch from ${cm.month} carried forward`,
+                });
+              }
+            }
+          }
+        }
+
+        // Sort causes: chronologically by origin month, then absolute amount descending
+        affectedCategories.sort((a, b) => {
+          const monthCmp = a.month.localeCompare(b.month);
+          if (monthCmp !== 0) return monthCmp;
+          return Math.abs(b.amount) - Math.abs(a.amount);
+        });
+
         mismatches.push({
           month: spec.month,
           expectedReadyToAssign: spec.expectedReadyToAssign,
@@ -1062,12 +1151,27 @@ export class YNABImportService {
             inBudgetTransfers: Number(breakdown.inBudgetTransfers),
             revaluations: Number(breakdown.revaluations),
             priorCashOverspend: Number(breakdown.priorCashOverspend),
+            priorCashOverspendDetails: breakdown.priorCashOverspendDetails?.map((o) => ({
+              categoryId: o.categoryId,
+              categoryName: o.categoryName,
+              categoryGroupName: o.categoryGroupName,
+              month: o.month,
+              amount: Number(o.amount),
+            })),
           },
+          affectedCategories,
         });
       }
 
       const processed = index + 1;
-      await onMonth?.(processed, specs.length, spec.month);
+      const now = Date.now();
+      if (
+        onMonth &&
+        (processed === specs.length || processed === 1 || now - lastProgressReportTime >= 150)
+      ) {
+        lastProgressReportTime = now;
+        await onMonth(processed, specs.length, spec.month);
+      }
     }
 
     debugLog(

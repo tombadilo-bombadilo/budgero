@@ -6,6 +6,14 @@
 import type { MilliUnits } from '../../money/index.js';
 import type { RtaMode } from '../budgets/types.js';
 
+export interface CashOverspendDetail {
+  categoryId: number;
+  categoryName: string;
+  categoryGroupName: string;
+  month: string;
+  amount: MilliUnits;
+}
+
 /**
  * ReadyToAssignBreakdown - the component figures behind the Ready to Assign
  * number, so the UI can always show the full math. `futureAssignments`,
@@ -25,6 +33,7 @@ export interface ReadyToAssignBreakdown {
   revaluations: MilliUnits;
   priorCashOverspend: MilliUnits;
   readyToAssign: MilliUnits;
+  priorCashOverspendDetails?: CashOverspendDetail[];
 }
 
 /**
