@@ -2,3 +2,8 @@
 id = "GHSA-vfj7-8cjw-p6xm"
 ignoreUntil = 2026-12-05T00:00:00Z
 reason = "braces 3.0.3 is only pulled in by the website build (contentlayer2 -> chokidar) on our own content globs; no fixed version exists yet"
+
+[[IgnoredVulns]]
+id = "GHSA-hp3w-g68c-fv3c"
+ignoreUntil = 2026-12-09T00:00:00Z
+reason = "sprintf-js has no fixed version; it is only pulled in by the website build (js-yaml 3 via contentlayer2) with our own format strings"
