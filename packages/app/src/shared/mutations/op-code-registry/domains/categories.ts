@@ -177,6 +177,23 @@ export const categoryOps = {
     ),
   },
 
+  // useUpdateCategoryNote
+  'categories.updateNote': {
+    execute: async (args) =>
+      S().categories!.updateCategoryNote(args.id as number, args.note as string),
+    invalidates: [['categories', '*']],
+    undo: {
+      // Not makeRestoreUndo: an empty previous note is a valid value to restore.
+      capture: async (args) =>
+        safeCapture(() => ({ note: S().categories!.getCategory(args.id as number)?.Note ?? '' })),
+      build: (args, _result, before) => {
+        const snapshot = before as { note: string } | null | undefined;
+        if (!snapshot) return [];
+        return [{ op: 'categories.updateNote', args: { id: args.id, note: snapshot.note } }];
+      },
+    },
+  },
+
   // useUpdateCategoryExcludeFromBudgetPace
   'categories.updateExcludeFromBudgetPace': {
     execute: async (args) => {

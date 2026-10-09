@@ -194,6 +194,15 @@ export function useUpdateCategoryName() {
   });
 }
 
+export function useUpdateCategoryNote() {
+  const runtime = useRuntime();
+  return useMutation<void, Error, { id: number; note: string }>({
+    mutationFn: async (payload) => {
+      await executeSpaceMutation<void>(runtime, { op: 'categories.updateNote', payload });
+    },
+  });
+}
+
 /**
  * Update an existing category's exclude_from_budget_pace flag.
  */

@@ -280,6 +280,23 @@ export class CategoryQueries {
   }
 
   /**
+   * UpdateCategoryNote - Updates category note only
+   * SQL: UPDATE categories SET note = ?2 WHERE id = ?1;
+   */
+  updateCategoryNote(id: number, note: string): void {
+    run(
+      this.db,
+      `
+      UPDATE categories
+      SET Note = ?2
+      WHERE ID = ?1
+    `,
+      id,
+      note
+    );
+  }
+
+  /**
    * UpdateCategoryExcludeFromBudgetPace - Updates category exclude_from_budget_pace flag
    * SQL: UPDATE categories SET exclude_from_budget_pace = ?2 WHERE id = ?1;
    */
