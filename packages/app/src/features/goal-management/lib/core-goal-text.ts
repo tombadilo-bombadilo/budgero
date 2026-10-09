@@ -11,6 +11,10 @@ import { describeLocalizedGoalCycle } from './goal-cycle-label';
  * merely falls back to English here.
  */
 const CORE_GOAL_TEXT: Record<string, MessageDescriptor> = {
+  'Target Balance': msg`Target Balance`,
+  'Spending lowers the balance, so assign again to top it back up': msg`Spending lowers the balance, so assign again to top it back up`,
+  'Goal: have this amount available, with no date and no repeat': msg`Goal: have this amount available, with no date and no repeat`,
+  'Balance to reach': msg`Balance to reach`,
   Activity: msg`Activity`,
   'All-time total': msg`All-time total`,
   'Allocate This Month': msg`Allocate This Month`,

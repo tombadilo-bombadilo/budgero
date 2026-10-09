@@ -21,6 +21,7 @@ import {
   Wallet,
   ArrowUpFromLine,
   CalendarClock,
+  Flag,
 } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
 import { formatMilli, toDecimal } from '@shared/lib/currency/milli';
@@ -309,6 +310,8 @@ export function GoalCard({
         return isPeriodic ? t`Periodic Allocation Target` : t`Yearly Allocation Target`;
       case 'yearly':
         return isPeriodic ? t`Periodic Available Target` : t`Yearly Available Target`;
+      case 'target-balance':
+        return t`Target Balance`;
       default:
         return 'Goal';
     }
@@ -324,6 +327,8 @@ export function GoalCard({
         return isPeriodic ? <Repeat className="h-4 w-4" /> : <CalendarClock className="h-4 w-4" />;
       case 'yearly':
         return isPeriodic ? <RefreshCw className="h-4 w-4" /> : <PiggyBank className="h-4 w-4" />;
+      case 'target-balance':
+        return <Flag className="h-4 w-4" />;
       default:
         return <Target className="h-4 w-4" />;
     }
