@@ -242,6 +242,17 @@ export async function runOnboardingApply(
     const summary = await spaceApi.createSpace(state.budgetName.trim() || 'My budget');
     const spaceId = summary.space_id;
 
+    // Record the master password on the server as soon as the workspace
+    // exists. Waiting until the end left accounts with a working budget but
+    // the flag unset whenever a later step was interrupted (e.g. a reload on
+    // the YNAB report), so other devices were sent back into onboarding.
+    // Step 11 repeats this, and StartupController heals it on next launch.
+    try {
+      await authApi.setMasterPasswordStatus(true);
+    } catch (err) {
+      console.warn('[Onboarding] Failed to mark master password set on server', err);
+    }
+
     // 3. Initialise the runtime so services + opcodes have a DB to talk to.
     // Pull the space list so refreshSpaces picks up the new one, then
     // switchSpace activates it (which also wires service-level fixtures).
@@ -369,7 +380,7 @@ export async function runOnboardingApply(
         summaryParts.push(
           plural(createdCategories.length, {
             one: `Created # category missing from Plan.csv: ${createdCategories.join(', ')}.`,
-            other: `Created # categories missing from Plan.csv: ${createdCategories.join(', ')}.`
+            other: `Created # categories missing from Plan.csv: ${createdCategories.join(', ')}.`,
           })
         );
       }
@@ -377,7 +388,7 @@ export async function runOnboardingApply(
         summaryParts.push(
           plural(importResult.summary.splitTransactionsImported, {
             one: `Imported # split transaction.`,
-            other: `Imported # split transactions.`
+            other: `Imported # split transactions.`,
           })
         );
       }
@@ -385,7 +396,7 @@ export async function runOnboardingApply(
         summaryParts.push(
           plural(importResult.summary.accountBalancesVerified, {
             one: `Verified # account balance against YNAB.`,
-            other: `Verified # account balances against YNAB.`
+            other: `Verified # account balances against YNAB.`,
           })
         );
       } else {

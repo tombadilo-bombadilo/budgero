@@ -178,7 +178,10 @@ describe('runOnboardingApply YNAB completion gate', () => {
     expect(onYnabProgress).toHaveBeenLastCalledWith(
       expect.objectContaining({ stage: 'complete', status: 'passed', progress: 100 })
     );
-    expect(mocks.setMasterPasswordStatus).not.toHaveBeenCalled();
+    // The workspace exists, so the server already knows a master password is
+    // set; other devices must not be sent into onboarding if this tab is
+    // closed on the report.
+    expect(mocks.setMasterPasswordStatus).toHaveBeenCalledWith(true);
     expect(updateOnboardingAsync).not.toHaveBeenCalled();
     expect(mocks.writeIntroAcknowledged).not.toHaveBeenCalled();
     expect(onComplete).not.toHaveBeenCalled();

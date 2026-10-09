@@ -11,8 +11,9 @@ import type {
 } from './hooks';
 import StartupController from './StartupController';
 
-const { mockSwitchWorkspaceAndSyncBudgetState } = vi.hoisted(() => ({
+const { mockSwitchWorkspaceAndSyncBudgetState, mockSetMasterPasswordStatus } = vi.hoisted(() => ({
   mockSwitchWorkspaceAndSyncBudgetState: vi.fn(),
+  mockSetMasterPasswordStatus: vi.fn(),
 }));
 
 let runtimeState = 'Ready';
@@ -68,6 +69,14 @@ vi.mock('@shared/runtime/budget-gate', () => ({
   switchWorkspaceAndSyncBudgetState: mockSwitchWorkspaceAndSyncBudgetState,
   syncBudgetStateFromRuntime: vi.fn(),
 }));
+
+vi.mock('@shared/api/api-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@shared/api/api-client')>();
+  return {
+    ...actual,
+    authApi: { ...actual.authApi, setMasterPasswordStatus: mockSetMasterPasswordStatus },
+  };
+});
 
 vi.mock('./hooks', () => ({
   useAuthStartupSnapshot: () => authSnapshot,
@@ -270,6 +279,29 @@ describe('StartupController', () => {
     await waitFor(() => {
       expect(screen.getByTestId('app-route')).toBeInTheDocument();
     });
+  });
+
+  it('marks the master password set on the server when a device reaches the app without the flag', async () => {
+    mockSetMasterPasswordStatus.mockResolvedValue({ success: true, is_master_password_set: true });
+    authSnapshot = createAuthSnapshot({
+      user: { id: 'user-1', is_master_password_set: false } as AuthStartupSnapshot['user'],
+    });
+    renderController();
+
+    await waitFor(() => {
+      expect(mockSetMasterPasswordStatus).toHaveBeenCalledWith(true);
+    });
+    expect(mockSetMasterPasswordStatus).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the master password flag alone when the server already has it', async () => {
+    authSnapshot = createAuthSnapshot({
+      user: { id: 'user-1', is_master_password_set: true } as AuthStartupSnapshot['user'],
+    });
+    renderController();
+
+    expect(await screen.findByTestId('app-route')).toBeInTheDocument();
+    expect(mockSetMasterPasswordStatus).not.toHaveBeenCalled();
   });
 
   it('re-enters the budget setup screen after the app was already ready', async () => {
