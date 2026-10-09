@@ -1,3 +1,4 @@
+import { currencyDisplayFor } from '@shared/lib/number-format';
 import { isCryptoCurrency, scaledToDecimal } from '@budgero/core/browser';
 import { getRuntime } from '@shared/runtime/global';
 
@@ -100,6 +101,7 @@ export function formatCurrency(amount: number, currencyCode: string): string {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currencyCode,
+      currencyDisplay: currencyDisplayFor(currencyCode),
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }).format(amount);

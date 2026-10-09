@@ -4,7 +4,7 @@ import { useLingui } from '@lingui/react/macro';
 
 import React, { useId } from 'react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@shared/ui/select';
-import { formatOptions } from '@shared/lib/number-format';
+import { formatOptions, currencyDisplayFor } from '@shared/lib/number-format';
 
 interface FormatSelectorProps {
   value: string;
@@ -27,6 +27,7 @@ export const FormatSelector: React.FC<FormatSelectorProps> = ({
     const formatter = new Intl.NumberFormat(option.settings.locale, {
       style: 'currency',
       currency,
+      currencyDisplay: currencyDisplayFor(currency),
       minimumFractionDigits: option.settings.fractionDigits,
       maximumFractionDigits: option.settings.fractionDigits,
       useGrouping: option.settings.useGrouping,
