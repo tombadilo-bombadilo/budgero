@@ -29,7 +29,11 @@ export interface LinkRequest {
 }
 
 export function isSupportedBankCurrency(code: string): boolean {
-  return /^[A-Z]{3}$/.test(code) && !isCryptoCurrency(code);
+  // "XXX" is the ISO 4217 placeholder for "no currency" / "unknown currency"
+  // (e.g. PayPal wallets via SimpleFIN report it for multi-currency accounts).
+  // It matches the bare regex but isn't a real currency, so it must never
+  // satisfy a currency-equality check downstream.
+  return code !== 'XXX' && /^[A-Z]{3}$/.test(code) && !isCryptoCurrency(code);
 }
 
 export function guessAccountType(remote: RemoteBankAccount): AccountTypeEnum {
