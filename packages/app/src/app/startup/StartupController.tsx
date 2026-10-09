@@ -118,6 +118,27 @@ export default function StartupController() {
     dispatch({ type: 'RESOLVE', resolution });
   }, [resolution]);
 
+  // Self-heal the server master-password flag. A device that reached the app
+  // with a working master password proves one is set; if the server still
+  // says otherwise (onboarding interrupted before its last step), every new
+  // device would land in onboarding instead of the master password prompt.
+  const masterPasswordFlagHealedRef = useRef(false);
+  useEffect(() => {
+    if (resolution.state !== 'ready' || masterPasswordFlagHealedRef.current) return;
+    if (auth.canProceedOffline || !auth.user || auth.user.is_master_password_set) return;
+    masterPasswordFlagHealedRef.current = true;
+    void (async () => {
+      try {
+        const { authApi } = await import('@shared/api/api-client');
+        await authApi.setMasterPasswordStatus(true);
+        await queryClient.invalidateQueries({ queryKey: ['profile'] });
+      } catch (err) {
+        masterPasswordFlagHealedRef.current = false;
+        console.warn('[Startup] Failed to mark master password set on server', err);
+      }
+    })();
+  }, [auth.canProceedOffline, auth.user, queryClient, resolution.state]);
+
   useEffect(() => {
     if (resolution.screen === 'intro' && !introCompletionRequestedRef.current) {
       setIntroFlowPinned(true);
