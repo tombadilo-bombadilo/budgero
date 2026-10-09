@@ -1,3 +1,4 @@
+import { currencyDisplayFor } from '@shared/lib/number-format';
 import { AccountTypeLabel } from '@entities/account/ui/AccountTypeLabel';
 import { Trans, useLingui } from '@lingui/react/macro';
 import React, { useState } from 'react';
@@ -80,6 +81,7 @@ export function AddAccountDialog({
       return new Intl.NumberFormat(resolvedOptions.locale, {
         style: 'currency',
         currency,
+        currencyDisplay: currencyDisplayFor(currency),
         minimumFractionDigits: resolvedOptions.minimumFractionDigits,
         maximumFractionDigits: resolvedOptions.maximumFractionDigits,
       });

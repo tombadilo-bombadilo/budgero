@@ -8,7 +8,8 @@ type UserMetaGetter =
   | 'getShowGroupPercent'
   | 'getPlanningNumberAnimations'
   | 'getDialogBackgroundBlur'
-  | 'getHideZeroAmounts';
+  | 'getHideZeroAmounts'
+  | 'getInlineTransactionEntry';
 
 /** Undo for single-value preference setters: re-issue the op with the old value. */
 function preferenceUndo(op: string, getter: UserMetaGetter): NonNullable<OpCodeEntry['undo']> {
@@ -136,5 +137,19 @@ export const userPreferenceOps = {
     },
     invalidates: [['hideZeroAmounts'], ['userPreferences']],
     undo: preferenceUndo('userPreferences.setHideZeroAmounts', 'getHideZeroAmounts'),
+  },
+  'userPreferences.setInlineTransactionEntry': {
+    execute: async (args) => {
+      const services = S() as {
+        userMeta?: { setInlineTransactionEntry(value: boolean): void };
+      };
+      if (!services.userMeta) {
+        throw new Error('userMeta service not available');
+      }
+      services.userMeta.setInlineTransactionEntry(args.value as boolean);
+      return { success: true };
+    },
+    invalidates: [['inlineTransactionEntry'], ['userPreferences']],
+    undo: preferenceUndo('userPreferences.setInlineTransactionEntry', 'getInlineTransactionEntry'),
   },
 } satisfies Record<string, OpCodeEntry>;

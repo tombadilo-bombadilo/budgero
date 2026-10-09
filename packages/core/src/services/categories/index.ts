@@ -166,6 +166,14 @@ export class CategoryService {
   }
 
   /**
+   * UpdateCategoryNote - Updates category note only
+   */
+  updateCategoryNote(id: number, note: string): void {
+    this.getCategory(id);
+    this.queries.updateCategoryNote(id, note.trim());
+  }
+
+  /**
    * UpdateCategoryExcludeFromBudgetPace - Updates category exclude_from_budget_pace flag
    *
    * New method for TypeScript implementation

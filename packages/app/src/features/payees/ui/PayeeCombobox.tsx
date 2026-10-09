@@ -1,6 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import * as React from 'react';
-import { Check, ChevronsUpDown, PlusCircle, X } from 'lucide-react';
+import { ArrowLeftRight, Check, ChevronsUpDown, PlusCircle, X } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import {
   Command,
@@ -28,6 +28,11 @@ export interface PayeeComboboxProps {
   payees?: string[];
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Accounts offered as "Transfer: <name>" entries (inline register row). */
+  transferAccounts?: { ID: number; Name: string }[];
+  onSelectTransfer?: (accountId: number) => void;
+  /** Overrides the trigger text, e.g. the chosen transfer. */
+  displayValue?: string;
 }
 
 /**
@@ -46,6 +51,9 @@ export function PayeeCombobox({
   payees: providedPayees,
   defaultOpen = false,
   onOpenChange,
+  transferAccounts,
+  onSelectTransfer,
+  displayValue,
 }: PayeeComboboxProps) {
   const { t } = useLingui();
   const placeholder = placeholderProp ?? t`Select or create payee`;
@@ -83,6 +91,15 @@ export function PayeeCombobox({
     [onChange]
   );
 
+  const handleSelectTransfer = React.useCallback(
+    (accountId: number) => {
+      onSelectTransfer?.(accountId);
+      setOpen(false);
+      setSearch('');
+    },
+    [onSelectTransfer]
+  );
+
   const handleClear = React.useCallback(() => {
     onChange('');
     setOpen(false);
@@ -106,12 +123,12 @@ export function PayeeCombobox({
           disabled={disabled}
           className={cn(
             'w-full justify-between text-left font-normal',
-            !normalizedValue && 'text-muted-foreground',
+            !normalizedValue && !displayValue && 'text-muted-foreground',
             triggerClassName
           )}
         >
           <span className="truncate">
-            {normalizedValue.length > 0 ? normalizedValue : placeholder}
+            {displayValue || (normalizedValue.length > 0 ? normalizedValue : placeholder)}
           </span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -161,6 +178,23 @@ export function PayeeCombobox({
                 )}
               </CommandGroup>
             ) : null}
+            {transferAccounts && transferAccounts.length > 0 && (
+              <CommandGroup heading={t`Transfers`}>
+                {transferAccounts.map((account) => (
+                  <CommandItem
+                    key={`transfer-${account.ID}`}
+                    value={`__transfer__::${account.ID}::${t`Transfer`} ${account.Name}`}
+                    onSelect={() => handleSelectTransfer(account.ID)}
+                    className="flex items-center gap-2"
+                  >
+                    <ArrowLeftRight className="h-4 w-4" />
+                    <span className="truncate">
+                      <Trans>Transfer: {account.Name}</Trans>
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
             <CommandGroup heading={t`Payees`}>
               {existingPayees.map((payee) => (
                 <CommandItem

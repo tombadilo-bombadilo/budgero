@@ -1,3 +1,4 @@
+import { currencyDisplayFor } from '@shared/lib/number-format';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useId } from 'react';
 import type { CreditPaymentMatching, CreditPaymentMappings } from './ynab-credit-payment-matching';
@@ -30,6 +31,7 @@ export function YnabCreditPaymentMatching({
     new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency,
+      currencyDisplay: currencyDisplayFor(currency),
       maximumFractionDigits: 3,
     }).format(milliunits / 1000);
 

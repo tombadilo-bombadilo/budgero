@@ -42,6 +42,8 @@ const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 interface TransactionsToolbarProps {
   headerActions?: React.ReactNode;
   addTransactionPending: boolean;
+  /** Set when inline entry is on: the button opens the register's inline row. */
+  onInlineAdd?: () => void;
   // Search
   searchQuery: string;
   setSearchQuery: (value: string) => void;
@@ -84,6 +86,7 @@ interface TransactionsToolbarProps {
 export function TransactionsToolbar({
   headerActions,
   addTransactionPending,
+  onInlineAdd,
   searchQuery,
   setSearchQuery,
   setIsSearchFocused,
@@ -124,14 +127,23 @@ export function TransactionsToolbar({
     <div className="space-y-4 mb-4">
       <div className="flex justify-between items-center gap-4">
         <div className="flex items-center gap-2">{headerActions}</div>
-        <DialogTrigger asChild>
-          <Button variant="outline" size="sm" disabled={addTransactionPending} className="gap-2">
+        {onInlineAdd ? (
+          <Button variant="outline" size="sm" className="gap-2" onClick={onInlineAdd}>
             <Trans>
               <PlusCircle className="h-4 w-4" />
               Add Transaction
             </Trans>
           </Button>
-        </DialogTrigger>
+        ) : (
+          <DialogTrigger asChild>
+            <Button variant="outline" size="sm" disabled={addTransactionPending} className="gap-2">
+              <Trans>
+                <PlusCircle className="h-4 w-4" />
+                Add Transaction
+              </Trans>
+            </Button>
+          </DialogTrigger>
+        )}
       </div>
 
       {/* Search Bar */}

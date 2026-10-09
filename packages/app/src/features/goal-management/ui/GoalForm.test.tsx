@@ -130,4 +130,24 @@ describe('GoalForm — periodic presets', () => {
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onSave.mock.calls[0][0]).toMatchObject({ Recurring: true, CycleMonths: 4 });
   });
+
+  it('creates a target balance goal with no date and no repeat', async () => {
+    const user = userEvent.setup();
+    const onSave = renderForm(null);
+    await user.click(screen.getByText('Target Balance'));
+    expect(screen.queryByText('Target Date')).not.toBeInTheDocument();
+    await user.click(screen.getByText('Enter amount'));
+    await user.keyboard('5000{Enter}');
+
+    await submit(user);
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    const saved = onSave.mock.calls[0][0] as Partial<Goal>;
+    expect(saved).toMatchObject({
+      Type: GoalType.TARGET_BALANCE,
+      Purpose: GoalPurpose.SAVINGS,
+      Recurring: false,
+      CycleMonths: null,
+    });
+    expect(saved.TargetDate).toBeUndefined();
+  });
 });

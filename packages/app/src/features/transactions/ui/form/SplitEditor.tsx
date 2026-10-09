@@ -12,6 +12,7 @@ import { CalculatorCell } from '@shared/ui/calculator-cell';
 import { SearchableCategorySelect } from '@features/category-management/ui/SearchableCategorySelect';
 import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell';
 import { asMilli, formatMilli, ZERO_MILLI, type MilliUnits } from '@shared/lib/currency/milli';
+import { assignRemainingToSplit, newSplitLine } from './split-lines';
 
 export interface SplitLine {
   id: string;
@@ -58,48 +59,11 @@ export function SplitEditor({
   };
 
   const addLine = () => {
-    onSplitLinesChange([
-      ...splitLines,
-      {
-        id: crypto.randomUUID(),
-        categoryId: undefined,
-        memo: '',
-        payee: '',
-        inflow: ZERO_MILLI,
-        outflow: ZERO_MILLI,
-      },
-    ]);
+    onSplitLinesChange([...splitLines, newSplitLine()]);
   };
 
   const splitRemaining = () => {
-    // Exact integer milliunit arithmetic throughout.
-    const delta = remaining;
-    if (splitLines.length === 0) {
-      onSplitLinesChange([
-        {
-          id: crypto.randomUUID(),
-          inflow: parentAmount > 0 ? asMilli(parentAmount) : ZERO_MILLI,
-          outflow: parentAmount < 0 ? asMilli(-parentAmount) : ZERO_MILLI,
-          memo: '',
-          payee: '',
-          categoryId: undefined,
-        },
-      ]);
-    } else {
-      onSplitLinesChange(
-        splitLines.map((l, i) =>
-          i !== splitLines.length - 1 || delta === 0
-            ? l
-            : delta > 0
-              ? { ...l, inflow: asMilli((l.inflow || 0) + delta), outflow: ZERO_MILLI }
-              : {
-                  ...l,
-                  inflow: ZERO_MILLI,
-                  outflow: asMilli((l.outflow || 0) + Math.abs(delta)),
-                }
-        )
-      );
-    }
+    onSplitLinesChange(assignRemainingToSplit(splitLines, remaining, parentAmount));
   };
 
   return (

@@ -4,3 +4,4 @@ export { DatePickerQuick } from './DatePickerQuick';
 export { FromAccountSelect, ToAccountSelect } from './AccountSelect';
 export { CurrencyConversionNotice } from './CurrencyConversionNotice';
 export { SplitEditor, type SplitLine } from './SplitEditor';
+export { assignRemainingToSplit, newSplitLine } from './split-lines';

@@ -1,3 +1,4 @@
+import { currencyDisplayFor } from '@shared/lib/number-format';
 import * as React from 'react';
 import { Trans, useLingui } from '@lingui/react/macro';
 import type {
@@ -66,6 +67,7 @@ function formatMilli(amount: number, currency: string): string {
     return new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency,
+      currencyDisplay: currencyDisplayFor(currency),
       minimumFractionDigits: 2,
       maximumFractionDigits: 3,
     }).format(amount / 1000);

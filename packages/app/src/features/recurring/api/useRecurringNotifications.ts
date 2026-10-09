@@ -1,3 +1,4 @@
+import { currencyDisplayFor } from '@shared/lib/number-format';
 import { useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRuntime } from '@shared/runtime/runtime-provider';
@@ -47,6 +48,7 @@ export function useRecurringNotifications(options: RecurringNotificationOptions 
     const currencyFormatter = new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency,
+      currencyDisplay: currencyDisplayFor(currency),
     });
 
     const notifyForOccurrence = async (occurrence: RecurringOccurrenceWithTemplate) => {

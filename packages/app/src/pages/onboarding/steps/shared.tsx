@@ -1,3 +1,4 @@
+import { currencyDisplayFor } from '@shared/lib/number-format';
 import type { MessageDescriptor } from '@lingui/core';
 import { useLingui } from '@lingui/react/macro';
 /* eslint-disable react-refresh/only-export-components */
@@ -30,6 +31,7 @@ export function getCurrencySym(code: string): string {
     const parts = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: code,
+      currencyDisplay: currencyDisplayFor(code),
     }).formatToParts(0);
     return parts.find((p) => p.type === 'currency')?.value ?? code;
   } catch {
