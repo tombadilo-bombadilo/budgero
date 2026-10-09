@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getFormatOptionFromLabel } from '@shared/lib/number-format';
+import { getFormatOptionFromLabel, currencyDisplayFor } from '@shared/lib/number-format';
 import type { Account, Budget, Category } from '@budgero/core/browser';
 import { getCurrencyInfo, isCryptoCurrency, MILLIS_PER_UNIT } from '@budgero/core/browser';
 import { DateRange } from 'react-day-picker';
@@ -22,6 +22,7 @@ export function buildCurrencyLocalizer(
     return Intl.NumberFormat(settings.locale, {
       style: 'currency',
       currency,
+      currencyDisplay: currencyDisplayFor(currency),
       minimumFractionDigits: settings.fractionDigits,
       maximumFractionDigits: settings.fractionDigits,
       useGrouping: settings.useGrouping,
@@ -343,10 +344,12 @@ export const useUiStore = create<UiState>((set) => ({
   globalLocalizer: Intl.NumberFormat('en-EN', {
     style: 'currency',
     currency: 'USD',
+    currencyDisplay: currencyDisplayFor('USD'),
   }),
   accountLocalizer: Intl.NumberFormat('en-EN', {
     style: 'currency',
     currency: 'USD',
+    currencyDisplay: currencyDisplayFor('USD'),
   }),
 
   setGlobalLocalizer: (currency: string, number_format: string) => {

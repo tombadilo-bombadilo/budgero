@@ -30,6 +30,16 @@ export function getFormatOptionFromLabel(key: string): FormatSettings | undefine
 
 const editPrecisionCache = new WeakMap<Intl.NumberFormat, Intl.NumberFormat>();
 
+/** Currencies shown with their local sign instead of the ISO code (HUF → "Ft"). */
+const LOCAL_SIGN_CURRENCIES = new Set(['HUF']);
+
+/** `currencyDisplay` for an Intl currency formatter of this currency. */
+export function currencyDisplayFor(
+  currency: string | undefined
+): Intl.NumberFormatOptions['currencyDisplay'] {
+  return currency && LOCAL_SIGN_CURRENCIES.has(currency) ? 'narrowSymbol' : 'symbol';
+}
+
 /**
  * Full-precision variant of a display formatter for edit surfaces.
  *
