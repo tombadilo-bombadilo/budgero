@@ -21,11 +21,100 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.17.0',
+    date: 'October 9, 2026',
+    summary:
+      'Adds inline transaction entry on the desktop register, category notes, a target balance goal and duplicating transactions, and makes far more changes undoable.',
+    isLatest: true,
+    items: [
+      {
+        type: 'new',
+        title: 'Inline transaction entry',
+        description:
+          'Settings → Appearance → Add transactions: choose Inline row to add transactions straight in the desktop register, including transfers between currencies and splits. Mobile keeps the dialog.',
+      },
+      {
+        type: 'new',
+        title: 'Category notes',
+        description: 'Write a note for a category in the budget context panel.',
+      },
+      {
+        type: 'new',
+        title: 'Target balance goal',
+        description: 'Set a balance a category should reach, with no date or repeat.',
+      },
+      {
+        type: 'new',
+        title: 'Duplicate transactions',
+        description: 'Duplicate the selected transactions with Shift+D.',
+      },
+      {
+        type: 'new',
+        title: 'Leave zero amounts empty',
+        description:
+          'An Appearance setting that shows empty amount fields instead of zeros in the register.',
+      },
+      {
+        type: 'improved',
+        title: 'Undo',
+        description:
+          'Reconciliation, accounts, goals, category order, split edits, transfer deletion, recurring transactions, warranties, custom rates, scenarios, reports, dashboards, budget settings and preferences can now be undone, and undo/redo keeps record IDs stable.',
+      },
+      {
+        type: 'improved',
+        title: 'Transfers',
+        description:
+          'Shorter transfer memos, the other account shown in the payee cell, Quick Add stays open for transfers, and saving a transfer no longer blocks the screen.',
+      },
+      {
+        type: 'improved',
+        title: 'Hungarian forint',
+        description: 'Forint amounts show as Ft instead of HUF.',
+      },
+      {
+        type: 'improved',
+        title: 'Uncategorized badges',
+        description: 'The uncategorized count on sidebar accounts explains what it counts.',
+      },
+      {
+        type: 'fixed',
+        title: 'PayPal accounts in bank sync',
+        description:
+          'PayPal accounts reported with the XXX currency can be linked to an existing account.',
+      },
+      {
+        type: 'fixed',
+        title: 'Self-hosted bank relay IP',
+        description:
+          'SELF_HOST_PUBLIC_IP can override the PSU-IP header and accepts a DDNS hostname as well as a literal IP.',
+      },
+      {
+        type: 'fixed',
+        title: 'Undo after amount edits',
+        description:
+          'Editing an amount refreshes the account register so the change can be undone.',
+      },
+    ],
+    acknowledgements: [
+      {
+        githubUsername: 'f-liva',
+        pullRequest: 43,
+        contribution:
+          'Letting self-hosted bank sync override the public IP, including DDNS hostnames.',
+      },
+      {
+        githubUsername: 'f-liva',
+        pullRequest: 44,
+        contribution: 'Fixing linking PayPal accounts to an existing account.',
+      },
+    ],
+  },
+  {
     version: 'v1.16.0',
     date: 'October 5, 2026',
     summary:
       'Adds EU bank sync (beta) through your own Enable Banking connection, a Sync status page, and fixes the month label being cut off with wide theme fonts.',
-    isLatest: true,
+    isLatest: false,
     items: [
       {
         type: 'new',
