@@ -143,6 +143,21 @@ export class UserMetaQueries {
     run(this.db, `UPDATE user_meta SET HideZeroAmounts = ? WHERE ID = 1`, value ? 1 : 0);
   }
 
+  /** Add transactions in an inline register row instead of the dialog. Off by default. */
+  getInlineTransactionEntry(): boolean {
+    this.ensureRow();
+    const row = getRow<{ InlineTransactionEntry: boolean | number | null }>(
+      this.db,
+      `SELECT InlineTransactionEntry FROM user_meta WHERE ID = 1`
+    );
+    return row?.InlineTransactionEntry === true || row?.InlineTransactionEntry === 1;
+  }
+
+  setInlineTransactionEntry(value: boolean): void {
+    this.ensureRow();
+    run(this.db, `UPDATE user_meta SET InlineTransactionEntry = ? WHERE ID = 1`, value ? 1 : 0);
+  }
+
   /** First calendar weekday: Sunday (0) or Monday (1). */
   getWeekStartsOn(): 0 | 1 {
     this.ensureRow();

@@ -27,6 +27,8 @@ import { useCategoryGroups } from '@entities/category/api/useCategories';
 import { usePayees } from '@entities/payee/api/usePayees';
 import { useMonthlyBudget, useReadyToAssign } from '@entities/budget/api/useMonthlyBudget';
 import { getTodayISO } from '@shared/lib/date-utils';
+import { useInlineTransactionEntryEnabled } from '@shared/contexts/InlineTransactionEntryContext';
+import { setInlineAddTarget } from '@features/transactions/model/inline-add-target';
 import type { TransactionEditorDirectories } from './desktop-table/transaction-editor-types';
 
 const EMPTY_CATEGORIES: Category[] = [];
@@ -438,12 +440,27 @@ export function TransactionsTable({
 
   const numSelected = selectedRowIds.length;
 
+  // Inline entry (Appearance setting): the register's Add Transaction button,
+  // Ctrl/⌘+Alt+T and the header button open a row at the top instead of the dialog.
+  const inlineEntry = useInlineTransactionEntryEnabled() && !isMobile;
+  const [inlineAddOpen, setInlineAddOpen] = React.useState(false);
+  const openInlineAdd = React.useCallback(() => {
+    setShowOnlyUncategorized(false);
+    setShowOnlyUncleared(false);
+    setInlineAddOpen(true);
+  }, []);
+  React.useEffect(() => {
+    if (!inlineEntry) return;
+    return setInlineAddTarget(openInlineAdd);
+  }, [inlineEntry, openInlineAdd]);
+
   return (
     <div className="space-y-2 sm:space-y-4 px-3 sm:px-0">
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <TransactionsToolbar
           headerActions={headerActions}
           addTransactionPending={addTransactionMutation.isPending}
+          onInlineAdd={inlineEntry ? openInlineAdd : undefined}
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           setIsSearchFocused={setIsSearchFocused}
@@ -569,6 +586,11 @@ export function TransactionsTable({
             }
             editorDirectories={editorDirectories}
             budgetId={budgetId}
+            inlineAdd={
+              inlineEntry && inlineAddOpen
+                ? { accountId: selectedAccountIdForForm, onClose: () => setInlineAddOpen(false) }
+                : undefined
+            }
             scrollResetKey={`${searchQuery}:${showOnlyUncategorized}:${showOnlyUncleared}`}
             canLoadMore={!isFilterModeActive && hasMoreTransactions}
             isLoadingMore={isLoadingMoreTransactions}

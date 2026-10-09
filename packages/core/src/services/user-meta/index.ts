@@ -69,6 +69,14 @@ export class UserMetaService {
     this.queries.setHideZeroAmounts(value);
   }
 
+  getInlineTransactionEntry(): boolean {
+    return this.queries.getInlineTransactionEntry();
+  }
+
+  setInlineTransactionEntry(value: boolean): void {
+    this.queries.setInlineTransactionEntry(value);
+  }
+
   getDuplicateHintSettings(): DuplicateHintSettings {
     return this.queries.getDuplicateHintSettings();
   }

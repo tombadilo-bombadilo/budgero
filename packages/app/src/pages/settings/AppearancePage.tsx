@@ -24,6 +24,7 @@ import { SettingsPageHeader } from '@pages/settings/SettingsPageHeader';
 import {
   useDialogBackgroundBlurPreference,
   useHideZeroAmountsPreference,
+  useInlineTransactionEntryPreference,
   usePlanningNumberAnimationsPreference,
 } from '@shared/hooks/useUserPreferences';
 
@@ -57,6 +58,11 @@ export default function AppearancePage() {
     updateHideZeroAmounts,
     isUpdating: isUpdatingHideZeroAmounts,
   } = useHideZeroAmountsPreference();
+  const {
+    inlineTransactionEntry,
+    updateInlineTransactionEntry,
+    isUpdating: isUpdatingInlineTransactionEntry,
+  } = useInlineTransactionEntryPreference();
 
   const handleHomePageChange = (value: string) => {
     const page = value as HomePageOption;
@@ -294,10 +300,40 @@ export default function AppearancePage() {
             </Trans>
           </CardTitle>
           <CardDescription>
-            <Trans>Choose how transaction amounts are shown.</Trans>
+            <Trans>Choose how transactions are added and how amounts are shown.</Trans>
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="inline-transaction-entry">
+                <Trans>Add transactions</Trans>
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                <Trans>
+                  In a dialog, or in an inline row at the top of the account register (desktop).
+                </Trans>
+              </p>
+            </div>
+            <Select
+              value={inlineTransactionEntry ? 'inline' : 'dialog'}
+              onValueChange={(value) => updateInlineTransactionEntry(value === 'inline')}
+              disabled={isUpdatingInlineTransactionEntry}
+            >
+              <SelectTrigger id="inline-transaction-entry" className="w-36 shrink-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="dialog">
+                  <Trans>Dialog</Trans>
+                </SelectItem>
+                <SelectItem value="inline">
+                  <Trans>Inline row</Trans>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Separator />
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <Label htmlFor="hide-zero-amounts">

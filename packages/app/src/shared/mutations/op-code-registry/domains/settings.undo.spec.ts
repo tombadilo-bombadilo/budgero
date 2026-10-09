@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     getAllowOverAssignment: vi.fn(() => false),
     getDuplicateHintSettings: vi.fn(() => ({ enabled: true, windowDays: 3 })),
     getHideZeroAmounts: vi.fn(() => false),
+    getInlineTransactionEntry: vi.fn(() => false),
   },
 }));
 
@@ -55,6 +56,9 @@ describe('settings undo', () => {
     ]);
     expect(await undoFor('userPreferences.setHideZeroAmounts', { value: true })).toEqual([
       { op: 'userPreferences.setHideZeroAmounts', args: { value: false } },
+    ]);
+    expect(await undoFor('userPreferences.setInlineTransactionEntry', { value: true })).toEqual([
+      { op: 'userPreferences.setInlineTransactionEntry', args: { value: false } },
     ]);
     expect(
       await undoFor('userPreferences.setDuplicateHintSettings', { settings: { enabled: false } })
