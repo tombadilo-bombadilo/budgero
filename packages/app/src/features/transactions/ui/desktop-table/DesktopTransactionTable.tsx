@@ -12,6 +12,7 @@ import type {
 } from './transaction-editor-types';
 import { useVirtualizedTransactionRows } from './useVirtualizedTransactionRows';
 import { useTransactionViewportHeight } from './useTransactionViewportHeight';
+import { InlineTransactionRow } from './InlineTransactionRow';
 
 export interface DesktopTransactionTableProps {
   transactions: GetTransactionsByAccountRow[];
@@ -52,6 +53,11 @@ export interface DesktopTransactionTableProps {
   canLoadMore?: boolean;
   isLoadingMore?: boolean;
   onLoadMore?: () => Promise<unknown>;
+  /** Present while the inline add row is open. */
+  inlineAdd?: {
+    accountId?: number;
+    onClose: () => void;
+  };
 }
 
 export function DesktopTransactionTable({
@@ -80,6 +86,7 @@ export function DesktopTransactionTable({
   canLoadMore = false,
   isLoadingMore = false,
   onLoadMore,
+  inlineAdd,
 }: DesktopTransactionTableProps) {
   const [splitDialogState, setSplitDialogState] = useState<{
     transaction: GetTransactionsByAccountRow;
@@ -179,6 +186,13 @@ export function DesktopTransactionTable({
     (showExchangeRateColumn ? 1 : 0) +
     (showBalanceColumn ? 1 : 0);
 
+  const isInlineAddOpen = !!inlineAdd;
+  useEffect(() => {
+    if (!isInlineAddOpen) return;
+    const frame = requestAnimationFrame(() => scrollToIndex(0));
+    return () => cancelAnimationFrame(frame);
+  }, [isInlineAddOpen, scrollToIndex]);
+
   const handleSplitView = useCallback((transaction: GetTransactionsByAccountRow) => {
     setSplitDialogState({ transaction });
   }, []);
@@ -188,7 +202,7 @@ export function DesktopTransactionTable({
   }, []);
 
   // Empty state
-  if (transactions.length === 0) {
+  if (transactions.length === 0 && !inlineAdd) {
     return (
       <div className="hidden sm:flex flex-col items-center justify-center py-16 border rounded-md border-dashed text-muted-foreground">
         <p className="text-lg font-medium mb-2">
@@ -254,6 +268,21 @@ export function DesktopTransactionTable({
               onSplitCreate={handleSplitCreate}
               onActivateCell={handleActivateCell}
               onDeactivateCell={handleDeactivateCell}
+              leadingRows={
+                inlineAdd && (
+                  <InlineTransactionRow
+                    budgetId={budgetId}
+                    accountId={inlineAdd.accountId}
+                    hideAccountColumn={hideAccountColumn}
+                    showLabelColumn={showLabelColumn}
+                    showExchangeRateColumn={showExchangeRateColumn}
+                    showBalanceColumn={showBalanceColumn}
+                    columnCount={columnCount}
+                    editorDirectories={editorDirectories}
+                    onClose={inlineAdd.onClose}
+                  />
+                )
+              }
             />
           </Table>
         </div>

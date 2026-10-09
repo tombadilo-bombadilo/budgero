@@ -23,6 +23,7 @@ interface UserMetaService {
   getPlanningNumberAnimations?(): Promise<boolean> | boolean;
   getDialogBackgroundBlur?(): Promise<boolean> | boolean;
   getHideZeroAmounts?(): Promise<boolean> | boolean;
+  getInlineTransactionEntry?(): Promise<boolean> | boolean;
 }
 
 /** Runtime services with userMeta */
@@ -375,6 +376,60 @@ export function useHideZeroAmountsPreference() {
     hideZeroAmounts,
     isLoading: queryRest.isLoading,
     updateHideZeroAmounts: updateMutation.mutate,
+    isUpdating: updateMutation.isPending,
+  };
+}
+
+/** Whether the desktop register adds transactions in an inline row. Off by default. */
+export function useInlineTransactionEntry() {
+  const runtime = useRuntime();
+  const runtimeInitialized = useRuntimeInitialized();
+  const spaceId = useActiveSpaceId();
+
+  return useQuery<boolean>({
+    queryKey: ['inlineTransactionEntry', spaceId ?? 'global'],
+    queryFn: async () => {
+      const services = runtime.services() as ServicesWithUserMeta;
+      return (await services?.userMeta?.getInlineTransactionEntry?.()) ?? false;
+    },
+    enabled: runtimeInitialized,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+
+/** Query + mutation pair for inline transaction entry. */
+export function useInlineTransactionEntryPreference() {
+  const runtime = useRuntime();
+  const spaceId = useActiveSpaceId();
+  const queryClient = useQueryClient();
+  const queryKey = ['inlineTransactionEntry', spaceId ?? 'global'] as const;
+  const { data: inlineTransactionEntry = false, ...queryRest } = useInlineTransactionEntry();
+
+  const updateMutation = useMutation<void, Error, boolean, { previous: boolean | undefined }>({
+    mutationFn: async (value: boolean) => {
+      await executeSpaceMutation<void>(runtime, {
+        op: 'userPreferences.setInlineTransactionEntry',
+        payload: { value },
+        meta: { label: 'Update inline transaction entry setting' },
+      });
+    },
+    onMutate: async (value) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<boolean>(queryKey);
+      queryClient.setQueryData(queryKey, value);
+      return { previous };
+    },
+    onError: (_error, _value, context) => {
+      queryClient.setQueryData(queryKey, context?.previous ?? false);
+    },
+  });
+
+  return {
+    inlineTransactionEntry,
+    isLoading: queryRest.isLoading,
+    updateInlineTransactionEntry: updateMutation.mutate,
     isUpdating: updateMutation.isPending,
   };
 }

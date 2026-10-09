@@ -49,6 +49,8 @@ interface TransactionTableBodyProps {
   onSplitCreate: (transaction: GetTransactionsByAccountRow) => void;
   onActivateCell: (transactionId: number, column: TransactionEditableColumn) => void;
   onDeactivateCell: () => void;
+  /** Rendered above the transactions, e.g. the inline add row. */
+  leadingRows?: React.ReactNode;
 }
 
 export const TransactionTableBody = React.memo(function TransactionTableBody({
@@ -83,6 +85,7 @@ export const TransactionTableBody = React.memo(function TransactionTableBody({
   onSplitCreate,
   onActivateCell,
   onDeactivateCell,
+  leadingRows,
 }: TransactionTableBodyProps) {
   const lastSelectedIndexRef = useRef<number | null>(null);
   const shiftPressedRef = useRef(false);
@@ -127,6 +130,7 @@ export const TransactionTableBody = React.memo(function TransactionTableBody({
 
   return (
     <TableBody>
+      {leadingRows}
       {topSpacerHeight > 0 && (
         <tr aria-hidden="true">
           <td colSpan={columnCount} style={{ height: topSpacerHeight, padding: 0, border: 0 }}>

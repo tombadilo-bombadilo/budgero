@@ -1,5 +1,6 @@
 'use client';
 
+import { requestInlineAdd } from '@features/transactions/model/inline-add-target';
 import { Trans, useLingui } from '@lingui/react/macro';
 
 import * as React from 'react';
@@ -117,7 +118,7 @@ export function CommandPalette() {
         // the browser's reserved Cmd/Ctrl+T "new tab" shortcut.
         if ((e.metaKey || e.ctrlKey) && e.altKey) {
           e.preventDefault();
-          setShowTransactionDialog(true);
+          if (!requestInlineAdd()) setShowTransactionDialog(true);
         }
       }
     };
@@ -469,7 +470,7 @@ export function CommandPalette() {
             <CommandItem
               onSelect={() => {
                 setCommandPaletteOpen(false);
-                setShowTransactionDialog(true);
+                if (!requestInlineAdd()) setShowTransactionDialog(true);
               }}
             >
               <Plus className="mr-2 h-4 w-4" />
