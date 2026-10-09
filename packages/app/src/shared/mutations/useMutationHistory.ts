@@ -140,6 +140,7 @@ export function formatOpCode(op: string): string {
     'transactions.clearSplits': 'Clear Splits',
     'categories.create': 'Create Category',
     'categories.updateName': 'Rename Category',
+    'categories.updateNote': 'Edit Category Note',
     'categories.updateDetails': 'Edit Category',
     'categories.updateFundingPriorities': 'Change Funding Priorities',
     'budgets.updateGoalFundingSettings': 'Change Goal Funding Settings',

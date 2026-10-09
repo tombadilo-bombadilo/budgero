@@ -26,6 +26,8 @@ vi.mock('@entities/budget/api/useGoalFundingSettings', () => ({
 }));
 vi.mock('@entities/category/api/useCategories', () => ({
   useUpdateFundingPriorities: () => ({ mutateAsync: mock.priorities, isPending: false }),
+  useCategories: () => ({ data: [] }),
+  useUpdateCategoryNote: () => ({ mutate: vi.fn() }),
 }));
 vi.mock('@entities/budget/api/useMonthlyBudget', () => ({
   useBatchUpsertAssignments: () => ({

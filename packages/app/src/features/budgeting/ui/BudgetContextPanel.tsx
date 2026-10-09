@@ -1,6 +1,7 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useGoalFundingSettings } from '@entities/budget/api/useGoalFundingSettings';
 import { FundingPriorityEditor } from '@features/category-management/ui/FundingPriorityEditor';
+import { CategoryNoteEditor } from '@features/category-management/ui/CategoryNoteEditor';
 import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@shared/ui/card';
 import type { EChartsCoreOption } from 'echarts/core';
@@ -888,6 +889,19 @@ export function BudgetContextPanel({
               formatter={maskedFormatter}
               compact={false}
             />
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedCategory && (
+        <Card className={cardClass}>
+          <CardHeader className={headerClass}>
+            <CardTitle className={titleClass}>
+              <Trans>Note</Trans>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className={contentClass}>
+            <CategoryNoteEditor budgetId={budgetId} categoryId={selectedCategory.categoryId} />
           </CardContent>
         </Card>
       )}
