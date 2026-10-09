@@ -315,8 +315,97 @@ export class GoalCalculations {
     if (goal.Type === GoalType.MONTHLY_SAVINGS) {
       return this.calculateMonthlySavings(goal, finances, currentMonth, currencyCode);
     }
+    if (goal.Type === GoalType.TARGET_BALANCE) {
+      return this.calculateTargetBalance(goal, finances);
+    }
 
     return this.getEmptyProgress('Unknown savings type');
+  }
+
+  /**
+   * Target Balance: "have X available", with no date and no repeat.
+   * Progress is the category's available balance, so spending creates a need
+   * again; an overspent balance has to be covered before it counts.
+   */
+  private static calculateTargetBalance(goal: Goal, finances: CategoryFinancials): GoalProgress {
+    const target = Math.max(0, goal.Target || 0);
+    const { available } = finances;
+    const amountNeeded = Math.max(0, target - available);
+    const percentage = this.clampPercentage((Math.max(0, available) / target) * 100);
+    const isFunded = available >= target;
+
+    let status: GoalStatus;
+    if (available < 0) {
+      status = 'overspent';
+    } else if (isFunded) {
+      status = available > target ? 'overfunded' : 'completed';
+    } else if (available === 0) {
+      status = 'not-started';
+    } else if (percentage >= 80) {
+      status = 'on-track';
+    } else if (percentage >= 50) {
+      status = 'behind';
+    } else {
+      status = 'at-risk';
+    }
+
+    let statusMessage: string;
+    const statusValues: Record<string, number | string> = {};
+    if (status === 'overspent') {
+      statusMessage = 'Overspent by {{overspent}}';
+      statusValues.overspent = Math.abs(available);
+    } else if (status === 'completed') {
+      statusMessage = '✓ Target available!';
+    } else if (status === 'overfunded') {
+      statusMessage = '✓ Goal exceeded by {{excess}}';
+      statusValues.excess = available - target;
+    } else {
+      statusMessage = 'Need {{needed}} more available';
+      statusValues.needed = amountNeeded;
+    }
+
+    const breakdown: GoalBreakdown = {
+      title: 'Target Balance',
+      items: [
+        { label: 'Target Available', value: target, description: 'Balance to reach' },
+        { label: 'Currently Available', value: available, description: 'Current balance' },
+        {
+          label: 'Assigned This Month',
+          value: finances.assigned,
+          description: 'Allocated this month',
+        },
+      ],
+      explanation: [
+        'Goal: have this amount available, with no date and no repeat',
+        'Spending lowers the balance, so assign again to top it back up',
+      ],
+    };
+    if (amountNeeded > 0) {
+      breakdown.items.push({
+        label: 'Still Needed',
+        value: amountNeeded,
+        description: 'Assign this to reach target',
+      });
+    }
+
+    return {
+      percentage,
+      amountSaved: available,
+      amountNeeded,
+      monthlyTarget: target,
+      overfundedAmount: Math.max(0, available - target),
+      isFunded,
+      isOnTrack: isFunded || percentage >= 80,
+      status,
+      statusMessage,
+      recommendation:
+        amountNeeded > 0
+          ? 'Assign {{needed}} to reach your target'
+          : 'Target met — category is fully funded',
+      recommendationValues: amountNeeded > 0 ? { needed: amountNeeded } : {},
+      breakdown,
+      statusValues,
+    };
   }
 
   /**
@@ -1133,7 +1222,8 @@ export class GoalCalculations {
       if (
         goal.Type !== GoalType.TARGET_DATE &&
         goal.Type !== GoalType.MONTHLY_SAVINGS &&
-        goal.Type !== GoalType.YEARLY
+        goal.Type !== GoalType.YEARLY &&
+        goal.Type !== GoalType.TARGET_BALANCE
       ) {
         errors.push('Invalid type for savings goal');
       }

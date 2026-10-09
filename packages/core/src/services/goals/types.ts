@@ -23,6 +23,7 @@ export enum GoalType {
   // Savings goal types
   TARGET_DATE = 'target-date', // Save a specific amount by a specific date
   MONTHLY_SAVINGS = 'monthly-savings', // Save a specific amount each month
+  TARGET_BALANCE = 'target-balance', // Have a balance of X, no date and no repeat
 }
 
 /**
@@ -32,7 +33,7 @@ export function getValidTypesForPurpose(purpose: GoalPurpose): GoalType[] {
   if (purpose === GoalPurpose.SPENDING) {
     return [GoalType.MONTHLY, GoalType.YEARLY];
   }
-  return [GoalType.TARGET_DATE, GoalType.MONTHLY_SAVINGS];
+  return [GoalType.TARGET_DATE, GoalType.MONTHLY_SAVINGS, GoalType.TARGET_BALANCE];
 }
 
 /**

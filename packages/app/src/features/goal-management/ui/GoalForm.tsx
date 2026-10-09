@@ -19,6 +19,7 @@ import {
   ChevronRight,
   Repeat,
   RefreshCw,
+  Flag,
 } from 'lucide-react';
 import { Input } from '@shared/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
@@ -59,6 +60,7 @@ interface GoalFormProps {
  * 2. monthly-allocation → MONTHLY_SAVINGS + SAVINGS — "Assign X each month"
  * 3. yearly-allocation  → TARGET_DATE + SAVINGS  — "Allocate X total by date"
  * 4. yearly-available   → YEARLY     + SPENDING  — "Have X available by date"
+ * 5. target-balance     → TARGET_BALANCE + SAVINGS — "Have X available", no date or repeat
  */
 type GoalPreset =
   | 'monthly-available'
@@ -66,11 +68,13 @@ type GoalPreset =
   | 'yearly-allocation'
   | 'yearly-available'
   | 'periodic-allocation'
-  | 'periodic-available';
+  | 'periodic-available'
+  | 'target-balance';
 
 function presetFromGoal(goal: Goal): GoalPreset {
   if (goal.Type === GoalType.MONTHLY) return 'monthly-available';
   if (goal.Type === GoalType.MONTHLY_SAVINGS) return 'monthly-allocation';
+  if (goal.Type === GoalType.TARGET_BALANCE) return 'target-balance';
   const cycle = getCycleMonths(goal);
   const periodic = cycle !== null && cycle !== 12;
   if (goal.Type === GoalType.TARGET_DATE)
@@ -186,6 +190,16 @@ export function GoalForm({
       buildExample: (amount) => t`e.g. Insurance — have ${amount} ready every 6 months`,
       needsDate: false,
       periodic: true,
+    },
+    {
+      key: 'target-balance',
+      type: GoalType.TARGET_BALANCE,
+      purpose: GoalPurpose.SAVINGS,
+      icon: <Flag className="h-5 w-5" />,
+      title: t`Target Balance`,
+      subtitle: t`Build up to an amount available, with no date and no repeat`,
+      buildExample: (amount) => t`e.g. Emergency fund — build up to ${amount}`,
+      needsDate: false,
     },
   ];
 
@@ -444,6 +458,8 @@ export function GoalForm({
                 t`The total to allocate in each cycle. Monthly target is calculated automatically.`}
               {selectedPreset === 'periodic-available' &&
                 t`The amount you need available by the end of each cycle.`}
+              {selectedPreset === 'target-balance' &&
+                t`The balance you want to build up in this category. Spending lowers it again.`}
             </p>
           </div>
 
