@@ -278,6 +278,11 @@ msgstr "{0, plural, one {# register row} other {# register rows}}"
 msgid "{0, plural, one {# split transaction detected} other {# split transactions detected}}"
 msgstr "{0, plural, one {# split transaction detected} other {# split transactions detected}}"
 
+#. placeholder {0}: sources.length
+#: src/features/transactions/api/useDuplicateShortcut.ts
+msgid "{0, plural, one {# transaction duplicated} other {# transactions duplicated}}"
+msgstr "{0, plural, one {# transaction duplicated} other {# transactions duplicated}}"
+
 #. placeholder {0}: users.length
 #: src/pages/admin/admin-users/UsersTable.tsx
 msgid "{0, plural, one {# user found} other {# users found}}"
@@ -1069,6 +1074,10 @@ msgstr "{totalCount, plural, one {# recorded action (showing {0} per page)} othe
 #: src/widgets/dashboard/UncategorizedTransactionsCard.tsx
 msgid "{totalCount, plural, one {# transaction waiting} other {# transactions waiting}}"
 msgstr "{totalCount, plural, one {# transaction waiting} other {# transactions waiting}}"
+
+#: src/app/layout/desktop-shell/AccountsList.tsx
+msgid "{uncategorizedCount, plural, one {# uncategorized transaction} other {# uncategorized transactions}}"
+msgstr "{uncategorizedCount, plural, one {# uncategorized transaction} other {# uncategorized transactions}}"
 
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
 msgid "{uncategorizedCount} uncategorized"
@@ -2009,6 +2018,10 @@ msgstr "<0/>Timeline"
 msgid "<0/>Tool Execution Mode"
 msgstr "<0/>Tool Execution Mode"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "<0/>Transactions"
+msgstr "<0/>Transactions"
+
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "<0/>Transfer rate"
 msgstr "<0/>Transfer rate"
@@ -2713,7 +2726,7 @@ msgid "Account not found"
 msgstr "Account not found"
 
 #. placeholder {0}: isInflow ? 'Added' : 'Removed'
-#. placeholder {1}: formatMilli(accountLocalizer, amount)
+#. placeholder {1}: formatMilli(accountLocalizer, adjustmentAmount)
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Account reconciled successfully. {0} {1}"
 msgstr "Account reconciled successfully. {0} {1}"
@@ -2894,6 +2907,10 @@ msgstr "Add a new user to this deployment. Share the password securely."
 msgid "Add a note for this transfer..."
 msgstr "Add a note for this transfer..."
 
+#: src/features/category-management/ui/CategoryNoteEditor.tsx
+msgid "Add a note…"
+msgstr "Add a note…"
+
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Add Account"
 msgstr "Add Account"
@@ -2963,6 +2980,10 @@ msgstr "Add Expense"
 msgid "Add Income"
 msgstr "Add Income"
 
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Add line"
+msgstr "Add line"
+
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Add New Account"
 msgstr "Add New Account"
@@ -2989,6 +3010,10 @@ msgstr "Add Transaction"
 #: src/app/layout/desktop-shell/HeaderBar.tsx
 msgid "Add transaction ({0})"
 msgstr "Add transaction ({0})"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Add transactions"
+msgstr "Add transactions"
 
 #: src/features/transactions/ui/add-transaction/TransactionFormActions.tsx
 msgid "Add Transfer"
@@ -3654,6 +3679,10 @@ msgstr "Assign {needed} to reach your target"
 msgid "Assign a fixed amount every month, regardless of spending"
 msgstr "Assign a fixed amount every month, regardless of spending"
 
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Assign remaining"
+msgstr "Assign remaining"
+
 #: src/pages/onboarding/steps/GoalStep.tsx
 msgid "Assign the same amount every month. Best for emergency funds and ongoing buckets."
 msgstr "Assign the same amount every month. Best for emergency funds and ongoing buckets."
@@ -3950,6 +3979,10 @@ msgstr "Balance after {0} months under this scenario"
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Balance owed"
 msgstr "Balance owed"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Balance to reach"
+msgstr "Balance to reach"
 
 #. placeholder {0}: formatAmount(currentFormatter, balanceValue)
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardAmounts.tsx
@@ -4481,6 +4514,10 @@ msgstr "Build dashboard layouts from Explorer charts. Drag to reorder, resize on
 msgid "Build metadata for support or troubleshooting."
 msgstr "Build metadata for support or troubleshooting."
 
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Build up to an amount available, with no date and no repeat"
+msgstr "Build up to an amount available, with no date and no repeat"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Building habits takes time - keep trying!"
 msgstr "Building habits takes time - keep trying!"
@@ -4556,6 +4593,7 @@ msgstr "Canadian Dollar"
 #: src/features/transactions/ui/add-transaction/AddTransactionForm.tsx
 #: src/features/transactions/ui/add-transaction/TransactionFormActions.tsx
 #: src/features/transactions/ui/cells/ExchangeRateCell.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 #: src/pages/admin/admin-users/ActionDialog.tsx
@@ -4727,6 +4765,7 @@ msgstr "Category deleted"
 msgid "Category group"
 msgstr "Category group"
 
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
 msgid "Category is set automatically for on-budget transfers"
 msgstr "Category is set automatically for on-budget transfers"
@@ -4743,6 +4782,10 @@ msgstr "Category Name"
 #: src/features/category-management/ui/CategoryEditDialog.tsx
 msgid "Category name cannot be empty"
 msgstr "Category name cannot be empty"
+
+#: src/features/category-management/ui/CategoryNoteEditor.tsx
+msgid "Category note"
+msgstr "Category note"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 msgid "Category-history differences"
@@ -5005,6 +5048,10 @@ msgstr "Choose how this budget computes Ready to Assign. Switching is instant an
 #: src/pages/settings/components/GoalFundingSettingsCard.tsx
 msgid "Choose how this budget funds goals. These settings sync across devices."
 msgstr "Choose how this budget funds goals. These settings sync across devices."
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Choose how transactions are added and how amounts are shown."
+msgstr "Choose how transactions are added and how amounts are shown."
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Choose how you want to track this category."
@@ -5658,6 +5705,10 @@ msgstr "Could not decrypt"
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Could not delete the query."
 msgstr "Could not delete the query."
+
+#: src/features/transactions/api/useDuplicateShortcut.ts
+msgid "Could not duplicate transactions"
+msgstr "Could not duplicate transactions"
 
 #: src/features/ai/ui/receipt-scanner/useReceiptScannerState.ts
 msgid "Could not extract any transactions from this image."
@@ -6710,6 +6761,10 @@ msgstr "Detected through the YNAB API"
 msgid "Diagnostics copied"
 msgstr "Diagnostics copied"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Dialog"
+msgstr "Dialog"
+
 #: src/pages/analytics/AnalyticsPage.tsx
 msgid "Did the budget hold?"
 msgstr "Did the budget hold?"
@@ -6889,9 +6944,21 @@ msgstr "Due today"
 #~ msgid "Due:"
 #~ msgstr "Due:"
 
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Duplicate"
+msgstr "Duplicate"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Duplicate (press {duplicateShortcut})"
+msgstr "Duplicate (press {duplicateShortcut})"
+
 #: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "Duplicate check failed"
 msgstr "Duplicate check failed"
+
+#: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
+msgid "Duplicate selected rows"
+msgstr "Duplicate selected rows"
 
 #: src/pages/settings/SecurityPage.tsx
 msgid "Duration"
@@ -6916,6 +6983,10 @@ msgstr "e.g. Car registration — need {amount} ready by {date}"
 #: src/features/rules/ui/rule-editor/RuleMetadataForm.tsx
 msgid "e.g. Categorise grocery deliveries"
 msgstr "e.g. Categorise grocery deliveries"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "e.g. Emergency fund — build up to {amount}"
+msgstr "e.g. Emergency fund — build up to {amount}"
 
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "e.g. Freelance"
@@ -7298,6 +7369,10 @@ msgstr "Enter account name"
 msgid "Enter amount"
 msgstr "Enter amount"
 
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Enter an amount and an account"
+msgstr "Enter an amount and an account"
+
 #: src/features/transactions/ui/form/CurrencyConversionNotice.tsx
 msgid "Enter an amount to see conversion"
 msgstr "Enter an amount to see conversion"
@@ -7318,6 +7393,10 @@ msgstr "Enter category name"
 msgid "Enter current password"
 msgstr "Enter current password"
 
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Enter either an inflow or an outflow"
+msgstr "Enter either an inflow or an outflow"
+
 #: src/features/currencies/ui/ManualRatePrompt.tsx
 msgid "Enter Exchange Rate"
 msgstr "Enter Exchange Rate"
@@ -7334,6 +7413,11 @@ msgstr "Enter new password (min 8 characters)"
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Enter report name..."
 msgstr "Enter report name..."
+
+#. placeholder {0}: transferAccountRecord.Name
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Enter the amount sent from {0}"
+msgstr "Enter the amount sent from {0}"
 
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Enter the balance your bank shows. It is compared with your cleared balance; cleared transactions are then locked, and uncleared ones stay open."
@@ -7969,6 +8053,10 @@ msgstr "Failed to revoke token: {0}"
 msgid "Failed to save"
 msgstr "Failed to save"
 
+#: src/features/category-management/ui/CategoryNoteEditor.tsx
+msgid "Failed to save note"
+msgstr "Failed to save note"
+
 #: src/features/budget-planning/ui/budget-table/useCategoryOperations.ts
 msgid "Failed to save order"
 msgstr "Failed to save order"
@@ -8526,6 +8614,10 @@ msgid "Goal updated"
 msgstr "Goal updated"
 
 #: src/features/goal-management/lib/core-goal-text.ts
+msgid "Goal: have this amount available, with no date and no repeat"
+msgstr "Goal: have this amount available, with no date and no repeat"
+
+#: src/features/goal-management/lib/core-goal-text.ts
 msgid "Goal: Save {monthlyTarget} every month"
 msgstr "Goal: Save {monthlyTarget} every month"
 
@@ -9050,6 +9142,10 @@ msgstr "Imports now live on their own page so you can manage history and undo ru
 msgid "In"
 msgstr "In"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "In a dialog, or in an inline row at the top of the account register (desktop)."
+msgstr "In a dialog, or in an inline row at the top of the account register (desktop)."
+
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "in progress"
 msgstr "in progress"
@@ -9212,6 +9308,10 @@ msgstr "Initial Balance"
 #: src/shared/hooks/useWhisperVoiceInput.ts
 msgid "Initializing..."
 msgstr "Initializing..."
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Inline row"
+msgstr "Inline row"
 
 #. placeholder {0}: drilldownRows.length
 #: src/pages/analytics/reports/FlowReport.tsx
@@ -9717,6 +9817,10 @@ msgstr "Leave empty"
 #: src/pages/settings/ai/ConnectionTestPanel.tsx
 msgid "Leave empty for local servers (Ollama, LM Studio). Sent as a <0>Bearer</0>token to your chosen provider."
 msgstr "Leave empty for local servers (Ollama, LM Studio). Sent as a <0>Bearer</0>token to your chosen provider."
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Leave zero amounts empty"
+msgstr "Leave zero amounts empty"
 
 #: src/pages/analytics/AnalyticsPage.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
@@ -10341,6 +10445,7 @@ msgstr "Membership records"
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
@@ -11681,6 +11786,10 @@ msgstr "Not synced yet."
 msgid "Not used yet"
 msgstr "Not used yet"
 
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "Note"
+msgstr "Note"
+
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Notes"
 msgstr "Notes"
@@ -12381,6 +12490,7 @@ msgstr "Pay"
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Payee"
 msgstr "Payee"
@@ -13045,8 +13155,8 @@ msgstr "Processing transactions"
 
 #: src/pages/accounts/AllTransactionsPage.tsx
 #: src/pages/accounts/components/AccountTransactionsSection.tsx
-msgid "Processing transfer..."
-msgstr "Processing transfer..."
+#~ msgid "Processing transfer..."
+#~ msgstr "Processing transfer..."
 
 #: src/features/budget-planning/ui/assign-dropdown/AssignDropdown.tsx
 msgid "Processing..."
@@ -13408,6 +13518,12 @@ msgstr "Received amount ({toCurrency})"
 msgid "Received in {0}"
 msgstr "Received in {0}"
 
+#. placeholder {0}: transferAccountRecord.Name
+#. placeholder {1}: transferAccountRecord.Currency
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Received in {0} ({1})"
+msgstr "Received in {0} ({1})"
+
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Recent Activity"
 msgstr "Recent Activity"
@@ -13687,6 +13803,7 @@ msgstr "Remaining"
 msgid "Remaining to allocate"
 msgstr "Remaining to allocate"
 
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 msgid "Remaining to assign"
 msgstr "Remaining to assign"
@@ -13768,6 +13885,14 @@ msgstr "Remove one-off"
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "Remove pattern from memo"
 msgstr "Remove pattern from memo"
+
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Remove split"
+msgstr "Remove split"
+
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Remove split line"
+msgstr "Remove split line"
 
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
@@ -14365,6 +14490,7 @@ msgstr "Same date and amount in this account"
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 #: src/features/currencies/ui/ManualRatePrompt.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -14391,6 +14517,10 @@ msgstr "Save 17%"
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
 msgid "Save a report with at least one chart in Explorer first."
 msgstr "Save a report with at least one chart in Explorer first."
+
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Save and add another"
+msgstr "Save and add another"
 
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 msgid "Save changes"
@@ -15090,6 +15220,12 @@ msgstr "Sent {0} of {1}, failed {2}{3}."
 msgid "Sent from {0}"
 msgstr "Sent from {0}"
 
+#. placeholder {0}: transferAccountRecord.Name
+#. placeholder {1}: transferAccountRecord.Currency
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Sent from {0} ({1})"
+msgstr "Sent from {0} ({1})"
+
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Server"
 msgstr "Server"
@@ -15313,6 +15449,10 @@ msgstr "Show All ({0})"
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show all transactions"
 msgstr "Show all transactions"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show an empty Inflow or Outflow cell instead of 0, so the amount that matters stands out."
+msgstr "Show an empty Inflow or Outflow cell instead of 0, so the amount that matters stands out."
 
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Show Archived"
@@ -15718,6 +15858,10 @@ msgstr "Spending by label (90d)"
 msgid "Spending during the month doesn't reduce progress — only what you assign matters"
 msgstr "Spending during the month doesn't reduce progress — only what you assign matters"
 
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Spending lowers the balance, so assign again to top it back up"
+msgstr "Spending lowers the balance, so assign again to top it back up"
+
 #. placeholder {0}: fmt.money(plan.totalSpent - plan.totalAssigned)
 #. placeholder {1}: (usage * 100).toFixed(0)
 #: src/pages/analytics/insights.ts
@@ -15758,6 +15902,7 @@ msgstr "Spent (over plan)"
 msgid "Spent (within plan)"
 msgstr "Spent (within plan)"
 
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Split"
@@ -15767,6 +15912,10 @@ msgstr "Split"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Split details"
 msgstr "Split details"
+
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Split memo"
+msgstr "Split memo"
 
 #: src/features/transactions/ui/form/SplitEditor.tsx
 msgid "Split remaining"
@@ -16295,6 +16444,12 @@ msgstr "Target amount is available and ready to use."
 msgid "Target Available"
 msgstr "Target Available"
 
+#: src/features/goal-management/lib/core-goal-text.ts
+#: src/features/goal-management/ui/GoalCard.tsx
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Target Balance"
+msgstr "Target Balance"
+
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Target Date"
 msgstr "Target Date"
@@ -16416,6 +16571,10 @@ msgstr "The assistant will automatically execute actions without asking for conf
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The available balance you want in this category each month."
 msgstr "The available balance you want in this category each month."
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "The balance you want to build up in this category. Spending lowers it again."
+msgstr "The balance you want to build up in this category. Spending lowers it again."
 
 #: src/features/bank-sync/model/enable-banking-auth.ts
 msgid "The bank didn't authorize access: {description}"
@@ -17292,6 +17451,7 @@ msgid "Transcription failed"
 msgstr "Transcription failed"
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
+#: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/form/TransactionTypeSelector.tsx
 #: src/pages/settings/recurring/components/RecurringKindBadge.tsx
 msgid "Transfer"
@@ -17312,8 +17472,8 @@ msgstr "Transfer created successfully."
 
 #. placeholder {0}: memo ? `: ${memo}` : ''
 #: src/features/transactions/ui/add-transaction/add-transaction.utils.ts
-msgid "Transfer from {fromAccountName} to {toAccountName}{0}"
-msgstr "Transfer from {fromAccountName} to {toAccountName}{0}"
+#~ msgid "Transfer from {fromAccountName} to {toAccountName}{0}"
+#~ msgstr "Transfer from {fromAccountName} to {toAccountName}{0}"
 
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "Transfer rate"
@@ -17330,6 +17490,15 @@ msgstr "Transfer rate updated"
 msgid "Transfer to {0}"
 msgstr "Transfer to {0}"
 
+#. placeholder {0}: account.Name
+#. placeholder {0}: transferAccountRecord.Name
+#: src/features/payees/ui/PayeeCombobox.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+msgid "Transfer: {0}"
+msgstr "Transfer: {0}"
+
+#: src/features/payees/ui/PayeeCombobox.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
 msgid "Transfers"
 msgstr "Transfers"

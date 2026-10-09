@@ -21,11 +21,24 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.17.1',
+    date: 'October 9, 2026',
+    summary: 'Fixes untranslated labels that appeared as short codes after v1.17.0.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Missing labels',
+        description:
+          'The inline transaction row, transfer payees and the new Appearance settings showed short codes instead of text. They now show properly in every language.',
+      },
+    ],
+  },
+  {
     version: 'v1.17.0',
     date: 'October 9, 2026',
     summary:
       'Adds inline transaction entry on the desktop register, category notes, a target balance goal and duplicating transactions, and makes far more changes undoable.',
-    isLatest: true,
     items: [
       {
         type: 'new',
