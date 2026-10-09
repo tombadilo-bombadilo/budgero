@@ -52,7 +52,7 @@ RUN pnpm --filter @budgero/core build
 RUN pnpm --filter @budgero/app exec vite build --config vite.config.ts
 
 # Go builder stage
-FROM golang:1.26.6-alpine AS go-builder
+FROM golang:1.26.9-alpine AS go-builder
 
 # Install build dependencies
 RUN apk upgrade --no-cache && apk add --no-cache git
