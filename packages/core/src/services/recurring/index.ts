@@ -23,6 +23,7 @@ import type {
   MarkOccurrenceReadyResult,
   ProjectedTransactionRow,
   RecurringOccurrence,
+  RecurringOccurrenceRef,
   RecurringOccurrenceStatus,
   RecurringOccurrenceWithTemplate,
   RecurringSchedule,
@@ -842,6 +843,57 @@ export class RecurringTransactionService {
     }));
   }
 
+  /**
+   * Resolves an occurrence reference to this device's row ID. The
+   * (recurringTransactionId, dueDate) key wins over occurrenceId because
+   * occurrence IDs are assigned locally by read paths and differ between
+   * devices; a keyed occurrence this device has not materialized yet is
+   * created. A bare number or an occurrenceId-only ref is the legacy form.
+   */
+  resolveOccurrenceId(ref: number | RecurringOccurrenceRef): number {
+    if (typeof ref === 'number') return ref;
+    const templateId = ref.recurringTransactionId;
+    if (templateId != null && ref.dueDate) {
+      const dueDate = getUTCDateString(parseDate(ref.dueDate, 'dueDate'));
+      const find = () =>
+        getRow<{ ID: number | bigint }>(
+          this.db,
+          `SELECT ID FROM recurring_transaction_occurrences
+            WHERE RecurringTransactionID = ? AND DueDate = ?`,
+          templateId,
+          dueDate
+        );
+      let row = find();
+      if (!row) {
+        const template = this.getRecurringTransaction(templateId, { includeInactive: true });
+        // Fill the series up to the due date first so later materialization
+        // (which continues after the newest row) leaves no gap before it.
+        const horizon = computeHorizonDate();
+        const due = parseDate(dueDate, 'dueDate');
+        this.ensureOccurrencesForTemplate(template, due > horizon ? due : horizon);
+        row = find();
+        if (!row) {
+          run(
+            this.db,
+            `INSERT OR IGNORE INTO recurring_transaction_occurrences (
+              RecurringTransactionID, BudgetID, DueDate, Status
+            ) VALUES (?, ?, ?, 'scheduled')`,
+            template.id,
+            template.budgetId,
+            dueDate
+          );
+          row = find();
+        }
+      }
+      if (row) return Number(row.ID);
+    }
+    if (ref.occurrenceId != null) return ref.occurrenceId;
+    throw new ValidationError(
+      'An occurrence needs an occurrenceId or a recurring transaction and due date',
+      'occurrenceId'
+    );
+  }
+
   getOccurrenceWithTemplate(occurrenceId: number): RecurringOccurrenceWithTemplate {
     const row = getRow<OccurrenceWithTemplateRow>(
       this.db,
@@ -860,7 +912,8 @@ export class RecurringTransactionService {
   async markOccurrenceReady(
     options: MarkOccurrenceReadyOptions
   ): Promise<MarkOccurrenceReadyResult> {
-    const occurrence = this.getOccurrenceWithTemplate(options.occurrenceId);
+    const occurrenceId = this.resolveOccurrenceId(options);
+    const occurrence = this.getOccurrenceWithTemplate(occurrenceId);
     if (occurrence.status !== 'scheduled') {
       throw new ValidationError('Occurrence is not in scheduled state', 'status');
     }
@@ -899,26 +952,42 @@ export class RecurringTransactionService {
       );
     }
 
-    run(
-      this.db,
-      `UPDATE recurring_transaction_occurrences
-         SET Status = 'ready',
-             TransactionID = ?,
-             ReadyAt = datetime('now'),
-             UpdatedAt = datetime('now')
-       WHERE ID = ?`,
-      transactionId,
-      options.occurrenceId
-    );
+    // The posting commits on its own (addTransaction runs its rate lookups
+    // and then its own DB transaction), so flip the occurrence in one
+    // transaction guarded on 'scheduled' and take the posting back if that
+    // fails. A posted transaction never sits behind a still-scheduled
+    // occurrence, so a retry can't post twice.
+    try {
+      this.db.transaction(() => {
+        const marked = run(
+          this.db,
+          `UPDATE recurring_transaction_occurrences
+             SET Status = 'ready',
+                 TransactionID = ?,
+                 ReadyAt = datetime('now'),
+                 UpdatedAt = datetime('now')
+           WHERE ID = ? AND Status = 'scheduled'`,
+          transactionId,
+          occurrenceId
+        );
+        if (!marked.changes) {
+          throw new ValidationError('Occurrence is not in scheduled state', 'status');
+        }
 
-    run(
-      this.db,
-      `UPDATE recurring_transactions
-         SET LastOccurrenceDate = ?, UpdatedAt = datetime('now')
-       WHERE ID = ?`,
-      occurrence.dueDate,
-      template.id
-    );
+        run(
+          this.db,
+          `UPDATE recurring_transactions
+             SET LastOccurrenceDate = ?, UpdatedAt = datetime('now')
+           WHERE ID = ?`,
+          occurrence.dueDate,
+          template.id
+        );
+      });
+    } catch (error) {
+      // Deleting the source leg removes a transfer's partner leg too.
+      this.transactions.deleteTransaction(transactionId);
+      throw error;
+    }
 
     this.ensureOccurrencesForTemplate(
       this.getRecurringTransaction(template.id, { includeInactive: true }),
@@ -926,7 +995,7 @@ export class RecurringTransactionService {
     );
 
     return {
-      occurrence: this.getOccurrenceWithTemplate(options.occurrenceId),
+      occurrence: this.getOccurrenceWithTemplate(occurrenceId),
       transactionId,
     };
   }
@@ -1013,7 +1082,10 @@ export class RecurringTransactionService {
     return sourceTransactionId;
   }
 
-  async skipOccurrence(occurrenceId: number): Promise<RecurringOccurrenceWithTemplate> {
+  async skipOccurrence(
+    ref: number | RecurringOccurrenceRef
+  ): Promise<RecurringOccurrenceWithTemplate> {
+    const occurrenceId = this.resolveOccurrenceId(ref);
     this.getOccurrenceWithTemplate(occurrenceId);
     const result = run(
       this.db,
@@ -1029,7 +1101,10 @@ export class RecurringTransactionService {
     return this.getOccurrenceWithTemplate(occurrenceId);
   }
 
-  async markOccurrenceNotified(occurrenceId: number): Promise<RecurringOccurrenceWithTemplate> {
+  async markOccurrenceNotified(
+    ref: number | RecurringOccurrenceRef
+  ): Promise<RecurringOccurrenceWithTemplate> {
+    const occurrenceId = this.resolveOccurrenceId(ref);
     const result = run(
       this.db,
       `UPDATE recurring_transaction_occurrences
@@ -1044,7 +1119,8 @@ export class RecurringTransactionService {
     return this.getOccurrenceWithTemplate(occurrenceId);
   }
 
-  resetOccurrence(occurrenceId: number): RecurringOccurrenceWithTemplate {
+  resetOccurrence(ref: number | RecurringOccurrenceRef): RecurringOccurrenceWithTemplate {
+    const occurrenceId = this.resolveOccurrenceId(ref);
     const occurrence = this.getOccurrenceWithTemplate(occurrenceId);
 
     run(

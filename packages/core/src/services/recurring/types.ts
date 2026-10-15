@@ -113,8 +113,19 @@ export interface MarkOccurrenceReadyResult {
   transactionId: number;
 }
 
-export interface MarkOccurrenceReadyOptions {
-  occurrenceId: number;
+/**
+ * Identifies one occurrence. Occurrence rows are materialized locally (read
+ * paths insert them), so their IDs differ between devices; synced ops must
+ * carry the stable (recurringTransactionId, dueDate) key, which wins over
+ * occurrenceId when present. occurrenceId alone is the legacy form.
+ */
+export interface RecurringOccurrenceRef {
+  occurrenceId?: number;
+  recurringTransactionId?: number;
+  dueDate?: string;
+}
+
+export interface MarkOccurrenceReadyOptions extends RecurringOccurrenceRef {
   transactionDate?: string;
   memoOverride?: string;
 }
