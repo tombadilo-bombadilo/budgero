@@ -255,8 +255,12 @@ export class SplitService {
           ? parent.TransferID
           : `split_transfer_${parent.ID}_${parent.Date}`;
 
-      // Clear any previous mirrors for this TransferID to avoid duplicates
-      this.queries.deleteTransactionsByTransferID(transferId);
+      // Clear any previous mirrors for this parent (including ones keyed by an
+      // older parent date). Their balance effect is undone by the recalculation
+      // below, together with the new mirrors' target accounts.
+      const oldMirrors = this.queries.getSplitMirrorTransactions(parent.ID);
+      this.queries.deleteTransactions(oldMirrors.map((mirror) => mirror.ID));
+      const affectedAccountIds = new Set(oldMirrors.map((mirror) => mirror.AccountID));
 
       // Create mirror transactions per transfer split
       for (const pm of preparedMirrors) {
@@ -302,7 +306,10 @@ export class SplitService {
           pm.inflowConverted,
           pm.outflowConverted
         );
+        affectedAccountIds.add(pm.targetAccountId);
       }
+
+      this.queries.recalculateBalancesForAccounts([...affectedAccountIds]);
     });
   }
 
@@ -332,11 +339,10 @@ export class SplitService {
       const hasTransferSplits = existingSplits.some((s) => !!s.TransferAccountID);
       if (!hasTransferSplits) return;
 
-      const transferId =
-        parent.TransferID && parent.TransferID.length > 0
-          ? parent.TransferID
-          : `split_transfer_${parent.ID}_${parent.Date}`;
-      this.queries.deleteTransactionsByTransferID(transferId);
+      // Remove the mirrors and undo their effect on the target accounts.
+      const mirrors = this.queries.getSplitMirrorTransactions(parent.ID);
+      this.queries.deleteTransactions(mirrors.map((mirror) => mirror.ID));
+      this.queries.recalculateBalancesForAccounts(mirrors.map((mirror) => mirror.AccountID));
     });
   }
 }
