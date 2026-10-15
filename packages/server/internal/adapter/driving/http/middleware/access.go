@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	"budgero-server/internal/port/driving"
 
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog/log"
 )
 
 // BlockedUserMiddleware denies requests for accounts that have been blocked.
@@ -20,14 +22,31 @@ func BlockedUserMiddleware(userService driving.UserService) echo.MiddlewareFunc 
 			if userID == "" {
 				return echo.NewHTTPError(http.StatusUnauthorized, "user not authenticated")
 			}
-			ctx := c.Request().Context()
-			blocked, err := userService.IsBlocked(ctx, userID)
-			if err == nil && blocked {
-				return echo.NewHTTPError(http.StatusForbidden, "account is blocked")
+			if err := CheckNotBlocked(c.Request().Context(), userService, userID); err != nil {
+				return err
 			}
 			return next(c)
 		}
 	}
+}
+
+// CheckNotBlocked returns 403 for a blocked account. It fails closed: when the
+// block flag can't be read the request is refused with 503 rather than let
+// through. A user without a local row yet is not blocked (rows are created
+// lazily on first profile fetch), matching the previous behavior. Shared by
+// the middleware and by routes that authenticate outside it (WebSocket, push).
+func CheckNotBlocked(ctx context.Context, userService driving.UserService, userID string) error {
+	blocked, err := userService.IsBlocked(ctx, userID)
+	switch {
+	case errors.Is(err, domain.ErrUserNotFound):
+		return nil
+	case err != nil:
+		log.Error().Err(err).Str("user_id", userID).Msg("Failed to read account block status; refusing request")
+		return echo.NewHTTPError(http.StatusServiceUnavailable, "unable to verify account status")
+	case blocked:
+		return echo.NewHTTPError(http.StatusForbidden, "account is blocked")
+	}
+	return nil
 }
 
 // CheckWorkspaceAccess resolves a workspace and applies the canonical SaaS access policy.

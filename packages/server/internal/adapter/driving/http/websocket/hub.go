@@ -303,6 +303,33 @@ func (h *Hub) CloseUserClients(spaceID, userID string) {
 	}
 }
 
+// CloseAllUserClients disconnects every client of a user across all spaces,
+// e.g. after the account is blocked, so it can't keep streaming mutations.
+// Returns the number of connections closed.
+func (h *Hub) CloseAllUserClients(userID string) int {
+	h.mu.RLock()
+	targets := make([]*Client, 0)
+	for _, clients := range h.clients {
+		for client := range clients {
+			if client.userID == userID {
+				targets = append(targets, client)
+			}
+		}
+	}
+	h.mu.RUnlock()
+
+	for _, client := range targets {
+		h.removeAndCloseClient(client)
+	}
+	if len(targets) > 0 {
+		log.Info().
+			Str("user_id", userID).
+			Int("closed_connections", len(targets)).
+			Msg("Closed all WebSocket clients for user")
+	}
+	return len(targets)
+}
+
 // NotifyUserPasswordChanged tells every OTHER connected client belonging to
 // the same user — across all spaces — that the account's master password
 // changed, so those devices reload and re-prompt. This is deliberately
