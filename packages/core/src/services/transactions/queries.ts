@@ -1051,6 +1051,18 @@ export class TransactionQueries {
     });
   }
 
+  getTransactionsByCategoryIDs(categoryIds: number[]): Transaction[] {
+    const normalized = [...new Set(categoryIds.filter((id) => Number.isInteger(id) && id > 0))];
+    return chunkValues(normalized).flatMap((chunk) => {
+      const placeholders = chunk.map(() => '?').join(', ');
+      return allRows<Transaction>(
+        this.db,
+        `SELECT * FROM transactions WHERE CategoryID IN (${placeholders})`,
+        ...chunk
+      );
+    });
+  }
+
   getTransactionsByTransferIDs(transferIds: string[]): Transaction[] {
     const normalized = [...new Set(transferIds.filter(Boolean))];
     return chunkValues(normalized).flatMap((chunk) => {
@@ -1197,6 +1209,42 @@ export class TransactionQueries {
       transactionId
     );
     return Number(row?.LegCount) === 2 && Number(row?.OnBudgetLegCount) === 2;
+  }
+
+  /**
+   * Mirror rows created for a split parent's transfer lines. Matched by the
+   * `split_transfer_<parentId>_` prefix so rows keyed by an older parent date
+   * are still found. GLOB keeps `_` literal.
+   */
+  getSplitMirrorTransactions(parentId: number): Transaction[] {
+    return allRows<Transaction>(
+      this.db,
+      `SELECT * FROM transactions WHERE TransferID GLOB ?`,
+      `split_transfer_${parentId}_*`
+    );
+  }
+
+  /** Split-transfer mirrors belonging to any of the given parents. */
+  getSplitMirrorsForParents(parentIds: number[]): Transaction[] {
+    const parents = new Set(parentIds);
+    if (parents.size === 0) return [];
+    return allRows<Transaction>(
+      this.db,
+      `SELECT * FROM transactions WHERE TransferID GLOB 'split_transfer_*'`
+    ).filter((row) =>
+      parents.has(Number(/^split_transfer_(\d+)_/.exec(row.TransferID ?? '')?.[1]))
+    );
+  }
+
+  /** Re-key a split parent's mirrors to the parent's current date. */
+  rekeySplitMirrors(parentId: number, date: string): void {
+    run(
+      this.db,
+      `UPDATE transactions SET Date = ?, TransferID = ? WHERE TransferID GLOB ?`,
+      date,
+      `split_transfer_${parentId}_${date}`,
+      `split_transfer_${parentId}_*`
+    );
   }
 
   /**

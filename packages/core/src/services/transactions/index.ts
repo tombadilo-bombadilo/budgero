@@ -815,8 +815,30 @@ export class TransactionService {
 
     // Recalculate balances to ensure both converted and original running balances are consistent
     this.queries.recalculateBalances(accountId);
+    this.syncSplitMirrorDates(id);
 
     await this.syncTransferPartnerAmounts(id);
+  }
+
+  /**
+   * Split-transfer mirrors are keyed by their parent's date. When the parent
+   * moves to another date, move the mirrors with it so later edits and deletes
+   * still find them and their accounts' running balances follow.
+   */
+  private syncSplitMirrorDates(parentId: number): void {
+    const parent = this.queries.getTransactionByID(parentId);
+    if (!parent || parent.TransferID) return;
+    const transferId = `split_transfer_${parent.ID}_${parent.Date}`;
+    const mirrors = this.queries.getSplitMirrorTransactions(parent.ID);
+    if (
+      !mirrors.some((mirror) => mirror.TransferID !== transferId || mirror.Date !== parent.Date)
+    ) {
+      return;
+    }
+    this.db.transaction(() => {
+      this.queries.rekeySplitMirrors(parent.ID, parent.Date);
+      this.queries.recalculateBalancesForAccounts(mirrors.map((mirror) => mirror.AccountID));
+    });
   }
 
   /** Apply a Push API patch in account currency, committing all fields together. */
@@ -961,9 +983,7 @@ export class TransactionService {
         !txn.TransferID &&
         this.queries.getSplitsForTransaction(id).some((line) => line.TransferAccountID)
       ) {
-        partnerTransactions = this.queries.getTransactionsByTransferID(
-          `split_transfer_${txn.ID}_${txn.Date}`
-        );
+        partnerTransactions = this.queries.getSplitMirrorTransactions(txn.ID);
       }
 
       // 3. Delete the main transaction
@@ -1049,20 +1069,23 @@ export class TransactionService {
   getTransactionsForDelete(ids: number[]): Transaction[] {
     const selected = this.queries.getTransactionsByIDs(ids);
     const transferIds = selected
-      .map(
-        (transaction) =>
-          transaction.TransferID ||
-          (this.queries
-            .getSplitsForTransaction(transaction.ID)
-            .some((line) => line.TransferAccountID)
-            ? `split_transfer_${transaction.ID}_${transaction.Date}`
-            : undefined)
-      )
+      .map((transaction) => transaction.TransferID)
       .filter((transferId): transferId is string => Boolean(transferId));
     const transferTransactions = this.queries.getTransactionsByTransferIDs(transferIds);
+    const splitMirrors = selected
+      .filter(
+        (transaction) =>
+          !transaction.TransferID &&
+          this.queries
+            .getSplitsForTransaction(transaction.ID)
+            .some((line) => line.TransferAccountID)
+      )
+      .flatMap((transaction) => this.queries.getSplitMirrorTransactions(transaction.ID));
 
     return [
-      ...new Map([...selected, ...transferTransactions].map((item) => [item.ID, item])).values(),
+      ...new Map(
+        [...selected, ...transferTransactions, ...splitMirrors].map((item) => [item.ID, item])
+      ).values(),
     ];
   }
 
@@ -1613,6 +1636,7 @@ export class TransactionService {
     );
 
     this.queries.recalculateBalances(accountId);
+    this.syncSplitMirrorDates(transactionId);
 
     await this.syncTransferPartnerAmounts(transactionId);
   }

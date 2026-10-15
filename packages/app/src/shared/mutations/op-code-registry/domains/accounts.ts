@@ -270,8 +270,14 @@ export const accountOps = {
     invalidates: [
       ['accounts', '*'], // Will match ["accounts", budgetId]
       ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
-      // Deleting a debt/credit account removes its linked system category.
+      // Deleting a debt/credit account removes its linked system category;
+      // rows other accounts held in it move to Uncategorized.
       ['categories', '*'],
+      ['allTransactions', '*'],
+      ['allTransactionsDetailed', '*'],
+      ['allTransactionsAnalytics', '*'],
+      ['uncategorizedTransactions', '*'],
+      ['transactionsByCategoryAndMonth', '*'],
       ['categoryGroups', '*'],
       ['monthlyBudget', '*'],
       ['onBudgetBalance'],
