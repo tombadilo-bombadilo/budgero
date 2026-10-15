@@ -154,6 +154,13 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
+
+	// This route sits outside the auth middleware chain, so it applies the
+	// block check itself (both Clerk and self-host tokens land here).
+	if err := middleware.CheckNotBlocked(ctx, h.services.User, userID); err != nil {
+		log.Warn().Err(err).Str("user_id", userID).Msg("WebSocket connection rejected: account blocked or status unavailable")
+		return err
+	}
 	spaceParam := c.QueryParam("space_id")
 	spaceID, err := h.ensureWorkspaceAccess(ctx, userID, spaceParam)
 	if err != nil {
@@ -234,6 +241,15 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 			Str("user_id", userID).
 			Err(err).
 			Msg("Failed to get sync state")
+	}
+
+	// Re-check now that the client is registered: a block that landed while
+	// this connection was being set up would have missed it when BlockUser
+	// closed the user's sockets.
+	if err := middleware.CheckNotBlocked(ctx, h.services.User, userID); err != nil {
+		log.Warn().Err(err).Str("user_id", userID).Msg("Closing WebSocket: account blocked during connect")
+		h.syncHub.Unregister <- client
+		return nil
 	}
 
 	// Run the read pump in this goroutine (blocks until disconnect)

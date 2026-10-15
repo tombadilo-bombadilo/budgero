@@ -198,6 +198,12 @@ func (h *Handlers) BlockUser(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to block user")
 	}
 
+	// Live sockets were authorized before the block; drop them so the user
+	// can't keep syncing. Reconnects are refused by the WebSocket handler.
+	if h.syncHub != nil {
+		h.syncHub.CloseAllUserClients(userID)
+	}
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"success": true,
 		"message": "User blocked",
