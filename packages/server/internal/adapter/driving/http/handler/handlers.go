@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
 	"time"
@@ -63,7 +62,7 @@ type Handlers struct {
 
 // NewHandlers creates a new Handlers instance.
 func NewHandlers(services *application.Services, syncHub *synchub.Hub, opts Options) *Handlers {
-	subscriptionSvc := NewSubscriptionService(services.Entitlement, opts.Config, !opts.SelfHost)
+	subscriptionSvc := NewSubscriptionService(services.Entitlement, services.User, opts.Config, !opts.SelfHost)
 	usecases := application.NewUsecases(
 		services.User,
 		services.Space,
@@ -186,6 +185,7 @@ func mapServiceError(err error) error {
 // SubscriptionService handles subscription-related operations.
 type SubscriptionService struct {
 	entitlements         driving.EntitlementService
+	users                driving.UserService
 	cfg                  *config.Config
 	client               *lemonsqueezy.Client
 	cache                *lemonsqueezy.ProductCache
@@ -199,10 +199,11 @@ type RevenueStats struct {
 }
 
 // NewSubscriptionService creates a new SubscriptionService.
-func NewSubscriptionService(entitlements driving.EntitlementService, cfg *config.Config, subscriptionsEnabled bool) *SubscriptionService {
+func NewSubscriptionService(entitlements driving.EntitlementService, users driving.UserService, cfg *config.Config, subscriptionsEnabled bool) *SubscriptionService {
 	if !subscriptionsEnabled {
 		return &SubscriptionService{
 			entitlements:         entitlements,
+			users:                users,
 			cfg:                  cfg,
 			subscriptionsEnabled: false,
 		}
@@ -213,6 +214,7 @@ func NewSubscriptionService(entitlements driving.EntitlementService, cfg *config
 
 	svc := &SubscriptionService{
 		entitlements:         entitlements,
+		users:                users,
 		cfg:                  cfg,
 		client:               client,
 		cache:                cache,
@@ -411,16 +413,26 @@ func (s *SubscriptionService) GetVariants() ([]lemonsqueezy.Variant, error) {
 	return s.cache.GetVariants()
 }
 
+// maxWebhookBodyBytes caps how much of an unauthenticated webhook body is read
+// before its signature is checked. LemonSqueezy payloads are a few KB.
+const maxWebhookBodyBytes int64 = 1 << 20
+
 // HandleWebhook processes incoming webhook events from LemonSqueezy.
+//
+// Delivery contract: a 2xx tells LemonSqueezy the event is done, anything else
+// makes it retry. So processing failures return 500 (a lost order_created or
+// subscription_created would otherwise leave a paying customer without access),
+// while unknown/ignored event types return 200. Every handler writes absolute
+// state (no counters or toggles), so re-delivering an event is safe.
 func (s *SubscriptionService) HandleWebhook(c echo.Context) error {
 	if !s.subscriptionsEnabled {
 		return echo.NewHTTPError(http.StatusNotFound, "subscriptions are disabled")
 	}
 
-	body, err := io.ReadAll(c.Request().Body)
+	body, err := readLimitedBody(c, maxWebhookBodyBytes, "webhook body too large", "Failed to read request body")
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to read webhook body")
-		return echo.NewHTTPError(http.StatusBadRequest, "Failed to read request body")
+		return err
 	}
 
 	// Verify signature
@@ -472,16 +484,38 @@ func (s *SubscriptionService) HandleWebhook(c echo.Context) error {
 	}
 
 	if err != nil {
-		log.Error().Err(err).Str("event", event.Meta.EventName).Msg("Failed to process webhook event")
+		log.Error().
+			Err(err).
+			Str("event", event.Meta.EventName).
+			Str("user_id", event.Meta.CustomData.UserID).
+			Str("subscription_id", event.Data.ID).
+			Msg("Failed to process webhook event; returning 500 so LemonSqueezy retries")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to process webhook event")
 	}
 
 	return c.JSON(http.StatusOK, map[string]bool{"success": true})
 }
 
-func (s *SubscriptionService) handleSubscriptionCreated(ctx context.Context, event *lemonsqueezy.WebhookEvent) error {
+// webhookUserID returns the event's user, failing when it is missing or not
+// (yet) in the database. Writes to an unknown user would match no rows and
+// silently drop the event; failing makes LemonSqueezy retry it instead.
+func (s *SubscriptionService) webhookUserID(ctx context.Context, event *lemonsqueezy.WebhookEvent) (string, error) {
 	userID := event.Meta.CustomData.UserID
 	if userID == "" {
-		return errors.New("missing user_id in custom data")
+		return "", errors.New("missing user_id in custom data")
+	}
+	if s.users != nil {
+		if _, err := s.users.GetByID(ctx, userID); err != nil {
+			return "", fmt.Errorf("webhook user %s: %w", userID, err)
+		}
+	}
+	return userID, nil
+}
+
+func (s *SubscriptionService) handleSubscriptionCreated(ctx context.Context, event *lemonsqueezy.WebhookEvent) error {
+	userID, err := s.webhookUserID(ctx, event)
+	if err != nil {
+		return err
 	}
 
 	var endsAt *time.Time
@@ -528,9 +562,9 @@ func (s *SubscriptionService) handleSubscriptionCreated(ctx context.Context, eve
 }
 
 func (s *SubscriptionService) handleSubscriptionUpdated(ctx context.Context, event *lemonsqueezy.WebhookEvent) error {
-	userID := event.Meta.CustomData.UserID
-	if userID == "" {
-		return errors.New("missing user_id in custom data")
+	userID, err := s.webhookUserID(ctx, event)
+	if err != nil {
+		return err
 	}
 
 	status := lemonsqueezy.MapLemonSqueezyStatus(event.Data.Attributes.Status)
@@ -550,9 +584,9 @@ func (s *SubscriptionService) handleSubscriptionUpdated(ctx context.Context, eve
 }
 
 func (s *SubscriptionService) handleSubscriptionCancelled(ctx context.Context, event *lemonsqueezy.WebhookEvent) error {
-	userID := event.Meta.CustomData.UserID
-	if userID == "" {
-		return errors.New("missing user_id in custom data")
+	userID, err := s.webhookUserID(ctx, event)
+	if err != nil {
+		return err
 	}
 
 	var endsAt *time.Time
@@ -566,9 +600,9 @@ func (s *SubscriptionService) handleSubscriptionCancelled(ctx context.Context, e
 }
 
 func (s *SubscriptionService) handleSubscriptionResumed(ctx context.Context, event *lemonsqueezy.WebhookEvent) error {
-	userID := event.Meta.CustomData.UserID
-	if userID == "" {
-		return errors.New("missing user_id in custom data")
+	userID, err := s.webhookUserID(ctx, event)
+	if err != nil {
+		return err
 	}
 
 	var endsAt *time.Time
@@ -582,27 +616,27 @@ func (s *SubscriptionService) handleSubscriptionResumed(ctx context.Context, eve
 }
 
 func (s *SubscriptionService) handleSubscriptionExpired(ctx context.Context, event *lemonsqueezy.WebhookEvent) error {
-	userID := event.Meta.CustomData.UserID
-	if userID == "" {
-		return errors.New("missing user_id in custom data")
+	userID, err := s.webhookUserID(ctx, event)
+	if err != nil {
+		return err
 	}
 
 	return s.entitlements.UpdateStatus(ctx, userID, lemonsqueezy.StatusExpired, nil, nil)
 }
 
 func (s *SubscriptionService) handlePaymentFailed(ctx context.Context, event *lemonsqueezy.WebhookEvent) error {
-	userID := event.Meta.CustomData.UserID
-	if userID == "" {
-		return errors.New("missing user_id in custom data")
+	userID, err := s.webhookUserID(ctx, event)
+	if err != nil {
+		return err
 	}
 
 	return s.entitlements.UpdateStatus(ctx, userID, lemonsqueezy.StatusPastDue, nil, nil)
 }
 
 func (s *SubscriptionService) handleOrderCreated(ctx context.Context, event *lemonsqueezy.WebhookEvent) error {
-	userID := event.Meta.CustomData.UserID
-	if userID == "" {
-		return errors.New("missing user_id in custom data")
+	userID, err := s.webhookUserID(ctx, event)
+	if err != nil {
+		return err
 	}
 
 	variantID := event.Data.Attributes.VariantID
