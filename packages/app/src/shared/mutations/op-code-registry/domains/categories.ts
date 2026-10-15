@@ -4,6 +4,7 @@ import {
   makeRestoreUndo,
   redoWithIds,
   safeCapture,
+  TRANSACTION_INVALIDATION_KEYS,
   type CategoryRow,
   type OpCodeEntry,
 } from '../shared';
@@ -113,6 +114,8 @@ export const categoryOps = {
       ['categories', '*'], // Will match ["categories", budgetId]
       ['monthlyBudget', '*'],
       ['readyToAssign', '*'], // Will match ["readyToAssign", budgetId]
+      // Deleting categories deletes their transactions and changes account balances.
+      ...TRANSACTION_INVALIDATION_KEYS,
     ],
     undo: {
       capture: async (args) =>
@@ -243,6 +246,8 @@ export const categoryOps = {
       ['categories', '*'], // Will match ["categories", budgetId]
       ['monthlyBudget', '*'],
       ['readyToAssign', '*'], // Will match ["readyToAssign", budgetId]
+      // Deleting a category deletes its transactions and changes account balances.
+      ...TRANSACTION_INVALIDATION_KEYS,
     ],
     undo: {
       capture: async (args) =>

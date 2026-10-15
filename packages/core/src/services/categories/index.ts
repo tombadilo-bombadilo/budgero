@@ -4,6 +4,7 @@ import { BudgetError, NotFoundError } from '../../types/index.js';
 import { CategoryQueries } from './queries.js';
 import { MonthlyBudgetQueries } from '../monthly-budgets/queries.js';
 import { BudgetQueries } from '../budgets/queries.js';
+import { TransactionQueries } from '../transactions/queries.js';
 import {
   getGoalFundingSettings,
   isValidFundingPriority,
@@ -23,9 +24,12 @@ export class CategoryService {
 
   private monthlyBudgetQueries: MonthlyBudgetQueries;
 
+  private transactionQueries: TransactionQueries;
+
   constructor(private db: DatabaseAdapter) {
     this.queries = new CategoryQueries(db);
     this.monthlyBudgetQueries = new MonthlyBudgetQueries(db);
+    this.transactionQueries = new TransactionQueries(db);
   }
 
   private validateFundingPriorities(budgetId: number, updates: FundingPriorityUpdate[]): void {
@@ -205,8 +209,22 @@ export class CategoryService {
    * deleted while that account is still active, or its payment mechanics break.
    * Archiving the account releases the category (the account is no longer in
    * use), so deletion is allowed once the linked account is archived.
+   *
+   * Transactions still in the category are deleted with it (see
+   * deleteCategoriesWithTransactions).
    */
   deleteCategory(id: number): void {
+    this.db.transaction(() => this.deleteCategoryInTransaction(id));
+  }
+
+  /** deleteCategory for callers that already hold a transaction (BEGIN doesn't nest). */
+  deleteCategoryInTransaction(id: number): void {
+    this.assertCategoryDeletable(id);
+    this.deleteCategoriesWithTransactions([id], () => this.queries.deleteCategory(id));
+  }
+
+  /** Throws when deleteCategory would refuse to delete this category. */
+  assertCategoryDeletable(id: number): void {
     this.assertEditableIncomeCategory(id);
     const linkedAccount = this.queries.getAccountLinkedToCategory(id);
     if (linkedAccount && !linkedAccount.Archived) {
@@ -215,8 +233,36 @@ export class CategoryService {
         `Cannot delete category: it tracks payments for the active "${linkedAccount.Name}" ${noun}. Archive or delete the account first.`
       );
     }
+  }
 
-    this.queries.deleteCategory(id);
+  /**
+   * Deleting a category cascades its transactions (FK ON DELETE CASCADE), which
+   * would leave account balances counting rows that no longer exist. Delete
+   * them explicitly instead — with their transfer partners and split-transfer
+   * mirrors, as deleting a transaction does — then recalculate every touched
+   * account. Must run inside a transaction.
+   */
+  private deleteCategoriesWithTransactions(categoryIds: number[], remove: () => void): void {
+    const inCategories = this.transactionQueries.getTransactionsByCategoryIDs(categoryIds);
+    const linked = [
+      ...this.transactionQueries.getTransactionsByTransferIDs(
+        inCategories
+          .map((transaction) => transaction.TransferID)
+          .filter((transferId): transferId is string => Boolean(transferId))
+      ),
+      ...this.transactionQueries.getSplitMirrorsForParents(
+        inCategories
+          .filter((transaction) => !transaction.TransferID)
+          .map((transaction) => transaction.ID)
+      ),
+    ];
+    const rows = [...inCategories, ...linked];
+
+    this.transactionQueries.deleteTransactions(rows.map((transaction) => transaction.ID));
+    remove();
+    this.transactionQueries.recalculateBalancesForAccounts(
+      rows.map((transaction) => transaction.AccountID)
+    );
   }
 
   /**
@@ -267,7 +313,13 @@ export class CategoryService {
    */
   deleteCategoryGroup(id: number): void {
     this.assertEditableIncomeGroup(id);
-    this.queries.deleteCategoryGroup(id);
+    const group = this.getCategoryGroup(id);
+    const categoryIds = this.getCategoriesByGroup(group.BudgetID, id).map(
+      (category) => category.ID
+    );
+    this.db.transaction(() =>
+      this.deleteCategoriesWithTransactions(categoryIds, () => this.queries.deleteCategoryGroup(id))
+    );
   }
 
   private assertEditableIncomeCategory(id: number): void {

@@ -1,5 +1,5 @@
 import { DatabaseAdapter } from '../../database/interface.js';
-import { allRows } from '../../database/sql.js';
+import { allRows, getRow, run } from '../../database/sql.js';
 import { asMilli, subMilli, ZERO_MILLI, type MilliUnits } from '../../money/index.js';
 import {
   Account,
@@ -11,7 +11,11 @@ import {
 import { AccountQueries } from './queries.js';
 import { isCryptoCurrency } from '../../currencies/index.js';
 import { TransactionService } from '../transactions/index.js';
-import { ensureCategoryGroup, ensureCategoryWithGroup } from '../transactions/category-helpers.js';
+import {
+  ensureCategoryGroup,
+  ensureCategoryWithGroup,
+  ensureUncategorizedCategory,
+} from '../transactions/category-helpers.js';
 import { CurrencyService } from '../currency/index.js';
 import { CategoryService } from '../categories/index.js';
 
@@ -678,67 +682,104 @@ export class AccountService {
       }
     }
 
-    // Delete the account (this will cascade delete transactions via foreign key)
-    this.queries.deleteAccount(id);
+    this.db.transaction(() => {
+      // Delete the account (this will cascade delete transactions via foreign key)
+      this.queries.deleteAccount(id);
 
-    // Delete the linked category if it exists (for loans/mortgages)
-    if (linkedCategoryId) {
-      try {
-        this.categoryService.deleteCategory(linkedCategoryId);
-      } catch {
-        // Category may have already been deleted or doesn't exist
-      }
-    } else if (isDebtAccount && !isCreditCard && accountName && budgetId) {
-      // Fallback: For debt accounts without linked_category_id in metadata,
-      // try to find and delete a category with the same name in Liabilities group
-      try {
-        const liabilitiesGroup = this.categoryService.getCategoryGroupByName(
-          'Liabilities',
-          budgetId
-        );
-        if (liabilitiesGroup) {
-          const category = this.categoryService.getCategoryByName(accountName, budgetId);
-          if (category && category.CategoryGroupID === liabilitiesGroup.ID) {
-            this.categoryService.deleteCategory(category.ID);
-          }
+      // Delete the linked category if it exists (for loans/mortgages)
+      if (linkedCategoryId) {
+        try {
+          this.deleteOwnedCategory(linkedCategoryId, budgetId);
+        } catch {
+          // Category may have already been deleted or doesn't exist
         }
-      } catch {
-        // Category not found or already deleted
+      } else if (isDebtAccount && !isCreditCard && accountName && budgetId) {
+        // Fallback: For debt accounts without linked_category_id in metadata,
+        // try to find and delete a category with the same name in Liabilities group
+        try {
+          const liabilitiesGroup = this.categoryService.getCategoryGroupByName(
+            'Liabilities',
+            budgetId
+          );
+          if (liabilitiesGroup) {
+            const category = this.categoryService.getCategoryByName(accountName, budgetId);
+            if (category && category.CategoryGroupID === liabilitiesGroup.ID) {
+              this.deleteOwnedCategory(category.ID, budgetId);
+            }
+          }
+        } catch {
+          // Category not found or already deleted
+        }
       }
-    }
 
-    // Delete the CC Payment category if it exists (for credit cards)
-    if (
-      ccPaymentCategoryId &&
-      budgetId &&
-      this.isCreditPaymentCategory(budgetId, ccPaymentCategoryId) &&
-      !this.paymentCategoryClaimedByAnotherAccount(ccPaymentCategoryId)
-    ) {
-      try {
-        this.categoryService.deleteCategory(ccPaymentCategoryId);
-      } catch {
-        // Category may have already been deleted or doesn't exist
-      }
-    } else if (!ccPaymentCategoryId && isCreditCard && accountName && budgetId) {
-      // Fallback: Try to find and delete a category with the same name in Credit Card Payments group
-      try {
-        const ccPaymentsGroup = this.categoryService.getCategoryGroupByName(
-          'Credit Card Payments',
-          budgetId
-        );
-        if (ccPaymentsGroup) {
-          const category = this.categoryService.getCategoryByName(accountName, budgetId);
-          if (
-            category &&
-            category.CategoryGroupID === ccPaymentsGroup.ID &&
-            !this.paymentCategoryClaimedByAnotherAccount(category.ID)
-          ) {
-            this.categoryService.deleteCategory(category.ID);
-          }
+      // Delete the CC Payment category if it exists (for credit cards)
+      if (
+        ccPaymentCategoryId &&
+        budgetId &&
+        this.isCreditPaymentCategory(budgetId, ccPaymentCategoryId) &&
+        !this.paymentCategoryClaimedByAnotherAccount(ccPaymentCategoryId)
+      ) {
+        try {
+          this.deleteOwnedCategory(ccPaymentCategoryId, budgetId);
+        } catch {
+          // Category may have already been deleted or doesn't exist
         }
-      } catch {
-        // Category not found or already deleted
+      } else if (!ccPaymentCategoryId && isCreditCard && accountName && budgetId) {
+        // Fallback: Try to find and delete a category with the same name in Credit Card Payments group
+        try {
+          const ccPaymentsGroup = this.categoryService.getCategoryGroupByName(
+            'Credit Card Payments',
+            budgetId
+          );
+          if (ccPaymentsGroup) {
+            const category = this.categoryService.getCategoryByName(accountName, budgetId);
+            if (
+              category &&
+              category.CategoryGroupID === ccPaymentsGroup.ID &&
+              !this.paymentCategoryClaimedByAnotherAccount(category.ID)
+            ) {
+              this.deleteOwnedCategory(category.ID, budgetId);
+            }
+          }
+        } catch {
+          // Category not found or already deleted
+        }
       }
+    });
+  }
+
+  /**
+   * Delete a category owned by an account being deleted. Other accounts can
+   * still hold rows in it — the checking side of loan payments carries the
+   * loan's linked category — and the category delete would cascade-delete
+   * them from those accounts. They stay (like other transfer legs into the
+   * deleted account) and move to Uncategorized first. Runs inside
+   * deleteAccount's transaction.
+   */
+  private deleteOwnedCategory(categoryId: number, budgetId: number | undefined): void {
+    this.categoryService.assertCategoryDeletable(categoryId);
+    const inUse = getRow<{ Count: number }>(
+      this.db,
+      `SELECT
+         (SELECT COUNT(*) FROM transactions WHERE CategoryID = ?1) +
+         (SELECT COUNT(*) FROM transaction_splits WHERE CategoryID = ?1) AS Count`,
+      categoryId
+    );
+    if (budgetId && Number(inUse?.Count) > 0) {
+      const uncategorizedId = ensureUncategorizedCategory(this.categoryService, budgetId);
+      run(
+        this.db,
+        'UPDATE transactions SET CategoryID = ? WHERE CategoryID = ?',
+        uncategorizedId,
+        categoryId
+      );
+      run(
+        this.db,
+        'UPDATE transaction_splits SET CategoryID = ? WHERE CategoryID = ?',
+        uncategorizedId,
+        categoryId
+      );
     }
+    this.categoryService.deleteCategoryInTransaction(categoryId);
   }
 }
