@@ -2,6 +2,8 @@ import type {
   CreateRecurringTransactionInput,
   MarkOccurrenceReadyOptions,
   MarkOccurrenceReadyResult,
+  RecurringOccurrence,
+  RecurringOccurrenceRef,
   RecurringTransaction,
   UpdateRecurringTransactionInput,
 } from '@budgero/core/browser';
@@ -29,6 +31,34 @@ const PROJECTION_CONSUMER_INVALIDATIONS: string[][] = [
   ['spendingByLabels', '*'],
   ['spendingByPayees', '*'],
 ];
+
+/**
+ * Occurrence ops take `{ id, recurringTransactionId?, dueDate? }`. Occurrence
+ * IDs are local to each device, so the core resolves the (template, due date)
+ * key first and falls back to `id` for ops logged before the key existed.
+ */
+function occurrenceRef(args: Record<string, unknown>): RecurringOccurrenceRef {
+  return {
+    occurrenceId: args.id as number | undefined,
+    recurringTransactionId: args.recurringTransactionId as number | undefined,
+    dueDate: args.dueDate as string | undefined,
+  };
+}
+
+/** Args addressing one occurrence, keyed from the op's result when it has one. */
+function occurrenceArgs(
+  ref: RecurringOccurrenceRef,
+  occurrence?: Partial<RecurringOccurrence> | null
+): Record<string, unknown> {
+  const recurringTransactionId = occurrence?.recurringTransactionId ?? ref.recurringTransactionId;
+  const dueDate = occurrence?.dueDate ?? ref.dueDate;
+  const args: Record<string, unknown> = { id: occurrence?.id ?? ref.occurrenceId };
+  if (recurringTransactionId != null && dueDate) {
+    args.recurringTransactionId = recurringTransactionId;
+    args.dueDate = dueDate;
+  }
+  return args;
+}
 
 export const recurringOps = {
   'recurring.create': {
@@ -113,9 +143,12 @@ export const recurringOps = {
     undo: {
       capture: async (args) => {
         try {
-          const occurrenceId = (args.options as MarkOccurrenceReadyOptions)?.occurrenceId;
-          if (!occurrenceId) return null;
-          const occurrence = await S().recurring!.getOccurrenceWithTemplate(occurrenceId);
+          const options = args.options as MarkOccurrenceReadyOptions | undefined;
+          if (!options) return null;
+          const recurring = S().recurring!;
+          const occurrence = await recurring.getOccurrenceWithTemplate(
+            recurring.resolveOccurrenceId(options)
+          );
           return { occurrence };
         } catch (error) {
           console.warn(
@@ -126,37 +159,43 @@ export const recurringOps = {
         }
       },
       build: (args, result, _before) => {
-        const options = args.options as MarkOccurrenceReadyOptions;
-        const occurrenceId = options?.occurrenceId;
-        const transactionId = (result as MarkOccurrenceReadyResult)?.transactionId;
-        if (!occurrenceId || !Number.isFinite(transactionId)) {
+        const options = (args.options ?? {}) as MarkOccurrenceReadyOptions;
+        const ready = result as MarkOccurrenceReadyResult | undefined;
+        const transactionId = ready?.transactionId;
+        const reset = occurrenceArgs(options, ready?.occurrence);
+        if (!reset.id || transactionId == null || !Number.isFinite(transactionId)) {
           return [];
         }
         const ops: { op: string; args: Record<string, unknown> }[] = [];
         ops.push({ op: 'transactions.delete', args: { id: transactionId } });
-        ops.push({ op: 'recurring.resetOccurrence', args: { id: occurrenceId } });
+        ops.push({ op: 'recurring.resetOccurrence', args: reset });
         return ops;
       },
     },
   },
   'recurring.skip': {
     execute: async (args) => {
-      return await S().recurring!.skipOccurrence(args.id as number);
+      return await S().recurring!.skipOccurrence(occurrenceRef(args));
     },
     invalidates: [...RECURRING_OCCURRENCE_INVALIDATIONS, ...PROJECTION_CONSUMER_INVALIDATIONS],
     undo: {
-      build: (args) => [{ op: 'recurring.resetOccurrence', args: { id: args.id } }],
+      build: (args, result) => [
+        {
+          op: 'recurring.resetOccurrence',
+          args: occurrenceArgs(occurrenceRef(args), result as RecurringOccurrence | undefined),
+        },
+      ],
     },
   },
   'recurring.markNotified': {
     execute: async (args) => {
-      return await S().recurring!.markOccurrenceNotified(args.id as number);
+      return await S().recurring!.markOccurrenceNotified(occurrenceRef(args));
     },
     invalidates: [...RECURRING_OCCURRENCE_INVALIDATIONS],
   },
   'recurring.resetOccurrence': {
     execute: async (args) => {
-      return await S().recurring!.resetOccurrence(args.id as number);
+      return await S().recurring!.resetOccurrence(occurrenceRef(args));
     },
     invalidates: [...RECURRING_OCCURRENCE_INVALIDATIONS, ...RECURRING_TEMPLATE_INVALIDATIONS],
   },
