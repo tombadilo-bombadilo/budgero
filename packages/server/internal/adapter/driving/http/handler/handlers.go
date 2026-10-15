@@ -58,6 +58,7 @@ type Handlers struct {
 	latestVersion        LatestVersionSource
 	email                *email.Service
 	bankRelay            *bankrelay.Relay
+	blobLocks            spaceBlobLocks
 }
 
 // NewHandlers creates a new Handlers instance.
