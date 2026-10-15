@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
+import { PasswordInput } from '@shared/ui/password-input';
 import { Badge } from '@shared/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import {
@@ -490,9 +491,8 @@ export default function SelfHostAdminUsers() {
               <Label htmlFor="new-password">
                 <Trans>New password</Trans>
               </Label>
-              <Input
+              <PasswordInput
                 id="new-password"
-                type="password"
                 value={resetDialog.password}
                 onChange={(event) =>
                   setResetDialog((prev) => ({ ...prev, password: event.target.value }))
@@ -504,9 +504,8 @@ export default function SelfHostAdminUsers() {
               <Label htmlFor="confirm-password">
                 <Trans>Confirm password</Trans>
               </Label>
-              <Input
+              <PasswordInput
                 id="confirm-password"
-                type="password"
                 value={resetDialog.confirm}
                 onChange={(event) =>
                   setResetDialog((prev) => ({ ...prev, confirm: event.target.value }))

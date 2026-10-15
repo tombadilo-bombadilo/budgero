@@ -5,6 +5,7 @@ import { SignIn, SignUp } from '@clerk/clerk-react';
 import { Alert, AlertDescription } from '@shared/ui/alert';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
+import { PasswordInput } from '@shared/ui/password-input';
 import { Label } from '@shared/ui/label';
 import { Check, Loader2, LockKeyhole } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -297,9 +298,8 @@ export function SelfHostAuthPage() {
             <Label htmlFor="password">
               <Trans>Password</Trans>
             </Label>
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               value={password}
               autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
               onChange={(e) => setPassword(e.target.value)}
