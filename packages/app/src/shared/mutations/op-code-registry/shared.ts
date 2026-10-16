@@ -270,6 +270,15 @@ export interface OpCodeExecutionContext {
 
 export interface OpCodeEntry {
   execute: (args: Record<string, unknown>, context?: OpCodeExecutionContext) => Promise<unknown>;
+  /**
+   * Runs once, on the originating device only, before the op executes; the
+   * args it returns are what executes here AND what is sent to other devices.
+   * Use it for anything that must be the same everywhere: generated IDs,
+   * fetched exchange rates. Must not write to the database.
+   */
+  prepare?: (
+    args: Record<string, unknown>
+  ) => Record<string, unknown> | Promise<Record<string, unknown>>;
   // Query keys to invalidate (for remote mutations)
   invalidates: string[][];
   /**
@@ -288,6 +297,17 @@ export interface OpCodeEntry {
   redo?: {
     build: (args: Record<string, unknown>, result: unknown, before: unknown) => OpCall[];
   };
+}
+
+/** Random ID for a row created by an op (generated once, carried in the args). */
+export function newOpRowId(): string {
+  return globalThis.crypto.randomUUID();
+}
+
+/** `prepare` for create ops whose row ID lives in `args[key]`: fill it in when absent. */
+export function withGeneratedId(key = 'id'): NonNullable<OpCodeEntry['prepare']> {
+  return (args) =>
+    args[key] == null || args[key] === '' ? { ...args, [key]: newOpRowId() } : args;
 }
 
 /**

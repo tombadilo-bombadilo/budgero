@@ -38,7 +38,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { SyncStatus } from '@shared/lib/utils';
 import { MutationRouter } from '@shared/runtime/mutation-router';
 import { createRuntimeDeps } from '@shared/runtime/runtime-bridge';
-import { getInvalidatesForOp } from '@shared/mutations/op-code-registry';
+import { getInvalidatesForOp, prepareMutationArgs } from '@shared/mutations/op-code-registry';
 import { getErrorMessage } from '@shared/lib/errors';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
 import { withPushIdentity } from './push-identity';
@@ -152,8 +152,14 @@ export class AppRuntime {
   }
 
   async executeMutation<T>(spec: MutationSpec): Promise<MutationResult<T>> {
-    const result = await this.coordinator.executeMutation<T>(spec);
-    await this.applyContinuousRulesIfNeeded(result.result, spec, !spec.mutationId);
+    // A mutation originating here gets its generated values (row IDs,
+    // exchange rates) once, before it runs, so the args executed locally are
+    // exactly the args every other device replays.
+    const prepared: MutationSpec = spec.mutationId
+      ? spec
+      : { ...spec, payload: await prepareMutationArgs(spec.op, spec.payload) };
+    const result = await this.coordinator.executeMutation<T>(prepared);
+    await this.applyContinuousRulesIfNeeded(result.result, prepared, !prepared.mutationId);
     return result;
   }
 
