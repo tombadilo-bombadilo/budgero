@@ -784,16 +784,10 @@ export class TransactionService {
 
     const normalizedPayee = this.resolvePayee(payee, transaction.Payee);
 
+    // Original row, read before the write: the balance recalculation starts at
+    // the earlier of its old and new position.
+    const oldTxn = this.getTransactionByID(id);
     this.db.transaction(() => {
-      // 1. Fetch original transaction
-      const oldTxn = this.getTransactionByID(id);
-
-      // 2. Calculate deltas (using converted amounts)
-      const oldDelta = oldTxn.InflowConverted - oldTxn.OutflowConverted;
-      const newDelta = inflow - outflow;
-      const delta = newDelta - oldDelta;
-
-      // 3. Update transaction fields with both original and converted amounts
       this.queries.updateTransaction(
         id,
         inflow,
@@ -806,32 +800,34 @@ export class TransactionService {
         memo,
         normalizedPayee
       );
-
-      // 4. Recalculate current row's running balance
-      const rbBefore = this.queries.getRunningBalanceBefore(accountId, date, id) || 0;
-      const newRunningBalance = rbBefore + newDelta;
-
-      // 5. Set new balance for this transaction
-      this.queries.updateRunningBalance(id, newRunningBalance);
-
-      // 6. Bump future balances
-      this.queries.bumpFutureBalances(accountId, date, id, delta);
-
-      // 7. Update account-level balance (both original and converted)
-      this.queries.updateAccountBalance(
-        accountId,
-        inflowOriginal - (oldTxn.InflowNative ?? oldTxn.InflowConverted ?? 0),
-        outflowOriginal - (oldTxn.OutflowNative ?? oldTxn.OutflowConverted ?? 0),
-        inflow - (oldTxn.InflowConverted ?? 0),
-        outflow - (oldTxn.OutflowConverted ?? 0)
-      );
     });
 
-    // Recalculate balances to ensure both converted and original running balances are consistent
-    this.queries.recalculateBalances(accountId);
+    // Running balances (converted and native) and the account balance.
+    this.recalculateAfterRowEdit(id, oldTxn, accountId, date);
     this.syncSplitMirrorDates(id);
 
     await this.syncTransferPartnerAmounts(id);
+  }
+
+  /**
+   * Balances after one row was written in place: `previous` is the row before
+   * the write, `accountId` / `date` where it is now. Within one account only
+   * the rows from the earlier of the two positions onward can change, so the
+   * recalculation starts there. An account move recalculates `accountId` in
+   * full (the previous account is left to the caller, as before).
+   */
+  private recalculateAfterRowEdit(
+    id: number,
+    previous: Pick<Transaction, 'AccountID' | 'Date'>,
+    accountId: number,
+    date: string
+  ): void {
+    if (previous.AccountID !== accountId || typeof date !== 'string') {
+      this.queries.recalculateBalances(accountId);
+      return;
+    }
+    const from = typeof previous.Date === 'string' && previous.Date < date ? previous.Date : date;
+    this.queries.recalculateBalancesFrom(accountId, from, id);
   }
 
   /**
@@ -966,7 +962,11 @@ export class TransactionService {
       );
       if (reprice && rate) this.queries.setExchangeRate(id, rate, Boolean(pinned));
       if (payee) this.queries.insertPayee(previous.BudgetID, payee);
-      this.queries.recalculateBalancesForAccounts([...new Set([previous.AccountID, accountId])]);
+      if (previous.AccountID === accountId) {
+        this.recalculateAfterRowEdit(id, previous, accountId, date);
+      } else {
+        this.queries.recalculateBalancesForAccounts([previous.AccountID, accountId]);
+      }
       if (typeof fields.cleared === 'boolean') {
         this.queries.setTransactionsCleared([id], fields.cleared);
       }
@@ -1484,7 +1484,7 @@ export class TransactionService {
         internalOnBudgetTransfer ? null : (partner.Payee ?? null)
       );
       if (internalOnBudgetTransfer) this.queries.updateTransactionPayee(main.ID, null);
-      this.queries.recalculateBalances(partner.AccountID);
+      this.queries.recalculateBalancesFrom(partner.AccountID, partner.Date, partner.ID);
     });
   }
 
@@ -1648,7 +1648,7 @@ export class TransactionService {
       normalizedPayee ?? null
     );
 
-    this.queries.recalculateBalances(accountId);
+    this.recalculateAfterRowEdit(transactionId, existingTransaction, accountId, date);
     this.syncSplitMirrorDates(transactionId);
 
     await this.syncTransferPartnerAmounts(transactionId);
@@ -1749,7 +1749,12 @@ export class TransactionService {
       case 'date':
         if (transaction.TransferID) {
           this.queries.updateTransactionDate(transactionId, newValue as string);
-          this.queries.recalculateBalances(transaction.AccountID);
+          this.recalculateAfterRowEdit(
+            transactionId,
+            transaction,
+            transaction.AccountID,
+            newValue as string
+          );
         } else {
           await this.updateTransaction(
             transactionId,
@@ -1829,7 +1834,7 @@ export class TransactionService {
               transactionId
             );
             if (!this.accountHasUnsafeTransactionAmounts(tx.AccountID)) {
-              this.queries.recalculateBalances(tx.AccountID);
+              this.queries.recalculateBalancesFrom(tx.AccountID, tx.Date, tx.ID);
             }
           });
         } else {
@@ -1856,7 +1861,7 @@ export class TransactionService {
               transactionId
             );
             if (!this.accountHasUnsafeTransactionAmounts(tx.AccountID)) {
-              this.queries.recalculateBalances(tx.AccountID);
+              this.queries.recalculateBalancesFrom(tx.AccountID, tx.Date, tx.ID);
             }
           });
         }

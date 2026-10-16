@@ -1091,6 +1091,8 @@ export class TransactionQueries {
             RunningBalanceNative = balances.RunningNative
         FROM balances
         WHERE transactions.ID = balances.ID
+          AND (transactions.RunningBalanceConverted IS NOT balances.RunningConverted
+            OR transactions.RunningBalanceNative IS NOT balances.RunningNative)
       `,
         ...chunk
       );
@@ -1118,6 +1120,124 @@ export class TransactionQueries {
         ...chunk
       );
     }
+  }
+
+  /**
+   * Recalculate one account's running balances from the row at (fromDate, fromId)
+   * onward in ledger order (Date, ID), seeded with the stored balances of the row
+   * just before it, then the account balances. For a write that changed only rows
+   * at or after that point (an amount edit, or a date move with `fromDate` = the
+   * earlier of the old and new date) this gives the same balances as
+   * recalculateBalances, without reading and rewriting the whole ledger: the rows
+   * before it are untouched and already correct, as every write path keeps them.
+   * Rows that already hold the right value are not rewritten. Falls back to the
+   * full recalculation when the seed row has no stored balances or the rows
+   * before it turn out not to add up.
+   */
+  recalculateBalancesFrom(accountId: number, fromDate: string, fromId: number): void {
+    const seed = getRow<{
+      RunningBalanceConverted: number | null;
+      RunningBalanceNative: number | null;
+    }>(
+      this.db,
+      `
+      SELECT RunningBalanceConverted, RunningBalanceNative
+      FROM transactions
+      WHERE AccountID = ?1 AND (Date < ?2 OR (Date = ?2 AND ID < ?3))
+      ORDER BY Date DESC, ID DESC
+      LIMIT 1
+    `,
+      accountId,
+      fromDate,
+      fromId
+    );
+    if (seed && (seed.RunningBalanceConverted === null || seed.RunningBalanceNative === null)) {
+      this.recalculateBalancesForAccounts([accountId]);
+      return;
+    }
+
+    run(
+      this.db,
+      `
+      WITH balances AS MATERIALIZED (
+        SELECT
+          ID,
+          ?4 + SUM(COALESCE(InflowConverted, 0) - COALESCE(OutflowConverted, 0)) OVER (
+            ORDER BY Date ASC, ID ASC
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+          ) AS RunningConverted,
+          ?5 + SUM(COALESCE(InflowNative, 0) - COALESCE(OutflowNative, 0)) OVER (
+            ORDER BY Date ASC, ID ASC
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+          ) AS RunningNative
+        FROM transactions
+        WHERE AccountID = ?1 AND (Date > ?2 OR (Date = ?2 AND ID >= ?3))
+      )
+      UPDATE transactions
+      SET RunningBalanceConverted = balances.RunningConverted,
+          RunningBalanceNative = balances.RunningNative
+      FROM balances
+      WHERE transactions.ID = balances.ID
+        AND (transactions.RunningBalanceConverted IS NOT balances.RunningConverted
+          OR transactions.RunningBalanceNative IS NOT balances.RunningNative)
+    `,
+      accountId,
+      fromDate,
+      fromId,
+      seed?.RunningBalanceConverted ?? 0,
+      seed?.RunningBalanceNative ?? 0
+    );
+
+    // Account balances: the same sums over every row as the full recalculation.
+    // They must equal the last row's running balance; if not, some row before
+    // `fromDate` was already off, so recalculate the account in full (which also
+    // repairs those rows, as the full recalculation always did).
+    const totals = getRow<{ native: number; converted: number }>(
+      this.db,
+      `
+      SELECT COALESCE(SUM(COALESCE(InflowNative, 0) - COALESCE(OutflowNative, 0)), 0) AS native,
+             COALESCE(SUM(COALESCE(InflowConverted, 0) - COALESCE(OutflowConverted, 0)), 0) AS converted
+      FROM transactions
+      WHERE AccountID = ?
+    `,
+      accountId
+    );
+    const last = getRow<{ RunningBalanceConverted: number; RunningBalanceNative: number }>(
+      this.db,
+      `
+      SELECT RunningBalanceConverted, RunningBalanceNative
+      FROM transactions
+      WHERE AccountID = ?
+      ORDER BY Date DESC, ID DESC
+      LIMIT 1
+    `,
+      accountId
+    );
+    const native = totals?.native ?? 0;
+    const converted = totals?.converted ?? 0;
+    if (
+      (last?.RunningBalanceNative ?? 0) !== native ||
+      (last?.RunningBalanceConverted ?? 0) !== converted
+    ) {
+      this.recalculateBalancesForAccounts([accountId]);
+      return;
+    }
+    run(
+      this.db,
+      `
+      UPDATE accounts
+      SET BalanceNative = ?2,
+          BalanceConverted = ?3 + COALESCE((
+            SELECT SUM(r.DeltaConverted)
+            FROM account_revaluations r
+            WHERE r.AccountID = accounts.ID
+          ), 0)
+      WHERE ID = ?1
+    `,
+      accountId,
+      native,
+      converted
+    );
   }
 
   getTransactionsByIDs(ids: number[]): Transaction[] {
