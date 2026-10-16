@@ -329,7 +329,10 @@ const OPS = {
     const from = pick(liveCats.slice(10));
     const to = pick(liveCats.filter((x) => x !== from));
     liveCats = liveCats.filter((x) => x !== from);
+    // A core with the atomic delete (categories.deleteAndReassign) uses it; an
+    // older one runs the legacy three steps. Both must end in the same state.
     return (s) => {
+      if (s.categories.deleteCategoryWithUndo) return s.categories.deleteCategoryWithUndo(from, to);
       s.transactions.reassignTransactions(to, from);
       s.monthlyBudgets.reassignAssignment(to, from);
       s.categories.deleteCategory(from);

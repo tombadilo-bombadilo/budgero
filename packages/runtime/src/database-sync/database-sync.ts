@@ -52,6 +52,14 @@ export class DatabaseSync {
   /** Mutation-log position of the most recently downloaded blob, if bound. */
   private lastDownloadedMutationVersion: number | undefined;
 
+  /** Operations (ops, imports) whose half-applied state must not be uploaded. */
+  private activeOperations = 0;
+
+  private idleWaiters: (() => void)[] = [];
+
+  /** A flush that was held back by an operation; runs when the last one ends. */
+  private flushAfterOperations: string | null = null;
+
   private readonly onHidden = () => {
     // The tab is going to the background (or away): flush pending changes
     // while the page can still complete a request. Best-effort — the
@@ -83,6 +91,47 @@ export class DatabaseSync {
 
   getBlobVersion(): number | undefined {
     return this.blobVersion;
+  }
+
+  /**
+   * Mark the start of work that writes the DB across awaits (an op running,
+   * a bulk import awaiting review). Until every such operation has ended, no
+   * snapshot is captured: a blob taken in the middle would publish a
+   * half-applied state that the mutation log can't account for. Returns an
+   * idempotent release.
+   */
+  beginOperation(): () => void {
+    this.activeOperations += 1;
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      this.activeOperations -= 1;
+      if (this.activeOperations > 0) return;
+      for (const resolve of this.idleWaiters.splice(0)) resolve();
+      const reason = this.flushAfterOperations;
+      this.flushAfterOperations = null;
+      // Next task, not now: the code that ended the operation still has to
+      // record it (queue it, advance the cursor) in its own continuation.
+      if (reason) {
+        this.scheduleTimer(() => this.flushPendingUpload(`${reason}_after_operation`), 0);
+      }
+    };
+  }
+
+  isOperationInProgress(): boolean {
+    return this.activeOperations > 0;
+  }
+
+  private async waitForNoOperation(): Promise<void> {
+    while (this.activeOperations > 0) {
+      await new Promise<void>((resolve) => this.idleWaiters.push(resolve));
+      // Let whoever ended the operation finish recording it (queue entry,
+      // cursor advance) in its microtask continuation before we capture.
+      await new Promise<void>((resolve) => {
+        this.scheduleTimer(resolve, 0);
+      });
+    }
   }
 
   /**
@@ -187,6 +236,18 @@ export class DatabaseSync {
     keyVersion: number,
     outOfBand?: boolean
   ): Promise<void> {
+    // Never capture mid-operation (an upload's own awaits can let one start).
+    // Nothing may await between this check and backup() below.
+    if (this.activeOperations > 0) {
+      logRuntime('debug', 'DatabaseSync', 'Upload waiting for running operations');
+      await this.waitForNoOperation();
+      // The op that just finished is in the DB but not yet versioned in the
+      // log: binding it into this blob would make a fresh device apply it
+      // twice. Defer (flushPendingUpload re-arms the retry).
+      if (this.deps.hasUnackedMutations?.()) {
+        throw new Error('Deferred upload: an operation finished during the upload');
+      }
+    }
     // Capture the cursor synchronously adjacent to backup() so the bound
     // mutation version matches the blob contents exactly.
     const mutationVersion = this.deps.getMutationCursor?.();
@@ -365,6 +426,14 @@ export class DatabaseSync {
     if (this.pendingMutations === 0) return;
     if (this.uploadInProgress) return;
 
+    if (this.activeOperations > 0) {
+      // Retried by the release of the last running operation.
+      logRuntime('debug', 'DatabaseSync', 'Upload deferred: operation in progress', { reason });
+      this.clearUploadTimer();
+      this.flushAfterOperations = reason;
+      return;
+    }
+
     if (this.deps.hasUnackedMutations?.()) {
       logRuntime('debug', 'DatabaseSync', 'Upload deferred: unacked mutations', { reason });
       this.clearUploadTimer();
@@ -402,6 +471,7 @@ export class DatabaseSync {
 
   destroy(): void {
     this.clearUploadTimer();
+    this.flushAfterOperations = null;
     if (typeof document !== 'undefined' && typeof document.removeEventListener === 'function') {
       document.removeEventListener('visibilitychange', this.onHidden);
     }

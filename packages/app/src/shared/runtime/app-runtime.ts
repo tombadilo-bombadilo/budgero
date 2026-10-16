@@ -38,7 +38,8 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { SyncStatus } from '@shared/lib/utils';
 import { MutationRouter } from '@shared/runtime/mutation-router';
 import { createRuntimeDeps } from '@shared/runtime/runtime-bridge';
-import { getInvalidatesForOp } from '@shared/mutations/op-code-registry';
+import { getInvalidatesForOp, prepareMutationArgs } from '@shared/mutations/op-code-registry';
+import { discardInterruptedImports } from '@shared/runtime/pending-import';
 import { getErrorMessage } from '@shared/lib/errors';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
 import { withPushIdentity } from './push-identity';
@@ -152,8 +153,14 @@ export class AppRuntime {
   }
 
   async executeMutation<T>(spec: MutationSpec): Promise<MutationResult<T>> {
-    const result = await this.coordinator.executeMutation<T>(spec);
-    await this.applyContinuousRulesIfNeeded(result.result, spec, !spec.mutationId);
+    // A mutation originating here gets its generated values (row IDs,
+    // exchange rates) once, before it runs, so the args executed locally are
+    // exactly the args every other device replays.
+    const prepared: MutationSpec = spec.mutationId
+      ? spec
+      : { ...spec, payload: await prepareMutationArgs(spec.op, spec.payload) };
+    const result = await this.coordinator.executeMutation<T>(prepared);
+    await this.applyContinuousRulesIfNeeded(result.result, prepared, !prepared.mutationId);
     return result;
   }
 
@@ -314,6 +321,15 @@ export class AppRuntime {
    */
   async notifyOutOfBandRestore(boundMutationVersion?: number): Promise<void> {
     await this.coordinator.notifyOutOfBandRestore(boundMutationVersion);
+  }
+
+  /**
+   * Hold snapshot uploads while out-of-band work writes the DB across awaits
+   * (a YNAB import and its review), so no half-written state is published.
+   * Call the returned release when the work is committed or fully undone.
+   */
+  holdSnapshotUploads(): () => void {
+    return this.coordinator.holdSnapshotUploads();
   }
 
   /**
@@ -985,6 +1001,21 @@ export class AppRuntime {
     await next.initialize(db as unknown as CoreDatabaseAdapter);
     this.serviceManager.reset();
     this.serviceManager = next;
+    this.discardInterruptedImports();
+  }
+
+  /** Drop a budget an interrupted import left in this DB (see pending-import). */
+  private discardInterruptedImports(): void {
+    const spaceId = this.getActiveSpaceId();
+    if (!spaceId) return;
+    try {
+      const removed = discardInterruptedImports(spaceId, this.serviceManager.getServices().budgets);
+      if (removed.length > 0) {
+        console.warn('[AppRuntime] Removed budgets left by an interrupted import', removed);
+      }
+    } catch (error) {
+      console.warn('[AppRuntime] Could not check for an interrupted import', error);
+    }
   }
 }
 

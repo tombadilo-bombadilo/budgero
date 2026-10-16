@@ -298,7 +298,7 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
         {
           onSuccess: () => {
             toast.success(t`Account deleted`, {
-              description: t`${selectedAccount.Name} has been permanently removed.`,
+              description: t`${selectedAccount.Name} has been deleted. You can undo this.`,
             });
             setOpen(false);
             // Navigate to the user's home page after deletion to avoid landing

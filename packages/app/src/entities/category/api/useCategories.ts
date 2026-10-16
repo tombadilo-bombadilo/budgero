@@ -127,7 +127,7 @@ export function useUpdateCategoryGroup() {
 }
 
 /**
- * Delete a category group.
+ * Delete a category group (and any categories in it) in one step; undoable.
  */
 export type DeleteCategoryGroupInput = {
   id: number;
@@ -138,7 +138,7 @@ export function useDeleteCategoryGroup() {
   return useMutation<void, Error, DeleteCategoryGroupInput>({
     mutationFn: async ({ id, budgetId }) => {
       await executeSpaceMutation<void>(runtime, {
-        op: 'categoryGroups.delete',
+        op: 'categoryGroups.deleteAndReassign',
         payload: { id, budgetId },
         meta: { label: 'useDeleteCategoryGroup' },
       });
@@ -225,7 +225,8 @@ export function useUpdateCategoryExcludeFromBudgetPace() {
 }
 
 /**
- * Delete a category.
+ * Delete a category that has no transactions (its goal, assignments and
+ * scheduled-transaction links go with it). One step; undo restores them all.
  */
 export type DeleteCategoryInput = {
   id: number;
@@ -236,7 +237,7 @@ export function useDeleteCategory() {
   return useMutation<void, Error, DeleteCategoryInput>({
     mutationFn: async ({ id, budgetId }) => {
       await executeSpaceMutation<void>(runtime, {
-        op: 'categories.delete',
+        op: 'categories.deleteAndReassign',
         payload: { id, budgetId },
         meta: { label: 'useDeleteCategory' },
       });
