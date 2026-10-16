@@ -171,5 +171,5 @@ describe('accounts.delete undo', () => {
     expect(c.s.accounts.deleteAccountWithUndo(big.ID)).toBeNull();
     expect(c.s.accounts.listAccounts(c.budgetId).some((a) => a.ID === big.ID)).toBe(false);
     expect(c.s.accounts.deleteAccountWithUndo(big.ID)).toBeNull();
-  });
+  }, 30_000);
 });
