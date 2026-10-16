@@ -77,7 +77,6 @@ export interface GetMonthlyBudgetRow {
   CategoryID: number;
   CategoryGroup: string;
   CategoryGroupID: number;
-  TotalTransactionCount: number;
   Assigned: MilliUnits;
   Activity: MilliUnits;
   Available: MilliUnits;

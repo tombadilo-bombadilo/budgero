@@ -1223,24 +1223,6 @@ export class MonthlyBudgetQueries {
         FROM activity_prior
         GROUP BY category_id
       ),
-      transaction_counts AS (
-        SELECT t.CategoryID AS category_id, COUNT(*) AS count
-        FROM transactions t
-        WHERE t.BudgetID = ?2
-          ${NO_SPLITS_FILTER}
-        GROUP BY t.CategoryID
-        UNION ALL
-        SELECT s.CategoryID AS category_id, COUNT(*) AS count
-        FROM transaction_splits s
-        JOIN transactions t ON t.ID = s.TransactionID
-        WHERE t.BudgetID = ?2
-        GROUP BY s.CategoryID
-      ),
-      transaction_count_totals AS (
-        SELECT category_id, SUM(count) AS count
-        FROM transaction_counts
-        GROUP BY category_id
-      ),
       assignment_totals AS (
         SELECT
           a.CategoryID AS category_id,
@@ -1256,7 +1238,6 @@ export class MonthlyBudgetQueries {
         COALESCE(c.FundingPriority, 3) AS FundingPriority,
         cg.Name AS CategoryGroup,
         cg.ID as CategoryGroupID,
-        COALESCE(tc.count, 0) AS TotalTransactionCount,
 
         /* 1) Assigned in selected month */
         COALESCE(at.assigned, 0) AS Assigned,
@@ -1273,7 +1254,6 @@ export class MonthlyBudgetQueries {
         ) AS Available
       FROM category_groups cg
       LEFT JOIN categories c ON c.CategoryGroupID = cg.ID
-      LEFT JOIN transaction_count_totals tc ON tc.category_id = c.ID
       LEFT JOIN assignment_totals at ON at.category_id = c.ID
       LEFT JOIN activity_month_totals am ON am.category_id = c.ID
       LEFT JOIN activity_prior_totals ap ON ap.category_id = c.ID
@@ -1283,6 +1263,30 @@ export class MonthlyBudgetQueries {
       month,
       budgetId
     );
+  }
+
+  /**
+   * All-time number of transactions in a category within a budget: rows
+   * without splits plus split lines (what the delete-category dialog shows).
+   * Kept out of getMonthlyBudget, which used to count every row of the budget
+   * on every read for this one dialog.
+   */
+  getCategoryTransactionCount(categoryId: number, budgetId: number): number {
+    const row = getRow<{ count: number }>(
+      this.db,
+      `
+      SELECT
+        (SELECT COUNT(*) FROM transactions t
+         WHERE t.CategoryID = ?1 AND t.BudgetID = ?2 ${NO_SPLITS_FILTER})
+        +
+        (SELECT COUNT(*) FROM transaction_splits s
+         JOIN transactions t ON t.ID = s.TransactionID
+         WHERE s.CategoryID = ?1 AND t.BudgetID = ?2) AS count
+    `,
+      categoryId,
+      budgetId
+    );
+    return row?.count ?? 0;
   }
 
   /**

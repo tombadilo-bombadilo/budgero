@@ -25,7 +25,11 @@ export interface BudgetRow {
   assigned: MilliUnits;
   activity: MilliUnits;
   available: MilliUnits;
-  totalTransactions: number;
+  /**
+   * All-time transaction count. Not part of the monthly budget rows; the
+   * budget table fills it in on the row it opens the delete dialog for.
+   */
+  totalTransactions?: number;
   isGroup: boolean;
   parentId?: string;
   categoryId: number;
@@ -124,11 +128,6 @@ export function transformBudgetRows(
 
   grouped.forEach((items, groupKey) => {
     const groupName = items[0].CategoryGroup || t`Ungrouped`;
-    const totalTransactionsForGroup = items.reduce(
-      (sum, item) => sum + (item.TotalTransactionCount || 0),
-      0
-    );
-
     // Always add the group header (even for empty groups)
     result.push({
       id: groupKey,
@@ -136,7 +135,6 @@ export function transformBudgetRows(
       assigned: ZERO_MILLI,
       activity: ZERO_MILLI,
       available: ZERO_MILLI,
-      totalTransactions: totalTransactionsForGroup,
       isGroup: true,
       categoryId: -1,
       categoryGroupId: items[0].CategoryGroupID,
@@ -164,7 +162,6 @@ export function transformBudgetRows(
         assigned: item.Assigned,
         activity: item.Activity,
         available: item.Available,
-        totalTransactions: item.TotalTransactionCount,
         isGroup: false,
         parentId: groupKey,
         categoryId: item.CategoryID,

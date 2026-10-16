@@ -216,6 +216,15 @@ export class MonthlyBudgetService {
   }
 
   /**
+   * All-time transaction count of a category in a budget (rows without splits
+   * plus split lines). Fetched on demand by the delete-category dialog; not
+   * part of getMonthlyBudget.
+   */
+  getCategoryTransactionCount(categoryId: number, budgetId: number): number {
+    return this.queries.getCategoryTransactionCount(categoryId, budgetId);
+  }
+
+  /**
    * GetAssignedLastMonth - Gets amount assigned to a category in a previous month
    */
   getAssignedLastMonth(month: string, categoryId: number): number {

@@ -4,6 +4,7 @@ import { cn } from '@shared/lib/utils';
 import { Plus } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { useUiStore } from '@shared/store/useUiStore';
+import { useRuntime } from '@shared/runtime/runtime-provider';
 import { useBudgetTableState } from '@features/budget-planning/api/useBudgetTableState';
 import { formatMaskedMilli } from '@shared/lib/privacy/mask-numbers';
 import { SearchAndFilterControls, type FilterType } from './SearchAndFilterControls';
@@ -56,6 +57,7 @@ export function BudgetTable({
   const swipeDisabled = disableSwipe || layoutVariant === 'desktop-table';
   const longPressEnabled = enableLongPressSelection && layoutVariant !== 'desktop-table';
 
+  const runtime = useRuntime();
   const selectedBudget = useUiStore((state) => state.selectedBudget);
   const focusCategoryIdFromStore = useUiStore((state) => state.focusCategoryId);
   const setFocusCategoryIdInStore = useUiStore((state) => state.setFocusCategoryId);
@@ -282,13 +284,25 @@ export function BudgetTable({
   };
 
   const handleDeleteCategory = (item: BudgetRow) => {
+    // The all-time count is read here, on demand (one indexed query), rather
+    // than with every monthly budget read.
+    let totalTransactions: number | undefined;
+    try {
+      totalTransactions = runtime
+        .services()
+        .monthlyBudgets.getCategoryTransactionCount(item.categoryId, budgetId);
+    } catch (error) {
+      console.error('Failed to count category transactions:', error);
+    }
+    const target: BudgetRow = { ...item, totalTransactions };
     const hasAssignments = item.assigned !== 0;
-    const hasTransactions = item.totalTransactions > 0;
+    // Unknown count: open the dialog that offers to reassign transactions.
+    const hasTransactions = totalTransactions === undefined || totalTransactions > 0;
 
     if (hasAssignments || hasTransactions) {
-      setModalState((prev) => ({ ...prev, deleteModalOpen: true, deletingCategory: item }));
+      setModalState((prev) => ({ ...prev, deleteModalOpen: true, deletingCategory: target }));
     } else {
-      setModalState((prev) => ({ ...prev, confirmDeleteOpen: true, pendingDelete: item }));
+      setModalState((prev) => ({ ...prev, confirmDeleteOpen: true, pendingDelete: target }));
     }
   };
 
