@@ -89,8 +89,11 @@ export function UpcomingTransactionsCard({
       toDate: recurringToDate,
     }
   );
-  const { data: transactions = [], isLoading: transactionsLoading } =
-    useAllTransactionsDetailed(budgetId);
+  // Only future-dated rows can be upcoming; the filter below still applies the horizon.
+  const { data: transactions = [], isLoading: transactionsLoading } = useAllTransactionsDetailed(
+    budgetId,
+    { afterDate: fromDate }
+  );
 
   const accountById = useMemo(() => {
     return new Map(accounts.map((account) => [account.ID, account.Name]));

@@ -263,13 +263,18 @@ export function useAllTransactions(
 
 /**
  * Fetch all transactions for a budget with full details (same format as account transactions).
- * Includes Account field for each transaction.
+ * Includes Account field for each transaction. `afterDate` limits it to rows dated after that day.
  */
-export function useAllTransactionsDetailed(budgetId: number) {
+export function useAllTransactionsDetailed(
+  budgetId: number,
+  { afterDate }: { afterDate?: string } = {}
+) {
   return useSpaceQuery<GetTransactionsByAccountRow[]>({
-    key: ['allTransactionsDetailed', budgetId],
+    key: afterDate
+      ? ['allTransactionsDetailed', budgetId, 'after', afterDate]
+      : ['allTransactionsDetailed', budgetId],
     enabled: Boolean(budgetId),
-    queryFn: (services) => services.transactions.getAllTransactionsDetailed(budgetId),
+    queryFn: (services) => services.transactions.getAllTransactionsDetailed(budgetId, afterDate),
   });
 }
 
