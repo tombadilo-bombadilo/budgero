@@ -30,6 +30,7 @@ import {
   type SplitLine,
 } from '@features/transactions/ui/form';
 import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell';
+import { resolveCategoryId } from '@features/transactions/lib/category-selection';
 import type { TransactionEditorDirectories } from './transaction-editor-types';
 
 interface InlineTransactionRowProps {
@@ -90,6 +91,7 @@ export function InlineTransactionRow({
     needsBudgetConversion,
     conversionTargetCurrency,
     resolvedRate,
+    payeeCategorySource,
   } = useAddTransactionForm({
     budgetId,
     selectedAccountId: accountId,
@@ -303,7 +305,7 @@ export function InlineTransactionRow({
     form.setPendingAdd(null);
     await handleAddTransaction(
       pending.date,
-      pending.category,
+      pending.categoryId,
       pending.memo,
       pending.payee,
       pending.outflow,
@@ -316,7 +318,12 @@ export function InlineTransactionRow({
   };
 
   const selectedCategoryId =
-    categories.find((category) => category.Name === form.selectedCategory)?.ID ?? 0;
+    resolveCategoryId(
+      categories,
+      form.selectedCategory,
+      form.selectedCategoryId,
+      payeeCategorySource?.CategoryID
+    ) ?? 0;
   const categoryIsAutomatic = !!transferAccount && !transferInvolvesOffBudget;
   const transferTargets = accounts.filter((account) => account.ID.toString() !== rowAccount);
 
@@ -473,9 +480,10 @@ export function InlineTransactionRow({
                 categoryGroups={editorDirectories.categoryGroups}
                 monthlyRows={editorDirectories.monthlyRows}
                 readyToAssignAmount={editorDirectories.readyToAssignAmount}
-                onCommit={(id) =>
-                  form.setCategory(categories.find((category) => category.ID === id)?.Name ?? '')
-                }
+                onCommit={(id) => {
+                  const category = categories.find((c) => c.ID === id);
+                  form.setCategory(category?.Name ?? '', category?.ID ?? null);
+                }}
                 triggerClassName={cellTrigger}
                 includeTransfers={transferInvolvesOffBudget}
               />

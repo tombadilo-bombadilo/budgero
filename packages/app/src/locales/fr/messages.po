@@ -17937,7 +17937,6 @@ msgid "Uncategorised"
 msgstr "Non catégorisé"
 
 #: src/features/analytics/ui/SpendingBreakdownContent.tsx
-#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 #: src/pages/analytics/analytics-model.ts
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Uncategorized"
