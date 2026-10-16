@@ -23,6 +23,7 @@ import { AddAccountDialog } from '@features/account-management/ui/AddAccountDial
 import type { AddTransferRequest } from '@features/transactions/api/useAddTransactionHandler';
 import type { AddTransferResult } from '@entities/transaction/api/useTransactions';
 import { useCreateRecurringTransaction } from '@entities/recurring/api/useRecurringTransactions';
+import { resolveCategoryId } from '@features/transactions/lib/category-selection';
 import { getCurrentDate } from './add-transaction.utils';
 
 import { TransactionFormHeader } from './TransactionFormHeader';
@@ -56,7 +57,8 @@ export interface AddTransactionFormProps {
   selectedAccountId?: number;
   onAddTransaction: (
     date: Date | null,
-    category: string,
+    /** 0 = uncategorized. */
+    categoryId: number,
     memo: string,
     payee: string,
     outflow: number,
@@ -177,7 +179,12 @@ function BudgetTransactionForm({
       return;
     }
 
-    const category = categories.find((item) => item.Name === form.selectedCategory);
+    const categoryId = resolveCategoryId(
+      categories,
+      form.selectedCategory,
+      form.selectedCategoryId,
+      payeeCategorySource?.CategoryID
+    );
     const values: RecurringTransactionFormSubmit = {
       name: form.payee.trim() || form.memo.trim() || t`Recurring transaction`,
       memo: form.memo.trim(),
@@ -185,7 +192,7 @@ function BudgetTransactionForm({
       direction: form.isInflow ? 'inflow' : 'outflow',
       accountId: Number(form.selectedFromAccount),
       toAccountId: form.isTransfer ? Number(form.selectedToAccount) : null,
-      categoryId: form.isTransfer && !transferInvolvesOffBudget ? null : (category?.ID ?? null),
+      categoryId: form.isTransfer && !transferInvolvesOffBudget ? null : categoryId,
       schedule: buildRecurringSchedule(form.transactionDate, recurringSettings),
       notifyDaysBefore: Math.max(0, Math.trunc(Number(recurringSettings.notifyDaysBefore) || 0)),
       active: recurringSettings.active,
@@ -217,6 +224,7 @@ function BudgetTransactionForm({
     form,
     recurringSettings,
     categories,
+    payeeCategorySource,
     transferInvolvesOffBudget,
     recurring,
     createRecurring,
@@ -285,7 +293,7 @@ function BudgetTransactionForm({
       if (form.pendingAdd) {
         await onAddTransaction(
           form.pendingAdd.date,
-          form.pendingAdd.category,
+          form.pendingAdd.categoryId,
           form.pendingAdd.memo,
           form.pendingAdd.payee,
           form.pendingAdd.outflow,
@@ -426,6 +434,7 @@ function BudgetTransactionForm({
         onLabelChange={form.setLabelId}
         showLabel={!recurringEnabled}
         selectedCategory={form.selectedCategory}
+        selectedCategoryId={form.selectedCategoryId}
         onCategoryChange={form.setCategory}
         categories={categories}
         categoriesLoading={categoriesLoading}

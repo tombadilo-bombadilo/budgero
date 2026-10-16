@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useConnectivity } from '@shared/hooks/useConnectivity';
 import { useActiveSpaceId } from '@shared/runtime/runtime-provider';
 import { getLastUsedTransactionStorageKey } from '@features/transactions/lib/last-used-storage';
+import { resolveCategoryId } from '@features/transactions/lib/category-selection';
 import {
   useTransactionForm,
   type TransactionFormInitialValues,
@@ -44,7 +45,7 @@ import {
   calculateSplitRemaining,
   calculateTransferRateOverrides,
   calculateImpliedTransferRate,
-  resolveTransferCategories,
+  resolveTransferCategoryIds,
 } from './add-transaction.utils';
 
 export interface UseAddTransactionFormOptions {
@@ -52,7 +53,8 @@ export interface UseAddTransactionFormOptions {
   selectedAccountId?: number;
   onAddTransaction: (
     date: Date | null,
-    category: string,
+    /** 0 = uncategorized. */
+    categoryId: number,
     memo: string,
     payee: string,
     outflow: number, // milliunits
@@ -224,7 +226,7 @@ export function useAddTransactionForm({
 
     // Create a key that represents the current prefill state
     // This changes when transaction type changes OR when lastUsed data is loaded/updated
-    const currentPrefillKey = `${form.transactionType}:${lu.payee || ''}:${lu.category || ''}:${lu.accountId || ''}:${lu.labelId || ''}`;
+    const currentPrefillKey = `${form.transactionType}:${lu.payee || ''}:${lu.category || ''}:${lu.categoryId || ''}:${lu.accountId || ''}:${lu.labelId || ''}`;
 
     // Skip if we've already prefilled with this exact data
     if (lastPrefillKey.current === currentPrefillKey) {
@@ -234,13 +236,13 @@ export function useAddTransactionForm({
     lastPrefillKey.current = currentPrefillKey;
 
     if (lu.payee) setPayee(lu.payee);
-    if (
-      !form.isTransfer &&
-      !isSplit &&
-      lu.category &&
-      categories.some((cat) => cat.Name === lu.category)
-    ) {
-      setCategory(lu.category);
+    const lastCategory = lu.category ?? '';
+    const lastCategoryId =
+      !form.isTransfer && !isSplit && lastCategory
+        ? resolveCategoryId(categories, lastCategory, lu.categoryId)
+        : null;
+    if (lastCategoryId !== null) {
+      setCategory(lastCategory, lastCategoryId);
     }
     if (typeof lu.labelId === 'number') {
       setLabelId(labels.some((label) => label.ID === lu.labelId) ? lu.labelId : null);
@@ -294,7 +296,7 @@ export function useAddTransactionForm({
     if (form.isInflow) {
       const incomeCategory = categories.find((cat) => cat.Name === 'Income');
       if (incomeCategory && !form.selectedCategory) {
-        setCategory(incomeCategory.Name);
+        setCategory(incomeCategory.Name, incomeCategory.ID);
       }
     }
   }, [form.isInflow, categories, form.selectedCategory, setCategory]);
@@ -303,7 +305,7 @@ export function useAddTransactionForm({
     if (transferInvolvesOffBudget && !form.selectedCategory) {
       const transfersCategory = categories.find((cat) => cat.Name === 'Transfers');
       if (transfersCategory) {
-        setCategory(transfersCategory.Name);
+        setCategory(transfersCategory.Name, transfersCategory.ID);
       }
     }
   }, [transferInvolvesOffBudget, form.selectedCategory, categories, setCategory]);
@@ -467,7 +469,16 @@ export function useAddTransactionForm({
       }
 
       const { inflow, outflow } = convertAmountToFlow(form.amount, form.transactionType);
-      const finalCategory = isSplit ? t`Uncategorized` : form.selectedCategory;
+      // Names aren't unique, so the picked ID is what gets saved; the payee
+      // memory's ID covers a name it filled in.
+      const selectedCategoryId = resolveCategoryId(
+        categories,
+        form.selectedCategory,
+        form.selectedCategoryId,
+        payeeCategorySource?.CategoryID
+      );
+      const uncategorizedId = categories.find((c) => c.Name === 'Uncategorized')?.ID ?? null;
+      const finalCategoryId = (isSplit ? uncategorizedId : selectedCategoryId) ?? 0;
 
       if (form.transactionType === 'transfer') {
         const fromAccount = accounts.find((acc) => acc.ID.toString() === form.selectedFromAccount);
@@ -546,10 +557,11 @@ export function useAddTransactionForm({
 
             const transferId = generateTransferId();
 
-            const { sourceCategory, destinationCategory } = resolveTransferCategories({
+            const { sourceCategoryId, destinationCategoryId } = resolveTransferCategoryIds({
               sourceOnBudget: isAccountOnBudget(fromAccount),
               destinationOnBudget: isAccountOnBudget(toAcc),
-              selectedCategory: form.selectedCategory,
+              selectedCategoryId,
+              transfersCategoryId: categories.find((c) => c.Name === 'Transfers')?.ID ?? null,
             });
 
             await onAddTransfer({
@@ -558,14 +570,14 @@ export function useAddTransactionForm({
               memo: transferMemo,
               labelId,
               source: {
-                category: sourceCategory,
+                categoryId: sourceCategoryId,
                 payee: sourcePayee ?? '',
                 amount: amt,
                 accountId: parseInt(form.selectedFromAccount),
                 exchangeRateOverride: sourceRateOverride,
               },
               destination: {
-                category: destinationCategory,
+                categoryId: destinationCategoryId,
                 payee: destinationPayee ?? '',
                 amount: inflowAmount,
                 accountId: parseInt(form.selectedToAccount),
@@ -626,7 +638,7 @@ export function useAddTransactionForm({
               form.setPendingRatePair({ from: selectedAccount.Currency, to: budgetCurrency });
               form.setPendingAdd({
                 date: form.transactionDate,
-                category: finalCategory,
+                categoryId: finalCategoryId,
                 memo: form.memo,
                 payee: form.payee,
                 labelId,
@@ -643,7 +655,7 @@ export function useAddTransactionForm({
 
         const transactionId = await onAddTransaction(
           form.transactionDate,
-          finalCategory,
+          finalCategoryId,
           form.memo,
           form.payee,
           outflow,
@@ -658,7 +670,8 @@ export function useAddTransactionForm({
         logAutofillApplications(transactionId, autofillAppliedSuggestions);
 
         form.persistLastUsed(form.transactionType, {
-          category: !form.isTransfer ? finalCategory : undefined,
+          category: !form.isTransfer ? form.selectedCategory : undefined,
+          categoryId: selectedCategoryId ?? undefined,
           payee: form.payee,
           accountId: form.selectedFromAccount,
           labelId,
@@ -695,8 +708,6 @@ export function useAddTransactionForm({
       }
 
       const accountId = parseInt(form.selectedFromAccount);
-      const uncategorized = categories.find((c) => c.Name === 'Uncategorized');
-      const uncategorizedId = uncategorized?.ID ?? null;
 
       const missingAssignment = splitLines.some(
         (l) => (!l.categoryId && !l.transferAccountId) || (l.categoryId && l.transferAccountId)
@@ -723,7 +734,7 @@ export function useAddTransactionForm({
         // Keep the dialog open until the parent and its split lines are both stored.
         transactionId = await onAddTransaction(
           form.transactionDate,
-          finalCategory,
+          finalCategoryId,
           form.memo,
           form.payee,
           outflow,
@@ -746,6 +757,7 @@ export function useAddTransactionForm({
         form.persistLastUsed(form.transactionType, {
           payee: form.payee,
           category: !form.isTransfer && form.selectedCategory ? form.selectedCategory : undefined,
+          categoryId: selectedCategoryId ?? undefined,
           accountId: form.selectedFromAccount,
           labelId,
         });
@@ -791,6 +803,7 @@ export function useAddTransactionForm({
       resetFormFields,
       logAutofillApplications,
       autofillAppliedSuggestions,
+      payeeCategorySource,
       labels,
       labelsLoaded,
       transferInvolvesOffBudget,

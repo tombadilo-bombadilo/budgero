@@ -22,6 +22,7 @@ import { formatShortDate, parseDateKey } from '@shared/lib/date-utils';
 import type { TransactionType } from '@features/transactions/api/useTransactionForm';
 import type { MilliUnits } from '@shared/lib/currency/milli';
 import type { PayeeCategoryMemory } from '@budgero/core/browser';
+import { resolveCategoryId } from '@features/transactions/lib/category-selection';
 import { shouldShowPayeeField } from './add-transaction.utils';
 import {
   TransactionTypeSelector,
@@ -108,8 +109,11 @@ interface TransactionDetailsSectionProps {
   showLabel?: boolean;
 
   // Category
+  /** Display name of the picked category. */
   selectedCategory: string;
-  onCategoryChange: (categoryName: string) => void;
+  /** The picked category; names aren't unique, so this decides which one. */
+  selectedCategoryId?: number | null;
+  onCategoryChange: (categoryName: string, categoryId: number) => void;
   categories: Category[];
   categoriesLoading: boolean;
   isSplit: boolean;
@@ -168,6 +172,7 @@ export const TransactionDetailsSection = React.memo(function TransactionDetailsS
   onLabelChange,
   showLabel = true,
   selectedCategory,
+  selectedCategoryId: pickedCategoryId = null,
   onCategoryChange,
   categories,
   categoriesLoading,
@@ -191,16 +196,22 @@ export const TransactionDetailsSection = React.memo(function TransactionDetailsS
       : t`From your last transaction for "${name}"`;
   }, [payee, payeeCategorySource, t]);
 
-  const selectedCategoryId = React.useMemo(() => {
-    const category = categories.find((cat) => cat.Name === selectedCategory);
-    return category?.ID || null;
-  }, [categories, selectedCategory]);
+  const selectedCategoryId = React.useMemo(
+    () =>
+      resolveCategoryId(
+        categories,
+        selectedCategory,
+        pickedCategoryId,
+        payeeCategorySource?.CategoryID
+      ),
+    [categories, selectedCategory, pickedCategoryId, payeeCategorySource]
+  );
 
   const handleCategorySelect = React.useCallback(
     (categoryId: number) => {
       const category = categories.find((cat) => cat.ID === categoryId);
       if (category) {
-        onCategoryChange(category.Name);
+        onCategoryChange(category.Name, category.ID);
       }
     },
     [categories, onCategoryChange]

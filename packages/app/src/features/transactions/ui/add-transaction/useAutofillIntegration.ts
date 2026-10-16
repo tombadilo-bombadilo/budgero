@@ -15,6 +15,7 @@ import { asMilli } from '@shared/lib/currency/milli';
 import { usePayeeCategoryMemory } from '@entities/payee/api/usePayeeCategoryMemory';
 import { useSuggestCategoryFromPayee } from '@shared/hooks/useUserPreferences';
 import { decidePayeeCategoryMemory } from '@features/transactions/lib/payee-category-memory';
+import { resolveCategoryId } from '@features/transactions/lib/category-selection';
 import type { Category, Budget, PayeeCategoryMemory } from '@budgero/core/browser';
 import type { useTransactionForm } from '@features/transactions/api/useTransactionForm';
 
@@ -94,11 +95,10 @@ export function useAutofillIntegration({
     [form.memo, form.payee, form.amount, form.selectedFromAccount]
   );
 
-  const selectedCategoryId = React.useMemo(() => {
-    if (!form.selectedCategory) return null;
-    const cat = categories.find((c) => c.Name === form.selectedCategory);
-    return cat?.ID ?? null;
-  }, [form.selectedCategory, categories]);
+  const selectedCategoryId = React.useMemo(
+    () => resolveCategoryId(categories, form.selectedCategory, form.selectedCategoryId),
+    [form.selectedCategory, form.selectedCategoryId, categories]
+  );
 
   const autofillCurrentValues = React.useMemo(
     () => ({
@@ -140,7 +140,7 @@ export function useAutofillIntegration({
         if (category) {
           // Update ref BEFORE setting value so the tracking effect doesn't clear it
           previousCategory.current = category.Name;
-          setCategory(category.Name);
+          setCategory(category.Name, category.ID);
           applyAutofillSuggestion(suggestion);
         }
       } else if (suggestion.field === 'payee' && typeof suggestion.value === 'string') {
@@ -260,7 +260,7 @@ export function useAutofillIntegration({
     if (!decision.apply || !memoryCategory || !payeeCategoryMemory) return;
 
     // Update the ref BEFORE setting so the rules' field tracking doesn't read
-    // our own write as the user typing.
+    // our own write as the user typing. Its ID travels as payeeCategorySource.
     previousCategory.current = memoryCategory.Name;
     setCategory(memoryCategory.Name);
     setAppliedFor({

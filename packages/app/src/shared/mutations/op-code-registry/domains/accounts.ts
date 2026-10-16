@@ -1,10 +1,9 @@
 import { t } from '@lingui/core/macro';
-import { asMilli, ZERO_MILLI, type Account } from '@budgero/core/browser';
-import { capitalize } from '@shared/lib/utils';
-import { getTodayISO } from '@shared/lib/date-utils';
+import { asMilli, type Account } from '@budgero/core/browser';
 import {
   S,
   ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
+  TRANSACTION_INVALIDATION_KEYS,
   redoWithIds,
   safeCapture,
   type OpCodeEntry,
@@ -73,9 +72,10 @@ export const accountOps = {
       );
     },
     invalidates: [
-      ['accounts', '*'], // Will match ["accounts", budgetId]
       ['account', '*'], // Will match ["account", id]
-      ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS, // Currency/type edits can rewrite transactions
+      // Currency edits rewrite transactions; liability edits sync Initial Debt.
+      ...TRANSACTION_INVALIDATION_KEYS,
+      ['debtProgression', '*'],
       // Type/name edits can create, relink, or rename system categories.
       ['categories', '*'],
       ['categoryGroups', '*'],
@@ -140,71 +140,16 @@ export const accountOps = {
     },
   },
 
-  // upsert liability starting transactions (initial debt and prior payments)
+  // Legacy: accounts.update now syncs the opening rows itself. Kept so queued
+  // ops from older clients still replay; budgetId/accountType are ignored.
   'transactions.upsertLiabilityStarts': {
     execute: async (args) => {
-      const accountId = args.accountId as number;
-      const budgetId = args.budgetId as number;
-      const originalDebt = args.originalDebt as number | null;
-      const accountType = (args.accountType as string) || 'loan';
-
-      const txService = S().transactions;
-      const catService = S().categories;
-
-      const now = getTodayISO();
-
-      // Ensure Liabilities group and category exist
-      const group = catService.getCategoryGroupByName('Liabilities', budgetId) || {
-        ID: catService.addCategoryGroup('Liabilities', budgetId),
-      };
-      const categoryName = capitalize(accountType);
-      const existingCategory = catService.getCategoryByName(categoryName, budgetId);
-      const liabilityCategoryId = existingCategory
-        ? existingCategory.ID
-        : catService.addCategory(group.ID, budgetId, categoryName, '');
-
-      // Find the first "Initial Debt" transaction for this account
-      const allTransactions = txService.getTransactionsByAccount(accountId);
-      const sorted = [...allTransactions].sort((a, b) => {
-        const dc = (a.Date || '').localeCompare(b.Date || '');
-        return dc !== 0 ? dc : (a.ID || 0) - (b.ID || 0);
-      });
-
-      type TransactionRow = (typeof allTransactions)[number];
-      let initialDebtTx: TransactionRow | null = null;
-      for (const t of sorted) {
-        if ((t.Memo || '').toLowerCase() === 'initial debt') {
-          initialDebtTx = t;
-          break;
-        }
-      }
-
-      if (typeof originalDebt === 'number') {
-        const originalDebtMilli = asMilli(originalDebt);
-        if (initialDebtTx) {
-          await txService.updateTransaction(
-            initialDebtTx.ID,
-            ZERO_MILLI,
-            originalDebtMilli,
-            accountId,
-            liabilityCategoryId,
-            initialDebtTx.Date,
-            'Initial Debt'
-          );
-        } else {
-          await txService.addTransaction(
-            ZERO_MILLI,
-            originalDebtMilli,
-            accountId,
-            liabilityCategoryId,
-            budgetId,
-            now,
-            'Initial Debt',
-            ''
-          );
-        }
-      }
-      // Note: Balance recalculation is handled internally by addTransaction/updateTransaction
+      const amount = (value: unknown) => (typeof value === 'number' ? value : null);
+      await S().accounts!.upsertLiabilityStarts(
+        args.accountId as number,
+        amount(args.originalDebt),
+        amount(args.paidSoFar)
+      );
     },
     invalidates: [
       ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
@@ -214,7 +159,7 @@ export const accountOps = {
       ['uncategorizedTransactions', '*'], // For uncategorized badges
       ['allAccountsMonthlyTransactions', '*'], // For all accounts monthly transactions
       ['accounts'],
-      // This legacy liability-start path also ensures its category/group.
+      // Ensures the Transfers category/group.
       ['categories', '*'],
       ['categoryGroups', '*'],
       ['monthlyBudget', '*'],
