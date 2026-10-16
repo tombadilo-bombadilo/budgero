@@ -1,5 +1,6 @@
 import { DatabaseAdapter } from '../../database/interface.js';
 import { getRow, allRows, run } from '../../database/sql.js';
+import { insertRawRow, type RawRow } from '../../database/restore-rows.js';
 import { asMilli, ZERO_MILLI } from '../../money/index.js';
 import {
   convertScaled,
@@ -29,6 +30,7 @@ import type {
   RecurringSchedule,
   RecurringTransaction,
   RecurringIntervalUnit,
+  RecurringTemplateSnapshot,
   UpdateRecurringTransactionInput,
 } from './types.js';
 
@@ -636,6 +638,54 @@ export class RecurringTransactionService {
       this.ensureOccurrencesForTemplate(updated, computeHorizonDate());
     }
     return updated;
+  }
+
+  /**
+   * The template row and its occurrence rows, verbatim, for a delete undo.
+   * Null when the template does not exist.
+   */
+  snapshotRecurringTransaction(id: number): RecurringTemplateSnapshot | null {
+    const template = getRow<RawRow>(
+      this.db,
+      'SELECT * FROM recurring_transactions WHERE ID = ?',
+      id
+    );
+    if (!template) return null;
+    const occurrences = allRows<RawRow>(
+      this.db,
+      'SELECT * FROM recurring_transaction_occurrences WHERE RecurringTransactionID = ? ORDER BY ID',
+      id
+    );
+    return { template, occurrences };
+  }
+
+  /**
+   * Undo of deleteRecurringTransaction, in one database transaction: the
+   * template comes back under its ID with every occurrence (status, posted
+   * transaction link, notified/ready marks). Occurrence IDs are local to each
+   * device, so one already taken here gets a fresh ID; the (template, due
+   * date) key is what other ops address.
+   */
+  restoreRecurringTransaction(snapshot: RecurringTemplateSnapshot): void {
+    this.db.transaction(() => {
+      insertRawRow(this.db, 'recurring_transactions', snapshot.template);
+      for (const occurrence of snapshot.occurrences) {
+        const taken = getRow(
+          this.db,
+          'SELECT 1 FROM recurring_transaction_occurrences WHERE ID = ?',
+          occurrence.ID
+        );
+        const linked =
+          occurrence.TransactionID == null ||
+          getRow(this.db, 'SELECT 1 FROM transactions WHERE ID = ?', occurrence.TransactionID);
+        insertRawRow(
+          this.db,
+          'recurring_transaction_occurrences',
+          linked ? occurrence : { ...occurrence, TransactionID: null },
+          { omit: taken ? ['ID'] : [], orIgnore: true }
+        );
+      }
+    });
   }
 
   async deleteRecurringTransaction(id: number): Promise<void> {

@@ -1,3 +1,4 @@
+import type { RawRow } from '../../database/restore-rows.js';
 import type { MilliUnits } from '../../money/index.js';
 
 export type RecurringDirection = 'inflow' | 'outflow';
@@ -168,4 +169,10 @@ export interface ProjectedTransactionRow {
   InflowNative: MilliUnits;
   OutflowNative: MilliUnits;
   IsProjected: true;
+}
+
+/** Verbatim rows of a template and its occurrences, for a delete undo. */
+export interface RecurringTemplateSnapshot {
+  template: RawRow;
+  occurrences: RawRow[];
 }

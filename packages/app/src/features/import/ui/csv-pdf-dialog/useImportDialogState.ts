@@ -12,6 +12,7 @@ import {
 } from '@entities/category/api/useCategories';
 import { useAddAccount, useAccounts } from '@entities/account/api/useAccounts';
 import { executeSpaceMutation } from '@shared/runtime/mutation-router';
+import { useUndoStore } from '@shared/mutations/UndoStore';
 import { useRecordImportRun } from '@features/import/api/useImportHistory';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUiStore } from '@shared/store/useUiStore';
@@ -548,6 +549,9 @@ export function useImportDialogState(): ImportDialogState {
     setCurrentStep('import');
     setError(null);
 
+    // The whole import (created account, categories, every row) is one undo
+    // entry, so a single Ctrl+Z reverts it instead of one row at a time.
+    useUndoStore.getState().beginGroup();
     try {
       if (saveAsTemplate && templateName.trim()) {
         saveTemplateHandler({
@@ -707,6 +711,7 @@ export function useImportDialogState(): ImportDialogState {
                 ? matchedIds.get(reviewed.duplicate.sameFileIndex)
                 : undefined);
             if (candidate !== undefined && reviewed.duplicate.status !== 'already-imported') {
+              // Part of the import's undo entry: undoing the import forgets the match too.
               await executeSpaceMutation(runtime, {
                 op: 'importHistory.match',
                 payload: {
@@ -715,7 +720,6 @@ export function useImportDialogState(): ImportDialogState {
                   transactionId: candidate,
                   identity: plan,
                 },
-                meta: { skipUndo: true },
               });
             }
             if (candidate !== undefined) matchedIds.set(plan.index, candidate);
@@ -833,6 +837,7 @@ export function useImportDialogState(): ImportDialogState {
       setError(getErrorMessage(err, t`Import failed`));
       setCurrentStep('configure');
     } finally {
+      useUndoStore.getState().endGroup();
       setIsImporting(false);
       importLock.current = false;
     }
