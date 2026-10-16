@@ -42,7 +42,9 @@
     "bench": "node bench/run.mjs",
     "bench:gen": "node bench/gen.mjs",
     "bench:profile": "node bench/profile.mjs",
-    "parity": "node parity/run.mjs"
+    "parity": "node parity/run.mjs",
+    "fuzz:snapshot": "vitest run node-tests/budget-snapshot.fuzz.node.spec.ts node-tests/budget-snapshot-monthly.fuzz.node.spec.ts",
+    "fuzz:snapshot:long": "bash parity/fuzz-long.sh"
   },
   "dependencies": {
     "debug": "^4.4.3",
@@ -55,6 +57,7 @@
     "@types/sql.js": "^1.4.11",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^9.39.5",
+    "fast-check": "^4.10.2",
     "globals": "^15.15.0",
     "sql.js": "^1.14.2",
     "typescript": "^5.9.3",
