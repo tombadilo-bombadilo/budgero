@@ -1210,8 +1210,18 @@ export class TransactionService {
   }
 
   /** Put back a captured delete exactly (same IDs and state), in one transaction. */
-  restoreTransactions(snapshot: TransactionRestoreSnapshot): number[] {
-    return restoreTransactionSnapshot(this.db, snapshot);
+  restoreTransactions(
+    snapshot: TransactionRestoreSnapshot,
+    { replace = false }: { replace?: boolean } = {}
+  ): number[] {
+    // Replace (undo of an edit): first remove the rows as they are now, with
+    // whatever the edit attached to them (e.g. new mirror rows).
+    const current = replace
+      ? this.getTransactionsForDelete(snapshot.transactions.map((row) => Number(row.ID))).map(
+          (transaction) => transaction.ID
+        )
+      : [];
+    return restoreTransactionSnapshot(this.db, snapshot, current);
   }
 
   /**

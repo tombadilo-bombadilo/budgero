@@ -116,7 +116,9 @@ function insertRow(db: DatabaseAdapter, table: string, columns: Set<string>, row
  */
 export function restoreTransactionSnapshot(
   db: DatabaseAdapter,
-  snapshot: TransactionRestoreSnapshot
+  snapshot: TransactionRestoreSnapshot,
+  /** Rows deleted first, in the same transaction (undo of an edit: put the captured state back). */
+  replaceIds: number[] = []
 ): number[] {
   if (snapshot?.version !== 1 || !Array.isArray(snapshot.transactions)) {
     throw new ValidationError('Unsupported transaction restore snapshot.');
@@ -132,6 +134,13 @@ export function restoreTransactionSnapshot(
   }
 
   return atomically(db, () => {
+    const queries = new TransactionQueries(db);
+    const replaced = selectIn(
+      db,
+      (p) => `SELECT ID, AccountID FROM transactions WHERE ID IN (${p})`,
+      [...new Set(replaceIds)]
+    );
+    queries.deleteTransactions(replaced.map((row) => Number(row.ID)));
     const taken = selectIn(db, (p) => `SELECT ID FROM transactions WHERE ID IN (${p})`, ids);
     if (taken.length) {
       throw new ValidationError(`Transaction ${taken[0].ID} already exists; nothing restored.`);
@@ -162,8 +171,8 @@ export function restoreTransactionSnapshot(
       }
     }
 
-    new TransactionQueries(db).recalculateBalancesForAccounts(
-      snapshot.transactions.map((row) => Number(row.AccountID))
+    queries.recalculateBalancesForAccounts(
+      [...snapshot.transactions, ...replaced].map((row) => Number(row.AccountID))
     );
     return ids;
   });
