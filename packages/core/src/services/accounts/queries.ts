@@ -1,6 +1,7 @@
 import { DatabaseAdapter } from '../../database/interface.js';
 import { getRow, allRows, run } from '../../database/sql.js';
 import { Account } from './types.js';
+import { getLocalDateString } from '../../utils/date.js';
 
 /**
  * AccountQueries - All SQL queries for accounts
@@ -65,35 +66,49 @@ export class AccountQueries {
    * SQL: ListAccounts :many
    */
   listAccounts(budgetId: number): Account[] {
+    // Future impact = rows dated after today's local date, as DATE('now',
+    // 'localtime') reads it. `t.Date >= today` is implied by `DATE(t.Date) > today`
+    // for every stored date form (YYYY-MM-DD, with or without a time/offset
+    // suffix) and lets SQLite seek idx_transactions_account_date_id to the future
+    // rows instead of reading each ledger. Both uncleared sums come from one pass
+    // over the budget's rows (Cleared has no index), not two per account.
+    const today = getLocalDateString();
     return allRows<Account>(
       this.db,
       `
+      WITH budget_accounts AS (
+        SELECT ID FROM accounts WHERE BudgetID = ?1
+      ),
+      future AS (
+        SELECT t.AccountID AS id,
+          SUM(COALESCE(t.InflowNative, t.InflowConverted) - COALESCE(t.OutflowNative, t.OutflowConverted)) AS native,
+          SUM(t.InflowConverted - t.OutflowConverted) AS converted
+        FROM transactions t
+        WHERE t.AccountID IN (SELECT ID FROM budget_accounts)
+          AND t.Date >= ?2 AND DATE(t.Date) > ?2
+        GROUP BY t.AccountID
+      ),
+      uncleared AS (
+        SELECT t.AccountID AS id,
+          SUM(COALESCE(t.InflowNative, t.InflowConverted) - COALESCE(t.OutflowNative, t.OutflowConverted)) AS native,
+          SUM(t.InflowConverted - t.OutflowConverted) AS converted
+        FROM transactions t
+        WHERE t.AccountID IN (SELECT ID FROM budget_accounts) AND t.Cleared = 0
+        GROUP BY t.AccountID
+      )
       SELECT a.*,
-        COALESCE((
-          SELECT SUM(COALESCE(t.InflowNative, t.InflowConverted) - COALESCE(t.OutflowNative, t.OutflowConverted))
-          FROM transactions t
-          WHERE t.AccountID = a.ID AND DATE(t.Date) > DATE('now', 'localtime')
-        ), 0) AS FutureImpactNative,
-        COALESCE((
-          SELECT SUM(t.InflowConverted - t.OutflowConverted)
-          FROM transactions t
-          WHERE t.AccountID = a.ID AND DATE(t.Date) > DATE('now', 'localtime')
-        ), 0) AS FutureImpactConverted,
-        COALESCE((
-          SELECT SUM(COALESCE(t.InflowNative, t.InflowConverted) - COALESCE(t.OutflowNative, t.OutflowConverted))
-          FROM transactions t
-          WHERE t.AccountID = a.ID AND t.Cleared = 0
-        ), 0) AS UnclearedNative,
-        COALESCE((
-          SELECT SUM(t.InflowConverted - t.OutflowConverted)
-          FROM transactions t
-          WHERE t.AccountID = a.ID AND t.Cleared = 0
-        ), 0) AS UnclearedConverted
+        COALESCE(f.native, 0) AS FutureImpactNative,
+        COALESCE(f.converted, 0) AS FutureImpactConverted,
+        COALESCE(u.native, 0) AS UnclearedNative,
+        COALESCE(u.converted, 0) AS UnclearedConverted
       FROM accounts a
+      LEFT JOIN future f ON f.id = a.ID
+      LEFT JOIN uncleared u ON u.id = a.ID
       WHERE a.BudgetID = ?1
       ORDER BY a.Position ASC, a.ID ASC
     `,
-      budgetId
+      budgetId,
+      today
     );
   }
 

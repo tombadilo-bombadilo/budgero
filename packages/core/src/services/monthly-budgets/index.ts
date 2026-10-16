@@ -120,6 +120,11 @@ export class MonthlyBudgetService {
     }
 
     if (ccAdjustments.size > 0) {
+      // One grouped query instead of one per CC payment row.
+      const priorAssignedByCategory = this.queries.getAssignedPriorToMonthByCategory(
+        rows.filter((row) => ccAdjustments.has(row.CategoryID)).map((row) => row.CategoryID),
+        month
+      );
       for (const row of rows) {
         const adjustment = ccAdjustments.get(row.CategoryID);
         if (adjustment) {
@@ -137,7 +142,7 @@ export class MonthlyBudgetService {
           row.Activity = asMilli(-currentPayments || 0);
 
           // Available = Assigned + Funded - Payments (all time)
-          const priorAssigned = this.queries.getAssignedPriorToMonth(row.CategoryID, month);
+          const priorAssigned = priorAssignedByCategory.get(row.CategoryID) || 0;
           const totalAssigned = priorAssigned + row.Assigned;
           const totalFunded = asMilli(fundedByPaymentCategory.get(row.CategoryID) || 0);
           const totalPayments = priorPayments + currentPayments;
@@ -208,6 +213,15 @@ export class MonthlyBudgetService {
     }
 
     return rows;
+  }
+
+  /**
+   * All-time transaction count of a category in a budget (rows without splits
+   * plus split lines). Fetched on demand by the delete-category dialog; not
+   * part of getMonthlyBudget.
+   */
+  getCategoryTransactionCount(categoryId: number, budgetId: number): number {
+    return this.queries.getCategoryTransactionCount(categoryId, budgetId);
   }
 
   /**
