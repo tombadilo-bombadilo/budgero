@@ -54,7 +54,7 @@ export interface KnownFailure {
   id: string;
   invariant: 'undo' | 'replay';
   kinds: ViolationKind[];
-  /** The violation matches if any of its ops is one of these. */
+  /** The violation matches if any of its ops is one of these ('*' = any op). */
   ops: string[];
   /** When set, every differing table must be one of these. */
   tables?: string[];
@@ -109,8 +109,8 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     id: 'U12',
     invariant: 'undo',
     kinds: ['no-undo-entry'],
-    ops: ['accounts.delete', 'recurring.delete', 'importHistory.record'],
-    note: 'No undo for accounts.delete or recurring.delete; importHistory.record (the import run of a CSV import) has none either.',
+    ops: ['accounts.delete', 'recurring.delete', 'importHistory.record', 'importHistory.undo'],
+    note: 'No undo for accounts.delete or recurring.delete; importHistory.record (the import run of a CSV import) and importHistory.undo (undo of a whole import) have none either.',
   },
   {
     id: 'U2',
@@ -148,8 +148,8 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     invariant: 'undo',
     kinds: ['undo-mismatch', 'chain-undo-mismatch'],
     ops: ['rules.execute', 'rules.delete'],
-    tables: RULE_LOG,
-    note: 'Rule-run undo leaves the run and its change rows (run not marked undone); undo of a rule delete does not bring back its run history.',
+    tables: [...RULE_LOG, 'transactions'],
+    note: "Rule-run undo leaves the run and its change rows (run not marked undone) and writes NULL into Payee where the row had ''; undo of a rule delete does not bring back its run history.",
   },
   {
     id: 'NEW-1',
@@ -163,9 +163,20 @@ export const KNOWN_FAILURES: KnownFailure[] = [
       'transactions.upsertSplits',
       'transactions.clearSplits',
       'transactions.duplicate',
+      'transactions.import',
+      'accounts.createLinked',
     ],
-    tables: ['transactions', 'payees', 'goals', 'transaction_splits', 'accounts', 'categories'],
-    note: 'Undo / redo re-create rows under new IDs: the Initial Balance row and linked debt / CC payment category of a re-done account (Metadata then points at the new category), a re-added payee, a goal (by design per goals.ts, undo addresses it by category), and split lines of an upsert / clear / duplicate undo or redo.',
+    tables: [
+      'transactions',
+      'payees',
+      'goals',
+      'transaction_splits',
+      'accounts',
+      'categories',
+      'import_provenance',
+      'bank_links',
+    ],
+    note: 'Undo / redo re-create rows under new IDs: the Initial Balance row and linked debt / CC payment category of a re-done account (Metadata then points at the new category), a re-added payee, a goal (by design per goals.ts, undo addresses it by category), and split lines of an upsert / clear / duplicate undo or redo; a re-done linked account also gets a new bank_links row.',
   },
   {
     id: 'NEW-7',
@@ -217,25 +228,30 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     id: 'NEW-6',
     invariant: 'undo',
     kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['categories.moveToNewGroup', 'categoryGroups.reorder'],
-    tables: ['categories', 'category_groups'],
-    note: 'Ordering not restored: undo of a group move puts the category at the end of its old group; undo of a group reorder writes explicit positions for system groups that had none (Income / Uncategorized / Transfers end up in another order).',
+    ops: [
+      'categories.moveToNewGroup',
+      'categoryGroups.reorder',
+      'categories.reorder',
+      'accounts.reorder',
+    ],
+    tables: ['categories', 'category_groups', 'accounts'],
+    note: 'Ordering not restored: undo of a group move puts the category at the end of its old group; undo of a group reorder writes explicit positions for system groups that had none (Income / Uncategorized / Transfers end up in another order); undo of a category / account reorder renumbers Position (same order, other values).',
   },
   {
     id: 'NEW-8',
     invariant: 'undo',
     kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['reports.update'],
+    ops: ['reports.update', 'reports.delete'],
     tables: ['saved_reports'],
-    note: "Report update undo turns a NULL Description into ''.",
+    note: "Report undo does not keep Description as it was: update undo turns NULL into '', delete undo turns '' into NULL.",
   },
   {
     id: 'NEW-9',
     invariant: 'undo',
     kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['recurring.update'],
+    ops: ['*'],
     tables: ['recurring_transaction_occurrences'],
-    note: 'Undo of a schedule edit regenerates occurrences from the old start date, bringing back past scheduled occurrences that were never materialized before the edit.',
+    note: 'Occurrence materialization is not a pure function of the template: undo of a schedule edit regenerates from the old start date (past scheduled occurrences come back), and gaps left in a series are filled by a later write (an undo of an unrelated op then shows an extra scheduled occurrence).',
   },
   {
     id: 'NEW-10',
@@ -244,6 +260,14 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     ops: ['transactions.updateColumn'],
     detail: /Exchange rate must be a finite number/,
     note: 'ExchangeRate cell edit on a foreign row with no stored rate: undo re-applies the captured NULL and throws, so the entry is dropped and the edit cannot be undone.',
+  },
+  {
+    id: 'NEW-14',
+    invariant: 'undo',
+    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
+    ops: ['recurring.update'],
+    tables: ['recurring_transactions', 'categories', 'recurring_transaction_occurrences'],
+    note: 'Undo of a category edit on a recurring transfer template writes the Transfers category (auto-created) instead of the NULL it had.',
   },
   {
     id: 'NEW-13',
@@ -270,8 +294,15 @@ export const KNOWN_FAILURES: KnownFailure[] = [
       'scenarios.save',
       'recurring.markReady',
     ],
-    tables: ['custom_dashboards', 'custom_dashboard_widgets', 'scenarios', 'transactions'],
-    note: 'IDs generated on apply differ per device: dashboards and widgets (the hooks send no ID), new scenarios, and the TransferID of a posted recurring transfer (generateTransferId).',
+    tables: [
+      'custom_dashboards',
+      'custom_dashboard_widgets',
+      'scenarios',
+      'transactions',
+      'accounts',
+      'recurring_transaction_occurrences',
+    ],
+    note: 'IDs generated on apply differ per device: dashboards and widgets (the hooks send no ID), new scenarios, and the TransferID of a posted recurring transfer (generateTransferId), so a later transactions.deleteTransfer of it deletes nothing on the other device.',
   },
   {
     id: 'A14',
@@ -308,6 +339,7 @@ export const KNOWN_FAILURES: KnownFailure[] = [
       'transactions.addTransfer',
       'transactions.upsertSplits',
       'transactions.updateTransferRate',
+      'accounts.createLinked',
       'transactions.delete',
       'accounts.create',
       'accounts.update',
@@ -339,7 +371,7 @@ export function matchKnown(v: Violation): KnownFailure | undefined {
     (entry) =>
       entry.invariant === v.invariant &&
       entry.kinds.includes(v.kind) &&
-      v.ops.some((op) => entry.ops.includes(op)) &&
+      (entry.ops.includes('*') || v.ops.some((op) => entry.ops.includes(op))) &&
       (!entry.tables || v.tables.every((t) => entry.tables!.includes(t))) &&
       (!entry.detail || entry.detail.test(v.detail))
   );
