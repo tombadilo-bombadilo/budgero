@@ -324,6 +324,9 @@ importers:
       eslint-plugin-react-refresh:
         specifier: ^0.4.26
         version: 0.4.26(eslint@9.39.5(jiti@2.7.0))
+      fast-check:
+        specifier: ^4.10.2
+        version: 4.10.2
       flag-icons:
         specifier: ^7.5.0
         version: 7.5.0
