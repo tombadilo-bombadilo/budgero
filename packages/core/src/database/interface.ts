@@ -31,6 +31,55 @@ export interface DatabaseAdapter {
   readonly isEncrypted: boolean;
   readonly hasSync: boolean;
   readonly platform: 'web' | 'desktop';
+
+  /**
+   * Optional connection hooks (the sql.js adapters implement them; the budget
+   * snapshot uses them for its TEMP-trigger change tracking and stays off
+   * without them).
+   *
+   * Registers a scalar JS function on the current connection. sql.js drops
+   * every registered function (and every TEMP object) when the connection is
+   * re-opened: on `export()` and when the database is replaced.
+   */
+  createFunction?(name: string, fn: (...args: SqlFunctionValue[]) => SqlFunctionValue): void;
+  /**
+   * Calls `listener` synchronously right after the connection was re-opened:
+   * `'export'` after `backup()` (same data, TEMP objects and functions gone),
+   * `'replace'` after restore / replaceDatabase (different data). Returns an
+   * unsubscribe function.
+   */
+  addConnectionListener?(listener: (event: ConnectionEvent) => void): () => void;
+  /** True while `transaction()` runs its callback. */
+  readonly inTransaction?: boolean;
+}
+
+export type SqlFunctionValue = number | string | Uint8Array | null;
+
+export type ConnectionEvent = 'export' | 'replace';
+
+/**
+ * Listener list for DatabaseAdapter.addConnectionListener. A throwing listener
+ * never breaks the adapter call that re-opened the connection.
+ */
+export class ConnectionListeners {
+  private listeners = new Set<(event: ConnectionEvent) => void>();
+
+  add(listener: (event: ConnectionEvent) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  emit(event: ConnectionEvent): void {
+    for (const listener of [...this.listeners]) {
+      try {
+        listener(event);
+      } catch {
+        // listeners own their error handling
+      }
+    }
+  }
 }
 
 /**
@@ -70,6 +119,36 @@ export abstract class BaseDatabaseAdapter implements DatabaseAdapter {
   abstract readonly hasSync: boolean;
 
   abstract readonly platform: 'web' | 'desktop';
+
+  // Created lazily (not as field initializers) so adapters built without the
+  // constructor (Object.create in tests) still work.
+  private listeners?: ConnectionListeners;
+
+  private transactionDepth?: number;
+
+  get inTransaction(): boolean {
+    return (this.transactionDepth ?? 0) > 0;
+  }
+
+  addConnectionListener(listener: (event: ConnectionEvent) => void): () => void {
+    this.listeners ??= new ConnectionListeners();
+    return this.listeners.add(listener);
+  }
+
+  /** Tells the connection listeners the connection was re-opened. */
+  protected emitConnectionEvent(event: ConnectionEvent): void {
+    this.listeners?.emit(event);
+  }
+
+  /** Runs `fn` with `inTransaction` set (adapters wrap their BEGIN/COMMIT in it). */
+  protected trackTransaction<T>(fn: () => T): T {
+    this.transactionDepth = (this.transactionDepth ?? 0) + 1;
+    try {
+      return fn();
+    } finally {
+      this.transactionDepth -= 1;
+    }
+  }
 
   protected validateSql(sql: string): void {
     // Basic SQL injection prevention
