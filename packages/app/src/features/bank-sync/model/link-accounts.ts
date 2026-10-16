@@ -120,55 +120,42 @@ export async function linkAccounts(
 
   for (const request of requests) {
     const remote = fetched.get(request.remote.id) ?? request.remote;
-    let accountId: number;
+    const link = {
+      provider: connection.Provider,
+      externalAccountId: remote.id,
+      externalName: remote.name,
+      orgName: remote.orgName,
+      importFrom: request.importFrom,
+    };
     if (request.target.kind === 'existing') {
-      accountId = request.target.accountId;
-    } else {
-      const definition = getAccountTypeDefinition(request.target.type);
-      const account = await executeSpaceMutation<Account>(runtime, {
-        op: 'accounts.create',
+      await executeSpaceMutation(runtime, {
+        op: 'bankSync.saveLink',
         payload: {
-          name: request.target.name,
           budgetId,
-          type: request.target.type,
-          currency: remote.currency,
-          balance: openingBalance(remote, request.importFrom),
-          metadata: {},
-          onBudget: definition?.budgetType !== 'always-off',
-          initialBalanceDate: dayBefore(request.importFrom),
+          input: { budgetId, accountId: request.target.accountId, ...link },
         },
-        meta: { label: 'bank-sync' },
+        meta: { label: 'bank-sync', skipUndo: true },
       });
-      accountId = account.ID;
-      // The opening balance comes from the bank's own balance, so it's cleared:
-      // otherwise the cleared total never matches the bank.
-      const opening = runtime
-        .services()
-        .transactions.getTransactionsByAccount(accountId)
-        .map((row) => row.ID);
-      if (opening.length) {
-        await executeSpaceMutation(runtime, {
-          op: 'transactions.setCleared',
-          payload: { budgetId, ids: opening, cleared: true },
-          meta: { label: 'bank-sync', skipUndo: true },
-        });
-      }
+      continue;
     }
-    await executeSpaceMutation(runtime, {
-      op: 'bankSync.saveLink',
+    // One op: the account, its opening balance (cleared: it comes from the
+    // bank's own balance, otherwise the cleared total never matches the bank)
+    // and the link are written together, so a failure leaves no unlinked account.
+    const definition = getAccountTypeDefinition(request.target.type);
+    await executeSpaceMutation<Account>(runtime, {
+      op: 'accounts.createLinked',
       payload: {
+        name: request.target.name,
         budgetId,
-        input: {
-          budgetId,
-          provider: connection.Provider,
-          accountId,
-          externalAccountId: remote.id,
-          externalName: remote.name,
-          orgName: remote.orgName,
-          importFrom: request.importFrom,
-        },
+        type: request.target.type,
+        currency: remote.currency,
+        balance: openingBalance(remote, request.importFrom),
+        metadata: {},
+        onBudget: definition?.budgetType !== 'always-off',
+        initialBalanceDate: dayBefore(request.importFrom),
+        link,
       },
-      meta: { label: 'bank-sync', skipUndo: true },
+      meta: { label: 'bank-sync' },
     });
   }
 

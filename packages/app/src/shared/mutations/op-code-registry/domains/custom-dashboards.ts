@@ -3,7 +3,14 @@ import type {
   CustomDashboardWidget,
   CustomDashboardWithWidgets,
 } from '@budgero/core/browser';
-import { S, redoWithIds, safeCapture, type OpCall, type OpCodeEntry } from '../shared';
+import {
+  S,
+  redoWithIds,
+  safeCapture,
+  withGeneratedId,
+  type OpCall,
+  type OpCodeEntry,
+} from '../shared';
 
 function addWidgetOp(widget: CustomDashboardWidget): OpCall {
   return {
@@ -33,6 +40,7 @@ const captureWidget = (args: Record<string, unknown>) =>
 
 export const customDashboardOps = {
   'customDashboards.create': {
+    prepare: withGeneratedId(),
     execute: async (args) => {
       return await S().customDashboards!.createDashboard({
         id: args.id as string | undefined,
@@ -137,6 +145,7 @@ export const customDashboardOps = {
   },
 
   'customDashboardWidgets.add': {
+    prepare: withGeneratedId(),
     execute: async (args) => {
       return await S().customDashboards!.addWidget({
         id: args.id as string | undefined,

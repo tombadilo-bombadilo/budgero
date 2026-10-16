@@ -104,6 +104,33 @@ export interface ReconcileResult {
  * TransactionService - Port of Go transactions service
  * Handles complex transaction management with running balance calculations
  */
+/** Converted amounts for a new row, resolved before the insert (see resolveConversion). */
+export interface TransactionConversion {
+  inflowConverted: MilliUnits;
+  outflowConverted: MilliUnits;
+  resolvedExchangeRate: number | null;
+  usesPinnedExchangeRate: boolean;
+  markPending: boolean;
+}
+
+/** addTransaction's arguments, for insertTransaction. */
+export interface NewTransactionRow {
+  inflowOriginal: MilliUnits;
+  outflowOriginal: MilliUnits;
+  accountId: number;
+  categoryId: number;
+  budgetId: number;
+  date: string;
+  memo: string;
+  transferId?: string;
+  payee?: string;
+  labelId?: number | null;
+  excludeFromReadyToAssign?: boolean;
+  importIdentities?: ImportIdentity[];
+  cleared?: boolean;
+  explicitId?: number;
+}
+
 export class TransactionService {
   private queries: TransactionQueries;
 
@@ -186,7 +213,65 @@ export class TransactionService {
     });
 
     const { account, budget } = this.queries.getAccountAndBudget(accountId, budgetId);
+    const conversion = await this.resolveConversion(
+      account?.Currency,
+      budget,
+      date,
+      budgetId,
+      inflowOriginal,
+      outflowOriginal,
+      exchangeRateOverride
+    );
+    const input: NewTransactionRow = {
+      inflowOriginal,
+      outflowOriginal,
+      accountId,
+      categoryId,
+      budgetId,
+      date,
+      memo,
+      transferId,
+      payee,
+      labelId,
+      excludeFromReadyToAssign,
+      importIdentities,
+      cleared,
+      explicitId,
+    };
+    if (batch) {
+      return batch.queue(() => this.insertTransaction(input, conversion), {
+        AccountID: accountId,
+        BudgetID: budgetId,
+        Date: date,
+        Memo: memo,
+        Payee: payee?.trim() || null,
+        LabelID: this.normalizeLabelId(labelId),
+        TransferID: transferId || null,
+        InflowConverted: conversion.inflowConverted,
+        OutflowConverted: conversion.outflowConverted,
+        InflowNative: inflowOriginal,
+        OutflowNative: outflowOriginal,
+      });
+    }
+    return this.insertTransaction(input, conversion);
+  }
 
+  /**
+   * The async half of addTransaction: resolves the exchange rate for a row in
+   * `accountCurrency` and the converted amounts. Writes no budget data, so
+   * callers that must insert atomically (account creation) run it before
+   * opening their transaction. Throws when a crypto row has no rate.
+   */
+  async resolveConversion(
+    accountCurrency: string | undefined,
+    budget: { DisplayCurrency: string } | null | undefined,
+    date: string,
+    budgetId: number,
+    inflowOriginal: MilliUnits,
+    outflowOriginal: MilliUnits,
+    exchangeRateOverride?: number | null
+  ): Promise<TransactionConversion> {
+    const account = accountCurrency === undefined ? undefined : { Currency: accountCurrency };
     // Calculate converted amounts (will be same as original if currencies match)
     let inflowConverted: MilliUnits = inflowOriginal;
     let outflowConverted: MilliUnits = outflowOriginal;
@@ -261,6 +346,45 @@ export class TransactionService {
       );
       markPending = (!official && !custom) || !!manual;
     }
+
+    return {
+      inflowConverted,
+      outflowConverted,
+      resolvedExchangeRate,
+      usesPinnedExchangeRate,
+      markPending,
+    };
+  }
+
+  /**
+   * The synchronous half of addTransaction: inserts the row with an already
+   * resolved conversion. Joins the caller's transaction when there is one.
+   */
+  insertTransaction(input: NewTransactionRow, conversion: TransactionConversion): number {
+    const {
+      inflowOriginal,
+      outflowOriginal,
+      accountId,
+      budgetId,
+      date,
+      memo,
+      transferId = '',
+      payee,
+      labelId,
+      excludeFromReadyToAssign = false,
+      importIdentities = [],
+      cleared = false,
+      explicitId,
+    } = input;
+    let { categoryId } = input;
+    const { account } = this.queries.getAccountAndBudget(accountId, budgetId);
+    const {
+      inflowConverted,
+      outflowConverted,
+      resolvedExchangeRate,
+      usesPinnedExchangeRate,
+      markPending,
+    } = conversion;
 
     const normalizedPayeeValue = (() => {
       const trimmed = payee?.trim();
@@ -629,27 +753,12 @@ export class TransactionService {
       debugLog('✅ Transaction added successfully with ID:', id);
       return id;
     };
-    const write = (): number => {
+    // Joins the caller's transaction when there is one.
+    return atomically(this.db, () => {
       const id = insert();
       if (transferId) this.normalizeTransferPayees(transferId);
       return id;
-    };
-    if (batch) {
-      return batch.queue(write, {
-        AccountID: accountId,
-        BudgetID: budgetId,
-        Date: date,
-        Memo: memo,
-        Payee: normalizedPayeeValue,
-        LabelID: normalizedLabelId,
-        TransferID: transferId || null,
-        InflowConverted: inflowConverted,
-        OutflowConverted: outflowConverted,
-        InflowNative: inflowOriginal,
-        OutflowNative: outflowOriginal,
-      });
-    }
-    return atomically(this.db, write);
+    });
   }
 
   /** A batch whose queued writes commit together in one DB transaction. */

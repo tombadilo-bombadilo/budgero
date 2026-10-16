@@ -131,6 +131,9 @@ export interface RecurringOccurrenceRef {
 export interface MarkOccurrenceReadyOptions extends RecurringOccurrenceRef {
   transactionDate?: string;
   memoOverride?: string;
+  /** TransferID for a transfer template's two legs. Ops carry it so every
+   * device posts the same one; generated when absent (older ops). */
+  transferId?: string;
   /**
    * Redo re-posts under the IDs (and TransferID) the first run produced, so
    * the undo entry that deletes them stays valid.

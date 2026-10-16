@@ -131,12 +131,16 @@ export class RuntimeContextFactory {
     // late-bound closures over the refs assigned below.
     let syncRef: SyncTransport | null = null;
     let offlineQueueRef: OfflineQueue | null = null;
+    let dbSyncRef: DatabaseSync | null = null;
 
     // Record the applied id as soon as the op's effect is in the DB, so any
-    // later export carries both (see createLocalPersistenceWriter).
+    // later export carries both (see createLocalPersistenceWriter). Every op
+    // (local, remote, re-applied) holds the snapshot-upload guard while it
+    // runs, so no blob ever captures it half-applied.
     const executor = this.buildExecutor(
       (spaceId) => this.deps.getSpaceRole(spaceId),
-      (mutationId) => offlineQueueRef?.markApplied(mutationId)
+      (mutationId) => offlineQueueRef?.markApplied(mutationId),
+      () => dbSyncRef?.beginOperation()
     );
 
     // Applied-id records must never outlive the DB persist that contains
@@ -182,6 +186,7 @@ export class RuntimeContextFactory {
         });
       },
     });
+    dbSyncRef = dbSync;
     if (params.initialBlobVersion !== undefined) {
       dbSync.setBlobVersion(params.initialBlobVersion);
     }
@@ -195,8 +200,16 @@ export class RuntimeContextFactory {
       encryptPayload: async (payload) =>
         params.encryption.encryptMutation(payload as { op: string; args: Record<string, unknown> }),
       decryptPayload: async (encrypted) => params.encryption.decryptMutation(encrypted),
-      onRemoteMutation: async (op, args, id) =>
-        params.onRemoteMutation(op, args, id, offlineQueue, executor),
+      // Held until the transport has also advanced its cursor past this
+      // mutation (its continuation runs before a held upload resumes).
+      onRemoteMutation: async (op, args, id) => {
+        const release = dbSync.beginOperation();
+        try {
+          await params.onRemoteMutation(op, args, id, offlineQueue, executor);
+        } finally {
+          release();
+        }
+      },
       onMutationAck: (mutationId) => offlineQueue.ackMutation(mutationId),
       persistLocalDatabase,
       persistLocalDatabaseSoon,
@@ -302,10 +315,18 @@ export class RuntimeContextFactory {
 
   private buildExecutor(
     getSpaceRole: (spaceId: string) => string | null,
-    onOpApplied?: (mutationId: string) => void
+    onOpApplied?: (mutationId: string) => void,
+    beginOperation?: () => (() => void) | undefined
   ): MutationExecutor {
     return new MutationExecutor({
-      executeOp: (op, payload, context) => this.deps.executeOp(op, payload, context),
+      executeOp: async (op, payload, context) => {
+        const release = beginOperation?.();
+        try {
+          return await this.deps.executeOp(op, payload, context);
+        } finally {
+          release?.();
+        }
+      },
       getUndoSpec: (op) => this.deps.getUndoSpec(op),
       getInvalidatesForOp: (op) => this.deps.getInvalidatesForOp(op),
       getInvalidatesForCall: (op, args) => this.deps.getInvalidatesForCall?.(op, args),

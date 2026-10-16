@@ -5,6 +5,7 @@ import { ValidationError, NotFoundError } from '../../types/index.js';
 import { isCryptoCurrency } from '../../currencies/index.js';
 import { BudgetQueries } from './queries.js';
 import { CurrencyService } from '../currency/index.js';
+import { parseCarriedRates, type OfficialRateQuote } from '../currency/budget-currency-change.js';
 import { CategoryService } from '../categories/index.js';
 import {
   getGoalFundingSettings,
@@ -12,6 +13,13 @@ import {
   type GoalFundingSettings,
   type FundingPriorityUpdate,
 } from '../goals/funding.js';
+
+/** What a prepared display-currency change carries in its op args. */
+export interface BudgetCurrencyChangeArgs {
+  fromCurrency: string;
+  asOf: string;
+  rates: OfficialRateQuote[];
+}
 
 /**
  * BudgetService - Port of Go budgets service
@@ -88,28 +96,92 @@ export class BudgetService {
   }
 
   /**
-   * UpdateBudgetCurrency - Updates budget display currency
-   * Handles currency change by clearing all converted amounts
+   * Plan a display-currency change without writing anything: which currency it
+   * converts from and every exchange rate it needs (fetched now). The result
+   * goes into the op args so the change applies with these exact rates on every
+   * device. Returns null when the budget already uses `currency`. Throws
+   * ExchangeRateUnavailableError when a rate can't be found.
    */
-  async updateBudgetCurrency(id: number, currency: string): Promise<void> {
-    if (isCryptoCurrency(currency)) {
-      throw new ValidationError(
-        'The budget display currency must be a fiat currency; crypto is supported on accounts',
-        'display_currency'
-      );
+  async prepareBudgetCurrencyChange(
+    id: number,
+    currency: string
+  ): Promise<BudgetCurrencyChangeArgs | null> {
+    this.assertFiatDisplayCurrency(currency);
+    const budget = this.queries.getBudget(id);
+    if (!budget) {
+      throw new NotFoundError('Budget', id);
     }
-    // Get the current budget to check old currency
+    if (budget.DisplayCurrency === currency) return null;
+    const { plan } = await this.currencyService.planBudgetCurrencyChange(
+      id,
+      budget.DisplayCurrency,
+      currency
+    );
+    return { fromCurrency: plan.fromCurrency, asOf: plan.asOf, rates: plan.rates };
+  }
+
+  /**
+   * UpdateBudgetCurrency - Updates budget display currency and converts the
+   * budget into it: every rate is resolved first (nothing is written if one is
+   * missing), then the currency switch and all conversions commit as ONE
+   * transaction. `change` carries the rates of a prepared change (op args).
+   *
+   * `replay` marks a mutation replayed from the log: if this DB already shows
+   * the new currency (a snapshot taken mid-change by an older client), the
+   * transaction conversions are recomputed instead of skipped.
+   */
+  async updateBudgetCurrency(
+    id: number,
+    currency: string,
+    change?: Partial<BudgetCurrencyChangeArgs> & { replay?: boolean }
+  ): Promise<void> {
+    this.assertFiatDisplayCurrency(currency);
     const budget = this.queries.getBudget(id);
     if (!budget) {
       throw new NotFoundError('Budget', id);
     }
 
-    const oldCurrency = budget.DisplayCurrency;
+    const carried = {
+      asOf: typeof change?.asOf === 'string' ? change.asOf : undefined,
+      rates: parseCarriedRates(change?.rates),
+    };
+    const fromCurrency = budget.DisplayCurrency;
 
-    this.queries.updateBudgetCurrency(id, currency);
+    if (fromCurrency === currency) {
+      if (change?.replay && change.fromCurrency !== currency) {
+        await this.currencyService.repairBudgetCurrencyChange(id, currency, carried);
+      }
+      return;
+    }
 
-    if (oldCurrency !== currency) {
-      await this.currencyService.handleBudgetCurrencyChange(id, currency, oldCurrency);
+    const { plan, book } = await this.currencyService.planBudgetCurrencyChange(
+      id,
+      fromCurrency,
+      currency,
+      carried
+    );
+
+    this.db.transaction(() => {
+      // The rates were resolved across awaits: make sure nothing switched the
+      // currency meanwhile before converting with them.
+      if (this.queries.getBudget(id)?.DisplayCurrency !== plan.fromCurrency) {
+        throw new ValidationError(
+          'The budget currency changed while exchange rates were loading; try again',
+          'display_currency'
+        );
+      }
+      this.currencyService.applyBudgetCurrencyChange(id, plan, book, (next) =>
+        this.queries.updateBudgetCurrency(id, next)
+      );
+    });
+  }
+
+  private assertFiatDisplayCurrency(currency: string): void {
+    if (isCryptoCurrency(currency)) {
+      throw new ValidationError(
+        'The budget display currency must be a fiat currency; crypto is supported on accounts',
+        'display_currency'
+      );
     }
   }
 

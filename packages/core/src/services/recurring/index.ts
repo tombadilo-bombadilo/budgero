@@ -940,7 +940,7 @@ export class RecurringTransactionService {
     const batch = this.transactions.createWriteBatch();
     let transferId: string | undefined;
     if (template.toAccountId != null) {
-      transferId = reuse?.transferId || generateTransferId();
+      transferId = reuse?.transferId || options.transferId?.trim() || generateTransferId();
       await this.postTransferLegs(template, transactionDate, memo, batch, transferId, reuse);
     } else {
       const inflow = template.direction === 'inflow' ? template.amount : ZERO_MILLI;

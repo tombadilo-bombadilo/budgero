@@ -16,6 +16,7 @@ export { WebDatabaseAdapter } from './database/web-adapter.js';
 
 export { MigrationRunner, getMaxSupportedSchemaVersion } from './database/migrations.js';
 export { reconcileSpaceScope } from './database/space-scope.js';
+export { isRowJournal, journalSize, type RowJournal } from './database/row-journal.js';
 
 // Services (platform-agnostic)
 export { BudgetService } from './services/budgets/index.js';
@@ -151,6 +152,11 @@ export type * from './services/transactions/types.js';
 export type { TransferRateDetails } from './services/transactions/transfer-rate.js';
 export type * from './services/warranties/types.js';
 export type { CustomCurrencyRate } from './services/currency/types.js';
+export {
+  ExchangeRateUnavailableError,
+  type OfficialRateQuote,
+} from './services/currency/budget-currency-change.js';
+export type { BudgetCurrencyChangeArgs } from './services/budgets/index.js';
 
 // Goal enums and pure calculations (values, browser-safe)
 export {
