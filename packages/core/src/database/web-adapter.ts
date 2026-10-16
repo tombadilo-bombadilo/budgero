@@ -4,6 +4,7 @@ import {
   DatabaseOptions,
   DatabaseError,
   LocalPersistenceCipher,
+  SqlFunctionValue,
 } from './interface.js';
 import { MigrationRunner } from './migrations.js';
 import { createMigrationDatabase } from './migration-database-factory.js';
@@ -19,6 +20,7 @@ interface SqlJsDatabase {
   getRowsModified(): number;
   export(): Uint8Array;
   close(): void;
+  create_function(name: string, fn: (...args: SqlFunctionValue[]) => SqlFunctionValue): unknown;
 }
 
 interface SqlJsStatement {
@@ -395,19 +397,30 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
 
   transaction<T>(fn: () => T): T {
     this.ensureForeignKeysOnOperation();
-    this.db.exec('BEGIN TRANSACTION');
-    try {
-      const result = fn();
-      this.db.exec('COMMIT');
-      return result;
-    } catch (error) {
-      this.db.exec('ROLLBACK');
-      throw error;
-    }
+    return this.trackTransaction(() => {
+      this.db.exec('BEGIN TRANSACTION');
+      try {
+        const result = fn();
+        this.db.exec('COMMIT');
+        return result;
+      } catch (error) {
+        this.db.exec('ROLLBACK');
+        throw error;
+      }
+    });
+  }
+
+  createFunction(name: string, fn: (...args: SqlFunctionValue[]) => SqlFunctionValue): void {
+    this.db.create_function(name, fn);
   }
 
   backup(): Uint8Array {
-    return this.db.export();
+    // sql.js export() re-opens the connection (TEMP objects and functions are
+    // gone); listeners re-install theirs before any other statement runs.
+    // backup() also serves forceSave() and saveToOPFSPublic().
+    const data = this.db.export();
+    this.emitConnectionEvent('export');
+    return data;
   }
 
   async restore(data: Uint8Array): Promise<void> {
@@ -440,6 +453,7 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
     this.db = candidate;
     this.fkCheckCounter = 0;
     previous.close();
+    this.emitConnectionEvent('replace');
   }
 
   close(): void {

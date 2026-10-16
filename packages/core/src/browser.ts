@@ -31,6 +31,13 @@ export {
 export { GoalService } from './services/goals/index.js';
 export * from './services/goals/funding.js';
 export { MonthlyBudgetService } from './services/monthly-budgets/index.js';
+export {
+  configureBudgetSnapshot,
+  getBudgetSnapshotOptions,
+  getBudgetSnapshotStore,
+  BudgetSnapshotStore,
+  type BudgetSnapshotOptions,
+} from './services/monthly-budgets/snapshot/store.js';
 export { AnalyticsService } from './services/analytics/index.js';
 export { RulesService } from './services/rules/index.js';
 export { RecurringTransactionService } from './services/recurring/index.js';
