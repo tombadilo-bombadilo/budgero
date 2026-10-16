@@ -4,6 +4,7 @@ import type {
   MarkOccurrenceReadyResult,
   RecurringOccurrence,
   RecurringOccurrenceRef,
+  RecurringTemplateSnapshot,
   RecurringTransaction,
   UpdateRecurringTransactionInput,
 } from '@budgero/core/browser';
@@ -125,6 +126,32 @@ export const recurringOps = {
   'recurring.delete': {
     execute: async (args) => {
       return await S().recurring!.deleteRecurringTransaction(args.id as number);
+    },
+    invalidates: [
+      ...RECURRING_TEMPLATE_INVALIDATIONS,
+      ...RECURRING_OCCURRENCE_INVALIDATIONS,
+      ...PROJECTION_CONSUMER_INVALIDATIONS,
+    ],
+    undo: {
+      // The template and its occurrences (posted/skipped history included)
+      // come back exactly as they were.
+      capture: async (args) =>
+        safeCapture(() => S().recurring!.snapshotRecurringTransaction(args.id as number)),
+      build: (_args, _result, before) => {
+        const snapshot = before as RecurringTemplateSnapshot | null | undefined;
+        if (!snapshot?.template) return [];
+        return [
+          {
+            op: 'recurring.restore',
+            args: { budgetId: Number(snapshot.template.BudgetID), snapshot },
+          },
+        ];
+      },
+    },
+  },
+  'recurring.restore': {
+    execute: async (args) => {
+      S().recurring!.restoreRecurringTransaction(args.snapshot as RecurringTemplateSnapshot);
     },
     invalidates: [
       ...RECURRING_TEMPLATE_INVALIDATIONS,

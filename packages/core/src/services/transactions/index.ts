@@ -22,6 +22,7 @@ import {
   GetTransactionsByAccountAndMonthRow,
   GetAllTransactions,
   GetTransactionsByCategoryAndMonthRow,
+  TransactionAmountsSnapshot,
   TransactionSplit,
 } from './types.js';
 import { NotFoundError, ValidationError } from '../../types';
@@ -1674,6 +1675,43 @@ export class TransactionService {
    * - Recalculates partner account balances to keep running balances consistent.
    * Skips if there are not exactly two transactions for the TransferID (e.g., split mirrors).
    */
+  /**
+   * Put a row's amounts and exchange rate back exactly as snapshotted (undo of
+   * an amount edit, which re-resolves the rate and drops a manual override).
+   * Balances, split lines and a transfer partner follow in the same DB
+   * transaction, like an amount edit.
+   */
+  async restoreAmounts(transactionId: number, amounts: TransactionAmountsSnapshot): Promise<void> {
+    const tx = this.getTransactionByID(transactionId);
+    const values = {
+      InflowNative: asMilli(Number(amounts.InflowNative)),
+      OutflowNative: asMilli(Number(amounts.OutflowNative)),
+      InflowConverted: asMilli(Number(amounts.InflowConverted)),
+      OutflowConverted: asMilli(Number(amounts.OutflowConverted)),
+      ExchangeRate: amounts.ExchangeRate ?? null,
+      ExchangeRateOverride: Boolean(amounts.ExchangeRateOverride),
+    };
+    const followUps = await this.prepareRowFollowUps({ ...tx, ...values } as Transaction);
+    this.db.transaction(() => {
+      run(
+        this.db,
+        `UPDATE transactions
+         SET InflowNative = ?, OutflowNative = ?, InflowConverted = ?, OutflowConverted = ?,
+             ExchangeRate = ?, ExchangeRateOverride = ?
+         WHERE ID = ?`,
+        values.InflowNative,
+        values.OutflowNative,
+        values.InflowConverted,
+        values.OutflowConverted,
+        values.ExchangeRate,
+        values.ExchangeRateOverride ? 1 : 0,
+        transactionId
+      );
+      this.recalculateAfterRowEdit(transactionId, tx, tx.AccountID, tx.Date);
+      for (const step of followUps) step();
+    });
+  }
+
   private async preparePartnerSync(main: Transaction): Promise<(() => void) | null> {
     if (!main.TransferID) return null;
     const group = this.getTransactionsByTransferID(main.TransferID);

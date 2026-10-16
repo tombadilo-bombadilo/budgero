@@ -117,6 +117,12 @@ export interface MutationSpec {
      * created transactions (AppRuntime.runContinuousRules). The runtime ignores it.
      */
     deferContinuousRules?: boolean;
+    /**
+     * Set by undo/redo replays (UndoStore, Audit Log). The executor records no
+     * history row for a replay: the replayed entry is marked undone/redone
+     * instead. The app also skips continuous rules on undo replays.
+     */
+    replay?: 'undo' | 'redo';
   };
 }
 

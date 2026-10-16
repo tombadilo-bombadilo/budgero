@@ -89,6 +89,16 @@ export class ImportDuplicateService {
     );
   }
 
+  /** Undo of record(): drop the identity again, only if it still points at `transactionId`. */
+  forget(transactionId: number, operationId: string): void {
+    run(
+      this.db,
+      'DELETE FROM import_provenance WHERE OperationID = ? AND TransactionID = ?',
+      operationId,
+      transactionId
+    );
+  }
+
   plan(rows: DuplicateInput[]): DuplicatePlan[] {
     // Fetch once per destination/date range, never once per statement row.
     const groups = new Map<string, DuplicateInput[]>();

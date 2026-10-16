@@ -122,6 +122,21 @@ export class MutationHistoryService {
     this.queries.markUndone(mutationId);
   }
 
+  /** Clear the undone mark of a mutation (it was redone). */
+  markRedone(mutationId: string): void {
+    this.queries.markRedone(mutationId);
+  }
+
+  /**
+   * The newest entry of a space whose change is still applied (not undone,
+   * not failed), or null. Audit Log undo is only safe for this entry: any
+   * later change may depend on the state the inverse would overwrite.
+   */
+  getLatestActiveEntryForSpace(spaceId: string): ParsedMutationHistoryEntry | null {
+    const entry = this.queries.getLatestActiveBySpace(spaceId);
+    return entry ? this.parseEntry(entry) : null;
+  }
+
   /**
    * Get the count of mutation history entries for a budget
    *

@@ -1,6 +1,7 @@
 import {
   type ImportIdentity,
   type ReconcileResult,
+  type TransactionAmountsSnapshot,
   type SplitParentAmounts,
   type TransactionBatchEdit,
   type TransactionRestoreSnapshot,
@@ -43,6 +44,19 @@ const SPLIT_INVALIDATION_KEYS: [string, ...string[]][] = [
   ['transactionSplits', '*'],
   ['labels', '*'],
   ['labelDirectory', '*'],
+  // Transfer lines move money into other accounts and category lines move
+  // money in and out of Uncategorized / Ready to Assign: the sidebar balances,
+  // RTA and balance charts must refresh too.
+  ['accounts'],
+  ['accounts', '*'],
+  ['uncategorizedTransactions', '*'],
+  ['allAccountsMonthlyTransactions', '*'],
+  ['readyToAssign'],
+  ['readyToAssign', '*'],
+  ['monthlyBalance', '*'],
+  ['balanceByDates', '*'],
+  ['onBudgetBalance'],
+  ['onBudgetBalanceByDates'],
 ];
 
 function restoreSnapshotsUndo(before: unknown): OpCall[] {
@@ -276,6 +290,47 @@ const TX_MOVE_INVALIDATION_KEYS: string[][] = [
   ['labelDirectory', '*'],
 ];
 
+const AMOUNT_COLUMNS = new Set([
+  'inflowconverted',
+  'outflowconverted',
+  'inflownative',
+  'outflownative',
+  'inflow',
+  'outflow',
+  'infloworiginal',
+  'outfloworiginal',
+]);
+
+const LEGACY_COLUMNS: Record<string, string> = {
+  inflow: 'inflowconverted',
+  outflow: 'outflowconverted',
+  infloworiginal: 'inflownative',
+  outfloworiginal: 'outflownative',
+};
+
+/**
+ * The row's value for an updateColumn column name, matched the way
+ * updateTransactionColumn matches it (any case, underscores, legacy names).
+ */
+function readColumn(tx: TransactionRowWithColumns, columnName: string): unknown {
+  if (columnName in tx) return tx[columnName];
+  const normalized = columnName.toLowerCase().replace(/_/g, '');
+  const target = LEGACY_COLUMNS[normalized] ?? normalized;
+  const key = Object.keys(tx).find((name) => name.toLowerCase() === target);
+  return key === undefined ? undefined : tx[key];
+}
+
+function amountsSnapshot(tx: TransactionRowWithColumns): TransactionAmountsSnapshot {
+  return {
+    InflowNative: asMilli(Number(tx.InflowNative ?? tx.InflowConverted ?? 0)),
+    OutflowNative: asMilli(Number(tx.OutflowNative ?? tx.OutflowConverted ?? 0)),
+    InflowConverted: asMilli(Number(tx.InflowConverted ?? 0)),
+    OutflowConverted: asMilli(Number(tx.OutflowConverted ?? 0)),
+    ExchangeRate: tx.ExchangeRate ?? null,
+    ExchangeRateOverride: Boolean(tx.ExchangeRateOverride),
+  };
+}
+
 /** Undo/redo pass the row's original ID so history entries that reference it stay valid. */
 function explicitId(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : undefined;
@@ -437,8 +492,21 @@ export const transactionOps = {
     },
     invalidates: [...TRANSACTION_INVALIDATION_KEYS, ...SPLIT_INVALIDATION_KEYS],
     undo: {
+      // An add whose import identity is already recorded returns the EXISTING
+      // row and creates nothing: there is nothing to undo (deleting would
+      // remove the row the identity belongs to).
+      capture: async (args) => {
+        const identity = (args.importIdentities as ImportIdentity[] | undefined)?.[0];
+        if (!identity) return { duplicateOf: undefined };
+        return {
+          duplicateOf: S().importHistory!.duplicates.findOperation(identity.operationId),
+        };
+      },
       // add -> delete the created transaction
-      build: (_args, result) => {
+      build: (_args, result, before) => {
+        if ((before as { duplicateOf?: number } | undefined)?.duplicateOf !== undefined) {
+          return [];
+        }
         const id = result as number | undefined;
         return typeof id === 'number' && Number.isFinite(id)
           ? [{ op: 'transactions.delete', args: { id } }]
@@ -649,11 +717,13 @@ export const transactionOps = {
           args.id as number
         )) as unknown as TransactionRowWithColumns;
         const col = args.columnName as string;
-        const oldValue = tx[col];
+        const oldValue = readColumn(tx, col);
+        const normalized = col.toLowerCase().replace(/_/g, '');
         const oldExchangeRateOverride =
-          col.toLowerCase().replace(/_/g, '') === 'exchangerate'
-            ? Boolean(tx.ExchangeRateOverride)
-            : undefined;
+          normalized === 'exchangerate' ? Boolean(tx.ExchangeRateOverride) : undefined;
+        if (AMOUNT_COLUMNS.has(normalized)) {
+          return { oldValue, oldExchangeRateOverride, amounts: amountsSnapshot(tx) };
+        }
         return { oldValue, oldExchangeRateOverride };
       },
       build: (args, _result, before) => {
@@ -661,8 +731,21 @@ export const transactionOps = {
           | {
               oldValue?: string | number | null;
               oldExchangeRateOverride?: boolean;
+              amounts?: TransactionAmountsSnapshot;
             }
           | undefined;
+        // Without a captured old value the inverse would write `undefined`.
+        if (!previous || !('oldValue' in previous) || previous.oldValue === undefined) return [];
+        if (previous.amounts?.ExchangeRateOverride) {
+          // An amount edit re-resolves the rate and drops a manual override:
+          // restore the row's amounts and rate exactly.
+          return [
+            {
+              op: 'transactions.restoreAmounts',
+              args: { id: args.id, amounts: previous.amounts },
+            },
+          ];
+        }
         return [
           {
             op: 'transactions.updateColumn',
@@ -678,6 +761,17 @@ export const transactionOps = {
         ];
       },
     },
+  },
+
+  /** Undo of an amount edit on a row with a manual rate: see TransactionService.restoreAmounts. */
+  'transactions.restoreAmounts': {
+    execute: async (args) => {
+      return await S().transactions!.restoreAmounts(
+        args.id as number,
+        args.amounts as TransactionAmountsSnapshot
+      );
+    },
+    invalidates: TX_VALUE_UPDATE_INVALIDATION_KEYS,
   },
 
   // useDeleteTransaction

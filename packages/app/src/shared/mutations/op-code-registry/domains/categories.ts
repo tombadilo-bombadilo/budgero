@@ -140,9 +140,13 @@ export const categoryOps = {
     ],
     undo: {
       // create -> delete
+      // create -> delete, without the cascade: the checked delete refuses a
+      // group whose categories still hold transactions instead of wiping them.
       build: (_args, result) => {
         const id = result as number;
-        return Number.isFinite(id) ? [{ op: 'categoryGroups.delete', args: { id } }] : [];
+        return Number.isFinite(id)
+          ? [{ op: 'categoryGroups.deleteAndReassign', args: { id } }]
+          : [];
       },
     },
     redo: redoWithIds('categoryGroups.create', (args, result) =>
@@ -216,9 +220,10 @@ export const categoryOps = {
     ],
     undo: {
       // create -> delete
+      // create -> delete, without the cascade (see categoryGroups.create).
       build: (_args, result) => {
         const id = result as number;
-        return Number.isFinite(id) ? [{ op: 'categories.delete', args: { id } }] : [];
+        return Number.isFinite(id) ? [{ op: 'categories.deleteAndReassign', args: { id } }] : [];
       },
     },
     redo: redoWithIds('categories.create', (args, result) =>
