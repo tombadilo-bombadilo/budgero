@@ -70,12 +70,15 @@ export function BudgetingPageDesktop() {
 
   const [month1, month2, month3, month4, month5, month6] = multiMonthSeries;
 
+  // Month 1 is the anchor; with the drawer closed that is currentMonth, so it
+  // shares the main query. Months 2-6 only load while the drawer shows them.
+  const showsMonth = (index: number) => multiMonthOpen && index < monthCount;
   const { data: budgetData1 } = useMonthlyBudget(month1, budgetId);
-  const { data: budgetData2 } = useMonthlyBudget(month2, budgetId);
-  const { data: budgetData3 } = useMonthlyBudget(month3, budgetId);
-  const { data: budgetData4 } = useMonthlyBudget(month4, budgetId);
-  const { data: budgetData5 } = useMonthlyBudget(month5, budgetId);
-  const { data: budgetData6 } = useMonthlyBudget(month6, budgetId);
+  const { data: budgetData2 } = useMonthlyBudget(month2, budgetId, showsMonth(1));
+  const { data: budgetData3 } = useMonthlyBudget(month3, budgetId, showsMonth(2));
+  const { data: budgetData4 } = useMonthlyBudget(month4, budgetId, showsMonth(3));
+  const { data: budgetData5 } = useMonthlyBudget(month5, budgetId, showsMonth(4));
+  const { data: budgetData6 } = useMonthlyBudget(month6, budgetId, showsMonth(5));
 
   const allBudgetData = useMemo(
     () =>
