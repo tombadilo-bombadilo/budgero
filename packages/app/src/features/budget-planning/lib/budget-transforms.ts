@@ -158,7 +158,8 @@ export function transformBudgetRows(
       );
 
       result.push({
-        id: `${groupKey}--${item.Category}`,
+        // Category ID, not name: names can repeat within a group.
+        id: `${groupKey}--${item.CategoryID}`,
         name: item.Category,
         assigned: item.Assigned,
         activity: item.Activity,
