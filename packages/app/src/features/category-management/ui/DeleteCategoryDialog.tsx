@@ -1,5 +1,7 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { plural } from '@lingui/core/macro';
 import React, { useState } from 'react';
+import type { CategoryDeletionImpact } from '@budgero/core/browser';
 import {
   Dialog,
   DialogContent,
@@ -19,6 +21,8 @@ interface DeleteCategoryDialogProps {
   currentCategoryId: number;
   currentCategoryTotalTransactions?: number;
   currentCategoryAssigned?: MilliUnits;
+  /** Everything the delete moves or removes, all months (read when the dialog opens). */
+  impact?: CategoryDeletionImpact;
   incomeOnly?: boolean;
   onDelete: (selectedCategoryId: number) => Promise<void> | void;
   isLoading?: boolean;
@@ -33,6 +37,7 @@ export const DeleteCategoryDialog: React.FC<DeleteCategoryDialogProps> = ({
   currentCategoryTotalTransactions,
   currentCategoryAssigned,
   currentCategoryId,
+  impact,
   incomeOnly = false,
   onDelete,
   isLoading = false,
@@ -41,6 +46,7 @@ export const DeleteCategoryDialog: React.FC<DeleteCategoryDialogProps> = ({
   const { t } = useLingui();
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
+  const assignedTotal = impact ? formatAmount(impact.assignedTotal as MilliUnits) : '';
 
   const handleDelete = async () => {
     if (selectedCategoryId === null || isLoading) {
@@ -130,18 +136,39 @@ export const DeleteCategoryDialog: React.FC<DeleteCategoryDialogProps> = ({
                   </Trans>
                 </li>
               )}
-              {currentCategoryAssigned !== undefined && currentCategoryAssigned !== 0 && (
-                <li>
-                  <Trans>Assigned amount ({formatAmount(currentCategoryAssigned)})</Trans>
-                </li>
-              )}
+              {impact
+                ? impact.assignedMonths > 0 && (
+                    <li>
+                      {plural(impact.assignedMonths, {
+                        one: `Assigned amounts in # month (total ${assignedTotal})`,
+                        other: `Assigned amounts in # months (total ${assignedTotal})`,
+                      })}
+                    </li>
+                  )
+                : currentCategoryAssigned !== undefined &&
+                  currentCategoryAssigned !== 0 && (
+                    <li>
+                      <Trans>Assigned amount ({formatAmount(currentCategoryAssigned)})</Trans>
+                    </li>
+                  )}
               <li>
                 <Trans>Any remaining available amount</Trans>
               </li>
               <li>
                 <Trans>Scheduled transactions using this category</Trans>
+                {impact !== undefined && impact.scheduled > 0 && ` (${impact.scheduled})`}
               </li>
             </ul>
+            {impact !== undefined && impact.goals > 0 && (
+              <p className="mt-2">
+                <Trans>
+                  Its goal is deleted with it. Set a goal on the new category if you still need one.
+                </Trans>
+              </p>
+            )}
+            <p className="mt-2 text-muted-foreground">
+              <Trans>You can undo this.</Trans>
+            </p>
           </div>
         </div>
         <DialogFooter>

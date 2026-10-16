@@ -7,6 +7,7 @@ import {
   type Goal,
   type CategoryFinancials,
   type GoalProgress,
+  type CategoryDeletionImpact,
 } from '@budgero/core/browser';
 import { ZERO_MILLI, type MilliUnits } from '@shared/lib/currency/milli';
 
@@ -30,6 +31,13 @@ export interface BudgetRow {
    * budget table fills it in on the row it opens the delete dialog for.
    */
   totalTransactions?: number;
+  /**
+   * What deleting the category removes or moves (all months, goal, schedule).
+   * Like totalTransactions, read on demand for the row being deleted.
+   */
+  deletionImpact?: CategoryDeletionImpact;
+  /** Set when the category can't be deleted; the menu shows it instead of Delete. */
+  deleteBlockedReason?: string;
   isGroup: boolean;
   parentId?: string;
   categoryId: number;

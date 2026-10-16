@@ -8,6 +8,46 @@ import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import type { BudgetRow } from '@features/budget-planning/lib/budget-transforms';
 import { getStatusColor, getStatusDotClasses, type StatusColorParams } from './category-row.utils';
 
+/**
+ * The Delete entry of a category's menu. Categories that can't be deleted
+ * (system Income, payment categories of active cards and loans) get a
+ * disabled entry with the reason underneath instead.
+ */
+function DeleteCategoryMenuButton({
+  item,
+  onDeleteCategory,
+}: {
+  item: BudgetRow;
+  onDeleteCategory: (item: BudgetRow) => void;
+}) {
+  const blocked = item.deleteBlockedReason;
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-full justify-start text-xs text-destructive hover:text-destructive"
+        disabled={Boolean(blocked)}
+        aria-describedby={blocked ? `delete-blocked-${item.categoryId}` : undefined}
+        onClick={() => onDeleteCategory(item)}
+      >
+        <Trans>
+          <Trash className="mr-2 h-3 w-3" />
+          Delete
+        </Trans>
+      </Button>
+      {blocked && (
+        <p
+          id={`delete-blocked-${item.categoryId}`}
+          className="px-3 pb-1 text-[11px] leading-snug text-muted-foreground"
+        >
+          {blocked}
+        </p>
+      )}
+    </>
+  );
+}
+
 export interface CategoryRowHeaderProps {
   item: BudgetRow;
   budgetId: number;
@@ -113,17 +153,7 @@ export function CategoryRowHeader({
                 </Trans>
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-xs text-destructive hover:text-destructive"
-              onClick={() => onDeleteCategory(item)}
-            >
-              <Trans>
-                <Trash className="mr-2 h-3 w-3" />
-                Delete
-              </Trans>
-            </Button>
+            <DeleteCategoryMenuButton item={item} onDeleteCategory={onDeleteCategory} />
           </div>
         </PopoverContent>
       </Popover>
@@ -212,17 +242,7 @@ export function DesktopCompactHeader({
                 </Trans>
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start text-xs text-destructive hover:text-destructive"
-              onClick={() => onDeleteCategory(item)}
-            >
-              <Trans>
-                <Trash className="mr-2 h-3 w-3" />
-                Delete
-              </Trans>
-            </Button>
+            <DeleteCategoryMenuButton item={item} onDeleteCategory={onDeleteCategory} />
           </div>
         </PopoverContent>
       </Popover>

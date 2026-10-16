@@ -19,6 +19,17 @@ import { createLogger } from '../../logger.js';
 import { getRow, allRows, run } from '../../database/sql.js';
 import { getLocalDateString } from '../../utils/date.js';
 import { clock } from '../../utils/clock.js';
+import {
+  applyBudgetCurrencyChange,
+  collectBudgetCurrencyLookups,
+  ExchangeRateUnavailableError,
+  RateBook,
+  repairBudgetCurrencyConversions,
+  resolveLookups,
+  type BudgetCurrencyChangePlan,
+  type OfficialRateQuote,
+  type RateSource,
+} from './budget-currency-change.js';
 
 const debugLog = createLogger('services:currency');
 
@@ -361,10 +372,38 @@ export class CurrencyService {
   }
 
   /**
-   * Fetch and store daily exchange rates from the server proxy. The server
-   * caches per (pair, date) and may clamp a future request or serve a slightly
-   * earlier dataset date. Use the response date when the server clamps a
-   * request so a current rate never gets stored as a future day's rate.
+   * Fetch official quotes from the server proxy without storing them. The
+   * server caches per (pair, date) and may clamp a future request or serve a
+   * slightly earlier dataset date; the returned `date` is the one to store the
+   * quotes under, so a current rate never gets stored as a future day's rate.
+   */
+  async fetchOfficialQuotes(
+    currencies: string[],
+    baseCurrency: string,
+    rateDate: string,
+    forceRefresh = false
+  ): Promise<{ date: string; quotes: Record<string, number> }> {
+    const currencyList = currencies.filter((c) => c !== baseCurrency).join(',');
+    const refreshParam = forceRefresh ? '&refresh=true' : '';
+    const url = `/api/v1/exchange-rates?base=${encodeURIComponent(baseCurrency)}&symbols=${encodeURIComponent(currencyList)}&date=${encodeURIComponent(rateDate)}${refreshParam}`;
+
+    const response = await this.fetchExchangeRatesWithPacing(url);
+    if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('unauthorized');
+      }
+      throw new Error(`Failed to fetch rates: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    const quotes = (data.quotes as Record<string, number> | undefined) ?? {};
+    const responseRateDate =
+      typeof data.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.date) ? data.date : rateDate;
+    return { date: responseRateDate, quotes };
+  }
+
+  /**
+   * Fetch and store daily exchange rates from the server proxy.
    * @private - Use getOrFetchRate instead to ensure proper error handling
    */
   private async fetchAndStoreRates(
@@ -375,24 +414,12 @@ export class CurrencyService {
     forceRefresh = false
   ): Promise<void> {
     try {
-      const currencyList = currencies.filter((c) => c !== baseCurrency).join(',');
-      const refreshParam = forceRefresh ? '&refresh=true' : '';
-      const url = `/api/v1/exchange-rates?base=${encodeURIComponent(baseCurrency)}&symbols=${encodeURIComponent(currencyList)}&date=${encodeURIComponent(rateDate)}${refreshParam}`;
-
-      const response = await this.fetchExchangeRatesWithPacing(url);
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error('unauthorized');
-        }
-        throw new Error(`Failed to fetch rates: ${response.status} ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const quotes = data.quotes as Record<string, number> | undefined;
-      const responseRateDate =
-        typeof data.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.date)
-          ? data.date
-          : rateDate;
+      const { date: responseRateDate, quotes } = await this.fetchOfficialQuotes(
+        currencies,
+        baseCurrency,
+        rateDate,
+        forceRefresh
+      );
 
       // Prune before saving so an explicitly requested historical rate is
       // available to the caller and reusable by the rest of the current pass.
@@ -403,7 +430,7 @@ export class CurrencyService {
       for (const currency of currencies) {
         if (currency === baseCurrency) continue;
         const quoteKey = `${baseCurrency}${currency}`;
-        const rate = quotes ? quotes[quoteKey] : undefined;
+        const rate = quotes[quoteKey];
         if (typeof rate === 'number' && isFinite(rate) && rate > 0) {
           this.saveRate(baseCurrency, currency, rate, responseRateDate, budgetId);
           this.saveRate(currency, baseCurrency, 1 / rate, responseRateDate, budgetId);
@@ -962,117 +989,118 @@ export class CurrencyService {
     return recalculated;
   }
 
+  private rateSource(budgetId: number): RateSource {
+    return {
+      fetchQuotes: (symbols, base, date) => this.fetchOfficialQuotes(symbols, base, date),
+      // Read-only (unlike findNearbyRate, never writes a reciprocal row).
+      cachedRate: (from, to, date) => {
+        const windowStart = CurrencyService.addDays(
+          date,
+          -CurrencyService.RATE_FALLBACK_WINDOW_DAYS
+        );
+        const direct = this.queries.getLatestCurrencyRateOnOrBefore(from, to, date, budgetId);
+        if (direct && direct.RateDate >= windowStart) return direct.Rate;
+        const reciprocal = this.queries.getLatestCurrencyRateOnOrBefore(to, from, date, budgetId);
+        if (reciprocal && reciprocal.RateDate >= windowStart) return 1 / reciprocal.Rate;
+        return null;
+      },
+    };
+  }
+
   /**
-   * Handle budget currency change
-   * Clears all converted amounts and rates, forcing recalculation with new currency
+   * Phase 1 of a budget currency change: find (and fetch) every rate the
+   * conversion needs, writing nothing. Rates already carried by the op are
+   * used first, so a replay converts with the originating device's numbers.
+   * Throws ExchangeRateUnavailableError when any rate is missing.
    */
-  async handleBudgetCurrencyChange(
+  async planBudgetCurrencyChange(
     budgetId: number,
-    newCurrency: string,
-    oldCurrency: string
-  ): Promise<void> {
-    debugLog(`Handling budget currency change from ${oldCurrency} to ${newCurrency}`, {
+    fromCurrency: string,
+    toCurrency: string,
+    carried?: { asOf?: string; rates?: OfficialRateQuote[] }
+  ): Promise<{ plan: BudgetCurrencyChangePlan; book: RateBook }> {
+    const asOf =
+      carried?.asOf && /^\d{4}-\d{2}-\d{2}$/.test(carried.asOf)
+        ? carried.asOf
+        : getLocalDateString();
+    const book = new RateBook(asOf);
+    const rates: OfficialRateQuote[] = [];
+    for (const quote of carried?.rates ?? []) {
+      book.add(quote);
+      rates.push(quote);
+    }
+    const lookups = collectBudgetCurrencyLookups(this.db, budgetId, fromCurrency, toCurrency, asOf);
+    const foreignCurrencies = [
+      ...new Set(this.queries.getAllCurrenciesUsed(budgetId).filter((c) => c !== toCurrency)),
+    ];
+    const { added, missing } = await resolveLookups(lookups, book, this.rateSource(budgetId), {
+      // Today's rates for every account currency, as the old pass fetched up
+      // front (only when the op did not bring its own rates).
+      prefetchToday:
+        carried?.rates === undefined && foreignCurrencies.length > 0
+          ? { base: toCurrency, symbols: foreignCurrencies, asOf }
+          : undefined,
+    });
+    if (missing.length > 0) throw new ExchangeRateUnavailableError(missing);
+    rates.push(...added);
+    return { plan: { fromCurrency, toCurrency, asOf, rates }, book };
+  }
+
+  /**
+   * Phase 2: apply a planned change. Synchronous; the caller runs it inside
+   * the same db.transaction as the DisplayCurrency update.
+   */
+  applyBudgetCurrencyChange(
+    budgetId: number,
+    plan: BudgetCurrencyChangePlan,
+    book: RateBook,
+    setDisplayCurrency: (currency: string) => void
+  ): void {
+    debugLog(`Applying budget currency change ${plan.fromCurrency} → ${plan.toCurrency}`, {
       budgetId,
+      rates: plan.rates.length,
       level: 'info',
     });
+    applyBudgetCurrencyChange(this.db, budgetId, plan, book, {
+      setDisplayCurrency,
+      clearConvertedAmounts: () => this.queries.clearAllConvertedAmounts(budgetId),
+      replaceRateCache: (quotes) => {
+        // Old-currency rates are useless now; keep the fetched ones as the
+        // warm cache (subject to the usual retention).
+        this.queries.deleteAllRatesForBudget(budgetId);
+        for (const quote of quotes) {
+          this.saveRate(quote.from, quote.to, quote.rate, quote.date, budgetId);
+          this.saveRate(quote.to, quote.from, 1 / quote.rate, quote.date, budgetId);
+        }
+        this.pruneRateCache(budgetId);
+      },
+    });
+  }
 
-    // 1. Clear all existing exchange rates for this budget
-    this.queries.deleteAllRatesForBudget(budgetId);
-
-    // 2. Clear all converted amounts (will be recalculated below). Old
-    // revaluation deltas are denominated in the old currency — drop them.
-    this.queries.clearAllConvertedAmounts(budgetId);
-    run(this.db, `DELETE FROM account_revaluations WHERE BudgetID = ?`, budgetId);
-
-    // 3. Get all currencies used in accounts
-    const accountCurrencies = this.queries.getAllCurrenciesUsed(budgetId);
-    const uniqueCurrencies = [...new Set(accountCurrencies)].filter((c) => c !== newCurrency);
-
-    if (uniqueCurrencies.length > 0) {
-      // 4. Fetch new rates for today (other dates will be fetched during recalculation)
-      const today = getLocalDateString();
-      try {
-        await this.fetchAndStoreRates(uniqueCurrencies, newCurrency, today, budgetId);
-        debugLog(`Fetched new rates for budget currency change`, {
-          currencies: uniqueCurrencies,
-          baseCurrency: newCurrency,
-        });
-      } catch (error) {
-        debugLog(`Failed to fetch rates after budget currency change`, {
-          error,
-          level: 'error',
-        });
-        // Continue anyway - rates will be fetched during recalculation
-      }
-    }
-
-    // 5. Recalculate all conversions with new currency
-    await this.recalculateAllConversions(budgetId);
-
-    // 6. Convert monthly assignments and goals targets into the new currency
-    try {
-      // Convert assignments table for this budget
-      const assignments = allRows<{ category_id: number; amount: number; month: string }>(
-        this.db,
-        `
-        SELECT a.CategoryID as category_id, a.Amount as amount, a.Month as month
-        FROM assignments a
-        JOIN categories c ON c.ID = a.CategoryID
-        WHERE c.BudgetID = ?
-      `,
-        budgetId
-      );
-
-      for (const row of assignments) {
-        // Assignments are monthly buckets; anchor conversion mid-month.
-        const rate = await this.getOrFetchRate(
-          oldCurrency,
-          newCurrency,
-          `${row.month}-15`,
-          budgetId
-        );
-        if (!rate) continue;
-        const newAmount = convertScaled(row.amount, rate, oldCurrency, newCurrency);
-        run(
-          this.db,
-          `UPDATE assignments SET Amount = ? WHERE CategoryID = ? AND Month = ?`,
-          newAmount,
-          row.category_id,
-          row.month
-        );
-      }
-
-      // Convert goals targets for categories in this budget
-      const goals = allRows<{ id: number; category_id: number; target: number }>(
-        this.db,
-        `
-        SELECT g.ID as id, g.CategoryID as category_id, g.Target as target
-        FROM goals g
-        JOIN categories c ON c.ID = g.CategoryID
-        WHERE c.BudgetID = ?
-      `,
-        budgetId
-      );
-
-      // Use today's rate for conversion of targets (most consistent baseline)
-      const rateForGoals = await this.getOrFetchRate(
-        oldCurrency,
-        newCurrency,
-        getLocalDateString(),
-        budgetId
-      );
-      const goalsRate = rateForGoals || 1;
-
-      for (const row of goals) {
-        const newTarget = convertScaled(row.target, goalsRate, oldCurrency, newCurrency);
-        run(this.db, `UPDATE goals SET Target = ? WHERE ID = ?`, newTarget, row.id);
-      }
-    } catch (error) {
-      debugLog('Failed to convert assignments/goals during budget currency change', {
-        error,
-        level: 'error',
-      });
-    }
+  /**
+   * Replay of a currency change that this DB already shows as applied (see
+   * repairBudgetCurrencyConversions). Best effort, never throws for missing
+   * rates; returns the number of accounts recomputed.
+   */
+  async repairBudgetCurrencyChange(
+    budgetId: number,
+    toCurrency: string,
+    carried?: { asOf?: string; rates?: OfficialRateQuote[] }
+  ): Promise<number> {
+    const asOf =
+      carried?.asOf && /^\d{4}-\d{2}-\d{2}$/.test(carried.asOf)
+        ? carried.asOf
+        : getLocalDateString();
+    const book = new RateBook(asOf);
+    for (const quote of carried?.rates ?? []) book.add(quote);
+    const lookups = collectBudgetCurrencyLookups(this.db, budgetId, toCurrency, toCurrency, asOf, {
+      budgetAmounts: false,
+    });
+    if (lookups.length === 0) return 0;
+    await resolveLookups(lookups, book, this.rateSource(budgetId));
+    return this.db.transaction(() =>
+      repairBudgetCurrencyConversions(this.db, budgetId, toCurrency, book)
+    );
   }
 
   /**

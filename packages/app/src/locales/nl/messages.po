@@ -270,6 +270,11 @@ msgstr "{0, plural, one {# registercategorie ontbreekt in Plan.csv} other {# reg
 msgid "{0, plural, one {# register row} other {# register rows}}"
 msgstr "{0, plural, one {# registerrij} other {# registerrijen}}"
 
+#. placeholder {0}: pendingImpact.scheduled
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "{0, plural, one {# scheduled transaction loses its category.} other {# scheduled transactions lose their category.}}"
+msgstr "{0, plural, one {# geplande transactie verliest haar categorie.} other {# geplande transacties verliezen hun categorie.}}"
+
 #. placeholder {0}: preview.splitTransactions.length
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
 #: src/pages/onboarding/steps/YnabImportStep.tsx
@@ -290,6 +295,16 @@ msgstr "{0, plural, one {# gebruiker gevonden} other {# gebruikers gevonden}}"
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "{0, plural, one {# user was not deleted} other {# users were not deleted}}"
 msgstr "{0, plural, one {# gebruiker is niet verwijderd} other {# gebruikers zijn niet verwijderd}}"
+
+#. placeholder {0}: impact.assignedMonths
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "{0, plural, one {Assigned amounts in # month (total {assignedTotal})} other {Assigned amounts in # months (total {assignedTotal})}}"
+msgstr "{0, plural, one {Toegewezen bedragen in # maand (totaal {assignedTotal})} other {Toegewezen bedragen in # maanden (totaal {assignedTotal})}}"
+
+#. placeholder {0}: pendingImpact.assignedMonths
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "{0, plural, one {Assigned money in # month ({total}) is removed and returns to Ready to Assign.} other {Assigned money in # months ({total}) is removed and returns to Ready to Assign.}}"
+msgstr "{0, plural, one {Toegewezen geld in # maand ({total}) wordt verwijderd en gaat terug naar Te verdelen.} other {Toegewezen geld in # maanden ({total}) wordt verwijderd en gaat terug naar Te verdelen.}}"
 
 #. placeholder {0}: data.deleted
 #: src/pages/settings/push-api/usePushApiState.ts
@@ -539,8 +554,13 @@ msgstr "{0} is gearchiveerd."
 
 #. placeholder {0}: selectedAccount.Name
 #: src/features/account-management/ui/EditAccountDialog.tsx
-msgid "{0} has been permanently removed."
-msgstr "{0} is permanent verwijderd."
+msgid "{0} has been deleted. You can undo this."
+msgstr "{0} is verwijderd. Je kunt dit ongedaan maken."
+
+#. placeholder {0}: selectedAccount.Name
+#: src/features/account-management/ui/EditAccountDialog.tsx
+#~ msgid "{0} has been permanently removed."
+#~ msgstr "{0} is permanent verwijderd."
 
 #. placeholder {0}: best.name
 #. placeholder {1}: Math.round((best.ratio - 1) * 100)
@@ -3627,8 +3647,8 @@ msgstr "Weet je zeker dat je \"{0}\" wilt verwijderen? Deze actie kan niet onged
 
 #. placeholder {0}: modalState.pendingDelete?.name
 #: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
-msgid "Are you sure you want to delete the category \"{0}\"? This action cannot be undone."
-msgstr "Weet je zeker dat je de categorie \"{0}\" wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
+#~ msgid "Are you sure you want to delete the category \"{0}\"? This action cannot be undone."
+#~ msgstr "Weet je zeker dat je de categorie \"{0}\" wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt."
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Are you sure you want to reveal the key?"
@@ -6699,6 +6719,10 @@ msgstr "Scenario {0} verwijderen"
 msgid "Delete selected rows"
 msgstr "Geselecteerde rijen verwijderen"
 
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "Delete the category \"{pendingName}\"?"
+msgstr "De categorie \"{pendingName}\" verwijderen?"
+
 #: src/features/transactions/ui/DeleteTransactionDialog.tsx
 msgid "Delete this transaction?"
 msgstr "Deze transactie verwijderen?"
@@ -7636,6 +7660,10 @@ msgstr "Wisselkoers niet beschikbaar"
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Exchange rates are fetched daily and cached inside your budget file."
 msgstr "Wisselkoersen worden dagelijks opgehaald en gecached in je budgetbestand."
+
+#: src/entities/budget/api/useBudgets.ts
+msgid "Exchange rates for the new currency are unavailable, so nothing was changed. Check your connection and try again."
+msgstr "Wisselkoersen voor de nieuwe valuta zijn niet beschikbaar, dus er is niets gewijzigd. Controleer je verbinding en probeer het opnieuw."
 
 #: src/pages/accounts/AccountPage.tsx
 msgid "Exchange-rate data needs attention"
@@ -9558,6 +9586,22 @@ msgstr "Onomkeerbare actie"
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "is not"
 msgstr "is niet"
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "It tracks payments for the {name} account. Archive or delete the account first."
+msgstr "Deze houdt betalingen bij voor de rekening {name}. Archiveer of verwijder eerst de rekening."
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "It tracks payments for the {name} credit card. Archive or delete the card first."
+msgstr "Deze houdt betalingen bij voor de creditcard {name}. Archiveer of verwijder eerst de kaart."
+
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "Its goal is deleted with it. Set a goal on the new category if you still need one."
+msgstr "Het doel wordt mee verwijderd. Stel een doel in op de nieuwe categorie als je er nog een nodig hebt."
+
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "Its goal is deleted."
+msgstr "Het doel wordt verwijderd."
 
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "Its history was moved to the selected income category."
@@ -16822,6 +16866,10 @@ msgstr "De afgeleide wisselkoers wordt bij deze transactie opgeslagen."
 msgid "The implied exchange rate will be saved with this transfer."
 msgstr "De afgeleide wisselkoers wordt bij deze overboeking opgeslagen."
 
+#: src/features/category-management/lib/delete-block.ts
+msgid "The Income group can't be deleted."
+msgstr "De groep Inkomsten kan niet worden verwijderd."
+
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "The invite has been revoked."
 msgstr "De uitnodiging is ingetrokken."
@@ -16881,6 +16929,10 @@ msgstr "Het verzonden bedrag blijft gelijk. Bij het opslaan worden het ontvangen
 #: src/features/sync-diagnostics/ui/PendingChangesCard.tsx
 msgid "The server has confirmed all changes from this device."
 msgstr "De server heeft alle wijzigingen van dit apparaat bevestigd."
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "The system Income category can't be deleted."
+msgstr "De systeemcategorie Inkomsten kan niet worden verwijderd."
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The total amount to allocate across the period. Monthly target is calculated automatically."
@@ -17029,6 +17081,10 @@ msgstr "Deze cache overleeft app-herstarts en wordt gewist wanneer de timer aflo
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
 #~ msgid "This card owes more than you've set aside to pay it. Assign money here to cover it."
 #~ msgstr "Deze kaart heeft meer schuld dan je hebt gereserveerd voor aflossing. Wijs hier geld toe om dit te dekken."
+
+#: src/features/budget-planning/ui/BudgetTable.tsx
+msgid "This category can't be deleted"
+msgstr "Deze categorie kan niet worden verwijderd"
 
 #: src/features/budget-planning/ui/FutureOverspendingWarning.tsx
 msgid "This change will cause negative Available in future months for this category:"
@@ -19297,6 +19353,11 @@ msgstr "Je kunt Budgero op elk moment installeren via je browsermenu"
 #: src/features/subscription/ui/SubscriptionSuccess.tsx
 msgid "You can manage your subscription anytime from your account settings."
 msgstr "Je kunt je abonnement op elk moment beheren via je accountinstellingen."
+
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "You can undo this."
+msgstr "Je kunt dit ongedaan maken."
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "You can't delete an account with a non-zero balance!"

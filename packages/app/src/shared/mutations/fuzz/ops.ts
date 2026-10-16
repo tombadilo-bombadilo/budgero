@@ -351,12 +351,15 @@ const KINDS: [string, number][] = [
   ['categories.updateName', 1],
   ['categories.updateNote', 1],
   ['categories.updateExcludeFromBudgetPace', 1],
-  ['categories.delete', 2],
+  ['categories.delete', 1],
+  ['categories.deleteAndReassign', 2],
+  ['categoryGroups.deleteAndReassign', 1],
   ['categories.moveToNewGroup', 1],
   ['categoryGroups.reorder', 1],
   ['categories.reorder', 1],
   // accounts
   ['accounts.create', 2],
+  ['accounts.createLinked', 1],
   ['accounts.update', 2],
   ['accounts.reorder', 1],
   ['accounts.setArchived', 1],
@@ -1005,6 +1008,21 @@ export function realize(device: Device, intent: Intent): OpCall | null {
       const id = pick(f ? cats : userCats, a);
       return id ? { op: k, payload: { id } } : null;
     }
+    case 'categories.deleteAndReassign':
+    case 'categoryGroups.deleteAndReassign': {
+      // useDeleteCategory / useDeleteCategoryGroup send { id, budgetId };
+      // useReassignAndDeleteCategory adds reassignTo.
+      const id =
+        k === 'categories.deleteAndReassign' ? pick(f ? cats : userCats, a) : pick(groups, a);
+      if (!id) return null;
+      const target = g
+        ? pick(
+            userCats.filter((cat) => cat !== id),
+            b
+          )
+        : undefined;
+      return { op: k, payload: { id, budgetId, ...(target ? { reassignTo: target } : {}) } };
+    }
     case 'categories.moveToNewGroup': {
       const id = pick(userCats, a);
       const group = pick(groups, b);
@@ -1041,6 +1059,28 @@ export function realize(device: Device, intent: Intent): OpCall | null {
         },
       };
     }
+    case 'accounts.createLinked':
+      // link-accounts.ts: a new account linked to a bank account.
+      return {
+        op: k,
+        payload: {
+          name: `Bank ${b % 5}`,
+          budgetId,
+          type: f ? 'savings' : 'checking',
+          currency: g ? 'EUR' : 'USD',
+          balance: amount,
+          metadata: {},
+          onBudget: true,
+          initialBalanceDate: date,
+          link: {
+            provider: 'simplefin',
+            externalAccountId: uid('ext', intent),
+            externalName: 'Bank account',
+            orgName: 'Bank',
+            importFrom: date,
+          },
+        },
+      };
     case 'accounts.update': {
       const acc = pick(accounts, a);
       if (!acc) return null;

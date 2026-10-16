@@ -1,5 +1,5 @@
 import type { ScenarioRecord } from '@budgero/core/browser';
-import { S, redoWithIds, safeCapture, type OpCodeEntry } from '../shared';
+import { S, redoWithIds, safeCapture, withGeneratedId, type OpCodeEntry } from '../shared';
 
 const captureScenario = (args: Record<string, unknown>) =>
   safeCapture(() => (args.id ? S().scenarios!.getScenario(args.id as string) : null));
@@ -16,6 +16,8 @@ const restoreScenario = (scenario: ScenarioRecord) => ({
 
 export const scenarioOps = {
   'scenarios.save': {
+    // A save without an id creates: mint the id here so peers insert the same row.
+    prepare: withGeneratedId(),
     execute: async (args) => {
       return S().scenarios!.saveScenario({
         id: args.id as string | undefined,

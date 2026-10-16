@@ -164,6 +164,7 @@ export const KNOWN_FAILURES: KnownFailure[] = [
       'transactions.clearSplits',
       'transactions.duplicate',
       'transactions.import',
+      'accounts.createLinked',
     ],
     tables: [
       'transactions',
@@ -173,8 +174,9 @@ export const KNOWN_FAILURES: KnownFailure[] = [
       'accounts',
       'categories',
       'import_provenance',
+      'bank_links',
     ],
-    note: 'Undo / redo re-create rows under new IDs: the Initial Balance row and linked debt / CC payment category of a re-done account (Metadata then points at the new category), a re-added payee, a goal (by design per goals.ts, undo addresses it by category), and split lines of an upsert / clear / duplicate undo or redo.',
+    note: 'Undo / redo re-create rows under new IDs: the Initial Balance row and linked debt / CC payment category of a re-done account (Metadata then points at the new category), a re-added payee, a goal (by design per goals.ts, undo addresses it by category), and split lines of an upsert / clear / duplicate undo or redo; a re-done linked account also gets a new bank_links row.',
   },
   {
     id: 'NEW-7',

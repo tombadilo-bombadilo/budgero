@@ -1,4 +1,8 @@
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { toast } from 'sonner';
+import type { CategoryDeleteBlock, CategoryDeletionImpact } from '@budgero/core/browser';
+import { useAccounts } from '@entities/account/api/useAccounts';
+import { describeDeleteBlock } from '@features/category-management/lib/delete-block';
 import { useState, useEffect, useMemo, useCallback, type MouseEvent } from 'react';
 import { cn } from '@shared/lib/utils';
 import { Plus } from 'lucide-react';
@@ -24,6 +28,29 @@ import {
 } from './budget-table';
 
 export type { BudgetTableToolbarControls } from './budget-table';
+
+/**
+ * Categories of the budget that can't be deleted, by category ID. `inputs`
+ * (accounts, budget rows) is not read: it only signals that links or
+ * categories changed and the blocks must be read again.
+ */
+function readDeleteBlocks(
+  runtime: ReturnType<typeof useRuntime>,
+  budgetId: number,
+  inputs: { accounts: unknown; rawRows: unknown }
+): Map<number, CategoryDeleteBlock> {
+  void inputs;
+  const blocks = new Map<number, CategoryDeleteBlock>();
+  if (!budgetId) return blocks;
+  try {
+    for (const block of runtime.services().categories.getDeleteBlocks(budgetId)) {
+      blocks.set(block.categoryId, block);
+    }
+  } catch (error) {
+    console.error('Failed to read which categories can be deleted:', error);
+  }
+  return blocks;
+}
 
 export function BudgetTable({
   rawRows,
@@ -57,6 +84,7 @@ export function BudgetTable({
   const swipeDisabled = disableSwipe || layoutVariant === 'desktop-table';
   const longPressEnabled = enableLongPressSelection && layoutVariant !== 'desktop-table';
 
+  const { t } = useLingui();
   const runtime = useRuntime();
   const selectedBudget = useUiStore((state) => state.selectedBudget);
   const focusCategoryIdFromStore = useUiStore((state) => state.focusCategoryId);
@@ -126,6 +154,31 @@ export function BudgetTable({
     budgetId,
     showHiddenCategories,
   });
+
+  // Categories that can't be deleted (system Income, payment categories of
+  // active cards and loans): the row menu shows why instead of Delete.
+  // Recomputed when accounts change (archive / unarchive / create / delete)
+  // or the rows do.
+  const { data: accounts } = useAccounts(budgetId);
+  const deleteBlocks = useMemo(
+    () => readDeleteBlocks(runtime, budgetId, { accounts, rawRows }),
+    [runtime, budgetId, accounts, rawRows]
+  );
+  const markBlocked = useCallback(
+    (rows: BudgetRow[]) =>
+      deleteBlocks.size === 0
+        ? rows
+        : rows.map((row) => {
+            const block = !row.isGroup ? deleteBlocks.get(row.categoryId) : undefined;
+            return block ? { ...row, deleteBlockedReason: describeDeleteBlock(block) } : row;
+          }),
+    [deleteBlocks]
+  );
+  const tableData = useMemo(() => markBlocked(data), [data, markBlocked]);
+  const tableUnfilteredData = useMemo(
+    () => markBlocked(transformedRows),
+    [transformedRows, markBlocked]
+  );
 
   // Ordering is persisted in the database (Position column). Clear any legacy
   // localStorage order data left over from the previous client-side approach.
@@ -284,20 +337,28 @@ export function BudgetTable({
   };
 
   const handleDeleteCategory = (item: BudgetRow) => {
-    // The all-time count is read here, on demand (one indexed query), rather
-    // than with every monthly budget read.
-    let totalTransactions: number | undefined;
+    // Read on demand (a few indexed counts), not with every monthly budget
+    // read: everything the delete removes or moves, across ALL months.
+    let impact: CategoryDeletionImpact | undefined;
     try {
-      totalTransactions = runtime
-        .services()
-        .monthlyBudgets.getCategoryTransactionCount(item.categoryId, budgetId);
+      impact = runtime.services().categories.getCategoryDeletionImpact(item.categoryId);
     } catch (error) {
-      console.error('Failed to count category transactions:', error);
+      console.error('Failed to read what deleting the category affects:', error);
     }
-    const target: BudgetRow = { ...item, totalTransactions };
+    if (impact?.blocked) {
+      toast.error(t`This category can't be deleted`, {
+        description: describeDeleteBlock(impact.blocked),
+      });
+      return;
+    }
+    const target: BudgetRow = {
+      ...item,
+      totalTransactions: impact?.transactions,
+      deletionImpact: impact,
+    };
     const hasAssignments = item.assigned !== 0;
-    // Unknown count: open the dialog that offers to reassign transactions.
-    const hasTransactions = totalTransactions === undefined || totalTransactions > 0;
+    // Unknown impact: open the dialog that offers to reassign transactions.
+    const hasTransactions = impact === undefined || impact.transactions > 0;
 
     if (hasAssignments || hasTransactions) {
       setModalState((prev) => ({ ...prev, deleteModalOpen: true, deletingCategory: target }));
@@ -480,8 +541,8 @@ export function BudgetTable({
         className="flex flex-col gap-3"
       >
         <DraggableBudgetTable
-          data={data}
-          unfilteredData={transformedRows}
+          data={tableData}
+          unfilteredData={tableUnfilteredData}
           searchTerm={searchTerm}
           collapsedGroups={collapsedGroups}
           expandedCategories={expandedCategories}

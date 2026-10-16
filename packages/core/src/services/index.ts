@@ -1,4 +1,8 @@
 export * from './budgets/index.js';
+export {
+  ExchangeRateUnavailableError,
+  type OfficialRateQuote,
+} from './currency/budget-currency-change.js';
 export * from './categories/index.js';
 export * from './accounts/index.js';
 export * from './transactions/index.js';
