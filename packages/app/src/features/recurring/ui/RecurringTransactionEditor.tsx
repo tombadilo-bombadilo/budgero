@@ -18,9 +18,7 @@ export interface RecurringTransactionEditorProps {
   budgetId?: number;
   accounts: Account[];
   categories: Category[];
-  initialValues?: Omit<RecurringTransactionFormInitialValues, 'categoryName'> & {
-    categoryId?: number | null;
-  };
+  initialValues?: Omit<RecurringTransactionFormInitialValues, 'categoryName'>;
   onSubmit: (values: RecurringTransactionEditorSubmit) => Promise<void> | void;
   isSubmitting?: boolean;
 }
@@ -50,6 +48,8 @@ export function RecurringTransactionEditor({
   isSubmitting = false,
 }: RecurringTransactionEditorProps) {
   const resolvedBudgetId = budgetId ?? accounts[0]?.BudgetID ?? categories[0]?.BudgetID ?? 0;
+  // The name is only shown; the ID travels with it so a same-named
+  // category can't take its place on save.
   const categoryName =
     initialValues?.categoryId != null
       ? categories.find((category) => category.ID === initialValues.categoryId)?.Name

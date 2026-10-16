@@ -22,7 +22,9 @@ export interface RecurringTransactionFormInitialValues {
   direction?: 'inflow' | 'outflow';
   accountId?: number | null;
   toAccountId?: number | null;
+  /** Display name only; categoryId decides which category is meant. */
   categoryName?: string;
+  categoryId?: number | null;
   schedule?: RecurringSchedule;
   notifyDaysBefore?: number;
   active?: boolean;
@@ -102,6 +104,7 @@ export function recurringInitialToTransactionValues(
     transactionType: initial.toAccountId != null ? 'transfer' : (initial.direction ?? 'outflow'),
     transactionDate: dateKeyToLocalDate(initial.schedule?.startDate) ?? new Date(),
     selectedCategory: initial.categoryName ?? '',
+    selectedCategoryId: initial.categoryName ? (initial.categoryId ?? null) : null,
     memo: initial.memo ?? '',
     payee: initial.name ?? '',
     amount: initial.amount ?? null,
