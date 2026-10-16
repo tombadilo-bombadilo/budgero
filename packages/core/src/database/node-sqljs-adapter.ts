@@ -3,6 +3,7 @@ import path from 'node:path';
 import { BaseDatabaseAdapter, Statement, DatabaseOptions, DatabaseError } from './interface.js';
 import { MigrationRunner } from './migrations.js';
 import { createMigrationDatabase } from './migration-database-factory.js';
+import { readAllRows, readRow } from './sqljs-rows.js';
 
 import { createLogger } from '../logger.js';
 
@@ -97,7 +98,7 @@ export class NodeSqlJsAdapter extends BaseDatabaseAdapter {
           const stmt = this.db.prepare(sql);
           stmt.bind(params as BindParams);
           const hasRow = stmt.step();
-          const result = hasRow ? stmt.getAsObject() : undefined;
+          const result = hasRow ? readRow(stmt) : undefined;
           stmt.free();
           return result;
         } catch (error) {
@@ -112,8 +113,7 @@ export class NodeSqlJsAdapter extends BaseDatabaseAdapter {
         try {
           const stmt = this.db.prepare(sql);
           stmt.bind(params as BindParams);
-          const results: Record<string, unknown>[] = [];
-          while (stmt.step()) results.push(stmt.getAsObject());
+          const results = readAllRows(stmt);
           stmt.free();
           return results;
         } catch (error) {
