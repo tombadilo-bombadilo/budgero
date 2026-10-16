@@ -146,6 +146,49 @@ describe('op undo specs', () => {
     expect(h.dump(tables)).toEqual(after);
   });
 
+  it('undoing a category create never cascades away transactions added since', async () => {
+    const groupId = h.services.categories.getAllCategories(h.budgetId)[0]!.CategoryGroupID;
+    const created = await h.run<number>('categories.create', {
+      parentId: groupId,
+      budgetId: h.budgetId,
+      name: 'New one',
+      note: '',
+    });
+    // A row that is not on the Ctrl+Z stack (e.g. from bank sync).
+    await h.runtime.mutationsRouter().execute({
+      op: 'transactions.add',
+      payload: {
+        budgetId: h.budgetId,
+        accountId: h.accountId,
+        categoryId: created,
+        date: '2026-09-01',
+        outflow: 1000,
+      },
+      meta: { skipUndo: true },
+    });
+    const before = h.dump(['transactions', 'categories', 'accounts']);
+
+    await expect(useUndoStore.getState().undo()).rejects.toThrow();
+    expect(h.dump(['transactions', 'categories', 'accounts'])).toEqual(before);
+  });
+
+  it('undoing a category create removes the empty category; redo brings it back', async () => {
+    const groupId = h.services.categories.getAllCategories(h.budgetId)[0]!.CategoryGroupID;
+    const before = h.dump(['categories']);
+    await h.run<number>('categories.create', {
+      parentId: groupId,
+      budgetId: h.budgetId,
+      name: 'Empty',
+      note: '',
+    });
+    const after = h.dump(['categories']);
+
+    await useUndoStore.getState().undo();
+    expect(h.dump(['categories'])).toEqual(before);
+    await useUndoStore.getState().redo();
+    expect(h.dump(['categories'])).toEqual(after);
+  });
+
   describe('bank review', () => {
     const tables = ['transactions', 'import_provenance', 'bank_reviews'];
 
