@@ -38,7 +38,11 @@
     "test": "vitest run",
     "test:node": "vitest run",
     "test:node:coverage": "vitest run --coverage",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "bench": "node bench/run.mjs",
+    "bench:gen": "node bench/gen.mjs",
+    "bench:profile": "node bench/profile.mjs",
+    "parity": "node parity/run.mjs"
   },
   "dependencies": {
     "debug": "^4.4.3",
