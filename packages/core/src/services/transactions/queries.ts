@@ -20,6 +20,7 @@ import {
 import type { Account } from '../accounts/types.js';
 import type { Budget } from '../budgets/types.js';
 import { asMilli, ZERO_MILLI } from '../../money/index.js';
+import type { BalanceHistoryBucket, BalanceHistoryRow } from './types.js';
 
 /**
  * Shared column list for the detailed transaction-row SELECTs.
@@ -2120,6 +2121,148 @@ export class TransactionQueries {
       changes += 1;
     }
     return changes;
+  }
+
+  /**
+   * Payee names used by a budget's transactions and split lines, without usage
+   * counts. Same rows, order and case-folding as {@link getPayeeUsageCounts}
+   * (a parent's payee is skipped when its split lines carry payees), so the
+   * directory built from it matches the usage directory name for name. The
+   * per-branch GROUP BY and the outer aggregate keep SQLite's choice of
+   * spelling for case variants the same as in the usage query.
+   */
+  getPayeeNamesInUse(budgetId: number): { Name: string }[] {
+    return allRows<{ Name: string }>(
+      this.db,
+      `
+      SELECT Name, COUNT(*) AS Spellings
+      FROM (
+        SELECT Payee AS Name
+        FROM transactions
+        WHERE BudgetID = ?
+          AND Payee IS NOT NULL
+          AND TRIM(Payee) <> ''
+          AND NOT EXISTS (
+            SELECT 1
+            FROM transaction_splits s
+            WHERE s.TransactionID = transactions.ID
+              AND s.Payee IS NOT NULL
+              AND TRIM(s.Payee) <> ''
+          )
+        GROUP BY Payee
+
+        UNION ALL
+
+        SELECT s.Payee AS Name
+        FROM transaction_splits s
+        CROSS JOIN transactions t ON t.ID = s.TransactionID
+        WHERE t.BudgetID = ?
+          AND s.Payee IS NOT NULL
+          AND TRIM(s.Payee) <> ''
+        GROUP BY s.Payee
+      ) used
+      GROUP BY Name COLLATE NOCASE
+      ORDER BY Name COLLATE NOCASE
+    `,
+      budgetId,
+      budgetId
+    );
+  }
+
+  /**
+   * The newest uncategorized transactions of a budget (split parents excluded),
+   * newest first. Same rows and order as filtering {@link getAllTransactions}
+   * by the uncategorized rule (CategoryID 0, a missing category, or one named
+   * '' / 'Uncategorized'), but driven from the category index instead of
+   * reading the whole ledger.
+   */
+  getRecentUncategorizedTransactions(budgetId: number, limit: number): GetAllTransactions[] {
+    const normalizedLimit = Number.isFinite(limit) ? Math.max(1, Math.floor(limit)) : 1;
+    const named = allRows<{ ID: number }>(
+      this.db,
+      `SELECT ID FROM categories WHERE Name IS NULL OR Name = '' OR Name = 'Uncategorized'`
+    );
+    // Rows can only point at a missing category while foreign keys are off;
+    // the distinct-ID pass walks the category index, not the table.
+    const missing = allRows<{ ID: number }>(
+      this.db,
+      `
+      SELECT d.CategoryID AS ID
+      FROM (SELECT DISTINCT CategoryID FROM transactions) d
+      WHERE d.CategoryID IS NOT NULL
+        AND d.CategoryID <> 0
+        AND NOT EXISTS (SELECT 1 FROM categories c WHERE c.ID = d.CategoryID)
+    `
+    );
+    const ids = [0, ...named.map((row) => row.ID), ...missing.map((row) => row.ID)];
+    return allRows<GetAllTransactions>(
+      this.db,
+      `
+      SELECT
+        t.ID,
+        t.AccountID as AccountId,
+        a.Name as AccountName,
+        t.Date,
+        t.CategoryID,
+        c.Name as Category,
+        t.LabelID,
+        l.Name as Label,
+        l.Color as LabelColor,
+        t.Memo,
+        t.Payee,
+        t.InflowConverted,
+        t.OutflowConverted,
+        t.RunningBalanceConverted,
+        t.TransferID
+      FROM transactions t
+        LEFT JOIN categories c ON t.CategoryID = c.ID
+        LEFT JOIN labels l ON t.LabelID = l.ID
+        LEFT JOIN accounts a ON t.AccountID = a.ID
+      WHERE +t.BudgetID = ?
+        AND t.CategoryID IN (${ids.map(() => '?').join(', ')})
+        ${NO_SPLITS_FILTER}
+      ORDER BY t.Date DESC, t.ID DESC
+      LIMIT ?
+    `,
+      budgetId,
+      ...ids,
+      normalizedLimit
+    );
+  }
+
+  /**
+   * Aggregated ledger rows for balance-history charts: one row per account for
+   * everything dated before `fromDate` (dated at the account's first
+   * transaction), then one row per account and day (or month) from
+   * `fromDate` on. Rows whose Date is not a canonical YYYY-MM-DD date are
+   * grouped by their exact Date string so callers can treat them as before.
+   */
+  getBalanceHistoryRows(
+    budgetId: number,
+    fromDate: string,
+    bucket: BalanceHistoryBucket
+  ): BalanceHistoryRow[] {
+    const inWindowKey = bucket === 'month' ? 'substr(Date, 1, 7)' : 'Date';
+    return allRows<BalanceHistoryRow>(
+      this.db,
+      `
+      SELECT
+        AccountID AS AccountId,
+        MIN(Date) AS Date,
+        COALESCE(SUM(COALESCE(InflowConverted, 0) - COALESCE(OutflowConverted, 0)), 0) AS Net
+      FROM transactions
+      WHERE BudgetID = ?
+      GROUP BY
+        AccountID,
+        CASE
+          WHEN date(Date) IS NOT Date THEN 'x' || Date
+          WHEN Date < ? THEN ''
+          ELSE ${inWindowKey}
+        END
+    `,
+      budgetId,
+      fromDate
+    );
   }
 }
 

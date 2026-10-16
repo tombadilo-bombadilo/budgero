@@ -280,3 +280,18 @@ export interface LabelListItem {
 
 /** How transactions that share a date are ordered in the register. */
 export type SameDayTransactionOrder = 'newest' | 'amount';
+
+/**
+ * One aggregated ledger row for balance-history charts: the net
+ * (inflow - outflow, budget currency) of every transaction in the group.
+ * Rows before the window collapse to one row per account dated at its first
+ * transaction; rows in the window are grouped per day or per month.
+ */
+export interface BalanceHistoryRow {
+  AccountId: number;
+  Date: string;
+  Net: MilliUnits;
+}
+
+/** How {@link BalanceHistoryRow}s inside the window are grouped. */
+export type BalanceHistoryBucket = 'day' | 'month';

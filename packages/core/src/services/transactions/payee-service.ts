@@ -122,4 +122,22 @@ export class PayeeService {
 
     return { deleted: unique.length, cleared };
   }
+
+  /**
+   * Payee names only: the same list as `getPayeesWithUsage(budgetId).map((p) => p.Name)`
+   * (same merge of saved and used names, same order), without counting every
+   * row. For pickers; the Payees settings page still needs the counts.
+   */
+  getPayeeNames(budgetId: number): string[] {
+    const saved = this.queries.listSavedPayees(budgetId);
+    const used = this.queries.getPayeeNamesInUse(budgetId);
+
+    const names = new Map<string, string>();
+    for (const row of used) names.set(row.Name.toLowerCase(), row.Name);
+    for (const payee of saved) names.set(payee.Name.toLowerCase(), payee.Name);
+
+    return Array.from(names.values()).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: 'base' })
+    );
+  }
 }

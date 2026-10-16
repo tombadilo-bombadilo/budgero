@@ -35,6 +35,7 @@ import {
   isCryptoCurrency,
 } from '../../currencies/index.js';
 import { getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
+import type { BalanceHistoryBucket, BalanceHistoryRow } from './types.js';
 import {
   applyTransferRate as applyDirectTransferRate,
   getTransferRateDetails as loadTransferRateDetails,
@@ -2075,5 +2076,22 @@ export class TransactionService {
    */
   updateTransferMemosForAccountRename(budgetId: number, oldName: string, newName: string): void {
     this.queries.updateTransferMemosForAccountRename(budgetId, oldName, newName);
+  }
+
+  /** Newest uncategorized transactions (split parents excluded), newest first. */
+  getRecentUncategorizedTransactions(budgetId: number, limit: number): GetAllTransactions[] {
+    return this.queries.getRecentUncategorizedTransactions(budgetId, limit);
+  }
+
+  /**
+   * Aggregated per-account ledger rows for balance-history charts; see
+   * {@link TransactionQueries.getBalanceHistoryRows}.
+   */
+  getBalanceHistoryRows(
+    budgetId: number,
+    fromDate: string,
+    bucket: BalanceHistoryBucket
+  ): BalanceHistoryRow[] {
+    return this.queries.getBalanceHistoryRows(budgetId, fromDate, bucket);
   }
 }
