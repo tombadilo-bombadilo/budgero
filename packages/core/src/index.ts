@@ -12,3 +12,4 @@ export {
   BudgetSnapshotStore,
   type BudgetSnapshotOptions,
 } from './services/monthly-budgets/snapshot/store.js';
+export { clock, setClock } from './utils/clock.js';

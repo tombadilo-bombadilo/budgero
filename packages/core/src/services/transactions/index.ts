@@ -42,6 +42,7 @@ import {
   type TransferRateDetails,
 } from './transfer-rate.js';
 import { isAccountOnBudget } from './transfer-payee.js';
+import { clock } from '../../utils/clock.js';
 
 export type {
   Transaction,
@@ -1967,7 +1968,7 @@ export class TransactionService {
     options: { clearedOnly?: boolean } = {}
   ): ReconcileResult {
     const date = reconcileDate || getLocalDateString();
-    const timestamp = new Date().toISOString();
+    const timestamp = clock.date().toISOString();
     const clearedOnly = options.clearedOnly ?? false;
 
     return this.db.transaction(() => {

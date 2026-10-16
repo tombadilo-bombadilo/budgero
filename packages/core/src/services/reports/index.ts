@@ -5,6 +5,7 @@
 
 import { DatabaseAdapter } from '../../database/interface.js';
 import { getRow, allRows, run } from '../../database/sql.js';
+import { clock } from '../../utils/clock.js';
 
 /** Database row structure for saved_reports table */
 interface SavedReportRow {
@@ -99,7 +100,7 @@ export class DatabaseUnifiedReportService implements UnifiedReportService {
     }
 
     const id = data.id ?? globalThis.crypto.randomUUID();
-    const now = new Date().toISOString();
+    const now = clock.date().toISOString();
 
     const report: UnifiedReport = {
       id,
@@ -190,7 +191,7 @@ export class DatabaseUnifiedReportService implements UnifiedReportService {
       }
     }
 
-    const now = new Date().toISOString();
+    const now = clock.date().toISOString();
     const updateFields: string[] = [];
     const updateValues: (string | number | null)[] = [];
 

@@ -18,6 +18,7 @@ import {
 import { createLogger } from '../../logger.js';
 import { getRow, allRows, run } from '../../database/sql.js';
 import { getLocalDateString } from '../../utils/date.js';
+import { clock } from '../../utils/clock.js';
 
 const debugLog = createLogger('services:currency');
 
@@ -178,7 +179,7 @@ export class CurrencyService {
     budgetId: number
   ): void {
     assertValidExchangeRate(rate);
-    const now = new Date().toISOString();
+    const now = clock.date().toISOString();
     this.queries.upsertCurrencyRate(fromCurrency, toCurrency, rate, rateDate, now, budgetId);
   }
 
@@ -226,7 +227,7 @@ export class CurrencyService {
   /** Save/get manual (user-supplied) rates for offline usage. */
   saveManualRate(fromCurrency: string, toCurrency: string, rate: number, budgetId: number): void {
     assertValidExchangeRate(rate);
-    const now = new Date().toISOString();
+    const now = clock.date().toISOString();
     // Save both direct and reciprocal to simplify lookups
     this.queries.upsertManualCurrencyRate(fromCurrency, toCurrency, rate, now, budgetId);
     if (rate && isFinite(rate) && rate > 0) {
