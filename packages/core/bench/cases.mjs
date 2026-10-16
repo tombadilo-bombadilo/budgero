@@ -52,6 +52,15 @@ export function makeContext({ services: s, adapter, info, today, app }) {
     ids.chk0,
     `${shiftMonth(month, -60).slice(0, 4)}-%`
   ).map((r) => r.ID);
+  // shorter histories: fall back to the oldest year on file
+  if (!oldIds.length) {
+    oldIds.push(
+      ...rows(
+        'SELECT ID FROM transactions WHERE AccountID=? AND TransferID IS NULL ORDER BY Date, ID LIMIT 200',
+        ids.chk0
+      ).map((r) => r.ID)
+    );
+  }
   return {
     s,
     adapter,
