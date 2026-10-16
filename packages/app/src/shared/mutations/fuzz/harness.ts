@@ -377,12 +377,12 @@ export class Device {
     });
   }
 
-  undo(): Promise<void> {
-    return this.run(() => useUndoStore.getState().undo());
+  async undo(): Promise<void> {
+    await this.run(() => useUndoStore.getState().undo());
   }
 
-  redo(): Promise<void> {
-    return this.run(() => useUndoStore.getState().redo());
+  async redo(): Promise<void> {
+    await this.run(() => useUndoStore.getState().redo());
   }
 
   undoDepth(): number {
