@@ -68,6 +68,12 @@ export class SyncTransport {
 
   private localVersion = 0;
 
+  /** Highest cursor written to storage by a deferred (debounced) persist. */
+  private durableVersion = 0;
+
+  /** Bumped when the cursor is replaced; stale deferred writes are dropped. */
+  private cursorEpoch = 0;
+
   private connectionListeners = new Set<ConnectionListener>();
 
   private overlayListeners = new Set<OverlayListener>();
@@ -128,6 +134,7 @@ export class SyncTransport {
     this.log = deps.log ?? scopedLogger('SyncTransport');
     this.cursorStorageKey = `${MUTATION_CURSOR_STORAGE_PREFIX}${spaceId}`;
     this.localVersion = readStoredVersion(this.cursorStorageKey, 0);
+    this.durableVersion = this.localVersion;
 
     const handleOffline = () => {
       if (this.destroyed || this.suspended) return;
@@ -1213,6 +1220,11 @@ export class SyncTransport {
     if (version <= this.localVersion) return;
     this.localVersion = version;
 
+    if (this.deps.persistLocalDatabaseSoon) {
+      this.persistCursorAfterDebouncedSave(version);
+      return;
+    }
+
     const persisted = await this.persistCursorAfterLocalSave(version);
     if (this.destroyed) return;
     if (!persisted) {
@@ -1228,6 +1240,8 @@ export class SyncTransport {
     if (!Number.isFinite(version) || version < 0) return;
     if (version === this.localVersion) return;
     this.localVersion = version;
+    this.cursorEpoch += 1;
+    this.durableVersion = version;
     if (version > 0) {
       writeStoredVersion(this.cursorStorageKey, version);
     } else {
@@ -1255,6 +1269,42 @@ export class SyncTransport {
       });
       return false;
     }
+  }
+
+  /**
+   * Debounced cursor advance: the in-memory cursor moved already; the stored
+   * one follows once a local persist that started after this call (so it
+   * contains every mutation up to `version`) has landed. Message handling does
+   * not wait for it, so a catch-up page or a burst of acks costs one persist.
+   * A crash before then leaves the stored cursor behind the DB, never ahead:
+   * catch-up replays the gap and applied-id dedup skips what the DB has.
+   */
+  private persistCursorAfterDebouncedSave(version: number): void {
+    const epoch = this.cursorEpoch;
+    const persist = this.deps.persistLocalDatabaseSoon!;
+    persist().then(
+      (persisted) => {
+        if (this.destroyed || epoch !== this.cursorEpoch) return;
+        if (!persisted) {
+          this.log('warn', 'Mutation cursor advance skipped due to local persistence failure', {
+            version,
+            spaceId: this.spaceId,
+          });
+          return;
+        }
+        if (version <= this.durableVersion) return;
+        this.durableVersion = version;
+        writeStoredVersion(this.cursorStorageKey, version);
+      },
+      (error: unknown) => {
+        if (this.destroyed) return;
+        this.log('warn', 'Failed to persist mutation cursor after local save', {
+          version,
+          spaceId: this.spaceId,
+          error: errorMessage(error),
+        });
+      }
+    );
   }
 
   private async persistLocalMutationOnly(reason: string): Promise<boolean> {

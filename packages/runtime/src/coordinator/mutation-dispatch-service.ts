@@ -30,6 +30,7 @@ interface MutationExecutionContext {
   };
   db: WebDatabaseInstance;
   persistLocalDatabase?(): Promise<boolean>;
+  persistLocalDatabaseSoon?(): Promise<boolean>;
 }
 
 export class MutationDispatchService {
@@ -89,7 +90,14 @@ export class MutationDispatchService {
         if (m.id === payload.id) sentOwn = true;
       }
       if (sentOwn) {
-        await this.persistLocalMutation(ctx);
+        // The server has it: if the tab dies before the debounced persist,
+        // reload + catch-up re-applies it from the log (its applied id is not
+        // persisted yet, so it isn't skipped). See LocalPersistScheduler.
+        if (ctx.persistLocalDatabaseSoon) {
+          void ctx.persistLocalDatabaseSoon();
+        } else {
+          await this.persistLocalMutation(ctx);
+        }
         ctx.dbSync.scheduleUpload();
         return { result, synced: true, queued: false };
       }

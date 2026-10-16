@@ -111,6 +111,7 @@ export class DatabaseSync {
     }
 
     const keyVersion = this.deps.getEncryptionKeyVersion(this.spaceId);
+    await this.flushLocalPersistence();
     // Mutations that land while the upload runs are not in this blob —
     // only settle the ones captured by it.
     const pendingAtStart = this.pendingMutations;
@@ -302,6 +303,7 @@ export class DatabaseSync {
       throw new Error('No database available for restore');
     }
 
+    await this.flushLocalPersistence();
     await db.restore(decrypted);
     logRuntime('info', 'DatabaseSync', 'Database restored via restore()');
 
@@ -319,6 +321,16 @@ export class DatabaseSync {
       });
     }
     return true;
+  }
+
+  private async flushLocalPersistence(): Promise<void> {
+    try {
+      await this.deps.flushLocalPersistence?.();
+    } catch (error) {
+      logRuntime('warn', 'DatabaseSync', 'Local persist flush failed', {
+        error: errorMessage(error),
+      });
+    }
   }
 
   /**
