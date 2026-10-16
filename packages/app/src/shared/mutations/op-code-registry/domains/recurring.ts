@@ -208,6 +208,33 @@ export const recurringOps = {
         return ops;
       },
     },
+    // Redo posts under the IDs (and TransferID) of the first run, so the undo
+    // entry above (delete by ID) still finds the posting after a redo.
+    redo: {
+      build: (args, result) => {
+        const ready = result as MarkOccurrenceReadyResult | undefined;
+        const options = (args.options ?? {}) as MarkOccurrenceReadyOptions;
+        if (ready?.transactionId == null) return [{ op: 'recurring.markReady', args }];
+        return [
+          {
+            op: 'recurring.markReady',
+            args: {
+              ...args,
+              options: {
+                ...options,
+                reuse: {
+                  transactionId: ready.transactionId,
+                  ...(ready.destinationTransactionId != null
+                    ? { destinationTransactionId: ready.destinationTransactionId }
+                    : {}),
+                  ...(ready.transferId ? { transferId: ready.transferId } : {}),
+                },
+              },
+            },
+          },
+        ];
+      },
+    },
   },
   'recurring.skip': {
     execute: async (args) => {

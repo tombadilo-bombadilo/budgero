@@ -2,7 +2,12 @@ import {
   type ImportIdentity,
   type ReconcileResult,
   type TransactionAmountsSnapshot,
+  type SplitParentAmounts,
+  type TransactionBatchEdit,
+  type TransactionRestoreSnapshot,
+  type TransactionService,
   type TransactionSplit,
+  type TransactionWriteBatch,
   asMilli,
 } from '@budgero/core/browser';
 import {
@@ -11,6 +16,7 @@ import {
   transactionSnapshotToAddOp,
   TRANSACTION_INVALIDATION_KEYS,
   ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
+  RECURRING_OCCURRENCE_INVALIDATIONS,
   RECURRING_TEMPLATE_INVALIDATIONS,
   safeCapture,
   type NormalizedSplit,
@@ -56,6 +62,63 @@ const SPLIT_INVALIDATION_KEYS: [string, ...string[]][] = [
 function restoreSnapshotsUndo(before: unknown): OpCall[] {
   const snaps = (before as { snapshots?: TransactionSnapshot[] } | undefined)?.snapshots || [];
   return snaps.length ? sortTransactionSnapshots(snaps).map(transactionSnapshotToAddOp) : [];
+}
+
+/**
+ * A write batch from the core services: the op's rows commit in ONE DB
+ * transaction (no compensating deletes). Service doubles without batches
+ * (older unit tests) take the sequential path.
+ */
+function writeBatch(): TransactionWriteBatch | null {
+  const transactions = S().transactions as Partial<TransactionService> | undefined;
+  return typeof transactions?.createWriteBatch === 'function'
+    ? transactions.createWriteBatch()
+    : null;
+}
+
+/**
+ * Exact before-state of the rows a delete or edit touches (with transfer
+ * partners, split lines and mirrors, provenance and links). Null when the
+ * services cannot capture one; callers then fall back to row snapshots.
+ */
+function captureRestore(ids: number[]): TransactionRestoreSnapshot | null {
+  const transactions = S().transactions as Partial<TransactionService> | undefined;
+  if (typeof transactions?.captureRestoreSnapshot !== 'function') return null;
+  try {
+    const snapshot = transactions.captureRestoreSnapshot(ids);
+    return snapshot.transactions.length ? snapshot : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Undo that puts captured rows back exactly, in one op (and one DB transaction). */
+function restoreUndo(before: unknown, replace = false): OpCall[] | null {
+  const snapshot = (before as { restore?: TransactionRestoreSnapshot } | null)?.restore;
+  if (!snapshot) return null;
+  return [{ op: 'transactions.restore', args: { snapshot, ...(replace ? { replace } : {}) } }];
+}
+
+/** Normalize split lines from an op payload (snake_case or PascalCase) to the core shape. */
+function normalizeSplitLines(splits: unknown): NormalizedSplit[] {
+  // asMilli doubles as the op-boundary guard: a decimal amount in a payload
+  // throws here instead of reaching an integer column.
+  return ((splits as Record<string, unknown>[]) || []).map((s, idx) => {
+    const inflowOriginal = s.InflowNative ?? s.InflowOriginal ?? s.inflow_original ?? null;
+    const outflowOriginal = s.OutflowNative ?? s.OutflowOriginal ?? s.outflow_original ?? null;
+    return {
+      CategoryID: (s.CategoryID ?? s.category_id ?? null) as number | null,
+      TransferAccountID: (s.TransferAccountID ?? s.transfer_account_id ?? null) as number | null,
+      Memo: String(s.Memo ?? s.memo ?? ''),
+      Payee: String(s.Payee ?? s.payee ?? ''),
+      InflowConverted: asMilli(Number(s.InflowConverted ?? s.Inflow ?? s.inflow ?? 0)),
+      OutflowConverted: asMilli(Number(s.OutflowConverted ?? s.Outflow ?? s.outflow ?? 0)),
+      InflowNative: inflowOriginal == null ? null : asMilli(Number(inflowOriginal)),
+      OutflowNative: outflowOriginal == null ? null : asMilli(Number(outflowOriginal)),
+      PairID: (s.PairID ?? s.pair_id ?? null) as string | null,
+      OrderIndex: Number(s.OrderIndex ?? s.order_index ?? idx),
+    };
+  });
 }
 
 /** Undo for split edits: put back the previous lines, or clear if there were none. */
@@ -273,7 +336,10 @@ function explicitId(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }
 
-async function addTransactionFromArgs(args: Record<string, unknown>): Promise<number> {
+async function addTransactionFromArgs(
+  args: Record<string, unknown>,
+  batch?: TransactionWriteBatch
+): Promise<number> {
   const parameters = [
     asMilli(Number(args.inflow ?? 0)),
     asMilli(Number(args.outflow ?? 0)),
@@ -293,7 +359,9 @@ async function addTransactionFromArgs(args: Record<string, unknown>): Promise<nu
     false,
     (args.importIdentities as ImportIdentity[] | undefined) ?? [],
     args.cleared === true,
-    explicitId(args.id)
+    explicitId(args.id),
+    // With a batch the result is the queued step's index (see TransactionWriteBatch).
+    ...(batch ? [batch] : [])
   );
 }
 
@@ -401,6 +469,13 @@ export const transactionOps = {
         );
         if (splitNet !== parentNet) throw new Error('Split amounts must sum to parent total.');
       }
+      const batch = splits ? writeBatch() : null;
+      if (splits && batch) {
+        // Parent and lines commit together.
+        const parent = await addTransactionFromArgs({ ...args, categoryId: null }, batch);
+        await S().splits!.upsertSplits({ batchIndex: parent }, splits, batch);
+        return batch.commit()[parent] as number;
+      }
       const transactionId = await addTransactionFromArgs(
         splits ? { ...args, categoryId: null } : args
       );
@@ -474,6 +549,21 @@ export const transactionOps = {
       // failed insert would delete the earlier transfer along with the new leg.
       const existing = await S().transactions!.getTransactionsByTransferID(transferId);
       if (existing.length) throw new Error('This transferId is already in use.');
+
+      const batch = writeBatch();
+      if (batch) {
+        // Both legs commit together.
+        const sourceStep = await addTransactionFromArgs({ ...source, budgetId, transferId }, batch);
+        const destinationStep = await addTransactionFromArgs(
+          { ...destination, budgetId, transferId },
+          batch
+        );
+        const ids = batch.commit();
+        return {
+          sourceId: ids[sourceStep] as number,
+          destinationId: ids[destinationStep] as number,
+        };
+      }
 
       let sourceId: number | null = null;
       try {
@@ -600,9 +690,11 @@ export const transactionOps = {
         const group = await safeCapture(() =>
           S().transactions!.getTransactionsByTransferID(args.transferId as string)
         );
+        const restore = captureRestore((group ?? []).map((row) => row.ID));
+        if (restore) return { restore };
         return { snapshots: (group ?? []).map(withImportIdentities) };
       },
-      build: (_args, _result, before) => restoreSnapshotsUndo(before),
+      build: (_args, _result, before) => restoreUndo(before) ?? restoreSnapshotsUndo(before),
     },
   },
 
@@ -700,6 +792,9 @@ export const transactionOps = {
       capture: async (args) => {
         try {
           const tx = await S().transactions!.getTransactionByID(args.id as number);
+          // Exact: the row with its transfer partner or split lines and mirrors.
+          const restore = captureRestore([tx.ID]);
+          if (restore) return { restore };
           if (tx?.TransferID) {
             const group = await S().transactions!.getTransactionsByTransferID(tx.TransferID);
             return {
@@ -713,7 +808,7 @@ export const transactionOps = {
           return { snapshots: [] };
         }
       },
-      build: (_args, _result, before) => restoreSnapshotsUndo(before),
+      build: (_args, _result, before) => restoreUndo(before) ?? restoreSnapshotsUndo(before),
     },
   },
 
@@ -771,6 +866,8 @@ export const transactionOps = {
     undo: {
       capture: async (args) => {
         const ids = Array.isArray(args.ids) ? args.ids.map(Number) : [];
+        const restore = captureRestore(ids);
+        if (restore) return { restore };
         return {
           snapshots: (await S().transactions!.getTransactionsForDelete(ids)).map(
             withImportIdentities
@@ -778,6 +875,8 @@ export const transactionOps = {
         };
       },
       build: (_args, _result, before) => {
+        const exact = restoreUndo(before);
+        if (exact) return exact;
         const beforeState = before as { snapshots?: TransactionSnapshot[] } | undefined;
         const snapshots = beforeState?.snapshots || [];
         if (!snapshots.length) return [];
@@ -791,18 +890,91 @@ export const transactionOps = {
     },
   },
 
+  // Undo of batch deletes logged before transactions.restore existed.
   'transactions.restoreBatch': {
     execute: async (args) => {
       const snapshots = Array.isArray(args.snapshots)
         ? sortTransactionSnapshots(args.snapshots as TransactionSnapshot[])
         : [];
 
+      const batch = writeBatch();
       for (const snapshot of snapshots) {
         const addArgs = transactionSnapshotToAddOp(snapshot).args;
-        await addTransactionFromArgs(addArgs);
+        await addTransactionFromArgs(addArgs, batch ?? undefined);
       }
+      batch?.commit();
     },
     invalidates: TX_WRITE_INVALIDATION_KEYS,
+  },
+
+  // Undo of a delete (or of an edit, with `replace`): puts the captured rows,
+  // split lines, mirrors, provenance and links back exactly, in one write.
+  'transactions.restore': {
+    execute: async (args) => {
+      if (!args.snapshot || typeof args.snapshot !== 'object') {
+        throw new Error('"snapshot" is required.');
+      }
+      return S().transactions!.restoreTransactions(args.snapshot as TransactionRestoreSnapshot, {
+        replace: args.replace === true,
+      });
+    },
+    invalidates: [
+      ...TX_WRITE_INVALIDATION_KEYS,
+      ...SPLIT_INVALIDATION_KEYS,
+      ...RECURRING_OCCURRENCE_INVALIDATIONS,
+    ],
+  },
+
+  // The split editor's save: parent total and lines in one op and one write.
+  'transactions.saveSplits': {
+    execute: async (args) => {
+      const amount = args.amount as
+        { inflow?: unknown; outflow?: unknown; currency?: unknown } | undefined;
+      return S().transactions!.saveSplitTransaction(args.transactionId as number, {
+        amount: amount
+          ? {
+              inflow: asMilli(Number(amount.inflow ?? 0)),
+              outflow: asMilli(Number(amount.outflow ?? 0)),
+              currency: amount.currency === 'native' ? 'native' : 'converted',
+            }
+          : undefined,
+        exactAmount: args.exactAmount as SplitParentAmounts | undefined,
+        splits: normalizeSplitLines(args.splits),
+      });
+    },
+    invalidates: [...TX_WRITE_INVALIDATION_KEYS, ...SPLIT_INVALIDATION_KEYS],
+    undo: {
+      capture: async (args) => {
+        const restore = captureRestore([args.transactionId as number]);
+        return restore ? { restore } : null;
+      },
+      build: (_args, _result, before) => restoreUndo(before, true) ?? [],
+    },
+  },
+
+  // The register's batch toolbar: account / category / payee for many rows,
+  // one op, one write, one undo step.
+  'transactions.batchEdit': {
+    execute: async (args) => {
+      const edits = Array.isArray(args.edits) ? (args.edits as TransactionBatchEdit[]) : [];
+      if (!edits.every((edit) => Number.isSafeInteger(edit?.id) && edit.id > 0)) {
+        throw new Error('edits must list transaction ids.');
+      }
+      return S().transactions!.editTransactions(edits);
+    },
+    invalidates: [
+      ...TX_UPDATE_COLUMN_INVALIDATION_KEYS,
+      ...TX_MOVE_INVALIDATION_KEYS,
+      ['accounts', '*'],
+    ],
+    undo: {
+      capture: async (args) => {
+        const edits = Array.isArray(args.edits) ? (args.edits as TransactionBatchEdit[]) : [];
+        const restore = captureRestore(edits.map((edit) => edit.id));
+        return restore ? { restore } : null;
+      },
+      build: (_args, _result, before) => restoreUndo(before, true) ?? [],
+    },
   },
 
   // useMoveTransactionToNewCategory
@@ -908,6 +1080,25 @@ export const transactionOps = {
       // The balance adjustment is created inside the op (cleared, so it is
       // locked too) so one undo removes both.
       const adjustment = args.adjustment as Record<string, unknown> | undefined;
+      const batch = writeBatch();
+      if (batch) {
+        // Adjustment and lock commit together.
+        const adjustmentStep = adjustment
+          ? await addTransactionFromArgs({ ...adjustment, cleared: true }, batch)
+          : undefined;
+        const reconcileStep = batch.queue(() =>
+          S().transactions!.reconcileAccount(
+            args.accountId as number,
+            args.reconcileDate as string | undefined,
+            { clearedOnly: true }
+          )
+        );
+        const results = batch.commit();
+        const result = results[reconcileStep] as ReconcileResult;
+        return adjustmentStep === undefined
+          ? result
+          : { ...result, adjustmentId: results[adjustmentStep] as number };
+      }
       const adjustmentId = adjustment
         ? await addTransactionFromArgs({ ...adjustment, cleared: true })
         : undefined;
@@ -929,6 +1120,23 @@ export const transactionOps = {
     ],
     undo: {
       build: (args, result) => reconcileUndo(args.accountId, result),
+    },
+    // Redo re-creates the adjustment under the ID it first got, so the undo
+    // entry that deletes it stays valid.
+    redo: {
+      build: (args, result) => {
+        const { adjustmentId } = (result ?? {}) as ReconcileWithAdjustment;
+        const adjustment = args.adjustment as Record<string, unknown> | undefined;
+        return [
+          {
+            op: 'transactions.reconcileCleared',
+            args:
+              adjustment && adjustmentId !== undefined
+                ? { ...args, adjustment: { ...adjustment, id: adjustmentId } }
+                : args,
+          },
+        ];
+      },
     },
   },
   'transactions.unreconcile': {
@@ -986,18 +1194,24 @@ export const transactionOps = {
       const created: number[] = [];
       const copied = new Set<string>();
 
+      // With a batch every copy (and its lines) commits together; `created`
+      // then holds step indexes until the commit turns them into IDs.
+      const batch = writeBatch();
       const copy = async (row: TransactionSnapshot, transferId?: string) => {
         const {
           id: _id,
           importIdentities: _identities,
           ...addArgs
         } = transactionSnapshotToAddOp(row).args;
-        const newId = await addTransactionFromArgs({
-          ...addArgs,
-          transferId,
-          cleared: false,
-          id: reuseIds[created.length],
-        });
+        const newId = await addTransactionFromArgs(
+          {
+            ...addArgs,
+            transferId,
+            cleared: false,
+            id: reuseIds[created.length],
+          },
+          batch ?? undefined
+        );
         created.push(newId);
         return newId;
       };
@@ -1024,7 +1238,7 @@ export const transactionOps = {
         const newId = await copy(row);
         if (splits.length) {
           await S().splits.upsertSplits(
-            newId,
+            batch ? { batchIndex: newId } : newId,
             splits.map((line, index) => ({
               CategoryID: line.CategoryID ?? null,
               TransferAccountID: line.TransferAccountID ?? null,
@@ -1036,9 +1250,14 @@ export const transactionOps = {
               OutflowNative: line.OutflowNative ?? null,
               PairID: null,
               OrderIndex: line.OrderIndex ?? index,
-            }))
+            })),
+            ...(batch ? [batch] : [])
           );
         }
+      }
+      if (batch) {
+        const results = batch.commit();
+        return { created: created.map((step) => results[step] as number) };
       }
       return { created };
     },
@@ -1065,28 +1284,7 @@ export const transactionOps = {
   'transactions.upsertSplits': {
     execute: async (args) => {
       // Normalize client payload (snake_case) to core service shape (PascalCase).
-      // asMilli doubles as the op-boundary guard: a decimal amount in a payload
-      // throws here instead of reaching an integer column.
-      const normalized: NormalizedSplit[] = ((args.splits as Record<string, unknown>[]) || []).map(
-        (s, idx) => {
-          const inflowOriginal = s.InflowNative ?? s.InflowOriginal ?? s.inflow_original ?? null;
-          const outflowOriginal =
-            s.OutflowNative ?? s.OutflowOriginal ?? s.outflow_original ?? null;
-          return {
-            CategoryID: (s.CategoryID ?? s.category_id ?? null) as number | null,
-            TransferAccountID: (s.TransferAccountID ?? s.transfer_account_id ?? null) as
-              number | null,
-            Memo: String(s.Memo ?? s.memo ?? ''),
-            Payee: String(s.Payee ?? s.payee ?? ''),
-            InflowConverted: asMilli(Number(s.InflowConverted ?? s.Inflow ?? s.inflow ?? 0)),
-            OutflowConverted: asMilli(Number(s.OutflowConverted ?? s.Outflow ?? s.outflow ?? 0)),
-            InflowNative: inflowOriginal == null ? null : asMilli(Number(inflowOriginal)),
-            OutflowNative: outflowOriginal == null ? null : asMilli(Number(outflowOriginal)),
-            PairID: (s.PairID ?? s.pair_id ?? null) as string | null,
-            OrderIndex: Number(s.OrderIndex ?? s.order_index ?? idx),
-          };
-        }
-      );
+      const normalized = normalizeSplitLines(args.splits);
       return S().splits.upsertSplits(args.transactionId as number, normalized);
     },
     invalidates: SPLIT_INVALIDATION_KEYS,

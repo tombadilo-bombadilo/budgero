@@ -28,6 +28,11 @@ export {
   isAccountOnBudget,
   resolveTransferPayees,
   transferInvolvesOffBudgetAccount,
+  TransactionWriteBatch,
+  type BatchRowRef,
+  type TransactionRestoreSnapshot,
+  type TransactionBatchEdit,
+  type SplitParentAmounts,
 } from './services/transactions/index.js';
 export { GoalService } from './services/goals/index.js';
 export * from './services/goals/funding.js';
