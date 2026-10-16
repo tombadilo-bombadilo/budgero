@@ -1,9 +1,11 @@
 import { t } from '@lingui/core/macro';
-import { asMilli, type Account } from '@budgero/core/browser';
+import { asMilli, isRowJournal, type Account, type BankLinkInput } from '@budgero/core/browser';
 import {
   S,
   ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
   TRANSACTION_INVALIDATION_KEYS,
+  RECURRING_OCCURRENCE_INVALIDATIONS,
+  RECURRING_TEMPLATE_INVALIDATIONS,
   redoWithIds,
   safeCapture,
   type OpCodeEntry,
@@ -19,33 +21,73 @@ function parseMetadata(metadata: unknown): Record<string, unknown> | undefined {
   }
 }
 
+function createAccount(args: Record<string, unknown>, link?: Record<string, unknown>) {
+  return S().accounts!.createAccount(
+    args.name as string,
+    args.budgetId as number,
+    args.type as string,
+    args.currency as string,
+    asMilli(Number(args.balance ?? 0)),
+    (args.metadata as Record<string, unknown>) || undefined,
+    !!args.onBudget,
+    t`Initial Balance`,
+    (args.initialBalanceDate as string | undefined) ?? undefined,
+    (args.id as number | undefined) ?? undefined,
+    link
+      ? {
+          openingCleared: true,
+          bankLink: link as unknown as Omit<BankLinkInput, 'budgetId' | 'accountId'>,
+        }
+      : {}
+  );
+}
+
+const ACCOUNT_CREATE_INVALIDATIONS: string[][] = [
+  ['accounts', '*'], // Will match ["accounts", budgetId]
+  // Debt and credit accounts create their linked category/group as part
+  // of account creation, so dropdowns must refetch them immediately.
+  ['categories', '*'],
+  ['categoryGroups', '*'],
+  ['monthlyBudget', '*'],
+  ['onBudgetBalance'],
+  ['onBudgetBalanceByDates'],
+  ['readyToAssign', '*'], // Income calculations depend on on_budget accounts
+];
+
+const ACCOUNT_DELETE_INVALIDATIONS: string[][] = [
+  ['accounts', '*'], // Will match ["accounts", budgetId]
+  ['account', '*'],
+  ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
+  // Deleting a debt/credit account removes its linked system category;
+  // rows other accounts held in it move to Uncategorized.
+  ['categories', '*'],
+  ['allTransactions', '*'],
+  ['allTransactionsDetailed', '*'],
+  ['allTransactionsAnalytics', '*'],
+  ['uncategorizedTransactions', '*'],
+  ['transactionsByCategoryAndMonth', '*'],
+  ['categoryGroups', '*'],
+  ['monthlyBudget', '*'],
+  ['onBudgetBalance'],
+  ['onBudgetBalanceByDates'],
+  ['readyToAssign', '*'], // Deleting account removes its transactions, affecting income
+];
+
+const ACCOUNT_RESTORE_INVALIDATIONS: string[][] = [
+  ...ACCOUNT_DELETE_INVALIDATIONS,
+  ...TRANSACTION_INVALIDATION_KEYS,
+  ['goals', '*'],
+  ['goal', '*'],
+  ['transactionSplits', '*'],
+  ...RECURRING_TEMPLATE_INVALIDATIONS,
+  ...RECURRING_OCCURRENCE_INVALIDATIONS,
+  ['bankSync', '*'],
+];
+
 export const accountOps = {
   'accounts.create': {
-    execute: async (args) => {
-      return await S().accounts!.createAccount(
-        args.name as string,
-        args.budgetId as number,
-        args.type as string,
-        args.currency as string,
-        asMilli(Number(args.balance ?? 0)),
-        (args.metadata as Record<string, unknown>) || undefined,
-        !!args.onBudget,
-        t`Initial Balance`,
-        (args.initialBalanceDate as string | undefined) ?? undefined,
-        (args.id as number | undefined) ?? undefined
-      );
-    },
-    invalidates: [
-      ['accounts', '*'], // Will match ["accounts", budgetId]
-      // Debt and credit accounts create their linked category/group as part
-      // of account creation, so dropdowns must refetch them immediately.
-      ['categories', '*'],
-      ['categoryGroups', '*'],
-      ['monthlyBudget', '*'],
-      ['onBudgetBalance'],
-      ['onBudgetBalanceByDates'],
-      ['readyToAssign', '*'], // Income calculations depend on on_budget accounts
-    ],
+    execute: async (args) => createAccount(args),
+    invalidates: ACCOUNT_CREATE_INVALIDATIONS,
     undo: {
       build: (_args, result) => {
         const id = (result as { ID?: number } | undefined)?.ID;
@@ -53,6 +95,30 @@ export const accountOps = {
       },
     },
     redo: redoWithIds('accounts.create', (args, result) => {
+      const id = (result as { ID?: number } | undefined)?.ID;
+      return typeof id === 'number' ? { ...args, id } : null;
+    }),
+  },
+
+  /**
+   * Bank linking: create the account, its cleared opening balance and its bank
+   * link in one transaction, so a failure never leaves an unlinked account.
+   * Replaces accounts.create + transactions.setCleared + bankSync.saveLink.
+   */
+  'accounts.createLinked': {
+    execute: async (args) => createAccount(args, args.link as Record<string, unknown>),
+    invalidates: [
+      ...ACCOUNT_CREATE_INVALIDATIONS,
+      ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
+      ['bankSync', '*'],
+    ],
+    undo: {
+      build: (_args, result) => {
+        const id = (result as { ID?: number } | undefined)?.ID;
+        return typeof id === 'number' ? [{ op: 'accounts.delete', args: { id } }] : [];
+      },
+    },
+    redo: redoWithIds('accounts.createLinked', (args, result) => {
       const id = (result as { ID?: number } | undefined)?.ID;
       return typeof id === 'number' ? { ...args, id } : null;
     }),
@@ -209,25 +275,23 @@ export const accountOps = {
 
   // useDeleteAccount
   'accounts.delete': {
-    execute: async (args) => {
-      return await S().accounts!.deleteAccount(args.id as number);
+    // Same delete as before; it now also returns what it removed, for undo.
+    execute: async (args) => S().accounts!.deleteAccountWithUndo(args.id as number),
+    invalidates: ACCOUNT_DELETE_INVALIDATIONS,
+    undo: {
+      build: (args, result) =>
+        isRowJournal(result)
+          ? [{ op: 'accounts.restoreDeleted', args: { budgetId: args.budgetId, journal: result } }]
+          : [],
     },
-    invalidates: [
-      ['accounts', '*'], // Will match ["accounts", budgetId]
-      ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
-      // Deleting a debt/credit account removes its linked system category;
-      // rows other accounts held in it move to Uncategorized.
-      ['categories', '*'],
-      ['allTransactions', '*'],
-      ['allTransactionsDetailed', '*'],
-      ['allTransactionsAnalytics', '*'],
-      ['uncategorizedTransactions', '*'],
-      ['transactionsByCategoryAndMonth', '*'],
-      ['categoryGroups', '*'],
-      ['monthlyBudget', '*'],
-      ['onBudgetBalance'],
-      ['onBudgetBalanceByDates'],
-      ['readyToAssign', '*'], // Deleting account removes its transactions, affecting income
-    ],
+  },
+
+  /** Undo of accounts.delete; `journal` is the delete's result. */
+  'accounts.restoreDeleted': {
+    execute: async (args) => {
+      if (!isRowJournal(args.journal)) throw new Error('Nothing to restore');
+      S().accounts!.restoreDeletedAccount(args.journal);
+    },
+    invalidates: ACCOUNT_RESTORE_INVALIDATIONS,
   },
 } satisfies Record<string, OpCodeEntry>;

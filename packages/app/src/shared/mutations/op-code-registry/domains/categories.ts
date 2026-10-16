@@ -1,5 +1,6 @@
-import type { FundingPriorityUpdate } from '@budgero/core/browser';
+import { isRowJournal, type FundingPriorityUpdate } from '@budgero/core/browser';
 import {
+  RECURRING_TEMPLATE_INVALIDATIONS,
   S,
   makeRestoreUndo,
   redoWithIds,
@@ -9,7 +10,68 @@ import {
   type OpCodeEntry,
 } from '../shared';
 
+/** Everything an atomic category (or group) delete, or its undo, can change. */
+const CATEGORY_DELETE_INVALIDATIONS: string[][] = [
+  ['categories', '*'],
+  ['categoryGroups', '*'],
+  ['goals', '*'],
+  ['goal', '*'],
+  ['transactionSplits', '*'],
+  ['categoryAssignmentHelpers'],
+  ['categoryAssignmentHelpers', '*'],
+  ['assignmentsByMonthForCategories'],
+  ['assignmentsByMonthForCategories', '*'],
+  ['assignedLastMonth'],
+  ['assignedLastMonth', '*'],
+  ['totalAssignedForBudgetPace', '*'],
+  ...RECURRING_TEMPLATE_INVALIDATIONS,
+  ...TRANSACTION_INVALIDATION_KEYS,
+];
+
+/** Undo of an atomic delete: put back exactly what its journal recorded. */
+const restoreDeletedUndo: NonNullable<OpCodeEntry['undo']> = {
+  build: (args, result) =>
+    isRowJournal(result)
+      ? [{ op: 'categories.restoreDeleted', args: { budgetId: args.budgetId, journal: result } }]
+      : [],
+};
+
+const reassignTarget = (args: Record<string, unknown>) =>
+  typeof args.reassignTo === 'number' ? args.reassignTo : null;
+
 export const categoryOps = {
+  /**
+   * Delete a category in one step, optionally moving its transactions, split
+   * lines, scheduled transactions and assignments to `reassignTo` first.
+   * Validates before writing anything; undo restores the category under its
+   * ID with its goal and assignments and moves exactly the moved rows back.
+   * Replaces the transactions.reassign + monthlyBudgets.reassignAssignment +
+   * categories.delete sequence (those ops stay for queued ops from older clients).
+   */
+  'categories.deleteAndReassign': {
+    execute: async (args) =>
+      S().categories.deleteCategoryWithUndo(args.id as number, reassignTarget(args)),
+    invalidates: CATEGORY_DELETE_INVALIDATIONS,
+    undo: restoreDeletedUndo,
+  },
+
+  /** categories.deleteAndReassign for a whole group (its categories, then the group). */
+  'categoryGroups.deleteAndReassign': {
+    execute: async (args) =>
+      S().categories.deleteCategoryGroupWithUndo(args.id as number, reassignTarget(args)),
+    invalidates: CATEGORY_DELETE_INVALIDATIONS,
+    undo: restoreDeletedUndo,
+  },
+
+  /** Undo of the two ops above; `journal` is the delete's result. */
+  'categories.restoreDeleted': {
+    execute: async (args) => {
+      if (!isRowJournal(args.journal)) throw new Error('Nothing to restore');
+      S().categories.restoreDeletedCategories(args.journal);
+    },
+    invalidates: CATEGORY_DELETE_INVALIDATIONS,
+  },
+
   'categories.updateFundingPriorities': {
     execute: async (args) =>
       S().categories.updateFundingPriorities(
