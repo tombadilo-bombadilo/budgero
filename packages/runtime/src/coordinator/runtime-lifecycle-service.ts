@@ -142,6 +142,7 @@ export class RuntimeLifecycleService {
   ): Promise<void> {
     const activeContext = this.deps.session.getContext();
     if (activeContext && activeContext.spaceId !== spaceId) {
+      await this.deps.session.flushLocalPersistence?.();
       this.deps.session.dispose();
     }
 
@@ -187,6 +188,11 @@ export class RuntimeLifecycleService {
     try {
       checkAbort(options.signal);
     } catch (error) {
+      try {
+        context.disposeLocalPersistence?.();
+      } catch {
+        /* no-op */
+      }
       try {
         context.sync.destroy();
       } catch {

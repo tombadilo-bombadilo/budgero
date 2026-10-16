@@ -60,6 +60,17 @@ with `--json` the same plus per-interaction breakdowns.
 - `persist`: `db.export()`, LZ4, LZ4 + AES-GCM envelope, and the main-thread total
   (export + LZ4 + Blob copy). AES runs off the main thread in browsers.
 
+The runner reads the checkout's runtime/app sources next to `--core` to model
+what it does around core (printed as `runtime model` on stderr):
+
+- `localLz4`: the local OPFS copy is LZ4-compressed (before P22a). Without it the
+  persist total is export + two copies (WebCrypto input, Blob).
+- `coalesced`: `LocalPersistScheduler` exists (P22b). An interaction then costs
+  `1 + floor(mutation ms / 1000)` persists (250 ms debounce, 1 s max wait)
+  instead of one per op.
+- `batchedRules`: bank sync runs each continuous rule once over the batch (P10),
+  so the bank-sync case does 3 `executeRule` calls over 200 ids, not 600.
+
 ## Dataset (`gen.mjs`)
 
 Seeded and deterministic: same seed, `--end` and generator core give the same rows

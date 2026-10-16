@@ -85,6 +85,7 @@ export class MutationExecutor {
       mutationId,
       isReceiver,
     })) as T;
+    this.deps.onOpApplied?.(mutationId);
 
     // Invalidate queries for every origin (local + remote) off the op's
     // declared set. Previously only remote/forced mutations invalidated here

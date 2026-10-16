@@ -112,6 +112,11 @@ export interface MutationSpec {
     label?: string;
     forceInvalidate?: boolean;
     origin?: 'local' | 'remote';
+    /**
+     * App-level: the caller runs continuous rules itself, once over a batch of
+     * created transactions (AppRuntime.runContinuousRules). The runtime ignores it.
+     */
+    deferContinuousRules?: boolean;
   };
 }
 
@@ -139,6 +144,12 @@ export interface SyncTransportDeps {
   onMutationAck?(mutationId: string, version: number): void | Promise<void>;
   /** Persist local DB snapshot before advancing durable mutation cursor. */
   persistLocalDatabase?(): Promise<boolean>;
+  /**
+   * Debounced variant. When provided, cursor advances persist through it
+   * without blocking message handling; the durable cursor is written once
+   * the covering persist lands.
+   */
+  persistLocalDatabaseSoon?(): Promise<boolean>;
   onConnectionChange(connected: boolean): void;
   onSyncStateChanged?(spaceId: string, version: number, outOfBand?: boolean): void;
   onCatchUpUnsafe?(details: {
@@ -195,6 +206,12 @@ export interface DatabaseSyncDeps {
    */
   hasUnackedMutations?(): boolean;
   /**
+   * Run a pending debounced local persist (and wait for in-flight ones)
+   * before a snapshot upload or restore, so the local file never lags the
+   * server blob and an old write can't land after the restored DB's.
+   */
+  flushLocalPersistence?(): Promise<unknown>;
+  /**
    * Fired after every successful downloadAndRestore, with the mutation-log
    * version bound to the restored blob (undefined for legacy blobs). The
    * wiring must restore the sync invariants the new DB content invalidated:
@@ -235,6 +252,12 @@ export interface MutationExecutorDeps {
   getActiveSpaceId(): string | null;
   getSpaceRole(spaceId: string): string | null;
   onAnalyticsEvent?(op: string): void;
+  /**
+   * The op's effect just landed in the DB (before invalidation, history and
+   * queueing). Used to record the applied id for dedup at the same moment, so
+   * a local persist taken after this point carries both.
+   */
+  onOpApplied?(mutationId: string): void;
 }
 
 /** Execution metadata available to domain op-code handlers. */

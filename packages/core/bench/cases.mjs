@@ -27,7 +27,7 @@ const addDays = (day, n) => {
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
 };
 
-export function makeContext({ services: s, adapter, info, today, app }) {
+export function makeContext({ services: s, adapter, info, today, app, runtime = {} }) {
   const budgetId = info.budgetId;
   const month = MONTH(today);
   const ids = info.accountIds;
@@ -70,6 +70,7 @@ export function makeContext({ services: s, adapter, info, today, app }) {
     today,
     ids,
     appMode,
+    runtime,
     accounts,
     goals,
     chk0Ids,
@@ -409,6 +410,11 @@ export function interactions(c) {
     for (const r of continuousRules())
       await c.s.rules.executeRule(r.id, { trigger: 'continuous', transactionIds: [txId] });
   };
+  // P10: bank sync runs each continuous rule once over the batch it created
+  const runContinuousBatch = async (txIds) => {
+    for (const r of continuousRules())
+      await c.s.rules.executeRule(r.id, { trigger: 'continuous', transactionIds: txIds });
+  };
   let delPool = null;
   return {
     'open budget page': {
@@ -548,6 +554,7 @@ export function interactions(c) {
     'bank-sync import 200 rows + 3 continuous rules': {
       mutation: async () => {
         const base = k++;
+        const created = [];
         for (let j = 0; j < 200; j++) {
           const id = await c.s.transactions.addTransaction(
             0,
@@ -565,14 +572,17 @@ export function interactions(c) {
             [],
             true
           );
-          await runContinuous(id);
+          if (c.runtime.batchedRules) created.push(id);
+          else await runContinuous(id);
         }
+        if (c.runtime.batchedRules) await runContinuousBatch(created);
       },
       refetch: () => [
         ...registerPageQueries(c, c.ids.chk1, { onlyInvalidated: true }),
         ...globalQueries(c),
       ],
-      persists: 800,
+      // 200 imports + one rules.execute per (row x rule), or per rule with P10
+      persists: c.runtime.batchedRules ? 203 : 800,
     },
     'open dashboard': { refetch: () => [...globalQueries(c), ...dashboardQueries(c)], persists: 0 },
     'open accounts page (net worth)': {

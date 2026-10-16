@@ -17,12 +17,20 @@ import { DatabaseSync, DatabaseLoader, type MigrationRunner } from '../database-
 import { OfflineQueue } from '../offline-queue';
 import { SyncTransport, SnapshotUnavailableError } from '../sync-transport';
 import { reapplyQueueAfterRestore } from './restore-invariant';
+import { LocalPersistScheduler } from './local-persist-scheduler';
 
 export interface RuntimeContext {
   spaceId: string;
   generation: number;
   db: WebDatabaseInstance;
+  /** Persist now (coalesced with a write that has not started yet). */
   persistLocalDatabase(): Promise<boolean>;
+  /** Debounced persist — see LocalPersistScheduler. */
+  persistLocalDatabaseSoon?(): Promise<boolean>;
+  /** Run a pending debounced persist now; otherwise wait for in-flight writes. */
+  flushLocalPersistence?(): Promise<boolean>;
+  /** Drop a pending debounced persist; the context is going away. */
+  disposeLocalPersistence?(): void;
   sync: SyncTransport;
   executor: MutationExecutor;
   dbSync: DatabaseSync;
@@ -118,24 +126,28 @@ export class RuntimeContextFactory {
   }
 
   createOnlineContext(params: CreateOnlineContextParams): RuntimeContext {
-    const persistDb = this.createLocalPersistenceWriter(params.spaceId, params.db);
-
-    const executor = this.buildExecutor((spaceId) => this.deps.getSpaceRole(spaceId));
-
     // dbSync is constructed before the transport/queue; these deps are
     // late-bound closures over the refs assigned below.
     let syncRef: SyncTransport | null = null;
     let offlineQueueRef: OfflineQueue | null = null;
 
+    // Record the applied id as soon as the op's effect is in the DB, so any
+    // later export carries both (see createLocalPersistenceWriter).
+    const executor = this.buildExecutor(
+      (spaceId) => this.deps.getSpaceRole(spaceId),
+      (mutationId) => offlineQueueRef?.markApplied(mutationId)
+    );
+
     // Applied-id records must never outlive the DB persist that contains
     // their effects (a persisted id whose mutation the persisted DB lost is
     // skipped on replay forever) — so the flush rides on every successful
-    // DB persist.
-    const persistLocalDatabase = async (): Promise<boolean> => {
-      const ok = await persistDb();
-      if (ok) offlineQueueRef?.flushAppliedIds();
-      return ok;
-    };
+    // DB persist, and only covers ids recorded before its export.
+    const localPersist = new LocalPersistScheduler(
+      this.createLocalPersistenceWriter(params.spaceId, params.db, () => offlineQueueRef)
+    );
+    const persistLocalDatabase = (): Promise<boolean> => localPersist.persistNow();
+    const persistLocalDatabaseSoon = (): Promise<boolean> => localPersist.persistSoon();
+    const flushLocalPersistence = (): Promise<boolean> => localPersist.flush();
 
     const dbSync = new DatabaseSync(params.spaceId, {
       getDatabase: () => params.db,
@@ -149,6 +161,7 @@ export class RuntimeContextFactory {
       checkApiHealth: () => this.deps.checkApiHealth(),
       getMutationCursor: () => syncRef?.getLocalVersion() ?? 0,
       hasUnackedMutations: () => (offlineQueueRef?.peekQueueLength() ?? 0) > 0,
+      flushLocalPersistence,
       // Restore invariant: after ANY snapshot restore the DB content changed
       // out from under the cursor and the dedup sets. Reseed the cursor to
       // the blob's bound log position, then reset dedup and re-apply queued
@@ -185,6 +198,7 @@ export class RuntimeContextFactory {
         params.onRemoteMutation(op, args, id, offlineQueue, executor),
       onMutationAck: (mutationId) => offlineQueue.ackMutation(mutationId),
       persistLocalDatabase,
+      persistLocalDatabaseSoon,
       onConnectionChange: (connected) => {
         if (!connected) {
           // Bytes written to the dead socket have unknown fate: treat every
@@ -270,6 +284,9 @@ export class RuntimeContextFactory {
       generation: params.generation,
       db: params.db,
       persistLocalDatabase,
+      persistLocalDatabaseSoon,
+      flushLocalPersistence,
+      disposeLocalPersistence: () => localPersist.dispose(),
       sync,
       executor,
       dbSync,
@@ -282,7 +299,10 @@ export class RuntimeContextFactory {
     };
   }
 
-  private buildExecutor(getSpaceRole: (spaceId: string) => string | null): MutationExecutor {
+  private buildExecutor(
+    getSpaceRole: (spaceId: string) => string | null,
+    onOpApplied?: (mutationId: string) => void
+  ): MutationExecutor {
     return new MutationExecutor({
       executeOp: (op, payload, context) => this.deps.executeOp(op, payload, context),
       getUndoSpec: (op) => this.deps.getUndoSpec(op),
@@ -294,6 +314,7 @@ export class RuntimeContextFactory {
       getActiveSpaceId: () => this.deps.getActiveSpaceId(),
       getSpaceRole,
       onAnalyticsEvent: (op) => this.deps.onAnalyticsEvent?.(op),
+      onOpApplied,
     });
   }
 
@@ -311,15 +332,23 @@ export class RuntimeContextFactory {
     };
   }
 
+  /**
+   * One local persist. Chaining and coalescing live in LocalPersistScheduler,
+   * which never runs two of these at once.
+   */
   private createLocalPersistenceWriter(
     spaceId: string,
-    db: WebDatabaseInstance
+    db: WebDatabaseInstance,
+    getOfflineQueue: () => OfflineQueue | null
   ): () => Promise<boolean> {
-    let writeChain: Promise<boolean> = Promise.resolve(true);
-
-    const runWrite = async (): Promise<boolean> => {
+    return async (): Promise<boolean> => {
+      // persistDatabase exports the DB synchronously, before its first await,
+      // so this mark separates the ids whose effects are in this write from
+      // those recorded while it is in flight (flushed by the next write).
+      const appliedMark = getOfflineQueue()?.appliedIdsMark();
       try {
         if (await persistDatabase(db)) {
+          getOfflineQueue()?.flushAppliedIds(appliedMark);
           return true;
         }
         this.deps.log?.(
@@ -336,11 +365,6 @@ export class RuntimeContextFactory {
         });
         return false;
       }
-    };
-
-    return async () => {
-      writeChain = writeChain.then(runWrite, runWrite);
-      return writeChain;
     };
   }
 }

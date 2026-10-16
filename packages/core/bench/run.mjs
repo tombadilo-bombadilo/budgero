@@ -116,10 +116,36 @@ const record = (suite, mode, name, st, extra = {}) => {
   );
 };
 const want = (name) => !caseFilter || caseFilter.test(name);
+// What the checkout's runtime/app do around core, read from their sources
+// (the bench runs core only and models the rest).
+const sibling = (...p) => path.resolve(args.core, '..', ...p);
+const readSrc = (p) => (fs.existsSync(p) ? fs.readFileSync(p, 'utf8') : '');
+const runtimeModel = {
+  // true before P22a: the local copy is LZ4-compressed before encryption
+  localLz4: /compressAndEncryptDatabase\(/.test(
+    readSrc(sibling('runtime', 'src', 'crypto', 'persistence-cipher.ts'))
+  ),
+  // P22b: LocalPersistScheduler coalesces persists (250 ms debounce, 1 s max wait)
+  coalesced: fs.existsSync(sibling('runtime', 'src', 'coordinator', 'local-persist-scheduler.ts')),
+  // P10: continuous rules once per bank-sync batch
+  batchedRules: /runContinuousRules\?\.\(/.test(
+    readSrc(sibling('app', 'src', 'features', 'bank-sync', 'model', 'run-bank-sync.ts'))
+  ),
+};
+process.stderr.write(`[bench] runtime model: ${JSON.stringify(runtimeModel)}\n`);
 const fresh = async (mode) => {
   const db = await openDb(core, data.bytes);
   db.adapter.exec(`UPDATE budgets SET RtaMode='${mode}' WHERE ID=${data.info.budgetId}`);
-  return { ...db, ctx: makeContext({ ...db, info: data.info, today: args.end, app: args.app }) };
+  return {
+    ...db,
+    ctx: makeContext({
+      ...db,
+      info: data.info,
+      today: args.end,
+      app: args.app,
+      runtime: runtimeModel,
+    }),
+  };
 };
 const modes = args.modes.split(',');
 const opts = { iters, warmup, budgetMs, minIters };
@@ -157,8 +183,10 @@ async function loadPersist() {
 const persistOps = await loadPersist();
 const persistOnce = async (adapter) => {
   const b = adapter.backup();
-  const c = persistOps ? persistOps.compress(b) : b;
-  return c.slice();
+  if (persistOps && runtimeModel.localLz4) return persistOps.compress(b).slice();
+  // No LZ4: WebCrypto copies the plaintext in, then the Blob copies the ciphertext.
+  b.slice();
+  return b.slice();
 };
 
 if (suites.has('persist')) {
@@ -279,18 +307,24 @@ if (suites.has('interactions')) {
           minIters: heavy ? 1 : minIters,
         }
       );
-      const persistMs = it.persists * pst.p50;
+      // Coalesced: one write per 1 s max-wait window of the burst + the trailing one.
+      const mutationMs = (parts.mutation || 0) / (st.n + (heavy ? 0 : Math.min(warmup, 2)));
+      const persists =
+        runtimeModel.coalesced && it.persists > 0
+          ? Math.min(it.persists, 1 + Math.floor(mutationMs / 1000))
+          : it.persists;
+      const persistMs = persists * pst.p50;
       const breakdown = Object.fromEntries(
         Object.entries(parts)
           .map(([k, v]) => [k, v / (st.n + (heavy ? 0 : Math.min(warmup, 2)))])
           .sort((a, b) => b[1] - a[1])
       );
       record('interactions', it.mutation || budgetModeOnly ? mode : '-', name, st, {
-        persists: it.persists,
+        persists,
         persistMs,
         totalP50: st.p50 + persistMs,
         breakdown,
-        note: `+ persist ${it.persists}x${fmt(pst.p50)} = ${fmt(persistMs)} ms => total p50 ${fmt(st.p50 + persistMs)} | top: ${Object.entries(
+        note: `+ persist ${persists}x${fmt(pst.p50)} = ${fmt(persistMs)} ms => total p50 ${fmt(st.p50 + persistMs)} | top: ${Object.entries(
           breakdown
         )
           .slice(0, 3)

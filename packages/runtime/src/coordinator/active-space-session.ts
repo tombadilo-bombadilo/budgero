@@ -29,7 +29,23 @@ export class ActiveSpaceSession {
     return this.context?.sync.isConnected() ?? false;
   }
 
+  /**
+   * Write the active space's pending debounced local persist now (and wait
+   * for in-flight writes). Call before leaving the space.
+   */
+  async flushLocalPersistence(): Promise<void> {
+    try {
+      await this.context?.flushLocalPersistence?.();
+    } catch {
+      /* no-op */
+    }
+  }
+
   replace(context: RuntimeContext): void {
+    if (this.context && this.context !== context) {
+      // A replaced context must not write its (stale) DB over the new one.
+      this.context.disposeLocalPersistence?.();
+    }
     this.clearContextListenerForwarding();
     this.contextListenerCleanup.push(
       context.sync.onConnectionChange((connected) => {
@@ -56,6 +72,13 @@ export class ActiveSpaceSession {
   dispose(): void {
     this.clearContextListenerForwarding();
     if (!this.context) return;
+    // Drops a pending debounced persist: callers that keep the data flush
+    // first (space switch); sign-out and resets wipe local storage anyway.
+    try {
+      this.context.disposeLocalPersistence?.();
+    } catch {
+      /* no-op */
+    }
     try {
       this.context.sync.destroy();
     } catch {
