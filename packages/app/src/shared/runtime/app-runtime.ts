@@ -43,6 +43,9 @@ import { getErrorMessage } from '@shared/lib/errors';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
 import { withPushIdentity } from './push-identity';
 
+/** Ids per rules.execute op; keeps the IN (...) list well under SQLite's bind limit. */
+const CONTINUOUS_RULE_BATCH_SIZE = 500;
+
 export class AppRuntime {
   private coordinator: RuntimeCoordinator;
 
@@ -612,6 +615,35 @@ export class AppRuntime {
       return;
     }
 
+    // Batch importers (bank sync, file import) run the rules themselves, once
+    // over every row they created — see runContinuousRules.
+    if (isTransactionAdd && spec.meta?.deferContinuousRules === true) return;
+
+    // Transfer legs stay one at a time: a rule edit on one leg can touch the
+    // other, so they keep the old (leg x rule) order.
+    for (const transactionId of transactionIds) {
+      await this.runContinuousRules(budgetId, [transactionId], {
+        skipInvalidate: isTransactionAdd && spec.meta?.skipInvalidate === true,
+      });
+    }
+  }
+
+  /**
+   * Run every enabled continuous rule (in runOrder) once over `transactionIds`:
+   * one synced `rules.execute` op per rule instead of one per (transaction x
+   * rule). A rule reads and edits only the transactions it is given, so each
+   * transaction ends up exactly as if the rules ran on it alone; only the rule
+   * run history differs (one run per rule per batch). Old per-transaction ops
+   * in the log replay unchanged — the op itself is the same.
+   */
+  async runContinuousRules(
+    budgetId: number,
+    transactionIds: number[],
+    options: { skipInvalidate?: boolean } = {}
+  ): Promise<void> {
+    const ids = transactionIds.filter(Number.isFinite);
+    if (ids.length === 0 || !Number.isFinite(budgetId)) return;
+
     try {
       const services = this.serviceManager.getServices();
       if (!services) return;
@@ -633,10 +665,10 @@ export class AppRuntime {
       }
 
       const invalidates = getInvalidatesForOp('rules.execute');
-      const deferPlainAddInvalidation = isTransactionAdd && spec.meta?.skipInvalidate === true;
 
-      for (const transactionId of transactionIds) {
-        for (const rule of continuousRules) {
+      for (const rule of continuousRules) {
+        for (let i = 0; i < ids.length; i += CONTINUOUS_RULE_BATCH_SIZE) {
+          const chunk = ids.slice(i, i + CONTINUOUS_RULE_BATCH_SIZE);
           try {
             await this.executeMutation({
               op: 'rules.execute',
@@ -644,20 +676,20 @@ export class AppRuntime {
                 ruleId: rule.id,
                 options: {
                   trigger: 'continuous',
-                  transactionIds: [transactionId],
+                  transactionIds: chunk,
                 },
               },
               invalidates,
               meta: {
                 skipUndo: true,
                 forceInvalidate: true,
-                skipInvalidate: deferPlainAddInvalidation,
+                skipInvalidate: options.skipInvalidate === true,
               },
             });
           } catch (error) {
             console.warn('[AppRuntime] Failed to run continuous rule', {
               ruleId: rule.id,
-              transactionId,
+              transactionIds: chunk,
               error,
             });
           }

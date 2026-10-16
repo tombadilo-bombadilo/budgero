@@ -112,6 +112,11 @@ export interface MutationSpec {
     label?: string;
     forceInvalidate?: boolean;
     origin?: 'local' | 'remote';
+    /**
+     * App-level: the caller runs continuous rules itself, once over a batch of
+     * created transactions (AppRuntime.runContinuousRules). The runtime ignores it.
+     */
+    deferContinuousRules?: boolean;
   };
 }
 
