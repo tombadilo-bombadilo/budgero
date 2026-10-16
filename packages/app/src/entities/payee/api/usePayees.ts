@@ -24,7 +24,9 @@ export function usePayees(budgetId: number | null | undefined, queryEnabled = tr
         return [];
       }
       const services = runtime.services();
-      const names = services.payees.getPayeesWithUsage(normalizedBudgetId).map((p) => p.Name);
+      // Names only: the usage counts (a GROUP BY over every row) are for the
+      // Payees settings page, not for pickers.
+      const names = services.payees.getPayeeNames(normalizedBudgetId);
 
       const unique = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
       return unique.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));

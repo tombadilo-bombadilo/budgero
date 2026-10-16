@@ -272,6 +272,12 @@ export interface OpCodeEntry {
   execute: (args: Record<string, unknown>, context?: OpCodeExecutionContext) => Promise<unknown>;
   // Query keys to invalidate (for remote mutations)
   invalidates: string[][];
+  /**
+   * Optional narrower set for one call's args (e.g. a memo edit cannot change
+   * balances). Must be a subset of `invalidates`, which stays the full list for
+   * callers that only know the op code.
+   */
+  invalidatesFor?: (args: Record<string, unknown>) => string[][];
   undo?: {
     // Capture any before-state needed to build inverse ops
     capture?: (args: Record<string, unknown>) => Promise<unknown>;

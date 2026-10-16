@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { AccountUncategorizedCount } from '@budgero/core/browser';
+import type { AccountUncategorizedCount, GetAllTransactions } from '@budgero/core/browser';
 import { useSpaceQuery } from '@shared/api/useSpaceQuery';
 import { useAccounts } from '@entities/account/api/useAccounts';
 
@@ -43,4 +43,18 @@ export function useUncategorizedTransactions(budgetId: number) {
   }, [counts, accounts]);
 
   return { data, isLoading: countsLoading || accountsLoading };
+}
+
+/**
+ * The newest uncategorized transactions (split parents excluded), newest
+ * first — what the dashboard card lists. Under the `allTransactions` root, like
+ * the counts, so it refreshes on every write that refreshed the full list.
+ */
+export function useRecentUncategorizedTransactions(budgetId: number, limit: number) {
+  return useSpaceQuery<GetAllTransactions[]>({
+    key: ['allTransactions', budgetId, 'recentUncategorized', limit],
+    enabled: Boolean(budgetId),
+    queryFn: (services) =>
+      services.transactions.getRecentUncategorizedTransactions(budgetId, limit),
+  });
 }

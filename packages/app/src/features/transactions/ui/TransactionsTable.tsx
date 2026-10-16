@@ -29,8 +29,6 @@ import { useLabels } from '@entities/label/api/useLabels';
 import { useAccounts } from '@entities/account/api/useAccounts';
 import { useCategoryGroups } from '@entities/category/api/useCategories';
 import { usePayees } from '@entities/payee/api/usePayees';
-import { useMonthlyBudget, useReadyToAssign } from '@entities/budget/api/useMonthlyBudget';
-import { getTodayISO } from '@shared/lib/date-utils';
 import { useInlineTransactionEntryEnabled } from '@shared/contexts/InlineTransactionEntryContext';
 import { setInlineAddTarget } from '@features/transactions/model/inline-add-target';
 import type { TransactionEditorDirectories } from './desktop-table/transaction-editor-types';
@@ -222,10 +220,8 @@ export function TransactionsTable({
   const { data: accounts = [] } = useAccounts(budgetId);
   const { data: categoryGroups = [] } = useCategoryGroups(budgetId);
   const { data: payees = [] } = usePayees(budgetId);
-  const currentMonth = getTodayISO().slice(0, 7);
-  const { data: monthlyRows = [] } = useMonthlyBudget(currentMonth, budgetId);
-  const { data: readyToAssignAmount = 0 } = useReadyToAssign(budgetId);
-
+  // The category pickers load Available and Ready to Assign themselves, only
+  // while open, so the register doesn't compute the budget on every write.
   const editorDirectories = React.useMemo<TransactionEditorDirectories>(
     () => ({
       accounts,
@@ -233,10 +229,8 @@ export function TransactionsTable({
       categoryGroups,
       labels,
       payees,
-      monthlyRows,
-      readyToAssignAmount,
     }),
-    [accounts, categories, categoryGroups, labels, payees, monthlyRows, readyToAssignAmount]
+    [accounts, categories, categoryGroups, labels, payees]
   );
 
   // Currency display helper - use the correct formatter AND values

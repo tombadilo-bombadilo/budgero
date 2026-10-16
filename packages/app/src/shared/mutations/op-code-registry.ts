@@ -83,12 +83,18 @@ export async function executeMutationOp(
 }
 
 /**
- * Get invalidation keys for a given op code.
- * Used by MutationManager when processing remote mutations.
+ * Get invalidation keys for a given op code. With `args`, ops that declare
+ * `invalidatesFor` return the set for that call (local, remote and undo/redo
+ * replays all pass the op's payload); without, the op's full list.
  */
-export function getInvalidatesForOp(op: string): string[][] | undefined {
+export function getInvalidatesForOp(
+  op: string,
+  args?: Record<string, unknown>
+): string[][] | undefined {
   if (!isKnownOpCode(op)) return undefined;
-  return opCodeRegistry[op]?.invalidates;
+  const entry: OpCodeEntry | undefined = opCodeRegistry[op];
+  if (args && entry?.invalidatesFor) return entry.invalidatesFor(args);
+  return entry?.invalidates;
 }
 
 /**

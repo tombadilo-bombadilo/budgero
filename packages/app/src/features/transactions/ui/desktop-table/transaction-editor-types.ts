@@ -23,6 +23,8 @@ export interface TransactionEditorDirectories {
   categoryGroups: CategoryGroup[];
   labels: LabelListItem[];
   payees: string[];
-  monthlyRows: GetMonthlyBudgetRow[];
-  readyToAssignAmount: number;
+  /** Omit to let each category picker load Available itself while open. */
+  monthlyRows?: GetMonthlyBudgetRow[];
+  /** Omit to let each category picker load Ready to Assign itself while open. */
+  readyToAssignAmount?: number;
 }

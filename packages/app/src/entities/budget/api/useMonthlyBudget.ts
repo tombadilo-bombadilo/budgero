@@ -10,6 +10,8 @@ import { useRuntime, useActiveSpaceId } from '@shared/runtime/runtime-provider';
 import { executeSpaceMutation } from '@shared/runtime/mutation-router';
 import { useSpaceQuery } from '@shared/api/useSpaceQuery';
 import { applyOpInvalidations, resolveSpaceKey } from '@shared/lib/query-utils';
+import { getTodayISO } from '@shared/lib/date-utils';
+import { asMilli } from '@shared/lib/currency/milli';
 
 /**
  * Fetch the monthly budget breakdown for a given month and budget.
@@ -36,6 +38,47 @@ export function useMonthlyBudget(month: string, budgetId: number, enabled = true
 }
 
 /**
+ * Month an RTA query is computed through: the given month, or today's.
+ * Core resolves an omitted month the same way, so callers that omit it share
+ * the cache entry with the budget page's current month instead of a separate
+ * 'current' copy.
+ */
+function resolveRtaMonth(month?: string): string {
+  return month || getTodayISO().slice(0, 7);
+}
+
+const selectReadyToAssign = (breakdown: ReadyToAssignBreakdown): number => breakdown.readyToAssign;
+
+/**
+ * One cache entry per budget and month: the Ready to Assign breakdown. The
+ * number is selected from it, so the figure and its help popover never
+ * compute RTA twice.
+ */
+function useReadyToAssignQuery<TData>(
+  budgetId: number,
+  month: string | undefined,
+  enabled: boolean,
+  select?: (breakdown: ReadyToAssignBreakdown) => TData
+) {
+  const runtime = useRuntime();
+  const spaceId = useActiveSpaceId();
+  const targetMonth = resolveRtaMonth(month);
+  return useQuery<ReadyToAssignBreakdown, Error, TData>({
+    queryKey: ['readyToAssign', resolveSpaceKey(spaceId), budgetId, targetMonth],
+    queryFn: async () => {
+      if (!spaceId) {
+        throw new Error('No active budget space selected');
+      }
+      return runtime.services().monthlyBudgets.getReadyToAssignBreakdown(budgetId, targetMonth);
+    },
+    enabled: enabled && Boolean(spaceId) && Boolean(budgetId),
+    staleTime: 1000 * 60 * 5,
+    placeholderData: keepPreviousData,
+    select,
+  });
+}
+
+/**
  * Fetch the "ready to assign" amount for a budget.
  *
  * In cumulative mode this is a static, month-independent figure; in monthly
@@ -43,28 +86,16 @@ export function useMonthlyBudget(month: string, budgetId: number, enabled = true
  * pass the selected month; omit it elsewhere to get the current month.
  */
 export function useReadyToAssign(budgetId: number, month?: string, enabled = true) {
-  return useSpaceQuery<number>({
-    key: ['readyToAssign', budgetId, month ?? 'current'],
-    enabled: enabled && Boolean(budgetId),
-    queryFn: (services) => services.monthlyBudgets.getReadyToAssign(budgetId, month),
-    placeholderData: keepPreviousData,
-  });
+  return useReadyToAssignQuery(budgetId, month, enabled, selectReadyToAssign);
 }
 
 /**
  * The component figures behind Ready to Assign (income, assignments, transfers,
  * revaluations, prior cash overspend) plus the active mode — used by the help
- * popover to always show the full math.
+ * popover to always show the full math. Same cache entry as useReadyToAssign.
  */
-export function useReadyToAssignBreakdown(budgetId: number, month?: string) {
-  return useSpaceQuery<ReadyToAssignBreakdown>({
-    // Keyed under the 'readyToAssign' prefix so every existing
-    // ['readyToAssign', '*'] invalidation refreshes the breakdown too.
-    key: ['readyToAssign', budgetId, month ?? 'current', 'breakdown'],
-    enabled: Boolean(budgetId),
-    queryFn: (services) => services.monthlyBudgets.getReadyToAssignBreakdown(budgetId, month),
-    placeholderData: keepPreviousData,
-  });
+export function useReadyToAssignBreakdown(budgetId: number, month?: string, enabled = true) {
+  return useReadyToAssignQuery<ReadyToAssignBreakdown>(budgetId, month, enabled);
 }
 
 /**
@@ -292,10 +323,15 @@ export const useBatchUpsertAssignments = () => {
         }
 
         const readyToAssignKey = ['readyToAssign', spaceKey, budgetId, month] as const;
-        const previousReadyToAssign = queryClient.getQueryData<number>(readyToAssignKey);
+        const previousReadyToAssign =
+          queryClient.getQueryData<ReadyToAssignBreakdown>(readyToAssignKey);
         snapshots.push({ key: readyToAssignKey, data: previousReadyToAssign });
         if (previousReadyToAssign !== undefined) {
-          queryClient.setQueryData(readyToAssignKey, previousReadyToAssign - assignedDelta);
+          queryClient.setQueryData<ReadyToAssignBreakdown>(readyToAssignKey, {
+            ...previousReadyToAssign,
+            assignments: asMilli(previousReadyToAssign.assignments + assignedDelta),
+            readyToAssign: asMilli(previousReadyToAssign.readyToAssign - assignedDelta),
+          });
         }
       }
 

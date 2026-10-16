@@ -13,10 +13,11 @@ import { Badge } from '@shared/ui/badge';
 import { EmptyStateRow } from '@shared/ui/EmptyStateRow';
 import { DeleteTransactionDialog } from '@features/transactions/ui/DeleteTransactionDialog';
 import { TransactionQuickViewDialog } from '@features/transactions/ui/TransactionQuickViewDialog';
+import { useDeleteTransaction } from '@entities/transaction/api/useTransactions';
 import {
-  useAllTransactions,
-  useDeleteTransaction,
-} from '@entities/transaction/api/useTransactions';
+  useRecentUncategorizedTransactions,
+  useUncategorizedTransactions,
+} from '@entities/transaction/api/useUncategorizedTransactions';
 import { useTransactionCellCommit } from '@features/transactions/api/useTransactionCellCommit';
 import { type TransactionColumnName as DbTransactionColumn } from '@entities/transaction/api/mutations';
 import { useAccounts } from '@entities/account/api/useAccounts';
@@ -45,7 +46,12 @@ export function UncategorizedTransactionsCard({
 }: UncategorizedTransactionsCardProps) {
   const { t } = useLingui();
 
-  const { data: transactions = [], isLoading } = useAllTransactions(budgetId);
+  // The newest few rows and the per-account counts, not the whole ledger.
+  const { data: transactions = [], isLoading } = useRecentUncategorizedTransactions(
+    budgetId,
+    MAX_ROWS
+  );
+  const { data: uncategorizedCounts } = useUncategorizedTransactions(budgetId);
   const { data: accounts = [] } = useAccounts(budgetId);
   const { data: llmSettings } = useLLMSettings(budgetId);
   const accountLocalizer = useUiStore((state) => state.accountLocalizer);
@@ -83,18 +89,9 @@ export function UncategorizedTransactionsCard({
       .slice(0, MAX_ROWS);
   }, [transactions]);
 
-  const totalCount = useMemo(() => {
-    return transactions.reduce((count, transaction) => {
-      if (!transaction) return count;
-      if (transaction.Category === 'Split') return count;
-      const isCategorised =
-        Boolean(transaction.CategoryID && transaction.CategoryID > 0) &&
-        transaction.Category !== 'Uncategorized' &&
-        transaction.Category !== null &&
-        transaction.Category !== '';
-      return count + (isCategorised ? 0 : 1);
-    }, 0);
-  }, [transactions]);
+  // Same rule as the old in-memory count over every transaction (split parents
+  // excluded; CategoryID 0, a missing category, '' or 'Uncategorized').
+  const totalCount = uncategorizedCounts.total;
 
   const toTransactionCardRow = (transaction: GetAllTransactions): TransactionCardRow => {
     const accountId = transaction.AccountId ?? 0;

@@ -76,7 +76,9 @@ export class MutationExecutor {
     // pass an explicit list (undo/redo) to override.
     let { invalidates } = spec;
     if (!invalidates) {
-      invalidates = this.deps.getInvalidatesForOp(spec.op);
+      invalidates =
+        this.deps.getInvalidatesForCall?.(spec.op, spec.payload) ??
+        this.deps.getInvalidatesForOp(spec.op);
     }
     const hasInvalidates = Array.isArray(invalidates) && invalidates.length > 0;
 

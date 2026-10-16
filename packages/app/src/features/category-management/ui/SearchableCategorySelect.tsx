@@ -111,10 +111,12 @@ export function SearchableCategorySelect({
 
   const effectiveMonth = month || getTodayISO().slice(0, 7);
   const globalLocalizer = useUiStore((s) => s.globalLocalizer);
+  // Available and Ready to Assign only show in the open list, so a closed
+  // picker doesn't compute (or refetch) the month's budget.
   const monthlyBudgetQuery = useMonthlyBudget(
     effectiveMonth,
     budgetId,
-    providedMonthlyRows === undefined
+    open && providedMonthlyRows === undefined
   );
   const monthlyRows = providedMonthlyRows ?? monthlyBudgetQuery.data ?? EMPTY_MONTHLY_ROWS;
   const availableByCategory = React.useMemo(() => {
@@ -127,7 +129,7 @@ export function SearchableCategorySelect({
   const readyToAssignQuery = useReadyToAssign(
     budgetId,
     undefined,
-    providedReadyToAssignAmount === undefined
+    open && providedReadyToAssignAmount === undefined
   );
   const readyToAssignAmount = providedReadyToAssignAmount ?? readyToAssignQuery.data ?? 0;
 
