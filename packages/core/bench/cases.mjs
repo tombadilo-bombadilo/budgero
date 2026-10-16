@@ -169,9 +169,7 @@ export function dashboardQueries(c) {
     q('incomeExpenseByPeriod', () =>
       c.s.analytics.getIncomeExpenseByPeriod(from, c.today, c.budgetId, 'week')
     ),
-    q('allAccountsMonthlyTransactions', () =>
-      c.accounts.forEach((a) => c.s.transactions.getTransactionsByAccountAndMonth(a.ID, c.month))
-    ),
+    q('allAccountsMonthlyTransactions', () => allAccountsMonthlyTransactions(c)),
     q('getMonthlyBudget(current)', () => c.s.monthlyBudgets.getMonthlyBudget(c.month, c.budgetId)),
     q('goals+cycleFinancials', () => {
       c.s.goals.getAllGoals();
@@ -287,14 +285,22 @@ export function queryCases(c) {
       'dash: incomeExpenseByPeriod (30d, week)',
       () => c.s.analytics.getIncomeExpenseByPeriod(from, c.today, c.budgetId, 'week'),
     ],
-    [
-      'dash: allAccountsMonthlyTransactions (30 accts)',
-      () =>
-        c.accounts.forEach((a) => c.s.transactions.getTransactionsByAccountAndMonth(a.ID, c.month)),
-    ],
+    ['dash: allAccountsMonthlyTransactions (30 accts)', () => allAccountsMonthlyTransactions(c)],
     ['dash: onBudgetBalance', () => c.s.analytics.getOnBudgetBalance(c.budgetId)],
   ];
   return { budget, other };
+}
+
+/** AtAGlance: one query for every account where the core has it (P16), else one per account. */
+function allAccountsMonthlyTransactions(c) {
+  if (typeof c.s.transactions.getTransactionsByAccountsAndMonth === 'function')
+    return c.s.transactions.getTransactionsByAccountsAndMonth(
+      c.accounts.map((a) => a.ID),
+      c.month
+    );
+  return c.accounts.flatMap((a) =>
+    c.s.transactions.getTransactionsByAccountAndMonth(a.ID, c.month)
+  );
 }
 
 // ---------------- P19: getMonthlyBudget / RTA anatomy ----------------
