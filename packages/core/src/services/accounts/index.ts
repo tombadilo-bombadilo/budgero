@@ -1,5 +1,11 @@
 import { DatabaseAdapter } from '../../database/interface.js';
 import { allRows, getRow, run } from '../../database/sql.js';
+import {
+  journalSize,
+  RowCapture,
+  restoreRowJournal,
+  type RowJournal,
+} from '../../database/row-journal.js';
 import { asMilli, subMilli, ZERO_MILLI, type MilliUnits } from '../../money/index.js';
 import {
   Account,
@@ -27,6 +33,28 @@ import { getLocalDateString } from '../../utils/date.js';
 const debugLog = createLogger('services:accounts');
 
 const SYSTEM_PAYEE = 'Budgero';
+
+/** Deletes larger than this (rows removed) keep no undo data. */
+export const ACCOUNT_UNDO_ROW_LIMIT = 5000;
+
+/** Tables an account-delete undo may write back to. */
+const ACCOUNT_RESTORE_TABLES: ReadonlySet<string> = new Set([
+  'accounts',
+  'transactions',
+  'transaction_splits',
+  'import_provenance',
+  'bank_links',
+  'bank_reviews',
+  'account_revaluations',
+  'recurring_transactions',
+  'recurring_transaction_occurrences',
+  'transaction_rule_run_changes',
+  'warranties',
+  'category_groups',
+  'categories',
+  'assignments',
+  'goals',
+]);
 
 export interface CreateAccountOptions {
   /** Mark the opening rows cleared (an account opened from a bank balance). */
@@ -817,7 +845,9 @@ export class AccountService {
       }
     }
 
-    this.db.transaction(() => {
+    const inTransaction = (fn: () => void) =>
+      this.db.inTransaction ? fn() : this.db.transaction(fn);
+    inTransaction(() => {
       // Delete the account (this will cascade delete transactions via foreign key)
       this.queries.deleteAccount(id);
 
@@ -881,6 +911,50 @@ export class AccountService {
         }
       }
     });
+  }
+
+  /**
+   * deleteAccount, recording exactly what it removed or changed: the account
+   * and every row that cascaded with it, its system categories (assignments,
+   * goals), rows other accounts held in those categories (moved to
+   * Uncategorized), and SET NULL references elsewhere. Returns null instead of
+   * a journal when the delete is too large to keep as undo data.
+   */
+  deleteAccountWithUndo(id: number): RowJournal | null {
+    return this.db.transaction(() => {
+      const account = this.queries.getAccount(id);
+      if (!account) {
+        this.deleteAccount(id); // replay of a delete that already happened: no-op
+        return null;
+      }
+      const metadata = this.parseAccountMetadata(account.Metadata);
+      const capture = new RowCapture(this.db)
+        .watchInserts('category_groups')
+        .watchInserts('categories')
+        .addKeys('accounts', [id]);
+      const owned = [metadata.linked_category_id, metadata.cc_payment_category_id].filter(
+        (value): value is number => typeof value === 'number'
+      );
+      capture.addKeys('categories', owned);
+      // deleteAccount's by-name fallback for accounts without metadata links
+      capture.addWhere(
+        'categories',
+        `BudgetID = ? AND Name = ? AND CategoryGroupID IN (
+           SELECT ID FROM category_groups
+           WHERE BudgetID = ? AND Name IN ('Liabilities', 'Credit Card Payments'))`,
+        account.BudgetID,
+        account.Name,
+        account.BudgetID
+      );
+      this.deleteAccount(id);
+      const journal = capture.finish();
+      return journalSize(journal) > ACCOUNT_UNDO_ROW_LIMIT ? null : journal;
+    });
+  }
+
+  /** Undo of deleteAccountWithUndo. */
+  restoreDeletedAccount(journal: RowJournal): void {
+    this.db.transaction(() => restoreRowJournal(this.db, journal, ACCOUNT_RESTORE_TABLES));
   }
 
   /**
