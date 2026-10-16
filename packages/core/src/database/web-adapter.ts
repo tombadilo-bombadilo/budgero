@@ -7,6 +7,7 @@ import {
 } from './interface.js';
 import { MigrationRunner } from './migrations.js';
 import { createMigrationDatabase } from './migration-database-factory.js';
+import { readAllRows, readRow } from './sqljs-rows.js';
 
 import { createLogger } from '../logger.js';
 
@@ -25,6 +26,7 @@ interface SqlJsStatement {
   step(): boolean;
   getAsObject(): Record<string, unknown>;
   get(): unknown[];
+  getColumnNames(): string[];
   free(): void;
 }
 
@@ -323,7 +325,7 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
           const stmt = this.db.prepare(sql);
           stmt.bind(params);
           const hasRow = stmt.step();
-          const result = hasRow ? stmt.getAsObject() : undefined;
+          const result = hasRow ? readRow(stmt) : undefined;
           stmt.free();
           return result;
         } catch (error) {
@@ -339,10 +341,7 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
           this.ensureForeignKeysOnOperation();
           const stmt = this.db.prepare(sql);
           stmt.bind(params);
-          const results = [];
-          while (stmt.step()) {
-            results.push(stmt.getAsObject());
-          }
+          const results = readAllRows(stmt);
           stmt.free();
           return results;
         } catch (error) {
