@@ -618,19 +618,45 @@ export class TransactionQueries {
 
   /**
    * Uncategorized transaction counts per account (split parents excluded; their
-   * lines carry the categories). Same rule as the register summary's UncategorizedCount.
+   * lines carry the categories). Same rule as the register summary's UncategorizedCount:
+   * CategoryID 0, a CategoryID with no category row, or a category named
+   * '' / NULL / 'Uncategorized'.
+   *
+   * Driven by category: `used_ids` walks the distinct CategoryIDs on
+   * idx_transactions_category_date (one seek per distinct ID), `uncategorized_ids`
+   * keeps the ones the rule above matches (dangling IDs included, so rows written
+   * while foreign keys were off still count), and only those categories' rows
+   * are read, instead of every row of the budget.
    */
   getUncategorizedCountsByAccount(budgetId: number): AccountUncategorizedCount[] {
     return allRows<AccountUncategorizedCount>(
       this.db,
       `
+      WITH RECURSIVE used_ids(id) AS (
+        SELECT MIN(CategoryID) FROM transactions
+        UNION ALL
+        SELECT (SELECT MIN(t.CategoryID) FROM transactions t WHERE t.CategoryID > used_ids.id)
+        FROM used_ids
+        WHERE used_ids.id IS NOT NULL
+      ),
+      uncategorized_ids(id) AS (
+        SELECT u.id FROM used_ids u
+        WHERE u.id IS NOT NULL
+          AND (
+            u.id = 0
+            OR NOT EXISTS (
+              SELECT 1 FROM categories c
+              WHERE c.ID = u.id AND c.Name IS NOT NULL AND c.Name <> '' AND c.Name <> 'Uncategorized'
+            )
+          )
+      )
       SELECT t.AccountID, COUNT(*) AS Count
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
+      FROM uncategorized_ids u
+      CROSS JOIN transactions t ON t.CategoryID = u.id
       WHERE t.BudgetID = ?
         ${NO_SPLITS_FILTER}
-        AND (t.CategoryID IS NULL OR t.CategoryID = 0 OR c.Name IS NULL OR c.Name = '' OR c.Name = 'Uncategorized')
       GROUP BY t.AccountID
+      ORDER BY t.AccountID
     `,
       budgetId
     );
