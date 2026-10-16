@@ -39,6 +39,7 @@ import type { SyncStatus } from '@shared/lib/utils';
 import { MutationRouter } from '@shared/runtime/mutation-router';
 import { createRuntimeDeps } from '@shared/runtime/runtime-bridge';
 import { getInvalidatesForOp, prepareMutationArgs } from '@shared/mutations/op-code-registry';
+import { discardInterruptedImports } from '@shared/runtime/pending-import';
 import { getErrorMessage } from '@shared/lib/errors';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
 import { withPushIdentity } from './push-identity';
@@ -1000,6 +1001,21 @@ export class AppRuntime {
     await next.initialize(db as unknown as CoreDatabaseAdapter);
     this.serviceManager.reset();
     this.serviceManager = next;
+    this.discardInterruptedImports();
+  }
+
+  /** Drop a budget an interrupted import left in this DB (see pending-import). */
+  private discardInterruptedImports(): void {
+    const spaceId = this.getActiveSpaceId();
+    if (!spaceId) return;
+    try {
+      const removed = discardInterruptedImports(spaceId, this.serviceManager.getServices().budgets);
+      if (removed.length > 0) {
+        console.warn('[AppRuntime] Removed budgets left by an interrupted import', removed);
+      }
+    } catch (error) {
+      console.warn('[AppRuntime] Could not check for an interrupted import', error);
+    }
   }
 }
 

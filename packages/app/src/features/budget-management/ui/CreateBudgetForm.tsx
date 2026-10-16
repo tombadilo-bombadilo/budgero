@@ -36,6 +36,10 @@ import {
   type CreditPaymentMappings,
 } from '@features/budget-management/ui/create-budget-form/ynab-credit-payment-matching';
 import { YnabImportStatus } from '@features/budget-management/ui/create-budget-form/YnabImportStatus';
+import {
+  holdUploadsForImport,
+  type ImportUploadGuard,
+} from '@features/budget-management/model/import-upload-guard';
 
 interface CreateBudgetFormProps {
   onCreated?: (budgetId: number) => void;
@@ -112,7 +116,11 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
   const ynabImportRunRef = useRef<{
     cancelled: boolean;
     saving: boolean;
+    /** The importer is still writing (it rolls itself back on failure). */
+    importing: boolean;
     deleteBudget: (budgetId: number) => void;
+    /** Holds snapshot uploads until the import is accepted or removed. */
+    uploads: ImportUploadGuard;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -135,9 +143,14 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
       // its state can itself unmount this form during first-budget onboarding.
       if (run?.saving) return;
       const pendingBudgetId = pendingYnabBudgetIdRef.current;
-      if (pendingBudgetId === null) return;
+      if (pendingBudgetId === null) {
+        // A running import notices the cancel and rolls itself back first.
+        if (run && !run.importing) run.uploads.rollBack();
+        return;
+      }
       try {
         run?.deleteBudget(pendingBudgetId);
+        run?.uploads.rollBack();
       } catch (error) {
         console.warn('[CreateBudgetForm] Failed to remove an unaccepted YNAB import', error);
       }
@@ -337,6 +350,8 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
         await db.saveToOPFSPublic();
       }
 
+      // Accepted: uploads may publish the budget from here on.
+      run.uploads.commit();
       try {
         await runtime.finalizeOutOfBandMutation({ uploadSnapshot: true });
       } catch (uploadError) {
@@ -433,6 +448,7 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
       run.saving = false;
       if (run.cancelled && pendingYnabBudgetIdRef.current !== null) {
         run.deleteBudget(pendingYnabBudgetIdRef.current);
+        run.uploads.rollBack();
         pendingYnabBudgetIdRef.current = null;
       }
       setIsFinalizingYnab(false);
@@ -467,10 +483,15 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
     }
     if (ynabImportRunRef.current?.saving || isImporting) return;
     const budgetService = runtime.services().budgets;
+    const deleteBudget = (budgetId: number) => budgetService.deleteBudget(budgetId);
     const run = {
       cancelled: false,
       saving: false,
-      deleteBudget: (budgetId: number) => budgetService.deleteBudget(budgetId),
+      importing: true,
+      deleteBudget,
+      // From the first write until accepted or removed, nothing of this
+      // import may reach the server (a timer/hide upload would publish it).
+      uploads: holdUploadsForImport(runtime, deleteBudget),
     };
     ynabImportRunRef.current = run;
     setIsImporting(true);
@@ -508,6 +529,7 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
         ynabCreditPaymentMappings
           ? { creditPaymentMappings: ynabCreditPaymentMappings }
           : {}),
+        onBudgetCreated: (budgetId) => run.uploads.trackBudget(budgetId, budgetName.trim()),
         onProgress: async (update) => {
           if (run.cancelled) throw new Error('YNAB import cancelled');
           setYnabImportUpdates((current) => [...current, update]);
@@ -525,8 +547,10 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
               await (file as File).arrayBuffer(),
               config
             );
+      run.importing = false;
       if (run.cancelled) {
         run.deleteBudget(result.budgetId);
+        run.uploads.rollBack();
         return;
       }
       pendingYnabBudgetIdRef.current = result.budgetId;
@@ -547,6 +571,9 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
 
       await finalizeYnabImport(result, false);
     } catch (err) {
+      run.importing = false;
+      // The importer removed its budget; make sure, then let uploads resume.
+      if (pendingYnabBudgetIdRef.current === null) run.uploads.rollBack();
       if (run.cancelled) return;
       console.error('Import failed:', err);
       setYnabImportError(
@@ -575,6 +602,7 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
       ynabImportRunRef.current?.deleteBudget(pendingBudgetId);
       pendingYnabBudgetIdRef.current = null;
     }
+    ynabImportRunRef.current?.uploads.rollBack();
     setYnabImportView('form');
     setYnabImportUpdates([]);
     setYnabImportError(null);
