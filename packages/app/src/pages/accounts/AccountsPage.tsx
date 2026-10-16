@@ -100,7 +100,7 @@ export default function AccountsPage() {
   const { data: netWorthChartData = [] } = useNetWorthHistory(budgetId, periodMonths);
   const { data: monthlyAssetHistory = [] } = useMonthlyAssetHistory(budgetId, 24);
   const { data: uncategorizedData } = useUncategorizedTransactions(budgetId);
-  const futureAdjustments = useFutureBalanceAdjustments(accountsData);
+  const futureAdjustments = useFutureBalanceAdjustments(budgetId, accountsData);
 
   const accounts = useMemo(() => {
     if (accountsData.length === 0) return [];

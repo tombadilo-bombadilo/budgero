@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
-import { useAllTransactions } from '@entities/transaction/api/useTransactions';
+import type { AccountUncategorizedCount } from '@budgero/core/browser';
+import { useSpaceQuery } from '@shared/api/useSpaceQuery';
 import { useAccounts } from '@entities/account/api/useAccounts';
 
 interface UncategorizedCount {
@@ -11,51 +12,35 @@ interface UncategorizedCount {
  * Hook to get count of uncategorized transactions
  * Returns total count and count per account
  *
- * Pure derivation over `useAllTransactions` + `useAccounts` — recomputes
- * whenever those caches refresh, so it needs no query key of its own.
+ * Counts are a SQL GROUP BY (split parents excluded; their lines carry the
+ * categories). The key lives under the `allTransactions` root so every write
+ * that refreshed the budget transaction list refreshes these counts too.
  */
 export function useUncategorizedTransactions(budgetId: number) {
-  const { data: allTransactions = [], isLoading: transactionsLoading } =
-    useAllTransactions(budgetId);
+  const { data: counts = [], isLoading: countsLoading } = useSpaceQuery<
+    AccountUncategorizedCount[]
+  >({
+    key: ['allTransactions', budgetId, 'uncategorizedCounts'],
+    enabled: Boolean(budgetId),
+    queryFn: (services) => services.transactions.getUncategorizedCountsByAccount(budgetId),
+  });
   const { data: accounts = [], isLoading: accountsLoading } = useAccounts(budgetId);
 
   const data = useMemo<UncategorizedCount>(() => {
-    const uncategorized = allTransactions.filter((transaction) => {
-      // Check if category is null, undefined, 0, or named "Uncategorized"
-      // BUT do not count split parents; those are categorized via child lines
-      const isSplitParent = transaction.Category === 'Split';
-      if (isSplitParent) return false;
-
-      return (
-        !transaction.CategoryID ||
-        transaction.CategoryID === 0 ||
-        transaction.Category === 'Uncategorized' ||
-        transaction.Category === null ||
-        transaction.Category === undefined ||
-        transaction.Category === ''
-      );
-    });
-
     const byAccount: Record<number, { accountName: string; count: number }> = {};
+    let total = 0;
 
-    uncategorized.forEach((transaction) => {
-      const accountId = transaction.AccountId; // Note: AccountId with lowercase 'd'
+    for (const { AccountID: accountId, Count: count } of counts) {
       const account = accounts.find((a) => a.ID === accountId);
+      byAccount[accountId] = {
+        accountName: account?.Name || `Account ${accountId}`,
+        count,
+      };
+      total += count;
+    }
 
-      if (!byAccount[accountId]) {
-        byAccount[accountId] = {
-          accountName: account?.Name || `Account ${accountId}`,
-          count: 0,
-        };
-      }
-      byAccount[accountId].count++;
-    });
+    return { total, byAccount };
+  }, [counts, accounts]);
 
-    return {
-      total: uncategorized.length,
-      byAccount,
-    };
-  }, [allTransactions, accounts]);
-
-  return { data, isLoading: transactionsLoading || accountsLoading };
+  return { data, isLoading: countsLoading || accountsLoading };
 }

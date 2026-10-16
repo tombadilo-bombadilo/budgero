@@ -401,6 +401,7 @@ export class MonthlyBudgetQueries {
           FROM transactions mirror
           INNER JOIN accounts dest ON mirror.AccountID = dest.ID
           WHERE mirror.TransferID = t.TransferID
+            AND mirror.TransferID != ''
             AND mirror.ID != t.ID
             AND dest.OnBudget = FALSE
             AND LOWER(dest.Type) NOT IN ('credit', 'loan', 'mortgage')
@@ -436,6 +437,7 @@ export class MonthlyBudgetQueries {
           FROM transactions mirror
           INNER JOIN accounts src ON mirror.AccountID = src.ID
           WHERE mirror.TransferID = t.TransferID
+            AND mirror.TransferID != ''
             AND mirror.ID != t.ID
             AND src.OnBudget = FALSE
             AND LOWER(src.Type) NOT IN ('credit', 'loan', 'mortgage')
@@ -589,6 +591,7 @@ export class MonthlyBudgetQueries {
           SELECT 1 FROM transactions mirror
           INNER JOIN accounts dest ON mirror.AccountID = dest.ID
           WHERE mirror.TransferID = t.TransferID
+            AND mirror.TransferID != ''
             AND mirror.ID != t.ID
             AND dest.OnBudget = FALSE
             AND LOWER(dest.Type) NOT IN ('credit', 'loan', 'mortgage')
@@ -622,6 +625,7 @@ export class MonthlyBudgetQueries {
           SELECT 1 FROM transactions mirror
           INNER JOIN accounts src ON mirror.AccountID = src.ID
           WHERE mirror.TransferID = t.TransferID
+            AND mirror.TransferID != ''
             AND mirror.ID != t.ID
             AND src.OnBudget = FALSE
             AND LOWER(src.Type) NOT IN ('credit', 'loan', 'mortgage')

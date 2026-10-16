@@ -12,6 +12,8 @@ import {
   AccountTransactionPageOptions,
   AccountTransactionSummary,
   AccountBalanceHistoryTransaction,
+  AccountFutureBalanceAdjustment,
+  AccountUncategorizedCount,
   SimilarTransaction,
   SimilarTransactionQuery,
 } from './types.js';
@@ -21,7 +23,7 @@ import { asMilli, ZERO_MILLI } from '../../money/index.js';
 
 /**
  * Shared column list for the detailed transaction-row SELECTs.
- * Expects aliases: t = transactions, c = categories, l = labels, a = accounts.
+ * Expects `FROM transactions t${TX_ROW_JOINS}` (c = categories, l = labels, a = accounts).
  * Callers that expose the account name append `a.Name as Account`.
  */
 const TX_ROW_COLUMNS = `
@@ -48,24 +50,28 @@ const TX_ROW_COLUMNS = `
         t.ExchangeRateOverride,
         t.TransferID,
         a.OnBudget AS AccountOnBudget,
-        CASE WHEN t.TransferID IS NOT NULL AND t.TransferID != '' THEN
-          (SELECT partner_account.OnBudget
-             FROM transactions transfer_partner
-             JOIN accounts partner_account ON partner_account.ID = transfer_partner.AccountID
-            WHERE transfer_partner.TransferID = t.TransferID
-              AND transfer_partner.ID != t.ID
-            ORDER BY transfer_partner.ID
-            LIMIT 1)
-        ELSE NULL END AS TransferAccountOnBudget,
-        CASE WHEN t.TransferID IS NOT NULL AND t.TransferID != '' THEN
-          (SELECT partner_account.Name
-             FROM transactions transfer_partner
-             JOIN accounts partner_account ON partner_account.ID = transfer_partner.AccountID
-            WHERE transfer_partner.TransferID = t.TransferID
-              AND transfer_partner.ID != t.ID
-            ORDER BY transfer_partner.ID
-            LIMIT 1)
-        ELSE NULL END AS TransferAccountName`;
+        transfer_partner_account.OnBudget AS TransferAccountOnBudget,
+        transfer_partner_account.Name AS TransferAccountName`;
+
+/**
+ * Joins the first other leg (lowest ID) of a linked transfer and its account,
+ * as `transfer_partner_account`, for TX_ROW_COLUMNS. One indexed lookup per row:
+ * the `!= ''` term lets SQLite use the partial idx_transactions_transfer_id.
+ */
+const TX_ROW_JOINS = `
+      LEFT JOIN categories c ON t.CategoryID = c.ID
+      LEFT JOIN labels l ON t.LabelID = l.ID
+      LEFT JOIN accounts a ON t.AccountID = a.ID
+      LEFT JOIN transactions transfer_partner ON transfer_partner.ID = (
+        SELECT p.ID
+          FROM transactions p
+          JOIN accounts pa ON pa.ID = p.AccountID
+         WHERE p.TransferID = t.TransferID
+           AND p.TransferID != ''
+           AND p.ID != t.ID
+         ORDER BY p.ID
+         LIMIT 1)
+      LEFT JOIN accounts transfer_partner_account ON transfer_partner_account.ID = transfer_partner.AccountID`;
 
 const SQLITE_BIND_CHUNK_SIZE = 500;
 const DEFAULT_ACCOUNT_PAGE_SIZE = 200;
@@ -265,21 +271,20 @@ export class TransactionQueries {
    * GetAllTransactionsDetailed - Gets all transactions for a budget with full details
    * Returns same format as getTransactionsByAccount but for all accounts
    */
-  getAllTransactionsDetailed(budgetId: number): GetTransactionsByAccountRow[] {
+  getAllTransactionsDetailed(budgetId: number, afterDate?: string): GetTransactionsByAccountRow[] {
     return allRows<GetTransactionsByAccountRow>(
       this.db,
       `
       SELECT${TX_ROW_COLUMNS},
         t.AccountID,
         a.Name as Account
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
+      FROM transactions t${TX_ROW_JOINS}
       WHERE t.BudgetID = ?
+      ${afterDate ? 'AND t.Date > ?' : ''}
       ORDER BY t.Date DESC, t.ID DESC
     `,
-      budgetId
+      budgetId,
+      ...(afterDate ? [afterDate] : [])
     );
   }
 
@@ -373,10 +378,7 @@ export class TransactionQueries {
       this.db,
       `
       SELECT${TX_ROW_COLUMNS}
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
+      FROM transactions t${TX_ROW_JOINS}
       WHERE t.AccountID = ?
       ORDER BY t.Date DESC, t.ID DESC
     `,
@@ -416,10 +418,7 @@ export class TransactionQueries {
       this.db,
       `
       SELECT${TX_ROW_COLUMNS}
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
+      FROM transactions t${TX_ROW_JOINS}
       WHERE ${where.join(' AND ')}
       ORDER BY t.Date DESC, t.ID DESC
       LIMIT ?
@@ -506,10 +505,7 @@ export class TransactionQueries {
       this.db,
       `
       SELECT${TX_ROW_COLUMNS}
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
+      FROM transactions t${TX_ROW_JOINS}
       WHERE ${where.join(' AND ')}
       ORDER BY t.Date DESC, t.ID DESC
     `,
@@ -586,6 +582,62 @@ export class TransactionQueries {
   }
 
   /**
+   * Per-account sums of rows dated after `afterDate`, so the accounts page can
+   * back future-dated entries out of today's balance without loading registers.
+   */
+  getFutureBalanceAdjustments(
+    budgetId: number,
+    afterDate: string
+  ): AccountFutureBalanceAdjustment[] {
+    return allRows<AccountFutureBalanceAdjustment>(
+      this.db,
+      `
+      SELECT
+        t.AccountID,
+        COALESCE(SUM(
+          COALESCE(t.InflowNative, t.InflowConverted, 0) - COALESCE(t.OutflowNative, t.OutflowConverted, 0)
+        ), 0) AS Original,
+        COALESCE(SUM(COALESCE(t.InflowConverted, 0) - COALESCE(t.OutflowConverted, 0)), 0) AS Converted
+      FROM transactions t
+      WHERE t.BudgetID = ? AND t.Date > ?
+      GROUP BY t.AccountID
+    `,
+      budgetId,
+      afterDate
+    );
+  }
+
+  /**
+   * Uncategorized transaction counts per account (split parents excluded; their
+   * lines carry the categories). Same rule as the register summary's UncategorizedCount.
+   */
+  getUncategorizedCountsByAccount(budgetId: number): AccountUncategorizedCount[] {
+    return allRows<AccountUncategorizedCount>(
+      this.db,
+      `
+      SELECT t.AccountID, COUNT(*) AS Count
+      FROM transactions t
+      LEFT JOIN categories c ON t.CategoryID = c.ID
+      WHERE t.BudgetID = ?
+        ${NO_SPLITS_FILTER}
+        AND (t.CategoryID IS NULL OR t.CategoryID = 0 OR c.Name IS NULL OR c.Name = '' OR c.Name = 'Uncategorized')
+      GROUP BY t.AccountID
+    `,
+      budgetId
+    );
+  }
+
+  accountHasTransactions(accountId: number): boolean {
+    return Boolean(
+      getRow<{ Found: number }>(
+        this.db,
+        'SELECT 1 AS Found FROM transactions WHERE AccountID = ? LIMIT 1',
+        accountId
+      )
+    );
+  }
+
+  /**
    * Return only a chart window plus one synthetic opening-balance row. This
    * preserves exact sparkline math without loading an account's entire ledger.
    */
@@ -637,10 +689,7 @@ export class TransactionQueries {
       SELECT${TX_ROW_COLUMNS},
         t.AccountID,
         a.Name AS Account
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
+      FROM transactions t${TX_ROW_JOINS}
       WHERE t.ID = ?
     `,
       id
@@ -660,10 +709,7 @@ export class TransactionQueries {
       `
       SELECT${TX_ROW_COLUMNS},
         a.Name as Account
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
+      FROM transactions t${TX_ROW_JOINS}
       WHERE t.AccountID = ? AND strftime('%Y-%m', t.Date) = ?
       ORDER BY t.Date DESC, t.ID DESC
     `,
@@ -1069,7 +1115,7 @@ export class TransactionQueries {
       const placeholders = chunk.map(() => '?').join(', ');
       return allRows<Transaction>(
         this.db,
-        `SELECT * FROM transactions WHERE TransferID IN (${placeholders})`,
+        `SELECT * FROM transactions WHERE TransferID IN (${placeholders}) AND TransferID != ''`,
         ...chunk
       );
     });
@@ -1139,7 +1185,7 @@ export class TransactionQueries {
       `
       UPDATE transactions
       SET CategoryID = ?
-      WHERE TransferID = ?
+      WHERE TransferID = ? AND TransferID != ''
     `,
       categoryId,
       transferId
@@ -1184,7 +1230,7 @@ export class TransactionQueries {
       this.db,
       `
       SELECT * FROM transactions 
-      WHERE TransferID = ? 
+      WHERE TransferID = ? AND TransferID != ''
       ORDER BY Date DESC
     `,
       transferId
@@ -1254,7 +1300,7 @@ export class TransactionQueries {
     run(
       this.db,
       `
-      DELETE FROM transactions WHERE TransferID = ?
+      DELETE FROM transactions WHERE TransferID = ? AND TransferID != ''
     `,
       transferId
     );

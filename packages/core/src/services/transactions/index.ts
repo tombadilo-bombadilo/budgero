@@ -7,6 +7,8 @@ import {
   AccountTransactionPage,
   AccountTransactionPageOptions,
   AccountTransactionSummary,
+  AccountFutureBalanceAdjustment,
+  AccountUncategorizedCount,
   AccountBalanceHistoryTransaction,
   SimilarTransaction,
   SimilarTransactionQuery,
@@ -277,7 +279,7 @@ export class TransactionService {
                   a.Type, a.OnBudget, a.BalanceNative, a.Metadata
            FROM transactions t
            JOIN accounts a ON t.AccountID = a.ID
-           WHERE t.TransferID = ? AND t.AccountID != ?
+           WHERE t.TransferID = ? AND t.TransferID != '' AND t.AccountID != ?
            LIMIT 1`,
           transferId,
           accountId
@@ -395,7 +397,7 @@ export class TransactionService {
               this.db,
               `UPDATE transactions
                SET CategoryID = ?
-               WHERE TransferID = ? AND AccountID = ?`,
+               WHERE TransferID = ? AND TransferID != '' AND AccountID = ?`,
               linkedCategoryId,
               transferId,
               partner.AccountID
@@ -601,10 +603,11 @@ export class TransactionService {
 
   /**
    * GetAllTransactionsDetailed - Gets all transactions for a budget with full details
-   * Returns same format as getTransactionsByAccount but includes Account field for all accounts
+   * Returns same format as getTransactionsByAccount but includes Account field for all accounts.
+   * Pass `afterDate` to return only rows dated after it.
    */
-  getAllTransactionsDetailed(budgetId: number): GetTransactionsByAccountRow[] {
-    return this.queries.getAllTransactionsDetailed(budgetId);
+  getAllTransactionsDetailed(budgetId: number, afterDate?: string): GetTransactionsByAccountRow[] {
+    return this.queries.getAllTransactionsDetailed(budgetId, afterDate);
   }
 
   /**
@@ -647,6 +650,17 @@ export class TransactionService {
     toDate?: string
   ): AccountTransactionSummary {
     return this.queries.getAccountTransactionSummary(accountId, fromDate, toDate);
+  }
+
+  getFutureBalanceAdjustments(
+    budgetId: number,
+    afterDate: string
+  ): AccountFutureBalanceAdjustment[] {
+    return this.queries.getFutureBalanceAdjustments(budgetId, afterDate);
+  }
+
+  getUncategorizedCountsByAccount(budgetId: number): AccountUncategorizedCount[] {
+    return this.queries.getUncategorizedCountsByAccount(budgetId);
   }
 
   getAccountBalanceHistory(
@@ -1054,8 +1068,7 @@ export class TransactionService {
       // (avoids floating point drift from incremental delta updates)
       const accountIds = new Set([txn.AccountID, ...partnerTransactions.map((p) => p.AccountID)]);
       for (const accountId of accountIds) {
-        const remaining = this.queries.getTransactionsByAccount(accountId);
-        if (remaining.length === 0) {
+        if (!this.queries.accountHasTransactions(accountId)) {
           this.queries.recalculateBalances(accountId);
         }
       }

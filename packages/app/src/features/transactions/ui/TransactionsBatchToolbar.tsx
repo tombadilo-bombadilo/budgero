@@ -29,7 +29,6 @@ import {
   useMoveTransactionToNewCategory,
   useMoveTransactionToNewAccount,
   useSetTransactionsCleared,
-  useTransactions,
   useUpdateTransactionColumn,
 } from '@entities/transaction/api/useTransactions';
 import { CLEARED_SHORTCUT_KEY } from '@features/transactions/api/useClearedShortcut';
@@ -59,7 +58,7 @@ interface TransactionsBatchToolbarProps {
   selectedRowIds: number[];
   clearSelection: () => void;
   onCreateRecurring?: (transaction: GetTransactionsByAccountRow) => void;
-  /** Register rows the selection refers to (used to duplicate them). */
+  /** Register rows the selection refers to. */
   rows: GetTransactionsByAccountRow[];
 }
 
@@ -100,12 +99,10 @@ export function TransactionsBatchToolbar({
   const { duplicateRows, isPending: isDuplicating } = useDuplicateSelected();
   const duplicateShortcut = getKeyboardShortcutLabels().shift(DUPLICATE_SHORTCUT_KEY);
 
-  const { data: allTransactions = [] } = useTransactions(selectedAccount?.ID || 0);
-
   const selectedRowIdSet = React.useMemo(() => new Set(selectedRowIds), [selectedRowIds]);
   const selectedTransactions = React.useMemo(
-    () => allTransactions.filter((transaction) => selectedRowIdSet.has(transaction.ID)),
-    [allTransactions, selectedRowIdSet]
+    () => rows.filter((transaction) => selectedRowIdSet.has(transaction.ID)),
+    [rows, selectedRowIdSet]
   );
   const singleSelectedTransaction =
     selectedTransactions.length === 1 ? selectedTransactions[0] : null;
@@ -314,7 +311,7 @@ export function TransactionsBatchToolbar({
           aria-label={t`Duplicate`}
           title={t`Duplicate (press ${duplicateShortcut})`}
           disabled={isDuplicating}
-          onClick={() => duplicateRows(rows.filter((row) => selectedRowIdSet.has(row.ID)))}
+          onClick={() => duplicateRows(selectedTransactions)}
         >
           <Copy className="h-3 w-3" />
         </Button>
