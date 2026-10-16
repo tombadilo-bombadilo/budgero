@@ -323,6 +323,15 @@ export class AppRuntime {
   }
 
   /**
+   * Hold snapshot uploads while out-of-band work writes the DB across awaits
+   * (a YNAB import and its review), so no half-written state is published.
+   * Call the returned release when the work is committed or fully undone.
+   */
+  holdSnapshotUploads(): () => void {
+    return this.coordinator.holdSnapshotUploads();
+  }
+
+  /**
    * Finalize a bulk/out-of-band DB mutation path (restore/import/direct SQL):
    * upload a fresh snapshot and reseed the mutation cursor from authoritative
    * server state. When the server state is unavailable (transient failure),

@@ -402,6 +402,15 @@ export class RuntimeCoordinator {
     this.activeContext?.dbSync.scheduleUpload();
   }
 
+  /**
+   * Hold snapshot uploads for the active space while out-of-band work writes
+   * the DB across awaits (bulk import, its review step). Returns an
+   * idempotent release; a flush that was held back runs on release.
+   */
+  holdSnapshotUploads(): () => void {
+    return this.activeContext?.dbSync.beginOperation() ?? (() => undefined);
+  }
+
   async waitForInitialSync(options?: {
     timeoutMs?: number;
   }): Promise<{ synced: boolean; timedOut: boolean; connected: boolean }> {
