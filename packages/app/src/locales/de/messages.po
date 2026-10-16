@@ -2022,8 +2022,8 @@ msgstr "<0/>Umbuchungskurs"
 
 #. placeholder {0}: formatAmount(underfunded)
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
-msgid "<0/>Underfunded {0}"
-msgstr "<0/>{0} unterfinanziert"
+#~ msgid "<0/>Underfunded {0}"
+#~ msgstr "<0/>{0} unterfinanziert"
 
 #: src/pages/settings/AuditLogPage.tsx
 #: src/pages/settings/ImportsPage.tsx
@@ -2369,7 +2369,7 @@ msgstr "~500 MB, genau"
 msgid "~75MB, fastest"
 msgstr "~75 MB, am schnellsten"
 
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "− Already set aside"
 msgstr "− Bereits zurückgelegt"
 
@@ -3374,7 +3374,7 @@ msgstr "Tilgungsplan"
 
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 #: src/features/budget-planning/ui/category-row/CoverOverspendingPopover.tsx
 #: src/features/budget-planning/ui/category-row/MoveMoneyPopover.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetCategoryRow.tsx
@@ -4743,7 +4743,7 @@ msgstr "Kategorien, die \"{0}\" entsprechen"
 
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
@@ -6140,9 +6140,13 @@ msgstr "Kreditkarten und Revolving-Credit-Konten"
 msgid "Credit overspend — cover to avoid debt"
 msgstr "Kreditüberziehung — abdecken, um Schulden zu vermeiden"
 
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
+msgid "Credit overspending that wasn't covered when it happened."
+msgstr "Kreditüberziehung, die zum Zeitpunkt der Entstehung nicht abgedeckt war."
+
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
-msgid "Credit overspending that wasn't covered when it happened. Assign money to this payment category to pay it off."
-msgstr "Kreditüberziehung, die zum Zeitpunkt der Entstehung nicht abgedeckt war. Weise dieser Zahlungskategorie Geld zu, um sie zu begleichen."
+#~ msgid "Credit overspending that wasn't covered when it happened. Assign money to this payment category to pay it off."
+#~ msgstr "Kreditüberziehung, die zum Zeitpunkt der Entstehung nicht abgedeckt war. Weise dieser Zahlungskategorie Geld zu, um sie zu begleichen."
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "Credit spending:"
@@ -6514,7 +6518,7 @@ msgstr "DD/MM/YYYY (31/01/2024)"
 msgid "Debt"
 msgstr "Schulden"
 
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Debt created"
 msgstr "Schulden entstanden"
 
@@ -10684,7 +10688,7 @@ msgid "Monochrome budgeting workspace with parchment canvas and red/green utilit
 msgstr "Monochromer Budget-Arbeitsbereich mit Pergament-Canvas und roten/grünen Utility-Akzenten."
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Month"
 msgstr "Monat"
@@ -15684,8 +15688,8 @@ msgid "Show upcoming"
 msgstr "Anstehende anzeigen"
 
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
-msgid "Show where this credit-card debt came from"
-msgstr "Zeigen, woher diese Kreditkartenschulden stammen"
+#~ msgid "Show where this credit-card debt came from"
+#~ msgstr "Zeigen, woher diese Kreditkartenschulden stammen"
 
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
 msgid "Show:"
@@ -16268,7 +16272,7 @@ msgstr "Dieses Konto wird noch geprüft"
 msgid "Still Needed"
 msgstr "Noch nötig"
 
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Still underfunded"
 msgstr "Noch unterfinanziert"
 
@@ -16768,6 +16772,13 @@ msgstr "Die Basiswährung für Kategorien, Zuweisungen, Berichte und umgerechnet
 msgid "The by-type view always covers all accounts — the account filter doesn't apply here."
 msgstr "Die Ansicht nach Typ umfasst immer alle Konten — der Kontofilter gilt hier nicht."
 
+#. placeholder {0}: formatAmount(owed)
+#. placeholder {1}: formatAmount(setAside)
+#. placeholder {2}: formatAmount(underfunded)
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
+msgid "The card owes {0} but only {1} is set aside to pay it. Assign {2} here to cover it."
+msgstr "Die Karte schuldet {0}, aber nur {1} ist zur Rückzahlung zurückgelegt. Weise hier {2} zu, um sie zu decken."
+
 #: src/pages/settings/DataManagementPage.tsx
 msgid "The change will also be pushed to the server for this workspace"
 msgstr "Die Änderung wird auch an den Server für diesen Arbeitsbereich übertragen"
@@ -17012,8 +17023,8 @@ msgid "This cache survives app restarts and is cleared when the timer expires, y
 msgstr "Dieser Cache übersteht App-Neustarts und wird geleert, wenn der Timer abläuft, du dich abmeldest oder deine lokalen Daten zurücksetzt."
 
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
-msgid "This card owes more than you've set aside to pay it. Assign money here to cover it."
-msgstr "Diese Karte schuldet mehr, als du zur Rückzahlung zurückgelegt hast. Weise hier Geld zu, um sie zu decken."
+#~ msgid "This card owes more than you've set aside to pay it. Assign money here to cover it."
+#~ msgstr "Diese Karte schuldet mehr, als du zur Rückzahlung zurückgelegt hast. Weise hier Geld zu, um sie zu decken."
 
 #: src/features/budget-planning/ui/FutureOverspendingWarning.tsx
 msgid "This change will cause negative Available in future months for this category:"
@@ -17968,6 +17979,21 @@ msgstr "Unter"
 msgid "Under pace"
 msgstr "Unter Plan"
 
+#. placeholder {0}: formatAmount(underfundedInfo.underfunded)
+#: src/features/budget-planning/ui/AvailableInfoPopover.tsx
+msgid "Underfunded {0}"
+msgstr "{0} unterfinanziert"
+
+#. placeholder {0}: formatAmount(underfundedInfo.underfunded)
+#: src/features/budget-planning/ui/AvailableInfoPopover.tsx
+msgid "Underfunded {0} — details"
+msgstr "{0} unterfinanziert — Details"
+
+#. placeholder {0}: formatAmount(underfunded)
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
+msgid "Underfunded by {0}"
+msgstr "Um {0} unterfinanziert"
+
 #: src/features/budget-planning/ui/SearchAndFilterControls.tsx
 msgid "Underfunded Goals"
 msgstr "Unterfinanzierte Ziele"
@@ -18838,7 +18864,7 @@ msgstr "Wohin das Geld fließt"
 msgid "Where the plan leaks"
 msgstr "Wo der Plan undicht ist"
 
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Where this debt came from"
 msgstr "Woher diese Schulden stammen"
 

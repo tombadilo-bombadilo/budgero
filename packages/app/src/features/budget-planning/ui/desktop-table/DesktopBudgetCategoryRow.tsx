@@ -24,7 +24,6 @@ import { useFormatMaskedMilli } from '@features/budget-planning/lib/useFormatMas
 import { SearchableCategorySelect } from '@features/category-management/ui/SearchableCategorySelect';
 import { GoalCalculations, type CategoryFinancials } from '@budgero/core/browser';
 import { CCPaymentCoverPopover } from '@features/budget-planning/ui/category-row/CCPaymentCoverPopover';
-import { CCUnderfundedBadge } from '@features/budget-planning/ui/category-row/CCUnderfundedBadge';
 import { CoverOverspendingPopover } from '@features/budget-planning/ui/category-row/CoverOverspendingPopover';
 import { overspendTone } from '@features/budget-planning/ui/category-row/category-row.utils';
 import { AvailableInfoPopover } from '@features/budget-planning/ui/AvailableInfoPopover';
@@ -327,7 +326,6 @@ export function DesktopBudgetCategoryRow({
       </TableCell>
       <TableCell className="align-middle text-right pr-6 py-1.5">
         <div className="flex min-h-[28px] items-center justify-end gap-2">
-          <CCUnderfundedBadge item={row} globalLocalizer={globalLocalizer} />
           {row.available > 0 && row.fundingBreakdown !== undefined ? (
             <CCPaymentCoverPopover
               available={row.available}
