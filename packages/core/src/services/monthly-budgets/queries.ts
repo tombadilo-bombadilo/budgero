@@ -44,6 +44,32 @@ const MONTHLY_ACTIVITY_CTE = `
   )
 `;
 
+// Distinct TransferIDs with a leg on an off-budget, non-debt account (savings,
+// investment, tracking). The transfer sums join an on-budget leg `t` to this
+// list instead of testing "EXISTS a partner leg on such an account" per leg:
+// same rows (the partner can't be t itself, t's account is on budget, and
+// DISTINCT keeps one match per leg), but SQLite reads those few accounts' rows
+// and then seeks the partial TransferID index per ID, instead of probing the
+// partner of every transfer leg in the budget. CROSS JOIN pins that order.
+// Callers add `t.TransferID <> ''` (so the partial index applies) and
+// `+t.CategoryID` / `+t.BudgetID` (so the planner stays off those indexes).
+const OFF_BUDGET_PARTNER_TRANSFERS = `(
+  SELECT DISTINCT mirror.TransferID AS TransferID
+  FROM accounts oa
+  CROSS JOIN transactions mirror ON mirror.AccountID = oa.ID
+  WHERE oa.OnBudget = FALSE
+    AND LOWER(oa.Type) NOT IN ('credit', 'loan', 'mortgage')
+    AND +mirror.TransferID != ''
+)`;
+
+// IDs of the categories in the system group `name` (the old categories /
+// category_groups join, as a filter).
+const categoriesInGroup = (name: 'Transfers') => `
+  SELECT c.ID FROM categories c
+  JOIN category_groups cg ON c.CategoryGroupID = cg.ID
+  WHERE cg.Name = '${name}'
+`;
+
 /**
  * MonthlyBudgetQueries - All SQL queries for monthly budget operations
  * Extracted from the main queries file for better organization
@@ -345,18 +371,20 @@ export class MonthlyBudgetQueries {
    * Simple static calculation: Total Income (NET) - Total Assignments (for entire budget, all time)
    */
   readyToAssign(budgetId: number, asOfDate: string): ReadyToAssignBreakdown {
-    // Get total income (NET of inflow - outflow for Income category) for all time
+    // Get total income (NET of inflow - outflow for Income category) for all time.
+    // Driven from the Income categories (CROSS JOIN pins the order) so SQLite
+    // reads only their rows on the category index, not every row of the budget.
     const incomeResult = getRow(
       this.db,
       `
       SELECT IFNULL(SUM(t.InflowConverted - t.OutflowConverted), 0) as total_income
-      FROM transactions t
+      FROM category_groups cg
+      CROSS JOIN categories c ON c.CategoryGroupID = cg.ID
+      CROSS JOIN transactions t ON t.CategoryID = c.ID
       INNER JOIN accounts acc ON t.AccountID = acc.ID
-      INNER JOIN categories c ON t.CategoryID = c.ID
-      INNER JOIN category_groups cg ON c.CategoryGroupID = cg.ID
-      WHERE t.BudgetID = ?1
+      WHERE cg.Name = 'Income'
+        AND +t.BudgetID = ?1
         AND acc.OnBudget = TRUE
-        AND cg.Name = 'Income'
         AND (t.TransferID IS NULL OR t.TransferID = '')
         AND DATE(t.Date) <= DATE(?2)
     `,
@@ -384,28 +412,16 @@ export class MonthlyBudgetQueries {
       this.db,
       `
       SELECT IFNULL(SUM(t.OutflowConverted), 0) as total_offbudget_transfers
-      FROM transactions t
+      FROM ${OFF_BUDGET_PARTNER_TRANSFERS} partner
+      CROSS JOIN transactions t ON partner.TransferID = t.TransferID
       INNER JOIN accounts src ON t.AccountID = src.ID
-      INNER JOIN categories c ON t.CategoryID = c.ID
-      INNER JOIN category_groups cg ON c.CategoryGroupID = cg.ID
-      WHERE t.BudgetID = ?1
+      WHERE t.TransferID <> ''
+        AND +t.CategoryID IN (${categoriesInGroup('Transfers')})
+        AND +t.BudgetID = ?1
         AND src.OnBudget = TRUE
         AND t.OutflowConverted > 0
-        AND t.TransferID IS NOT NULL
-        AND t.TransferID <> ''
         AND t.ExcludeFromReadyToAssign = FALSE
         AND DATE(t.Date) <= DATE(?2)
-        AND cg.Name = 'Transfers'
-        AND EXISTS (
-          SELECT 1
-          FROM transactions mirror
-          INNER JOIN accounts dest ON mirror.AccountID = dest.ID
-          WHERE mirror.TransferID = t.TransferID
-            AND mirror.TransferID != ''
-            AND mirror.ID != t.ID
-            AND dest.OnBudget = FALSE
-            AND LOWER(dest.Type) NOT IN ('credit', 'loan', 'mortgage')
-        )
     `,
       budgetId,
       asOfDate
@@ -420,28 +436,16 @@ export class MonthlyBudgetQueries {
       this.db,
       `
       SELECT IFNULL(SUM(t.InflowConverted), 0) as total_inbudget_transfers
-      FROM transactions t
+      FROM ${OFF_BUDGET_PARTNER_TRANSFERS} partner
+      CROSS JOIN transactions t ON partner.TransferID = t.TransferID
       INNER JOIN accounts dst ON t.AccountID = dst.ID
-      INNER JOIN categories c ON t.CategoryID = c.ID
-      INNER JOIN category_groups cg ON c.CategoryGroupID = cg.ID
-      WHERE t.BudgetID = ?1
+      WHERE t.TransferID <> ''
+        AND +t.CategoryID IN (${categoriesInGroup('Transfers')})
+        AND +t.BudgetID = ?1
         AND dst.OnBudget = TRUE
         AND t.InflowConverted > 0
-        AND t.TransferID IS NOT NULL
-        AND t.TransferID <> ''
         AND t.ExcludeFromReadyToAssign = FALSE
         AND DATE(t.Date) <= DATE(?2)
-        AND cg.Name = 'Transfers'
-        AND EXISTS (
-          SELECT 1
-          FROM transactions mirror
-          INNER JOIN accounts src ON mirror.AccountID = src.ID
-          WHERE mirror.TransferID = t.TransferID
-            AND mirror.TransferID != ''
-            AND mirror.ID != t.ID
-            AND src.OnBudget = FALSE
-            AND LOWER(src.Type) NOT IN ('credit', 'loan', 'mortgage')
-        )
     `,
       budgetId,
       asOfDate
@@ -575,27 +579,16 @@ export class MonthlyBudgetQueries {
       this.db,
       `
       SELECT t.Month, IFNULL(SUM(t.OutflowConverted), 0) as total
-      FROM transactions t
+      FROM ${OFF_BUDGET_PARTNER_TRANSFERS} partner
+      CROSS JOIN transactions t ON partner.TransferID = t.TransferID
       INNER JOIN accounts src ON t.AccountID = src.ID
-      INNER JOIN categories c ON t.CategoryID = c.ID
-      INNER JOIN category_groups cg ON c.CategoryGroupID = cg.ID
-      WHERE t.BudgetID = ?1
+      WHERE t.TransferID <> ''
+        AND +t.CategoryID IN (${categoriesInGroup('Transfers')})
+        AND +t.BudgetID = ?1
         AND src.OnBudget = TRUE
         AND t.OutflowConverted > 0
-        AND t.TransferID IS NOT NULL
-        AND t.TransferID <> ''
         AND t.ExcludeFromReadyToAssign = FALSE
         AND t.Month <= ?2
-        AND cg.Name = 'Transfers'
-        AND EXISTS (
-          SELECT 1 FROM transactions mirror
-          INNER JOIN accounts dest ON mirror.AccountID = dest.ID
-          WHERE mirror.TransferID = t.TransferID
-            AND mirror.TransferID != ''
-            AND mirror.ID != t.ID
-            AND dest.OnBudget = FALSE
-            AND LOWER(dest.Type) NOT IN ('credit', 'loan', 'mortgage')
-        )
       GROUP BY t.Month
     `,
       budgetId,
@@ -609,27 +602,16 @@ export class MonthlyBudgetQueries {
       this.db,
       `
       SELECT t.Month, IFNULL(SUM(t.InflowConverted), 0) as total
-      FROM transactions t
+      FROM ${OFF_BUDGET_PARTNER_TRANSFERS} partner
+      CROSS JOIN transactions t ON partner.TransferID = t.TransferID
       INNER JOIN accounts dst ON t.AccountID = dst.ID
-      INNER JOIN categories c ON t.CategoryID = c.ID
-      INNER JOIN category_groups cg ON c.CategoryGroupID = cg.ID
-      WHERE t.BudgetID = ?1
+      WHERE t.TransferID <> ''
+        AND +t.CategoryID IN (${categoriesInGroup('Transfers')})
+        AND +t.BudgetID = ?1
         AND dst.OnBudget = TRUE
         AND t.InflowConverted > 0
-        AND t.TransferID IS NOT NULL
-        AND t.TransferID <> ''
         AND t.ExcludeFromReadyToAssign = FALSE
         AND t.Month <= ?2
-        AND cg.Name = 'Transfers'
-        AND EXISTS (
-          SELECT 1 FROM transactions mirror
-          INNER JOIN accounts src ON mirror.AccountID = src.ID
-          WHERE mirror.TransferID = t.TransferID
-            AND mirror.TransferID != ''
-            AND mirror.ID != t.ID
-            AND src.OnBudget = FALSE
-            AND LOWER(src.Type) NOT IN ('credit', 'loan', 'mortgage')
-        )
       GROUP BY t.Month
     `,
       budgetId,
