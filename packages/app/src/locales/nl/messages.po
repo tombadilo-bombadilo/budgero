@@ -7637,6 +7637,10 @@ msgstr "Wisselkoers niet beschikbaar"
 msgid "Exchange rates are fetched daily and cached inside your budget file."
 msgstr "Wisselkoersen worden dagelijks opgehaald en gecached in je budgetbestand."
 
+#: src/entities/budget/api/useBudgets.ts
+msgid "Exchange rates for the new currency are unavailable, so nothing was changed. Check your connection and try again."
+msgstr "Wisselkoersen voor de nieuwe valuta zijn niet beschikbaar, dus er is niets gewijzigd. Controleer je verbinding en probeer het opnieuw."
+
 #: src/pages/accounts/AccountPage.tsx
 msgid "Exchange-rate data needs attention"
 msgstr "De wisselkoersgegevens vereisen aandacht"

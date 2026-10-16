@@ -7637,6 +7637,10 @@ msgstr "Wechselkurs nicht verfügbar"
 msgid "Exchange rates are fetched daily and cached inside your budget file."
 msgstr "Wechselkurse werden täglich abgerufen und in deiner Budgetdatei zwischengespeichert."
 
+#: src/entities/budget/api/useBudgets.ts
+msgid "Exchange rates for the new currency are unavailable, so nothing was changed. Check your connection and try again."
+msgstr "Wechselkurse für die neue Währung sind nicht verfügbar, daher wurde nichts geändert. Prüfe deine Verbindung und versuche es erneut."
+
 #: src/pages/accounts/AccountPage.tsx
 msgid "Exchange-rate data needs attention"
 msgstr "Die Wechselkursdaten müssen geprüft werden"
