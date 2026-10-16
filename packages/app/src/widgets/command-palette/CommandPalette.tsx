@@ -49,6 +49,7 @@ import {
   useAddTransaction,
   useAddTransfer,
   useAllTransactions,
+  type AddTransactionSplitLine,
 } from '@entities/transaction/api/useTransactions';
 import type { AddTransferRequest } from '@features/transactions/api/useAddTransactionHandler';
 import { useTransactionCellCommit } from '@features/transactions/api/useTransactionCellCommit';
@@ -334,7 +335,8 @@ export function CommandPalette() {
     labelId: number | null,
     transferId: string | null,
     keepDialogOpen?: boolean,
-    exchangeRateOverride?: number | null
+    exchangeRateOverride?: number | null,
+    splits?: AddTransactionSplitLine[]
   ): Promise<number> => {
     const transactionDate = date
       ? date.toLocaleDateString('en-CA')
@@ -352,6 +354,7 @@ export function CommandPalette() {
       payee,
       transferId: transferId || '',
       exchangeRateOverride,
+      ...(splits ? { splits } : {}),
     });
 
     if (!keepDialogOpen) setShowTransactionDialog(false);

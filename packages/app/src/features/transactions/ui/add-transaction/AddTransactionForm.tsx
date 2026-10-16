@@ -32,7 +32,7 @@ import { TransactionSplitSection } from './TransactionSplitSection';
 import { TransactionFormActions } from './TransactionFormActions';
 import { DuplicateTransactionHint } from '../form/DuplicateTransactionHint';
 import { RecurringOptionsSection } from './RecurringOptionsSection';
-import { useAddTransactionForm } from './useAddTransactionForm';
+import { useAddTransactionForm, type UseAddTransactionFormOptions } from './useAddTransactionForm';
 import {
   buildRecurringSchedule,
   createRecurringFormSettings,
@@ -55,20 +55,7 @@ export interface AddTransactionRecurringOptions {
 export interface AddTransactionFormProps {
   budgetId: number;
   selectedAccountId?: number;
-  onAddTransaction: (
-    date: Date | null,
-    /** 0 = uncategorized. */
-    categoryId: number,
-    memo: string,
-    payee: string,
-    outflow: number,
-    inflow: number,
-    accountId: number,
-    labelId: number | null,
-    transferId: string | null,
-    keepDialogOpen?: boolean,
-    exchangeRateOverride?: number | null
-  ) => Promise<number>;
+  onAddTransaction: UseAddTransactionFormOptions['onAddTransaction'];
   onAddTransfer: (request: AddTransferRequest) => Promise<AddTransferResult>;
   onCancel: () => void;
   recurring?: AddTransactionRecurringOptions;

@@ -48,6 +48,18 @@ export type AddTransactionInput = {
   exchangeRateOverride?: number | null;
   /** Already seen in the bank. Defaults to uncleared. */
   cleared?: boolean;
+  /** Split lines (account currency); the parent and its lines are stored as one op. */
+  splits?: AddTransactionSplitLine[];
+};
+
+/** One line of a new split transaction: a category or a transfer account. */
+export type AddTransactionSplitLine = {
+  categoryId: number | null;
+  transferAccountId: number | null;
+  memo?: string;
+  payee?: string;
+  inflow: number;
+  outflow: number;
 };
 
 export type AddTransferLegInput = Omit<AddTransactionInput, 'budgetId' | 'transferId'>;
@@ -63,6 +75,8 @@ export type AddTransferResult = {
   sourceId: number;
   destinationId: number;
 };
+
+const isPlainAdd = (input: AddTransactionInput) => !input.transferId && !input.splits?.length;
 
 export function useAddTransaction() {
   const runtime = useRuntime();
@@ -86,14 +100,15 @@ export function useAddTransaction() {
           transferId: input.transferId,
           exchangeRateOverride: input.exchangeRateOverride ?? null,
           ...(input.cleared ? { cleared: true } : {}),
+          ...(input.splits ? { splits: input.splits } : {}),
         },
         // Plain adds refresh active views in the background so a large account
         // register does not keep the add dialog pending. Preserve the existing
-        // awaited invalidation behavior for legacy transfer calls.
-        meta: { label: 'useAddTransaction', skipInvalidate: !input.transferId },
+        // awaited invalidation behavior for legacy transfer calls and splits.
+        meta: { label: 'useAddTransaction', skipInvalidate: isPlainAdd(input) },
       });
 
-      if (!input.transferId) {
+      if (isPlainAdd(input)) {
         try {
           // Read the final joined row after continuous rules have completed, so
           // the cache receives their category/label/account metadata as well.
@@ -124,7 +139,7 @@ export function useAddTransaction() {
       if (vars.date.slice(0, 10) > getTodayISO()) {
         requestSchedulingGuide('future', resolveSpaceKey(spaceId), vars.budgetId, vars.accountId);
       }
-      if (!vars.transferId) {
+      if (isPlainAdd(vars)) {
         applyOpInvalidations(queryClient, 'transactions.add', {
           excludeRoots: [
             'transactions',
@@ -464,6 +479,25 @@ export function useMoveTransactionToNewAccount() {
           newAccountId,
         },
         meta: { label: 'useMoveTransactionToNewAccount', skipInvalidate },
+      });
+    },
+  });
+}
+
+/** One row of a batch edit (omitted fields stay as they are). */
+export type BatchEditTransactionsInput = {
+  edits: { id: number; accountId?: number; categoryId?: number; payee?: string }[];
+};
+
+/** Account / category / payee for many rows: one op, one write, one undo step. */
+export function useBatchEditTransactions() {
+  const runtime = useRuntime();
+  return useMutation<void, Error, BatchEditTransactionsInput>({
+    mutationFn: async ({ edits }) => {
+      await executeSpaceMutation<void>(runtime, {
+        op: 'transactions.batchEdit',
+        payload: { edits },
+        meta: { label: 'useBatchEditTransactions' },
       });
     },
   });

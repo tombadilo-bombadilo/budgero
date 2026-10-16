@@ -76,6 +76,29 @@ export function useUpsertSplits() {
   });
 }
 
+export type SaveSplitsInput = UpsertSplitsInput & {
+  /** New parent total (same currency as the lines), when the editor changed it. */
+  total?: { inflow: number; outflow: number };
+};
+
+/** The split editor's save: parent total and lines in one op and one write. */
+export function useSaveSplits() {
+  const runtime = useRuntime();
+  return useMutation<void, Error, SaveSplitsInput>({
+    mutationFn: async ({ transactionId, splits, type, amountCurrency = 'converted', total }) => {
+      await executeSpaceMutation<void>(runtime, {
+        op: 'transactions.saveSplits',
+        payload: {
+          transactionId,
+          splits: prepareSplitMutationLines(splits, type, amountCurrency),
+          ...(total ? { amount: { ...total, currency: amountCurrency } } : {}),
+        },
+        meta: { label: 'useSaveSplits' },
+      });
+    },
+  });
+}
+
 export type ClearSplitsInput = {
   transactionId: number;
 };

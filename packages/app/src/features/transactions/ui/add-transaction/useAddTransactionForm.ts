@@ -21,7 +21,6 @@ import { getExchangeRate, getLocalOrManualRate } from '@entities/currency/lib/cu
 import { buildCurrencyLocalizer, useUiStore } from '@shared/store/useUiStore';
 import { useCategories } from '@entities/category/api/useCategories';
 import { useLabels } from '@entities/label/api/useLabels';
-import { useDeleteTransaction, useUpsertSplits } from '@entities/transaction/api/useTransactions';
 import { useActiveAccounts } from '@entities/account/api/useActiveAccounts';
 import {
   asMilli,
@@ -31,7 +30,10 @@ import {
   transferInvolvesOffBudgetAccount,
 } from '@budgero/core/browser';
 import type { AddTransferRequest } from '@features/transactions/api/useAddTransactionHandler';
-import type { AddTransferResult } from '@entities/transaction/api/useTransactions';
+import type {
+  AddTransactionSplitLine,
+  AddTransferResult,
+} from '@entities/transaction/api/useTransactions';
 import { useAutofillIntegration } from './useAutofillIntegration';
 
 import type { SplitLine } from '../form';
@@ -63,7 +65,9 @@ export interface UseAddTransactionFormOptions {
     labelId: number | null,
     transferId: string | null,
     keepDialogOpen?: boolean,
-    exchangeRateOverride?: number | null
+    exchangeRateOverride?: number | null,
+    /** Split lines: the parent and its lines are added as one op. */
+    splits?: AddTransactionSplitLine[]
   ) => Promise<number>;
   onAddTransfer: (request: AddTransferRequest) => Promise<AddTransferResult>;
   onCancel: () => void;
@@ -86,8 +90,6 @@ export function useAddTransactionForm({
 }: UseAddTransactionFormOptions) {
   const { t } = useLingui();
 
-  const upsertSplits = useUpsertSplits();
-  const deleteTransaction = useDeleteTransaction();
   const spaceId = useActiveSpaceId();
   const form = useTransactionForm({
     lastUsedStorageKey: getLastUsedTransactionStorageKey(spaceId, budgetId),
@@ -719,20 +721,20 @@ export function useAddTransactionForm({
         return;
       }
 
-      const prepared = splitLines.map((l, idx) => ({
-        category_id: l.categoryId ?? (l.transferAccountId ? null : uncategorizedId),
-        transfer_account_id: l.transferAccountId ?? null,
+      // Account-currency amounts, like the parent's.
+      const prepared = splitLines.map((l) => ({
+        categoryId: l.categoryId ?? (l.transferAccountId ? null : uncategorizedId),
+        transferAccountId: l.transferAccountId ?? null,
         memo: l.memo ?? '',
         payee: l.payee ?? '',
         inflow: l.inflow,
         outflow: l.outflow,
-        order_index: idx,
       }));
 
-      let transactionId: number | null = null;
       try {
-        // Keep the dialog open until the parent and its split lines are both stored.
-        transactionId = await onAddTransaction(
+        // Parent and lines are one op: stored together or not at all. Keep
+        // the dialog open until it is done.
+        const transactionId = await onAddTransaction(
           form.transactionDate,
           finalCategoryId,
           form.memo,
@@ -742,14 +744,10 @@ export function useAddTransactionForm({
           accountId,
           labelId,
           null,
-          true
+          true,
+          null,
+          prepared
         );
-
-        await upsertSplits.mutateAsync({
-          transactionId,
-          splits: prepared,
-          amountCurrency: 'native',
-        });
 
         // Log autofill rule applications (if any were applied before split mode)
         logAutofillApplications(transactionId, autofillAppliedSuggestions);
@@ -772,13 +770,6 @@ export function useAddTransactionForm({
         });
       } catch (e) {
         console.error('Failed to save splits', e);
-        if (transactionId !== null) {
-          try {
-            await deleteTransaction.mutateAsync({ transactionId, accountId });
-          } catch (rollbackError) {
-            console.error('Failed to roll back split parent transaction', rollbackError);
-          }
-        }
         toast.error(t`Failed to save split transaction`, {
           description: e instanceof Error ? e.message : t`Please try again.`,
         });
@@ -798,8 +789,6 @@ export function useAddTransactionForm({
       remaining,
       onAddTransaction,
       onAddTransfer,
-      upsertSplits,
-      deleteTransaction,
       resetFormFields,
       logAutofillApplications,
       autofillAppliedSuggestions,
