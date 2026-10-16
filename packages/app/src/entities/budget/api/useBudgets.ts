@@ -112,6 +112,13 @@ export function useUpdateBudgetCurrency() {
         // Invalidate all queries to refresh everything with new currency
         await qc.invalidateQueries();
       } catch (error) {
+        // Rates are resolved before anything is written: a missing one leaves
+        // the budget exactly as it was.
+        if ((error as { code?: unknown } | null)?.code === 'EXCHANGE_RATE_UNAVAILABLE') {
+          const message = t`Exchange rates for the new currency are unavailable, so nothing was changed. Check your connection and try again.`;
+          setCurrencyConversion({ error: message });
+          throw new Error(message);
+        }
         setCurrencyConversion({
           error: 'Failed to update currency. Please try again.',
         });
