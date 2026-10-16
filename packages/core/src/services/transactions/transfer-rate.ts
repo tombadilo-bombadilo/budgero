@@ -86,7 +86,7 @@ function getTransferLegs(db: DatabaseAdapter, transferId: string): TransferLegRo
       FROM transactions t
       JOIN accounts a ON a.ID = t.AccountID
       JOIN budgets b ON b.ID = t.BudgetID
-      WHERE t.TransferID = ?
+      WHERE t.TransferID = ? AND t.TransferID != ''
       ORDER BY t.ID
     `,
     transferId
@@ -141,9 +141,9 @@ export function getTransferRateDetails(
     transferRateOverride: Boolean(source.TransferRateOverride || destination.TransferRateOverride),
     hasRateOverride: Boolean(
       source.TransferRateOverride ||
-        destination.TransferRateOverride ||
-        source.ExchangeRateOverride ||
-        destination.ExchangeRateOverride
+      destination.TransferRateOverride ||
+      source.ExchangeRateOverride ||
+      destination.ExchangeRateOverride
     ),
   };
 }

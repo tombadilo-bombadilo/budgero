@@ -149,6 +149,21 @@ export interface AccountTransactionSummary {
   TotalOutflowNative: MilliUnits;
 }
 
+/** Per-account totals of future-dated rows (Date after a cutoff). */
+export interface AccountFutureBalanceAdjustment {
+  AccountID: number;
+  /** Account-currency delta: inflow - outflow, native amounts falling back to converted. */
+  Original: MilliUnits;
+  /** Budget-currency delta: converted inflow - converted outflow. */
+  Converted: MilliUnits;
+}
+
+/** Uncategorized (non-split) transaction count for one account. */
+export interface AccountUncategorizedCount {
+  AccountID: number;
+  Count: number;
+}
+
 export interface AccountBalanceHistoryTransaction {
   Date: string;
   InflowConverted: MilliUnits;
