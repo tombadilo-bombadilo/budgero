@@ -1416,6 +1416,30 @@ export class MonthlyBudgetQueries {
   }
 
   /**
+   * getAssignedPriorToMonth for several categories in one query: categories
+   * with no assignment before `month` are absent (read them as 0). Same
+   * filter as the single-category version (no BudgetID filter: a category
+   * belongs to one budget).
+   */
+  getAssignedPriorToMonthByCategory(categoryIds: number[], month: string): Map<number, number> {
+    const totals = new Map<number, number>();
+    if (categoryIds.length === 0) return totals;
+    const rows = allRows<{ CategoryID: number; total: number }>(
+      this.db,
+      `
+      SELECT CategoryID, COALESCE(SUM(Amount), 0) AS total
+      FROM assignments
+      WHERE CategoryID IN (${categoryIds.map(() => '?').join(', ')}) AND Month < ?
+      GROUP BY CategoryID
+    `,
+      ...categoryIds,
+      month
+    );
+    for (const row of rows) totals.set(row.CategoryID, row.total);
+    return totals;
+  }
+
+  /**
    * GetCCPaymentAdjustments - Returns CC payment category IDs and total payments to CCs
    */
   getCCPaymentAdjustments(
@@ -1567,45 +1591,54 @@ export class MonthlyBudgetQueries {
     if (ccAccounts.length === 0) return result;
 
     const ccAccountIds = ccAccounts.map((a) => a.ID);
-    const placeholders = ccAccountIds.map(() => '?').join(',');
+    const n = ccAccountIds.length;
+    const placeholders = ccAccountIds.map((_, i) => `?${i + 1}`).join(',');
 
     // Split-aware spending: prefer split lines for transactions that have them,
     // fall back to the parent transaction otherwise (same pattern as the
     // activity CTEs in getMonthlyBudget). Without this, CC spending recorded as
     // a split transaction would never fund the CC Payment category.
-    const spendingQuery = (dateOp: '=' | '<') => `
-      SELECT x.CategoryID, x.AccountID, COALESCE(SUM(x.OutflowConverted), 0) as spending
+    //
+    // One pass over the cards' rows up to `month` (idx_transactions_budget_account_month)
+    // yields both the current-month and the prior total per (category, card). The
+    // filters sit inside each UNION branch so SQLite never reads other accounts
+    // or budgets; `+x.CategoryID` keeps it from driving the non-split branch by
+    // the category index instead.
+    const rows = allRows<{
+      CategoryID: number;
+      AccountID: number;
+      current: number;
+      prior: number;
+      currentRows: number;
+    }>(
+      this.db,
+      `
+      SELECT x.CategoryID, x.AccountID,
+             SUM(CASE WHEN x.Month = ?${n + 2} THEN x.OutflowConverted ELSE 0 END) AS current,
+             SUM(CASE WHEN x.Month < ?${n + 2} THEN x.OutflowConverted ELSE 0 END) AS prior,
+             COUNT(CASE WHEN x.Month = ?${n + 2} THEN 1 END) AS currentRows
       FROM (
-        SELECT s.CategoryID AS CategoryID, t.AccountID AS AccountID, s.OutflowConverted AS OutflowConverted,
-               t.Month AS Month, t.BudgetID AS BudgetID
-        FROM transaction_splits s
-        JOIN transactions t ON t.ID = s.TransactionID
-        UNION ALL
-        SELECT t.CategoryID, t.AccountID, t.OutflowConverted, t.Month, t.BudgetID
+        SELECT s.CategoryID AS CategoryID, t.AccountID AS AccountID,
+               s.OutflowConverted AS OutflowConverted, t.Month AS Month
         FROM transactions t
-        WHERE NOT EXISTS (SELECT 1 FROM transaction_splits s2 WHERE s2.TransactionID = t.ID)
+        CROSS JOIN transaction_splits s ON s.TransactionID = t.ID
+        WHERE t.AccountID IN (${placeholders}) AND t.BudgetID = ?${n + 1} AND t.Month <= ?${n + 2}
+          AND s.OutflowConverted > 0
+        UNION ALL
+        SELECT t.CategoryID, t.AccountID, t.OutflowConverted, t.Month
+        FROM transactions t
+        WHERE t.AccountID IN (${placeholders}) AND t.BudgetID = ?${n + 1} AND t.Month <= ?${n + 2}
+          AND t.OutflowConverted > 0
+          ${NO_SPLITS_FILTER}
       ) x
-      JOIN categories c ON x.CategoryID = c.ID
-      JOIN category_groups cg ON c.CategoryGroupID = cg.ID
-      WHERE x.AccountID IN (${placeholders})
-        AND x.BudgetID = ?
-        AND x.Month ${dateOp} ?
-        AND x.OutflowConverted > 0
-        AND cg.Name NOT IN ('Income', 'Transfers', 'Uncategorized', 'Credit Card Payments')
+      WHERE +x.CategoryID IN (
+        SELECT c.ID FROM categories c
+        JOIN category_groups cg ON c.CategoryGroupID = cg.ID
+        WHERE cg.Name NOT IN ('Income', 'Transfers', 'Uncategorized', 'Credit Card Payments')
+      )
       GROUP BY x.CategoryID, x.AccountID
-    `;
-
-    const currentRows = allRows<{ CategoryID: number; AccountID: number; spending: number }>(
-      this.db,
-      spendingQuery('='),
-      ...ccAccountIds,
-      budgetId,
-      month
-    );
-
-    const priorRows = allRows<{ CategoryID: number; AccountID: number; spending: number }>(
-      this.db,
-      spendingQuery('<'),
+      ORDER BY x.CategoryID, x.AccountID
+    `,
       ...ccAccountIds,
       budgetId,
       month
@@ -1625,11 +1658,14 @@ export class MonthlyBudgetQueries {
       return entry;
     };
 
-    for (const row of currentRows) {
-      ensure(row.CategoryID, row.AccountID).current = row.spending;
+    // Insertion order matters downstream (it orders fundingBreakdown): pairs
+    // with current-month spending first, then prior-only pairs, as when these
+    // were two queries.
+    for (const row of rows) {
+      if (row.currentRows > 0) ensure(row.CategoryID, row.AccountID).current = row.current;
     }
-    for (const row of priorRows) {
-      ensure(row.CategoryID, row.AccountID).prior = row.spending;
+    for (const row of rows) {
+      ensure(row.CategoryID, row.AccountID).prior = row.prior;
     }
 
     return result;
