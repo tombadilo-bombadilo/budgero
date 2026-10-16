@@ -93,6 +93,15 @@ function chunkValues<T>(values: T[]): T[][] {
 export const NO_SPLITS_FILTER = `AND NOT EXISTS (SELECT 1 FROM transaction_splits s2 WHERE s2.TransactionID = t.ID)`;
 
 /**
+ * Bounds and GLOB pattern for TransferIDs starting with `prefix`. The range and
+ * the `!= ''` guard let SQLite use the partial TransferID index; GLOB keeps `_`
+ * literal. The prefixes used here end in `_`, and '`' is the next character.
+ */
+function splitMirrorRange(prefix: string): [string, string, string] {
+  return [prefix, `${prefix.slice(0, -1)}\``, `${prefix}*`];
+}
+
+/**
  * TransactionQueries - All SQL queries for transaction operations
  * Extracted from the main queries file for better organization
  */
@@ -1265,8 +1274,9 @@ export class TransactionQueries {
   getSplitMirrorTransactions(parentId: number): Transaction[] {
     return allRows<Transaction>(
       this.db,
-      `SELECT * FROM transactions WHERE TransferID GLOB ?`,
-      `split_transfer_${parentId}_*`
+      `SELECT * FROM transactions
+       WHERE TransferID != '' AND TransferID >= ? AND TransferID < ? AND TransferID GLOB ?`,
+      ...splitMirrorRange(`split_transfer_${parentId}_`)
     );
   }
 
@@ -1276,7 +1286,9 @@ export class TransactionQueries {
     if (parents.size === 0) return [];
     return allRows<Transaction>(
       this.db,
-      `SELECT * FROM transactions WHERE TransferID GLOB 'split_transfer_*'`
+      `SELECT * FROM transactions
+       WHERE TransferID != '' AND TransferID >= ? AND TransferID < ? AND TransferID GLOB ?`,
+      ...splitMirrorRange('split_transfer_')
     ).filter((row) =>
       parents.has(Number(/^split_transfer_(\d+)_/.exec(row.TransferID ?? '')?.[1]))
     );
@@ -1286,10 +1298,11 @@ export class TransactionQueries {
   rekeySplitMirrors(parentId: number, date: string): void {
     run(
       this.db,
-      `UPDATE transactions SET Date = ?, TransferID = ? WHERE TransferID GLOB ?`,
+      `UPDATE transactions SET Date = ?, TransferID = ?
+       WHERE TransferID != '' AND TransferID >= ? AND TransferID < ? AND TransferID GLOB ?`,
       date,
       `split_transfer_${parentId}_${date}`,
-      `split_transfer_${parentId}_*`
+      ...splitMirrorRange(`split_transfer_${parentId}_`)
     );
   }
 
