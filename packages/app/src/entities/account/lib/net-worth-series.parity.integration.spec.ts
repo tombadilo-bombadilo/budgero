@@ -129,7 +129,7 @@ describe('net worth and asset history from aggregates match the whole-ledger fol
     vi.setSystemTime(now);
     const accounts = services.accounts.listAccounts(budgetId);
     const ledger = services.transactions.getAllTransactions(budgetId);
-    for (const periodMonths of [1, 3, 6, 12, 36]) {
+    for (const periodMonths of [0.25, 0.5, 1, 3, 6, 12, 36]) {
       const rows = services.transactions.getBalanceHistoryRows(
         budgetId,
         netWorthWindowStart(periodMonths),

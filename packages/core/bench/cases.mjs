@@ -5,7 +5,11 @@
 // The app model below mirrors packages/app at 4dc2161 (`app: 'old'`) and the
 // query fixes of audit/queries d77b957 (`app: 'new'`: aggregate future-balance and
 // uncategorized-count queries, date-bounded Upcoming card, batch toolbar without
-// a register refetch). `auto` picks 'new' when the core has the aggregate APIs.
+// a register refetch). `app: 'refetch'` adds perf/app-refetch on top of 'new':
+// visible budget months only (P20), one RTA breakdown entry (P8), category picker
+// figures loaded on open (P9), per-column cell-edit invalidation (P24), payee
+// names query (P23), bounded uncategorized card and aggregated net worth (P25).
+// `auto` picks the newest model the core supports.
 // Invalidation sets come from shared/mutations/op-code-registry (see README).
 
 const MONTH = (d) => d.slice(0, 7);
@@ -22,6 +26,8 @@ export function shiftMonth(month, delta) {
   }
   return `${y}-${String(m).padStart(2, '0')}`;
 }
+// Same day one month earlier (the net-worth window start for the default 1 month).
+const shiftDay = (day, months) => `${shiftMonth(day.slice(0, 7), months)}${day.slice(7)}`;
 const addDays = (day, n) => {
   const d = new Date(Date.UTC(+day.slice(0, 4), +day.slice(5, 7) - 1, +day.slice(8, 10) + n));
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
@@ -33,9 +39,11 @@ export function makeContext({ services: s, adapter, info, today, app, runtime = 
   const ids = info.accountIds;
   const appMode =
     app === 'auto'
-      ? typeof s.transactions.getUncategorizedCountsByAccount === 'function'
-        ? 'new'
-        : 'old'
+      ? typeof s.transactions.getBalanceHistoryRows === 'function'
+        ? 'refetch'
+        : typeof s.transactions.getUncategorizedCountsByAccount === 'function'
+          ? 'new'
+          : 'old'
       : app;
   const accounts = s.accounts.listAccounts(budgetId);
   const goals = s.goals
@@ -82,11 +90,17 @@ export function makeContext({ services: s, adapter, info, today, app, runtime = 
 
 // ---------------- refetch sets per mounted page ----------------
 const q = (name, fn) => ({ name, fn });
+const isRefetch = (c) => c.appMode === 'refetch';
+// Which part of the register a transactions.updateColumn edit refreshes (P24).
+const VALUE_COLUMNS = new Set(['amount', 'category', 'date', 'account']);
 
-export function globalQueries(c) {
+export function globalQueries(c, { column } = {}) {
+  // memo/payee edits (refetch model) leave listAccounts alone; the counts sit
+  // under the allTransactions root and still refresh.
+  const skipAccounts = isRefetch(c) && column && !VALUE_COLUMNS.has(column);
   return [
-    q('listAccounts', () => c.s.accounts.listAccounts(c.budgetId)),
-    c.appMode === 'new'
+    ...(skipAccounts ? [] : [q('listAccounts', () => c.s.accounts.listAccounts(c.budgetId))]),
+    c.appMode !== 'old'
       ? q('uncategorizedCounts', () => c.s.transactions.getUncategorizedCountsByAccount(c.budgetId))
       : q('getAllTransactions(badge)', () => c.s.transactions.getAllTransactions(c.budgetId)),
   ];
@@ -94,7 +108,7 @@ export function globalQueries(c) {
 
 export function budgetPageQueries(c, month = c.month) {
   const list = [];
-  for (let k = 0; k < 6; k++)
+  for (let k = 0; k < (isRefetch(c) ? 1 : 6); k++)
     list.push(
       q(`getMonthlyBudget(+${k})`, () =>
         c.s.monthlyBudgets.getMonthlyBudget(shiftMonth(month, k), c.budgetId)
@@ -106,7 +120,8 @@ export function budgetPageQueries(c, month = c.month) {
       c.goals.forEach((g) => c.s.goals.getCategoryFinancials(g.CategoryID, month))
     )
   );
-  list.push(q('getReadyToAssign', () => c.s.monthlyBudgets.getReadyToAssign(c.budgetId, month)));
+  if (!isRefetch(c))
+    list.push(q('getReadyToAssign', () => c.s.monthlyBudgets.getReadyToAssign(c.budgetId, month)));
   list.push(
     q('getReadyToAssignBreakdown', () =>
       c.s.monthlyBudgets.getReadyToAssignBreakdown(c.budgetId, month)
@@ -116,7 +131,27 @@ export function budgetPageQueries(c, month = c.month) {
   return list;
 }
 
-export function registerPageQueries(c, accountId = c.ids.chk0, { onlyInvalidated = false } = {}) {
+export function registerPageQueries(
+  c,
+  accountId = c.ids.chk0,
+  { onlyInvalidated = false, column } = {}
+) {
+  if (isRefetch(c)) {
+    // Picker figures load when a picker opens (P9); cell edits refresh by column (P24).
+    const edit = onlyInvalidated ? column : undefined;
+    const list = [
+      q('register page 1', () =>
+        c.s.transactions.getTransactionsByAccountPage(accountId, { limit: 200 })
+      ),
+      q('accountSummary', () => c.s.transactions.getAccountTransactionSummary(accountId)),
+    ];
+    if (!edit || edit === 'payee')
+      list.push(q('payeeNames', () => c.s.payees.getPayeeNames(c.budgetId)));
+    if (!edit || edit === 'label')
+      list.push(q('labelsWithUsage', () => c.s.labels.getLabelsWithUsage(c.budgetId)));
+    if (!onlyInvalidated) list.push(...registerStaticQueries(c, accountId));
+    return list;
+  }
   const list = [
     q('register page 1', () =>
       c.s.transactions.getTransactionsByAccountPage(accountId, { limit: 200 })
@@ -127,24 +162,32 @@ export function registerPageQueries(c, accountId = c.ids.chk0, { onlyInvalidated
     q('payeesWithUsage', () => c.s.payees.getPayeesWithUsage(c.budgetId)),
     q('labelsWithUsage', () => c.s.labels.getLabelsWithUsage(c.budgetId)),
   ];
-  if (!onlyInvalidated) {
-    list.push(
-      q('categories+groups', () => {
-        c.s.categories.getAllCategories(c.budgetId);
-        c.s.categories.getAllCategoryGroups(c.budgetId);
-      })
-    );
-    list.push(
-      q('postedOccurrences', () =>
-        c.s.recurring.listOccurrences(c.budgetId, { status: ['ready'], accountId })
-      )
-    );
-    list.push(
-      q('projectedTransactions', () =>
-        c.s.recurring.listProjectedTransactions(c.budgetId, { accountId })
-      )
-    );
-  }
+  // The base app already passes a payee/label-free set for amount edits
+  // (AMOUNT_UPDATE_INVALIDATIONS in entities/transaction/api/mutations.ts).
+  if (onlyInvalidated && column === 'amount' && c.appMode === 'new')
+    return list.filter((x) => !/payees|labels/.test(x.name));
+  if (!onlyInvalidated) list.push(...registerStaticQueries(c, accountId));
+  return list;
+}
+
+function registerStaticQueries(c, accountId) {
+  const list = [];
+  list.push(
+    q('categories+groups', () => {
+      c.s.categories.getAllCategories(c.budgetId);
+      c.s.categories.getAllCategoryGroups(c.budgetId);
+    })
+  );
+  list.push(
+    q('postedOccurrences', () =>
+      c.s.recurring.listOccurrences(c.budgetId, { status: ['ready'], accountId })
+    )
+  );
+  list.push(
+    q('projectedTransactions', () =>
+      c.s.recurring.listProjectedTransactions(c.budgetId, { accountId })
+    )
+  );
   return list;
 }
 
@@ -176,8 +219,12 @@ export function dashboardQueries(c) {
       c.s.goals.getAllGoals();
       c.goals.forEach((g) => c.s.goals.getCategoryFinancials(g.CategoryID, c.month));
     }),
-    q('getReadyToAssign(current)', () => c.s.monthlyBudgets.getReadyToAssign(c.budgetId)),
-    c.appMode === 'new'
+    isRefetch(c)
+      ? q('readyToAssignBreakdown(current)', () =>
+          c.s.monthlyBudgets.getReadyToAssignBreakdown(c.budgetId, c.month)
+        )
+      : q('getReadyToAssign(current)', () => c.s.monthlyBudgets.getReadyToAssign(c.budgetId)),
+    c.appMode !== 'old'
       ? q('upcoming: getAllTransactionsDetailed(afterDate)', () =>
           c.s.transactions.getAllTransactionsDetailed(c.budgetId, c.today)
         )
@@ -191,20 +238,33 @@ export function dashboardQueries(c) {
         toDate: addDays(c.today, 30),
       })
     ),
-    q('uncategorized card: getAllTransactions', () =>
-      c.s.transactions.getAllTransactions(c.budgetId)
-    ),
+    isRefetch(c)
+      ? q('uncategorized card: recent 6', () =>
+          c.s.transactions.getRecentUncategorizedTransactions(c.budgetId, 6)
+        )
+      : q('uncategorized card: getAllTransactions', () =>
+          c.s.transactions.getAllTransactions(c.budgetId)
+        ),
   ];
 }
 
 export function accountsPageQueries(c) {
   return [
     q('listAccounts', () => c.s.accounts.listAccounts(c.budgetId)),
-    q('netWorth+assetHistory: getAllTransactions', () =>
-      c.s.transactions.getAllTransactions(c.budgetId)
-    ),
+    isRefetch(c)
+      ? q('netWorth+assetHistory: balance history rows (day 1 mo + month 24 mo)', () => {
+          c.s.transactions.getBalanceHistoryRows(c.budgetId, shiftDay(c.today, -1), 'day');
+          c.s.transactions.getBalanceHistoryRows(
+            c.budgetId,
+            `${shiftMonth(c.month, -23)}-01`,
+            'month'
+          );
+        })
+      : q('netWorth+assetHistory: getAllTransactions', () =>
+          c.s.transactions.getAllTransactions(c.budgetId)
+        ),
     q('budgetRevaluations', () => c.s.currency.getBudgetRevaluations(c.budgetId)),
-    c.appMode === 'new'
+    c.appMode !== 'old'
       ? q('futureBalanceAdjustments', () =>
           c.s.transactions.getFutureBalanceAdjustments(c.budgetId, c.today)
         )
@@ -273,6 +333,30 @@ export function queryCases(c) {
     ['getAllTransactionsAnalytics', () => c.s.transactions.getAllTransactionsAnalytics(c.budgetId)],
     ['getAllTransactions', () => c.s.transactions.getAllTransactions(c.budgetId)],
     ['payeesWithUsage', () => c.s.payees.getPayeesWithUsage(c.budgetId)],
+    ...(typeof c.s.payees.getPayeeNames === 'function'
+      ? [['payeeNames', () => c.s.payees.getPayeeNames(c.budgetId)]]
+      : []),
+    ...(typeof c.s.transactions.getBalanceHistoryRows === 'function'
+      ? [
+          [
+            'recentUncategorized (6)',
+            () => c.s.transactions.getRecentUncategorizedTransactions(c.budgetId, 6),
+          ],
+          [
+            'balanceHistoryRows (day, 1 month)',
+            () => c.s.transactions.getBalanceHistoryRows(c.budgetId, shiftDay(c.today, -1), 'day'),
+          ],
+          [
+            'balanceHistoryRows (month, 24 months)',
+            () =>
+              c.s.transactions.getBalanceHistoryRows(
+                c.budgetId,
+                `${shiftMonth(c.month, -23)}-01`,
+                'month'
+              ),
+          ],
+        ]
+      : []),
     ['labelsWithUsage', () => c.s.labels.getLabelsWithUsage(c.budgetId)],
     [
       'dash: onBudgetBalanceByDates (30d)',
@@ -409,7 +493,10 @@ export function interactions(c) {
   const nextId = () => c.chk0Ids[(k++ * 7) % Math.min(400, c.chk0Ids.length)];
   const cat = () => c.spendCats[(k * 3) % 60];
   const reg = (opts) => [...registerPageQueries(c, c.ids.chk0, opts)];
-  const regInv = () => [...reg({ onlyInvalidated: true }), ...globalQueries(c)];
+  const regInv = (column) => () => [
+    ...reg({ onlyInvalidated: true, column }),
+    ...globalQueries(c, { column }),
+  ];
   const continuousRules = () =>
     c.s.rules.listRules(c.budgetId).filter((r) => r.enabled && r.mode === 'continuous');
   const runContinuous = async (txId) => {
@@ -434,9 +521,13 @@ export function interactions(c) {
           q('getMonthlyBudget(new month)', () =>
             c.s.monthlyBudgets.getMonthlyBudget(m, c.budgetId)
           ),
-          q('getReadyToAssign(new month)', () =>
-            c.s.monthlyBudgets.getReadyToAssign(c.budgetId, m)
-          ),
+          ...(isRefetch(c)
+            ? []
+            : [
+                q('getReadyToAssign(new month)', () =>
+                  c.s.monthlyBudgets.getReadyToAssign(c.budgetId, m)
+                ),
+              ]),
           q('getReadyToAssignBreakdown(new month)', () =>
             c.s.monthlyBudgets.getReadyToAssignBreakdown(c.budgetId, m)
           ),
@@ -489,8 +580,41 @@ export function interactions(c) {
         c.s.transactions.getTransactionByID(id);
         await c.s.transactions.updateTransactionColumn(id, 'OutflowNative', 1000 * (5 + (k % 90)));
       },
-      refetch: regInv,
+      refetch: regInv('amount'),
       persists: 1,
+    },
+    'edit memo cell': {
+      mutation: async () => {
+        const id = nextId();
+        c.s.transactions.getTransactionByID(id);
+        await c.s.transactions.updateTransactionColumn(id, 'Memo', `bench memo ${k % 97}`);
+      },
+      refetch: regInv('memo'),
+      persists: 1,
+    },
+    'edit payee cell': {
+      mutation: async () => {
+        const id = nextId();
+        c.s.transactions.getTransactionByID(id);
+        await c.s.transactions.updateTransactionColumn(id, 'Payee', `Payee ${k % 50}`);
+      },
+      refetch: regInv('payee'),
+      persists: 1,
+    },
+    'open category picker in register': {
+      // Before P9 the register had these loaded already; now the picker loads them on open.
+      refetch: () =>
+        isRefetch(c)
+          ? [
+              q('getMonthlyBudget(picker)', () =>
+                c.s.monthlyBudgets.getMonthlyBudget(c.month, c.budgetId)
+              ),
+              q('readyToAssignBreakdown(picker)', () =>
+                c.s.monthlyBudgets.getReadyToAssignBreakdown(c.budgetId, c.month)
+              ),
+            ]
+          : [],
+      persists: 0,
     },
     'edit category cell': {
       mutation: async () => {
@@ -498,7 +622,7 @@ export function interactions(c) {
         c.s.transactions.getTransactionByID(id);
         await c.s.transactions.updateTransactionColumn(id, 'CategoryID', String(cat()));
       },
-      refetch: regInv,
+      refetch: regInv('category'),
       persists: 1,
     },
     'add transaction (+3 continuous rules)': {
@@ -539,7 +663,7 @@ export function interactions(c) {
         c.s.transactions.getTransactionByID(id);
         c.s.transactions.deleteTransaction(id);
       },
-      refetch: regInv,
+      refetch: regInv(),
       persists: 1,
     },
     'bulk-categorize 50 rows': {
@@ -552,7 +676,7 @@ export function interactions(c) {
         }
       },
       refetch: () => [
-        ...reg({ onlyInvalidated: true }).filter((x) => !/ReadyToAssign|payees/.test(x.name)),
+        ...reg({ onlyInvalidated: true }).filter((x) => !/ReadyToAssign|payee/i.test(x.name)),
         globalQueries(c)[1],
       ],
       persists: 50,
