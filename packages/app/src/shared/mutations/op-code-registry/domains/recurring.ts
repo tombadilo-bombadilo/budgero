@@ -10,6 +10,7 @@ import type {
 } from '@budgero/core/browser';
 import {
   S,
+  newOpRowId,
   redoWithIds,
   safeCapture,
   RECURRING_OCCURRENCE_INVALIDATIONS,
@@ -159,6 +160,14 @@ export const recurringOps = {
     ],
   },
   'recurring.markReady': {
+    // A transfer template posts two legs sharing a TransferID: mint it here so
+    // every device's legs carry the same one (later edits are keyed by it).
+    prepare: (args) => {
+      const options = (args.options ?? {}) as MarkOccurrenceReadyOptions;
+      return options.transferId
+        ? args
+        : { ...args, options: { ...options, transferId: newOpRowId() } };
+    },
     execute: async (args) => {
       return await S().recurring!.markOccurrenceReady(args.options as MarkOccurrenceReadyOptions);
     },

@@ -23,6 +23,12 @@ export interface YNABImportConfig {
    * backpressure, allowing browser clients to paint before work continues.
    */
   onProgress?: (update: YNABImportProgressUpdate) => void | Promise<void>;
+  /**
+   * Called as soon as the budget row exists, before anything else is written
+   * into it, so the caller can track (and after a crash, remove) a budget the
+   * import may leave half-written.
+   */
+  onBudgetCreated?: (budgetId: number) => void;
 }
 
 export type YNABImportStage =

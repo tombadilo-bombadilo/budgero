@@ -598,6 +598,7 @@ export class YNABImportService {
       create_default_categories: false,
     });
     try {
+      config.onBudgetCreated?.(budgetId);
       // YNAB's Ready to Assign changes with the viewed month. Imported budgets
       // should preserve that expectation, while ordinary Budgero budgets keep
       // the application's cumulative default.

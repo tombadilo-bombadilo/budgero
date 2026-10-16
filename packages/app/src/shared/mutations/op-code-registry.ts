@@ -197,6 +197,20 @@ export async function executeMutationOp(
 }
 
 /**
+ * Args to execute and send for a mutation that originates on this device:
+ * runs the op's `prepare` (IDs, rates) so every device replays the same values.
+ * Receivers never call this — they execute the args they were sent.
+ */
+export async function prepareMutationArgs(
+  op: string,
+  args: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  if (!isKnownOpCode(op)) return args;
+  const entry: OpCodeEntry = opCodeRegistry[op];
+  return entry.prepare ? await entry.prepare(args) : args;
+}
+
+/**
  * Get invalidation keys for a given op code. With `args`, ops that declare
  * `invalidatesFor` return the set for that call (local, remote and undo/redo
  * replays all pass the op's payload); without, the op's full list.

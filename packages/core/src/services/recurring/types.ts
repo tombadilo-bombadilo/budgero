@@ -129,6 +129,9 @@ export interface RecurringOccurrenceRef {
 export interface MarkOccurrenceReadyOptions extends RecurringOccurrenceRef {
   transactionDate?: string;
   memoOverride?: string;
+  /** TransferID for a transfer template's two legs. Ops carry it so every
+   * device posts the same one; generated when absent (older ops). */
+  transferId?: string;
 }
 
 export interface ListOccurrencesOptions {

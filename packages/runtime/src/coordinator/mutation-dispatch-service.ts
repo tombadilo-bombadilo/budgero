@@ -20,6 +20,7 @@ interface MutationExecutionContext {
   };
   dbSync: {
     scheduleUpload(): void;
+    beginOperation?(): () => void;
   };
   offlineQueue: {
     add(mutation: MutationPayload): Promise<void>;
@@ -38,10 +39,22 @@ export class MutationDispatchService {
     spec: MutationSpec,
     ctx: MutationExecutionContext
   ): Promise<MutationResult<T>> {
-    const { result, mutationId, isReceiver } = await ctx.executor.execute<T>(spec);
+    // Hold snapshot uploads from the start of the op until it is in the
+    // durable queue: in between, its effects are in the DB but nothing marks
+    // them as not-yet-in-the-log (hasUnackedMutations only sees the queue).
+    const release = ctx.dbSync.beginOperation?.();
+    let execution: { result: T; mutationId: string; isReceiver: boolean };
+    try {
+      execution = await ctx.executor.execute<T>(spec);
+    } catch (error) {
+      release?.();
+      throw error;
+    }
+    const { result, mutationId, isReceiver } = execution;
 
     // Inbound mutation already applied by executor path.
     if (isReceiver) {
+      release?.();
       return { result, synced: false, queued: false };
     }
 
@@ -59,7 +72,11 @@ export class MutationDispatchService {
     // send attempt and leaves the queue only when the server acks its ID
     // (the server dedups re-sends on UNIQUE(space_id, id)). A ws.send() that
     // "succeeds" only proves the bytes entered the socket buffer.
-    await ctx.offlineQueue.add(payload);
+    try {
+      await ctx.offlineQueue.add(payload);
+    } finally {
+      release?.();
+    }
     // Applied-marking makes a catch-up echo of our own mutation a dedup
     // no-op (and an implicit ack) instead of a local double-apply. It goes
     // into the DURABLE dedup set, flushed together with the DB persist

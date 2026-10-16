@@ -985,7 +985,12 @@ export class RecurringTransactionService {
 
     let transactionId: number;
     if (template.toAccountId != null) {
-      transactionId = await this.postTransferLegs(template, transactionDate, memo);
+      transactionId = await this.postTransferLegs(
+        template,
+        transactionDate,
+        memo,
+        options.transferId?.trim() || undefined
+      );
     } else {
       const inflow = template.direction === 'inflow' ? template.amount : ZERO_MILLI;
       const outflow = template.direction === 'outflow' ? template.amount : ZERO_MILLI;
@@ -1059,7 +1064,8 @@ export class RecurringTransactionService {
   private async postTransferLegs(
     template: RecurringTransaction,
     transactionDate: string,
-    memo: string
+    memo: string,
+    transferId: string = generateTransferId()
   ): Promise<number> {
     const accountRow = (id: number) =>
       getRow<{ ID: number; Name: string; Currency: string; OnBudget: boolean | number }>(
@@ -1098,7 +1104,6 @@ export class RecurringTransactionService {
       );
     }
 
-    const transferId = generateTransferId();
     const sourceTransactionId = await this.transactions.addTransaction(
       ZERO_MILLI,
       template.amount,

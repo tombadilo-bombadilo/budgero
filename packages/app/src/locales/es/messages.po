@@ -270,6 +270,11 @@ msgstr "{0, plural, one {Falta # categoría del registro en Plan.csv} other {Fal
 msgid "{0, plural, one {# register row} other {# register rows}}"
 msgstr "{0, plural, one {# fila del registro} other {# filas del registro}}"
 
+#. placeholder {0}: pendingImpact.scheduled
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "{0, plural, one {# scheduled transaction loses its category.} other {# scheduled transactions lose their category.}}"
+msgstr "{0, plural, one {# transacción programada pierde su categoría.} other {# transacciones programadas pierden su categoría.}}"
+
 #. placeholder {0}: preview.splitTransactions.length
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
 #: src/pages/onboarding/steps/YnabImportStep.tsx
@@ -290,6 +295,16 @@ msgstr "{0, plural, one {# usuario encontrado} other {# usuarios encontrados}}"
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "{0, plural, one {# user was not deleted} other {# users were not deleted}}"
 msgstr "{0, plural, one {# usuario no se eliminó} other {# usuarios no se eliminaron}}"
+
+#. placeholder {0}: impact.assignedMonths
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "{0, plural, one {Assigned amounts in # month (total {assignedTotal})} other {Assigned amounts in # months (total {assignedTotal})}}"
+msgstr "{0, plural, one {Importes asignados en # mes (total {assignedTotal})} other {Importes asignados en # meses (total {assignedTotal})}}"
+
+#. placeholder {0}: pendingImpact.assignedMonths
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "{0, plural, one {Assigned money in # month ({total}) is removed and returns to Ready to Assign.} other {Assigned money in # months ({total}) is removed and returns to Ready to Assign.}}"
+msgstr "{0, plural, one {El dinero asignado en # mes ({total}) se elimina y vuelve a Por asignar.} other {El dinero asignado en # meses ({total}) se elimina y vuelve a Por asignar.}}"
 
 #. placeholder {0}: data.deleted
 #: src/pages/settings/push-api/usePushApiState.ts
@@ -539,8 +554,13 @@ msgstr "{0} ha sido archivado."
 
 #. placeholder {0}: selectedAccount.Name
 #: src/features/account-management/ui/EditAccountDialog.tsx
-msgid "{0} has been permanently removed."
-msgstr "{0} ha sido eliminado permanentemente."
+msgid "{0} has been deleted. You can undo this."
+msgstr "{0} se ha eliminado. Puedes deshacerlo."
+
+#. placeholder {0}: selectedAccount.Name
+#: src/features/account-management/ui/EditAccountDialog.tsx
+#~ msgid "{0} has been permanently removed."
+#~ msgstr "{0} ha sido eliminado permanentemente."
 
 #. placeholder {0}: best.name
 #. placeholder {1}: Math.round((best.ratio - 1) * 100)
@@ -3627,8 +3647,8 @@ msgstr "¿Seguro que quieres eliminar \"{0}\"? Esta acción no se puede deshacer
 
 #. placeholder {0}: modalState.pendingDelete?.name
 #: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
-msgid "Are you sure you want to delete the category \"{0}\"? This action cannot be undone."
-msgstr "¿Seguro que quieres eliminar la categoría \"{0}\"? Esta acción no se puede deshacer."
+#~ msgid "Are you sure you want to delete the category \"{0}\"? This action cannot be undone."
+#~ msgstr "¿Seguro que quieres eliminar la categoría \"{0}\"? Esta acción no se puede deshacer."
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Are you sure you want to reveal the key?"
@@ -6703,6 +6723,10 @@ msgstr "Eliminar escenario {0}"
 msgid "Delete selected rows"
 msgstr "Eliminar las filas seleccionadas"
 
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "Delete the category \"{pendingName}\"?"
+msgstr "¿Eliminar la categoría \"{pendingName}\"?"
+
 #: src/features/transactions/ui/DeleteTransactionDialog.tsx
 msgid "Delete this transaction?"
 msgstr "¿Eliminar esta transacción?"
@@ -7640,6 +7664,10 @@ msgstr "Tipo de cambio no disponible"
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Exchange rates are fetched daily and cached inside your budget file."
 msgstr "Los tipos de cambio se obtienen a diario y se guardan en la caché dentro de tu archivo de presupuesto."
+
+#: src/entities/budget/api/useBudgets.ts
+msgid "Exchange rates for the new currency are unavailable, so nothing was changed. Check your connection and try again."
+msgstr "No hay tipos de cambio disponibles para la nueva moneda, así que no se ha cambiado nada. Comprueba tu conexión e inténtalo de nuevo."
 
 #: src/pages/accounts/AccountPage.tsx
 msgid "Exchange-rate data needs attention"
@@ -9568,6 +9596,22 @@ msgstr "Acción irreversible"
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "is not"
 msgstr "no es"
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "It tracks payments for the {name} account. Archive or delete the account first."
+msgstr "Registra los pagos de la cuenta {name}. Archiva o elimina primero la cuenta."
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "It tracks payments for the {name} credit card. Archive or delete the card first."
+msgstr "Registra los pagos de la tarjeta de crédito {name}. Archiva o elimina primero la tarjeta."
+
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "Its goal is deleted with it. Set a goal on the new category if you still need one."
+msgstr "Su objetivo se elimina con ella. Define un objetivo en la nueva categoría si aún lo necesitas."
+
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "Its goal is deleted."
+msgstr "Su objetivo se elimina."
 
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "Its history was moved to the selected income category."
@@ -16837,6 +16881,10 @@ msgstr "El tipo de cambio resultante se guardará con esta transacción."
 msgid "The implied exchange rate will be saved with this transfer."
 msgstr "El tipo de cambio implícito se guardará con esta transferencia."
 
+#: src/features/category-management/lib/delete-block.ts
+msgid "The Income group can't be deleted."
+msgstr "El grupo Ingresos no se puede eliminar."
+
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "The invite has been revoked."
 msgstr "La invitación ha sido revocada."
@@ -16896,6 +16944,10 @@ msgstr "El importe enviado permanece fijo. Al guardar se recalculan conjuntament
 #: src/features/sync-diagnostics/ui/PendingChangesCard.tsx
 msgid "The server has confirmed all changes from this device."
 msgstr "El servidor ha confirmado todos los cambios de este dispositivo."
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "The system Income category can't be deleted."
+msgstr "La categoría de sistema Ingresos no se puede eliminar."
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The total amount to allocate across the period. Monthly target is calculated automatically."
@@ -17056,6 +17108,10 @@ msgstr "Esta caché persiste tras reiniciar la aplicación y se borra cuando exp
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
 #~ msgid "This card owes more than you've set aside to pay it. Assign money here to cover it."
 #~ msgstr "Esta tarjeta debe más de lo que has reservado para pagarla. Asigna dinero aquí para cubrirla."
+
+#: src/features/budget-planning/ui/BudgetTable.tsx
+msgid "This category can't be deleted"
+msgstr "Esta categoría no se puede eliminar"
 
 #: src/shared/mutations/useMutationHistory.ts
 msgid "This change is part of a larger action. Use Undo (Ctrl+Z) to revert it."
@@ -19328,6 +19384,11 @@ msgstr "Puedes instalar Budgero en cualquier momento desde el menú de tu navega
 #: src/features/subscription/ui/SubscriptionSuccess.tsx
 msgid "You can manage your subscription anytime from your account settings."
 msgstr "Puedes gestionar tu suscripción en cualquier momento desde los ajustes de tu cuenta."
+
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "You can undo this."
+msgstr "Puedes deshacerlo."
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "You can't delete an account with a non-zero balance!"
