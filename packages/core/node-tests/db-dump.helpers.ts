@@ -19,7 +19,7 @@ export function dumpDb(db: DatabaseAdapter): Record<string, unknown[]> {
 
 /** dumpDb without per-database identity and wall-clock columns, to compare two databases. */
 export function dumpComparable(db: DatabaseAdapter): Record<string, unknown[]> {
-  const volatile = new Set(['SpaceID', 'CreatedAt', 'UpdatedAt']);
+  const volatile = new Set(['SpaceID', 'CreatedAt', 'UpdatedAt', 'applied_at']);
   return Object.fromEntries(
     Object.entries(dumpDb(db)).map(([table, rows]) => [
       table,
