@@ -56,7 +56,7 @@ export const useUndoStore = create<UndoState>((set, get) => ({
         const spec: MutationSpec = {
           op: call.op,
           payload: call.args,
-          invalidates: getInvalidatesForOp(call.op),
+          invalidates: getInvalidatesForOp(call.op, call.args),
           meta: { skipUndo: true, forceInvalidate: true },
         };
         await manager.execute(spec);
@@ -85,7 +85,7 @@ export const useUndoStore = create<UndoState>((set, get) => ({
         const spec: MutationSpec = {
           op: call.op,
           payload: call.args,
-          invalidates: getInvalidatesForOp(call.op),
+          invalidates: getInvalidatesForOp(call.op, call.args),
           meta: { skipUndo: true, forceInvalidate: true },
         };
         await manager.execute(spec);

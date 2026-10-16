@@ -111,6 +111,88 @@ const TX_WRITE_INVALIDATION_KEYS: string[][] = [
   ['spendingByLabels', '*'],
 ];
 
+const TX_COLUMN_PAYEE_KEYS: string[][] = [
+  ['payees'],
+  ['payees', '*'],
+  ['payeeDirectory'],
+  ['payeeDirectory', '*'],
+];
+
+const TX_COLUMN_LABEL_KEYS: string[][] = [
+  ['labels'],
+  ['labels', '*'],
+  ['labelDirectory'],
+  ['labelDirectory', '*'],
+  ['spendingByLabels', '*'],
+];
+
+// Full set for a column edit the op cannot classify (and for callers that only
+// know the op code): every write key plus payees, as before.
+const TX_UPDATE_COLUMN_INVALIDATION_KEYS: string[][] = [
+  ...TX_WRITE_INVALIDATION_KEYS,
+  ['payees'],
+  ['payees', '*'],
+];
+
+/**
+ * Every query that lists transaction rows (and so shows memo, payee and label),
+ * but none of the balance, budget or analytics aggregates.
+ */
+const TX_ROW_LIST_INVALIDATION_KEYS: string[][] = [
+  ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
+  ['transactionsByCategoryAndMonth', '*'],
+  ['allTransactions', '*'],
+  ['allTransactionsDetailed', '*'],
+  ['allTransactionsAnalytics', '*'],
+  ['uncategorizedTransactions', '*'],
+  ['allAccountsMonthlyTransactions', '*'],
+];
+
+/**
+ * Amount, date, category, account and rate edits move balances, budgets and
+ * analytics, but cannot change the payee or label directories (names and
+ * usage counts depend only on which rows exist and their payee/label).
+ */
+const TX_VALUE_UPDATE_INVALIDATION_KEYS: string[][] = TX_WRITE_INVALIDATION_KEYS.filter(
+  ([root]) => !['payees', 'payeeDirectory', 'labels', 'labelDirectory'].includes(root)
+);
+
+const TX_VALUE_COLUMNS = new Set([
+  'inflowconverted',
+  'outflowconverted',
+  'inflownative',
+  'outflownative',
+  // legacy pre-045 names, still accepted by updateTransactionColumn
+  'inflow',
+  'outflow',
+  'infloworiginal',
+  'outfloworiginal',
+  'date',
+  'categoryid',
+  'accountid',
+  'exchangerate',
+]);
+
+/**
+ * What a `transactions.updateColumn` call can change, by column (normalized the
+ * same way as TransactionService.updateTransactionColumn):
+ * - memo: only the rows themselves;
+ * - payee: the rows and the payee directory;
+ * - label: the rows and the label directory / label analytics;
+ * - amounts, date, category, account, rate: everything except the payee and
+ *   label directories;
+ * - anything else: the full list.
+ */
+export function updateColumnInvalidations(args: Record<string, unknown>): string[][] {
+  const column =
+    typeof args.columnName === 'string' ? args.columnName.toLowerCase().replace(/_/g, '') : '';
+  if (column === 'memo') return TX_ROW_LIST_INVALIDATION_KEYS;
+  if (column === 'payee') return [...TX_ROW_LIST_INVALIDATION_KEYS, ...TX_COLUMN_PAYEE_KEYS];
+  if (column === 'labelid') return [...TX_ROW_LIST_INVALIDATION_KEYS, ...TX_COLUMN_LABEL_KEYS];
+  if (TX_VALUE_COLUMNS.has(column)) return TX_VALUE_UPDATE_INVALIDATION_KEYS;
+  return TX_UPDATE_COLUMN_INVALIDATION_KEYS;
+}
+
 // Shared by transactions.moveToNewCategory and transactions.reassign (exact), and
 // transactions.moveToNewAccount (which also invalidates accounts).
 const TX_MOVE_INVALIDATION_KEYS: string[][] = [
@@ -466,7 +548,8 @@ export const transactionOps = {
         typeof args.exchangeRateOverride === 'boolean' ? args.exchangeRateOverride : undefined
       );
     },
-    invalidates: [...TX_WRITE_INVALIDATION_KEYS, ['payees'], ['payees', '*']],
+    invalidates: TX_UPDATE_COLUMN_INVALIDATION_KEYS,
+    invalidatesFor: updateColumnInvalidations,
     undo: {
       // capture current value before update so we can restore it
       capture: async (args) => {

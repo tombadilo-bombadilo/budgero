@@ -51,6 +51,7 @@ export interface RuntimeContextFactoryDeps {
   ): Promise<unknown>;
   getUndoSpec(op: string): ReturnType<MutationExecutorDeps['getUndoSpec']>;
   getInvalidatesForOp(op: string): string[][] | undefined;
+  getInvalidatesForCall?(op: string, args: Record<string, unknown>): string[][] | undefined;
   getQueryClient(): QueryClientLike | undefined;
   pushUndo?(entry: UndoEntry): void;
   recordHistory?(entry: HistoryEntry): void;
@@ -307,6 +308,7 @@ export class RuntimeContextFactory {
       executeOp: (op, payload, context) => this.deps.executeOp(op, payload, context),
       getUndoSpec: (op) => this.deps.getUndoSpec(op),
       getInvalidatesForOp: (op) => this.deps.getInvalidatesForOp(op),
+      getInvalidatesForCall: (op, args) => this.deps.getInvalidatesForCall?.(op, args),
       getQueryClient: () => this.deps.getQueryClient(),
       pushUndo: (entry) => this.deps.pushUndo?.(entry),
       recordHistory: (entry) => this.deps.recordHistory?.(entry),

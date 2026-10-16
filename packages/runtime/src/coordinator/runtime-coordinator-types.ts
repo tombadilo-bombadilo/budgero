@@ -57,6 +57,7 @@ export interface RuntimeCoordinatorDeps {
     op: string
   ): MutationExecutorDeps['getUndoSpec'] extends (op: string) => infer R ? R : never;
   getInvalidatesForOp(op: string): string[][] | undefined;
+  getInvalidatesForCall?(op: string, args: Record<string, unknown>): string[][] | undefined;
 
   getQueryClient?(): QueryClientLike | undefined;
   pushUndo?(entry: import('../types').UndoEntry): void;

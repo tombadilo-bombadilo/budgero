@@ -245,6 +245,12 @@ export interface MutationExecutorDeps {
   ): Promise<unknown>;
   getUndoSpec(op: string): UndoSpec | undefined;
   getInvalidatesForOp(op: string): string[][] | undefined;
+  /**
+   * Invalidation set for one call (the op payload as `args`), for ops whose set
+   * depends on their arguments. Falls back to `getInvalidatesForOp` when absent
+   * or when it returns undefined.
+   */
+  getInvalidatesForCall?(op: string, args: Record<string, unknown>): string[][] | undefined;
   getQueryClient(): QueryClientLike | undefined;
   pushUndo(entry: UndoEntry): void;
   recordHistory(entry: HistoryEntry): void;

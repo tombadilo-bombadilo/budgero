@@ -78,7 +78,7 @@ export function useUndoMutationHistoryEntry() {
         await router.execute({
           op: op.op,
           payload: op.args,
-          invalidates: getInvalidatesForOp(op.op),
+          invalidates: getInvalidatesForOp(op.op, op.args),
           meta: { skipUndo: true, label: t`Undo: ${entry.op}`, forceInvalidate: true },
         });
       }

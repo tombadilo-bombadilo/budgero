@@ -176,6 +176,10 @@ export function createRuntimeDeps(): RuntimeCoordinatorDeps {
       return getInvalidatesForOp(op);
     },
 
+    getInvalidatesForCall(op, args) {
+      return getInvalidatesForOp(op, args);
+    },
+
     pushUndo(entry) {
       try {
         useUndoStore.getState().push({

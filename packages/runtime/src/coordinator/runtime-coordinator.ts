@@ -95,6 +95,7 @@ export class RuntimeCoordinator {
         executeOp: (op, payload, context) => deps.executeOp(op, payload, context),
         getUndoSpec: (op) => deps.getUndoSpec(op),
         getInvalidatesForOp: (op) => deps.getInvalidatesForOp(op),
+        getInvalidatesForCall: (op, args) => deps.getInvalidatesForCall?.(op, args),
         getQueryClient: () => this.getQueryClient(),
         pushUndo: (entry) => deps.pushUndo?.(entry),
         recordHistory: (entry) => deps.recordHistory?.(entry),

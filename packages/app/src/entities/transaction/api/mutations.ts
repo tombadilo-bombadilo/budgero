@@ -5,7 +5,6 @@ import { executeSpaceMutation } from '@shared/runtime/mutation-router';
 import { applyOpInvalidations, resolveSpaceKey } from '@shared/lib/query-utils';
 import { getTodayISO } from '@shared/lib/date-utils';
 import type { MilliUnits } from '@shared/lib/currency/milli';
-import { ACCOUNT_TRANSACTION_INVALIDATION_KEYS } from '@shared/mutations/op-code-registry/shared';
 import { requestSchedulingGuide } from '@shared/store/useSchedulingGuideStore';
 import { patchPlainAddTransactionCaches } from './plain-add-cache';
 
@@ -215,41 +214,9 @@ export type UpdateTransactionColumnInput = {
   skipInvalidate?: boolean;
 };
 
-const AMOUNT_COLUMNS = new Set([
-  'InflowConverted',
-  'OutflowConverted',
-  'InflowNative',
-  'OutflowNative',
-]);
-
-// Amount edits change balances, budgets, and analytics, but cannot change the
-// payee or label directories. Keeping those active queries out of this hot path
-// avoids rebuilding every row's editor data after each numeric commit.
-const AMOUNT_UPDATE_INVALIDATIONS: string[][] = [
-  ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
-  ['transactionsByCategoryAndMonth', '*'],
-  ['allTransactions', '*'],
-  ['allTransactionsDetailed', '*'],
-  ['allTransactionsAnalytics', '*'],
-  ['uncategorizedTransactions', '*'],
-  ['allAccountsMonthlyTransactions', '*'],
-  ['accounts'],
-  ['monthlyBudget', '*'],
-  ['readyToAssign'],
-  ['monthlySpending', '*'],
-  ['monthlyBalance', '*'],
-  ['spendingByDates', '*'],
-  ['spendingByDatesByCategories', '*'],
-  ['spendingByCategoriesInGroup', '*'],
-  ['balanceByDates', '*'],
-  ['analyticsPeriodSummary', '*'],
-  ['topSpendingCategories', '*'],
-  ['incomeExpenseByPeriod', '*'],
-  ['onBudgetBalance'],
-  ['onBudgetBalanceByDates'],
-  ['spendingByLabels', '*'],
-];
-
+// Invalidation depends on the column (a memo edit cannot move balances); the
+// MutationExecutor asks the op registry for this call's set, see
+// updateColumnInvalidations in op-code-registry/domains/transactions.ts.
 export function useUpdateTransactionColumn() {
   const runtime = useRuntime();
   return useMutation<void, Error, UpdateTransactionColumnInput>({
@@ -261,7 +228,6 @@ export function useUpdateTransactionColumn() {
           columnName: column,
           newValue: value,
         },
-        invalidates: AMOUNT_COLUMNS.has(column) ? AMOUNT_UPDATE_INVALIDATIONS : undefined,
         meta: { label: 'useUpdateTransactionColumn', skipInvalidate },
       });
     },
