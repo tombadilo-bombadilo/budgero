@@ -226,29 +226,22 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     tables: ['recurring_transaction_occurrences'],
     note: 'Occurrence materialization is not a pure function of the template: undo of a schedule edit regenerates from the old start date (past scheduled occurrences come back), and gaps left in a series are filled by a later write (an undo of an unrelated op then shows an extra scheduled occurrence).',
   },
-  {
-    id: 'NEW-10',
-    invariant: 'undo',
-    kinds: ['undo-threw'],
-    ops: ['transactions.updateColumn'],
-    detail: /Exchange rate must be a finite number/,
-    note: 'ExchangeRate cell edit on a foreign row with no stored rate: undo re-applies the captured NULL and throws, so the entry is dropped and the edit cannot be undone.',
-  },
+
   {
     id: 'NEW-14',
     invariant: 'undo',
     kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['recurring.update'],
+    ops: ['recurring.update', 'recurring.create'],
     tables: ['recurring_transactions', 'categories', 'recurring_transaction_occurrences'],
-    note: 'Undo of a category edit on a recurring transfer template writes the Transfers category (auto-created) instead of the NULL it had.',
+    note: 'Recurring transfer templates: undo of any edit (memo, category, ...) writes the auto-created Transfers category instead of the NULL CategoryID it had; undo of creating one leaves the Transfers category it auto-created.',
   },
   {
     id: 'NEW-15',
     invariant: 'undo',
     kinds: ['undo-mismatch', 'chain-undo-mismatch'],
     ops: ['transactions.updateColumn'],
-    tables: ['transaction_splits'],
-    note: 'Editing a split parent amount re-proportions its lines (A19 fix); undo restores the parent amount but re-proportions again instead of restoring the original lines (50/40 becomes 90/0).',
+    tables: ['transaction_splits', 'transactions', 'accounts'],
+    note: 'Editing a split parent amount re-proportions its lines (A19 fix); undo restores the parent amount but re-proportions again instead of restoring the original lines (50/40 becomes 90/0; the mirror row of a split-transfer line and the balance of the other account move with it).',
   },
   {
     id: 'NEW-16',
@@ -267,13 +260,7 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     detail: /amount\.(adjust_value|adjust_percent|set)/,
     note: 'Undo of an amount rule (amount.adjust_value) on a foreign-currency row does not restore the native amount: the EUR account balance ends 86.38 EUR lower than before the run.',
   },
-  {
-    id: 'NEW-13',
-    invariant: 'undo',
-    kinds: ['failed-op-partial'],
-    ops: ['accounts.update'],
-    note: 'Deleting the Liabilities group removes a loan\'s linked category; a later edit of that loan commits the name / on-budget change, then throws "Category with id N not found" (not atomic; the half-applied edit is never synced).',
-  },
+
   // ---------------------------------------------------------------- replay (invariant 6)
   {
     id: 'NEW-16',
@@ -283,13 +270,7 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     detail: /Only the most recent completed run can be undone/,
     note: 'Same as the undo entry, across devices: an undo of a rule run replayed after the other device ran a continuous rule throws there.',
   },
-  {
-    id: 'NEW-13',
-    invariant: 'replay',
-    kinds: ['failed-op-partial'],
-    ops: ['accounts.update'],
-    note: 'Same as the undo entry: the failed edit stays on the device that made it and is never sent, so the devices diverge.',
-  },
+
   {
     id: 'NEW-11',
     invariant: 'replay',
