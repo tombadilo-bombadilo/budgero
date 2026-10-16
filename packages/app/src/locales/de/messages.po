@@ -4877,6 +4877,10 @@ msgstr "Änderungsprotokoll"
 msgid "Changes apply to transactions imported from now on. If a field you pick is missing for a transaction, Budgero uses the automatic choice."
 msgstr "Änderungen gelten für Transaktionen, die ab jetzt importiert werden. Fehlt das gewählte Feld bei einer Transaktion, nutzt Budgero die automatische Auswahl."
 
+#: src/shared/mutations/useMutationHistory.ts
+msgid "Changes from other devices can only be undone on the device that made them."
+msgstr "Änderungen von anderen Geräten können nur auf dem Gerät rückgängig gemacht werden, auf dem sie vorgenommen wurden."
+
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Changes have been applied to the database."
 msgstr "Änderungen wurden auf die Datenbank angewendet."
@@ -8056,6 +8060,7 @@ msgid "Failed to reconcile account. Please try again."
 msgstr "Konto konnte nicht abgeglichen werden. Bitte versuche es erneut."
 
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/widgets/navigation/MobileTopBar.tsx
 msgid "Failed to redo action"
 msgstr "Aktion konnte nicht wiederholt werden"
 
@@ -8155,8 +8160,13 @@ msgid "Failed to toggle token: {0}"
 msgstr "Token konnte nicht umgeschaltet werden: {0}"
 
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/widgets/navigation/MobileTopBar.tsx
 msgid "Failed to undo last action"
 msgstr "Letzte Aktion konnte nicht rückgängig gemacht werden"
+
+#: src/features/transactions/api/useDeleteSelected.ts
+msgid "Failed to undo the delete"
+msgstr "Löschen konnte nicht rückgängig gemacht werden"
 
 #: src/features/budget-planning/ui/budget-table/useCategoryOperations.ts
 msgid "Failed to update allocation"
@@ -12115,6 +12125,10 @@ msgstr "Nur ein Arbeitsbereich-Eigentümer kann hier das erste Budget erstellen.
 msgid "Only money you have now"
 msgstr "Nur Geld, das du jetzt hast"
 
+#: src/shared/mutations/useMutationHistory.ts
+msgid "Only the most recent change can be undone. Undo the newer changes first."
+msgstr "Nur die letzte Änderung kann rückgängig gemacht werden. Mache zuerst die neueren Änderungen rückgängig."
+
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Only the workspace owner can restore a Budgero Core backup into this workspace."
 msgstr "Nur der Arbeitsbereichsbesitzer kann ein Budgero Core-Backup in diesen Arbeitsbereich wiederherstellen."
@@ -14344,6 +14358,7 @@ msgid "Retro run"
 msgstr "Rückwirkend ausführen"
 
 #: src/app/startup/screens.tsx
+#: src/app/system/GlobalUndoHotkeys.tsx
 #: src/pages/admin/components/RegistrationSettings.tsx
 msgid "Retry"
 msgstr "Erneut versuchen"
@@ -16994,10 +17009,22 @@ msgstr "Die Währung dieses Kontos wird nicht unterstützt. Verknüpfe es stattd
 msgid "This action CANNOT be undone"
 msgstr "Diese Aktion kann NICHT rückgängig gemacht werden"
 
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This action cannot be undone."
+msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
+
 #. placeholder {0}: budget.Name
 #: src/features/budget-management/ui/DeleteBudgetButton.tsx
 msgid "This action cannot be undone. This will permanently delete the budget \"{0}\" and all its associated data."
 msgstr "Diese Aktion kann nicht rückgängig gemacht werden. Dadurch wird das Budget „{0}\" und alle zugehörigen Daten dauerhaft gelöscht."
+
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This action failed, so there is nothing to undo."
+msgstr "Diese Aktion ist fehlgeschlagen, es gibt also nichts rückgängig zu machen."
+
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This action has already been undone."
+msgstr "Diese Aktion wurde bereits rückgängig gemacht."
 
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "This app"
@@ -17029,6 +17056,10 @@ msgstr "Dieser Cache übersteht App-Neustarts und wird geleert, wenn der Timer a
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
 #~ msgid "This card owes more than you've set aside to pay it. Assign money here to cover it."
 #~ msgstr "Diese Karte schuldet mehr, als du zur Rückzahlung zurückgelegt hast. Weise hier Geld zu, um sie zu decken."
+
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This change is part of a larger action. Use Undo (Ctrl+Z) to revert it."
+msgstr "Diese Änderung gehört zu einer größeren Aktion. Verwende Rückgängig (Strg+Z), um sie zurückzusetzen."
 
 #: src/features/budget-planning/ui/FutureOverspendingWarning.tsx
 msgid "This change will cause negative Available in future months for this category:"
