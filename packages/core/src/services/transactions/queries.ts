@@ -713,16 +713,38 @@ export class TransactionQueries {
     accountId: number,
     month: string
   ): GetTransactionsByAccountAndMonthRow[] {
+    return this.getTransactionsByAccountsAndMonth([accountId], month);
+  }
+
+  /**
+   * Same rows as calling getTransactionsByAccountAndMonth for each account in turn and
+   * concatenating: grouped in `accountIds` order, then Date DESC, ID DESC.
+   *
+   * Filters on the stored Month column (`substr(Date, 1, 7)`, the month the budget uses)
+   * instead of `strftime('%Y-%m', Date)`, which was evaluated on every row of each account's
+   * ledger. The Date range is the same month as a prefix range, so idx_transactions_account_date_id
+   * reads only that month. Month is always 'YYYY-MM'; any other string matches nothing, as before.
+   */
+  getTransactionsByAccountsAndMonth(
+    accountIds: readonly number[],
+    month: string
+  ): GetTransactionsByAccountAndMonthRow[] {
+    if (accountIds.length === 0 || !/^\d{4}-\d{2}$/.test(month)) return [];
+    // Smallest string above every string starting with `month` ('2026-10' -> '2026-11').
+    const monthEnd = month.slice(0, 6) + String.fromCharCode(month.charCodeAt(6) + 1);
     return allRows<GetTransactionsByAccountAndMonthRow>(
       this.db,
       `
       SELECT${TX_ROW_COLUMNS},
         a.Name as Account
-      FROM transactions t${TX_ROW_JOINS}
-      WHERE t.AccountID = ? AND strftime('%Y-%m', t.Date) = ?
-      ORDER BY t.Date DESC, t.ID DESC
+      FROM json_each(?) ids
+      CROSS JOIN transactions t
+        ON t.AccountID = ids.value AND t.Date >= ? AND t.Date < ? AND t.Month = ?${TX_ROW_JOINS}
+      ORDER BY ids.key, t.Date DESC, t.ID DESC
     `,
-      accountId,
+      JSON.stringify(accountIds),
+      month,
+      monthEnd,
       month
     );
   }

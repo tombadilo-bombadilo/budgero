@@ -690,6 +690,17 @@ export class TransactionService {
   }
 
   /**
+   * Transactions of several accounts in one month, in one query: the same rows and order as
+   * getTransactionsByAccountAndMonth per account, concatenated in `accountIds` order.
+   */
+  getTransactionsByAccountsAndMonth(
+    accountIds: readonly number[],
+    month: string
+  ): GetTransactionsByAccountAndMonthRow[] {
+    return this.queries.getTransactionsByAccountsAndMonth(accountIds, month);
+  }
+
+  /**
    * GetTransactionsByCategory - Gets all transactions for a category
    */
   getTransactionsByCategory(categoryId: number): Transaction[] {

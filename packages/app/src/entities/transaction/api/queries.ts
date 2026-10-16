@@ -171,14 +171,11 @@ export function useAllAccountsMonthlyTransactions(budgetId: number, month: strin
     queryFn: async () => {
       if (!spaceId || !accounts || accounts.length === 0) return [];
 
-      const allTransactions = await Promise.all(
-        accounts.map((account) => {
-          const services = runtime.services();
-          return services.transactions.getTransactionsByAccountAndMonth(account.ID, month);
-        })
+      // One query for every account; same rows and order as one query per account, concatenated.
+      return runtime.services().transactions.getTransactionsByAccountsAndMonth(
+        accounts.map((account) => account.ID),
+        month
       );
-
-      return allTransactions.flat();
     },
     enabled: Boolean(spaceId) && Boolean(budgetId) && Boolean(month) && Boolean(accounts),
     staleTime: 1000 * 60 * 5,
