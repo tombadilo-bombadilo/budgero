@@ -1,4 +1,4 @@
-import type { OpCodeEntry, OpCodeExecutionContext } from './op-code-registry/shared';
+import type { OpCall, OpCodeEntry, OpCodeExecutionContext } from './op-code-registry/shared';
 import { accountOps } from './op-code-registry/domains/accounts';
 import { bankSyncOps } from './op-code-registry/domains/bank-sync';
 import { budgetOps } from './op-code-registry/domains/budgets';
@@ -20,7 +20,7 @@ import { transactionOps } from './op-code-registry/domains/transactions';
 import { userPreferenceOps } from './op-code-registry/domains/user-preferences';
 import { warrantyOps } from './op-code-registry/domains/warranties';
 
-const flatOpCodeRegistry = {
+const domainOpCodeRegistry = {
   ...budgetOps,
   ...transactionOps,
   ...payeeOps,
@@ -41,6 +41,120 @@ const flatOpCodeRegistry = {
   ...chatOps,
   ...llmSettingsOps,
   ...bankSyncOps,
+} satisfies Record<string, OpCodeEntry>;
+
+/** Unique invalidation keys, first occurrence order. */
+function uniqueKeys(keys: string[][]): string[][] {
+  const seen = new Set<string>();
+  return keys.filter((key) => {
+    const id = JSON.stringify(key);
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+}
+
+function readOpCalls(args: Record<string, unknown>): OpCall[] {
+  const { ops } = args;
+  if (!Array.isArray(ops) || ops.length === 0) {
+    throw new Error('"ops" must be a non-empty list of operations.');
+  }
+  return ops.map((call) => {
+    const entry = call as Partial<OpCall> | null;
+    if (!entry || typeof entry.op !== 'string' || entry.op === APPLY_OPS) {
+      throw new Error('Invalid operation in "ops".');
+    }
+    return { op: entry.op, args: (entry.args ?? {}) as Record<string, unknown> };
+  });
+}
+
+/** Op code that applies a list of ops as one mutation (multi-step undo/redo). */
+export const APPLY_OPS = 'history.applyOps';
+
+/**
+ * Apply `ops` in order as one unit. Each step's inverse is built from its own
+ * undo spec as it runs; if a step throws, the steps already applied are
+ * reverted (newest first) before the error propagates, so a multi-step undo or
+ * redo either applies completely or leaves the data as it was. Because the
+ * whole list is one mutation, nothing is queued for sync unless every step
+ * succeeded.
+ */
+async function applyOpsAtomically(
+  ops: OpCall[],
+  context?: OpCodeExecutionContext
+): Promise<unknown[]> {
+  const results: unknown[] = [];
+  const inverses: OpCall[][] = [];
+  for (const call of ops) {
+    const spec = getUndoSpec(call.op);
+    let before: unknown;
+    let captured = true;
+    if (spec?.capture) {
+      try {
+        before = await spec.capture(call.args);
+      } catch {
+        captured = false;
+      }
+    }
+    let result: unknown;
+    try {
+      result = await executeMutationOp(call.op, call.args, context);
+    } catch (error) {
+      await revertApplied(inverses, context);
+      throw error;
+    }
+    results.push(result);
+    let inverse: OpCall[] = [];
+    if (spec && captured) {
+      try {
+        const { budgetId } = call.args;
+        inverse = (spec.build(call.args, result, before) ?? []).map((entry) =>
+          budgetId !== undefined && entry.args.budgetId === undefined
+            ? { ...entry, args: { ...entry.args, budgetId } }
+            : entry
+        );
+      } catch {
+        inverse = [];
+      }
+    }
+    if (!inverse.length) {
+      console.warn(`[OpCodeRegistry] ${APPLY_OPS}: no inverse for ${call.op}; cannot revert it`);
+    }
+    inverses.push(inverse);
+  }
+  return results;
+}
+
+async function revertApplied(inverses: OpCall[][], context?: OpCodeExecutionContext) {
+  for (const inverse of [...inverses].reverse()) {
+    for (const call of inverse) {
+      try {
+        await executeMutationOp(call.op, call.args, context);
+      } catch (error) {
+        console.error(`[OpCodeRegistry] ${APPLY_OPS}: failed to revert ${call.op}`, error);
+      }
+    }
+  }
+}
+
+const historyOps = {
+  [APPLY_OPS]: {
+    execute: async (args, context) => applyOpsAtomically(readOpCalls(args), context),
+    invalidates: uniqueKeys(
+      Object.values(domainOpCodeRegistry as Record<string, OpCodeEntry>).flatMap(
+        (entry) => entry.invalidates
+      )
+    ),
+    invalidatesFor: (args) =>
+      uniqueKeys(
+        readOpCalls(args).flatMap((call) => getInvalidatesForOp(call.op, call.args) ?? [])
+      ),
+  },
+} satisfies Record<string, OpCodeEntry>;
+
+const flatOpCodeRegistry = {
+  ...domainOpCodeRegistry,
+  ...historyOps,
 } satisfies Record<string, OpCodeEntry>;
 
 /** Every known mutation op code — derived from the registry keys, so an op
