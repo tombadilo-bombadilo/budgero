@@ -29,6 +29,7 @@ export function DesktopBudgetGroupRow({
   isDeleting,
   dragHandleProps,
   showGroupPercent = false,
+  compact = false,
 }: DesktopBudgetGroupRowProps) {
   const [editingOpen, setEditingOpen] = useState(false);
   const [editingName, setEditingName] = useState(row.name);
@@ -64,6 +65,7 @@ export function DesktopBudgetGroupRow({
       style={style}
       className={cn(
         'bg-muted/40 text-sm',
+        compact && '[&>td]:py-1',
         isDragging && 'opacity-60',
         isOver && 'ring-2 ring-primary/50'
       )}
@@ -123,7 +125,7 @@ export function DesktopBudgetGroupRow({
             <AddCategoryButton
               groupId={groupId}
               onAddCategory={onAddCategory}
-              className="h-7 w-7 text-primary hover:bg-primary/10"
+              className={cn(compact ? 'h-6 w-6' : 'h-7 w-7', 'text-primary hover:bg-primary/10')}
               highlightClassName="border border-primary ring-2 ring-primary/60 bg-primary/10"
             />
           )}

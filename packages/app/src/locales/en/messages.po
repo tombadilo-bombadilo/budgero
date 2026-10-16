@@ -5441,6 +5441,10 @@ msgid "Compact header"
 msgstr "Compact header"
 
 #: src/pages/settings/AppearancePage.tsx
+msgid "Compact rows fit more categories on screen (table view)."
+msgstr "Compact rows fit more categories on screen (table view)."
+
+#: src/pages/settings/AppearancePage.tsx
 msgid "Compact rows fit more transactions on screen (desktop register)."
 msgstr "Compact rows fit more transactions on screen (desktop register)."
 

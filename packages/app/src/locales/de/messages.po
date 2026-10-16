@@ -5439,6 +5439,10 @@ msgid "Compact header"
 msgstr "Kompakte Kopfzeile"
 
 #: src/pages/settings/AppearancePage.tsx
+msgid "Compact rows fit more categories on screen (table view)."
+msgstr "Kompakte Zeilen zeigen mehr Kategorien auf einmal (Tabellenansicht)."
+
+#: src/pages/settings/AppearancePage.tsx
 msgid "Compact rows fit more transactions on screen (desktop register)."
 msgstr "Kompakte Zeilen zeigen mehr Transaktionen auf einmal (Register am Desktop)."
 

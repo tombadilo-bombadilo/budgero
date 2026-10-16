@@ -5439,6 +5439,10 @@ msgid "Compact header"
 msgstr "En-tête compact"
 
 #: src/pages/settings/AppearancePage.tsx
+msgid "Compact rows fit more categories on screen (table view)."
+msgstr "Les lignes compactes affichent plus de catégories à l’écran (vue tableau)."
+
+#: src/pages/settings/AppearancePage.tsx
 msgid "Compact rows fit more transactions on screen (desktop register)."
 msgstr "Les lignes compactes affichent plus de transactions à l’écran (registre sur ordinateur)."
 

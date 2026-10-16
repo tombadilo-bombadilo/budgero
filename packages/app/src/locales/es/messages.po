@@ -5439,6 +5439,10 @@ msgid "Compact header"
 msgstr "Cabecera compacta"
 
 #: src/pages/settings/AppearancePage.tsx
+msgid "Compact rows fit more categories on screen (table view)."
+msgstr "Las filas compactas muestran más categorías en pantalla (vista de tabla)."
+
+#: src/pages/settings/AppearancePage.tsx
 msgid "Compact rows fit more transactions on screen (desktop register)."
 msgstr "Las filas compactas muestran más transacciones en pantalla (registro de escritorio)."
 
