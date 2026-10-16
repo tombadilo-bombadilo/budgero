@@ -15,6 +15,7 @@ import {
   GetTransactionsByAccountAndMonthRow,
   GetAllTransactions,
   GetTransactionsByCategoryAndMonthRow,
+  TransactionAmountsSnapshot,
 } from './types.js';
 import { NotFoundError, ValidationError } from '../../types';
 import { TransactionQueries } from './queries.js';
@@ -1410,6 +1411,33 @@ export class TransactionService {
    * - Recalculates partner account balances to keep running balances consistent.
    * Skips if there are not exactly two transactions for the TransferID (e.g., split mirrors).
    */
+  /**
+   * Put a row's amounts and exchange rate back exactly as snapshotted (undo of
+   * an amount edit, which re-resolves the rate and drops a manual override),
+   * then fix running balances and a transfer partner like an amount edit does.
+   */
+  async restoreAmounts(transactionId: number, amounts: TransactionAmountsSnapshot): Promise<void> {
+    const tx = this.getTransactionByID(transactionId);
+    this.db.transaction(() => {
+      run(
+        this.db,
+        `UPDATE transactions
+         SET InflowNative = ?, OutflowNative = ?, InflowConverted = ?, OutflowConverted = ?,
+             ExchangeRate = ?, ExchangeRateOverride = ?
+         WHERE ID = ?`,
+        asMilli(Number(amounts.InflowNative)),
+        asMilli(Number(amounts.OutflowNative)),
+        asMilli(Number(amounts.InflowConverted)),
+        asMilli(Number(amounts.OutflowConverted)),
+        amounts.ExchangeRate ?? null,
+        amounts.ExchangeRateOverride ? 1 : 0,
+        transactionId
+      );
+      this.recalculateAfterRowEdit(transactionId, tx, tx.AccountID, tx.Date);
+    });
+    await this.syncTransferPartnerAmounts(transactionId);
+  }
+
   private async syncTransferPartnerAmounts(transactionId: number): Promise<void> {
     let main: Transaction;
     try {
