@@ -251,6 +251,17 @@ export async function seedDataset(device: Device): Promise<void> {
     reportId: report.id,
     chartId: report.charts[0]!.id,
   });
+  await op('bankSync.addReviews', {
+    budgetId,
+    reviews: [
+      {
+        budgetId,
+        accountId: chk,
+        identity: identity('seed-review-1', dateOf(4, 5), 31_000, 'USD'),
+        candidateTransactionId: txs[1],
+      },
+    ],
+  });
   await op('scenarios.save', { id: 'seed-scenario', budgetId, name: 'Plan', payload: '{}' });
   await op('warranties.create', {
     budgetId,
@@ -321,6 +332,8 @@ const KINDS: [string, number][] = [
   ['transactions.duplicate', 2],
   ['transactions.upsertSplits', 3],
   ['transactions.clearSplits', 2],
+  ['transactions.saveSplits', 3],
+  ['transactions.batchEdit', 3],
   ['transactions.reassign', 1],
   // payees / labels
   ['payees.add', 1],
@@ -401,6 +414,8 @@ const KINDS: [string, number][] = [
   // imports
   ['importHistory.record', 1],
   ['importHistory.undo', 1],
+  ['importHistory.match', 1],
+  ['bankSync.setReviewStatus', 2],
   // preferences / budget settings
   ['userPreferences.setDuplicateHintSettings', 1],
   ['userPreferences.setWeekStartsOn', 1],
@@ -774,6 +789,72 @@ export function realize(device: Device, intent: Intent): OpCall | null {
                   InflowConverted: inn - firstIn,
                 },
           ],
+        },
+      };
+    }
+    case 'transactions.saveSplits': {
+      // useSaveSplits: snake_case lines in the parent's converted currency,
+      // plus a new parent total when the editor changed it.
+      const id = pick(plainTxs, a);
+      if (!id) return null;
+      const parent = rows<{ OutflowConverted: number; InflowConverted: number; AccountID: number }>(
+        device,
+        'SELECT OutflowConverted, InflowConverted, AccountID FROM transactions WHERE ID = ?',
+        id
+      )[0]!;
+      const total = f ? amount : Number(parent.OutflowConverted) + Number(parent.InflowConverted);
+      const inflow = !f && Number(parent.InflowConverted) > 0;
+      const first = Math.floor(total / 2);
+      const transferTo = g
+        ? pick(
+            accountIds.filter((acc) => acc !== parent.AccountID),
+            d
+          )
+        : undefined;
+      const line = (amt: number, extra: Record<string, unknown>, idx: number) => ({
+        category_id: null,
+        transfer_account_id: null,
+        memo: `l${idx}`,
+        payee: '',
+        inflow: inflow ? amt : 0,
+        outflow: inflow ? 0 : amt,
+        inflow_original: null,
+        outflow_original: null,
+        order_index: idx,
+        ...extra,
+      });
+      return {
+        op: k,
+        payload: {
+          transactionId: id,
+          splits: [
+            line(first, { category_id: pick(userCats, b) }, 0),
+            line(
+              total - first,
+              transferTo ? { transfer_account_id: transferTo } : { category_id: pick(userCats, c) },
+              1
+            ),
+          ],
+          ...(f ? { amount: { inflow: 0, outflow: total, currency: 'converted' } } : {}),
+        },
+      };
+    }
+    case 'transactions.batchEdit': {
+      if (!plainTxs.length) return null;
+      const chosen = [
+        ...new Set([pick(plainTxs, a)!, pick(plainTxs, b)!, ...(f ? [pick(plainTxs, c)!] : [])]),
+      ];
+      const field = d % 3;
+      return {
+        op: k,
+        payload: {
+          edits: chosen.map((id) =>
+            field === 0
+              ? { id, accountId: pick(accountIds, c) }
+              : field === 1
+                ? { id, categoryId: pick(userCats, c) }
+                : { id, payee: g ? 'Grocer' : `Batch ${c % 3}` }
+          ),
         },
       };
     }
@@ -1424,6 +1505,38 @@ export function realize(device: Device, intent: Intent): OpCall | null {
           },
         },
       };
+    }
+    case 'importHistory.match': {
+      // Import review "skip": link a file row to an existing transaction.
+      const tx = pick(
+        rows<{ ID: number; AccountID: number; Currency: string }>(
+          device,
+          `SELECT t.ID, t.AccountID, acc.Currency FROM transactions t JOIN accounts acc ON acc.ID = t.AccountID
+            WHERE t.BudgetID = ? AND (t.TransferID IS NULL OR t.TransferID = '') ORDER BY t.ID`,
+          budgetId
+        ),
+        a
+      );
+      if (!tx) return null;
+      return {
+        op: k,
+        payload: {
+          budgetId,
+          accountId: tx.AccountID,
+          transactionId: tx.ID,
+          identity: identity(uid('match', intent), date, amount, tx.Currency),
+        },
+      };
+    }
+    case 'bankSync.setReviewStatus': {
+      // Bank sync adds reviews with skipUndo (seeded once); the review panel resolves them.
+      const id = pick(ids(device, 'SELECT ID FROM bank_reviews ORDER BY ID'), a);
+      return id
+        ? {
+            op: k,
+            payload: { budgetId, id, status: pick(['dismissed', 'resolved', 'pending'], b) },
+          }
+        : null;
     }
     case 'importHistory.undo': {
       const id = pick(

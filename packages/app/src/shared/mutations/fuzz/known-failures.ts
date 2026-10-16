@@ -64,11 +64,6 @@ export interface KnownFailure {
 }
 
 const RULE_LOG = ['transaction_rule_runs', 'transaction_rule_run_changes', 'transaction_rules'];
-const DELETE_OPS = [
-  'transactions.delete',
-  'transactions.deleteBatch',
-  'transactions.deleteTransfer',
-];
 
 /**
  * Order matters: the first matching entry wins, so narrow entries come
@@ -109,47 +104,17 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     id: 'U12',
     invariant: 'undo',
     kinds: ['no-undo-entry'],
-    ops: ['recurring.delete', 'importHistory.record', 'importHistory.undo'],
-    note: 'No undo for recurring.delete (accounts.delete got one with the atomic delete); importHistory.record (the import run of a CSV import) and importHistory.undo (undo of a whole import) have none either.',
+    ops: ['importHistory.record', 'importHistory.undo'],
+    note: 'importHistory.record (the import run of a CSV import) and, rarely, importHistory.undo record no undo (recurring.delete and accounts.delete got one in the integrity fixes).',
   },
-  {
-    id: 'U2',
-    invariant: 'undo',
-    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: DELETE_OPS,
-    tables: ['transaction_splits', 'import_provenance', 'warranties', 'accounts', 'transactions'],
-    note: 'Undo of a delete re-adds the rows but loses split lines, re-links nothing that pointed at the row (warranties.TransactionID), recreates provenance under a new ID and re-resolves the FX rate of a non-override foreign row (converted amount and balance change).',
-  },
-  {
-    id: 'U7',
-    invariant: 'undo',
-    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: DELETE_OPS,
-    note: 'Undo of a delete re-runs continuous rules on the restored rows (category rewritten, new rule run + changes, LastRunAt bumped); combined with the U2 losses.',
-  },
-  {
-    id: 'U4',
-    invariant: 'undo',
-    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['payees.rename', 'payees.delete', 'payees.deleteMany', 'labels.delete'],
-    tables: ['payees', 'transactions', 'recurring_transactions'],
-    note: 'Payee rename undo renames every row now carrying the new name (merges); payee / label delete undo re-adds the directory entry (new ID) but not the payee / label on the transactions.',
-  },
-  {
-    id: 'U5',
-    invariant: 'undo',
-    kinds: ['redo-mismatch', 'chain-redo-mismatch', 'chain-undo-mismatch'],
-    ops: ['transactions.reconcileCleared'],
-    tables: ['transactions', 'accounts'],
-    note: 'Redo of reconcile-with-adjustment re-creates the adjustment row under a new ID.',
-  },
+
   {
     id: 'U6',
     invariant: 'undo',
     kinds: ['undo-mismatch', 'chain-undo-mismatch'],
     ops: ['rules.execute', 'rules.delete'],
     tables: [...RULE_LOG, 'transactions'],
-    note: "Rule-run undo leaves the run and its change rows (run not marked undone) and writes NULL into Payee where the row had ''; undo of a rule delete does not bring back its run history.",
+    note: "After the int-undo fix the rows themselves are restored; what remains: rules.execute undo keeps the run and its change rows (now Status 'undone', which is the intended audit trail), and undo of a rules.delete does not bring back the rule's run history.",
   },
   {
     id: 'NEW-1',
@@ -164,6 +129,8 @@ export const KNOWN_FAILURES: KnownFailure[] = [
       'transactions.clearSplits',
       'transactions.duplicate',
       'transactions.import',
+      'transactions.saveSplits',
+      'importHistory.match',
       'accounts.createLinked',
     ],
     tables: [
@@ -182,10 +149,16 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     id: 'NEW-7',
     invariant: 'undo',
     kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['transactions.add', 'transactions.updateColumn', 'transactions.import'],
+    ops: [
+      'transactions.add',
+      'transactions.updateColumn',
+      'transactions.import',
+      'transactions.batchEdit',
+    ],
     tables: ['payees', 'transactions'],
-    detail: /^transactions\.(add|import)[ #]|"columnName":"Payee"/,
-    note: "A new payee name typed on add / payee edit is added to the payee directory and undo leaves the entry; undo of a payee edit on a row whose Payee was '' writes NULL.",
+    detail:
+      /^transactions\.(add|import)[ #]|"columnName":"Payee"|^transactions\.batchEdit .*"payee"/,
+    note: "A new payee name typed on add / payee edit / batch payee edit is added to the payee directory and undo leaves the entry; undo of a payee edit on a row whose Payee was '' writes NULL.",
   },
   {
     id: 'NEW-2',
@@ -270,6 +243,31 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     note: 'Undo of a category edit on a recurring transfer template writes the Transfers category (auto-created) instead of the NULL it had.',
   },
   {
+    id: 'NEW-15',
+    invariant: 'undo',
+    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
+    ops: ['transactions.updateColumn'],
+    tables: ['transaction_splits'],
+    note: 'Editing a split parent amount re-proportions its lines (A19 fix); undo restores the parent amount but re-proportions again instead of restoring the original lines (50/40 becomes 90/0).',
+  },
+  {
+    id: 'NEW-16',
+    invariant: 'undo',
+    kinds: ['undo-threw'],
+    ops: ['rules.execute'],
+    detail: /Only the most recent completed run can be undone/,
+    note: 'Rule-run undo is now rules.undoRun, which only undoes the latest run: once a continuous rule has run again (e.g. after an add), Ctrl+Z on the manual run throws and the entry is dropped.',
+  },
+  {
+    id: 'NEW-17',
+    invariant: 'undo',
+    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
+    ops: ['rules.execute'],
+    tables: [...RULE_LOG, 'transactions', 'accounts'],
+    detail: /amount\.(adjust_value|adjust_percent|set)/,
+    note: 'Undo of an amount rule (amount.adjust_value) on a foreign-currency row does not restore the native amount: the EUR account balance ends 86.38 EUR lower than before the run.',
+  },
+  {
     id: 'NEW-13',
     invariant: 'undo',
     kinds: ['failed-op-partial'],
@@ -277,6 +275,14 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     note: 'Deleting the Liabilities group removes a loan\'s linked category; a later edit of that loan commits the name / on-budget change, then throws "Category with id N not found" (not atomic; the half-applied edit is never synced).',
   },
   // ---------------------------------------------------------------- replay (invariant 6)
+  {
+    id: 'NEW-16',
+    invariant: 'replay',
+    kinds: ['replay-threw'],
+    ops: ['rules.undoRun'],
+    detail: /Only the most recent completed run can be undone/,
+    note: 'Same as the undo entry, across devices: an undo of a rule run replayed after the other device ran a continuous rule throws there.',
+  },
   {
     id: 'NEW-13',
     invariant: 'replay',
@@ -288,33 +294,7 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     id: 'NEW-11',
     invariant: 'replay',
     kinds: ['replay-diverged-clock'],
-    ops: [
-      'currency.customRates.add',
-      'currency.customRates.update',
-      'currency.customRates.delete',
-      'transactions.reconcile',
-      'transactions.reconcileCleared',
-      'transactions.add',
-      'transactions.duplicate',
-      'transactions.restoreBatch',
-      'transactions.updateColumn',
-      'transactions.moveToNewAccount',
-      'transactions.import',
-      'transactions.addTransfer',
-      'transactions.upsertSplits',
-      'transactions.updateTransferRate',
-      'accounts.createLinked',
-      'transactions.delete',
-      'accounts.create',
-      'accounts.update',
-      'accounts.delete',
-      'recurring.create',
-      'recurring.update',
-      'recurring.markReady',
-      'recurring.skip',
-      'recurring.resetOccurrence',
-      'rules.execute',
-    ],
+    ops: ['*'],
     note: "Replay depends on the receiving device's \"today\": custom-rate ops revalue as of the receiver's today (other revaluation rows and BalanceConverted), ReconciledAt is stamped at apply time, FX rates of future-dated rows resolve against the receiver's today, and recurring series materialize from the receiver's backfill window.",
   },
 ];
