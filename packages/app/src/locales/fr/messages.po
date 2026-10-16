@@ -7661,6 +7661,10 @@ msgstr "Taux de change indisponible"
 msgid "Exchange rates are fetched daily and cached inside your budget file."
 msgstr "Les taux de change sont récupérés quotidiennement et mis en cache dans votre fichier de budget."
 
+#: src/entities/budget/api/useBudgets.ts
+msgid "Exchange rates for the new currency are unavailable, so nothing was changed. Check your connection and try again."
+msgstr "Les taux de change de la nouvelle devise ne sont pas disponibles, rien n'a donc été modifié. Vérifiez votre connexion et réessayez."
+
 #: src/pages/accounts/AccountPage.tsx
 msgid "Exchange-rate data needs attention"
 msgstr "Les données de change nécessitent votre attention"
