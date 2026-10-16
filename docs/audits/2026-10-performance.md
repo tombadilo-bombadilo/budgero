@@ -470,6 +470,44 @@ At 100k every "before" figure roughly doubles or triples while the snapshot read
    with >= 20 seeds x 300 steps, 0 diffs; plus node-tests for each edge case above. Then
    `pnpm bench` before/after on 50k and 100k.
 
+### P19 as implemented (feat/p19-snapshot)
+
+Code: `packages/core/src/services/monthly-budgets/snapshot/` (model.ts pure folds, store.ts SQL + TEMP
+triggers + registry, reads.ts the snapshot-backed reads, compare.ts). Differences from the design above:
+- **No stored fold state, no seeded partial replay.** The snapshot keeps only per-month grouped sums (per
+  category: non-credit activity, assignments, income rows, transfer legs; per card: net, payments, CC spend;
+  every on-budget credit line in ledger order). Every derived figure is recomputed in JS: cumulative sums
+  per read (memoised per data version), the monthly rollforward once per data version over all months
+  (credit running balance, floors, funding, payment pass). At 100k that refold is a few ms, so a
+  5-years-back edit costs one month's `Month IN (...)` queries plus a refold, and nothing path-dependent
+  can drift.
+- **RtaMode changes need no invalidation**: the sums serve both modes.
+- **Category / group membership is applied in JS from live metadata**: a category move or group rename
+  re-folds without SQL. Accounts (OnBudget, Type, Metadata, Currency, BudgetID), budget DisplayCurrency and
+  deletes rebuild.
+- **Revaluations stay live** (a few hundred rows); cumulative RTA reads the previous and current month live
+  with the original `DATE(Date) <= today` bound, so a midnight rollover needs no invalidation.
+- Transfer partners: the transactions triggers also dirty every leg sharing the OLD/NEW TransferID.
+- Inside an explicit transaction the snapshot is never read, built or refreshed (a rollback reverts rows
+  without firing triggers); rows with a NULL `DATE(Date)` or a malformed Month make that budget use the full
+  queries.
+- `BUDGERO_SNAPSHOT=0` turns it off, `BUDGERO_SNAPSHOT_VERIFY=1` recomputes every read fully and throws on
+  any difference (`configureBudgetSnapshot` sets both from code).
+
+Interleaved A/B (bench/ab-core.mjs, base = fix/quarterly-code-quality-audit a98ae3d, 20 iterations, machine
+at load 8-12), p50 / p95 ms:
+
+| case (100k) | cumulative base | cumulative snapshot | monthly base | monthly snapshot |
+|---|---|---|---|---|
+| open budget page | 503 / 549 | 118 / 120 | 4185 / 5350 | 86 / 86 |
+| switch month | 283 / 299 | 23 / 24 | 5784 / 5951 | 43 / 48 |
+| assign money | 305 / 309 | 25 / 25 | 4907 / 6163 | 78 / 85 |
+| getMonthlyBudget current | 424 / 435 | 5.4 / 6.7 | 2072 / 2083 | 9.9 / 15 |
+| RTA + breakdown | 36 / 36 | 5.4 / 5.6 | 4114 / 5450 | 3.8 / 5.1 |
+| first read of a session (builds the snapshot) | 344 | 716 | 2208 | 559 |
+
+Writes: the triggers add nothing measurable to single edits; bulk-categorize 50 rows 11.6 -> 14.4 ms.
+
 ### P19 parity test plan (the bar the snapshot implementation must pass)
 
 Tool: `packages/core/parity/run.mjs` (worktree audit/perf-suite). Two sides, same seeded dataset (bench generator,
