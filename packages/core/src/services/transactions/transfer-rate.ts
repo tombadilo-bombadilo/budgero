@@ -279,6 +279,10 @@ export async function applyTransferRate(
     const transactionQueries = new TransactionQueries(db);
     transactionQueries.recalculateBalances(current.source.accountId);
     transactionQueries.recalculateBalances(current.destination.accountId);
+    transactionQueries.resyncSplitLinesForAccounts([
+      current.source.accountId,
+      current.destination.accountId,
+    ]);
   });
 
   const updated = getTransferRateDetails(db, transferId);
