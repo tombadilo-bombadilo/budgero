@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro';
+import { plural } from '@lingui/core/macro';
 import { memo } from 'react';
 import { ConfirmDialog } from '@shared/ui/confirm-dialog';
 import { SpendingDrawerMobile } from '@features/budget-planning/ui/spending-drawer-mobile';
@@ -114,6 +115,42 @@ export function BudgetModals({
     const date = new Date(Number(year), Number(m) - 1);
     return date.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   };
+  // What the delete also removes, across all months (A6): stated up front.
+  const pendingName = modalState.pendingDelete?.name ?? '';
+  const pendingImpact = modalState.pendingDelete?.deletionImpact;
+  const removals: string[] = [];
+  if (pendingImpact) {
+    if (pendingImpact.assignedMonths > 0) {
+      const total = formatAmount(pendingImpact.assignedTotal);
+      removals.push(
+        plural(pendingImpact.assignedMonths, {
+          one: `Assigned money in # month (${total}) is removed and returns to Ready to Assign.`,
+          other: `Assigned money in # months (${total}) is removed and returns to Ready to Assign.`,
+        })
+      );
+    }
+    if (pendingImpact.goals > 0) removals.push(t`Its goal is deleted.`);
+    if (pendingImpact.scheduled > 0) {
+      removals.push(
+        plural(pendingImpact.scheduled, {
+          one: `# scheduled transaction loses its category.`,
+          other: `# scheduled transactions lose their category.`,
+        })
+      );
+    }
+  }
+  const confirmDeleteDescription = (
+    <>
+      <span className="block">{t`Delete the category "${pendingName}"?`}</span>
+      {removals.map((line) => (
+        <span key={line} className="mt-1 block">
+          {line}
+        </span>
+      ))}
+      <span className="mt-1 block">{t`You can undo this.`}</span>
+    </>
+  );
+
   return (
     <>
       {/* Mobile Spending Drawer */}
@@ -146,6 +183,7 @@ export function BudgetModals({
           currentCategoryId={modalState.deletingCategory.categoryId}
           currentCategoryTotalTransactions={modalState.deletingCategory.totalTransactions}
           currentCategoryAssigned={modalState.deletingCategory.assigned}
+          impact={modalState.deletingCategory.deletionImpact}
           onDelete={onConfirmCategoryDelete}
           isLoading={isDeletingWithData}
           formatAmount={formatAmount}
@@ -173,7 +211,7 @@ export function BudgetModals({
         open={modalState.confirmDeleteOpen}
         onOpenChange={(open) => !open && onConfirmDeleteClose()}
         title={t`Delete Category`}
-        description={t`Are you sure you want to delete the category "${modalState.pendingDelete?.name}"? This action cannot be undone.`}
+        description={confirmDeleteDescription}
         confirmText={t`Delete`}
         cancelText={t`Cancel`}
         variant="destructive"

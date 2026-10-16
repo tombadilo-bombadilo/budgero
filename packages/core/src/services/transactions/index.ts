@@ -72,6 +72,33 @@ export interface ReconcileResult {
  * TransactionService - Port of Go transactions service
  * Handles complex transaction management with running balance calculations
  */
+/** Converted amounts for a new row, resolved before the insert (see resolveConversion). */
+export interface TransactionConversion {
+  inflowConverted: MilliUnits;
+  outflowConverted: MilliUnits;
+  resolvedExchangeRate: number | null;
+  usesPinnedExchangeRate: boolean;
+  markPending: boolean;
+}
+
+/** addTransaction's arguments, for insertTransaction. */
+export interface NewTransactionRow {
+  inflowOriginal: MilliUnits;
+  outflowOriginal: MilliUnits;
+  accountId: number;
+  categoryId: number;
+  budgetId: number;
+  date: string;
+  memo: string;
+  transferId?: string;
+  payee?: string;
+  labelId?: number | null;
+  excludeFromReadyToAssign?: boolean;
+  importIdentities?: ImportIdentity[];
+  cleared?: boolean;
+  explicitId?: number;
+}
+
 export class TransactionService {
   private queries: TransactionQueries;
 
@@ -148,7 +175,52 @@ export class TransactionService {
     });
 
     const { account, budget } = this.queries.getAccountAndBudget(accountId, budgetId);
+    const conversion = await this.resolveConversion(
+      account?.Currency,
+      budget,
+      date,
+      budgetId,
+      inflowOriginal,
+      outflowOriginal,
+      exchangeRateOverride
+    );
+    return this.insertTransaction(
+      {
+        inflowOriginal,
+        outflowOriginal,
+        accountId,
+        categoryId,
+        budgetId,
+        date,
+        memo,
+        transferId,
+        payee,
+        labelId,
+        excludeFromReadyToAssign,
+        importIdentities,
+        cleared,
+        explicitId,
+      },
+      conversion
+    );
+  }
 
+  /**
+   * The async half of addTransaction: resolves the exchange rate for a row in
+   * `accountCurrency` and the converted amounts. Writes no budget data, so
+   * callers that must insert atomically (account creation) run it before
+   * opening their transaction. Throws when a crypto row has no rate.
+   */
+  async resolveConversion(
+    accountCurrency: string | undefined,
+    budget: { DisplayCurrency: string } | null | undefined,
+    date: string,
+    budgetId: number,
+    inflowOriginal: MilliUnits,
+    outflowOriginal: MilliUnits,
+    exchangeRateOverride?: number | null
+  ): Promise<TransactionConversion> {
+    const account = accountCurrency === undefined ? undefined : { Currency: accountCurrency };
     // Calculate converted amounts (will be same as original if currencies match)
     let inflowConverted: MilliUnits = inflowOriginal;
     let outflowConverted: MilliUnits = outflowOriginal;
@@ -224,6 +296,45 @@ export class TransactionService {
       markPending = (!official && !custom) || !!manual;
     }
 
+    return {
+      inflowConverted,
+      outflowConverted,
+      resolvedExchangeRate,
+      usesPinnedExchangeRate,
+      markPending,
+    };
+  }
+
+  /**
+   * The synchronous half of addTransaction: inserts the row with an already
+   * resolved conversion. Joins the caller's transaction when there is one.
+   */
+  insertTransaction(input: NewTransactionRow, conversion: TransactionConversion): number {
+    const {
+      inflowOriginal,
+      outflowOriginal,
+      accountId,
+      budgetId,
+      date,
+      memo,
+      transferId = '',
+      payee,
+      labelId,
+      excludeFromReadyToAssign = false,
+      importIdentities = [],
+      cleared = false,
+      explicitId,
+    } = input;
+    let { categoryId } = input;
+    const { account } = this.queries.getAccountAndBudget(accountId, budgetId);
+    const {
+      inflowConverted,
+      outflowConverted,
+      resolvedExchangeRate,
+      usesPinnedExchangeRate,
+      markPending,
+    } = conversion;
+
     const normalizedPayeeValue = (() => {
       const trimmed = payee?.trim();
       return trimmed || null;
@@ -234,7 +345,9 @@ export class TransactionService {
       this.assertLabelBelongsToBudget(normalizedLabelId, budgetId);
     }
 
-    const transactionId = this.db.transaction(() => {
+    const inTransaction = <T>(fn: () => T): T =>
+      this.db.inTransaction ? fn() : this.db.transaction(fn);
+    const transactionId = inTransaction(() => {
       const imports = new ImportDuplicateService(this.db);
       const existing =
         importIdentities[0] && imports.findOperation(importIdentities[0].operationId);

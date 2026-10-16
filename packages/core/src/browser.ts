@@ -16,6 +16,7 @@ export { WebDatabaseAdapter } from './database/web-adapter.js';
 
 export { MigrationRunner, getMaxSupportedSchemaVersion } from './database/migrations.js';
 export { reconcileSpaceScope } from './database/space-scope.js';
+export { isRowJournal, journalSize, type RowJournal } from './database/row-journal.js';
 
 // Services (platform-agnostic)
 export { BudgetService } from './services/budgets/index.js';

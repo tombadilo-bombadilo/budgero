@@ -272,6 +272,11 @@ msgstr "{0, plural, one {# register category is missing from Plan.csv} other {# 
 msgid "{0, plural, one {# register row} other {# register rows}}"
 msgstr "{0, plural, one {# register row} other {# register rows}}"
 
+#. placeholder {0}: pendingImpact.scheduled
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "{0, plural, one {# scheduled transaction loses its category.} other {# scheduled transactions lose their category.}}"
+msgstr "{0, plural, one {# scheduled transaction loses its category.} other {# scheduled transactions lose their category.}}"
+
 #. placeholder {0}: preview.splitTransactions.length
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
 #: src/pages/onboarding/steps/YnabImportStep.tsx
@@ -292,6 +297,16 @@ msgstr "{0, plural, one {# user found} other {# users found}}"
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "{0, plural, one {# user was not deleted} other {# users were not deleted}}"
 msgstr "{0, plural, one {# user was not deleted} other {# users were not deleted}}"
+
+#. placeholder {0}: impact.assignedMonths
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "{0, plural, one {Assigned amounts in # month (total {assignedTotal})} other {Assigned amounts in # months (total {assignedTotal})}}"
+msgstr "{0, plural, one {Assigned amounts in # month (total {assignedTotal})} other {Assigned amounts in # months (total {assignedTotal})}}"
+
+#. placeholder {0}: pendingImpact.assignedMonths
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "{0, plural, one {Assigned money in # month ({total}) is removed and returns to Ready to Assign.} other {Assigned money in # months ({total}) is removed and returns to Ready to Assign.}}"
+msgstr "{0, plural, one {Assigned money in # month ({total}) is removed and returns to Ready to Assign.} other {Assigned money in # months ({total}) is removed and returns to Ready to Assign.}}"
 
 #. placeholder {0}: data.deleted
 #: src/pages/settings/push-api/usePushApiState.ts
@@ -541,8 +556,13 @@ msgstr "{0} has been archived."
 
 #. placeholder {0}: selectedAccount.Name
 #: src/features/account-management/ui/EditAccountDialog.tsx
-msgid "{0} has been permanently removed."
-msgstr "{0} has been permanently removed."
+msgid "{0} has been deleted. You can undo this."
+msgstr "{0} has been deleted. You can undo this."
+
+#. placeholder {0}: selectedAccount.Name
+#: src/features/account-management/ui/EditAccountDialog.tsx
+#~ msgid "{0} has been permanently removed."
+#~ msgstr "{0} has been permanently removed."
 
 #. placeholder {0}: best.name
 #. placeholder {1}: Math.round((best.ratio - 1) * 100)
@@ -3629,8 +3649,8 @@ msgstr "Are you sure you want to delete \"{0}\"? This action cannot be undone."
 
 #. placeholder {0}: modalState.pendingDelete?.name
 #: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
-msgid "Are you sure you want to delete the category \"{0}\"? This action cannot be undone."
-msgstr "Are you sure you want to delete the category \"{0}\"? This action cannot be undone."
+#~ msgid "Are you sure you want to delete the category \"{0}\"? This action cannot be undone."
+#~ msgstr "Are you sure you want to delete the category \"{0}\"? This action cannot be undone."
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Are you sure you want to reveal the key?"
@@ -6701,6 +6721,10 @@ msgstr "Delete scenario {0}"
 msgid "Delete selected rows"
 msgstr "Delete selected rows"
 
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "Delete the category \"{pendingName}\"?"
+msgstr "Delete the category \"{pendingName}\"?"
+
 #: src/features/transactions/ui/DeleteTransactionDialog.tsx
 msgid "Delete this transaction?"
 msgstr "Delete this transaction?"
@@ -9560,6 +9584,22 @@ msgstr "Irreversible Action"
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "is not"
 msgstr "is not"
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "It tracks payments for the {name} account. Archive or delete the account first."
+msgstr "It tracks payments for the {name} account. Archive or delete the account first."
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "It tracks payments for the {name} credit card. Archive or delete the card first."
+msgstr "It tracks payments for the {name} credit card. Archive or delete the card first."
+
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "Its goal is deleted with it. Set a goal on the new category if you still need one."
+msgstr "Its goal is deleted with it. Set a goal on the new category if you still need one."
+
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "Its goal is deleted."
+msgstr "Its goal is deleted."
 
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "Its history was moved to the selected income category."
@@ -16824,6 +16864,10 @@ msgstr "The implied exchange rate will be saved with this transaction."
 msgid "The implied exchange rate will be saved with this transfer."
 msgstr "The implied exchange rate will be saved with this transfer."
 
+#: src/features/category-management/lib/delete-block.ts
+msgid "The Income group can't be deleted."
+msgstr "The Income group can't be deleted."
+
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "The invite has been revoked."
 msgstr "The invite has been revoked."
@@ -16883,6 +16927,10 @@ msgstr "The sent amount stays fixed. Saving recalculates the received amount and
 #: src/features/sync-diagnostics/ui/PendingChangesCard.tsx
 msgid "The server has confirmed all changes from this device."
 msgstr "The server has confirmed all changes from this device."
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "The system Income category can't be deleted."
+msgstr "The system Income category can't be deleted."
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The total amount to allocate across the period. Monthly target is calculated automatically."
@@ -17031,6 +17079,10 @@ msgstr "This cache survives app restarts and is cleared when the timer expires, 
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
 #~ msgid "This card owes more than you've set aside to pay it. Assign money here to cover it."
 #~ msgstr "This card owes more than you've set aside to pay it. Assign money here to cover it."
+
+#: src/features/budget-planning/ui/BudgetTable.tsx
+msgid "This category can't be deleted"
+msgstr "This category can't be deleted"
 
 #: src/features/budget-planning/ui/FutureOverspendingWarning.tsx
 msgid "This change will cause negative Available in future months for this category:"
@@ -19299,6 +19351,11 @@ msgstr "You can install Budgero anytime from your browser menu"
 #: src/features/subscription/ui/SubscriptionSuccess.tsx
 msgid "You can manage your subscription anytime from your account settings."
 msgstr "You can manage your subscription anytime from your account settings."
+
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "You can undo this."
+msgstr "You can undo this."
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "You can't delete an account with a non-zero balance!"

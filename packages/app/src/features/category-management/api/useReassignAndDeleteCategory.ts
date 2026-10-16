@@ -3,8 +3,18 @@ import { useDeleteCategory } from '@entities/category/api/useCategories';
 import { useReassignAssignments } from '@entities/budget/api/useMonthlyBudget';
 import { useReassignTransactions } from '@entities/transaction/api/useTransactions';
 import { useRuntime } from '@shared/runtime/runtime-provider';
+import { executeSpaceMutation } from '@shared/runtime/mutation-router';
 
-/** The reassignment flow shared by Planning and income category settings. */
+/**
+ * The reassignment flow shared by Planning and income category settings.
+ *
+ * Runs as ONE op (categories.deleteAndReassign): the core validates first,
+ * then moves transactions, split lines, scheduled transactions and
+ * assignments and deletes the category in one database transaction; undo puts
+ * everything back. The old three-op sequence below only runs against a
+ * categories service without deleteCategoryWithUndo (test doubles of the
+ * service); it is not reachable with the bundled core.
+ */
 export function useReassignAndDeleteCategory() {
   const runtime = useRuntime();
   const transactions = useReassignTransactions();
@@ -47,6 +57,14 @@ export function useReassignAndDeleteCategory() {
           );
         }
       };
+      if (typeof categories.deleteCategoryWithUndo === 'function') {
+        await executeSpaceMutation(runtime, {
+          op: 'categories.deleteAndReassign',
+          payload: { id: oldCategoryId, budgetId, reassignTo: newCategoryId },
+          meta: { label: 'useReassignAndDeleteCategory' },
+        });
+        return;
+      }
       const input = { budgetId, oldCategoryId, newCategoryId };
       await transactions.mutateAsync(input);
       assertSameSpace();
