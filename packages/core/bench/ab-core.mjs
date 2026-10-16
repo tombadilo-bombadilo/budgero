@@ -13,7 +13,8 @@
 // 5-years-back edit (the edit runs untimed first), and the interactions open
 // budget page / switch month / assign money (mutation + the page's refetch set,
 // app model from cases.mjs; persists excluded, as in ab.mjs). Prints p50 / p95 /
-// p99 of each side and B/A of the p50.
+// p99 of each side and B/A of the p50. "write only" cases time the mutation alone
+// (what the snapshot's triggers add to every write).
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -100,6 +101,15 @@ function casesFor(c) {
         for (const r of it.refetch()) r.fn();
       },
     };
+  }
+  // Write cost alone (the TEMP triggers fire on these): the mutation, no refetch.
+  for (const name of [
+    'edit amount cell',
+    'add transaction (+3 continuous rules)',
+    'bulk-categorize 50 rows',
+  ]) {
+    const it = ia[name];
+    if (it?.mutation) list[`write only: ${name}`] = { run: () => it.mutation() };
   }
   return list;
 }
