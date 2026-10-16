@@ -15,21 +15,25 @@
  *    snapshot upload, a snapshot restore and a space switch. `dispose()`
  *    drops a pending write (sign-out wipes local storage; the DB is closed).
  *
- * What happens if the tab dies before a debounced write runs: the local DB
- * file is up to ~1 s behind memory. Nothing is lost, because the durable
- * state that recovery reads never runs ahead of that file:
+ * If the tab dies before a debounced write runs, the local DB file is up to
+ * ~1 s (+ one write) behind memory. That is the same state a crash in the
+ * middle of a write always left, and recovery is the same, because no durable
+ * record ever runs ahead of the file:
  *  - local mutations are in the IndexedDB offline queue before they are sent,
- *    and only leave it on the server's ack;
+ *    and leave it only on the server's ack;
  *  - the mutation cursor (localStorage) is written only after a persist that
  *    contains everything up to it (SyncTransport.updateLocalVersion);
  *  - applied ids are flushed only for mutations applied before that persist's
  *    export began (OfflineQueue.appliedIdsMark / flushAppliedIds).
- * On reload the DB opens at the last write and catch-up replays the log from
- * the persisted cursor. Mutations after it, our own included, are not in the
- * persisted applied set, so they are applied again; our queued ones are then
- * re-sent and the server dedups them by id. Mutations that never reached the
- * server (offline, failed send) are not debounced: MutationDispatchService
- * still persists those right away, as before.
+ * On reload the DB opens at the last write and catch-up (requested first on
+ * connect) replays the log from the persisted cursor. Mutations after it, our
+ * own sent ones included, are not in the persisted applied set, so they are
+ * applied again; still-queued ones are then re-sent and the server dedups them
+ * by id. Only a mutation that never reached the server can't come back from
+ * the log, so those (offline, failed send) are not debounced:
+ * MutationDispatchService persists them right away, as before. (A send that
+ * entered the socket buffer but never arrived was already exposed for the
+ * length of one write; the debounce widens that window, not its nature.)
  */
 
 export const LOCAL_PERSIST_DEBOUNCE_MS = 250;

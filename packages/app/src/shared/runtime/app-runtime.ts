@@ -615,7 +615,7 @@ export class AppRuntime {
       return;
     }
 
-    // Batch importers (bank sync, file import) run the rules themselves, once
+    // Batch importers (bank sync) run the rules themselves, once
     // over every row they created — see runContinuousRules.
     if (isTransactionAdd && spec.meta?.deferContinuousRules === true) return;
 
