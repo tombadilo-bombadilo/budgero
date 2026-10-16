@@ -2,16 +2,27 @@ import { Trans, useLingui } from '@lingui/react/macro';
 /**
  * Available Info Popover Component
  *
- * Shows calculation breakdown for the Available column.
+ * Shows calculation breakdown for the Available column. Its trigger is also the
+ * row's one status indicator for Credit Card Payment categories: a neutral info
+ * dot normally, an amber warning when what's set aside doesn't match what the
+ * card owes (underfunded or over-assigned), with the details up top.
  */
 
+import { useId, useState } from 'react';
 import { Info, CreditCard, Undo2, AlertTriangle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shared/ui/tooltip';
 import { useFormatMaskedMilli } from '@features/budget-planning/lib/useFormatMaskedMilli';
 import { useUpsertAssignment } from '@entities/budget/api/useMonthlyBudget';
 import { asMilli } from '@budgero/core/browser';
 import { cn } from '@shared/lib/utils';
 import type { BudgetRow } from '@features/budget-planning/lib/budget-transforms';
+import {
+  getCardDebt,
+  getCCOverAssigned,
+  getCCUnderfundedInfo,
+} from './category-row/cc-payment.utils';
+import { CCUnderfundedDetails } from './category-row/CCUnderfundedDetails';
 
 export interface AvailableInfoPopoverProps {
   item: BudgetRow;
@@ -53,6 +64,9 @@ export function AvailableInfoPopover({
   budgetId,
 }: AvailableInfoPopoverProps) {
   const { t } = useLingui();
+  const titleId = useId();
+  const [open, setOpen] = useState(false);
+  const [tooltipOpen, setTooltipOpen] = useState(false);
 
   const isCCPayment = item.fundingBreakdown !== undefined;
   const formatAmount = useFormatMaskedMilli(globalLocalizer);
@@ -62,11 +76,10 @@ export function AvailableInfoPopover({
   // surplus is real cash (never hidden by the math) — the user resolves it,
   // if they want, by reducing this month's assignment, which returns the
   // money to Ready to Assign through the normal assignment mechanism.
-  const cardDebt = item.cardBalance !== undefined ? Math.max(0, 0 - item.cardBalance) : undefined;
-  const overAssigned =
-    isCCPayment && cardDebt !== undefined && item.available > cardDebt
-      ? item.available - cardDebt
-      : 0;
+  const cardDebt = getCardDebt(item);
+  const overAssigned = getCCOverAssigned(item);
+  // The opposite mismatch: the card owes more than is set aside.
+  const underfundedInfo = getCCUnderfundedInfo(item);
   // Only this month's manual assignment can be reduced here.
   const reducible = Math.min(overAssigned, Math.max(0, item.assigned));
   const canReduce = reducible > 0 && month !== undefined && budgetId !== undefined;
@@ -91,39 +104,101 @@ export function AvailableInfoPopover({
   const cashOverspend = Math.max(0, 0 - cashSide);
   const creditOverspend = Math.max(0, totalOverspend - cashOverspend);
 
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          onClick={(e) => e.stopPropagation()}
-          aria-label={
-            overAssigned > 0
+  // Short status for the tooltip; the accessible name adds "— details".
+  const warning = underfundedInfo
+    ? t`Underfunded ${formatAmount(underfundedInfo.underfunded)}`
+    : overAssigned > 0
+      ? t`Over-assigned by ${formatAmount(overAssigned)}`
+      : null;
+
+  const trigger = (
+    <PopoverTrigger asChild>
+      <button
+        type="button"
+        onClick={(e) => e.stopPropagation()}
+        aria-label={
+          underfundedInfo
+            ? t`Underfunded ${formatAmount(underfundedInfo.underfunded)} — details`
+            : overAssigned > 0
               ? t`Over-assigned by ${formatAmount(overAssigned)} — details`
               : t`Available calculation details`
-          }
-          title={overAssigned > 0 ? t`Over-assigned by ${formatAmount(overAssigned)}` : undefined}
-          className={cn(
-            'inline-flex items-center justify-center rounded-full transition-colors',
-            triggerSize === 'sm' ? 'h-3 w-3' : 'h-4 w-4',
-            // Over-assigned CC Payment: promote the info dot to an amber
-            // warning badge so the state is visible without opening anything.
-            overAssigned > 0
-              ? 'bg-amber-200/90 text-amber-700 hover:bg-amber-300 dark:bg-amber-900/60 dark:text-amber-400 dark:hover:bg-amber-800/70'
-              : 'bg-muted/60 hover:bg-muted'
-          )}
-        >
-          {overAssigned > 0 ? (
-            <AlertTriangle className="h-2.5 w-2.5" />
-          ) : (
-            <Info className="h-2.5 w-2.5" />
-          )}
-        </button>
-      </PopoverTrigger>
-      <PopoverContent className="w-72 space-y-3 p-4" side={side} align={align}>
-        <div className="font-medium text-sm">
+        }
+        data-budget-prevent-row-select="true"
+        className={cn(
+          // after: widens the tap target without growing the row.
+          "relative inline-flex shrink-0 items-center justify-center rounded-full transition-colors after:absolute after:-inset-1.5 after:content-[''] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          triggerSize === 'sm' ? 'h-3 w-3' : 'h-4 w-4',
+          // CC Payment out of step with its card: promote the info dot to an
+          // amber warning so the state is visible without opening anything.
+          warning
+            ? 'bg-amber-200/90 text-amber-700 hover:bg-amber-300 dark:bg-amber-900/60 dark:text-amber-400 dark:hover:bg-amber-800/70'
+            : 'bg-muted/60 hover:bg-muted'
+        )}
+      >
+        {warning ? (
+          <AlertTriangle className="h-2.5 w-2.5" aria-hidden="true" />
+        ) : (
+          <Info className="h-2.5 w-2.5" aria-hidden="true" />
+        )}
+      </button>
+    </PopoverTrigger>
+  );
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      {warning ? (
+        <Tooltip open={tooltipOpen && !open} onOpenChange={setTooltipOpen}>
+          <TooltipTrigger asChild>{trigger}</TooltipTrigger>
+          <TooltipContent side="top">{warning}</TooltipContent>
+        </Tooltip>
+      ) : (
+        trigger
+      )}
+      <PopoverContent
+        className={cn(
+          'max-h-[var(--radix-popover-content-available-height)] space-y-3 overflow-y-auto p-4',
+          // The debt-source table needs room for category names.
+          underfundedInfo?.events.length ? 'w-80' : 'w-72'
+        )}
+        side={side}
+        align={align}
+        aria-labelledby={titleId}
+      >
+        <div id={titleId} className="font-medium text-sm">
           {isCCPayment ? t`CC Payment Calculation` : t`Available Calculation`}
         </div>
+
+        {underfundedInfo && (
+          <CCUnderfundedDetails info={underfundedInfo} formatAmount={formatAmount} />
+        )}
+
+        {overAssigned > 0 && (
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg space-y-2">
+            <div className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+              <Trans>Over-assigned by {formatAmount(overAssigned)}</Trans>
+            </div>
+            <div className="text-xs text-amber-700/80 dark:text-amber-400/80">
+              <Trans>
+                You have {formatAmount(item.available)} set aside but the card only needs{' '}
+                {formatAmount(cardDebt ?? 0)}. The extra is your money — it just isn't needed for
+                this card.
+              </Trans>
+            </div>
+            {canReduce && (
+              <button
+                type="button"
+                onClick={handleReduceAssignment}
+                disabled={upsertAssignment.isPending}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 dark:text-amber-300 hover:underline disabled:opacity-50"
+              >
+                <Undo2 className="h-3 w-3" />
+                {upsertAssignment.isPending
+                  ? t`Reducing…`
+                  : t`Reduce assignment by ${formatAmount(reducible)} (back to Ready to Assign)`}
+              </button>
+            )}
+          </div>
+        )}
 
         <div
           className={cn(
@@ -335,34 +410,6 @@ export function AvailableInfoPopover({
                 </>
               )}
             </ul>
-          </div>
-        )}
-
-        {overAssigned > 0 && (
-          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg space-y-2">
-            <div className="text-xs text-amber-700 dark:text-amber-400 font-medium">
-              <Trans>Over-assigned by {formatAmount(overAssigned)}</Trans>
-            </div>
-            <div className="text-xs text-amber-700/80 dark:text-amber-400/80">
-              <Trans>
-                You have {formatAmount(item.available)} set aside but the card only needs{' '}
-                {formatAmount(cardDebt ?? 0)}. The extra is your money — it just isn't needed for
-                this card.
-              </Trans>
-            </div>
-            {canReduce && (
-              <button
-                type="button"
-                onClick={handleReduceAssignment}
-                disabled={upsertAssignment.isPending}
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-amber-800 dark:text-amber-300 hover:underline disabled:opacity-50"
-              >
-                <Undo2 className="h-3 w-3" />
-                {upsertAssignment.isPending
-                  ? t`Reducing…`
-                  : t`Reduce assignment by ${formatAmount(reducible)} (back to Ready to Assign)`}
-              </button>
-            )}
           </div>
         )}
 

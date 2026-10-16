@@ -82,6 +82,8 @@ export type ClassicFontId =
 
 export type DesktopBudgetLayout = 'cards' | 'compact' | 'table';
 export type MobileBudgetLayout = 'cards' | 'compact' | 'table';
+/** Row height of the desktop budget table (layout 'table'). */
+export type BudgetRowDensity = 'comfortable' | 'compact';
 
 const CLASSIC_FONT_STORAGE_KEY = 'budgero:classic-font';
 const DESKTOP_LAYOUT_STORAGE_KEY = 'budgero:desktop-budget-layout';
@@ -90,6 +92,7 @@ const COMPACT_MOBILE_LAYOUT_KEY = 'budgero:compact-mobile-layout';
 const MOBILE_BUDGET_LAYOUT_KEY = 'budgero:mobile-budget-layout';
 const LEGACY_COMPACT_MOBILE_TABLE_KEY = 'budgero:compact-mobile-table';
 const HOME_PAGE_STORAGE_KEY = 'budgero:home-page';
+const BUDGET_ROW_DENSITY_KEY = 'budgero:budget-row-density';
 
 /**
  * Read a persisted UI preference. `validate` maps the raw stored string to a
@@ -205,6 +208,9 @@ interface UiState {
   desktopBudgetLayout: DesktopBudgetLayout;
   setDesktopBudgetLayout: (value: DesktopBudgetLayout) => void;
 
+  budgetRowDensity: BudgetRowDensity;
+  setBudgetRowDensity: (value: BudgetRowDensity) => void;
+
   // Compact mobile layout (header only)
   compactMobileLayout: boolean;
   setCompactMobileLayout: (value: boolean) => void;
@@ -279,6 +285,18 @@ export const useUiStore = create<UiState>((set) => ({
     writeStoredPref(LEGACY_COMPACT_LAYOUT_KEY, null);
     persistUserPreferencesPatch({ desktop_budget_layout: value });
     set({ desktopBudgetLayout: value });
+  },
+  // Device-local like the layout's localStorage copy. Not synced through
+  // /profile/preferences: that table has a fixed column per preference and
+  // adding one needs a server migration.
+  budgetRowDensity: readStoredPref<BudgetRowDensity>(
+    BUDGET_ROW_DENSITY_KEY,
+    (stored) => (stored === 'compact' || stored === 'comfortable' ? stored : undefined),
+    'comfortable'
+  ),
+  setBudgetRowDensity: (value) => {
+    writeStoredPref(BUDGET_ROW_DENSITY_KEY, value === 'compact' ? value : null);
+    set({ budgetRowDensity: value });
   },
   compactMobileLayout: readStoredPref(COMPACT_MOBILE_LAYOUT_KEY, (stored) => stored === '1', false),
   setCompactMobileLayout: (value) => {
