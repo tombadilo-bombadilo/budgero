@@ -375,9 +375,41 @@ export class CategoryService {
 
   /** Every category in the budget that can't be deleted right now (for the budget table). */
   getDeleteBlocks(budgetId: number): CategoryDeleteBlock[] {
-    return this.getAllCategories(budgetId)
-      .map((category) => this.getDeletionBlock(category.ID))
-      .filter((block): block is CategoryDeleteBlock => block !== null);
+    const blocks = new Map<number, CategoryDeleteBlock>();
+    const income = this.queries.getCategoryGroupByName('Income', budgetId);
+    if (income) {
+      for (const category of this.getCategoriesByGroup(budgetId, income.ID)) {
+        if (category.Name === 'Income') {
+          blocks.set(category.ID, { categoryId: category.ID, reason: 'income' });
+        }
+      }
+    }
+    // One pass over the accounts (same rule as getAccountLinkedToCategory).
+    const inBudget = new Set(this.getAllCategories(budgetId).map((category) => category.ID));
+    const accounts = allRows<{ Name: string; Metadata: string | null; Archived: number }>(
+      this.db,
+      'SELECT Name, Metadata, Archived FROM accounts ORDER BY ID'
+    );
+    for (const account of accounts) {
+      if (account.Archived) continue;
+      let metadata: Record<string, unknown>;
+      try {
+        metadata = JSON.parse(account.Metadata || '{}');
+      } catch {
+        continue;
+      }
+      const links: [unknown, CategoryDeleteBlock['reason']][] = [
+        [metadata.linked_category_id, 'debt_account'],
+        [metadata.cc_payment_category_id, 'credit_card'],
+      ];
+      for (const [categoryId, reason] of links) {
+        if (typeof categoryId !== 'number' || !inBudget.has(categoryId)) continue;
+        if (!blocks.has(categoryId)) {
+          blocks.set(categoryId, { categoryId, reason, accountName: account.Name });
+        }
+      }
+    }
+    return [...blocks.values()];
   }
 
   private deletionBlockMessage(block: CategoryDeleteBlock): string {
