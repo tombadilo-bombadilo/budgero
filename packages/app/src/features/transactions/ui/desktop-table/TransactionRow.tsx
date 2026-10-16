@@ -303,11 +303,20 @@ export const TransactionRow = React.memo(function TransactionRow({
           </div>
         </TableCell>
         <TableCell>
-          <div className="flex items-center gap-1.5 px-2">
-            <RecurringIndicator />
-            <span className="text-xs xl:text-sm text-muted-foreground">{transaction.Date}</span>
+          {/* The badge sits under the date: on one line it overflows the narrow
+              date column into the next cell. */}
+          <div className="flex min-w-0 flex-col items-start gap-0.5 px-2">
+            <div className="flex items-center gap-1.5">
+              <RecurringIndicator />
+              <span className="whitespace-nowrap text-xs xl:text-sm text-muted-foreground">
+                {transaction.Date}
+              </span>
+            </div>
             {transaction.Date < getTodayISO() && (
-              <Badge variant="destructive" className="px-1.5 py-0 text-[9px] uppercase">
+              <Badge
+                variant="destructive"
+                className="px-1.5 py-0 text-[9px] leading-tight uppercase"
+              >
                 <Trans>Overdue</Trans>
               </Badge>
             )}
