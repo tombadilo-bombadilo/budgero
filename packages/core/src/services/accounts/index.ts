@@ -475,6 +475,103 @@ export class AccountService {
         finalName
       );
     }
+
+    // Starting debt / prior payments edited on a liability: keep the opening
+    // rows createAccount wrote in step with the metadata. Untouched values
+    // leave the transactions alone.
+    const savedMetadata = persistedMetadata;
+    if (
+      savedMetadata !== undefined &&
+      (Boolean(savedMetadata.liability) || isLiabilityAccountType(finalAccType))
+    ) {
+      const changedAmount = (key: 'debt_total' | 'paid_so_far'): number | null => {
+        const next = savedMetadata[key];
+        return typeof next === 'number' && next !== originalMetadata[key] ? next : null;
+      };
+      const originalDebt = changedAmount('debt_total');
+      const paidSoFar = changedAmount('paid_so_far');
+      if (originalDebt !== null || paidSoFar !== null) {
+        await this.upsertLiabilityStarts(id, originalDebt, paidSoFar);
+      }
+    }
+  }
+
+  /**
+   * Upserts a liability's opening rows ("Initial Debt" outflow, "Prior
+   * payments" inflow) with createAccount's semantics: Transfers category,
+   * excluded from the budget. Amounts are account-currency milliunits; null
+   * or non-positive amounts are skipped. An existing row keeps its date. A
+   * missing row is only created while the account has no other transactions,
+   * so an account opened with a plain balance never gets a second debt row.
+   */
+  async upsertLiabilityStarts(
+    accountId: number,
+    originalDebt: number | null,
+    paidSoFar: number | null
+  ): Promise<void> {
+    const account = this.getAccount(accountId);
+    const budgetId = account.BudgetID;
+    const transfersCategoryId = ensureCategoryWithGroup(
+      this.categoryService,
+      budgetId,
+      'Transfers',
+      'Transfers',
+      ''
+    );
+
+    const starts = [
+      { memo: 'Initial Debt', amount: originalDebt, isInflow: false },
+      { memo: 'Prior payments', amount: paidSoFar, isInflow: true },
+    ];
+    const isStartRow = (memo: string | undefined) =>
+      starts.some((s) => s.memo.toLowerCase() === (memo || '').trim().toLowerCase());
+
+    for (const start of starts) {
+      if (typeof start.amount !== 'number' || start.amount <= 0) continue;
+      const amount = asMilli(start.amount);
+      const inflow = start.isInflow ? amount : ZERO_MILLI;
+      const outflow = start.isInflow ? ZERO_MILLI : amount;
+
+      const rows = [...this.transactionService.getTransactionsByAccount(accountId)].sort(
+        (a, b) => (a.Date || '').localeCompare(b.Date || '') || a.ID - b.ID
+      );
+      const existing = rows.find(
+        (row) => (row.Memo || '').trim().toLowerCase() === start.memo.toLowerCase()
+      );
+
+      if (existing) {
+        const unchanged =
+          (existing.InflowNative ?? existing.InflowConverted) === inflow &&
+          (existing.OutflowNative ?? existing.OutflowConverted) === outflow &&
+          existing.CategoryID === transfersCategoryId;
+        if (!unchanged) {
+          await this.transactionService.updateTransaction(
+            existing.ID,
+            inflow,
+            outflow,
+            accountId,
+            transfersCategoryId,
+            existing.Date,
+            existing.Memo,
+            existing.Payee
+          );
+        }
+        continue;
+      }
+
+      if (rows.some((row) => !isStartRow(row.Memo))) continue;
+      await this.transactionService.addTransaction(
+        inflow,
+        outflow,
+        accountId,
+        transfersCategoryId, // Transfers category - excluded from budget calculations
+        budgetId,
+        rows[0]?.Date ?? getLocalDateString(),
+        start.memo,
+        '',
+        SYSTEM_PAYEE
+      );
+    }
   }
 
   /**

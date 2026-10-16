@@ -77,12 +77,6 @@ export function useReorderAccounts() {
 /**
  * Edit an existing account.
  */
-interface LiabilityMetadata {
-  liability?: boolean;
-  debt_total?: number;
-  paid_so_far?: number;
-}
-
 export type EditAccountInput = {
   id: number;
   name: string;
@@ -125,6 +119,8 @@ export function useEditAccount() {
       }
 
       try {
+        // Core also syncs a liability's Initial Debt / Prior payments rows
+        // when debt_total / paid_so_far change.
         await executeSpaceMutation<void>(runtime, {
           op: 'accounts.update',
           payload: {
@@ -139,31 +135,6 @@ export function useEditAccount() {
           },
           meta: { label: 'useEditAccount' },
         });
-
-        // If liability metadata changed (original debt / paid_so_far), upsert initial transactions
-        try {
-          const md = metadata as LiabilityMetadata | undefined;
-          const isLiability =
-            md &&
-            (md.liability || ['credit', 'loan', 'mortgage'].includes((type || '').toLowerCase()));
-          const hasDebtOrPaid =
-            md && (typeof md.debt_total === 'number' || typeof md.paid_so_far === 'number');
-          if (isLiability && hasDebtOrPaid) {
-            await executeSpaceMutation<void>(runtime, {
-              op: 'transactions.upsertLiabilityStarts',
-              payload: {
-                accountId: id,
-                budgetId: budget_id,
-                originalDebt: typeof md.debt_total === 'number' ? md.debt_total : null,
-                paidSoFar: typeof md.paid_so_far === 'number' ? md.paid_so_far : null,
-                accountType: type,
-              },
-              meta: { label: 'useEditAccount' },
-            });
-          }
-        } catch (e) {
-          console.warn('Failed to upsert liability start transactions', e);
-        }
 
         if (isCurrencyChanging) {
           // Invalidate all queries to refresh everything with new currency
