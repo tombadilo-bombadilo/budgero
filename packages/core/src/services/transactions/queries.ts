@@ -21,6 +21,7 @@ import type { Account } from '../accounts/types.js';
 import type { Budget } from '../budgets/types.js';
 import { asMilli, ZERO_MILLI } from '../../money/index.js';
 import type { BalanceHistoryBucket, BalanceHistoryRow } from './types.js';
+import { linesOutOfStep } from './split-amounts.js';
 
 /**
  * Shared column list for the detailed transaction-row SELECTs.
@@ -2051,6 +2052,50 @@ export class TransactionQueries {
       split.OrderIndex ?? 0
     );
     return Number(result.lastInsertRowid);
+  }
+
+  updateSplitLineAmounts(
+    line: Pick<
+      TransactionSplit,
+      'ID' | 'InflowConverted' | 'OutflowConverted' | 'InflowNative' | 'OutflowNative'
+    >
+  ): void {
+    run(
+      this.db,
+      `UPDATE transaction_splits
+          SET InflowConverted = ?, OutflowConverted = ?, InflowNative = ?, OutflowNative = ?
+        WHERE ID = ?`,
+      line.InflowConverted,
+      line.OutflowConverted,
+      line.InflowNative ?? null,
+      line.OutflowNative ?? null,
+      line.ID
+    );
+  }
+
+  /**
+   * Rescale the split lines of every split parent in `accountIds` whose lines
+   * no longer sum to it (after a bulk re-conversion rewrote parent amounts).
+   * Mirror rows are not touched: they live in their own accounts and are
+   * re-converted with them.
+   */
+  resyncSplitLinesForAccounts(accountIds: number[]): void {
+    const ids = [...new Set(accountIds.filter((id) => Number.isInteger(id) && id > 0))];
+    for (const chunk of chunkValues(ids)) {
+      const placeholders = chunk.map(() => '?').join(', ');
+      const parents = allRows<Transaction>(
+        this.db,
+        `SELECT t.* FROM transactions t
+          WHERE t.AccountID IN (${placeholders})
+            AND EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)`,
+        ...chunk
+      );
+      for (const parent of parents) {
+        for (const line of linesOutOfStep(this.getSplitsForTransaction(parent.ID), parent)) {
+          this.updateSplitLineAmounts(line);
+        }
+      }
+    }
   }
 
   getSplitsForTransaction(transactionId: number): TransactionSplit[] {
