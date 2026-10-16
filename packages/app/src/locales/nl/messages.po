@@ -4897,6 +4897,10 @@ msgstr "Wijzigingslog"
 msgid "Changes apply to transactions imported from now on. If a field you pick is missing for a transaction, Budgero uses the automatic choice."
 msgstr "Wijzigingen gelden voor transacties die vanaf nu worden geïmporteerd. Ontbreekt het gekozen veld bij een transactie, dan gebruikt Budgero de automatische keuze."
 
+#: src/shared/mutations/useMutationHistory.ts
+msgid "Changes from other devices can only be undone on the device that made them."
+msgstr "Wijzigingen van andere apparaten kunnen alleen ongedaan worden gemaakt op het apparaat waarop ze zijn gedaan."
+
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Changes have been applied to the database."
 msgstr "Wijzigingen zijn toegepast op de database."
@@ -8084,6 +8088,7 @@ msgid "Failed to reconcile account. Please try again."
 msgstr "Rekening afstemmen mislukt. Probeer het opnieuw."
 
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/widgets/navigation/MobileTopBar.tsx
 msgid "Failed to redo action"
 msgstr "Actie opnieuw uitvoeren mislukt"
 
@@ -8183,8 +8188,13 @@ msgid "Failed to toggle token: {0}"
 msgstr "Token in-/uitschakelen mislukt: {0}"
 
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/widgets/navigation/MobileTopBar.tsx
 msgid "Failed to undo last action"
 msgstr "Laatste actie ongedaan maken mislukt"
+
+#: src/features/transactions/api/useDeleteSelected.ts
+msgid "Failed to undo the delete"
+msgstr "Verwijderen kon niet ongedaan worden gemaakt"
 
 #: src/features/budget-planning/ui/budget-table/useCategoryOperations.ts
 msgid "Failed to update allocation"
@@ -12159,6 +12169,10 @@ msgstr "Alleen een werkruimte-eigenaar kan hier het eerste budget aanmaken."
 msgid "Only money you have now"
 msgstr "Alleen geld dat je nu hebt"
 
+#: src/shared/mutations/useMutationHistory.ts
+msgid "Only the most recent change can be undone. Undo the newer changes first."
+msgstr "Alleen de meest recente wijziging kan ongedaan worden gemaakt. Maak eerst de nieuwere wijzigingen ongedaan."
+
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Only the workspace owner can restore a Budgero Core backup into this workspace."
 msgstr "Alleen de werkruimte-eigenaar kan een Budgero Core-back-up herstellen in deze werkruimte."
@@ -14388,6 +14402,7 @@ msgid "Retro run"
 msgstr "Terugwerkend uitvoeren"
 
 #: src/app/startup/screens.tsx
+#: src/app/system/GlobalUndoHotkeys.tsx
 #: src/pages/admin/components/RegistrationSettings.tsx
 msgid "Retry"
 msgstr "Opnieuw proberen"
@@ -17046,10 +17061,22 @@ msgstr "De valuta van deze rekening wordt niet ondersteund. Koppel hem in plaats
 msgid "This action CANNOT be undone"
 msgstr "Deze actie kan NIET ongedaan worden gemaakt"
 
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This action cannot be undone."
+msgstr "Deze actie kan niet ongedaan worden gemaakt."
+
 #. placeholder {0}: budget.Name
 #: src/features/budget-management/ui/DeleteBudgetButton.tsx
 msgid "This action cannot be undone. This will permanently delete the budget \"{0}\" and all its associated data."
 msgstr "Deze actie kan niet ongedaan worden gemaakt. Dit verwijdert permanent het budget \"{0}\" en alle bijbehorende gegevens."
+
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This action failed, so there is nothing to undo."
+msgstr "Deze actie is mislukt, dus er valt niets ongedaan te maken."
+
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This action has already been undone."
+msgstr "Deze actie is al ongedaan gemaakt."
 
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "This app"
@@ -17085,6 +17112,10 @@ msgstr "Deze cache overleeft app-herstarts en wordt gewist wanneer de timer aflo
 #: src/features/budget-planning/ui/BudgetTable.tsx
 msgid "This category can't be deleted"
 msgstr "Deze categorie kan niet worden verwijderd"
+
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This change is part of a larger action. Use Undo (Ctrl+Z) to revert it."
+msgstr "Deze wijziging hoort bij een grotere actie. Gebruik Ongedaan maken (Ctrl+Z) om haar terug te draaien."
 
 #: src/features/budget-planning/ui/FutureOverspendingWarning.tsx
 msgid "This change will cause negative Available in future months for this category:"

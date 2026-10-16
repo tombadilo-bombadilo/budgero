@@ -8,6 +8,7 @@ import { useUiStore } from '@shared/store/useUiStore';
 import {
   useAddTransaction,
   useAddTransfer,
+  type AddTransactionSplitLine,
   type AddTransferResult,
 } from '@entities/transaction/api/useTransactions';
 import { useCategories } from '@entities/category/api/useCategories';
@@ -62,7 +63,8 @@ export function useAddTransactionHandler({ onDialogClose }: UseAddTransactionHan
       labelId: number | null,
       transferId: string | null,
       keepDialogOpen?: boolean,
-      exchangeRateOverride?: number | null
+      exchangeRateOverride?: number | null,
+      splits?: AddTransactionSplitLine[]
     ): Promise<number> => {
       // Don't perform optimistic update - let React Query handle the data flow
       // This prevents the data from getting out of sync
@@ -85,6 +87,7 @@ export function useAddTransactionHandler({ onDialogClose }: UseAddTransactionHan
         payee,
         transferId,
         exchangeRateOverride,
+        ...(splits ? { splits } : {}),
       });
 
       // Only close dialog if not keeping it open for "Add Another"

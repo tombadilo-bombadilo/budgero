@@ -1,3 +1,4 @@
+import type { LabelSnapshot } from '@budgero/core/browser';
 import {
   S,
   TRANSACTION_INVALIDATION_KEYS,
@@ -62,39 +63,27 @@ export const labelOps = {
     },
     invalidates: [...TRANSACTION_INVALIDATION_KEYS],
     undo: {
+      // Deleting a label also clears it from its transactions: the undo puts
+      // the label back under its ID on exactly those rows.
       capture: async (args) =>
-        safeCapture(async () => {
-          const label = await S().labels.getLabelById(args.id as number, args.budgetId as number);
-          return {
-            id: label?.ID,
-            name: label?.Name,
-            color: label?.Color,
-            budgetId: label?.BudgetID,
-          };
-        }),
+        safeCapture(() => S().labels.snapshotLabel(args.id as number, args.budgetId as number)),
       build: (_args, _result, before) => {
-        const snapshot = before as
-          | {
-              id?: number;
-              budgetId?: number;
-              name?: string;
-              color?: string;
-            }
-          | null
-          | undefined;
-        if (!snapshot?.budgetId || !snapshot?.name || !snapshot?.color) return [];
+        const snapshot = before as LabelSnapshot | null | undefined;
+        if (!snapshot?.row) return [];
         return [
           {
-            op: 'labels.add',
-            args: {
-              id: snapshot.id,
-              budgetId: snapshot.budgetId,
-              name: snapshot.name,
-              color: snapshot.color,
-            },
+            op: 'labels.restore',
+            args: { budgetId: Number(snapshot.row.BudgetID), snapshot },
           },
         ];
       },
     },
+  },
+
+  'labels.restore': {
+    execute: async (args) => {
+      return S().labels.restoreLabel(args.budgetId as number, args.snapshot as LabelSnapshot);
+    },
+    invalidates: [...TRANSACTION_INVALIDATION_KEYS],
   },
 } satisfies Record<string, OpCodeEntry>;

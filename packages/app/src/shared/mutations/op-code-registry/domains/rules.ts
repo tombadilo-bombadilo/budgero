@@ -2,9 +2,10 @@ import type {
   LogAutofillApplicationInput,
   CreateRuleInput,
   ExecuteRuleOptions,
+  RedoRunOptions,
   RuleExecutionResult,
+  RuleRunState,
   TransactionRule,
-  TransactionRuleRunChange,
   UpdateRuleInput,
 } from '@budgero/core/browser';
 import {
@@ -14,6 +15,17 @@ import {
   safeCapture,
   type OpCodeEntry,
 } from '../shared';
+
+type RuleRunSnapshot = {
+  ruleId: number;
+  budgetId: number;
+  mode: TransactionRule['mode'];
+  lastRunAt: string | null;
+  oneTimeConsumed?: boolean;
+};
+
+/** Run statuses core undoRun accepts. */
+const UNDOABLE_RUN_STATUSES = new Set<string>(['completed', 'partial']);
 
 export const ruleOps = {
   'rules.create': {
@@ -121,117 +133,80 @@ export const ruleOps = {
           return {
             ruleId: rule.id,
             budgetId: rule.budgetId,
+            mode: rule.mode,
             lastRunAt: rule.lastRunAt ?? null,
             oneTimeConsumed: rule.oneTimeConsumed,
           };
         }),
+      // One op, same code path as Rules -> "Undo run": core undoRun restores
+      // every logged field (payee included), marks the run undone, and puts
+      // the rule's lastRunAt/oneTimeConsumed back as they were.
       build: (args, result, before) => {
-        const undoOps: { op: string; args: Record<string, unknown> }[] = [];
         const execResult = result as RuleExecutionResult | undefined;
-        const snapshot = before as
-          { lastRunAt?: string | null; oneTimeConsumed?: boolean } | null | undefined;
-        const changes = execResult?.changes ?? [];
-
-        if (changes.length > 0) {
-          [...changes].reverse().forEach((change: TransactionRuleRunChange) => {
-            const metadata = (change.metadata || {}) as Record<string, unknown>;
-            switch (change.field) {
-              case 'memo': {
-                const oldMemo =
-                  typeof change.oldValue === 'string'
-                    ? change.oldValue
-                    : ((metadata.oldMemo as string) ?? '');
-                undoOps.push({
-                  op: 'transactions.updateColumn',
-                  args: {
-                    id: change.transactionId,
-                    columnName: 'memo',
-                    newValue: oldMemo,
-                  },
-                });
-                break;
-              }
-              case 'categoryId': {
-                const oldCategory = Number(
-                  change.oldValue ?? metadata.previousCategoryId ?? metadata.categoryId
-                );
-                if (Number.isFinite(oldCategory)) {
-                  undoOps.push({
-                    op: 'transactions.updateColumn',
-                    args: {
-                      id: change.transactionId,
-                      columnName: 'CategoryID',
-                      newValue: oldCategory,
-                    },
-                  });
-                }
-                break;
-              }
-              case 'accountId': {
-                const oldAccount = Number(
-                  change.oldValue ?? metadata.previousAccountId ?? metadata.accountId
-                );
-                if (Number.isFinite(oldAccount)) {
-                  undoOps.push({
-                    op: 'transactions.updateColumn',
-                    args: {
-                      id: change.transactionId,
-                      columnName: 'AccountID',
-                      newValue: oldAccount,
-                    },
-                  });
-                }
-                break;
-              }
-              case 'amount': {
-                const oldInflow = Number(metadata.oldInflow ?? 0);
-                const oldOutflow = Number(metadata.oldOutflow ?? 0);
-                if (Number.isFinite(oldInflow) && Number.isFinite(oldOutflow)) {
-                  undoOps.push({
-                    op: 'transactions.updateColumn',
-                    args: {
-                      id: change.transactionId,
-                      columnName: 'inflow',
-                      newValue: oldInflow,
-                    },
-                  });
-                  undoOps.push({
-                    op: 'transactions.updateColumn',
-                    args: {
-                      id: change.transactionId,
-                      columnName: 'outflow',
-                      newValue: oldOutflow,
-                    },
-                  });
-                }
-                break;
-              }
-              default:
-                break;
-            }
-          });
-        }
-
-        if (snapshot) {
-          undoOps.push({
-            op: 'rules.update',
-            args: {
-              id: args.ruleId,
-              patch: {
-                lastRunAt: snapshot.lastRunAt,
-                oneTimeConsumed: snapshot.oneTimeConsumed,
-              } satisfies UpdateRuleInput,
+        const snapshot = before as RuleRunSnapshot | null | undefined;
+        if (!execResult?.run?.id || !snapshot) return [];
+        const ruleState: RuleRunState = {
+          lastRunAt: snapshot.lastRunAt ?? null,
+          oneTimeConsumed: Boolean(snapshot.oneTimeConsumed),
+        };
+        if (!UNDOABLE_RUN_STATUSES.has(execResult.run.status)) {
+          // Nothing was applied (failed run): only the bookkeeping moved.
+          return [
+            {
+              op: 'rules.update',
+              args: { id: args.ruleId, patch: ruleState satisfies UpdateRuleInput },
             },
-          });
+          ];
         }
-
-        return undoOps;
+        return [{ op: 'rules.undoRun', args: { runId: execResult.run.id, ruleState } }];
+      },
+    },
+    redo: {
+      // Re-running the rule would log a new run the undo entry doesn't know;
+      // redo re-applies the same run instead.
+      build: (args, result, before) => {
+        const execResult = result as RuleExecutionResult | undefined;
+        const snapshot = before as RuleRunSnapshot | null | undefined;
+        if (!execResult?.run?.id || !snapshot) return [];
+        if (!UNDOABLE_RUN_STATUSES.has(execResult.run.status)) {
+          return [{ op: 'rules.execute', args }];
+        }
+        return [
+          {
+            op: 'rules.redoRun',
+            args: {
+              runId: execResult.run.id,
+              ruleState: {
+                lastRunAt: execResult.lastRunAt ?? execResult.run.completedAt ?? null,
+                oneTimeConsumed:
+                  snapshot.mode === 'one_time' ? true : Boolean(snapshot.oneTimeConsumed),
+              } satisfies RuleRunState,
+              run: {
+                status: execResult.run.status,
+                notes: execResult.run.notes ?? '',
+                transactionCount: execResult.run.transactionCount,
+              },
+            },
+          },
+        ];
       },
     },
   },
   'rules.undoRun': {
     execute: async (args) => {
-      return await S().rules!.undoRun(args.runId as number);
+      return await S().rules!.undoRun(
+        args.runId as number,
+        args.ruleState ? { ruleState: args.ruleState as RuleRunState } : {}
+      );
+    },
+    invalidates: [...RULE_INVALIDATION_KEYS, ...RULE_EXECUTE_TX_INVALIDATIONS],
+  },
+  'rules.redoRun': {
+    execute: async (args) => {
+      return await S().rules!.redoRun(args.runId as number, {
+        ruleState: args.ruleState as RuleRunState | undefined,
+        run: args.run as RedoRunOptions['run'],
+      });
     },
     invalidates: [...RULE_INVALIDATION_KEYS, ...RULE_EXECUTE_TX_INVALIDATIONS],
   },

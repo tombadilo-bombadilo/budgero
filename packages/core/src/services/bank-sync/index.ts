@@ -236,6 +236,11 @@ export class BankSyncService {
     this.queries.setReviewStatus(id, status);
   }
 
+  /** A review's current status (undo of setReviewStatus), or null when it is gone. */
+  getReviewStatus(id: number): BankReviewStatus | null {
+    return this.queries.getReviewStatus(id);
+  }
+
   planImport(input: BankImportPlanInput): BankImportPlan {
     const { budgetId, accountId, currency, link } = input;
     const provider = input.provider ?? 'simplefin';

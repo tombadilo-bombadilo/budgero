@@ -203,6 +203,16 @@ export class BankSyncQueries {
     }
   }
 
+  getReviewStatus(id: number): BankReviewStatus | null {
+    return (
+      getRow<{ Status: BankReviewStatus }>(
+        this.db,
+        'SELECT Status FROM bank_reviews WHERE ID = ?',
+        id
+      )?.Status ?? null
+    );
+  }
+
   setReviewStatus(id: number, status: BankReviewStatus): void {
     run(this.db, 'UPDATE bank_reviews SET Status = ? WHERE ID = ?', status, id);
   }

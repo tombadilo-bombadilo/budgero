@@ -552,7 +552,10 @@ export class AppRuntime {
             // the mutation must still be queued and broadcast to the space.
             idempotencyKey: mutationId,
             meta: {
-              skipUndo: false,
+              // Pushed items are not the user's own actions in this session:
+              // they must not land on the Ctrl+Z stack (the first Ctrl+Z
+              // after startup would delete a pushed transaction).
+              skipUndo: true,
               label: 'push-api',
               origin: 'remote',
               forceInvalidate: true,
@@ -595,6 +598,11 @@ export class AppRuntime {
     isMutator: boolean
   ): Promise<void> {
     if (!isMutator) return;
+    // An undo replay restores rows as they were (rules already applied, then
+    // maybe fixed by hand): running the rules again would overwrite those
+    // fixes or compound amount adjustments. Redo replays re-run the original
+    // action, so its rules run like they did the first time.
+    if (spec.meta?.replay === 'undo') return;
     const isTransactionAdd = spec.op === 'transactions.add' || spec.op === 'transactions.import';
     const isTransferAdd = spec.op === 'transactions.addTransfer';
     const isRecurringReady = spec.op === 'recurring.markReady';

@@ -3,9 +3,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import type { GetTransactionsByAccountRow } from '@budgero/core/browser';
 import {
   useTransactionSplits,
-  useUpsertSplits,
+  useSaveSplits,
   useClearSplits,
-  useUpdateTransactionColumn,
 } from '@entities/transaction/api/useTransactions';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
@@ -63,9 +62,8 @@ export function SplitDetailsDialog({
   const editFormatter = withEditPrecision(currentFormatter);
   const amountCurrency = transactionCurrencyDisplay === 'account' ? 'native' : 'converted';
   const { data: splits = [], isLoading } = useTransactionSplits(transactionId);
-  const upsertSplits = useUpsertSplits();
+  const saveSplits = useSaveSplits();
   const clearSplits = useClearSplits();
-  const updateTransactionColumn = useUpdateTransactionColumn();
 
   const createLineId = useCallback(
     () =>
@@ -150,9 +148,8 @@ export function SplitDetailsDialog({
   const isClearing = Boolean(editSplits && editSplits.length === 0 && hasExistingSplits);
   const canSave =
     !!editSplits &&
-    !upsertSplits.isPending &&
+    !saveSplits.isPending &&
     !clearSplits.isPending &&
-    !updateTransactionColumn.isPending &&
     ((editSplits.length > 0 &&
       targetTotal > 0 &&
       editSplits.every(
@@ -223,9 +220,8 @@ export function SplitDetailsDialog({
       return;
     }
 
-    // If the user edited the original amount, sync the parent transaction
-    // first — the splits service requires splits to sum to the parent total.
-    // Both sides are exact integer milliunits.
+    // A changed total is saved with the lines in one op, so the parent and its
+    // lines can never disagree. Both sides are exact integer milliunits.
     const currentParentInflow =
       amountCurrency === 'native'
         ? (transaction.InflowNative ?? transaction.InflowConverted ?? 0)
@@ -234,24 +230,13 @@ export function SplitDetailsDialog({
       amountCurrency === 'native'
         ? (transaction.OutflowNative ?? transaction.OutflowConverted ?? 0)
         : transaction.OutflowConverted || 0;
-    if (targetNet !== currentParentInflow - currentParentOutflow) {
-      const accountId =
-        (transaction as GetTransactionsByAccountRow & { AccountID?: number }).AccountID ?? 0;
-      const inflowColumn = amountCurrency === 'native' ? 'InflowNative' : 'InflowConverted';
-      const outflowColumn = amountCurrency === 'native' ? 'OutflowNative' : 'OutflowConverted';
-      await updateTransactionColumn.mutateAsync({
-        transactionId: transaction.ID,
-        column: targetNet >= 0 ? outflowColumn : inflowColumn,
-        value: 0,
-        accountId,
-      });
-      await updateTransactionColumn.mutateAsync({
-        transactionId: transaction.ID,
-        column: targetNet >= 0 ? inflowColumn : outflowColumn,
-        value: Math.abs(targetNet),
-        accountId,
-      });
-    }
+    const total =
+      targetNet !== currentParentInflow - currentParentOutflow
+        ? {
+            inflow: targetNet >= 0 ? targetNet : 0,
+            outflow: targetNet >= 0 ? 0 : Math.abs(targetNet),
+          }
+        : undefined;
 
     const prepared = editSplits.map((line, idx) => ({
       category_id: line.category_id ?? null,
@@ -262,10 +247,11 @@ export function SplitDetailsDialog({
       outflow: Number(line.outflow) || 0,
       order_index: idx,
     }));
-    await upsertSplits.mutateAsync({
+    await saveSplits.mutateAsync({
       transactionId: transaction.ID,
       splits: prepared,
       amountCurrency,
+      total,
     });
     setEditSplits(null);
     setEditTotal(null);
@@ -333,7 +319,7 @@ export function SplitDetailsDialog({
                         setEditSplits(null);
                         setEditTotal(null);
                       }}
-                      disabled={upsertSplits.isPending}
+                      disabled={saveSplits.isPending}
                     >
                       <Trans>Cancel</Trans>
                     </Button>

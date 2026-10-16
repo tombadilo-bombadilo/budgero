@@ -1,3 +1,4 @@
+import type { RawRow } from '../../database/restore-rows.js';
 /**
  * Transactions service type definitions
  * These types use PascalCase for API consistency
@@ -295,3 +296,36 @@ export interface BalanceHistoryRow {
 
 /** How {@link BalanceHistoryRow}s inside the window are grouped. */
 export type BalanceHistoryBucket = 'day' | 'month';
+
+/** Undo snapshots (see PayeeService.restorePayees / LabelService.restoreLabel). */
+export interface PayeeAssignment {
+  name: string;
+  transactionIds: number[];
+  splitIds: number[];
+}
+
+export interface PayeeSnapshot {
+  rows: RawRow[];
+  assignments: PayeeAssignment[];
+}
+
+export interface RestorePayeesInput {
+  rows?: RawRow[];
+  assignments?: PayeeAssignment[];
+  removeNames?: string[];
+}
+
+export interface LabelSnapshot {
+  row: RawRow;
+  transactionIds: number[];
+}
+
+/** A transaction's amounts and rate, for an exact amount-edit undo. */
+export interface TransactionAmountsSnapshot {
+  InflowNative: MilliUnits;
+  OutflowNative: MilliUnits;
+  InflowConverted: MilliUnits;
+  OutflowConverted: MilliUnits;
+  ExchangeRate: number | null;
+  ExchangeRateOverride: boolean;
+}

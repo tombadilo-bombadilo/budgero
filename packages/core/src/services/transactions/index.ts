@@ -1,6 +1,13 @@
 import { ImportDuplicateService, type ImportIdentity } from '../import/duplicate-planner.js';
 import { DatabaseAdapter } from '../../database/interface.js';
-import { allRows, getRow, run } from '../../database/sql.js';
+import { allRows, atomically, getRow, run } from '../../database/sql.js';
+import { TransactionWriteBatch } from './write-batch.js';
+import { SplitService } from './split-service.js';
+import {
+  captureRestoreSnapshot,
+  restoreTransactionSnapshot,
+  type TransactionRestoreSnapshot,
+} from './restore.js';
 import {
   Transaction,
   GetTransactionsByAccountRow,
@@ -15,6 +22,8 @@ import {
   GetTransactionsByAccountAndMonthRow,
   GetAllTransactions,
   GetTransactionsByCategoryAndMonthRow,
+  TransactionAmountsSnapshot,
+  TransactionSplit,
 } from './types.js';
 import { NotFoundError, ValidationError } from '../../types';
 import { TransactionQueries } from './queries.js';
@@ -55,12 +64,36 @@ export type {
   LabelListItem,
 } from './types.js';
 export type { TransferRateDetails } from './transfer-rate.js';
+export type { TransactionRestoreSnapshot } from './restore.js';
+export {
+  TransactionWriteBatch,
+  type BatchRowRef,
+  type PendingTransactionRow,
+} from './write-batch.js';
 export {
   isAccountOnBudget,
   resolveTransferPayees,
   transferInvolvesOffBudgetAccount,
 } from './transfer-payee.js';
 const debugLog = createLogger('services:transactions');
+
+/** A split parent's stored amounts and rate, put back verbatim by an undo. */
+export interface SplitParentAmounts {
+  InflowNative: MilliUnits | null;
+  OutflowNative: MilliUnits | null;
+  InflowConverted: MilliUnits;
+  OutflowConverted: MilliUnits;
+  ExchangeRate?: number | null;
+  ExchangeRateOverride?: boolean | number;
+}
+
+/** One row of a batch edit; omitted fields stay as they are. */
+export interface TransactionBatchEdit {
+  id: number;
+  accountId?: number;
+  categoryId?: number;
+  payee?: string | null;
+}
 
 export interface ReconcileResult {
   reconciledIds: number[];
@@ -107,10 +140,13 @@ export class TransactionService {
 
   private categoryService: CategoryService;
 
+  private splits: SplitService;
+
   constructor(private db: DatabaseAdapter) {
     this.queries = new TransactionQueries(db);
     this.currencyService = new CurrencyService(db);
     this.categoryService = new CategoryService(db);
+    this.splits = new SplitService(db);
   }
 
   private resolvePayee(
@@ -159,7 +195,10 @@ export class TransactionService {
     importIdentities: ImportIdentity[] = [],
     cleared = false,
     // Undo/redo re-inserts a row under its original ID so older history entries stay valid.
-    explicitId?: number
+    explicitId?: number,
+    // With a batch the row is only queued (the result is its batch step index);
+    // batch.commit() writes it together with the batch's other steps.
+    batch?: TransactionWriteBatch
   ): Promise<number> {
     debugLog('🔵 TransactionService.addTransaction called with:', {
       inflowOriginal,
@@ -185,25 +224,38 @@ export class TransactionService {
       outflowOriginal,
       exchangeRateOverride
     );
-    return this.insertTransaction(
-      {
-        inflowOriginal,
-        outflowOriginal,
-        accountId,
-        categoryId,
-        budgetId,
-        date,
-        memo,
-        transferId,
-        payee,
-        labelId,
-        excludeFromReadyToAssign,
-        importIdentities,
-        cleared,
-        explicitId,
-      },
-      conversion
-    );
+    const input: NewTransactionRow = {
+      inflowOriginal,
+      outflowOriginal,
+      accountId,
+      categoryId,
+      budgetId,
+      date,
+      memo,
+      transferId,
+      payee,
+      labelId,
+      excludeFromReadyToAssign,
+      importIdentities,
+      cleared,
+      explicitId,
+    };
+    if (batch) {
+      return batch.queue(() => this.insertTransaction(input, conversion), {
+        AccountID: accountId,
+        BudgetID: budgetId,
+        Date: date,
+        Memo: memo,
+        Payee: payee?.trim() || null,
+        LabelID: this.normalizeLabelId(labelId),
+        TransferID: transferId || null,
+        InflowConverted: conversion.inflowConverted,
+        OutflowConverted: conversion.outflowConverted,
+        InflowNative: inflowOriginal,
+        OutflowNative: outflowOriginal,
+      });
+    }
+    return this.insertTransaction(input, conversion);
   }
 
   /**
@@ -346,9 +398,7 @@ export class TransactionService {
       this.assertLabelBelongsToBudget(normalizedLabelId, budgetId);
     }
 
-    const inTransaction = <T>(fn: () => T): T =>
-      this.db.inTransaction ? fn() : this.db.transaction(fn);
-    const transactionId = inTransaction(() => {
+    const insert = (): number => {
       const imports = new ImportDuplicateService(this.db);
       const existing =
         importIdentities[0] && imports.findOperation(importIdentities[0].operationId);
@@ -704,9 +754,18 @@ export class TransactionService {
       for (const identity of importIdentities) imports.record(id, identity);
       debugLog('✅ Transaction added successfully with ID:', id);
       return id;
+    };
+    // Joins the caller's transaction when there is one.
+    return atomically(this.db, () => {
+      const id = insert();
+      if (transferId) this.normalizeTransferPayees(transferId);
+      return id;
     });
-    if (transferId) this.normalizeTransferPayees(transferId);
-    return transactionId;
+  }
+
+  /** A batch whose queued writes commit together in one DB transaction. */
+  createWriteBatch(): TransactionWriteBatch {
+    return new TransactionWriteBatch(this.db);
   }
 
   /**
@@ -913,7 +972,19 @@ export class TransactionService {
     // Original row, read before the write: the balance recalculation starts at
     // the earlier of its old and new position.
     const oldTxn = this.getTransactionByID(id);
-    this.db.transaction(() => {
+    const followUps = await this.prepareRowFollowUps({
+      ...oldTxn,
+      InflowConverted: inflow,
+      OutflowConverted: outflow,
+      InflowNative: inflowOriginal,
+      OutflowNative: outflowOriginal,
+      CategoryID: categoryId,
+      AccountID: accountId,
+      Date: date,
+      Memo: memo,
+      Payee: normalizedPayee ?? undefined,
+    });
+    atomically(this.db, () => {
       this.queries.updateTransaction(
         id,
         inflow,
@@ -926,13 +997,25 @@ export class TransactionService {
         memo,
         normalizedPayee
       );
+      // Running balances (converted and native) and the account balance.
+      this.recalculateAfterRowEdit(id, oldTxn, accountId, date);
+      for (const step of followUps) step();
     });
+  }
 
-    // Running balances (converted and native) and the account balance.
-    this.recalculateAfterRowEdit(id, oldTxn, accountId, date);
-    this.syncSplitMirrorDates(id);
-
-    await this.syncTransferPartnerAmounts(id);
+  /**
+   * Writes that must land with an edit of row `after.ID` (given as it will be
+   * after the edit), prepared before the write so they can share its DB
+   * transaction: a split parent's lines and mirror rows follow its amount,
+   * date and account; a transfer's partner leg follows its amount.
+   */
+  private async prepareRowFollowUps(after: Transaction): Promise<(() => void)[]> {
+    const steps: (() => void)[] = [];
+    const splitStep = await this.splits.prepareParentChange(after.ID, after);
+    if (splitStep) steps.push(splitStep);
+    const partnerStep = await this.preparePartnerSync(after);
+    if (partnerStep) steps.push(partnerStep);
+    return steps;
   }
 
   /**
@@ -954,27 +1037,6 @@ export class TransactionService {
     }
     const from = typeof previous.Date === 'string' && previous.Date < date ? previous.Date : date;
     this.queries.recalculateBalancesFrom(accountId, from, id);
-  }
-
-  /**
-   * Split-transfer mirrors are keyed by their parent's date. When the parent
-   * moves to another date, move the mirrors with it so later edits and deletes
-   * still find them and their accounts' running balances follow.
-   */
-  private syncSplitMirrorDates(parentId: number): void {
-    const parent = this.queries.getTransactionByID(parentId);
-    if (!parent || parent.TransferID) return;
-    const transferId = `split_transfer_${parent.ID}_${parent.Date}`;
-    const mirrors = this.queries.getSplitMirrorTransactions(parent.ID);
-    if (
-      !mirrors.some((mirror) => mirror.TransferID !== transferId || mirror.Date !== parent.Date)
-    ) {
-      return;
-    }
-    this.db.transaction(() => {
-      this.queries.rekeySplitMirrors(parent.ID, parent.Date);
-      this.queries.recalculateBalancesForAccounts(mirrors.map((mirror) => mirror.AccountID));
-    });
   }
 
   /** Apply a Push API patch in account currency, committing all fields together. */
@@ -1104,8 +1166,12 @@ export class TransactionService {
    * DeleteTransaction - Deletes a transaction with proper balance cleanup
    * If the transaction is part of a transfer, deletes both sides automatically
    */
-  deleteTransaction(id: number): void {
-    this.db.transaction(() => {
+  deleteTransaction(requestedId: number): void {
+    // A split-transfer mirror is the other side of its parent's transfer line:
+    // like a transfer leg, deleting it deletes the whole split transaction
+    // (parent, lines and every mirror), so no line is left without its mirror.
+    const id = this.splitParentOfMirror(this.getTransactionByID(requestedId))?.ID ?? requestedId;
+    atomically(this.db, () => {
       // 1. Fetch original transaction
       const txn = this.getTransactionByID(id);
 
@@ -1206,7 +1272,13 @@ export class TransactionService {
    * deleted with them. Exposed so mutation undo can capture the same set.
    */
   getTransactionsForDelete(ids: number[]): Transaction[] {
-    const selected = this.queries.getTransactionsByIDs(ids);
+    const requested = this.queries.getTransactionsByIDs(ids);
+    const parents = requested
+      .map((transaction) => this.splitParentOfMirror(transaction))
+      .filter((parent): parent is Transaction => parent !== null);
+    const selected = [
+      ...new Map([...requested, ...parents].map((item) => [item.ID, item])).values(),
+    ];
     const transferIds = selected
       .map((transaction) => transaction.TransferID)
       .filter((transferId): transferId is string => Boolean(transferId));
@@ -1228,6 +1300,41 @@ export class TransactionService {
     ];
   }
 
+  /** The split parent a split-transfer mirror row belongs to, if it still exists. */
+  private splitParentOfMirror(transaction: Transaction): Transaction | null {
+    const match = /^split_transfer_(\d+)_/.exec(transaction.TransferID ?? '');
+    if (!match) return null;
+    const parent = this.queries.getTransactionByID(Number(match[1]));
+    if (!parent || parent.ID === transaction.ID || parent.TransferID) return null;
+    return parent;
+  }
+
+  /**
+   * Everything deleting `ids` would remove (transfer partners, split lines and
+   * mirrors, provenance, links), for an exact undo via restoreTransactions.
+   */
+  captureRestoreSnapshot(ids: number[]): TransactionRestoreSnapshot {
+    return captureRestoreSnapshot(
+      this.db,
+      this.getTransactionsForDelete(ids).map((transaction) => transaction.ID)
+    );
+  }
+
+  /** Put back a captured delete exactly (same IDs and state), in one transaction. */
+  restoreTransactions(
+    snapshot: TransactionRestoreSnapshot,
+    { replace = false }: { replace?: boolean } = {}
+  ): number[] {
+    // Replace (undo of an edit): first remove the rows as they are now, with
+    // whatever the edit attached to them (e.g. new mirror rows).
+    const current = replace
+      ? this.getTransactionsForDelete(snapshot.transactions.map((row) => Number(row.ID))).map(
+          (transaction) => transaction.ID
+        )
+      : [];
+    return restoreTransactionSnapshot(this.db, snapshot, current);
+  }
+
   /**
    * Delete a selection atomically, expanding transfer pairs once and
    * recalculating each affected account once.
@@ -1239,7 +1346,7 @@ export class TransactionService {
     const transactionIds = transactions.map((transaction) => transaction.ID);
     const accountIds = [...new Set(transactions.map((transaction) => transaction.AccountID))];
 
-    this.db.transaction(() => {
+    atomically(this.db, () => {
       this.queries.deleteTransactions(transactionIds);
       this.queries.recalculateBalancesForAccounts(accountIds);
     });
@@ -1250,6 +1357,15 @@ export class TransactionService {
    * Note: This may require re-conversion if the new account has a different currency
    */
   async moveTransactionToNewAccount(transactionId: number, newAccountId: number): Promise<void> {
+    const write = await this.prepareMoveToAccount(transactionId, newAccountId);
+    atomically(this.db, write);
+  }
+
+  /** Conversions for an account move, then the synchronous write (one transaction). */
+  private async prepareMoveToAccount(
+    transactionId: number,
+    newAccountId: number
+  ): Promise<() => void> {
     const tx = this.getTransactionByID(transactionId);
 
     const { account: newAccount, budget } = this.queries.getAccountAndBudget(
@@ -1367,7 +1483,16 @@ export class TransactionService {
         !officialOldToNew || !!manualOldToNew || !officialNewToBudget || !!manualNewToBudget;
     }
 
-    this.db.transaction(() => {
+    const followUps = await this.prepareRowFollowUps({
+      ...tx,
+      AccountID: newAccountId,
+      InflowConverted: newInflowConverted,
+      OutflowConverted: newOutflowConverted,
+      InflowNative: newInflowOriginal,
+      OutflowNative: newOutflowOriginal,
+    });
+
+    return () => {
       const oldAccountId = tx.AccountID;
       const deltaConverted = tx.InflowConverted - tx.OutflowConverted;
       const oldDeltaOriginal =
@@ -1432,9 +1557,34 @@ export class TransactionService {
       );
 
       if (markPendingMove) this.queries.setConversionPending(tx.ID, true);
-    });
+      for (const step of followUps) step();
+    };
+  }
 
-    await this.syncTransferPartnerAmounts(transactionId);
+  /**
+   * Apply per-row account / category / payee edits (the register's batch
+   * toolbar) in ONE DB transaction: one synced op and one undo step for the
+   * whole selection. Per row the order is account, category, payee, as when
+   * the edits were sent one by one.
+   */
+  async editTransactions(edits: TransactionBatchEdit[]): Promise<void> {
+    const steps: (() => void)[] = [];
+    for (const edit of edits) {
+      if (edit.accountId !== undefined) {
+        steps.push(await this.prepareMoveToAccount(edit.id, edit.accountId));
+      }
+      if (edit.categoryId !== undefined) {
+        const { categoryId } = edit;
+        steps.push(() => this.moveTransactionToNewCategory(edit.id, categoryId));
+      }
+      if (edit.payee !== undefined) {
+        const { payee } = edit;
+        steps.push(() => this.setTransactionPayee(this.getTransactionByID(edit.id), payee));
+      }
+    }
+    atomically(this.db, () => {
+      for (const step of steps) step();
+    });
   }
 
   /**
@@ -1485,7 +1635,7 @@ export class TransactionService {
       return account ? isAccountOnBudget(account) : false;
     });
     if (!internal) return;
-    this.db.transaction(() => {
+    atomically(this.db, () => {
       for (const leg of linked) this.queries.updateTransactionPayee(leg.ID, null);
     });
   }
@@ -1516,7 +1666,9 @@ export class TransactionService {
   }
 
   /**
-   * Synchronize the partner amount for a transfer (two-leg transfers only).
+   * Prepare the partner-leg update for a transfer leg edit (two-leg transfers
+   * only); `main` is the edited leg as it will be after the edit. The returned
+   * step runs in the edit's own DB transaction, so both legs change together.
    * - Partner converted amounts are mirrored (inflow <-> outflow) in budget currency.
    * - Partner originals are recalculated using the partner leg's own date and account currency.
    * - Date, memo, payee, and label remain specific to each leg. Category
@@ -1524,29 +1676,57 @@ export class TransactionService {
    * - Recalculates partner account balances to keep running balances consistent.
    * Skips if there are not exactly two transactions for the TransferID (e.g., split mirrors).
    */
-  private async syncTransferPartnerAmounts(transactionId: number): Promise<void> {
-    let main: Transaction;
-    try {
-      main = this.getTransactionByID(transactionId);
-    } catch {
-      return; // Nothing to sync
-    }
+  /**
+   * Put a row's amounts and exchange rate back exactly as snapshotted (undo of
+   * an amount edit, which re-resolves the rate and drops a manual override).
+   * Balances, split lines and a transfer partner follow in the same DB
+   * transaction, like an amount edit.
+   */
+  async restoreAmounts(transactionId: number, amounts: TransactionAmountsSnapshot): Promise<void> {
+    const tx = this.getTransactionByID(transactionId);
+    const values = {
+      InflowNative: asMilli(Number(amounts.InflowNative)),
+      OutflowNative: asMilli(Number(amounts.OutflowNative)),
+      InflowConverted: asMilli(Number(amounts.InflowConverted)),
+      OutflowConverted: asMilli(Number(amounts.OutflowConverted)),
+      ExchangeRate: amounts.ExchangeRate ?? null,
+      ExchangeRateOverride: Boolean(amounts.ExchangeRateOverride),
+    };
+    const followUps = await this.prepareRowFollowUps({ ...tx, ...values } as Transaction);
+    this.db.transaction(() => {
+      run(
+        this.db,
+        `UPDATE transactions
+         SET InflowNative = ?, OutflowNative = ?, InflowConverted = ?, OutflowConverted = ?,
+             ExchangeRate = ?, ExchangeRateOverride = ?
+         WHERE ID = ?`,
+        values.InflowNative,
+        values.OutflowNative,
+        values.InflowConverted,
+        values.OutflowConverted,
+        values.ExchangeRate,
+        values.ExchangeRateOverride ? 1 : 0,
+        transactionId
+      );
+      this.recalculateAfterRowEdit(transactionId, tx, tx.AccountID, tx.Date);
+      for (const step of followUps) step();
+    });
+  }
 
-    if (!main.TransferID) return;
+  private async preparePartnerSync(main: Transaction): Promise<(() => void) | null> {
+    if (!main.TransferID) return null;
     const group = this.getTransactionsByTransferID(main.TransferID);
     // Only sync simple two-leg transfers; avoid split-transfer groups
-    if (!group || group.length !== 2) return;
+    if (!group || group.length !== 2) return null;
     const partner = group.find((t) => t.ID !== main.ID);
-    if (!partner) return;
+    if (!partner) return null;
 
     const { account: mainAcc } = this.queries.getAccountAndBudget(main.AccountID, main.BudgetID);
     const { account: partnerAcc, budget } = this.queries.getAccountAndBudget(
       partner.AccountID,
       main.BudgetID
     );
-    if (!mainAcc) return;
-    if (!partnerAcc) return;
-    if (!budget) return;
+    if (!mainAcc || !partnerAcc || !budget) return null;
     const internalOnBudgetTransfer = isAccountOnBudget(mainAcc) && isAccountOnBudget(partnerAcc);
 
     // Mirror converted (budget) amounts: partner inflow = main outflow; partner outflow = main inflow
@@ -1596,7 +1776,7 @@ export class TransactionService {
       }
     }
 
-    this.db.transaction(() => {
+    return () => {
       this.queries.updateTransactionWithOriginal(
         partner.ID,
         pInflowOriginal,
@@ -1611,7 +1791,7 @@ export class TransactionService {
       );
       if (internalOnBudgetTransfer) this.queries.updateTransactionPayee(main.ID, null);
       this.queries.recalculateBalancesFrom(partner.AccountID, partner.Date, partner.ID);
-    });
+    };
   }
 
   /**
@@ -1686,6 +1866,37 @@ export class TransactionService {
     memo: string,
     payee?: string
   ): Promise<void> {
+    const { write } = await this.prepareAmountEdit(
+      transactionId,
+      editedIn,
+      inflow,
+      outflow,
+      accountId,
+      categoryId,
+      date,
+      memo,
+      payee
+    );
+    atomically(this.db, write);
+  }
+
+  /**
+   * Rate lookups for an amount edit, then the synchronous write. `after` is the
+   * row as the write leaves it. Without `followUps` the caller takes care of
+   * split lines and partner legs itself.
+   */
+  private async prepareAmountEdit(
+    transactionId: number,
+    editedIn: 'budget-currency' | 'account-currency',
+    inflow: MilliUnits,
+    outflow: MilliUnits,
+    accountId: number,
+    categoryId: number,
+    date: string,
+    memo: string,
+    payee?: string,
+    { followUps: withFollowUps = true }: { followUps?: boolean } = {}
+  ): Promise<{ after: Transaction; write: () => void }> {
     const { account, budget } = this.queries.getAccountAndBudget(accountId);
 
     if (!account) {
@@ -1705,6 +1916,7 @@ export class TransactionService {
     let outflowOriginal = outflow;
     let inflowConverted = inflow;
     let outflowConverted = outflow;
+    let newRate: number | null = null;
 
     if (account.Currency !== budget.DisplayCurrency) {
       if (editedIn === 'budget-currency') {
@@ -1730,7 +1942,7 @@ export class TransactionService {
           outflowOriginal = asMilli(
             convertScaled(outflow, 1 / rate, budget.DisplayCurrency, account.Currency)
           );
-          this.queries.setExchangeRate(transactionId, rate, false);
+          newRate = rate;
         }
       } else {
         inflowConverted = await this.currencyService.convertAmount(
@@ -1755,29 +1967,141 @@ export class TransactionService {
           date,
           account.BudgetID
         );
-        if (rate) {
-          this.queries.setExchangeRate(transactionId, rate, false);
-        }
+        if (rate) newRate = rate;
       }
     }
 
-    this.queries.updateTransactionWithOriginal(
-      transactionId,
-      inflowOriginal ?? 0,
-      outflowOriginal ?? 0,
-      inflowConverted ?? 0,
-      outflowConverted ?? 0,
-      categoryId,
-      accountId,
-      date,
-      memo ?? '',
-      normalizedPayee ?? null
+    const after: Transaction = {
+      ...existingTransaction,
+      InflowNative: inflowOriginal ?? ZERO_MILLI,
+      OutflowNative: outflowOriginal ?? ZERO_MILLI,
+      InflowConverted: inflowConverted ?? ZERO_MILLI,
+      OutflowConverted: outflowConverted ?? ZERO_MILLI,
+      CategoryID: categoryId,
+      AccountID: accountId,
+      Date: date,
+      Memo: memo ?? '',
+      Payee: normalizedPayee ?? undefined,
+    };
+    const followUps = withFollowUps ? await this.prepareRowFollowUps(after) : [];
+
+    const write = () => {
+      if (newRate !== null) this.queries.setExchangeRate(transactionId, newRate, false);
+      this.queries.updateTransactionWithOriginal(
+        transactionId,
+        inflowOriginal ?? 0,
+        outflowOriginal ?? 0,
+        inflowConverted ?? 0,
+        outflowConverted ?? 0,
+        categoryId,
+        accountId,
+        date,
+        memo ?? '',
+        normalizedPayee ?? null
+      );
+
+      this.recalculateAfterRowEdit(transactionId, existingTransaction, accountId, date);
+      for (const step of followUps) step();
+    };
+    return { after, write };
+  }
+
+  /**
+   * Save a split transaction from the split editor in ONE DB transaction:
+   * optionally a new parent total (`amount`, in account or budget currency;
+   * `exactAmount` puts back stored values verbatim, for undo), then the lines
+   * (an empty list clears the split).
+   */
+  async saveSplitTransaction(
+    transactionId: number,
+    input: {
+      amount?: { inflow: MilliUnits; outflow: MilliUnits; currency: 'native' | 'converted' };
+      exactAmount?: SplitParentAmounts;
+      splits: Omit<TransactionSplit, 'ID' | 'TransactionID'>[];
+    }
+  ): Promise<void> {
+    const before = this.getTransactionByID(transactionId);
+    if (before.TransferID) throw new ValidationError('Transfer transactions cannot be split.');
+    const batch = this.createWriteBatch();
+    let after: Transaction = before;
+    let writeParent: () => void = () => undefined;
+
+    if (input.exactAmount) {
+      const exact = input.exactAmount;
+      after = {
+        ...before,
+        InflowNative: exact.InflowNative ?? undefined,
+        OutflowNative: exact.OutflowNative ?? undefined,
+        InflowConverted: exact.InflowConverted,
+        OutflowConverted: exact.OutflowConverted,
+      };
+      writeParent = () => {
+        run(
+          this.db,
+          `UPDATE transactions
+              SET InflowNative = ?, OutflowNative = ?, InflowConverted = ?, OutflowConverted = ?,
+                  ExchangeRate = ?, ExchangeRateOverride = ?
+            WHERE ID = ?`,
+          exact.InflowNative ?? null,
+          exact.OutflowNative ?? null,
+          exact.InflowConverted,
+          exact.OutflowConverted,
+          exact.ExchangeRate ?? null,
+          exact.ExchangeRateOverride ? 1 : 0,
+          transactionId
+        );
+        this.recalculateAfterRowEdit(transactionId, before, before.AccountID, before.Date);
+      };
+    } else if (input.amount) {
+      const { inflow, outflow, currency } = input.amount;
+      const current =
+        currency === 'native'
+          ? (before.InflowNative ?? before.InflowConverted) -
+            (before.OutflowNative ?? before.OutflowConverted)
+          : before.InflowConverted - before.OutflowConverted;
+      if (inflow - outflow !== current) {
+        const prepared = await this.prepareAmountEdit(
+          transactionId,
+          currency === 'native' ? 'account-currency' : 'budget-currency',
+          inflow,
+          outflow,
+          before.AccountID,
+          before.CategoryID,
+          before.Date,
+          before.Memo ?? '',
+          undefined,
+          { followUps: false }
+        );
+        after = prepared.after;
+        writeParent = prepared.write;
+      }
+    }
+
+    const parentRef = batch.queue(
+      () => {
+        writeParent();
+        return transactionId;
+      },
+      {
+        AccountID: after.AccountID,
+        BudgetID: after.BudgetID,
+        Date: after.Date,
+        Memo: after.Memo ?? '',
+        Payee: after.Payee ?? null,
+        LabelID: after.LabelID ?? null,
+        TransferID: after.TransferID || null,
+        InflowConverted: after.InflowConverted,
+        OutflowConverted: after.OutflowConverted,
+        InflowNative: after.InflowNative ?? after.InflowConverted,
+        OutflowNative: after.OutflowNative ?? after.OutflowConverted,
+      }
     );
-
-    this.recalculateAfterRowEdit(transactionId, existingTransaction, accountId, date);
-    this.syncSplitMirrorDates(transactionId);
-
-    await this.syncTransferPartnerAmounts(transactionId);
+    if (input.splits.length) {
+      await this.splits.upsertSplits({ batchIndex: parentRef }, input.splits, batch);
+    } else {
+      batch.queue(() => this.splits.clearSplitsNow(transactionId));
+    }
+    batch.commit();
   }
 
   /**
@@ -1897,20 +2221,7 @@ export class TransactionService {
         this.queries.updateTransactionMemo(transactionId, newValue as string);
         break;
       case 'payee':
-        if (this.isInternalOnBudgetTransfer(transaction)) {
-          const linked = this.getTransactionsByTransferID(transaction.TransferID!);
-          this.db.transaction(() => {
-            for (const leg of linked) this.queries.updateTransactionPayee(leg.ID, null);
-          });
-          break;
-        }
-        if (typeof newValue === 'string' && newValue.trim()) {
-          this.queries.insertPayee(transaction.BudgetID, newValue.trim());
-        }
-        this.queries.updateTransactionPayee(
-          transactionId,
-          typeof newValue === 'string' ? newValue.trim() || null : null
-        );
+        this.setTransactionPayee(transaction, newValue);
         break;
       case 'accountid':
         await this.moveTransactionToNewAccount(transactionId, newValue as number);
@@ -1944,7 +2255,12 @@ export class TransactionService {
             ? convertScaled(outflowConverted, 1 / newRate, budgetCurrency, accountCurrency)
             : outflowConverted;
 
-          this.db.transaction(() => {
+          const followUp = await this.splits.prepareParentChange(transactionId, {
+            ...tx,
+            InflowNative: newInflowOriginal,
+            OutflowNative: newOutflowOriginal,
+          });
+          atomically(this.db, () => {
             run(
               this.db,
               `
@@ -1962,6 +2278,7 @@ export class TransactionService {
             if (!this.accountHasUnsafeTransactionAmounts(tx.AccountID)) {
               this.queries.recalculateBalancesFrom(tx.AccountID, tx.Date, tx.ID);
             }
+            followUp?.();
           });
         } else {
           // Regular transaction: the original (account-currency) amount is ground truth, so
@@ -1971,7 +2288,13 @@ export class TransactionService {
           const newInflow = convertScaled(inflowOrig, newRate, accountCurrency, budgetCurrency);
           const newOutflow = convertScaled(outflowOrig, newRate, accountCurrency, budgetCurrency);
 
-          this.db.transaction(() => {
+          // A split parent's lines follow the re-derived amount (A20).
+          const followUp = await this.splits.prepareParentChange(transactionId, {
+            ...tx,
+            InflowConverted: newInflow,
+            OutflowConverted: newOutflow,
+          });
+          atomically(this.db, () => {
             run(
               this.db,
               `
@@ -1989,6 +2312,7 @@ export class TransactionService {
             if (!this.accountHasUnsafeTransactionAmounts(tx.AccountID)) {
               this.queries.recalculateBalancesFrom(tx.AccountID, tx.Date, tx.ID);
             }
+            followUp?.();
           });
         }
         break;
@@ -1996,6 +2320,24 @@ export class TransactionService {
       default:
         throw new ValidationError(`Unsupported column: ${columnName}`);
     }
+  }
+
+  /** Payee edit; a transfer entirely inside the budget keeps no payee on either leg. */
+  private setTransactionPayee(transaction: Transaction, newValue: unknown): void {
+    if (this.isInternalOnBudgetTransfer(transaction)) {
+      const linked = this.getTransactionsByTransferID(transaction.TransferID!);
+      atomically(this.db, () => {
+        for (const leg of linked) this.queries.updateTransactionPayee(leg.ID, null);
+      });
+      return;
+    }
+    if (typeof newValue === 'string' && newValue.trim()) {
+      this.queries.insertPayee(transaction.BudgetID, newValue.trim());
+    }
+    this.queries.updateTransactionPayee(
+      transaction.ID,
+      typeof newValue === 'string' ? newValue.trim() || null : null
+    );
   }
 
   private isInternalOnBudgetTransfer(transaction: Transaction): boolean {
@@ -2084,7 +2426,7 @@ export class TransactionService {
     const timestamp = clock.date().toISOString();
     const clearedOnly = options.clearedOnly ?? false;
 
-    return this.db.transaction(() => {
+    return atomically(this.db, () => {
       const previous = getRow<{ ReconciledAt: string | null }>(
         this.db,
         `SELECT ReconciledAt FROM accounts WHERE ID = ?`,

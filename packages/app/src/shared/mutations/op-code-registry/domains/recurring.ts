@@ -4,6 +4,7 @@ import type {
   MarkOccurrenceReadyResult,
   RecurringOccurrence,
   RecurringOccurrenceRef,
+  RecurringTemplateSnapshot,
   RecurringTransaction,
   UpdateRecurringTransactionInput,
 } from '@budgero/core/browser';
@@ -131,6 +132,32 @@ export const recurringOps = {
       ...RECURRING_OCCURRENCE_INVALIDATIONS,
       ...PROJECTION_CONSUMER_INVALIDATIONS,
     ],
+    undo: {
+      // The template and its occurrences (posted/skipped history included)
+      // come back exactly as they were.
+      capture: async (args) =>
+        safeCapture(() => S().recurring!.snapshotRecurringTransaction(args.id as number)),
+      build: (_args, _result, before) => {
+        const snapshot = before as RecurringTemplateSnapshot | null | undefined;
+        if (!snapshot?.template) return [];
+        return [
+          {
+            op: 'recurring.restore',
+            args: { budgetId: Number(snapshot.template.BudgetID), snapshot },
+          },
+        ];
+      },
+    },
+  },
+  'recurring.restore': {
+    execute: async (args) => {
+      S().recurring!.restoreRecurringTransaction(args.snapshot as RecurringTemplateSnapshot);
+    },
+    invalidates: [
+      ...RECURRING_TEMPLATE_INVALIDATIONS,
+      ...RECURRING_OCCURRENCE_INVALIDATIONS,
+      ...PROJECTION_CONSUMER_INVALIDATIONS,
+    ],
   },
   'recurring.markReady': {
     // A transfer template posts two legs sharing a TransferID: mint it here so
@@ -179,6 +206,33 @@ export const recurringOps = {
         ops.push({ op: 'transactions.delete', args: { id: transactionId } });
         ops.push({ op: 'recurring.resetOccurrence', args: reset });
         return ops;
+      },
+    },
+    // Redo posts under the IDs (and TransferID) of the first run, so the undo
+    // entry above (delete by ID) still finds the posting after a redo.
+    redo: {
+      build: (args, result) => {
+        const ready = result as MarkOccurrenceReadyResult | undefined;
+        const options = (args.options ?? {}) as MarkOccurrenceReadyOptions;
+        if (ready?.transactionId == null) return [{ op: 'recurring.markReady', args }];
+        return [
+          {
+            op: 'recurring.markReady',
+            args: {
+              ...args,
+              options: {
+                ...options,
+                reuse: {
+                  transactionId: ready.transactionId,
+                  ...(ready.destinationTransactionId != null
+                    ? { destinationTransactionId: ready.destinationTransactionId }
+                    : {}),
+                  ...(ready.transferId ? { transferId: ready.transferId } : {}),
+                },
+              },
+            },
+          },
+        ];
       },
     },
   },

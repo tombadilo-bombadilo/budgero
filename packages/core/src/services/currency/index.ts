@@ -725,6 +725,8 @@ export class CurrencyService {
     for (const accountId of affectedAccounts) {
       this.transactionQueries.recalculateBalances(accountId);
     }
+    // Split lines follow their parent's re-converted amount.
+    this.transactionQueries.resyncSplitLinesForAccounts([...affectedAccounts]);
 
     if (updated > 0) {
       debugLog(`Resynced ${updated} pending conversions to official rates`, { budgetId });
@@ -927,6 +929,8 @@ export class CurrencyService {
     for (const accountId of affectedAccounts) {
       this.transactionQueries.recalculateBalances(accountId);
     }
+    // Split lines follow their parent's re-converted amount.
+    this.transactionQueries.resyncSplitLinesForAccounts([...affectedAccounts]);
 
     const transferCount = await this.recalculateTransfersForDateRange(
       fromCurrency,
@@ -1335,5 +1339,6 @@ export class CurrencyService {
       runningBalanceConverted,
       accountId
     );
+    this.transactionQueries.resyncSplitLinesForAccounts([accountId]);
   }
 }

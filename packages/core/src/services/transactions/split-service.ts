@@ -1,12 +1,46 @@
 import { DatabaseAdapter } from '../../database/interface.js';
-import { getRow } from '../../database/sql.js';
+import { atomically, getRow, run } from '../../database/sql.js';
 import { asMilli, toDecimal, ZERO_MILLI, type MilliUnits } from '../../money/index.js';
 import { NotFoundError } from '../../types';
 import { TransactionQueries } from './queries.js';
 import { CurrencyService } from '../currency/index.js';
 import { CategoryService } from '../categories/index.js';
-import { TransactionSplit } from './types.js';
+import { Transaction, TransactionSplit } from './types.js';
 import { ensureTransferCategory } from './category-helpers.js';
+import { TransactionWriteBatch, isBatchRowRef, type BatchRowRef } from './write-batch.js';
+import { linesOutOfStep } from './split-amounts.js';
+
+/** The parent fields split handling reads (an existing row or a queued one). */
+export interface SplitParent {
+  AccountID: number;
+  BudgetID: number;
+  Date: string;
+  Memo?: string | null;
+  Payee?: string | null;
+  LabelID?: number | null;
+  TransferID?: string | null;
+  InflowConverted: number;
+  OutflowConverted: number;
+  InflowNative?: number | null;
+  OutflowNative?: number | null;
+}
+
+type SplitInput = Omit<TransactionSplit, 'ID' | 'TransactionID'>;
+
+/** A mirror row for one transfer split line, converted ahead of the write. */
+interface PreparedMirror {
+  targetAccountId: number;
+  memo: string;
+  payee: string;
+  inflowOriginal: MilliUnits;
+  outflowOriginal: MilliUnits;
+  inflowConverted: MilliUnits;
+  outflowConverted: MilliUnits;
+}
+
+/** Mirror rows are keyed by their parent and its current date. */
+export const splitMirrorTransferId = (parentId: number, date: string) =>
+  `split_transfer_${parentId}_${date}`;
 
 /**
  * SplitService - manages split transactions, including mirrored rows for transfer split lines.
@@ -30,11 +64,21 @@ export class SplitService {
    * For transfer split lines, does not create separate parent rows; instead stores TransferAccountID for later reporting.
    */
   async upsertSplits(
-    transactionId: number,
-    splits: Omit<TransactionSplit, 'ID' | 'TransactionID'>[]
+    transactionId: number | BatchRowRef,
+    splits: SplitInput[],
+    // With a batch the lines are only queued; batch.commit() writes them
+    // together with the batch's other steps (e.g. the new parent row).
+    batch?: TransactionWriteBatch
   ): Promise<void> {
-    const parent = this.queries.getTransactionByID(transactionId);
-    if (!parent) throw new NotFoundError('Transaction', transactionId);
+    let parent: SplitParent;
+    if (isBatchRowRef(transactionId)) {
+      if (!batch) throw new Error('A queued parent needs the batch it was queued in.');
+      parent = batch.pendingRow(transactionId);
+    } else {
+      const row = this.queries.getTransactionByID(transactionId);
+      if (!row) throw new NotFoundError('Transaction', transactionId);
+      parent = row;
+    }
 
     // Transfers move money between two of your own accounts and are already
     // mirrored as a linked pair. Splitting one would have to reconcile the
@@ -155,162 +199,277 @@ export class SplitService {
       });
     }
 
-    // Upsert atomically: delete old, insert new
-    // Precompute mirror rows (async conversions) before entering sync transaction
+    const preparedMirrors = await this.prepareMirrors(parent, preparedSplits);
+    const write = (results: unknown[]) =>
+      this.writeSplits(
+        TransactionWriteBatch.idOf(results, transactionId),
+        parent,
+        preparedSplits,
+        preparedMirrors
+      );
+    if (batch) {
+      batch.queue(write);
+      return;
+    }
+    atomically(this.db, () => write([]));
+  }
+
+  /** Convert the mirror rows for the transfer lines (async, before any write). */
+  private async prepareMirrors(
+    parent: SplitParent,
+    lines: Pick<
+      SplitInput,
+      | 'TransferAccountID'
+      | 'InflowConverted'
+      | 'OutflowConverted'
+      | 'InflowNative'
+      | 'OutflowNative'
+      | 'Memo'
+      | 'Payee'
+    >[]
+  ): Promise<PreparedMirror[]> {
     const { account: sourceAcc, budget } = this.queries.getAccountAndBudget(
       parent.AccountID,
       parent.BudgetID
     );
-
-    type PreparedMirror = {
-      targetAccountId: number;
-      memo: string;
-      payee: string;
-      inflowOriginal: MilliUnits;
-      outflowOriginal: MilliUnits;
-      inflowConverted: MilliUnits;
-      outflowConverted: MilliUnits;
-    };
     const preparedMirrors: PreparedMirror[] = [];
+    if (!sourceAcc || !budget) return preparedMirrors;
 
-    if (sourceAcc && budget) {
-      for (const s of preparedSplits) {
-        if (!s.TransferAccountID) continue;
+    for (const s of lines) {
+      if (!s.TransferAccountID) continue;
 
-        const targetAccount = getRow<{ ID: number; Currency: string }>(
-          this.db,
-          'SELECT ID , Currency FROM accounts WHERE ID = ?',
-          s.TransferAccountID
-        );
-        if (!targetAccount) continue;
+      const targetAccount = getRow<{ ID: number; Currency: string }>(
+        this.db,
+        'SELECT ID , Currency FROM accounts WHERE ID = ?',
+        s.TransferAccountID
+      );
+      if (!targetAccount) continue;
 
-        const sourceNetOriginal =
-          (s.InflowNative ?? s.InflowConverted ?? 0) - (s.OutflowNative ?? s.OutflowConverted ?? 0);
-        const mirrorNetOriginalInTarget = await this.currencyService.convertAmount(
-          asMilli(-sourceNetOriginal),
-          sourceAcc.Currency,
-          targetAccount.Currency,
-          parent.Date,
-          parent.BudgetID
-        );
-        const mirrorInflowOriginal =
-          mirrorNetOriginalInTarget > 0 ? mirrorNetOriginalInTarget : ZERO_MILLI;
-        const mirrorOutflowOriginal =
-          mirrorNetOriginalInTarget < 0 ? asMilli(-Number(mirrorNetOriginalInTarget)) : ZERO_MILLI;
+      const sourceNetOriginal =
+        (s.InflowNative ?? s.InflowConverted ?? 0) - (s.OutflowNative ?? s.OutflowConverted ?? 0);
+      const mirrorNetOriginalInTarget = await this.currencyService.convertAmount(
+        asMilli(-sourceNetOriginal),
+        sourceAcc.Currency,
+        targetAccount.Currency,
+        parent.Date,
+        parent.BudgetID
+      );
+      const mirrorInflowOriginal =
+        mirrorNetOriginalInTarget > 0 ? mirrorNetOriginalInTarget : ZERO_MILLI;
+      const mirrorOutflowOriginal =
+        mirrorNetOriginalInTarget < 0 ? asMilli(-Number(mirrorNetOriginalInTarget)) : ZERO_MILLI;
 
-        const mirrorInflowConverted = await this.currencyService.convertAmount(
-          mirrorInflowOriginal,
-          targetAccount.Currency,
-          budget.DisplayCurrency,
-          parent.Date,
-          parent.BudgetID
-        );
-        const mirrorOutflowConverted = await this.currencyService.convertAmount(
-          mirrorOutflowOriginal,
-          targetAccount.Currency,
-          budget.DisplayCurrency,
-          parent.Date,
-          parent.BudgetID
-        );
+      const mirrorInflowConverted = await this.currencyService.convertAmount(
+        mirrorInflowOriginal,
+        targetAccount.Currency,
+        budget.DisplayCurrency,
+        parent.Date,
+        parent.BudgetID
+      );
+      const mirrorOutflowConverted = await this.currencyService.convertAmount(
+        mirrorOutflowOriginal,
+        targetAccount.Currency,
+        budget.DisplayCurrency,
+        parent.Date,
+        parent.BudgetID
+      );
 
-        preparedMirrors.push({
-          targetAccountId: targetAccount.ID,
-          memo: s.Memo ?? parent.Memo ?? '',
-          payee: s.Payee || parent.Payee || '',
-          inflowOriginal: mirrorInflowOriginal,
-          outflowOriginal: mirrorOutflowOriginal,
-          inflowConverted: mirrorInflowConverted,
-          outflowConverted: mirrorOutflowConverted,
-        });
-      }
+      preparedMirrors.push({
+        targetAccountId: targetAccount.ID,
+        memo: s.Memo ?? parent.Memo ?? '',
+        payee: s.Payee || parent.Payee || '',
+        inflowOriginal: mirrorInflowOriginal,
+        outflowOriginal: mirrorOutflowOriginal,
+        inflowConverted: mirrorInflowConverted,
+        outflowConverted: mirrorOutflowConverted,
+      });
+    }
+    return preparedMirrors;
+  }
+
+  /** Replace the parent's lines and mirror rows (synchronous; caller holds the transaction). */
+  private writeSplits(
+    transactionId: number,
+    parent: SplitParent,
+    preparedSplits: SplitInput[],
+    preparedMirrors: PreparedMirror[]
+  ): void {
+    // 1) Replace existing splits
+    this.queries.deleteSplitsForTransaction(transactionId);
+    let orderIndex = 0;
+    for (const s of preparedSplits) {
+      const row: Omit<TransactionSplit, 'ID'> = {
+        TransactionID: transactionId,
+        CategoryID: s.CategoryID ?? null,
+        TransferAccountID: s.TransferAccountID ?? null,
+        Memo: s.Memo ?? parent.Memo ?? '',
+        Payee: s.Payee ?? '',
+        InflowConverted: s.InflowConverted ?? 0,
+        OutflowConverted: s.OutflowConverted ?? 0,
+        InflowNative: s.InflowNative ?? null,
+        OutflowNative: s.OutflowNative ?? null,
+        PairID: s.PairID ?? null,
+        OrderIndex: s.OrderIndex ?? orderIndex,
+      };
+      this.queries.insertSplitLine(row);
+      if (row.Payee) this.queries.insertPayee(parent.BudgetID, row.Payee);
+      orderIndex++;
     }
 
-    this.db.transaction(() => {
-      // 1) Replace existing splits
-      this.queries.deleteSplitsForTransaction(transactionId);
-      let orderIndex = 0;
-      for (const s of preparedSplits) {
-        const row: Omit<TransactionSplit, 'ID'> = {
-          TransactionID: transactionId,
-          CategoryID: s.CategoryID ?? null,
-          TransferAccountID: s.TransferAccountID ?? null,
-          Memo: s.Memo ?? parent.Memo ?? '',
-          Payee: s.Payee ?? '',
-          InflowConverted: s.InflowConverted ?? 0,
-          OutflowConverted: s.OutflowConverted ?? 0,
-          InflowNative: s.InflowNative ?? null,
-          OutflowNative: s.OutflowNative ?? null,
-          PairID: s.PairID ?? null,
-          OrderIndex: s.OrderIndex ?? orderIndex,
-        };
-        this.queries.insertSplitLine(row);
-        if (row.Payee) this.queries.insertPayee(parent.BudgetID, row.Payee);
-        orderIndex++;
-      }
+    // 2) Mirror rows for the transfer lines
+    this.replaceMirrors(transactionId, parent, preparedMirrors);
+  }
 
-      // 2) Mirror handling for transfer split lines
-      // Strategy: use a common TransferID for all mirrors of this parent to tie both sides
-      const transferId =
-        parent.TransferID && parent.TransferID.length > 0
-          ? parent.TransferID
-          : `split_transfer_${parent.ID}_${parent.Date}`;
+  /**
+   * Delete the parent's mirror rows and insert `preparedMirrors`. The old
+   * rows' balance effect is undone by the recalculation at the end, together
+   * with the new mirrors' target accounts.
+   */
+  private replaceMirrors(
+    parentId: number,
+    parent: SplitParent,
+    preparedMirrors: PreparedMirror[]
+  ): void {
+    // Strategy: use a common TransferID for all mirrors of this parent to tie both sides
+    const transferId =
+      parent.TransferID && parent.TransferID.length > 0
+        ? parent.TransferID
+        : splitMirrorTransferId(parentId, parent.Date);
 
-      // Clear any previous mirrors for this parent (including ones keyed by an
-      // older parent date). Their balance effect is undone by the recalculation
-      // below, together with the new mirrors' target accounts.
-      const oldMirrors = this.queries.getSplitMirrorTransactions(parent.ID);
-      this.queries.deleteTransactions(oldMirrors.map((mirror) => mirror.ID));
-      const affectedAccountIds = new Set(oldMirrors.map((mirror) => mirror.AccountID));
+    // Clear any previous mirrors for this parent (including ones keyed by an
+    // older parent date).
+    const oldMirrors = this.queries.getSplitMirrorTransactions(parentId);
+    this.queries.deleteTransactions(oldMirrors.map((mirror) => mirror.ID));
+    const affectedAccountIds = new Set(oldMirrors.map((mirror) => mirror.AccountID));
 
-      // Create mirror transactions per transfer split
-      for (const pm of preparedMirrors) {
-        const transfersCategoryId = ensureTransferCategory(this.categoryService, parent.BudgetID);
-        const prevBalanceConverted =
-          this.queries.getRunningBalanceBefore(pm.targetAccountId, parent.Date) || 0;
-        const prevBalanceOriginal =
-          this.queries.getRunningBalanceOriginalBefore(pm.targetAccountId, parent.Date) || 0;
-        const deltaConverted = pm.inflowConverted - pm.outflowConverted;
-        const deltaOriginal = pm.inflowOriginal - pm.outflowOriginal;
-        const newBalanceConverted = prevBalanceConverted + deltaConverted;
-        const newBalanceOriginal = prevBalanceOriginal + deltaOriginal;
+    // Create mirror transactions per transfer split
+    for (const pm of preparedMirrors) {
+      const transfersCategoryId = ensureTransferCategory(this.categoryService, parent.BudgetID);
+      const prevBalanceConverted =
+        this.queries.getRunningBalanceBefore(pm.targetAccountId, parent.Date) || 0;
+      const prevBalanceOriginal =
+        this.queries.getRunningBalanceOriginalBefore(pm.targetAccountId, parent.Date) || 0;
+      const deltaConverted = pm.inflowConverted - pm.outflowConverted;
+      const deltaOriginal = pm.inflowOriginal - pm.outflowOriginal;
+      const newBalanceConverted = prevBalanceConverted + deltaConverted;
+      const newBalanceOriginal = prevBalanceOriginal + deltaOriginal;
 
-        const mirrorId = this.queries.insertTransactionWithBalance(
-          pm.inflowConverted,
-          pm.outflowConverted,
-          pm.inflowOriginal,
-          pm.outflowOriginal,
-          transfersCategoryId,
-          pm.targetAccountId,
-          parent.Date,
-          pm.memo,
-          pm.payee || null,
-          parent.BudgetID,
-          newBalanceConverted,
-          newBalanceOriginal,
-          transferId,
-          undefined,
-          parent.LabelID ?? null
-        );
+      const mirrorId = this.queries.insertTransactionWithBalance(
+        pm.inflowConverted,
+        pm.outflowConverted,
+        pm.inflowOriginal,
+        pm.outflowOriginal,
+        transfersCategoryId,
+        pm.targetAccountId,
+        parent.Date,
+        pm.memo,
+        pm.payee || null,
+        parent.BudgetID,
+        newBalanceConverted,
+        newBalanceOriginal,
+        transferId,
+        undefined,
+        parent.LabelID ?? null
+      );
 
-        this.queries.bumpFutureBalances(pm.targetAccountId, parent.Date, mirrorId, deltaConverted);
-        this.queries.bumpFutureBalancesOriginal(
-          pm.targetAccountId,
-          parent.Date,
-          mirrorId,
-          deltaOriginal
-        );
-        this.queries.updateAccountBalance(
-          pm.targetAccountId,
-          pm.inflowOriginal,
-          pm.outflowOriginal,
-          pm.inflowConverted,
-          pm.outflowConverted
-        );
-        affectedAccountIds.add(pm.targetAccountId);
-      }
+      this.queries.bumpFutureBalances(pm.targetAccountId, parent.Date, mirrorId, deltaConverted);
+      this.queries.bumpFutureBalancesOriginal(
+        pm.targetAccountId,
+        parent.Date,
+        mirrorId,
+        deltaOriginal
+      );
+      this.queries.updateAccountBalance(
+        pm.targetAccountId,
+        pm.inflowOriginal,
+        pm.outflowOriginal,
+        pm.inflowConverted,
+        pm.outflowConverted
+      );
+      affectedAccountIds.add(pm.targetAccountId);
+    }
 
-      this.queries.recalculateBalancesForAccounts([...affectedAccountIds]);
+    this.queries.recalculateBalancesForAccounts([...affectedAccountIds]);
+  }
+
+  /**
+   * Keep a split parent's lines and mirror rows in step with a change to the
+   * parent itself (amount, date, account or rate): lines are rescaled to the
+   * parent's new amounts (see split-amounts.ts) and mirrors are re-converted
+   * at the parent's date and re-keyed to it. Conversions run now; the returned
+   * step writes everything and must run in the same DB transaction as the
+   * parent's own update. Null when the parent has no split lines.
+   */
+  async prepareParentChange(parentId: number, after: SplitParent): Promise<(() => void) | null> {
+    const lines = this.queries.getSplitsForTransaction(parentId);
+    if (lines.length === 0) return null;
+    const rescaled = linesOutOfStep(lines, after);
+    const nextLines = rescaled.length ? rescaled : lines;
+    const hasTransferLines = nextLines.some((line) => line.TransferAccountID);
+    const mirrorLines = [...nextLines].sort((a, b) => a.ID - b.ID);
+    const preparedMirrors = hasTransferLines ? await this.prepareMirrors(after, mirrorLines) : [];
+
+    return () => {
+      for (const line of rescaled) this.queries.updateSplitLineAmounts(line);
+      if (hasTransferLines) this.refreshMirrors(parentId, after, preparedMirrors);
+    };
+  }
+
+  /**
+   * Bring existing mirror rows to `preparedMirrors` in place (same IDs, so
+   * history entries that reference them stay valid). Mirrors are created in
+   * line-insertion order, so the n-th mirror belongs to the n-th transfer line;
+   * if they no longer line up, they are replaced instead.
+   */
+  private refreshMirrors(
+    parentId: number,
+    parent: SplitParent,
+    preparedMirrors: PreparedMirror[]
+  ): void {
+    const mirrors = this.queries
+      .getSplitMirrorTransactions(parentId)
+      .sort((a: Transaction, b: Transaction) => a.ID - b.ID);
+    const lineUp =
+      mirrors.length === preparedMirrors.length &&
+      mirrors.every((mirror, index) => mirror.AccountID === preparedMirrors[index].targetAccountId);
+    if (!lineUp) {
+      this.replaceMirrors(parentId, parent, preparedMirrors);
+      return;
+    }
+    const transferId =
+      parent.TransferID && parent.TransferID.length > 0
+        ? parent.TransferID
+        : splitMirrorTransferId(parentId, parent.Date);
+    const inStep = mirrors.every((mirror, index) => {
+      const pm = preparedMirrors[index];
+      return (
+        mirror.Date === parent.Date &&
+        mirror.TransferID === transferId &&
+        mirror.InflowNative === pm.inflowOriginal &&
+        mirror.OutflowNative === pm.outflowOriginal &&
+        mirror.InflowConverted === pm.inflowConverted &&
+        mirror.OutflowConverted === pm.outflowConverted
+      );
     });
+    if (inStep) return;
+    mirrors.forEach((mirror, index) => {
+      const pm = preparedMirrors[index];
+      run(
+        this.db,
+        `UPDATE transactions
+            SET Date = ?, TransferID = ?, InflowNative = ?, OutflowNative = ?,
+                InflowConverted = ?, OutflowConverted = ?
+          WHERE ID = ?`,
+        parent.Date,
+        transferId,
+        pm.inflowOriginal,
+        pm.outflowOriginal,
+        pm.inflowConverted,
+        pm.outflowConverted,
+        mirror.ID
+      );
+    });
+    this.queries.recalculateBalancesForAccounts(mirrors.map((mirror) => mirror.AccountID));
   }
 
   /**
@@ -325,6 +484,11 @@ export class SplitService {
    * Removes any mirrored transfer rows created for split lines.
    */
   async clearSplits(transactionId: number): Promise<void> {
+    this.clearSplitsNow(transactionId);
+  }
+
+  /** clearSplits, synchronously (usable as a write-batch step). */
+  clearSplitsNow(transactionId: number): void {
     const parent = this.queries.getTransactionByID(transactionId);
     if (!parent) throw new NotFoundError('Transaction', transactionId);
 
@@ -333,7 +497,7 @@ export class SplitService {
       return; // Nothing to clear
     }
 
-    this.db.transaction(() => {
+    atomically(this.db, () => {
       this.queries.deleteSplitsForTransaction(transactionId);
 
       const hasTransferSplits = existingSplits.some((s) => !!s.TransferAccountID);

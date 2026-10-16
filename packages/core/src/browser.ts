@@ -28,6 +28,11 @@ export {
   isAccountOnBudget,
   resolveTransferPayees,
   transferInvolvesOffBudgetAccount,
+  TransactionWriteBatch,
+  type BatchRowRef,
+  type TransactionRestoreSnapshot,
+  type TransactionBatchEdit,
+  type SplitParentAmounts,
 } from './services/transactions/index.js';
 export { GoalService } from './services/goals/index.js';
 export * from './services/goals/funding.js';
@@ -136,6 +141,9 @@ export type {
   ExecuteRuleOptions,
   RuleExecutionResult,
   RuleRunUndoResult,
+  RuleRunState,
+  UndoRunOptions,
+  RedoRunOptions,
   AutofillApplicationChange,
   LogAutofillApplicationInput,
   AutofillApplicationResult,
@@ -144,6 +152,7 @@ export type {
   ComputeAutofillOptions,
 } from './services/rules/index.js';
 export type * from './services/transactions/types.js';
+export type { RawRow } from './database/restore-rows.js';
 export type { TransferRateDetails } from './services/transactions/transfer-rate.js';
 export type * from './services/warranties/types.js';
 export type { CustomCurrencyRate } from './services/currency/types.js';
