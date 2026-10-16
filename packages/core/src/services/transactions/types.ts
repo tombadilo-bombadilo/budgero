@@ -265,3 +265,13 @@ export interface LabelListItem {
 
 /** How transactions that share a date are ordered in the register. */
 export type SameDayTransactionOrder = 'newest' | 'amount';
+
+/**
+ * Records elsewhere in the database that point at a transaction and would lose
+ * the link if the row were deleted and re-created.
+ */
+export interface TransactionLinks {
+  warranty: boolean;
+  recurringOccurrence: boolean;
+  bankReview: boolean;
+}

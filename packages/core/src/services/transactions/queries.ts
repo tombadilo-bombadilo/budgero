@@ -14,6 +14,7 @@ import {
   AccountBalanceHistoryTransaction,
   SimilarTransaction,
   SimilarTransactionQuery,
+  TransactionLinks,
 } from './types.js';
 import type { Account } from '../accounts/types.js';
 import type { Budget } from '../budgets/types.js';
@@ -1161,6 +1162,40 @@ export class TransactionQueries {
         oldCategoryId
       );
     });
+  }
+
+  /**
+   * Which records outside the transactions table point at any of these rows.
+   * Those links use ON DELETE SET NULL, so deleting and re-creating a row (even
+   * under the same ID) silently drops them. Pending bank-sync reviews count
+   * because their candidate pointer is cleared the same way.
+   */
+  getLinkedRecordFlags(transactionIds: number[]): TransactionLinks {
+    if (transactionIds.length === 0) {
+      return { warranty: false, recurringOccurrence: false, bankReview: false };
+    }
+    const placeholders = transactionIds.map(() => '?').join(', ');
+    const row = getRow<{ Warranty: number; RecurringOccurrence: number; BankReview: number }>(
+      this.db,
+      `
+      SELECT
+        EXISTS(SELECT 1 FROM warranties
+                WHERE TransactionID IN (${placeholders})) AS Warranty,
+        EXISTS(SELECT 1 FROM recurring_transaction_occurrences
+                WHERE TransactionID IN (${placeholders})) AS RecurringOccurrence,
+        EXISTS(SELECT 1 FROM bank_reviews
+                WHERE CandidateTransactionID IN (${placeholders})
+                  AND Status = 'pending') AS BankReview
+    `,
+      ...transactionIds,
+      ...transactionIds,
+      ...transactionIds
+    );
+    return {
+      warranty: Boolean(row?.Warranty),
+      recurringOccurrence: Boolean(row?.RecurringOccurrence),
+      bankReview: Boolean(row?.BankReview),
+    };
   }
 
   /**

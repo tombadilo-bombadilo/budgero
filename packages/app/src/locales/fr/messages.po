@@ -2552,6 +2552,12 @@ msgstr "7 jours"
 msgid "90 days"
 msgstr "90 jours"
 
+#. placeholder {0}: ownAccount.Currency
+#. placeholder {1}: counterpart.Currency
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "A {0} to {1} rate is required to convert this transaction."
+msgstr "Un taux de change de {0} vers {1} est nécessaire pour convertir cette transaction."
+
 #. placeholder {0}: fromAccount.Currency
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "A {0} to {budgetCurrency} rate is required to save the received amount."
@@ -3604,6 +3610,10 @@ msgstr "Archivé"
 msgid "Archived accounts are hidden from sidebars and account pickers by default, but their historical transactions remain visible in reports and transaction lists. You can unarchive an account later from the All Accounts page."
 msgstr "Les comptes archivés sont masqués des barres latérales et des sélecteurs de comptes par défaut, mais leurs transactions historiques restent visibles dans les rapports et les listes de transactions. Vous pouvez désarchiver un compte plus tard depuis la page Tous les comptes."
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Archived accounts can't be part of a transfer."
+msgstr "Les comptes archivés ne peuvent pas faire partie d'un virement."
+
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 msgid "Archiving..."
 msgstr "Archivage..."
@@ -4596,6 +4606,7 @@ msgstr "Dollar canadien"
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 #: src/features/subscription/ui/ExportDataCard.tsx
+#: src/features/transactions/api/useTransferConversion.tsx
 #: src/features/transactions/ui/add-transaction/AddTransactionForm.tsx
 #: src/features/transactions/ui/add-transaction/TransactionFormActions.tsx
 #: src/features/transactions/ui/cells/ExchangeRateCell.tsx
@@ -5661,6 +5672,31 @@ msgstr "Les conversions déduisent toujours l'inverse automatiquement ; décoche
 msgid "Convert existing amounts"
 msgstr "Convertir les montants existants"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Convert to a transfer?"
+msgstr "Convertir en virement ?"
+
+#: src/features/payees/ui/PayeeCombobox.tsx
+msgid "Convert to regular transaction"
+msgstr "Convertir en transaction normale"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Convert to transfer"
+msgstr "Convertir en virement"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Convert transfer to transaction"
+msgstr "Convertir le virement en transaction"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Converted back to a regular transaction"
+msgstr "Reconverti en transaction normale"
+
+#. placeholder {0}: prepared.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Converted to a transfer with {0}"
+msgstr "Converti en virement avec {0}"
+
 #: src/shared/lib/analytics/klaro-config.ts
 msgid "Cookies on Budgero"
 msgstr "Cookies sur Budgero"
@@ -5826,6 +5862,14 @@ msgstr "Impossible de mettre à jour les paramètres de financement des objectif
 #: src/features/bank-sync/ui/ConnectSimpleFINCard.tsx
 msgid "Couldn't connect to SimpleFIN"
 msgstr "Impossible de se connecter à SimpleFIN"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Couldn't convert the transfer"
+msgstr "Impossible de convertir le virement"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Couldn't convert to a transfer"
+msgstr "Impossible de convertir en virement"
 
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "Couldn't copy to the clipboard"
@@ -7621,6 +7665,7 @@ msgstr "Taux de change"
 msgid "Exchange rate not available"
 msgstr "Taux de change non disponible"
 
+#: src/features/transactions/api/useTransferConversion.tsx
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Exchange rate unavailable"
 msgstr "Taux de change indisponible"
@@ -9550,6 +9595,18 @@ msgstr "Action irréversible"
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "is not"
 msgstr "n'est pas"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "It is linked to a recurring transaction, and that link would be lost."
+msgstr "Elle est liée à une transaction récurrente, et ce lien serait perdu."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "It is linked to a warranty, and that link would be lost."
+msgstr "Elle est liée à une garantie, et ce lien serait perdu."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "It is waiting in a bank sync review, and that link would be lost."
+msgstr "Elle attend dans une vérification de synchro bancaire, et ce lien serait perdu."
 
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "Its history was moved to the selected income category."
@@ -11964,6 +12021,7 @@ msgid "of {0}"
 msgstr "sur {0}"
 
 #: src/features/account-management/ui/AccountOrderCard.tsx
+#: src/features/payees/ui/PayeeCombobox.tsx
 msgid "Off budget"
 msgstr "Hors budget"
 
@@ -12784,6 +12842,10 @@ msgstr "Choisissez une catégorie pour l'action de catégorie."
 #: src/shared/ui/date-range-picker.tsx
 msgid "Pick a date"
 msgstr "Choisissez une date"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Pick a different account."
+msgstr "Choisissez un autre compte."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Pick a look"
@@ -13693,6 +13755,10 @@ msgstr "Rapproché"
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "Reconciled transaction"
 msgstr "Transaction rapprochée"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Reconciled transactions can't be converted."
+msgstr "Les transactions rapprochées ne peuvent pas être converties."
 
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Reconciling..."
@@ -16090,6 +16156,10 @@ msgstr "Total de ventilation incorrect"
 msgid "Split transaction"
 msgstr "Transaction ventilée"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Split transactions can't be converted to a transfer."
+msgstr "Les transactions ventilées ne peuvent pas être converties en virement."
+
 #: src/pages/explorer-page/sql-utils.ts
 msgid "Split transactions overview"
 msgstr "Aperçu des transactions ventilées"
@@ -17053,6 +17123,10 @@ msgstr "Il s'agit du total des lignes ventilées. Pour le modifier, cliquez sur 
 msgid "This is your final month!"
 msgstr "C'est votre dernier mois !"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This isn't a simple two-sided transfer, so it can't be converted back."
+msgstr "Ce n'est pas un simple virement à deux côtés ; il ne peut donc pas être reconverti."
+
 #: src/pages/JoinWorkspacePage.tsx
 msgid "This join link is missing its invite code. Ask the workspace owner to resend the full link."
 msgstr "Ce lien pour rejoindre l'espace de travail manque son code d'invitation. Demandez au propriétaire de l'espace de travail de renvoyer le lien complet."
@@ -17101,6 +17175,12 @@ msgstr "Ce rappel ne peut pas être ignoré — téléchargez une sauvegarde mai
 msgid "This removes the history entry only. Your transactions remain untouched."
 msgstr "Cela supprime uniquement l'entrée d'historique. Vos transactions restent inchangées."
 
+#. placeholder {0}: pending.categoryName
+#. placeholder {1}: pending.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This replaces the category ({0}) with Transfers, so the amount no longer counts as spending. A matching transaction is added to {1}."
+msgstr "Cela remplace la catégorie ({0}) par Virements ; le montant ne compte donc plus comme une dépense. Une transaction correspondante est ajoutée à {1}."
+
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "This replaces the data on this device with the server copy, then applies the changes made after it. {pendingCount} changes from this device haven't been confirmed yet; they are kept and applied again on top."
 msgstr "Cela remplace les données de cet appareil par la copie du serveur, puis applique les modifications faites après celle-ci. {pendingCount} modifications de cet appareil n'ont pas encore été confirmées ; elles sont conservées et réappliquées par-dessus."
@@ -17142,6 +17222,14 @@ msgstr "Cette transaction est rapprochée et verrouillée comme pointée."
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 #~ msgid "This transaction has been reconciled."
 #~ msgstr "Cette transaction a été rapprochée."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This transaction has no single amount to transfer."
+msgstr "Cette transaction n'a pas de montant unique à virer."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This transaction is already a transfer."
+msgstr "Cette transaction est déjà un virement."
 
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "This transaction is scheduled for a future date."
@@ -17656,8 +17744,10 @@ msgid "Transfer to {0}"
 msgstr "Virement vers {0}"
 
 #. placeholder {0}: account.Name
+#. placeholder {0}: selectedTransfer.Name
 #. placeholder {0}: transferAccountRecord.Name
 #: src/features/payees/ui/PayeeCombobox.tsx
+#: src/features/transactions/ui/cells/TransactionPayeeCell.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Transfer: {0}"
 msgstr "Virement : {0}"

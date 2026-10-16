@@ -14,6 +14,9 @@ export type UndoItem = {
   ts: number;
 };
 
+// While a group is open, history entries are collected here instead of being pushed.
+let activeGroup: UndoItem[] | null = null;
+
 interface UndoState {
   past: UndoItem[];
   future: UndoItem[];
@@ -31,11 +34,16 @@ export const useUndoStore = create<UndoState>((set, get) => ({
   future: [],
   isReplaying: false,
 
-  push: (item) =>
+  push: (item) => {
+    if (activeGroup) {
+      activeGroup.push(item);
+      return;
+    }
     set((s) => ({
       past: [...s.past, item],
       future: [], // clear redo stack on new action
-    })),
+    }));
+  },
 
   clear: () => set({ past: [], future: [] }),
 
@@ -99,3 +107,63 @@ export const useUndoStore = create<UndoState>((set, get) => ({
     }
   },
 }));
+
+async function replayCalls(calls: OpCall[]): Promise<void> {
+  const manager = getRuntime()?.mutationsRouter();
+  if (!manager) {
+    throw new Error('Runtime mutations router not available');
+  }
+  for (const call of calls) {
+    const spec: MutationSpec = {
+      op: call.op,
+      payload: call.args,
+      invalidates: getInvalidatesForOp(call.op),
+      meta: { skipUndo: true, forceInvalidate: true },
+    };
+    await manager.execute(spec);
+  }
+}
+
+/**
+ * Runs several ordinary mutations as one undoable action. Each mutation still records
+ * its own undo/redo as usual; they are merged into a single history entry, so one undo
+ * reverts the whole action (newest step first) and one redo replays it in order.
+ *
+ * If a step throws, the steps that already applied are undone before the error is
+ * rethrown, so a failed multi-step action leaves nothing half-done and no entry behind.
+ *
+ * The group captures every history entry pushed while `work` runs, so await only the
+ * action's own mutations inside it. A nested call joins the outer group.
+ */
+export async function runUndoGroup<T>(label: string, work: () => Promise<T>): Promise<T> {
+  if (activeGroup) return work();
+
+  const items: UndoItem[] = [];
+  activeGroup = items;
+  let result: T;
+  try {
+    result = await work();
+  } catch (error) {
+    activeGroup = null;
+    for (const item of [...items].reverse()) {
+      try {
+        await replayCalls(item.undo);
+      } catch {
+        // Best effort: keep the original failure as the one the caller sees.
+      }
+    }
+    throw error;
+  }
+  activeGroup = null;
+
+  if (items.length > 0) {
+    useUndoStore.getState().push({
+      id: items[0].id,
+      label,
+      undo: [...items].reverse().flatMap((item) => item.undo),
+      redo: items.flatMap((item) => item.redo),
+      ts: Date.now(),
+    });
+  }
+  return result;
+}
