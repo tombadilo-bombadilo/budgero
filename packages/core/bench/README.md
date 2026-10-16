@@ -71,6 +71,21 @@ what it does around core (printed as `runtime model` on stderr):
 - `batchedRules`: bank sync runs each continuous rule once over the batch (P10),
   so the bank-sync case does 3 `executeRule` calls over 200 ids, not 600.
 
+## Core A/B (`ab-core.mjs`)
+
+Two core builds on one dataset, interleaved sample by sample in one process,
+with small iteration counts and a per-case time budget (light by design):
+
+```sh
+node bench/ab-core.mjs --a <base>/packages/core --b . --gen-core <base>/packages/core \
+  --tx 100000 --iters 20 --budget-ms 8000 [--modes cumulative,monthly] [--case <regex>]
+```
+
+Cases: the first (cold) budget read, getMonthlyBudget current / month switch,
+Ready to Assign + breakdown, budget + RTA reads right after a current-month
+edit / an assignment / a 5-years-back edit, and the interactions open budget
+page / switch month / assign money. Prints p50 / p95 / p99 per side.
+
 ## Dataset (`gen.mjs`)
 
 Seeded and deterministic: same seed, `--end` and generator core give the same rows
@@ -111,3 +126,10 @@ month (first ledger month to 2 months past the last), the RTA breakdown for ever
 month, listAccounts, every running balance, and every 10 steps every register.
 Any difference (or an op that fails on one side only) fails the run; zero diffs is
 the bar. `--keep-going` lists every diverging step.
+
+Also in the mix: account on/off-budget toggles and type changes, category moves
+between groups, RtaMode switches (`--mode` sets the start), `restore()` of an
+exported copy and plain exports, FX custom rates and revaluations, and a second
+budget in the same database (its own adds, edits, assignments, transfers; both
+budgets are compared). Each check also runs the zero-based identity
+(`parity/invariant.mjs`) on both sides and reports violations per side.
