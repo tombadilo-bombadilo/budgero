@@ -69,9 +69,9 @@ describe('SpaceCatalogService', () => {
       spaceRegistry: spaceRegistry as never,
     });
 
-    await expect(service.prepareInitialSpace('master', new AbortController().signal)).resolves.toBe(
-      's1'
-    );
+    await expect(
+      service.prepareInitialSpace('master', new AbortController().signal)
+    ).resolves.toBe('s1');
   });
 
   it('throws when no accepted spaces exist', async () => {
@@ -141,7 +141,7 @@ describe('SpaceCatalogService', () => {
       getMasterPassword: vi.fn(() => 'master'),
     };
     const spaceRegistry = {
-      resolveInitialSpace: vi.fn((spaces: (typeof accepted)[]) => spaces[0]),
+      resolveInitialSpace: vi.fn((spaces: typeof accepted[]) => spaces[0]),
       setAvailableSpaces: vi.fn(),
       loadCachedSpaceSummaries: vi.fn(() => null),
       getActiveSpaceId: vi.fn(() => 'locked-owned'),
@@ -160,10 +160,7 @@ describe('SpaceCatalogService', () => {
 
     expect(spaceId).toBe('shared-1');
     expect(spaceRegistry.setAvailableSpaces).toHaveBeenCalledWith([accessibleShared]);
-    expect(spaceRegistry.resolveInitialSpace).toHaveBeenCalledWith(
-      [accessibleShared],
-      'locked-owned'
-    );
+    expect(spaceRegistry.resolveInitialSpace).toHaveBeenCalledWith([accessibleShared], 'locked-owned');
     expect(keyVault.ensureSpaceKey).toHaveBeenCalledWith('shared-1', 'master', [accessibleShared]);
   });
 
@@ -239,9 +236,9 @@ describe('SpaceCatalogService', () => {
       log,
     });
 
-    await expect(service.prepareInitialSpace('master', new AbortController().signal)).resolves.toBe(
-      's1'
-    );
+    await expect(
+      service.prepareInitialSpace('master', new AbortController().signal)
+    ).resolves.toBe('s1');
     expect(log).toHaveBeenCalledWith('warn', 'Failed to load profile', expect.any(Object));
     expect(cleanup).toHaveBeenCalled();
   });
@@ -250,9 +247,9 @@ describe('SpaceCatalogService', () => {
     const log = vi.fn();
     const keyVault = {
       ensureSpaceKey: vi
-        .fn()
-        .mockRejectedValueOnce('key fail')
-        .mockResolvedValueOnce(new Uint8Array([1])),
+          .fn()
+          .mockRejectedValueOnce('key fail')
+          .mockResolvedValueOnce(new Uint8Array([1])),
       pruneKeys: vi.fn(),
       getMasterPassword: vi.fn(() => 'master'),
     };
@@ -305,15 +302,15 @@ describe('SpaceCatalogService', () => {
       log,
     });
 
-    await expect(service.prepareInitialSpace('master', new AbortController().signal)).resolves.toBe(
-      's4'
-    );
+    await expect(
+      service.prepareInitialSpace('master', new AbortController().signal)
+    ).resolves.toBe('s4');
     expect(log).toHaveBeenCalledWith('warn', 'Failed to provision space key', expect.any(Object));
   });
 
   it('covers non-array list responses and non-error list fallback', async () => {
     const service = new SpaceCatalogService({
-      listSpaces: async () => ({ bad: true }) as never,
+      listSpaces: async () => ({ bad: true } as never),
       keyVault: {
         ensureSpaceKey: vi.fn(async () => new Uint8Array([1])),
         pruneKeys: vi.fn(),
