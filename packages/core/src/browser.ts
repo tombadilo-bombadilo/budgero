@@ -263,3 +263,6 @@ export {
   simpleFINDate,
   tidyPayeeName,
 } from './services/bank-sync/index.js';
+
+// Clock seam (tests move "today")
+export { clock, setClock } from './utils/clock.js';

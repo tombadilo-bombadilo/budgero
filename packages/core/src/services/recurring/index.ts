@@ -33,6 +33,7 @@ import type {
   RecurringTemplateSnapshot,
   UpdateRecurringTransactionInput,
 } from './types.js';
+import { clock } from '../../utils/clock.js';
 
 interface RecurringTransactionRow {
   ID: number | bigint;
@@ -388,11 +389,11 @@ function generateTransferId(): string {
   if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
     return cryptoApi.randomUUID();
   }
-  return `rt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  return `rt_${clock.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function computeHorizonDate(monthsAhead: number = DEFAULT_HORIZON_MONTHS): Date {
-  const today = new Date();
+  const today = clock.date();
   const result = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
   result.setUTCMonth(result.getUTCMonth() + monthsAhead);
   // Move to end of month for generous coverage
@@ -404,7 +405,7 @@ function computeHorizonDate(monthsAhead: number = DEFAULT_HORIZON_MONTHS): Date 
 }
 
 function backfillThreshold(monthsBack: number = BACKFILL_MONTHS): Date {
-  const today = new Date();
+  const today = clock.date();
   return new Date(
     Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - monthsBack * 30)
   );
@@ -1365,7 +1366,7 @@ export class RecurringTransactionService {
 
   private mapTemplateRow(row: RecurringTransactionRow): RecurringTransaction {
     const schedule = safeParseJSON<RecurringSchedule>(row.ScheduleJSON, {
-      startDate: getLocalDateString(new Date()),
+      startDate: getLocalDateString(clock.date()),
       intervalUnit: 'month',
       intervalCount: DEFAULT_INTERVAL_COUNT,
     });

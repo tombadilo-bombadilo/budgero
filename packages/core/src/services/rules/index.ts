@@ -8,6 +8,7 @@ import type { Transaction } from '../transactions/types.js';
 
 import { createLogger } from '../../logger.js';
 import { matchesConditionChain } from './condition-groups.js';
+import { clock } from '../../utils/clock.js';
 
 const debugLog = createLogger('services:rules');
 
@@ -505,8 +506,8 @@ export class RulesService {
       snapshot.oneTimeConsumed ? 1 : 0,
       snapshot.runOrder ?? 0,
       snapshot.lastRunAt ?? null,
-      snapshot.createdAt ?? new Date().toISOString(),
-      snapshot.updatedAt ?? new Date().toISOString()
+      snapshot.createdAt ?? clock.date().toISOString(),
+      snapshot.updatedAt ?? clock.date().toISOString()
     );
 
     return this.getRule(snapshot.id);
@@ -637,12 +638,12 @@ export class RulesService {
       runRecord = this.updateRun({
         runId: runRecord.id,
         status,
-        completedAt: new Date().toISOString(),
+        completedAt: clock.date().toISOString(),
         transactionCount: matchedCount,
         notes: errors.slice(0, 5).join('; ').slice(0, 500),
       });
 
-      const timestamp = new Date().toISOString();
+      const timestamp = clock.date().toISOString();
       this.updateRule(ruleId, {
         lastRunAt: timestamp,
         oneTimeConsumed: rule.mode === 'one_time' ? true : undefined,
@@ -660,7 +661,7 @@ export class RulesService {
       this.updateRun({
         runId: runRecord.id,
         status: 'failed',
-        completedAt: new Date().toISOString(),
+        completedAt: clock.date().toISOString(),
         notes: error instanceof Error ? error.message : 'Rule execution failed',
       });
       throw error;
@@ -1415,7 +1416,7 @@ export class RulesService {
         ruleId,
         trigger: 'autofill',
         status: 'completed',
-        completedAt: new Date().toISOString(),
+        completedAt: clock.date().toISOString(),
         transactionCount: 1,
         notes: `Autofill applied ${ruleChanges.length} field(s) during transaction entry`,
       });

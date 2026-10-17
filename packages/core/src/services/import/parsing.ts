@@ -8,6 +8,7 @@
 
 import type { ColumnMapping } from './types.js';
 import { getLocalDateString } from '../../utils/date.js';
+import { clock } from '../../utils/clock.js';
 
 const DELIMITER_CANDIDATES = [',', ';', '\t', '|'] as const;
 type SupportedDelimiter = (typeof DELIMITER_CANDIDATES)[number];
@@ -203,7 +204,7 @@ export function parseDateDetailed(
 
   // 2) Yearless "Mon DD" / "DD Mon" (common in US/Canadian credit card
   //    statements). Apply the configured default year or today's year.
-  const yearless = parseYearlessDate(trimmed, defaultYear ?? new Date().getFullYear());
+  const yearless = parseYearlessDate(trimmed, defaultYear ?? clock.date().getFullYear());
   if (yearless) return found(yearless);
 
   // 3) ISO-leading dates ("2024-01-31", "2024-01-31T12:34:56Z"): return the

@@ -1,5 +1,6 @@
 import { DatabaseAdapter } from '../../database/interface.js';
 import { getRow, allRows, run } from '../../database/sql.js';
+import { clock } from '../../utils/clock.js';
 
 export interface DesktopWidgetLayout {
   colSpan: number;
@@ -135,7 +136,7 @@ function createId(): string {
   if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
     return cryptoApi.randomUUID();
   }
-  return `cd_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  return `cd_${clock.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function clampDesktopLayout(layout: DesktopWidgetLayout): DesktopWidgetLayout {
@@ -237,7 +238,7 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
     const sortOrder = orderResult?.NextOrder ?? 0;
 
     const id = input.id ?? createId();
-    const now = new Date().toISOString();
+    const now = clock.date().toISOString();
 
     try {
       run(
@@ -290,7 +291,7 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
     }
 
     updateFields.push('UpdatedAt = ?');
-    values.push(new Date().toISOString());
+    values.push(clock.date().toISOString());
     values.push(input.id);
 
     try {
@@ -340,7 +341,7 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
     );
     const sortOrder = orderResult?.NextOrder ?? 0;
 
-    const now = new Date().toISOString();
+    const now = clock.date().toISOString();
     const id = input.id ?? createId();
 
     const desktopLayout = clampDesktopLayout(input.desktopLayout ?? DEFAULT_DESKTOP_LAYOUT);
@@ -416,7 +417,7 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
     }
 
     fields.push('UpdatedAt = ?');
-    values.push(new Date().toISOString());
+    values.push(clock.date().toISOString());
     values.push(input.id);
 
     const result = run(
@@ -459,7 +460,7 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
       const stmt = this.db.prepare(
         `UPDATE custom_dashboards SET SortOrder = ?, UpdatedAt = ? WHERE ID = ? AND BudgetID = ?`
       );
-      const now = new Date().toISOString();
+      const now = clock.date().toISOString();
       input.orderedIds.forEach((id, index) => {
         stmt.run(index, now, id, input.budgetId);
       });
@@ -480,7 +481,7 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
       const stmt = this.db.prepare(
         `UPDATE custom_dashboard_widgets SET SortOrder = ?, UpdatedAt = ? WHERE ID = ? AND DashboardID = ?`
       );
-      const now = new Date().toISOString();
+      const now = clock.date().toISOString();
       input.orderedIds.forEach((id, index) => {
         stmt.run(index, now, id, input.dashboardId);
       });

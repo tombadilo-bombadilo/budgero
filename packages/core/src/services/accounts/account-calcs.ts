@@ -5,6 +5,7 @@
 
 import { getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
 import { isCreditAccountType, isLiabilityAccountType } from './types.js';
+import { clock } from '../../utils/clock.js';
 
 export interface LiabilityInfo {
   originalDebt: number | undefined;
@@ -123,8 +124,8 @@ export function computeLiabilityInfo(
     if (startDate) {
       const elapsed = Math.max(
         0,
-        (new Date().getFullYear() - startDate.getFullYear()) * 12 +
-          (new Date().getMonth() - startDate.getMonth())
+        (clock.date().getFullYear() - startDate.getFullYear()) * 12 +
+          (clock.date().getMonth() - startDate.getMonth())
       );
       remainingMonths = Math.max(1, totalMonths - elapsed);
     }
@@ -149,8 +150,8 @@ export function computeLiabilityInfo(
     if (originalLoanTerm !== undefined && planStartDate) {
       const monthsElapsed = Math.max(
         0,
-        (new Date().getFullYear() - planStartDate.getFullYear()) * 12 +
-          (new Date().getMonth() - planStartDate.getMonth())
+        (clock.date().getFullYear() - planStartDate.getFullYear()) * 12 +
+          (clock.date().getMonth() - planStartDate.getMonth())
       );
       const remainingMonths = Math.max(1, originalLoanTerm - monthsElapsed);
 
@@ -197,7 +198,7 @@ export function computeLiabilityInfo(
 
   const estimatedPayoffDate = (() => {
     if (!payoffMonths) return undefined;
-    const d = new Date();
+    const d = clock.date();
     d.setMonth(d.getMonth() + payoffMonths);
     return getLocalDateString(d);
   })();

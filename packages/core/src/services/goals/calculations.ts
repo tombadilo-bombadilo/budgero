@@ -9,6 +9,7 @@ import {
 } from './types.js';
 import { getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
 import { MILLIS_PER_CENT } from '../../money/index.js';
+import { clock } from '../../utils/clock.js';
 
 /**
  * Goal Progress Calculation Result
@@ -559,7 +560,7 @@ export class GoalCalculations {
       recommendationValues,
       breakdown,
       timeMetrics: {
-        startDate: parseDateOnlyLocal(goal.StartDate) ?? new Date(),
+        startDate: parseDateOnlyLocal(goal.StartDate) ?? clock.date(),
         monthsActive: historicalStats.monthsTracked,
         successfulMonths: historicalStats.successfulMonths,
         currentStreak: historicalStats.currentStreak,
@@ -611,18 +612,18 @@ export class GoalCalculations {
     // Handle MM-DD format (legacy)
     if (/^\d{2}-\d{2}$/.test(targetDate)) {
       const [month, day] = targetDate.split('-').map(Number);
-      const currentYear = new Date().getFullYear();
+      const currentYear = clock.date().getFullYear();
       const date = new Date(currentYear, month - 1, day);
 
       // If date is in the past, assume next year
-      if (date < new Date()) {
+      if (date < clock.date()) {
         date.setFullYear(currentYear + 1);
       }
       return date;
     }
 
     // ISO date: local anchor for date-only strings, instant for timestamps
-    return parseDateOnlyLocal(targetDate) ?? new Date();
+    return parseDateOnlyLocal(targetDate) ?? clock.date();
   }
 
   private static calculateMonthsRemaining(from: Date, to: Date): number {
@@ -1098,7 +1099,7 @@ export class GoalCalculations {
       timeMetrics: {
         monthsRemaining,
         daysRemaining,
-        startDate: parseDateOnlyLocal(goal.StartDate) ?? new Date(),
+        startDate: parseDateOnlyLocal(goal.StartDate) ?? clock.date(),
         targetDate: cycleTargetDate,
       },
     };

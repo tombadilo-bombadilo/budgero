@@ -12,6 +12,7 @@ import { MonthlyBudgetQueries } from './queries.js';
 import { getBudgetSnapshotOptions, getBudgetSnapshotStore } from './snapshot/store.js';
 import { SnapshotMonthlyBudgetQueries, type MonthlyBudgetSource } from './snapshot/reads.js';
 import { firstDifference } from './snapshot/compare.js';
+import { clock } from '../../utils/clock.js';
 
 // Re-export types for external use
 export type {
@@ -270,7 +271,7 @@ export class MonthlyBudgetService {
     let mm = parseInt(mStr || '1', 10);
     if (!year || !mm) {
       // Fallback to the previous month based on system time if input is malformed
-      const now = new Date();
+      const now = clock.date();
       year = now.getFullYear();
       mm = now.getMonth() + 1;
     }
@@ -296,7 +297,7 @@ export class MonthlyBudgetService {
     month: string
   ): { lastMonth: Record<number, number>; average: Record<number, number> } {
     const [yearValue, monthValue] = month.split('-').map(Number);
-    const now = new Date();
+    const now = clock.date();
     let year = Number.isInteger(yearValue) && yearValue > 0 ? yearValue : now.getFullYear();
     let monthNumber =
       Number.isInteger(monthValue) && monthValue >= 1 && monthValue <= 12

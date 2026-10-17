@@ -2,6 +2,7 @@ import type { Services } from '../service-manager.js';
 import type { GetMonthlyBudgetRow } from '../monthly-budgets/types.js';
 import { getLocalDateString } from '../../utils/date.js';
 import { AccountTypeEnum } from '../accounts/types.js';
+import { clock } from '../../utils/clock.js';
 
 export interface MonthlyBudgetData {
   month: string;
@@ -77,7 +78,7 @@ export function buildBudgetContext(
   budgetId: number,
   contextMonths = 3
 ): BudgetContext {
-  const today = new Date();
+  const today = clock.date();
 
   let currencySymbol = '$';
   try {
