@@ -131,6 +131,7 @@ export const KNOWN_FAILURES: KnownFailure[] = [
       'transactions.import',
       'transactions.saveSplits',
       'importHistory.match',
+      'transactions.add',
       'accounts.createLinked',
     ],
     tables: [
@@ -170,8 +171,8 @@ export const KNOWN_FAILURES: KnownFailure[] = [
       'transactions.addTransfer',
       'recurring.markReady',
     ],
-    tables: [...RULE_LOG, 'payees', 'categories'],
-    note: 'Undo of an add / import / transfer / posted bill leaves the continuous-rule run it triggered (run row, LastRunAt) pointing at a deleted row; a posted recurring transfer also leaves the Transfers category it auto-created.',
+    tables: [...RULE_LOG, 'payees', 'categories', 'category_groups'],
+    note: 'Undo of an add / import / transfer / posted bill leaves the continuous-rule run it triggered (run row, LastRunAt) pointing at a deleted row; a transfer or posted recurring transfer also leaves the Transfers category (and group) it auto-created.',
   },
   {
     id: 'NEW-3',
@@ -184,8 +185,8 @@ export const KNOWN_FAILURES: KnownFailure[] = [
   {
     id: 'NEW-4',
     invariant: 'undo',
-    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['transactions.moveToNewAccount', 'transactions.updateColumn'],
+    kinds: ['undo-mismatch', 'chain-undo-mismatch', 'redo-mismatch', 'chain-redo-mismatch'],
+    ops: ['transactions.moveToNewAccount', 'transactions.updateColumn', 'transactions.batchEdit'],
     tables: ['accounts', 'transactions'],
     note: 'Moving a row between accounts of different currencies is not reversible: the native amount is re-derived from the converted one on each move (86.38 EUR -> 79.18 or 88.30 EUR after undo), and ConversionPending stays set after moving back.',
   },
@@ -236,6 +237,14 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     note: 'Recurring transfer templates: undo of any edit (memo, category, ...) writes the auto-created Transfers category instead of the NULL CategoryID it had; undo of creating one leaves the Transfers category it auto-created.',
   },
   {
+    id: 'NEW-10',
+    invariant: 'undo',
+    kinds: ['undo-threw'],
+    ops: ['transactions.updateColumn'],
+    detail: /Exchange rate must be a finite number/,
+    note: 'ExchangeRate cell edit on a foreign row with no stored rate: undo re-applies the captured NULL and throws, so the edit cannot be undone.',
+  },
+  {
     id: 'NEW-15',
     invariant: 'undo',
     kinds: ['undo-mismatch', 'chain-undo-mismatch'],
@@ -261,7 +270,23 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     note: 'Undo of an amount rule (amount.adjust_value) on a foreign-currency row does not restore the native amount: the EUR account balance ends 86.38 EUR lower than before the run.',
   },
 
+  {
+    id: 'NEW-18',
+    invariant: 'undo',
+    kinds: ['failed-op-partial'],
+    ops: ['undo:rules.execute', 'redo:rules.execute'],
+    detail: /Failed to restore transaction/,
+    note: 'rules.undoRun is not atomic: when a restored category no longer exists (deleted since the run) it throws on a FOREIGN KEY error after restoring the earlier rows, and nothing is rolled back or synced.',
+  },
   // ---------------------------------------------------------------- replay (invariant 6)
+  {
+    id: 'NEW-18',
+    invariant: 'replay',
+    kinds: ['failed-op-partial'],
+    ops: ['undo', 'redo'],
+    detail: /Failed to restore transaction/,
+    note: 'Same as the undo entry: device B runs a rule, device A deletes a category the rule moved rows out of, B presses undo: rows before the failing one stay restored on B only.',
+  },
   {
     id: 'NEW-16',
     invariant: 'replay',
@@ -271,6 +296,14 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     note: 'Same as the undo entry, across devices: an undo of a rule run replayed after the other device ran a continuous rule throws there.',
   },
 
+  {
+    id: 'NEW-9',
+    invariant: 'replay',
+    kinds: ['replay-diverged'],
+    ops: ['*'],
+    tables: ['recurring_transaction_occurrences'],
+    note: 'Same materialization issue across devices: after the same ops one device has a scheduled occurrence the other does not (gap filled on one side only).',
+  },
   {
     id: 'NEW-11',
     invariant: 'replay',

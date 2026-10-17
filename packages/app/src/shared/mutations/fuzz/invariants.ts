@@ -147,9 +147,20 @@ async function undoStep(device: Device, step: UndoStep): Promise<void> {
     threwKind: Violation['kind'],
     mismatchKind: Violation['kind']
   ) => {
+    // The state the undo / redo starts from: a failed one must leave it as is.
+    const start = device.dump(UNDO_DUMP);
     try {
       await (action === 'undo' ? device.undo() : device.redo());
     } catch (error) {
+      const partial = diffDumps(start, device.dump(UNDO_DUMP));
+      if (partial.length)
+        violate({
+          ...base,
+          kind: 'failed-op-partial',
+          ops: [`${action}:${call.op}`],
+          tables: partial.map((d) => d.table),
+          detail: `${label}\n  ${action} threw: ${errorText(error)}\n${formatDiffs(partial, `before ${action}`, 'after throw')}`,
+        });
       violate({
         ...base,
         kind: threwKind,
@@ -295,21 +306,27 @@ export async function runReplaySequence(steps: ReplayStep[]): Promise<void> {
         // One total order: the actor first applies everything sent to it.
         await deliver(actor);
         const call = step.action === 0 ? realize(actor, step.intent) : null;
-        const before = call ? actor.dump(REPLAY_DUMP) : null;
+        const before = call || step.action ? actor.dump(REPLAY_DUMP) : null;
         try {
           if (step.action === 1) await actor.undo();
           else if (step.action === 2) await actor.redo();
           else if (call) await actor.local(call.op, call.payload);
         } catch (error) {
-          // A rejected user op sends nothing, so it must not have written anything.
+          // A rejected user op (or a failed undo / redo) sends nothing, so it
+          // must not have written anything.
           const diffs = before ? diffDumps(before, actor.dump(REPLAY_DUMP)) : [];
-          if (call && diffs.length && !actor.outbox.length)
+          const what = call
+            ? `${step.intent.k} ${JSON.stringify(call.payload)}`
+            : step.action === 1
+              ? 'undo'
+              : 'redo';
+          if (diffs.length && !actor.outbox.length)
             violate({
               invariant: 'replay',
               kind: 'failed-op-partial',
-              ops: [call.op],
+              ops: [call ? call.op : what],
               tables: diffs.map((d) => d.table),
-              detail: `${step.intent.k} ${JSON.stringify(call.payload)} on ${actor.name}\n  threw: ${errorText(error)}\n${formatDiffs(diffs, 'before', 'after throw')}`,
+              detail: `${what} on ${actor.name}\n  threw: ${errorText(error)}\n${formatDiffs(diffs, 'before', 'after throw')}`,
             });
         }
         const messages = actor.outbox.splice(0);
