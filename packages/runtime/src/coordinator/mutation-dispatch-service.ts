@@ -1,5 +1,5 @@
 import type { MutationResult, MutationSpec, MutationPayload, WebDatabaseInstance } from '../types';
-import { MUTATION_FORMAT_VERSION } from '../sync-format.js';
+import { mutationFormatVersion } from '../sync-format.js';
 import { persistDatabase } from '../utils/persist-database';
 
 interface MutationExecutionContext {
@@ -60,7 +60,7 @@ export class MutationDispatchService {
 
     const payload: MutationPayload = {
       id: mutationId,
-      v: MUTATION_FORMAT_VERSION,
+      v: mutationFormatVersion(spec.op, spec.payload),
       op: spec.op,
       args: spec.payload,
       baseVersion: 0,

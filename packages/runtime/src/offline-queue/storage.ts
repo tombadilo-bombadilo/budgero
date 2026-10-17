@@ -13,7 +13,11 @@
  */
 
 import type { MutationPayload } from '../types';
-import { MUTATION_FORMAT_VERSION, upgradeLegacyMoneyValues } from '../sync-format.js';
+import {
+  MILLIUNIT_FORMAT_VERSION,
+  mutationFormatVersion,
+  upgradeLegacyMoneyValues,
+} from '../sync-format.js';
 import { masterPasswordStore } from '../key-vault/master-password-store';
 import { DEVICE_ENCRYPTED_PREFIX } from '../key-vault/device-crypto';
 import { IndexedDBStore } from '../key-vault/indexeddb-store';
@@ -29,12 +33,12 @@ function deserializeMutation(m: Record<string, unknown>, spaceId: string): Mutat
   // Entries queued by a pre-milliunit build hold decimal-money args; upgrade
   // them at load so replay after an app update writes the current format.
   const args =
-    version < MUTATION_FORMAT_VERSION
+    version < MILLIUNIT_FORMAT_VERSION
       ? (upgradeLegacyMoneyValues(m.args ?? {}) as Record<string, unknown>)
       : ((m.args as Record<string, unknown>) ?? {});
   return {
     ...m,
-    v: MUTATION_FORMAT_VERSION,
+    v: mutationFormatVersion(String(m.op ?? ''), args),
     args,
     timestamp: new Date(m.timestamp as string | number),
     spaceId: (m.spaceId as string) || spaceId,

@@ -85,6 +85,8 @@ export interface RuntimeContextFactoryDeps {
     onEncryptionKeyChanged?(spaceId: string, version: number): void;
     /** A sync payload arrived in a newer data format — prompt for an app update. */
     onFormatTooNew?(spaceId: string, receivedVersion: number): void;
+    /** A synced mutation names an op code this build doesn't have — prompt for update. */
+    onUnknownOpCode?(spaceId: string, op: string): void;
     setPasswordChangedReason?(): void;
     reloadApp?(): void;
   };
@@ -349,6 +351,7 @@ export class RuntimeContextFactory {
       getReconnectDelayMs: policy?.getReconnectDelayMs,
       onEncryptionKeyChanged: policy?.onEncryptionKeyChanged,
       onFormatTooNew: policy?.onFormatTooNew,
+      onUnknownOpCode: policy?.onUnknownOpCode,
       setPasswordChangedReason: policy?.setPasswordChangedReason,
       reloadApp: policy?.reloadApp,
       log: scopedLogger('SyncTransport', this.deps.log),
