@@ -1,3 +1,4 @@
+import { UnknownOpCodeError } from '@budgero/runtime';
 import type { OpCall, OpCodeEntry, OpCodeExecutionContext } from './op-code-registry/shared';
 import { accountOps } from './op-code-registry/domains/accounts';
 import { bankSyncOps } from './op-code-registry/domains/bank-sync';
@@ -183,7 +184,8 @@ export async function executeMutationOp(
 ): Promise<unknown> {
   if (!isKnownOpCode(op)) {
     console.warn(`[OpCodeRegistry] Unknown op code: ${op}`);
-    throw new Error(`Unknown mutation op code: ${op}`);
+    // Typed so sync stops with "update required" instead of skipping it.
+    throw new UnknownOpCodeError(op);
   }
 
   const entry = opCodeRegistry[op];

@@ -270,6 +270,11 @@ export function createRuntimeDeps(): RuntimeCoordinatorDeps {
           notifyUpdateRequired('sync-format-too-new')
         );
       },
+      onUnknownOpCode: () => {
+        void import('@shared/lib/update-required').then(({ notifyUpdateRequired }) =>
+          notifyUpdateRequired('sync-op-unknown')
+        );
+      },
     },
 
     isSelfHostable: IS_SELF_HOSTABLE_BUILD,

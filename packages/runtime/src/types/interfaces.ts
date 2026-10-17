@@ -170,6 +170,8 @@ export interface SyncTransportDeps {
   onEncryptionKeyChanged?(spaceId: string, version: number): void;
   /** A payload arrived in a format newer than this build understands — prompt for update. */
   onFormatTooNew?(spaceId: string, receivedVersion: number): void;
+  /** A synced mutation names an op code this build doesn't have — prompt for update. */
+  onUnknownOpCode?(spaceId: string, op: string): void;
   setPasswordChangedReason?(): void;
   reloadApp?(): void;
   log?: RuntimeLogFn;

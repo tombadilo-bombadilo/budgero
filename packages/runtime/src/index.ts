@@ -117,9 +117,17 @@ export type { QueueStorage } from './offline-queue';
 export { SpaceRegistry } from './space-registry';
 
 export {
+  BASE_MUTATION_FORMAT_VERSION,
   FormatTooNewError,
+  isUpdateRequiredError,
+  MILLIUNIT_FORMAT_VERSION,
   MUTATION_FORMAT_VERSION,
+  mutationFormatVersion,
+  OP_CODE_FORMAT_VERSIONS,
+  opCodeFormatVersion,
+  SNAPSHOT_DATA_FORMAT_VERSION,
   SYNC_PROTOCOL_VERSION,
+  UnknownOpCodeError,
   normalizeMutationPayload,
   upgradeLegacyMoneyValues,
 } from './sync-format';
