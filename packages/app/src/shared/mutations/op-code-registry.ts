@@ -1,4 +1,5 @@
 import { UnknownOpCodeError } from '@budgero/runtime';
+import { withLegacyFormat } from './legacy-format';
 import type { OpCall, OpCodeEntry, OpCodeExecutionContext } from './op-code-registry/shared';
 import { accountOps } from './op-code-registry/domains/accounts';
 import { bankSyncOps } from './op-code-registry/domains/bank-sync';
@@ -209,7 +210,9 @@ export async function prepareMutationArgs(
 ): Promise<Record<string, unknown>> {
   if (!isKnownOpCode(op)) return args;
   const entry: OpCodeEntry = opCodeRegistry[op];
-  return entry.prepare ? await entry.prepare(args) : args;
+  const prepared = entry.prepare ? await entry.prepare(args) : args;
+  // Calls older builds would apply differently carry a newer sync format.
+  return withLegacyFormat(op, prepared);
 }
 
 /**

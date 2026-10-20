@@ -51,6 +51,7 @@ export { RecurringTransactionService } from './services/recurring/index.js';
 export { DatabaseCustomDashboardService } from './services/custom-dashboards/index.js';
 
 export { ServiceManager, type Services } from './services/service-manager.js';
+export { LegacyReplayService } from './services/legacy-replay/index.js';
 
 // File-format parsers (pure, browser-safe). We re-export from the specific
 // modules rather than the ./services/import barrel so this entry stays an
