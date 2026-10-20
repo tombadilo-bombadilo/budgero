@@ -1413,6 +1413,11 @@ function carriedRateLookup(carried: unknown, fallback: RateLookup): RateLookup {
   return async (from, to, date) => {
     const key = `${from}>${to}@${date}`;
     if (!known.has(key)) return fallback(from, to, date);
+    const carriedRate = known.get(key)!;
+    // No rate where the change was prepared (offline, or the provider has
+    // none): don't try again. Each failed lookup costs a network round trip,
+    // and the originating device already paid it once in prepare.
+    if (carriedRate === null) return null;
     // Still look the rate up locally (result unused): it fills this device's
     // rate cache as the change always did, and later lookups (other rows,
     // other ops) read that cache, so devices must fill it alike.
@@ -1421,6 +1426,6 @@ function carriedRateLookup(carried: unknown, fallback: RateLookup): RateLookup {
     } catch {
       // the carried rate is what counts
     }
-    return known.get(key)!;
+    return carriedRate;
   };
 }
