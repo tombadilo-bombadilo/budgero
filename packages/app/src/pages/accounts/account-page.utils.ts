@@ -1,7 +1,7 @@
 import { t } from '@lingui/core/macro';
 import { formatDate as format } from '@shared/lib/date-format';
 import type { DateRange } from 'react-day-picker';
-import type { Account, Category } from '@budgero/core/browser';
+import { isLiabilityAccountType, type Account, type Category } from '@budgero/core/browser';
 
 // Account business calculations now live in core (services/accounts/account-calcs).
 export {
@@ -10,6 +10,26 @@ export {
   calculateTransactionStats,
 } from '@budgero/core/browser';
 export type { LiabilityInfo, TransactionStats, MobilePageStats } from '@budgero/core/browser';
+
+/**
+ * Whether the account page shows debt details and the payoff simulator: credit
+ * cards, loans and mortgages, or accounts flagged as a liability. A checking or
+ * savings account that is merely overdrawn doesn't get them.
+ */
+export function showsDebtDetails(account: Pick<Account, 'Type'> & { Metadata?: unknown }): boolean {
+  if (isLiabilityAccountType(account.Type)) return true;
+  let metadata: unknown = account.Metadata;
+  if (typeof metadata === 'string') {
+    try {
+      metadata = JSON.parse(metadata);
+    } catch {
+      return false;
+    }
+  }
+  return Boolean(
+    metadata && typeof metadata === 'object' && (metadata as { liability?: unknown }).liability
+  );
+}
 
 /**
  * Generates a human-readable label for a date range.
