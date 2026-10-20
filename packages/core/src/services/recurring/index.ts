@@ -1,6 +1,7 @@
 import { DatabaseAdapter } from '../../database/interface.js';
 import { getRow, allRows, run } from '../../database/sql.js';
 import { insertRawRow, type RawRow } from '../../database/restore-rows.js';
+import { RowCapture, restoreRowJournal, type RowJournal } from '../../database/row-journal.js';
 import { asMilli, ZERO_MILLI } from '../../money/index.js';
 import {
   convertScaled,
@@ -411,6 +412,13 @@ function backfillThreshold(monthsBack: number = BACKFILL_MONTHS): Date {
   );
 }
 
+/** Tables a template create / edit undo journal may write (see restoreTemplateEdit). */
+const TEMPLATE_EDIT_TABLES: ReadonlySet<string> = new Set([
+  'recurring_transactions',
+  'categories',
+  'category_groups',
+]);
+
 export class RecurringTransactionService {
   private transactions: TransactionService;
 
@@ -639,6 +647,41 @@ export class RecurringTransactionService {
       this.ensureOccurrencesForTemplate(updated, computeHorizonDate());
     }
     return updated;
+  }
+
+  /**
+   * Starts recording what a template create / edit changes besides what its
+   * undo puts back itself: the template row's own columns (with `id`) and the
+   * Transfers category and group a transfer template auto-creates. `finish()`
+   * after the op returns the journal for restoreTemplateEdit.
+   */
+  beginTemplateEdit(id?: number): { finish(): RowJournal } {
+    const capture = new RowCapture(this.db)
+      .watchInserts('category_groups')
+      .watchInserts('categories');
+    if (id !== undefined) capture.addKeys('recurring_transactions', [id], false);
+    return {
+      finish: () => {
+        const journal = capture.finish();
+        // The edit back restores every column but a NULL category (a transfer
+        // template's category is coerced to Transfers on write): keep only that.
+        journal.changed = journal.changed
+          .filter((entry) => entry.table === 'recurring_transactions')
+          .filter((entry) => 'CategoryID' in entry.values && entry.values.CategoryID === null)
+          .map((entry) => ({ ...entry, values: { CategoryID: null } }));
+        return journal;
+      },
+    };
+  }
+
+  /**
+   * Second half of a template create / edit undo (after the delete or the
+   * edit back): the template columns the edit back cannot write (a transfer
+   * template's NULL category), and the Transfers category and group the op
+   * created, when nothing uses them any more.
+   */
+  restoreTemplateEdit(journal: RowJournal): void {
+    this.db.transaction(() => restoreRowJournal(this.db, journal, TEMPLATE_EDIT_TABLES));
   }
 
   /**

@@ -1,4 +1,5 @@
 import {
+  type AccountService,
   type ImportIdentity,
   type ReconcileResult,
   type TransactionAmountsSnapshot,
@@ -125,8 +126,16 @@ function normalizeSplitLines(splits: unknown): NormalizedSplit[] {
 
 /** Undo for split edits: put back the previous lines, or clear if there were none. */
 const splitsUndo: NonNullable<OpCodeEntry['undo']> = {
-  capture: async (args) => safeCapture(() => S().splits.getSplits(args.transactionId as number)),
+  // Exact when the services can capture the parent (lines under their IDs,
+  // mirrors, the parent's category); otherwise the previous lines are re-upserted.
+  capture: async (args) => {
+    const restore = captureRestore([args.transactionId as number]);
+    if (restore) return { restore };
+    return safeCapture(() => S().splits.getSplits(args.transactionId as number));
+  },
   build: (args, _result, before) => {
+    const exact = restoreUndo(before, true);
+    if (exact) return exact;
     const previous = before as TransactionSplit[] | null;
     if (!previous) return [];
     return previous.length
@@ -333,6 +342,124 @@ function amountsSnapshot(tx: TransactionRowWithColumns): TransactionAmountsSnaps
   };
 }
 
+/** True when the two accounts exist and hold different currencies. */
+function crossCurrencyMove(fromAccountId: unknown, toAccountId: unknown): boolean {
+  const accounts = S().accounts as Partial<Pick<AccountService, 'getAccount'>> | undefined;
+  if (typeof accounts?.getAccount !== 'function') return false;
+  try {
+    return (
+      accounts.getAccount(Number(fromAccountId)).Currency !==
+      accounts.getAccount(Number(toAccountId)).Currency
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Before-state for column edits whose inverse edit would not land exactly on
+ * it, so undo puts the captured rows back instead (transactions.restore):
+ * - an amount or rate edit on a split parent re-proportions the lines (and
+ *   moves split-transfer mirrors); editing the amount back re-proportions the
+ *   new lines again instead of restoring them;
+ * - a rate edit on a row with no stored rate (there is no rate to write back);
+ * - a move between accounts of different currencies converts the native
+ *   amount, and converting it back does not round-trip;
+ * - a date edit on a foreign row re-converts it at the new date's rate;
+ * - a payee edit on a row whose payee was '' (the edit back writes NULL).
+ */
+function exactColumnRestore(
+  tx: TransactionRowWithColumns,
+  column: string,
+  oldValue: unknown,
+  newValue: unknown
+): TransactionRestoreSnapshot | null {
+  if (column === 'accountid') {
+    return crossCurrencyMove(tx.AccountID, newValue) ? captureRestore([tx.ID]) : null;
+  }
+  // A date edit on a foreign row re-converts it at the new date's rate;
+  // editing the date back converts again instead of restoring the amounts.
+  if (column === 'date') {
+    return tx.ExchangeRate != null || Boolean(tx.ConversionPending)
+      ? captureRestore([tx.ID])
+      : null;
+  }
+  // A payee edit stores '' as NULL, so the edit back would not restore ''.
+  if (column === 'payee') return oldValue === '' ? captureRestore([tx.ID]) : null;
+  const amount = AMOUNT_COLUMNS.has(column);
+  if (!amount && column !== 'exchangerate') return null;
+  const restore = captureRestore([tx.ID]);
+  if (!restore) return null;
+  if (restore.dependents.some((dependent) => dependent.table === 'transaction_splits')) {
+    return restore;
+  }
+  if (column === 'exchangerate') return oldValue == null ? restore : null;
+  // An amount edit re-resolves the rate of a foreign row (whose stored rate
+  // may be a fallback or stale) and re-derives a transfer partner: editing the
+  // amount back would not restore either.
+  return restore.transactions.length > 1 ||
+    restore.transactions.some((row) => row.ExchangeRate != null)
+    ? restore
+    : null;
+}
+
+/** Payee names an op is about to use that the budget's directory does not have yet. */
+export interface MissingPayees {
+  budgetId: number;
+  names: string[];
+}
+
+type PayeeDirectory = Pick<
+  ReturnType<typeof S>['payees'],
+  'hasSavedPayee' | 'getSavedPayeeId' | 'removeUnusedPayees'
+>;
+
+function payeeDirectory(): PayeeDirectory | null {
+  const payees = S().payees as Partial<PayeeDirectory> | undefined;
+  return typeof payees?.hasSavedPayee === 'function' &&
+    typeof payees.getSavedPayeeId === 'function' &&
+    typeof payees.removeUnusedPayees === 'function'
+    ? (payees as PayeeDirectory)
+    : null;
+}
+
+/** Capture side of removeAddedPayees: which typed names are new to the directory. */
+export function missingPayees(budgetId: unknown, names: unknown[]): MissingPayees | undefined {
+  const directory = payeeDirectory();
+  if (!directory || typeof budgetId !== 'number') return undefined;
+  const missing = [
+    ...new Set(
+      names
+        .filter((name): name is string => typeof name === 'string')
+        .map((name) => name.trim())
+        .filter(Boolean)
+    ),
+  ].filter((name) => !directory.hasSavedPayee(budgetId, name));
+  return missing.length ? { budgetId, names: missing } : undefined;
+}
+
+/**
+ * Undo step for directory entries the op added (a new payee typed on an add or
+ * an edit): runs after the rows are undone and drops the entries nothing uses.
+ */
+export function removeAddedPayees(missing: MissingPayees | undefined): OpCall[] {
+  if (!missing) return [];
+  const directory = payeeDirectory();
+  if (!directory) return [];
+  const ids = missing.names
+    .map((name) => directory.getSavedPayeeId(missing.budgetId, name))
+    .filter((id): id is number => id !== undefined);
+  return ids.length
+    ? [{ op: 'payees.removeUnused', args: { budgetId: missing.budgetId, ids } }]
+    : [];
+}
+
+/** Payee names on an add / import payload: the row's and its split lines'. */
+function payloadPayees(args: Record<string, unknown>): unknown[] {
+  const lines = Array.isArray(args.splits) ? (args.splits as Record<string, unknown>[]) : [];
+  return [args.payee, ...lines.map((line) => line?.payee)];
+}
+
 /** Undo/redo pass the row's original ID so history entries that reference it stay valid. */
 function explicitId(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : undefined;
@@ -438,10 +565,14 @@ export const transactionOps = {
     },
     invalidates: [...TRANSACTION_INVALIDATION_KEYS],
     undo: {
-      build: (_args, result) => {
+      capture: async (args) => ({ payees: missingPayees(args.budgetId, payloadPayees(args)) }),
+      build: (_args, result, before) => {
         const imported = result as { transactionId: number; created: boolean };
         return imported.created
-          ? [{ op: 'transactions.delete', args: { id: imported.transactionId } }]
+          ? [
+              { op: 'transactions.delete', args: { id: imported.transactionId } },
+              ...removeAddedPayees((before as { payees?: MissingPayees } | undefined)?.payees),
+            ]
           : [];
       },
     },
@@ -498,20 +629,21 @@ export const transactionOps = {
       // row and creates nothing: there is nothing to undo (deleting would
       // remove the row the identity belongs to).
       capture: async (args) => {
+        const payees = missingPayees(args.budgetId, payloadPayees(args));
         const identity = (args.importIdentities as ImportIdentity[] | undefined)?.[0];
-        if (!identity) return { duplicateOf: undefined };
+        if (!identity) return { duplicateOf: undefined, ...(payees ? { payees } : {}) };
         return {
           duplicateOf: S().importHistory!.duplicates.findOperation(identity.operationId),
+          ...(payees ? { payees } : {}),
         };
       },
-      // add -> delete the created transaction
+      // add -> delete the created transaction (and a payee entry it added)
       build: (_args, result, before) => {
-        if ((before as { duplicateOf?: number } | undefined)?.duplicateOf !== undefined) {
-          return [];
-        }
+        const captured = before as { duplicateOf?: number; payees?: MissingPayees } | undefined;
+        if (captured?.duplicateOf !== undefined) return [];
         const id = result as number | undefined;
         return typeof id === 'number' && Number.isFinite(id)
-          ? [{ op: 'transactions.delete', args: { id } }]
+          ? [{ op: 'transactions.delete', args: { id } }, ...removeAddedPayees(captured?.payees)]
           : [];
       },
     },
@@ -731,6 +863,11 @@ export const transactionOps = {
         const normalized = col.toLowerCase().replace(/_/g, '');
         const oldExchangeRateOverride =
           normalized === 'exchangerate' ? Boolean(tx.ExchangeRateOverride) : undefined;
+        const payees =
+          normalized === 'payee' ? missingPayees(tx.BudgetID, [args.newValue]) : undefined;
+        const restore = exactColumnRestore(tx, normalized, oldValue, args.newValue);
+        if (restore) return { oldValue, restore, ...(payees ? { payees } : {}) };
+        if (payees) return { oldValue, payees };
         if (AMOUNT_COLUMNS.has(normalized)) {
           return { oldValue, oldExchangeRateOverride, amounts: amountsSnapshot(tx) };
         }
@@ -742,10 +879,24 @@ export const transactionOps = {
               oldValue?: string | number | null;
               oldExchangeRateOverride?: boolean;
               amounts?: TransactionAmountsSnapshot;
+              restore?: TransactionRestoreSnapshot;
+              payees?: MissingPayees;
             }
           | undefined;
+        const addedPayees = removeAddedPayees(previous?.payees);
+        const exact = restoreUndo(previous, true);
+        if (exact) return [...exact, ...addedPayees];
         // Without a captured old value the inverse would write `undefined`.
         if (!previous || !('oldValue' in previous) || previous.oldValue === undefined) return [];
+        if (addedPayees.length) {
+          return [
+            {
+              op: 'transactions.updateColumn',
+              args: { id: args.id, columnName: args.columnName, newValue: previous.oldValue },
+            },
+            ...addedPayees,
+          ];
+        }
         if (previous.amounts?.ExchangeRateOverride) {
           // An amount edit re-resolves the rate and drops a manual override:
           // restore the row's amounts and rate exactly.
@@ -981,9 +1132,22 @@ export const transactionOps = {
       capture: async (args) => {
         const edits = Array.isArray(args.edits) ? (args.edits as TransactionBatchEdit[]) : [];
         const restore = captureRestore(edits.map((edit) => edit.id));
-        return restore ? { restore } : null;
+        if (!restore) return null;
+        const typed = edits.filter((edit) => edit.payee !== undefined);
+        const payees = typed.length
+          ? missingPayees(
+              restore.transactions[0]?.BudgetID,
+              typed.map((edit) => edit.payee)
+            )
+          : undefined;
+        return payees ? { restore, payees } : { restore };
       },
-      build: (_args, _result, before) => restoreUndo(before, true) ?? [],
+      build: (_args, _result, before) => {
+        const exact = restoreUndo(before, true);
+        return exact
+          ? [...exact, ...removeAddedPayees((before as { payees?: MissingPayees }).payees)]
+          : [];
+      },
     },
   },
 
@@ -1031,17 +1195,21 @@ export const transactionOps = {
         const tx = (await S().transactions!.getTransactionByID(
           args.transactionId as number
         )) as unknown as TransactionRowWithColumns | undefined;
-        return { oldAccountId: tx?.AccountID };
+        // Across currencies the move converts the native amount: put the row back exactly.
+        const restore =
+          tx && crossCurrencyMove(tx.AccountID, args.newAccountId) ? captureRestore([tx.ID]) : null;
+        return restore ? { oldAccountId: tx?.AccountID, restore } : { oldAccountId: tx?.AccountID };
       },
-      build: (args, _result, before) => [
-        {
-          op: 'transactions.moveToNewAccount',
-          args: {
-            transactionId: args.transactionId,
-            newAccountId: (before as { oldAccountId?: number } | undefined)?.oldAccountId,
+      build: (args, _result, before) =>
+        restoreUndo(before, true) ?? [
+          {
+            op: 'transactions.moveToNewAccount',
+            args: {
+              transactionId: args.transactionId,
+              newAccountId: (before as { oldAccountId?: number } | undefined)?.oldAccountId,
+            },
           },
-        },
-      ],
+        ],
     },
   },
 

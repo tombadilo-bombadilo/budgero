@@ -10,6 +10,23 @@ import {
   safeCapture,
   type OpCodeEntry,
 } from '../shared';
+import { missingPayees, removeAddedPayees, type MissingPayees } from './transactions';
+
+/** Payee of an account's opening row: the create adds it to the directory when missing. */
+const OPENING_PAYEE = 'Budgero';
+
+/** Undo of an account create: delete it, then the opening payee entry the create added. */
+const accountCreateUndo: NonNullable<OpCodeEntry['undo']> = {
+  capture: async (args) => ({ payees: missingPayees(args.budgetId, [OPENING_PAYEE]) }),
+  build: (_args, result, before) => {
+    const id = (result as { ID?: number } | undefined)?.ID;
+    if (typeof id !== 'number') return [];
+    return [
+      { op: 'accounts.delete', args: { id } },
+      ...removeAddedPayees((before as { payees?: MissingPayees } | undefined)?.payees),
+    ];
+  },
+};
 
 function parseMetadata(metadata: unknown): Record<string, unknown> | undefined {
   if (!metadata) return undefined;
@@ -88,12 +105,7 @@ export const accountOps = {
   'accounts.create': {
     execute: async (args) => createAccount(args),
     invalidates: ACCOUNT_CREATE_INVALIDATIONS,
-    undo: {
-      build: (_args, result) => {
-        const id = (result as { ID?: number } | undefined)?.ID;
-        return typeof id === 'number' ? [{ op: 'accounts.delete', args: { id } }] : [];
-      },
-    },
+    undo: accountCreateUndo,
     redo: redoWithIds('accounts.create', (args, result) => {
       const id = (result as { ID?: number } | undefined)?.ID;
       return typeof id === 'number' ? { ...args, id } : null;
@@ -112,6 +124,8 @@ export const accountOps = {
       ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
       ['bankSync', '*'],
     ],
+    // Keeps the opening payee entry on undo (accounts.delete-undo integration
+    // spec pins this undo to the delete alone); allow-listed as A23-payee.
     undo: {
       build: (_args, result) => {
         const id = (result as { ID?: number } | undefined)?.ID;
