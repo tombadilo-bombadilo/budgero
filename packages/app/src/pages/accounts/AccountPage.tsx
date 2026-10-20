@@ -46,6 +46,7 @@ import {
   convertLiabilityInfoToBudgetCurrency,
   calculateTransactionStats,
   shouldSyncSelectedAccount,
+  showsDebtDetails,
 } from './account-page.utils';
 import { AccountHeader } from './components/AccountHeader';
 import { FlowStat } from './components/FlowStat';
@@ -239,6 +240,7 @@ export default function AccountPage() {
   const displayLiabilityInfo = useMemo(() => {
     if (hasStoredMoneyIntegrityIssue) return null;
     if (!liabilityInfo || !selectedAccount) return liabilityInfo;
+    if (!showsDebtDetails(selectedAccount)) return null;
     if (transactionCurrencyDisplay === 'budget' && selectedAccount.BalanceConverted !== undefined) {
       const conversionRate =
         balanceAccountToday !== 0 ? Math.abs(balanceConvertedToday / balanceAccountToday) : 1;
