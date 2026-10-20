@@ -1,4 +1,4 @@
-import { GoalPurpose, type Goal, type GoalType } from '@budgero/core/browser';
+import { GoalPurpose, type Goal, type GoalService, type GoalType } from '@budgero/core/browser';
 import { asMilli } from '@budgero/core/browser';
 import { S, safeCapture, type OpCall, type OpCodeEntry } from '../shared';
 
@@ -113,8 +113,26 @@ export const goalOps = {
       capture: async (args) => safeCapture(() => findGoal(args)),
       build: (_args, _result, before) => {
         const goal = before as Goal | null | undefined;
-        return goal ? [recreateGoalOp(goal)] : [];
+        if (!goal) return [];
+        // The row as it was, under its own ID; services without restore recreate it.
+        return typeof (S().goals as Partial<GoalService>).restoreGoal === 'function'
+          ? [{ op: 'goals.restore', args: { goal } }]
+          : [recreateGoalOp(goal)];
       },
     },
+  },
+
+  /** Undo of goals.delete. */
+  'goals.restore': {
+    execute: async (args) => {
+      if (!args.goal || typeof args.goal !== 'object') throw new Error('"goal" is required.');
+      S().goals.restoreGoal(args.goal as Parameters<GoalService['restoreGoal']>[0]);
+    },
+    invalidates: [
+      ['categories', '*'],
+      ['goals', '*'],
+      ['goal', '*'],
+      ['monthlyBudget', '*'],
+    ],
   },
 } satisfies Record<string, OpCodeEntry>;

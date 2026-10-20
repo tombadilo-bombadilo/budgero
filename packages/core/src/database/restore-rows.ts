@@ -6,6 +6,7 @@ export type RawRow = Record<string, string | number | null>;
 
 /** Tables whose rows undo may re-insert verbatim. */
 const RESTORABLE_TABLES = new Set([
+  'goals',
   'payees',
   'labels',
   'recurring_transactions',
