@@ -38,11 +38,20 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { SyncStatus } from '@shared/lib/utils';
 import { MutationRouter } from '@shared/runtime/mutation-router';
 import { createRuntimeDeps } from '@shared/runtime/runtime-bridge';
+import { runInUndoGroup } from '@shared/mutations/UndoStore';
 import { getInvalidatesForOp, prepareMutationArgs } from '@shared/mutations/op-code-registry';
 import { discardInterruptedImports } from '@shared/runtime/pending-import';
 import { getErrorMessage } from '@shared/lib/errors';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
 import { withPushIdentity } from './push-identity';
+
+/** Ops whose new rows the continuous rules run over (see applyContinuousRulesIfNeeded). */
+const CONTINUOUS_RULE_TRIGGERS = new Set([
+  'transactions.add',
+  'transactions.import',
+  'transactions.addTransfer',
+  'recurring.markReady',
+]);
 
 /** Ids per rules.execute op; keeps the IN (...) list well under SQLite's bind limit. */
 const CONTINUOUS_RULE_BATCH_SIZE = 500;
@@ -159,9 +168,25 @@ export class AppRuntime {
     const prepared: MutationSpec = spec.mutationId
       ? spec
       : { ...spec, payload: await prepareMutationArgs(spec.op, spec.payload) };
-    const result = await this.coordinator.executeMutation<T>(prepared);
-    await this.applyContinuousRulesIfNeeded(result.result, prepared, !prepared.mutationId);
-    return result;
+    const run = async () => {
+      const result = await this.coordinator.executeMutation<T>(prepared);
+      await this.applyContinuousRulesIfNeeded(result.result, prepared, !prepared.mutationId);
+      return result;
+    };
+    // The continuous rules an add triggers are part of that user action: one
+    // undo entry reverts the add and the rule runs together (and redo puts
+    // back the same runs instead of running the rules again).
+    return this.recordsRuleUndo(prepared) ? runInUndoGroup(run) : run();
+  }
+
+  /** A local, undoable action that can trigger continuous rules. */
+  private recordsRuleUndo(spec: MutationSpec): boolean {
+    return (
+      !spec.mutationId &&
+      !spec.meta?.skipUndo &&
+      !spec.meta?.replay &&
+      CONTINUOUS_RULE_TRIGGERS.has(spec.op)
+    );
   }
 
   isMutationApplied(mutationId: string): boolean {
@@ -603,11 +628,10 @@ export class AppRuntime {
     // fixes or compound amount adjustments. Redo replays re-run the original
     // action, so its rules run like they did the first time.
     if (spec.meta?.replay === 'undo') return;
+    if (!CONTINUOUS_RULE_TRIGGERS.has(spec.op)) return;
     const isTransactionAdd = spec.op === 'transactions.add' || spec.op === 'transactions.import';
     const isTransferAdd = spec.op === 'transactions.addTransfer';
     const isRecurringReady = spec.op === 'recurring.markReady';
-
-    if (!isTransactionAdd && !isTransferAdd && !isRecurringReady) return;
 
     let transactionIds: number[] = [];
     let budgetId: number | null = null;
@@ -648,6 +672,7 @@ export class AppRuntime {
     for (const transactionId of transactionIds) {
       await this.runContinuousRules(budgetId, [transactionId], {
         skipInvalidate: isTransactionAdd && spec.meta?.skipInvalidate === true,
+        recordUndo: this.recordsRuleUndo(spec),
       });
     }
   }
@@ -663,7 +688,14 @@ export class AppRuntime {
   async runContinuousRules(
     budgetId: number,
     transactionIds: number[],
-    options: { skipInvalidate?: boolean } = {}
+    options: {
+      skipInvalidate?: boolean;
+      /**
+       * Record each rule run for undo (they join the caller's undo group);
+       * otherwise runs are not undoable on their own.
+       */
+      recordUndo?: boolean;
+    } = {}
   ): Promise<void> {
     const ids = transactionIds.filter(Number.isFinite);
     if (ids.length === 0 || !Number.isFinite(budgetId)) return;
@@ -705,7 +737,7 @@ export class AppRuntime {
               },
               invalidates,
               meta: {
-                skipUndo: true,
+                skipUndo: options.recordUndo !== true,
                 forceInvalidate: true,
                 skipInvalidate: options.skipInvalidate === true,
               },

@@ -12,6 +12,8 @@ import {
 } from '@budgero/core/browser';
 import {
   S,
+  captureCategoryMark,
+  createdCategoriesUndo,
   sortTransactionSnapshots,
   transactionSnapshotToAddOp,
   TRANSACTION_INVALIDATION_KEYS,
@@ -589,11 +591,19 @@ export const transactionOps = {
     },
     invalidates: [...TRANSACTION_INVALIDATION_KEYS],
     undo: {
+      capture: async () => ({ categoryMark: captureCategoryMark() }),
       // Use the stable TransferID because redo creates new database row IDs.
-      build: (args) => {
+      build: (args, _result, before) => {
         const { transferId } = args;
         return typeof transferId === 'string' && transferId
-          ? [{ op: 'transactions.deleteTransfer', args: { transferId } }]
+          ? [
+              { op: 'transactions.deleteTransfer', args: { transferId } },
+              // A transfer re-creates the Transfers category if it was deleted.
+              ...createdCategoriesUndo(
+                (before as { categoryMark?: unknown } | null)?.categoryMark,
+                args.budgetId
+              ),
+            ]
           : [];
       },
     },

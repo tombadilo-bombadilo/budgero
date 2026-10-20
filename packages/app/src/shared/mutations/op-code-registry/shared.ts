@@ -8,6 +8,7 @@
 
 import { getRuntime } from '@shared/runtime/global';
 import {
+  type CategoryCreationMark,
   type ImportIdentity,
   type MilliUnits,
   type ChartConfiguration,
@@ -328,6 +329,42 @@ export function redoWithIds(
       return next ? [{ op, args: next }] : [];
     },
   };
+}
+
+/**
+ * Undo capture for ops that can create a system category on the fly (a
+ * transfer re-creates Transfers after it was deleted): where the category
+ * IDs stand before the op. See createdCategoriesUndo.
+ */
+export function captureCategoryMark(): CategoryCreationMark | null {
+  try {
+    return S().categories.creationMark();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The undo op removing the categories / groups created since `mark` (none
+ * created: no op). Runs after the op's other undo steps, once nothing uses
+ * them anymore; it puts the ID counters back so a redo re-creates them under
+ * the same IDs.
+ */
+export function createdCategoriesUndo(mark: unknown, budgetId: unknown): OpCall[] {
+  if (!mark || typeof mark !== 'object') return [];
+  try {
+    const journal = S().categories.createdSinceJournal(mark as CategoryCreationMark);
+    return journal
+      ? [
+          {
+            op: 'categories.restoreDeleted',
+            args: { ...(budgetId !== undefined ? { budgetId } : {}), journal },
+          },
+        ]
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 /** Run an undo-capture snapshot, returning null when it throws. */

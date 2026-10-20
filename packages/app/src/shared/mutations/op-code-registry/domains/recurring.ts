@@ -10,6 +10,8 @@ import type {
 } from '@budgero/core/browser';
 import {
   S,
+  captureCategoryMark,
+  createdCategoriesUndo,
   newOpRowId,
   redoWithIds,
   safeCapture,
@@ -185,7 +187,7 @@ export const recurringOps = {
           const occurrence = await recurring.getOccurrenceWithTemplate(
             recurring.resolveOccurrenceId(options)
           );
-          return { occurrence };
+          return { occurrence, categoryMark: captureCategoryMark() };
         } catch (error) {
           console.warn(
             '[OpCodeRegistry] Unable to capture occurrence before markReady undo',
@@ -194,7 +196,7 @@ export const recurringOps = {
           return null;
         }
       },
-      build: (args, result, _before) => {
+      build: (args, result, before) => {
         const options = (args.options ?? {}) as MarkOccurrenceReadyOptions;
         const ready = result as MarkOccurrenceReadyResult | undefined;
         const transactionId = ready?.transactionId;
@@ -205,6 +207,13 @@ export const recurringOps = {
         const ops: { op: string; args: Record<string, unknown> }[] = [];
         ops.push({ op: 'transactions.delete', args: { id: transactionId } });
         ops.push({ op: 'recurring.resetOccurrence', args: reset });
+        // Posting a transfer re-creates the Transfers category if it was deleted.
+        ops.push(
+          ...createdCategoriesUndo(
+            (before as { categoryMark?: unknown } | null)?.categoryMark,
+            ready?.occurrence?.template?.budgetId ?? ready?.occurrence?.budgetId
+          )
+        );
         return ops;
       },
     },
