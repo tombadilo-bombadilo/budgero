@@ -22,3 +22,4 @@ export * from './bank-sync/index.js';
 export * from './chat/index.js';
 export * from './custom-dashboards/index.js';
 export * from './warranties/index.js';
+export * from './legacy-replay/index.js';
