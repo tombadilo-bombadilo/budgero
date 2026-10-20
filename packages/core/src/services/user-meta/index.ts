@@ -85,6 +85,14 @@ export class UserMetaService {
     this.queries.setCompactTransactionRows(value);
   }
 
+  getCompactBudgetRows(): boolean {
+    return this.queries.getCompactBudgetRows();
+  }
+
+  setCompactBudgetRows(value: boolean): void {
+    this.queries.setCompactBudgetRows(value);
+  }
+
   getSameDayTransactionOrder(): SameDayTransactionOrder {
     return this.queries.getSameDayTransactionOrder();
   }

@@ -173,6 +173,21 @@ export class UserMetaQueries {
     run(this.db, `UPDATE user_meta SET CompactTransactionRows = ? WHERE ID = 1`, value ? 1 : 0);
   }
 
+  /** Denser desktop budget table rows. Off by default. */
+  getCompactBudgetRows(): boolean {
+    this.ensureRow();
+    const row = getRow<{ CompactBudgetRows: boolean | number | null }>(
+      this.db,
+      `SELECT CompactBudgetRows FROM user_meta WHERE ID = 1`
+    );
+    return row?.CompactBudgetRows === true || row?.CompactBudgetRows === 1;
+  }
+
+  setCompactBudgetRows(value: boolean): void {
+    this.ensureRow();
+    run(this.db, `UPDATE user_meta SET CompactBudgetRows = ? WHERE ID = 1`, value ? 1 : 0);
+  }
+
   /** Order of transactions within one day: newest entry first, or by amount. */
   getSameDayTransactionOrder(): SameDayTransactionOrder {
     this.ensureRow();
