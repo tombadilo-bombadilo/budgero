@@ -427,6 +427,7 @@ const KINDS: [string, number][] = [
   ['userPreferences.setHideZeroAmounts', 1],
   ['userPreferences.setInlineTransactionEntry', 1],
   ['userPreferences.setCompactTransactionRows', 1],
+  ['userPreferences.setCompactBudgetRows', 1],
   ['userPreferences.setSameDayTransactionOrder', 1],
   ['budgets.updateGoalFundingSettings', 1],
   ['budgets.updateName', 1],
@@ -1564,6 +1565,7 @@ export function realize(device: Device, intent: Intent): OpCall | null {
     case 'userPreferences.setHideZeroAmounts':
     case 'userPreferences.setInlineTransactionEntry':
     case 'userPreferences.setCompactTransactionRows':
+    case 'userPreferences.setCompactBudgetRows':
       return { op: k, payload: { value: f } };
     case 'budgets.updateGoalFundingSettings':
       return {

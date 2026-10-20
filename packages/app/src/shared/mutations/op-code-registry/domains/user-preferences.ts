@@ -11,6 +11,7 @@ type UserMetaGetter =
   | 'getHideZeroAmounts'
   | 'getInlineTransactionEntry'
   | 'getCompactTransactionRows'
+  | 'getCompactBudgetRows'
   | 'getSameDayTransactionOrder';
 
 /** Undo for single-value preference setters: re-issue the op with the old value. */
@@ -167,6 +168,20 @@ export const userPreferenceOps = {
     },
     invalidates: [['compactTransactionRows'], ['userPreferences']],
     undo: preferenceUndo('userPreferences.setCompactTransactionRows', 'getCompactTransactionRows'),
+  },
+  'userPreferences.setCompactBudgetRows': {
+    execute: async (args) => {
+      const services = S() as {
+        userMeta?: { setCompactBudgetRows(value: boolean): void };
+      };
+      if (!services.userMeta) {
+        throw new Error('userMeta service not available');
+      }
+      services.userMeta.setCompactBudgetRows(args.value as boolean);
+      return { success: true };
+    },
+    invalidates: [['compactBudgetRows'], ['userPreferences']],
+    undo: preferenceUndo('userPreferences.setCompactBudgetRows', 'getCompactBudgetRows'),
   },
   'userPreferences.setSameDayTransactionOrder': {
     execute: async (args) => {

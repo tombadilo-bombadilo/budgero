@@ -30,6 +30,7 @@ interface UserMetaService {
   getHideZeroAmounts?(): Promise<boolean> | boolean;
   getInlineTransactionEntry?(): Promise<boolean> | boolean;
   getCompactTransactionRows?(): Promise<boolean> | boolean;
+  getCompactBudgetRows?(): Promise<boolean> | boolean;
   getSameDayTransactionOrder?(): Promise<SameDayTransactionOrder> | SameDayTransactionOrder;
 }
 
@@ -491,6 +492,60 @@ export function useCompactTransactionRowsPreference() {
     compactTransactionRows,
     isLoading: queryRest.isLoading,
     updateCompactTransactionRows: updateMutation.mutate,
+    isUpdating: updateMutation.isPending,
+  };
+}
+
+/** Denser desktop budget table rows. Off by default. */
+export function useCompactBudgetRows() {
+  const runtime = useRuntime();
+  const runtimeInitialized = useRuntimeInitialized();
+  const spaceId = useActiveSpaceId();
+
+  return useQuery<boolean>({
+    queryKey: ['compactBudgetRows', spaceId ?? 'global'],
+    queryFn: async () => {
+      const services = runtime.services() as ServicesWithUserMeta;
+      return (await services?.userMeta?.getCompactBudgetRows?.()) ?? false;
+    },
+    enabled: runtimeInitialized,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+    retry: PREFERENCE_READ_RETRIES,
+  });
+}
+
+/** Query + mutation pair for compact budget table rows. */
+export function useCompactBudgetRowsPreference() {
+  const runtime = useRuntime();
+  const spaceId = useActiveSpaceId();
+  const queryClient = useQueryClient();
+  const queryKey = ['compactBudgetRows', spaceId ?? 'global'] as const;
+  const { data: compactBudgetRows = false, ...queryRest } = useCompactBudgetRows();
+
+  const updateMutation = useMutation<void, Error, boolean, { previous: boolean | undefined }>({
+    mutationFn: async (value: boolean) => {
+      await executeSpaceMutation<void>(runtime, {
+        op: 'userPreferences.setCompactBudgetRows',
+        payload: { value },
+        meta: { label: 'Update compact budget rows setting' },
+      });
+    },
+    onMutate: async (value) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<boolean>(queryKey);
+      queryClient.setQueryData(queryKey, value);
+      return { previous };
+    },
+    onError: (_error, _value, context) => {
+      queryClient.setQueryData(queryKey, context?.previous ?? false);
+    },
+  });
+
+  return {
+    compactBudgetRows,
+    isLoading: queryRest.isLoading,
+    updateCompactBudgetRows: updateMutation.mutate,
     isUpdating: updateMutation.isPending,
   };
 }

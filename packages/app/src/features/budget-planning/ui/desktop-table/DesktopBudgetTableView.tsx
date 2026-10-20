@@ -10,7 +10,7 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { cn } from '@shared/lib/utils';
-import { useUiStore } from '@shared/store/useUiStore';
+import { useCompactBudgetRows } from '@shared/hooks/useUserPreferences';
 import { restrictToVerticalAxis } from '@features/budget-planning/lib/dnd-modifiers';
 import type { BudgetRow } from '../../lib/budget-transforms';
 import { DesktopBudgetGroupRow, SortableDesktopBudgetGroupRow } from './DesktopBudgetGroupRow';
@@ -50,7 +50,7 @@ export function DesktopBudgetTableView({
   isUpdatingGroup = false,
   isDeletingGroup = false,
 }: DesktopBudgetTableViewProps) {
-  const compact = useUiStore((state) => state.budgetRowDensity === 'compact');
+  const { data: compact = false } = useCompactBudgetRows();
   const filteredData = useMemo(
     () =>
       data.filter((row) => {

@@ -73,6 +73,7 @@ export const OP_CODE_FORMAT_VERSIONS: Readonly<Record<string, number>> = Object.
   'transactions.restore': 3,
   'transactions.restoreAmounts': 3,
   'transactions.saveSplits': 3,
+  'userPreferences.setCompactBudgetRows': 3,
 });
 
 /** Format that introduced `op` (BASE_MUTATION_FORMAT_VERSION if it predates format 3). */
