@@ -53,6 +53,7 @@ export const SYNC_PROTOCOL_VERSION = 2;
  */
 export const OP_CODE_FORMAT_VERSIONS: Readonly<Record<string, number>> = Object.freeze({
   'history.applyOps': 3,
+  'history.restoreRows': 3,
   'accounts.createLinked': 3,
   'accounts.restoreDeleted': 3,
   'categories.deleteAndReassign': 3,

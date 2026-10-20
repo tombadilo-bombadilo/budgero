@@ -1,6 +1,8 @@
 import { asMilli } from '@budgero/core/browser';
 import {
   S,
+  executeJournaled,
+  journaledUndo,
   type ExtendedMonthlyBudgetService,
   type MonthlyBudgetRow,
   type OpCodeEntry,
@@ -205,11 +207,15 @@ export const monthlyBudgetOps = {
   },
 
   // useReassignAssignments
+  // Legacy step of the old category delete (older clients still send it).
+  // Journaled: undo restores both categories' assignment rows exactly.
   'monthlyBudgets.reassignAssignment': {
-    execute: async (args) => {
+    execute: async (args, context) => {
       const svc = S().monthlyBudgets as ExtendedMonthlyBudgetService;
       if (!svc.reassignAssignment) throw new Error('reassignAssignment not available');
-      return svc.reassignAssignment(args.newCategoryId as number, args.oldCategoryId as number);
+      return executeJournaled(args, context, () =>
+        svc.reassignAssignment!(args.newCategoryId as number, args.oldCategoryId as number)
+      );
     },
     invalidates: [
       ['monthlyBudget', '*'],
@@ -222,5 +228,6 @@ export const monthlyBudgetOps = {
       ['assignedLastMonth', '*'],
       ['totalAssignedForBudgetPace', '*'],
     ],
+    undo: journaledUndo(),
   },
 } satisfies Record<string, OpCodeEntry>;

@@ -71,42 +71,6 @@ const RULE_LOG = ['transaction_rule_runs', 'transaction_rule_run_changes', 'tran
  */
 export const KNOWN_FAILURES: KnownFailure[] = [
   // ---------------------------------------------------------------- undo (invariant 5)
-  {
-    id: 'U1',
-    invariant: 'undo',
-    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['categories.delete', 'categoryGroups.delete'],
-    note: 'Undo of a category / group delete recreates only the category: its transactions, split lines, assignments (all months), goal, recurring and warranty links, balances and Position are not restored (also A6).',
-  },
-  {
-    id: 'U1',
-    invariant: 'undo',
-    kinds: ['no-undo-entry'],
-    ops: ['transactions.reassign', 'monthlyBudgets.reassignAssignment'],
-    note: 'transactions.reassign and monthlyBudgets.reassignAssignment change data but record no undo.',
-  },
-  {
-    id: 'U1',
-    invariant: 'undo',
-    kinds: ['undo-threw', 'redo-threw'],
-    ops: ['transactions.upsertSplits', 'transactions.clearSplits'],
-    detail: /Each split must have either CategoryID or TransferAccountID/,
-    note: 'Follow-up of a category delete: split lines left with CategoryID NULL cannot be written back, so undo of a later split edit throws and the entry is dropped.',
-  },
-  {
-    id: 'NEW-12',
-    invariant: 'undo',
-    kinds: ['no-undo-entry'],
-    ops: ['accounts.update'],
-    note: 'Account currency change records no undo (deliberate in accounts.ts: converting back would not be exact), so the edit, the rewritten amounts and rates cannot be undone.',
-  },
-  {
-    id: 'U12',
-    invariant: 'undo',
-    kinds: ['no-undo-entry'],
-    ops: ['importHistory.record', 'importHistory.undo'],
-    note: 'importHistory.record (the import run of a CSV import) and, rarely, importHistory.undo record no undo (recurring.delete and accounts.delete got one in the integrity fixes).',
-  },
 
   {
     id: 'U6',
@@ -175,57 +139,12 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     note: 'Undo of an add / import / transfer / posted bill leaves the continuous-rule run it triggered (run row, LastRunAt) pointing at a deleted row; a transfer or posted recurring transfer also leaves the Transfers category (and group) it auto-created.',
   },
   {
-    id: 'NEW-3',
-    invariant: 'undo',
-    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['currency.customRates.add', 'currency.customRates.update', 'currency.customRates.delete'],
-    tables: ['account_revaluations', 'accounts', 'transactions'],
-    note: 'Custom-rate add / edit / delete revalues foreign accounts (pinned-rate true-up, dated today); undo adds another revaluation instead of reverting, so BalanceConverted and the revaluation rows differ.',
-  },
-  {
     id: 'NEW-4',
     invariant: 'undo',
     kinds: ['undo-mismatch', 'chain-undo-mismatch', 'redo-mismatch', 'chain-redo-mismatch'],
     ops: ['transactions.moveToNewAccount', 'transactions.updateColumn', 'transactions.batchEdit'],
     tables: ['accounts', 'transactions'],
     note: 'Moving a row between accounts of different currencies is not reversible: the native amount is re-derived from the converted one on each move (86.38 EUR -> 79.18 or 88.30 EUR after undo), and ConversionPending stays set after moving back.',
-  },
-  {
-    id: 'NEW-5',
-    invariant: 'undo',
-    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['accounts.update'],
-    tables: ['accounts', 'categories', 'category_groups'],
-    note: 'Undo of an account type change (e.g. savings -> credit) keeps the CC payment category it created and the cc_payment_category_id link in Metadata.',
-  },
-  {
-    id: 'NEW-6',
-    invariant: 'undo',
-    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: [
-      'categories.moveToNewGroup',
-      'categoryGroups.reorder',
-      'categories.reorder',
-      'accounts.reorder',
-    ],
-    tables: ['categories', 'category_groups', 'accounts'],
-    note: 'Ordering not restored: undo of a group move puts the category at the end of its old group; undo of a group reorder writes explicit positions for system groups that had none (Income / Uncategorized / Transfers end up in another order); undo of a category / account reorder renumbers Position (same order, other values).',
-  },
-  {
-    id: 'NEW-8',
-    invariant: 'undo',
-    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['reports.update', 'reports.delete'],
-    tables: ['saved_reports'],
-    note: "Report undo does not keep Description as it was: update undo turns NULL into '', delete undo turns '' into NULL.",
-  },
-  {
-    id: 'NEW-9',
-    invariant: 'undo',
-    kinds: ['undo-mismatch', 'chain-undo-mismatch'],
-    ops: ['*'],
-    tables: ['recurring_transaction_occurrences'],
-    note: 'Occurrence materialization is not a pure function of the template: undo of a schedule edit regenerates from the old start date (past scheduled occurrences come back), and gaps left in a series are filled by a later write (an undo of an unrelated op then shows an extra scheduled occurrence).',
   },
 
   {
@@ -294,22 +213,6 @@ export const KNOWN_FAILURES: KnownFailure[] = [
     ops: ['rules.undoRun'],
     detail: /Only the most recent completed run can be undone/,
     note: 'Same as the undo entry, across devices: an undo of a rule run replayed after the other device ran a continuous rule throws there.',
-  },
-
-  {
-    id: 'NEW-9',
-    invariant: 'replay',
-    kinds: ['replay-diverged'],
-    ops: ['*'],
-    tables: ['recurring_transaction_occurrences'],
-    note: 'Same materialization issue across devices: after the same ops one device has a scheduled occurrence the other does not (gap filled on one side only).',
-  },
-  {
-    id: 'NEW-11',
-    invariant: 'replay',
-    kinds: ['replay-diverged-clock'],
-    ops: ['*'],
-    note: "Replay depends on the receiving device's \"today\": custom-rate ops revalue as of the receiver's today (other revaluation rows and BalanceConverted), ReconciledAt is stamped at apply time, FX rates of future-dated rows resolve against the receiver's today, and recurring series materialize from the receiver's backfill window.",
   },
 ];
 

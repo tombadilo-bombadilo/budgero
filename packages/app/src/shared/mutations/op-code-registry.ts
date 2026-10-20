@@ -1,5 +1,12 @@
+import type { Services } from '@budgero/core/browser';
 import { UnknownOpCodeError } from '@budgero/runtime';
-import type { OpCall, OpCodeEntry, OpCodeExecutionContext } from './op-code-registry/shared';
+import {
+  RESTORE_ROWS_OP,
+  S,
+  type OpCall,
+  type OpCodeEntry,
+  type OpCodeExecutionContext,
+} from './op-code-registry/shared';
 import { accountOps } from './op-code-registry/domains/accounts';
 import { bankSyncOps } from './op-code-registry/domains/bank-sync';
 import { budgetOps } from './op-code-registry/domains/budgets';
@@ -153,10 +160,89 @@ const historyOps = {
   },
 } satisfies Record<string, OpCodeEntry>;
 
-const flatOpCodeRegistry = {
+/** Every query key any domain op invalidates (for ops that can touch anything). */
+const ALL_INVALIDATIONS = uniqueKeys(
+  Object.values(domainOpCodeRegistry as Record<string, OpCodeEntry>).flatMap(
+    (entry) => entry.invalidates
+  )
+);
+
+const journalOps = {
+  /**
+   * Undo of a journaled op (executeJournaled / journaledUndo): puts back every
+   * row the op wrote, in one transaction. `journal` is recorded by the
+   * originating device, so every device restores the same rows.
+   */
+  [RESTORE_ROWS_OP]: {
+    execute: async (args) => S().rowJournal.restore(args.journal),
+    invalidates: ALL_INVALIDATIONS,
+  },
+} satisfies Record<string, OpCodeEntry>;
+
+/**
+ * Arg carrying the originating device's clock (epoch ms). Many writes depend
+ * on "today" (FX rates of future-dated rows resolve against it, revaluations
+ * and reconciliations are stamped with it, opening balances default to it,
+ * and recurring series materialize from it on almost any budget write, e.g.
+ * a payee rename that touches a template). Such ops stamp it in prepare and
+ * every device runs them at that instant (core runAtClock), so a replay on
+ * another device, or a redo after midnight, writes the same rows. Ops from
+ * older clients carry no clock and run at the local one, as before.
+ */
+export const OP_CLOCK_ARG = 'opClock';
+
+/**
+ * Every op is pinned except these: they write only their own UI records
+ * (dashboards, scenarios, chat, preferences), never budget data or recurring
+ * series.
+ */
+const CLOCK_FREE_OPS =
+  /^(customDashboards|customDashboardWidgets|scenarios|chat|userPreferences)\./;
+
+const isClockValue = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value);
+
+/** The services' clock (unit-test mocks may not have one). */
+function servicesClock(): Partial<Services['clock']> | undefined {
+  try {
+    return S().clock as Partial<Services['clock']> | undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function pinnedToOriginClock(entry: OpCodeEntry): OpCodeEntry {
+  return {
+    ...entry,
+    prepare: async (args) => {
+      const prepared = entry.prepare ? await entry.prepare(args) : args;
+      if (isClockValue(prepared[OP_CLOCK_ARG])) return prepared;
+      return { ...prepared, [OP_CLOCK_ARG]: servicesClock()?.now?.() ?? Date.now() };
+    },
+    execute: (args, context) => {
+      const at = args[OP_CLOCK_ARG];
+      const runAt = servicesClock()?.runAt;
+      return isClockValue(at) && runAt
+        ? runAt(at, () => entry.execute(args, context))
+        : entry.execute(args, context);
+    },
+  };
+}
+
+function withOriginClock<T extends Record<string, OpCodeEntry>>(ops: T): T {
+  return Object.fromEntries(
+    Object.entries(ops).map(([op, entry]) => [
+      op,
+      CLOCK_FREE_OPS.test(op) ? entry : pinnedToOriginClock(entry),
+    ])
+  ) as T;
+}
+
+const flatOpCodeRegistry = withOriginClock({
+  ...journalOps,
   ...domainOpCodeRegistry,
   ...historyOps,
-} satisfies Record<string, OpCodeEntry>;
+} satisfies Record<string, OpCodeEntry>);
 
 /** Every known mutation op code — derived from the registry keys, so an op
  * string exists iff its registry entry does. */

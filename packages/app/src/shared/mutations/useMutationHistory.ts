@@ -295,6 +295,7 @@ export function formatOpCode(op: string): string {
     'bankSync.setReviewStatus': 'Review Bank Match',
     'push.import': 'Push API Import',
     'history.applyOps': 'Undo / Redo',
+    'history.restoreRows': 'Undo',
   };
 
   return (

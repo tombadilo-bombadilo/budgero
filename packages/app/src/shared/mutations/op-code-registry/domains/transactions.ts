@@ -12,6 +12,8 @@ import {
 } from '@budgero/core/browser';
 import {
   S,
+  executeJournaled,
+  journaledUndo,
   sortTransactionSnapshots,
   transactionSnapshotToAddOp,
   TRANSACTION_INVALIDATION_KEYS,
@@ -1036,18 +1038,22 @@ export const transactionOps = {
   },
 
   // useReassignTransactions
+  // Legacy step of the old category delete (older clients still send it).
+  // Journaled: undo moves exactly the moved rows back.
   'transactions.reassign': {
-    execute: async (args) => {
-      return await S().transactions!.reassignTransactions(
-        args.newCategoryId as number,
-        args.oldCategoryId as number
-      );
-    },
+    execute: async (args, context) =>
+      executeJournaled(args, context, () =>
+        S().transactions!.reassignTransactions(
+          args.newCategoryId as number,
+          args.oldCategoryId as number
+        )
+      ),
     invalidates: [
       ...TRANSACTION_INVALIDATION_KEYS,
       ['transactionSplits', '*'],
       ...RECURRING_TEMPLATE_INVALIDATIONS,
     ],
+    undo: journaledUndo(),
   },
 
   // useReconcileAccount

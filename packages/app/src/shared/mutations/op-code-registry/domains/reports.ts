@@ -1,6 +1,8 @@
 import type { UnifiedReport } from '@budgero/core/browser';
 import {
   S,
+  executeJournaled,
+  journaledUndo,
   redoWithIds,
   safeCapture,
   type NewReportChart,
@@ -75,10 +77,13 @@ export const reportOps = {
       if (context?.isReceiver) {
         return await S().reports!.reconcileAndUpdateReport(args.id as string, updates);
       }
-      return await S().reports!.updateReport(args.id as string, updates);
+      // Journaled: undo restores the row as it was (a NULL description too).
+      return executeJournaled(args, context, () =>
+        S().reports!.updateReport(args.id as string, updates)
+      );
     },
     invalidates: [['reports'], ['report', '*']],
-    undo: {
+    undo: journaledUndo({
       capture: async (args) => captureReport(args.id),
       build: (args, _result, before) => {
         const report = before as UnifiedReport | null;
@@ -86,16 +91,17 @@ export const reportOps = {
           ? [{ op: 'reports.update', args: { id: args.id, ...reportFields(report) } }]
           : [];
       },
-    },
+    }),
   },
 
   // useDeleteReport
+  // Journaled: undo re-inserts the row exactly (an empty description too).
   'reports.delete': {
-    execute: async (args) => {
-      await S().reports!.deleteReport(args.id as string);
+    execute: async (args, context) => {
+      await executeJournaled(args, context, () => S().reports!.deleteReport(args.id as string));
     },
     invalidates: [['reports'], ['report', '*']],
-    undo: {
+    undo: journaledUndo({
       capture: async (args) => captureReport(args.id),
       build: (_args, _result, before) => {
         const report = before as UnifiedReport | null;
@@ -103,7 +109,7 @@ export const reportOps = {
           ? [{ op: 'reports.create', args: { id: report.id, ...reportFields(report) } }]
           : [];
       },
-    },
+    }),
   },
 
   // useToggleReportFavorite
