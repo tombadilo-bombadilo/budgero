@@ -6,6 +6,9 @@ export {
   RowCapture,
   restoreRowJournal,
   isRowJournal,
+  isEmptyJournal,
+  recordRowChanges,
+  recordRowChangesAsync,
   journalSize,
   type RowJournal,
 } from './row-journal.js';

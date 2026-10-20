@@ -1111,13 +1111,50 @@ export class CurrencyService {
    * Handle account currency change
    * Clears converted amounts for that account's transactions
    */
-  async handleAccountCurrencyChange(
+  /**
+   * Every exchange rate an account currency change will read, resolved up
+   * front (op prepare). Carried in the op args, they make the change convert
+   * with the same numbers on every device and on a redo, whatever each
+   * device's rate cache holds by then.
+   */
+  async prepareAccountCurrencyChange(
     accountId: number,
     budgetId: number,
     newCurrency: string,
     oldCurrency: string,
     mode: 'convert' | 'reinterpret' = 'convert'
+  ): Promise<CarriedFxRate[]> {
+    if (newCurrency === oldCurrency) return [];
+    const dates = allRows<{ date: string }>(
+      this.db,
+      'SELECT DISTINCT Date AS date FROM transactions WHERE AccountID = ? ORDER BY Date',
+      accountId
+    ).map((row) => row.date);
+    const displayCurrency = this.getBudgetDisplayCurrency(budgetId);
+    const pairs: [string, string][] = [];
+    if (mode === 'convert') pairs.push([oldCurrency, newCurrency]);
+    if (displayCurrency && displayCurrency !== newCurrency)
+      pairs.push([newCurrency, displayCurrency]);
+    const rates: CarriedFxRate[] = [];
+    for (const [from, to] of pairs) {
+      for (const date of dates) {
+        rates.push([from, to, date, await this.getOrFetchRate(from, to, date, budgetId)]);
+      }
+    }
+    return rates;
+  }
+
+  async handleAccountCurrencyChange(
+    accountId: number,
+    budgetId: number,
+    newCurrency: string,
+    oldCurrency: string,
+    mode: 'convert' | 'reinterpret' = 'convert',
+    carried?: unknown
   ): Promise<void> {
+    const rateFor = carriedRateLookup(carried, (from, to, date) =>
+      this.getOrFetchRate(from, to, date, budgetId)
+    );
     debugLog(`Handling account currency change from ${oldCurrency} to ${newCurrency}`, {
       accountId,
       mode,
@@ -1180,7 +1217,7 @@ export class CurrencyService {
         if (mode === 'convert') {
           // Get or fetch rate old -> new for the transaction date. Falling
           // back to 1 matches the established missing-rate behavior.
-          const rate = await this.getOrFetchRate(oldCurrency, newCurrency, tx.date, budgetId);
+          const rate = await rateFor(oldCurrency, newCurrency, tx.date);
           const effectiveRate = rate || 1;
           inflowNew = convertScaled(baseInflow, effectiveRate, oldCurrency, newCurrency);
           outflowNew = convertScaled(baseOutflow, effectiveRate, oldCurrency, newCurrency);
@@ -1232,7 +1269,13 @@ export class CurrencyService {
 
     // 3. Recalculate conversions for this account
     if (displayCurrency) {
-      await this.recalculateAccountTransactions(accountId, newCurrency, displayCurrency, budgetId);
+      await this.recalculateAccountTransactions(
+        accountId,
+        newCurrency,
+        displayCurrency,
+        budgetId,
+        rateFor
+      );
     }
   }
 
@@ -1270,7 +1313,8 @@ export class CurrencyService {
     accountId: number,
     accountCurrency: string,
     budgetCurrency: string,
-    budgetId: number
+    budgetId: number,
+    rateFor: RateLookup = (from, to, date) => this.getOrFetchRate(from, to, date, budgetId)
   ): Promise<void> {
     const transactions = allRows<{
       id: number;
@@ -1292,7 +1336,7 @@ export class CurrencyService {
     let runningBalanceConverted = 0;
 
     for (const tx of transactions) {
-      const rate = await this.getOrFetchRate(accountCurrency, budgetCurrency, tx.date, budgetId);
+      const rate = await rateFor(accountCurrency, budgetCurrency, tx.date);
 
       if (rate) {
         const inflowConverted = convertScaled(
@@ -1341,4 +1385,42 @@ export class CurrencyService {
     );
     this.transactionQueries.resyncSplitLinesForAccounts([accountId]);
   }
+}
+
+/** A rate an op carries: [from, to, date, rate] (null: no rate was found). */
+export type CarriedFxRate = [string, string, string, number | null];
+
+type RateLookup = (from: string, to: string, date: string) => Promise<number | null>;
+
+/**
+ * Looks rates up in `carried` (op args, see prepareAccountCurrencyChange)
+ * first; a pair / date it does not hold (a row added on another device since)
+ * falls back to `fallback`. Malformed entries are ignored.
+ */
+function carriedRateLookup(carried: unknown, fallback: RateLookup): RateLookup {
+  const known = new Map<string, number | null>();
+  if (Array.isArray(carried)) {
+    for (const entry of carried) {
+      if (!Array.isArray(entry) || entry.length !== 4) continue;
+      const [from, to, date, rate] = entry as unknown[];
+      if (typeof from !== 'string' || typeof to !== 'string' || typeof date !== 'string') continue;
+      if (rate !== null && !(typeof rate === 'number' && Number.isFinite(rate) && rate > 0)) {
+        continue;
+      }
+      known.set(`${from}>${to}@${date}`, rate);
+    }
+  }
+  return async (from, to, date) => {
+    const key = `${from}>${to}@${date}`;
+    if (!known.has(key)) return fallback(from, to, date);
+    // Still look the rate up locally (result unused): it fills this device's
+    // rate cache as the change always did, and later lookups (other rows,
+    // other ops) read that cache, so devices must fill it alike.
+    try {
+      await fallback(from, to, date);
+    } catch {
+      // the carried rate is what counts
+    }
+    return known.get(key)!;
+  };
 }

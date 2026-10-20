@@ -36,3 +36,36 @@ export function setClock(next: number | Date | (() => number) | null): void {
     override = () => fixed;
   }
 }
+
+/**
+ * Runs `fn` with the clock fixed at `at` (epoch ms), then puts the previous
+ * clock back; for an async `fn`, once it settles. Used to replay an op at the
+ * instant it originated, so every device computes the same "today". Pins
+ * don't interleave: ops run one at a time.
+ */
+export function runAtClock<T>(at: number, fn: () => T): T {
+  const previous = override;
+  override = () => at;
+  let settlesLater = false;
+  try {
+    const result = fn();
+    if (result instanceof Promise) {
+      settlesLater = true;
+      return result.finally(() => {
+        override = previous;
+      }) as T;
+    }
+    return result;
+  } finally {
+    if (!settlesLater) override = previous;
+  }
+}
+
+/**
+ * The clock as a service object (Services.clock), for callers that must read
+ * or pin the same clock instance the services use.
+ */
+export const serviceClock = {
+  now: (): number => clock.now(),
+  runAt: runAtClock,
+};

@@ -29,7 +29,35 @@ export interface RowJournal {
   deleted: { table: string; rows: JournalRow[] }[];
   changed: { table: string; values: JournalRow; ids: Key[] }[];
   inserted: { table: string; ids: Key[]; seq?: { before: number | null; after: number } }[];
+  /**
+   * Rows of tables whose ID is device-local (see NATURAL_KEYS), addressed by
+   * their natural key instead: re-inserted without the ID, updated and
+   * removed by key. Only written by recordRowChanges.
+   */
+  keyed?: KeyedJournal[];
 }
+
+export interface KeyedJournal {
+  table: string;
+  key: string[];
+  deleted: JournalRow[];
+  changed: { key: JournalRow; values: JournalRow }[];
+  inserted: JournalRow[];
+}
+
+/**
+ * Tables whose primary key differs per device (each device numbers its own
+ * materialized occurrences), so a journal names their rows by this unique key.
+ */
+const NATURAL_KEYS: Record<string, string[]> = {
+  recurring_transaction_occurrences: ['RecurringTransactionID', 'DueDate'],
+};
+
+/**
+ * Tables recordRowChanges never journals: device-local logs and caches, and
+ * SQLite / migration bookkeeping.
+ */
+const UNJOURNALED_TABLES = new Set(['mutation_history', 'currency_rates', 'schema_migrations']);
 
 interface ForeignKey {
   child: string;
@@ -326,6 +354,302 @@ export class RowCapture {
   }
 }
 
+let recorderCount = 0;
+
+interface TrackedTable {
+  table: TableSchema;
+  key: string[];
+  kept: string;
+  added: string;
+  seq: number | null;
+}
+
+/**
+ * Records every row written between start() and finish(), whatever tables
+ * it touches: unlike RowCapture, nothing has to be known up front.
+ *
+ * TEMP triggers on every journaled table keep the first previous version of
+ * each row an UPDATE or DELETE touches, and the key of each row an INSERT
+ * adds (FK cascades fire them too). finish() compares the kept rows with the
+ * database like RowCapture.finish() does. stop() drops the triggers and
+ * their tables. sql.js drops TEMP objects when the connection is re-opened
+ * (export / replace); a recording that spans that is incomplete, so finish()
+ * then returns null.
+ */
+class ChangeRecorder {
+  private readonly schema: Schema;
+
+  private readonly tracked: TrackedTable[];
+
+  private readonly drop: string[] = [];
+
+  private broken = false;
+
+  private unsubscribe: (() => void) | undefined;
+
+  constructor(private readonly db: DatabaseAdapter) {
+    this.schema = readSchema(db);
+    const prefix = `_rowjournal${(recorderCount += 1)}_`;
+    this.tracked = [...this.schema.values()]
+      .filter((table) => !UNJOURNALED_TABLES.has(table.name))
+      .map((table, index) => ({
+        table,
+        key: NATURAL_KEYS[table.name] ?? [table.pk],
+        kept: `${prefix}${index}_old`,
+        added: `${prefix}${index}_new`,
+        seq: NATURAL_KEYS[table.name] ? null : sequenceOf(db, table.name),
+      }));
+  }
+
+  start(): void {
+    const ddl: string[] = [];
+    for (const { table, key, kept, added } of this.tracked) {
+      const target = `main.${quote(table.name)}`;
+      const columns = table.columns.map(quote).join(', ');
+      const keyColumns = key.map(quote).join(', ');
+      const same = (alias: string, ref: string) =>
+        key.map((column) => `${alias}.${quote(column)} IS ${ref}.${quote(column)}`).join(' AND ');
+      const keep = (ref: string) =>
+        `INSERT OR IGNORE INTO ${quote(kept)} (${columns})
+           SELECT ${table.columns.map((column) => `${ref}.${quote(column)}`).join(', ')}
+           WHERE NOT EXISTS (SELECT 1 FROM ${quote(added)} AS a WHERE ${same('a', ref)});`;
+      const add = (ref: string, extra = '') =>
+        `INSERT OR IGNORE INTO ${quote(added)} (${keyColumns})
+           SELECT ${key.map((column) => `${ref}.${quote(column)}`).join(', ')}
+           WHERE NOT EXISTS (SELECT 1 FROM ${quote(kept)} AS k WHERE ${same('k', ref)})${extra};`;
+      ddl.push(
+        `CREATE TEMP TABLE ${quote(kept)} AS SELECT ${columns} FROM ${target} WHERE 0`,
+        `CREATE UNIQUE INDEX temp.${quote(`${kept}_key`)} ON ${quote(kept)} (${keyColumns})`,
+        `CREATE TEMP TABLE ${quote(added)} AS SELECT ${keyColumns} FROM ${target} WHERE 0`,
+        `CREATE UNIQUE INDEX temp.${quote(`${added}_key`)} ON ${quote(added)} (${keyColumns})`,
+        // A key change counts as a new row (the old key's row is kept).
+        `CREATE TEMP TRIGGER ${quote(`${kept}_u`)} BEFORE UPDATE ON ${target} BEGIN ${keep('OLD')}
+           ${add('NEW', ` AND NOT (${same('NEW', 'OLD')})`)} END`,
+        `CREATE TEMP TRIGGER ${quote(`${kept}_d`)} BEFORE DELETE ON ${target} BEGIN ${keep('OLD')} END`,
+        `CREATE TEMP TRIGGER ${quote(`${kept}_i`)} AFTER INSERT ON ${target} BEGIN ${add('NEW')} END`
+      );
+      this.drop.push(
+        `DROP TRIGGER IF EXISTS temp.${quote(`${kept}_u`)}`,
+        `DROP TRIGGER IF EXISTS temp.${quote(`${kept}_d`)}`,
+        `DROP TRIGGER IF EXISTS temp.${quote(`${kept}_i`)}`,
+        `DROP TABLE IF EXISTS temp.${quote(kept)}`,
+        `DROP TABLE IF EXISTS temp.${quote(added)}`
+      );
+    }
+    this.unsubscribe = this.db.addConnectionListener?.(() => {
+      this.broken = true;
+    });
+    this.db.exec(`${ddl.join(';\n')};`);
+  }
+
+  stop(): void {
+    this.unsubscribe?.();
+    if (!this.broken) this.db.exec(`${this.drop.join(';\n')};`);
+  }
+
+  finish(): RowJournal | null {
+    if (this.broken) return null;
+    const journal: RowJournal = { v: 1, deleted: [], changed: [], inserted: [] };
+    const deletedByTable = new Map<string, JournalRow[]>();
+    const insertedByTable = new Map<string, RowJournal['inserted'][number]>();
+    const keyed: KeyedJournal[] = [];
+    for (const { table, key, kept, added, seq } of this.tracked) {
+      const before = allRows<Record<string, unknown>>(
+        this.db,
+        `SELECT ${table.columns.map(quote).join(', ')} FROM ${quote(kept)}`
+      ).map((row) => encodeRow(table, row));
+      const addedKeys = allRows<Record<string, unknown>>(
+        this.db,
+        `SELECT ${key.map(quote).join(', ')} FROM ${quote(added)}`
+      );
+      if (NATURAL_KEYS[table.name]) {
+        const entry = diffKeyed(this.db, table, key, before, addedKeys);
+        if (entry) keyed.push(entry);
+        continue;
+      }
+      const now = new Map<Key, JournalRow>();
+      for (const row of readByKeys(
+        this.db,
+        table,
+        before.map((row) => row[table.pk] as Key)
+      ))
+        now.set(row[table.pk] as Key, row);
+      const groups = new Map<string, { values: JournalRow; ids: Key[] }>();
+      for (const row of before) {
+        const id = row[table.pk] as Key;
+        const after = now.get(id);
+        if (!after) {
+          deletedByTable.set(table.name, [...(deletedByTable.get(table.name) ?? []), row]);
+          continue;
+        }
+        const values: JournalRow = {};
+        for (const column of table.columns) {
+          if (!sameValue(row[column], after[column])) values[column] = row[column];
+        }
+        if (!Object.keys(values).length) continue;
+        const groupKey = JSON.stringify(values);
+        const group = groups.get(groupKey) ?? { values, ids: [] };
+        group.ids.push(id);
+        groups.set(groupKey, group);
+      }
+      for (const group of groups.values()) journal.changed.push({ table: table.name, ...group });
+      const addedIds = addedKeys.map((row) => row[table.pk] as Key);
+      const stillThere = new Set(
+        readByKeys(this.db, table, addedIds).map((row) => row[table.pk] as Key)
+      );
+      const ids = addedIds
+        .filter((id) => stillThere.has(id))
+        .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+      const after = sequenceOf(this.db, table.name);
+      const seqChanged = after !== null && after !== seq;
+      if (ids.length || seqChanged) {
+        insertedByTable.set(table.name, {
+          table: table.name,
+          ids,
+          ...(seqChanged ? { seq: { before: seq, after: after! } } : {}),
+        });
+      }
+    }
+    for (const name of insertOrder(this.schema, [...deletedByTable.keys()])) {
+      journal.deleted.push({ table: name, rows: deletedByTable.get(name)! });
+    }
+    for (const name of insertOrder(this.schema, [...insertedByTable.keys()])) {
+      journal.inserted.push(insertedByTable.get(name)!);
+    }
+    if (keyed.length) journal.keyed = keyed;
+    return journal;
+  }
+}
+
+/**
+ * After `change` threw: put back whatever it had already written (a change
+ * made of several commits, or one that awaits between writes, is not atomic
+ * by itself). Best effort: the original error is what the caller sees.
+ */
+function rollBack(db: DatabaseAdapter, recorder: ChangeRecorder): void {
+  try {
+    const journal = recorder.finish();
+    if (!journal || isEmptyJournal(journal)) return;
+    const restore = () => restoreRowJournal(db, journal, journaledTables(db));
+    if (db.inTransaction) restore();
+    else db.transaction(restore);
+  } catch {
+    // nothing more to do: the change's own error propagates
+  }
+}
+
+/**
+ * Runs `change` (synchronous) and returns its result with a journal that
+ * undoes exactly what it wrote (see ChangeRecorder). When `change` throws,
+ * what it had written is put back and the error propagates, so the change is
+ * all or nothing.
+ */
+export function recordRowChanges<T>(
+  db: DatabaseAdapter,
+  change: () => T
+): { result: T; journal: RowJournal | null } {
+  const recorder = new ChangeRecorder(db);
+  recorder.start();
+  try {
+    let result: T;
+    try {
+      result = change();
+      if (result && typeof (result as { then?: unknown }).then === 'function') {
+        throw new Error('recordRowChanges needs a synchronous change; use recordRowChangesAsync');
+      }
+    } catch (error) {
+      rollBack(db, recorder);
+      throw error;
+    }
+    return { result, journal: recorder.finish() };
+  } finally {
+    recorder.stop();
+  }
+}
+
+/**
+ * recordRowChanges for a change that awaits (e.g. an FX lookup between its
+ * writes). Every write made before it settles is journaled, so the caller
+ * must not run other mutations meanwhile (the mutation pipeline runs one op
+ * at a time).
+ */
+export async function recordRowChangesAsync<T>(
+  db: DatabaseAdapter,
+  change: () => Promise<T>
+): Promise<{ result: T; journal: RowJournal | null }> {
+  const recorder = new ChangeRecorder(db);
+  recorder.start();
+  try {
+    let result: T;
+    try {
+      result = await change();
+    } catch (error) {
+      rollBack(db, recorder);
+      throw error;
+    }
+    return { result, journal: recorder.finish() };
+  } finally {
+    recorder.stop();
+  }
+}
+
+/** Kept / added rows of a natural-key table compared with the database now. */
+function diffKeyed(
+  db: DatabaseAdapter,
+  table: TableSchema,
+  key: string[],
+  before: JournalRow[],
+  addedKeys: Record<string, unknown>[]
+): KeyedJournal | null {
+  const entry: KeyedJournal = { table: table.name, key, deleted: [], changed: [], inserted: [] };
+  const where = key.map((column) => `${quote(column)} IS ?`).join(' AND ');
+  const read = (values: unknown[]) => {
+    const row = getRow<Record<string, unknown>>(
+      db,
+      `SELECT ${table.columns.map(quote).join(', ')} FROM ${quote(table.name)} WHERE ${where}`,
+      ...values
+    );
+    return row ? encodeRow(table, row) : null;
+  };
+  const keyOf = (row: JournalRow): JournalRow =>
+    Object.fromEntries(key.map((column) => [column, row[column]]));
+  for (const row of before) {
+    const after = read(key.map((column) => decodeValue(row[column])));
+    if (!after) {
+      const rest = { ...row };
+      delete rest[table.pk];
+      entry.deleted.push(rest);
+      continue;
+    }
+    const values: JournalRow = {};
+    for (const column of table.columns) {
+      if (column === table.pk) continue;
+      if (!sameValue(row[column], after[column])) values[column] = row[column];
+    }
+    if (Object.keys(values).length) entry.changed.push({ key: keyOf(row), values });
+  }
+  for (const added of addedKeys) {
+    const encoded = keyOf(Object.fromEntries(key.map((c) => [c, encodeValue(added[c])])));
+    if (read(key.map((column) => decodeValue(encoded[column])))) entry.inserted.push(encoded);
+  }
+  return entry.deleted.length || entry.changed.length || entry.inserted.length ? entry : null;
+}
+
+/** True when a journal records no change at all. */
+export function isEmptyJournal(journal: RowJournal): boolean {
+  return (
+    !journal.deleted.length &&
+    !journal.changed.length &&
+    !journal.inserted.length &&
+    !journal.keyed?.length
+  );
+}
+
+/** Every table recordRowChanges journals (what restoring its journals may write). */
+export function journaledTables(db: DatabaseAdapter): Set<string> {
+  return new Set([...readSchema(db).keys()].filter((name) => !UNJOURNALED_TABLES.has(name)));
+}
+
 /** Row count a journal re-inserts (deleted rows). */
 export function journalSize(journal: RowJournal): number {
   return journal.deleted.reduce((sum, entry) => sum + entry.rows.length, 0);
@@ -338,7 +662,8 @@ export function isRowJournal(value: unknown): value is RowJournal {
     journal.v === 1 &&
     Array.isArray(journal.deleted) &&
     Array.isArray(journal.changed) &&
-    Array.isArray(journal.inserted)
+    Array.isArray(journal.inserted) &&
+    (journal.keyed === undefined || Array.isArray(journal.keyed))
   );
 }
 
@@ -384,6 +709,40 @@ export function restoreRowJournal(
     }
   }
 
+  // Natural-key rows (children of the tables above) come back without their
+  // device-local ID.
+  const keyed = journal.keyed ?? [];
+  const keyedTable = (entry: KeyedJournal) => {
+    const table = tableFor(entry.table);
+    if (JSON.stringify(entry.key) !== JSON.stringify(NATURAL_KEYS[entry.table])) {
+      throw new Error(`Invalid undo key for ${entry.table}`);
+    }
+    return table;
+  };
+  const keyWhere = (entry: KeyedJournal) =>
+    entry.key.map((column) => `${quote(column)} IS ?`).join(' AND ');
+  for (const entry of keyed) {
+    const table = keyedTable(entry);
+    for (const row of entry.deleted) {
+      checkColumns(table, row);
+      const columns = Object.keys(row).filter((column) => column !== table.pk);
+      const rest = columns.filter((column) => !entry.key.includes(column));
+      // These rows are derived and re-materialized on their own (a later
+      // write can fill the same due date again): overwrite such a row.
+      run(
+        db,
+        `INSERT INTO ${quote(table.name)} (${columns.map(quote).join(', ')})
+         VALUES (${columns.map(() => '?').join(', ')})
+         ON CONFLICT (${entry.key.map(quote).join(', ')}) DO ${
+           rest.length
+             ? `UPDATE SET ${rest.map((column) => `${quote(column)} = excluded.${quote(column)}`).join(', ')}`
+             : 'NOTHING'
+         }`,
+        ...columns.map((column) => decodeValue(row[column]))
+      );
+    }
+  }
+
   // 2. Updated rows get their previous values back.
   for (const entry of journal.changed) {
     const table = tableFor(entry.table);
@@ -403,7 +762,35 @@ export function restoreRowJournal(
     }
   }
 
+  for (const entry of keyed) {
+    const table = keyedTable(entry);
+    for (const { key, values } of entry.changed) {
+      checkColumns(table, values);
+      checkColumns(table, key);
+      const columns = Object.keys(values).filter((column) => column !== table.pk);
+      if (!columns.length) continue;
+      run(
+        db,
+        `UPDATE ${quote(table.name)} SET ${columns.map((column) => `${quote(column)} = ?`).join(', ')}
+         WHERE ${keyWhere(entry)}`,
+        ...columns.map((column) => decodeValue(values[column])),
+        ...entry.key.map((column) => decodeValue(key[column]))
+      );
+    }
+  }
+
   // 3. Rows the change created go again, unless something now refers to them.
+  for (const entry of keyed) {
+    const table = keyedTable(entry);
+    for (const key of entry.inserted) {
+      checkColumns(table, key);
+      run(
+        db,
+        `DELETE FROM ${quote(table.name)} WHERE ${keyWhere(entry)}`,
+        ...entry.key.map((column) => decodeValue(key[column]))
+      );
+    }
+  }
   for (const entry of [...journal.inserted].reverse()) {
     const table = tableFor(entry.table);
     const removable = entry.ids.filter(

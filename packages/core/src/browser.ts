@@ -16,7 +16,12 @@ export { WebDatabaseAdapter } from './database/web-adapter.js';
 
 export { MigrationRunner, getMaxSupportedSchemaVersion } from './database/migrations.js';
 export { reconcileSpaceScope } from './database/space-scope.js';
-export { isRowJournal, journalSize, type RowJournal } from './database/row-journal.js';
+export {
+  isEmptyJournal,
+  isRowJournal,
+  journalSize,
+  type RowJournal,
+} from './database/row-journal.js';
 
 // Services (platform-agnostic)
 export { BudgetService } from './services/budgets/index.js';
@@ -265,4 +270,4 @@ export {
 } from './services/bank-sync/index.js';
 
 // Clock seam (tests move "today")
-export { clock, setClock } from './utils/clock.js';
+export { clock, runAtClock, setClock } from './utils/clock.js';
