@@ -15,6 +15,8 @@ import {
   S,
   captureCategoryMark,
   createdCategoriesUndo,
+  executeJournaled,
+  journaledUndo,
   newOpRowId,
   redoWithIds,
   safeCapture,
@@ -128,19 +130,25 @@ export const recurringOps = {
         : null;
     }),
   },
+  // Journaled: undo restores the template and its occurrences exactly (a
+  // schedule edit regenerates them; re-applying the old schedule would not).
   'recurring.update': {
-    execute: async (args) => {
-      return await S().recurring!.updateRecurringTransaction(
-        args.id as number,
-        args.patch as UpdateRecurringTransactionInput
-      );
-    },
+    execute: async (args, context) =>
+      executeJournaled(args, context, () =>
+        S().recurring!.updateRecurringTransaction(
+          args.id as number,
+          args.patch as UpdateRecurringTransactionInput
+        )
+      ),
     invalidates: [
       ...RECURRING_TEMPLATE_INVALIDATIONS,
       ...RECURRING_OCCURRENCE_INVALIDATIONS,
       ...PROJECTION_CONSUMER_INVALIDATIONS,
     ],
-    undo: {
+    // The journal restores everything the edit wrote (template, occurrences,
+    // a Transfers category it created). The edit back + restoreEdit below is
+    // only the fallback when no journal was recorded (mocked services).
+    undo: journaledUndo({
       capture: async (args) => {
         const template = await safeCapture(() =>
           S().recurring!.getRecurringTransaction(args.id as number, { includeInactive: true })
@@ -173,7 +181,7 @@ export const recurringOps = {
           ...(journal ? [{ op: 'recurring.restoreEdit', args: { journal } }] : []),
         ];
       },
-    },
+    }),
   },
   'recurring.delete': {
     execute: async (args) => {

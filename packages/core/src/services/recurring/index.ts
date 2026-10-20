@@ -1369,6 +1369,7 @@ export class RecurringTransactionService {
       ) VALUES (?, ?, ?, 'scheduled')`
     );
 
+    let generated = false;
     while (iterations < MAX_GENERATED_OCCURRENCES) {
       if (endDate && nextDate > endDate) {
         break;
@@ -1377,9 +1378,18 @@ export class RecurringTransactionService {
         break;
       }
       if (nextDate > horizon) {
+        // An empty series still gets its first due date, even past the
+        // horizon: later passes continue from the newest row, which makes the
+        // series the same on every device. Without a row, the next pass would
+        // start from that device's own "today" (backfillThreshold), so devices
+        // whose clocks differ would materialize different dates.
+        if (!lastRow?.DueDate && !generated) {
+          insert.run(template.id, template.budgetId, getUTCDateString(nextDate));
+        }
         break;
       }
       insert.run(template.id, template.budgetId, getUTCDateString(nextDate));
+      generated = true;
       const candidate = addInterval(nextDate, schedule);
       if (candidate.getTime() === nextDate.getTime()) {
         break;

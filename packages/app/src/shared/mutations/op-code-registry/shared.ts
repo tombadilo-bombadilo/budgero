@@ -8,8 +8,11 @@
 
 import { getRuntime } from '@shared/runtime/global';
 import {
+  isEmptyJournal,
   type CategoryCreationMark,
   type ImportIdentity,
+  type RowJournal,
+  type Services,
   type MilliUnits,
   type ChartConfiguration,
   type SaveReportInput,
@@ -394,6 +397,56 @@ export function makeRestoreUndo<S extends Record<string, unknown>>(
       const snapshot = before as S | null | undefined;
       if (!snapshot || Object.values(snapshot).some((value) => !value)) return [];
       return [{ op, args: restoreArgs(args, snapshot) }];
+    },
+  };
+}
+
+/** Op code that puts back what a journaled op wrote (see executeJournaled). */
+export const RESTORE_ROWS_OP = 'history.restoreRows';
+
+/** Journal of the op run with these args object (set by execute, read by undo build). */
+const opJournals = new WeakMap<Record<string, unknown>, RowJournal>();
+
+/**
+ * Runs an op's change under the row journal (core RowJournalService), so its
+ * undo restores exactly the rows it wrote, whatever they are (see
+ * journaledUndo). Only the originating device records: receivers apply the
+ * undo op they are sent. `change` must be the op's only database work.
+ * Without a journal service (unit-test mocks) it just runs the change.
+ */
+export async function executeJournaled<T>(
+  args: Record<string, unknown>,
+  context: OpCodeExecutionContext | undefined,
+  change: () => T | Promise<T>
+): Promise<T> {
+  // Optional at runtime: unit tests mock only the services they use.
+  const recorder = S().rowJournal as Partial<Services['rowJournal']> | undefined;
+  if (context?.isReceiver || typeof recorder?.recordAsync !== 'function') return change();
+  const { result, journal } = await recorder.recordAsync(async () => change());
+  if (journal) opJournals.set(args, journal);
+  return result;
+}
+
+/**
+ * Undo for an op run through executeJournaled: one RESTORE_ROWS_OP with the
+ * journal (nothing when the op changed nothing). Falls back to `fallback`
+ * when no journal was recorded (mocked services).
+ */
+export function journaledUndo(
+  fallback?: NonNullable<OpCodeEntry['undo']>
+): NonNullable<OpCodeEntry['undo']> {
+  return {
+    ...(fallback?.capture ? { capture: fallback.capture } : {}),
+    build: (args, result, before) => {
+      const journal = opJournals.get(args);
+      if (!journal) return fallback ? fallback.build(args, result, before) : [];
+      if (isEmptyJournal(journal)) return [];
+      return [
+        {
+          op: RESTORE_ROWS_OP,
+          args: { ...(args.budgetId !== undefined ? { budgetId: args.budgetId } : {}), journal },
+        },
+      ];
     },
   };
 }

@@ -24,7 +24,7 @@ import {
   ensureCategoryWithGroup,
   ensureUncategorizedCategory,
 } from '../transactions/category-helpers.js';
-import { CurrencyService } from '../currency/index.js';
+import { CurrencyService, type CarriedFxRate } from '../currency/index.js';
 import { CategoryService } from '../categories/index.js';
 
 import { createLogger } from '../../logger.js';
@@ -402,6 +402,28 @@ export class AccountService {
   }
 
   /**
+   * The exchange rates an updateAccount call changing the currency will use
+   * (null when the currency does not change). The op carries them, so every
+   * device and a redo convert with the same numbers.
+   */
+  async prepareCurrencyChange(
+    id: number,
+    currency: string,
+    currencyChangeMode: 'convert' | 'reinterpret' = 'convert'
+  ): Promise<CarriedFxRate[] | null> {
+    const account = this.getAccount(id);
+    const finalCurrency = currency.trim() || account.Currency;
+    if (finalCurrency === account.Currency) return null;
+    return this.currencyService.prepareAccountCurrencyChange(
+      id,
+      account.BudgetID,
+      finalCurrency,
+      account.Currency,
+      currencyChangeMode
+    );
+  }
+
+  /**
    * UpdateAccount - Updates an account's properties
    * Uses original values if updated values are empty
    * Handles currency changes by clearing converted amounts
@@ -414,7 +436,9 @@ export class AccountService {
     currency: string,
     metadata?: Record<string, unknown>,
     onBudget?: boolean,
-    currencyChangeMode: 'convert' | 'reinterpret' = 'convert'
+    currencyChangeMode: 'convert' | 'reinterpret' = 'convert',
+    /** Rates from prepareCurrencyChange (op args); see CurrencyService. */
+    currencyRates?: unknown
   ): Promise<void> {
     const originalAccount = this.getAccount(id);
 
@@ -441,7 +465,8 @@ export class AccountService {
         originalAccount.BudgetID,
         finalCurrency,
         originalAccount.Currency,
-        currencyChangeMode
+        currencyChangeMode,
+        currencyRates
       );
     }
 
@@ -526,9 +551,11 @@ export class AccountService {
       // Update linked category name (for debt accounts) and CC Payment category
       // (for credit cards). Read from the metadata as persisted above, so links
       // preserved or created during this very update are honored too.
+      // A link to a since-deleted category has nothing to rename; throwing
+      // here would leave the edit half written.
       const linkedCategoryId = effectiveMetadata.linked_category_id;
-      if (typeof linkedCategoryId === 'number') {
-        this.categoryService.updateCategoryName(linkedCategoryId, finalName);
+      if (this.categoryExistsInBudget(originalAccount.BudgetID, linkedCategoryId)) {
+        this.categoryService.updateCategoryName(linkedCategoryId as number, finalName);
       }
 
       const ccPaymentCategoryId = effectiveMetadata.cc_payment_category_id;

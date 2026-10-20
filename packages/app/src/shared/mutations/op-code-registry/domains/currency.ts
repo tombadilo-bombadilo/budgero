@@ -2,6 +2,8 @@ import type { CustomCurrencyRate } from '@budgero/core/browser';
 import {
   S,
   TRANSACTION_INVALIDATION_KEYS,
+  executeJournaled,
+  journaledUndo,
   redoWithIds,
   safeCapture,
   type OpCodeEntry,
@@ -25,24 +27,28 @@ const CURRENCY_INVALIDATION_KEYS: string[][] = [
 ];
 
 export const currencyOps = {
+  // Custom-rate ops re-convert the rows in their range and revalue foreign
+  // accounts (dated today). All three are journaled: undo restores exactly
+  // what they wrote instead of revaluing again.
   'currency.customRates.add': {
-    execute: async (args) => {
-      return await S().currency!.addCustomRate(
-        args.fromCurrency as string,
-        args.toCurrency as string,
-        args.rate as number,
-        args.startDate as string,
-        (args.endDate as string | null) ?? null,
-        args.budgetId as number,
-        (args.alsoReverse as boolean | undefined) ?? false,
-        {
-          id: (args.id as number | undefined) ?? undefined,
-          reverseId: (args.reverseId as number | null | undefined) ?? undefined,
-        }
-      );
-    },
+    execute: async (args, context) =>
+      executeJournaled(args, context, () =>
+        S().currency!.addCustomRate(
+          args.fromCurrency as string,
+          args.toCurrency as string,
+          args.rate as number,
+          args.startDate as string,
+          (args.endDate as string | null) ?? null,
+          args.budgetId as number,
+          (args.alsoReverse as boolean | undefined) ?? false,
+          {
+            id: (args.id as number | undefined) ?? undefined,
+            reverseId: (args.reverseId as number | null | undefined) ?? undefined,
+          }
+        )
+      ),
     invalidates: CURRENCY_INVALIDATION_KEYS,
-    undo: {
+    undo: journaledUndo({
       build: (args, result) => {
         const { id, reverseId } = (result ?? {}) as { id?: number; reverseId?: number | null };
         return [id, reverseId]
@@ -52,7 +58,7 @@ export const currencyOps = {
             args: { id: rateId, budgetId: args.budgetId },
           }));
       },
-    },
+    }),
     redo: redoWithIds('currency.customRates.add', (args, result) => {
       const { id, reverseId } = (result ?? {}) as { id?: number; reverseId?: number | null };
       return typeof id === 'number' ? { ...args, id, reverseId } : null;
@@ -60,17 +66,18 @@ export const currencyOps = {
   },
 
   'currency.customRates.update': {
-    execute: async (args) => {
-      return await S().currency!.updateCustomRate(
-        args.id as number,
-        args.rate as number,
-        args.startDate as string,
-        (args.endDate as string | null) ?? null,
-        args.budgetId as number
-      );
-    },
+    execute: async (args, context) =>
+      executeJournaled(args, context, () =>
+        S().currency!.updateCustomRate(
+          args.id as number,
+          args.rate as number,
+          args.startDate as string,
+          (args.endDate as string | null) ?? null,
+          args.budgetId as number
+        )
+      ),
     invalidates: CURRENCY_INVALIDATION_KEYS,
-    undo: {
+    undo: journaledUndo({
       capture: captureRate,
       build: (args, _result, before) => {
         const rate = before as CustomCurrencyRate | null;
@@ -89,15 +96,16 @@ export const currencyOps = {
             ]
           : [];
       },
-    },
+    }),
   },
 
   'currency.customRates.delete': {
-    execute: async (args) => {
-      return await S().currency!.deleteCustomRate(args.id as number, args.budgetId as number);
-    },
+    execute: async (args, context) =>
+      executeJournaled(args, context, () =>
+        S().currency!.deleteCustomRate(args.id as number, args.budgetId as number)
+      ),
     invalidates: CURRENCY_INVALIDATION_KEYS,
-    undo: {
+    undo: journaledUndo({
       capture: captureRate,
       build: (args, _result, before) => {
         const rate = before as CustomCurrencyRate | null;
@@ -118,6 +126,6 @@ export const currencyOps = {
             ]
           : [];
       },
-    },
+    }),
   },
 } satisfies Record<string, OpCodeEntry>;

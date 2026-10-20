@@ -2,6 +2,8 @@ import { t } from '@lingui/core/macro';
 import { asMilli, isRowJournal, type Account, type BankLinkInput } from '@budgero/core/browser';
 import {
   S,
+  executeJournaled,
+  journaledUndo,
   ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
   TRANSACTION_INVALIDATION_KEYS,
   RECURRING_OCCURRENCE_INVALIDATIONS,
@@ -139,18 +141,36 @@ export const accountOps = {
   },
 
   // useEditAccount
+  // Journaled: undo puts back exactly what the edit wrote, including the
+  // payment / linked category a type change created and every amount a
+  // currency change rewrote.
   'accounts.update': {
-    execute: async (args) => {
-      return await S().accounts!.updateAccount(
+    // A currency change converts every row at the rates of its date: resolve
+    // them here and carry them, so every device (and a redo) converts with
+    // the same numbers whatever its rate cache holds.
+    prepare: async (args) => {
+      if (Array.isArray(args.currencyRates)) return args;
+      const rates = await S().accounts!.prepareCurrencyChange?.(
         args.id as number,
-        args.name as string,
-        args.type as string,
-        args.currency as string,
-        (args.metadata as Record<string, unknown>) || undefined,
-        args.onBudget as boolean | undefined,
+        (args.currency as string | undefined) ?? '',
         args.currencyChangeMode === 'reinterpret' ? 'reinterpret' : 'convert'
       );
+      return rates ? { ...args, currencyRates: rates } : args;
     },
+    execute: async (args, context) =>
+      executeJournaled(args, context, () =>
+        S().accounts!.updateAccount(
+          args.id as number,
+          args.name as string,
+          args.type as string,
+          args.currency as string,
+          (args.metadata as Record<string, unknown>) || undefined,
+          args.onBudget as boolean | undefined,
+          args.currencyChangeMode === 'reinterpret' ? 'reinterpret' : 'convert',
+          // Only when carried (prepare): older payloads keep the 7-arg call.
+          ...((args.currencyRates !== undefined ? [args.currencyRates] : []) as [] | [unknown])
+        )
+      ),
     invalidates: [
       ['account', '*'], // Will match ["account", id]
       // Currency edits rewrite transactions; liability edits sync Initial Debt.
@@ -164,11 +184,12 @@ export const accountOps = {
       ['onBudgetBalanceByDates'],
       ['readyToAssign', '*'], // Income calculations depend on on_budget accounts
     ],
-    undo: {
+    undo: journaledUndo({
       capture: async (args) => safeCapture(() => S().accounts!.getAccount(args.id as number)),
       build: (args, _result, before) => {
         const account = before as Account | null;
-        // A currency change rewrote every amount; converting back would not be exact.
+        // Without the journal: a currency change rewrote every amount and
+        // converting back would not be exact, so it gets no undo.
         if (!account || account.Currency !== args.currency) return [];
         return [
           {
@@ -184,27 +205,30 @@ export const accountOps = {
           },
         ];
       },
-    },
+    }),
   },
 
   // useReorderAccounts — custom sidebar/nav ordering (Settings → Appearance)
   'accounts.reorder': {
-    execute: async (args) => {
+    // Journaled: undo restores every Position exactly.
+    execute: async (args, context) => {
       const accountsService = S().accounts as {
         reorderAccounts?: (budgetId: number, orderedAccountIds: number[]) => void;
       };
       if (!accountsService.reorderAccounts) {
         throw new Error('reorderAccounts not available on accounts service');
       }
-      return accountsService.reorderAccounts(
-        args.budgetId as number,
-        args.orderedAccountIds as number[]
+      return executeJournaled(args, context, () =>
+        accountsService.reorderAccounts!(
+          args.budgetId as number,
+          args.orderedAccountIds as number[]
+        )
       );
     },
     invalidates: [
       ['accounts', '*'], // Will match ["accounts", budgetId]
     ],
-    undo: {
+    undo: journaledUndo({
       capture: async (args) =>
         safeCapture(() =>
           S()
@@ -217,7 +241,7 @@ export const accountOps = {
           ? [{ op: 'accounts.reorder', args: { budgetId: args.budgetId, orderedAccountIds } }]
           : [];
       },
-    },
+    }),
   },
 
   // Legacy: accounts.update now syncs the opening rows itself. Kept so queued

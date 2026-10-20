@@ -105,6 +105,14 @@ const services = () => {
   }
 };
 
+const categoryExists = (categoryId: number): boolean => {
+  try {
+    return Boolean(services()?.categories?.getCategory(categoryId));
+  } catch {
+    return false;
+  }
+};
+
 export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   // Carried rates (A12): v1.18 ignores them and fetches its own, row by row.
   // A no-op (prepare marks it with fromCurrency === currency) is a no-op there too.
@@ -245,6 +253,12 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
       (key) => typeof next[key] === 'number' && next[key] !== stored[key]
     );
     if (startsChanged) return true;
+    // A28: renaming a loan whose linked category is gone (a legacy group
+    // delete removed it) now skips that category; v1.18 throws half-way.
+    const linked = id(stored.linked_category_id);
+    const renamed =
+      typeof args.name === 'string' && args.name.trim() !== '' && args.name.trim() !== account.Name;
+    if (renamed && linked && !categoryExists(linked)) return true;
     const currencyChanged = typeof args.currency === 'string' && args.currency !== account.Currency;
     return Boolean(currencyChanged && checks?.accountHasSplitParents(accountId));
   },

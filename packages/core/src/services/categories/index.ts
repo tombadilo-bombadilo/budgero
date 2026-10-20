@@ -540,6 +540,16 @@ export class CategoryService {
     });
   }
 
+  /**
+   * Throws what deleteCategoryGroupWithUndo would refuse with: the Income
+   * group, or a group holding an active account's payment / linked category.
+   */
+  assertCategoryGroupDeletable(groupId: number): void {
+    this.assertEditableIncomeGroup(groupId);
+    const group = this.getCategoryGroup(groupId);
+    this.assertDeletable(this.getCategoriesByGroup(group.BudgetID, groupId).map((c) => c.ID));
+  }
+
   /** Undo of deleteCategoryWithUndo / deleteCategoryGroupWithUndo. */
   restoreDeletedCategories(journal: RowJournal): void {
     this.db.transaction(() => restoreRowJournal(this.db, journal, CATEGORY_RESTORE_TABLES));

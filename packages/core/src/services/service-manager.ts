@@ -33,6 +33,8 @@ import {
   DatabaseCustomDashboardService,
 } from './custom-dashboards/index.js';
 import { WarrantyService } from './warranties/index.js';
+import { RowJournalService } from './row-journal/index.js';
+import { serviceClock } from '../utils/clock.js';
 import { LegacyReplayService } from './legacy-replay/index.js';
 
 import { createLogger } from '../logger.js';
@@ -72,6 +74,9 @@ export interface Services {
   userMeta: UserMetaService;
   customDashboards: CustomDashboardService;
   warranties: WarrantyService;
+  rowJournal: RowJournalService;
+  /** The clock these services read (see utils/clock.ts). */
+  clock: typeof serviceClock;
   legacyReplay: LegacyReplayService;
 }
 
@@ -158,6 +163,8 @@ export class ServiceManager {
       userMeta: new UserMetaService(this.db),
       customDashboards: new DatabaseCustomDashboardService(this.db),
       warranties: new WarrantyService(this.db),
+      rowJournal: new RowJournalService(this.db),
+      clock: serviceClock,
       legacyReplay: new LegacyReplayService(this.db),
     };
   }
