@@ -125,6 +125,7 @@ export {
   mutationFormatVersion,
   OP_CODE_FORMAT_VERSIONS,
   opCodeFormatVersion,
+  REQUIRES_FORMAT_ARG,
   SNAPSHOT_DATA_FORMAT_VERSION,
   SYNC_PROTOCOL_VERSION,
   UnknownOpCodeError,
