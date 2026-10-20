@@ -690,3 +690,27 @@ describe('deleteDiffersFromLegacy (set-based)', () => {
     expect(prepare.mock.calls.length).toBeLessThanOrEqual(8);
   });
 });
+
+describe('rules.execute and empty payees', () => {
+  it("stamps format 3 when a candidate row stores Payee '' (v1.18 wrote NULL)", async () => {
+    const rule = services.rules.createRule({
+      budgetId,
+      name: 'category',
+      conditions: [],
+      actions: [{ type: 'category.set', payload: { categoryId: rent } }],
+    });
+    const named = await addRow(checking, 500);
+    sql("UPDATE transactions SET Payee = 'Shop' WHERE ID = ?", named);
+    const blank = await addRow(checking, 700);
+    sql("UPDATE transactions SET Payee = 'Cafe' WHERE ID = ?", blank);
+    expect(await sentFormat('rules.execute', { ruleId: rule.id })).toBe(2);
+    sql("UPDATE transactions SET Payee = '' WHERE ID = ?", blank);
+    expect(await sentFormat('rules.execute', { ruleId: rule.id })).toBe(3);
+    const only = (ids: number[]) =>
+      sentFormat('rules.execute', { ruleId: rule.id, options: { transactionIds: ids } });
+    expect(await only([named])).toBe(2);
+    expect(await only([named, blank])).toBe(3);
+    sql('UPDATE transactions SET Payee = NULL WHERE ID = ?', blank);
+    expect(await only([blank])).toBe(2);
+  });
+});

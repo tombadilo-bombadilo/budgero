@@ -128,7 +128,8 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   // run bookkeeping back from ruleState, and split parents follow amount edits.
   'rules.undoRun': () => true,
 
-  // Amount / account actions on a split parent now move its lines and mirrors.
+  // Amount / account actions on a split parent now move its lines and mirrors,
+  // and a stored '' payee the rule leaves alone stays '' (v1.18 wrote NULL).
   'rules.execute': (args, checks) => {
     const rule = checks ? services()?.rules?.getRule(Number(args.ruleId)) : undefined;
     if (!checks || !rule) return false;
@@ -136,7 +137,10 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
       (action) => action.type.startsWith('amount.') || action.type === 'account.set'
     );
     const options = (args.options ?? {}) as { transactionIds?: number[] };
-    return structural && checks.hasSplitParents(rule.budgetId, options.transactionIds);
+    return (
+      (structural && checks.hasSplitParents(rule.budgetId, options.transactionIds)) ||
+      checks.hasEmptyPayees(rule.budgetId, options.transactionIds)
+    );
   },
 
   'transactions.updateColumn': (args, checks) => {

@@ -233,19 +233,47 @@ export class LegacyReplayService {
 
   /** Whether any account of these (or, without ids, of the budget) holds a split parent. */
   hasSplitParents(budgetId: number, transactionIds?: number[]): boolean {
-    const ids = transactionIds ? validIds(transactionIds) : [];
-    if (transactionIds && !ids.length) return false;
-    const row = getRow<{ Found: number }>(
-      this.db,
-      `SELECT 1 AS Found FROM transactions t
-        WHERE t.BudgetID = ?
-          ${ids.length ? `AND t.ID IN (${placeholders(ids)})` : ''}
-          AND EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)
-        LIMIT 1`,
+    return this.budgetRowMatches(
       budgetId,
-      ...ids
+      transactionIds,
+      'EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)'
     );
-    return Boolean(row);
+  }
+
+  /**
+   * Whether any of these rows (or, without ids, of the budget) has an empty
+   * stored payee: rule runs now keep '' on rows whose payee they don't change,
+   * where older builds wrote NULL.
+   */
+  hasEmptyPayees(budgetId: number, transactionIds?: number[]): boolean {
+    return this.budgetRowMatches(budgetId, transactionIds, "t.Payee = ''");
+  }
+
+  /** Whether a row of the budget (limited to `transactionIds` when given) matches `condition`. */
+  private budgetRowMatches(
+    budgetId: number,
+    transactionIds: number[] | undefined,
+    condition: string
+  ): boolean {
+    const query = (ids: number[]) =>
+      Boolean(
+        getRow<{ Found: number }>(
+          this.db,
+          `SELECT 1 AS Found FROM transactions t
+            WHERE t.BudgetID = ?
+              ${ids.length ? `AND t.ID IN (${placeholders(ids)})` : ''}
+              AND ${condition}
+            LIMIT 1`,
+          budgetId,
+          ...ids
+        )
+      );
+    if (!transactionIds) return query([]);
+    const ids = validIds(transactionIds);
+    for (let index = 0; index < ids.length; index += CHUNK) {
+      if (query(ids.slice(index, index + CHUNK))) return true;
+    }
+    return false;
   }
 
   /**
