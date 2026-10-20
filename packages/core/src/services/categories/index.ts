@@ -25,6 +25,23 @@ export type {
   CategoryDeletionImpact,
 } from './types.js';
 
+/** Highest ID and AUTOINCREMENT counter of a table (see CategoryService.creationMark). */
+export interface IdCounter {
+  maxKey: number;
+  seq: number | null;
+}
+
+export interface CategoryCreationMark {
+  categories: IdCounter;
+  groups: IdCounter;
+}
+
+function idCounter(db: DatabaseAdapter, table: 'categories' | 'category_groups'): IdCounter {
+  const max = getRow<{ maxKey: number | null }>(db, `SELECT MAX(ID) AS maxKey FROM ${table}`);
+  const seq = getRow<{ seq: number }>(db, 'SELECT seq FROM sqlite_sequence WHERE name = ?', table);
+  return { maxKey: Number(max?.maxKey ?? 0), seq: seq ? Number(seq.seq) : null };
+}
+
 /** Tables a category-delete undo may write back to. */
 const CATEGORY_RESTORE_TABLES: ReadonlySet<string> = new Set([
   'category_groups',
@@ -536,6 +553,47 @@ export class CategoryService {
   /** Undo of deleteCategoryWithUndo / deleteCategoryGroupWithUndo. */
   restoreDeletedCategories(journal: RowJournal): void {
     this.db.transaction(() => restoreRowJournal(this.db, journal, CATEGORY_RESTORE_TABLES));
+  }
+
+  /**
+   * Where the category and group IDs stand now. With createdSinceJournal, an
+   * op's undo can remove the system category (and group) the op created on
+   * the fly, e.g. Transfers when a transfer is posted after it was deleted.
+   */
+  creationMark(): CategoryCreationMark {
+    return {
+      categories: idCounter(this.db, 'categories'),
+      groups: idCounter(this.db, 'category_groups'),
+    };
+  }
+
+  /**
+   * A journal that removes the categories and groups created since `mark`
+   * (restoreDeletedCategories skips any that are in use by then) and puts the
+   * ID counters back, so a redo creates them under the same IDs. Null when
+   * nothing was created.
+   */
+  createdSinceJournal(mark: CategoryCreationMark): RowJournal | null {
+    const inserted: RowJournal['inserted'] = [];
+    // Groups first: restore removes inserted rows newest entry first.
+    for (const [table, before] of [
+      ['category_groups', mark.groups],
+      ['categories', mark.categories],
+    ] as const) {
+      const created = allRows<{ ID: number }>(
+        this.db,
+        `SELECT ID FROM ${table} WHERE ID > ? ORDER BY ID`,
+        before.maxKey
+      ).map((row) => Number(row.ID));
+      if (!created.length) continue;
+      const after = idCounter(this.db, table).seq;
+      inserted.push({
+        table,
+        ids: created,
+        ...(after !== null ? { seq: { before: before.seq, after } } : {}),
+      });
+    }
+    return inserted.length ? { v: 1, deleted: [], changed: [], inserted } : null;
   }
 
   private assertDeletable(categoryIds: number[]): void {

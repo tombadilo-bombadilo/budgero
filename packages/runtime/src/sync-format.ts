@@ -54,16 +54,21 @@ export const SYNC_PROTOCOL_VERSION = 2;
 export const OP_CODE_FORMAT_VERSIONS: Readonly<Record<string, number>> = Object.freeze({
   'history.applyOps': 3,
   'history.restoreRows': 3,
+  'history.redoWithIds': 3,
   'accounts.createLinked': 3,
   'accounts.restoreDeleted': 3,
   'categories.deleteAndReassign': 3,
   'categories.restoreDeleted': 3,
   'categoryGroups.deleteAndReassign': 3,
+  'goals.restore': 3,
   'importHistory.unmatch': 3,
   'labels.restore': 3,
+  'payees.removeUnused': 3,
   'payees.restore': 3,
   'recurring.restore': 3,
+  'recurring.restoreEdit': 3,
   'rules.redoRun': 3,
+  'rules.restoreDeleted': 3,
   'transactions.batchEdit': 3,
   'transactions.restore': 3,
   'transactions.restoreAmounts': 3,
@@ -78,12 +83,28 @@ export function opCodeFormatVersion(op: string): number {
 }
 
 /**
+ * Arg the originating device sets when THIS call of an older op code needs a
+ * newer format: the op exists in older builds, but they would apply this
+ * particular call differently (see the app's legacy-format rules). Receivers
+ * that support the format ignore it.
+ */
+export const REQUIRES_FORMAT_ARG = 'requiresFormat';
+
+/** The format a call asks for via REQUIRES_FORMAT_ARG, clamped to what this build writes. */
+function requestedFormat(args?: Record<string, unknown>): number {
+  const value = args?.[REQUIRES_FORMAT_ARG];
+  if (typeof value !== 'number' || !Number.isInteger(value)) return BASE_MUTATION_FORMAT_VERSION;
+  return Math.min(Math.max(value, BASE_MUTATION_FORMAT_VERSION), MUTATION_FORMAT_VERSION);
+}
+
+/**
  * Lowest format a receiver must support to apply this mutation: the newest
  * op code it contains, including ops nested in a list-of-ops payload
- * (`args.ops`, e.g. history.applyOps).
+ * (`args.ops`, e.g. history.applyOps), or the format the call itself asks
+ * for (REQUIRES_FORMAT_ARG).
  */
 export function mutationFormatVersion(op: string, args?: Record<string, unknown>): number {
-  let version = opCodeFormatVersion(op);
+  let version = Math.max(opCodeFormatVersion(op), requestedFormat(args));
   const nested = args?.ops;
   if (Array.isArray(nested)) {
     for (const call of nested) {

@@ -1,4 +1,5 @@
 import { DatabaseAdapter } from '../../database/interface.js';
+import { insertRawRow, type RawRow } from '../../database/restore-rows.js';
 import type { MilliUnits } from '../../money/index.js';
 import { getLocalDateString } from '../../utils/date.js';
 import { NotFoundError, ValidationError } from '../../types/index.js';
@@ -130,6 +131,14 @@ export class GoalService {
    */
   deleteGoal(goalId: number): void {
     this.queries.deleteGoal(goalId);
+  }
+
+  /** Undo of a goal delete: the row as it was, under its own ID. */
+  restoreGoal(goal: RawRow): void {
+    if (!Number.isSafeInteger(Number(goal?.ID)) || Number(goal.ID) <= 0) {
+      throw new ValidationError('A restored goal needs its original ID');
+    }
+    insertRawRow(this.db, 'goals', goal);
   }
 
   /**

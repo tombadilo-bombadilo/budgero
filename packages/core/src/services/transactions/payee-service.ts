@@ -223,6 +223,30 @@ export class PayeeService {
     return { restored };
   }
 
+  /**
+   * Undo of an op that added directory entries (a new payee typed on an add,
+   * an edit or a batch edit): drop the entries `ids` of this budget that no
+   * transaction or split line uses any more.
+   */
+  removeUnusedPayees(budgetId: number, ids: number[]): { removed: number } {
+    const keys = (ids || []).filter((id) => Number.isSafeInteger(id) && id > 0);
+    if (!keys.length) return { removed: 0 };
+    const result = run(
+      this.db,
+      `DELETE FROM payees
+        WHERE BudgetID = ? AND ID IN (${placeholders(keys.length)})
+          AND NOT EXISTS (
+            SELECT 1 FROM transactions t
+             WHERE t.BudgetID = payees.BudgetID AND t.Payee = payees.Name COLLATE NOCASE)
+          AND NOT EXISTS (
+            SELECT 1 FROM transaction_splits s JOIN transactions t ON t.ID = s.TransactionID
+             WHERE t.BudgetID = payees.BudgetID AND s.Payee = payees.Name COLLATE NOCASE)`,
+      budgetId,
+      ...keys
+    );
+    return { removed: result.changes };
+  }
+
   deletePayee(budgetId: number, name: string): { cleared: number } {
     return { cleared: this.deletePayees(budgetId, [name]).cleared };
   }

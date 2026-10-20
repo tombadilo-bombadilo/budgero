@@ -122,6 +122,14 @@ export const payeeOps = {
     invalidates: PAYEE_WRITE_INVALIDATIONS,
     undo: restoreDeletedPayeesUndo,
   },
+  /** Undo of an op that added directory entries: see PayeeService.removeUnusedPayees. */
+  'payees.removeUnused': {
+    execute: async (args) => {
+      const ids = Array.isArray(args.ids) ? (args.ids as unknown[]).map(Number) : [];
+      return S().payees.removeUnusedPayees(args.budgetId as number, ids);
+    },
+    invalidates: [['payees'], ['payees', '*'], ['payeeDirectory'], ['payeeDirectory', '*']],
+  },
   /** Undo of rename/delete: see PayeeService.restorePayees. */
   'payees.restore': {
     execute: async (args) => {

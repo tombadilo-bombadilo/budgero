@@ -296,6 +296,7 @@ export function formatOpCode(op: string): string {
     'push.import': 'Push API Import',
     'history.applyOps': 'Undo / Redo',
     'history.restoreRows': 'Undo',
+    'history.redoWithIds': 'Redo',
   };
 
   return (

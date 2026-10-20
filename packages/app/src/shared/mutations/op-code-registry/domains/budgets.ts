@@ -96,7 +96,9 @@ export const budgetOps = {
         args.id as number,
         args.currency as string
       );
-      return change ? { ...args, ...change } : args;
+      // No change: say so, so a replay doesn't take the "already switched by
+      // an older client" repair path for it.
+      return change ? { ...args, ...change } : { ...args, fromCurrency: args.currency };
     },
     execute: async (args, context) => {
       return await S().budgets!.updateBudgetCurrency(args.id as number, args.currency as string, {

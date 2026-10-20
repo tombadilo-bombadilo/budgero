@@ -59,7 +59,7 @@ const NATURAL_KEYS: Record<string, string[]> = {
  */
 const UNJOURNALED_TABLES = new Set(['mutation_history', 'currency_rates', 'schema_migrations']);
 
-interface ForeignKey {
+export interface ForeignKey {
   child: string;
   column: string;
   parent: string;
@@ -67,7 +67,7 @@ interface ForeignKey {
   onDelete: string;
 }
 
-interface TableSchema {
+export interface TableSchema {
   name: string;
   /** Stored columns (generated columns excluded). */
   columns: string[];
@@ -76,7 +76,7 @@ interface TableSchema {
   parents: ForeignKey[];
 }
 
-type Schema = Map<string, TableSchema>;
+export type Schema = Map<string, TableSchema>;
 
 const CHUNK = 400;
 
@@ -214,8 +214,20 @@ export class RowCapture {
 
   private readonly watched = new Map<string, { maxKey: number; seq: number | null }>();
 
-  constructor(private readonly db: DatabaseAdapter) {
-    this.schema = readSchema(db);
+  constructor(
+    private readonly db: DatabaseAdapter,
+    schema?: Schema
+  ) {
+    this.schema = schema ?? readSchema(db);
+  }
+
+  /**
+   * A new, empty capture on the same connection that reuses this one's schema
+   * (reading the schema is the expensive part when capturing many small
+   * changes one by one).
+   */
+  fork(): RowCapture {
+    return new RowCapture(this.db, this.schema);
   }
 
   private table(name: string): TableSchema {

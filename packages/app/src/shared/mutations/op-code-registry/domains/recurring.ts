@@ -1,15 +1,20 @@
-import type {
-  CreateRecurringTransactionInput,
-  MarkOccurrenceReadyOptions,
-  MarkOccurrenceReadyResult,
-  RecurringOccurrence,
-  RecurringOccurrenceRef,
-  RecurringTemplateSnapshot,
-  RecurringTransaction,
-  UpdateRecurringTransactionInput,
+import {
+  isRowJournal,
+  type CreateRecurringTransactionInput,
+  type MarkOccurrenceReadyOptions,
+  type MarkOccurrenceReadyResult,
+  type RecurringOccurrence,
+  type RecurringOccurrenceRef,
+  type RecurringTemplateSnapshot,
+  type RecurringTransaction,
+  type RecurringTransactionService,
+  type RowJournal,
+  type UpdateRecurringTransactionInput,
 } from '@budgero/core/browser';
 import {
   S,
+  captureCategoryMark,
+  createdCategoriesUndo,
   executeJournaled,
   journaledUndo,
   newOpRowId,
@@ -35,6 +40,35 @@ const PROJECTION_CONSUMER_INVALIDATIONS: string[][] = [
   ['spendingByLabels', '*'],
   ['spendingByPayees', '*'],
 ];
+
+interface TemplateEdit {
+  finish(): RowJournal;
+}
+
+/** Starts the template journal (see RecurringTransactionService.beginTemplateEdit). */
+function beginTemplateEdit(id?: number): TemplateEdit | null {
+  const recurring = S().recurring as Partial<RecurringTransactionService> | undefined;
+  if (typeof recurring?.beginTemplateEdit !== 'function') return null;
+  try {
+    return recurring.beginTemplateEdit(id);
+  } catch {
+    return null;
+  }
+}
+
+/** The journal, when it records anything undo must put back. */
+function finishTemplateEdit(before: unknown): RowJournal | null {
+  const edit = (before as { edit?: TemplateEdit } | null)?.edit ?? before;
+  if (!edit || typeof (edit as TemplateEdit).finish !== 'function') return null;
+  try {
+    const journal = (edit as TemplateEdit).finish();
+    return journal.changed.length || journal.inserted.length || journal.deleted.length
+      ? journal
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * Occurrence ops take `{ id, recurringTransactionId?, dueDate? }`. Occurrence
@@ -77,9 +111,16 @@ export const recurringOps = {
       ...PROJECTION_CONSUMER_INVALIDATIONS,
     ],
     undo: {
-      build: (_args, result) => {
+      capture: async () => beginTemplateEdit(),
+      build: (_args, result, before) => {
         const id = (result as RecurringTransaction | undefined)?.id;
-        return typeof id === 'number' ? [{ op: 'recurring.delete', args: { id } }] : [];
+        if (typeof id !== 'number') return [];
+        // The delete, then the Transfers category a transfer template created.
+        const journal = finishTemplateEdit(before);
+        return [
+          { op: 'recurring.delete', args: { id } },
+          ...(journal ? [{ op: 'recurring.restoreEdit', args: { journal } }] : []),
+        ];
       },
     },
     redo: redoWithIds('recurring.create', (args, result) => {
@@ -104,14 +145,25 @@ export const recurringOps = {
       ...RECURRING_OCCURRENCE_INVALIDATIONS,
       ...PROJECTION_CONSUMER_INVALIDATIONS,
     ],
+    // The journal restores everything the edit wrote (template, occurrences,
+    // a Transfers category it created). The edit back + restoreEdit below is
+    // only the fallback when no journal was recorded (mocked services).
     undo: journaledUndo({
-      capture: async (args) =>
-        safeCapture(() =>
+      capture: async (args) => {
+        const template = await safeCapture(() =>
           S().recurring!.getRecurringTransaction(args.id as number, { includeInactive: true })
-        ),
+        );
+        const edit = template ? beginTemplateEdit(args.id as number) : null;
+        return edit ? { template, edit } : template;
+      },
       build: (args, _result, before) => {
-        const template = before as RecurringTransaction | null;
+        const captured = before as
+          RecurringTransaction | { template: RecurringTransaction; edit: TemplateEdit } | null;
+        const template = captured && 'edit' in captured ? captured.template : captured;
         if (!template) return [];
+        // What the edit back cannot write: a transfer template's NULL category,
+        // and the Transfers category the edit created.
+        const journal = finishTemplateEdit(captured && 'edit' in captured ? captured : null);
         const patch: UpdateRecurringTransactionInput = {
           accountId: template.accountId,
           toAccountId: template.toAccountId,
@@ -124,7 +176,10 @@ export const recurringOps = {
           notifyDaysBefore: template.notifyDaysBefore,
           active: template.active,
         };
-        return [{ op: 'recurring.update', args: { id: args.id, patch } }];
+        return [
+          { op: 'recurring.update', args: { id: args.id, patch } },
+          ...(journal ? [{ op: 'recurring.restoreEdit', args: { journal } }] : []),
+        ];
       },
     }),
   },
@@ -153,6 +208,20 @@ export const recurringOps = {
         ];
       },
     },
+  },
+  /** Second step of a template create / edit undo: see restoreTemplateEdit. */
+  'recurring.restoreEdit': {
+    execute: async (args) => {
+      if (!isRowJournal(args.journal)) throw new Error('"journal" is required.');
+      S().recurring!.restoreTemplateEdit(args.journal);
+    },
+    invalidates: [
+      ...RECURRING_TEMPLATE_INVALIDATIONS,
+      ...PROJECTION_CONSUMER_INVALIDATIONS,
+      ['categories', '*'],
+      ['categoryGroups', '*'],
+      ['monthlyBudget', '*'],
+    ],
   },
   'recurring.restore': {
     execute: async (args) => {
@@ -190,7 +259,7 @@ export const recurringOps = {
           const occurrence = await recurring.getOccurrenceWithTemplate(
             recurring.resolveOccurrenceId(options)
           );
-          return { occurrence };
+          return { occurrence, categoryMark: captureCategoryMark() };
         } catch (error) {
           console.warn(
             '[OpCodeRegistry] Unable to capture occurrence before markReady undo',
@@ -199,7 +268,7 @@ export const recurringOps = {
           return null;
         }
       },
-      build: (args, result, _before) => {
+      build: (args, result, before) => {
         const options = (args.options ?? {}) as MarkOccurrenceReadyOptions;
         const ready = result as MarkOccurrenceReadyResult | undefined;
         const transactionId = ready?.transactionId;
@@ -210,6 +279,13 @@ export const recurringOps = {
         const ops: { op: string; args: Record<string, unknown> }[] = [];
         ops.push({ op: 'transactions.delete', args: { id: transactionId } });
         ops.push({ op: 'recurring.resetOccurrence', args: reset });
+        // Posting a transfer re-creates the Transfers category if it was deleted.
+        ops.push(
+          ...createdCategoriesUndo(
+            (before as { categoryMark?: unknown } | null)?.categoryMark,
+            ready?.occurrence?.template?.budgetId ?? ready?.occurrence?.budgetId
+          )
+        );
         return ops;
       },
     },

@@ -6,6 +6,12 @@
  */
 
 import type { DatabaseAdapter } from '../../database/interface.js';
+import {
+  allocatedIdRange,
+  readIdCounters,
+  withReusedIds,
+  type IdRange,
+} from '../../database/id-reuse.js';
 import { MutationHistoryQueries } from './queries.js';
 import type {
   MutationHistoryEntry,
@@ -20,6 +26,21 @@ export class MutationHistoryService {
 
   constructor(private db: DatabaseAdapter) {
     this.queries = new MutationHistoryQueries(db);
+  }
+
+  /** AUTOINCREMENT counters of the shared tables, read before an op runs (see id-reuse). */
+  idCounters(): Record<string, number> {
+    return readIdCounters(this.db);
+  }
+
+  /** The ID range an op allocated since `before` (from idCounters), for its redo. */
+  allocatedIds(before: Record<string, number>): IdRange {
+    return allocatedIdRange(this.db, before);
+  }
+
+  /** Run a redo so it allocates the IDs of `range` again (see id-reuse). */
+  withReusedIds<T>(range: unknown, fn: () => Promise<T> | T): Promise<T> {
+    return withReusedIds(this.db, range, fn);
   }
 
   /**

@@ -158,6 +158,16 @@ export interface DumpOptions {
    * time each device ran the rule.
    */
   crossDevice: boolean;
+  /**
+   * Invariant 5: a rule run marked 'undone' (and its change rows) counts as
+   * no run. Undoing a run keeps its row as the run history's audit trail
+   * ("Undo run" in Rules shows it as undone; redo flips the same row back),
+   * so "undo restores the state before the op" holds for run bookkeeping
+   * when an undone run equals no run. Everything else about the run (the
+   * rule's LastRunAt / OneTimeConsumed, the restored transactions) is still
+   * compared, and a redo must bring the run back exactly as it was.
+   */
+  hideUndoneRuns?: boolean;
 }
 
 export type Dump = Map<string, string[]>;
@@ -179,6 +189,19 @@ export function dumpDb(adapter: DatabaseAdapter, options: DumpOptions): Dump {
     .prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
     .all() as { name: string }[];
   const out: Dump = new Map();
+  const undoneRuns = new Set(
+    options.hideUndoneRuns && tables.some((t) => t.name === 'transaction_rule_runs')
+      ? (
+          adapter.prepare("SELECT ID FROM transaction_rule_runs WHERE Status = 'undone'").all() as {
+            ID: number;
+          }[]
+        ).map((row) => Number(row.ID))
+      : []
+  );
+  const hidden = (name: string, row: Record<string, unknown>) =>
+    undoneRuns.size > 0 &&
+    ((name === 'transaction_rule_runs' && undoneRuns.has(Number(row.ID))) ||
+      (name === 'transaction_rule_run_changes' && undoneRuns.has(Number(row.RunID))));
   for (const { name } of tables) {
     if (EXCLUDED_TABLES.has(name)) continue;
     if (name === 'sqlite_sequence' && !options.sequences) continue;
@@ -188,7 +211,7 @@ export function dumpDb(adapter: DatabaseAdapter, options: DumpOptions): Dump {
     const lines: string[] = [];
     for (const row of rows) {
       if (name === 'sqlite_sequence' && LOCAL_SEQUENCES.has(String(row.name))) continue;
-      if (!equivalent(name, row)) continue;
+      if (!equivalent(name, row) || hidden(name, row)) continue;
       const kept: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(row)) if (!skip.has(key)) kept[key] = encode(value);
       lines.push(JSON.stringify(kept));

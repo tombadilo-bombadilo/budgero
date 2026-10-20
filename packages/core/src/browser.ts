@@ -26,6 +26,7 @@ export {
 // Services (platform-agnostic)
 export { BudgetService } from './services/budgets/index.js';
 export { CategoryService } from './services/categories/index.js';
+export type { CategoryCreationMark } from './services/categories/index.js';
 export { AccountService } from './services/accounts/index.js';
 export {
   TransactionService,
@@ -55,6 +56,7 @@ export { RecurringTransactionService } from './services/recurring/index.js';
 export { DatabaseCustomDashboardService } from './services/custom-dashboards/index.js';
 
 export { ServiceManager, type Services } from './services/service-manager.js';
+export { LegacyReplayService } from './services/legacy-replay/index.js';
 
 // File-format parsers (pure, browser-safe). We re-export from the specific
 // modules rather than the ./services/import barrel so this entry stays an
