@@ -632,20 +632,29 @@ export const transactionOps = {
       // remove the row the identity belongs to).
       capture: async (args) => {
         const payees = missingPayees(args.budgetId, payloadPayees(args));
+        // An add can re-create the Uncategorized category (and group) when a
+        // legacy group delete removed it.
+        const categoryMark = captureCategoryMark();
+        const extra = { ...(payees ? { payees } : {}), ...(categoryMark ? { categoryMark } : {}) };
         const identity = (args.importIdentities as ImportIdentity[] | undefined)?.[0];
-        if (!identity) return { duplicateOf: undefined, ...(payees ? { payees } : {}) };
+        if (!identity) return { duplicateOf: undefined, ...extra };
         return {
           duplicateOf: S().importHistory!.duplicates.findOperation(identity.operationId),
-          ...(payees ? { payees } : {}),
+          ...extra,
         };
       },
-      // add -> delete the created transaction (and a payee entry it added)
-      build: (_args, result, before) => {
-        const captured = before as { duplicateOf?: number; payees?: MissingPayees } | undefined;
+      // add -> delete the created transaction (and a payee entry / category it added)
+      build: (args, result, before) => {
+        const captured = before as
+          { duplicateOf?: number; payees?: MissingPayees; categoryMark?: unknown } | undefined;
         if (captured?.duplicateOf !== undefined) return [];
         const id = result as number | undefined;
         return typeof id === 'number' && Number.isFinite(id)
-          ? [{ op: 'transactions.delete', args: { id } }, ...removeAddedPayees(captured?.payees)]
+          ? [
+              { op: 'transactions.delete', args: { id } },
+              ...removeAddedPayees(captured?.payees),
+              ...createdCategoriesUndo(captured?.categoryMark, args.budgetId),
+            ]
           : [];
       },
     },

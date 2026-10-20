@@ -6,14 +6,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // The harness runs the Node core build; its clock is the one to move.
 // eslint-disable-next-line no-restricted-imports
-import { setClock } from '@budgero/core';
-import { opCodeFormatVersion } from '@budgero/runtime';
+import { asMilli, setClock } from '@budgero/core';
+import { opCodeFormatVersion, REQUIRES_FORMAT_ARG } from '@budgero/runtime';
 import {
   executeMutationOp,
   OP_CLOCK_ARG,
   prepareMutationArgs,
 } from '@shared/mutations/op-code-registry';
 import { RESTORE_ROWS_OP } from '@shared/mutations/op-code-registry/shared';
+import { withLegacyFormat } from '@shared/mutations/legacy-format';
 import { useUndoStore } from '@shared/mutations/UndoStore';
 import { createUndoHarness, resetUndoStore, type UndoHarness } from './harness';
 
@@ -134,6 +135,53 @@ describe('journaled undo', () => {
       type: 'credit',
       currency: 'USD',
     });
+  });
+
+  it('undo of a split add removes the Uncategorized category it re-created', async () => {
+    const uncategorized = h.services.categories
+      .getAllCategories(h.budgetId)
+      .find((category) => category.Name === 'Uncategorized')!;
+    await h.run('categoryGroups.delete', {
+      id: uncategorized.CategoryGroupID,
+      budgetId: h.budgetId,
+    });
+    const before = h.dump(['categories', 'category_groups']);
+    await h.run('transactions.add', {
+      budgetId: h.budgetId,
+      accountId: h.accountId,
+      date: '2026-09-02',
+      outflow: 2000,
+      memo: 'split',
+      splits: [
+        { categoryId: h.categoryId, outflow: 1000 },
+        { categoryId: other, outflow: 1000 },
+      ],
+    });
+    await useUndoStore.getState().undo();
+    expect(h.dump(['categories', 'category_groups'])).toEqual(before);
+  });
+
+  it('a loan rename v1.18 would half-apply (linked category gone) asks for format 3 (A28)', async () => {
+    const loan = await h.services.accounts.createAccount(
+      'Car',
+      h.budgetId,
+      'loan',
+      'USD',
+      asMilli(0),
+      {
+        debt_total: 100_000,
+      }
+    );
+    const linked = (
+      JSON.parse(String(h.services.accounts.getAccount(loan.ID).Metadata || '{}')) as {
+        linked_category_id: number;
+      }
+    ).linked_category_id;
+    const call = { id: loan.ID, name: 'Truck', type: 'loan', currency: 'USD' };
+    expect(withLegacyFormat('accounts.update', call)).not.toHaveProperty(REQUIRES_FORMAT_ARG);
+    // What a replayed legacy group delete leaves behind.
+    h.adapter.prepare('DELETE FROM categories WHERE ID = ?').run(linked);
+    expect(withLegacyFormat('accounts.update', call)[REQUIRES_FORMAT_ARG]).toBe(3);
   });
 
   it('a new op code older builds cannot read is stamped format 3', () => {
