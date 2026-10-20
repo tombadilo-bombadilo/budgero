@@ -1,3 +1,4 @@
+import { isRowJournal } from '@budgero/core/browser';
 import type {
   LogAutofillApplicationInput,
   CreateRuleInput,
@@ -24,8 +25,8 @@ type RuleRunSnapshot = {
   oneTimeConsumed?: boolean;
 };
 
-/** Run statuses core undoRun accepts. */
-const UNDOABLE_RUN_STATUSES = new Set<string>(['completed', 'partial']);
+/** Run statuses an execution can end with; core undoRun takes all of them (failed: allowFailed). */
+const FINISHED_RUN_STATUSES = new Set<string>(['completed', 'partial', 'failed']);
 
 export const ruleOps = {
   'rules.create': {
@@ -91,13 +92,19 @@ export const ruleOps = {
   },
 
   'rules.delete': {
+    // Returns the delete's journal (the rule with its run history), or null.
     execute: async (args) => {
-      return await S().rules!.deleteRule(args.id as number);
+      return S().rules!.deleteRuleWithUndo(args.id as number);
     },
     invalidates: RULE_INVALIDATION_KEYS,
     undo: {
       capture: async (args) => safeCapture(() => S().rules!.getRule(args.id as number)),
-      build: (_args, _result, before) => {
+      build: (_args, result, before) => {
+        // The journal brings back the rule's run history too; without one
+        // (history too large) only the rule comes back.
+        if (isRowJournal(result)) {
+          return [{ op: 'rules.restoreDeleted', args: { journal: result } }];
+        }
         if (!before) return [];
         return [
           {
@@ -109,6 +116,15 @@ export const ruleOps = {
         ];
       },
     },
+  },
+
+  /** Undo of rules.delete: put the rule and its run history back exactly. */
+  'rules.restoreDeleted': {
+    execute: async (args) => {
+      if (!isRowJournal(args.journal)) throw new Error('Nothing to restore');
+      return S().rules!.restoreDeletedRule(args.journal);
+    },
+    invalidates: RULE_INVALIDATION_KEYS,
   },
 
   'rules.restore': {
@@ -140,25 +156,27 @@ export const ruleOps = {
         }),
       // One op, same code path as Rules -> "Undo run": core undoRun restores
       // every logged field (payee included), marks the run undone, and puts
-      // the rule's lastRunAt/oneTimeConsumed back as they were.
-      build: (args, result, before) => {
+      // the rule's lastRunAt/oneTimeConsumed back as they were. A failed run
+      // changed no transaction; it is marked undone the same way.
+      build: (_args, result, before) => {
         const execResult = result as RuleExecutionResult | undefined;
         const snapshot = before as RuleRunSnapshot | null | undefined;
         if (!execResult?.run?.id || !snapshot) return [];
+        if (!FINISHED_RUN_STATUSES.has(execResult.run.status)) return [];
         const ruleState: RuleRunState = {
           lastRunAt: snapshot.lastRunAt ?? null,
           oneTimeConsumed: Boolean(snapshot.oneTimeConsumed),
         };
-        if (!UNDOABLE_RUN_STATUSES.has(execResult.run.status)) {
-          // Nothing was applied (failed run): only the bookkeeping moved.
-          return [
-            {
-              op: 'rules.update',
-              args: { id: args.ruleId, patch: ruleState satisfies UpdateRuleInput },
+        return [
+          {
+            op: 'rules.undoRun',
+            args: {
+              runId: execResult.run.id,
+              ruleState,
+              ...(execResult.run.status === 'failed' ? { allowFailed: true } : {}),
             },
-          ];
-        }
-        return [{ op: 'rules.undoRun', args: { runId: execResult.run.id, ruleState } }];
+          },
+        ];
       },
     },
     redo: {
@@ -168,9 +186,10 @@ export const ruleOps = {
         const execResult = result as RuleExecutionResult | undefined;
         const snapshot = before as RuleRunSnapshot | null | undefined;
         if (!execResult?.run?.id || !snapshot) return [];
-        if (!UNDOABLE_RUN_STATUSES.has(execResult.run.status)) {
+        if (!FINISHED_RUN_STATUSES.has(execResult.run.status)) {
           return [{ op: 'rules.execute', args }];
         }
+        const trigger = (args.options as ExecuteRuleOptions | undefined)?.trigger;
         return [
           {
             op: 'rules.redoRun',
@@ -186,6 +205,11 @@ export const ruleOps = {
                 notes: execResult.run.notes ?? '',
                 transactionCount: execResult.run.transactionCount,
               },
+              // A continuous run is undone together with the add that
+              // triggered it, whose undo deletes the row and with it the
+              // run's change rows: redo needs them back. (Small: the rows of
+              // one add. A manual run's change rows stay in the database.)
+              ...(trigger === 'continuous' ? { changes: execResult.changes } : {}),
             },
           },
         ];
@@ -194,10 +218,10 @@ export const ruleOps = {
   },
   'rules.undoRun': {
     execute: async (args) => {
-      return await S().rules!.undoRun(
-        args.runId as number,
-        args.ruleState ? { ruleState: args.ruleState as RuleRunState } : {}
-      );
+      return await S().rules!.undoRun(args.runId as number, {
+        ...(args.ruleState ? { ruleState: args.ruleState as RuleRunState } : {}),
+        ...(args.allowFailed === true ? { allowFailed: true } : {}),
+      });
     },
     invalidates: [...RULE_INVALIDATION_KEYS, ...RULE_EXECUTE_TX_INVALIDATIONS],
   },
@@ -206,6 +230,9 @@ export const ruleOps = {
       return await S().rules!.redoRun(args.runId as number, {
         ruleState: args.ruleState as RuleRunState | undefined,
         run: args.run as RedoRunOptions['run'],
+        changes: Array.isArray(args.changes)
+          ? (args.changes as RedoRunOptions['changes'])
+          : undefined,
       });
     },
     invalidates: [...RULE_INVALIDATION_KEYS, ...RULE_EXECUTE_TX_INVALIDATIONS],

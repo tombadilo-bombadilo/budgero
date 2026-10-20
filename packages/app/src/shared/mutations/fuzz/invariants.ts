@@ -87,7 +87,7 @@ const errorText = (error: unknown) => (error instanceof Error ? error.message : 
 
 // ------------------------------------------------------------------ invariant 5
 
-const UNDO_DUMP: DumpOptions = { sequences: false, crossDevice: false };
+const UNDO_DUMP: DumpOptions = { sequences: false, crossDevice: false, hideUndoneRuns: true };
 
 export const undoStepArb = fc.record({
   intent: intentArb,
