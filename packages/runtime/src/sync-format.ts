@@ -63,6 +63,7 @@ export const OP_CODE_FORMAT_VERSIONS: Readonly<Record<string, number>> = Object.
   'payees.restore': 3,
   'recurring.restore': 3,
   'rules.redoRun': 3,
+  'rules.restoreDeleted': 3,
   'transactions.batchEdit': 3,
   'transactions.restore': 3,
   'transactions.restoreAmounts': 3,
