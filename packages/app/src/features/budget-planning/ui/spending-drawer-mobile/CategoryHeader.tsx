@@ -1,4 +1,4 @@
-import { Trans } from '@lingui/react/macro';
+import { Plural, Trans } from '@lingui/react/macro';
 import { memo } from 'react';
 import { cn } from '@shared/lib/utils';
 import { formatMonthLabel } from '@shared/lib/date-utils';
@@ -11,6 +11,7 @@ export const CategoryHeader = memo(function CategoryHeader({
   loading,
   totalSpent,
   goalStatus,
+  dailyAllowance,
   globalLocalizer,
 }: CategoryHeaderProps) {
   return (
@@ -51,6 +52,15 @@ export const CategoryHeader = memo(function CategoryHeader({
                     <Trans>
                       Over by {formatMilli(globalLocalizer, asMilli(0 - goalStatus.remaining))}
                     </Trans>
+                  </span>
+                )}
+                {!goalStatus.isOver && dailyAllowance && dailyAllowance.remaining > 0 && (
+                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">
+                    <Plural
+                      value={dailyAllowance.daysLeft}
+                      one={`${formatMilli(globalLocalizer, dailyAllowance.perDay)}/day left · # day`}
+                      other={`${formatMilli(globalLocalizer, dailyAllowance.perDay)}/day left · # days`}
+                    />
                   </span>
                 )}
               </div>
