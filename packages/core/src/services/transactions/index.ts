@@ -905,11 +905,19 @@ export class TransactionService {
     }
 
     const normalizedPayee = this.resolvePayee(payee, transaction.Payee);
-    this.db.transaction(() => {
+    atomically(this.db, () => {
       this.queries.recategorizeTransaction(id, categoryId);
       this.queries.updateTransactionMemo(id, memo);
       this.queries.updateTransactionPayee(id, normalizedPayee);
     });
+  }
+
+  /**
+   * Rebuild running and account balances of these accounts, e.g. after rows
+   * were written back verbatim from an undo journal.
+   */
+  recalculateAccountBalances(accountIds: number[]): void {
+    this.queries.recalculateBalancesForAccounts(accountIds);
   }
 
   /**

@@ -21,6 +21,7 @@ export { isRowJournal, journalSize, type RowJournal } from './database/row-journ
 // Services (platform-agnostic)
 export { BudgetService } from './services/budgets/index.js';
 export { CategoryService } from './services/categories/index.js';
+export type { CategoryCreationMark } from './services/categories/index.js';
 export { AccountService } from './services/accounts/index.js';
 export {
   TransactionService,
