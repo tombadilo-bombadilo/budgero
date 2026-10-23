@@ -11,7 +11,7 @@ import { CategorySelectCell } from '@features/transactions/ui/cells/CategorySele
 import { AccountSelectCell } from '@features/transactions/ui/cells/AccountSelectCell';
 import { EditableCell } from '@features/transactions/ui/cells/EditableCell';
 import { ExchangeRateCell } from '@features/transactions/ui/cells/ExchangeRateCell';
-import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell';
+import { TransactionPayeeCell } from '@features/transactions/ui/cells/TransactionPayeeCell';
 import { LabelSelectCell } from '@features/transactions/ui/cells/LabelSelectCell';
 import { Badge } from '@shared/ui/badge';
 import { useHideZeroAmountsEnabled } from '@shared/contexts/HideZeroAmountsContext';
@@ -475,9 +475,10 @@ export const TransactionRow = React.memo(function TransactionRow({
       {/* Payee */}
       <TableCell className="max-w-[200px]">
         {editingColumn === 'payee' ? (
-          <PayeeSelectCell
+          <TransactionPayeeCell
             budgetId={budgetId}
-            value={transaction.Payee ?? ''}
+            transaction={transaction}
+            accounts={editorDirectories.accounts}
             payees={editorDirectories.payees}
             onCommit={(newVal) => onCellCommit(transaction.ID, 'Payee', newVal)}
             triggerClassName="h-8 text-xs xl:text-sm px-2 truncate"

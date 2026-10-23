@@ -1,6 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import * as React from 'react';
-import { ArrowLeftRight, Check, ChevronsUpDown, PlusCircle, X } from 'lucide-react';
+import { ArrowLeftRight, Check, ChevronsUpDown, PlusCircle, Unlink, X } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import {
   Command,
@@ -28,11 +28,22 @@ export interface PayeeComboboxProps {
   payees?: string[];
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
-  /** Accounts offered as "Transfer: <name>" entries (inline register row). */
-  transferAccounts?: { ID: number; Name: string }[];
+  /**
+   * Accounts offered as "Transfer: <name>" entries. `OnBudget` is optional; accounts
+   * that are explicitly off budget are tagged as such.
+   */
+  transferAccounts?: { ID: number; Name: string; OnBudget?: boolean | number | null }[];
   onSelectTransfer?: (accountId: number) => void;
   /** Overrides the trigger text, e.g. the chosen transfer. */
   displayValue?: string;
+  /**
+   * When editing an existing transfer: the account on its other side. It is shown as
+   * checked, picking it again does nothing, and "Clear payee" is hidden because a
+   * transfer is turned back into a plain transaction with `onUnlinkTransfer` instead.
+   */
+  selectedTransferAccountId?: number | null;
+  /** Offered while a transfer is selected: turn the row back into a regular transaction. */
+  onUnlinkTransfer?: () => void;
 }
 
 /**
@@ -54,6 +65,8 @@ export function PayeeCombobox({
   transferAccounts,
   onSelectTransfer,
   displayValue,
+  selectedTransferAccountId = null,
+  onUnlinkTransfer,
 }: PayeeComboboxProps) {
   const { t } = useLingui();
   const placeholder = placeholderProp ?? t`Select or create payee`;
@@ -93,12 +106,20 @@ export function PayeeCombobox({
 
   const handleSelectTransfer = React.useCallback(
     (accountId: number) => {
-      onSelectTransfer?.(accountId);
+      // Re-picking the current partner is a no-op; retargeting is not supported here.
+      if (accountId !== selectedTransferAccountId) onSelectTransfer?.(accountId);
       setOpen(false);
       setSearch('');
     },
-    [onSelectTransfer]
+    [onSelectTransfer, selectedTransferAccountId]
   );
+
+  const handleUnlink = React.useCallback(() => {
+    onUnlinkTransfer?.();
+    setOpen(false);
+    setSearch('');
+  }, [onUnlinkTransfer]);
+  const hasSelectedTransfer = selectedTransferAccountId !== null;
 
   const handleClear = React.useCallback(() => {
     onChange('');
@@ -150,7 +171,9 @@ export function PayeeCombobox({
                 ? t`No matching payees. Use "Create" below.`
                 : t`Type to search payees.`}
             </CommandEmpty>
-            {(normalizedSearch && !hasExactMatch) || (allowClear && normalizedValue) ? (
+            {(normalizedSearch && !hasExactMatch) ||
+            (allowClear && normalizedValue && !hasSelectedTransfer) ||
+            (hasSelectedTransfer && onUnlinkTransfer) ? (
               <CommandGroup heading={t`Actions`}>
                 {normalizedSearch && !hasExactMatch && (
                   <CommandItem
@@ -164,7 +187,22 @@ export function PayeeCombobox({
                     </span>
                   </CommandItem>
                 )}
-                {allowClear && normalizedValue && (
+                {hasSelectedTransfer && onUnlinkTransfer && (
+                  <CommandItem
+                    value="__unlink__"
+                    // The search box opens pre-filled with the current payee; keep this
+                    // action visible regardless of that filter.
+                    forceMount
+                    onSelect={handleUnlink}
+                    className="flex items-center gap-2"
+                  >
+                    <Unlink className="h-4 w-4" />
+                    <span>
+                      <Trans>Convert to regular transaction</Trans>
+                    </span>
+                  </CommandItem>
+                )}
+                {allowClear && normalizedValue && !hasSelectedTransfer && (
                   <CommandItem
                     value="__clear__"
                     onSelect={handleClear}
@@ -187,10 +225,25 @@ export function PayeeCombobox({
                     onSelect={() => handleSelectTransfer(account.ID)}
                     className="flex items-center gap-2"
                   >
+                    {hasSelectedTransfer && (
+                      <Check
+                        className={cn(
+                          'h-4 w-4',
+                          account.ID === selectedTransferAccountId ? 'opacity-100' : 'opacity-0'
+                        )}
+                      />
+                    )}
                     <ArrowLeftRight className="h-4 w-4" />
                     <span className="truncate">
                       <Trans>Transfer: {account.Name}</Trans>
                     </span>
+                    {account.OnBudget !== undefined &&
+                      account.OnBudget !== null &&
+                      Number(account.OnBudget) === 0 && (
+                        <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                          <Trans>Off budget</Trans>
+                        </span>
+                      )}
                   </CommandItem>
                 ))}
               </CommandGroup>

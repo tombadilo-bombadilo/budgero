@@ -31,6 +31,8 @@ import { useCategoryGroups } from '@entities/category/api/useCategories';
 import { usePayees } from '@entities/payee/api/usePayees';
 import { useInlineTransactionEntryEnabled } from '@shared/contexts/InlineTransactionEntryContext';
 import { setInlineAddTarget } from '@features/transactions/model/inline-add-target';
+import { useTransferConversion } from '../api/useTransferConversion';
+import { TransferConversionProvider } from '../api/transfer-conversion-context';
 import type { TransactionEditorDirectories } from './desktop-table/transaction-editor-types';
 
 const EMPTY_CATEGORIES: Category[] = [];
@@ -231,6 +233,17 @@ export function TransactionsTable({
       payees,
     }),
     [accounts, categories, categoryGroups, labels, payees]
+  );
+
+  // "Transfer: Account" payee choices: convert a row to a transfer and back. The
+  // payee cells reach these through context, so other surfaces are unaffected.
+  const transferConversion = useTransferConversion({ rows: rawData, accounts });
+  const transferConversionActions = React.useMemo(
+    () => ({
+      requestConversion: transferConversion.requestConversion,
+      requestUnlink: transferConversion.requestUnlink,
+    }),
+    [transferConversion.requestConversion, transferConversion.requestUnlink]
   );
 
   // Currency display helper - use the correct formatter AND values
@@ -466,165 +479,169 @@ export function TransactionsTable({
   });
 
   return (
-    <div className="space-y-2 sm:space-y-4 px-3 sm:px-0">
-      <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-        <TransactionsToolbar
-          headerActions={headerActions}
-          addTransactionPending={addTransactionMutation.isPending}
-          onInlineAdd={inlineEntry ? openInlineAdd : undefined}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          setIsSearchFocused={setIsSearchFocused}
-          categorySuggestions={categorySuggestions}
-          highlightedIndex={highlightedIndex}
-          setHighlightedIndex={setHighlightedIndex}
-          handleSelectCategory={handleSelectCategory}
-          parsedQuery={parsedQuery}
-          handleRemoveToken={handleRemoveToken}
-          handleClearAll={handleClearAll}
-          globalLocalizer={globalLocalizer}
-          forceBudgetCurrency={forceBudgetCurrency}
-          selectedBudget={selectedBudget}
-          selectedAccount={selectedAccount}
-          transactionCurrencyDisplay={transactionCurrencyDisplay}
-          storeCurrencyDisplay={storeCurrencyDisplay}
-          setTransactionCurrencyDisplay={setTransactionCurrencyDisplay}
-          currencyLabel={currencyLabel}
-          isMobile={isMobile}
-          showBalanceColumn={showBalanceColumn}
-          handleToggleBalanceColumn={handleToggleBalanceColumn}
-          showLabelColumn={showLabelColumn}
-          handleToggleLabelColumn={handleToggleLabelColumn}
-          pageSize={pageSize}
-          handlePageSizeChange={handlePageSizeChange}
-          hideAccountColumn={hideAccountColumn}
-          uncategorizedCount={uncategorizedCount}
-          showOnlyUncategorized={showOnlyUncategorized}
-          setShowOnlyUncategorized={setShowOnlyUncategorized}
-          unclearedCount={unclearedCount}
-          showOnlyUncleared={showOnlyUncleared}
-          setShowOnlyUncleared={setShowOnlyUncleared}
-        />
-
-        <DialogContent onInteractOutside={(e) => e.preventDefault()}>
-          <AddTransactionForm
-            onAddTransaction={handleAddTransaction}
-            onAddTransfer={handleAddTransfer}
-            onCancel={() => setOpenDialog(false)}
-            budgetId={budgetId}
-            selectedAccountId={selectedAccountIdForForm}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <div>
-        {isMobile ? (
-          <MobileTransactionList
-            transactions={filteredData}
-            rowSelection={rowSelection}
-            page={page}
-            pageSize={pageSize}
-            isPending={updateTransactionColumnMutation.isPending}
-            pendingId={updateTransactionColumnMutation.variables?.transactionId}
-            accountLocalizer={accountLocalizer}
+    <TransferConversionProvider value={transferConversionActions}>
+      <div className="space-y-2 sm:space-y-4 px-3 sm:px-0">
+        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
+          <TransactionsToolbar
+            headerActions={headerActions}
+            addTransactionPending={addTransactionMutation.isPending}
+            onInlineAdd={inlineEntry ? openInlineAdd : undefined}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            setIsSearchFocused={setIsSearchFocused}
+            categorySuggestions={categorySuggestions}
+            highlightedIndex={highlightedIndex}
+            setHighlightedIndex={setHighlightedIndex}
+            handleSelectCategory={handleSelectCategory}
+            parsedQuery={parsedQuery}
+            handleRemoveToken={handleRemoveToken}
+            handleClearAll={handleClearAll}
             globalLocalizer={globalLocalizer}
-            currentFormatter={currentFormatter}
+            forceBudgetCurrency={forceBudgetCurrency}
+            selectedBudget={selectedBudget}
+            selectedAccount={selectedAccount}
             transactionCurrencyDisplay={transactionCurrencyDisplay}
-            getPrimaryInflow={getPrimaryInflow}
-            getPrimaryOutflow={getPrimaryOutflow}
-            getSecondaryInflow={getSecondaryInflow}
-            getSecondaryOutflow={getSecondaryOutflow}
-            onCellCommit={handleCellCommit}
-            stickyFooter={false}
-            onSelectionChange={(rowId: string, checked: boolean) =>
-              toggleRowSelection([rowId], checked)
-            }
-            hideAccountColumn={hideAccountColumn}
-            hideSecondaryAmounts={hideSecondaryAmounts}
-            budgetId={budgetId}
-            hasNextPage={hasNextPage}
-            hasPreviousPage={hasPreviousPage}
-            onNextPage={async () => {
-              if (!hasNextPage) return;
-              const nextPage = page + 1;
-              if (
-                !isFilterModeActive &&
-                (nextPage + 1) * pageSize > filteredData.length &&
-                hasMoreTransactions
-              ) {
-                await onLoadMoreTransactions?.();
-              }
-              setPage(nextPage);
-            }}
-            onPreviousPage={() => {
-              if (hasPreviousPage) {
-                setPage((p) => Math.max(0, p - 1));
-              }
-            }}
-            currentPage={page}
-            totalPages={totalPages}
-            isLoadingMore={isLoadingMoreTransactions}
-          />
-        ) : (
-          <DesktopTransactionTable
-            transactions={filteredData}
-            rowSelection={rowSelection}
-            isPending={updateTransactionColumnMutation.isPending}
-            pendingId={updateTransactionColumnMutation.variables?.transactionId}
-            accountLocalizer={accountLocalizer}
-            globalLocalizer={globalLocalizer}
-            currentFormatter={currentFormatter}
-            transactionCurrencyDisplay={transactionCurrencyDisplay}
-            getPrimaryInflow={getPrimaryInflow}
-            getPrimaryOutflow={getPrimaryOutflow}
-            getSecondaryInflow={getSecondaryInflow}
-            getSecondaryOutflow={getSecondaryOutflow}
-            onCellCommit={handleCellCommit}
-            onSelectionChange={(rowId, checked, rangeIds, replaceSelection = false) =>
-              toggleRowSelection(rangeIds && rangeIds.length > 0 ? rangeIds : [rowId], checked, {
-                replace: replaceSelection,
-              })
-            }
-            hideAccountColumn={hideAccountColumn}
-            hideSecondaryAmounts={hideSecondaryAmounts}
+            storeCurrencyDisplay={storeCurrencyDisplay}
+            setTransactionCurrencyDisplay={setTransactionCurrencyDisplay}
+            currencyLabel={currencyLabel}
+            isMobile={isMobile}
             showBalanceColumn={showBalanceColumn}
+            handleToggleBalanceColumn={handleToggleBalanceColumn}
             showLabelColumn={showLabelColumn}
-            showExchangeRateColumn={
-              hideAccountColumn &&
-              !!selectedAccount?.Currency &&
-              !!selectedBudget?.DisplayCurrency &&
-              selectedAccount.Currency !== selectedBudget.DisplayCurrency
-            }
-            editorDirectories={editorDirectories}
-            budgetId={budgetId}
-            inlineAdd={
-              inlineEntry && inlineAddOpen
-                ? { accountId: selectedAccountIdForForm, onClose: () => setInlineAddOpen(false) }
-                : undefined
-            }
-            scrollResetKey={`${searchQuery}:${showOnlyUncategorized}:${showOnlyUncleared}`}
-            canLoadMore={!isFilterModeActive && hasMoreTransactions}
-            isLoadingMore={isLoadingMoreTransactions}
-            onLoadMore={onLoadMoreTransactions}
-            compact={compactRows}
-            onClearSelection={() => setRowSelection({})}
+            handleToggleLabelColumn={handleToggleLabelColumn}
+            pageSize={pageSize}
+            handlePageSizeChange={handlePageSizeChange}
+            hideAccountColumn={hideAccountColumn}
+            uncategorizedCount={uncategorizedCount}
+            showOnlyUncategorized={showOnlyUncategorized}
+            setShowOnlyUncategorized={setShowOnlyUncategorized}
+            unclearedCount={unclearedCount}
+            showOnlyUncleared={showOnlyUncleared}
+            setShowOnlyUncleared={setShowOnlyUncleared}
           />
+
+          <DialogContent onInteractOutside={(e) => e.preventDefault()}>
+            <AddTransactionForm
+              onAddTransaction={handleAddTransaction}
+              onAddTransfer={handleAddTransfer}
+              onCancel={() => setOpenDialog(false)}
+              budgetId={budgetId}
+              selectedAccountId={selectedAccountIdForForm}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <div>
+          {isMobile ? (
+            <MobileTransactionList
+              transactions={filteredData}
+              rowSelection={rowSelection}
+              page={page}
+              pageSize={pageSize}
+              isPending={updateTransactionColumnMutation.isPending}
+              pendingId={updateTransactionColumnMutation.variables?.transactionId}
+              accountLocalizer={accountLocalizer}
+              globalLocalizer={globalLocalizer}
+              currentFormatter={currentFormatter}
+              transactionCurrencyDisplay={transactionCurrencyDisplay}
+              getPrimaryInflow={getPrimaryInflow}
+              getPrimaryOutflow={getPrimaryOutflow}
+              getSecondaryInflow={getSecondaryInflow}
+              getSecondaryOutflow={getSecondaryOutflow}
+              onCellCommit={handleCellCommit}
+              stickyFooter={false}
+              onSelectionChange={(rowId: string, checked: boolean) =>
+                toggleRowSelection([rowId], checked)
+              }
+              hideAccountColumn={hideAccountColumn}
+              hideSecondaryAmounts={hideSecondaryAmounts}
+              budgetId={budgetId}
+              hasNextPage={hasNextPage}
+              hasPreviousPage={hasPreviousPage}
+              onNextPage={async () => {
+                if (!hasNextPage) return;
+                const nextPage = page + 1;
+                if (
+                  !isFilterModeActive &&
+                  (nextPage + 1) * pageSize > filteredData.length &&
+                  hasMoreTransactions
+                ) {
+                  await onLoadMoreTransactions?.();
+                }
+                setPage(nextPage);
+              }}
+              onPreviousPage={() => {
+                if (hasPreviousPage) {
+                  setPage((p) => Math.max(0, p - 1));
+                }
+              }}
+              currentPage={page}
+              totalPages={totalPages}
+              isLoadingMore={isLoadingMoreTransactions}
+            />
+          ) : (
+            <DesktopTransactionTable
+              transactions={filteredData}
+              rowSelection={rowSelection}
+              isPending={updateTransactionColumnMutation.isPending}
+              pendingId={updateTransactionColumnMutation.variables?.transactionId}
+              accountLocalizer={accountLocalizer}
+              globalLocalizer={globalLocalizer}
+              currentFormatter={currentFormatter}
+              transactionCurrencyDisplay={transactionCurrencyDisplay}
+              getPrimaryInflow={getPrimaryInflow}
+              getPrimaryOutflow={getPrimaryOutflow}
+              getSecondaryInflow={getSecondaryInflow}
+              getSecondaryOutflow={getSecondaryOutflow}
+              onCellCommit={handleCellCommit}
+              onSelectionChange={(rowId, checked, rangeIds, replaceSelection = false) =>
+                toggleRowSelection(rangeIds && rangeIds.length > 0 ? rangeIds : [rowId], checked, {
+                  replace: replaceSelection,
+                })
+              }
+              hideAccountColumn={hideAccountColumn}
+              hideSecondaryAmounts={hideSecondaryAmounts}
+              showBalanceColumn={showBalanceColumn}
+              showLabelColumn={showLabelColumn}
+              showExchangeRateColumn={
+                hideAccountColumn &&
+                !!selectedAccount?.Currency &&
+                !!selectedBudget?.DisplayCurrency &&
+                selectedAccount.Currency !== selectedBudget.DisplayCurrency
+              }
+              editorDirectories={editorDirectories}
+              budgetId={budgetId}
+              inlineAdd={
+                inlineEntry && inlineAddOpen
+                  ? { accountId: selectedAccountIdForForm, onClose: () => setInlineAddOpen(false) }
+                  : undefined
+              }
+              scrollResetKey={`${searchQuery}:${showOnlyUncategorized}:${showOnlyUncleared}`}
+              canLoadMore={!isFilterModeActive && hasMoreTransactions}
+              isLoadingMore={isLoadingMoreTransactions}
+              onLoadMore={onLoadMoreTransactions}
+              compact={compactRows}
+              onClearSelection={() => setRowSelection({})}
+            />
+          )}
+        </div>
+
+        {transferConversion.dialog}
+
+        {/* Batch Toolbar - Centered with max width like dashboard */}
+        {numSelected > 0 && (
+          <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 w-[min(720px,90vw)]">
+            <div className="px-4 py-3 bg-background/95 backdrop-blur border border-border/50 shadow-lg rounded-xl">
+              <TransactionsBatchToolbar
+                selectedRowIds={selectedRowIds}
+                clearSelection={() => setRowSelection({})}
+                onCreateRecurring={onCreateRecurringFromSelection}
+                rows={rawData}
+              />
+            </div>
+          </div>
         )}
       </div>
-
-      {/* Batch Toolbar - Centered with max width like dashboard */}
-      {numSelected > 0 && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-40 w-[min(720px,90vw)]">
-          <div className="px-4 py-3 bg-background/95 backdrop-blur border border-border/50 shadow-lg rounded-xl">
-            <TransactionsBatchToolbar
-              selectedRowIds={selectedRowIds}
-              clearSelection={() => setRowSelection({})}
-              onCreateRecurring={onCreateRecurringFromSelection}
-              rows={rawData}
-            />
-          </div>
-        </div>
-      )}
-    </div>
+    </TransferConversionProvider>
   );
 }

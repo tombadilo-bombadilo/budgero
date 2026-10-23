@@ -329,3 +329,13 @@ export interface TransactionAmountsSnapshot {
   ExchangeRate: number | null;
   ExchangeRateOverride: boolean;
 }
+
+/**
+ * Records elsewhere in the database that point at a transaction and would lose
+ * the link if the row were deleted and re-created.
+ */
+export interface TransactionLinks {
+  warranty: boolean;
+  recurringOccurrence: boolean;
+  bankReview: boolean;
+}

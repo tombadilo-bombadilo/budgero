@@ -281,3 +281,36 @@ export function latestUndoId(): string | undefined {
   const { past } = useUndoStore.getState();
   return past[past.length - 1]?.id;
 }
+
+/**
+ * Runs several mutations as one undoable action named `label` (see
+ * runInUndoGroup). If a step throws, the steps that already applied are undone
+ * and their entry dropped before the error is rethrown, so a failed action
+ * leaves nothing half-done. A nested call joins the outer group.
+ */
+export async function runUndoGroup<T>(label: string, work: () => Promise<T>): Promise<T> {
+  if (useUndoStore.getState().groupDepth > 0) return work();
+
+  const before = latestUndoId();
+  try {
+    const result = await runInUndoGroup(work);
+    const id = latestUndoId();
+    if (id && id !== before) {
+      useUndoStore.setState((s) => ({
+        past: s.past.map((entry) => (entry.id === id ? { ...entry, label } : entry)),
+      }));
+    }
+    return result;
+  } catch (error) {
+    const id = latestUndoId();
+    if (id && id !== before) {
+      try {
+        await useUndoStore.getState().undo();
+      } catch {
+        // Best effort: keep the original failure as the one the caller sees.
+      }
+      useUndoStore.getState().remove(id);
+    }
+    throw error;
+  }
+}
