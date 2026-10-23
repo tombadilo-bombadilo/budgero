@@ -215,7 +215,8 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
     else l.cash = l.pos;
     l.credit = l.amt - l.cash;
   }
-  // cumulative RTA counts cash advances dated up to today (see cumulativeRtaParts)
+  // cumulative RTA parts the SQL in cumulativeRtaParts cannot see (cash
+  // advances, split-transfer legs to / from off-budget accounts), by date
   const advanceParts = [];
 
   // transfer partners
@@ -293,6 +294,7 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
         }
         if (l.card) bump(termByMonth, l.m, 'cardToOffBudget', l.credit);
         bump(devByMonth, l.m, 'splitTransferOffBudget', -l.amt);
+        advanceParts.push({ m: l.m, d: l.d, v: l.amt }); // an RTA part dated like the line
         continue;
       }
       if (partner === 'onCash' || partner === 'onCard' || partner === 'onDebt') {
@@ -328,7 +330,10 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
       if (partner === 'offN') {
         // a split-transfer mirror whose split parent is off budget: the off-budget
         // transfer sums only look at TransferIDs with a leg on that account
-        if (/^split_transfer_/.test(l.tr)) bump(devByMonth, l.m, 'splitTransferOffBudget', -l.amt);
+        if (/^split_transfer_/.test(l.tr)) {
+          bump(devByMonth, l.m, 'splitTransferOffBudget', -l.amt);
+          if (!l.ex) advanceParts.push({ m: l.m, d: l.d, v: l.amt });
+        }
         if (l.ex) {
           if (!l.card) bump(termByMonth, l.m, 'excluded', -l.cash);
           else if (paysCard) bump(termByMonth, l.m, 'excluded', -l.amt);
@@ -540,7 +545,6 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
     for (const m of axis) {
       for (const pc of pcSet) add(pcAssigned, pc, asg.get(pc)?.get(m) ?? 0);
       for (const [card, byM] of payments) add(cardPaid, card, byM.get(m) ?? 0);
-      for (const [card, byM] of bogusPayments) add(cardPaid, card, byM.get(m) ?? 0);
       for (const l of lines) if (l.m === m && l.card) add(cardBalance, l.acc, l.amt);
       for (const c of spendingCats) {
         let t = cum.get(c);
