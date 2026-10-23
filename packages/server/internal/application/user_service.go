@@ -11,6 +11,7 @@ import (
 
 	"budgero-server/internal/config"
 	"budgero-server/internal/domain"
+	"budgero-server/internal/domain/analytics"
 	"budgero-server/internal/port/driven/repository"
 	"budgero-server/internal/port/driving"
 
@@ -22,6 +23,7 @@ type UserService struct {
 	userRepo  repository.UserRepository
 	spaceRepo repository.SpaceRepository
 	cfg       *config.Config
+	analytics driving.AnalyticsTracker
 }
 
 // NewUserService creates a new UserService.
@@ -38,6 +40,11 @@ func NewUserService(
 }
 
 var _ driving.UserService = (*UserService)(nil)
+
+// SetAnalytics attaches the analytics tracker (user_signed_up, opt-out cache).
+func (s *UserService) SetAnalytics(t driving.AnalyticsTracker) {
+	s.analytics = t
+}
 
 // GetByID retrieves a user by their ID.
 func (s *UserService) GetByID(ctx context.Context, id string) (*domain.User, error) {
@@ -68,7 +75,11 @@ func (s *UserService) Create(ctx context.Context, id, name, email string) (*doma
 		CreatedAt:          time.Now(),
 	}
 
-	return s.userRepo.Create(ctx, user)
+	created, err := s.userRepo.Create(ctx, user)
+	if err == nil && created != nil && s.analytics != nil {
+		s.analytics.Track(created.ID, analytics.UserSignedUp())
+	}
+	return created, err
 }
 
 // Update updates a user's name and email.
@@ -183,7 +194,13 @@ func (s *UserService) ResetData(ctx context.Context, id string) ([]string, error
 
 // SetAnalyticsDisabled sets the analytics opt-out flag for a user.
 func (s *UserService) SetAnalyticsDisabled(ctx context.Context, id string, disabled bool) error {
-	return s.userRepo.SetAnalyticsDisabled(ctx, id, disabled)
+	if err := s.userRepo.SetAnalyticsDisabled(ctx, id, disabled); err != nil {
+		return err
+	}
+	if s.analytics != nil {
+		s.analytics.SetOptOut(id, disabled)
+	}
+	return nil
 }
 
 // SetPrimarySpace sets the primary space for a user.

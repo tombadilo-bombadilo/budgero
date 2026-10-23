@@ -8,6 +8,7 @@ import (
 
 	"budgero-server/internal/adapter/driving/http/middleware"
 	"budgero-server/internal/domain"
+	"budgero-server/internal/domain/analytics"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
@@ -83,6 +84,7 @@ func (h *Handlers) CreateBudgetSpace(c echo.Context) error {
 		log.Error().Err(err).Str("user_id", userID).Msg("failed to create budget space")
 		return mapServiceError(err)
 	}
+	h.track(userID, analytics.WorkspaceCreated(analytics.BucketCount(1)))
 
 	return c.JSON(http.StatusCreated, space)
 }
@@ -100,8 +102,17 @@ func (h *Handlers) DeleteBudgetSpace(c echo.Context) error {
 	}
 
 	ctx := c.Request().Context()
+	memberCount := -1
+	if h.analyticsEnabled() {
+		if members, err := h.services.Space.ListMembers(ctx, userID, spaceID); err == nil {
+			memberCount = len(members)
+		}
+	}
 	if err := h.usecases.DeleteSpace.Execute(ctx, userID, spaceID); err != nil {
 		return mapServiceError(err)
+	}
+	if memberCount >= 0 {
+		h.track(userID, analytics.WorkspaceDeleted(analytics.BucketCount(memberCount)))
 	}
 
 	// Clear the mutation log and disconnect any live sockets for the deleted
@@ -202,6 +213,7 @@ func (h *Handlers) InviteBudgetSpaceMember(c echo.Context) error {
 	if err != nil {
 		return mapServiceError(err)
 	}
+	h.track(userID, analytics.InviteCreated(analytics.InviteRoleMember))
 
 	return c.JSON(http.StatusCreated, map[string]any{
 		"id":            invite.ID,
@@ -270,6 +282,11 @@ func (h *Handlers) RemoveBudgetSpaceMember(c echo.Context) error {
 	ctx := c.Request().Context()
 	if err := h.services.Space.RemoveMember(ctx, userID, spaceID, memberID); err != nil {
 		return mapServiceError(err)
+	}
+	if memberID == userID {
+		h.track(userID, analytics.MemberLeft())
+	} else {
+		h.track(userID, analytics.MemberRemoved())
 	}
 
 	// Revoked members must not keep a live mutation stream for the space.
@@ -368,16 +385,20 @@ func (h *Handlers) RedeemInvite(c echo.Context) error {
 	ctx := c.Request().Context()
 	invite, err := h.services.Space.GetInviteBySecret(ctx, req.InviteSecret)
 	if err != nil {
+		h.track(userID, analytics.InviteRedeemFailed(analytics.InviteErrorFor(err)))
 		return mapServiceError(err)
 	}
 
 	if err := h.services.Space.RedeemInvite(ctx, invite, userID, req.EncryptedSpaceKey); err != nil {
+		h.track(userID, analytics.InviteRedeemFailed(analytics.InviteErrorFor(err)))
 		return mapServiceError(err)
 	}
 	if err := h.services.Entitlement.SetCollaborationAccess(ctx, userID, true); err != nil {
 		log.Error().Err(err).Str("user_id", userID).Str("space_id", invite.SpaceID).Msg("failed to grant collaboration access after invite redemption")
+		h.track(userID, analytics.InviteRedeemFailed(analytics.InviteErrorFor(err)))
 		return mapServiceError(err)
 	}
+	h.track(userID, analytics.InviteRedeemed())
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"space_id":     invite.SpaceID,
