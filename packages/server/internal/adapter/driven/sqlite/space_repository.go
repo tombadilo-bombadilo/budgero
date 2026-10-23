@@ -260,12 +260,10 @@ func (r *SpaceRepository) reconcileBlobPath(ctx context.Context, blob *sqlc.Budg
 	}
 
 	if canonicalExists || !legacyExists {
-		if err := r.queries.UpdateSpaceBlobMetadata(ctx, sqlc.UpdateSpaceBlobMetadataParams{
-			BlobPath:    canonicalPath,
-			CurrentHash: blob.CurrentHash,
-			SyncVersion: blob.SyncVersion,
-			SizeBytes:   blob.SizeBytes,
-			SpaceID:     blob.SpaceID,
+		if err := r.queries.UpdateSpaceBlobPath(ctx, sqlc.UpdateSpaceBlobPathParams{
+			BlobPath:   canonicalPath,
+			SpaceID:    blob.SpaceID,
+			BlobPath_2: blob.BlobPath,
 		}); err == nil {
 			return canonicalPath
 		}
