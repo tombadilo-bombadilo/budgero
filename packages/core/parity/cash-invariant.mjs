@@ -68,12 +68,14 @@
 //                       the category (displayed balance falls below it at a month
 //                       end) must be charged to RTA the next month as cash overspend.
 //   rtaAsOfToday    cumulative only: Ready to Assign is computed for today (income,
-//                   transfers, revaluations dated <= today, every assignment); the
+//                   transfers, cash advances, revaluations dated <= today, every assignment); the
 //                   difference to the same parts as of the end of M
-//   spending (cumulative) per spending row: credit parts + funded, funded =
-//                   min(net credit spending, max(0, assigned + cash activity)) when
-//                   net credit spending > 0: -unfunded credit overspend, or + a net
-//                   credit refund
+//   spending (cumulative) per spending row: credit parts + funded, with card
+//                   spending netted per card: funded = min(net purchases, max(0,
+//                   assigned + cash activity + leftover refunds)) split per card;
+//                   a card's leftover refunds are then drawn from its CC Payment
+//                   balance (assigned + funded - payments, floored at 0), except the
+//                   part that put the card in credit
 //
 // Known model deviations (opts.known; added only when listed, so a listed one
 // that is fixed makes the check fail until it is removed from the list):
@@ -201,16 +203,20 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
   for (const l of lines) {
     const a = accounts.get(l.acc);
     l.card = a.credit;
-    if (!a.credit) l.cash = l.amt;
-    else if (!monthly) l.cash = 0;
-    else {
+    // pos: how much the line moves the card's positive balance (both modes)
+    if (a.credit) {
       const before = running.get(l.acc) ?? 0;
       const after = before + l.amt;
       running.set(l.acc, after);
-      l.cash = Math.max(0, after) - Math.max(0, before);
-    }
+      l.pos = Math.max(0, after) - Math.max(0, before);
+    } else l.pos = 0;
+    if (!a.credit) l.cash = l.amt;
+    else if (!monthly) l.cash = 0;
+    else l.cash = l.pos;
     l.credit = l.amt - l.cash;
   }
+  // cumulative RTA counts cash advances dated up to today (see cumulativeRtaParts)
+  const advanceParts = [];
 
   // transfer partners
   const legsByTid = new Map();
@@ -294,8 +300,10 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
         } else if (!inflow && partner !== 'onCard') {
           // cash advance: RTA should rise by the debt-sourced part (the rest was the
           // card's positive balance, already cash), i.e. ideal envelope change
-          // -amount + cash part, so -amount after the cash part
-          bump(termByMonth, l.m, 'transferLegs', -l.amt);
+          // -amount + cash part, so -amount after the cash part. Cumulative mode
+          // keeps no card cash, so the positive-balance part is booked here.
+          bump(termByMonth, l.m, 'transferLegs', monthly ? -l.amt : -l.amt + l.pos);
+          if (!monthly) advanceParts.push({ m: l.m, d: l.d, v: -l.amt + l.pos });
           bump(devByMonth, l.m, '#67', l.split ? l.credit : l.amt);
         } else if (l.split) {
           // a split line counts for no envelope (no category)
@@ -393,11 +401,12 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
     let byM = series.get(l.cat);
     if (!byM) series.set(l.cat, (byM = new Map()));
     let s = byM.get(l.m);
-    if (!s) byM.set(l.m, (s = { cash: 0, credit: 0, out: new Map(), lines: [] }));
+    if (!s) byM.set(l.m, (s = { cash: 0, credit: 0, out: new Map(), net: new Map(), lines: [] }));
     s.cash += l.cash;
     s.credit += l.credit;
     if (l.card) {
       s.lines.push({ card: l.acc, spend: -l.credit });
+      add(s.net, l.acc, -l.amt);
       if (l.outflow > 0) add(s.out, l.acc, l.outflow);
     }
   }
@@ -512,13 +521,26 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
       }
     }
   } else {
-    // cumulative: running totals per category
-    const cum = new Map(); // cat -> { A, act, cash, credit, out: Map(card -> outflow) }
+    // cumulative: running totals per category. Card spending is netted per card
+    // (a refund first cancels the same card's purchases in the category); cards
+    // with net spending are funded from assigned + cash + the category's leftover
+    // refunds, proportionally per card (rounded per card, as displayed); a card's
+    // leftover refunds take money back out of its CC Payment balance (assigned +
+    // funded - payments, floored at 0), except the part that put the card in
+    // credit (it is the card's positive balance).
+    const cum = new Map(); // cat -> { A, act, cash, credit, out: Map(card -> outflow), net }
+    const pcAssigned = new Map(); // payment category -> assigned so far
+    const cardBalance = new Map(); // card -> balance so far
+    const cardPaid = new Map(); // card -> payments so far
     const months2 = new Set(axis);
     for (const m of axis) {
+      for (const pc of pcSet) add(pcAssigned, pc, asg.get(pc)?.get(m) ?? 0);
+      for (const [card, byM] of payments) add(cardPaid, card, byM.get(m) ?? 0);
+      for (const [card, byM] of bogusPayments) add(cardPaid, card, byM.get(m) ?? 0);
+      for (const l of lines) if (l.m === m && l.card) add(cardBalance, l.acc, l.amt);
       for (const c of spendingCats) {
         let t = cum.get(c);
-        if (!t) cum.set(c, (t = { A: 0, act: 0, cash: 0, credit: 0, out: new Map() }));
+        if (!t) cum.set(c, (t = { A: 0, act: 0, cash: 0, credit: 0, out: new Map(), net: new Map() }));
         const s = series.get(c)?.get(m);
         t.A += asg.get(c)?.get(m) ?? 0;
         if (s) {
@@ -526,15 +548,34 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
           t.credit += s.credit;
           t.act += s.cash + s.credit;
           for (const [card, v] of s.out) add(t.out, card, v);
+          for (const [card, v] of s.net) add(t.net, card, v);
         }
       }
       if (!months2.has(m)) continue;
       let spending = 0;
       let gross = 0;
+      const fundedPc = new Map();
+      const leftoverCard = new Map();
       for (const c of spendingCats) {
         const t = cum.get(c);
-        const net = -t.credit;
-        const fRef = net > 0 ? Math.min(net, Math.max(0, t.A + t.cash)) : 0;
+        let P = 0;
+        let L = 0;
+        for (const [card, v] of t.net) {
+          if (v > 0) P += v;
+          else if (v < 0) {
+            L -= v;
+            add(leftoverCard, card, -v);
+          }
+        }
+        const fTotal = P > 0 ? Math.min(P, Math.max(0, t.A + t.cash + L)) : 0;
+        let fRef = 0;
+        if (fTotal > 0)
+          for (const [card, v] of t.net) {
+            if (v <= 0 || !cardToPc.has(card)) continue;
+            const share = Math.round(fTotal * (v / P));
+            fRef += share;
+            add(fundedPc, cardToPc.get(card), share);
+          }
         spending += t.credit + fRef;
         // model mirror: gross card outflows, proportional per card, rounded
         let total = 0;
@@ -547,13 +588,25 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
         }
         gross -= fRef;
       }
+      const requests = new Map(); // payment category -> leftover refunds to give back
+      for (const [card, v] of leftoverCard) {
+        const pc = cardToPc.get(card);
+        if (!pc) continue;
+        add(requests, pc, v - Math.min(v, Math.max(0, cardBalance.get(card) ?? 0)));
+      }
+      for (const [pc, want] of requests) {
+        let paid = 0;
+        for (const [card, p] of cardToPc) if (p === pc) paid += cardPaid.get(card) ?? 0;
+        const holds = (pcAssigned.get(pc) ?? 0) + (fundedPc.get(pc) ?? 0) - paid;
+        spending -= Math.min(want, Math.max(0, holds));
+      }
       refByMonth.set(m, { spending, gross });
     }
   }
 
   // cumulative RTA is computed for `today`; move it to the end of each checked month
   let shiftRows = null;
-  if (!monthly) shiftRows = cumulativeRtaParts(rows, budgetId, today);
+  if (!monthly) shiftRows = cumulativeRtaParts(rows, budgetId, today, advanceParts);
 
   // ---- check each month -------------------------------------------------------------
   const violations = [];
@@ -607,7 +660,7 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
  * to `today` and every assignment. Returns month -> (the same parts as of the
  * end of that month) - (the parts RTA used), so RTA + shift is "RTA at month M".
  */
-function cumulativeRtaParts(rows, budgetId, today) {
+function cumulativeRtaParts(rows, budgetId, today, advances = []) {
   const offPartner = `(SELECT DISTINCT mirror.TransferID AS TransferID FROM accounts oa
       JOIN transactions mirror ON mirror.AccountID = oa.ID
       WHERE oa.OnBudget = FALSE AND LOWER(oa.Type) NOT IN ('credit', 'loan', 'mortgage')
@@ -642,6 +695,7 @@ function cumulativeRtaParts(rows, budgetId, today) {
     budgetId,
     today
   );
+  for (const a of advances) parts.push({ m: a.m, asOf: a.d.slice(0, 10) <= today, v: a.v });
   let used = 0;
   for (const p of parts) if (p.asOf) used += p.v;
   return (M) => {
