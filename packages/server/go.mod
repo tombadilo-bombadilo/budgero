@@ -9,7 +9,7 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
-	github.com/labstack/echo/v4 v4.15.4
+	github.com/labstack/echo/v4 v4.16.1
 	github.com/mattn/go-isatty v0.0.22
 	github.com/pressly/goose/v3 v3.27.0
 	github.com/resend/resend-go/v2 v2.28.0

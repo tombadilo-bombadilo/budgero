@@ -21,12 +21,67 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.19.1',
+    date: 'October 24, 2026',
+    summary:
+      'Credit card transfers, cash advances and refunds now work out exactly like YNAB, and Budgero no longer shows a cookie banner.',
+    isLatest: true,
+    items: [
+      {
+        type: 'improved',
+        title: 'Cash advances',
+        description:
+          'Moving money from a credit card into a cash account (checking, PayPal, savings) now adds it to Ready to Assign, shown as “Inflow from debt accounts”. The card’s payment category stays as it was until you assign money to cover the new debt.',
+      },
+      {
+        type: 'improved',
+        title: 'Privacy and cookies',
+        description:
+          'Budgero no longer uses cookies for analytics, so the cookie banner is gone from the website and the app. Cloud now records pseudonymous usage events (which features are used and where things fail, never your budget data) so we can find problems sooner. You can switch this off any time in Settings → Security & Privacy; the choice is saved to your account. Self-host still sends nothing.',
+      },
+      {
+        type: 'fixed',
+        title: 'Balance transfers between cards',
+        description:
+          'A transfer from one credit card, loan or mortgage to another card is no longer counted as a payment. It no longer drains the card’s payment category or lowers Ready to Assign.',
+      },
+      {
+        type: 'fixed',
+        title: 'Card refunds',
+        description:
+          'Refunds come out of the card’s payment category the way YNAB does it, and spending a refunded amount later from another account no longer counts as overspending.',
+      },
+      {
+        type: 'fixed',
+        title: 'Card refunds in cumulative mode',
+        description: 'Card refunds now reduce the card’s payment category.',
+      },
+      {
+        type: 'fixed',
+        title: 'Split transfers to off-budget accounts',
+        description:
+          'They now come out of Ready to Assign, and splits coming in from off-budget accounts add to it.',
+      },
+      {
+        type: 'fixed',
+        title: 'Positive card balances',
+        description:
+          'A positive card balance moved to an off-budget account is no longer subtracted from Ready to Assign twice.',
+      },
+      {
+        type: 'fixed',
+        title: 'Numbers after updating',
+        description:
+          'Your Ready to Assign or credit card payment categories may change after updating, if you’ve made cash advances, balance transfers or card refunds. The new numbers match YNAB.',
+      },
+    ],
+  },
+  {
     version: 'v1.19.0',
     date: 'October 23, 2026',
     summary:
       'Makes large budgets much faster, makes undo exact and all-or-nothing everywhere, keeps devices from silently drifting apart, and adds converting a transaction to a transfer and a daily allowance in budget pacing.',
-    isLatest: true,
-    items: [
+        items: [
       {
         type: 'new',
         title: 'Convert to a transfer',
