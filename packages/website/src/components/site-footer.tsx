@@ -3,7 +3,6 @@ import Image from 'next/image';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Link } from '@/i18n/navigation';
 import { TrackedLink } from '@/components/TrackedLink';
-import { ManageCookiesButton } from '@/components/ManageCookiesButton';
 
 export async function SiteFooter() {
   const locale = await getLocale();
@@ -136,9 +135,6 @@ export async function SiteFooter() {
                   className="hover:text-[#141414] transition-colors"
                   label={copy('u_98b67063cf8e')}
                 />
-              </li>
-              <li>
-                <ManageCookiesButton className="hover:text-[#141414] transition-colors" />
               </li>
               <li>
                 <a

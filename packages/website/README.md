@@ -43,9 +43,10 @@ placement, which the Cloud signup event also preserves. Gallery events measure
 interest in the product examples; they are not steps in the trial funnel.
 
 The website and Cloud app use the same Umami website ID and `/stats/api/send`
-proxy. After deploying both, verify a consent-denied signup journey in Umami
-before relying on cross-domain funnel percentages. IP/browser changes and session
-expiry can split a journey. PostHog receives the same event names only with consent.
+proxy. After deploying both, verify a signup journey in Umami before relying on
+cross-domain funnel percentages. IP/browser changes and session expiry can split a
+journey. PostHog receives the same event names, cookieless (memory persistence, a
+fresh anonymous id per page load) and not at all when the browser sends GPC/DNT.
 Production-host checks exclude local Umami funnel events and website custom events.
 
 The `/stats` proxy forwards the visitor's Cloudflare headers (`cf-connecting-ip`,

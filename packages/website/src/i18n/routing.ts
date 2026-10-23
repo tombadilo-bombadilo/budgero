@@ -28,6 +28,9 @@ export const routing = defineRouting({
   // URLs identify their language. Negotiating unprefixed English URLs from a
   // cookie would loop when an English-only article redirects to its canonical.
   localeDetection: false,
+  // Without detection the NEXT_LOCALE cookie is never read; don't set it
+  // (the site sets no cookies at all, privacy policy §8).
+  localeCookie: false,
   // Explicit metadata/sitemaps know which translations really exist. Automatic
   // Link headers would invent translations of independent native articles.
   alternateLinks: false,
