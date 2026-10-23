@@ -31,11 +31,11 @@
   },
   "devDependencies": {
     "@budgero/eslint-config": "workspace:*",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^9.39.5",
     "globals": "^15.15.0",
     "typescript": "~5.6.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "files": [
     "dist"

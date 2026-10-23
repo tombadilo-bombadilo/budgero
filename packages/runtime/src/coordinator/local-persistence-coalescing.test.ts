@@ -100,8 +100,12 @@ const settle = async () => {
   for (let i = 0; i < 5; i++) await new Promise((resolve) => setImmediate(resolve));
 };
 
+// Bounded by real time, not a tick count: on a loaded CI runner the offline
+// persist can take more than a few hundred event-loop turns. (Date is faked;
+// performance.now is not.)
 const until = async (condition: () => boolean) => {
-  for (let i = 0; i < 500 && !condition(); i++) {
+  const deadline = performance.now() + 5_000;
+  while (!condition() && performance.now() < deadline) {
     await new Promise((resolve) => setImmediate(resolve));
   }
 };
