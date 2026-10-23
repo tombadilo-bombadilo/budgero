@@ -155,6 +155,10 @@ msgstr "(vider)"
 msgid "(cleared)"
 msgstr "(Pointé)"
 
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "(goal reached)"
+msgstr "(objectif atteint)"
+
 #: src/features/currencies/ui/CurrencySelector.tsx
 msgid "(Offline)"
 msgstr "(Hors ligne)"
@@ -162,6 +166,10 @@ msgstr "(Hors ligne)"
 #: src/features/import/ui/steps/configure/MappingTab.tsx
 msgid "(Optional)"
 msgstr "(Facultatif)"
+
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "(over goal)"
+msgstr "(au-dessus de l'objectif)"
 
 #: src/features/import/ui/steps/configure/MappingTab.tsx
 msgid "(Required - or use InflowConverted/OutflowConverted)"
@@ -180,6 +188,11 @@ msgstr "{0, plural, one {, # compte} other {, # comptes}}"
 #: src/pages/settings/ImportsPage.tsx
 msgid "{0, plural, one {, # category} other {, # categories}}"
 msgstr "{0, plural, one {, # catégorie} other {, # catégories}}"
+
+#. placeholder {0}: dailyAllowance.daysLeft
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "{0, plural, one {(# day left)} other {(# days left)}}"
+msgstr "{0, plural, one {(# jour restant)} other {(# jours restants)}}"
 
 #. placeholder {0}: run.transactionCount
 #. placeholder {1}: run.status.toUpperCase()
@@ -208,6 +221,13 @@ msgstr "{0, plural, one {{1} administrateur} other {{2} administrateurs}}"
 #: src/pages/admin/admin-users/user-details/ActivityHeatmap.tsx
 msgid "{0, plural, one {{1}: # {itemLabel}} other {{2}: # {itemLabel}s}}"
 msgstr "{0, plural, one {{1}: # {itemLabel}} other {{2}: # {itemLabel}s}}"
+
+#. placeholder {0}: dailyAllowance.daysLeft
+#. placeholder {1}: formatMilli(globalLocalizer, dailyAllowance.perDay)
+#. placeholder {2}: formatMilli(globalLocalizer, dailyAllowance.perDay)
+#: src/features/budget-planning/ui/spending-drawer-mobile/CategoryHeader.tsx
+msgid "{0, plural, one {{1}/day left · # day} other {{2}/day left · # days}}"
+msgstr "{0, plural, one {{1}/jour restant · # jour} other {{2}/jour restant · # jours}}"
 
 #. placeholder {0}: preview.accountCount
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
@@ -10013,6 +10033,10 @@ msgstr "restant"
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Left in plan"
 msgstr "Restant dans le plan"
+
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "Left per day:"
+msgstr "Reste par jour :"
 
 #: src/pages/onboarding/steps/ZbbStep.tsx
 msgid "LEFT TO ASSIGN"

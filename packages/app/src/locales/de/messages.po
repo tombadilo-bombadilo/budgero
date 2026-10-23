@@ -155,6 +155,10 @@ msgstr "(leeren)"
 msgid "(cleared)"
 msgstr "(Gebucht)"
 
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "(goal reached)"
+msgstr "(Ziel erreicht)"
+
 #: src/features/currencies/ui/CurrencySelector.tsx
 msgid "(Offline)"
 msgstr "(Offline)"
@@ -162,6 +166,10 @@ msgstr "(Offline)"
 #: src/features/import/ui/steps/configure/MappingTab.tsx
 msgid "(Optional)"
 msgstr "(Optional)"
+
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "(over goal)"
+msgstr "(über dem Ziel)"
 
 #: src/features/import/ui/steps/configure/MappingTab.tsx
 msgid "(Required - or use InflowConverted/OutflowConverted)"
@@ -180,6 +188,11 @@ msgstr "{0, plural, one {, # Konto} other {, # Konten}}"
 #: src/pages/settings/ImportsPage.tsx
 msgid "{0, plural, one {, # category} other {, # categories}}"
 msgstr "{0, plural, one {, # Kategorie} other {, # Kategorien}}"
+
+#. placeholder {0}: dailyAllowance.daysLeft
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "{0, plural, one {(# day left)} other {(# days left)}}"
+msgstr "{0, plural, one {(noch # Tag)} other {(noch # Tage)}}"
 
 #. placeholder {0}: run.transactionCount
 #. placeholder {1}: run.status.toUpperCase()
@@ -208,6 +221,13 @@ msgstr "{0, plural, one {{1} Admin} other {{2} Admins}}"
 #: src/pages/admin/admin-users/user-details/ActivityHeatmap.tsx
 msgid "{0, plural, one {{1}: # {itemLabel}} other {{2}: # {itemLabel}s}}"
 msgstr "{0, plural, one {{1}: # {itemLabel}} other {{2}: # {itemLabel}}}"
+
+#. placeholder {0}: dailyAllowance.daysLeft
+#. placeholder {1}: formatMilli(globalLocalizer, dailyAllowance.perDay)
+#. placeholder {2}: formatMilli(globalLocalizer, dailyAllowance.perDay)
+#: src/features/budget-planning/ui/spending-drawer-mobile/CategoryHeader.tsx
+msgid "{0, plural, one {{1}/day left · # day} other {{2}/day left · # days}}"
+msgstr "{0, plural, one {{1}/Tag übrig · # Tag} other {{2}/Tag übrig · # Tage}}"
 
 #. placeholder {0}: preview.accountCount
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
@@ -10013,6 +10033,10 @@ msgstr "übrig"
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Left in plan"
 msgstr "Verbleibend im Plan"
+
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "Left per day:"
+msgstr "Pro Tag übrig:"
 
 #: src/pages/onboarding/steps/ZbbStep.tsx
 msgid "LEFT TO ASSIGN"

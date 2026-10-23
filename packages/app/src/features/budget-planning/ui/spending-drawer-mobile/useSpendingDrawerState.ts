@@ -12,6 +12,7 @@ import { useGoalsByCategories } from '@entities/goal/api/useGoals';
 import { useCategories } from '@entities/category/api/useCategories';
 import { toast } from 'sonner';
 import { ZERO_MILLI } from '@shared/lib/currency/milli';
+import { calculateDailyAllowance } from '@shared/lib/budget-pacing';
 import {
   calculateCumulativeData,
   calculateGoalStatus,
@@ -91,6 +92,11 @@ export function useSpendingDrawerState(
   const goalStatus = useMemo(
     () => calculateGoalStatus(totalSpent, monthlyGoal),
     [totalSpent, monthlyGoal]
+  );
+
+  const dailyAllowance = useMemo(
+    () => calculateDailyAllowance(monthlyGoal, totalSpent, currentMonth),
+    [monthlyGoal, totalSpent, currentMonth]
   );
 
   const maxValue =
@@ -181,6 +187,7 @@ export function useSpendingDrawerState(
     cumulativeData,
     totalSpent,
     goalStatus,
+    dailyAllowance,
     maxValue,
     shouldShowBudgetPace,
     loading,

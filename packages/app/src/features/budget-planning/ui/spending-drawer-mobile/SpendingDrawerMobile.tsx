@@ -67,6 +67,7 @@ export const SpendingDrawerMobile = React.memo(function SpendingDrawerMobile({
     cumulativeData,
     totalSpent,
     goalStatus,
+    dailyAllowance,
     maxValue,
     shouldShowBudgetPace,
     loading,
@@ -125,6 +126,7 @@ export const SpendingDrawerMobile = React.memo(function SpendingDrawerMobile({
             loading={contentLoading}
             totalSpent={totalSpent}
             goalStatus={goalStatus}
+            dailyAllowance={dailyAllowance}
             globalLocalizer={maskedLocalizer}
           />
 

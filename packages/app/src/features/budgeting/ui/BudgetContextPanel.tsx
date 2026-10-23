@@ -1,4 +1,4 @@
-import { Trans, useLingui } from '@lingui/react/macro';
+import { Plural, Trans, useLingui } from '@lingui/react/macro';
 import { useGoalFundingSettings } from '@entities/budget/api/useGoalFundingSettings';
 import { FundingPriorityEditor } from '@features/category-management/ui/FundingPriorityEditor';
 import { CategoryNoteEditor } from '@features/category-management/ui/CategoryNoteEditor';
@@ -73,6 +73,7 @@ import { useMaskedLocalizer } from '@shared/lib/privacy/useMaskedLocalizer';
 import { useFormatMaskedMilli } from '@features/budget-planning/lib/useFormatMaskedMilli';
 import { cn } from '@shared/lib/utils';
 import { extractDateKey } from '@shared/lib/date-utils';
+import { calculateDailyAllowance } from '@shared/lib/budget-pacing';
 import { toastError } from '@shared/lib/errors';
 import { useAllowOverAssignment } from '@shared/hooks/useUserPreferences';
 
@@ -365,6 +366,14 @@ export function BudgetContextPanel({
       goal: monthlyGoal,
     };
   }, [selectedCategory, monthlyGoal, categoryTransactions, currentMonth]);
+
+  const dailyAllowance = useMemo(
+    () =>
+      budgetPacingData
+        ? calculateDailyAllowance(budgetPacingData.goal, budgetPacingData.totalSpent, currentMonth)
+        : null,
+    [budgetPacingData, currentMonth]
+  );
 
   const summaryTotals = useMemo(() => {
     return selectedRows.reduce(
@@ -937,6 +946,36 @@ export function BudgetContextPanel({
                   {Math.round((budgetPacingData.totalSpent / budgetPacingData.goal) * 100)}%
                 </span>
               </div>
+              {dailyAllowance && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">
+                    <Trans>Left per day:</Trans>
+                  </span>
+                  {dailyAllowance.remaining > 0 ? (
+                    <span className="font-medium text-right">
+                      {formatAmount(dailyAllowance.perDay)}{' '}
+                      <span className="font-normal text-muted-foreground">
+                        <Plural
+                          value={dailyAllowance.daysLeft}
+                          one="(# day left)"
+                          other="(# days left)"
+                        />
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="font-medium text-red-600">
+                      {formatAmount(ZERO_MILLI)}{' '}
+                      <span className="font-normal">
+                        {dailyAllowance.remaining < 0 ? (
+                          <Trans>(over goal)</Trans>
+                        ) : (
+                          <Trans>(goal reached)</Trans>
+                        )}
+                      </span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
             {pacingOption ? (
               <EChart

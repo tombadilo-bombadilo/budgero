@@ -1,4 +1,5 @@
 import type { MilliUnits } from '@budgero/core/browser';
+import type { DailyAllowance } from '@shared/lib/budget-pacing';
 
 export interface SpendingDrawerMobileProps {
   open: boolean;
@@ -59,6 +60,7 @@ export interface CategoryHeaderProps {
   loading: boolean;
   totalSpent: MilliUnits;
   goalStatus: GoalStatus | null;
+  dailyAllowance: DailyAllowance | null;
   globalLocalizer: Intl.NumberFormat;
 }
 
