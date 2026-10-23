@@ -59,7 +59,8 @@ function errorType(error: unknown): string {
   if (error instanceof Error || (error && typeof error === 'object' && 'name' in error)) {
     const name = String((error as { name?: unknown }).name ?? '');
     const ctorName = (error as { constructor?: { name?: string } }).constructor?.name ?? '';
-    const pick = name && name !== 'Error' ? name : ctorName || name;
+    const ctor = ctorName && ctorName !== 'Object' ? ctorName : '';
+    const pick = name && name !== 'Error' ? name : ctor || name;
     return SAFE_NAME.test(pick) ? pick : Error.name;
   }
   return 'NonError';

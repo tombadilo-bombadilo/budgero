@@ -63,6 +63,11 @@ describe('error capture scrubbing', () => {
     expect((props.$exception_list as { type: string }[])[0].type).toBe('NonError');
   });
 
+  it('names a muted cross-origin error plainly', () => {
+    const props = buildExceptionProps({ name: 'Error' }, { handled: false, source: 'onerror' });
+    expect((props.$exception_list as { type: string }[])[0].type).toBe('Error');
+  });
+
   it('does not trust a crafted error name', () => {
     const error = new Error('x');
     error.name = SECRET;

@@ -291,6 +291,12 @@ describe('scrubOutgoing', () => {
     expect(out.properties.$pathname).toBe('/accounts/:accountId');
     expect(out.properties.platform).toBe('web');
     expect(out.$set).toBeUndefined();
+
+    const pageview = scrubOutgoing({
+      event: '$pageview',
+      properties: { $pathname: '/reports/dashboards/:dashboardId', $current_url: 'x?y=1' },
+    } as unknown as CaptureResult) as unknown as Record<string, Record<string, unknown>>;
+    expect(pageview.properties.$pathname).toBe('/reports/dashboards/:dashboardId');
     window.history.replaceState(null, '', '/');
   });
 });

@@ -200,12 +200,17 @@ export function scrubOutgoing(event: CaptureResult | null): CaptureResult | null
   if (!ALLOWED_SYSTEM_EVENTS.has(event.event) && !Object.keys(EVENT_SCHEMA).includes(event.event))
     return null;
   const props = { ...(event.properties ?? {}) } as Record<string, unknown>;
+  // A manual pageview names its own (already normalized) path; keep it.
+  const ownPath =
+    event.event === '$pageview' && typeof props.$pathname === 'string' ? props.$pathname : null;
   for (const key of Object.keys(props)) {
     if (DROP_PROP.test(key)) delete props[key];
   }
   delete props.$set;
   delete props.$set_once;
-  const path = normalizePagePath(typeof window !== 'undefined' ? window.location.pathname : '/');
+  const path = normalizePagePath(
+    ownPath ?? (typeof window !== 'undefined' ? window.location.pathname : '/')
+  );
   props.$pathname = path;
   props.$current_url = `${typeof window !== 'undefined' ? window.location.origin : ''}${path}`;
   const out = { ...event, properties: props } as CaptureResult & Record<string, unknown>;
