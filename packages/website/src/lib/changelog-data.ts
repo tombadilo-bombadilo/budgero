@@ -21,12 +21,93 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.19.0',
+    date: 'October 23, 2026',
+    summary:
+      'Makes large budgets much faster, makes undo exact and all-or-nothing everywhere, keeps devices from silently drifting apart, and adds converting a transaction to a transfer and a daily allowance in budget pacing.',
+    isLatest: true,
+    items: [
+      {
+        type: 'new',
+        title: 'Convert to a transfer',
+        description:
+          'Pick another account in a transaction’s payee field to turn it into a transfer; Convert to regular transaction turns it back. One undo reverts it.',
+      },
+      {
+        type: 'new',
+        title: 'Left per day',
+        description:
+          'Budget Pacing shows how much you can still spend per day this month to stay on your goal, on the desktop panel and in the mobile category drawer.',
+      },
+      {
+        type: 'new',
+        title: 'Compact budget table',
+        description:
+          'Settings → Appearance → Budget Table → Row density fits more categories on screen. It is saved with your preferences, so it follows you to every device.',
+      },
+      {
+        type: 'improved',
+        title: 'Large budgets',
+        description:
+          'Budgets with tens of thousands of transactions open, switch months and update Ready to Assign much faster, and the local copy is saved less often and without recompressing.',
+      },
+      {
+        type: 'improved',
+        title: 'Undo and redo',
+        description:
+          'Undo now restores exactly what was there and either applies completely or not at all: deletes, splits, transfers, rule runs, imports, bank reviews, payee and label changes, account edits and currency changes. Recreated rows keep their IDs, and one undo reverts a whole import, bank review or conversion.',
+      },
+      {
+        type: 'improved',
+        title: 'Underfunded warnings',
+        description:
+          'The credit card payment mismatch shows as one warning icon instead of a badge per row.',
+      },
+      {
+        type: 'improved',
+        title: 'Self-hosting: back up before updating',
+        description:
+          'Back up your data volume before upgrading. After the update, devices can’t go back to 1.18 except by restoring that backup. Reload Budgero on every device afterwards.',
+      },
+      {
+        type: 'fixed',
+        title: 'Devices drifting apart',
+        description:
+          'When a device still runs an older version, changes it can’t apply correctly now stop it with Update required instead of being silently skipped. Update every device after this release.',
+      },
+      {
+        type: 'fixed',
+        title: 'Account balances',
+        description:
+          'Balances stay correct after deleting a category or debt account, editing split transactions and their transfer lines, and moving transactions between currencies.',
+      },
+      {
+        type: 'fixed',
+        title: 'Payoff simulator on checking accounts',
+        description:
+          'An overdrawn checking or savings account no longer shows the Payoff Simulator; it stays on credit cards, loans and mortgages.',
+      },
+      {
+        type: 'fixed',
+        title: 'Smaller fixes',
+        description:
+          'Recurring templates keep their category, picked categories are saved by ID, the overdue badge stays in the date column, a YNAB import stays local until accepted, and blocked accounts are blocked everywhere.',
+      },
+    ],
+    acknowledgements: [
+      {
+        githubUsername: 'luisjmarrero',
+        pullRequest: 61,
+        contribution: 'Convert a transaction to a transfer from the payee picker',
+      },
+    ],
+  },
+  {
     version: 'v1.18.0',
     date: 'October 15, 2026',
     summary:
       'Adds keyboard navigation and batch shortcuts to the register, compact rows, your own exchange rate on foreign-currency transactions and Post now for recurring transactions, and fixes categories mixing up after switching budgets.',
-    isLatest: true,
-    items: [
+        items: [
       {
         type: 'new',
         title: 'Keyboard navigation in the register',

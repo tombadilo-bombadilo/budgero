@@ -55,13 +55,13 @@
     "@types/debug": "^4.1.13",
     "@types/node": "^20.19.43",
     "@types/sql.js": "^1.4.11",
-    "@vitest/coverage-v8": "^4.1.11",
+    "@vitest/coverage-v8": "^4.1.12",
     "eslint": "^9.39.5",
     "fast-check": "^4.10.2",
     "globals": "^15.15.0",
     "sql.js": "^1.14.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.12"
   },
   "files": [
     "dist"
