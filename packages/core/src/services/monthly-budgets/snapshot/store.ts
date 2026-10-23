@@ -21,7 +21,7 @@
 import type { DatabaseAdapter, SqlFunctionValue } from '../../../database/interface.js';
 import { allRows, getRow } from '../../../database/sql.js';
 import { NO_SPLITS_FILTER } from '../../transactions/queries.js';
-import { DEBT_PARTNER_LEG } from '../queries.js';
+import { CASH_ADVANCE_ROW, CASH_ADVANCE_SPLIT, DEBT_PARTNER_LEG } from '../queries.js';
 import { createLogger } from '../../../logger.js';
 import {
   addCreditLine,
@@ -111,6 +111,7 @@ const TX_COLUMNS = [
 ];
 const SPLIT_COLUMNS = [
   'TransactionID',
+  'TransferAccountID',
   'CategoryID',
   'InflowConverted',
   'OutflowConverted',
@@ -223,16 +224,19 @@ const nonCreditSql = (mf: string) => `
     WHERE t.BudgetID = ?1 ${mf} AND a.OnBudget = TRUE AND LOWER(a.Type) <> 'credit'
   ) GROUP BY Month, CategoryID`;
 
+// ToCash: CASH_ADVANCE_ROW / _SPLIT (the Transfers-category test of rows is
+// applied in the fold, from live category groups).
 const creditLinesSql = (mf: string) => `
-  SELECT Month, AccountID, CategoryID, Amount FROM (
+  SELECT Month, AccountID, CategoryID, Amount, ToCash, DATE(LineDate) AS Day FROM (
     SELECT t.Month AS Month, t.AccountID AS AccountID, t.CategoryID AS CategoryID,
            t.InflowConverted - t.OutflowConverted AS Amount, t.Date AS LineDate,
-           t.OutflowConverted AS ParentOutflow, t.ID AS TransactionID, 0 AS PartIndex
+           t.OutflowConverted AS ParentOutflow, t.ID AS TransactionID, 0 AS PartIndex,
+           ${CASH_ADVANCE_ROW('t')} AS ToCash
     FROM transactions t JOIN accounts a ON a.ID = t.AccountID
     WHERE t.BudgetID = ?1 ${mf} AND a.OnBudget = TRUE AND LOWER(a.Type) = 'credit' ${NO_SPLITS_FILTER}
     UNION ALL
     SELECT t.Month, t.AccountID, s.CategoryID, s.InflowConverted - s.OutflowConverted, t.Date,
-           t.OutflowConverted, t.ID, s.OrderIndex
+           t.OutflowConverted, t.ID, s.OrderIndex, ${CASH_ADVANCE_SPLIT('s', 't')}
     FROM transaction_splits s JOIN transactions t ON t.ID = s.TransactionID
     JOIN accounts a ON a.ID = t.AccountID
     WHERE t.BudgetID = ?1 ${mf} AND a.OnBudget = TRUE AND LOWER(a.Type) = 'credit'
@@ -592,8 +596,10 @@ export class BudgetSnapshotStore {
       AccountID: number;
       CategoryID: CategoryKey;
       Amount: number;
+      ToCash: number;
+      Day: string | null;
     }>(this.db, creditLinesSql(mf), ...params))
-      addCreditLine(get(r.Month), r.AccountID, r.CategoryID, r.Amount);
+      addCreditLine(get(r.Month), r.AccountID, r.CategoryID, r.Amount, r.ToCash, r.Day ?? '');
 
     for (const r of allRows<{
       Month: string;

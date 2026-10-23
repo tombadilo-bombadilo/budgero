@@ -19,6 +19,7 @@ import {
   activityByKindAt,
   activityInMonth,
   availableThrough,
+  cashAdvanceDays,
   ccRefundsFlat,
   ccRefundsThrough,
   ccSpendingAt,
@@ -372,11 +373,19 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
       getRow<{ total_revaluations: number }>(this.db, REVALUATIONS_SQL, budgetId, asOfDate)
         ?.total_revaluations ?? 0;
 
+    const advances = this.snap.memo('cashAdvanceDays', () =>
+      cashAdvanceDays(this.data, this.snap.groupMap())
+    );
+    let totalDebtInflows = 0;
+    for (let i = 0; i < advances.day.length; i++)
+      if (advances.day[i] <= asOfDate) totalDebtInflows += advances.amount[i];
+
     const readyToAssign =
       totalIncome -
       totalAssignments -
       totalOffBudgetTransfers +
       totalInBudgetTransfers +
+      totalDebtInflows +
       totalRevaluations;
 
     return {
@@ -387,6 +396,7 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
       futureAssignments: asMilli(0),
       offBudgetTransfers: asMilli(totalOffBudgetTransfers),
       inBudgetTransfers: asMilli(totalInBudgetTransfers),
+      debtInflows: asMilli(totalDebtInflows),
       revaluations: asMilli(totalRevaluations),
       priorCashOverspend: asMilli(0),
       readyToAssign: asMilli(readyToAssign),
@@ -436,10 +446,15 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
       );
       let rev = 0;
       for (const r of revalRows) if (r.Month !== null && r.Month <= month) rev += r.total;
+      const debt = this.snap.memo(`mDebt:${index}`, () => {
+        let total = 0;
+        for (const [m, v] of fold.debtInflow) if (m <= index) total += v;
+        return total;
+      });
 
       const overspendsForMonth = overspendBefore(fold, index, names);
       const priorCashOverspend = overspendsForMonth.reduce((sum, o) => sum + o.amount, 0);
-      const readyToAssign = inc - ass - off + inB + rev - priorCashOverspend;
+      const readyToAssign = inc - ass - off + inB + debt + rev - priorCashOverspend;
 
       result.set(month, {
         mode: 'monthly',
@@ -449,6 +464,7 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
         futureAssignments: asMilli(0),
         offBudgetTransfers: asMilli(off),
         inBudgetTransfers: asMilli(inB),
+        debtInflows: asMilli(debt),
         revaluations: asMilli(rev),
         priorCashOverspend: asMilli(priorCashOverspend),
         readyToAssign: asMilli(readyToAssign),

@@ -13,6 +13,7 @@
 //   income      Income-group lines <= M (split-aware) - RTA income
 //               (RTA counts parent rows, non-transfers, by date <= today in cumulative mode)
 //   transfers   Transfers-group lines <= M + RTA off-budget - RTA in-budget transfers
+//               - RTA cash advances (card -> cash account, the debt-growing part)
 //               (what is left: legs to off-budget debt accounts, ExcludeFromReadyToAssign
 //               legs, unpaired legs, timing)
 //   other       lines whose category is none of: Income group, Transfers group, a budget row
@@ -192,7 +193,8 @@ export function checkZeroBasedIdentity(side, budgetId, months, reads) {
 
     const terms = {
       income: income - rta.income,
-      transfers: transfers + rta.offBudgetTransfers - rta.inBudgetTransfers,
+      transfers:
+        transfers + rta.offBudgetTransfers - rta.inBudgetTransfers - (rta.debtInflows ?? 0),
       other,
       splitGap,
       reval: reval - rta.revaluations,

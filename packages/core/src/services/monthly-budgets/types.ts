@@ -30,6 +30,11 @@ export interface ReadyToAssignBreakdown {
   futureAssignments: MilliUnits;
   offBudgetTransfers: MilliUnits;
   inBudgetTransfers: MilliUnits;
+  /**
+   * Cash advances: card -> on-budget cash account transfers, the part that grew
+   * the card's debt (YNAB's "Inflow from Debt Account"). Added to RTA.
+   */
+  debtInflows?: MilliUnits;
   revaluations: MilliUnits;
   priorCashOverspend: MilliUnits;
   readyToAssign: MilliUnits;

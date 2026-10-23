@@ -154,6 +154,7 @@ export interface YNABReadyToAssignMismatch {
     assignments: number;
     offBudgetTransfers: number;
     inBudgetTransfers: number;
+    debtInflows?: number;
     revaluations: number;
     priorCashOverspend: number;
     priorCashOverspendDetails?: {

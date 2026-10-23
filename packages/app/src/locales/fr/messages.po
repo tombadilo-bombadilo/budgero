@@ -9460,6 +9460,10 @@ msgstr "Roupie indienne"
 msgid "Inflow"
 msgstr "Entrée"
 
+#: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
+msgid "Inflow from debt accounts"
+msgstr "Entrées depuis des comptes de dette"
+
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "Inflow vs Outflow"
 msgstr "Entrée vs Sortie"

@@ -400,3 +400,115 @@ describe('cumulative: card refunds take funding back out of the CC Payment categ
     expect(out).toMatchObject({ pay: 100, other: 100, refunded: undefined });
   });
 });
+
+describe('#67: card -> on-budget cash account transfers are cash advances', () => {
+  for (const mode of ['cumulative', 'monthly'] as Mode[]) {
+    it(`[${mode}] the debt-growing part raises RTA; positive balances, debt and off-budget moves do not`, async () => {
+      const c = await setup();
+      const shop = category(c, 'Shopping');
+      const pay = paymentCategoryOf(c, c.card);
+      const sav = (await c.s.accounts.createAccount('Savings', c.b, 'savings', 'USD', asMilli(0)))
+        .ID;
+      const off = (
+        await c.s.accounts.createAccount(
+          'Tracking',
+          c.b,
+          'savings',
+          'USD',
+          asMilli(0),
+          undefined,
+          false
+        )
+      ).ID;
+      const base = reads(c, mode).rta['2024-05'].readyToAssign;
+      const rtaDelta = () => reads(c, mode).rta['2024-05'].readyToAssign - base;
+
+      await transfer(c, c.card, c.chk, 100, '2024-02-05', 'adv1'); // plain advance
+      expect(rtaDelta()).toBe(100);
+      expect(reads(c, mode).avail('2024-05', pay)).toBe(0);
+
+      // Card 2 holds +50 of refund money: moving 80 out only borrows 30.
+      await tx(c, c.card2, shop, 50, '2024-02-10');
+      const before = rtaDelta();
+      await transfer(c, c.card2, sav, 80, '2024-02-11', 'adv2');
+      expect(rtaDelta() - before).toBe(30);
+
+      // split-transfer mirror on the card (parent on checking, a line from the card)
+      await tx(c, c.chk, shop, 60, '2024-03-01');
+      const parent = idOf(c, `SELECT MAX(ID) AS ID FROM transactions WHERE AccountID=${c.chk}`);
+      await c.s.splits.upsertSplits(parent, [
+        {
+          CategoryID: shop,
+          InflowConverted: asMilli(20),
+          OutflowConverted: asMilli(0),
+          OrderIndex: 0,
+        },
+        {
+          TransferAccountID: c.card,
+          InflowConverted: asMilli(40),
+          OutflowConverted: asMilli(0),
+          OrderIndex: 1,
+        },
+      ]);
+      expect(rtaDelta() - before).toBe(30 + 40);
+
+      // card split line transferring to checking (parent on the card)
+      await tx(c, c.card, shop, -70, '2024-03-05');
+      const cardParent = idOf(
+        c,
+        `SELECT MAX(ID) AS ID FROM transactions WHERE AccountID=${c.card}`
+      );
+      await c.s.splits.upsertSplits(cardParent, [
+        {
+          CategoryID: shop,
+          InflowConverted: asMilli(0),
+          OutflowConverted: asMilli(45),
+          OrderIndex: 0,
+        },
+        {
+          TransferAccountID: c.chk,
+          InflowConverted: asMilli(0),
+          OutflowConverted: asMilli(25),
+          OrderIndex: 1,
+        },
+      ]);
+      expect(rtaDelta() - before).toBe(30 + 40 + 25);
+      const mid = rtaDelta();
+
+      // Not advances: card -> card, card -> off-budget, unpaired, excluded from RTA.
+      await transfer(c, c.card, c.card2, 10, '2024-03-10', 'bt');
+      await transfer(c, c.card, off, 15, '2024-03-11', 'offb');
+      await tx(c, c.card, c.transfers, -5, '2024-03-12', 'unpaired');
+      expect(rtaDelta() - mid).toBe(-15); // off-budget leaves RTA as before
+      await transfer(c, c.card, c.chk, 12, '2024-03-13', 'excl');
+      c.adapter.exec(
+        `UPDATE transactions SET ExcludeFromReadyToAssign = 1 WHERE TransferID='excl'`
+      );
+      expect(rtaDelta() - mid).toBe(-15);
+    });
+  }
+
+  it('snapshot follows the partner leg and the split line target', async () => {
+    const c = await setup();
+    await transfer(c, c.card, c.card2, 100, '2024-02-05', 'x');
+    const rta = (mode: Mode) => reads(c, mode).rta['2024-05'].readyToAssign;
+    const start = { cumulative: rta('cumulative'), monthly: rta('monthly') };
+    const store = getBudgetSnapshotStore(c.adapter)!;
+    const builds = store.stats.builds;
+    const partner = idOf(
+      c,
+      `SELECT ID FROM transactions WHERE TransferID='x' AND AccountID=${c.card2}`
+    );
+    c.adapter.exec(`UPDATE transactions SET Date='2024-04-02' WHERE ID=${partner}`);
+    c.adapter.exec(`UPDATE transactions SET AccountID=${c.chk} WHERE ID=${partner}`); // now an advance
+    // checking 1000 + 100, card -100: an advance of 100 in both modes (monthly
+    // had counted Card 2's +100 credit balance as cash before)
+    expect(start).toEqual({ cumulative: 1000, monthly: 1100 });
+    expect(rta('cumulative')).toBe(1100);
+    expect(rta('monthly')).toBe(1100);
+    c.adapter.exec(`DELETE FROM transactions WHERE ID=${partner}`); // unpaired again
+    expect(rta('cumulative')).toBe(1000);
+    expect(rta('monthly')).toBe(1000);
+    expect(store.stats.builds, 'incremental, no rebuild').toBe(builds);
+  });
+});

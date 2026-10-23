@@ -37,6 +37,10 @@ export interface TxMonth {
   creditAccount: number[];
   creditCategory: CategoryKey[];
   creditAmount: number[];
+  /** Cash-advance code per line (CASH_ADVANCE_ROW / _SPLIT: 0, 1 row, 2 split line). */
+  creditToCash: number[];
+  /** DATE(t.Date) per line (the cumulative cash-advance sum is day-bounded). */
+  creditDay: string[];
   /** SUM(creditAmount) per category (derived from the lines). */
   creditByCategory: Map<CategoryKey, number>;
   /**
@@ -63,6 +67,8 @@ export function emptyTxMonth(): TxMonth {
     creditAccount: [],
     creditCategory: [],
     creditAmount: [],
+    creditToCash: [],
+    creditDay: [],
     creditByCategory: new Map(),
     ccSpend: new Map(),
     ccRefund: new Map(),
@@ -93,11 +99,15 @@ export function addCreditLine(
   m: TxMonth,
   accountId: number,
   categoryId: CategoryKey,
-  amount: number
+  amount: number,
+  toCash = 0,
+  day = ''
 ): void {
   m.creditAccount.push(accountId);
   m.creditCategory.push(categoryId);
   m.creditAmount.push(amount);
+  m.creditToCash.push(toCash);
+  m.creditDay.push(day);
   m.creditByCategory.set(categoryId, (m.creditByCategory.get(categoryId) ?? 0) + amount);
 }
 
@@ -348,6 +358,8 @@ export interface MonthlyFold {
   creditCash: Map<number, Map<CategoryKey, number>>;
   /** Per month: monthly-mode income (Income lines; credit lines also Transfers). */
   income: Map<number, number>;
+  /** Per month: cash advances, the debt-growing part (readyToAssignMonthlyBatch's debt). */
+  debtInflow: Map<number, number>;
 }
 
 export interface FoldMeta {
@@ -377,6 +389,7 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
   const balance = new Map<number, number>();
   const creditCash = new Map<number, Map<CategoryKey, number>>();
   const income = new Map<number, number>();
+  const debtInflow = new Map<number, number>();
   // purchases[month][category] -> { card, spend } in funding order
   const purchases = new Map<number, Map<number, { card: number; spend: number }[]>>();
   for (let m = first; m <= last; m++) {
@@ -400,7 +413,10 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
       balance.set(acc, after);
       const cash = Math.max(0, after) - Math.max(0, after - amount);
       add(cashByCat, cat, cash);
-      if (cat !== null) {
+      if (isCashAdvance(tx.creditToCash[i], cat, groupOf)) {
+        // #67: the debt-growing part is RTA inflow; none of it is income
+        if (amount < 0) add(debtInflow, m, cash - amount);
+      } else if (cat !== null) {
         const group = groupOf.get(cat);
         if (group === GROUP_INCOME || group === GROUP_TRANSFERS) {
           monthIncome += cash;
@@ -619,7 +635,46 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
     payment,
     creditCash,
     income,
+    debtInflow,
   };
+}
+
+/** A card line that is a cash advance (#67): a split line, or a Transfers-category row. */
+function isCashAdvance(code: number, cat: CategoryKey, groupOf: Map<number, string>): boolean {
+  return code === 2 || (code === 1 && cat !== null && groupOf.get(cat) === GROUP_TRANSFERS);
+}
+
+/**
+ * Cash advances of every month with their day (cashAdvancesThrough): the part
+ * of each advance that grew the card's debt, from the running card balance.
+ */
+export function cashAdvanceDays(
+  data: BudgetData,
+  groupOf: Map<number, string>
+): { day: string[]; amount: number[] } {
+  const out = { day: [] as string[], amount: [] as number[] };
+  // only the cards with an advance need their running balance
+  const cards = new Set<number>();
+  for (const tx of data.tx.values())
+    for (let i = 0; i < tx.creditToCash.length; i++)
+      if (tx.creditToCash[i] !== 0) cards.add(tx.creditAccount[i]);
+  if (cards.size === 0) return out;
+  const balance = new Map<number, number>();
+  for (const m of [...data.tx.keys()].sort((a, b) => a - b)) {
+    const tx = data.tx.get(m)!;
+    for (let i = 0; i < tx.creditAmount.length; i++) {
+      const acc = tx.creditAccount[i];
+      if (!cards.has(acc)) continue;
+      const amount = tx.creditAmount[i];
+      const after = (balance.get(acc) ?? 0) + amount;
+      balance.set(acc, after);
+      if (amount < 0 && isCashAdvance(tx.creditToCash[i], tx.creditCategory[i], groupOf)) {
+        out.day.push(tx.creditDay[i]);
+        out.amount.push(Math.max(0, after) - Math.max(0, after - amount) - amount);
+      }
+    }
+  }
+  return out;
 }
 
 /** Live names for the overspend details (categories of the budget). */
