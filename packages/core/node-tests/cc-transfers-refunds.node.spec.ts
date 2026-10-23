@@ -597,3 +597,20 @@ describe('monthly: a card sending its positive balance off budget', () => {
     expect(reads(c, 'monthly').rta['2024-05'].readyToAssign).toBe(base - 80);
   });
 });
+
+describe('monthly: refund money that was never cash', () => {
+  it('funding a card purchase from it is charged like spending it from cash', async () => {
+    const c = await setup();
+    const shop = category(c, 'Shopping');
+    await tx(c, c.card, shop, -50, '2024-01-10'); // unfunded
+    await tx(c, c.card, shop, 50, '2024-02-10'); // refunded: Shopping +50, nothing drawn
+    await tx(c, c.card, shop, -50, '2024-03-10'); // funded from that refund money
+    await transfer(c, c.chk, c.card, 50, '2024-04-10', 'pay'); // card paid from checking
+    const r = reads(c, 'monthly');
+    // checking 950, card 0: envelopes 950
+    expect(r.rta['2024-05'].readyToAssign).toBe(950);
+    expect(r.rta['2024-05'].priorCashOverspendDetails).toEqual([
+      expect.objectContaining({ categoryId: shop, month: '2024-03', amount: 50 }),
+    ]);
+  });
+});

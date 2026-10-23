@@ -492,6 +492,7 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
     displayed.set(categoryId, values);
     const base = new Float64Array(months);
     cashBase.set(categoryId, base);
+    let monthFunded = 0;
     let carryTotal = 0;
     for (let m = presence.get(categoryId)!; m <= last; m++) {
       const tx = data.tx.get(m);
@@ -518,6 +519,7 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
         0,
         availableToCover + [...refunds.values()].reduce((sum, value) => sum + value, 0)
       );
+      monthFunded = 0;
       for (const c of bought) {
         const paymentCatId = cardToPaymentCat.get(c.card);
         if (!paymentCatId) continue;
@@ -528,6 +530,7 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
           if (!list) funding.set(m, (list = []));
           list.push({ paymentCategoryId: paymentCatId, categoryId, amount: funded });
           series(fundedByPc, paymentCatId)[m - first] += funded;
+          monthFunded += funded;
         }
         if (c.spend > funded) {
           let byKey = debt.get(paymentCatId);
@@ -551,7 +554,8 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
 
       const shown = carryTotal + assigned + cash + credit;
       values[m - first] = shown;
-      base[m - first] = assigned + cash;
+      // cash after sending the funding of card purchases to CC Payment (see the cash pass)
+      base[m - first] = assigned + cash - monthFunded;
       carryTotal = Math.max(0, shown);
     }
   }

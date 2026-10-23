@@ -1181,11 +1181,17 @@ export class MonthlyBudgetQueries {
     // decides how much of each refund came back out of a CC Payment category.
     const cashSteps = new Map<
       number,
-      { m: string; assigned: number; cash: number; displayed: number }[]
+      { m: string; assigned: number; cash: number; funded: number; displayed: number }[]
     >();
     for (const [categoryId, byMonth] of seriesByCat) {
       let carryTotal = 0;
-      const steps: { m: string; assigned: number; cash: number; displayed: number }[] = [];
+      const steps: {
+        m: string;
+        assigned: number;
+        cash: number;
+        funded: number;
+        displayed: number;
+      }[] = [];
       cashSteps.set(categoryId, steps);
       for (const m of allMonths) {
         const s = byMonth.get(m) ?? { Assigned: 0, Cash: 0, Credit: 0 };
@@ -1208,12 +1214,16 @@ export class MonthlyBudgetQueries {
           0,
           availableToCover + [...refunds.values()].reduce((sum, value) => sum + value, 0)
         );
+        let monthFunded = 0;
         for (const c of purchases) {
           const paymentCatId = cardToPaymentCat.get(c.card);
           if (!paymentCatId) continue;
           const funded = Math.min(c.spend, remaining);
           remaining -= funded;
-          if (funded > 0) addFunded(paymentCatId, categoryId, m, funded);
+          if (funded > 0) {
+            addFunded(paymentCatId, categoryId, m, funded);
+            monthFunded += funded;
+          }
           if (c.spend > funded) addDebt(paymentCatId, categoryId, m, c.spend - funded);
         }
         for (const [card, refund] of refunds) {
@@ -1230,7 +1240,7 @@ export class MonthlyBudgetQueries {
         }
 
         const displayed = carryTotal + s.Assigned + s.Cash + s.Credit;
-        steps.push({ m, assigned: s.Assigned, cash: s.Cash, displayed });
+        steps.push({ m, assigned: s.Assigned, cash: s.Cash, funded: monthFunded, displayed });
         if (m === month) {
           availableByCategory.set(categoryId, displayed);
         } else {
@@ -1325,16 +1335,20 @@ export class MonthlyBudgetQueries {
     }
 
     // Spending-category cash pass. Category cash = carried cash + assigned +
-    // cash activity + the part of a card refund that came back out of the CC
-    // Payment category (it was cash set aside for the card, so spending or
+    // cash activity - money sent to CC Payment categories for card purchases +
+    // the part of a card refund that came back out of the CC Payment category (it was cash set aside for the card, so spending or
     // moving it later is not cash overspend). A refund of unfunded credit
     // overspend comes back as nothing and stays credit.
     for (const [categoryId, steps] of cashSteps) {
       let carryCash = 0;
       const refunds = realizedRefunds.get(categoryId);
-      for (const { m, assigned, cash, displayed } of steps) {
+      for (const { m, assigned, cash, funded, displayed } of steps) {
         if (m === month) continue;
-        const rawCash = carryCash + assigned + cash + (refunds?.get(m) ?? 0);
+        // Funding card purchases sends cash to the CC Payment category: when
+        // it came from refund money that was never cash (a refund of unfunded
+        // credit spending), the shortfall is cash overspend, as when that money
+        // is spent from a cash account.
+        const rawCash = carryCash + assigned + cash + (refunds?.get(m) ?? 0) - funded;
         if (rawCash < 0) {
           const overspent = -rawCash;
           priorCashOverspend += overspent;

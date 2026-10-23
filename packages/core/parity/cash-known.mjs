@@ -6,6 +6,4 @@
 // model to the reference again.
 export const KNOWN_DEVIATIONS = [
   // Not filed yet (found by this check, see the report):
-  // monthly: a refund of an unfunded purchase that funds a later card purchase is never charged
-  'phantomLeak',
 ];
