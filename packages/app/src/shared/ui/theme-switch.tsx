@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { trackSettingChanged } from '@shared/lib/analytics/track';
 import { Moon, Palette, Sun } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { useTheme } from 'next-themes';
@@ -52,6 +53,7 @@ export function ThemeSwitch() {
     const nextId = value as AppThemeId;
     const nextPreset = availableThemes.find((p) => p.id === nextId);
     setThemeId(nextId);
+    trackSettingChanged('theme', nextId);
 
     // Auto-force color mode for single-mode themes
     if (nextPreset && nextPreset.colorMode !== 'dual') {

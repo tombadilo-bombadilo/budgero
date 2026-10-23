@@ -190,19 +190,27 @@ func (r *Relay) IssueTicket(userID string) (string, time.Time, error) {
 // Acquire validates a ticket and reserves a session slot. Call release when
 // the session ends.
 func (r *Relay) Acquire(ticket string) (release func(), err error) {
-	userID, err := r.tickets.verify(ticket)
+	_, release, err = r.AcquireUser(ticket)
+	return release, err
+}
+
+// AcquireUser is Acquire that also returns the ticket's user. The user is
+// returned with ErrThrottled too (the ticket was valid), and is empty when
+// the ticket itself is invalid.
+func (r *Relay) AcquireUser(ticket string) (userID string, release func(), err error) {
+	userID, err = r.tickets.verify(ticket)
 	if err != nil {
-		return nil, err
+		return "", nil, err
 	}
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	state := r.user(userID)
 	if state.active >= r.opts.SessionsPerUser {
-		return nil, ErrThrottled
+		return userID, nil, ErrThrottled
 	}
 	state.active++
 	var once sync.Once
-	return func() {
+	return userID, func() {
 		once.Do(func() {
 			r.mu.Lock()
 			state.active--

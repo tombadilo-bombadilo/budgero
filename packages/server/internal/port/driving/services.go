@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"budgero-server/internal/domain"
+	"budgero-server/internal/domain/analytics"
 	"budgero-server/internal/port/driven/repository"
 )
 
@@ -51,7 +52,6 @@ type UserService interface {
 
 	// ResetData clears user data and returns affected space IDs.
 	ResetData(ctx context.Context, id string) ([]string, error)
-
 
 	// SetAnalyticsDisabled sets the analytics opt-out flag for a user.
 	SetAnalyticsDisabled(ctx context.Context, id string, disabled bool) error
@@ -401,4 +401,19 @@ type UserPurgeService interface {
 
 	// ListActivity returns every user with activity data for inactivity checks.
 	ListActivity(ctx context.Context) ([]domain.UserActivitySummary, error)
+}
+
+// AnalyticsTracker records server-side product analytics events. Track never
+// blocks and never fails: events are queued and dropped when the queue is full,
+// when analytics is disabled (self-host, no key) or when the user opted out.
+type AnalyticsTracker interface {
+	// Enabled reports whether events leave the server at all. Callers use it
+	// to skip work that only exists to compute event properties.
+	Enabled() bool
+
+	// Track queues event for userID (the PostHog distinct_id).
+	Track(userID string, event analytics.Event)
+
+	// SetOptOut updates the cached opt-out flag after the user changes it.
+	SetOptOut(userID string, disabled bool)
 }

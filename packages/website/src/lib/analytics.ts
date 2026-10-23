@@ -13,8 +13,8 @@ declare global {
 /**
  * Dual-fire an event to both analytics layers:
  *
- * - PostHog: consent-gated behind Klaro; a no-op until the visitor accepts
- *   (capture before init is dropped by posthog-js).
+ * - PostHog: cookieless (memory persistence, see posthog.ts); events are
+ *   dropped by posthog-js when it isn't initialized (no key, or GPC / DNT).
  * - Umami: cookieless and always on — no device storage, so no consent needed.
  *   `window.umami` is set by the proxied tracker script in the root layout;
  *   a blocked or unloaded tracker never interrupts navigation.

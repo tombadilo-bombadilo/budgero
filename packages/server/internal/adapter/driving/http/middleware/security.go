@@ -30,7 +30,8 @@ func SecurityHeaders(cfg *config.Config) echo.MiddlewareFunc {
 		"style-src 'self' 'unsafe-inline'",
 		// Allow Clerk assets and loaders
 		// Also allow cdn.jsdelivr.net for HuggingFace transformers.js (Whisper WASM)
-		// Also allow s.budgero.app (PostHog reverse proxy) and eu-assets.i.posthog.com for PostHog analytics scripts
+		// Also allow s.budgero.app (PostHog reverse proxy) and eu-assets.i.posthog.com for PostHog
+		// scripts (posthog-js lazy-loads extensions such as exception capture from the assets host)
 		// Also allow feedback.budgero.app for the Quackback feedback widget SDK
 		"script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://*.clerk.accounts.dev https://clerk.com https://clerk.budgero.app https://accounts.budgero.app https://cdn.jsdelivr.net https://s.budgero.app https://eu-assets.i.posthog.com https://feedback.budgero.app",
 		// Allow API/WebSocket connections to our Clerk instance as well

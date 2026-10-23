@@ -162,5 +162,6 @@ export async function linkAccounts(
   return runBankSync(runtime, budgetId, {
     providers: [connection.Provider],
     prefetched: { provider: connection.Provider, set },
+    trigger: 'link',
   });
 }

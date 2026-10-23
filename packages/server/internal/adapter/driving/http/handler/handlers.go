@@ -17,6 +17,7 @@ import (
 	"budgero-server/internal/application/email"
 	"budgero-server/internal/config"
 	"budgero-server/internal/domain"
+	"budgero-server/internal/domain/analytics"
 	"budgero-server/internal/port/driving"
 
 	"github.com/labstack/echo/v4"
@@ -63,6 +64,7 @@ type Handlers struct {
 // NewHandlers creates a new Handlers instance.
 func NewHandlers(services *application.Services, syncHub *synchub.Hub, opts Options) *Handlers {
 	subscriptionSvc := NewSubscriptionService(services.Entitlement, services.User, opts.Config, !opts.SelfHost)
+	subscriptionSvc.analytics = services.Analytics
 	usecases := application.NewUsecases(
 		services.User,
 		services.Space,
@@ -130,6 +132,19 @@ func parseVariantIDList(ids []string) map[string]struct{} {
 	return allowed
 }
 
+// track records a product analytics event. Safe when analytics is not wired.
+func (h *Handlers) track(userID string, event analytics.Event) {
+	if h.services != nil && h.services.Analytics != nil {
+		h.services.Analytics.Track(userID, event)
+	}
+}
+
+// analyticsEnabled reports whether events leave the server, so handlers can
+// skip queries that only feed event properties.
+func (h *Handlers) analyticsEnabled() bool {
+	return h.services != nil && h.services.Analytics != nil && h.services.Analytics.Enabled()
+}
+
 func (h *Handlers) ensureSelfHostMode() error {
 	if h.selfHostMode {
 		return nil
@@ -190,6 +205,7 @@ type SubscriptionService struct {
 	client               *lemonsqueezy.Client
 	cache                *lemonsqueezy.ProductCache
 	subscriptionsEnabled bool
+	analytics            driving.AnalyticsTracker
 }
 
 // RevenueStats contains MRR and total revenue data.
@@ -479,6 +495,8 @@ func (s *SubscriptionService) HandleWebhook(c echo.Context) error {
 		err = s.handlePaymentFailed(ctx, &event)
 	case "order_created":
 		err = s.handleOrderCreated(ctx, &event)
+	case "subscription_payment_success":
+		s.trackRenewal(ctx, &event)
 	default:
 		log.Info().Str("event", event.Meta.EventName).Msg("Unhandled webhook event type")
 	}
@@ -493,7 +511,73 @@ func (s *SubscriptionService) HandleWebhook(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to process webhook event")
 	}
 
+	s.trackWebhook(&event)
+
 	return c.JSON(http.StatusOK, map[string]bool{"success": true})
+}
+
+// trackWebhook records subscription_started / subscription_canceled once the
+// event was applied. Test-mode events are not tracked.
+func (s *SubscriptionService) trackWebhook(event *lemonsqueezy.WebhookEvent) {
+	if s.analytics == nil || !s.analytics.Enabled() || event.Meta.TestMode || event.Data.Attributes.TestMode {
+		return
+	}
+	userID := event.Meta.CustomData.UserID
+	plan := s.planFor(fmt.Sprintf("%d", event.Data.Attributes.VariantID), event.Data.Attributes.VariantName)
+	switch event.Meta.EventName {
+	case "subscription_created":
+		s.analytics.Track(userID, analytics.SubscriptionStarted(plan))
+	case "subscription_cancelled":
+		s.analytics.Track(userID, analytics.SubscriptionCanceled(plan))
+	}
+}
+
+// trackRenewal records subscription_renewed for renewal payments. The invoice
+// payload carries no variant, so the plan comes from the user's stored
+// variant. Analytics-only: it never fails the webhook.
+func (s *SubscriptionService) trackRenewal(ctx context.Context, event *lemonsqueezy.WebhookEvent) {
+	if s.analytics == nil || !s.analytics.Enabled() || event.Meta.TestMode || event.Data.Attributes.TestMode {
+		return
+	}
+	if event.Data.Attributes.BillingReason != "renewal" {
+		return
+	}
+	userID := event.Meta.CustomData.UserID
+	if userID == "" || s.users == nil {
+		return
+	}
+	user, err := s.users.GetByID(ctx, userID)
+	if err != nil {
+		return
+	}
+	variantID := ""
+	if user.VariantID != nil {
+		variantID = *user.VariantID
+	}
+	s.analytics.Track(userID, analytics.SubscriptionRenewed(s.planFor(variantID, "")))
+}
+
+// planFor resolves a variant's billing interval from the warm product cache
+// (never an API call on the webhook path), then from the variant name.
+func (s *SubscriptionService) planFor(variantID, variantName string) analytics.Plan {
+	if s.cache != nil && variantID != "" {
+		for _, v := range s.cache.CachedVariants() {
+			if v.ID == variantID {
+				if p := analytics.PlanFromInterval(v.Interval); p != analytics.PlanUnknown {
+					return p
+				}
+				break
+			}
+		}
+	}
+	name := strings.ToLower(variantName)
+	switch {
+	case strings.Contains(name, "year") || strings.Contains(name, "annual"):
+		return analytics.PlanYearly
+	case strings.Contains(name, "month"):
+		return analytics.PlanMonthly
+	}
+	return analytics.PlanUnknown
 }
 
 // webhookUserID returns the event's user, failing when it is missing or not

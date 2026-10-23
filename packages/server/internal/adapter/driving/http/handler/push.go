@@ -9,6 +9,7 @@ import (
 
 	"budgero-server/internal/adapter/driving/http/middleware"
 	"budgero-server/internal/domain"
+	"budgero-server/internal/domain/analytics"
 	"budgero-server/internal/pkg/crypto"
 
 	"github.com/labstack/echo/v4"
@@ -44,6 +45,7 @@ func (h *Handlers) GeneratePushToken(c echo.Context) error {
 	}
 
 	log.Info().Str("user_id", userID).Str("space_id", spaceID).Msg("Generated new push API token")
+	h.track(userID, analytics.PushTokenCreated())
 
 	return c.JSON(http.StatusOK, PushTokenResponse{
 		Token:     token,
@@ -109,6 +111,7 @@ func (h *Handlers) RevokePushToken(c echo.Context) error {
 	}
 
 	log.Info().Str("user_id", userID).Msg("Revoked push API token")
+	h.track(userID, analytics.PushTokenRevoked())
 
 	return c.JSON(http.StatusOK, map[string]string{"status": "revoked"})
 }
@@ -146,16 +149,19 @@ func (h *Handlers) PushMutation(c echo.Context) error {
 
 	// Token auth bypasses the JWT middleware chain, so apply the block check here.
 	if blockErr := middleware.CheckNotBlocked(ctx, h.services.User, userID); blockErr != nil {
+		h.track(userID, analytics.PushRejected(analytics.PushRejectBlocked))
 		return blockErr
 	}
 
 	// Parse the payload
 	var payload PushPayload
 	if err = c.Bind(&payload); err != nil {
+		h.track(userID, analytics.PushRejected(analytics.PushRejectInvalidPayload))
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid request body")
 	}
 
 	if payload.EncryptedPayload == "" {
+		h.track(userID, analytics.PushRejected(analytics.PushRejectInvalidPayload))
 		return echo.NewHTTPError(http.StatusBadRequest, "encrypted_payload is required")
 	}
 
@@ -168,9 +174,11 @@ func (h *Handlers) PushMutation(c echo.Context) error {
 		existingID, existingStatus, exists, err = h.services.Push.CheckDuplicateMessage(ctx, spaceID, messageID)
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to check duplicate message_id")
+			h.track(userID, analytics.PushRejected(analytics.PushRejectInternal))
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to validate request")
 		}
 		if exists {
+			h.track(userID, analytics.PushRejected(analytics.PushRejectDuplicate))
 			return echo.NewHTTPError(http.StatusConflict, fmt.Sprintf("duplicate message_id; existing item %s (%s)", existingID, existingStatus))
 		}
 	}
@@ -179,6 +187,7 @@ func (h *Handlers) PushMutation(c echo.Context) error {
 	queueID, err := h.services.Push.QueueMutation(ctx, userID, spaceID, messageID, payload.EncryptedPayload)
 	if err != nil {
 		log.Error().Err(err).Str("user_id", userID).Msg("Failed to queue push mutation")
+		h.track(userID, analytics.PushRejected(analytics.PushRejectInternal))
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to queue mutation")
 	}
 
@@ -188,6 +197,7 @@ func (h *Handlers) PushMutation(c echo.Context) error {
 		Str("space_id", spaceID).
 		Str("message_id", messageID).
 		Msg("Push mutation queued")
+	h.track(userID, analytics.PushQueued())
 
 	return c.JSON(http.StatusAccepted, map[string]string{
 		"id":      queueID,

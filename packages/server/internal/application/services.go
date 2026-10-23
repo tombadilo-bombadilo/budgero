@@ -23,6 +23,9 @@ type Services struct {
 	Feedback        driving.FeedbackService
 	UpdatePing      driving.UpdatePingService
 	UserPurge       driving.UserPurgeService
+	// Analytics is the server-side product analytics tracker. It drops
+	// everything on self-host and when POSTHOG_KEY is unset.
+	Analytics driving.AnalyticsTracker
 }
 
 // Repositories is a container for all repository dependencies.
@@ -49,13 +52,19 @@ type Repositories struct {
 	// CurrencyProvider fetches daily exchange rates from the external
 	// dataset (or a self-hosted mirror).
 	CurrencyProvider external.CurrencyProvider
-	Queries          *sqlc.Queries
+	// AnalyticsSender ships server-side analytics events. Nil disables them.
+	AnalyticsSender external.AnalyticsSender
+	Queries         *sqlc.Queries
 }
 
 // NewServices creates all application services with their dependencies.
 func NewServices(repos *Repositories, cfg *config.Config) *Services {
+	tracker := NewAnalyticsService(repos.AnalyticsSender, repos.User, AnalyticsOptions{})
+	users := NewUserService(repos.User, repos.Space, cfg)
+	users.SetAnalytics(tracker)
 	return &Services{
-		User:            NewUserService(repos.User, repos.Space, cfg),
+		Analytics:       tracker,
+		User:            users,
 		Space:           NewSpaceService(repos.Space, repos.User, cfg),
 		Credential:      NewCredentialService(repos.Credential, cfg),
 		Entitlement:     NewEntitlementService(repos.Entitlement, repos.User, cfg),

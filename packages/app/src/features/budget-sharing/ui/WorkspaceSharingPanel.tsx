@@ -25,6 +25,7 @@ import {
   useSpaceMembers,
 } from '@features/budget-sharing/api/useBudgetSpaceSharing';
 import { trackSharedBudget } from '@shared/lib/analytics/analytics';
+import { track } from '@shared/lib/analytics/track';
 import { buildInviteMailto, buildJoinUrl } from '@features/budget-sharing/lib/workspace-invites';
 import { copyWithToast } from '@features/budget-sharing/lib/copy-with-toast';
 import { toastError } from '@shared/lib/errors';
@@ -76,6 +77,7 @@ export function WorkspaceSharingPanel({ activeSpace, spaces }: WorkspaceSharingP
       const invite = await createInvite.mutateAsync({ expiresAt });
       setLatestInvite(invite);
       trackSharedBudget();
+      track('feature_used', { feature: 'shared_budget', action: 'created' });
       toast.success(t`Invite ready`, {
         description: t`Copy the link or open it in your email client to share.`,
       });

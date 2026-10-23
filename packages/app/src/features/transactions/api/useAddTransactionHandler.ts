@@ -12,9 +12,12 @@ import {
   type AddTransferResult,
 } from '@entities/transaction/api/useTransactions';
 import { useCategories } from '@entities/category/api/useCategories';
+import type { TransactionEntry } from '@shared/lib/analytics/events';
 
 interface UseAddTransactionHandlerOptions {
   onDialogClose: () => void;
+  /** Where the add happens (analytics only). */
+  entry?: TransactionEntry;
 }
 
 export interface AddTransferRequest {
@@ -39,7 +42,10 @@ export interface AddTransferRequest {
   keepDialogOpen?: boolean;
 }
 
-export function useAddTransactionHandler({ onDialogClose }: UseAddTransactionHandlerOptions) {
+export function useAddTransactionHandler({
+  onDialogClose,
+  entry = 'dialog',
+}: UseAddTransactionHandlerOptions) {
   const selectedAccount = useUiStore((state) => state.selectedAccount);
   const selectedBudget = useUiStore((state) => state.selectedBudget);
 
@@ -47,8 +53,8 @@ export function useAddTransactionHandler({ onDialogClose }: UseAddTransactionHan
     selectedBudget?.ID || selectedAccount?.BudgetID || 0
   );
 
-  const addTransactionMutation = useAddTransaction();
-  const addTransferMutation = useAddTransfer();
+  const addTransactionMutation = useAddTransaction(entry);
+  const addTransferMutation = useAddTransfer(entry);
 
   const handleAddTransaction = useCallback(
     async (

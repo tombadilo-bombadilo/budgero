@@ -1,4 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
+import { toErrorCode } from '@shared/lib/analytics/error-codes';
 import { useState } from 'react';
 import { ExternalLink, Loader2, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
@@ -14,17 +16,31 @@ export function ConnectSimpleFINCard({ budgetId }: { budgetId: number }) {
   const [token, setToken] = useState('');
   const connect = useConnectBank();
 
-  const submit = () =>
+  const submit = () => {
+    track('bank_connect_started', { provider: 'simplefin' });
     connect.mutate(
       { budgetId, setupToken: token },
       {
         onSuccess: () => {
+          track('bank_connect_finished', {
+            provider: 'simplefin',
+            outcome: 'ok',
+            error_code: 'none',
+          });
           setToken('');
           toast.success(t`Connected to SimpleFIN`);
         },
-        onError: (error) => toast.error(getErrorMessage(error, t`Couldn't connect to SimpleFIN`)),
+        onError: (error) => {
+          track('bank_connect_finished', {
+            provider: 'simplefin',
+            outcome: 'error',
+            error_code: toErrorCode(error, 'bank'),
+          });
+          toast.error(getErrorMessage(error, t`Couldn't connect to SimpleFIN`));
+        },
       }
     );
+  };
 
   return (
     <Card>

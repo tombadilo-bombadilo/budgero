@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
 import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
@@ -131,6 +132,7 @@ export default function WorkspaceSettingsPage() {
         queryClient,
         spaceId,
       });
+      track('workspace_switched');
       toast.success(t`Workspace switched`, {
         description: t`You are now viewing this workspace.`,
       });

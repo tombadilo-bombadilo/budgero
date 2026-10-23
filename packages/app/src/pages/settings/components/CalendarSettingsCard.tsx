@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { trackSettingChanged } from '@shared/lib/analytics/track';
 import { CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWeekStartsOnPreference } from '@shared/hooks/useUserPreferences';
@@ -37,6 +38,7 @@ export function CalendarSettingsCard() {
           disabled={isLoading || isError || isUpdating}
           onValueChange={(value) => {
             if (value !== '0' && value !== '1') return;
+            trackSettingChanged('week_start', value === '1' ? 'monday' : 'sunday');
             updateWeekStartsOn(value === '1' ? 1 : 0, {
               onError: () => toast.error(t`Could not save the first day of the week`),
             });

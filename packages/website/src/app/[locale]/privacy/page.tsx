@@ -51,7 +51,7 @@ export default async function PrivacyPolicy({
             {t('privacy_policy')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-1">
-            <strong>{t('last_updated')}</strong> {t('4_august_2026')}{' '}
+            <strong>{t('last_updated')}</strong> {t('23_october_2026')}{' '}
           </p>
           <p className="text-gray-600 dark:text-gray-400 mb-8">
             <strong>{t('effective')}</strong> {t('29_april_2026')}{' '}
@@ -89,15 +89,15 @@ export default async function PrivacyPolicy({
               </li>
               <li>
                 <strong>{t('personal_data_is_never_sold')}</strong>{' '}
-                {t('budgero_doesn_t_share_data_with')}{' '}
+                {t('budgero_doesn_t_share_data_with_advertisers')}{' '}
               </li>
               <li>
                 <strong>{t('you_have_full_rights')}</strong>{' '}
                 {t('under_gdpr_uk_gdpr_ccpa_including')}{' '}
               </li>
               <li>
-                <strong>{t('cookies_and_trackers')}</strong>{' '}
-                {t('require_your_consent_the_manage_cookies')}{' '}
+                <strong>{t('no_tracking_cookies_no_ads')}</strong>{' '}
+                {t('budgero_sets_no_analytics_or_advertising')}{' '}
               </li>
             </ul>
 
@@ -142,34 +142,48 @@ export default async function PrivacyPolicy({
               <li> {t('send_open_bounce_events_for_transactional')} </li>
             </ul>
 
-            <h3>{t('3_5_product_analytics_pseudonymous')}</h3>
+            <h3>{t('3_5_product_analytics_cookieless')}</h3>
+            <p>{t('budgero_cloud_records_how_the_product')}</p>
+            <p>
+              <strong>{t('what_is_recorded')}</strong>
+            </p>
             <ul>
-              <li>{t('page_urls_screen_size_browser_operating')}</li>
-              <li> {t('ip_address_used_at_request_time')} </li>
-              <li>
-                {' '}
-                {t('event_names_for_example')} <code>Checkout Started</code>, <code>Purchase</code>,{' '}
-                <code>Subscription Canceled</code>, <code>Trial Started</code>
-              </li>
-              <li> {t('event_properties_for_commercial_events_only')} </li>
-              <li> {t('a_pseudonymous_user_identifier_your_clerk')} </li>
-              <li>
-                <strong>{copy('u_1ea442a134b2')}</strong>{' '}
-                {t('session_recording_autocapture_heatmaps_or_survey')}{' '}
-              </li>
+              <li>{t('pa_pages')}</li>
+              <li>{t('pa_onboarding')}</li>
+              <li>{t('pa_imports')}</li>
+              <li>{t('pa_bank_sync')}</li>
+              <li>{t('pa_features')}</li>
+              <li>{t('pa_ai')}</li>
+              <li>{t('pa_settings')}</li>
+              <li>{t('pa_account')}</li>
+              <li>{t('pa_sync')}</li>
+              <li>{t('pa_reliability')}</li>
+              <li>{t('pa_context')}</li>
             </ul>
+            <ul>
+              <li>{t('every_detail_attached_to_an_event')}</li>
+              <li>{t('once_you_re_logged_in_events')}</li>
+              <li>{t('some_events_are_sent_by_the_server')}</li>
+              <li> {t('ip_address_used_at_request_time')} </li>
+              <li>{t('cookieless_the_analytics_library_keeps')}</li>
+            </ul>
+            <p>
+              <strong>{t('never_collected')}</strong>{' '}
+              {t('names_of_transactions_accounts_categories')}
+            </p>
+            <p>
+              <strong>{t('switch_it_off')}</strong> {t('settings_security_privacy_in_the_app')}
+            </p>
 
-            <h3>{t('3_6_marketing_analytics_consent_gated')}</h3>
+            <h3>{t('3_6_website_analytics_cookieless')}</h3>
+            <p>{t('on_the_budgero_website_page_views')}</p>
             <ul>
               <li>
-                {' '}
-                {t('if_and_only_if_you_accept')}
-                <code>gclid</code>
-                {t('a_conversion_event_and_the_aggregate')}
-                <code>gtag</code>
-                {t('collects_ip_browser_page_url')}{' '}
+                <strong>{t('umami')}</strong> {t('umami_desc')}
               </li>
-              <li>{t('if_you_decline_or_ignore_the')}</li>
+              <li>
+                <strong>{t('posthog')}</strong> {t('posthog_website_desc')}
+              </li>
             </ul>
 
             <h3>{t('3_7_server_security_logs')}</h3>
@@ -222,14 +236,14 @@ export default async function PrivacyPolicy({
                   <td> {t('legitimate_interest_in_protecting_the_service')} </td>
                 </tr>
                 <tr>
-                  <td> {t('product_analytics_understanding_what_features_ge')} </td>
-                  <td>{t('pseudonymous_analytics_events_3_5')}</td>
-                  <td> {t('legitimate_interest_in_improving_the_product')} </td>
+                  <td>{t('product_analytics_which_features_get_used')}</td>
+                  <td>{t('pseudonymous_analytics_events_app_and_server')}</td>
+                  <td>{t('legitimate_interest_in_improving_and_fixing')}</td>
                 </tr>
                 <tr>
-                  <td> {t('marketing_analytics_measuring_the_effectiveness_')} </td>
-                  <td>{t('google_ads_click_id_conversion_event')}</td>
-                  <td> {t('consent_art_6_1_a_collected')} </td>
+                  <td>{t('website_analytics_how_people_find_budgero')}</td>
+                  <td>{t('website_statistics_3_6')}</td>
+                  <td>{t('legitimate_interest_in_understanding_how_people')}</td>
                 </tr>
               </tbody>
             </table>
@@ -269,16 +283,12 @@ export default async function PrivacyPolicy({
                   <td> {t('up_to_90_days_in_the')} </td>
                 </tr>
                 <tr>
-                  <td>{t('product_analytics_events_pseudonymous')}</td>
+                  <td>{t('analytics_events_app_server_website')}</td>
                   <td> {t('up_to_6_months_in_the')} </td>
                 </tr>
                 <tr>
                   <td>{t('product_analytics_person_profiles')}</td>
                   <td> {t('up_to_12_months_of_inactivity')} </td>
-                </tr>
-                <tr>
-                  <td>{t('marketing_analytics_data_google_ads')}</td>
-                  <td> {t('per_google_ads_default_retention_you')} </td>
                 </tr>
                 <tr>
                   <td>{t('server_security_logs')}</td>
@@ -321,7 +331,7 @@ export default async function PrivacyPolicy({
                     <strong>{t('posthog_cloud_eu')}</strong>
                   </td>
                   <td>{t('product_analytics')}</td>
-                  <td>{t('pseudonymous_events_3_5_ip_account')}</td>
+                  <td>{t('pseudonymous_events_and_error_reports_ip')}</td>
                   <td>EU</td>
                 </tr>
                 <tr>
@@ -339,14 +349,6 @@ export default async function PrivacyPolicy({
                   <td>{t('transactional_email_delivery')}</td>
                   <td>{t('email_address_message_content_of_service')}</td>
                   <td>{t('eu_us_with_sccs')}</td>
-                </tr>
-                <tr>
-                  <td>
-                    <strong>{t('google_ads_gtag')}</strong> <em>{t('consent_gated')}</em>
-                  </td>
-                  <td>{t('marketing_analytics_conversion_tracking')}</td>
-                  <td>{t('click_id_conversion_event_ip_browser')}</td>
-                  <td>{t('us_with_sccs')}</td>
                 </tr>
                 <tr>
                   <td>
@@ -377,7 +379,7 @@ export default async function PrivacyPolicy({
             <p> {t('some_of_the_providers_in_6')} </p>
             <p>
               {' '}
-              {t('for_provider_transfers_outside_the_eea')}{' '}
+              {t('for_provider_transfers_outside_the_eea_no_ads')}{' '}
               <strong>{t('standard_contractual_clauses_sccs_2021_version')}</strong>{' '}
               {t('and_equivalent_uk_addenda_where_applicable')}{' '}
             </p>
@@ -385,25 +387,15 @@ export default async function PrivacyPolicy({
             <hr />
 
             <h2>{t('8_cookies_and_tracking')}</h2>
-            <p> {t('no_non_essential_cookies_or_third')} </p>
+            <p>{t('budgero_uses_no_analytics_advertising_or')}</p>
             <ul>
               <li>
-                <strong>{t('strictly_necessary')}</strong> {t('required_to_log_you_in_and')}{' '}
+                <strong>{t('strictly_necessary')}</strong> {t('strictly_necessary_storage_desc')}
               </li>
               <li>
-                <strong>{t('analytics')}</strong>{' '}
-                {t('pseudonymous_product_usage_analytics_posthog_clo')}{' '}
-              </li>
-              <li>
-                <strong>{t('marketing')}</strong> {t('google_ads_conversion_tag_off_by')}{' '}
+                <strong>{t('analytics')}</strong> {t('analytics_nothing_stored_desc')}
               </li>
             </ul>
-            <p>
-              {' '}
-              {t('you_can_change_your_choice_at')} <strong>{t('manage_cookies')}</strong>{' '}
-              {t('link_in_the_footer_of_every')}{' '}
-              <a href="https://budgero.app">https://budgero.app</a>.
-            </p>
 
             <hr />
 
@@ -461,11 +453,11 @@ export default async function PrivacyPolicy({
               </li>
               <li>
                 <strong>{t('object')}</strong>{' '}
-                {t('to_processing_based_on_legitimate_interest')}{' '}
+                {t('to_processing_based_on_legitimate_interest_incl')}{' '}
               </li>
               <li>
                 <strong>{t('withdraw_consent')}</strong>{' '}
-                {t('at_any_time_for_anything_processed')}{' '}
+                {t('at_any_time_for_anything_processed_on_consent')}{' '}
               </li>
               <li>
                 <strong>{t('not_be_subject_to_automated_decisions')}</strong>{' '}
@@ -520,7 +512,7 @@ export default async function PrivacyPolicy({
             <p>
               <strong>{t('sale_or_sharing_of_personal_information')}</strong>{' '}
               <strong>{t('personal_information_is_not_sold_or')}</strong>{' '}
-              {t('as_those_terms_are_defined_in')}{' '}
+              {t('as_those_terms_are_defined_in_no_ads')}{' '}
             </p>
             <p>
               {' '}

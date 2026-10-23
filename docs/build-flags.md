@@ -72,6 +72,10 @@ This reference tracks the feature flags and environment toggles that change how 
 - **Set by**: `packages/server/dev.js` before starting `air`.
 - **Purpose**: Provision a development-only ES256 signing key and entitlement bypass so the app can test offline unlock flows without production credentials.
 
+### `POSTHOG_KEY` / `POSTHOG_HOST`
+- **Key usage**: `packages/server/cmd/shared/server.go` (`newAnalyticsSender`) wires the PostHog batch sender (`internal/adapter/driven/posthog`) into `application.AnalyticsService`.
+- **Purpose**: Server-side product analytics for the cloud build (signup, subscription, push, workspace, invite and bank relay events; enum properties only, see `internal/domain/analytics`). Unset `POSTHOG_KEY` or any self-host build sends nothing. `POSTHOG_HOST` defaults to `https://eu.i.posthog.com`. Users with `is_analytics_disabled` are skipped.
+
 ### Other notable server envs
 - Subscription & payment (`LEMONSQUEEZY_*`), newsletter (`MAILERLITE_*`), Clerk (`CLERK_SECRET_KEY`), and URL/port (`APP_URL`, `PORT`) variables are documented in `packages/server/README.md`. While not "flags" in the feature-toggle sense, they gate integrations and should be considered when packaging alternative flavors.
 

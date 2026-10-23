@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -136,6 +137,7 @@ export function WorkspaceBudgetList({
         queryClient,
         spaceId: space.space_id,
       });
+      track('workspace_switched');
       toast.success(t`Workspace switched`, {
         description: t`You are now in "${space.display_name}".`,
       });

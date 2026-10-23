@@ -199,13 +199,12 @@ export function useSubscriptionViewModel() {
   const handleCancelSubscription = useCallback(async () => {
     if (!cancelReason || cancelMutation.isPending) return;
     await cancelMutation.mutateAsync();
-    const reasonPayload =
-      cancelReason === 'other' ? cancelReasonNotes.trim() || 'other' : cancelReason;
-    trackSubscriptionCanceled({ reason: reasonPayload });
+    // The reason option only: free-text notes never go to analytics.
+    trackSubscriptionCanceled(cancelReason);
     setShowCancelDialog(false);
     setCancelReason(null);
     setCancelReasonNotes('');
-  }, [cancelReason, cancelReasonNotes, cancelMutation]);
+  }, [cancelReason, cancelMutation]);
 
   const handleResumeSubscription = useCallback(async () => {
     await resumeMutation.mutateAsync();

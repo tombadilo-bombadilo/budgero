@@ -49,6 +49,14 @@ func (pc *ProductCache) GetVariants() ([]Variant, error) {
 	return pc.refreshVariants()
 }
 
+// CachedVariants returns whatever variants are cached, even if stale, without
+// ever calling the API. Empty when nothing was fetched yet.
+func (pc *ProductCache) CachedVariants() []Variant {
+	pc.mu.RLock()
+	defer pc.mu.RUnlock()
+	return pc.variants
+}
+
 // fetchWithRetry calls fetch up to 3 times with exponential back-off sleep,
 // returning the first successful result or the last error.
 func fetchWithRetry[T any](fetch func() ([]T, error)) ([]T, error) {

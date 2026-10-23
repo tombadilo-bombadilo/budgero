@@ -7,6 +7,7 @@ import (
 
 	"budgero-server/internal/adapter/driving/http/bankrelay"
 	"budgero-server/internal/adapter/driving/http/middleware"
+	"budgero-server/internal/domain/analytics"
 
 	"github.com/labstack/echo/v4"
 )
@@ -22,6 +23,7 @@ func (h *Handlers) IssueBankRelayTicket(c echo.Context) error {
 	}
 	ticket, expires, err := h.bankRelay.IssueTicket(userID)
 	if errors.Is(err, bankrelay.ErrThrottled) {
+		h.track(userID, analytics.BankRelayFailed(analytics.BankProviderEnableBanking, analytics.BankRelayErrThrottled))
 		return echo.NewHTTPError(http.StatusTooManyRequests, "bank relay rate limit exceeded")
 	}
 	if err != nil {
@@ -64,8 +66,10 @@ func resolveClientIP(override, realIP string) string {
 // aggregator. The ticket sits in the path because libcurl.js appends nothing
 // to the proxy URL and browsers can't set WebSocket headers.
 func (h *Handlers) BankRelay(c echo.Context) error {
-	release, err := h.bankRelay.Acquire(c.Param("ticket"))
+	// Invalid tickets have no user to attribute, so only valid ones are tracked.
+	userID, release, err := h.bankRelay.AcquireUser(c.Param("ticket"))
 	if errors.Is(err, bankrelay.ErrThrottled) {
+		h.track(userID, analytics.BankRelayFailed(analytics.BankProviderEnableBanking, analytics.BankRelayErrThrottled))
 		return echo.NewHTTPError(http.StatusTooManyRequests, "too many bank relay sessions")
 	}
 	if err != nil {
@@ -76,8 +80,10 @@ func (h *Handlers) BankRelay(c echo.Context) error {
 	upgrader := getUpgrader(h.cfg)
 	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
+		h.track(userID, analytics.BankRelayFailed(analytics.BankProviderEnableBanking, analytics.BankRelayErrUpgradeFailed))
 		return nil //nolint:nilerr // Upgrade already wrote the error response.
 	}
 	h.bankRelay.Serve(c.Request().Context(), ws)
+	h.track(userID, analytics.BankRelayOK(analytics.BankProviderEnableBanking))
 	return nil
 }

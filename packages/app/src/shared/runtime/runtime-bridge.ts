@@ -202,66 +202,6 @@ export function createRuntimeDeps(): RuntimeCoordinatorDeps {
       }
     },
 
-    onAnalyticsEvent(op: string) {
-      import('@shared/lib/analytics/analytics')
-        .then(
-          ({
-            trackTransactionLogged,
-            trackTransactionEdited,
-            trackTransactionDeleted,
-            trackAccountAdded,
-            trackAssignmentUpserted,
-            trackCategoryAdded,
-            trackCategoryEdited,
-            trackCategoryDeleted,
-            trackCategoryGroupAdded,
-            trackCategoryGroupEdited,
-            trackCategoryGroupDeleted,
-          }) => {
-            switch (op) {
-              case 'transactions.import':
-              case 'transactions.add':
-                trackTransactionLogged();
-                break;
-              case 'transactions.addTransfer':
-                trackTransactionLogged();
-                break;
-              case 'transactions.updateColumn':
-                trackTransactionEdited();
-                break;
-              case 'transactions.delete':
-                trackTransactionDeleted();
-                break;
-              case 'accounts.create':
-                trackAccountAdded();
-                break;
-              case 'categories.create':
-                trackCategoryAdded();
-                break;
-              case 'categories.updateName':
-                trackCategoryEdited();
-                break;
-              case 'categories.delete':
-                trackCategoryDeleted();
-                break;
-              case 'categoryGroups.create':
-                trackCategoryGroupAdded();
-                break;
-              case 'categoryGroups.update':
-                trackCategoryGroupEdited();
-                break;
-              case 'categoryGroups.delete':
-                trackCategoryGroupDeleted();
-                break;
-              case 'monthlyBudgets.upsertAssignment':
-                trackAssignmentUpserted();
-                break;
-            }
-          }
-        )
-        .catch(() => {});
-    },
-
     // recordHistory and getQueryClient are set by AppRuntime after ServiceManager init
 
     syncTransportPolicy: {
