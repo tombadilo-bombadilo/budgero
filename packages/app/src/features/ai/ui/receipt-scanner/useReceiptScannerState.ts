@@ -35,7 +35,7 @@ export function useReceiptScannerState({
   const { data: accounts = [] } = useAccounts(budgetId);
   const { data: categories = [] } = useCategories(budgetId);
   const { data: llmSettings } = useLLMSettings(budgetId);
-  const addTransaction = useAddTransaction();
+  const addTransaction = useAddTransaction('receipt_scan');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 

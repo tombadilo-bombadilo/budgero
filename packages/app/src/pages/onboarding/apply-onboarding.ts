@@ -21,6 +21,7 @@ import type {
 import { YNABImportService, GoalPurpose, GoalType } from '@budgero/core/browser';
 import { MasterPasswordManager } from '@shared/lib/crypto';
 import { getErrorMessage } from '@shared/lib/errors';
+import { startImportRun } from '@shared/lib/analytics/import-tracking';
 import { authApi, spaceApi } from '@shared/api/api-client';
 import type { AppRuntime } from '@shared/runtime/app-runtime';
 import {
@@ -295,6 +296,10 @@ export async function runOnboardingApply(
         onProgress: onYnabProgress,
       };
       let importResult: YNABImportResult;
+      const importRun = startImportRun(
+        state.ynabApiSnapshot ? 'ynab_api' : 'ynab_zip',
+        'onboarding'
+      );
       try {
         importResult = state.ynabApiSnapshot
           ? await importService.importYNABFromApiSnapshotWithSummary(
@@ -303,6 +308,7 @@ export async function runOnboardingApply(
             )
           : await importService.importYNABFromZipWithSummary(state.ynabFile!.bytes, importConfig);
       } catch (error) {
+        importRun.error(error);
         try {
           await removeIncompleteYnabWorkspace(runtime, queryClient, spaceId);
         } catch (cleanupError) {
@@ -327,6 +333,7 @@ export async function runOnboardingApply(
         });
         const decision = await reviewDecision;
         if (decision === 'cancel') {
+          importRun.cancelled();
           try {
             await removeIncompleteYnabWorkspace(runtime, queryClient, spaceId, budgetId);
           } catch (cleanupError) {
@@ -350,6 +357,8 @@ export async function runOnboardingApply(
             ? t`Saving imported budget with accepted warnings`
             : t`Saving imported budget`,
       });
+
+      importRun.ok(importResult.summary.transactionsCreated);
 
       runtime.services().importHistory.recordImportRun({
         budgetId,

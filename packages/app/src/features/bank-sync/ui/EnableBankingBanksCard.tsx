@@ -1,4 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
+import { toErrorCode } from '@shared/lib/analytics/error-codes';
 import { useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Landmark, Loader2, Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -81,11 +83,18 @@ function useBankLogin(onConnected?: () => void) {
     // Opened right here in the click handler, or the browser blocks it.
     const popup = openBankLoginPopup();
     abort.current = new AbortController();
+    track('bank_connect_started', { provider: 'enablebanking' });
     start.mutate(
       { connection, aspsp, popup, signal: abort.current.signal },
       {
         onSuccess: (session) => {
+          // No session: the login continues as a full-page redirect.
           if (!session) return;
+          track('bank_connect_finished', {
+            provider: 'enablebanking',
+            outcome: 'ok',
+            error_code: 'none',
+          });
           toast.success(t`${session.aspsp.name} connected`, {
             description: session.accounts.length
               ? t`Link its accounts to start importing.`
@@ -94,7 +103,13 @@ function useBankLogin(onConnected?: () => void) {
           onConnected?.();
         },
         onError: (error) => {
-          if (error instanceof AuthorizationCancelled) return;
+          const cancelled = error instanceof AuthorizationCancelled;
+          track('bank_connect_finished', {
+            provider: 'enablebanking',
+            outcome: cancelled ? 'cancelled' : 'error',
+            error_code: cancelled ? 'cancelled' : toErrorCode(error, 'bank'),
+          });
+          if (cancelled) return;
           toast.error(getErrorMessage(error, t`Couldn't finish connecting the bank`));
         },
       }

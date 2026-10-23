@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
 import { useState, useMemo, useCallback } from 'react';
 import { toast } from 'sonner';
 import { useBatchUpsertAssignments } from '@entities/budget/api/useMonthlyBudget';
@@ -134,6 +135,7 @@ export function useAssignDropdownState({
         }))
       );
 
+      track('goal_funded', { method: 'auto_assign_underfunded' });
       const { details, moreText } = formatAssignmentDetails(assignments, globalLocalizer);
 
       toast.success(t`Auto-assigned to goals`, {

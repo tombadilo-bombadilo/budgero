@@ -1,4 +1,7 @@
 import { t } from '@lingui/core/macro';
+import { track } from '@shared/lib/analytics/track';
+import { countBucket } from '@shared/lib/analytics/events';
+import { toErrorCode } from '@shared/lib/analytics/error-codes';
 import {
   bankOperationId,
   parseBankFeedSettings,
@@ -67,6 +70,8 @@ export interface RunBankSyncOptions {
   /** Only these providers; every connected one when omitted. Each sync spends provider quota. */
   providers?: BankProvider[];
   prefetched?: PrefetchedSet;
+  /** What started the run (analytics only). */
+  trigger?: 'manual' | 'auto' | 'link';
 }
 
 const inFlight = new Map<number, { scope: string; promise: Promise<BankSyncResult> }>();
@@ -98,7 +103,7 @@ export function runBankSync(
 async function syncBudget(
   runtime: AppRuntime,
   budgetId: number,
-  { providers, prefetched }: RunBankSyncOptions
+  { providers, prefetched, trigger = 'manual' }: RunBankSyncOptions
 ): Promise<BankSyncResult> {
   const result: BankSyncResult = { imported: 0, reviews: 0, errors: [] };
   const failures: unknown[] = [];
@@ -121,7 +126,21 @@ async function syncBudget(
       result.imported += part.imported;
       result.reviews += part.reviews;
       result.errors.push(...part.errors);
+      track('bank_sync_run', {
+        provider: connection.Provider,
+        trigger,
+        outcome: 'ok',
+        error_code: 'none',
+        new_tx_bucket: countBucket(part.imported),
+      });
     } catch (error) {
+      track('bank_sync_run', {
+        provider: connection.Provider,
+        trigger,
+        outcome: 'error',
+        error_code: toErrorCode(error, 'bank'),
+        new_tx_bucket: '0',
+      });
       failures.push(error);
       result.errors.push(getErrorMessage(error, t`Bank sync failed`));
     }

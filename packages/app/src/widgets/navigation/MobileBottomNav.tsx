@@ -63,6 +63,7 @@ export function MobileBottomNav() {
   const [addTransactionOpen, setAddTransactionOpen] = useState(false);
   const { handleAddTransaction, handleAddTransfer } = useAddTransactionHandler({
     onDialogClose: () => setAddTransactionOpen(false),
+    entry: 'mobile_dialog',
   });
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const navRef = useRef<HTMLElement | null>(null);

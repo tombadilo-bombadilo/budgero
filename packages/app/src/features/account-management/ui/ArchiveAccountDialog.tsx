@@ -48,7 +48,7 @@ export function ArchiveAccountDialog({
   const needsAdjustment = balance !== 0;
 
   const setArchivedMutation = useSetAccountArchived();
-  const addTransactionMutation = useAddTransaction();
+  const addTransactionMutation = useAddTransaction('archive_balance');
 
   const { data: categories = [] } = useCategories(budgetId);
   const { data: categoryGroups = [] } = useCategoryGroups(budgetId);

@@ -123,6 +123,11 @@ export interface MutationSpec {
      * instead. The app also skips continuous rules on undo replays.
      */
     replay?: 'undo' | 'redo';
+    /**
+     * App-level analytics context (where a transaction came from, what
+     * started a rule run). The runtime ignores it.
+     */
+    analytics?: string;
   };
 }
 

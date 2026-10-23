@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query';
+import type { TransactionEntry } from '@shared/lib/analytics/events';
 // Use runtime services directly instead of db-ops wrappers
 import { useActiveSpaceId, useRuntime } from '@shared/runtime/runtime-provider';
 import { executeSpaceMutation } from '@shared/runtime/mutation-router';
@@ -78,7 +79,8 @@ export type AddTransferResult = {
 
 const isPlainAdd = (input: AddTransactionInput) => !input.transferId && !input.splits?.length;
 
-export function useAddTransaction() {
+/** `entry` says where the add came from (analytics only). */
+export function useAddTransaction(entry: TransactionEntry = 'other') {
   const runtime = useRuntime();
   const spaceId = useActiveSpaceId();
   const queryClient = useQueryClient();
@@ -105,7 +107,7 @@ export function useAddTransaction() {
         // Plain adds refresh active views in the background so a large account
         // register does not keep the add dialog pending. Preserve the existing
         // awaited invalidation behavior for legacy transfer calls and splits.
-        meta: { label: 'useAddTransaction', skipInvalidate: isPlainAdd(input) },
+        meta: { label: 'useAddTransaction', skipInvalidate: isPlainAdd(input), analytics: entry },
       });
 
       if (isPlainAdd(input)) {
@@ -161,7 +163,7 @@ export function useAddTransaction() {
 /**
  * Add both linked legs of a transfer as one mutation/undo item.
  */
-export function useAddTransfer() {
+export function useAddTransfer(entry: TransactionEntry = 'other') {
   const runtime = useRuntime();
   const spaceId = useActiveSpaceId();
   const queryClient = useQueryClient();
@@ -178,7 +180,7 @@ export function useAddTransfer() {
         },
         // Refresh in the background (onSuccess) so the add dialog doesn't wait
         // on a full register refetch, same as plain adds.
-        meta: { label: 'useAddTransfer', skipInvalidate: true },
+        meta: { label: 'useAddTransfer', skipInvalidate: true, analytics: entry },
       });
     },
     onSuccess: (_result, vars) => {

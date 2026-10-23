@@ -40,6 +40,7 @@ import {
 } from '@budgero/core/browser';
 import { buildFileImportPreview } from '@features/import/lib/plan-file-import';
 import { trackImportedCsvPdf } from '@shared/lib/analytics/analytics';
+import { startImportRun } from '@shared/lib/analytics/import-tracking';
 import { parseImportFile } from '@features/import/lib/parse-import-file';
 import { useImportTemplates } from './useImportTemplates';
 
@@ -484,6 +485,7 @@ export function useImportDialogState(): ImportDialogState {
     const invalidRows = fresh.filter(
       (r) => !r.input.valid && !skippedRowIndices.has(r.input.index)
     ).length;
+    const importRun = startImportRun(parsedData.source.type, 'app');
     if (!selectedRows.length) {
       try {
         const matchedIds = new Map<number, number>();
@@ -537,7 +539,9 @@ export function useImportDialogState(): ImportDialogState {
         });
         setImportSummary(summary);
         setCurrentStep('complete');
+        importRun.ok(0);
       } catch (err) {
+        importRun.error(err);
         setError(getErrorMessage(err, t`Could not finish import`));
       } finally {
         importLock.current = false;
@@ -816,6 +820,7 @@ export function useImportDialogState(): ImportDialogState {
       });
 
       trackImportedCsvPdf();
+      importRun.ok(successCount);
 
       await checkpoint(true);
 
@@ -833,6 +838,7 @@ export function useImportDialogState(): ImportDialogState {
 
       setCurrentStep('complete');
     } catch (err) {
+      importRun.error(err);
       console.error('Import error:', err);
       setError(getErrorMessage(err, t`Import failed`));
       setCurrentStep('configure');

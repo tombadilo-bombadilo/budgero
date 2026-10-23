@@ -1,4 +1,6 @@
 import { useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
+import { toErrorCode } from '@shared/lib/analytics/error-codes';
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { useChatStore } from '@features/chat/model/useChatStore';
 import { useUiStore } from '@shared/store/useUiStore';
@@ -324,6 +326,8 @@ export function useChatPanelState() {
         });
       }
 
+      track('ai_message_sent', { outcome: 'ok', error_code: 'none' });
+
       // Generate title for new conversations (in background)
       const responseForTitle = result.text;
       if (isFirstMessage && responseForTitle) {
@@ -342,6 +346,7 @@ export function useChatPanelState() {
           .catch((err) => console.error('[Chat] Failed to generate title:', err));
       }
     } catch (error) {
+      track('ai_message_sent', { outcome: 'error', error_code: toErrorCode(error, 'ai') });
       const errorMsg = getErrorMessage(error, String(error));
       console.error('[Chat] handleSend error:', errorMsg, error);
       await addMessage.mutateAsync({

@@ -101,8 +101,8 @@ export function CommandPalette() {
     enabled: commandPaletteOpen && isSearching,
     limit: COMMAND_PALETTE_TRANSACTION_LIMIT,
   });
-  const addTransactionMutation = useAddTransaction();
-  const addTransferMutation = useAddTransfer();
+  const addTransactionMutation = useAddTransaction('command_palette');
+  const addTransferMutation = useAddTransfer('command_palette');
   const cellCommit = useTransactionCellCommit();
 
   React.useEffect(() => {

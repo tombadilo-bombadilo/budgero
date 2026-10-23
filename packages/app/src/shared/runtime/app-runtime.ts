@@ -43,6 +43,13 @@ import { getInvalidatesForOp, prepareMutationArgs } from '@shared/mutations/op-c
 import { discardInterruptedImports } from '@shared/runtime/pending-import';
 import { getErrorMessage } from '@shared/lib/errors';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
+import {
+  readBeforeState,
+  reportMutationAnalytics,
+  type MutationAnalyticsServices,
+} from '@shared/lib/analytics/mutation-events';
+import { track } from '@shared/lib/analytics/track';
+import { ageBucket } from '@shared/lib/analytics/events';
 import { withPushIdentity } from './push-identity';
 
 /** Ops whose new rows the continuous rules run over (see applyContinuousRulesIfNeeded). */
@@ -168,9 +175,18 @@ export class AppRuntime {
     const prepared: MutationSpec = spec.mutationId
       ? spec
       : { ...spec, payload: await prepareMutationArgs(spec.op, spec.payload) };
+    const isLocal = !prepared.mutationId;
+    const before = isLocal ? readBeforeState(prepared, this.analyticsServices()) : null;
     const run = async () => {
       const result = await this.coordinator.executeMutation<T>(prepared);
-      await this.applyContinuousRulesIfNeeded(result.result, prepared, !prepared.mutationId);
+      if (isLocal) {
+        try {
+          reportMutationAnalytics(prepared, result.result, this.analyticsServices(), before);
+        } catch {
+          /* analytics must never fail a mutation */
+        }
+      }
+      await this.applyContinuousRulesIfNeeded(result.result, prepared, isLocal);
       return result;
     };
     // The continuous rules an add triggers are part of that user action: one
@@ -456,6 +472,15 @@ export class AppRuntime {
       }
 
       for (const item of items) {
+        const reportPush = (
+          code:
+            'none' | 'decryption_failed' | 'invalid_payload' | 'format_too_new' | 'mutation_error'
+        ) =>
+          track('push_applied', {
+            outcome: code === 'none' ? 'ok' : 'error',
+            error_code: code,
+            age_bucket: ageBucket(Date.now() - Date.parse(item.created_at)),
+          });
         let parsedOp: string | undefined;
         let parsedArgs: Record<string, unknown> | undefined;
 
@@ -471,6 +496,7 @@ export class AppRuntime {
             );
             await pushApi.ackQueueItem(item.id, 'failed');
             failed++;
+            reportPush('decryption_failed');
             continue;
           }
 
@@ -491,6 +517,7 @@ export class AppRuntime {
             );
             await pushApi.ackQueueItem(item.id, 'failed');
             failed++;
+            reportPush('decryption_failed');
             continue;
           }
 
@@ -504,6 +531,7 @@ export class AppRuntime {
             );
             await pushApi.ackQueueItem(item.id, 'failed');
             failed++;
+            reportPush('invalid_payload');
             continue;
           }
 
@@ -529,6 +557,7 @@ export class AppRuntime {
               notifyUpdateRequired('push-payload-newer-than-app');
               await pushApi.ackQueueItem(item.id, 'failed');
               failed++;
+              reportPush('format_too_new');
               continue;
             }
             throw formatError;
@@ -546,6 +575,7 @@ export class AppRuntime {
             );
             await pushApi.ackQueueItem(item.id, 'failed');
             failed++;
+            reportPush('invalid_payload');
             continue;
           }
 
@@ -590,6 +620,7 @@ export class AppRuntime {
 
           await pushApi.ackQueueItem(item.id, 'processed');
           processed++;
+          reportPush('none');
         } catch (itemError) {
           console.error(`[AppRuntime] Failed to process push queue item: ${item.id}`, itemError);
           const errorMessage = getErrorMessage(itemError, String(itemError));
@@ -601,6 +632,7 @@ export class AppRuntime {
             errorMessage
           );
           failed++;
+          reportPush('mutation_error');
           try {
             await pushApi.ackQueueItem(item.id, 'failed');
           } catch {
@@ -673,6 +705,7 @@ export class AppRuntime {
       await this.runContinuousRules(budgetId, [transactionId], {
         skipInvalidate: isTransactionAdd && spec.meta?.skipInvalidate === true,
         recordUndo: this.recordsRuleUndo(spec),
+        analytics: spec.op === 'transactions.import' ? 'import' : 'on_add',
       });
     }
   }
@@ -695,6 +728,11 @@ export class AppRuntime {
        * otherwise runs are not undoable on their own.
        */
       recordUndo?: boolean;
+      /**
+       * What started the run, for analytics. Internal callers pass it; the only
+       * external caller is the bank sync batch importer, hence the default.
+       */
+      analytics?: 'bank_sync' | 'import' | 'on_add';
     } = {}
   ): Promise<void> {
     const ids = transactionIds.filter(Number.isFinite);
@@ -740,6 +778,7 @@ export class AppRuntime {
                 skipUndo: options.recordUndo !== true,
                 forceInvalidate: true,
                 skipInvalidate: options.skipInvalidate === true,
+                analytics: options.analytics ?? 'bank_sync',
               },
             });
           } catch (error) {
@@ -1002,6 +1041,10 @@ export class AppRuntime {
       return null;
     }
     return Math.trunc(parsed);
+  }
+
+  private analyticsServices(): MutationAnalyticsServices | null {
+    return this.getServicesSafe() as unknown as MutationAnalyticsServices | null;
   }
 
   private getServicesSafe(): Services | null {

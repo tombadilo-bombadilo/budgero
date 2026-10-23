@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { trackSettingChanged } from '@shared/lib/analytics/track';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { Label } from '@shared/ui/label';
 import { ThemeSwitch } from '@shared/ui/theme-switch';
@@ -85,6 +86,7 @@ export default function AppearancePage() {
   const handleHomePageChange = (value: string) => {
     const page = value as HomePageOption;
     setHomePage(page);
+    trackSettingChanged('home_page', page);
   };
 
   const classicFontOptions: { id: ClassicFontId; label: string; sampleFamily: string }[] = [
@@ -282,7 +284,10 @@ export default function AppearancePage() {
             <Switch
               id="planning-number-animations"
               checked={planningNumberAnimations}
-              onCheckedChange={updatePlanningNumberAnimations}
+              onCheckedChange={(checked) => {
+                trackSettingChanged('number_animations', checked ? 'on' : 'off');
+                updatePlanningNumberAnimations(checked);
+              }}
               disabled={isUpdatingPlanningNumberAnimations}
             />
           </div>
@@ -302,7 +307,10 @@ export default function AppearancePage() {
             <Switch
               id="dialog-background-blur"
               checked={dialogBackgroundBlur}
-              onCheckedChange={updateDialogBackgroundBlur}
+              onCheckedChange={(checked) => {
+                trackSettingChanged('dialog_blur', checked ? 'on' : 'off');
+                updateDialogBackgroundBlur(checked);
+              }}
               disabled={isUpdatingDialogBackgroundBlur}
             />
           </div>
@@ -335,7 +343,10 @@ export default function AppearancePage() {
             </div>
             <Select
               value={inlineTransactionEntry ? 'inline' : 'dialog'}
-              onValueChange={(value) => updateInlineTransactionEntry(value === 'inline')}
+              onValueChange={(value) => {
+                trackSettingChanged('inline_entry', value === 'inline' ? 'inline' : 'dialog');
+                updateInlineTransactionEntry(value === 'inline');
+              }}
               disabled={isUpdatingInlineTransactionEntry}
             >
               <SelectTrigger id="inline-transaction-entry" className="w-36 shrink-0">
@@ -363,7 +374,13 @@ export default function AppearancePage() {
             </div>
             <Select
               value={compactTransactionRows ? 'compact' : 'comfortable'}
-              onValueChange={(value) => updateCompactTransactionRows(value === 'compact')}
+              onValueChange={(value) => {
+                trackSettingChanged(
+                  'transaction_row_density',
+                  value === 'compact' ? 'compact' : 'comfortable'
+                );
+                updateCompactTransactionRows(value === 'compact');
+              }}
               disabled={isUpdatingCompactTransactionRows}
             >
               <SelectTrigger id="compact-transaction-rows" className="w-36 shrink-0">
@@ -394,9 +411,11 @@ export default function AppearancePage() {
             </div>
             <Select
               value={sameDayTransactionOrder}
-              onValueChange={(value) =>
-                updateSameDayTransactionOrder(value === 'amount' ? 'amount' : 'newest')
-              }
+              onValueChange={(value) => {
+                const order = value === 'amount' ? 'amount' : 'newest';
+                trackSettingChanged('same_day_order', order);
+                updateSameDayTransactionOrder(order);
+              }}
               disabled={isUpdatingSameDayTransactionOrder}
             >
               <SelectTrigger id="same-day-transaction-order" className="w-36 shrink-0">
@@ -428,7 +447,10 @@ export default function AppearancePage() {
             <Switch
               id="hide-zero-amounts"
               checked={hideZeroAmounts}
-              onCheckedChange={updateHideZeroAmounts}
+              onCheckedChange={(checked) => {
+                trackSettingChanged('hide_zero_amounts', checked ? 'on' : 'off');
+                updateHideZeroAmounts(checked);
+              }}
               disabled={isUpdatingHideZeroAmounts}
             />
           </div>
@@ -461,7 +483,13 @@ export default function AppearancePage() {
             </div>
             <Select
               value={compactBudgetRows ? 'compact' : 'comfortable'}
-              onValueChange={(value) => updateCompactBudgetRows(value === 'compact')}
+              onValueChange={(value) => {
+                trackSettingChanged(
+                  'budget_row_density',
+                  value === 'compact' ? 'compact' : 'comfortable'
+                );
+                updateCompactBudgetRows(value === 'compact');
+              }}
               disabled={isUpdatingCompactBudgetRows}
             >
               <SelectTrigger id="budget-row-density" className="w-36 shrink-0">

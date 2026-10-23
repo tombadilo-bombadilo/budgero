@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Download, Database, FileText, AlertTriangle, Inbox, Upload, BellRing } from 'lucide-react';
@@ -150,6 +151,7 @@ export default function DataManagementPage() {
       const filename = `budgero-${workspaceFilenameTag(activeSpace)}-${timestamp}.db`;
 
       downloadBlob(dbData, filename, 'application/x-sqlite3');
+      track('backup_downloaded', { format: 'sqlite' });
       toast.success(t`Database exported successfully`);
       try {
         await recordBackup.mutateAsync();
@@ -192,6 +194,7 @@ export default function DataManagementPage() {
       const filename = `budgero-${workspaceFilenameTag(activeSpace)}-csv-${timestamp}.zip`;
 
       downloadBlob(zipBlob, filename, 'application/zip');
+      track('export_done', { format: 'csv' });
       toast.success(t`CSV files exported successfully`);
     } catch (error) {
       const errorMessage = getErrorMessage(error, t`Failed to export CSV files`);

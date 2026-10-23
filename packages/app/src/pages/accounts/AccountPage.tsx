@@ -1,4 +1,5 @@
 import { AccountTypeLabel } from '@entities/account/ui/AccountTypeLabel';
+import { track } from '@shared/lib/analytics/track';
 import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useParams } from 'react-router-dom';
@@ -210,6 +211,14 @@ export default function AccountPage() {
     )
   );
   const hasStoredMoneyIntegrityIssue = unsafeTransactionCount > 0 || hasUnsafeAccountBalance;
+  const integrityKind = !hasStoredMoneyIntegrityIssue
+    ? null
+    : unsafeTransactionCount > 0
+      ? 'transactions'
+      : 'account_balance';
+  useEffect(() => {
+    if (integrityKind) track('money_integrity_warning_shown', { kind: integrityKind });
+  }, [integrityKind, numericId]);
   const recurringEditor = useRecurringEditorFromTransaction({
     budgetId: selectedAccount?.BudgetID || selectedBudget?.ID || 0,
     accountId: numericId,

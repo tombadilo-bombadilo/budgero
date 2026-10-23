@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { identifyUser, trackTrialStarted } from '@shared/lib/analytics/analytics';
+import { trackTrialStarted } from '@shared/lib/analytics/analytics';
 import { sendTrialStartedToUmami } from '@shared/lib/analytics/umami';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import type { AuthStartupSnapshot } from './hooks';
@@ -24,13 +24,12 @@ function writeFiredFlag(userId: string): void {
 }
 
 /**
- * Single source of truth for analytics identification + new-signup events.
+ * New-signup events. Identification itself lives in AnalyticsGate (app-wide,
+ * so it also covers /auth); this hook only decides when Trial Started fires.
  *
  * Wired into StartupController, which is the only point in the app where the
  * backend `User` is guaranteed to exist (`auth.status === 'ready'` requires
- * Clerk loaded + signed in + the profile query resolved). Doing it here covers
- * every path into the app — fresh signup, existing-user signin, multi-tab
- * refresh, OAuth callback redirect, PWA cold boot — with one identify path.
+ * Clerk loaded + signed in + the profile query resolved).
  *
  * Trial Started fires ONCE per user, gated on:
  *   1. backend `created_at` within the last 15 minutes (existing users won't
@@ -41,7 +40,6 @@ function writeFiredFlag(userId: string): void {
  * Both gates must pass; either failing suppresses the event.
  */
 export function useAnalyticsIdentity(auth: AuthStartupSnapshot): void {
-  const identifiedRef = useRef<string | null>(null);
   const trialHandledRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -50,11 +48,6 @@ export function useAnalyticsIdentity(auth: AuthStartupSnapshot): void {
 
     const userId = auth.user.id;
     const createdAtRaw = auth.user.created_at;
-
-    if (identifiedRef.current !== userId) {
-      identifyUser(userId);
-      identifiedRef.current = userId;
-    }
 
     if (trialHandledRef.current === userId) return;
     trialHandledRef.current = userId;
@@ -67,7 +60,7 @@ export function useAnalyticsIdentity(auth: AuthStartupSnapshot): void {
 
     writeFiredFlag(userId);
     trackTrialStarted();
-    // Cookieless anonymous counterpart (not consent-gated — see umami.ts).
+    // Cookieless anonymous counterpart (see umami.ts).
     sendTrialStartedToUmami();
   }, [auth.status, auth.user]);
 }

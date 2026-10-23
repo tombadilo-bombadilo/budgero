@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
 import { CalendarCheck, Check, Loader2, RefreshCw, SkipForward } from 'lucide-react';
 import type React from 'react';
 import { toast } from 'sonner';
@@ -48,6 +49,7 @@ export function RecurringOccurrenceActions({
       { occurrenceId, transactionDate },
       {
         onSuccess: (result) => {
+          track('recurring_posted', { how: transactionDate ? 'post_now' : 'mark_ready' });
           const { template } = result.occurrence;
           toast.success(t`Transaction posted`, {
             description: t`${template.name} was added to your register.`,
