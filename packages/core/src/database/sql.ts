@@ -38,3 +38,11 @@ export function run(
   stmt.finalize();
   return result;
 }
+
+/**
+ * Runs `fn` in a DB transaction, or inline when one is already open, so a
+ * caller can compose several service writes into one commit.
+ */
+export function atomically<T>(db: DatabaseAdapter, fn: () => T): T {
+  return db.inTransaction ? fn() : db.transaction(fn);
+}

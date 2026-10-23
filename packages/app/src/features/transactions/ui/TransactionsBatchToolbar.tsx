@@ -2,9 +2,7 @@ import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import * as React from 'react';
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { applyOpInvalidations } from '@shared/lib/query-utils';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@shared/ui/select';
 import { Button } from '@shared/ui/button';
 import {
@@ -26,11 +24,8 @@ import {
 } from '@shared/ui/dropdown-menu';
 import { useUiStore } from '@shared/store/useUiStore';
 import {
-  useMoveTransactionToNewCategory,
-  useMoveTransactionToNewAccount,
+  useBatchEditTransactions,
   useSetTransactionsCleared,
-  useTransactions,
-  useUpdateTransactionColumn,
 } from '@entities/transaction/api/useTransactions';
 import { CLEARED_SHORTCUT_KEY } from '@features/transactions/api/useClearedShortcut';
 import {
@@ -59,7 +54,7 @@ interface TransactionsBatchToolbarProps {
   selectedRowIds: number[];
   clearSelection: () => void;
   onCreateRecurring?: (transaction: GetTransactionsByAccountRow) => void;
-  /** Register rows the selection refers to (used to duplicate them). */
+  /** Register rows the selection refers to. */
   rows: GetTransactionsByAccountRow[];
 }
 
@@ -91,21 +86,16 @@ export function TransactionsBatchToolbar({
   // Fetch accounts using the account hook (archived accounts are excluded from batch move targets).
   const { data: accountsData } = useActiveAccounts(selectedBudget?.ID || 0);
 
-  const queryClient = useQueryClient();
   const { deleteRows, isDeleting } = useDeleteSelected();
-  const moveToNewCategoryMutation = useMoveTransactionToNewCategory();
-  const moveToNewAccountMutation = useMoveTransactionToNewAccount();
-  const updateTransactionColumnMutation = useUpdateTransactionColumn();
+  const batchEditMutation = useBatchEditTransactions();
   const setClearedMutation = useSetTransactionsCleared();
   const { duplicateRows, isPending: isDuplicating } = useDuplicateSelected();
   const duplicateShortcut = getKeyboardShortcutLabels().shift(DUPLICATE_SHORTCUT_KEY);
 
-  const { data: allTransactions = [] } = useTransactions(selectedAccount?.ID || 0);
-
   const selectedRowIdSet = React.useMemo(() => new Set(selectedRowIds), [selectedRowIds]);
   const selectedTransactions = React.useMemo(
-    () => allTransactions.filter((transaction) => selectedRowIdSet.has(transaction.ID)),
-    [allTransactions, selectedRowIdSet]
+    () => rows.filter((transaction) => selectedRowIdSet.has(transaction.ID)),
+    [rows, selectedRowIdSet]
   );
   const singleSelectedTransaction =
     selectedTransactions.length === 1 ? selectedTransactions[0] : null;
@@ -202,48 +192,17 @@ export function TransactionsBatchToolbar({
         }
       }
 
-      // Apply each row's edits with per-item invalidation suppressed; a single
-      // invalidation pass runs after the whole batch (below) instead of once
-      // per mutation, which would refetch every affected query N times.
-      // selectedAccount is null on the All Transactions page; these mutations
-      // only need the transaction id, so don't gate on it.
-      const didMoveAccount = newAccountIdInt != -1;
-      const didMoveCategory = categoryId != -1;
-      const didUpdatePayee = !!payee;
-
-      for (const id of selectedRowIds) {
-        if (didMoveAccount) {
-          await moveToNewAccountMutation.mutateAsync({
-            transactionId: id,
-            newAccountId: newAccountIdInt,
-            skipInvalidate: true,
-          });
-        }
-
-        if (didMoveCategory) {
-          await moveToNewCategoryMutation.mutateAsync({
-            transactionId: id,
-            newCategoryId: categoryId,
-            accountId: selectedAccount?.ID ?? 0,
-            skipInvalidate: true,
-          });
-        }
-
-        if (didUpdatePayee) {
-          await updateTransactionColumnMutation.mutateAsync({
-            transactionId: id,
-            column: 'Payee',
-            value: payee,
-            accountId: selectedAccount?.ID ?? 0,
-            skipInvalidate: true,
-          });
-        }
-      }
-
-      // One invalidation pass for whichever op kinds actually ran.
-      if (didMoveAccount) applyOpInvalidations(queryClient, 'transactions.moveToNewAccount');
-      if (didMoveCategory) applyOpInvalidations(queryClient, 'transactions.moveToNewCategory');
-      if (didUpdatePayee) applyOpInvalidations(queryClient, 'transactions.updateColumn');
+      // One op for the whole selection: one write, one sync op, one undo step.
+      // selectedAccount is null on the All Transactions page; the edits only
+      // need the transaction ids.
+      await batchEditMutation.mutateAsync({
+        edits: selectedRowIds.map((id) => ({
+          id,
+          ...(newAccountIdInt != -1 ? { accountId: newAccountIdInt } : {}),
+          ...(categoryId != -1 ? { categoryId } : {}),
+          ...(payee ? { payee } : {}),
+        })),
+      });
 
       const count = selectedRowIds.length;
       toast.success(
@@ -314,7 +273,7 @@ export function TransactionsBatchToolbar({
           aria-label={t`Duplicate`}
           title={t`Duplicate (press ${duplicateShortcut})`}
           disabled={isDuplicating}
-          onClick={() => duplicateRows(rows.filter((row) => selectedRowIdSet.has(row.ID)))}
+          onClick={() => duplicateRows(selectedTransactions)}
         >
           <Copy className="h-3 w-3" />
         </Button>
@@ -451,17 +410,9 @@ export function TransactionsBatchToolbar({
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => void handleBatchEdits()}
-              disabled={
-                working ||
-                moveToNewCategoryMutation.isPending ||
-                moveToNewAccountMutation.isPending ||
-                updateTransactionColumnMutation.isPending
-              }
+              disabled={working || batchEditMutation.isPending}
             >
-              {working ||
-              moveToNewCategoryMutation.isPending ||
-              moveToNewAccountMutation.isPending ||
-              updateTransactionColumnMutation.isPending ? (
+              {working || batchEditMutation.isPending ? (
                 <Trans>
                   <Loader2 className="h-3 w-3 mr-2 animate-spin" />
                   Applying...

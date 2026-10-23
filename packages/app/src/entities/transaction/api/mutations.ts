@@ -5,7 +5,6 @@ import { executeSpaceMutation } from '@shared/runtime/mutation-router';
 import { applyOpInvalidations, resolveSpaceKey } from '@shared/lib/query-utils';
 import { getTodayISO } from '@shared/lib/date-utils';
 import type { MilliUnits } from '@shared/lib/currency/milli';
-import { ACCOUNT_TRANSACTION_INVALIDATION_KEYS } from '@shared/mutations/op-code-registry/shared';
 import { requestSchedulingGuide } from '@shared/store/useSchedulingGuideStore';
 import { patchPlainAddTransactionCaches } from './plain-add-cache';
 
@@ -49,6 +48,18 @@ export type AddTransactionInput = {
   exchangeRateOverride?: number | null;
   /** Already seen in the bank. Defaults to uncleared. */
   cleared?: boolean;
+  /** Split lines (account currency); the parent and its lines are stored as one op. */
+  splits?: AddTransactionSplitLine[];
+};
+
+/** One line of a new split transaction: a category or a transfer account. */
+export type AddTransactionSplitLine = {
+  categoryId: number | null;
+  transferAccountId: number | null;
+  memo?: string;
+  payee?: string;
+  inflow: number;
+  outflow: number;
 };
 
 export type AddTransferLegInput = Omit<AddTransactionInput, 'budgetId' | 'transferId'>;
@@ -64,6 +75,8 @@ export type AddTransferResult = {
   sourceId: number;
   destinationId: number;
 };
+
+const isPlainAdd = (input: AddTransactionInput) => !input.transferId && !input.splits?.length;
 
 export function useAddTransaction() {
   const runtime = useRuntime();
@@ -87,14 +100,15 @@ export function useAddTransaction() {
           transferId: input.transferId,
           exchangeRateOverride: input.exchangeRateOverride ?? null,
           ...(input.cleared ? { cleared: true } : {}),
+          ...(input.splits ? { splits: input.splits } : {}),
         },
         // Plain adds refresh active views in the background so a large account
         // register does not keep the add dialog pending. Preserve the existing
-        // awaited invalidation behavior for legacy transfer calls.
-        meta: { label: 'useAddTransaction', skipInvalidate: !input.transferId },
+        // awaited invalidation behavior for legacy transfer calls and splits.
+        meta: { label: 'useAddTransaction', skipInvalidate: isPlainAdd(input) },
       });
 
-      if (!input.transferId) {
+      if (isPlainAdd(input)) {
         try {
           // Read the final joined row after continuous rules have completed, so
           // the cache receives their category/label/account metadata as well.
@@ -125,7 +139,7 @@ export function useAddTransaction() {
       if (vars.date.slice(0, 10) > getTodayISO()) {
         requestSchedulingGuide('future', resolveSpaceKey(spaceId), vars.budgetId, vars.accountId);
       }
-      if (!vars.transferId) {
+      if (isPlainAdd(vars)) {
         applyOpInvalidations(queryClient, 'transactions.add', {
           excludeRoots: [
             'transactions',
@@ -215,41 +229,9 @@ export type UpdateTransactionColumnInput = {
   skipInvalidate?: boolean;
 };
 
-const AMOUNT_COLUMNS = new Set([
-  'InflowConverted',
-  'OutflowConverted',
-  'InflowNative',
-  'OutflowNative',
-]);
-
-// Amount edits change balances, budgets, and analytics, but cannot change the
-// payee or label directories. Keeping those active queries out of this hot path
-// avoids rebuilding every row's editor data after each numeric commit.
-const AMOUNT_UPDATE_INVALIDATIONS: string[][] = [
-  ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
-  ['transactionsByCategoryAndMonth', '*'],
-  ['allTransactions', '*'],
-  ['allTransactionsDetailed', '*'],
-  ['allTransactionsAnalytics', '*'],
-  ['uncategorizedTransactions', '*'],
-  ['allAccountsMonthlyTransactions', '*'],
-  ['accounts'],
-  ['monthlyBudget', '*'],
-  ['readyToAssign'],
-  ['monthlySpending', '*'],
-  ['monthlyBalance', '*'],
-  ['spendingByDates', '*'],
-  ['spendingByDatesByCategories', '*'],
-  ['spendingByCategoriesInGroup', '*'],
-  ['balanceByDates', '*'],
-  ['analyticsPeriodSummary', '*'],
-  ['topSpendingCategories', '*'],
-  ['incomeExpenseByPeriod', '*'],
-  ['onBudgetBalance'],
-  ['onBudgetBalanceByDates'],
-  ['spendingByLabels', '*'],
-];
-
+// Invalidation depends on the column (a memo edit cannot move balances); the
+// MutationExecutor asks the op registry for this call's set, see
+// updateColumnInvalidations in op-code-registry/domains/transactions.ts.
 export function useUpdateTransactionColumn() {
   const runtime = useRuntime();
   return useMutation<void, Error, UpdateTransactionColumnInput>({
@@ -261,7 +243,6 @@ export function useUpdateTransactionColumn() {
           columnName: column,
           newValue: value,
         },
-        invalidates: AMOUNT_COLUMNS.has(column) ? AMOUNT_UPDATE_INVALIDATIONS : undefined,
         meta: { label: 'useUpdateTransactionColumn', skipInvalidate },
       });
     },
@@ -498,6 +479,25 @@ export function useMoveTransactionToNewAccount() {
           newAccountId,
         },
         meta: { label: 'useMoveTransactionToNewAccount', skipInvalidate },
+      });
+    },
+  });
+}
+
+/** One row of a batch edit (omitted fields stay as they are). */
+export type BatchEditTransactionsInput = {
+  edits: { id: number; accountId?: number; categoryId?: number; payee?: string }[];
+};
+
+/** Account / category / payee for many rows: one op, one write, one undo step. */
+export function useBatchEditTransactions() {
+  const runtime = useRuntime();
+  return useMutation<void, Error, BatchEditTransactionsInput>({
+    mutationFn: async ({ edits }) => {
+      await executeSpaceMutation<void>(runtime, {
+        op: 'transactions.batchEdit',
+        payload: { edits },
+        meta: { label: 'useBatchEditTransactions' },
       });
     },
   });

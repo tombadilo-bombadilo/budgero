@@ -1,5 +1,6 @@
 import { DatabaseAdapter } from '../../database/interface.js';
 import { getRow, allRows, run } from '../../database/sql.js';
+import { clock } from '../../utils/clock.js';
 
 /**
  * ScenarioService — persistence for the analytics Scenario Planner.
@@ -30,7 +31,7 @@ function createId(): string {
   if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
     return cryptoApi.randomUUID();
   }
-  return `sc_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  return `sc_${clock.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function hasUniqueConstraintError(error: unknown): boolean {
@@ -62,7 +63,7 @@ export class ScenarioService {
     const name = input.name.trim();
     if (!name) throw new Error('Scenario name cannot be empty');
     JSON.parse(input.payload); // reject malformed payloads early
-    const now = new Date().toISOString();
+    const now = clock.date().toISOString();
 
     try {
       // An ID that no longer exists (undo of a delete) is re-inserted under that ID.

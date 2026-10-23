@@ -6,6 +6,7 @@
  */
 
 import { decryptAndDecompressDatabase } from '../crypto';
+import { getSubtleCrypto } from '../crypto/subtle';
 import { logRuntime } from '../logging';
 
 export interface SnapshotVersions {
@@ -43,17 +44,59 @@ export function readSnapshotVersions(headers: Headers): SnapshotVersions {
   };
 }
 
+/** Re-downloads allowed when the blob bytes don't match X-Database-Hash. */
+const HASH_MISMATCH_RETRIES = 2;
+
+async function sha256Hex(data: Uint8Array): Promise<string> {
+  const digest = await getSubtleCrypto().digest('SHA-256', data);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+/**
+ * Fetch the blob, re-fetching while its bytes don't match the server's
+ * X-Database-Hash. The version headers (notably X-Mutation-Version, which
+ * seeds the mutation cursor) are only trustworthy for the bytes they were
+ * recorded with; trusting them on a mismatched blob would skip mutations.
+ * Responses without the header (legacy servers) are accepted as-is.
+ */
+async function downloadVerifiedBlob(
+  deps: DownloadSnapshotDeps,
+  spaceId: string
+): Promise<{ data: Uint8Array; headers: Headers } | null> {
+  for (let attempt = 0; ; attempt++) {
+    const blobResult = await deps.downloadBlob(spaceId);
+    if (!blobResult) return null;
+
+    const expected = blobResult.headers.get('X-Database-Hash')?.trim().toLowerCase();
+    if (!expected) return blobResult;
+
+    const actual = await sha256Hex(blobResult.data);
+    if (actual === expected) return blobResult;
+
+    logRuntime('warn', 'SnapshotDownload', 'Snapshot blob does not match X-Database-Hash', {
+      spaceId,
+      attempt,
+      size: blobResult.data.length,
+      blobVersion: blobResult.headers.get('X-Database-Version'),
+    });
+    if (attempt >= HASH_MISMATCH_RETRIES) {
+      throw new Error('Snapshot integrity check failed: blob does not match X-Database-Hash');
+    }
+  }
+}
+
 /**
  * Download and decrypt the latest server snapshot for a space.
  * Returns null when the server has no snapshot; persistence of the returned
- * versions is the caller's responsibility. Decryption errors propagate.
+ * versions is the caller's responsibility. Decryption errors propagate, as
+ * does an integrity error when the blob keeps failing its hash check.
  */
 export async function downloadSnapshot(
   deps: DownloadSnapshotDeps,
   spaceId: string,
   passphrase: string
 ): Promise<DownloadedSnapshot | null> {
-  const blobResult = await deps.downloadBlob(spaceId);
+  const blobResult = await downloadVerifiedBlob(deps, spaceId);
   if (!blobResult) return null;
 
   const { blobVersion, keyVersion, mutationVersion } = readSnapshotVersions(blobResult.headers);

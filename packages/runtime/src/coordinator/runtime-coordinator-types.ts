@@ -57,6 +57,7 @@ export interface RuntimeCoordinatorDeps {
     op: string
   ): MutationExecutorDeps['getUndoSpec'] extends (op: string) => infer R ? R : never;
   getInvalidatesForOp(op: string): string[][] | undefined;
+  getInvalidatesForCall?(op: string, args: Record<string, unknown>): string[][] | undefined;
 
   getQueryClient?(): QueryClientLike | undefined;
   pushUndo?(entry: import('../types').UndoEntry): void;
@@ -86,6 +87,8 @@ export interface RuntimeCoordinatorDeps {
     onEncryptionKeyChanged?(spaceId: string, version: number): void;
     /** A sync payload arrived in a newer data format — prompt for an app update. */
     onFormatTooNew?(spaceId: string, receivedVersion: number): void;
+    /** A synced mutation names an op code this build doesn't have — prompt for update. */
+    onUnknownOpCode?(spaceId: string, op: string): void;
     setPasswordChangedReason?(): void;
     reloadApp?(): void;
   };

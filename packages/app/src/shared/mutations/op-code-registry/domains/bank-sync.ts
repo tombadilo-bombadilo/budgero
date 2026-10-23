@@ -86,5 +86,19 @@ export const bankSyncOps = {
       S().bankSync.setReviewStatus(args.id as number, args.status as BankReviewStatus);
     },
     invalidates: BANK_SYNC_KEYS,
+    undo: {
+      capture: async (args) => ({ previous: S().bankSync.getReviewStatus(args.id as number) }),
+      build: (args, _result, before) => {
+        const previous = (before as { previous?: BankReviewStatus | null } | undefined)?.previous;
+        return previous && previous !== args.status
+          ? [
+              {
+                op: 'bankSync.setReviewStatus',
+                args: { budgetId: args.budgetId, id: args.id, status: previous },
+              },
+            ]
+          : [];
+      },
+    },
   },
 } satisfies Record<string, OpCodeEntry>;

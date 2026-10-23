@@ -1,7 +1,14 @@
+import { t as translate } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getRuntime } from '@shared/runtime/global';
-import { getInvalidatesForOp } from '@shared/mutations/op-code-registry';
+import {
+  applyReplayOps,
+  markHistory,
+  undoItemMutationIds,
+  useUndoStore,
+  type UndoItem,
+} from '@shared/mutations/UndoStore';
 import type { ParsedMutationHistoryEntry, MutationHistoryListOptions } from '@budgero/core/browser';
 
 /**
@@ -45,9 +52,98 @@ export function useMutationHistoryCount(spaceId: string | null) {
   });
 }
 
+export type AuditUndoBlockReason =
+  'no-undo' | 'undone' | 'failed' | 'remote' | 'newer-changes' | 'grouped';
+
+export type AuditUndoAvailability =
+  { canUndo: true; viaUndoStack: boolean } | { canUndo: false; reason: AuditUndoBlockReason };
+
 /**
- * Hook to undo a mutation from history
+ * Whether the Audit Log may undo `entry`. An inverse op restores the state
+ * right after the change, so it is only safe while nothing changed since:
+ * the entry must be the newest change of the space still applied
+ * (`latestActiveMutationId`). When the entry is the newest Ctrl+Z entry, the
+ * undo goes through the UndoStore, so both stay in step.
  */
+export function getAuditUndoAvailability(
+  entry: Pick<ParsedMutationHistoryEntry, 'mutationId' | 'undoOps' | 'undoneAt' | 'origin'> & {
+    status?: string;
+  },
+  latestActiveMutationId: string | null | undefined,
+  undoTop: UndoItem | undefined
+): AuditUndoAvailability {
+  if (entry.undoneAt) return { canUndo: false, reason: 'undone' };
+  if (entry.status === 'failed') return { canUndo: false, reason: 'failed' };
+  if (!entry.undoOps || entry.undoOps.length === 0) return { canUndo: false, reason: 'no-undo' };
+  if (entry.origin !== 'local') return { canUndo: false, reason: 'remote' };
+  if (latestActiveMutationId !== entry.mutationId) {
+    return { canUndo: false, reason: 'newer-changes' };
+  }
+  if (undoTop && undoItemMutationIds(undoTop).includes(entry.mutationId)) {
+    // Part of a grouped action: undoing it alone would split the group.
+    if (undoItemMutationIds(undoTop).length > 1) return { canUndo: false, reason: 'grouped' };
+    return { canUndo: true, viaUndoStack: true };
+  }
+  return { canUndo: true, viaUndoStack: false };
+}
+
+/** The newest still-applied change of a space (see getAuditUndoAvailability). */
+export function useLatestActiveMutation(spaceId: string | null) {
+  return useQuery({
+    queryKey: ['mutationHistory', spaceId, 'latestActive'],
+    queryFn: () => {
+      const services = getRuntime()?.services?.();
+      if (!services?.mutationHistory || !spaceId) return null;
+      return services.mutationHistory.getLatestActiveEntryForSpace(spaceId)?.mutationId ?? null;
+    },
+    enabled: !!spaceId,
+    staleTime: 1000 * 30,
+  });
+}
+
+export class AuditUndoBlockedError extends Error {
+  constructor(readonly reason: AuditUndoBlockReason) {
+    super(`Audit Log undo not available: ${reason}`);
+    this.name = 'AuditUndoBlockedError';
+  }
+}
+
+/**
+ * Undo a history entry from the Audit Log. Re-checks safety at the moment of
+ * the undo, applies the inverse atomically and marks the entry undone in the
+ * history and the Ctrl+Z stack alike (an entry on top of the stack is undone
+ * through the stack, so it can be redone and is not undone twice).
+ */
+export async function undoMutationHistoryEntry(
+  entry: ParsedMutationHistoryEntry,
+  label?: string
+): Promise<string> {
+  const runtime = getRuntime();
+  const history = runtime?.services?.()?.mutationHistory;
+  if (!history) {
+    throw new Error('Services not available');
+  }
+  const spaceId = runtime?.getActiveSpaceId?.() ?? null;
+  const latest = spaceId
+    ? (history.getLatestActiveEntryForSpace(spaceId)?.mutationId ?? null)
+    : null;
+  const store = useUndoStore.getState();
+  const top = store.past[store.past.length - 1];
+  const availability = getAuditUndoAvailability(entry, latest, top);
+  if (!availability.canUndo) throw new AuditUndoBlockedError(availability.reason);
+
+  if (availability.viaUndoStack && top) {
+    await store.undoItem(top.id);
+    return entry.mutationId;
+  }
+
+  await applyReplayOps(entry.undoOps!, 'undo', label);
+  markHistory([entry.mutationId], 'undo');
+  useUndoStore.getState().remove(entry.mutationId);
+  return entry.mutationId;
+}
+
+/** Hook to undo a mutation from history (see undoMutationHistoryEntry). */
 export function useUndoMutationHistoryEntry() {
   const { t } = useLingui();
 
@@ -55,45 +151,39 @@ export function useUndoMutationHistoryEntry() {
 
   return useMutation({
     mutationFn: async ({ entry }: { entry: ParsedMutationHistoryEntry }) => {
-      const runtime = getRuntime();
-      const services = runtime?.services?.();
-      const router = runtime?.mutationsRouter?.();
-
-      if (!services?.mutationHistory || !router) {
-        throw new Error('Services not available');
+      try {
+        return await undoMutationHistoryEntry(entry, t`Undo: ${entry.op}`);
+      } catch (error) {
+        if (error instanceof AuditUndoBlockedError) {
+          throw new Error(auditUndoBlockMessage(error.reason));
+        }
+        throw error;
       }
-
-      if (!entry.undoOps || entry.undoOps.length === 0) {
-        throw new Error('No undo operations available for this entry');
-      }
-
-      if (entry.undoneAt) {
-        throw new Error('This entry has already been undone');
-      }
-
-      // Execute each undo operation. Pass `invalidates` + `forceInvalidate` so
-      // the MutationExecutor runs the full query invalidation for the op (local
-      // mutations are otherwise skipped) — same as the global undo path.
-      for (const op of entry.undoOps) {
-        await router.execute({
-          op: op.op,
-          payload: op.args,
-          invalidates: getInvalidatesForOp(op.op),
-          meta: { skipUndo: true, label: t`Undo: ${entry.op}`, forceInvalidate: true },
-        });
-      }
-
-      services.mutationHistory.markUndone(entry.mutationId);
-
-      return entry.mutationId;
     },
-    onSuccess: () => {
+    onSettled: () => {
       // Data queries are invalidated by the MutationExecutor (via `invalidates`
-      // + `forceInvalidate` above). Here we only refresh the audit log's own views.
+      // + `forceInvalidate`). Here we only refresh the audit log's own views.
       void queryClient.invalidateQueries({ queryKey: ['mutationHistory'] });
       void queryClient.invalidateQueries({ queryKey: ['mutationHistoryCount'] });
     },
   });
+}
+
+export function auditUndoBlockMessage(reason: AuditUndoBlockReason): string {
+  switch (reason) {
+    case 'undone':
+      return translate`This action has already been undone.`;
+    case 'failed':
+      return translate`This action failed, so there is nothing to undo.`;
+    case 'no-undo':
+      return translate`This action cannot be undone.`;
+    case 'remote':
+      return translate`Changes from other devices can only be undone on the device that made them.`;
+    case 'newer-changes':
+      return translate`Only the most recent change can be undone. Undo the newer changes first.`;
+    case 'grouped':
+      return translate`This change is part of a larger action. Use Undo (Ctrl+Z) to revert it.`;
+  }
 }
 
 /**
@@ -145,6 +235,9 @@ export function formatOpCode(op: string): string {
     'categories.updateFundingPriorities': 'Change Funding Priorities',
     'budgets.updateGoalFundingSettings': 'Change Goal Funding Settings',
     'categories.delete': 'Delete Category',
+    'categories.deleteAndReassign': 'Delete Category',
+    'categories.restoreDeleted': 'Restore Category',
+    'categoryGroups.deleteAndReassign': 'Delete Category Group',
     'categories.moveToNewGroup': 'Move Category',
     'categories.updateExcludeFromBudgetPace': 'Update Category Pacing',
     'categoryGroups.create': 'Create Category Group',
@@ -153,6 +246,8 @@ export function formatOpCode(op: string): string {
     'accounts.create': 'Create Account',
     'accounts.update': 'Update Account',
     'accounts.delete': 'Delete Account',
+    'accounts.createLinked': 'Create Linked Account',
+    'accounts.restoreDeleted': 'Restore Account',
     'accounts.setArchived': 'Archive Account',
     'payees.add': 'Add Payee',
     'payees.rename': 'Rename Payee',
@@ -199,6 +294,9 @@ export function formatOpCode(op: string): string {
     'bankSync.addReviews': 'Queue Bank Matches',
     'bankSync.setReviewStatus': 'Review Bank Match',
     'push.import': 'Push API Import',
+    'history.applyOps': 'Undo / Redo',
+    'history.restoreRows': 'Undo',
+    'history.redoWithIds': 'Redo',
   };
 
   return (

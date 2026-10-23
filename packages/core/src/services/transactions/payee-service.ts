@@ -1,6 +1,13 @@
 import { DatabaseAdapter } from '../../database/interface.js';
+import { insertRawRow, placeholders, type RawRow } from '../../database/restore-rows.js';
+import { allRows, getRow, run } from '../../database/sql.js';
 import { TransactionQueries } from './queries.js';
-import { PayeeListItem, PayeeCategoryMemory } from './types.js';
+import {
+  PayeeListItem,
+  PayeeCategoryMemory,
+  type PayeeSnapshot,
+  type RestorePayeesInput,
+} from './types.js';
 
 /**
  * PayeeService - manages the payee directory (saved payees + usage from transactions).
@@ -74,7 +81,16 @@ export class PayeeService {
     return this.queries.insertPayee(budgetId, trimmed);
   }
 
-  renamePayee(budgetId: number, oldName: string, newName: string): { updated: number } {
+  /**
+   * `newPayeeId` is only passed by redo: when the rename creates the
+   * destination directory entry, it gets the ID the first run gave it.
+   */
+  renamePayee(
+    budgetId: number,
+    oldName: string,
+    newName: string,
+    newPayeeId?: number
+  ): { updated: number } {
     const oldTrimmed = (oldName || '').trim();
     const newTrimmed = (newName || '').trim();
     if (!oldTrimmed || !newTrimmed || oldTrimmed === newTrimmed) {
@@ -84,13 +100,151 @@ export class PayeeService {
     let updated = 0;
     this.db.transaction(() => {
       // Ensure destination payee exists (in case it was only in transactions)
-      this.queries.insertPayee(budgetId, newTrimmed);
+      if (!this.findSavedPayee(budgetId, newTrimmed, true)) {
+        if (newPayeeId !== undefined) {
+          run(
+            this.db,
+            `INSERT INTO payees (ID, BudgetID, Name, Metadata) VALUES (?, ?, ?, '{}')`,
+            newPayeeId,
+            budgetId,
+            newTrimmed
+          );
+        } else {
+          this.queries.insertPayee(budgetId, newTrimmed);
+        }
+      }
       updated = this.queries.updatePayeeValue(budgetId, oldTrimmed, newTrimmed);
       // Remove the old payee entry to avoid uniqueness conflicts if the destination already exists
       this.queries.deletePayee(budgetId, oldTrimmed);
     });
 
     return { updated };
+  }
+
+  /** The saved directory row for `name` (exact, or case-insensitive like the unique index). */
+  private findSavedPayee(budgetId: number, name: string, ignoreCase = false): RawRow | undefined {
+    return getRow<RawRow>(
+      this.db,
+      `SELECT * FROM payees WHERE BudgetID = ? AND Name = ?${ignoreCase ? ' COLLATE NOCASE' : ''}`,
+      budgetId,
+      name
+    );
+  }
+
+  /**
+   * Everything a payee rename/delete changes for `names`: their saved
+   * directory rows and the exact transaction and split rows that carry each
+   * name. Undo restores exactly these (see restorePayees).
+   */
+  snapshotPayees(budgetId: number, names: string[]): PayeeSnapshot {
+    const unique = Array.from(
+      new Set((names || []).map((name) => (name || '').trim()).filter(Boolean))
+    );
+    const snapshot: PayeeSnapshot = { rows: [], assignments: [] };
+    for (const name of unique) {
+      const row = this.findSavedPayee(budgetId, name);
+      if (row) snapshot.rows.push(row);
+      const transactionIds = allRows<{ ID: number }>(
+        this.db,
+        `SELECT ID FROM transactions WHERE BudgetID = ? AND Payee = ? ORDER BY ID`,
+        budgetId,
+        name
+      ).map((tx) => Number(tx.ID));
+      const splitIds = allRows<{ ID: number }>(
+        this.db,
+        `SELECT ID FROM transaction_splits
+         WHERE TransactionID IN (SELECT ID FROM transactions WHERE BudgetID = ?) AND Payee = ?
+         ORDER BY ID`,
+        budgetId,
+        name
+      ).map((split) => Number(split.ID));
+      if (transactionIds.length || splitIds.length) {
+        snapshot.assignments.push({ name, transactionIds, splitIds });
+      }
+    }
+    return snapshot;
+  }
+
+  /** ID of the saved payee named exactly `name`, if any. */
+  getSavedPayeeId(budgetId: number, name: string): number | undefined {
+    const row = this.findSavedPayee(budgetId, (name || '').trim());
+    return row ? Number(row.ID) : undefined;
+  }
+
+  /** Whether a saved payee matches `name` the way the unique index compares (case-insensitive). */
+  hasSavedPayee(budgetId: number, name: string): boolean {
+    const trimmed = (name || '').trim();
+    return Boolean(trimmed && this.findSavedPayee(budgetId, trimmed, true));
+  }
+
+  /**
+   * Undo of payee rename/delete, in one database transaction: drop the
+   * directory entries in `removeNames` (exact name), re-insert the snapshot
+   * `rows` under their original IDs, and set each name back on exactly the
+   * transaction and split rows that had it.
+   */
+  restorePayees(budgetId: number, input: RestorePayeesInput): { restored: number } {
+    let restored = 0;
+    this.db.transaction(() => {
+      for (const name of input.removeNames ?? []) {
+        this.queries.deletePayee(budgetId, name);
+      }
+      for (const row of input.rows ?? []) {
+        if (Number(row.BudgetID) !== budgetId) {
+          throw new Error('Payee snapshot belongs to another budget');
+        }
+        if (this.findSavedPayee(budgetId, String(row.Name), true)) continue;
+        insertRawRow(this.db, 'payees', row);
+      }
+      for (const { name, transactionIds = [], splitIds = [] } of input.assignments ?? []) {
+        if (transactionIds.length) {
+          restored += run(
+            this.db,
+            `UPDATE transactions SET Payee = ?
+             WHERE BudgetID = ? AND ID IN (${placeholders(transactionIds.length)})`,
+            name,
+            budgetId,
+            ...transactionIds
+          ).changes;
+        }
+        if (splitIds.length) {
+          run(
+            this.db,
+            `UPDATE transaction_splits SET Payee = ?
+             WHERE ID IN (${placeholders(splitIds.length)})
+               AND TransactionID IN (SELECT ID FROM transactions WHERE BudgetID = ?)`,
+            name,
+            ...splitIds,
+            budgetId
+          );
+        }
+      }
+    });
+    return { restored };
+  }
+
+  /**
+   * Undo of an op that added directory entries (a new payee typed on an add,
+   * an edit or a batch edit): drop the entries `ids` of this budget that no
+   * transaction or split line uses any more.
+   */
+  removeUnusedPayees(budgetId: number, ids: number[]): { removed: number } {
+    const keys = (ids || []).filter((id) => Number.isSafeInteger(id) && id > 0);
+    if (!keys.length) return { removed: 0 };
+    const result = run(
+      this.db,
+      `DELETE FROM payees
+        WHERE BudgetID = ? AND ID IN (${placeholders(keys.length)})
+          AND NOT EXISTS (
+            SELECT 1 FROM transactions t
+             WHERE t.BudgetID = payees.BudgetID AND t.Payee = payees.Name COLLATE NOCASE)
+          AND NOT EXISTS (
+            SELECT 1 FROM transaction_splits s JOIN transactions t ON t.ID = s.TransactionID
+             WHERE t.BudgetID = payees.BudgetID AND s.Payee = payees.Name COLLATE NOCASE)`,
+      budgetId,
+      ...keys
+    );
+    return { removed: result.changes };
   }
 
   deletePayee(budgetId: number, name: string): { cleared: number } {
@@ -121,5 +275,23 @@ export class PayeeService {
     });
 
     return { deleted: unique.length, cleared };
+  }
+
+  /**
+   * Payee names only: the same list as `getPayeesWithUsage(budgetId).map((p) => p.Name)`
+   * (same merge of saved and used names, same order), without counting every
+   * row. For pickers; the Payees settings page still needs the counts.
+   */
+  getPayeeNames(budgetId: number): string[] {
+    const saved = this.queries.listSavedPayees(budgetId);
+    const used = this.queries.getPayeeNamesInUse(budgetId);
+
+    const names = new Map<string, string>();
+    for (const row of used) names.set(row.Name.toLowerCase(), row.Name);
+    for (const payee of saved) names.set(payee.Name.toLowerCase(), payee.Name);
+
+    return Array.from(names.values()).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: 'base' })
+    );
   }
 }

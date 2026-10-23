@@ -17,6 +17,7 @@ import { EditBudgetForm } from '@features/budget-management/ui/EditBudgetForm';
 import { DeleteBudgetButton } from '@features/budget-management/ui/DeleteBudgetButton';
 import { WorkspaceBudgetList } from '@features/budget-management/ui/WorkspaceBudgetList';
 import { useUndoStore } from '@shared/mutations/UndoStore';
+import { toastError } from '@shared/lib/errors';
 import { openQuackback } from '@features/feedback';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/ui/tooltip';
@@ -226,7 +227,11 @@ export function MobileTopBar() {
                     size="icon"
                     className="h-8 w-6 mr-3"
                     disabled={!canUndo}
-                    onClick={() => undo()}
+                    onClick={() => {
+                      undo().catch((error: unknown) =>
+                        toastError(t`Failed to undo last action`, error)
+                      );
+                    }}
                   >
                     <Undo2 className="h-4 w-4" />
                   </Button>
@@ -242,7 +247,9 @@ export function MobileTopBar() {
                     size="icon"
                     className="h-8 w-6"
                     disabled={!canRedo}
-                    onClick={() => redo()}
+                    onClick={() => {
+                      redo().catch((error: unknown) => toastError(t`Failed to redo action`, error));
+                    }}
                   >
                     <Redo2 className="h-4 w-4" />
                   </Button>

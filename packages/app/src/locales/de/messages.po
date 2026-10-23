@@ -155,6 +155,10 @@ msgstr "(leeren)"
 msgid "(cleared)"
 msgstr "(Gebucht)"
 
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "(goal reached)"
+msgstr "(Ziel erreicht)"
+
 #: src/features/currencies/ui/CurrencySelector.tsx
 msgid "(Offline)"
 msgstr "(Offline)"
@@ -162,6 +166,10 @@ msgstr "(Offline)"
 #: src/features/import/ui/steps/configure/MappingTab.tsx
 msgid "(Optional)"
 msgstr "(Optional)"
+
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "(over goal)"
+msgstr "(über dem Ziel)"
 
 #: src/features/import/ui/steps/configure/MappingTab.tsx
 msgid "(Required - or use InflowConverted/OutflowConverted)"
@@ -180,6 +188,11 @@ msgstr "{0, plural, one {, # Konto} other {, # Konten}}"
 #: src/pages/settings/ImportsPage.tsx
 msgid "{0, plural, one {, # category} other {, # categories}}"
 msgstr "{0, plural, one {, # Kategorie} other {, # Kategorien}}"
+
+#. placeholder {0}: dailyAllowance.daysLeft
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "{0, plural, one {(# day left)} other {(# days left)}}"
+msgstr "{0, plural, one {(noch # Tag)} other {(noch # Tage)}}"
 
 #. placeholder {0}: run.transactionCount
 #. placeholder {1}: run.status.toUpperCase()
@@ -208,6 +221,13 @@ msgstr "{0, plural, one {{1} Admin} other {{2} Admins}}"
 #: src/pages/admin/admin-users/user-details/ActivityHeatmap.tsx
 msgid "{0, plural, one {{1}: # {itemLabel}} other {{2}: # {itemLabel}s}}"
 msgstr "{0, plural, one {{1}: # {itemLabel}} other {{2}: # {itemLabel}}}"
+
+#. placeholder {0}: dailyAllowance.daysLeft
+#. placeholder {1}: formatMilli(globalLocalizer, dailyAllowance.perDay)
+#. placeholder {2}: formatMilli(globalLocalizer, dailyAllowance.perDay)
+#: src/features/budget-planning/ui/spending-drawer-mobile/CategoryHeader.tsx
+msgid "{0, plural, one {{1}/day left · # day} other {{2}/day left · # days}}"
+msgstr "{0, plural, one {{1}/Tag übrig · # Tag} other {{2}/Tag übrig · # Tage}}"
 
 #. placeholder {0}: preview.accountCount
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
@@ -270,6 +290,11 @@ msgstr "{0, plural, one {# Kategorie aus dem Register fehlt in Plan.csv} other {
 msgid "{0, plural, one {# register row} other {# register rows}}"
 msgstr "{0, plural, one {# Registerzeile} other {# Registerzeilen}}"
 
+#. placeholder {0}: pendingImpact.scheduled
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "{0, plural, one {# scheduled transaction loses its category.} other {# scheduled transactions lose their category.}}"
+msgstr "{0, plural, one {# geplante Transaktion verliert ihre Kategorie.} other {# geplante Transaktionen verlieren ihre Kategorie.}}"
+
 #. placeholder {0}: preview.splitTransactions.length
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
 #: src/pages/onboarding/steps/YnabImportStep.tsx
@@ -290,6 +315,16 @@ msgstr "{0, plural, one {# Benutzer gefunden} other {# Benutzer gefunden}}"
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "{0, plural, one {# user was not deleted} other {# users were not deleted}}"
 msgstr "{0, plural, one {# Benutzer wurde nicht gelöscht} other {# Benutzer wurden nicht gelöscht}}"
+
+#. placeholder {0}: impact.assignedMonths
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "{0, plural, one {Assigned amounts in # month (total {assignedTotal})} other {Assigned amounts in # months (total {assignedTotal})}}"
+msgstr "{0, plural, one {Zugewiesene Beträge in # Monat (insgesamt {assignedTotal})} other {Zugewiesene Beträge in # Monaten (insgesamt {assignedTotal})}}"
+
+#. placeholder {0}: pendingImpact.assignedMonths
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "{0, plural, one {Assigned money in # month ({total}) is removed and returns to Ready to Assign.} other {Assigned money in # months ({total}) is removed and returns to Ready to Assign.}}"
+msgstr "{0, plural, one {Zugewiesenes Geld in # Monat ({total}) wird entfernt und geht zurück an Zu budgetieren.} other {Zugewiesenes Geld in # Monaten ({total}) wird entfernt und geht zurück an Zu budgetieren.}}"
 
 #. placeholder {0}: data.deleted
 #: src/pages/settings/push-api/usePushApiState.ts
@@ -539,8 +574,13 @@ msgstr "{0} wurde archiviert."
 
 #. placeholder {0}: selectedAccount.Name
 #: src/features/account-management/ui/EditAccountDialog.tsx
-msgid "{0} has been permanently removed."
-msgstr "{0} wurde dauerhaft entfernt."
+msgid "{0} has been deleted. You can undo this."
+msgstr "{0} wurde gelöscht. Du kannst das rückgängig machen."
+
+#. placeholder {0}: selectedAccount.Name
+#: src/features/account-management/ui/EditAccountDialog.tsx
+#~ msgid "{0} has been permanently removed."
+#~ msgstr "{0} wurde dauerhaft entfernt."
 
 #. placeholder {0}: best.name
 #. placeholder {1}: Math.round((best.ratio - 1) * 100)
@@ -2022,8 +2062,8 @@ msgstr "<0/>Umbuchungskurs"
 
 #. placeholder {0}: formatAmount(underfunded)
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
-msgid "<0/>Underfunded {0}"
-msgstr "<0/>{0} unterfinanziert"
+#~ msgid "<0/>Underfunded {0}"
+#~ msgstr "<0/>{0} unterfinanziert"
 
 #: src/pages/settings/AuditLogPage.tsx
 #: src/pages/settings/ImportsPage.tsx
@@ -2369,7 +2409,7 @@ msgstr "~500 MB, genau"
 msgid "~75MB, fastest"
 msgstr "~75 MB, am schnellsten"
 
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "− Already set aside"
 msgstr "− Bereits zurückgelegt"
 
@@ -2551,6 +2591,12 @@ msgstr "7 Tage"
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "90 days"
 msgstr "90 Tage"
+
+#. placeholder {0}: ownAccount.Currency
+#. placeholder {1}: counterpart.Currency
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "A {0} to {1} rate is required to convert this transaction."
+msgstr "Für die Umwandlung dieser Transaktion wird ein Kurs von {0} zu {1} benötigt."
 
 #. placeholder {0}: fromAccount.Currency
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
@@ -3374,7 +3420,7 @@ msgstr "Tilgungsplan"
 
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 #: src/features/budget-planning/ui/category-row/CoverOverspendingPopover.tsx
 #: src/features/budget-planning/ui/category-row/MoveMoneyPopover.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetCategoryRow.tsx
@@ -3604,6 +3650,10 @@ msgstr "Archiviert"
 msgid "Archived accounts are hidden from sidebars and account pickers by default, but their historical transactions remain visible in reports and transaction lists. You can unarchive an account later from the All Accounts page."
 msgstr "Archivierte Konten werden standardmäßig in der Seitenleiste und der Kontoauswahl ausgeblendet, aber ihre historischen Transaktionen bleiben in Berichten und Transaktionslisten sichtbar. Du kannst ein Konto später über die Seite „Alle Konten\" reaktivieren."
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Archived accounts can't be part of a transfer."
+msgstr "Archivierte Konten können nicht an einer Umbuchung beteiligt sein."
+
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 msgid "Archiving..."
 msgstr "Wird archiviert …"
@@ -3627,8 +3677,8 @@ msgstr "Bist du sicher, dass du \"{0}\" löschen möchtest? Diese Aktion kann ni
 
 #. placeholder {0}: modalState.pendingDelete?.name
 #: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
-msgid "Are you sure you want to delete the category \"{0}\"? This action cannot be undone."
-msgstr "Bist du sicher, dass du die Kategorie \"{0}\" löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden."
+#~ msgid "Are you sure you want to delete the category \"{0}\"? This action cannot be undone."
+#~ msgstr "Bist du sicher, dass du die Kategorie \"{0}\" löschen möchtest? Diese Aktion kann nicht rückgängig gemacht werden."
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Are you sure you want to reveal the key?"
@@ -4596,6 +4646,7 @@ msgstr "Kanadischer Dollar"
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 #: src/features/subscription/ui/ExportDataCard.tsx
+#: src/features/transactions/api/useTransferConversion.tsx
 #: src/features/transactions/ui/add-transaction/AddTransactionForm.tsx
 #: src/features/transactions/ui/add-transaction/TransactionFormActions.tsx
 #: src/features/transactions/ui/cells/ExchangeRateCell.tsx
@@ -4743,7 +4794,7 @@ msgstr "Kategorien, die \"{0}\" entsprechen"
 
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
@@ -4876,6 +4927,10 @@ msgstr "Änderungsprotokoll"
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Changes apply to transactions imported from now on. If a field you pick is missing for a transaction, Budgero uses the automatic choice."
 msgstr "Änderungen gelten für Transaktionen, die ab jetzt importiert werden. Fehlt das gewählte Feld bei einer Transaktion, nutzt Budgero die automatische Auswahl."
+
+#: src/shared/mutations/useMutationHistory.ts
+msgid "Changes from other devices can only be undone on the device that made them."
+msgstr "Änderungen von anderen Geräten können nur auf dem Gerät rückgängig gemacht werden, auf dem sie vorgenommen wurden."
 
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Changes have been applied to the database."
@@ -5439,6 +5494,10 @@ msgid "Compact header"
 msgstr "Kompakte Kopfzeile"
 
 #: src/pages/settings/AppearancePage.tsx
+msgid "Compact rows fit more categories on screen (table view)."
+msgstr "Kompakte Zeilen zeigen mehr Kategorien auf einmal (Tabellenansicht)."
+
+#: src/pages/settings/AppearancePage.tsx
 msgid "Compact rows fit more transactions on screen (desktop register)."
 msgstr "Kompakte Zeilen zeigen mehr Transaktionen auf einmal (Register am Desktop)."
 
@@ -5661,6 +5720,31 @@ msgstr "Umwandlungen leiten die umgekehrte Richtung weiterhin automatisch ab; da
 msgid "Convert existing amounts"
 msgstr "Bestehende Beträge umrechnen"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Convert to a transfer?"
+msgstr "In eine Umbuchung umwandeln?"
+
+#: src/features/payees/ui/PayeeCombobox.tsx
+msgid "Convert to regular transaction"
+msgstr "In normale Transaktion umwandeln"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Convert to transfer"
+msgstr "In Umbuchung umwandeln"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Convert transfer to transaction"
+msgstr "Umbuchung in Transaktion umwandeln"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Converted back to a regular transaction"
+msgstr "In eine normale Transaktion zurückgewandelt"
+
+#. placeholder {0}: prepared.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Converted to a transfer with {0}"
+msgstr "In eine Umbuchung mit {0} umgewandelt"
+
 #: src/shared/lib/analytics/klaro-config.ts
 msgid "Cookies on Budgero"
 msgstr "Cookies auf Budgero"
@@ -5826,6 +5910,14 @@ msgstr "Die Einstellungen zur Zielfinanzierung konnten nicht aktualisiert werden
 #: src/features/bank-sync/ui/ConnectSimpleFINCard.tsx
 msgid "Couldn't connect to SimpleFIN"
 msgstr "Verbindung mit SimpleFIN fehlgeschlagen"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Couldn't convert the transfer"
+msgstr "Die Umbuchung konnte nicht umgewandelt werden"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Couldn't convert to a transfer"
+msgstr "Umwandlung in eine Umbuchung nicht möglich"
 
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "Couldn't copy to the clipboard"
@@ -6140,9 +6232,13 @@ msgstr "Kreditkarten und Revolving-Credit-Konten"
 msgid "Credit overspend — cover to avoid debt"
 msgstr "Kreditüberziehung — abdecken, um Schulden zu vermeiden"
 
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
+msgid "Credit overspending that wasn't covered when it happened."
+msgstr "Kreditüberziehung, die zum Zeitpunkt der Entstehung nicht abgedeckt war."
+
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
-msgid "Credit overspending that wasn't covered when it happened. Assign money to this payment category to pay it off."
-msgstr "Kreditüberziehung, die zum Zeitpunkt der Entstehung nicht abgedeckt war. Weise dieser Zahlungskategorie Geld zu, um sie zu begleichen."
+#~ msgid "Credit overspending that wasn't covered when it happened. Assign money to this payment category to pay it off."
+#~ msgstr "Kreditüberziehung, die zum Zeitpunkt der Entstehung nicht abgedeckt war. Weise dieser Zahlungskategorie Geld zu, um sie zu begleichen."
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "Credit spending:"
@@ -6514,7 +6610,7 @@ msgstr "DD/MM/YYYY (31/01/2024)"
 msgid "Debt"
 msgstr "Schulden"
 
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Debt created"
 msgstr "Schulden entstanden"
 
@@ -6690,6 +6786,10 @@ msgstr "Szenario {0} löschen"
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 msgid "Delete selected rows"
 msgstr "Ausgewählte Zeilen löschen"
+
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "Delete the category \"{pendingName}\"?"
+msgstr "Die Kategorie \"{pendingName}\" löschen?"
 
 #: src/features/transactions/ui/DeleteTransactionDialog.tsx
 msgid "Delete this transaction?"
@@ -7621,6 +7721,7 @@ msgstr "Wechselkurs"
 msgid "Exchange rate not available"
 msgstr "Wechselkurs nicht verfügbar"
 
+#: src/features/transactions/api/useTransferConversion.tsx
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Exchange rate unavailable"
 msgstr "Wechselkurs nicht verfügbar"
@@ -7628,6 +7729,10 @@ msgstr "Wechselkurs nicht verfügbar"
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Exchange rates are fetched daily and cached inside your budget file."
 msgstr "Wechselkurse werden täglich abgerufen und in deiner Budgetdatei zwischengespeichert."
+
+#: src/entities/budget/api/useBudgets.ts
+msgid "Exchange rates for the new currency are unavailable, so nothing was changed. Check your connection and try again."
+msgstr "Wechselkurse für die neue Währung sind nicht verfügbar, daher wurde nichts geändert. Prüfe deine Verbindung und versuche es erneut."
 
 #: src/pages/accounts/AccountPage.tsx
 msgid "Exchange-rate data needs attention"
@@ -8048,6 +8153,7 @@ msgid "Failed to reconcile account. Please try again."
 msgstr "Konto konnte nicht abgeglichen werden. Bitte versuche es erneut."
 
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/widgets/navigation/MobileTopBar.tsx
 msgid "Failed to redo action"
 msgstr "Aktion konnte nicht wiederholt werden"
 
@@ -8147,8 +8253,13 @@ msgid "Failed to toggle token: {0}"
 msgstr "Token konnte nicht umgeschaltet werden: {0}"
 
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/widgets/navigation/MobileTopBar.tsx
 msgid "Failed to undo last action"
 msgstr "Letzte Aktion konnte nicht rückgängig gemacht werden"
+
+#: src/features/transactions/api/useDeleteSelected.ts
+msgid "Failed to undo the delete"
+msgstr "Löschen konnte nicht rückgängig gemacht werden"
 
 #: src/features/budget-planning/ui/budget-table/useCategoryOperations.ts
 msgid "Failed to update allocation"
@@ -9551,6 +9662,34 @@ msgstr "Unumkehrbare Aktion"
 msgid "is not"
 msgstr "ist nicht"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "It is linked to a recurring transaction, and that link would be lost."
+msgstr "Sie ist mit einer wiederkehrenden Transaktion verknüpft, und diese Verknüpfung ginge verloren."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "It is linked to a warranty, and that link would be lost."
+msgstr "Sie ist mit einer Garantie verknüpft, und diese Verknüpfung ginge verloren."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "It is waiting in a bank sync review, and that link would be lost."
+msgstr "Sie wartet in einer Banksync-Prüfung, und diese Verknüpfung ginge verloren."
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "It tracks payments for the {name} account. Archive or delete the account first."
+msgstr "Sie erfasst Zahlungen für das Konto {name}. Archiviere oder lösche zuerst das Konto."
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "It tracks payments for the {name} credit card. Archive or delete the card first."
+msgstr "Sie erfasst Zahlungen für die Kreditkarte {name}. Archiviere oder lösche zuerst die Karte."
+
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "Its goal is deleted with it. Set a goal on the new category if you still need one."
+msgstr "Ihr Ziel wird mit gelöscht. Lege ein Ziel für die neue Kategorie fest, falls du noch eines brauchst."
+
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+msgid "Its goal is deleted."
+msgstr "Ihr Ziel wird gelöscht."
+
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "Its history was moved to the selected income category."
 msgstr "Der Verlauf wurde in die ausgewählte Einnahmekategorie verschoben."
@@ -9894,6 +10033,10 @@ msgstr "übrig"
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Left in plan"
 msgstr "Verbleibend im Plan"
+
+#: src/features/budgeting/ui/BudgetContextPanel.tsx
+msgid "Left per day:"
+msgstr "Pro Tag übrig:"
 
 #: src/pages/onboarding/steps/ZbbStep.tsx
 msgid "LEFT TO ASSIGN"
@@ -10684,7 +10827,7 @@ msgid "Monochrome budgeting workspace with parchment canvas and red/green utilit
 msgstr "Monochromer Budget-Arbeitsbereich mit Pergament-Canvas und roten/grünen Utility-Akzenten."
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Month"
 msgstr "Monat"
@@ -11964,6 +12107,7 @@ msgid "of {0}"
 msgstr "von {0}"
 
 #: src/features/account-management/ui/AccountOrderCard.tsx
+#: src/features/payees/ui/PayeeCombobox.tsx
 msgid "Off budget"
 msgstr "Nicht im Budget"
 
@@ -12106,6 +12250,10 @@ msgstr "Nur ein Arbeitsbereich-Eigentümer kann hier das erste Budget erstellen.
 #: src/pages/onboarding/steps/RulesStep.tsx
 msgid "Only money you have now"
 msgstr "Nur Geld, das du jetzt hast"
+
+#: src/shared/mutations/useMutationHistory.ts
+msgid "Only the most recent change can be undone. Undo the newer changes first."
+msgstr "Nur die letzte Änderung kann rückgängig gemacht werden. Mache zuerst die neueren Änderungen rückgängig."
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Only the workspace owner can restore a Budgero Core backup into this workspace."
@@ -12784,6 +12932,10 @@ msgstr "Wähle eine Kategorie für die Kategorie-Aktion."
 #: src/shared/ui/date-range-picker.tsx
 msgid "Pick a date"
 msgstr "Datum auswählen"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Pick a different account."
+msgstr "Wähle ein anderes Konto."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Pick a look"
@@ -13694,6 +13846,10 @@ msgstr "Abgeglichen"
 msgid "Reconciled transaction"
 msgstr "Abgeglichene Transaktion"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Reconciled transactions can't be converted."
+msgstr "Abgeglichene Transaktionen können nicht umgewandelt werden."
+
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Reconciling..."
 msgstr "Abgleichen…"
@@ -14336,6 +14492,7 @@ msgid "Retro run"
 msgstr "Rückwirkend ausführen"
 
 #: src/app/startup/screens.tsx
+#: src/app/system/GlobalUndoHotkeys.tsx
 #: src/pages/admin/components/RegistrationSettings.tsx
 msgid "Retry"
 msgstr "Erneut versuchen"
@@ -15684,8 +15841,8 @@ msgid "Show upcoming"
 msgstr "Anstehende anzeigen"
 
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
-msgid "Show where this credit-card debt came from"
-msgstr "Zeigen, woher diese Kreditkartenschulden stammen"
+#~ msgid "Show where this credit-card debt came from"
+#~ msgstr "Zeigen, woher diese Kreditkartenschulden stammen"
 
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
 msgid "Show:"
@@ -16090,6 +16247,10 @@ msgstr "Aufteilungssumme stimmt nicht überein"
 msgid "Split transaction"
 msgstr "Geteilte Transaktion"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Split transactions can't be converted to a transfer."
+msgstr "Aufgeteilte Transaktionen können nicht in eine Umbuchung umgewandelt werden."
+
 #: src/pages/explorer-page/sql-utils.ts
 msgid "Split transactions overview"
 msgstr "Übersicht geteilter Transaktionen"
@@ -16268,7 +16429,7 @@ msgstr "Dieses Konto wird noch geprüft"
 msgid "Still Needed"
 msgstr "Noch nötig"
 
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Still underfunded"
 msgstr "Noch unterfinanziert"
 
@@ -16768,6 +16929,13 @@ msgstr "Die Basiswährung für Kategorien, Zuweisungen, Berichte und umgerechnet
 msgid "The by-type view always covers all accounts — the account filter doesn't apply here."
 msgstr "Die Ansicht nach Typ umfasst immer alle Konten — der Kontofilter gilt hier nicht."
 
+#. placeholder {0}: formatAmount(owed)
+#. placeholder {1}: formatAmount(setAside)
+#. placeholder {2}: formatAmount(underfunded)
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
+msgid "The card owes {0} but only {1} is set aside to pay it. Assign {2} here to cover it."
+msgstr "Die Karte schuldet {0}, aber nur {1} ist zur Rückzahlung zurückgelegt. Weise hier {2} zu, um sie zu decken."
+
 #: src/pages/settings/DataManagementPage.tsx
 msgid "The change will also be pushed to the server for this workspace"
 msgstr "Die Änderung wird auch an den Server für diesen Arbeitsbereich übertragen"
@@ -16806,6 +16974,10 @@ msgstr "Der sich daraus ergebende Wechselkurs wird mit dieser Transaktion gespei
 #: src/features/transactions/ui/form/CurrencyConversionNotice.tsx
 msgid "The implied exchange rate will be saved with this transfer."
 msgstr "Der daraus abgeleitete Wechselkurs wird mit dieser Umbuchung gespeichert."
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "The Income group can't be deleted."
+msgstr "Die Gruppe „Einnahmen“ kann nicht gelöscht werden."
 
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "The invite has been revoked."
@@ -16866,6 +17038,10 @@ msgstr "Der gesendete Betrag bleibt unverändert. Beim Speichern werden der empf
 #: src/features/sync-diagnostics/ui/PendingChangesCard.tsx
 msgid "The server has confirmed all changes from this device."
 msgstr "Der Server hat alle Änderungen dieses Geräts bestätigt."
+
+#: src/features/category-management/lib/delete-block.ts
+msgid "The system Income category can't be deleted."
+msgstr "Die Systemkategorie „Einnahmen“ kann nicht gelöscht werden."
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The total amount to allocate across the period. Monthly target is calculated automatically."
@@ -16979,10 +17155,22 @@ msgstr "Die Währung dieses Kontos wird nicht unterstützt. Verknüpfe es stattd
 msgid "This action CANNOT be undone"
 msgstr "Diese Aktion kann NICHT rückgängig gemacht werden"
 
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This action cannot be undone."
+msgstr "Diese Aktion kann nicht rückgängig gemacht werden."
+
 #. placeholder {0}: budget.Name
 #: src/features/budget-management/ui/DeleteBudgetButton.tsx
 msgid "This action cannot be undone. This will permanently delete the budget \"{0}\" and all its associated data."
 msgstr "Diese Aktion kann nicht rückgängig gemacht werden. Dadurch wird das Budget „{0}\" und alle zugehörigen Daten dauerhaft gelöscht."
+
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This action failed, so there is nothing to undo."
+msgstr "Diese Aktion ist fehlgeschlagen, es gibt also nichts rückgängig zu machen."
+
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This action has already been undone."
+msgstr "Diese Aktion wurde bereits rückgängig gemacht."
 
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "This app"
@@ -17012,8 +17200,16 @@ msgid "This cache survives app restarts and is cleared when the timer expires, y
 msgstr "Dieser Cache übersteht App-Neustarts und wird geleert, wenn der Timer abläuft, du dich abmeldest oder deine lokalen Daten zurücksetzt."
 
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
-msgid "This card owes more than you've set aside to pay it. Assign money here to cover it."
-msgstr "Diese Karte schuldet mehr, als du zur Rückzahlung zurückgelegt hast. Weise hier Geld zu, um sie zu decken."
+#~ msgid "This card owes more than you've set aside to pay it. Assign money here to cover it."
+#~ msgstr "Diese Karte schuldet mehr, als du zur Rückzahlung zurückgelegt hast. Weise hier Geld zu, um sie zu decken."
+
+#: src/features/budget-planning/ui/BudgetTable.tsx
+msgid "This category can't be deleted"
+msgstr "Diese Kategorie kann nicht gelöscht werden"
+
+#: src/shared/mutations/useMutationHistory.ts
+msgid "This change is part of a larger action. Use Undo (Ctrl+Z) to revert it."
+msgstr "Diese Änderung gehört zu einer größeren Aktion. Verwende Rückgängig (Strg+Z), um sie zurückzusetzen."
 
 #: src/features/budget-planning/ui/FutureOverspendingWarning.tsx
 msgid "This change will cause negative Available in future months for this category:"
@@ -17052,6 +17248,10 @@ msgstr "Dies ist die Summe der Teilbeträge. Um sie zu ändern, klicke auf <0>Au
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "This is your final month!"
 msgstr "Dies ist dein letzter Monat!"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This isn't a simple two-sided transfer, so it can't be converted back."
+msgstr "Das ist keine einfache zweiseitige Umbuchung und kann daher nicht zurückgewandelt werden."
 
 #: src/pages/JoinWorkspacePage.tsx
 msgid "This join link is missing its invite code. Ask the workspace owner to resend the full link."
@@ -17101,6 +17301,12 @@ msgstr "Diese Erinnerung kann nicht übersprungen werden – lade jetzt ein Back
 msgid "This removes the history entry only. Your transactions remain untouched."
 msgstr "Dadurch wird nur der Verlaufseintrag entfernt. Deine Transaktionen bleiben unberührt."
 
+#. placeholder {0}: pending.categoryName
+#. placeholder {1}: pending.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This replaces the category ({0}) with Transfers, so the amount no longer counts as spending. A matching transaction is added to {1}."
+msgstr "Dadurch wird die Kategorie ({0}) durch „Umbuchungen“ ersetzt, sodass der Betrag nicht mehr als Ausgabe zählt. Auf {1} wird eine passende Transaktion hinzugefügt."
+
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "This replaces the data on this device with the server copy, then applies the changes made after it. {pendingCount} changes from this device haven't been confirmed yet; they are kept and applied again on top."
 msgstr "Dadurch werden die Daten auf diesem Gerät durch die Serverkopie ersetzt und anschließend die danach vorgenommenen Änderungen übernommen. {pendingCount} Änderungen dieses Geräts sind noch nicht bestätigt; sie bleiben erhalten und werden erneut darauf angewendet."
@@ -17142,6 +17348,14 @@ msgstr "Diese Transaktion wurde abgeglichen und ist als gebucht gesperrt."
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 #~ msgid "This transaction has been reconciled."
 #~ msgstr "Diese Transaktion wurde abgeglichen."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This transaction has no single amount to transfer."
+msgstr "Diese Transaktion hat keinen eindeutigen Betrag zum Umbuchen."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This transaction is already a transfer."
+msgstr "Diese Transaktion ist bereits eine Umbuchung."
 
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "This transaction is scheduled for a future date."
@@ -17656,8 +17870,10 @@ msgid "Transfer to {0}"
 msgstr "Umbuchung an {0}"
 
 #. placeholder {0}: account.Name
+#. placeholder {0}: selectedTransfer.Name
 #. placeholder {0}: transferAccountRecord.Name
 #: src/features/payees/ui/PayeeCombobox.tsx
+#: src/features/transactions/ui/cells/TransactionPayeeCell.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Transfer: {0}"
 msgstr "Umbuchung: {0}"
@@ -17937,7 +18153,6 @@ msgid "Uncategorised"
 msgstr "Nicht kategorisiert"
 
 #: src/features/analytics/ui/SpendingBreakdownContent.tsx
-#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 #: src/pages/analytics/analytics-model.ts
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Uncategorized"
@@ -17968,6 +18183,21 @@ msgstr "Unter"
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 msgid "Under pace"
 msgstr "Unter Plan"
+
+#. placeholder {0}: formatAmount(underfundedInfo.underfunded)
+#: src/features/budget-planning/ui/AvailableInfoPopover.tsx
+msgid "Underfunded {0}"
+msgstr "{0} unterfinanziert"
+
+#. placeholder {0}: formatAmount(underfundedInfo.underfunded)
+#: src/features/budget-planning/ui/AvailableInfoPopover.tsx
+msgid "Underfunded {0} — details"
+msgstr "{0} unterfinanziert — Details"
+
+#. placeholder {0}: formatAmount(underfunded)
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
+msgid "Underfunded by {0}"
+msgstr "Um {0} unterfinanziert"
 
 #: src/features/budget-planning/ui/SearchAndFilterControls.tsx
 msgid "Underfunded Goals"
@@ -18839,7 +19069,7 @@ msgstr "Wohin das Geld fließt"
 msgid "Where the plan leaks"
 msgstr "Wo der Plan undicht ist"
 
-#: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
+#: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Where this debt came from"
 msgstr "Woher diese Schulden stammen"
 
@@ -19268,6 +19498,11 @@ msgstr "Du kannst Budgero jederzeit über dein Browser-Menü installieren"
 #: src/features/subscription/ui/SubscriptionSuccess.tsx
 msgid "You can manage your subscription anytime from your account settings."
 msgstr "Du kannst dein Abonnement jederzeit in deinen Kontoeinstellungen verwalten."
+
+#: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
+#: src/features/category-management/ui/DeleteCategoryDialog.tsx
+msgid "You can undo this."
+msgstr "Du kannst das rückgängig machen."
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "You can't delete an account with a non-zero balance!"

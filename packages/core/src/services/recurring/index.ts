@@ -1,5 +1,7 @@
 import { DatabaseAdapter } from '../../database/interface.js';
 import { getRow, allRows, run } from '../../database/sql.js';
+import { insertRawRow, type RawRow } from '../../database/restore-rows.js';
+import { RowCapture, restoreRowJournal, type RowJournal } from '../../database/row-journal.js';
 import { asMilli, ZERO_MILLI } from '../../money/index.js';
 import {
   convertScaled,
@@ -10,7 +12,7 @@ import {
 import { ValidationError, NotFoundError } from '../../types/index.js';
 import { safeParseJSON } from '../../utils/json.js';
 import { getLocalDateString, getUTCDateString } from '../../utils/date.js';
-import { TransactionService } from '../transactions/index.js';
+import { TransactionService, type TransactionWriteBatch } from '../transactions/index.js';
 import { isAccountOnBudget, resolveTransferPayees } from '../transactions/transfer-payee.js';
 import { ensureTransferCategory } from '../transactions/category-helpers.js';
 import { CategoryService } from '../categories/index.js';
@@ -23,13 +25,16 @@ import type {
   MarkOccurrenceReadyResult,
   ProjectedTransactionRow,
   RecurringOccurrence,
+  RecurringOccurrenceRef,
   RecurringOccurrenceStatus,
   RecurringOccurrenceWithTemplate,
   RecurringSchedule,
   RecurringTransaction,
   RecurringIntervalUnit,
+  RecurringTemplateSnapshot,
   UpdateRecurringTransactionInput,
 } from './types.js';
+import { clock } from '../../utils/clock.js';
 
 interface RecurringTransactionRow {
   ID: number | bigint;
@@ -385,11 +390,11 @@ function generateTransferId(): string {
   if (cryptoApi && typeof cryptoApi.randomUUID === 'function') {
     return cryptoApi.randomUUID();
   }
-  return `rt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  return `rt_${clock.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function computeHorizonDate(monthsAhead: number = DEFAULT_HORIZON_MONTHS): Date {
-  const today = new Date();
+  const today = clock.date();
   const result = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
   result.setUTCMonth(result.getUTCMonth() + monthsAhead);
   // Move to end of month for generous coverage
@@ -401,11 +406,18 @@ function computeHorizonDate(monthsAhead: number = DEFAULT_HORIZON_MONTHS): Date 
 }
 
 function backfillThreshold(monthsBack: number = BACKFILL_MONTHS): Date {
-  const today = new Date();
+  const today = clock.date();
   return new Date(
     Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - monthsBack * 30)
   );
 }
+
+/** Tables a template create / edit undo journal may write (see restoreTemplateEdit). */
+const TEMPLATE_EDIT_TABLES: ReadonlySet<string> = new Set([
+  'recurring_transactions',
+  'categories',
+  'category_groups',
+]);
 
 export class RecurringTransactionService {
   private transactions: TransactionService;
@@ -637,6 +649,89 @@ export class RecurringTransactionService {
     return updated;
   }
 
+  /**
+   * Starts recording what a template create / edit changes besides what its
+   * undo puts back itself: the template row's own columns (with `id`) and the
+   * Transfers category and group a transfer template auto-creates. `finish()`
+   * after the op returns the journal for restoreTemplateEdit.
+   */
+  beginTemplateEdit(id?: number): { finish(): RowJournal } {
+    const capture = new RowCapture(this.db)
+      .watchInserts('category_groups')
+      .watchInserts('categories');
+    if (id !== undefined) capture.addKeys('recurring_transactions', [id], false);
+    return {
+      finish: () => {
+        const journal = capture.finish();
+        // The edit back restores every column but a NULL category (a transfer
+        // template's category is coerced to Transfers on write): keep only that.
+        journal.changed = journal.changed
+          .filter((entry) => entry.table === 'recurring_transactions')
+          .filter((entry) => 'CategoryID' in entry.values && entry.values.CategoryID === null)
+          .map((entry) => ({ ...entry, values: { CategoryID: null } }));
+        return journal;
+      },
+    };
+  }
+
+  /**
+   * Second half of a template create / edit undo (after the delete or the
+   * edit back): the template columns the edit back cannot write (a transfer
+   * template's NULL category), and the Transfers category and group the op
+   * created, when nothing uses them any more.
+   */
+  restoreTemplateEdit(journal: RowJournal): void {
+    this.db.transaction(() => restoreRowJournal(this.db, journal, TEMPLATE_EDIT_TABLES));
+  }
+
+  /**
+   * The template row and its occurrence rows, verbatim, for a delete undo.
+   * Null when the template does not exist.
+   */
+  snapshotRecurringTransaction(id: number): RecurringTemplateSnapshot | null {
+    const template = getRow<RawRow>(
+      this.db,
+      'SELECT * FROM recurring_transactions WHERE ID = ?',
+      id
+    );
+    if (!template) return null;
+    const occurrences = allRows<RawRow>(
+      this.db,
+      'SELECT * FROM recurring_transaction_occurrences WHERE RecurringTransactionID = ? ORDER BY ID',
+      id
+    );
+    return { template, occurrences };
+  }
+
+  /**
+   * Undo of deleteRecurringTransaction, in one database transaction: the
+   * template comes back under its ID with every occurrence (status, posted
+   * transaction link, notified/ready marks). Occurrence IDs are local to each
+   * device, so one already taken here gets a fresh ID; the (template, due
+   * date) key is what other ops address.
+   */
+  restoreRecurringTransaction(snapshot: RecurringTemplateSnapshot): void {
+    this.db.transaction(() => {
+      insertRawRow(this.db, 'recurring_transactions', snapshot.template);
+      for (const occurrence of snapshot.occurrences) {
+        const taken = getRow(
+          this.db,
+          'SELECT 1 FROM recurring_transaction_occurrences WHERE ID = ?',
+          occurrence.ID
+        );
+        const linked =
+          occurrence.TransactionID == null ||
+          getRow(this.db, 'SELECT 1 FROM transactions WHERE ID = ?', occurrence.TransactionID);
+        insertRawRow(
+          this.db,
+          'recurring_transaction_occurrences',
+          linked ? occurrence : { ...occurrence, TransactionID: null },
+          { omit: taken ? ['ID'] : [], orIgnore: true }
+        );
+      }
+    });
+  }
+
   async deleteRecurringTransaction(id: number): Promise<void> {
     const result = run(this.db, 'DELETE FROM recurring_transactions WHERE ID = ?', id);
     if (!result.changes) {
@@ -842,6 +937,57 @@ export class RecurringTransactionService {
     }));
   }
 
+  /**
+   * Resolves an occurrence reference to this device's row ID. The
+   * (recurringTransactionId, dueDate) key wins over occurrenceId because
+   * occurrence IDs are assigned locally by read paths and differ between
+   * devices; a keyed occurrence this device has not materialized yet is
+   * created. A bare number or an occurrenceId-only ref is the legacy form.
+   */
+  resolveOccurrenceId(ref: number | RecurringOccurrenceRef): number {
+    if (typeof ref === 'number') return ref;
+    const templateId = ref.recurringTransactionId;
+    if (templateId != null && ref.dueDate) {
+      const dueDate = getUTCDateString(parseDate(ref.dueDate, 'dueDate'));
+      const find = () =>
+        getRow<{ ID: number | bigint }>(
+          this.db,
+          `SELECT ID FROM recurring_transaction_occurrences
+            WHERE RecurringTransactionID = ? AND DueDate = ?`,
+          templateId,
+          dueDate
+        );
+      let row = find();
+      if (!row) {
+        const template = this.getRecurringTransaction(templateId, { includeInactive: true });
+        // Fill the series up to the due date first so later materialization
+        // (which continues after the newest row) leaves no gap before it.
+        const horizon = computeHorizonDate();
+        const due = parseDate(dueDate, 'dueDate');
+        this.ensureOccurrencesForTemplate(template, due > horizon ? due : horizon);
+        row = find();
+        if (!row) {
+          run(
+            this.db,
+            `INSERT OR IGNORE INTO recurring_transaction_occurrences (
+              RecurringTransactionID, BudgetID, DueDate, Status
+            ) VALUES (?, ?, ?, 'scheduled')`,
+            template.id,
+            template.budgetId,
+            dueDate
+          );
+          row = find();
+        }
+      }
+      if (row) return Number(row.ID);
+    }
+    if (ref.occurrenceId != null) return ref.occurrenceId;
+    throw new ValidationError(
+      'An occurrence needs an occurrenceId or a recurring transaction and due date',
+      'occurrenceId'
+    );
+  }
+
   getOccurrenceWithTemplate(occurrenceId: number): RecurringOccurrenceWithTemplate {
     const row = getRow<OccurrenceWithTemplateRow>(
       this.db,
@@ -860,7 +1006,8 @@ export class RecurringTransactionService {
   async markOccurrenceReady(
     options: MarkOccurrenceReadyOptions
   ): Promise<MarkOccurrenceReadyResult> {
-    const occurrence = this.getOccurrenceWithTemplate(options.occurrenceId);
+    const occurrenceId = this.resolveOccurrenceId(options);
+    const occurrence = this.getOccurrenceWithTemplate(occurrenceId);
     if (occurrence.status !== 'scheduled') {
       throw new ValidationError('Occurrence is not in scheduled state', 'status');
     }
@@ -880,14 +1027,20 @@ export class RecurringTransactionService {
       : occurrence.dueDate;
     const memo = options.memoOverride?.trim() || template.memo || template.name;
 
-    let transactionId: number;
+    // The posting and the occurrence status commit in ONE DB transaction:
+    // rate lookups run while the legs are queued, then everything is written
+    // together, so a failure leaves nothing behind and a retry posts once.
+    const { reuse } = options;
+    const batch = this.transactions.createWriteBatch();
+    let transferId: string | undefined;
     if (template.toAccountId != null) {
-      transactionId = await this.postTransferLegs(template, transactionDate, memo);
+      transferId = reuse?.transferId || options.transferId?.trim() || generateTransferId();
+      await this.postTransferLegs(template, transactionDate, memo, batch, transferId, reuse);
     } else {
       const inflow = template.direction === 'inflow' ? template.amount : ZERO_MILLI;
       const outflow = template.direction === 'outflow' ? template.amount : ZERO_MILLI;
 
-      transactionId = await this.transactions.addTransaction(
+      await this.transactions.addTransaction(
         inflow,
         outflow,
         template.accountId,
@@ -895,30 +1048,47 @@ export class RecurringTransactionService {
         template.budgetId,
         transactionDate,
         memo,
-        ''
+        '',
+        undefined,
+        undefined,
+        undefined,
+        false,
+        [],
+        false,
+        reuse?.transactionId,
+        batch
       );
     }
+    const postedSteps = batch.size;
 
-    run(
-      this.db,
-      `UPDATE recurring_transaction_occurrences
-         SET Status = 'ready',
-             TransactionID = ?,
-             ReadyAt = datetime('now'),
-             UpdatedAt = datetime('now')
-       WHERE ID = ?`,
-      transactionId,
-      options.occurrenceId
-    );
+    batch.queue((results) => {
+      const marked = run(
+        this.db,
+        `UPDATE recurring_transaction_occurrences
+           SET Status = 'ready',
+               TransactionID = ?,
+               ReadyAt = datetime('now'),
+               UpdatedAt = datetime('now')
+         WHERE ID = ? AND Status = 'scheduled'`,
+        results[0],
+        occurrenceId
+      );
+      if (!marked.changes) {
+        throw new ValidationError('Occurrence is not in scheduled state', 'status');
+      }
 
-    run(
-      this.db,
-      `UPDATE recurring_transactions
-         SET LastOccurrenceDate = ?, UpdatedAt = datetime('now')
-       WHERE ID = ?`,
-      occurrence.dueDate,
-      template.id
-    );
+      run(
+        this.db,
+        `UPDATE recurring_transactions
+           SET LastOccurrenceDate = ?, UpdatedAt = datetime('now')
+         WHERE ID = ?`,
+        occurrence.dueDate,
+        template.id
+      );
+    });
+    const results = batch.commit();
+    const transactionId = results[0] as number;
+    const destinationTransactionId = postedSteps > 1 ? (results[1] as number) : undefined;
 
     this.ensureOccurrencesForTemplate(
       this.getRecurringTransaction(template.id, { includeInactive: true }),
@@ -926,22 +1096,27 @@ export class RecurringTransactionService {
     );
 
     return {
-      occurrence: this.getOccurrenceWithTemplate(options.occurrenceId),
+      occurrence: this.getOccurrenceWithTemplate(occurrenceId),
       transactionId,
+      ...(transferId ? { destinationTransactionId, transferId } : {}),
     };
   }
 
   /**
    * Posts the two legs of a recurring transfer sharing one TransferID —
    * the same shape the manual add-transaction transfer flow produces.
-   * Returns the source-leg transaction id (deleting it removes both legs,
-   * which keeps the markReady undo path working unchanged).
+   * Both legs are queued in `batch` (source first), so they commit together
+   * with the occurrence update. Deleting the source leg removes both legs,
+   * which keeps the markReady undo path working unchanged.
    */
   private async postTransferLegs(
     template: RecurringTransaction,
     transactionDate: string,
-    memo: string
-  ): Promise<number> {
+    memo: string,
+    batch: TransactionWriteBatch,
+    transferId: string,
+    reuse?: MarkOccurrenceReadyOptions['reuse']
+  ): Promise<void> {
     const accountRow = (id: number) =>
       getRow<{ ID: number; Name: string; Currency: string; OnBudget: boolean | number }>(
         this.db,
@@ -979,8 +1154,7 @@ export class RecurringTransactionService {
       );
     }
 
-    const transferId = generateTransferId();
-    const sourceTransactionId = await this.transactions.addTransaction(
+    await this.transactions.addTransaction(
       ZERO_MILLI,
       template.amount,
       template.accountId,
@@ -989,31 +1163,39 @@ export class RecurringTransactionService {
       transactionDate,
       memo,
       transferId,
-      payees.sourcePayee ?? ''
+      payees.sourcePayee ?? '',
+      undefined,
+      undefined,
+      false,
+      [],
+      false,
+      reuse?.transactionId,
+      batch
     );
-    try {
-      await this.transactions.addTransaction(
-        destinationAmount,
-        ZERO_MILLI,
-        destination.ID,
-        destinationCategoryId,
-        template.budgetId,
-        transactionDate,
-        memo,
-        transferId,
-        payees.destinationPayee ?? ''
-      );
-    } catch (error) {
-      // The legs can't share one DB transaction (each addTransaction opens
-      // its own), so compensate: never leave a one-sided transfer behind.
-      // The occurrence is still 'scheduled' at this point, so retry is safe.
-      this.transactions.deleteTransaction(sourceTransactionId);
-      throw error;
-    }
-    return sourceTransactionId;
+    await this.transactions.addTransaction(
+      destinationAmount,
+      ZERO_MILLI,
+      destination.ID,
+      destinationCategoryId,
+      template.budgetId,
+      transactionDate,
+      memo,
+      transferId,
+      payees.destinationPayee ?? '',
+      undefined,
+      undefined,
+      false,
+      [],
+      false,
+      reuse?.destinationTransactionId,
+      batch
+    );
   }
 
-  async skipOccurrence(occurrenceId: number): Promise<RecurringOccurrenceWithTemplate> {
+  async skipOccurrence(
+    ref: number | RecurringOccurrenceRef
+  ): Promise<RecurringOccurrenceWithTemplate> {
+    const occurrenceId = this.resolveOccurrenceId(ref);
     this.getOccurrenceWithTemplate(occurrenceId);
     const result = run(
       this.db,
@@ -1029,7 +1211,10 @@ export class RecurringTransactionService {
     return this.getOccurrenceWithTemplate(occurrenceId);
   }
 
-  async markOccurrenceNotified(occurrenceId: number): Promise<RecurringOccurrenceWithTemplate> {
+  async markOccurrenceNotified(
+    ref: number | RecurringOccurrenceRef
+  ): Promise<RecurringOccurrenceWithTemplate> {
+    const occurrenceId = this.resolveOccurrenceId(ref);
     const result = run(
       this.db,
       `UPDATE recurring_transaction_occurrences
@@ -1044,7 +1229,8 @@ export class RecurringTransactionService {
     return this.getOccurrenceWithTemplate(occurrenceId);
   }
 
-  resetOccurrence(occurrenceId: number): RecurringOccurrenceWithTemplate {
+  resetOccurrence(ref: number | RecurringOccurrenceRef): RecurringOccurrenceWithTemplate {
+    const occurrenceId = this.resolveOccurrenceId(ref);
     const occurrence = this.getOccurrenceWithTemplate(occurrenceId);
 
     run(
@@ -1183,6 +1369,7 @@ export class RecurringTransactionService {
       ) VALUES (?, ?, ?, 'scheduled')`
     );
 
+    let generated = false;
     while (iterations < MAX_GENERATED_OCCURRENCES) {
       if (endDate && nextDate > endDate) {
         break;
@@ -1191,9 +1378,18 @@ export class RecurringTransactionService {
         break;
       }
       if (nextDate > horizon) {
+        // An empty series still gets its first due date, even past the
+        // horizon: later passes continue from the newest row, which makes the
+        // series the same on every device. Without a row, the next pass would
+        // start from that device's own "today" (backfillThreshold), so devices
+        // whose clocks differ would materialize different dates.
+        if (!lastRow?.DueDate && !generated) {
+          insert.run(template.id, template.budgetId, getUTCDateString(nextDate));
+        }
         break;
       }
       insert.run(template.id, template.budgetId, getUTCDateString(nextDate));
+      generated = true;
       const candidate = addInterval(nextDate, schedule);
       if (candidate.getTime() === nextDate.getTime()) {
         break;
@@ -1223,7 +1419,7 @@ export class RecurringTransactionService {
 
   private mapTemplateRow(row: RecurringTransactionRow): RecurringTransaction {
     const schedule = safeParseJSON<RecurringSchedule>(row.ScheduleJSON, {
-      startDate: getLocalDateString(new Date()),
+      startDate: getLocalDateString(clock.date()),
       intervalUnit: 'month',
       intervalCount: DEFAULT_INTERVAL_COUNT,
     });

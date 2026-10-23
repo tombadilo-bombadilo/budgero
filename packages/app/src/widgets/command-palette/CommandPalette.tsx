@@ -49,6 +49,7 @@ import {
   useAddTransaction,
   useAddTransfer,
   useAllTransactions,
+  type AddTransactionSplitLine,
 } from '@entities/transaction/api/useTransactions';
 import type { AddTransferRequest } from '@features/transactions/api/useAddTransactionHandler';
 import { useTransactionCellCommit } from '@features/transactions/api/useTransactionCellCommit';
@@ -224,9 +225,9 @@ export function CommandPalette() {
   }, [clearStartupIntent, executeStartupIntent, readStartupIntent, budgetId]);
 
   const handleCategoryNavigation = React.useCallback(
-    (categoryName: string) => {
+    (categoryId: number) => {
       setCommandPaletteOpen(false);
-      const categoryToExpand = categories.find((cat) => cat.Name === categoryName);
+      const categoryToExpand = categories.find((cat) => cat.ID === categoryId);
       if (categoryToExpand) {
         // Navigate with state to tell the budgeting page which category to expand
         void navigate('/budgeting', { state: focusCategoryNavState(categoryToExpand.ID) });
@@ -325,7 +326,7 @@ export function CommandPalette() {
 
   const handleAddTransaction = async (
     date: Date | null,
-    category: string,
+    categoryId: number,
     memo: string,
     payee: string,
     outflow: number,
@@ -334,11 +335,9 @@ export function CommandPalette() {
     labelId: number | null,
     transferId: string | null,
     keepDialogOpen?: boolean,
-    exchangeRateOverride?: number | null
+    exchangeRateOverride?: number | null,
+    splits?: AddTransactionSplitLine[]
   ): Promise<number> => {
-    const categoryObject = categories.find((cat) => cat.Name === category);
-    const categoryId = categoryObject?.ID || 0;
-
     const transactionDate = date
       ? date.toLocaleDateString('en-CA')
       : new Date().toLocaleDateString('en-CA');
@@ -355,6 +354,7 @@ export function CommandPalette() {
       payee,
       transferId: transferId || '',
       exchangeRateOverride,
+      ...(splits ? { splits } : {}),
     });
 
     if (!keepDialogOpen) setShowTransactionDialog(false);
@@ -362,10 +362,6 @@ export function CommandPalette() {
   };
 
   const handleAddTransfer = async (request: AddTransferRequest) => {
-    const sourceCategoryId =
-      categories.find((category) => category.Name === request.source.category)?.ID || 0;
-    const destinationCategoryId =
-      categories.find((category) => category.Name === request.destination.category)?.ID || 0;
     const transactionDate = request.date
       ? request.date.toLocaleDateString('en-CA')
       : new Date().toLocaleDateString('en-CA');
@@ -377,7 +373,7 @@ export function CommandPalette() {
         inflow: 0,
         outflow: request.source.amount,
         accountId: request.source.accountId,
-        categoryId: sourceCategoryId,
+        categoryId: request.source.categoryId,
         labelId: request.labelId,
         date: transactionDate,
         memo: request.memo,
@@ -388,7 +384,7 @@ export function CommandPalette() {
         inflow: request.destination.amount,
         outflow: 0,
         accountId: request.destination.accountId,
-        categoryId: destinationCategoryId,
+        categoryId: request.destination.categoryId,
         labelId: request.labelId,
         date: transactionDate,
         memo: request.memo,
@@ -589,7 +585,7 @@ export function CommandPalette() {
                   <CommandItem
                     key={category.ID}
                     value={`category-${category.Name}`}
-                    onSelect={() => handleCategoryNavigation(category.Name)}
+                    onSelect={() => handleCategoryNavigation(category.ID)}
                   >
                     <Tag className="mr-2 h-4 w-4" />
                     <span>{category.Name}</span>

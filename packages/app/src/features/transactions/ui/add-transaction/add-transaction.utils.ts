@@ -23,19 +23,51 @@ export function shouldShowPayeeField(
   return !isTransfer || transferInvolvesOffBudget;
 }
 
+/** Puts the picked category on the on-budget leg; every other leg gets Transfers. */
+function placeTransferCategory<T>(
+  sourceOnBudget: boolean,
+  destinationOnBudget: boolean,
+  selected: T,
+  transfers: T
+): { source: T; destination: T } {
+  if (sourceOnBudget && destinationOnBudget) {
+    return { source: transfers, destination: transfers };
+  }
+  if (destinationOnBudget) {
+    return { source: transfers, destination: selected };
+  }
+  return { source: selected, destination: transfers };
+}
+
 export function resolveTransferCategories(params: {
   sourceOnBudget: boolean;
   destinationOnBudget: boolean;
   selectedCategory?: string | null;
 }): { sourceCategory: string; destinationCategory: string } {
-  const selected = params.selectedCategory || 'Transfers';
-  if (params.sourceOnBudget && params.destinationOnBudget) {
-    return { sourceCategory: 'Transfers', destinationCategory: 'Transfers' };
-  }
-  if (params.destinationOnBudget) {
-    return { sourceCategory: 'Transfers', destinationCategory: selected };
-  }
-  return { sourceCategory: selected, destinationCategory: 'Transfers' };
+  const { source, destination } = placeTransferCategory(
+    params.sourceOnBudget,
+    params.destinationOnBudget,
+    params.selectedCategory || 'Transfers',
+    'Transfers'
+  );
+  return { sourceCategory: source, destinationCategory: destination };
+}
+
+/** ID form of resolveTransferCategories; 0 means uncategorized. */
+export function resolveTransferCategoryIds(params: {
+  sourceOnBudget: boolean;
+  destinationOnBudget: boolean;
+  selectedCategoryId: number | null;
+  transfersCategoryId: number | null;
+}): { sourceCategoryId: number; destinationCategoryId: number } {
+  const transfers = params.transfersCategoryId ?? 0;
+  const { source, destination } = placeTransferCategory(
+    params.sourceOnBudget,
+    params.destinationOnBudget,
+    params.selectedCategoryId ?? transfers,
+    transfers
+  );
+  return { sourceCategoryId: source, destinationCategoryId: destination };
 }
 
 /** Direct source-to-destination rate implied by the two exact native amounts. */

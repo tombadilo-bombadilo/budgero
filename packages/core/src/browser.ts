@@ -16,10 +16,17 @@ export { WebDatabaseAdapter } from './database/web-adapter.js';
 
 export { MigrationRunner, getMaxSupportedSchemaVersion } from './database/migrations.js';
 export { reconcileSpaceScope } from './database/space-scope.js';
+export {
+  isEmptyJournal,
+  isRowJournal,
+  journalSize,
+  type RowJournal,
+} from './database/row-journal.js';
 
 // Services (platform-agnostic)
 export { BudgetService } from './services/budgets/index.js';
 export { CategoryService } from './services/categories/index.js';
+export type { CategoryCreationMark } from './services/categories/index.js';
 export { AccountService } from './services/accounts/index.js';
 export {
   TransactionService,
@@ -27,16 +34,29 @@ export {
   isAccountOnBudget,
   resolveTransferPayees,
   transferInvolvesOffBudgetAccount,
+  TransactionWriteBatch,
+  type BatchRowRef,
+  type TransactionRestoreSnapshot,
+  type TransactionBatchEdit,
+  type SplitParentAmounts,
 } from './services/transactions/index.js';
 export { GoalService } from './services/goals/index.js';
 export * from './services/goals/funding.js';
 export { MonthlyBudgetService } from './services/monthly-budgets/index.js';
+export {
+  configureBudgetSnapshot,
+  getBudgetSnapshotOptions,
+  getBudgetSnapshotStore,
+  BudgetSnapshotStore,
+  type BudgetSnapshotOptions,
+} from './services/monthly-budgets/snapshot/store.js';
 export { AnalyticsService } from './services/analytics/index.js';
 export { RulesService } from './services/rules/index.js';
 export { RecurringTransactionService } from './services/recurring/index.js';
 export { DatabaseCustomDashboardService } from './services/custom-dashboards/index.js';
 
 export { ServiceManager, type Services } from './services/service-manager.js';
+export { LegacyReplayService } from './services/legacy-replay/index.js';
 
 // File-format parsers (pure, browser-safe). We re-export from the specific
 // modules rather than the ./services/import barrel so this entry stays an
@@ -128,6 +148,9 @@ export type {
   ExecuteRuleOptions,
   RuleExecutionResult,
   RuleRunUndoResult,
+  RuleRunState,
+  UndoRunOptions,
+  RedoRunOptions,
   AutofillApplicationChange,
   LogAutofillApplicationInput,
   AutofillApplicationResult,
@@ -136,9 +159,15 @@ export type {
   ComputeAutofillOptions,
 } from './services/rules/index.js';
 export type * from './services/transactions/types.js';
+export type { RawRow } from './database/restore-rows.js';
 export type { TransferRateDetails } from './services/transactions/transfer-rate.js';
 export type * from './services/warranties/types.js';
 export type { CustomCurrencyRate } from './services/currency/types.js';
+export {
+  ExchangeRateUnavailableError,
+  type OfficialRateQuote,
+} from './services/currency/budget-currency-change.js';
+export type { BudgetCurrencyChangeArgs } from './services/budgets/index.js';
 
 // Goal enums and pure calculations (values, browser-safe)
 export {
@@ -241,3 +270,6 @@ export {
   simpleFINDate,
   tidyPayeeName,
 } from './services/bank-sync/index.js';
+
+// Clock seam (tests move "today")
+export { clock, runAtClock, setClock } from './utils/clock.js';

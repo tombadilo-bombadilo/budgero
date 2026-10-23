@@ -11,10 +11,12 @@
 
 import type { SyncTransportDeps, WsMessage, WsCatchUpMutation } from '../types';
 import {
-  FormatTooNewError,
-  MUTATION_FORMAT_VERSION,
+  type FormatTooNewError,
+  isUpdateRequiredError,
+  mutationFormatVersion,
   normalizeMutationPayload,
   SYNC_PROTOCOL_VERSION,
+  UnknownOpCodeError,
 } from '../sync-format.js';
 import { MUTATION_CURSOR_STORAGE_PREFIX, PASSWORD_CHANGED_REASON_KEY } from '../types/storage-keys';
 import { errorMessage } from '../utils/diagnostics';
@@ -68,6 +70,12 @@ export class SyncTransport {
 
   private localVersion = 0;
 
+  /** Highest cursor written to storage by a deferred (debounced) persist. */
+  private durableVersion = 0;
+
+  /** Bumped when the cursor is replaced; stale deferred writes are dropped. */
+  private cursorEpoch = 0;
+
   private connectionListeners = new Set<ConnectionListener>();
 
   private overlayListeners = new Set<OverlayListener>();
@@ -111,6 +119,14 @@ export class SyncTransport {
    */
   private syncDisabled = false;
 
+  /**
+   * Set when a synced mutation needs a newer app (newer format or unknown op
+   * code). Nothing past it is applied and the cursor stays just before it,
+   * so the stored cursor is the durable "pending" marker: after the update
+   * (a reload builds a new transport) catch-up resumes there and applies it.
+   */
+  private updateRequired: { mutationId: string; version?: number } | null = null;
+
   private initialCatchUpSettled = false;
 
   private initialCatchUpWaiters = new Set<
@@ -128,6 +144,7 @@ export class SyncTransport {
     this.log = deps.log ?? scopedLogger('SyncTransport');
     this.cursorStorageKey = `${MUTATION_CURSOR_STORAGE_PREFIX}${spaceId}`;
     this.localVersion = readStoredVersion(this.cursorStorageKey, 0);
+    this.durableVersion = this.localVersion;
 
     const handleOffline = () => {
       if (this.destroyed || this.suspended) return;
@@ -347,7 +364,9 @@ export class SyncTransport {
     try {
       const targetSpaceId = payload.spaceId || this.spaceId;
       const encryptedPayload = await this.deps.encryptPayload({
-        v: MUTATION_FORMAT_VERSION,
+        // Lowest format that can express this op: older builds keep applying
+        // ops they know, and stop with "update required" on ones they don't.
+        v: mutationFormatVersion(payload.op, payload.args),
         op: payload.op,
         args: payload.args,
       });
@@ -718,6 +737,9 @@ export class SyncTransport {
   private async handleMutationApplied(msg: WsMessage): Promise<void> {
     const id = msg.mutationId;
     if (!id) return;
+    // Halted before an earlier mutation this build can't apply: applying a
+    // later one would reorder the log.
+    if (this.updateRequired) return;
 
     if (typeof msg.version === 'number' && Number.isFinite(msg.version)) {
       // Already at or behind our cursor: the effect is in the DB (or was
@@ -777,12 +799,8 @@ export class SyncTransport {
       }
     } catch (error) {
       if (this.destroyed) return;
-      if (error instanceof FormatTooNewError) {
-        this.log('error', 'Remote mutation uses a newer data format — update required', {
-          mutationId: id,
-          receivedVersion: error.receivedVersion,
-        });
-        this.deps.onFormatTooNew?.(this.spaceId, error.receivedVersion);
+      if (isUpdateRequiredError(error)) {
+        this.haltForUpdate(error, id, msg.version);
         return;
       }
       this.log('warn', 'Failed to apply remote mutation', {
@@ -823,6 +841,11 @@ export class SyncTransport {
   }
 
   private async handleCatchUp(msg: WsMessage): Promise<void> {
+    if (this.updateRequired) {
+      this.catchUpInProgress = false;
+      this.catchUpRequestedSince = null;
+      return;
+    }
     const rawMutations = msg.mutations;
     const mutations: WsCatchUpMutation[] =
       rawMutations == null ? [] : Array.isArray(rawMutations) ? rawMutations : [];
@@ -891,15 +914,11 @@ export class SyncTransport {
         await this.updateLocalVersion(m.version);
       } catch (error) {
         if (this.destroyed) return;
-        if (error instanceof FormatTooNewError) {
-          // A snapshot fallback cannot fix a format we don't understand —
-          // stop syncing this space and prompt for an app update instead.
-          this.log('error', 'Catch-up mutation uses a newer data format — update required', {
-            mutationId: id,
-            receivedVersion: error.receivedVersion,
-          });
-          this.catchUpInProgress = false;
-          this.deps.onFormatTooNew?.(this.spaceId, error.receivedVersion);
+        if (isUpdateRequiredError(error)) {
+          // A snapshot fallback cannot fix a format or op code we don't
+          // understand, and quarantining would skip the change for good —
+          // stop here and prompt for an app update instead.
+          this.haltForUpdate(error, id, m.version);
           return;
         }
         this.log('warn', 'Failed to apply catch-up mutation', {
@@ -1002,6 +1021,62 @@ export class SyncTransport {
     this.requestCatchUpIfNeeded(this.ws, previousVersion);
   }
 
+  /**
+   * Stop applying synced mutations: this build is too old for the one at
+   * `version`. The cursor stays before it (not advanced, not quarantined),
+   * later mutations are ignored instead of applied out of order, and the app
+   * is told to show its update prompt.
+   */
+  private haltForUpdate(
+    error: FormatTooNewError | UnknownOpCodeError,
+    mutationId: string | undefined,
+    version: unknown
+  ): void {
+    const first = !this.updateRequired;
+    this.updateRequired = {
+      mutationId: mutationId || '',
+      version: typeof version === 'number' ? version : undefined,
+    };
+    this.catchUpInProgress = false;
+    this.catchUpRequestedSince = null;
+    this.catchUpPages = 0;
+    this.catchUpMutationBuffer = [];
+    this.updateSyncStatus({
+      isSyncing: false,
+      syncError: 'This device needs an app update to apply newer changes.',
+    });
+    if (error instanceof UnknownOpCodeError || error.name === 'UnknownOpCodeError') {
+      const { op } = error as UnknownOpCodeError;
+      this.log(
+        'error',
+        'Synced mutation uses an op code this app does not have — update required',
+        {
+          mutationId,
+          version,
+          op,
+          localVersion: this.localVersion,
+          spaceId: this.spaceId,
+        }
+      );
+      if (first) this.deps.onUnknownOpCode?.(this.spaceId, op);
+      return;
+    }
+    const { receivedVersion } = error as FormatTooNewError;
+    this.log('error', 'Synced mutation uses a newer data format — update required', {
+      mutationId,
+      version,
+      receivedVersion,
+      localVersion: this.localVersion,
+      spaceId: this.spaceId,
+    });
+    if (first) this.deps.onFormatTooNew?.(this.spaceId, receivedVersion);
+  }
+
+  /** True once a synced mutation needed a newer app; sync is halted before it. */
+  isUpdateRequired(): boolean {
+    return this.updateRequired !== null;
+  }
+
   private catchUpFailureKey(mutation: WsCatchUpMutation): string {
     return mutation.id || `version:${mutation.version}`;
   }
@@ -1029,6 +1104,7 @@ export class SyncTransport {
 
   private requestCatchUpIfNeeded(ws: WebSocket | null, sinceVersion = this.localVersion): void {
     if (this.destroyed) return;
+    if (this.updateRequired) return;
     if (!ws) return;
     if (sinceVersion < 0) return;
     if (ws.readyState !== WebSocket.OPEN) return;
@@ -1213,6 +1289,11 @@ export class SyncTransport {
     if (version <= this.localVersion) return;
     this.localVersion = version;
 
+    if (this.deps.persistLocalDatabaseSoon) {
+      this.persistCursorAfterDebouncedSave(version);
+      return;
+    }
+
     const persisted = await this.persistCursorAfterLocalSave(version);
     if (this.destroyed) return;
     if (!persisted) {
@@ -1228,6 +1309,8 @@ export class SyncTransport {
     if (!Number.isFinite(version) || version < 0) return;
     if (version === this.localVersion) return;
     this.localVersion = version;
+    this.cursorEpoch += 1;
+    this.durableVersion = version;
     if (version > 0) {
       writeStoredVersion(this.cursorStorageKey, version);
     } else {
@@ -1255,6 +1338,42 @@ export class SyncTransport {
       });
       return false;
     }
+  }
+
+  /**
+   * Debounced cursor advance: the in-memory cursor moved already; the stored
+   * one follows once a local persist that started after this call (so it
+   * contains every mutation up to `version`) has landed. Message handling does
+   * not wait for it, so a catch-up page or a burst of acks costs one persist.
+   * A crash before then leaves the stored cursor behind the DB, never ahead:
+   * catch-up replays the gap and applied-id dedup skips what the DB has.
+   */
+  private persistCursorAfterDebouncedSave(version: number): void {
+    const epoch = this.cursorEpoch;
+    const persist = this.deps.persistLocalDatabaseSoon!;
+    persist().then(
+      (persisted) => {
+        if (this.destroyed || epoch !== this.cursorEpoch) return;
+        if (!persisted) {
+          this.log('warn', 'Mutation cursor advance skipped due to local persistence failure', {
+            version,
+            spaceId: this.spaceId,
+          });
+          return;
+        }
+        if (version <= this.durableVersion) return;
+        this.durableVersion = version;
+        writeStoredVersion(this.cursorStorageKey, version);
+      },
+      (error: unknown) => {
+        if (this.destroyed) return;
+        this.log('warn', 'Failed to persist mutation cursor after local save', {
+          version,
+          spaceId: this.spaceId,
+          error: errorMessage(error),
+        });
+      }
+    );
   }
 
   private async persistLocalMutationOnly(reason: string): Promise<boolean> {

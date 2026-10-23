@@ -1,14 +1,34 @@
 import { t } from '@lingui/core/macro';
-import { asMilli, ZERO_MILLI, type Account } from '@budgero/core/browser';
-import { capitalize } from '@shared/lib/utils';
-import { getTodayISO } from '@shared/lib/date-utils';
+import { asMilli, isRowJournal, type Account, type BankLinkInput } from '@budgero/core/browser';
 import {
   S,
+  executeJournaled,
+  journaledUndo,
   ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
+  TRANSACTION_INVALIDATION_KEYS,
+  RECURRING_OCCURRENCE_INVALIDATIONS,
+  RECURRING_TEMPLATE_INVALIDATIONS,
   redoWithIds,
   safeCapture,
   type OpCodeEntry,
 } from '../shared';
+import { missingPayees, removeAddedPayees, type MissingPayees } from './transactions';
+
+/** Payee of an account's opening row: the create adds it to the directory when missing. */
+const OPENING_PAYEE = 'Budgero';
+
+/** Undo of an account create: delete it, then the opening payee entry the create added. */
+const accountCreateUndo: NonNullable<OpCodeEntry['undo']> = {
+  capture: async (args) => ({ payees: missingPayees(args.budgetId, [OPENING_PAYEE]) }),
+  build: (_args, result, before) => {
+    const id = (result as { ID?: number } | undefined)?.ID;
+    if (typeof id !== 'number') return [];
+    return [
+      { op: 'accounts.delete', args: { id } },
+      ...removeAddedPayees((before as { payees?: MissingPayees } | undefined)?.payees),
+    ];
+  },
+};
 
 function parseMetadata(metadata: unknown): Record<string, unknown> | undefined {
   if (!metadata) return undefined;
@@ -20,62 +40,142 @@ function parseMetadata(metadata: unknown): Record<string, unknown> | undefined {
   }
 }
 
+function createAccount(args: Record<string, unknown>, link?: Record<string, unknown>) {
+  return S().accounts!.createAccount(
+    args.name as string,
+    args.budgetId as number,
+    args.type as string,
+    args.currency as string,
+    asMilli(Number(args.balance ?? 0)),
+    (args.metadata as Record<string, unknown>) || undefined,
+    !!args.onBudget,
+    t`Initial Balance`,
+    (args.initialBalanceDate as string | undefined) ?? undefined,
+    (args.id as number | undefined) ?? undefined,
+    link
+      ? {
+          openingCleared: true,
+          bankLink: link as unknown as Omit<BankLinkInput, 'budgetId' | 'accountId'>,
+        }
+      : {}
+  );
+}
+
+const ACCOUNT_CREATE_INVALIDATIONS: string[][] = [
+  ['accounts', '*'], // Will match ["accounts", budgetId]
+  // Debt and credit accounts create their linked category/group as part
+  // of account creation, so dropdowns must refetch them immediately.
+  ['categories', '*'],
+  ['categoryGroups', '*'],
+  ['monthlyBudget', '*'],
+  ['onBudgetBalance'],
+  ['onBudgetBalanceByDates'],
+  ['readyToAssign', '*'], // Income calculations depend on on_budget accounts
+];
+
+const ACCOUNT_DELETE_INVALIDATIONS: string[][] = [
+  ['accounts', '*'], // Will match ["accounts", budgetId]
+  ['account', '*'],
+  ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
+  // Deleting a debt/credit account removes its linked system category;
+  // rows other accounts held in it move to Uncategorized.
+  ['categories', '*'],
+  ['allTransactions', '*'],
+  ['allTransactionsDetailed', '*'],
+  ['allTransactionsAnalytics', '*'],
+  ['uncategorizedTransactions', '*'],
+  ['transactionsByCategoryAndMonth', '*'],
+  ['categoryGroups', '*'],
+  ['monthlyBudget', '*'],
+  ['onBudgetBalance'],
+  ['onBudgetBalanceByDates'],
+  ['readyToAssign', '*'], // Deleting account removes its transactions, affecting income
+];
+
+const ACCOUNT_RESTORE_INVALIDATIONS: string[][] = [
+  ...ACCOUNT_DELETE_INVALIDATIONS,
+  ...TRANSACTION_INVALIDATION_KEYS,
+  ['goals', '*'],
+  ['goal', '*'],
+  ['transactionSplits', '*'],
+  ...RECURRING_TEMPLATE_INVALIDATIONS,
+  ...RECURRING_OCCURRENCE_INVALIDATIONS,
+  ['bankSync', '*'],
+];
+
 export const accountOps = {
   'accounts.create': {
-    execute: async (args) => {
-      return await S().accounts!.createAccount(
-        args.name as string,
-        args.budgetId as number,
-        args.type as string,
-        args.currency as string,
-        asMilli(Number(args.balance ?? 0)),
-        (args.metadata as Record<string, unknown>) || undefined,
-        !!args.onBudget,
-        t`Initial Balance`,
-        (args.initialBalanceDate as string | undefined) ?? undefined,
-        (args.id as number | undefined) ?? undefined
-      );
-    },
-    invalidates: [
-      ['accounts', '*'], // Will match ["accounts", budgetId]
-      // Debt and credit accounts create their linked category/group as part
-      // of account creation, so dropdowns must refetch them immediately.
-      ['categories', '*'],
-      ['categoryGroups', '*'],
-      ['monthlyBudget', '*'],
-      ['onBudgetBalance'],
-      ['onBudgetBalanceByDates'],
-      ['readyToAssign', '*'], // Income calculations depend on on_budget accounts
-    ],
-    undo: {
-      build: (_args, result) => {
-        const id = (result as { ID?: number } | undefined)?.ID;
-        return typeof id === 'number' ? [{ op: 'accounts.delete', args: { id } }] : [];
-      },
-    },
+    execute: async (args) => createAccount(args),
+    invalidates: ACCOUNT_CREATE_INVALIDATIONS,
+    undo: accountCreateUndo,
     redo: redoWithIds('accounts.create', (args, result) => {
       const id = (result as { ID?: number } | undefined)?.ID;
       return typeof id === 'number' ? { ...args, id } : null;
     }),
   },
 
+  /**
+   * Bank linking: create the account, its cleared opening balance and its bank
+   * link in one transaction, so a failure never leaves an unlinked account.
+   * Replaces accounts.create + transactions.setCleared + bankSync.saveLink.
+   */
+  'accounts.createLinked': {
+    execute: async (args) => createAccount(args, args.link as Record<string, unknown>),
+    invalidates: [
+      ...ACCOUNT_CREATE_INVALIDATIONS,
+      ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
+      ['bankSync', '*'],
+    ],
+    // Keeps the opening payee entry on undo (accounts.delete-undo integration
+    // spec pins this undo to the delete alone); allow-listed as A23-payee.
+    undo: {
+      build: (_args, result) => {
+        const id = (result as { ID?: number } | undefined)?.ID;
+        return typeof id === 'number' ? [{ op: 'accounts.delete', args: { id } }] : [];
+      },
+    },
+    redo: redoWithIds('accounts.createLinked', (args, result) => {
+      const id = (result as { ID?: number } | undefined)?.ID;
+      return typeof id === 'number' ? { ...args, id } : null;
+    }),
+  },
+
   // useEditAccount
+  // Journaled: undo puts back exactly what the edit wrote, including the
+  // payment / linked category a type change created and every amount a
+  // currency change rewrote.
   'accounts.update': {
-    execute: async (args) => {
-      return await S().accounts!.updateAccount(
+    // A currency change converts every row at the rates of its date: resolve
+    // them here and carry them, so every device (and a redo) converts with
+    // the same numbers whatever its rate cache holds.
+    prepare: async (args) => {
+      if (Array.isArray(args.currencyRates)) return args;
+      const rates = await S().accounts!.prepareCurrencyChange?.(
         args.id as number,
-        args.name as string,
-        args.type as string,
-        args.currency as string,
-        (args.metadata as Record<string, unknown>) || undefined,
-        args.onBudget as boolean | undefined,
+        (args.currency as string | undefined) ?? '',
         args.currencyChangeMode === 'reinterpret' ? 'reinterpret' : 'convert'
       );
+      return rates ? { ...args, currencyRates: rates } : args;
     },
+    execute: async (args, context) =>
+      executeJournaled(args, context, () =>
+        S().accounts!.updateAccount(
+          args.id as number,
+          args.name as string,
+          args.type as string,
+          args.currency as string,
+          (args.metadata as Record<string, unknown>) || undefined,
+          args.onBudget as boolean | undefined,
+          args.currencyChangeMode === 'reinterpret' ? 'reinterpret' : 'convert',
+          // Only when carried (prepare): older payloads keep the 7-arg call.
+          ...((args.currencyRates !== undefined ? [args.currencyRates] : []) as [] | [unknown])
+        )
+      ),
     invalidates: [
-      ['accounts', '*'], // Will match ["accounts", budgetId]
       ['account', '*'], // Will match ["account", id]
-      ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS, // Currency/type edits can rewrite transactions
+      // Currency edits rewrite transactions; liability edits sync Initial Debt.
+      ...TRANSACTION_INVALIDATION_KEYS,
+      ['debtProgression', '*'],
       // Type/name edits can create, relink, or rename system categories.
       ['categories', '*'],
       ['categoryGroups', '*'],
@@ -84,11 +184,12 @@ export const accountOps = {
       ['onBudgetBalanceByDates'],
       ['readyToAssign', '*'], // Income calculations depend on on_budget accounts
     ],
-    undo: {
+    undo: journaledUndo({
       capture: async (args) => safeCapture(() => S().accounts!.getAccount(args.id as number)),
       build: (args, _result, before) => {
         const account = before as Account | null;
-        // A currency change rewrote every amount; converting back would not be exact.
+        // Without the journal: a currency change rewrote every amount and
+        // converting back would not be exact, so it gets no undo.
         if (!account || account.Currency !== args.currency) return [];
         return [
           {
@@ -104,27 +205,30 @@ export const accountOps = {
           },
         ];
       },
-    },
+    }),
   },
 
   // useReorderAccounts — custom sidebar/nav ordering (Settings → Appearance)
   'accounts.reorder': {
-    execute: async (args) => {
+    // Journaled: undo restores every Position exactly.
+    execute: async (args, context) => {
       const accountsService = S().accounts as {
         reorderAccounts?: (budgetId: number, orderedAccountIds: number[]) => void;
       };
       if (!accountsService.reorderAccounts) {
         throw new Error('reorderAccounts not available on accounts service');
       }
-      return accountsService.reorderAccounts(
-        args.budgetId as number,
-        args.orderedAccountIds as number[]
+      return executeJournaled(args, context, () =>
+        accountsService.reorderAccounts!(
+          args.budgetId as number,
+          args.orderedAccountIds as number[]
+        )
       );
     },
     invalidates: [
       ['accounts', '*'], // Will match ["accounts", budgetId]
     ],
-    undo: {
+    undo: journaledUndo({
       capture: async (args) =>
         safeCapture(() =>
           S()
@@ -137,74 +241,19 @@ export const accountOps = {
           ? [{ op: 'accounts.reorder', args: { budgetId: args.budgetId, orderedAccountIds } }]
           : [];
       },
-    },
+    }),
   },
 
-  // upsert liability starting transactions (initial debt and prior payments)
+  // Legacy: accounts.update now syncs the opening rows itself. Kept so queued
+  // ops from older clients still replay; budgetId/accountType are ignored.
   'transactions.upsertLiabilityStarts': {
     execute: async (args) => {
-      const accountId = args.accountId as number;
-      const budgetId = args.budgetId as number;
-      const originalDebt = args.originalDebt as number | null;
-      const accountType = (args.accountType as string) || 'loan';
-
-      const txService = S().transactions;
-      const catService = S().categories;
-
-      const now = getTodayISO();
-
-      // Ensure Liabilities group and category exist
-      const group = catService.getCategoryGroupByName('Liabilities', budgetId) || {
-        ID: catService.addCategoryGroup('Liabilities', budgetId),
-      };
-      const categoryName = capitalize(accountType);
-      const existingCategory = catService.getCategoryByName(categoryName, budgetId);
-      const liabilityCategoryId = existingCategory
-        ? existingCategory.ID
-        : catService.addCategory(group.ID, budgetId, categoryName, '');
-
-      // Find the first "Initial Debt" transaction for this account
-      const allTransactions = txService.getTransactionsByAccount(accountId);
-      const sorted = [...allTransactions].sort((a, b) => {
-        const dc = (a.Date || '').localeCompare(b.Date || '');
-        return dc !== 0 ? dc : (a.ID || 0) - (b.ID || 0);
-      });
-
-      type TransactionRow = (typeof allTransactions)[number];
-      let initialDebtTx: TransactionRow | null = null;
-      for (const t of sorted) {
-        if ((t.Memo || '').toLowerCase() === 'initial debt') {
-          initialDebtTx = t;
-          break;
-        }
-      }
-
-      if (typeof originalDebt === 'number') {
-        const originalDebtMilli = asMilli(originalDebt);
-        if (initialDebtTx) {
-          await txService.updateTransaction(
-            initialDebtTx.ID,
-            ZERO_MILLI,
-            originalDebtMilli,
-            accountId,
-            liabilityCategoryId,
-            initialDebtTx.Date,
-            'Initial Debt'
-          );
-        } else {
-          await txService.addTransaction(
-            ZERO_MILLI,
-            originalDebtMilli,
-            accountId,
-            liabilityCategoryId,
-            budgetId,
-            now,
-            'Initial Debt',
-            ''
-          );
-        }
-      }
-      // Note: Balance recalculation is handled internally by addTransaction/updateTransaction
+      const amount = (value: unknown) => (typeof value === 'number' ? value : null);
+      await S().accounts!.upsertLiabilityStarts(
+        args.accountId as number,
+        amount(args.originalDebt),
+        amount(args.paidSoFar)
+      );
     },
     invalidates: [
       ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
@@ -214,7 +263,7 @@ export const accountOps = {
       ['uncategorizedTransactions', '*'], // For uncategorized badges
       ['allAccountsMonthlyTransactions', '*'], // For all accounts monthly transactions
       ['accounts'],
-      // This legacy liability-start path also ensures its category/group.
+      // Ensures the Transfers category/group.
       ['categories', '*'],
       ['categoryGroups', '*'],
       ['monthlyBudget', '*'],
@@ -264,19 +313,23 @@ export const accountOps = {
 
   // useDeleteAccount
   'accounts.delete': {
-    execute: async (args) => {
-      return await S().accounts!.deleteAccount(args.id as number);
+    // Same delete as before; it now also returns what it removed, for undo.
+    execute: async (args) => S().accounts!.deleteAccountWithUndo(args.id as number),
+    invalidates: ACCOUNT_DELETE_INVALIDATIONS,
+    undo: {
+      build: (args, result) =>
+        isRowJournal(result)
+          ? [{ op: 'accounts.restoreDeleted', args: { budgetId: args.budgetId, journal: result } }]
+          : [],
     },
-    invalidates: [
-      ['accounts', '*'], // Will match ["accounts", budgetId]
-      ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
-      // Deleting a debt/credit account removes its linked system category.
-      ['categories', '*'],
-      ['categoryGroups', '*'],
-      ['monthlyBudget', '*'],
-      ['onBudgetBalance'],
-      ['onBudgetBalanceByDates'],
-      ['readyToAssign', '*'], // Deleting account removes its transactions, affecting income
-    ],
+  },
+
+  /** Undo of accounts.delete; `journal` is the delete's result. */
+  'accounts.restoreDeleted': {
+    execute: async (args) => {
+      if (!isRowJournal(args.journal)) throw new Error('Nothing to restore');
+      S().accounts!.restoreDeletedAccount(args.journal);
+    },
+    invalidates: ACCOUNT_RESTORE_INVALIDATIONS,
   },
 } satisfies Record<string, OpCodeEntry>;

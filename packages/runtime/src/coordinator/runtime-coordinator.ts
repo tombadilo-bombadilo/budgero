@@ -95,6 +95,7 @@ export class RuntimeCoordinator {
         executeOp: (op, payload, context) => deps.executeOp(op, payload, context),
         getUndoSpec: (op) => deps.getUndoSpec(op),
         getInvalidatesForOp: (op) => deps.getInvalidatesForOp(op),
+        getInvalidatesForCall: (op, args) => deps.getInvalidatesForCall?.(op, args),
         getQueryClient: () => this.getQueryClient(),
         pushUndo: (entry) => deps.pushUndo?.(entry),
         recordHistory: (entry) => deps.recordHistory?.(entry),
@@ -399,6 +400,15 @@ export class RuntimeCoordinator {
 
   scheduleSnapshotUpload(): void {
     this.activeContext?.dbSync.scheduleUpload();
+  }
+
+  /**
+   * Hold snapshot uploads for the active space while out-of-band work writes
+   * the DB across awaits (bulk import, its review step). Returns an
+   * idempotent release; a flush that was held back runs on release.
+   */
+  holdSnapshotUploads(): () => void {
+    return this.activeContext?.dbSync.beginOperation() ?? (() => undefined);
   }
 
   async waitForInitialSync(options?: {

@@ -164,6 +164,26 @@ export class MutationHistoryQueries {
     );
   }
 
+  /** Clear UndoneAt again (the entry was redone). */
+  markRedone(mutationId: string): void {
+    run(this.db, `UPDATE mutation_history SET UndoneAt = NULL WHERE MutationID = ?`, mutationId);
+  }
+
+  /**
+   * The newest entry of a space whose change is still applied: not undone and
+   * not a failed (never applied) mutation. Ordered by insertion (ID), since
+   * Timestamp only has second resolution.
+   */
+  getLatestActiveBySpace(spaceId: string): MutationHistoryEntry | undefined {
+    return getRow<MutationHistoryEntry>(
+      this.db,
+      `SELECT * FROM mutation_history
+       WHERE SpaceID = ? AND UndoneAt IS NULL AND COALESCE(Status, 'success') <> 'failed'
+       ORDER BY ID DESC LIMIT 1`,
+      spaceId
+    );
+  }
+
   /**
    * Count entries for a budget
    */

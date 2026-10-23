@@ -7,6 +7,7 @@ import {
   type Goal,
   type CategoryFinancials,
   type GoalProgress,
+  type CategoryDeletionImpact,
 } from '@budgero/core/browser';
 import { ZERO_MILLI, type MilliUnits } from '@shared/lib/currency/milli';
 
@@ -25,7 +26,18 @@ export interface BudgetRow {
   assigned: MilliUnits;
   activity: MilliUnits;
   available: MilliUnits;
-  totalTransactions: number;
+  /**
+   * All-time transaction count. Not part of the monthly budget rows; the
+   * budget table fills it in on the row it opens the delete dialog for.
+   */
+  totalTransactions?: number;
+  /**
+   * What deleting the category removes or moves (all months, goal, schedule).
+   * Like totalTransactions, read on demand for the row being deleted.
+   */
+  deletionImpact?: CategoryDeletionImpact;
+  /** Set when the category can't be deleted; the menu shows it instead of Delete. */
+  deleteBlockedReason?: string;
   isGroup: boolean;
   parentId?: string;
   categoryId: number;
@@ -124,11 +136,6 @@ export function transformBudgetRows(
 
   grouped.forEach((items, groupKey) => {
     const groupName = items[0].CategoryGroup || t`Ungrouped`;
-    const totalTransactionsForGroup = items.reduce(
-      (sum, item) => sum + (item.TotalTransactionCount || 0),
-      0
-    );
-
     // Always add the group header (even for empty groups)
     result.push({
       id: groupKey,
@@ -136,7 +143,6 @@ export function transformBudgetRows(
       assigned: ZERO_MILLI,
       activity: ZERO_MILLI,
       available: ZERO_MILLI,
-      totalTransactions: totalTransactionsForGroup,
       isGroup: true,
       categoryId: -1,
       categoryGroupId: items[0].CategoryGroupID,
@@ -158,12 +164,12 @@ export function transformBudgetRows(
       );
 
       result.push({
-        id: `${groupKey}--${item.Category}`,
+        // Category ID, not name: names can repeat within a group.
+        id: `${groupKey}--${item.CategoryID}`,
         name: item.Category,
         assigned: item.Assigned,
         activity: item.Activity,
         available: item.Available,
-        totalTransactions: item.TotalTransactionCount,
         isGroup: false,
         parentId: groupKey,
         categoryId: item.CategoryID,

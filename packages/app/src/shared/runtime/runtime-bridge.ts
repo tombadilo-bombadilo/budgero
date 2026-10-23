@@ -176,6 +176,10 @@ export function createRuntimeDeps(): RuntimeCoordinatorDeps {
       return getInvalidatesForOp(op);
     },
 
+    getInvalidatesForCall(op, args) {
+      return getInvalidatesForOp(op, args);
+    },
+
     pushUndo(entry) {
       try {
         useUndoStore.getState().push({
@@ -264,6 +268,11 @@ export function createRuntimeDeps(): RuntimeCoordinatorDeps {
       onFormatTooNew: () => {
         void import('@shared/lib/update-required').then(({ notifyUpdateRequired }) =>
           notifyUpdateRequired('sync-format-too-new')
+        );
+      },
+      onUnknownOpCode: () => {
+        void import('@shared/lib/update-required').then(({ notifyUpdateRequired }) =>
+          notifyUpdateRequired('sync-op-unknown')
         );
       },
     },

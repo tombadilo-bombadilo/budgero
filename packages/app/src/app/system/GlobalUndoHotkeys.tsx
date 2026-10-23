@@ -2,6 +2,7 @@ import { useLingui } from '@lingui/react/macro';
 import { useEffect } from 'react';
 import { useUndoStore } from '@shared/mutations/UndoStore';
 import { toast } from 'sonner';
+import { getErrorMessage, toastError } from '@shared/lib/errors';
 
 export function GlobalUndoHotkeys() {
   const { t } = useLingui();
@@ -10,6 +11,8 @@ export function GlobalUndoHotkeys() {
   const redo = useUndoStore((s) => s.redo);
   const canUndo = useUndoStore((s) => s.canUndo);
   const canRedo = useUndoStore((s) => s.canRedo);
+  const redoItem = useUndoStore((s) => s.redoItem);
+  const retryFailed = useUndoStore((s) => s.retryFailed);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -30,16 +33,32 @@ export function GlobalUndoHotkeys() {
         if (canUndo()) {
           e.preventDefault();
           undo()
-            .then(() => {
+            .then((item) => {
+              if (!item) return;
               toast.success(t`Undid last action`, {
                 action: {
+                  // Redo exactly the entry this toast undid.
                   label: t`Redo`,
-                  onClick: () => void (canRedo() && redo()),
+                  onClick: () => {
+                    redoItem(item.id).catch((error: unknown) =>
+                      toastError(t`Failed to redo action`, error)
+                    );
+                  },
                 },
               });
             })
-            .catch(() => {
-              toast.error(t`Failed to undo last action`);
+            .catch((error: unknown) => {
+              toast.error(t`Failed to undo last action`, {
+                description: getErrorMessage(error),
+                action: {
+                  label: t`Retry`,
+                  onClick: () => {
+                    retryFailed().catch((retryError: unknown) =>
+                      toastError(t`Failed to undo last action`, retryError)
+                    );
+                  },
+                },
+              });
             });
         }
       } else if ((k === 'z' && e.shiftKey) || k === 'y') {
@@ -49,8 +68,18 @@ export function GlobalUndoHotkeys() {
             .then(() => {
               toast.success(t`Redid action`);
             })
-            .catch(() => {
-              toast.error(t`Failed to redo action`);
+            .catch((error: unknown) => {
+              toast.error(t`Failed to redo action`, {
+                description: getErrorMessage(error),
+                action: {
+                  label: t`Retry`,
+                  onClick: () => {
+                    retryFailed().catch((retryError: unknown) =>
+                      toastError(t`Failed to redo action`, retryError)
+                    );
+                  },
+                },
+              });
             });
         }
       }
@@ -58,7 +87,7 @@ export function GlobalUndoHotkeys() {
 
     window.addEventListener('keydown', handler, { capture: true });
     return () => window.removeEventListener('keydown', handler, { capture: true });
-  }, [undo, redo, canUndo, canRedo, t]);
+  }, [undo, redo, redoItem, retryFailed, canUndo, canRedo, t]);
 
   return null;
 }

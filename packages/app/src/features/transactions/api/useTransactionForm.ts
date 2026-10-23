@@ -14,6 +14,7 @@ export interface TransactionFormInitialValues {
   transactionType?: TransactionType;
   transactionDate?: Date | null;
   selectedCategory?: string;
+  selectedCategoryId?: number | null;
   memo?: string;
   payee?: string;
   selectedLabelId?: number | null;
@@ -25,6 +26,8 @@ export interface TransactionFormInitialValues {
 
 export interface LastUsedFields {
   category?: string;
+  /** Names aren't unique; the ID says which "category" was meant. */
+  categoryId?: number;
   payee?: string;
   accountId?: string;
   // number = a real label, null = explicitly "No label", undefined = field
@@ -36,7 +39,7 @@ export type LastUsedState = Record<TransactionType, LastUsedFields>;
 
 export interface PendingTransaction {
   date: Date | null;
-  category: string;
+  categoryId: number;
   memo: string;
   payee: string;
   labelId: number | null;
@@ -52,7 +55,10 @@ export interface TransactionFormState {
   // Form fields
   transactionType: TransactionType;
   transactionDate: Date | null;
+  /** Display name of the picked category. */
   selectedCategory: string;
+  /** The picked category; null when only a name is known. */
+  selectedCategoryId: number | null;
   memo: string;
   payee: string;
   selectedLabelId: number | null;
@@ -89,7 +95,7 @@ type TransactionFormAction =
   | { type: 'SET_TRANSACTION_TYPE'; value: TransactionType }
   | { type: 'SET_DATE'; date: Date | null }
   | { type: 'SET_DATE_OPEN'; open: boolean }
-  | { type: 'SET_CATEGORY'; category: string }
+  | { type: 'SET_CATEGORY'; category: string; categoryId: number | null }
   | { type: 'SET_MEMO'; memo: string }
   | { type: 'SET_PAYEE'; payee: string }
   | { type: 'SET_LABEL_ID'; labelId: number | null }
@@ -117,7 +123,11 @@ const REMEMBER_LAST_KEY = 'budgero:add-transaction:remember-last';
 
 export function mergeLastUsedFields(base: LastUsedFields, fields: LastUsedFields): LastUsedFields {
   const next: LastUsedFields = { ...base };
-  if (fields.category) next.category = fields.category;
+  if (fields.category) {
+    next.category = fields.category;
+    if (fields.categoryId) next.categoryId = fields.categoryId;
+    else delete next.categoryId;
+  }
   if (fields.payee) next.payee = fields.payee;
   if (fields.accountId) next.accountId = fields.accountId;
   // null means the user explicitly chose "No label" — clear the remembered
@@ -147,6 +157,7 @@ const createInitialState = ({
       ? (initialValues.transactionDate ?? null)
       : new Date(),
   selectedCategory: initialValues?.selectedCategory ?? '',
+  selectedCategoryId: initialValues?.selectedCategoryId ?? null,
   memo: initialValues?.memo ?? '',
   payee: initialValues?.payee ?? '',
   selectedLabelId: initialValues?.selectedLabelId ?? null,
@@ -188,7 +199,11 @@ function transactionFormReducer(
       return { ...state, dateOpen: action.open };
 
     case 'SET_CATEGORY':
-      return { ...state, selectedCategory: action.category };
+      return {
+        ...state,
+        selectedCategory: action.category,
+        selectedCategoryId: action.category ? action.categoryId : null,
+      };
 
     case 'SET_MEMO':
       return { ...state, memo: action.memo };
@@ -336,8 +351,8 @@ export function useTransactionForm(options: UseTransactionFormOptions) {
     dispatch({ type: 'SET_DATE_OPEN', open });
   }, []);
 
-  const setCategory = useCallback((category: string) => {
-    dispatch({ type: 'SET_CATEGORY', category });
+  const setCategory = useCallback((category: string, categoryId: number | null = null) => {
+    dispatch({ type: 'SET_CATEGORY', category, categoryId });
   }, []);
 
   const setMemo = useCallback((memo: string) => {

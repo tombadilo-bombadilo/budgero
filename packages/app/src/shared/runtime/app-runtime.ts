@@ -38,10 +38,23 @@ import type { QueryClient } from '@tanstack/react-query';
 import type { SyncStatus } from '@shared/lib/utils';
 import { MutationRouter } from '@shared/runtime/mutation-router';
 import { createRuntimeDeps } from '@shared/runtime/runtime-bridge';
-import { getInvalidatesForOp } from '@shared/mutations/op-code-registry';
+import { runInUndoGroup } from '@shared/mutations/UndoStore';
+import { getInvalidatesForOp, prepareMutationArgs } from '@shared/mutations/op-code-registry';
+import { discardInterruptedImports } from '@shared/runtime/pending-import';
 import { getErrorMessage } from '@shared/lib/errors';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
 import { withPushIdentity } from './push-identity';
+
+/** Ops whose new rows the continuous rules run over (see applyContinuousRulesIfNeeded). */
+const CONTINUOUS_RULE_TRIGGERS = new Set([
+  'transactions.add',
+  'transactions.import',
+  'transactions.addTransfer',
+  'recurring.markReady',
+]);
+
+/** Ids per rules.execute op; keeps the IN (...) list well under SQLite's bind limit. */
+const CONTINUOUS_RULE_BATCH_SIZE = 500;
 
 export class AppRuntime {
   private coordinator: RuntimeCoordinator;
@@ -149,9 +162,31 @@ export class AppRuntime {
   }
 
   async executeMutation<T>(spec: MutationSpec): Promise<MutationResult<T>> {
-    const result = await this.coordinator.executeMutation<T>(spec);
-    await this.applyContinuousRulesIfNeeded(result.result, spec, !spec.mutationId);
-    return result;
+    // A mutation originating here gets its generated values (row IDs,
+    // exchange rates) once, before it runs, so the args executed locally are
+    // exactly the args every other device replays.
+    const prepared: MutationSpec = spec.mutationId
+      ? spec
+      : { ...spec, payload: await prepareMutationArgs(spec.op, spec.payload) };
+    const run = async () => {
+      const result = await this.coordinator.executeMutation<T>(prepared);
+      await this.applyContinuousRulesIfNeeded(result.result, prepared, !prepared.mutationId);
+      return result;
+    };
+    // The continuous rules an add triggers are part of that user action: one
+    // undo entry reverts the add and the rule runs together (and redo puts
+    // back the same runs instead of running the rules again).
+    return this.recordsRuleUndo(prepared) ? runInUndoGroup(run) : run();
+  }
+
+  /** A local, undoable action that can trigger continuous rules. */
+  private recordsRuleUndo(spec: MutationSpec): boolean {
+    return (
+      !spec.mutationId &&
+      !spec.meta?.skipUndo &&
+      !spec.meta?.replay &&
+      CONTINUOUS_RULE_TRIGGERS.has(spec.op)
+    );
   }
 
   isMutationApplied(mutationId: string): boolean {
@@ -311,6 +346,15 @@ export class AppRuntime {
    */
   async notifyOutOfBandRestore(boundMutationVersion?: number): Promise<void> {
     await this.coordinator.notifyOutOfBandRestore(boundMutationVersion);
+  }
+
+  /**
+   * Hold snapshot uploads while out-of-band work writes the DB across awaits
+   * (a YNAB import and its review), so no half-written state is published.
+   * Call the returned release when the work is committed or fully undone.
+   */
+  holdSnapshotUploads(): () => void {
+    return this.coordinator.holdSnapshotUploads();
   }
 
   /**
@@ -533,7 +577,10 @@ export class AppRuntime {
             // the mutation must still be queued and broadcast to the space.
             idempotencyKey: mutationId,
             meta: {
-              skipUndo: false,
+              // Pushed items are not the user's own actions in this session:
+              // they must not land on the Ctrl+Z stack (the first Ctrl+Z
+              // after startup would delete a pushed transaction).
+              skipUndo: true,
               label: 'push-api',
               origin: 'remote',
               forceInvalidate: true,
@@ -576,11 +623,15 @@ export class AppRuntime {
     isMutator: boolean
   ): Promise<void> {
     if (!isMutator) return;
+    // An undo replay restores rows as they were (rules already applied, then
+    // maybe fixed by hand): running the rules again would overwrite those
+    // fixes or compound amount adjustments. Redo replays re-run the original
+    // action, so its rules run like they did the first time.
+    if (spec.meta?.replay === 'undo') return;
+    if (!CONTINUOUS_RULE_TRIGGERS.has(spec.op)) return;
     const isTransactionAdd = spec.op === 'transactions.add' || spec.op === 'transactions.import';
     const isTransferAdd = spec.op === 'transactions.addTransfer';
     const isRecurringReady = spec.op === 'recurring.markReady';
-
-    if (!isTransactionAdd && !isTransferAdd && !isRecurringReady) return;
 
     let transactionIds: number[] = [];
     let budgetId: number | null = null;
@@ -612,6 +663,43 @@ export class AppRuntime {
       return;
     }
 
+    // Batch importers (bank sync) run the rules themselves, once
+    // over every row they created — see runContinuousRules.
+    if (isTransactionAdd && spec.meta?.deferContinuousRules === true) return;
+
+    // Transfer legs stay one at a time: a rule edit on one leg can touch the
+    // other, so they keep the old (leg x rule) order.
+    for (const transactionId of transactionIds) {
+      await this.runContinuousRules(budgetId, [transactionId], {
+        skipInvalidate: isTransactionAdd && spec.meta?.skipInvalidate === true,
+        recordUndo: this.recordsRuleUndo(spec),
+      });
+    }
+  }
+
+  /**
+   * Run every enabled continuous rule (in runOrder) once over `transactionIds`:
+   * one synced `rules.execute` op per rule instead of one per (transaction x
+   * rule). A rule reads and edits only the transactions it is given, so each
+   * transaction ends up exactly as if the rules ran on it alone; only the rule
+   * run history differs (one run per rule per batch). Old per-transaction ops
+   * in the log replay unchanged — the op itself is the same.
+   */
+  async runContinuousRules(
+    budgetId: number,
+    transactionIds: number[],
+    options: {
+      skipInvalidate?: boolean;
+      /**
+       * Record each rule run for undo (they join the caller's undo group);
+       * otherwise runs are not undoable on their own.
+       */
+      recordUndo?: boolean;
+    } = {}
+  ): Promise<void> {
+    const ids = transactionIds.filter(Number.isFinite);
+    if (ids.length === 0 || !Number.isFinite(budgetId)) return;
+
     try {
       const services = this.serviceManager.getServices();
       if (!services) return;
@@ -633,10 +721,10 @@ export class AppRuntime {
       }
 
       const invalidates = getInvalidatesForOp('rules.execute');
-      const deferPlainAddInvalidation = isTransactionAdd && spec.meta?.skipInvalidate === true;
 
-      for (const transactionId of transactionIds) {
-        for (const rule of continuousRules) {
+      for (const rule of continuousRules) {
+        for (let i = 0; i < ids.length; i += CONTINUOUS_RULE_BATCH_SIZE) {
+          const chunk = ids.slice(i, i + CONTINUOUS_RULE_BATCH_SIZE);
           try {
             await this.executeMutation({
               op: 'rules.execute',
@@ -644,20 +732,20 @@ export class AppRuntime {
                 ruleId: rule.id,
                 options: {
                   trigger: 'continuous',
-                  transactionIds: [transactionId],
+                  transactionIds: chunk,
                 },
               },
               invalidates,
               meta: {
-                skipUndo: true,
+                skipUndo: options.recordUndo !== true,
                 forceInvalidate: true,
-                skipInvalidate: deferPlainAddInvalidation,
+                skipInvalidate: options.skipInvalidate === true,
               },
             });
           } catch (error) {
             console.warn('[AppRuntime] Failed to run continuous rule', {
               ruleId: rule.id,
-              transactionId,
+              transactionIds: chunk,
               error,
             });
           }
@@ -953,6 +1041,21 @@ export class AppRuntime {
     await next.initialize(db as unknown as CoreDatabaseAdapter);
     this.serviceManager.reset();
     this.serviceManager = next;
+    this.discardInterruptedImports();
+  }
+
+  /** Drop a budget an interrupted import left in this DB (see pending-import). */
+  private discardInterruptedImports(): void {
+    const spaceId = this.getActiveSpaceId();
+    if (!spaceId) return;
+    try {
+      const removed = discardInterruptedImports(spaceId, this.serviceManager.getServices().budgets);
+      if (removed.length > 0) {
+        console.warn('[AppRuntime] Removed budgets left by an interrupted import', removed);
+      }
+    } catch (error) {
+      console.warn('[AppRuntime] Could not check for an interrupted import', error);
+    }
   }
 }
 

@@ -4,7 +4,7 @@ import type {
   BudgetSpaceInvite,
   SpaceInviteInspection,
 } from '@shared/model/budget-spaces';
-import { MUTATION_FORMAT_VERSION, SYNC_PROTOCOL_VERSION } from '@budgero/runtime';
+import { SNAPSHOT_DATA_FORMAT_VERSION, SYNC_PROTOCOL_VERSION } from '@budgero/runtime';
 import { getGlobalToken } from '@shared/lib/clerk-token-manager';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
@@ -429,7 +429,9 @@ export const blobApi = {
     const headers: Record<string, string> = {
       // Declares both what we write and what we understand; the server
       // gates stale clients off newer-format spaces with 426 responses.
-      'X-Data-Format-Version': String(MUTATION_FORMAT_VERSION),
+      // Snapshots stay format 2 (mutation format 3 only added op codes), so
+      // older builds can still restore them.
+      'X-Data-Format-Version': String(SNAPSHOT_DATA_FORMAT_VERSION),
       'X-Budgero-Protocol': String(SYNC_PROTOCOL_VERSION),
     };
     if (version !== undefined) {

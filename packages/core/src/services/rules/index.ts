@@ -1,5 +1,13 @@
 import { DatabaseAdapter } from '../../database/interface.js';
-import { getRow, allRows, run } from '../../database/sql.js';
+import { getRow, allRows, run, atomically } from '../../database/sql.js';
+import {
+  RowCapture,
+  isRowJournal,
+  journalSize,
+  restoreRowJournal,
+  type JournalRow,
+  type RowJournal,
+} from '../../database/row-journal.js';
 import { asMilli, ZERO_MILLI, type MilliUnits } from '../../money/index.js';
 import { NotFoundError, ValidationError } from '../../types/index.js';
 import { safeParseJSON } from '../../utils/json.js';
@@ -8,6 +16,7 @@ import type { Transaction } from '../transactions/types.js';
 
 import { createLogger } from '../../logger.js';
 import { matchesConditionChain } from './condition-groups.js';
+import { clock } from '../../utils/clock.js';
 
 const debugLog = createLogger('services:rules');
 
@@ -225,12 +234,114 @@ export interface RuleExecutionResult {
   evaluatedCount: number;
   matchedCount: number;
   errors: string[];
+  /** The lastRunAt this execution stored on the rule (redo restores it). */
+  lastRunAt?: string;
 }
 
 export interface RuleRunUndoResult {
   run: TransactionRuleRun;
   restoredTransactions: number;
 }
+
+/** The rule's run bookkeeping, as it was before (undo) or after (redo) a run. */
+export interface RuleRunState {
+  lastRunAt: string | null;
+  oneTimeConsumed: boolean;
+}
+
+export interface UndoRunOptions {
+  /**
+   * Put the rule's lastRunAt/oneTimeConsumed back to exactly these values
+   * (captured before the run) instead of deriving them from older runs.
+   */
+  ruleState?: RuleRunState;
+  /**
+   * Also accept a failed run (it changed no transaction): it is marked undone
+   * and only the rule state goes back. Ctrl+Z of a run uses this; the run
+   * history's "Undo run" does not offer failed runs.
+   */
+  allowFailed?: boolean;
+}
+
+export interface RedoRunOptions {
+  ruleState?: RuleRunState;
+  /** The run row as the original execution left it. */
+  run?: { status?: RuleRunStatus; notes?: string; transactionCount?: number };
+  /**
+   * The run's change rows as logged. Rows that are gone (deleted with their
+   * transaction, e.g. by the undo of the add that triggered a continuous
+   * run) are put back under their IDs when the transaction exists again.
+   */
+  changes?: TransactionRuleRunChange[];
+}
+
+type RuleRollback = {
+  memo?: string;
+  categoryId?: number;
+  accountId?: number;
+  inflow?: number;
+  outflow?: number;
+  payee?: string;
+};
+
+/** One transaction's write in an undo / redo of a run. */
+interface RunStep {
+  transactionId: number;
+  values: RuleRollback;
+  /** Undo of a run logged with a row journal: put those rows back verbatim. */
+  journal?: RowJournal;
+  /** Category / memo / payee only on a non-transfer row (no balance work, no async). */
+  plain: boolean;
+}
+
+/**
+ * Key in a change row's metadata (the transaction's first change row of the
+ * run) holding the row journal of the write that applied the run to it: the
+ * previous value of every column it changed, in the row and in the rows the
+ * write touched with it (transfer partner, split lines and mirrors).
+ */
+const ROW_JOURNAL_KEY = 'rowJournal';
+
+/** Tables the journal of a run's write may put back. */
+const RUN_RESTORE_TABLES: ReadonlySet<string> = new Set(['transactions', 'transaction_splits']);
+
+/** Transaction columns whose restore can move running / account balances. */
+const BALANCE_COLUMNS: ReadonlySet<string> = new Set([
+  'AccountID',
+  'Date',
+  'InflowNative',
+  'OutflowNative',
+  'InflowConverted',
+  'OutflowConverted',
+]);
+
+/** Tables rowExists may look in (table names are interpolated into SQL). */
+const EXISTENCE_TABLES: ReadonlySet<string> = new Set([
+  ...RUN_RESTORE_TABLES,
+  'categories',
+  'accounts',
+]);
+
+/** Tables the undo of a rule delete may put back. */
+const RULE_RESTORE_TABLES: ReadonlySet<string> = new Set([
+  'transaction_rules',
+  'transaction_rule_runs',
+  'transaction_rule_run_changes',
+]);
+
+/** Above this many rows (runs + changes) a rule delete keeps no history for undo. */
+export const RULE_UNDO_ROW_LIMIT = 5000;
+
+const ID_CHUNK = 400;
+
+function chunked<T>(items: T[]): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < items.length; i += ID_CHUNK) out.push(items.slice(i, i + ID_CHUNK));
+  return out;
+}
+
+const isEmptyJournal = (journal: RowJournal | null) =>
+  !journal || (!journal.changed.length && !journal.deleted.length && !journal.inserted.length);
 
 export interface AutofillApplicationChange {
   ruleId: number;
@@ -425,6 +536,49 @@ export class RulesService {
     run(this.db, `DELETE FROM transaction_rules WHERE ID = ?`, id);
   }
 
+  /**
+   * deleteRule, recording the rule with its run history (runs and change
+   * rows cascade with it) so undo can put all of it back under the same IDs.
+   * Returns null when nothing was deleted or the history is too large to keep
+   * as undo data (undo then restores the rule alone).
+   */
+  deleteRuleWithUndo(id: number): RowJournal | null {
+    return this.db.transaction(() => {
+      const capture = new RowCapture(this.db).addKeys('transaction_rules', [id]);
+      this.deleteRule(id);
+      const journal = capture.finish();
+      if (!journal.deleted.length || journalSize(journal) > RULE_UNDO_ROW_LIMIT) return null;
+      return journal;
+    });
+  }
+
+  /**
+   * Undo of deleteRuleWithUndo. Change rows of transactions deleted since
+   * cannot come back (and say nothing anymore); they are left out, the same
+   * way on every device.
+   */
+  restoreDeletedRule(journal: RowJournal): TransactionRule {
+    if (!isRowJournal(journal)) throw new ValidationError('Invalid rule restore data');
+    const ruleRow = journal.deleted
+      .find((entry) => entry.table === 'transaction_rules')
+      ?.rows.find((row) => row.ID !== undefined);
+    if (!ruleRow) throw new ValidationError('Invalid rule restore data');
+    const deleted = journal.deleted.map((entry) =>
+      entry.table === 'transaction_rule_run_changes'
+        ? {
+            ...entry,
+            rows: entry.rows.filter((row) =>
+              this.rowExists('transactions', Number(row.TransactionID))
+            ),
+          }
+        : entry
+    );
+    this.db.transaction(() =>
+      restoreRowJournal(this.db, { ...journal, deleted }, RULE_RESTORE_TABLES)
+    );
+    return this.getRule(Number(ruleRow.ID));
+  }
+
   restoreRule(snapshot: TransactionRule): TransactionRule {
     if (!snapshot?.id) {
       throw new ValidationError('Cannot restore rule without an ID');
@@ -474,8 +628,8 @@ export class RulesService {
       snapshot.oneTimeConsumed ? 1 : 0,
       snapshot.runOrder ?? 0,
       snapshot.lastRunAt ?? null,
-      snapshot.createdAt ?? new Date().toISOString(),
-      snapshot.updatedAt ?? new Date().toISOString()
+      snapshot.createdAt ?? clock.date().toISOString(),
+      snapshot.updatedAt ?? clock.date().toISOString()
     );
 
     return this.getRule(snapshot.id);
@@ -579,6 +733,9 @@ export class RulesService {
       const rule = this.getRule(ruleId);
       const transactions = this.getCandidateTransactions(rule.budgetId, options.transactionIds);
       let matchedCount = 0;
+      // One schema read per run, shared by the per-row journals.
+      let journalBase: RowCapture | null = null;
+      const newCapture = () => (journalBase ??= new RowCapture(this.db)).fork();
 
       for (const tx of transactions) {
         if (!this.matchesRuleConditions(rule.conditions, tx)) {
@@ -586,7 +743,7 @@ export class RulesService {
         }
 
         try {
-          const appliedChanges = await this.applyRuleActions(rule, tx, runRecord.id);
+          const appliedChanges = await this.applyRuleActions(rule, tx, runRecord.id, newCapture);
           if (appliedChanges.length > 0) {
             changes.push(...appliedChanges);
             matchedCount += 1;
@@ -606,12 +763,12 @@ export class RulesService {
       runRecord = this.updateRun({
         runId: runRecord.id,
         status,
-        completedAt: new Date().toISOString(),
+        completedAt: clock.date().toISOString(),
         transactionCount: matchedCount,
         notes: errors.slice(0, 5).join('; ').slice(0, 500),
       });
 
-      const timestamp = new Date().toISOString();
+      const timestamp = clock.date().toISOString();
       this.updateRule(ruleId, {
         lastRunAt: timestamp,
         oneTimeConsumed: rule.mode === 'one_time' ? true : undefined,
@@ -623,66 +780,164 @@ export class RulesService {
         evaluatedCount: transactions.length,
         matchedCount,
         errors,
+        lastRunAt: timestamp,
       };
     } catch (error) {
       this.updateRun({
         runId: runRecord.id,
         status: 'failed',
-        completedAt: new Date().toISOString(),
+        completedAt: clock.date().toISOString(),
         notes: error instanceof Error ? error.message : 'Rule execution failed',
       });
       throw error;
     }
   }
 
-  async undoRun(runId: number): Promise<RuleRunUndoResult> {
+  async undoRun(runId: number, options: UndoRunOptions = {}): Promise<RuleRunUndoResult> {
     const run = this.getRun(runId);
     if (!run.completedAt) {
       throw new ValidationError('Cannot undo a run that has not completed');
     }
 
-    if (run.status !== 'completed' && run.status !== 'partial') {
+    const changes = this.listRunChanges(runId);
+    const failedWithoutChanges =
+      options.allowFailed === true && run.status === 'failed' && changes.length === 0;
+    if (run.status !== 'completed' && run.status !== 'partial' && !failedWithoutChanges) {
       throw new ValidationError('Only completed runs can be undone');
     }
 
-    const latestRow = getRow<{ ID: number | bigint }>(
-      this.db,
-      // Undone runs are excluded: once the newest run is reverted, the run before it
-      // is the latest one whose changes are still applied, so it becomes undoable.
-      `SELECT ID FROM transaction_rule_runs
-       WHERE RuleID = ? AND CompletedAt IS NOT NULL AND Status IN ('completed', 'partial')
-       ORDER BY datetime(CompletedAt) DESC, ID DESC LIMIT 1`,
-      run.ruleId
-    );
-    const latestId = latestRow ? Number(latestRow.ID) : null;
-    if (latestId !== runId) {
-      throw new ValidationError('Only the most recent completed run can be undone');
+    if (!changes.length) {
+      return this.db.transaction(() => {
+        if (options.ruleState) {
+          this.updateRule(run.ruleId, {
+            lastRunAt: options.ruleState.lastRunAt,
+            oneTimeConsumed: options.ruleState.oneTimeConsumed,
+          });
+        }
+        const updated = this.updateRun({
+          runId,
+          status: 'undone',
+          notes: this.appendNote(run.notes, 'Marked as undone (no changes recorded).'),
+        });
+        return { run: updated, restoredTransactions: 0 };
+      });
     }
 
-    const changes = this.listRunChanges(runId);
-    if (!changes.length) {
-      const updated = this.updateRun({
+    // Validate everything before writing anything.
+    this.assertNoLaterRunOverlap(runId, changes);
+    const steps = this.planRunSteps(this.rollbackValues(changes), this.runJournals(changes));
+
+    const finalize = () => {
+      const rule = this.getRule(run.ruleId);
+      if (options.ruleState) {
+        this.updateRule(rule.id, {
+          lastRunAt: options.ruleState.lastRunAt,
+          oneTimeConsumed: options.ruleState.oneTimeConsumed,
+        });
+      } else {
+        let previousCompletedAt: string | null = null;
+        const prevRow = getRow<{ CompletedAt: string | null }>(
+          this.db,
+          `SELECT CompletedAt FROM transaction_rule_runs WHERE RuleID = ? AND ID <> ? AND CompletedAt IS NOT NULL ORDER BY datetime(CompletedAt) DESC, ID DESC LIMIT 1`,
+          run.ruleId,
+          runId
+        );
+        if (prevRow?.CompletedAt) {
+          previousCompletedAt = String(prevRow.CompletedAt);
+        }
+
+        this.updateRule(rule.id, {
+          lastRunAt: previousCompletedAt,
+          oneTimeConsumed: rule.mode === 'one_time' ? false : undefined,
+        });
+      }
+
+      this.updateRun({
         runId,
         status: 'undone',
-        notes: this.appendNote(run.notes, 'Marked as undone (no changes recorded).'),
+        notes: this.appendNote(run.notes, 'Run undone and transactions restored.'),
+        completedAt: run.completedAt,
+        transactionCount: steps.length,
       });
-      return {
-        run: updated,
-        restoredTransactions: 0,
-      };
-    }
+    };
 
-    const rollbackMap = new Map<
-      number,
-      {
-        memo?: string;
-        categoryId?: number;
-        accountId?: number;
-        inflow?: number;
-        outflow?: number;
-        payee?: string;
+    await this.applyRunSteps(steps, 'restore', finalize);
+
+    return {
+      run: this.getRun(runId),
+      restoredTransactions: steps.length,
+    };
+  }
+
+  /**
+   * Re-apply an undone run (redo): put back the new values its logged changes
+   * recorded, the rule's run bookkeeping and the run row's status, so a later
+   * undoRun of the same run works again. All or nothing, like undoRun.
+   */
+  async redoRun(runId: number, options: RedoRunOptions = {}): Promise<RuleRunUndoResult> {
+    const run = this.getRun(runId);
+    if (run.status !== 'undone') {
+      throw new ValidationError('Only an undone run can be redone');
+    }
+    const existing = this.listRunChanges(runId);
+    const missing = this.missingRunChanges(run, existing, options.changes);
+    const changes = [...existing, ...missing].sort((a, b) => a.id - b.id);
+    const steps = this.planRunSteps(this.forwardValues(changes), new Map());
+
+    const finalize = () => {
+      for (const change of missing) this.insertRunChange(change);
+      const rule = this.getRule(run.ruleId);
+      this.updateRule(rule.id, {
+        lastRunAt: options.ruleState?.lastRunAt ?? run.completedAt ?? null,
+        oneTimeConsumed:
+          options.ruleState?.oneTimeConsumed ?? (rule.mode === 'one_time' ? true : undefined),
+      });
+
+      // The undo appended a note; put the row back as the run left it.
+      run_updateRunExact(this.db, runId, {
+        status: options.run?.status ?? 'completed',
+        notes: options.run?.notes ?? run.notes ?? null,
+        transactionCount: options.run?.transactionCount ?? steps.length,
+      });
+    };
+
+    await this.applyRunSteps(steps, 'reapply', finalize);
+
+    return { run: this.getRun(runId), restoredTransactions: steps.length };
+  }
+
+  /**
+   * A run can be undone unless a later run that is still applied changed one
+   * of the same transactions: putting the old values back would overwrite
+   * that run's work. Later runs on other transactions (a continuous rule
+   * after an add) don't matter. Decided by run IDs, which every device
+   * assigns alike, so the answer is the same everywhere.
+   */
+  private assertNoLaterRunOverlap(runId: number, changes: TransactionRuleRunChange[]): void {
+    const ids = [...new Set(changes.map((change) => change.transactionId))];
+    for (const part of chunked(ids)) {
+      const overlap = getRow<{ ID: number }>(
+        this.db,
+        `SELECT r.ID AS ID
+           FROM transaction_rule_run_changes c
+           JOIN transaction_rule_runs r ON r.ID = c.RunID
+          WHERE c.RunID > ? AND r.Status IN ('completed', 'partial')
+            AND c.TransactionID IN (${part.map(() => '?').join(', ')})
+          LIMIT 1`,
+        runId,
+        ...part
+      );
+      if (overlap) {
+        throw new ValidationError(
+          'Only the most recent completed run can be undone: a later rule run changed the same transactions. Undo that run first.'
+        );
       }
-    >();
+    }
+  }
+
+  /** Old values per transaction, from a run's logged changes (undo). */
+  private rollbackValues(changes: TransactionRuleRunChange[]): Map<number, RuleRollback> {
+    const rollbackMap = new Map<number, RuleRollback>();
 
     for (const change of changes) {
       const metadata = (change.metadata ?? {}) as Record<string, unknown>;
@@ -740,67 +995,381 @@ export class RulesService {
 
       rollbackMap.set(change.transactionId, entry);
     }
+    return rollbackMap;
+  }
 
-    let restoredTransactions = 0;
+  /** New values per transaction, from a run's logged changes (redo). */
+  private forwardValues(changes: TransactionRuleRunChange[]): Map<number, RuleRollback> {
+    const forward = new Map<number, RuleRollback>();
+    for (const change of changes) {
+      const metadata = (change.metadata ?? {}) as Record<string, unknown>;
+      const entry = forward.get(change.transactionId) ?? {};
+      switch (change.field) {
+        case 'memo':
+          entry.memo =
+            typeof metadata.newMemo === 'string'
+              ? metadata.newMemo
+              : typeof change.newValue === 'string'
+                ? change.newValue
+                : '';
+          break;
+        case 'categoryId': {
+          const next = Number(metadata.nextCategoryId ?? change.newValue);
+          if (Number.isFinite(next)) entry.categoryId = next;
+          break;
+        }
+        case 'accountId': {
+          const next = Number(metadata.nextAccountId ?? change.newValue);
+          if (Number.isFinite(next)) entry.accountId = next;
+          break;
+        }
+        case 'payee':
+          entry.payee =
+            typeof metadata.nextPayee === 'string'
+              ? metadata.nextPayee
+              : typeof change.newValue === 'string'
+                ? change.newValue
+                : '';
+          break;
+        case 'amount': {
+          const inflow = Number(metadata.newInflow);
+          const outflow = Number(metadata.newOutflow);
+          if (Number.isFinite(inflow)) entry.inflow = inflow;
+          if (Number.isFinite(outflow)) entry.outflow = outflow;
+          break;
+        }
+        default:
+          break;
+      }
+      forward.set(change.transactionId, entry);
+    }
+    return forward;
+  }
 
-    for (const [transactionId, rollback] of rollbackMap.entries()) {
-      try {
-        const tx = this.transactions.getTransactionByID(transactionId);
-        const nextInflow = asMilli(Number(rollback.inflow ?? tx.InflowConverted ?? 0));
-        const nextOutflow = asMilli(Number(rollback.outflow ?? tx.OutflowConverted ?? 0));
-        const nextAccount = Number(rollback.accountId ?? tx.AccountID ?? 0);
-        const nextCategory = Number(rollback.categoryId ?? tx.CategoryID ?? 0);
-        const nextMemo = rollback.memo ?? tx.Memo ?? '';
-        const nextPayee =
-          rollback.payee !== undefined ? rollback.payee : (tx.Payee?.toString?.() ?? '');
+  /** The row journal logged with each transaction's write, if any. */
+  private runJournals(changes: TransactionRuleRunChange[]): Map<number, RowJournal> {
+    const journals = new Map<number, RowJournal>();
+    for (const change of changes) {
+      const journal = (change.metadata as Record<string, unknown> | null)?.[ROW_JOURNAL_KEY];
+      if (isRowJournal(journal) && !journals.has(change.transactionId)) {
+        journals.set(change.transactionId, journal);
+      }
+    }
+    return journals;
+  }
 
-        await this.transactions.updateTransaction(
+  /**
+   * What undo / redo of a run writes, decided before anything is written and
+   * only from the current database (so every device decides alike):
+   * - a transaction deleted since is skipped;
+   * - a category that no longer exists is not written back (the row keeps the
+   *   category it has now);
+   * - a row whose account no longer exists is skipped.
+   */
+  private planRunSteps(
+    values: Map<number, RuleRollback>,
+    journals: Map<number, RowJournal>
+  ): RunStep[] {
+    const steps: RunStep[] = [];
+    for (const [transactionId, raw] of values) {
+      const tx = getRow<{ TransferID: string | null }>(
+        this.db,
+        'SELECT TransferID FROM transactions WHERE ID = ?',
+        transactionId
+      );
+      if (!tx) continue;
+      const journal = journals.get(transactionId);
+      if (journal) {
+        const usable = this.usableJournal(journal);
+        if (usable && !isEmptyJournal(usable)) {
+          steps.push({ transactionId, values: {}, journal: usable, plain: false });
+        }
+        continue;
+      }
+      const next: RuleRollback = { ...raw };
+      if (
+        next.categoryId !== undefined &&
+        next.categoryId > 0 &&
+        !this.rowExists('categories', next.categoryId)
+      ) {
+        delete next.categoryId;
+      }
+      if (next.accountId !== undefined && !this.rowExists('accounts', next.accountId)) continue;
+      if (Object.keys(next).length === 0) continue;
+      const structural =
+        next.accountId !== undefined || next.inflow !== undefined || next.outflow !== undefined;
+      steps.push({ transactionId, values: next, plain: !tx.TransferID && !structural });
+    }
+    return steps;
+  }
+
+  /** A logged row journal minus what can no longer be written back (see planRunSteps). */
+  private usableJournal(journal: RowJournal): RowJournal | null {
+    const refsOk = (values: JournalRow): boolean => {
+      for (const column of ['AccountID', 'TransferAccountID']) {
+        const id = values[column];
+        if (typeof id === 'number' && id > 0 && !this.rowExists('accounts', id)) return false;
+      }
+      return true;
+    };
+    const changed: RowJournal['changed'] = [];
+    for (const entry of journal.changed) {
+      if (!refsOk(entry.values)) return null;
+      const values = { ...entry.values };
+      const category = values.CategoryID;
+      if (typeof category === 'number' && category > 0 && !this.rowExists('categories', category)) {
+        delete values.CategoryID;
+      }
+      if (Object.keys(values).length) changed.push({ ...entry, values });
+    }
+    const deleted: RowJournal['deleted'] = [];
+    for (const entry of journal.deleted) {
+      if (!entry.rows.every(refsOk)) return null;
+      const rows = entry.rows.filter((row) => !this.rowExists(entry.table, Number(row.ID)));
+      if (rows.length) deleted.push({ ...entry, rows });
+    }
+    return { ...journal, changed, deleted };
+  }
+
+  private rowExists(table: string, id: number): boolean {
+    if (!EXISTENCE_TABLES.has(table)) throw new Error(`Unexpected table ${table}`);
+    return Boolean(getRow(this.db, `SELECT 1 AS ok FROM "${table}" WHERE ID = ?`, id));
+  }
+
+  /**
+   * Apply the steps and the run bookkeeping (`finalize`) all or nothing.
+   * Journal and plain steps are synchronous and run in one DB transaction.
+   * Steps that need the full transaction update (a re-conversion may fetch a
+   * rate) cannot share one; their rows are captured first and put back if any
+   * step or the bookkeeping fails.
+   */
+  private async applyRunSteps(
+    steps: RunStep[],
+    purpose: 'restore' | 'reapply',
+    finalize: () => void
+  ): Promise<void> {
+    const recalc = new Set<number>();
+    const rebuildBalances = () => {
+      if (recalc.size) this.transactions.recalculateAccountBalances([...recalc]);
+    };
+    if (steps.every((step) => step.journal || step.plain)) {
+      this.db.transaction(() => {
+        for (const step of steps) this.applyStepNow(step, purpose, recalc);
+        rebuildBalances();
+        finalize();
+      });
+      return;
+    }
+    const guard = this.captureRunGuard(steps.map((step) => step.transactionId));
+    try {
+      for (const step of steps) {
+        if (step.journal || step.plain) {
+          atomically(this.db, () => this.applyStepNow(step, purpose, recalc));
+        } else {
+          await this.applyRunValues(step.transactionId, step.values, purpose);
+        }
+      }
+      atomically(this.db, () => {
+        rebuildBalances();
+        finalize();
+      });
+    } catch (error) {
+      this.revertRunGuard(guard);
+      throw error;
+    }
+  }
+
+  private applyStepNow(step: RunStep, purpose: 'restore' | 'reapply', recalc: Set<number>): void {
+    try {
+      if (step.journal) {
+        this.restoreRunJournal(step.journal, recalc);
+        return;
+      }
+      const tx = this.transactions.getTransactionByID(step.transactionId);
+      const { values } = step;
+      this.transactions.updatePlainTransactionMetadata(
+        step.transactionId,
+        Number(values.categoryId ?? tx.CategoryID ?? 0),
+        values.memo ?? tx.Memo ?? '',
+        values.payee
+      );
+    } catch (error) {
+      throw new Error(
+        `Failed to ${purpose} transaction ${step.transactionId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Put a write's rows back verbatim. When that can move balances (amounts,
+   * account or date changed, rows came or went), the accounts involved are
+   * added to `recalc` for the caller to rebuild once.
+   */
+  private restoreRunJournal(journal: RowJournal, recalc: Set<number>): void {
+    const ids = new Set<number>();
+    const accounts = new Set<number>();
+    let moved = journal.deleted.length > 0 || journal.inserted.length > 0;
+    for (const entry of journal.changed) {
+      if (entry.table !== 'transactions') continue;
+      entry.ids.forEach((id) => ids.add(Number(id)));
+      if (Object.keys(entry.values).some((column) => BALANCE_COLUMNS.has(column))) moved = true;
+      if (typeof entry.values.AccountID === 'number') accounts.add(entry.values.AccountID);
+    }
+    for (const entry of journal.deleted) {
+      if (entry.table !== 'transactions') continue;
+      for (const row of entry.rows) {
+        ids.add(Number(row.ID));
+        if (typeof row.AccountID === 'number') accounts.add(row.AccountID);
+      }
+    }
+    for (const entry of journal.inserted) {
+      if (entry.table === 'transactions') entry.ids.forEach((id) => ids.add(Number(id)));
+    }
+    if (moved) this.addAccountsOf([...ids], accounts);
+    restoreRowJournal(this.db, journal, RUN_RESTORE_TABLES);
+    if (!moved) return;
+    this.addAccountsOf([...ids], accounts);
+    accounts.forEach((account) => recalc.add(account));
+  }
+
+  /** Adds the AccountID of each existing transaction in `ids` to `accounts`. */
+  private addAccountsOf(ids: number[], accounts: Set<number>): void {
+    for (const part of chunked(ids)) {
+      for (const row of allRows<{ AccountID: number }>(
+        this.db,
+        `SELECT AccountID FROM transactions WHERE ID IN (${part.map(() => '?').join(', ')})`,
+        ...part
+      ))
+        accounts.add(Number(row.AccountID));
+    }
+  }
+
+  /** Rows the steps of an undo / redo can touch, captured to put back on failure. */
+  private captureRunGuard(transactionIds: number[]) {
+    const related = this.transactions.getTransactionsForDelete(transactionIds);
+    const ids = related.map((tx) => Number(tx.ID));
+    const capture = new RowCapture(this.db)
+      .watchInserts('transactions')
+      .watchInserts('transaction_splits')
+      .addKeys('transactions', ids, false);
+    for (const part of chunked(ids)) {
+      capture.addWhere(
+        'transaction_splits',
+        `TransactionID IN (${part.map(() => '?').join(', ')})`,
+        ...part
+      );
+    }
+    return { capture, ids, accounts: new Set(related.map((tx) => Number(tx.AccountID))) };
+  }
+
+  private revertRunGuard(guard: ReturnType<RulesService['captureRunGuard']>): void {
+    try {
+      atomically(this.db, () => {
+        restoreRowJournal(this.db, guard.capture.finish(), RUN_RESTORE_TABLES);
+        for (const part of chunked(guard.ids)) {
+          for (const row of allRows<{ AccountID: number }>(
+            this.db,
+            `SELECT AccountID FROM transactions WHERE ID IN (${part.map(() => '?').join(', ')})`,
+            ...part
+          ))
+            guard.accounts.add(Number(row.AccountID));
+        }
+        this.transactions.recalculateAccountBalances([...guard.accounts]);
+      });
+    } catch (error) {
+      console.error('[RulesService] Failed to roll back a rule run undo/redo', error);
+    }
+  }
+
+  /** Snapshot change rows of `run` that are not in the database and can be put back. */
+  private missingRunChanges(
+    run: TransactionRuleRun,
+    existing: TransactionRuleRunChange[],
+    snapshot: TransactionRuleRunChange[] | undefined
+  ): TransactionRuleRunChange[] {
+    if (!Array.isArray(snapshot) || !snapshot.length) return [];
+    const have = new Set(existing.map((change) => change.id));
+    const missing: TransactionRuleRunChange[] = [];
+    for (const change of snapshot) {
+      const id = Number(change?.id);
+      if (!Number.isSafeInteger(id) || id <= 0 || have.has(id)) continue;
+      if (Number(change.runId) !== run.id || Number(change.ruleId) !== run.ruleId) continue;
+      if (!this.rowExists('transactions', Number(change.transactionId))) continue;
+      if (getRow(this.db, 'SELECT 1 AS ok FROM transaction_rule_run_changes WHERE ID = ?', id)) {
+        continue;
+      }
+      have.add(id);
+      missing.push({ ...change, id, transactionId: Number(change.transactionId) });
+    }
+    return missing;
+  }
+
+  /** logRunChange under the change's own ID (redo). */
+  private insertRunChange(change: TransactionRuleRunChange): void {
+    run(
+      this.db,
+      `
+      INSERT INTO transaction_rule_run_changes (
+        ID, RunID, RuleID, TransactionID, ActionType, Field, OldValue, NewValue, Metadata
+      )
+      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+    `,
+      change.id,
+      change.runId,
+      change.ruleId,
+      change.transactionId,
+      change.actionType,
+      change.field ?? null,
+      change.oldValue === undefined ? null : toJSON(change.oldValue),
+      change.newValue === undefined ? null : toJSON(change.newValue),
+      change.metadata ? toJSON(change.metadata) : null
+    );
+  }
+
+  /**
+   * Write a run's values onto one transaction, the way applyRuleActions does:
+   * metadata-only edits of a non-transfer row go through the plain metadata
+   * update (no amount re-conversion); anything else through updateTransaction.
+   */
+  private async applyRunValues(
+    transactionId: number,
+    values: RuleRollback,
+    purpose: 'restore' | 'reapply'
+  ): Promise<void> {
+    try {
+      const tx = this.transactions.getTransactionByID(transactionId);
+      const nextCategory = Number(values.categoryId ?? tx.CategoryID ?? 0);
+      const nextMemo = values.memo ?? tx.Memo ?? '';
+      // Undefined keeps the stored payee as it is.
+      const nextPayee = values.payee;
+      const structural =
+        values.accountId !== undefined ||
+        values.inflow !== undefined ||
+        values.outflow !== undefined;
+      if (!tx.TransferID && !structural) {
+        this.transactions.updatePlainTransactionMetadata(
           transactionId,
-          nextInflow,
-          nextOutflow,
-          nextAccount,
           nextCategory,
-          tx.Date,
           nextMemo,
           nextPayee
         );
-        restoredTransactions += 1;
-      } catch (error) {
-        throw new Error(
-          `Failed to restore transaction ${transactionId}: ${error instanceof Error ? error.message : 'Unknown error'}`
-        );
+        return;
       }
+      await this.transactions.updateTransaction(
+        transactionId,
+        asMilli(Number(values.inflow ?? tx.InflowConverted ?? 0)),
+        asMilli(Number(values.outflow ?? tx.OutflowConverted ?? 0)),
+        Number(values.accountId ?? tx.AccountID ?? 0),
+        nextCategory,
+        tx.Date,
+        nextMemo,
+        nextPayee
+      );
+    } catch (error) {
+      throw new Error(
+        `Failed to ${purpose} transaction ${transactionId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
-
-    const rule = this.getRule(run.ruleId);
-    let previousCompletedAt: string | null = null;
-    const prevRow = getRow<{ CompletedAt: string | null }>(
-      this.db,
-      `SELECT CompletedAt FROM transaction_rule_runs WHERE RuleID = ? AND ID <> ? AND CompletedAt IS NOT NULL ORDER BY datetime(CompletedAt) DESC, ID DESC LIMIT 1`,
-      run.ruleId,
-      runId
-    );
-    if (prevRow?.CompletedAt) {
-      previousCompletedAt = String(prevRow.CompletedAt);
-    }
-
-    this.updateRule(rule.id, {
-      lastRunAt: previousCompletedAt,
-      oneTimeConsumed: rule.mode === 'one_time' ? false : undefined,
-    });
-
-    const updatedRun = this.updateRun({
-      runId,
-      status: 'undone',
-      notes: this.appendNote(run.notes, 'Run undone and transactions restored.'),
-      completedAt: run.completedAt,
-      transactionCount: restoredTransactions,
-    });
-
-    return {
-      run: updatedRun,
-      restoredTransactions,
-    };
   }
 
   private appendNote(existing: string | undefined, message: string): string {
@@ -936,7 +1505,8 @@ export class RulesService {
   private async applyRuleActions(
     rule: TransactionRule,
     transaction: Transaction,
-    runId: number
+    runId: number,
+    newCapture: () => RowCapture = () => new RowCapture(this.db)
   ): Promise<TransactionRuleRunChange[]> {
     const original: TransactionWorkingState = {
       memo: (transaction.Memo ?? '').toString(),
@@ -1121,25 +1691,33 @@ export class RulesService {
       return [];
     }
 
+    // Record exactly what the write changed (the row journal), so undo puts
+    // those rows back as they were: the full update can also re-derive native
+    // amounts (foreign currency), sync a transfer partner and re-proportion
+    // split lines. An unchanged payee is passed as undefined so the write
+    // keeps it as stored ('' stays '', not NULL).
+    const id = Number(transaction.ID);
+    const payee = payeeChanged ? working.payee : undefined;
+    let rowJournal: RowJournal | null = null;
     if (!transaction.TransferID && !accountChanged && !amountChanged) {
-      this.transactions.updatePlainTransactionMetadata(
-        Number(transaction.ID),
-        working.categoryId,
-        working.memo,
-        working.payee
-      );
+      const capture = newCapture().addKeys('transactions', [id], false);
+      this.transactions.updatePlainTransactionMetadata(id, working.categoryId, working.memo, payee);
+      rowJournal = capture.finish();
     } else {
+      const capture = this.captureWrite(newCapture(), id);
       await this.transactions.updateTransaction(
-        Number(transaction.ID),
+        id,
         working.inflow,
         working.outflow,
         working.accountId,
         working.categoryId,
         transaction.Date,
         working.memo,
-        working.payee
+        payee
       );
+      rowJournal = capture.finish();
     }
+    if (isEmptyJournal(rowJournal)) rowJournal = null;
 
     const loggedChanges: TransactionRuleRunChange[] = [];
 
@@ -1189,6 +1767,12 @@ export class RulesService {
 
     for (const descriptor of changeDescriptors) {
       if (!descriptor.changed) continue;
+      let metadata = metadataByField.get(descriptor.field);
+      if (rowJournal) {
+        // Once per transaction, on its first logged change.
+        metadata = { ...(metadata ?? {}), [ROW_JOURNAL_KEY]: rowJournal };
+        rowJournal = null;
+      }
       loggedChanges.push(
         this.logRunChange({
           runId,
@@ -1198,12 +1782,32 @@ export class RulesService {
           field: descriptor.field,
           oldValue: descriptor.oldValue,
           newValue: descriptor.newValue,
-          metadata: metadataByField.get(descriptor.field),
+          metadata,
         })
       );
     }
 
     return loggedChanges;
+  }
+
+  /**
+   * Capture the rows a full update of transaction `id` can change: the row,
+   * its transfer partner, split lines and split-transfer mirrors.
+   */
+  private captureWrite(capture: RowCapture, id: number): RowCapture {
+    const ids = this.transactions.getTransactionsForDelete([id]).map((tx) => Number(tx.ID));
+    capture
+      .watchInserts('transactions')
+      .watchInserts('transaction_splits')
+      .addKeys('transactions', ids, false);
+    if (ids.length) {
+      capture.addWhere(
+        'transaction_splits',
+        `TransactionID IN (${ids.map(() => '?').join(', ')})`,
+        ...ids
+      );
+    }
+    return capture;
   }
 
   private calculateNetAmount(state: TransactionWorkingState): MilliUnits {
@@ -1282,7 +1886,7 @@ export class RulesService {
         ruleId,
         trigger: 'autofill',
         status: 'completed',
-        completedAt: new Date().toISOString(),
+        completedAt: clock.date().toISOString(),
         transactionCount: 1,
         notes: `Autofill applied ${ruleChanges.length} field(s) during transaction entry`,
       });
@@ -1442,3 +2046,19 @@ export class RulesService {
 
 export * from './autofill.js';
 export * from './condition-groups.js';
+
+/** Set a run row's status, notes and count verbatim (redoRun; COALESCE-free). */
+function run_updateRunExact(
+  db: DatabaseAdapter,
+  runId: number,
+  values: { status: RuleRunStatus; notes: string | null; transactionCount: number }
+): void {
+  run(
+    db,
+    `UPDATE transaction_rule_runs SET Status = ?, Notes = ?, TransactionCount = ? WHERE ID = ?`,
+    values.status,
+    values.notes,
+    values.transactionCount,
+    runId
+  );
+}

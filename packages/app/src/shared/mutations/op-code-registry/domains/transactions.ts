@@ -1,15 +1,27 @@
 import {
+  type AccountService,
   type ImportIdentity,
   type ReconcileResult,
+  type TransactionAmountsSnapshot,
+  type SplitParentAmounts,
+  type TransactionBatchEdit,
+  type TransactionRestoreSnapshot,
+  type TransactionService,
   type TransactionSplit,
+  type TransactionWriteBatch,
   asMilli,
 } from '@budgero/core/browser';
 import {
   S,
+  executeJournaled,
+  journaledUndo,
+  captureCategoryMark,
+  createdCategoriesUndo,
   sortTransactionSnapshots,
   transactionSnapshotToAddOp,
   TRANSACTION_INVALIDATION_KEYS,
   ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
+  RECURRING_OCCURRENCE_INVALIDATIONS,
   RECURRING_TEMPLATE_INVALIDATIONS,
   safeCapture,
   type NormalizedSplit,
@@ -37,6 +49,19 @@ const SPLIT_INVALIDATION_KEYS: [string, ...string[]][] = [
   ['transactionSplits', '*'],
   ['labels', '*'],
   ['labelDirectory', '*'],
+  // Transfer lines move money into other accounts and category lines move
+  // money in and out of Uncategorized / Ready to Assign: the sidebar balances,
+  // RTA and balance charts must refresh too.
+  ['accounts'],
+  ['accounts', '*'],
+  ['uncategorizedTransactions', '*'],
+  ['allAccountsMonthlyTransactions', '*'],
+  ['readyToAssign'],
+  ['readyToAssign', '*'],
+  ['monthlyBalance', '*'],
+  ['balanceByDates', '*'],
+  ['onBudgetBalance'],
+  ['onBudgetBalanceByDates'],
 ];
 
 function restoreSnapshotsUndo(before: unknown): OpCall[] {
@@ -44,10 +69,75 @@ function restoreSnapshotsUndo(before: unknown): OpCall[] {
   return snaps.length ? sortTransactionSnapshots(snaps).map(transactionSnapshotToAddOp) : [];
 }
 
+/**
+ * A write batch from the core services: the op's rows commit in ONE DB
+ * transaction (no compensating deletes). Service doubles without batches
+ * (older unit tests) take the sequential path.
+ */
+function writeBatch(): TransactionWriteBatch | null {
+  const transactions = S().transactions as Partial<TransactionService> | undefined;
+  return typeof transactions?.createWriteBatch === 'function'
+    ? transactions.createWriteBatch()
+    : null;
+}
+
+/**
+ * Exact before-state of the rows a delete or edit touches (with transfer
+ * partners, split lines and mirrors, provenance and links). Null when the
+ * services cannot capture one; callers then fall back to row snapshots.
+ */
+function captureRestore(ids: number[]): TransactionRestoreSnapshot | null {
+  const transactions = S().transactions as Partial<TransactionService> | undefined;
+  if (typeof transactions?.captureRestoreSnapshot !== 'function') return null;
+  try {
+    const snapshot = transactions.captureRestoreSnapshot(ids);
+    return snapshot.transactions.length ? snapshot : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Undo that puts captured rows back exactly, in one op (and one DB transaction). */
+function restoreUndo(before: unknown, replace = false): OpCall[] | null {
+  const snapshot = (before as { restore?: TransactionRestoreSnapshot } | null)?.restore;
+  if (!snapshot) return null;
+  return [{ op: 'transactions.restore', args: { snapshot, ...(replace ? { replace } : {}) } }];
+}
+
+/** Normalize split lines from an op payload (snake_case or PascalCase) to the core shape. */
+function normalizeSplitLines(splits: unknown): NormalizedSplit[] {
+  // asMilli doubles as the op-boundary guard: a decimal amount in a payload
+  // throws here instead of reaching an integer column.
+  return ((splits as Record<string, unknown>[]) || []).map((s, idx) => {
+    const inflowOriginal = s.InflowNative ?? s.InflowOriginal ?? s.inflow_original ?? null;
+    const outflowOriginal = s.OutflowNative ?? s.OutflowOriginal ?? s.outflow_original ?? null;
+    return {
+      CategoryID: (s.CategoryID ?? s.category_id ?? null) as number | null,
+      TransferAccountID: (s.TransferAccountID ?? s.transfer_account_id ?? null) as number | null,
+      Memo: String(s.Memo ?? s.memo ?? ''),
+      Payee: String(s.Payee ?? s.payee ?? ''),
+      InflowConverted: asMilli(Number(s.InflowConverted ?? s.Inflow ?? s.inflow ?? 0)),
+      OutflowConverted: asMilli(Number(s.OutflowConverted ?? s.Outflow ?? s.outflow ?? 0)),
+      InflowNative: inflowOriginal == null ? null : asMilli(Number(inflowOriginal)),
+      OutflowNative: outflowOriginal == null ? null : asMilli(Number(outflowOriginal)),
+      PairID: (s.PairID ?? s.pair_id ?? null) as string | null,
+      OrderIndex: Number(s.OrderIndex ?? s.order_index ?? idx),
+    };
+  });
+}
+
 /** Undo for split edits: put back the previous lines, or clear if there were none. */
 const splitsUndo: NonNullable<OpCodeEntry['undo']> = {
-  capture: async (args) => safeCapture(() => S().splits.getSplits(args.transactionId as number)),
+  // Exact when the services can capture the parent (lines under their IDs,
+  // mirrors, the parent's category); otherwise the previous lines are re-upserted.
+  capture: async (args) => {
+    const restore = captureRestore([args.transactionId as number]);
+    if (restore) return { restore };
+    return safeCapture(() => S().splits.getSplits(args.transactionId as number));
+  },
   build: (args, _result, before) => {
+    const exact = restoreUndo(before, true);
+    if (exact) return exact;
     const previous = before as TransactionSplit[] | null;
     if (!previous) return [];
     return previous.length
@@ -111,6 +201,88 @@ const TX_WRITE_INVALIDATION_KEYS: string[][] = [
   ['spendingByLabels', '*'],
 ];
 
+const TX_COLUMN_PAYEE_KEYS: string[][] = [
+  ['payees'],
+  ['payees', '*'],
+  ['payeeDirectory'],
+  ['payeeDirectory', '*'],
+];
+
+const TX_COLUMN_LABEL_KEYS: string[][] = [
+  ['labels'],
+  ['labels', '*'],
+  ['labelDirectory'],
+  ['labelDirectory', '*'],
+  ['spendingByLabels', '*'],
+];
+
+// Full set for a column edit the op cannot classify (and for callers that only
+// know the op code): every write key plus payees, as before.
+const TX_UPDATE_COLUMN_INVALIDATION_KEYS: string[][] = [
+  ...TX_WRITE_INVALIDATION_KEYS,
+  ['payees'],
+  ['payees', '*'],
+];
+
+/**
+ * Every query that lists transaction rows (and so shows memo, payee and label),
+ * but none of the balance, budget or analytics aggregates.
+ */
+const TX_ROW_LIST_INVALIDATION_KEYS: string[][] = [
+  ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
+  ['transactionsByCategoryAndMonth', '*'],
+  ['allTransactions', '*'],
+  ['allTransactionsDetailed', '*'],
+  ['allTransactionsAnalytics', '*'],
+  ['uncategorizedTransactions', '*'],
+  ['allAccountsMonthlyTransactions', '*'],
+];
+
+/**
+ * Amount, date, category, account and rate edits move balances, budgets and
+ * analytics, but cannot change the payee or label directories (names and
+ * usage counts depend only on which rows exist and their payee/label).
+ */
+const TX_VALUE_UPDATE_INVALIDATION_KEYS: string[][] = TX_WRITE_INVALIDATION_KEYS.filter(
+  ([root]) => !['payees', 'payeeDirectory', 'labels', 'labelDirectory'].includes(root)
+);
+
+const TX_VALUE_COLUMNS = new Set([
+  'inflowconverted',
+  'outflowconverted',
+  'inflownative',
+  'outflownative',
+  // legacy pre-045 names, still accepted by updateTransactionColumn
+  'inflow',
+  'outflow',
+  'infloworiginal',
+  'outfloworiginal',
+  'date',
+  'categoryid',
+  'accountid',
+  'exchangerate',
+]);
+
+/**
+ * What a `transactions.updateColumn` call can change, by column (normalized the
+ * same way as TransactionService.updateTransactionColumn):
+ * - memo: only the rows themselves;
+ * - payee: the rows and the payee directory;
+ * - label: the rows and the label directory / label analytics;
+ * - amounts, date, category, account, rate: everything except the payee and
+ *   label directories;
+ * - anything else: the full list.
+ */
+export function updateColumnInvalidations(args: Record<string, unknown>): string[][] {
+  const column =
+    typeof args.columnName === 'string' ? args.columnName.toLowerCase().replace(/_/g, '') : '';
+  if (column === 'memo') return TX_ROW_LIST_INVALIDATION_KEYS;
+  if (column === 'payee') return [...TX_ROW_LIST_INVALIDATION_KEYS, ...TX_COLUMN_PAYEE_KEYS];
+  if (column === 'labelid') return [...TX_ROW_LIST_INVALIDATION_KEYS, ...TX_COLUMN_LABEL_KEYS];
+  if (TX_VALUE_COLUMNS.has(column)) return TX_VALUE_UPDATE_INVALIDATION_KEYS;
+  return TX_UPDATE_COLUMN_INVALIDATION_KEYS;
+}
+
 // Shared by transactions.moveToNewCategory and transactions.reassign (exact), and
 // transactions.moveToNewAccount (which also invalidates accounts).
 const TX_MOVE_INVALIDATION_KEYS: string[][] = [
@@ -131,12 +303,174 @@ const TX_MOVE_INVALIDATION_KEYS: string[][] = [
   ['labelDirectory', '*'],
 ];
 
+const AMOUNT_COLUMNS = new Set([
+  'inflowconverted',
+  'outflowconverted',
+  'inflownative',
+  'outflownative',
+  'inflow',
+  'outflow',
+  'infloworiginal',
+  'outfloworiginal',
+]);
+
+const LEGACY_COLUMNS: Record<string, string> = {
+  inflow: 'inflowconverted',
+  outflow: 'outflowconverted',
+  infloworiginal: 'inflownative',
+  outfloworiginal: 'outflownative',
+};
+
+/**
+ * The row's value for an updateColumn column name, matched the way
+ * updateTransactionColumn matches it (any case, underscores, legacy names).
+ */
+function readColumn(tx: TransactionRowWithColumns, columnName: string): unknown {
+  if (columnName in tx) return tx[columnName];
+  const normalized = columnName.toLowerCase().replace(/_/g, '');
+  const target = LEGACY_COLUMNS[normalized] ?? normalized;
+  const key = Object.keys(tx).find((name) => name.toLowerCase() === target);
+  return key === undefined ? undefined : tx[key];
+}
+
+function amountsSnapshot(tx: TransactionRowWithColumns): TransactionAmountsSnapshot {
+  return {
+    InflowNative: asMilli(Number(tx.InflowNative ?? tx.InflowConverted ?? 0)),
+    OutflowNative: asMilli(Number(tx.OutflowNative ?? tx.OutflowConverted ?? 0)),
+    InflowConverted: asMilli(Number(tx.InflowConverted ?? 0)),
+    OutflowConverted: asMilli(Number(tx.OutflowConverted ?? 0)),
+    ExchangeRate: tx.ExchangeRate ?? null,
+    ExchangeRateOverride: Boolean(tx.ExchangeRateOverride),
+  };
+}
+
+/** True when the two accounts exist and hold different currencies. */
+function crossCurrencyMove(fromAccountId: unknown, toAccountId: unknown): boolean {
+  const accounts = S().accounts as Partial<Pick<AccountService, 'getAccount'>> | undefined;
+  if (typeof accounts?.getAccount !== 'function') return false;
+  try {
+    return (
+      accounts.getAccount(Number(fromAccountId)).Currency !==
+      accounts.getAccount(Number(toAccountId)).Currency
+    );
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Before-state for column edits whose inverse edit would not land exactly on
+ * it, so undo puts the captured rows back instead (transactions.restore):
+ * - an amount or rate edit on a split parent re-proportions the lines (and
+ *   moves split-transfer mirrors); editing the amount back re-proportions the
+ *   new lines again instead of restoring them;
+ * - a rate edit on a row with no stored rate (there is no rate to write back);
+ * - a move between accounts of different currencies converts the native
+ *   amount, and converting it back does not round-trip;
+ * - a date edit on a foreign row re-converts it at the new date's rate;
+ * - a payee edit on a row whose payee was '' (the edit back writes NULL).
+ */
+function exactColumnRestore(
+  tx: TransactionRowWithColumns,
+  column: string,
+  oldValue: unknown,
+  newValue: unknown
+): TransactionRestoreSnapshot | null {
+  if (column === 'accountid') {
+    return crossCurrencyMove(tx.AccountID, newValue) ? captureRestore([tx.ID]) : null;
+  }
+  // A date edit on a foreign row re-converts it at the new date's rate;
+  // editing the date back converts again instead of restoring the amounts.
+  if (column === 'date') {
+    return tx.ExchangeRate != null || Boolean(tx.ConversionPending)
+      ? captureRestore([tx.ID])
+      : null;
+  }
+  // A payee edit stores '' as NULL, so the edit back would not restore ''.
+  if (column === 'payee') return oldValue === '' ? captureRestore([tx.ID]) : null;
+  const amount = AMOUNT_COLUMNS.has(column);
+  if (!amount && column !== 'exchangerate') return null;
+  const restore = captureRestore([tx.ID]);
+  if (!restore) return null;
+  if (restore.dependents.some((dependent) => dependent.table === 'transaction_splits')) {
+    return restore;
+  }
+  if (column === 'exchangerate') return oldValue == null ? restore : null;
+  // An amount edit re-resolves the rate of a foreign row (whose stored rate
+  // may be a fallback or stale) and re-derives a transfer partner: editing the
+  // amount back would not restore either.
+  return restore.transactions.length > 1 ||
+    restore.transactions.some((row) => row.ExchangeRate != null)
+    ? restore
+    : null;
+}
+
+/** Payee names an op is about to use that the budget's directory does not have yet. */
+export interface MissingPayees {
+  budgetId: number;
+  names: string[];
+}
+
+type PayeeDirectory = Pick<
+  ReturnType<typeof S>['payees'],
+  'hasSavedPayee' | 'getSavedPayeeId' | 'removeUnusedPayees'
+>;
+
+function payeeDirectory(): PayeeDirectory | null {
+  const payees = S().payees as Partial<PayeeDirectory> | undefined;
+  return typeof payees?.hasSavedPayee === 'function' &&
+    typeof payees.getSavedPayeeId === 'function' &&
+    typeof payees.removeUnusedPayees === 'function'
+    ? (payees as PayeeDirectory)
+    : null;
+}
+
+/** Capture side of removeAddedPayees: which typed names are new to the directory. */
+export function missingPayees(budgetId: unknown, names: unknown[]): MissingPayees | undefined {
+  const directory = payeeDirectory();
+  if (!directory || typeof budgetId !== 'number') return undefined;
+  const missing = [
+    ...new Set(
+      names
+        .filter((name): name is string => typeof name === 'string')
+        .map((name) => name.trim())
+        .filter(Boolean)
+    ),
+  ].filter((name) => !directory.hasSavedPayee(budgetId, name));
+  return missing.length ? { budgetId, names: missing } : undefined;
+}
+
+/**
+ * Undo step for directory entries the op added (a new payee typed on an add or
+ * an edit): runs after the rows are undone and drops the entries nothing uses.
+ */
+export function removeAddedPayees(missing: MissingPayees | undefined): OpCall[] {
+  if (!missing) return [];
+  const directory = payeeDirectory();
+  if (!directory) return [];
+  const ids = missing.names
+    .map((name) => directory.getSavedPayeeId(missing.budgetId, name))
+    .filter((id): id is number => id !== undefined);
+  return ids.length
+    ? [{ op: 'payees.removeUnused', args: { budgetId: missing.budgetId, ids } }]
+    : [];
+}
+
+/** Payee names on an add / import payload: the row's and its split lines'. */
+function payloadPayees(args: Record<string, unknown>): unknown[] {
+  const lines = Array.isArray(args.splits) ? (args.splits as Record<string, unknown>[]) : [];
+  return [args.payee, ...lines.map((line) => line?.payee)];
+}
+
 /** Undo/redo pass the row's original ID so history entries that reference it stay valid. */
 function explicitId(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }
 
-async function addTransactionFromArgs(args: Record<string, unknown>): Promise<number> {
+async function addTransactionFromArgs(
+  args: Record<string, unknown>,
+  batch?: TransactionWriteBatch
+): Promise<number> {
   const parameters = [
     asMilli(Number(args.inflow ?? 0)),
     asMilli(Number(args.outflow ?? 0)),
@@ -156,7 +490,9 @@ async function addTransactionFromArgs(args: Record<string, unknown>): Promise<nu
     false,
     (args.importIdentities as ImportIdentity[] | undefined) ?? [],
     args.cleared === true,
-    explicitId(args.id)
+    explicitId(args.id),
+    // With a batch the result is the queued step's index (see TransactionWriteBatch).
+    ...(batch ? [batch] : [])
   );
 }
 
@@ -231,10 +567,14 @@ export const transactionOps = {
     },
     invalidates: [...TRANSACTION_INVALIDATION_KEYS],
     undo: {
-      build: (_args, result) => {
+      capture: async (args) => ({ payees: missingPayees(args.budgetId, payloadPayees(args)) }),
+      build: (_args, result, before) => {
         const imported = result as { transactionId: number; created: boolean };
         return imported.created
-          ? [{ op: 'transactions.delete', args: { id: imported.transactionId } }]
+          ? [
+              { op: 'transactions.delete', args: { id: imported.transactionId } },
+              ...removeAddedPayees((before as { payees?: MissingPayees } | undefined)?.payees),
+            ]
           : [];
       },
     },
@@ -264,6 +604,13 @@ export const transactionOps = {
         );
         if (splitNet !== parentNet) throw new Error('Split amounts must sum to parent total.');
       }
+      const batch = splits ? writeBatch() : null;
+      if (splits && batch) {
+        // Parent and lines commit together.
+        const parent = await addTransactionFromArgs({ ...args, categoryId: null }, batch);
+        await S().splits!.upsertSplits({ batchIndex: parent }, splits, batch);
+        return batch.commit()[parent] as number;
+      }
       const transactionId = await addTransactionFromArgs(
         splits ? { ...args, categoryId: null } : args
       );
@@ -280,11 +627,34 @@ export const transactionOps = {
     },
     invalidates: [...TRANSACTION_INVALIDATION_KEYS, ...SPLIT_INVALIDATION_KEYS],
     undo: {
-      // add -> delete the created transaction
-      build: (_args, result) => {
+      // An add whose import identity is already recorded returns the EXISTING
+      // row and creates nothing: there is nothing to undo (deleting would
+      // remove the row the identity belongs to).
+      capture: async (args) => {
+        const payees = missingPayees(args.budgetId, payloadPayees(args));
+        // An add can re-create the Uncategorized category (and group) when a
+        // legacy group delete removed it.
+        const categoryMark = captureCategoryMark();
+        const extra = { ...(payees ? { payees } : {}), ...(categoryMark ? { categoryMark } : {}) };
+        const identity = (args.importIdentities as ImportIdentity[] | undefined)?.[0];
+        if (!identity) return { duplicateOf: undefined, ...extra };
+        return {
+          duplicateOf: S().importHistory!.duplicates.findOperation(identity.operationId),
+          ...extra,
+        };
+      },
+      // add -> delete the created transaction (and a payee entry / category it added)
+      build: (args, result, before) => {
+        const captured = before as
+          { duplicateOf?: number; payees?: MissingPayees; categoryMark?: unknown } | undefined;
+        if (captured?.duplicateOf !== undefined) return [];
         const id = result as number | undefined;
         return typeof id === 'number' && Number.isFinite(id)
-          ? [{ op: 'transactions.delete', args: { id } }]
+          ? [
+              { op: 'transactions.delete', args: { id } },
+              ...removeAddedPayees(captured?.payees),
+              ...createdCategoriesUndo(captured?.categoryMark, args.budgetId),
+            ]
           : [];
       },
     },
@@ -325,6 +695,21 @@ export const transactionOps = {
       const existing = await S().transactions!.getTransactionsByTransferID(transferId);
       if (existing.length) throw new Error('This transferId is already in use.');
 
+      const batch = writeBatch();
+      if (batch) {
+        // Both legs commit together.
+        const sourceStep = await addTransactionFromArgs({ ...source, budgetId, transferId }, batch);
+        const destinationStep = await addTransactionFromArgs(
+          { ...destination, budgetId, transferId },
+          batch
+        );
+        const ids = batch.commit();
+        return {
+          sourceId: ids[sourceStep] as number,
+          destinationId: ids[destinationStep] as number,
+        };
+      }
+
       let sourceId: number | null = null;
       try {
         sourceId = await addTransactionFromArgs({ ...source, budgetId, transferId });
@@ -349,11 +734,19 @@ export const transactionOps = {
     },
     invalidates: [...TRANSACTION_INVALIDATION_KEYS],
     undo: {
+      capture: async () => ({ categoryMark: captureCategoryMark() }),
       // Use the stable TransferID because redo creates new database row IDs.
-      build: (args) => {
+      build: (args, _result, before) => {
         const { transferId } = args;
         return typeof transferId === 'string' && transferId
-          ? [{ op: 'transactions.deleteTransfer', args: { transferId } }]
+          ? [
+              { op: 'transactions.deleteTransfer', args: { transferId } },
+              // A transfer re-creates the Transfers category if it was deleted.
+              ...createdCategoriesUndo(
+                (before as { categoryMark?: unknown } | null)?.categoryMark,
+                args.budgetId
+              ),
+            ]
           : [];
       },
     },
@@ -450,9 +843,11 @@ export const transactionOps = {
         const group = await safeCapture(() =>
           S().transactions!.getTransactionsByTransferID(args.transferId as string)
         );
+        const restore = captureRestore((group ?? []).map((row) => row.ID));
+        if (restore) return { restore };
         return { snapshots: (group ?? []).map(withImportIdentities) };
       },
-      build: (_args, _result, before) => restoreSnapshotsUndo(before),
+      build: (_args, _result, before) => restoreUndo(before) ?? restoreSnapshotsUndo(before),
     },
   },
 
@@ -466,7 +861,8 @@ export const transactionOps = {
         typeof args.exchangeRateOverride === 'boolean' ? args.exchangeRateOverride : undefined
       );
     },
-    invalidates: [...TX_WRITE_INVALIDATION_KEYS, ['payees'], ['payees', '*']],
+    invalidates: TX_UPDATE_COLUMN_INVALIDATION_KEYS,
+    invalidatesFor: updateColumnInvalidations,
     undo: {
       // capture current value before update so we can restore it
       capture: async (args) => {
@@ -474,11 +870,18 @@ export const transactionOps = {
           args.id as number
         )) as unknown as TransactionRowWithColumns;
         const col = args.columnName as string;
-        const oldValue = tx[col];
+        const oldValue = readColumn(tx, col);
+        const normalized = col.toLowerCase().replace(/_/g, '');
         const oldExchangeRateOverride =
-          col.toLowerCase().replace(/_/g, '') === 'exchangerate'
-            ? Boolean(tx.ExchangeRateOverride)
-            : undefined;
+          normalized === 'exchangerate' ? Boolean(tx.ExchangeRateOverride) : undefined;
+        const payees =
+          normalized === 'payee' ? missingPayees(tx.BudgetID, [args.newValue]) : undefined;
+        const restore = exactColumnRestore(tx, normalized, oldValue, args.newValue);
+        if (restore) return { oldValue, restore, ...(payees ? { payees } : {}) };
+        if (payees) return { oldValue, payees };
+        if (AMOUNT_COLUMNS.has(normalized)) {
+          return { oldValue, oldExchangeRateOverride, amounts: amountsSnapshot(tx) };
+        }
         return { oldValue, oldExchangeRateOverride };
       },
       build: (args, _result, before) => {
@@ -486,8 +889,35 @@ export const transactionOps = {
           | {
               oldValue?: string | number | null;
               oldExchangeRateOverride?: boolean;
+              amounts?: TransactionAmountsSnapshot;
+              restore?: TransactionRestoreSnapshot;
+              payees?: MissingPayees;
             }
           | undefined;
+        const addedPayees = removeAddedPayees(previous?.payees);
+        const exact = restoreUndo(previous, true);
+        if (exact) return [...exact, ...addedPayees];
+        // Without a captured old value the inverse would write `undefined`.
+        if (!previous || !('oldValue' in previous) || previous.oldValue === undefined) return [];
+        if (addedPayees.length) {
+          return [
+            {
+              op: 'transactions.updateColumn',
+              args: { id: args.id, columnName: args.columnName, newValue: previous.oldValue },
+            },
+            ...addedPayees,
+          ];
+        }
+        if (previous.amounts?.ExchangeRateOverride) {
+          // An amount edit re-resolves the rate and drops a manual override:
+          // restore the row's amounts and rate exactly.
+          return [
+            {
+              op: 'transactions.restoreAmounts',
+              args: { id: args.id, amounts: previous.amounts },
+            },
+          ];
+        }
         return [
           {
             op: 'transactions.updateColumn',
@@ -503,6 +933,17 @@ export const transactionOps = {
         ];
       },
     },
+  },
+
+  /** Undo of an amount edit on a row with a manual rate: see TransactionService.restoreAmounts. */
+  'transactions.restoreAmounts': {
+    execute: async (args) => {
+      return await S().transactions!.restoreAmounts(
+        args.id as number,
+        args.amounts as TransactionAmountsSnapshot
+      );
+    },
+    invalidates: TX_VALUE_UPDATE_INVALIDATION_KEYS,
   },
 
   // useDeleteTransaction
@@ -523,6 +964,9 @@ export const transactionOps = {
       capture: async (args) => {
         try {
           const tx = await S().transactions!.getTransactionByID(args.id as number);
+          // Exact: the row with its transfer partner or split lines and mirrors.
+          const restore = captureRestore([tx.ID]);
+          if (restore) return { restore };
           if (tx?.TransferID) {
             const group = await S().transactions!.getTransactionsByTransferID(tx.TransferID);
             return {
@@ -536,7 +980,7 @@ export const transactionOps = {
           return { snapshots: [] };
         }
       },
-      build: (_args, _result, before) => restoreSnapshotsUndo(before),
+      build: (_args, _result, before) => restoreUndo(before) ?? restoreSnapshotsUndo(before),
     },
   },
 
@@ -594,6 +1038,8 @@ export const transactionOps = {
     undo: {
       capture: async (args) => {
         const ids = Array.isArray(args.ids) ? args.ids.map(Number) : [];
+        const restore = captureRestore(ids);
+        if (restore) return { restore };
         return {
           snapshots: (await S().transactions!.getTransactionsForDelete(ids)).map(
             withImportIdentities
@@ -601,6 +1047,8 @@ export const transactionOps = {
         };
       },
       build: (_args, _result, before) => {
+        const exact = restoreUndo(before);
+        if (exact) return exact;
         const beforeState = before as { snapshots?: TransactionSnapshot[] } | undefined;
         const snapshots = beforeState?.snapshots || [];
         if (!snapshots.length) return [];
@@ -614,18 +1062,104 @@ export const transactionOps = {
     },
   },
 
+  // Undo of batch deletes logged before transactions.restore existed.
   'transactions.restoreBatch': {
     execute: async (args) => {
       const snapshots = Array.isArray(args.snapshots)
         ? sortTransactionSnapshots(args.snapshots as TransactionSnapshot[])
         : [];
 
+      const batch = writeBatch();
       for (const snapshot of snapshots) {
         const addArgs = transactionSnapshotToAddOp(snapshot).args;
-        await addTransactionFromArgs(addArgs);
+        await addTransactionFromArgs(addArgs, batch ?? undefined);
       }
+      batch?.commit();
     },
     invalidates: TX_WRITE_INVALIDATION_KEYS,
+  },
+
+  // Undo of a delete (or of an edit, with `replace`): puts the captured rows,
+  // split lines, mirrors, provenance and links back exactly, in one write.
+  'transactions.restore': {
+    execute: async (args) => {
+      if (!args.snapshot || typeof args.snapshot !== 'object') {
+        throw new Error('"snapshot" is required.');
+      }
+      return S().transactions!.restoreTransactions(args.snapshot as TransactionRestoreSnapshot, {
+        replace: args.replace === true,
+      });
+    },
+    invalidates: [
+      ...TX_WRITE_INVALIDATION_KEYS,
+      ...SPLIT_INVALIDATION_KEYS,
+      ...RECURRING_OCCURRENCE_INVALIDATIONS,
+    ],
+  },
+
+  // The split editor's save: parent total and lines in one op and one write.
+  'transactions.saveSplits': {
+    execute: async (args) => {
+      const amount = args.amount as
+        { inflow?: unknown; outflow?: unknown; currency?: unknown } | undefined;
+      return S().transactions!.saveSplitTransaction(args.transactionId as number, {
+        amount: amount
+          ? {
+              inflow: asMilli(Number(amount.inflow ?? 0)),
+              outflow: asMilli(Number(amount.outflow ?? 0)),
+              currency: amount.currency === 'native' ? 'native' : 'converted',
+            }
+          : undefined,
+        exactAmount: args.exactAmount as SplitParentAmounts | undefined,
+        splits: normalizeSplitLines(args.splits),
+      });
+    },
+    invalidates: [...TX_WRITE_INVALIDATION_KEYS, ...SPLIT_INVALIDATION_KEYS],
+    undo: {
+      capture: async (args) => {
+        const restore = captureRestore([args.transactionId as number]);
+        return restore ? { restore } : null;
+      },
+      build: (_args, _result, before) => restoreUndo(before, true) ?? [],
+    },
+  },
+
+  // The register's batch toolbar: account / category / payee for many rows,
+  // one op, one write, one undo step.
+  'transactions.batchEdit': {
+    execute: async (args) => {
+      const edits = Array.isArray(args.edits) ? (args.edits as TransactionBatchEdit[]) : [];
+      if (!edits.every((edit) => Number.isSafeInteger(edit?.id) && edit.id > 0)) {
+        throw new Error('edits must list transaction ids.');
+      }
+      return S().transactions!.editTransactions(edits);
+    },
+    invalidates: [
+      ...TX_UPDATE_COLUMN_INVALIDATION_KEYS,
+      ...TX_MOVE_INVALIDATION_KEYS,
+      ['accounts', '*'],
+    ],
+    undo: {
+      capture: async (args) => {
+        const edits = Array.isArray(args.edits) ? (args.edits as TransactionBatchEdit[]) : [];
+        const restore = captureRestore(edits.map((edit) => edit.id));
+        if (!restore) return null;
+        const typed = edits.filter((edit) => edit.payee !== undefined);
+        const payees = typed.length
+          ? missingPayees(
+              restore.transactions[0]?.BudgetID,
+              typed.map((edit) => edit.payee)
+            )
+          : undefined;
+        return payees ? { restore, payees } : { restore };
+      },
+      build: (_args, _result, before) => {
+        const exact = restoreUndo(before, true);
+        return exact
+          ? [...exact, ...removeAddedPayees((before as { payees?: MissingPayees }).payees)]
+          : [];
+      },
+    },
   },
 
   // useMoveTransactionToNewCategory
@@ -672,33 +1206,41 @@ export const transactionOps = {
         const tx = (await S().transactions!.getTransactionByID(
           args.transactionId as number
         )) as unknown as TransactionRowWithColumns | undefined;
-        return { oldAccountId: tx?.AccountID };
+        // Across currencies the move converts the native amount: put the row back exactly.
+        const restore =
+          tx && crossCurrencyMove(tx.AccountID, args.newAccountId) ? captureRestore([tx.ID]) : null;
+        return restore ? { oldAccountId: tx?.AccountID, restore } : { oldAccountId: tx?.AccountID };
       },
-      build: (args, _result, before) => [
-        {
-          op: 'transactions.moveToNewAccount',
-          args: {
-            transactionId: args.transactionId,
-            newAccountId: (before as { oldAccountId?: number } | undefined)?.oldAccountId,
+      build: (args, _result, before) =>
+        restoreUndo(before, true) ?? [
+          {
+            op: 'transactions.moveToNewAccount',
+            args: {
+              transactionId: args.transactionId,
+              newAccountId: (before as { oldAccountId?: number } | undefined)?.oldAccountId,
+            },
           },
-        },
-      ],
+        ],
     },
   },
 
   // useReassignTransactions
+  // Legacy step of the old category delete (older clients still send it).
+  // Journaled: undo moves exactly the moved rows back.
   'transactions.reassign': {
-    execute: async (args) => {
-      return await S().transactions!.reassignTransactions(
-        args.newCategoryId as number,
-        args.oldCategoryId as number
-      );
-    },
+    execute: async (args, context) =>
+      executeJournaled(args, context, () =>
+        S().transactions!.reassignTransactions(
+          args.newCategoryId as number,
+          args.oldCategoryId as number
+        )
+      ),
     invalidates: [
       ...TRANSACTION_INVALIDATION_KEYS,
       ['transactionSplits', '*'],
       ...RECURRING_TEMPLATE_INVALIDATIONS,
     ],
+    undo: journaledUndo(),
   },
 
   // useReconcileAccount
@@ -731,6 +1273,25 @@ export const transactionOps = {
       // The balance adjustment is created inside the op (cleared, so it is
       // locked too) so one undo removes both.
       const adjustment = args.adjustment as Record<string, unknown> | undefined;
+      const batch = writeBatch();
+      if (batch) {
+        // Adjustment and lock commit together.
+        const adjustmentStep = adjustment
+          ? await addTransactionFromArgs({ ...adjustment, cleared: true }, batch)
+          : undefined;
+        const reconcileStep = batch.queue(() =>
+          S().transactions!.reconcileAccount(
+            args.accountId as number,
+            args.reconcileDate as string | undefined,
+            { clearedOnly: true }
+          )
+        );
+        const results = batch.commit();
+        const result = results[reconcileStep] as ReconcileResult;
+        return adjustmentStep === undefined
+          ? result
+          : { ...result, adjustmentId: results[adjustmentStep] as number };
+      }
       const adjustmentId = adjustment
         ? await addTransactionFromArgs({ ...adjustment, cleared: true })
         : undefined;
@@ -752,6 +1313,23 @@ export const transactionOps = {
     ],
     undo: {
       build: (args, result) => reconcileUndo(args.accountId, result),
+    },
+    // Redo re-creates the adjustment under the ID it first got, so the undo
+    // entry that deletes it stays valid.
+    redo: {
+      build: (args, result) => {
+        const { adjustmentId } = (result ?? {}) as ReconcileWithAdjustment;
+        const adjustment = args.adjustment as Record<string, unknown> | undefined;
+        return [
+          {
+            op: 'transactions.reconcileCleared',
+            args:
+              adjustment && adjustmentId !== undefined
+                ? { ...args, adjustment: { ...adjustment, id: adjustmentId } }
+                : args,
+          },
+        ];
+      },
     },
   },
   'transactions.unreconcile': {
@@ -809,18 +1387,24 @@ export const transactionOps = {
       const created: number[] = [];
       const copied = new Set<string>();
 
+      // With a batch every copy (and its lines) commits together; `created`
+      // then holds step indexes until the commit turns them into IDs.
+      const batch = writeBatch();
       const copy = async (row: TransactionSnapshot, transferId?: string) => {
         const {
           id: _id,
           importIdentities: _identities,
           ...addArgs
         } = transactionSnapshotToAddOp(row).args;
-        const newId = await addTransactionFromArgs({
-          ...addArgs,
-          transferId,
-          cleared: false,
-          id: reuseIds[created.length],
-        });
+        const newId = await addTransactionFromArgs(
+          {
+            ...addArgs,
+            transferId,
+            cleared: false,
+            id: reuseIds[created.length],
+          },
+          batch ?? undefined
+        );
         created.push(newId);
         return newId;
       };
@@ -847,7 +1431,7 @@ export const transactionOps = {
         const newId = await copy(row);
         if (splits.length) {
           await S().splits.upsertSplits(
-            newId,
+            batch ? { batchIndex: newId } : newId,
             splits.map((line, index) => ({
               CategoryID: line.CategoryID ?? null,
               TransferAccountID: line.TransferAccountID ?? null,
@@ -859,9 +1443,14 @@ export const transactionOps = {
               OutflowNative: line.OutflowNative ?? null,
               PairID: null,
               OrderIndex: line.OrderIndex ?? index,
-            }))
+            })),
+            ...(batch ? [batch] : [])
           );
         }
+      }
+      if (batch) {
+        const results = batch.commit();
+        return { created: created.map((step) => results[step] as number) };
       }
       return { created };
     },
@@ -888,28 +1477,7 @@ export const transactionOps = {
   'transactions.upsertSplits': {
     execute: async (args) => {
       // Normalize client payload (snake_case) to core service shape (PascalCase).
-      // asMilli doubles as the op-boundary guard: a decimal amount in a payload
-      // throws here instead of reaching an integer column.
-      const normalized: NormalizedSplit[] = ((args.splits as Record<string, unknown>[]) || []).map(
-        (s, idx) => {
-          const inflowOriginal = s.InflowNative ?? s.InflowOriginal ?? s.inflow_original ?? null;
-          const outflowOriginal =
-            s.OutflowNative ?? s.OutflowOriginal ?? s.outflow_original ?? null;
-          return {
-            CategoryID: (s.CategoryID ?? s.category_id ?? null) as number | null,
-            TransferAccountID: (s.TransferAccountID ?? s.transfer_account_id ?? null) as
-              number | null,
-            Memo: String(s.Memo ?? s.memo ?? ''),
-            Payee: String(s.Payee ?? s.payee ?? ''),
-            InflowConverted: asMilli(Number(s.InflowConverted ?? s.Inflow ?? s.inflow ?? 0)),
-            OutflowConverted: asMilli(Number(s.OutflowConverted ?? s.Outflow ?? s.outflow ?? 0)),
-            InflowNative: inflowOriginal == null ? null : asMilli(Number(inflowOriginal)),
-            OutflowNative: outflowOriginal == null ? null : asMilli(Number(outflowOriginal)),
-            PairID: (s.PairID ?? s.pair_id ?? null) as string | null,
-            OrderIndex: Number(s.OrderIndex ?? s.order_index ?? idx),
-          };
-        }
-      );
+      const normalized = normalizeSplitLines(args.splits);
       return S().splits.upsertSplits(args.transactionId as number, normalized);
     },
     invalidates: SPLIT_INVALIDATION_KEYS,

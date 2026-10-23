@@ -110,13 +110,33 @@ export function useDeleteRecurringTransaction() {
   });
 }
 
+/**
+ * Occurrence IDs are local to each device, so synced occurrence ops also carry
+ * the (template, due date) key that every device resolves to the same bill.
+ */
+function occurrenceKey(
+  runtime: ReturnType<typeof useRuntime>,
+  occurrenceId: number | undefined
+): { recurringTransactionId?: number; dueDate?: string } {
+  if (occurrenceId == null) return {};
+  try {
+    const occurrence = runtime.services().recurring.getOccurrenceWithTemplate(occurrenceId);
+    return {
+      recurringTransactionId: occurrence.recurringTransactionId,
+      dueDate: occurrence.dueDate,
+    };
+  } catch {
+    return {};
+  }
+}
+
 export function useMarkRecurringOccurrenceReady() {
   const runtime = useRuntime();
   return useMutation<MarkOccurrenceReadyResult, Error, MarkOccurrenceReadyOptions>({
     mutationFn: async (options) => {
       return executeSpaceMutation<MarkOccurrenceReadyResult>(runtime, {
         op: 'recurring.markReady',
-        payload: { options },
+        payload: { options: { ...options, ...occurrenceKey(runtime, options.occurrenceId) } },
         meta: { label: 'useMarkRecurringOccurrenceReady' },
       });
     },
@@ -129,7 +149,7 @@ export function useSkipRecurringOccurrence() {
     mutationFn: async ({ id }) => {
       return executeSpaceMutation<RecurringOccurrenceWithTemplate>(runtime, {
         op: 'recurring.skip',
-        payload: { id },
+        payload: { id, ...occurrenceKey(runtime, id) },
         meta: { label: 'useSkipRecurringOccurrence' },
       });
     },
@@ -142,7 +162,7 @@ export function useMarkRecurringOccurrenceNotified() {
     mutationFn: async ({ id }) => {
       return executeSpaceMutation<RecurringOccurrenceWithTemplate>(runtime, {
         op: 'recurring.markNotified',
-        payload: { id },
+        payload: { id, ...occurrenceKey(runtime, id) },
         meta: { label: 'useMarkRecurringOccurrenceNotified' },
       });
     },

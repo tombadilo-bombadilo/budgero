@@ -1,3 +1,4 @@
+import type { RawRow } from '../../database/restore-rows.js';
 import type { MilliUnits } from '../../money/index.js';
 
 export type RecurringDirection = 'inflow' | 'outflow';
@@ -111,12 +112,34 @@ export interface RecurringOccurrenceWithTemplate extends RecurringOccurrence {
 export interface MarkOccurrenceReadyResult {
   occurrence: RecurringOccurrenceWithTemplate;
   transactionId: number;
+  /** Transfer templates: the destination leg and the transfer's TransferID. */
+  destinationTransactionId?: number;
+  transferId?: string;
 }
 
-export interface MarkOccurrenceReadyOptions {
-  occurrenceId: number;
+/**
+ * Identifies one occurrence. Occurrence rows are materialized locally (read
+ * paths insert them), so their IDs differ between devices; synced ops must
+ * carry the stable (recurringTransactionId, dueDate) key, which wins over
+ * occurrenceId when present. occurrenceId alone is the legacy form.
+ */
+export interface RecurringOccurrenceRef {
+  occurrenceId?: number;
+  recurringTransactionId?: number;
+  dueDate?: string;
+}
+
+export interface MarkOccurrenceReadyOptions extends RecurringOccurrenceRef {
   transactionDate?: string;
   memoOverride?: string;
+  /** TransferID for a transfer template's two legs. Ops carry it so every
+   * device posts the same one; generated when absent (older ops). */
+  transferId?: string;
+  /**
+   * Redo re-posts under the IDs (and TransferID) the first run produced, so
+   * the undo entry that deletes them stays valid.
+   */
+  reuse?: { transactionId: number; destinationTransactionId?: number; transferId?: string };
 }
 
 export interface ListOccurrencesOptions {
@@ -157,4 +180,10 @@ export interface ProjectedTransactionRow {
   InflowNative: MilliUnits;
   OutflowNative: MilliUnits;
   IsProjected: true;
+}
+
+/** Verbatim rows of a template and its occurrences, for a delete undo. */
+export interface RecurringTemplateSnapshot {
+  template: RawRow;
+  occurrences: RawRow[];
 }

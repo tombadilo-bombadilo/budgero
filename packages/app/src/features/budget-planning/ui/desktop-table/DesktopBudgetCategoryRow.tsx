@@ -24,7 +24,6 @@ import { useFormatMaskedMilli } from '@features/budget-planning/lib/useFormatMas
 import { SearchableCategorySelect } from '@features/category-management/ui/SearchableCategorySelect';
 import { GoalCalculations, type CategoryFinancials } from '@budgero/core/browser';
 import { CCPaymentCoverPopover } from '@features/budget-planning/ui/category-row/CCPaymentCoverPopover';
-import { CCUnderfundedBadge } from '@features/budget-planning/ui/category-row/CCUnderfundedBadge';
 import { CoverOverspendingPopover } from '@features/budget-planning/ui/category-row/CoverOverspendingPopover';
 import { overspendTone } from '@features/budget-planning/ui/category-row/category-row.utils';
 import { AvailableInfoPopover } from '@features/budget-planning/ui/AvailableInfoPopover';
@@ -48,6 +47,7 @@ export function DesktopBudgetCategoryRow({
   isSelected,
   dragHandleProps,
   selectable,
+  compact = false,
 }: DesktopBudgetCategoryRowProps) {
   const { t } = useLingui();
 
@@ -63,6 +63,8 @@ export function DesktopBudgetCategoryRow({
     (state) => state.setHighlightAssignmentCategoryId
   );
   const formatAmount = useFormatMaskedMilli(globalLocalizer);
+  // Compact density (Settings → Appearance): same cells, shorter row.
+  const rowMinH = compact ? 'min-h-6' : 'min-h-[28px]';
 
   const isAssignmentHighlighted = highlightAssignmentCategoryId === row.categoryId;
 
@@ -137,6 +139,7 @@ export function DesktopBudgetCategoryRow({
       style={style}
       className={cn(
         'transition-colors text-sm align-middle',
+        compact && '[&>td]:py-0.5',
         selectable && isSelected && 'bg-primary/10',
         isDragging && 'opacity-60',
         isOver && 'ring-2 ring-primary/50'
@@ -216,7 +219,7 @@ export function DesktopBudgetCategoryRow({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7"
+                className={compact ? 'h-6 w-6' : 'h-7 w-7'}
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreVertical className="h-4 w-4" />
@@ -269,7 +272,7 @@ export function DesktopBudgetCategoryRow({
         </div>
       </TableCell>
       <TableCell className="align-middle text-right py-1.5" data-budget-prevent-row-select="true">
-        <div className="inline-flex min-h-[28px] w-full items-center justify-end">
+        <div className={`inline-flex ${rowMinH} w-full items-center justify-end`}>
           <CalculatorCell
             value={row.assigned}
             onCommit={(val) => onUpdateAssignment(row.categoryId, val)}
@@ -289,10 +292,12 @@ export function DesktopBudgetCategoryRow({
             }}
             displayClassName={cn(
               'text-right font-medium text-sm',
+              compact && 'py-0.5',
               isAssignmentHighlighted && 'ring-2 ring-primary/60 bg-primary/10 animate-pulse'
             )}
             inputClassName={cn(
-              'h-8 text-right text-sm',
+              compact ? 'h-6' : 'h-8',
+              'text-right text-sm',
               !isEditingAllocated &&
                 'border-none bg-transparent shadow-none focus-visible:ring-0 px-0 h-auto font-medium',
               isAssignmentHighlighted && 'ring-2 ring-primary/60'
@@ -305,7 +310,7 @@ export function DesktopBudgetCategoryRow({
           type="button"
           data-testid={`activity-${row.name.toLowerCase().replace(/\s+/g, '-')}`}
           className={cn(
-            'inline-flex min-h-[28px] items-center justify-end gap-1 rounded-md px-2 font-mono text-sm transition-colors hover:bg-muted/40 hover:text-primary',
+            `inline-flex ${rowMinH} items-center justify-end gap-1 rounded-md px-2 font-mono text-sm transition-colors hover:bg-muted/40 hover:text-primary`,
             row.activity < 0
               ? 'text-red-600'
               : row.activity > 0
@@ -326,15 +331,14 @@ export function DesktopBudgetCategoryRow({
         </button>
       </TableCell>
       <TableCell className="align-middle text-right pr-6 py-1.5">
-        <div className="flex min-h-[28px] items-center justify-end gap-2">
-          <CCUnderfundedBadge item={row} globalLocalizer={globalLocalizer} />
+        <div className={`flex ${rowMinH} items-center justify-end gap-2`}>
           {row.available > 0 && row.fundingBreakdown !== undefined ? (
             <CCPaymentCoverPopover
               available={row.available}
               ccCategoryId={row.categoryId}
               budgetId={selectedBudgetId}
               globalLocalizer={globalLocalizer}
-              triggerClassName="inline-flex min-h-[28px] items-center rounded-md px-2 font-mono text-sm"
+              triggerClassName={`inline-flex ${rowMinH} items-center rounded-md px-2 font-mono text-sm`}
             />
           ) : row.available > 0 && onMoveMoney ? (
             <Popover
@@ -351,7 +355,7 @@ export function DesktopBudgetCategoryRow({
                 <button
                   type="button"
                   className={cn(
-                    'inline-flex min-h-[28px] items-center rounded-md px-2 font-mono text-sm underline decoration-dotted underline-offset-2 hover:bg-muted/40 hover:text-primary',
+                    `inline-flex ${rowMinH} items-center rounded-md px-2 font-mono text-sm underline decoration-dotted underline-offset-2 hover:bg-muted/40 hover:text-primary`,
                     availableSignClass
                   )}
                   onClick={(e) => e.stopPropagation()}
@@ -422,7 +426,7 @@ export function DesktopBudgetCategoryRow({
               month={currentMonth}
               globalLocalizer={globalLocalizer}
               onMoveMoney={onMoveMoney}
-              triggerClassName="inline-flex min-h-[28px] items-center rounded-md px-2 font-mono text-sm hover:bg-muted/40"
+              triggerClassName={`inline-flex ${rowMinH} items-center rounded-md px-2 font-mono text-sm hover:bg-muted/40`}
               tone={overspendTone(row)}
             />
           ) : (
@@ -430,7 +434,7 @@ export function DesktopBudgetCategoryRow({
               value={row.available}
               formatter={formatAmount}
               className={cn(
-                'inline-flex min-h-[28px] items-center rounded-md px-2 font-mono text-sm tabular-nums',
+                `inline-flex ${rowMinH} items-center rounded-md px-2 font-mono text-sm tabular-nums`,
                 availableSignClass
               )}
             />

@@ -2,6 +2,7 @@ import {
   getGoalFundingSettings,
   type GoalFundingSettings,
   type FundingPriorityUpdate,
+  type BudgetCurrencyChangeArgs,
 } from '@budgero/core/browser';
 import { S, ACCOUNT_TRANSACTION_INVALIDATION_KEYS, safeCapture, type OpCodeEntry } from '../shared';
 
@@ -88,8 +89,24 @@ export const budgetOps = {
 
   // useUpdateBudgetCurrency
   'budgets.updateCurrency': {
-    execute: async (args) => {
-      return await S().budgets!.updateBudgetCurrency(args.id as number, args.currency as string);
+    // Resolve every exchange rate up front (fails cleanly before any write)
+    // and carry them, so all devices convert with the same numbers.
+    prepare: async (args) => {
+      const change = await S().budgets!.prepareBudgetCurrencyChange(
+        args.id as number,
+        args.currency as string
+      );
+      // No change: say so, so a replay doesn't take the "already switched by
+      // an older client" repair path for it.
+      return change ? { ...args, ...change } : { ...args, fromCurrency: args.currency };
+    },
+    execute: async (args, context) => {
+      return await S().budgets!.updateBudgetCurrency(args.id as number, args.currency as string, {
+        fromCurrency: args.fromCurrency as string | undefined,
+        asOf: args.asOf as string | undefined,
+        rates: args.rates as BudgetCurrencyChangeArgs['rates'] | undefined,
+        replay: context?.isReceiver === true,
+      });
     },
     invalidates: [['budgets']],
   },

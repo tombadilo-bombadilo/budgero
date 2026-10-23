@@ -16,7 +16,11 @@ import {
   useClearMutationHistory,
   formatOpCode,
   getOpColorClass,
+  getAuditUndoAvailability,
+  auditUndoBlockMessage,
+  useLatestActiveMutation,
 } from '@shared/mutations/useMutationHistory';
+import { useUndoStore } from '@shared/mutations/UndoStore';
 import { useBudgets } from '@entities/budget/api/useBudgets';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
@@ -129,6 +133,8 @@ export default function AuditLogPage() {
   const { data: totalCount = 0 } = useMutationHistoryCount(spaceId);
   const { data: budgets = [] } = useBudgets();
   const undoMutation = useUndoMutationHistoryEntry();
+  const { data: latestActiveMutationId = null } = useLatestActiveMutation(spaceId);
+  const undoTop = useUndoStore((state) => state.past[state.past.length - 1]);
   const clearMutation = useClearMutationHistory();
 
   const budgetNameMap = React.useMemo(() => {
@@ -278,7 +284,16 @@ export default function AuditLogPage() {
                   </TableHeader>
                   <TableBody>
                     {history.map((entry) => {
-                      const canUndo = entry.undoOps && entry.undoOps.length > 0 && !entry.undoneAt;
+                      const hasUndo = !!entry.undoOps && entry.undoOps.length > 0;
+                      const availability = getAuditUndoAvailability(
+                        entry,
+                        latestActiveMutationId,
+                        undoTop
+                      );
+                      const { canUndo } = availability;
+                      const blockedReason = availability.canUndo
+                        ? undefined
+                        : auditUndoBlockMessage(availability.reason);
                       const isCurrentBudget = selectedBudget?.ID === entry.budgetId;
                       return (
                         <TableRow key={entry.id} className={isCurrentBudget ? 'bg-primary/5' : ''}>
@@ -365,7 +380,7 @@ export default function AuditLogPage() {
                               <Badge variant="outline" className="text-muted-foreground">
                                 <Trans>Undone</Trans>
                               </Badge>
-                            ) : canUndo ? (
+                            ) : hasUndo ? (
                               <Badge variant="secondary">
                                 <Trans>Active</Trans>
                               </Badge>
@@ -376,17 +391,19 @@ export default function AuditLogPage() {
                             )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={!canUndo || disableActions}
-                              onClick={() => setPendingAction({ type: 'undo', entry })}
-                            >
-                              <Trans>
-                                <Undo2 className="h-4 w-4 mr-1" />
-                                Undo
-                              </Trans>
-                            </Button>
+                            <span className="inline-block" title={blockedReason}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={!canUndo || disableActions}
+                                onClick={() => setPendingAction({ type: 'undo', entry })}
+                              >
+                                <Trans>
+                                  <Undo2 className="h-4 w-4 mr-1" />
+                                  Undo
+                                </Trans>
+                              </Button>
+                            </span>
                           </TableCell>
                         </TableRow>
                       );

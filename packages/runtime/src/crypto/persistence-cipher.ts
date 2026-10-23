@@ -3,7 +3,8 @@
  * Builds a cipher for encrypting/decrypting database files stored in OPFS.
  */
 
-import { compressAndEncryptDatabase, decryptAndDecompressDatabase } from './database-crypto';
+import { decryptAndDecompressDatabase } from './database-crypto';
+import { encryptEnvelope } from './envelope';
 import { logRuntime } from '../logging';
 import { errorMessage } from '../utils/diagnostics';
 
@@ -38,9 +39,14 @@ export interface LocalPersistenceCipher {
  */
 export function createLocalPersistenceCipher(masterPassword: string): LocalPersistenceCipher {
   return {
+    // The local copy is NOT LZ4-compressed: lz4js runs in JS on the main
+    // thread and cost ~90% of every persist (~150-190 ms at 50k rows), paid
+    // after every mutation. Only the server blob upload compresses. decrypt()
+    // still reads older compressed copies: decryptAndDecompressDatabase falls
+    // back to the raw bytes when the plaintext has no LZ4 frame magic, and a
+    // SQLite file always starts with "SQLite format 3\0", never that magic.
     async encrypt(data: Uint8Array): Promise<Uint8Array> {
-      const { encrypted } = await compressAndEncryptDatabase(data, masterPassword);
-      return encrypted;
+      return encryptEnvelope(data, masterPassword);
     },
 
     async decrypt(data: Uint8Array): Promise<{ decrypted: Uint8Array; wasEncrypted: boolean }> {

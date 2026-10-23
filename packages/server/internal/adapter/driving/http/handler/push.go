@@ -144,6 +144,11 @@ func (h *Handlers) PushMutation(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "token validation failed")
 	}
 
+	// Token auth bypasses the JWT middleware chain, so apply the block check here.
+	if blockErr := middleware.CheckNotBlocked(ctx, h.services.User, userID); blockErr != nil {
+		return blockErr
+	}
+
 	// Parse the payload
 	var payload PushPayload
 	if err = c.Bind(&payload); err != nil {

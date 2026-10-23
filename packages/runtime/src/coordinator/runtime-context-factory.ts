@@ -17,12 +17,20 @@ import { DatabaseSync, DatabaseLoader, type MigrationRunner } from '../database-
 import { OfflineQueue } from '../offline-queue';
 import { SyncTransport, SnapshotUnavailableError } from '../sync-transport';
 import { reapplyQueueAfterRestore } from './restore-invariant';
+import { LocalPersistScheduler } from './local-persist-scheduler';
 
 export interface RuntimeContext {
   spaceId: string;
   generation: number;
   db: WebDatabaseInstance;
+  /** Persist now (coalesced with a write that has not started yet). */
   persistLocalDatabase(): Promise<boolean>;
+  /** Debounced persist — see LocalPersistScheduler. */
+  persistLocalDatabaseSoon?(): Promise<boolean>;
+  /** Run a pending debounced persist now; otherwise wait for in-flight writes. */
+  flushLocalPersistence?(): Promise<boolean>;
+  /** Drop a pending debounced persist; the context is going away. */
+  disposeLocalPersistence?(): void;
   sync: SyncTransport;
   executor: MutationExecutor;
   dbSync: DatabaseSync;
@@ -43,6 +51,7 @@ export interface RuntimeContextFactoryDeps {
   ): Promise<unknown>;
   getUndoSpec(op: string): ReturnType<MutationExecutorDeps['getUndoSpec']>;
   getInvalidatesForOp(op: string): string[][] | undefined;
+  getInvalidatesForCall?(op: string, args: Record<string, unknown>): string[][] | undefined;
   getQueryClient(): QueryClientLike | undefined;
   pushUndo?(entry: UndoEntry): void;
   recordHistory?(entry: HistoryEntry): void;
@@ -76,6 +85,8 @@ export interface RuntimeContextFactoryDeps {
     onEncryptionKeyChanged?(spaceId: string, version: number): void;
     /** A sync payload arrived in a newer data format — prompt for an app update. */
     onFormatTooNew?(spaceId: string, receivedVersion: number): void;
+    /** A synced mutation names an op code this build doesn't have — prompt for update. */
+    onUnknownOpCode?(spaceId: string, op: string): void;
     setPasswordChangedReason?(): void;
     reloadApp?(): void;
   };
@@ -118,24 +129,32 @@ export class RuntimeContextFactory {
   }
 
   createOnlineContext(params: CreateOnlineContextParams): RuntimeContext {
-    const persistDb = this.createLocalPersistenceWriter(params.spaceId, params.db);
-
-    const executor = this.buildExecutor((spaceId) => this.deps.getSpaceRole(spaceId));
-
     // dbSync is constructed before the transport/queue; these deps are
     // late-bound closures over the refs assigned below.
     let syncRef: SyncTransport | null = null;
     let offlineQueueRef: OfflineQueue | null = null;
+    let dbSyncRef: DatabaseSync | null = null;
+
+    // Record the applied id as soon as the op's effect is in the DB, so any
+    // later export carries both (see createLocalPersistenceWriter). Every op
+    // (local, remote, re-applied) holds the snapshot-upload guard while it
+    // runs, so no blob ever captures it half-applied.
+    const executor = this.buildExecutor(
+      (spaceId) => this.deps.getSpaceRole(spaceId),
+      (mutationId) => offlineQueueRef?.markApplied(mutationId),
+      () => dbSyncRef?.beginOperation()
+    );
 
     // Applied-id records must never outlive the DB persist that contains
     // their effects (a persisted id whose mutation the persisted DB lost is
     // skipped on replay forever) — so the flush rides on every successful
-    // DB persist.
-    const persistLocalDatabase = async (): Promise<boolean> => {
-      const ok = await persistDb();
-      if (ok) offlineQueueRef?.flushAppliedIds();
-      return ok;
-    };
+    // DB persist, and only covers ids recorded before its export.
+    const localPersist = new LocalPersistScheduler(
+      this.createLocalPersistenceWriter(params.spaceId, params.db, () => offlineQueueRef)
+    );
+    const persistLocalDatabase = (): Promise<boolean> => localPersist.persistNow();
+    const persistLocalDatabaseSoon = (): Promise<boolean> => localPersist.persistSoon();
+    const flushLocalPersistence = (): Promise<boolean> => localPersist.flush();
 
     const dbSync = new DatabaseSync(params.spaceId, {
       getDatabase: () => params.db,
@@ -149,6 +168,7 @@ export class RuntimeContextFactory {
       checkApiHealth: () => this.deps.checkApiHealth(),
       getMutationCursor: () => syncRef?.getLocalVersion() ?? 0,
       hasUnackedMutations: () => (offlineQueueRef?.peekQueueLength() ?? 0) > 0,
+      flushLocalPersistence,
       // Restore invariant: after ANY snapshot restore the DB content changed
       // out from under the cursor and the dedup sets. Reseed the cursor to
       // the blob's bound log position, then reset dedup and re-apply queued
@@ -168,6 +188,7 @@ export class RuntimeContextFactory {
         });
       },
     });
+    dbSyncRef = dbSync;
     if (params.initialBlobVersion !== undefined) {
       dbSync.setBlobVersion(params.initialBlobVersion);
     }
@@ -181,10 +202,19 @@ export class RuntimeContextFactory {
       encryptPayload: async (payload) =>
         params.encryption.encryptMutation(payload as { op: string; args: Record<string, unknown> }),
       decryptPayload: async (encrypted) => params.encryption.decryptMutation(encrypted),
-      onRemoteMutation: async (op, args, id) =>
-        params.onRemoteMutation(op, args, id, offlineQueue, executor),
+      // Held until the transport has also advanced its cursor past this
+      // mutation (its continuation runs before a held upload resumes).
+      onRemoteMutation: async (op, args, id) => {
+        const release = dbSync.beginOperation();
+        try {
+          await params.onRemoteMutation(op, args, id, offlineQueue, executor);
+        } finally {
+          release();
+        }
+      },
       onMutationAck: (mutationId) => offlineQueue.ackMutation(mutationId),
       persistLocalDatabase,
+      persistLocalDatabaseSoon,
       onConnectionChange: (connected) => {
         if (!connected) {
           // Bytes written to the dead socket have unknown fate: treat every
@@ -270,6 +300,9 @@ export class RuntimeContextFactory {
       generation: params.generation,
       db: params.db,
       persistLocalDatabase,
+      persistLocalDatabaseSoon,
+      flushLocalPersistence,
+      disposeLocalPersistence: () => localPersist.dispose(),
       sync,
       executor,
       dbSync,
@@ -282,11 +315,23 @@ export class RuntimeContextFactory {
     };
   }
 
-  private buildExecutor(getSpaceRole: (spaceId: string) => string | null): MutationExecutor {
+  private buildExecutor(
+    getSpaceRole: (spaceId: string) => string | null,
+    onOpApplied?: (mutationId: string) => void,
+    beginOperation?: () => (() => void) | undefined
+  ): MutationExecutor {
     return new MutationExecutor({
-      executeOp: (op, payload, context) => this.deps.executeOp(op, payload, context),
+      executeOp: async (op, payload, context) => {
+        const release = beginOperation?.();
+        try {
+          return await this.deps.executeOp(op, payload, context);
+        } finally {
+          release?.();
+        }
+      },
       getUndoSpec: (op) => this.deps.getUndoSpec(op),
       getInvalidatesForOp: (op) => this.deps.getInvalidatesForOp(op),
+      getInvalidatesForCall: (op, args) => this.deps.getInvalidatesForCall?.(op, args),
       getQueryClient: () => this.deps.getQueryClient(),
       pushUndo: (entry) => this.deps.pushUndo?.(entry),
       recordHistory: (entry) => this.deps.recordHistory?.(entry),
@@ -294,6 +339,7 @@ export class RuntimeContextFactory {
       getActiveSpaceId: () => this.deps.getActiveSpaceId(),
       getSpaceRole,
       onAnalyticsEvent: (op) => this.deps.onAnalyticsEvent?.(op),
+      onOpApplied,
     });
   }
 
@@ -305,21 +351,30 @@ export class RuntimeContextFactory {
       getReconnectDelayMs: policy?.getReconnectDelayMs,
       onEncryptionKeyChanged: policy?.onEncryptionKeyChanged,
       onFormatTooNew: policy?.onFormatTooNew,
+      onUnknownOpCode: policy?.onUnknownOpCode,
       setPasswordChangedReason: policy?.setPasswordChangedReason,
       reloadApp: policy?.reloadApp,
       log: scopedLogger('SyncTransport', this.deps.log),
     };
   }
 
+  /**
+   * One local persist. Chaining and coalescing live in LocalPersistScheduler,
+   * which never runs two of these at once.
+   */
   private createLocalPersistenceWriter(
     spaceId: string,
-    db: WebDatabaseInstance
+    db: WebDatabaseInstance,
+    getOfflineQueue: () => OfflineQueue | null
   ): () => Promise<boolean> {
-    let writeChain: Promise<boolean> = Promise.resolve(true);
-
-    const runWrite = async (): Promise<boolean> => {
+    return async (): Promise<boolean> => {
+      // persistDatabase exports the DB synchronously, before its first await,
+      // so this mark separates the ids whose effects are in this write from
+      // those recorded while it is in flight (flushed by the next write).
+      const appliedMark = getOfflineQueue()?.appliedIdsMark();
       try {
         if (await persistDatabase(db)) {
+          getOfflineQueue()?.flushAppliedIds(appliedMark);
           return true;
         }
         this.deps.log?.(
@@ -336,11 +391,6 @@ export class RuntimeContextFactory {
         });
         return false;
       }
-    };
-
-    return async () => {
-      writeChain = writeChain.then(runWrite, runWrite);
-      return writeChain;
     };
   }
 }

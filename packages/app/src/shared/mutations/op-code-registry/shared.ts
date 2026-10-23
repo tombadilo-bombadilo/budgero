@@ -8,7 +8,11 @@
 
 import { getRuntime } from '@shared/runtime/global';
 import {
+  isEmptyJournal,
+  type CategoryCreationMark,
   type ImportIdentity,
+  type RowJournal,
+  type Services,
   type MilliUnits,
   type ChartConfiguration,
   type SaveReportInput,
@@ -270,8 +274,23 @@ export interface OpCodeExecutionContext {
 
 export interface OpCodeEntry {
   execute: (args: Record<string, unknown>, context?: OpCodeExecutionContext) => Promise<unknown>;
+  /**
+   * Runs once, on the originating device only, before the op executes; the
+   * args it returns are what executes here AND what is sent to other devices.
+   * Use it for anything that must be the same everywhere: generated IDs,
+   * fetched exchange rates. Must not write to the database.
+   */
+  prepare?: (
+    args: Record<string, unknown>
+  ) => Record<string, unknown> | Promise<Record<string, unknown>>;
   // Query keys to invalidate (for remote mutations)
   invalidates: string[][];
+  /**
+   * Optional narrower set for one call's args (e.g. a memo edit cannot change
+   * balances). Must be a subset of `invalidates`, which stays the full list for
+   * callers that only know the op code.
+   */
+  invalidatesFor?: (args: Record<string, unknown>) => string[][];
   undo?: {
     // Capture any before-state needed to build inverse ops
     capture?: (args: Record<string, unknown>) => Promise<unknown>;
@@ -282,6 +301,17 @@ export interface OpCodeEntry {
   redo?: {
     build: (args: Record<string, unknown>, result: unknown, before: unknown) => OpCall[];
   };
+}
+
+/** Random ID for a row created by an op (generated once, carried in the args). */
+export function newOpRowId(): string {
+  return globalThis.crypto.randomUUID();
+}
+
+/** `prepare` for create ops whose row ID lives in `args[key]`: fill it in when absent. */
+export function withGeneratedId(key = 'id'): NonNullable<OpCodeEntry['prepare']> {
+  return (args) =>
+    args[key] == null || args[key] === '' ? { ...args, [key]: newOpRowId() } : args;
 }
 
 /**
@@ -302,6 +332,42 @@ export function redoWithIds(
       return next ? [{ op, args: next }] : [];
     },
   };
+}
+
+/**
+ * Undo capture for ops that can create a system category on the fly (a
+ * transfer re-creates Transfers after it was deleted): where the category
+ * IDs stand before the op. See createdCategoriesUndo.
+ */
+export function captureCategoryMark(): CategoryCreationMark | null {
+  try {
+    return S().categories.creationMark();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The undo op removing the categories / groups created since `mark` (none
+ * created: no op). Runs after the op's other undo steps, once nothing uses
+ * them anymore; it puts the ID counters back so a redo re-creates them under
+ * the same IDs.
+ */
+export function createdCategoriesUndo(mark: unknown, budgetId: unknown): OpCall[] {
+  if (!mark || typeof mark !== 'object') return [];
+  try {
+    const journal = S().categories.createdSinceJournal(mark as CategoryCreationMark);
+    return journal
+      ? [
+          {
+            op: 'categories.restoreDeleted',
+            args: { ...(budgetId !== undefined ? { budgetId } : {}), journal },
+          },
+        ]
+      : [];
+  } catch {
+    return [];
+  }
 }
 
 /** Run an undo-capture snapshot, returning null when it throws. */
@@ -331,6 +397,56 @@ export function makeRestoreUndo<S extends Record<string, unknown>>(
       const snapshot = before as S | null | undefined;
       if (!snapshot || Object.values(snapshot).some((value) => !value)) return [];
       return [{ op, args: restoreArgs(args, snapshot) }];
+    },
+  };
+}
+
+/** Op code that puts back what a journaled op wrote (see executeJournaled). */
+export const RESTORE_ROWS_OP = 'history.restoreRows';
+
+/** Journal of the op run with these args object (set by execute, read by undo build). */
+const opJournals = new WeakMap<Record<string, unknown>, RowJournal>();
+
+/**
+ * Runs an op's change under the row journal (core RowJournalService), so its
+ * undo restores exactly the rows it wrote, whatever they are (see
+ * journaledUndo). Only the originating device records: receivers apply the
+ * undo op they are sent. `change` must be the op's only database work.
+ * Without a journal service (unit-test mocks) it just runs the change.
+ */
+export async function executeJournaled<T>(
+  args: Record<string, unknown>,
+  context: OpCodeExecutionContext | undefined,
+  change: () => T | Promise<T>
+): Promise<T> {
+  // Optional at runtime: unit tests mock only the services they use.
+  const recorder = S().rowJournal as Partial<Services['rowJournal']> | undefined;
+  if (context?.isReceiver || typeof recorder?.recordAsync !== 'function') return change();
+  const { result, journal } = await recorder.recordAsync(async () => change());
+  if (journal) opJournals.set(args, journal);
+  return result;
+}
+
+/**
+ * Undo for an op run through executeJournaled: one RESTORE_ROWS_OP with the
+ * journal (nothing when the op changed nothing). Falls back to `fallback`
+ * when no journal was recorded (mocked services).
+ */
+export function journaledUndo(
+  fallback?: NonNullable<OpCodeEntry['undo']>
+): NonNullable<OpCodeEntry['undo']> {
+  return {
+    ...(fallback?.capture ? { capture: fallback.capture } : {}),
+    build: (args, result, before) => {
+      const journal = opJournals.get(args);
+      if (!journal) return fallback ? fallback.build(args, result, before) : [];
+      if (isEmptyJournal(journal)) return [];
+      return [
+        {
+          op: RESTORE_ROWS_OP,
+          args: { ...(args.budgetId !== undefined ? { budgetId: args.budgetId } : {}), journal },
+        },
+      ];
     },
   };
 }

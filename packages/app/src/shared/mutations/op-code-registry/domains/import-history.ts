@@ -1,5 +1,11 @@
 import type { ImportRunRecordInput, ImportIdentity } from '@budgero/core/browser';
-import { S, ACCOUNT_TRANSACTION_INVALIDATION_KEYS, type OpCodeEntry } from '../shared';
+import {
+  S,
+  ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
+  executeJournaled,
+  journaledUndo,
+  type OpCodeEntry,
+} from '../shared';
 
 export const importHistoryOps = {
   'importHistory.match': {
@@ -10,17 +16,54 @@ export const importHistoryOps = {
       S().importHistory!.duplicates.record(tx.ID, args.identity as ImportIdentity);
     },
     invalidates: [['importHistory']],
+    undo: {
+      // Only a match that recorded the identity is undone (it may already
+      // have belonged to a transaction, in which case record() was a no-op).
+      capture: async (args) => ({
+        existing: S().importHistory!.duplicates.findOperation(
+          (args.identity as ImportIdentity).operationId
+        ),
+      }),
+      build: (args, _result, before) =>
+        (before as { existing?: number } | undefined)?.existing === undefined
+          ? [
+              {
+                op: 'importHistory.unmatch',
+                args: {
+                  budgetId: args.budgetId,
+                  transactionId: args.transactionId,
+                  operationId: (args.identity as ImportIdentity).operationId,
+                },
+              },
+            ]
+          : [],
+    },
   },
-  'importHistory.record': {
+  'importHistory.unmatch': {
     execute: async (args) => {
-      return await S().importHistory!.recordImportRun(args.input as ImportRunRecordInput);
+      S().importHistory!.duplicates.forget(
+        args.transactionId as number,
+        args.operationId as string
+      );
     },
     invalidates: [['importHistory']],
   },
+  // The import run of a CSV import (each checkpoint). It is part of the
+  // import's undo entry, so undoing the import also takes back its run record
+  // (otherwise the history would list a run whose rows are gone).
+  'importHistory.record': {
+    execute: async (args, context) =>
+      executeJournaled(args, context, () =>
+        S().importHistory!.recordImportRun(args.input as ImportRunRecordInput)
+      ),
+    invalidates: [['importHistory']],
+    undo: journaledUndo(),
+  },
+  // Settings -> Imports -> Undo removes an import's rows; Ctrl+Z brings back
+  // exactly what it removed.
   'importHistory.undo': {
-    execute: async (args) => {
-      return await S().importHistory!.undoImportRun(args.id as number);
-    },
+    execute: async (args, context) =>
+      executeJournaled(args, context, () => S().importHistory!.undoImportRun(args.id as number)),
     invalidates: [
       ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
       ['categories'],
@@ -30,6 +73,7 @@ export const importHistoryOps = {
       ['uncategorizedTransactions', '*'],
       ['importHistory'],
     ],
+    undo: journaledUndo(),
   },
   'importHistory.delete': {
     execute: async (args) => {

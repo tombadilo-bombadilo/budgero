@@ -46,7 +46,8 @@ export function RuleHistoryDrawer({
   const ruleId = rule?.id ?? 0;
   const { data: runs = [], isLoading } = useRuleRuns(ruleId, 25, open);
   // Runs are newest-first. Only the newest run whose changes are still applied
-  // (i.e. not already undone) can be undone — mirrors RulesService.undoRun.
+  // (i.e. not already undone) is offered for undo. RulesService.undoRun is
+  // looser: it refuses only when a later applied run changed the same rows.
   const latestUndoableIndex = runs.findIndex(
     (run) => run.status === 'completed' || run.status === 'partial'
   );

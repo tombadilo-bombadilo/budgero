@@ -24,6 +24,7 @@ import { SettingsPageHeader } from '@pages/settings/SettingsPageHeader';
 import {
   useDialogBackgroundBlurPreference,
   useHideZeroAmountsPreference,
+  useCompactBudgetRowsPreference,
   useCompactTransactionRowsPreference,
   useInlineTransactionEntryPreference,
   usePlanningNumberAnimationsPreference,
@@ -41,6 +42,11 @@ export default function AppearancePage() {
   const { themeId } = useThemePreset();
   const desktopBudgetLayout = useUiStore((state) => state.desktopBudgetLayout);
   const setDesktopBudgetLayout = useUiStore((state) => state.setDesktopBudgetLayout);
+  const {
+    compactBudgetRows,
+    updateCompactBudgetRows,
+    isUpdating: isUpdatingCompactBudgetRows,
+  } = useCompactBudgetRowsPreference();
   const compactMobileLayout = useUiStore((state) => state.compactMobileLayout);
   const setCompactMobileLayout = useUiStore((state) => state.setCompactMobileLayout);
   const mobileBudgetLayout = useUiStore((state) => state.mobileBudgetLayout);
@@ -444,6 +450,34 @@ export default function AppearancePage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="budget-row-density">
+                <Trans>Row density</Trans>
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                <Trans>Compact rows fit more categories on screen (table view).</Trans>
+              </p>
+            </div>
+            <Select
+              value={compactBudgetRows ? 'compact' : 'comfortable'}
+              onValueChange={(value) => updateCompactBudgetRows(value === 'compact')}
+              disabled={isUpdatingCompactBudgetRows}
+            >
+              <SelectTrigger id="budget-row-density" className="w-36 shrink-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="comfortable">
+                  <Trans>Comfortable</Trans>
+                </SelectItem>
+                <SelectItem value="compact">
+                  <Trans>Compact</Trans>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Separator />
           <RadioGroup
             value={desktopBudgetLayout}
             onValueChange={(value) => setDesktopBudgetLayout(value as DesktopBudgetLayout)}

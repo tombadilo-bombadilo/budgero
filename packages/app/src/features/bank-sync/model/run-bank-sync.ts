@@ -218,27 +218,43 @@ async function syncConnection(
           meta: { label: 'bank-sync', skipUndo: true },
         });
       }
-      for (const identity of plan.imports) {
-        await executeSpaceMutation(runtime, {
-          op: 'transactions.import',
-          payload: {
-            inflow: identity.inflow,
-            outflow: identity.outflow,
-            accountId: account.ID,
-            categoryId: 0,
-            budgetId,
-            date: identity.date,
-            memo: identity.memo.substring(0, 255),
-            payee: identity.payee,
-            transferId: '',
-            importIdentities: [identity],
-            // Pending rows come in uncleared and are cleared once booked.
-            ...(identity.pending ? { cleared: false } : {}),
-          },
-          idempotencyKey: keys.get(identity.operationId),
-          meta: { label: 'bank-sync', skipUndo: true, skipInvalidate: true },
-        });
-        result.imported++;
+      // Continuous rules run once per rule over the whole batch (not one op
+      // per row x rule), before settles and removals, as they did per row.
+      const created: number[] = [];
+      try {
+        for (const identity of plan.imports) {
+          const imported = await executeSpaceMutation<{
+            transactionId: number;
+            created: boolean;
+          }>(runtime, {
+            op: 'transactions.import',
+            payload: {
+              inflow: identity.inflow,
+              outflow: identity.outflow,
+              accountId: account.ID,
+              categoryId: 0,
+              budgetId,
+              date: identity.date,
+              memo: identity.memo.substring(0, 255),
+              payee: identity.payee,
+              transferId: '',
+              importIdentities: [identity],
+              // Pending rows come in uncleared and are cleared once booked.
+              ...(identity.pending ? { cleared: false } : {}),
+            },
+            idempotencyKey: keys.get(identity.operationId),
+            meta: {
+              label: 'bank-sync',
+              skipUndo: true,
+              skipInvalidate: true,
+              deferContinuousRules: true,
+            },
+          });
+          if (imported?.created) created.push(imported.transactionId);
+          result.imported++;
+        }
+      } finally {
+        await runtime.runContinuousRules?.(budgetId, created, { skipInvalidate: true });
       }
       for (const settle of plan.settles) {
         await settlePending(

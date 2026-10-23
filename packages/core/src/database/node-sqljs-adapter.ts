@@ -1,8 +1,15 @@
 import initSqlJs, { Database as SqlJsDatabase, SqlJsStatic, BindParams } from 'sql.js';
 import path from 'node:path';
-import { BaseDatabaseAdapter, Statement, DatabaseOptions, DatabaseError } from './interface.js';
+import {
+  BaseDatabaseAdapter,
+  Statement,
+  DatabaseOptions,
+  DatabaseError,
+  SqlFunctionValue,
+} from './interface.js';
 import { MigrationRunner } from './migrations.js';
 import { createMigrationDatabase } from './migration-database-factory.js';
+import { readAllRows, readRow } from './sqljs-rows.js';
 
 import { createLogger } from '../logger.js';
 
@@ -97,7 +104,7 @@ export class NodeSqlJsAdapter extends BaseDatabaseAdapter {
           const stmt = this.db.prepare(sql);
           stmt.bind(params as BindParams);
           const hasRow = stmt.step();
-          const result = hasRow ? stmt.getAsObject() : undefined;
+          const result = hasRow ? readRow(stmt) : undefined;
           stmt.free();
           return result;
         } catch (error) {
@@ -112,8 +119,7 @@ export class NodeSqlJsAdapter extends BaseDatabaseAdapter {
         try {
           const stmt = this.db.prepare(sql);
           stmt.bind(params as BindParams);
-          const results: Record<string, unknown>[] = [];
-          while (stmt.step()) results.push(stmt.getAsObject());
+          const results = readAllRows(stmt);
           stmt.free();
           return results;
         } catch (error) {
@@ -163,25 +169,35 @@ export class NodeSqlJsAdapter extends BaseDatabaseAdapter {
   }
 
   transaction<T>(fn: () => T): T {
-    this.db.exec('BEGIN TRANSACTION');
-    try {
-      const result = fn();
-      this.db.exec('COMMIT');
-      return result;
-    } catch (error) {
-      this.db.exec('ROLLBACK');
-      throw error;
-    }
+    return this.trackTransaction(() => {
+      this.db.exec('BEGIN TRANSACTION');
+      try {
+        const result = fn();
+        this.db.exec('COMMIT');
+        return result;
+      } catch (error) {
+        this.db.exec('ROLLBACK');
+        throw error;
+      }
+    });
+  }
+
+  createFunction(name: string, fn: (...args: SqlFunctionValue[]) => SqlFunctionValue): void {
+    this.db.create_function(name, fn);
   }
 
   backup(): Uint8Array {
-    return this.db.export();
+    // sql.js export() re-opens the connection (TEMP objects and functions are gone).
+    const data = this.db.export();
+    this.emitConnectionEvent('export');
+    return data;
   }
 
   restore(data: Uint8Array): void {
     this.db.close();
     this.db = new this.SQL.Database(data);
     this.enableForeignKeys();
+    this.emitConnectionEvent('replace');
   }
 
   restoreAndMigrate(data: Uint8Array): void {
@@ -190,6 +206,7 @@ export class NodeSqlJsAdapter extends BaseDatabaseAdapter {
     const runner = new MigrationRunner(createMigrationDatabase(this.db));
     runner.runMigrations();
     this.enableForeignKeys();
+    this.emitConnectionEvent('replace');
   }
 
   close(): void {

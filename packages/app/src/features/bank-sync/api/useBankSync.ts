@@ -12,6 +12,7 @@ import { useSpaceQuery } from '@shared/api/useSpaceQuery';
 import { invalidateRoots } from '@shared/lib/query-utils';
 import { getInvalidatesForOp } from '@shared/mutations/op-code-registry';
 import { useRuntime } from '@shared/runtime/runtime-provider';
+import { runInUndoGroup } from '@shared/mutations/UndoStore';
 import { executeSpaceMutation } from '@shared/runtime/mutation-router';
 import {
   deleteSession,
@@ -149,52 +150,68 @@ export function useUnlinkBankAccount() {
 
 export type ReviewAction = 'match' | 'import' | 'dismiss';
 
+type SpaceRuntime = Parameters<typeof executeSpaceMutation>[0];
+
+/**
+ * Resolve one bank review. Every step is one undo entry together: Ctrl+Z
+ * reverts the match (or the imported row), the cleared flag and the review
+ * status at once, instead of only the newest step.
+ */
+export function resolveBankReview(
+  runtime: SpaceRuntime,
+  review: BankReview,
+  action: ReviewAction
+): Promise<void> {
+  return runInUndoGroup(async () => {
+    const { BudgetID: budgetId, AccountID: accountId, identity } = review;
+    if (action === 'match' && review.candidate) {
+      await executeSpaceMutation(runtime, {
+        op: 'importHistory.match',
+        payload: { budgetId, accountId, transactionId: review.candidate.id, identity },
+        meta: { label: 'bank-sync' },
+      });
+      await executeSpaceMutation(runtime, {
+        op: 'transactions.setCleared',
+        payload: { budgetId, ids: [review.candidate.id], cleared: true },
+        meta: { label: 'bank-sync' },
+      });
+    } else if (action !== 'dismiss') {
+      await executeSpaceMutation(runtime, {
+        op: 'transactions.import',
+        payload: {
+          inflow: identity.inflow,
+          outflow: identity.outflow,
+          accountId,
+          categoryId: 0,
+          budgetId,
+          date: identity.date,
+          memo: identity.memo.substring(0, 255),
+          payee: identity.payee,
+          transferId: '',
+          importIdentities: [identity],
+        },
+        idempotencyKey: await bankIdempotencyKey(identity.operationId),
+        meta: { label: 'bank-sync' },
+      });
+    }
+    await executeSpaceMutation(runtime, {
+      op: 'bankSync.setReviewStatus',
+      payload: {
+        budgetId,
+        id: review.ID,
+        status: action === 'dismiss' ? 'dismissed' : 'resolved',
+      },
+      meta: { label: 'bank-sync' },
+    });
+  });
+}
+
 export function useResolveBankReview() {
   const runtime = useRuntime();
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ review, action }: { review: BankReview; action: ReviewAction }) => {
-      const { BudgetID: budgetId, AccountID: accountId, identity } = review;
-      if (action === 'match' && review.candidate) {
-        await executeSpaceMutation(runtime, {
-          op: 'importHistory.match',
-          payload: { budgetId, accountId, transactionId: review.candidate.id, identity },
-          meta: { label: 'bank-sync', skipUndo: true },
-        });
-        await executeSpaceMutation(runtime, {
-          op: 'transactions.setCleared',
-          payload: { budgetId, ids: [review.candidate.id], cleared: true },
-          meta: { label: 'bank-sync' },
-        });
-      } else if (action !== 'dismiss') {
-        await executeSpaceMutation(runtime, {
-          op: 'transactions.import',
-          payload: {
-            inflow: identity.inflow,
-            outflow: identity.outflow,
-            accountId,
-            categoryId: 0,
-            budgetId,
-            date: identity.date,
-            memo: identity.memo.substring(0, 255),
-            payee: identity.payee,
-            transferId: '',
-            importIdentities: [identity],
-          },
-          idempotencyKey: await bankIdempotencyKey(identity.operationId),
-          meta: { label: 'bank-sync' },
-        });
-      }
-      await executeSpaceMutation(runtime, {
-        op: 'bankSync.setReviewStatus',
-        payload: {
-          budgetId,
-          id: review.ID,
-          status: action === 'dismiss' ? 'dismissed' : 'resolved',
-        },
-        meta: { label: 'bank-sync', skipUndo: true },
-      });
-    },
+    mutationFn: ({ review, action }: { review: BankReview; action: ReviewAction }) =>
+      resolveBankReview(runtime, review, action),
     onSettled: () => invalidateAfterBankSync(queryClient),
   });
 }

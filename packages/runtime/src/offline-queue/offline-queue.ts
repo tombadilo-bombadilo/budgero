@@ -42,6 +42,15 @@ export class OfflineQueue {
    */
   private appliedIdsDirty = false;
 
+  /**
+   * Applied ids not yet persisted, with the sequence number of their first
+   * mark. A persist only flushes the ids marked before its DB export began
+   * (see {@link appliedIdsMark}); later ones wait for the next persist.
+   */
+  private unflushedAppliedIds = new Map<string, number>();
+
+  private appliedIdsSeq = 0;
+
   constructor(spaceId: string, storage?: QueueStorage) {
     this.spaceId = spaceId;
     this.storage = storage ?? new IndexedDBQueueStorage();
@@ -199,16 +208,36 @@ export class OfflineQueue {
     this.inFlightIds.delete(mutationId);
     this.appliedIds.add(mutationId);
     this.appliedIdsDirty = true;
+    if (!this.unflushedAppliedIds.has(mutationId)) {
+      this.unflushedAppliedIds.set(mutationId, ++this.appliedIdsSeq);
+    }
+  }
+
+  /**
+   * Position in the applied-id stream. Take it right before a DB export and
+   * pass it to {@link flushAppliedIds} once that export is persisted: ids
+   * marked while the write was in flight are not in it.
+   */
+  appliedIdsMark(): number {
+    return this.appliedIdsSeq;
   }
 
   /**
    * Persist the applied-id set. Call after a successful local DB persist —
    * that ordering keeps the invariant "persisted appliedIds never lead the
-   * persisted DB".
+   * persisted DB". With `upToMark` (from {@link appliedIdsMark}, taken before
+   * the export) only ids marked up to then are written.
    */
-  flushAppliedIds(): void {
+  flushAppliedIds(upToMark?: number): void {
     if (!this.appliedIdsDirty) return;
-    this.appliedIdsDirty = false;
+    if (upToMark === undefined) {
+      this.unflushedAppliedIds.clear();
+    } else {
+      for (const [id, seq] of this.unflushedAppliedIds) {
+        if (seq <= upToMark) this.unflushedAppliedIds.delete(id);
+      }
+    }
+    this.appliedIdsDirty = this.unflushedAppliedIds.size > 0;
     this.saveAppliedIds();
   }
 
@@ -223,6 +252,7 @@ export class OfflineQueue {
     this.appliedIds = new Set();
     this.inFlightIds = new Set();
     this.appliedIdsDirty = false;
+    this.unflushedAppliedIds.clear();
     this.saveAppliedIds();
   }
 
@@ -292,10 +322,10 @@ export class OfflineQueue {
         const trimmed = arr.slice(arr.length - MAX_APPLIED_IDS);
         this.appliedIds = new Set(trimmed);
       }
-      localStorage.setItem(
-        `${APPLIED_IDS_PREFIX}_${this.spaceId}`,
-        JSON.stringify(Array.from(this.appliedIds))
-      );
+      const persisted = this.unflushedAppliedIds.size
+        ? Array.from(this.appliedIds).filter((id) => !this.unflushedAppliedIds.has(id))
+        : Array.from(this.appliedIds);
+      localStorage.setItem(`${APPLIED_IDS_PREFIX}_${this.spaceId}`, JSON.stringify(persisted));
     } catch {
       /* no-op */
     }

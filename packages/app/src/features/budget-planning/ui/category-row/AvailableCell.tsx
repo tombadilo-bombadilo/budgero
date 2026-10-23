@@ -18,7 +18,6 @@ import { AvailableInfoPopover } from '@features/budget-planning/ui/AvailableInfo
 import type { MilliUnits } from '@shared/lib/currency/milli';
 import { MoveMoneyPopover } from './MoveMoneyPopover';
 import { CCPaymentCoverPopover } from './CCPaymentCoverPopover';
-import { CCUnderfundedBadge } from './CCUnderfundedBadge';
 import { CoverOverspendingPopover } from './CoverOverspendingPopover';
 import { overspendTone } from './category-row.utils';
 
@@ -116,7 +115,6 @@ export function AvailableCell({
 
   return (
     <div className={className}>
-      <CCUnderfundedBadge item={item} globalLocalizer={globalLocalizer} />
       {amountWrapperClassName ? <div className={amountWrapperClassName}>{amount}</div> : amount}
       <AvailableInfoPopover
         item={item}

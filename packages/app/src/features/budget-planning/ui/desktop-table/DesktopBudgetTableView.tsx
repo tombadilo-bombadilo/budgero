@@ -10,6 +10,7 @@ import { DndContext, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { cn } from '@shared/lib/utils';
+import { useCompactBudgetRows } from '@shared/hooks/useUserPreferences';
 import { restrictToVerticalAxis } from '@features/budget-planning/lib/dnd-modifiers';
 import type { BudgetRow } from '../../lib/budget-transforms';
 import { DesktopBudgetGroupRow, SortableDesktopBudgetGroupRow } from './DesktopBudgetGroupRow';
@@ -49,6 +50,7 @@ export function DesktopBudgetTableView({
   isUpdatingGroup = false,
   isDeletingGroup = false,
 }: DesktopBudgetTableViewProps) {
+  const { data: compact = false } = useCompactBudgetRows();
   const filteredData = useMemo(
     () =>
       data.filter((row) => {
@@ -91,7 +93,10 @@ export function DesktopBudgetTableView({
   // sortable wrappers call useSortable, which requires a surrounding
   // DndContext — that is why the fork exists at the component level.
   const renderTable = (sortable: boolean) => (
-    <div className="overflow-x-auto rounded-lg border border-border/60 bg-background">
+    <div
+      className="overflow-x-auto rounded-lg border border-border/60 bg-background"
+      data-row-density={compact ? 'compact' : 'comfortable'}
+    >
       <Table className="w-full">
         {tableHeader}
         <TableBody>
@@ -109,6 +114,7 @@ export function DesktopBudgetTableView({
                 globalLocalizer,
                 isUpdating: isUpdatingGroup,
                 isDeleting: isDeletingGroup,
+                compact,
               };
               return sortable ? (
                 <SortableDesktopBudgetGroupRow key={item.id} {...groupProps} overId={overId} />
@@ -130,6 +136,7 @@ export function DesktopBudgetTableView({
               onSelect: handleCategorySelect,
               isSelected: Boolean(selectedCategoryIds?.has(item.categoryId)),
               selectable: !disableSelection,
+              compact,
             };
             return sortable ? (
               <SortableDesktopBudgetCategoryRow key={item.id} {...categoryProps} overId={overId} />

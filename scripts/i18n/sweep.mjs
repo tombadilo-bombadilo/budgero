@@ -85,6 +85,7 @@ const WRAPPER_TAGS = new Set(['t', 'msg']);
 const SKIP_FILES = [
   /\.test\./, /\.spec\./, /\/test\//, /\.generated\./, /\.d\.ts$/,
   /currency-data\.ts$/, // handled via Intl.DisplayNames, not catalogs
+  /\/mutations\/fuzz\//, /\/undo-integrity\/harness\.ts$/, // test-only fixtures
 ];
 
 // ---------------------------------------------------------------- text classification

@@ -8,6 +8,7 @@ import { useUiStore } from '@shared/store/useUiStore';
 import {
   useAddTransaction,
   useAddTransfer,
+  type AddTransactionSplitLine,
   type AddTransferResult,
 } from '@entities/transaction/api/useTransactions';
 import { useCategories } from '@entities/category/api/useCategories';
@@ -22,14 +23,14 @@ export interface AddTransferRequest {
   memo: string;
   labelId: number | null;
   source: {
-    category: string;
+    categoryId: number;
     payee: string;
     amount: number;
     accountId: number;
     exchangeRateOverride?: number | null;
   };
   destination: {
-    category: string;
+    categoryId: number;
     payee: string;
     amount: number;
     accountId: number;
@@ -52,7 +53,8 @@ export function useAddTransactionHandler({ onDialogClose }: UseAddTransactionHan
   const handleAddTransaction = useCallback(
     async (
       date: Date | null,
-      category: string,
+      /** 0 = uncategorized. */
+      categoryId: number,
       memo: string,
       payee: string,
       outflow: number,
@@ -61,11 +63,9 @@ export function useAddTransactionHandler({ onDialogClose }: UseAddTransactionHan
       labelId: number | null,
       transferId: string | null,
       keepDialogOpen?: boolean,
-      exchangeRateOverride?: number | null
+      exchangeRateOverride?: number | null,
+      splits?: AddTransactionSplitLine[]
     ): Promise<number> => {
-      const categoryObject = categories.find((cat) => cat.Name === category);
-      const categoryId = categoryObject?.ID || 0;
-
       // Don't perform optimistic update - let React Query handle the data flow
       // This prevents the data from getting out of sync
 
@@ -87,6 +87,7 @@ export function useAddTransactionHandler({ onDialogClose }: UseAddTransactionHan
         payee,
         transferId,
         exchangeRateOverride,
+        ...(splits ? { splits } : {}),
       });
 
       // Only close dialog if not keeping it open for "Add Another"
@@ -95,15 +96,11 @@ export function useAddTransactionHandler({ onDialogClose }: UseAddTransactionHan
       }
       return id;
     },
-    [categories, selectedAccount, selectedBudget, addTransactionMutation, onDialogClose]
+    [selectedAccount, selectedBudget, addTransactionMutation, onDialogClose]
   );
 
   const handleAddTransfer = useCallback(
     async (request: AddTransferRequest): Promise<AddTransferResult> => {
-      const sourceCategoryId =
-        categories.find((category) => category.Name === request.source.category)?.ID || 0;
-      const destinationCategoryId =
-        categories.find((category) => category.Name === request.destination.category)?.ID || 0;
       const transactionDate = request.date
         ? request.date.toLocaleDateString('en-CA')
         : new Date().toLocaleDateString('en-CA');
@@ -116,7 +113,7 @@ export function useAddTransactionHandler({ onDialogClose }: UseAddTransactionHan
           inflow: 0,
           outflow: request.source.amount,
           accountId: request.source.accountId,
-          categoryId: sourceCategoryId,
+          categoryId: request.source.categoryId,
           labelId: request.labelId,
           date: transactionDate,
           memo: request.memo,
@@ -127,7 +124,7 @@ export function useAddTransactionHandler({ onDialogClose }: UseAddTransactionHan
           inflow: request.destination.amount,
           outflow: 0,
           accountId: request.destination.accountId,
-          categoryId: destinationCategoryId,
+          categoryId: request.destination.categoryId,
           labelId: request.labelId,
           date: transactionDate,
           memo: request.memo,
@@ -139,7 +136,7 @@ export function useAddTransactionHandler({ onDialogClose }: UseAddTransactionHan
       if (!request.keepDialogOpen) onDialogClose();
       return result;
     },
-    [categories, selectedAccount, selectedBudget, addTransferMutation, onDialogClose]
+    [selectedAccount, selectedBudget, addTransferMutation, onDialogClose]
   );
 
   return {

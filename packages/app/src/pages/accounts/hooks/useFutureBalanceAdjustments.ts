@@ -1,14 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRuntime, useActiveSpaceId } from '@shared/runtime/runtime-provider';
-import type { Account, GetTransactionsByAccountRow } from '@budgero/core/browser';
+import type { Account } from '@budgero/core/browser';
 import { getTodayISO } from '@shared/lib/date-utils';
 
 /**
- * Scans each account's transactions for future-dated entries (Date > today)
- * and returns the original/converted balance deltas they contribute, so
+ * Sums each account's future-dated entries (Date > today) in one aggregate
+ * query and returns the original/converted balance deltas they contribute, so
  * callers can back them out of the displayed (as-of-today) balance.
  */
-export function useFutureBalanceAdjustments(accountsData: Account[]) {
+export function useFutureBalanceAdjustments(budgetId: number, accountsData: Account[]) {
   const runtime = useRuntime();
   const spaceId = useActiveSpaceId();
   const [futureAdjustments, setFutureAdjustments] = useState<
@@ -27,7 +27,7 @@ export function useFutureBalanceAdjustments(accountsData: Account[]) {
     let cancelled = false;
 
     const calculateAdjustments = async () => {
-      if (!spaceId || accountsData.length === 0) {
+      if (!spaceId || !budgetId || accountsData.length === 0) {
         if (!cancelled) setFutureAdjustments({});
         return;
       }
@@ -35,44 +35,16 @@ export function useFutureBalanceAdjustments(accountsData: Account[]) {
       try {
         const services = runtime.services();
         const cutoff = getTodayISO();
-
-        const results = await Promise.all(
-          accountsData.map(async (account) => {
-            try {
-              const transactions = (await services.transactions.getTransactionsByAccount(
-                account.ID
-              )) as GetTransactionsByAccountRow[];
-
-              let original = 0;
-              let converted = 0;
-
-              for (const tx of transactions) {
-                if (!tx?.Date || tx.Date <= cutoff) continue;
-                const inflow = tx.InflowConverted ?? 0;
-                const outflow = tx.OutflowConverted ?? 0;
-                const inflowOriginal = tx.InflowNative ?? inflow;
-                const outflowOriginal = tx.OutflowNative ?? outflow;
-                original += inflowOriginal - outflowOriginal;
-                converted += inflow - outflow;
-              }
-
-              return [account.ID, { original, converted }] as const;
-            } catch (error) {
-              console.error(
-                'Failed to evaluate future transactions for account',
-                account.ID,
-                error
-              );
-              return [account.ID, { original: 0, converted: 0 }] as const;
-            }
-          })
-        );
+        // One grouped SUM over Date > today instead of loading every register.
+        const rows = await services.transactions.getFutureBalanceAdjustments(budgetId, cutoff);
+        const byAccount = new Map(rows.map((row) => [row.AccountID, row]));
 
         if (cancelled) return;
 
         const map: Record<number, { original: number; converted: number }> = {};
-        for (const [accountId, values] of results) {
-          map[accountId] = values;
+        for (const account of accountsData) {
+          const row = byAccount.get(account.ID);
+          map[account.ID] = { original: row?.Original ?? 0, converted: row?.Converted ?? 0 };
         }
         setFutureAdjustments(map);
       } catch (error) {
@@ -85,7 +57,7 @@ export function useFutureBalanceAdjustments(accountsData: Account[]) {
     return () => {
       cancelled = true;
     };
-  }, [runtime, spaceId, accountsData, accountIdsKey]);
+  }, [runtime, spaceId, budgetId, accountsData, accountIdsKey]);
 
   return futureAdjustments;
 }

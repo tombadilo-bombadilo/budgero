@@ -6,6 +6,12 @@
  */
 
 import type { DatabaseAdapter } from '../../database/interface.js';
+import {
+  allocatedIdRange,
+  readIdCounters,
+  withReusedIds,
+  type IdRange,
+} from '../../database/id-reuse.js';
 import { MutationHistoryQueries } from './queries.js';
 import type {
   MutationHistoryEntry,
@@ -20,6 +26,21 @@ export class MutationHistoryService {
 
   constructor(private db: DatabaseAdapter) {
     this.queries = new MutationHistoryQueries(db);
+  }
+
+  /** AUTOINCREMENT counters of the shared tables, read before an op runs (see id-reuse). */
+  idCounters(): Record<string, number> {
+    return readIdCounters(this.db);
+  }
+
+  /** The ID range an op allocated since `before` (from idCounters), for its redo. */
+  allocatedIds(before: Record<string, number>): IdRange {
+    return allocatedIdRange(this.db, before);
+  }
+
+  /** Run a redo so it allocates the IDs of `range` again (see id-reuse). */
+  withReusedIds<T>(range: unknown, fn: () => Promise<T> | T): Promise<T> {
+    return withReusedIds(this.db, range, fn);
   }
 
   /**
@@ -120,6 +141,21 @@ export class MutationHistoryService {
    */
   markUndone(mutationId: string): void {
     this.queries.markUndone(mutationId);
+  }
+
+  /** Clear the undone mark of a mutation (it was redone). */
+  markRedone(mutationId: string): void {
+    this.queries.markRedone(mutationId);
+  }
+
+  /**
+   * The newest entry of a space whose change is still applied (not undone,
+   * not failed), or null. Audit Log undo is only safe for this entry: any
+   * later change may depend on the state the inverse would overwrite.
+   */
+  getLatestActiveEntryForSpace(spaceId: string): ParsedMutationHistoryEntry | null {
+    const entry = this.queries.getLatestActiveBySpace(spaceId);
+    return entry ? this.parseEntry(entry) : null;
   }
 
   /**

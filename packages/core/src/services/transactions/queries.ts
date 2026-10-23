@@ -12,16 +12,21 @@ import {
   AccountTransactionPageOptions,
   AccountTransactionSummary,
   AccountBalanceHistoryTransaction,
+  AccountFutureBalanceAdjustment,
+  AccountUncategorizedCount,
   SimilarTransaction,
   SimilarTransactionQuery,
+  TransactionLinks,
 } from './types.js';
 import type { Account } from '../accounts/types.js';
 import type { Budget } from '../budgets/types.js';
 import { asMilli, ZERO_MILLI } from '../../money/index.js';
+import type { BalanceHistoryBucket, BalanceHistoryRow } from './types.js';
+import { linesOutOfStep } from './split-amounts.js';
 
 /**
  * Shared column list for the detailed transaction-row SELECTs.
- * Expects aliases: t = transactions, c = categories, l = labels, a = accounts.
+ * Expects `FROM transactions t${TX_ROW_JOINS}` (c = categories, l = labels, a = accounts).
  * Callers that expose the account name append `a.Name as Account`.
  */
 const TX_ROW_COLUMNS = `
@@ -48,24 +53,28 @@ const TX_ROW_COLUMNS = `
         t.ExchangeRateOverride,
         t.TransferID,
         a.OnBudget AS AccountOnBudget,
-        CASE WHEN t.TransferID IS NOT NULL AND t.TransferID != '' THEN
-          (SELECT partner_account.OnBudget
-             FROM transactions transfer_partner
-             JOIN accounts partner_account ON partner_account.ID = transfer_partner.AccountID
-            WHERE transfer_partner.TransferID = t.TransferID
-              AND transfer_partner.ID != t.ID
-            ORDER BY transfer_partner.ID
-            LIMIT 1)
-        ELSE NULL END AS TransferAccountOnBudget,
-        CASE WHEN t.TransferID IS NOT NULL AND t.TransferID != '' THEN
-          (SELECT partner_account.Name
-             FROM transactions transfer_partner
-             JOIN accounts partner_account ON partner_account.ID = transfer_partner.AccountID
-            WHERE transfer_partner.TransferID = t.TransferID
-              AND transfer_partner.ID != t.ID
-            ORDER BY transfer_partner.ID
-            LIMIT 1)
-        ELSE NULL END AS TransferAccountName`;
+        transfer_partner_account.OnBudget AS TransferAccountOnBudget,
+        transfer_partner_account.Name AS TransferAccountName`;
+
+/**
+ * Joins the first other leg (lowest ID) of a linked transfer and its account,
+ * as `transfer_partner_account`, for TX_ROW_COLUMNS. One indexed lookup per row:
+ * the `!= ''` term lets SQLite use the partial idx_transactions_transfer_id.
+ */
+const TX_ROW_JOINS = `
+      LEFT JOIN categories c ON t.CategoryID = c.ID
+      LEFT JOIN labels l ON t.LabelID = l.ID
+      LEFT JOIN accounts a ON t.AccountID = a.ID
+      LEFT JOIN transactions transfer_partner ON transfer_partner.ID = (
+        SELECT p.ID
+          FROM transactions p
+          JOIN accounts pa ON pa.ID = p.AccountID
+         WHERE p.TransferID = t.TransferID
+           AND p.TransferID != ''
+           AND p.ID != t.ID
+         ORDER BY p.ID
+         LIMIT 1)
+      LEFT JOIN accounts transfer_partner_account ON transfer_partner_account.ID = transfer_partner.AccountID`;
 
 const SQLITE_BIND_CHUNK_SIZE = 500;
 const DEFAULT_ACCOUNT_PAGE_SIZE = 200;
@@ -85,6 +94,15 @@ function chunkValues<T>(values: T[]): T[][] {
  * `s2` so it can sit alongside a `transaction_splits s` join.
  */
 export const NO_SPLITS_FILTER = `AND NOT EXISTS (SELECT 1 FROM transaction_splits s2 WHERE s2.TransactionID = t.ID)`;
+
+/**
+ * Bounds and GLOB pattern for TransferIDs starting with `prefix`. The range and
+ * the `!= ''` guard let SQLite use the partial TransferID index; GLOB keeps `_`
+ * literal. The prefixes used here end in `_`, and '`' is the next character.
+ */
+function splitMirrorRange(prefix: string): [string, string, string] {
+  return [prefix, `${prefix.slice(0, -1)}\``, `${prefix}*`];
+}
 
 /**
  * TransactionQueries - All SQL queries for transaction operations
@@ -265,21 +283,20 @@ export class TransactionQueries {
    * GetAllTransactionsDetailed - Gets all transactions for a budget with full details
    * Returns same format as getTransactionsByAccount but for all accounts
    */
-  getAllTransactionsDetailed(budgetId: number): GetTransactionsByAccountRow[] {
+  getAllTransactionsDetailed(budgetId: number, afterDate?: string): GetTransactionsByAccountRow[] {
     return allRows<GetTransactionsByAccountRow>(
       this.db,
       `
       SELECT${TX_ROW_COLUMNS},
         t.AccountID,
         a.Name as Account
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
+      FROM transactions t${TX_ROW_JOINS}
       WHERE t.BudgetID = ?
+      ${afterDate ? 'AND t.Date > ?' : ''}
       ORDER BY t.Date DESC, t.ID DESC
     `,
-      budgetId
+      budgetId,
+      ...(afterDate ? [afterDate] : [])
     );
   }
 
@@ -373,10 +390,7 @@ export class TransactionQueries {
       this.db,
       `
       SELECT${TX_ROW_COLUMNS}
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
+      FROM transactions t${TX_ROW_JOINS}
       WHERE t.AccountID = ?
       ORDER BY t.Date DESC, t.ID DESC
     `,
@@ -416,10 +430,7 @@ export class TransactionQueries {
       this.db,
       `
       SELECT${TX_ROW_COLUMNS}
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
+      FROM transactions t${TX_ROW_JOINS}
       WHERE ${where.join(' AND ')}
       ORDER BY t.Date DESC, t.ID DESC
       LIMIT ?
@@ -506,10 +517,7 @@ export class TransactionQueries {
       this.db,
       `
       SELECT${TX_ROW_COLUMNS}
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
+      FROM transactions t${TX_ROW_JOINS}
       WHERE ${where.join(' AND ')}
       ORDER BY t.Date DESC, t.ID DESC
     `,
@@ -586,6 +594,88 @@ export class TransactionQueries {
   }
 
   /**
+   * Per-account sums of rows dated after `afterDate`, so the accounts page can
+   * back future-dated entries out of today's balance without loading registers.
+   */
+  getFutureBalanceAdjustments(
+    budgetId: number,
+    afterDate: string
+  ): AccountFutureBalanceAdjustment[] {
+    return allRows<AccountFutureBalanceAdjustment>(
+      this.db,
+      `
+      SELECT
+        t.AccountID,
+        COALESCE(SUM(
+          COALESCE(t.InflowNative, t.InflowConverted, 0) - COALESCE(t.OutflowNative, t.OutflowConverted, 0)
+        ), 0) AS Original,
+        COALESCE(SUM(COALESCE(t.InflowConverted, 0) - COALESCE(t.OutflowConverted, 0)), 0) AS Converted
+      FROM transactions t
+      WHERE t.BudgetID = ? AND t.Date > ?
+      GROUP BY t.AccountID
+    `,
+      budgetId,
+      afterDate
+    );
+  }
+
+  /**
+   * Uncategorized transaction counts per account (split parents excluded; their
+   * lines carry the categories). Same rule as the register summary's UncategorizedCount:
+   * CategoryID 0, a CategoryID with no category row, or a category named
+   * '' / NULL / 'Uncategorized'.
+   *
+   * Driven by category: `used_ids` walks the distinct CategoryIDs on
+   * idx_transactions_category_date (one seek per distinct ID), `uncategorized_ids`
+   * keeps the ones the rule above matches (dangling IDs included, so rows written
+   * while foreign keys were off still count), and only those categories' rows
+   * are read, instead of every row of the budget.
+   */
+  getUncategorizedCountsByAccount(budgetId: number): AccountUncategorizedCount[] {
+    return allRows<AccountUncategorizedCount>(
+      this.db,
+      `
+      WITH RECURSIVE used_ids(id) AS (
+        SELECT MIN(CategoryID) FROM transactions
+        UNION ALL
+        SELECT (SELECT MIN(t.CategoryID) FROM transactions t WHERE t.CategoryID > used_ids.id)
+        FROM used_ids
+        WHERE used_ids.id IS NOT NULL
+      ),
+      uncategorized_ids(id) AS (
+        SELECT u.id FROM used_ids u
+        WHERE u.id IS NOT NULL
+          AND (
+            u.id = 0
+            OR NOT EXISTS (
+              SELECT 1 FROM categories c
+              WHERE c.ID = u.id AND c.Name IS NOT NULL AND c.Name <> '' AND c.Name <> 'Uncategorized'
+            )
+          )
+      )
+      SELECT t.AccountID, COUNT(*) AS Count
+      FROM uncategorized_ids u
+      CROSS JOIN transactions t ON t.CategoryID = u.id
+      WHERE t.BudgetID = ?
+        ${NO_SPLITS_FILTER}
+      GROUP BY t.AccountID
+      ORDER BY t.AccountID
+    `,
+      budgetId
+    );
+  }
+
+  accountHasTransactions(accountId: number): boolean {
+    return Boolean(
+      getRow<{ Found: number }>(
+        this.db,
+        'SELECT 1 AS Found FROM transactions WHERE AccountID = ? LIMIT 1',
+        accountId
+      )
+    );
+  }
+
+  /**
    * Return only a chart window plus one synthetic opening-balance row. This
    * preserves exact sparkline math without loading an account's entire ledger.
    */
@@ -637,10 +727,7 @@ export class TransactionQueries {
       SELECT${TX_ROW_COLUMNS},
         t.AccountID,
         a.Name AS Account
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
+      FROM transactions t${TX_ROW_JOINS}
       WHERE t.ID = ?
     `,
       id
@@ -655,19 +742,38 @@ export class TransactionQueries {
     accountId: number,
     month: string
   ): GetTransactionsByAccountAndMonthRow[] {
+    return this.getTransactionsByAccountsAndMonth([accountId], month);
+  }
+
+  /**
+   * Same rows as calling getTransactionsByAccountAndMonth for each account in turn and
+   * concatenating: grouped in `accountIds` order, then Date DESC, ID DESC.
+   *
+   * Filters on the stored Month column (`substr(Date, 1, 7)`, the month the budget uses)
+   * instead of `strftime('%Y-%m', Date)`, which was evaluated on every row of each account's
+   * ledger. The Date range is the same month as a prefix range, so idx_transactions_account_date_id
+   * reads only that month. Month is always 'YYYY-MM'; any other string matches nothing, as before.
+   */
+  getTransactionsByAccountsAndMonth(
+    accountIds: readonly number[],
+    month: string
+  ): GetTransactionsByAccountAndMonthRow[] {
+    if (accountIds.length === 0 || !/^\d{4}-\d{2}$/.test(month)) return [];
+    // Smallest string above every string starting with `month` ('2026-10' -> '2026-11').
+    const monthEnd = month.slice(0, 6) + String.fromCharCode(month.charCodeAt(6) + 1);
     return allRows<GetTransactionsByAccountAndMonthRow>(
       this.db,
       `
       SELECT${TX_ROW_COLUMNS},
         a.Name as Account
-      FROM transactions t
-      LEFT JOIN categories c ON t.CategoryID = c.ID
-      LEFT JOIN labels l ON t.LabelID = l.ID
-      LEFT JOIN accounts a ON t.AccountID = a.ID
-      WHERE t.AccountID = ? AND strftime('%Y-%m', t.Date) = ?
-      ORDER BY t.Date DESC, t.ID DESC
+      FROM json_each(?) ids
+      CROSS JOIN transactions t
+        ON t.AccountID = ids.value AND t.Date >= ? AND t.Date < ? AND t.Month = ?${TX_ROW_JOINS}
+      ORDER BY ids.key, t.Date DESC, t.ID DESC
     `,
-      accountId,
+      JSON.stringify(accountIds),
+      month,
+      monthEnd,
       month
     );
   }
@@ -1010,6 +1116,8 @@ export class TransactionQueries {
             RunningBalanceNative = balances.RunningNative
         FROM balances
         WHERE transactions.ID = balances.ID
+          AND (transactions.RunningBalanceConverted IS NOT balances.RunningConverted
+            OR transactions.RunningBalanceNative IS NOT balances.RunningNative)
       `,
         ...chunk
       );
@@ -1039,6 +1147,124 @@ export class TransactionQueries {
     }
   }
 
+  /**
+   * Recalculate one account's running balances from the row at (fromDate, fromId)
+   * onward in ledger order (Date, ID), seeded with the stored balances of the row
+   * just before it, then the account balances. For a write that changed only rows
+   * at or after that point (an amount edit, or a date move with `fromDate` = the
+   * earlier of the old and new date) this gives the same balances as
+   * recalculateBalances, without reading and rewriting the whole ledger: the rows
+   * before it are untouched and already correct, as every write path keeps them.
+   * Rows that already hold the right value are not rewritten. Falls back to the
+   * full recalculation when the seed row has no stored balances or the rows
+   * before it turn out not to add up.
+   */
+  recalculateBalancesFrom(accountId: number, fromDate: string, fromId: number): void {
+    const seed = getRow<{
+      RunningBalanceConverted: number | null;
+      RunningBalanceNative: number | null;
+    }>(
+      this.db,
+      `
+      SELECT RunningBalanceConverted, RunningBalanceNative
+      FROM transactions
+      WHERE AccountID = ?1 AND (Date < ?2 OR (Date = ?2 AND ID < ?3))
+      ORDER BY Date DESC, ID DESC
+      LIMIT 1
+    `,
+      accountId,
+      fromDate,
+      fromId
+    );
+    if (seed && (seed.RunningBalanceConverted === null || seed.RunningBalanceNative === null)) {
+      this.recalculateBalancesForAccounts([accountId]);
+      return;
+    }
+
+    run(
+      this.db,
+      `
+      WITH balances AS MATERIALIZED (
+        SELECT
+          ID,
+          ?4 + SUM(COALESCE(InflowConverted, 0) - COALESCE(OutflowConverted, 0)) OVER (
+            ORDER BY Date ASC, ID ASC
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+          ) AS RunningConverted,
+          ?5 + SUM(COALESCE(InflowNative, 0) - COALESCE(OutflowNative, 0)) OVER (
+            ORDER BY Date ASC, ID ASC
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+          ) AS RunningNative
+        FROM transactions
+        WHERE AccountID = ?1 AND (Date > ?2 OR (Date = ?2 AND ID >= ?3))
+      )
+      UPDATE transactions
+      SET RunningBalanceConverted = balances.RunningConverted,
+          RunningBalanceNative = balances.RunningNative
+      FROM balances
+      WHERE transactions.ID = balances.ID
+        AND (transactions.RunningBalanceConverted IS NOT balances.RunningConverted
+          OR transactions.RunningBalanceNative IS NOT balances.RunningNative)
+    `,
+      accountId,
+      fromDate,
+      fromId,
+      seed?.RunningBalanceConverted ?? 0,
+      seed?.RunningBalanceNative ?? 0
+    );
+
+    // Account balances: the same sums over every row as the full recalculation.
+    // They must equal the last row's running balance; if not, some row before
+    // `fromDate` was already off, so recalculate the account in full (which also
+    // repairs those rows, as the full recalculation always did).
+    const totals = getRow<{ native: number; converted: number }>(
+      this.db,
+      `
+      SELECT COALESCE(SUM(COALESCE(InflowNative, 0) - COALESCE(OutflowNative, 0)), 0) AS native,
+             COALESCE(SUM(COALESCE(InflowConverted, 0) - COALESCE(OutflowConverted, 0)), 0) AS converted
+      FROM transactions
+      WHERE AccountID = ?
+    `,
+      accountId
+    );
+    const last = getRow<{ RunningBalanceConverted: number; RunningBalanceNative: number }>(
+      this.db,
+      `
+      SELECT RunningBalanceConverted, RunningBalanceNative
+      FROM transactions
+      WHERE AccountID = ?
+      ORDER BY Date DESC, ID DESC
+      LIMIT 1
+    `,
+      accountId
+    );
+    const native = totals?.native ?? 0;
+    const converted = totals?.converted ?? 0;
+    if (
+      (last?.RunningBalanceNative ?? 0) !== native ||
+      (last?.RunningBalanceConverted ?? 0) !== converted
+    ) {
+      this.recalculateBalancesForAccounts([accountId]);
+      return;
+    }
+    run(
+      this.db,
+      `
+      UPDATE accounts
+      SET BalanceNative = ?2,
+          BalanceConverted = ?3 + COALESCE((
+            SELECT SUM(r.DeltaConverted)
+            FROM account_revaluations r
+            WHERE r.AccountID = accounts.ID
+          ), 0)
+      WHERE ID = ?1
+    `,
+      accountId,
+      native,
+      converted
+    );
+  }
+
   getTransactionsByIDs(ids: number[]): Transaction[] {
     const normalized = [...new Set(ids.filter((id) => Number.isInteger(id) && id > 0))];
     return chunkValues(normalized).flatMap((chunk) => {
@@ -1051,13 +1277,25 @@ export class TransactionQueries {
     });
   }
 
+  getTransactionsByCategoryIDs(categoryIds: number[]): Transaction[] {
+    const normalized = [...new Set(categoryIds.filter((id) => Number.isInteger(id) && id > 0))];
+    return chunkValues(normalized).flatMap((chunk) => {
+      const placeholders = chunk.map(() => '?').join(', ');
+      return allRows<Transaction>(
+        this.db,
+        `SELECT * FROM transactions WHERE CategoryID IN (${placeholders})`,
+        ...chunk
+      );
+    });
+  }
+
   getTransactionsByTransferIDs(transferIds: string[]): Transaction[] {
     const normalized = [...new Set(transferIds.filter(Boolean))];
     return chunkValues(normalized).flatMap((chunk) => {
       const placeholders = chunk.map(() => '?').join(', ');
       return allRows<Transaction>(
         this.db,
-        `SELECT * FROM transactions WHERE TransferID IN (${placeholders})`,
+        `SELECT * FROM transactions WHERE TransferID IN (${placeholders}) AND TransferID != ''`,
         ...chunk
       );
     });
@@ -1127,7 +1365,7 @@ export class TransactionQueries {
       `
       UPDATE transactions
       SET CategoryID = ?
-      WHERE TransferID = ?
+      WHERE TransferID = ? AND TransferID != ''
     `,
       categoryId,
       transferId
@@ -1164,6 +1402,40 @@ export class TransactionQueries {
   }
 
   /**
+   * Which records outside the transactions table point at any of these rows.
+   * Those links use ON DELETE SET NULL, so deleting and re-creating a row (even
+   * under the same ID) silently drops them. Pending bank-sync reviews count
+   * because their candidate pointer is cleared the same way.
+   */
+  getLinkedRecordFlags(transactionIds: number[]): TransactionLinks {
+    if (transactionIds.length === 0) {
+      return { warranty: false, recurringOccurrence: false, bankReview: false };
+    }
+    const placeholders = transactionIds.map(() => '?').join(', ');
+    const row = getRow<{ Warranty: number; RecurringOccurrence: number; BankReview: number }>(
+      this.db,
+      `
+      SELECT
+        EXISTS(SELECT 1 FROM warranties
+                WHERE TransactionID IN (${placeholders})) AS Warranty,
+        EXISTS(SELECT 1 FROM recurring_transaction_occurrences
+                WHERE TransactionID IN (${placeholders})) AS RecurringOccurrence,
+        EXISTS(SELECT 1 FROM bank_reviews
+                WHERE CandidateTransactionID IN (${placeholders})
+                  AND Status = 'pending') AS BankReview
+    `,
+      ...transactionIds,
+      ...transactionIds,
+      ...transactionIds
+    );
+    return {
+      warranty: Boolean(row?.Warranty),
+      recurringOccurrence: Boolean(row?.RecurringOccurrence),
+      bankReview: Boolean(row?.BankReview),
+    };
+  }
+
+  /**
    * GetTransactionsByTransferID - Gets transactions by transfer ID
    * SQL: SELECT * FROM transactions WHERE transfer_id = ? ORDER BY date DESC
    */
@@ -1172,7 +1444,7 @@ export class TransactionQueries {
       this.db,
       `
       SELECT * FROM transactions 
-      WHERE TransferID = ? 
+      WHERE TransferID = ? AND TransferID != ''
       ORDER BY Date DESC
     `,
       transferId
@@ -1200,13 +1472,53 @@ export class TransactionQueries {
   }
 
   /**
+   * Mirror rows created for a split parent's transfer lines. Matched by the
+   * `split_transfer_<parentId>_` prefix so rows keyed by an older parent date
+   * are still found. GLOB keeps `_` literal.
+   */
+  getSplitMirrorTransactions(parentId: number): Transaction[] {
+    return allRows<Transaction>(
+      this.db,
+      `SELECT * FROM transactions
+       WHERE TransferID != '' AND TransferID >= ? AND TransferID < ? AND TransferID GLOB ?`,
+      ...splitMirrorRange(`split_transfer_${parentId}_`)
+    );
+  }
+
+  /** Split-transfer mirrors belonging to any of the given parents. */
+  getSplitMirrorsForParents(parentIds: number[]): Transaction[] {
+    const parents = new Set(parentIds);
+    if (parents.size === 0) return [];
+    return allRows<Transaction>(
+      this.db,
+      `SELECT * FROM transactions
+       WHERE TransferID != '' AND TransferID >= ? AND TransferID < ? AND TransferID GLOB ?`,
+      ...splitMirrorRange('split_transfer_')
+    ).filter((row) =>
+      parents.has(Number(/^split_transfer_(\d+)_/.exec(row.TransferID ?? '')?.[1]))
+    );
+  }
+
+  /** Re-key a split parent's mirrors to the parent's current date. */
+  rekeySplitMirrors(parentId: number, date: string): void {
+    run(
+      this.db,
+      `UPDATE transactions SET Date = ?, TransferID = ?
+       WHERE TransferID != '' AND TransferID >= ? AND TransferID < ? AND TransferID GLOB ?`,
+      date,
+      `split_transfer_${parentId}_${date}`,
+      ...splitMirrorRange(`split_transfer_${parentId}_`)
+    );
+  }
+
+  /**
    * Delete transactions by transfer ID (used to remove old split mirrors)
    */
   deleteTransactionsByTransferID(transferId: string): void {
     run(
       this.db,
       `
-      DELETE FROM transactions WHERE TransferID = ?
+      DELETE FROM transactions WHERE TransferID = ? AND TransferID != ''
     `,
       transferId
     );
@@ -1777,6 +2089,50 @@ export class TransactionQueries {
     return Number(result.lastInsertRowid);
   }
 
+  updateSplitLineAmounts(
+    line: Pick<
+      TransactionSplit,
+      'ID' | 'InflowConverted' | 'OutflowConverted' | 'InflowNative' | 'OutflowNative'
+    >
+  ): void {
+    run(
+      this.db,
+      `UPDATE transaction_splits
+          SET InflowConverted = ?, OutflowConverted = ?, InflowNative = ?, OutflowNative = ?
+        WHERE ID = ?`,
+      line.InflowConverted,
+      line.OutflowConverted,
+      line.InflowNative ?? null,
+      line.OutflowNative ?? null,
+      line.ID
+    );
+  }
+
+  /**
+   * Rescale the split lines of every split parent in `accountIds` whose lines
+   * no longer sum to it (after a bulk re-conversion rewrote parent amounts).
+   * Mirror rows are not touched: they live in their own accounts and are
+   * re-converted with them.
+   */
+  resyncSplitLinesForAccounts(accountIds: number[]): void {
+    const ids = [...new Set(accountIds.filter((id) => Number.isInteger(id) && id > 0))];
+    for (const chunk of chunkValues(ids)) {
+      const placeholders = chunk.map(() => '?').join(', ');
+      const parents = allRows<Transaction>(
+        this.db,
+        `SELECT t.* FROM transactions t
+          WHERE t.AccountID IN (${placeholders})
+            AND EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)`,
+        ...chunk
+      );
+      for (const parent of parents) {
+        for (const line of linesOutOfStep(this.getSplitsForTransaction(parent.ID), parent)) {
+          this.updateSplitLineAmounts(line);
+        }
+      }
+    }
+  }
+
   getSplitsForTransaction(transactionId: number): TransactionSplit[] {
     return allRows<TransactionSplit>(
       this.db,
@@ -1845,6 +2201,148 @@ export class TransactionQueries {
       changes += 1;
     }
     return changes;
+  }
+
+  /**
+   * Payee names used by a budget's transactions and split lines, without usage
+   * counts. Same rows, order and case-folding as {@link getPayeeUsageCounts}
+   * (a parent's payee is skipped when its split lines carry payees), so the
+   * directory built from it matches the usage directory name for name. The
+   * per-branch GROUP BY and the outer aggregate keep SQLite's choice of
+   * spelling for case variants the same as in the usage query.
+   */
+  getPayeeNamesInUse(budgetId: number): { Name: string }[] {
+    return allRows<{ Name: string }>(
+      this.db,
+      `
+      SELECT Name, COUNT(*) AS Spellings
+      FROM (
+        SELECT Payee AS Name
+        FROM transactions
+        WHERE BudgetID = ?
+          AND Payee IS NOT NULL
+          AND TRIM(Payee) <> ''
+          AND NOT EXISTS (
+            SELECT 1
+            FROM transaction_splits s
+            WHERE s.TransactionID = transactions.ID
+              AND s.Payee IS NOT NULL
+              AND TRIM(s.Payee) <> ''
+          )
+        GROUP BY Payee
+
+        UNION ALL
+
+        SELECT s.Payee AS Name
+        FROM transaction_splits s
+        CROSS JOIN transactions t ON t.ID = s.TransactionID
+        WHERE t.BudgetID = ?
+          AND s.Payee IS NOT NULL
+          AND TRIM(s.Payee) <> ''
+        GROUP BY s.Payee
+      ) used
+      GROUP BY Name COLLATE NOCASE
+      ORDER BY Name COLLATE NOCASE
+    `,
+      budgetId,
+      budgetId
+    );
+  }
+
+  /**
+   * The newest uncategorized transactions of a budget (split parents excluded),
+   * newest first. Same rows and order as filtering {@link getAllTransactions}
+   * by the uncategorized rule (CategoryID 0, a missing category, or one named
+   * '' / 'Uncategorized'), but driven from the category index instead of
+   * reading the whole ledger.
+   */
+  getRecentUncategorizedTransactions(budgetId: number, limit: number): GetAllTransactions[] {
+    const normalizedLimit = Number.isFinite(limit) ? Math.max(1, Math.floor(limit)) : 1;
+    const named = allRows<{ ID: number }>(
+      this.db,
+      `SELECT ID FROM categories WHERE Name IS NULL OR Name = '' OR Name = 'Uncategorized'`
+    );
+    // Rows can only point at a missing category while foreign keys are off;
+    // the distinct-ID pass walks the category index, not the table.
+    const missing = allRows<{ ID: number }>(
+      this.db,
+      `
+      SELECT d.CategoryID AS ID
+      FROM (SELECT DISTINCT CategoryID FROM transactions) d
+      WHERE d.CategoryID IS NOT NULL
+        AND d.CategoryID <> 0
+        AND NOT EXISTS (SELECT 1 FROM categories c WHERE c.ID = d.CategoryID)
+    `
+    );
+    const ids = [0, ...named.map((row) => row.ID), ...missing.map((row) => row.ID)];
+    return allRows<GetAllTransactions>(
+      this.db,
+      `
+      SELECT
+        t.ID,
+        t.AccountID as AccountId,
+        a.Name as AccountName,
+        t.Date,
+        t.CategoryID,
+        c.Name as Category,
+        t.LabelID,
+        l.Name as Label,
+        l.Color as LabelColor,
+        t.Memo,
+        t.Payee,
+        t.InflowConverted,
+        t.OutflowConverted,
+        t.RunningBalanceConverted,
+        t.TransferID
+      FROM transactions t
+        LEFT JOIN categories c ON t.CategoryID = c.ID
+        LEFT JOIN labels l ON t.LabelID = l.ID
+        LEFT JOIN accounts a ON t.AccountID = a.ID
+      WHERE +t.BudgetID = ?
+        AND t.CategoryID IN (${ids.map(() => '?').join(', ')})
+        ${NO_SPLITS_FILTER}
+      ORDER BY t.Date DESC, t.ID DESC
+      LIMIT ?
+    `,
+      budgetId,
+      ...ids,
+      normalizedLimit
+    );
+  }
+
+  /**
+   * Aggregated ledger rows for balance-history charts: one row per account for
+   * everything dated before `fromDate` (dated at the account's first
+   * transaction), then one row per account and day (or month) from
+   * `fromDate` on. Rows whose Date is not a canonical YYYY-MM-DD date are
+   * grouped by their exact Date string so callers can treat them as before.
+   */
+  getBalanceHistoryRows(
+    budgetId: number,
+    fromDate: string,
+    bucket: BalanceHistoryBucket
+  ): BalanceHistoryRow[] {
+    const inWindowKey = bucket === 'month' ? 'substr(Date, 1, 7)' : 'Date';
+    return allRows<BalanceHistoryRow>(
+      this.db,
+      `
+      SELECT
+        AccountID AS AccountId,
+        MIN(Date) AS Date,
+        COALESCE(SUM(COALESCE(InflowConverted, 0) - COALESCE(OutflowConverted, 0)), 0) AS Net
+      FROM transactions
+      WHERE BudgetID = ?
+      GROUP BY
+        AccountID,
+        CASE
+          WHEN date(Date) IS NOT Date THEN 'x' || Date
+          WHEN Date < ? THEN ''
+          ELSE ${inWindowKey}
+        END
+    `,
+      budgetId,
+      fromDate
+    );
   }
 }
 

@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { PayeeCombobox } from '@features/payees/ui/PayeeCombobox';
+import { PayeeCombobox, type PayeeComboboxProps } from '@features/payees/ui/PayeeCombobox';
 
 interface PayeeSelectCellProps {
   budgetId: number;
@@ -10,6 +10,12 @@ interface PayeeSelectCellProps {
   payees?: string[];
   defaultOpen?: boolean;
   onOpenChange?: (open: boolean) => void;
+  // Transfer choices for editing existing rows; see PayeeCombobox.
+  transferAccounts?: PayeeComboboxProps['transferAccounts'];
+  onSelectTransfer?: PayeeComboboxProps['onSelectTransfer'];
+  displayValue?: PayeeComboboxProps['displayValue'];
+  selectedTransferAccountId?: PayeeComboboxProps['selectedTransferAccountId'];
+  onUnlinkTransfer?: PayeeComboboxProps['onUnlinkTransfer'];
 }
 
 export function PayeeSelectCell({
@@ -21,6 +27,11 @@ export function PayeeSelectCell({
   payees,
   defaultOpen,
   onOpenChange,
+  transferAccounts,
+  onSelectTransfer,
+  displayValue,
+  selectedTransferAccountId,
+  onUnlinkTransfer,
 }: PayeeSelectCellProps) {
   const [internalValue, setInternalValue] = React.useState(value ?? '');
 
@@ -46,6 +57,11 @@ export function PayeeSelectCell({
       payees={payees}
       defaultOpen={defaultOpen}
       onOpenChange={onOpenChange}
+      transferAccounts={transferAccounts}
+      onSelectTransfer={onSelectTransfer}
+      displayValue={displayValue}
+      selectedTransferAccountId={selectedTransferAccountId}
+      onUnlinkTransfer={onUnlinkTransfer}
     />
   );
 }

@@ -26,6 +26,8 @@ export interface DesktopBudgetGroupRowProps {
   isDeleting: boolean;
   dragHandleProps?: DragHandleProps;
   showGroupPercent?: boolean;
+  /** Compact row density (Settings → Appearance → Budget table). */
+  compact?: boolean;
 }
 
 export interface DesktopBudgetCategoryRowProps {
@@ -43,6 +45,8 @@ export interface DesktopBudgetCategoryRowProps {
   isSelected: boolean;
   dragHandleProps?: DragHandleProps;
   selectable: boolean;
+  /** Compact row density (Settings → Appearance → Budget table). */
+  compact?: boolean;
 }
 
 export interface DesktopBudgetTableViewProps {

@@ -9,6 +9,10 @@ import {
   ReadyToAssignBreakdown,
 } from './types.js';
 import { MonthlyBudgetQueries } from './queries.js';
+import { getBudgetSnapshotOptions, getBudgetSnapshotStore } from './snapshot/store.js';
+import { SnapshotMonthlyBudgetQueries, type MonthlyBudgetSource } from './snapshot/reads.js';
+import { firstDifference } from './snapshot/compare.js';
+import { clock } from '../../utils/clock.js';
 
 // Re-export types for external use
 export type {
@@ -38,12 +42,47 @@ export class MonthlyBudgetService {
    * - Payments to CC draw from the CC Payment category
    */
   getMonthlyBudget(month: string, budgetId: number): GetMonthlyBudgetRow[] {
-    const rows = this.queries.getMonthlyBudget(month, budgetId);
-    const isMonthly = this.queries.getRtaMode(budgetId) === 'monthly';
+    return this.read(
+      budgetId,
+      [month],
+      (src) => this.buildMonthlyBudget(src, month, budgetId),
+      `getMonthlyBudget(${month}, ${budgetId})`
+    );
+  }
+
+  /**
+   * Runs `compute` on the budget snapshot when it is usable, else on the full
+   * queries. With BUDGERO_SNAPSHOT_VERIFY on, also runs it on the full queries
+   * and throws on any difference.
+   */
+  private read<T>(
+    budgetId: number,
+    months: string[],
+    compute: (src: MonthlyBudgetSource) => T,
+    label: string
+  ): T {
+    const handle = getBudgetSnapshotStore(this.db)?.acquire(budgetId, months) ?? null;
+    if (!handle) return compute(this.queries);
+    const result = compute(new SnapshotMonthlyBudgetQueries(this.db, this.queries, handle));
+    if (getBudgetSnapshotOptions().verify) {
+      const expected = compute(this.queries);
+      const diff = firstDifference(expected, result);
+      if (diff) throw new Error(`Budget snapshot verify failed: ${label}: ${diff}`);
+    }
+    return result;
+  }
+
+  private buildMonthlyBudget(
+    src: MonthlyBudgetSource,
+    month: string,
+    budgetId: number
+  ): GetMonthlyBudgetRow[] {
+    const rows = src.getMonthlyBudget(month, budgetId);
+    const isMonthly = src.getRtaMode(budgetId) === 'monthly';
 
     // Split each category's current-month activity into cash vs credit so the
     // UI can flag credit overspend (yellow) distinctly from cash (red).
-    const activityByKind = this.queries.getActivityByAccountKind(month, budgetId, isMonthly);
+    const activityByKind = src.getActivityByAccountKind(month, budgetId, isMonthly);
     for (const row of rows) {
       const kind = activityByKind.get(row.CategoryID);
       row.CashActivity = asMilli(kind?.cash ?? 0);
@@ -51,15 +90,12 @@ export class MonthlyBudgetService {
     }
 
     // Get CC Payment adjustments for YNAB-style tracking
-    const ccAdjustments = this.queries.getCCPaymentAdjustments(month, budgetId);
-    const ccSpendingByCategoryAndAccount = this.queries.getCCSpendingByCategoryAndAccount(
-      month,
-      budgetId
-    );
-    const ccAccountToPaymentCategory = this.queries.getCCAccountPaymentCategoryMap(budgetId);
+    const ccAdjustments = src.getCCPaymentAdjustments(month, budgetId);
+    const ccSpendingByCategoryAndAccount = src.getCCSpendingByCategoryAndAccount(month, budgetId);
+    const ccAccountToPaymentCategory = src.getCCAccountPaymentCategoryMap(budgetId);
     // Card balance per payment category — display-only context for the UI
     // (shows "owed" next to "set aside"; never feeds the Available math).
-    const ccBalances = this.queries.getCCAccountBalances(month, budgetId);
+    const ccBalances = src.getCCAccountBalances(month, budgetId);
     const balanceByPaymentCategory = new Map<number, number>();
     for (const [accountId, paymentCategoryId] of ccAccountToPaymentCategory) {
       balanceByPaymentCategory.set(paymentCategoryId, ccBalances.get(accountId) ?? 0);
@@ -120,6 +156,11 @@ export class MonthlyBudgetService {
     }
 
     if (ccAdjustments.size > 0) {
+      // One grouped query instead of one per CC payment row.
+      const priorAssignedByCategory = src.getAssignedPriorToMonthByCategory(
+        rows.filter((row) => ccAdjustments.has(row.CategoryID)).map((row) => row.CategoryID),
+        month
+      );
       for (const row of rows) {
         const adjustment = ccAdjustments.get(row.CategoryID);
         if (adjustment) {
@@ -137,7 +178,7 @@ export class MonthlyBudgetService {
           row.Activity = asMilli(-currentPayments || 0);
 
           // Available = Assigned + Funded - Payments (all time)
-          const priorAssigned = this.queries.getAssignedPriorToMonth(row.CategoryID, month);
+          const priorAssigned = priorAssignedByCategory.get(row.CategoryID) || 0;
           const totalAssigned = priorAssigned + row.Assigned;
           const totalFunded = asMilli(fundedByPaymentCategory.get(row.CategoryID) || 0);
           const totalPayments = priorPayments + currentPayments;
@@ -166,7 +207,7 @@ export class MonthlyBudgetService {
         paymentCalculationByCategory,
         currentFundingByPaymentCategory,
         debtBreakdownByPaymentCat,
-      } = this.queries.computeMonthlyRollforward(budgetId, month);
+      } = src.computeMonthlyRollforward(budgetId, month);
       const nameById = new Map(rows.map((r) => [r.CategoryID, r.Category]));
       for (const row of rows) {
         const spendOverride = availableByCategory.get(row.CategoryID);
@@ -211,6 +252,15 @@ export class MonthlyBudgetService {
   }
 
   /**
+   * All-time transaction count of a category in a budget (rows without splits
+   * plus split lines). Fetched on demand by the delete-category dialog; not
+   * part of getMonthlyBudget.
+   */
+  getCategoryTransactionCount(categoryId: number, budgetId: number): number {
+    return this.queries.getCategoryTransactionCount(categoryId, budgetId);
+  }
+
+  /**
    * GetAssignedLastMonth - Gets amount assigned to a category in a previous month
    */
   getAssignedLastMonth(month: string, categoryId: number): number {
@@ -221,7 +271,7 @@ export class MonthlyBudgetService {
     let mm = parseInt(mStr || '1', 10);
     if (!year || !mm) {
       // Fallback to the previous month based on system time if input is malformed
-      const now = new Date();
+      const now = clock.date();
       year = now.getFullYear();
       mm = now.getMonth() + 1;
     }
@@ -247,7 +297,7 @@ export class MonthlyBudgetService {
     month: string
   ): { lastMonth: Record<number, number>; average: Record<number, number> } {
     const [yearValue, monthValue] = month.split('-').map(Number);
-    const now = new Date();
+    const now = clock.date();
     let year = Number.isInteger(yearValue) && yearValue > 0 ? yearValue : now.getFullYear();
     let monthNumber =
       Number.isInteger(monthValue) && monthValue >= 1 && monthValue <= 12
@@ -329,26 +379,40 @@ export class MonthlyBudgetService {
    * overspend) so the UI can always show the full math for the active mode.
    */
   getReadyToAssignBreakdown(budgetId: number, month?: string): ReadyToAssignBreakdown {
-    if (this.queries.getRtaMode(budgetId) === 'monthly') {
-      const targetMonth = month ?? getLocalDateString().slice(0, 7);
-      return this.queries.readyToAssignMonthly(budgetId, targetMonth);
-    }
-    return this.queries.readyToAssign(budgetId, getLocalDateString());
+    const today = getLocalDateString();
+    const monthly = this.queries.getRtaMode(budgetId) === 'monthly';
+    const targetMonth = month ?? today.slice(0, 7);
+    return this.read(
+      budgetId,
+      monthly ? [targetMonth] : [today.slice(0, 7)],
+      (src) =>
+        monthly
+          ? src.readyToAssignMonthly(budgetId, targetMonth)
+          : src.readyToAssign(budgetId, today),
+      `getReadyToAssignBreakdown(${budgetId}, ${month})`
+    );
   }
 
   getReadyToAssignBreakdownMap(
     budgetId: number,
     months: string[]
   ): Map<string, ReadyToAssignBreakdown> {
-    if (this.queries.getRtaMode(budgetId) === 'monthly') {
-      return this.queries.readyToAssignMonthlyBatch(budgetId, months);
-    }
-    const single = this.queries.readyToAssign(budgetId, getLocalDateString());
-    const map = new Map<string, ReadyToAssignBreakdown>();
-    for (const m of months) {
-      map.set(m, { ...single, month: m });
-    }
-    return map;
+    const today = getLocalDateString();
+    const monthly = this.queries.getRtaMode(budgetId) === 'monthly';
+    return this.read(
+      budgetId,
+      monthly ? months : [today.slice(0, 7)],
+      (src) => {
+        if (monthly) return src.readyToAssignMonthlyBatch(budgetId, months);
+        const single = src.readyToAssign(budgetId, today);
+        const map = new Map<string, ReadyToAssignBreakdown>();
+        for (const m of months) {
+          map.set(m, { ...single, month: m });
+        }
+        return map;
+      },
+      `getReadyToAssignBreakdownMap(${budgetId})`
+    );
   }
 
   /**

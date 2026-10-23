@@ -11,7 +11,7 @@ import { CategorySelectCell } from '@features/transactions/ui/cells/CategorySele
 import { AccountSelectCell } from '@features/transactions/ui/cells/AccountSelectCell';
 import { EditableCell } from '@features/transactions/ui/cells/EditableCell';
 import { ExchangeRateCell } from '@features/transactions/ui/cells/ExchangeRateCell';
-import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell';
+import { TransactionPayeeCell } from '@features/transactions/ui/cells/TransactionPayeeCell';
 import { LabelSelectCell } from '@features/transactions/ui/cells/LabelSelectCell';
 import { Badge } from '@shared/ui/badge';
 import { useHideZeroAmountsEnabled } from '@shared/contexts/HideZeroAmountsContext';
@@ -303,11 +303,20 @@ export const TransactionRow = React.memo(function TransactionRow({
           </div>
         </TableCell>
         <TableCell>
-          <div className="flex items-center gap-1.5 px-2">
-            <RecurringIndicator />
-            <span className="text-xs xl:text-sm text-muted-foreground">{transaction.Date}</span>
+          {/* The badge sits under the date: on one line it overflows the narrow
+              date column into the next cell. */}
+          <div className="flex min-w-0 flex-col items-start gap-0.5 px-2">
+            <div className="flex items-center gap-1.5">
+              <RecurringIndicator />
+              <span className="whitespace-nowrap text-xs xl:text-sm text-muted-foreground">
+                {transaction.Date}
+              </span>
+            </div>
             {transaction.Date < getTodayISO() && (
-              <Badge variant="destructive" className="px-1.5 py-0 text-[9px] uppercase">
+              <Badge
+                variant="destructive"
+                className="px-1.5 py-0 text-[9px] leading-tight uppercase"
+              >
                 <Trans>Overdue</Trans>
               </Badge>
             )}
@@ -466,9 +475,10 @@ export const TransactionRow = React.memo(function TransactionRow({
       {/* Payee */}
       <TableCell className="max-w-[200px]">
         {editingColumn === 'payee' ? (
-          <PayeeSelectCell
+          <TransactionPayeeCell
             budgetId={budgetId}
-            value={transaction.Payee ?? ''}
+            transaction={transaction}
+            accounts={editorDirectories.accounts}
             payees={editorDirectories.payees}
             onCommit={(newVal) => onCellCommit(transaction.ID, 'Payee', newVal)}
             triggerClassName="h-8 text-xs xl:text-sm px-2 truncate"

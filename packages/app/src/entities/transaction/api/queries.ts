@@ -171,14 +171,11 @@ export function useAllAccountsMonthlyTransactions(budgetId: number, month: strin
     queryFn: async () => {
       if (!spaceId || !accounts || accounts.length === 0) return [];
 
-      const allTransactions = await Promise.all(
-        accounts.map((account) => {
-          const services = runtime.services();
-          return services.transactions.getTransactionsByAccountAndMonth(account.ID, month);
-        })
+      // One query for every account; same rows and order as one query per account, concatenated.
+      return runtime.services().transactions.getTransactionsByAccountsAndMonth(
+        accounts.map((account) => account.ID),
+        month
       );
-
-      return allTransactions.flat();
     },
     enabled: Boolean(spaceId) && Boolean(budgetId) && Boolean(month) && Boolean(accounts),
     staleTime: 1000 * 60 * 5,
@@ -263,13 +260,18 @@ export function useAllTransactions(
 
 /**
  * Fetch all transactions for a budget with full details (same format as account transactions).
- * Includes Account field for each transaction.
+ * Includes Account field for each transaction. `afterDate` limits it to rows dated after that day.
  */
-export function useAllTransactionsDetailed(budgetId: number) {
+export function useAllTransactionsDetailed(
+  budgetId: number,
+  { afterDate }: { afterDate?: string } = {}
+) {
   return useSpaceQuery<GetTransactionsByAccountRow[]>({
-    key: ['allTransactionsDetailed', budgetId],
+    key: afterDate
+      ? ['allTransactionsDetailed', budgetId, 'after', afterDate]
+      : ['allTransactionsDetailed', budgetId],
     enabled: Boolean(budgetId),
-    queryFn: (services) => services.transactions.getAllTransactionsDetailed(budgetId),
+    queryFn: (services) => services.transactions.getAllTransactionsDetailed(budgetId, afterDate),
   });
 }
 

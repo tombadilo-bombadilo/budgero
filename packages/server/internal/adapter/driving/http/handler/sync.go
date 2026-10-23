@@ -42,9 +42,12 @@ func (h *Handlers) DownloadDatabase(c echo.Context) error {
 
 	ctx := c.Request().Context()
 	spaceParam := c.QueryParam("space_id")
-	blob, err := h.services.Space.GetBlobMetadata(ctx, userID, spaceParam)
+	blob, file, openErr, err := h.openSpaceBlob(ctx, userID, spaceParam)
 	if err != nil {
 		return mapServiceError(err)
+	}
+	if file != nil {
+		defer func() { _ = file.Close() }()
 	}
 
 	log.Info().
@@ -65,9 +68,8 @@ func (h *Handlers) DownloadDatabase(c echo.Context) error {
 		return err
 	}
 
-	info, statErr := os.Stat(blob.BlobPath)
-	if statErr != nil {
-		if errors.Is(statErr, os.ErrNotExist) {
+	if openErr != nil {
+		if errors.Is(openErr, os.ErrNotExist) {
 			log.Info().
 				Str("user_id", userID).
 				Str("space_id", blob.SpaceID).
@@ -75,6 +77,16 @@ func (h *Handlers) DownloadDatabase(c echo.Context) error {
 				Msg("Database file not found")
 			return echo.NewHTTPError(http.StatusNotFound, "database not found")
 		}
+		log.Error().
+			Err(openErr).
+			Str("user_id", userID).
+			Str("space_id", blob.SpaceID).
+			Str("db_path", blob.BlobPath).
+			Msg("Failed to open database file")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read database file")
+	}
+	info, statErr := file.Stat()
+	if statErr != nil {
 		log.Error().
 			Err(statErr).
 			Str("user_id", userID).
@@ -115,7 +127,8 @@ func (h *Handlers) DownloadDatabase(c echo.Context) error {
 		c.Response().Header().Set("X-Database-Hash", hash)
 	}
 
-	return c.File(blob.BlobPath)
+	http.ServeContent(c.Response(), c.Request(), info.Name(), info.ModTime(), file)
+	return nil
 }
 
 // UploadDatabase accepts an encrypted database file from the user
@@ -177,6 +190,14 @@ func (h *Handlers) UploadDatabase(c echo.Context) error {
 			Str("space_id", blob.SpaceID).
 			Msg("Failed to read request body")
 		return err
+	}
+
+	if len(data) == 0 {
+		log.Warn().
+			Str("user_id", userID).
+			Str("space_id", blob.SpaceID).
+			Msg("Empty database upload attempted")
+		return echo.NewHTTPError(http.StatusBadRequest, "empty database data")
 	}
 
 	currentState, stateErr := h.services.Space.GetSyncState(ctx, userID, blob.SpaceID)
@@ -245,7 +266,8 @@ func (h *Handlers) UploadDatabase(c echo.Context) error {
 		return mvErr
 	}
 
-	if err = os.WriteFile(blob.BlobPath, data, 0o600); err != nil {
+	tempPath, err := writeBlobTemp(blob.BlobPath, data)
+	if err != nil {
 		log.Error().
 			Err(err).
 			Str("user_id", userID).
@@ -256,8 +278,22 @@ func (h *Handlers) UploadDatabase(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to save database")
 	}
 
+	// Same publish protocol as PostDatabaseBlob: metadata advance and rename
+	// happen together under the space's blob lock.
 	hash := crypto.ComputeDataHash(data)
-	newVersion, err := h.services.Space.UpdateSyncState(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion)
+	newVersion, err := h.commitBlob(blob.SpaceID, tempPath, blob.BlobPath, func() (int64, error) {
+		return h.services.Space.UpdateSyncState(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion)
+	})
+	if errors.Is(err, errBlobPublish) {
+		log.Error().
+			Err(err).
+			Str("user_id", userID).
+			Str("space_id", blob.SpaceID).
+			Str("db_path", blob.BlobPath).
+			Int64("reserved_version", newVersion).
+			Msg("CRITICAL: database rename failed after sync version was advanced; stored blob is stale until re-upload")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to save database")
+	}
 	if err != nil {
 		log.Error().
 			Err(err).
@@ -363,7 +399,7 @@ func (h *Handlers) GetDatabaseState(c echo.Context) error {
 
 	ctx := c.Request().Context()
 	spaceParam := c.QueryParam("space_id")
-	state, err := h.services.Space.GetSyncState(ctx, userID, spaceParam)
+	state, err := h.getSyncStateLocked(ctx, userID, spaceParam)
 	if err != nil {
 		log.Error().
 			Err(err).
@@ -480,9 +516,14 @@ func (h *Handlers) GetDatabaseBlob(c echo.Context) error {
 
 	ctx := c.Request().Context()
 	spaceParam := c.QueryParam("space_id")
-	blob, err := h.services.Space.GetBlobMetadata(ctx, userID, spaceParam)
+	// Metadata and file are captured together under the space's blob lock, so
+	// the version/hash/cursor headers below always describe the served bytes.
+	blob, file, openErr, err := h.openSpaceBlob(ctx, userID, spaceParam)
 	if err != nil {
 		return mapServiceError(err)
+	}
+	if file != nil {
+		defer func() { _ = file.Close() }()
 	}
 
 	log.Info().
@@ -503,9 +544,8 @@ func (h *Handlers) GetDatabaseBlob(c echo.Context) error {
 		return err
 	}
 
-	info, statErr := os.Stat(blob.BlobPath)
-	if statErr != nil {
-		if errors.Is(statErr, os.ErrNotExist) {
+	if openErr != nil {
+		if errors.Is(openErr, os.ErrNotExist) {
 			log.Info().
 				Str("user_id", userID).
 				Str("space_id", blob.SpaceID).
@@ -513,6 +553,16 @@ func (h *Handlers) GetDatabaseBlob(c echo.Context) error {
 				Msg("Database blob not found")
 			return echo.NewHTTPError(http.StatusNotFound, "database blob not found")
 		}
+		log.Error().
+			Err(openErr).
+			Str("user_id", userID).
+			Str("space_id", blob.SpaceID).
+			Str("db_path", blob.BlobPath).
+			Msg("Failed to open database blob")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to read database blob")
+	}
+	info, statErr := file.Stat()
+	if statErr != nil {
 		log.Error().
 			Err(statErr).
 			Str("user_id", userID).
@@ -554,7 +604,8 @@ func (h *Handlers) GetDatabaseBlob(c echo.Context) error {
 	c.Response().Header().Set("X-Encryption-Key-Version", fmt.Sprintf("%d", blob.EncryptionKeyVersion))
 	c.Response().Header().Set(dataFormatHeader, fmt.Sprintf("%d", blob.DataFormatVersion))
 
-	return c.File(blob.BlobPath)
+	http.ServeContent(c.Response(), c.Request(), info.Name(), info.ModTime(), file)
+	return nil
 }
 
 // resolveUploadMutationVersion returns the mutation-log position an uploaded
@@ -734,38 +785,66 @@ func (h *Handlers) PostDatabaseBlob(c echo.Context) error {
 
 	hash := crypto.ComputeDataHash(data)
 
-	// Advance the version BEFORE writing the file: the sync_version row is the
-	// concurrency gate. With a version header the advance is a compare-and-swap
-	// against the client's base version, so a concurrent upload that raced past
-	// the pre-checks above loses here instead of silently overwriting the blob.
-	var newVersion int64
-	if clientVersion >= 0 {
-		newVersion, err = h.services.Space.UpdateSyncStateCAS(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion, clientVersion)
-		if errors.Is(err, domain.ErrSyncVersionConflict) {
-			serverVersion := blob.SyncVersion
-			if refreshed, refreshErr := h.services.Space.GetSyncState(ctx, userID, blob.SpaceID); refreshErr == nil {
-				serverVersion = refreshed.Version
-			}
-			log.Warn().
-				Str("user_id", userID).
-				Str("space_id", blob.SpaceID).
-				Int64("client_version", clientVersion).
-				Int64("server_version", serverVersion).
-				Msg("Blob upload lost version compare-and-swap; rejecting")
-			return c.JSON(http.StatusConflict, map[string]any{
-				"error":          "version_conflict",
-				"message":        "Database version conflict. Client must download latest blob first.",
-				"server_version": serverVersion,
-				"client_version": clientVersion,
-				"space_id":       blob.SpaceID,
-			})
+	// Stage the bytes in a private temp file first; nothing is visible yet.
+	tempPath, err := writeBlobTemp(blob.BlobPath, data)
+	if err != nil {
+		log.Error().
+			Err(err).
+			Str("user_id", userID).
+			Str("space_id", blob.SpaceID).
+			Str("db_path", blob.BlobPath).
+			Int("data_size", len(data)).
+			Msg("Failed to write blob temp file")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to save blob")
+	}
+
+	// Advance the version, then publish the file, under the space's blob lock.
+	// The sync_version row is the concurrency gate: with a version header the
+	// advance is a compare-and-swap against the client's base version, so a
+	// concurrent upload that raced past the pre-checks above loses here and its
+	// temp file is discarded instead of overwriting the blob. Downloads take the
+	// same lock, so they see old metadata with old bytes or new with new.
+	newVersion, err := h.commitBlob(blob.SpaceID, tempPath, blob.BlobPath, func() (int64, error) {
+		if clientVersion >= 0 {
+			return h.services.Space.UpdateSyncStateCAS(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion, clientVersion)
 		}
-	} else {
 		log.Warn().
 			Str("user_id", userID).
 			Str("space_id", blob.SpaceID).
 			Msg("Blob upload without usable X-Database-Version header; advancing sync version unconditionally")
-		newVersion, err = h.services.Space.UpdateSyncState(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion)
+		return h.services.Space.UpdateSyncState(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion)
+	})
+	if errors.Is(err, domain.ErrSyncVersionConflict) {
+		serverVersion := blob.SyncVersion
+		if refreshed, refreshErr := h.services.Space.GetSyncState(ctx, userID, blob.SpaceID); refreshErr == nil {
+			serverVersion = refreshed.Version
+		}
+		log.Warn().
+			Str("user_id", userID).
+			Str("space_id", blob.SpaceID).
+			Int64("client_version", clientVersion).
+			Int64("server_version", serverVersion).
+			Msg("Blob upload lost version compare-and-swap; rejecting")
+		return c.JSON(http.StatusConflict, map[string]any{
+			"error":          "version_conflict",
+			"message":        "Database version conflict. Client must download latest blob first.",
+			"server_version": serverVersion,
+			"client_version": clientVersion,
+			"space_id":       blob.SpaceID,
+		})
+	}
+	if errors.Is(err, errBlobPublish) {
+		// Loud on purpose: the version was advanced but the rename failed, so
+		// the stored blob lags the recorded hash until the client re-uploads.
+		// Downloading clients detect the mismatch via X-Database-Hash.
+		log.Error().
+			Err(err).
+			Str("user_id", userID).
+			Str("space_id", blob.SpaceID).
+			Str("db_path", blob.BlobPath).
+			Int64("reserved_version", newVersion).
+			Msg("CRITICAL: blob rename failed after sync version was advanced; stored blob is stale until re-upload")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to save blob")
 	}
 	if err != nil {
 		log.Error().
@@ -775,34 +854,6 @@ func (h *Handlers) PostDatabaseBlob(c echo.Context) error {
 			Str("hash", hash).
 			Msg("Failed to update sync state for blob upload")
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update sync metadata")
-	}
-
-	tempPath := blob.BlobPath + ".tmp"
-	if err = os.WriteFile(tempPath, data, 0o600); err != nil {
-		// Loud on purpose: the version was already reserved, so the stored
-		// blob is now stale relative to the recorded hash until the client
-		// retries. Recoverable via the mutation log.
-		log.Error().
-			Err(err).
-			Str("user_id", userID).
-			Str("space_id", blob.SpaceID).
-			Str("temp_path", tempPath).
-			Int("data_size", len(data)).
-			Int64("reserved_version", newVersion).
-			Msg("CRITICAL: blob write failed after sync version was advanced; stored blob is stale until re-upload")
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to save blob")
-	}
-
-	if err = os.Rename(tempPath, blob.BlobPath); err != nil {
-		log.Error().
-			Err(err).
-			Str("user_id", userID).
-			Str("space_id", blob.SpaceID).
-			Str("db_path", blob.BlobPath).
-			Int64("reserved_version", newVersion).
-			Msg("CRITICAL: blob rename failed after sync version was advanced; stored blob is stale until re-upload")
-		_ = os.Remove(tempPath)
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to save blob")
 	}
 
 	if uploadFormat > blob.DataFormatVersion {

@@ -60,7 +60,11 @@ export function AICategorizeDialog({ open, onOpenChange, budgetId }: AICategoriz
 
   const selectedBudget = useUiStore((s) => s.selectedBudget);
   const currencyCode = selectedBudget?.DisplayCurrency || 'USD';
-  const { data: transactions = [] } = useAllTransactions(budgetId);
+  // The whole ledger (for the uncategorized list and the payee history) loads
+  // only while the dialog is open; the dashboard card mounts it closed.
+  const { data: transactions = [], isLoading: transactionsLoading } = useAllTransactions(budgetId, {
+    enabled: open,
+  });
   const { data: categories = [] } = useCategories(budgetId);
   const { data: categoryGroups = [] } = useCategoryGroups(budgetId);
   const { data: accounts = [] } = useAccounts(budgetId);
@@ -313,6 +317,10 @@ export function AICategorizeDialog({ open, onOpenChange, budgetId }: AICategoriz
           <div className="space-y-4 py-4">
             {!llmSettings?.Enabled ? (
               <AINotConfiguredWarning />
+            ) : transactionsLoading ? (
+              <div className="flex justify-center py-6">
+                <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary" />
+              </div>
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
@@ -342,7 +350,11 @@ export function AICategorizeDialog({ open, onOpenChange, budgetId }: AICategoriz
               </Button>
               <Button
                 onClick={handleAnalyze}
-                disabled={!llmSettings?.Enabled || uncategorizedTransactions.length === 0}
+                disabled={
+                  !llmSettings?.Enabled ||
+                  transactionsLoading ||
+                  uncategorizedTransactions.length === 0
+                }
               >
                 <Trans>
                   <Sparkles className="h-4 w-4 mr-2" />

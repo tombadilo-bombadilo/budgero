@@ -62,12 +62,19 @@ export class MutationExecutor {
 
     // Capture before-state for undo
     let beforeState: unknown;
+    // A failed capture means the inverse would be built from missing state
+    // (e.g. restore `undefined` over a column), so no undo is recorded at all.
+    let captureFailed = false;
     const undoSpec = this.deps.getUndoSpec(spec.op);
     if (!spec.meta?.skipUndo && undoSpec?.capture) {
       try {
         beforeState = await undoSpec.capture(spec.payload);
-      } catch {
-        /* ignore capture errors */
+      } catch (captureError) {
+        captureFailed = true;
+        logRuntime('warn', 'MutationExecutor', 'Undo capture failed; no undo recorded', {
+          op: spec.op,
+          error: errorMessage(captureError),
+        });
       }
     }
 
@@ -76,7 +83,9 @@ export class MutationExecutor {
     // pass an explicit list (undo/redo) to override.
     let { invalidates } = spec;
     if (!invalidates) {
-      invalidates = this.deps.getInvalidatesForOp(spec.op);
+      invalidates =
+        this.deps.getInvalidatesForCall?.(spec.op, spec.payload) ??
+        this.deps.getInvalidatesForOp(spec.op);
     }
     const hasInvalidates = Array.isArray(invalidates) && invalidates.length > 0;
 
@@ -85,6 +94,7 @@ export class MutationExecutor {
       mutationId,
       isReceiver,
     })) as T;
+    this.deps.onOpApplied?.(mutationId);
 
     // Invalidate queries for every origin (local + remote) off the op's
     // declared set. Previously only remote/forced mutations invalidated here
@@ -126,7 +136,7 @@ export class MutationExecutor {
     let undoOps: { op: string; args: Record<string, unknown> }[] | null = null;
     let redoOps: { op: string; args: Record<string, unknown> }[] | null = null;
 
-    if (isMutator && !spec.meta?.skipUndo && undoSpec?.build) {
+    if (isMutator && !spec.meta?.skipUndo && !captureFailed && undoSpec?.build) {
       try {
         const builtUndoOps = undoSpec.build(spec.payload, result, beforeState) || [];
         if (builtUndoOps.length) {
@@ -166,9 +176,10 @@ export class MutationExecutor {
       });
     }
 
-    // Record to mutation history
+    // Record to mutation history (not for undo/redo replays: the replayed
+    // entry is marked undone/redone by the caller instead).
     try {
-      if (budgetId !== null) {
+      if (budgetId !== null && !spec.meta?.replay) {
         const recordOrigin = spec.meta?.origin ?? (isMutator ? 'local' : 'remote');
         const s = spec as unknown as SpecWithUserId;
 

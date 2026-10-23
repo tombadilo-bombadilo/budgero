@@ -1,5 +1,5 @@
 import type { MutationResult, MutationSpec, MutationPayload, WebDatabaseInstance } from '../types';
-import { MUTATION_FORMAT_VERSION } from '../sync-format.js';
+import { mutationFormatVersion } from '../sync-format.js';
 import { persistDatabase } from '../utils/persist-database';
 
 interface MutationExecutionContext {
@@ -20,6 +20,7 @@ interface MutationExecutionContext {
   };
   dbSync: {
     scheduleUpload(): void;
+    beginOperation?(): () => void;
   };
   offlineQueue: {
     add(mutation: MutationPayload): Promise<void>;
@@ -30,6 +31,7 @@ interface MutationExecutionContext {
   };
   db: WebDatabaseInstance;
   persistLocalDatabase?(): Promise<boolean>;
+  persistLocalDatabaseSoon?(): Promise<boolean>;
 }
 
 export class MutationDispatchService {
@@ -37,16 +39,28 @@ export class MutationDispatchService {
     spec: MutationSpec,
     ctx: MutationExecutionContext
   ): Promise<MutationResult<T>> {
-    const { result, mutationId, isReceiver } = await ctx.executor.execute<T>(spec);
+    // Hold snapshot uploads from the start of the op until it is in the
+    // durable queue: in between, its effects are in the DB but nothing marks
+    // them as not-yet-in-the-log (hasUnackedMutations only sees the queue).
+    const release = ctx.dbSync.beginOperation?.();
+    let execution: { result: T; mutationId: string; isReceiver: boolean };
+    try {
+      execution = await ctx.executor.execute<T>(spec);
+    } catch (error) {
+      release?.();
+      throw error;
+    }
+    const { result, mutationId, isReceiver } = execution;
 
     // Inbound mutation already applied by executor path.
     if (isReceiver) {
+      release?.();
       return { result, synced: false, queued: false };
     }
 
     const payload: MutationPayload = {
       id: mutationId,
-      v: MUTATION_FORMAT_VERSION,
+      v: mutationFormatVersion(spec.op, spec.payload),
       op: spec.op,
       args: spec.payload,
       baseVersion: 0,
@@ -58,7 +72,11 @@ export class MutationDispatchService {
     // send attempt and leaves the queue only when the server acks its ID
     // (the server dedups re-sends on UNIQUE(space_id, id)). A ws.send() that
     // "succeeds" only proves the bytes entered the socket buffer.
-    await ctx.offlineQueue.add(payload);
+    try {
+      await ctx.offlineQueue.add(payload);
+    } finally {
+      release?.();
+    }
     // Applied-marking makes a catch-up echo of our own mutation a dedup
     // no-op (and an implicit ack) instead of a local double-apply. It goes
     // into the DURABLE dedup set, flushed together with the DB persist
@@ -89,7 +107,14 @@ export class MutationDispatchService {
         if (m.id === payload.id) sentOwn = true;
       }
       if (sentOwn) {
-        await this.persistLocalMutation(ctx);
+        // The server has it: if the tab dies before the debounced persist,
+        // reload + catch-up re-applies it from the log (its applied id is not
+        // persisted yet, so it isn't skipped). See LocalPersistScheduler.
+        if (ctx.persistLocalDatabaseSoon) {
+          void ctx.persistLocalDatabaseSoon();
+        } else {
+          await this.persistLocalMutation(ctx);
+        }
         ctx.dbSync.scheduleUpload();
         return { result, synced: true, queued: false };
       }

@@ -28,7 +28,7 @@ import {
 import { useAccountTransactionSummary } from '@entities/transaction/api/queries';
 import { CurrencySelector } from '@features/currencies/ui/CurrencySelector';
 import { roundMilli } from '@shared/lib/currency/round-amount';
-import { fromDecimal, toDecimal, type MilliUnits } from '@shared/lib/currency/milli';
+import { toDecimal } from '@shared/lib/currency/milli';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { DatePickerButton } from '@shared/ui/DatePickerButton';
 import { parseISO, differenceInMonths } from 'date-fns';
@@ -40,27 +40,16 @@ import { OnBudgetToggle } from './OnBudgetToggle';
 import { ArchiveAccountDialog } from './ArchiveAccountDialog';
 import { LiabilityNumberCell } from './LiabilityNumberCell';
 import { AccountCurrencyChangeDialog } from './AccountCurrencyChangeDialog';
+import {
+  liabilityFormFromMetadata,
+  mergeLiabilityMetadata,
+  parseAccountMetadata,
+  resolveMinPayment,
+} from '../lib/edit-account-metadata';
 
 interface EditAccountDialogProps {
   selectedAccount: Account | null;
   budgetId: number;
-}
-
-interface AccountMetadata extends Record<string, unknown> {
-  liability?: boolean;
-  liability_type?: string;
-  /** Stored in integer milliunits. */
-  debt_total?: MilliUnits;
-  interest_rate_annual?: number;
-  /** Stored in integer milliunits. */
-  min_payment_monthly?: MilliUnits;
-  start_date?: string;
-  target_date?: string;
-  payment_frequency?: string;
-}
-
-interface AccountWithMetadata extends Account {
-  Metadata?: AccountMetadata;
 }
 
 interface EditAccountPayload {
@@ -96,17 +85,21 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
     selectedAccount?.Currency || selectedBudget?.DisplayCurrency || 'USD'
   );
   const [onBudget, setOnBudget] = useState(selectedAccount?.OnBudget ?? true);
-  const initialMd: AccountMetadata = (selectedAccount as AccountWithMetadata)?.Metadata || {};
-  const [isLiability, setIsLiability] = useState(Boolean(initialMd?.liability));
+  // Stored metadata and the form values it started from; an edit merges only
+  // the fields that differ from these back into it.
+  const initialMd = useMemo(
+    () => parseAccountMetadata(selectedAccount?.Metadata),
+    [selectedAccount?.Metadata]
+  );
+  const initialForm = useMemo(() => liabilityFormFromMetadata(initialMd), [initialMd]);
+  const [isLiability, setIsLiability] = useState(
+    Boolean(initialMd.liability) || isLiabilityType(selectedAccount?.Type || '')
+  );
   // Edited as a DECIMAL amount; stored metadata is milliunits (fromDecimal at submit).
-  const [debtTotal, setDebtTotal] = useState<number>(
-    typeof initialMd?.debt_total === 'number' ? toDecimal(initialMd.debt_total) : 0
-  );
-  const [interestRate, setInterestRate] = useState<number>(
-    typeof initialMd?.interest_rate_annual === 'number' ? initialMd.interest_rate_annual : 0
-  );
-  const [startDate, setStartDate] = useState(initialMd?.start_date || '');
-  const [targetDate, setTargetDate] = useState(initialMd?.target_date || '');
+  const [debtTotal, setDebtTotal] = useState<number>(initialForm.debtTotal);
+  const [interestRate, setInterestRate] = useState<number>(initialForm.interestRate);
+  const [startDate, setStartDate] = useState(initialForm.startDate);
+  const [targetDate, setTargetDate] = useState(initialForm.targetDate);
 
   const editAccountMutation = useEditAccount();
   const deleteAccountMutation = useDeleteAccount();
@@ -130,14 +123,13 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
       setAccType(selectedAccount?.Type || '');
       setCurrency(selectedAccount?.Currency || selectedBudget?.DisplayCurrency || 'USD');
       setOnBudget(selectedAccount?.OnBudget ?? true);
-      const md: AccountMetadata = (selectedAccount as AccountWithMetadata)?.Metadata || {};
-      setIsLiability(Boolean(md?.liability));
-      setDebtTotal(typeof md?.debt_total === 'number' ? toDecimal(md.debt_total) : 0);
-      setInterestRate(typeof md?.interest_rate_annual === 'number' ? md.interest_rate_annual : 0);
-      setStartDate(md?.start_date || '');
-      setTargetDate(md?.target_date || '');
+      setIsLiability(Boolean(initialMd.liability) || isLiabilityType(selectedAccount?.Type || ''));
+      setDebtTotal(initialForm.debtTotal);
+      setInterestRate(initialForm.interestRate);
+      setStartDate(initialForm.startDate);
+      setTargetDate(initialForm.targetDate);
     });
-  }, [open, selectedAccount, selectedBudget?.DisplayCurrency]);
+  }, [open, selectedAccount, selectedBudget?.DisplayCurrency, initialMd, initialForm]);
 
   // Close-related cleanup to avoid stale confirmation state on re-open.
   // Uses React-approved "adjusting state when prop changes" pattern
@@ -176,6 +168,12 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
     return null;
   }, [isLiability, selectedAccount?.BalanceNative, interestRate, targetDate]);
 
+  const formFields = { debtTotal, interestRate, startDate, targetDate };
+  // What the min-payment field shows is what Apply stores.
+  const shownMinPayment = isLiability
+    ? resolveMinPayment(initialMd, initialForm, formFields, computedMinPayment)
+    : undefined;
+
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -187,18 +185,13 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
       let nextMetadata;
 
       if (isLiabilityType(accType) || isLiability) {
-        nextMetadata = {
-          liability: true,
-          liability_type: accType.toLowerCase(),
-          // Money metadata is stored in milliunits; debtTotal is decimal form
-          // state, computedMinPayment is already MilliUnits.
-          debt_total: debtTotal > 0 ? fromDecimal(debtTotal) : undefined,
-          interest_rate_annual: interestRate > 0 ? interestRate : undefined,
-          min_payment_monthly: computedMinPayment ?? undefined,
-          start_date: startDate || undefined,
-          target_date: targetDate || undefined,
-          payment_frequency: 'monthly',
-        };
+        nextMetadata = mergeLiabilityMetadata(
+          initialMd,
+          accType,
+          initialForm,
+          formFields,
+          computedMinPayment
+        );
       }
       const targetCurrency = currency;
 
@@ -305,7 +298,7 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
         {
           onSuccess: () => {
             toast.success(t`Account deleted`, {
-              description: t`${selectedAccount.Name} has been permanently removed.`,
+              description: t`${selectedAccount.Name} has been deleted. You can undo this.`,
             });
             setOpen(false);
             // Navigate to the user's home page after deletion to avoid landing
@@ -424,9 +417,7 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
                       <Input
                         className="h-8 sm:h-9"
                         value={
-                          computedMinPayment !== null
-                            ? toDecimal(computedMinPayment).toFixed(2)
-                            : ''
+                          shownMinPayment !== undefined ? toDecimal(shownMinPayment).toFixed(2) : ''
                         }
                         placeholder={t`Select target date to calculate`}
                         disabled

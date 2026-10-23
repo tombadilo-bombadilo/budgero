@@ -1,3 +1,4 @@
+import type { RawRow } from '../../database/restore-rows.js';
 /**
  * Transactions service type definitions
  * These types use PascalCase for API consistency
@@ -149,6 +150,21 @@ export interface AccountTransactionSummary {
   TotalOutflowNative: MilliUnits;
 }
 
+/** Per-account totals of future-dated rows (Date after a cutoff). */
+export interface AccountFutureBalanceAdjustment {
+  AccountID: number;
+  /** Account-currency delta: inflow - outflow, native amounts falling back to converted. */
+  Original: MilliUnits;
+  /** Budget-currency delta: converted inflow - converted outflow. */
+  Converted: MilliUnits;
+}
+
+/** Uncategorized (non-split) transaction count for one account. */
+export interface AccountUncategorizedCount {
+  AccountID: number;
+  Count: number;
+}
+
 export interface AccountBalanceHistoryTransaction {
   Date: string;
   InflowConverted: MilliUnits;
@@ -265,3 +281,61 @@ export interface LabelListItem {
 
 /** How transactions that share a date are ordered in the register. */
 export type SameDayTransactionOrder = 'newest' | 'amount';
+
+/**
+ * One aggregated ledger row for balance-history charts: the net
+ * (inflow - outflow, budget currency) of every transaction in the group.
+ * Rows before the window collapse to one row per account dated at its first
+ * transaction; rows in the window are grouped per day or per month.
+ */
+export interface BalanceHistoryRow {
+  AccountId: number;
+  Date: string;
+  Net: MilliUnits;
+}
+
+/** How {@link BalanceHistoryRow}s inside the window are grouped. */
+export type BalanceHistoryBucket = 'day' | 'month';
+
+/** Undo snapshots (see PayeeService.restorePayees / LabelService.restoreLabel). */
+export interface PayeeAssignment {
+  name: string;
+  transactionIds: number[];
+  splitIds: number[];
+}
+
+export interface PayeeSnapshot {
+  rows: RawRow[];
+  assignments: PayeeAssignment[];
+}
+
+export interface RestorePayeesInput {
+  rows?: RawRow[];
+  assignments?: PayeeAssignment[];
+  removeNames?: string[];
+}
+
+export interface LabelSnapshot {
+  row: RawRow;
+  transactionIds: number[];
+}
+
+/** A transaction's amounts and rate, for an exact amount-edit undo. */
+export interface TransactionAmountsSnapshot {
+  InflowNative: MilliUnits;
+  OutflowNative: MilliUnits;
+  InflowConverted: MilliUnits;
+  OutflowConverted: MilliUnits;
+  ExchangeRate: number | null;
+  ExchangeRateOverride: boolean;
+}
+
+/**
+ * Records elsewhere in the database that point at a transaction and would lose
+ * the link if the row were deleted and re-created.
+ */
+export interface TransactionLinks {
+  warranty: boolean;
+  recurringOccurrence: boolean;
+  bankReview: boolean;
+}
