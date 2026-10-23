@@ -62,6 +62,25 @@ const OFF_BUDGET_PARTNER_TRANSFERS = `(
     AND +mirror.TransferID != ''
 )`;
 
+// A transfer inflow on a credit account `t` is a card payment unless its
+// partner leg is on another on-budget debt account (credit, loan, mortgage):
+// a balance transfer moves debt, not cash, so it must not drain the card's CC
+// Payment category (#69). Money already set aside for the paid-down card stays
+// there; moving it to the other card's payment category is left to the user.
+// The partner is the other row with the same TransferID, or for a
+// split-transfer mirror (TransferID `split_transfer_<parentId>_<date>`, shared
+// by sibling mirrors) the split parent. An unpaired leg stays a payment.
+export const DEBT_PARTNER_LEG = (t: string) => `(CASE
+  WHEN ${t}.TransferID GLOB 'split_transfer_*' THEN EXISTS (
+    SELECT 1 FROM transactions p JOIN accounts pa ON pa.ID = p.AccountID
+    WHERE p.ID = CAST(substr(${t}.TransferID, 16) AS INTEGER)
+      AND pa.OnBudget = TRUE AND LOWER(pa.Type) IN ('credit', 'loan', 'mortgage'))
+  ELSE EXISTS (
+    SELECT 1 FROM transactions p JOIN accounts pa ON pa.ID = p.AccountID
+    WHERE p.TransferID = ${t}.TransferID AND p.TransferID != '' AND p.ID != ${t}.ID
+      AND pa.OnBudget = TRUE AND LOWER(pa.Type) IN ('credit', 'loan', 'mortgage'))
+END)`;
+
 // IDs of the categories in the system group `name` (the old categories /
 // category_groups join, as a filter).
 const categoriesInGroup = (name: 'Transfers') => `
@@ -796,7 +815,10 @@ export class MonthlyBudgetQueries {
     );
   }
 
-  /** Card payments (transfers into a credit account) per card per month. */
+  /**
+   * Card payments per card per month: transfers into a credit account, except
+   * from another on-budget debt account (see DEBT_PARTNER_LEG).
+   */
   private getCardPaymentsByMonth(
     budgetId: number,
     throughMonth: string
@@ -811,6 +833,7 @@ export class MonthlyBudgetQueries {
       WHERE t.BudgetID = ?1 AND LOWER(acc.Type) = 'credit'
         AND t.Month <= ?2
         AND t.TransferID IS NOT NULL AND t.TransferID != '' AND t.InflowConverted > 0
+        AND NOT ${DEBT_PARTNER_LEG('t')}
       GROUP BY t.AccountID, t.Month
     `,
       budgetId,
@@ -1473,6 +1496,7 @@ export class MonthlyBudgetQueries {
         AND t.TransferID IS NOT NULL
         AND t.TransferID != ''
         AND t.InflowConverted > 0
+        AND NOT ${DEBT_PARTNER_LEG('t')}
     `;
 
     for (const cc of ccAccounts) {

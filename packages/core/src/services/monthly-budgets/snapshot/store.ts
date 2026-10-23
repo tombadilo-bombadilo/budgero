@@ -21,6 +21,7 @@
 import type { DatabaseAdapter, SqlFunctionValue } from '../../../database/interface.js';
 import { allRows, getRow } from '../../../database/sql.js';
 import { NO_SPLITS_FILTER } from '../../transactions/queries.js';
+import { DEBT_PARTNER_LEG } from '../queries.js';
 import { createLogger } from '../../../logger.js';
 import {
   addCreditLine,
@@ -84,6 +85,14 @@ const KIND_ALL = 4;
 const partnerLegs = (row: 'NEW' | 'OLD') =>
   `SELECT ${FN}(${KIND_TX}, p.BudgetID, p.Month, 1) FROM main.transactions p
      WHERE p.TransferID = ${row}.TransferID AND p.TransferID != '' AND p.ID != ${row}.ID;`;
+// A split parent's account decides whether its split-transfer mirrors are card
+// payments (DEBT_PARTNER_LEG), and moving the parent to another account of the
+// same currency leaves the mirror rows untouched.
+const splitMirrors = (row: 'NEW' | 'OLD') =>
+  `SELECT ${FN}(${KIND_TX}, m.BudgetID, m.Month, 1) FROM main.transactions m
+     WHERE m.TransferID != '' AND m.TransferID >= 'split_transfer_' || ${row}.ID || '_'
+       AND m.TransferID < 'split_transfer_' || ${row}.ID || '\`'
+       AND m.TransferID GLOB 'split_transfer_' || ${row}.ID || '_*';`;
 const txRow = (row: 'NEW' | 'OLD') =>
   `SELECT ${FN}(${KIND_TX}, ${row}.BudgetID, ${row}.Month, DATE(${row}.Date) IS NOT NULL);`;
 const parentOf = (row: 'NEW' | 'OLD') =>
@@ -114,11 +123,22 @@ const GROUP_COLUMNS = ['ID', 'Name', 'BudgetID'];
 
 const TRIGGERS: [name: string, sql: string][] = [
   ['tx_ins', `AFTER INSERT ON main.transactions BEGIN ${txRow('NEW')} ${partnerLegs('NEW')} END`],
-  ['tx_del', `AFTER DELETE ON main.transactions BEGIN ${txRow('OLD')} ${partnerLegs('OLD')} END`],
+  [
+    'tx_del',
+    `AFTER DELETE ON main.transactions BEGIN
+       ${txRow('OLD')} ${partnerLegs('OLD')} ${splitMirrors('OLD')} END`,
+  ],
   [
     'tx_upd',
     `AFTER UPDATE OF ${TX_COLUMNS.join(', ')} ON main.transactions BEGIN
        ${txRow('OLD')} ${txRow('NEW')} ${partnerLegs('OLD')} ${partnerLegs('NEW')} END`,
+  ],
+  // Own trigger so ordinary edits (category, amount, date) never run the lookup.
+  [
+    'tx_upd_parent',
+    `AFTER UPDATE OF AccountID, BudgetID ON main.transactions
+       WHEN OLD.AccountID IS NOT NEW.AccountID OR OLD.BudgetID IS NOT NEW.BudgetID
+       BEGIN ${splitMirrors('OLD')} END`,
   ],
   ['split_ins', `AFTER INSERT ON main.transaction_splits BEGIN ${parentOf('NEW')} END`],
   ['split_del', `AFTER DELETE ON main.transaction_splits BEGIN ${parentOf('OLD')} END`],
@@ -238,6 +258,7 @@ const cardsSql = (mf: string) => `
   SELECT t.Month AS Month, t.AccountID AS AccountID,
          SUM(t.InflowConverted - t.OutflowConverted) AS Net,
          SUM(CASE WHEN t.TransferID IS NOT NULL AND t.TransferID != '' AND t.InflowConverted > 0
+                       AND NOT ${DEBT_PARTNER_LEG('t')}
                   THEN t.InflowConverted ELSE 0 END) AS Payments
   FROM transactions t JOIN accounts a ON a.ID = t.AccountID
   WHERE t.BudgetID = ?1 ${mf} AND LOWER(a.Type) = 'credit'
