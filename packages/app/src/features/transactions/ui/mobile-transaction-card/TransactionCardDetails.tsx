@@ -20,6 +20,7 @@ import { DatePickerCell } from '@features/transactions/ui/cells/DatePickerCell';
 import { CategorySelectCell } from '@features/transactions/ui/cells/CategorySelectCell';
 import { AccountSelectCell } from '@features/transactions/ui/cells/AccountSelectCell';
 import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell';
+import { TransactionPayeeCell } from '@features/transactions/ui/cells/TransactionPayeeCell';
 import { LabelSelectCell } from '@features/transactions/ui/cells/LabelSelectCell';
 import { EditableCell } from '@features/transactions/ui/cells/EditableCell';
 import { ExchangeRateCell } from '@features/transactions/ui/cells/ExchangeRateCell';
@@ -264,9 +265,9 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
             <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
             <div className="flex-1 min-w-0">
               <div className="[&>button]:text-sm [&>button]:p-2 [&>button]:h-9 [&>button]:bg-muted/30 [&>button]:border-0 [&>button]:shadow-none [&>button]:hover:bg-muted/50 [&>button]:justify-between [&>button]:font-normal [&>button]:w-full [&>button]:truncate">
-                <PayeeSelectCell
+                <TransactionPayeeCell
                   budgetId={budgetId}
-                  value={transaction.Payee ?? ''}
+                  transaction={transaction}
                   onCommit={(newVal) => onCellCommit(transaction.ID, 'Payee', newVal)}
                 />
               </div>

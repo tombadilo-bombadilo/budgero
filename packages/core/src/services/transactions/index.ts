@@ -24,6 +24,7 @@ import {
   GetTransactionsByCategoryAndMonthRow,
   TransactionAmountsSnapshot,
   TransactionSplit,
+  TransactionLinks,
 } from './types.js';
 import { NotFoundError, ValidationError } from '../../types';
 import { TransactionQueries } from './queries.js';
@@ -1628,6 +1629,23 @@ export class TransactionService {
    */
   getTransactionsByTransferID(transferId: string): Transaction[] {
     return this.queries.getTransactionsByTransferID(transferId);
+  }
+
+  /**
+   * Records that would lose their link to this transaction if it were deleted and
+   * re-created (warranty, recurring occurrence, pending bank review). For a simple
+   * two-leg transfer the other leg is included, since reverting deletes it too.
+   * Import provenance is not reported: undo snapshots already carry it.
+   */
+  getTransactionLinks(transactionId: number): TransactionLinks {
+    const tx = this.getTransactionByID(transactionId);
+    const ids = [tx.ID];
+    if (tx.TransferID && !tx.TransferID.startsWith('split_transfer_')) {
+      for (const leg of this.queries.getTransactionsByTransferID(tx.TransferID)) {
+        if (leg.ID !== tx.ID) ids.push(leg.ID);
+      }
+    }
+    return this.queries.getLinkedRecordFlags(ids);
   }
 
   getTransferRateDetails(transferId: string): TransferRateDetails | null {

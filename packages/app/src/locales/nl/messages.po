@@ -2572,6 +2572,12 @@ msgstr "7 dagen"
 msgid "90 days"
 msgstr "90 dagen"
 
+#. placeholder {0}: ownAccount.Currency
+#. placeholder {1}: counterpart.Currency
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "A {0} to {1} rate is required to convert this transaction."
+msgstr "Er is een wisselkoers van {0} naar {1} nodig om deze transactie om te zetten."
+
 #. placeholder {0}: fromAccount.Currency
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "A {0} to {budgetCurrency} rate is required to save the received amount."
@@ -3624,6 +3630,10 @@ msgstr "Gearchiveerd"
 msgid "Archived accounts are hidden from sidebars and account pickers by default, but their historical transactions remain visible in reports and transaction lists. You can unarchive an account later from the All Accounts page."
 msgstr "Gearchiveerde rekeningen worden standaard verborgen in zijbalken en rekeningkiezers, maar hun historische transacties blijven zichtbaar in rapporten en transactielijsten. Je kunt een rekening later dearchiveren vanaf de pagina Alle rekeningen."
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Archived accounts can't be part of a transfer."
+msgstr "Gearchiveerde rekeningen kunnen geen deel uitmaken van een overboeking."
+
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 msgid "Archiving..."
 msgstr "Archiveren..."
@@ -4616,6 +4626,7 @@ msgstr "Canadese dollar"
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 #: src/features/subscription/ui/ExportDataCard.tsx
+#: src/features/transactions/api/useTransferConversion.tsx
 #: src/features/transactions/ui/add-transaction/AddTransactionForm.tsx
 #: src/features/transactions/ui/add-transaction/TransactionFormActions.tsx
 #: src/features/transactions/ui/cells/ExchangeRateCell.tsx
@@ -5689,6 +5700,31 @@ msgstr "Conversies leiden de omgekeerde nog steeds automatisch af; uitvinken sla
 msgid "Convert existing amounts"
 msgstr "Bestaande bedragen omrekenen"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Convert to a transfer?"
+msgstr "Omzetten naar een overboeking?"
+
+#: src/features/payees/ui/PayeeCombobox.tsx
+msgid "Convert to regular transaction"
+msgstr "Omzetten naar gewone transactie"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Convert to transfer"
+msgstr "Omzetten naar overboeking"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Convert transfer to transaction"
+msgstr "Overboeking omzetten naar transactie"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Converted back to a regular transaction"
+msgstr "Teruggezet naar een gewone transactie"
+
+#. placeholder {0}: prepared.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Converted to a transfer with {0}"
+msgstr "Omgezet naar een overboeking met {0}"
+
 #: src/shared/lib/analytics/klaro-config.ts
 msgid "Cookies on Budgero"
 msgstr "Cookies op Budgero"
@@ -5854,6 +5890,14 @@ msgstr "De instellingen voor doelfinanciering konden niet worden bijgewerkt"
 #: src/features/bank-sync/ui/ConnectSimpleFINCard.tsx
 msgid "Couldn't connect to SimpleFIN"
 msgstr "Kon niet koppelen met SimpleFIN"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Couldn't convert the transfer"
+msgstr "De overboeking kon niet worden omgezet"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Couldn't convert to a transfer"
+msgstr "Omzetten naar een overboeking is mislukt"
 
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "Couldn't copy to the clipboard"
@@ -7657,6 +7701,7 @@ msgstr "Wisselkoers"
 msgid "Exchange rate not available"
 msgstr "Wisselkoers niet beschikbaar"
 
+#: src/features/transactions/api/useTransferConversion.tsx
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Exchange rate unavailable"
 msgstr "Wisselkoers niet beschikbaar"
@@ -9596,6 +9641,18 @@ msgstr "Onomkeerbare actie"
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "is not"
 msgstr "is niet"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "It is linked to a recurring transaction, and that link would be lost."
+msgstr "Ze is gekoppeld aan een terugkerende transactie, en die koppeling zou verloren gaan."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "It is linked to a warranty, and that link would be lost."
+msgstr "Ze is gekoppeld aan een garantie, en die koppeling zou verloren gaan."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "It is waiting in a bank sync review, and that link would be lost."
+msgstr "Ze wacht in een banksync-controle, en die koppeling zou verloren gaan."
 
 #: src/features/category-management/lib/delete-block.ts
 msgid "It tracks payments for the {name} account. Archive or delete the account first."
@@ -12026,6 +12083,7 @@ msgid "of {0}"
 msgstr "van {0}"
 
 #: src/features/account-management/ui/AccountOrderCard.tsx
+#: src/features/payees/ui/PayeeCombobox.tsx
 msgid "Off budget"
 msgstr "Buiten budget"
 
@@ -12850,6 +12908,10 @@ msgstr "Kies een categorie voor de categorie-actie."
 #: src/shared/ui/date-range-picker.tsx
 msgid "Pick a date"
 msgstr "Kies een datum"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Pick a different account."
+msgstr "Kies een andere rekening."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Pick a look"
@@ -13759,6 +13821,10 @@ msgstr "Afgestemd"
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "Reconciled transaction"
 msgstr "Afgestemde transactie"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Reconciled transactions can't be converted."
+msgstr "Afgestemde transacties kunnen niet worden omgezet."
 
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Reconciling..."
@@ -16157,6 +16223,10 @@ msgstr "Split-totaal komt niet overeen"
 msgid "Split transaction"
 msgstr "Gesplitste transactie"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Split transactions can't be converted to a transfer."
+msgstr "Gesplitste transacties kunnen niet naar een overboeking worden omgezet."
+
 #: src/pages/explorer-page/sql-utils.ts
 msgid "Split transactions overview"
 msgstr "Overzicht Gesplitste transacties"
@@ -17155,6 +17225,10 @@ msgstr "Dit is het totaal van de gesplitste regels. Om het te wijzigen, klik op 
 msgid "This is your final month!"
 msgstr "Dit is je laatste maand!"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This isn't a simple two-sided transfer, so it can't be converted back."
+msgstr "Dit is geen eenvoudige overboeking met twee kanten en kan daarom niet worden teruggezet."
+
 #: src/pages/JoinWorkspacePage.tsx
 msgid "This join link is missing its invite code. Ask the workspace owner to resend the full link."
 msgstr "Deze uitnodigingslink mist de uitnodigingscode. Vraag de eigenaar van de werkruimte om de volledige link opnieuw te versturen."
@@ -17203,6 +17277,12 @@ msgstr "Deze herinnering kan niet worden overgeslagen—download nu een back-up 
 msgid "This removes the history entry only. Your transactions remain untouched."
 msgstr "Dit verwijdert alleen de geschiedenisvermelding. Jouw transacties blijven ongewijzigd."
 
+#. placeholder {0}: pending.categoryName
+#. placeholder {1}: pending.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This replaces the category ({0}) with Transfers, so the amount no longer counts as spending. A matching transaction is added to {1}."
+msgstr "Hierdoor wordt de categorie ({0}) vervangen door Overboekingen, waardoor het bedrag niet meer als uitgave telt. Er wordt een bijbehorende transactie toegevoegd aan {1}."
+
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "This replaces the data on this device with the server copy, then applies the changes made after it. {pendingCount} changes from this device haven't been confirmed yet; they are kept and applied again on top."
 msgstr "Dit vervangt de gegevens op dit apparaat door de serverkopie en past daarna de latere wijzigingen toe. {pendingCount} wijzigingen van dit apparaat zijn nog niet bevestigd; die blijven bewaard en worden er opnieuw op toegepast."
@@ -17244,6 +17324,14 @@ msgstr "Deze transactie is afgestemd en vergrendeld als bevestigd."
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 #~ msgid "This transaction has been reconciled."
 #~ msgstr "Deze transactie is afgestemd."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This transaction has no single amount to transfer."
+msgstr "Deze transactie heeft geen enkel bedrag om over te boeken."
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "This transaction is already a transfer."
+msgstr "Deze transactie is al een overboeking."
 
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "This transaction is scheduled for a future date."
@@ -17758,8 +17846,10 @@ msgid "Transfer to {0}"
 msgstr "Overboeking naar {0}"
 
 #. placeholder {0}: account.Name
+#. placeholder {0}: selectedTransfer.Name
 #. placeholder {0}: transferAccountRecord.Name
 #: src/features/payees/ui/PayeeCombobox.tsx
+#: src/features/transactions/ui/cells/TransactionPayeeCell.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Transfer: {0}"
 msgstr "Overboeking: {0}"
