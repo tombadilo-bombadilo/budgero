@@ -91,7 +91,8 @@ const DEBT_TYPES = "('credit', 'loan', 'mortgage')";
 const partnerLeg = (t: string, account: string) => `(CASE
   WHEN ${t}.TransferID GLOB 'split_transfer_*' THEN EXISTS (
     SELECT 1 FROM transactions p JOIN accounts pa ON pa.ID = p.AccountID
-    WHERE p.ID = CAST(substr(${t}.TransferID, 16) AS INTEGER) AND ${account})
+    WHERE p.ID = CAST(substr(${t}.TransferID, 16) AS INTEGER)
+      AND ${t}.TransferID = 'split_transfer_' || p.ID || '_' || p.Date AND ${account})
   ELSE EXISTS (
     SELECT 1 FROM transactions p JOIN accounts pa ON pa.ID = p.AccountID
     WHERE p.TransferID = ${t}.TransferID AND p.TransferID != '' AND p.ID != ${t}.ID
@@ -108,9 +109,14 @@ export const DEBT_PARTNER_LEG = (t: string) => partnerLeg(t, `LOWER(pa.Type) IN 
 // the Transfers category), 2 = a split line; 0 otherwise. `t` / `s` are the
 // row / split line of a credit-account line, `a` its account.
 const CASH_ACCOUNT = `pa.OnBudget = TRUE AND LOWER(pa.Type) NOT IN ${DEBT_TYPES}`;
+// 3 = a card leg sent to an off-budget (non-debt) account: the off-budget
+// transfer sums take the whole amount off RTA, so monthly income must not also
+// count its positive-balance part.
 export const CASH_ADVANCE_ROW = (t: string) => `(CASE
-  WHEN ${t}.TransferID != '' AND ${t}.OutflowConverted > 0 AND ${t}.ExcludeFromReadyToAssign = FALSE
-    AND ${partnerLeg(t, CASH_ACCOUNT)} THEN 1 ELSE 0 END)`;
+  WHEN ${t}.TransferID = '' OR ${t}.OutflowConverted <= 0 OR ${t}.ExcludeFromReadyToAssign THEN 0
+  WHEN ${partnerLeg(t, CASH_ACCOUNT)} THEN 1
+  WHEN ${partnerLeg(t, `pa.OnBudget = FALSE AND LOWER(pa.Type) NOT IN ${DEBT_TYPES}`)} THEN 3
+  ELSE 0 END)`;
 export const CASH_ADVANCE_SPLIT = (s: string, t: string) => `(CASE
   WHEN ${s}.TransferAccountID IS NOT NULL AND ${s}.OutflowConverted > 0
     AND ${t}.ExcludeFromReadyToAssign = FALSE
@@ -600,7 +606,7 @@ export class MonthlyBudgetQueries {
       WITH ${CARD_ACTIVITY_CTE}
       SELECT IFNULL(SUM(Cash - Amount), 0) AS total
       FROM monthly_activity
-      WHERE ToCash <> 0 AND Amount < 0 AND DATE(Date) <= DATE(?3)
+      WHERE ToCash IN (1, 2) AND Amount < 0 AND DATE(Date) <= DATE(?3)
     `,
       budgetId,
       asOfDate.slice(0, 7),
@@ -661,7 +667,7 @@ export class MonthlyBudgetQueries {
              IFNULL(SUM(CASE WHEN line.ToCash = 0
                THEN CASE WHEN line.AccountType = 'credit' THEN line.Cash ELSE line.Amount END
                ELSE 0 END), 0) AS total,
-             IFNULL(SUM(CASE WHEN line.ToCash <> 0 AND line.Amount < 0
+             IFNULL(SUM(CASE WHEN line.ToCash IN (1, 2) AND line.Amount < 0
                THEN line.Cash - line.Amount ELSE 0 END), 0) AS debt
       FROM monthly_activity line
       LEFT JOIN categories c ON line.CategoryID = c.ID

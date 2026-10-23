@@ -43,6 +43,7 @@ const DEBT_PARTNER_LEG = `(CASE
   WHEN t.TransferID GLOB 'split_transfer_*' THEN EXISTS (
     SELECT 1 FROM transactions p JOIN accounts pa ON pa.ID = p.AccountID
     WHERE p.ID = CAST(substr(t.TransferID, 16) AS INTEGER)
+      AND t.TransferID = 'split_transfer_' || p.ID || '_' || p.Date
       AND LOWER(pa.Type) IN ('credit', 'loan', 'mortgage'))
   ELSE EXISTS (
     SELECT 1 FROM transactions p JOIN accounts pa ON pa.ID = p.AccountID

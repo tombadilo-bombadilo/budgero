@@ -575,3 +575,25 @@ describe('split-transfer legs to and from off-budget accounts move RTA', () => {
     });
   }
 });
+
+describe('monthly: a card sending its positive balance off budget', () => {
+  it('takes the amount off RTA once', async () => {
+    const c = await setup();
+    const shop = category(c, 'Shopping');
+    const off = (
+      await c.s.accounts.createAccount(
+        'Tracking',
+        c.b,
+        'savings',
+        'USD',
+        asMilli(0),
+        undefined,
+        false
+      )
+    ).ID;
+    await tx(c, c.card, shop, 50, '2024-01-10'); // card +50 (refund money in Shopping)
+    const base = reads(c, 'monthly').rta['2024-05'].readyToAssign;
+    await transfer(c, c.card, off, 80, '2024-02-10', 'off'); // 50 from the balance, 30 borrowed
+    expect(reads(c, 'monthly').rta['2024-05'].readyToAssign).toBe(base - 80);
+  });
+});

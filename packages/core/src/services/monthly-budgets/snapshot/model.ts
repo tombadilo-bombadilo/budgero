@@ -37,7 +37,7 @@ export interface TxMonth {
   creditAccount: number[];
   creditCategory: CategoryKey[];
   creditAmount: number[];
-  /** Cash-advance code per line (CASH_ADVANCE_ROW / _SPLIT: 0, 1 row, 2 split line). */
+  /** Card transfer code per line (CASH_ADVANCE_ROW / _SPLIT: 0, 1 / 2 cash advance row / split line, 3 sent off budget). */
   creditToCash: number[];
   /** DATE(t.Date) per line (the cumulative cash-advance sum is day-bounded). */
   creditDay: string[];
@@ -420,9 +420,12 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
       balance.set(acc, after);
       const cash = Math.max(0, after) - Math.max(0, after - amount);
       add(cashByCat, cat, cash);
-      if (isCashAdvance(tx.creditToCash[i], cat, groupOf)) {
+      const code = tx.creditToCash[i];
+      if (isCashAdvance(code, cat, groupOf)) {
         // #67: the debt-growing part is RTA inflow; none of it is income
         if (amount < 0) add(debtInflow, m, cash - amount);
+      } else if (code === 3 && cat !== null && groupOf.get(cat) === GROUP_TRANSFERS) {
+        // sent off budget: the off-budget transfer sums count all of it
       } else if (cat !== null) {
         const group = groupOf.get(cat);
         if (group === GROUP_INCOME || group === GROUP_TRANSFERS) {
@@ -664,7 +667,7 @@ export function cashAdvanceDays(
   const cards = new Set<number>();
   for (const tx of data.tx.values())
     for (let i = 0; i < tx.creditToCash.length; i++)
-      if (tx.creditToCash[i] !== 0) cards.add(tx.creditAccount[i]);
+      if (tx.creditToCash[i] === 1 || tx.creditToCash[i] === 2) cards.add(tx.creditAccount[i]);
   if (cards.size === 0) return out;
   const balance = new Map<number, number>();
   for (const m of [...data.tx.keys()].sort((a, b) => a - b)) {
