@@ -399,6 +399,11 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
   >();
   const fundedByPc = new Map<number, Float64Array>();
   const refundsByPc = new Map<number, Float64Array>();
+  // payment category -> month -> refunds per spending category (#68)
+  const refundRequests = new Map<number, Map<number, { categoryId: number; amount: number }[]>>();
+  // spending category -> per month: assigned + cash activity, for the cash pass
+  const cashBase = new Map<number, Float64Array>();
+  const realizedRefunds = new Map<number, Float64Array>();
   const debt = new Map<
     number,
     Map<string, { categoryId: number; month: number; amount: number }>
@@ -413,8 +418,9 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
   for (const categoryId of categories) {
     const values = new Float64Array(months);
     displayed.set(categoryId, values);
+    const base = new Float64Array(months);
+    cashBase.set(categoryId, base);
     let carryTotal = 0;
-    let carryCash = 0;
     for (let m = presence.get(categoryId)!; m <= last; m++) {
       const tx = data.tx.get(m);
       const assigned = data.assigned.get(m)?.get(categoryId) ?? 0;
@@ -464,18 +470,23 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
         const paymentCatId = cardToPaymentCat.get(card);
         if (!paymentCatId || refund === 0) continue;
         series(refundsByPc, paymentCatId)[m - first] += refund;
+        let requests = refundRequests.get(paymentCatId);
+        if (!requests) refundRequests.set(paymentCatId, (requests = new Map()));
+        let list = requests.get(m);
+        if (!list) requests.set(m, (list = []));
+        list.push({ categoryId, amount: refund });
       }
 
       const shown = carryTotal + assigned + cash + credit;
-      const rawCash = carryCash + assigned + cash;
       values[m - first] = shown;
-      if (rawCash < 0) overspend.push({ categoryId, month: m, amount: -rawCash, payment: false });
+      base[m - first] = assigned + cash;
       carryTotal = Math.max(0, shown);
-      carryCash = Math.max(0, Math.min(rawCash, shown));
     }
   }
 
-  // 4. CC Payment-category pass.
+  // 4. CC Payment-category pass. Payment overspend is listed after every
+  // spending category's (the base's order).
+  const paymentOverspend: OverspendEvent[] = [];
   const payment = new Map<number, PaymentSeries>();
   const paymentsByPc = new Map<number, Float64Array>();
   for (const [m, tx] of data.tx) {
@@ -509,6 +520,18 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
         refundsArr ? refundsArr[i] : 0,
         Math.max(0, carry + assigned + funded)
       );
+      // Realized refund back to the categories: ascending CategoryID, each up
+      // to its own refund (as computeMonthlyRollforward).
+      const requests = refunded > 0 ? refundRequests.get(paymentCatId)?.get(m) : undefined;
+      if (requests) {
+        let left = refunded;
+        for (const r of [...requests].sort((a, b) => a.categoryId - b.categoryId)) {
+          const share = Math.min(r.amount, left);
+          if (share <= 0) break;
+          left -= share;
+          series(realizedRefunds, r.categoryId)[i] += share;
+        }
+      }
       const activity = funded - payments - refunded;
       const raw = carry + assigned + activity;
       s.previousAvailable[i] = carry;
@@ -518,10 +541,26 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
       s.activity[i] = activity;
       s.raw[i] = raw;
       if (raw < 0)
-        overspend.push({ categoryId: paymentCatId, month: m, amount: -raw, payment: true });
+        paymentOverspend.push({ categoryId: paymentCatId, month: m, amount: -raw, payment: true });
       carry = Math.max(0, raw);
     }
   }
+
+  // 5. Spending-category cash pass: carried cash + assigned + cash activity +
+  // the refund that came back out of a CC Payment category (#68).
+  for (const categoryId of categories) {
+    const values = displayed.get(categoryId)!;
+    const base = cashBase.get(categoryId)!;
+    const refunds = realizedRefunds.get(categoryId);
+    let carryCash = 0;
+    for (let m = presence.get(categoryId)!; m <= last; m++) {
+      const i = m - first;
+      const rawCash = carryCash + base[i] + (refunds ? refunds[i] : 0);
+      if (rawCash < 0) overspend.push({ categoryId, month: m, amount: -rawCash, payment: false });
+      carryCash = Math.max(0, Math.min(rawCash, values[i]));
+    }
+  }
+  overspend.push(...paymentOverspend);
 
   return {
     first,

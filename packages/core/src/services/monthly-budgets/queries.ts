@@ -1011,6 +1011,10 @@ export class MonthlyBudgetQueries {
     // fundedByPaymentCat[paymentCatId][month] -> funded amount
     const fundedByPaymentCat = new Map<number, Map<string, number>>();
     const refundsByPaymentCat = new Map<number, Map<string, number>>();
+    // refundRequests[paymentCatId][month] -> refunds per spending category, which
+    // the payment pass turns into the cash each category got back (#68).
+    const refundRequests = new Map<number, Map<string, { categoryId: number; amount: number }[]>>();
+    const realizedRefunds = new Map<number, Map<string, number>>();
     const currentFundingByPaymentCategory = new Map<number, Map<number, number>>();
     const addFunded = (paymentCatId: number, categoryId: number, m: string, amount: number) => {
       if (m === month) {
@@ -1046,9 +1050,16 @@ export class MonthlyBudgetQueries {
     }[] = [];
 
     // Spending-category pass: displayed available + per-card funding attribution.
+    // The cash side (rawCash / carryCash) runs after the payment pass, which
+    // decides how much of each refund came back out of a CC Payment category.
+    const cashSteps = new Map<
+      number,
+      { m: string; assigned: number; cash: number; displayed: number }[]
+    >();
     for (const [categoryId, byMonth] of seriesByCat) {
       let carryTotal = 0;
-      let carryCash = 0;
+      const steps: { m: string; assigned: number; cash: number; displayed: number }[] = [];
+      cashSteps.set(categoryId, steps);
       for (const m of allMonths) {
         const s = byMonth.get(m) ?? { Assigned: 0, Cash: 0, Credit: 0 };
         const availableToCover = carryTotal + s.Assigned + s.Cash; // before credit spend
@@ -1084,30 +1095,19 @@ export class MonthlyBudgetQueries {
           let byMonth = refundsByPaymentCat.get(paymentCatId);
           if (!byMonth) refundsByPaymentCat.set(paymentCatId, (byMonth = new Map()));
           byMonth.set(m, (byMonth.get(m) ?? 0) + refund);
+          let requests = refundRequests.get(paymentCatId);
+          if (!requests) refundRequests.set(paymentCatId, (requests = new Map()));
+          const list = requests.get(m) ?? [];
+          list.push({ categoryId, amount: refund });
+          requests.set(m, list);
         }
 
         const displayed = carryTotal + s.Assigned + s.Cash + s.Credit;
-        const rawCash = carryCash + s.Assigned + s.Cash;
+        steps.push({ m, assigned: s.Assigned, cash: s.Cash, displayed });
         if (m === month) {
           availableByCategory.set(categoryId, displayed);
         } else {
-          if (rawCash < 0) {
-            const overspent = -rawCash;
-            priorCashOverspend += overspent;
-            const meta = categoryMeta.get(categoryId);
-            priorCashOverspendDetails.push({
-              categoryId,
-              categoryName: meta?.name ?? `Category #${categoryId}`,
-              categoryGroupName: meta?.groupName ?? 'Unknown Group',
-              month: m,
-              amount: overspent,
-            });
-          }
           carryTotal = Math.max(0, displayed);
-          // Credit spending consumes positive category cash before becoming
-          // debt. Carrying rawCash independently would make that funded amount
-          // available again next month and understate later cash overspending.
-          carryCash = Math.max(0, Math.min(rawCash, displayed));
         }
       }
     }
@@ -1128,6 +1128,28 @@ export class MonthlyBudgetQueries {
       byMonth.set(r.Month, (byMonth.get(r.Month) ?? 0) + r.Payments);
     }
 
+    // A payment category gives back at most what it holds; when several
+    // categories' refunds hit one card in a month and only part comes back,
+    // the realized amount goes to the categories in ascending CategoryID
+    // order, each up to its own refund (deterministic, same as the snapshot).
+    const splitRealizedRefund = (
+      requests: { categoryId: number; amount: number }[] | undefined,
+      m: string,
+      realized: number
+    ) => {
+      if (!requests || realized <= 0) return;
+      let left = realized;
+      for (const r of [...requests].sort((a, b) => a.categoryId - b.categoryId)) {
+        const share = Math.min(r.amount, left);
+        if (share <= 0) break;
+        left -= share;
+        let byMonth = realizedRefunds.get(r.categoryId);
+        if (!byMonth) realizedRefunds.set(r.categoryId, (byMonth = new Map()));
+        byMonth.set(m, (byMonth.get(m) ?? 0) + share);
+      }
+    };
+    const paymentOverspendDetails: typeof priorCashOverspendDetails = [];
+
     const paymentCatIds = new Set<number>(cardToPaymentCat.values());
     const paymentAvailableByCategory = new Map<number, number>();
     const paymentActivityByCategory = new Map<number, number>();
@@ -1145,6 +1167,7 @@ export class MonthlyBudgetQueries {
           refundsByPaymentCat.get(paymentCatId)?.get(m) ?? 0,
           Math.max(0, carry + assigned + funded)
         );
+        splitRealizedRefund(refundRequests.get(paymentCatId)?.get(m), m, refunded);
         const activity = funded - payments - refunded;
         const raw = carry + assigned + activity;
         if (m === month) {
@@ -1161,7 +1184,7 @@ export class MonthlyBudgetQueries {
             const overspent = -raw;
             priorCashOverspend += overspent; // overpaid card = cash overspend
             const meta = categoryMeta.get(paymentCatId);
-            priorCashOverspendDetails.push({
+            paymentOverspendDetails.push({
               categoryId: paymentCatId,
               categoryName: meta?.name ?? `Payment Category #${paymentCatId}`,
               categoryGroupName: meta?.groupName ?? 'Credit Card Payments',
@@ -1173,6 +1196,37 @@ export class MonthlyBudgetQueries {
         }
       }
     }
+
+    // Spending-category cash pass. Category cash = carried cash + assigned +
+    // cash activity + the part of a card refund that came back out of the CC
+    // Payment category (it was cash set aside for the card, so spending or
+    // moving it later is not cash overspend). A refund of unfunded credit
+    // overspend comes back as nothing and stays credit.
+    for (const [categoryId, steps] of cashSteps) {
+      let carryCash = 0;
+      const refunds = realizedRefunds.get(categoryId);
+      for (const { m, assigned, cash, displayed } of steps) {
+        if (m === month) continue;
+        const rawCash = carryCash + assigned + cash + (refunds?.get(m) ?? 0);
+        if (rawCash < 0) {
+          const overspent = -rawCash;
+          priorCashOverspend += overspent;
+          const meta = categoryMeta.get(categoryId);
+          priorCashOverspendDetails.push({
+            categoryId,
+            categoryName: meta?.name ?? `Category #${categoryId}`,
+            categoryGroupName: meta?.groupName ?? 'Unknown Group',
+            month: m,
+            amount: overspent,
+          });
+        }
+        // Credit spending consumes positive category cash before becoming
+        // debt. Carrying rawCash independently would make that funded amount
+        // available again next month and understate later cash overspending.
+        carryCash = Math.max(0, Math.min(rawCash, displayed));
+      }
+    }
+    priorCashOverspendDetails.push(...paymentOverspendDetails);
 
     const debtBreakdownByPaymentCat = new Map<
       number,
