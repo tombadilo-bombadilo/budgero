@@ -8,7 +8,7 @@
 import type { DatabaseAdapter } from '../../../database/interface.js';
 import { allRows, getRow } from '../../../database/sql.js';
 import { asMilli } from '../../../money/index.js';
-import type { MonthlyBudgetQueries } from '../queries.js';
+import { SPLIT_OFF_BUDGET_LEGS, type MonthlyBudgetQueries } from '../queries.js';
 import type { GetMonthlyBudgetRow, ReadyToAssignBreakdown } from '../types.js';
 import type { RtaMode } from '../../budgets/types.js';
 import {
@@ -102,6 +102,9 @@ const RECENT_TRANSFERS_SQL = `
       WHERE mirror.TransferID = t.TransferID AND mirror.TransferID != ''
         AND oa.OnBudget = FALSE AND LOWER(oa.Type) NOT IN ('credit', 'loan', 'mortgage'))
 `;
+const RECENT_SPLIT_LEGS_SQL = `
+  SELECT IFNULL(SUM(Off), 0) AS off, IFNULL(SUM(Inb), 0) AS inb
+  FROM (${SPLIT_OFF_BUDGET_LEGS((x) => `AND DATE(${x}.Date) <= DATE(?2) AND ${x}.Month >= ?3`)})`;
 const REVALUATIONS_SQL = `
   SELECT IFNULL(SUM(r.DeltaConverted), 0) as total_revaluations
   FROM account_revaluations r
@@ -367,8 +370,27 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
     const totalAssignments = this.snap.memo('rtaAssignments', () =>
       sumAssignedOver(this.data, -Infinity, Infinity)
     );
-    const totalOffBudgetTransfers = snapOff + (recentTransfers?.off_budget ?? 0);
-    const totalInBudgetTransfers = snapIn + (recentTransfers?.in_budget ?? 0);
+    const snapSplit = this.snap.memo(`rtaSplit:${liveFrom}`, () => {
+      let off = 0;
+      let inb = 0;
+      for (const [m, tx] of this.data.tx)
+        if (m < liveFrom) {
+          off += tx.splitOffBudget;
+          inb += tx.splitInBudget;
+        }
+      return { off, inb };
+    });
+    const recentSplit = getRow<{ off: number; inb: number }>(
+      this.db,
+      RECENT_SPLIT_LEGS_SQL,
+      budgetId,
+      asOfDate,
+      liveFromLabel
+    );
+    const totalOffBudgetTransfers =
+      snapOff + (recentTransfers?.off_budget ?? 0) + snapSplit.off + (recentSplit?.off ?? 0);
+    const totalInBudgetTransfers =
+      snapIn + (recentTransfers?.in_budget ?? 0) + snapSplit.inb + (recentSplit?.inb ?? 0);
     const totalRevaluations =
       getRow<{ total_revaluations: number }>(this.db, REVALUATIONS_SQL, budgetId, asOfDate)
         ?.total_revaluations ?? 0;
@@ -444,6 +466,16 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
       const inB = this.snap.memo(`mIn:${index}`, () =>
         sumCategoriesOver(this.data, (m) => m.inBudgetTransfers, -Infinity, index, transfers)
       );
+      const split = this.snap.memo(`mSplit:${index}`, () => {
+        let o = 0;
+        let i = 0;
+        for (const [m, tx] of this.data.tx)
+          if (m <= index) {
+            o += tx.splitOffBudget;
+            i += tx.splitInBudget;
+          }
+        return { off: o, inb: i };
+      });
       let rev = 0;
       for (const r of revalRows) if (r.Month !== null && r.Month <= month) rev += r.total;
       const debt = this.snap.memo(`mDebt:${index}`, () => {
@@ -454,7 +486,9 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
 
       const overspendsForMonth = overspendBefore(fold, index, names);
       const priorCashOverspend = overspendsForMonth.reduce((sum, o) => sum + o.amount, 0);
-      const readyToAssign = inc - ass - off + inB + debt + rev - priorCashOverspend;
+      const offAll = off + split.off;
+      const inAll = inB + split.inb;
+      const readyToAssign = inc - ass - offAll + inAll + debt + rev - priorCashOverspend;
 
       result.set(month, {
         mode: 'monthly',
@@ -462,8 +496,8 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
         income: asMilli(inc),
         assignments: asMilli(ass),
         futureAssignments: asMilli(0),
-        offBudgetTransfers: asMilli(off),
-        inBudgetTransfers: asMilli(inB),
+        offBudgetTransfers: asMilli(offAll),
+        inBudgetTransfers: asMilli(inAll),
         debtInflows: asMilli(debt),
         revaluations: asMilli(rev),
         priorCashOverspend: asMilli(priorCashOverspend),

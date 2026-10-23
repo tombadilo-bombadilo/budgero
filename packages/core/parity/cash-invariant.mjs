@@ -287,6 +287,10 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
       }
       if (l.split && partner === 'offN') {
         // expected: like a regular transfer to an off-budget account
+        if (l.ex) {
+          bump(termByMonth, l.m, 'excluded', -l.cash);
+          continue;
+        }
         if (l.card) bump(termByMonth, l.m, 'cardToOffBudget', l.credit);
         bump(devByMonth, l.m, 'splitTransferOffBudget', -l.amt);
         continue;

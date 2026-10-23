@@ -514,3 +514,64 @@ describe('#67: card -> on-budget cash account transfers are cash advances', () =
     expect(store.stats.builds, 'incremental, no rebuild').toBe(builds);
   });
 });
+
+describe('split-transfer legs to and from off-budget accounts move RTA', () => {
+  for (const mode of ['cumulative', 'monthly'] as Mode[]) {
+    it(`[${mode}] a split line to off-budget savings leaves RTA; the reverse adds to it`, async () => {
+      const c = await setup();
+      const shop = category(c, 'Shopping');
+      const off = (
+        await c.s.accounts.createAccount(
+          'Tracking',
+          c.b,
+          'savings',
+          'USD',
+          asMilli(0),
+          undefined,
+          false
+        )
+      ).ID;
+      assign(c, shop, 60, '2024-02');
+      const base = reads(c, mode).rta['2024-05'].readyToAssign;
+      // 100 from checking: 60 Shopping + 40 to off-budget savings
+      await tx(c, c.chk, shop, -100, '2024-02-05');
+      const parent = idOf(c, `SELECT MAX(ID) AS ID FROM transactions WHERE AccountID=${c.chk}`);
+      await c.s.splits.upsertSplits(parent, [
+        {
+          CategoryID: shop,
+          InflowConverted: asMilli(0),
+          OutflowConverted: asMilli(60),
+          OrderIndex: 0,
+        },
+        {
+          TransferAccountID: off,
+          InflowConverted: asMilli(0),
+          OutflowConverted: asMilli(40),
+          OrderIndex: 1,
+        },
+      ]);
+      expect(reads(c, mode).rta['2024-05'].readyToAssign).toBe(base - 40);
+      // an off-budget transaction split partly into checking: 25 comes onto the budget
+      await tx(c, off, shop, -70, '2024-03-05');
+      const offParent = idOf(c, `SELECT MAX(ID) AS ID FROM transactions WHERE AccountID=${off}`);
+      await c.s.splits.upsertSplits(offParent, [
+        {
+          CategoryID: shop,
+          InflowConverted: asMilli(0),
+          OutflowConverted: asMilli(45),
+          OrderIndex: 0,
+        },
+        {
+          TransferAccountID: c.chk,
+          InflowConverted: asMilli(0),
+          OutflowConverted: asMilli(25),
+          OrderIndex: 1,
+        },
+      ]);
+      expect(reads(c, mode).rta['2024-05'].readyToAssign).toBe(base - 40 + 25);
+      // excluded from Ready to Assign
+      c.adapter.exec(`UPDATE transactions SET ExcludeFromReadyToAssign = 1 WHERE ID=${parent}`);
+      expect(reads(c, mode).rta['2024-05'].readyToAssign).toBe(base + 25);
+    });
+  }
+});

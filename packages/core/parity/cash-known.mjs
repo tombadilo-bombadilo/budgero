@@ -10,6 +10,4 @@ export const KNOWN_DEVIATIONS = [
   'phantomLeak',
   // monthly: card -> off-budget transfer deducts the card's positive part twice
   'cardPositiveToOffBudget',
-  // both modes: a split line transferring to an off-budget account never leaves RTA
-  'splitTransferOffBudget',
 ];

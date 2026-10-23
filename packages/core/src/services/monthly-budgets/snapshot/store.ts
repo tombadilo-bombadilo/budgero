@@ -21,7 +21,12 @@
 import type { DatabaseAdapter, SqlFunctionValue } from '../../../database/interface.js';
 import { allRows, getRow } from '../../../database/sql.js';
 import { NO_SPLITS_FILTER } from '../../transactions/queries.js';
-import { CASH_ADVANCE_ROW, CASH_ADVANCE_SPLIT, DEBT_PARTNER_LEG } from '../queries.js';
+import {
+  CASH_ADVANCE_ROW,
+  CASH_ADVANCE_SPLIT,
+  DEBT_PARTNER_LEG,
+  SPLIT_OFF_BUDGET_LEGS,
+} from '../queries.js';
 import { createLogger } from '../../../logger.js';
 import {
   addCreditLine,
@@ -93,6 +98,12 @@ const splitMirrors = (row: 'NEW' | 'OLD') =>
      WHERE m.TransferID != '' AND m.TransferID >= 'split_transfer_' || ${row}.ID || '_'
        AND m.TransferID < 'split_transfer_' || ${row}.ID || '\`'
        AND m.TransferID GLOB 'split_transfer_' || ${row}.ID || '_*';`;
+// A split-transfer mirror decides its parent's off-budget split leg
+// (SPLIT_OFF_BUDGET_LEGS), whatever month it is dated in.
+const mirrorParent = (row: 'NEW' | 'OLD') =>
+  `SELECT ${FN}(${KIND_TX}, p.BudgetID, p.Month, 1) FROM main.transactions p
+     WHERE ${row}.TransferID GLOB 'split_transfer_*'
+       AND p.ID = CAST(substr(${row}.TransferID, 16) AS INTEGER);`;
 const txRow = (row: 'NEW' | 'OLD') =>
   `SELECT ${FN}(${KIND_TX}, ${row}.BudgetID, ${row}.Month, DATE(${row}.Date) IS NOT NULL);`;
 const parentOf = (row: 'NEW' | 'OLD') =>
@@ -123,16 +134,21 @@ const CATEGORY_COLUMNS = ['ID', 'CategoryGroupID', 'BudgetID', 'Name'];
 const GROUP_COLUMNS = ['ID', 'Name', 'BudgetID'];
 
 const TRIGGERS: [name: string, sql: string][] = [
-  ['tx_ins', `AFTER INSERT ON main.transactions BEGIN ${txRow('NEW')} ${partnerLegs('NEW')} END`],
+  [
+    'tx_ins',
+    `AFTER INSERT ON main.transactions BEGIN
+       ${txRow('NEW')} ${partnerLegs('NEW')} ${mirrorParent('NEW')} END`,
+  ],
   [
     'tx_del',
     `AFTER DELETE ON main.transactions BEGIN
-       ${txRow('OLD')} ${partnerLegs('OLD')} ${splitMirrors('OLD')} END`,
+       ${txRow('OLD')} ${partnerLegs('OLD')} ${splitMirrors('OLD')} ${mirrorParent('OLD')} END`,
   ],
   [
     'tx_upd',
     `AFTER UPDATE OF ${TX_COLUMNS.join(', ')} ON main.transactions BEGIN
-       ${txRow('OLD')} ${txRow('NEW')} ${partnerLegs('OLD')} ${partnerLegs('NEW')} END`,
+       ${txRow('OLD')} ${txRow('NEW')} ${partnerLegs('OLD')} ${partnerLegs('NEW')}
+       ${mirrorParent('OLD')} ${mirrorParent('NEW')} END`,
   ],
   // Own trigger so ordinary edits (category, amount, date) never run the lookup.
   [
@@ -308,6 +324,10 @@ const transfersSql = (mf: string, all: boolean) => `
                AND oa.OnBudget = FALSE AND LOWER(oa.Type) NOT IN ('credit', 'loan', 'mortgage'))`
     }
   GROUP BY t.Month, t.CategoryID`;
+
+const splitOffBudgetSql = (months: string[] | null) => `
+  SELECT Month, IFNULL(SUM(Off), 0) AS Off, IFNULL(SUM(Inb), 0) AS Inb
+  FROM (${SPLIT_OFF_BUDGET_LEGS((x) => monthFilter(`${x}.Month`, months))}) GROUP BY Month`;
 
 const assignmentsSql = (mf: string) => `
   SELECT Month, CategoryID, SUM(Amount) AS Amount FROM assignments
@@ -648,6 +668,16 @@ export class BudgetSnapshotStore {
       const tx = get(r.Month);
       addTo(tx.offBudgetTransfers, r.CategoryID, r.OffBudget);
       addTo(tx.inBudgetTransfers, r.CategoryID, r.InBudget);
+    }
+
+    for (const r of allRows<{ Month: string; Off: number; Inb: number }>(
+      this.db,
+      splitOffBudgetSql(months),
+      ...params
+    )) {
+      const tx = get(r.Month);
+      tx.splitOffBudget += r.Off;
+      tx.splitInBudget += r.Inb;
     }
 
     if (monthIndexes === null) data.tx.clear();

@@ -117,6 +117,35 @@ export const CASH_ADVANCE_SPLIT = (s: string, t: string) => `(CASE
     AND EXISTS (SELECT 1 FROM accounts pa WHERE pa.ID = ${s}.TransferAccountID AND ${CASH_ACCOUNT})
   THEN 2 ELSE 0 END)`;
 
+// Split-transfer legs between an on-budget and an off-budget (non-debt)
+// account, which the TransferID-based off-budget sums cannot see: an on-budget
+// split line transferring to such an account (its mirror sits off budget), and
+// a mirror on an on-budget account whose split parent is off budget. Off = the
+// money that left the budget, Inb = what came in. `bound(alias)` adds the
+// month / date filter on the on-budget row.
+export const SPLIT_OFF_BUDGET_LEGS = (bound: (alias: string) => string) => `
+  SELECT t.Month AS Month, s.OutflowConverted AS Off, s.InflowConverted AS Inb
+  FROM transaction_splits s JOIN transactions t ON t.ID = s.TransactionID
+  JOIN accounts src ON src.ID = t.AccountID
+  JOIN accounts dst ON dst.ID = s.TransferAccountID
+  WHERE t.BudgetID = ?1 ${bound('t')} AND src.OnBudget = TRUE
+    AND dst.OnBudget = FALSE AND LOWER(dst.Type) NOT IN ${DEBT_TYPES}
+    AND t.ExcludeFromReadyToAssign = FALSE
+    AND EXISTS (SELECT 1 FROM transactions m
+      WHERE m.TransferID = 'split_transfer_' || t.ID || '_' || t.Date AND m.TransferID != ''
+        AND m.AccountID = s.TransferAccountID)
+  UNION ALL
+  SELECT m.Month, m.OutflowConverted, m.InflowConverted
+  FROM transactions m JOIN accounts dst ON dst.ID = m.AccountID
+  JOIN transactions p ON p.ID = CAST(substr(m.TransferID, 16) AS INTEGER)
+  JOIN accounts pa ON pa.ID = p.AccountID
+  WHERE m.TransferID != '' AND m.TransferID >= 'split_transfer_' AND m.TransferID < 'split_transfer\`'
+    AND m.TransferID GLOB 'split_transfer_*' AND +m.BudgetID = ?1 ${bound('m')}
+    AND m.TransferID = 'split_transfer_' || p.ID || '_' || p.Date
+    AND dst.OnBudget = TRUE AND pa.OnBudget = FALSE AND LOWER(pa.Type) NOT IN ${DEBT_TYPES}
+    AND m.ExcludeFromReadyToAssign = FALSE
+    AND +m.CategoryID IN (${categoriesInGroup('Transfers')})`;
+
 const MONTHLY_ACTIVITY_CTE = activityCte();
 const CARD_ACTIVITY_CTE = activityCte("AND LOWER(a.Type) = 'credit'");
 
@@ -476,7 +505,7 @@ export class MonthlyBudgetQueries {
       budgetId,
       asOfDate
     );
-    const totalOffBudgetTransfers = offBudgetTransfersResult?.total_offbudget_transfers ?? 0;
+    const offBudgetLegs = offBudgetTransfersResult?.total_offbudget_transfers ?? 0;
 
     // Mirror of the above: money moved FROM an off-budget account (savings,
     // investment, tracking) INTO an on-budget account is fresh budgetable cash,
@@ -500,7 +529,7 @@ export class MonthlyBudgetQueries {
       budgetId,
       asOfDate
     );
-    const totalInBudgetTransfers = inBudgetTransfersResult?.total_inbudget_transfers ?? 0;
+    const inBudgetLegs = inBudgetTransfersResult?.total_inbudget_transfers ?? 0;
 
     // Journaled rate true-ups on on-budget foreign-currency accounts: the
     // budget's purchasing power moved with the market, so RTA moves with it.
@@ -519,6 +548,16 @@ export class MonthlyBudgetQueries {
     );
     const totalRevaluations = revaluationsResult?.total_revaluations ?? 0;
     const totalDebtInflows = this.cashAdvancesThrough(budgetId, asOfDate);
+    const splitLegs = getRow<{ off: number; inb: number }>(
+      this.db,
+      `SELECT IFNULL(SUM(Off), 0) AS off, IFNULL(SUM(Inb), 0) AS inb FROM (${SPLIT_OFF_BUDGET_LEGS(
+        (x) => `AND DATE(${x}.Date) <= DATE(?2)`
+      )})`,
+      budgetId,
+      asOfDate
+    );
+    const totalOffBudgetTransfers = offBudgetLegs + (splitLegs?.off ?? 0);
+    const totalInBudgetTransfers = inBudgetLegs + (splitLegs?.inb ?? 0);
 
     const readyToAssign =
       incomeResult.total_income -
@@ -704,6 +743,16 @@ export class MonthlyBudgetQueries {
     );
     const monthlyInBudget = new Map<string, number>();
     for (const r of inBudgetRows) monthlyInBudget.set(r.Month, r.total);
+    for (const r of allRows<{ Month: string; off: number; inb: number }>(
+      this.db,
+      `SELECT Month, IFNULL(SUM(Off), 0) AS off, IFNULL(SUM(Inb), 0) AS inb
+       FROM (${SPLIT_OFF_BUDGET_LEGS((x) => `AND ${x}.Month <= ?2`)}) GROUP BY Month`,
+      budgetId,
+      maxMonth
+    )) {
+      if (r.off) monthlyOffBudget.set(r.Month, (monthlyOffBudget.get(r.Month) ?? 0) + r.off);
+      if (r.inb) monthlyInBudget.set(r.Month, (monthlyInBudget.get(r.Month) ?? 0) + r.inb);
+    }
 
     // 5. Grouped monthly revaluations
     const revalRows = allRows<{ Month: string; total: number }>(
