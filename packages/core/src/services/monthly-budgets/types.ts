@@ -30,6 +30,11 @@ export interface ReadyToAssignBreakdown {
   futureAssignments: MilliUnits;
   offBudgetTransfers: MilliUnits;
   inBudgetTransfers: MilliUnits;
+  /**
+   * Cash advances: card -> on-budget cash account transfers, the part that grew
+   * the card's debt (YNAB's "Inflow from Debt Account"). Added to RTA.
+   */
+  debtInflows?: MilliUnits;
   revaluations: MilliUnits;
   priorCashOverspend: MilliUnits;
   readyToAssign: MilliUnits;
@@ -92,6 +97,8 @@ export interface GetMonthlyBudgetRow {
   debtBreakdown?: DebtSource[];
   /** For CC Payment categories: total funded from spending categories */
   totalFunded?: MilliUnits;
+  /** Cumulative mode: card refunds taken back out of this CC Payment category (all time). */
+  totalRefunded?: MilliUnits;
   /** Monthly-mode card envelope calculation; payments/refunds are positive deductions. */
   paymentCalculation?: {
     previousAvailable: MilliUnits;

@@ -9460,6 +9460,10 @@ msgstr "Indiase roepie"
 msgid "Inflow"
 msgstr "Inkomsten"
 
+#: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
+msgid "Inflow from debt accounts"
+msgstr "Instroom van schuldrekeningen"
+
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "Inflow vs Outflow"
 msgstr "Inkomsten vs Uitgaven"

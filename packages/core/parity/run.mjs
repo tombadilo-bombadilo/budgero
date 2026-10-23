@@ -6,7 +6,7 @@
 //   node parity/run.mjs --a <packages/core> --b <packages/core> [--seed 1] [--steps 150]
 //        [--tx 1200 --years 3] [--a-init hook.mjs] [--b-init hook.mjs] [--every 1]
 //        [--ops add,edit,...] [--keep-going] [--registers-every 10] [--no-registers]
-//        [--mode cumulative|monthly] [--no-invariant] [--quiet-invariant]
+//        [--mode cumulative|monthly] [--no-invariant] [--no-cash-invariant] [--quiet-invariant]
 //
 // --mode sets budget 1's RtaMode before the first step (mutations then run in
 // that mode until an rtaMode op flips it). A second budget (budget 2) with its
@@ -22,6 +22,9 @@
 //   - the zero-based identity (invariant.mjs) on each side, both modes, every month:
 //     violations are reported per side (a violation on A is a base bug, on B only
 //     a snapshot bug); they fail the run only if the sides disagree (that is a diff)
+//   - cash conservation (cash-invariant.mjs, tolerating cash-known.mjs) on each
+//     side, both modes, every month: reported per side with the tolerated hits,
+//     never a diff (--no-cash-invariant skips it)
 //
 // An init hook is `export default async ({ core, services, adapter, side }) => {}`;
 // use it to e.g. enable a snapshot cache on side B while side A recomputes fully.
@@ -40,6 +43,8 @@ import {
 import { generate } from '../bench/gen.mjs';
 import { shiftMonth } from '../bench/cases.mjs';
 import { checkZeroBasedIdentity } from './invariant.mjs';
+import { checkCashConservation } from './cash-invariant.mjs';
+import { KNOWN_DEVIATIONS } from './cash-known.mjs';
 
 const args = parseArgs(process.argv.slice(2), {
   seed: '1',
@@ -261,6 +266,55 @@ const OPS = {
       await s.transactions.addTransaction(amt, 0, cc, transfersCat, budgetId, d, 'cc pay', tid);
     };
   },
+  cardRefund: () => {
+    // a refund of an earlier card purchase (same card and category), up to 3 months later
+    const r = rowsA(
+      `SELECT AccountID a, CategoryID c, Month m, OutflowConverted o FROM transactions
+       WHERE BudgetID=? AND AccountID IN (${info.cards.join(',')}) AND OutflowConverted > 0
+         AND (TransferID IS NULL OR TransferID = '') ORDER BY ID`,
+      budgetId
+    );
+    if (!r.length) return null;
+    const t = pick(r);
+    const amt = Math.max(10, 10 * Math.floor((t.o * between(1, 4)) / 40));
+    const d = `${shiftMonth(t.m, between(0, 3))}-${String(between(1, 28)).padStart(2, '0')}`;
+    return (s) => s.transactions.addTransaction(amt, 0, t.a, t.c, budgetId, d, 'refund', '', 'P');
+  },
+  cardToCard: () => {
+    // balance transfer between two cards: debt moves, no cash does
+    if (info.cards.length < 2) return null;
+    const from = pick(info.cards);
+    const to = pick(info.cards.filter((c) => c !== from));
+    const d = randomDate(),
+      amt = 10 * between(100, 50000),
+      tid = `parity_${SEED}_${++tseq}`;
+    return async (s) => {
+      const tc = s.categories.getAllCategories(budgetId).find((c) => c.Name === 'Transfers').ID;
+      await s.transactions.addTransaction(0, amt, from, tc, budgetId, d, 'bt', tid);
+      await s.transactions.addTransaction(amt, 0, to, tc, budgetId, d, 'bt', tid);
+    };
+  },
+  fundedCardPurchase: () => {
+    // assign, buy on a card in the same month (funded), refund part of it later (60%)
+    const c = pick(liveCats),
+      card = pick(info.cards),
+      d = randomDate(),
+      amt = 10 * between(100, 50000),
+      refund = rnd() < 0.6 ? 10 * Math.floor((amt * between(1, 4)) / 40) : 0,
+      later = `${shiftMonth(d.slice(0, 7), between(1, 3))}-${String(between(1, 28)).padStart(2, '0')}`;
+    return async (s, S) => {
+      const m = d.slice(0, 7);
+      const cur = S.adapter
+        .prepare(
+          'SELECT IFNULL(SUM(Amount), 0) v FROM assignments WHERE CategoryID = ? AND Month = ?'
+        )
+        .get(c, m).v;
+      s.monthlyBudgets.upsertMonthlyAssignment(c, cur + amt, m, budgetId);
+      await s.transactions.addTransaction(0, amt, card, c, budgetId, d, 'buy', '', 'P');
+      if (refund)
+        await s.transactions.addTransaction(refund, 0, card, c, budgetId, later, 'refund', '', 'P');
+    };
+  },
   split: () => {
     const id = randomTx("(TransferID IS NULL OR TransferID = '') AND OutflowNative > 1000");
     if (!id) return null;
@@ -445,6 +499,9 @@ const weights = {
   assign: 14,
   transfer: 7,
   ccPayment: 5,
+  cardRefund: 3,
+  cardToCard: 2,
+  fundedCardPurchase: 3,
   split: 5,
   clearSplits: 2,
   exchangeRate: 3,
@@ -476,6 +533,10 @@ function monthsOf(b) {
 const canon = (rows, key) =>
   [...rows].sort((x, y) => (x[key] > y[key] ? 1 : x[key] < y[key] ? -1 : 0));
 const invariantStats = { A: { checks: 0, violations: [] }, B: { checks: 0, violations: [] } };
+const cashStats = {
+  A: { checks: 0, violations: [], known: {} },
+  B: { checks: 0, violations: [], known: {} },
+};
 function snapshot(S, monthLists, withRegisters, step) {
   const snap = {};
   for (const [b, monthList] of monthLists) {
@@ -505,6 +566,16 @@ function snapshot(S, monthLists, withRegisters, step) {
         invariantStats[S.name].checks += monthList.length;
         for (const x of v) invariantStats[S.name].violations.push({ step, budget: b, mode, ...x });
         snap[`${b}/${mode}/invariant`] = v;
+      }
+      if (args['no-cash-invariant'] !== 'true' && monthList.length) {
+        const c = checkCashConservation(S, b, monthList, reads, {
+          today: args.end,
+          known: KNOWN_DEVIATIONS,
+        });
+        const st = cashStats[S.name];
+        st.checks += monthList.length;
+        for (const x of c.violations) st.violations.push({ step, budget: b, mode, ...x });
+        for (const k of new Set(c.known.map((x) => x.key))) st.known[k] = (st.known[k] ?? 0) + 1;
       }
     }
     S.adapter.exec(`UPDATE budgets SET RtaMode='${saved}' WHERE ID=${b}`);
@@ -583,6 +654,14 @@ for (const name of ['A', 'B']) {
     `invariant ${name}: ${st.checks} month checks, ${st.violations.length} violations${
       st.violations.length ? ` (first: ${JSON.stringify(st.violations[0])})` : ''
     }`
+  );
+  if (args['quiet-invariant'] !== 'true')
+    for (const v of st.violations.slice(0, 20)) out(`  ${name} ${JSON.stringify(v)}`);
+}
+for (const name of ['A', 'B']) {
+  const st = cashStats[name];
+  out(
+    `cash invariant ${name}: ${st.checks} month checks, ${st.violations.length} violations, tolerated ${JSON.stringify(st.known)}`
   );
   if (args['quiet-invariant'] !== 'true')
     for (const v of st.violations.slice(0, 20)) out(`  ${name} ${JSON.stringify(v)}`);

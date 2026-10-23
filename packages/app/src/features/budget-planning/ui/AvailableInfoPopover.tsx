@@ -241,13 +241,15 @@ export function AvailableInfoPopover({
                     )}
                   </span>
                 </div>
-                {!!item.paymentCalculation?.refunds && (
+                {!!(item.paymentCalculation?.refunds || item.totalRefunded) && (
                   <div className="flex justify-between">
                     <span>
                       <Trans>Returned to categories:</Trans>
                     </span>
                     <span className="font-mono">
-                      {formatAmount(0 - item.paymentCalculation.refunds)}
+                      {formatAmount(
+                        0 - (item.paymentCalculation?.refunds ?? item.totalRefunded ?? 0)
+                      )}
                     </span>
                   </div>
                 )}

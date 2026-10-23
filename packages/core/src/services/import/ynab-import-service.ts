@@ -839,6 +839,7 @@ export class YNABImportService {
               `[YNAB RTA Mismatch] ${m.month}: YNAB ${formatAmt(m.expectedReadyToAssign)} | Budgero ${formatAmt(m.computedReadyToAssign)} (Δ ${formatAmt(m.difference)}) ` +
                 `[Income: ${formatAmt(m.breakdown.income)}, Assigned: ${formatAmt(m.breakdown.assignments)}, ` +
                 `OffBudget: ${formatAmt(m.breakdown.offBudgetTransfers)}, InBudget: ${formatAmt(m.breakdown.inBudgetTransfers)}, ` +
+                `FromDebt: ${formatAmt(m.breakdown.debtInflows ?? 0)}, ` +
                 `PriorOverspend: ${formatAmt(m.breakdown.priorCashOverspend)}]${causesSummary}`
             );
           }
@@ -1170,6 +1171,7 @@ export class YNABImportService {
             assignments: Number(breakdown.assignments),
             offBudgetTransfers: Number(breakdown.offBudgetTransfers),
             inBudgetTransfers: Number(breakdown.inBudgetTransfers),
+            debtInflows: Number(breakdown.debtInflows ?? 0),
             revaluations: Number(breakdown.revaluations),
             priorCashOverspend: Number(breakdown.priorCashOverspend),
             priorCashOverspendDetails: breakdown.priorCashOverspendDetails?.map((o) => ({

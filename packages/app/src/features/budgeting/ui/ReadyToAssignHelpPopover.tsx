@@ -137,6 +137,15 @@ export function ReadyToAssignHelpPopover({
                   sign="+"
                 />
               )}
+              {!!breakdown.debtInflows && (
+                <MathRow
+                  label={t`Inflow from debt accounts`}
+                  value={breakdown.debtInflows}
+                  localizer={globalLocalizer}
+                  mask={mask}
+                  sign="+"
+                />
+              )}
               {breakdown.revaluations !== 0 && (
                 <MathRow
                   label={t`Currency rate changes`}

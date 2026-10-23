@@ -37,6 +37,10 @@ export interface TxMonth {
   creditAccount: number[];
   creditCategory: CategoryKey[];
   creditAmount: number[];
+  /** Card transfer code per line (CASH_ADVANCE_ROW / _SPLIT: 0, 1 / 2 cash advance row / split line, 3 sent off budget). */
+  creditToCash: number[];
+  /** DATE(t.Date) per line (the cumulative cash-advance sum is day-bounded). */
+  creditDay: string[];
   /** SUM(creditAmount) per category (derived from the lines). */
   creditByCategory: Map<CategoryKey, number>;
   /**
@@ -44,6 +48,8 @@ export interface TxMonth {
    * budget (any OnBudget), split-aware; total and row count per category, card.
    */
   ccSpend: Map<CategoryKey, Map<number, { total: number; count: number }>>;
+  /** getCCRefundsByCategoryAndAccount: non-transfer card inflows per category, card. */
+  ccRefund: Map<CategoryKey, Map<number, number>>;
   /** Credit accounts (rows, not split-aware): SUM(Inflow - Outflow) per account. */
   cardNet: Map<number, number>;
   /** Credit accounts: transfer inflows (TransferID set, Inflow > 0) per account. */
@@ -53,6 +59,11 @@ export interface TxMonth {
   /** Legs with an off-budget non-debt partner, on-budget account, not excluded from RTA. */
   offBudgetTransfers: Map<CategoryKey, number>;
   inBudgetTransfers: Map<CategoryKey, number>;
+  /** SPLIT_OFF_BUDGET_LEGS: split-transfer legs to / from off-budget accounts (totals). */
+  splitOffBudget: number;
+  splitInBudget: number;
+  /** The same legs one by one with their day (cumulative RTA is day-bounded). */
+  splitLegs: { day: string; off: number; inb: number }[];
 }
 
 export function emptyTxMonth(): TxMonth {
@@ -61,13 +72,19 @@ export function emptyTxMonth(): TxMonth {
     creditAccount: [],
     creditCategory: [],
     creditAmount: [],
+    creditToCash: [],
+    creditDay: [],
     creditByCategory: new Map(),
     ccSpend: new Map(),
+    ccRefund: new Map(),
     cardNet: new Map(),
     cardPayments: new Map(),
     income: new Map(),
     offBudgetTransfers: new Map(),
     inBudgetTransfers: new Map(),
+    splitOffBudget: 0,
+    splitInBudget: 0,
+    splitLegs: [],
   };
 }
 
@@ -76,11 +93,13 @@ export function isEmptyTxMonth(m: TxMonth): boolean {
     m.nonCredit.size === 0 &&
     m.creditAmount.length === 0 &&
     m.ccSpend.size === 0 &&
+    m.ccRefund.size === 0 &&
     m.cardNet.size === 0 &&
     m.cardPayments.size === 0 &&
     m.income.size === 0 &&
     m.offBudgetTransfers.size === 0 &&
-    m.inBudgetTransfers.size === 0
+    m.inBudgetTransfers.size === 0 &&
+    m.splitLegs.length === 0
   );
 }
 
@@ -89,11 +108,15 @@ export function addCreditLine(
   m: TxMonth,
   accountId: number,
   categoryId: CategoryKey,
-  amount: number
+  amount: number,
+  toCash = 0,
+  day = ''
 ): void {
   m.creditAccount.push(accountId);
   m.creditCategory.push(categoryId);
   m.creditAmount.push(amount);
+  m.creditToCash.push(toCash);
+  m.creditDay.push(day);
   m.creditByCategory.set(categoryId, (m.creditByCategory.get(categoryId) ?? 0) + amount);
 }
 
@@ -256,6 +279,48 @@ export function ccSpendingAt(
   return result;
 }
 
+/** Every month's card refunds as flat (month, category, card, amount) rows, for ccRefundsThrough. */
+export interface RefundRows {
+  month: number[];
+  category: number[];
+  card: number[];
+  amount: number[];
+}
+
+export function ccRefundsFlat(
+  data: BudgetData,
+  keepCategory: (cat: CategoryKey) => boolean
+): RefundRows {
+  const out: RefundRows = { month: [], category: [], card: [], amount: [] };
+  for (const [m, tx] of data.tx) {
+    for (const [cat, byCard] of tx.ccRefund) {
+      if (cat === null || !keepCategory(cat)) continue;
+      for (const [card, v] of byCard) {
+        out.month.push(m);
+        out.category.push(cat);
+        out.card.push(card);
+        out.amount.push(v);
+      }
+    }
+  }
+  return out;
+}
+
+/** getCCRefundsByCategoryAndAccount(M): refunds of every month <= M per (category, card). */
+export function ccRefundsThrough(
+  rows: RefundRows,
+  monthIndex: number
+): Map<number, Map<number, number>> {
+  const out = new Map<number, Map<number, number>>();
+  for (let i = 0; i < rows.month.length; i++) {
+    if (rows.month[i] > monthIndex) continue;
+    let o = out.get(rows.category[i]);
+    if (!o) out.set(rows.category[i], (o = new Map()));
+    add(o, rows.card[i], rows.amount[i]);
+  }
+  return out;
+}
+
 // ---------------------------------------------------------------- monthly fold
 
 export interface OverspendEvent {
@@ -302,6 +367,8 @@ export interface MonthlyFold {
   creditCash: Map<number, Map<CategoryKey, number>>;
   /** Per month: monthly-mode income (Income lines; credit lines also Transfers). */
   income: Map<number, number>;
+  /** Per month: cash advances, the debt-growing part (readyToAssignMonthlyBatch's debt). */
+  debtInflow: Map<number, number>;
 }
 
 export interface FoldMeta {
@@ -331,6 +398,7 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
   const balance = new Map<number, number>();
   const creditCash = new Map<number, Map<CategoryKey, number>>();
   const income = new Map<number, number>();
+  const debtInflow = new Map<number, number>();
   // purchases[month][category] -> { card, spend } in funding order
   const purchases = new Map<number, Map<number, { card: number; spend: number }[]>>();
   for (let m = first; m <= last; m++) {
@@ -354,7 +422,13 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
       balance.set(acc, after);
       const cash = Math.max(0, after) - Math.max(0, after - amount);
       add(cashByCat, cat, cash);
-      if (cat !== null) {
+      const code = tx.creditToCash[i];
+      if (isCashAdvance(code, cat, groupOf)) {
+        // #67: the debt-growing part is RTA inflow; none of it is income
+        if (amount < 0) add(debtInflow, m, cash - amount);
+      } else if (code === 3 && cat !== null && groupOf.get(cat) === GROUP_TRANSFERS) {
+        // sent off budget: the off-budget transfer sums count all of it
+      } else if (cat !== null) {
         const group = groupOf.get(cat);
         if (group === GROUP_INCOME || group === GROUP_TRANSFERS) {
           monthIncome += cash;
@@ -399,6 +473,11 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
   >();
   const fundedByPc = new Map<number, Float64Array>();
   const refundsByPc = new Map<number, Float64Array>();
+  // payment category -> month -> refunds per spending category (#68)
+  const refundRequests = new Map<number, Map<number, { categoryId: number; amount: number }[]>>();
+  // spending category -> per month: assigned + cash activity, for the cash pass
+  const cashBase = new Map<number, Float64Array>();
+  const realizedRefunds = new Map<number, Float64Array>();
   const debt = new Map<
     number,
     Map<string, { categoryId: number; month: number; amount: number }>
@@ -413,8 +492,9 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
   for (const categoryId of categories) {
     const values = new Float64Array(months);
     displayed.set(categoryId, values);
+    const base = new Float64Array(months);
+    cashBase.set(categoryId, base);
     let carryTotal = 0;
-    let carryCash = 0;
     for (let m = presence.get(categoryId)!; m <= last; m++) {
       const tx = data.tx.get(m);
       const assigned = data.assigned.get(m)?.get(categoryId) ?? 0;
@@ -464,18 +544,23 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
         const paymentCatId = cardToPaymentCat.get(card);
         if (!paymentCatId || refund === 0) continue;
         series(refundsByPc, paymentCatId)[m - first] += refund;
+        let requests = refundRequests.get(paymentCatId);
+        if (!requests) refundRequests.set(paymentCatId, (requests = new Map()));
+        let list = requests.get(m);
+        if (!list) requests.set(m, (list = []));
+        list.push({ categoryId, amount: refund });
       }
 
       const shown = carryTotal + assigned + cash + credit;
-      const rawCash = carryCash + assigned + cash;
       values[m - first] = shown;
-      if (rawCash < 0) overspend.push({ categoryId, month: m, amount: -rawCash, payment: false });
+      base[m - first] = assigned + cash;
       carryTotal = Math.max(0, shown);
-      carryCash = Math.max(0, Math.min(rawCash, shown));
     }
   }
 
-  // 4. CC Payment-category pass.
+  // 4. CC Payment-category pass. Payment overspend is listed after every
+  // spending category's (the base's order).
+  const paymentOverspend: OverspendEvent[] = [];
   const payment = new Map<number, PaymentSeries>();
   const paymentsByPc = new Map<number, Float64Array>();
   for (const [m, tx] of data.tx) {
@@ -505,10 +590,12 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
       const assigned = isPaymentGroup ? (data.assigned.get(m)?.get(paymentCatId) ?? 0) : 0;
       const funded = fundedArr ? fundedArr[i] : 0;
       const payments = paymentsArr ? paymentsArr[i] : 0;
-      const refunded = Math.min(
-        refundsArr ? refundsArr[i] : 0,
-        Math.max(0, carry + assigned + funded)
-      );
+      // Refunds are taken out in full, even past 0 (YNAB-observed, see
+      // computeMonthlyRollforward): each category gets all of its refund as cash.
+      const refunded = refundsArr ? refundsArr[i] : 0;
+      if (refunded > 0)
+        for (const r of refundRequests.get(paymentCatId)?.get(m) ?? [])
+          series(realizedRefunds, r.categoryId)[i] += r.amount;
       const activity = funded - payments - refunded;
       const raw = carry + assigned + activity;
       s.previousAvailable[i] = carry;
@@ -518,10 +605,26 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
       s.activity[i] = activity;
       s.raw[i] = raw;
       if (raw < 0)
-        overspend.push({ categoryId: paymentCatId, month: m, amount: -raw, payment: true });
+        paymentOverspend.push({ categoryId: paymentCatId, month: m, amount: -raw, payment: true });
       carry = Math.max(0, raw);
     }
   }
+
+  // 5. Spending-category cash pass: carried cash + assigned + cash activity +
+  // the refund that came back out of a CC Payment category (#68).
+  for (const categoryId of categories) {
+    const values = displayed.get(categoryId)!;
+    const base = cashBase.get(categoryId)!;
+    const refunds = realizedRefunds.get(categoryId);
+    let carryCash = 0;
+    for (let m = presence.get(categoryId)!; m <= last; m++) {
+      const i = m - first;
+      const rawCash = carryCash + base[i] + (refunds ? refunds[i] : 0);
+      if (rawCash < 0) overspend.push({ categoryId, month: m, amount: -rawCash, payment: false });
+      carryCash = Math.max(0, Math.min(rawCash, values[i]));
+    }
+  }
+  overspend.push(...paymentOverspend);
 
   return {
     first,
@@ -534,7 +637,46 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
     payment,
     creditCash,
     income,
+    debtInflow,
   };
+}
+
+/** A card line that is a cash advance (#67): a split line, or a Transfers-category row. */
+function isCashAdvance(code: number, cat: CategoryKey, groupOf: Map<number, string>): boolean {
+  return code === 2 || (code === 1 && cat !== null && groupOf.get(cat) === GROUP_TRANSFERS);
+}
+
+/**
+ * Cash advances of every month with their day (cashAdvancesThrough): the part
+ * of each advance that grew the card's debt, from the running card balance.
+ */
+export function cashAdvanceDays(
+  data: BudgetData,
+  groupOf: Map<number, string>
+): { day: string[]; amount: number[] } {
+  const out = { day: [] as string[], amount: [] as number[] };
+  // only the cards with an advance need their running balance
+  const cards = new Set<number>();
+  for (const tx of data.tx.values())
+    for (let i = 0; i < tx.creditToCash.length; i++)
+      if (tx.creditToCash[i] === 1 || tx.creditToCash[i] === 2) cards.add(tx.creditAccount[i]);
+  if (cards.size === 0) return out;
+  const balance = new Map<number, number>();
+  for (const m of [...data.tx.keys()].sort((a, b) => a - b)) {
+    const tx = data.tx.get(m)!;
+    for (let i = 0; i < tx.creditAmount.length; i++) {
+      const acc = tx.creditAccount[i];
+      if (!cards.has(acc)) continue;
+      const amount = tx.creditAmount[i];
+      const after = (balance.get(acc) ?? 0) + amount;
+      balance.set(acc, after);
+      if (amount < 0 && isCashAdvance(tx.creditToCash[i], tx.creditCategory[i], groupOf)) {
+        out.day.push(tx.creditDay[i]);
+        out.amount.push(Math.max(0, after) - Math.max(0, after - amount) - amount);
+      }
+    }
+  }
+  return out;
 }
 
 /** Live names for the overspend details (categories of the budget). */

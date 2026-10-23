@@ -19,6 +19,9 @@ import {
   activityByKindAt,
   activityInMonth,
   availableThrough,
+  cashAdvanceDays,
+  ccRefundsFlat,
+  ccRefundsThrough,
   ccSpendingAt,
   overspendBefore,
   rollforwardAt,
@@ -41,6 +44,7 @@ export type MonthlyBudgetSource = Pick<
   | 'getActivityByAccountKind'
   | 'getCCPaymentAdjustments'
   | 'getCCSpendingByCategoryAndAccount'
+  | 'getCCRefundsByCategoryAndAccount'
   | 'getCCAccountPaymentCategoryMap'
   | 'getCCAccountBalances'
   | 'getAssignedPriorToMonthByCategory'
@@ -252,6 +256,25 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
     });
   }
 
+  getCCRefundsByCategoryAndAccount(
+    month: string,
+    _budgetId: number
+  ): Map<number, Map<number, number>> {
+    const index = this.monthIndex(month);
+    const excluded = new Set([
+      GROUP_INCOME,
+      GROUP_TRANSFERS,
+      GROUP_UNCATEGORIZED,
+      GROUP_CC_PAYMENTS,
+    ]);
+    const keep = (cat: CategoryKey) => {
+      const group = this.groupOf(cat);
+      return group !== undefined && !excluded.has(group);
+    };
+    const flat = this.snap.txMemo('ccRefundsFlat', () => ccRefundsFlat(this.data, keep));
+    return this.snap.txMemo(`ccRefunds:${index}`, () => ccRefundsThrough(flat, index));
+  }
+
   getCCAccountBalances(month: string, _budgetId: number): Map<number, number> {
     const index = this.monthIndex(month);
     return new Map(
@@ -344,17 +367,38 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
     const totalAssignments = this.snap.memo('rtaAssignments', () =>
       sumAssignedOver(this.data, -Infinity, Infinity)
     );
-    const totalOffBudgetTransfers = snapOff + (recentTransfers?.off_budget ?? 0);
-    const totalInBudgetTransfers = snapIn + (recentTransfers?.in_budget ?? 0);
+    // split-transfer legs to / from off-budget accounts, dated up to today
+    const legs = this.snap.txMemo('splitLegs', () => {
+      const all: { day: string; off: number; inb: number }[] = [];
+      for (const tx of this.data.tx.values()) all.push(...tx.splitLegs);
+      return all;
+    });
+    let splitOff = 0;
+    let splitIn = 0;
+    for (const leg of legs)
+      if (leg.day <= asOfDate) {
+        splitOff += leg.off;
+        splitIn += leg.inb;
+      }
+    const totalOffBudgetTransfers = snapOff + (recentTransfers?.off_budget ?? 0) + splitOff;
+    const totalInBudgetTransfers = snapIn + (recentTransfers?.in_budget ?? 0) + splitIn;
     const totalRevaluations =
       getRow<{ total_revaluations: number }>(this.db, REVALUATIONS_SQL, budgetId, asOfDate)
         ?.total_revaluations ?? 0;
+
+    const advances = this.snap.txMemo('cashAdvanceDays', () =>
+      cashAdvanceDays(this.data, this.snap.groupMap())
+    );
+    let totalDebtInflows = 0;
+    for (let i = 0; i < advances.day.length; i++)
+      if (advances.day[i] <= asOfDate) totalDebtInflows += advances.amount[i];
 
     const readyToAssign =
       totalIncome -
       totalAssignments -
       totalOffBudgetTransfers +
       totalInBudgetTransfers +
+      totalDebtInflows +
       totalRevaluations;
 
     return {
@@ -365,6 +409,7 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
       futureAssignments: asMilli(0),
       offBudgetTransfers: asMilli(totalOffBudgetTransfers),
       inBudgetTransfers: asMilli(totalInBudgetTransfers),
+      debtInflows: asMilli(totalDebtInflows),
       revaluations: asMilli(totalRevaluations),
       priorCashOverspend: asMilli(0),
       readyToAssign: asMilli(readyToAssign),
@@ -412,12 +457,29 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
       const inB = this.snap.memo(`mIn:${index}`, () =>
         sumCategoriesOver(this.data, (m) => m.inBudgetTransfers, -Infinity, index, transfers)
       );
+      const split = this.snap.memo(`mSplit:${index}`, () => {
+        let o = 0;
+        let i = 0;
+        for (const [m, tx] of this.data.tx)
+          if (m <= index) {
+            o += tx.splitOffBudget;
+            i += tx.splitInBudget;
+          }
+        return { off: o, inb: i };
+      });
       let rev = 0;
       for (const r of revalRows) if (r.Month !== null && r.Month <= month) rev += r.total;
+      const debt = this.snap.memo(`mDebt:${index}`, () => {
+        let total = 0;
+        for (const [m, v] of fold.debtInflow) if (m <= index) total += v;
+        return total;
+      });
 
       const overspendsForMonth = overspendBefore(fold, index, names);
       const priorCashOverspend = overspendsForMonth.reduce((sum, o) => sum + o.amount, 0);
-      const readyToAssign = inc - ass - off + inB + rev - priorCashOverspend;
+      const offAll = off + split.off;
+      const inAll = inB + split.inb;
+      const readyToAssign = inc - ass - offAll + inAll + debt + rev - priorCashOverspend;
 
       result.set(month, {
         mode: 'monthly',
@@ -425,8 +487,9 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
         income: asMilli(inc),
         assignments: asMilli(ass),
         futureAssignments: asMilli(0),
-        offBudgetTransfers: asMilli(off),
-        inBudgetTransfers: asMilli(inB),
+        offBudgetTransfers: asMilli(offAll),
+        inBudgetTransfers: asMilli(inAll),
+        debtInflows: asMilli(debt),
         revaluations: asMilli(rev),
         priorCashOverspend: asMilli(priorCashOverspend),
         readyToAssign: asMilli(readyToAssign),

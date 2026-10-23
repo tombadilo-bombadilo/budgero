@@ -13,6 +13,7 @@
 //   income      Income-group lines <= M (split-aware) - RTA income
 //               (RTA counts parent rows, non-transfers, by date <= today in cumulative mode)
 //   transfers   Transfers-group lines <= M + RTA off-budget - RTA in-budget transfers
+//               - RTA cash advances (card -> cash account, the debt-growing part)
 //               (what is left: legs to off-budget debt accounts, ExcludeFromReadyToAssign
 //               legs, unpaired legs, timing)
 //   other       lines whose category is none of: Income group, Transfers group, a budget row
@@ -21,7 +22,8 @@
 //   reval       revaluations in months <= M - RTA revaluations
 //   assign      RTA assignments - assignments <= M of the budget-row categories
 //   model       how Available departs from "assigned + activity so far":
-//               cumulative: CC payment rows hold assigned + funded - payments instead of
+//               cumulative: CC payment rows hold assigned + funded - refunded - payments (transfers in,
+//                 except from another on-budget debt account) instead of
 //                 their own activity -> sum over CC rows of (activity <= M + payments <= M
 //                 - totalFunded); every other row must equal assigned + activity <= M
 //               monthly: every row follows Avail(m) = max(0, Avail(m-1)) + Assigned(m) +
@@ -34,6 +36,20 @@
 
 const NO_SPLITS =
   'AND NOT EXISTS (SELECT 1 FROM transaction_splits s2 WHERE s2.TransactionID = t.ID)';
+
+// Transfers from another debt account (balance transfers) are not
+// card payments; same rule as DEBT_PARTNER_LEG in monthly-budgets/queries.ts.
+const DEBT_PARTNER_LEG = `(CASE
+  WHEN t.TransferID GLOB 'split_transfer_*' THEN EXISTS (
+    SELECT 1 FROM transactions p JOIN accounts pa ON pa.ID = p.AccountID
+    WHERE p.ID = CAST(substr(t.TransferID, 16) AS INTEGER)
+      AND t.TransferID = 'split_transfer_' || p.ID || '_' || p.Date
+      AND LOWER(pa.Type) IN ('credit', 'loan', 'mortgage'))
+  ELSE EXISTS (
+    SELECT 1 FROM transactions p JOIN accounts pa ON pa.ID = p.AccountID
+    WHERE p.TransferID = t.TransferID AND p.TransferID != '' AND p.ID != t.ID
+      AND LOWER(pa.Type) IN ('credit', 'loan', 'mortgage'))
+END)`;
 
 /**
  * @param {{ adapter: { prepare(sql: string): { all(...p: unknown[]): any[] } } }} side
@@ -78,7 +94,8 @@ export function checkZeroBasedIdentity(side, budgetId, months, reads) {
     `SELECT t.Month AS Month, t.AccountID AS AccountID, SUM(t.InflowConverted) AS Amount
      FROM transactions t JOIN accounts a ON a.ID = t.AccountID
      WHERE t.BudgetID = ?1 AND LOWER(a.Type) = 'credit' AND t.TransferID IS NOT NULL
-       AND t.TransferID != '' AND t.InflowConverted > 0 GROUP BY 1, 2`,
+       AND t.TransferID != '' AND t.InflowConverted > 0
+       AND NOT ${DEBT_PARTNER_LEG} GROUP BY 1, 2`,
     budgetId
   );
   const groups = new Map(
@@ -150,7 +167,9 @@ export function checkZeroBasedIdentity(side, budgetId, months, reads) {
       if (reads.mode === 'cumulative') {
         if (ccRows.has(r.CategoryID) && r.totalFunded !== undefined)
           model +=
-            (actByCat.get(r.CategoryID) ?? 0) + (payByPc.get(r.CategoryID) ?? 0) - r.totalFunded;
+            (actByCat.get(r.CategoryID) ?? 0) +
+            (payByPc.get(r.CategoryID) ?? 0) -
+            (r.totalFunded - (r.totalRefunded ?? 0));
       } else if (groups.get(r.CategoryID) === 'Credit Card Payments' && !ccRows.has(r.CategoryID)) {
         // unlinked CC-group categories keep their cumulative Available in monthly
         // mode: expected raw - Available = 0, nothing to add
@@ -175,7 +194,8 @@ export function checkZeroBasedIdentity(side, budgetId, months, reads) {
 
     const terms = {
       income: income - rta.income,
-      transfers: transfers + rta.offBudgetTransfers - rta.inBudgetTransfers,
+      transfers:
+        transfers + rta.offBudgetTransfers - rta.inBudgetTransfers - (rta.debtInflows ?? 0),
       other,
       splitGap,
       reval: reval - rta.revaluations,

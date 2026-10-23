@@ -21,6 +21,13 @@
 import type { DatabaseAdapter, SqlFunctionValue } from '../../../database/interface.js';
 import { allRows, getRow } from '../../../database/sql.js';
 import { NO_SPLITS_FILTER } from '../../transactions/queries.js';
+import {
+  CASH_ADVANCE_ROW,
+  CASH_ADVANCE_SPLIT,
+  DEBT_PARTNER_LEG,
+  SPLIT_OFF_BUDGET_LEGS,
+  SPLIT_OFF_BUDGET_LEGS_IN,
+} from '../queries.js';
 import { createLogger } from '../../../logger.js';
 import {
   addCreditLine,
@@ -84,6 +91,20 @@ const KIND_ALL = 4;
 const partnerLegs = (row: 'NEW' | 'OLD') =>
   `SELECT ${FN}(${KIND_TX}, p.BudgetID, p.Month, 1) FROM main.transactions p
      WHERE p.TransferID = ${row}.TransferID AND p.TransferID != '' AND p.ID != ${row}.ID;`;
+// A split parent's account decides whether its split-transfer mirrors are card
+// payments (DEBT_PARTNER_LEG), and moving the parent to another account of the
+// same currency leaves the mirror rows untouched.
+const splitMirrors = (row: 'NEW' | 'OLD') =>
+  `SELECT ${FN}(${KIND_TX}, m.BudgetID, m.Month, 1) FROM main.transactions m
+     WHERE m.TransferID != '' AND m.TransferID >= 'split_transfer_' || ${row}.ID || '_'
+       AND m.TransferID < 'split_transfer_' || ${row}.ID || '\`'
+       AND m.TransferID GLOB 'split_transfer_' || ${row}.ID || '_*';`;
+// A split-transfer mirror decides its parent's off-budget split leg
+// (SPLIT_OFF_BUDGET_LEGS), whatever month it is dated in.
+const mirrorParent = (row: 'NEW' | 'OLD') =>
+  `SELECT ${FN}(${KIND_TX}, p.BudgetID, p.Month, 1) FROM main.transactions p
+     WHERE ${row}.TransferID GLOB 'split_transfer_*'
+       AND p.ID = CAST(substr(${row}.TransferID, 16) AS INTEGER);`;
 const txRow = (row: 'NEW' | 'OLD') =>
   `SELECT ${FN}(${KIND_TX}, ${row}.BudgetID, ${row}.Month, DATE(${row}.Date) IS NOT NULL);`;
 const parentOf = (row: 'NEW' | 'OLD') =>
@@ -102,6 +123,7 @@ const TX_COLUMNS = [
 ];
 const SPLIT_COLUMNS = [
   'TransactionID',
+  'TransferAccountID',
   'CategoryID',
   'InflowConverted',
   'OutflowConverted',
@@ -113,12 +135,28 @@ const CATEGORY_COLUMNS = ['ID', 'CategoryGroupID', 'BudgetID', 'Name'];
 const GROUP_COLUMNS = ['ID', 'Name', 'BudgetID'];
 
 const TRIGGERS: [name: string, sql: string][] = [
-  ['tx_ins', `AFTER INSERT ON main.transactions BEGIN ${txRow('NEW')} ${partnerLegs('NEW')} END`],
-  ['tx_del', `AFTER DELETE ON main.transactions BEGIN ${txRow('OLD')} ${partnerLegs('OLD')} END`],
+  [
+    'tx_ins',
+    `AFTER INSERT ON main.transactions BEGIN
+       ${txRow('NEW')} ${partnerLegs('NEW')} ${mirrorParent('NEW')} END`,
+  ],
+  [
+    'tx_del',
+    `AFTER DELETE ON main.transactions BEGIN
+       ${txRow('OLD')} ${partnerLegs('OLD')} ${splitMirrors('OLD')} ${mirrorParent('OLD')} END`,
+  ],
   [
     'tx_upd',
     `AFTER UPDATE OF ${TX_COLUMNS.join(', ')} ON main.transactions BEGIN
-       ${txRow('OLD')} ${txRow('NEW')} ${partnerLegs('OLD')} ${partnerLegs('NEW')} END`,
+       ${txRow('OLD')} ${txRow('NEW')} ${partnerLegs('OLD')} ${partnerLegs('NEW')}
+       ${mirrorParent('OLD')} ${mirrorParent('NEW')} END`,
+  ],
+  // Own trigger so ordinary edits (category, amount, date) never run the lookup.
+  [
+    'tx_upd_parent',
+    `AFTER UPDATE OF AccountID, BudgetID ON main.transactions
+       WHEN OLD.AccountID IS NOT NEW.AccountID OR OLD.BudgetID IS NOT NEW.BudgetID
+       BEGIN ${splitMirrors('OLD')} END`,
   ],
   ['split_ins', `AFTER INSERT ON main.transaction_splits BEGIN ${parentOf('NEW')} END`],
   ['split_del', `AFTER DELETE ON main.transaction_splits BEGIN ${parentOf('OLD')} END`],
@@ -203,16 +241,19 @@ const nonCreditSql = (mf: string) => `
     WHERE t.BudgetID = ?1 ${mf} AND a.OnBudget = TRUE AND LOWER(a.Type) <> 'credit'
   ) GROUP BY Month, CategoryID`;
 
+// ToCash: CASH_ADVANCE_ROW / _SPLIT (the Transfers-category test of rows is
+// applied in the fold, from live category groups).
 const creditLinesSql = (mf: string) => `
-  SELECT Month, AccountID, CategoryID, Amount FROM (
+  SELECT Month, AccountID, CategoryID, Amount, ToCash, DATE(LineDate) AS Day FROM (
     SELECT t.Month AS Month, t.AccountID AS AccountID, t.CategoryID AS CategoryID,
            t.InflowConverted - t.OutflowConverted AS Amount, t.Date AS LineDate,
-           t.OutflowConverted AS ParentOutflow, t.ID AS TransactionID, 0 AS PartIndex
+           t.OutflowConverted AS ParentOutflow, t.ID AS TransactionID, 0 AS PartIndex,
+           ${CASH_ADVANCE_ROW('t')} AS ToCash
     FROM transactions t JOIN accounts a ON a.ID = t.AccountID
     WHERE t.BudgetID = ?1 ${mf} AND a.OnBudget = TRUE AND LOWER(a.Type) = 'credit' ${NO_SPLITS_FILTER}
     UNION ALL
     SELECT t.Month, t.AccountID, s.CategoryID, s.InflowConverted - s.OutflowConverted, t.Date,
-           t.OutflowConverted, t.ID, s.OrderIndex
+           t.OutflowConverted, t.ID, s.OrderIndex, ${CASH_ADVANCE_SPLIT('s', 't')}
     FROM transaction_splits s JOIN transactions t ON t.ID = s.TransactionID
     JOIN accounts a ON a.ID = t.AccountID
     WHERE t.BudgetID = ?1 ${mf} AND a.OnBudget = TRUE AND LOWER(a.Type) = 'credit'
@@ -220,24 +261,32 @@ const creditLinesSql = (mf: string) => `
 
 const ccSpendSql = (mf: string) => `
   SELECT x.Month AS Month, x.CategoryID AS CategoryID, x.AccountID AS AccountID,
-         SUM(x.OutflowConverted) AS Total, COUNT(*) AS N
+         SUM(x.Spend) AS Total, COUNT(CASE WHEN x.Spend > 0 THEN 1 END) AS N,
+         SUM(x.Refund) AS Refund
   FROM (
     SELECT t.Month AS Month, s.CategoryID AS CategoryID, t.AccountID AS AccountID,
-           s.OutflowConverted AS OutflowConverted
+           s.OutflowConverted AS Spend,
+           CASE WHEN ${REFUND('t')} THEN s.InflowConverted ELSE 0 END AS Refund
     FROM transactions t CROSS JOIN transaction_splits s ON s.TransactionID = t.ID
     WHERE t.AccountID IN (SELECT ID FROM accounts WHERE BudgetID = ?1 AND LOWER(Type) = 'credit')
-      AND t.BudgetID = ?1 ${mf} AND s.OutflowConverted > 0
+      AND t.BudgetID = ?1 ${mf}
+      AND (s.OutflowConverted > 0 OR (s.InflowConverted > 0 AND ${REFUND('t')}))
     UNION ALL
-    SELECT t.Month, t.CategoryID, t.AccountID, t.OutflowConverted
+    SELECT t.Month, t.CategoryID, t.AccountID, t.OutflowConverted,
+           CASE WHEN ${REFUND('t')} THEN t.InflowConverted ELSE 0 END
     FROM transactions t
     WHERE t.AccountID IN (SELECT ID FROM accounts WHERE BudgetID = ?1 AND LOWER(Type) = 'credit')
-      AND t.BudgetID = ?1 ${mf} AND t.OutflowConverted > 0 ${NO_SPLITS_FILTER}
+      AND t.BudgetID = ?1 ${mf}
+      AND (t.OutflowConverted > 0 OR (t.InflowConverted > 0 AND ${REFUND('t')})) ${NO_SPLITS_FILTER}
   ) x GROUP BY x.Month, x.CategoryID, x.AccountID`;
+// A card inflow that is a refund (getCCRefundsByCategoryAndAccount): not a transfer.
+const REFUND = (t: string) => `(${t}.TransferID IS NULL OR ${t}.TransferID = '')`;
 
 const cardsSql = (mf: string) => `
   SELECT t.Month AS Month, t.AccountID AS AccountID,
          SUM(t.InflowConverted - t.OutflowConverted) AS Net,
          SUM(CASE WHEN t.TransferID IS NOT NULL AND t.TransferID != '' AND t.InflowConverted > 0
+                       AND NOT ${DEBT_PARTNER_LEG('t')}
                   THEN t.InflowConverted ELSE 0 END) AS Payments
   FROM transactions t JOIN accounts a ON a.ID = t.AccountID
   WHERE t.BudgetID = ?1 ${mf} AND LOWER(a.Type) = 'credit'
@@ -277,6 +326,11 @@ const transfersSql = (mf: string, all: boolean) => `
     }
   GROUP BY t.Month, t.CategoryID`;
 
+const splitOffBudgetSql = (months: string[] | null) =>
+  months
+    ? SPLIT_OFF_BUDGET_LEGS_IN(`IN (${months.map((_, i) => `?${i + 2}`).join(', ')})`)
+    : SPLIT_OFF_BUDGET_LEGS(() => '');
+
 const assignmentsSql = (mf: string) => `
   SELECT Month, CategoryID, SUM(Amount) AS Amount FROM assignments
   WHERE BudgetID = ?1 ${mf} GROUP BY Month, CategoryID`;
@@ -291,6 +345,8 @@ interface BudgetState {
   version: number;
   fold: { key: string; fold: MonthlyFold } | null;
   memo: Map<string, unknown>;
+  /** Derived caches of the transaction sums only (kept across assignment changes). */
+  txMemo: Map<string, unknown>;
 }
 
 class UnsupportedMonth extends Error {}
@@ -506,6 +562,7 @@ export class BudgetSnapshotStore {
       version: 0,
       fold: null,
       memo: new Map(),
+      txMemo: new Map(),
     };
   }
 
@@ -516,6 +573,7 @@ export class BudgetSnapshotStore {
       state.dirtyTx.clear();
       this.loadTx(budgetId, state.data, months);
       this.stats.refreshedMonths += months.length;
+      state.txMemo.clear();
     }
     if (state.dirtyAssigned.size > 0) {
       const months = [...state.dirtyAssigned];
@@ -564,8 +622,10 @@ export class BudgetSnapshotStore {
       AccountID: number;
       CategoryID: CategoryKey;
       Amount: number;
+      ToCash: number;
+      Day: string | null;
     }>(this.db, creditLinesSql(mf), ...params))
-      addCreditLine(get(r.Month), r.AccountID, r.CategoryID, r.Amount);
+      addCreditLine(get(r.Month), r.AccountID, r.CategoryID, r.Amount, r.ToCash, r.Day ?? '');
 
     for (const r of allRows<{
       Month: string;
@@ -573,11 +633,19 @@ export class BudgetSnapshotStore {
       AccountID: number;
       Total: number;
       N: number;
+      Refund: number;
     }>(this.db, ccSpendSql(mf), ...params)) {
       const tx = get(r.Month);
-      let byCard = tx.ccSpend.get(r.CategoryID);
-      if (!byCard) tx.ccSpend.set(r.CategoryID, (byCard = new Map()));
-      byCard.set(r.AccountID, { total: r.Total, count: r.N });
+      if (r.N > 0) {
+        let byCard = tx.ccSpend.get(r.CategoryID);
+        if (!byCard) tx.ccSpend.set(r.CategoryID, (byCard = new Map()));
+        byCard.set(r.AccountID, { total: r.Total, count: r.N });
+      }
+      if (r.Refund > 0) {
+        let byCard = tx.ccRefund.get(r.CategoryID);
+        if (!byCard) tx.ccRefund.set(r.CategoryID, (byCard = new Map()));
+        byCard.set(r.AccountID, r.Refund);
+      }
     }
 
     for (const r of allRows<{ Month: string; AccountID: number; Net: number; Payments: number }>(
@@ -606,6 +674,17 @@ export class BudgetSnapshotStore {
       const tx = get(r.Month);
       addTo(tx.offBudgetTransfers, r.CategoryID, r.OffBudget);
       addTo(tx.inBudgetTransfers, r.CategoryID, r.InBudget);
+    }
+
+    for (const r of allRows<{ Month: string; Day: string | null; Off: number; Inb: number }>(
+      this.db,
+      splitOffBudgetSql(months),
+      ...params
+    )) {
+      const tx = get(r.Month);
+      tx.splitOffBudget += r.Off;
+      tx.splitInBudget += r.Inb;
+      tx.splitLegs.push({ day: r.Day ?? '', off: r.Off, inb: r.Inb });
     }
 
     if (monthIndexes === null) data.tx.clear();
@@ -665,6 +744,16 @@ export class SnapshotHandle {
     const value = compute();
     if (this.state.memo.size > 256) this.state.memo.clear();
     this.state.memo.set(k, value);
+    return value;
+  }
+
+  /** Like memo, for values derived from the transaction sums alone. */
+  txMemo<T>(key: string, compute: () => T): T {
+    const k = `${this.store.currentMetaVersion}|${key}`;
+    if (this.state.txMemo.has(k)) return this.state.txMemo.get(k) as T;
+    const value = compute();
+    if (this.state.txMemo.size > 64) this.state.txMemo.clear();
+    this.state.txMemo.set(k, value);
     return value;
   }
 
