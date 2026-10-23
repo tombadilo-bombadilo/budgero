@@ -22,3 +22,8 @@ reason = "toml 4.x is only pulled in by the website build (contentlayer2 -> mdx-
 id = "GHSA-9qmh-m7c6-f92p"
 ignoreUntil = 2026-12-23T00:00:00Z
 reason = "toml 4.x is only pulled in by the website build (contentlayer2 -> mdx-bundler -> remark-mdx-frontmatter) to parse our own docs frontmatter; the fix is only in 5.x, which remark-mdx-frontmatter 4 does not use"
+
+[[IgnoredVulns]]
+id = "GHSA-mrhx-c7xc-m3w5"
+ignoreUntil = 2026-12-23T00:00:00Z
+reason = "zod 3.x is only pulled in by build and lint tooling (contentlayer2 for the website docs, eslint-plugin-react-hooks / react-compiler) validating our own files, never untrusted input; the fix is only in 4.6.6, which those tools do not support. The app itself uses zod ^4.6.6."

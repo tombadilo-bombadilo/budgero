@@ -45,6 +45,7 @@ overrides:
   brace-expansion@^5.0.0: ^5.0.12
   defu@<6.1.5: ^6.1.5
   dompurify@<3.4.17: ^3.4.17
+  'zod@>=4.0.0 <4.6.6': ^4.6.6
   esbuild@<0.25.0: ^0.25.0
   fast-uri@<3.1.6: ^3.1.6
   flatted@<3.4.2: ^3.4.2
