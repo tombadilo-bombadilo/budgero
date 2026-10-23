@@ -7,3 +7,18 @@ reason = "braces 3.0.3 is only pulled in by the website build (contentlayer2 -> 
 id = "GHSA-hp3w-g68c-fv3c"
 ignoreUntil = 2026-12-09T00:00:00Z
 reason = "sprintf-js has no fixed version; it is only pulled in by the website build (js-yaml 3 via contentlayer2) with our own format strings"
+
+[[IgnoredVulns]]
+id = "GHSA-4qx8-w7c3-pj3p"
+ignoreUntil = 2026-12-23T00:00:00Z
+reason = "toml 4.x is only pulled in by the website build (contentlayer2 -> mdx-bundler -> remark-mdx-frontmatter) to parse our own docs frontmatter; the fix is only in 5.x, which remark-mdx-frontmatter 4 does not use"
+
+[[IgnoredVulns]]
+id = "GHSA-9j65-hcg3-gc64"
+ignoreUntil = 2026-12-23T00:00:00Z
+reason = "toml 4.x is only pulled in by the website build (contentlayer2 -> mdx-bundler -> remark-mdx-frontmatter) to parse our own docs frontmatter; the fix is only in 5.x, which remark-mdx-frontmatter 4 does not use"
+
+[[IgnoredVulns]]
+id = "GHSA-9qmh-m7c6-f92p"
+ignoreUntil = 2026-12-23T00:00:00Z
+reason = "toml 4.x is only pulled in by the website build (contentlayer2 -> mdx-bundler -> remark-mdx-frontmatter) to parse our own docs frontmatter; the fix is only in 5.x, which remark-mdx-frontmatter 4 does not use"
