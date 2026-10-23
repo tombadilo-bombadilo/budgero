@@ -19,10 +19,10 @@ func TestReconcileBlobPath_DoesNotRewindConcurrentUpload(t *testing.T) {
 		t.Fatalf("open: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if err := Migrate(db); err != nil {
+	if err = Migrate(db); err != nil {
 		t.Fatalf("migrate: %v", err)
 	}
-	if _, err := db.Exec(`PRAGMA foreign_keys = OFF`); err != nil {
+	if _, err = db.Exec(`PRAGMA foreign_keys = OFF`); err != nil {
 		t.Fatalf("pragma: %v", err)
 	}
 	ctx := context.Background()
@@ -31,7 +31,7 @@ func TestReconcileBlobPath_DoesNotRewindConcurrentUpload(t *testing.T) {
 
 	const spaceID = "space-reconcile-race"
 	legacyPath := filepath.Join(t.TempDir(), "missing-legacy.db")
-	if _, err := db.Exec(
+	if _, err = db.Exec(
 		`INSERT INTO budget_space_blobs (space_id, blob_path, current_hash, sync_version, size_bytes, encryption_key_version, updated_at)
 		 VALUES (?, ?, '', 0, 0, 1, datetime('now'))`,
 		spaceID, legacyPath,
@@ -59,7 +59,7 @@ func TestReconcileBlobPath_DoesNotRewindConcurrentUpload(t *testing.T) {
 	if after.SyncVersion != 1 || after.CurrentHash != "winner-hash" || after.SizeBytes != 42 {
 		t.Fatalf("sync state = (v%d, %q, %d), want (v1, winner-hash, 42)", after.SyncVersion, after.CurrentHash, after.SizeBytes)
 	}
-	if _, err := repo.UpdateSyncStateCAS(ctx, spaceID, "late-hash", 1, 0, 0); err == nil {
+	if _, err = repo.UpdateSyncStateCAS(ctx, spaceID, "late-hash", 1, 0, 0); err == nil {
 		t.Fatalf("second CAS against version 0 succeeded after reconcile")
 	}
 }
