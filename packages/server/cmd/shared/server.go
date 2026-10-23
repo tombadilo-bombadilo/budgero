@@ -18,6 +18,7 @@ import (
 
 	serverpkg "budgero-server"
 	"budgero-server/internal/adapter/driven/currencyapi"
+	"budgero-server/internal/adapter/driven/posthog"
 	"budgero-server/internal/adapter/driven/sqlite"
 	"budgero-server/internal/adapter/driven/sqlite/sqlc"
 	"budgero-server/internal/adapter/driven/updatecheck"
@@ -29,6 +30,7 @@ import (
 	emailpkg "budgero-server/internal/application/email"
 	"budgero-server/internal/appmeta"
 	"budgero-server/internal/config"
+	"budgero-server/internal/port/driven/external"
 
 	"github.com/joho/godotenv"
 	"github.com/labstack/echo/v4"
@@ -289,24 +291,34 @@ func WireServices(dbConn *sql.DB, cfg *config.Config, selfHost bool) *applicatio
 	queries := sqlc.New(dbConn)
 
 	repos := &application.Repositories{
-		User:            sqlite.NewUserRepository(queries),
-		Space:           sqlite.NewSpaceRepository(queries),
-		Credential:      sqlite.NewCredentialRepository(queries),
-		Entitlement:     sqlite.NewEntitlementRepository(queries),
-		Sync:            sqlite.NewSyncRepository(queries),
-		Push:            sqlite.NewPushRepository(queries),
-		ExchangeRate:    sqlite.NewExchangeRateRepository(queries),
-		Activity:        sqlite.NewActivityRepository(dbConn, queries),
-		Admin:           sqlite.NewAdminRepository(queries),
-		DatabaseBrowser: sqlite.NewDatabaseBrowserRepository(dbConn),
-		Feedback:        sqlite.NewFeedbackRepository(dbConn),
-		UpdatePing:      sqlite.NewUpdatePingRepository(dbConn),
-		UserPurge:       sqlite.NewUserPurgeRepository(dbConn),
+		User:             sqlite.NewUserRepository(queries),
+		Space:            sqlite.NewSpaceRepository(queries),
+		Credential:       sqlite.NewCredentialRepository(queries),
+		Entitlement:      sqlite.NewEntitlementRepository(queries),
+		Sync:             sqlite.NewSyncRepository(queries),
+		Push:             sqlite.NewPushRepository(queries),
+		ExchangeRate:     sqlite.NewExchangeRateRepository(queries),
+		Activity:         sqlite.NewActivityRepository(dbConn, queries),
+		Admin:            sqlite.NewAdminRepository(queries),
+		DatabaseBrowser:  sqlite.NewDatabaseBrowserRepository(dbConn),
+		Feedback:         sqlite.NewFeedbackRepository(dbConn),
+		UpdatePing:       sqlite.NewUpdatePingRepository(dbConn),
+		UserPurge:        sqlite.NewUserPurgeRepository(dbConn),
 		CurrencyProvider: currencyapi.New(cfg.External.CurrencyAPIBaseURL),
+		AnalyticsSender:  newAnalyticsSender(cfg, selfHost),
 		Queries:          queries,
 	}
 
 	return application.NewServices(repos, cfg)
+}
+
+// newAnalyticsSender returns the PostHog sender for cloud builds with a key,
+// and a no-op otherwise. Self-host never sends analytics, whatever the env says.
+func newAnalyticsSender(cfg *config.Config, selfHost bool) external.AnalyticsSender {
+	if selfHost || cfg.IsSelfHost() || strings.TrimSpace(cfg.Analytics.PostHogKey) == "" {
+		return posthog.Noop{}
+	}
+	return posthog.NewSender(cfg.Analytics.PostHogHost, strings.TrimSpace(cfg.Analytics.PostHogKey), posthog.DefaultTimeout)
 }
 
 func bootstrapInitialAdmin(ctx context.Context, dbConn *sql.DB, services *application.Services) {

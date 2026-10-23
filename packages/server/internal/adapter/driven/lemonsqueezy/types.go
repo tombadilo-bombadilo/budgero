@@ -179,6 +179,9 @@ type WebhookEvent struct {
 			CreatedAt string  `json:"created_at"`
 			UpdatedAt string  `json:"updated_at"`
 			TestMode  bool    `json:"test_mode"`
+			// BillingReason is set on subscription invoice events
+			// (subscription_payment_success): "initial", "renewal", "updated".
+			BillingReason string `json:"billing_reason"`
 		} `json:"attributes"`
 	} `json:"data"`
 }

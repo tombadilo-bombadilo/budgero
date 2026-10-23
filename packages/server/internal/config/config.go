@@ -22,6 +22,17 @@ type Config struct {
 	WebSocket    WebSocketConfig
 	Email        EmailConfig
 	UpdateCheck  UpdateCheckConfig
+	Analytics    AnalyticsConfig
+}
+
+// AnalyticsConfig configures server-side product analytics (cloud only).
+// Unset POSTHOG_KEY, or a self-host build, disables it: nothing is sent.
+type AnalyticsConfig struct {
+	// PostHogKey is the PostHog project API key (same project as the app).
+	PostHogKey string `env:"POSTHOG_KEY"`
+	// PostHogHost is the ingestion host. Empty selects the EU cloud
+	// (https://eu.i.posthog.com).
+	PostHogHost string `env:"POSTHOG_HOST"`
 }
 
 // ServerConfig contains HTTP server settings.
