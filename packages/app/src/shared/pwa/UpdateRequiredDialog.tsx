@@ -10,6 +10,7 @@ import {
   AlertDialogTitle,
 } from '@shared/ui/alert-dialog';
 import { subscribeUpdateRequired } from '@shared/lib/update-required';
+import { track } from '@shared/lib/analytics/track';
 import { useServiceWorkerUpdate } from './ServiceWorkerUpdateProvider';
 
 /**
@@ -22,6 +23,10 @@ export function UpdateRequiredDialog() {
   const { applyUpdate, checkForUpdates, isSupported } = useServiceWorkerUpdate();
 
   useEffect(() => subscribeUpdateRequired(({ reason: r }) => setReason(r)), []);
+  const shown = reason !== null;
+  useEffect(() => {
+    if (shown) track('update_required_shown');
+  }, [shown]);
 
   if (!reason) return null;
 

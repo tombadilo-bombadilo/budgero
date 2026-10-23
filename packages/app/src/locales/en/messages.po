@@ -2206,8 +2206,8 @@ msgid "<0>✉</0>Flying solo? Skip this step and invite people later.<1>All 5 se
 msgstr "<0>✉</0>Flying solo? Skip this step and invite people later.<1>All 5 seats are free, included in your plan.</1>"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "<0>Account Added</0>— when you create a new account"
-msgstr "<0>Account Added</0>— when you create a new account"
+#~ msgid "<0>Account Added</0>— when you create a new account"
+#~ msgstr "<0>Account Added</0>— when you create a new account"
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "<0>Activity</0>: Your spending (negative) or income (positive)"
@@ -2222,8 +2222,8 @@ msgid "<0>Assigned</0>: Money you manually allocated"
 msgstr "<0>Assigned</0>: Money you manually allocated"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "<0>Assignment Upserted</0>— when you assign money to a category"
-msgstr "<0>Assignment Upserted</0>— when you assign money to a category"
+#~ msgid "<0>Assignment Upserted</0>— when you assign money to a category"
+#~ msgstr "<0>Assignment Upserted</0>— when you assign money to a category"
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "<0>Available</0>: Ready for your next CC payment"
@@ -2238,8 +2238,8 @@ msgid "<0>Before you export:</0> in YNAB’s <1>Plan Settings</1>, set Date Form
 msgstr "<0>Before you export:</0> in YNAB’s <1>Plan Settings</1>, set Date Format to <2>2025-12-30</2>, Number Format to <3>123,456.78</3>and Currency Placement to “Don’t Show”. Skipping this can shift dates and break amounts. Details in the <4>import guide</4>."
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "<0>Budget Created</0>— when you create a new budget"
-msgstr "<0>Budget Created</0>— when you create a new budget"
+#~ msgid "<0>Budget Created</0>— when you create a new budget"
+#~ msgstr "<0>Budget Created</0>— when you create a new budget"
 
 #. placeholder {0}: preview.missingCategories .map((category) => `${category.categoryGroup} › ${category.category}`) .join(', ')
 #: src/pages/onboarding/steps/YnabImportStep.tsx
@@ -2247,16 +2247,16 @@ msgid "<0>Categories missing from Plan.csv:</0> {0}. Budgero will create them an
 msgstr "<0>Categories missing from Plan.csv:</0> {0}. Budgero will create them and report them when the import finishes."
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "<0>Category Added / Edited / Deleted</0>— when you manage categories"
-msgstr "<0>Category Added / Edited / Deleted</0>— when you manage categories"
+#~ msgid "<0>Category Added / Edited / Deleted</0>— when you manage categories"
+#~ msgstr "<0>Category Added / Edited / Deleted</0>— when you manage categories"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "<0>Category Group Added / Edited / Deleted</0>— when you manage category groups"
-msgstr "<0>Category Group Added / Edited / Deleted</0>— when you manage category groups"
+#~ msgid "<0>Category Group Added / Edited / Deleted</0>— when you manage category groups"
+#~ msgstr "<0>Category Group Added / Edited / Deleted</0>— when you manage category groups"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "<0>Checkout Started / Purchase</0>— subscription funnel events (plan, price)"
-msgstr "<0>Checkout Started / Purchase</0>— subscription funnel events (plan, price)"
+#~ msgid "<0>Checkout Started / Purchase</0>— subscription funnel events (plan, price)"
+#~ msgstr "<0>Checkout Started / Purchase</0>— subscription funnel events (plan, price)"
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "<0>CSV Files:</0>Downloads individual CSV files for each table (budgets, accounts, transactions, etc.) that can be opened in spreadsheet applications."
@@ -2305,8 +2305,8 @@ msgid "<0>Heads up:</0>YNAB’s “Age of Money”, scheduled transactions, and 
 msgstr "<0>Heads up:</0>YNAB’s “Age of Money”, scheduled transactions, and goals don’t carry over. Accounts, categories, assignments, and transaction history do."
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "<0>Imported from YNAB / Imported CSV/PDF</0>— when you import data into a budget"
-msgstr "<0>Imported from YNAB / Imported CSV/PDF</0>— when you import data into a budget"
+#~ msgid "<0>Imported from YNAB / Imported CSV/PDF</0>— when you import data into a budget"
+#~ msgstr "<0>Imported from YNAB / Imported CSV/PDF</0>— when you import data into a budget"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "<0>Manual overrides are protected</0>— transactions where you manually set the exchange rate in the table are never automatically changed."
@@ -2366,24 +2366,24 @@ msgid "<0>Security Warning:</0>Your encryption key can decrypt all your budget d
 msgstr "<0>Security Warning:</0>Your encryption key can decrypt all your budget data. Never share it publicly and store it securely."
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "<0>Shared Budget</0>— when you create a workspace invite"
-msgstr "<0>Shared Budget</0>— when you create a workspace invite"
+#~ msgid "<0>Shared Budget</0>— when you create a workspace invite"
+#~ msgstr "<0>Shared Budget</0>— when you create a workspace invite"
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "<0>SQLite Database:</0>Downloads the complete database file that can be imported into other SQLite-compatible tools or used as a backup."
 msgstr "<0>SQLite Database:</0>Downloads the complete database file that can be imported into other SQLite-compatible tools or used as a backup."
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "<0>Subscription Canceled</0>— cancellation reason (so we can improve the product)"
-msgstr "<0>Subscription Canceled</0>— cancellation reason (so we can improve the product)"
+#~ msgid "<0>Subscription Canceled</0>— cancellation reason (so we can improve the product)"
+#~ msgstr "<0>Subscription Canceled</0>— cancellation reason (so we can improve the product)"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "<0>Transaction Logged / Edited / Deleted</0>— when you add, modify, or remove a transaction"
-msgstr "<0>Transaction Logged / Edited / Deleted</0>— when you add, modify, or remove a transaction"
+#~ msgid "<0>Transaction Logged / Edited / Deleted</0>— when you add, modify, or remove a transaction"
+#~ msgstr "<0>Transaction Logged / Edited / Deleted</0>— when you add, modify, or remove a transaction"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "<0>Trial Started</0>— when your free trial begins"
-msgstr "<0>Trial Started</0>— when your free trial begins"
+#~ msgid "<0>Trial Started</0>— when your free trial begins"
+#~ msgstr "<0>Trial Started</0>— when your free trial begins"
 
 #. placeholder {0}: activeSpace?.display_name ? ( <> {' '} (<strong>{activeSpace.display_name}</strong>) </> ) : null
 #: src/pages/settings/DataManagementPage.tsx
@@ -2667,8 +2667,8 @@ msgid "Absolutely. You might keep a personal workspace and a shared household on
 msgstr "Absolutely. You might keep a personal workspace and a shared household one. Each workspace is independently encrypted and completely separate."
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Accept all"
-msgstr "Accept all"
+#~ msgid "Accept all"
+#~ msgstr "Accept all"
 
 #: src/pages/settings/components/WorkspaceRow.tsx
 msgid "Access blocked"
@@ -3409,8 +3409,8 @@ msgid "Also delete their Clerk accounts"
 msgstr "Also delete their Clerk accounts"
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Always on"
-msgstr "Always on"
+#~ msgid "Always on"
+#~ msgstr "Always on"
 
 #: src/pages/analytics/AnalyticsPage.tsx
 msgid "Am I growing?"
@@ -5173,8 +5173,8 @@ msgid "Choose what the assistant is allowed to do. Disable tools your model hand
 msgstr "Choose what the assistant is allowed to do. Disable tools your model handles poorly, or turn on raw SQL for a capable model."
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Choose what to allow"
-msgstr "Choose what to allow"
+#~ msgid "Choose what to allow"
+#~ msgstr "Choose what to allow"
 
 #. placeholder {0}: pendingCategoryName || searchTerm.trim()
 #: src/features/category-management/ui/CreateCategoryDialog.tsx
@@ -5354,7 +5354,6 @@ msgstr "Clipboard with checkmarks"
 #: src/features/rules/ui/RuleRunOverlay.tsx
 #: src/pages/admin/sql-explorer/AdminSqlExplorer.tsx
 #: src/pages/explorer-page/components/ReportsPanel.tsx
-#: src/shared/lib/analytics/klaro-config.ts
 #: src/shared/ui/dialog.tsx
 #: src/shared/ui/sheet.tsx
 msgid "Close"
@@ -5699,8 +5698,12 @@ msgid "Control interface animations and visual effects."
 msgstr "Control interface animations and visual effects."
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "Control what anonymous usage data Budgero collects."
-msgstr "Control what anonymous usage data Budgero collects."
+msgid "Control the product analytics Budgero collects."
+msgstr "Control the product analytics Budgero collects."
+
+#: src/pages/settings/components/PrivacySettingsCard.tsx
+#~ msgid "Control what anonymous usage data Budgero collects."
+#~ msgstr "Control what anonymous usage data Budgero collects."
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Control whether Budgero enforces the Ready to Assign limit when funding categories."
@@ -5748,8 +5751,8 @@ msgid "Converted to a transfer with {0}"
 msgstr "Converted to a transfer with {0}"
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Cookies on Budgero"
-msgstr "Cookies on Budgero"
+#~ msgid "Cookies on Budgero"
+#~ msgstr "Cookies on Budgero"
 
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Copied path"
@@ -7649,8 +7652,8 @@ msgid "Events & Tickets"
 msgstr "Events & Tickets"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "Events we track"
-msgstr "Events we track"
+#~ msgid "Events we track"
+#~ msgstr "Events we track"
 
 #: src/features/transactions/ui/add-transaction/recurring-form.ts
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
@@ -8930,8 +8933,8 @@ msgid "Height +"
 msgstr "Height +"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "Help improve Budgero by sending anonymous usage events. Off by default — nothing is collected unless you turn this on."
-msgstr "Help improve Budgero by sending anonymous usage events. Off by default — nothing is collected unless you turn this on."
+#~ msgid "Help improve Budgero by sending anonymous usage events. Off by default — nothing is collected unless you turn this on."
+#~ msgstr "Help improve Budgero by sending anonymous usage events. Off by default — nothing is collected unless you turn this on."
 
 #: src/pages/settings/components/GoalFundingSettingsCard.tsx
 msgid "Help the least-funded goals catch up toward the same percentage of this month’s target."
@@ -10442,8 +10445,8 @@ msgid "Manage Budget"
 msgstr "Manage Budget"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "Manage cookies"
-msgstr "Manage cookies"
+#~ msgid "Manage cookies"
+#~ msgstr "Manage cookies"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Manage custom exchange rates for your budget. Custom rates take priority over automatically fetched rates for transactions and account balances within the specified date range."
@@ -11527,6 +11530,10 @@ msgstr "No column metadata"
 msgid "No conversations yet"
 msgstr "No conversations yet"
 
+#: src/pages/settings/components/PrivacySettingsCard.tsx
+msgid "No cookies are used. We never collect amounts, balances, payee, category or account names, notes, your messages to the AI assistant, or anything else you type."
+msgstr "No cookies are used. We never collect amounts, balances, payee, category or account names, notes, your messages to the AI assistant, or anything else you type."
+
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
 msgid "No country found."
 msgstr "No country found."
@@ -12167,6 +12174,10 @@ msgstr "On budget"
 #: src/widgets/navigation/MobileBottomNav.tsx
 msgid "On Budget"
 msgstr "On Budget"
+
+#: src/pages/settings/components/PrivacySettingsCard.tsx
+msgid "On by default. Tells us which features you use, linked to your account ID, so we can improve Budgero. Turning it off also stops the events our server records."
+msgstr "On by default. Tells us which features you use, linked to your account ID, so we can improve Budgero. Turning it off also stops the events our server records."
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "On track"
@@ -12973,8 +12984,8 @@ msgid "Pick two different accounts for a transfer"
 msgstr "Pick two different accounts for a transfer"
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Pick which cookies are OK with you. Your encrypted budget data is never tracked either way. You can change this any time from Settings → Security."
-msgstr "Pick which cookies are OK with you. Your encrypted budget data is never tracked either way. You can change this any time from Settings → Security."
+#~ msgid "Pick which cookies are OK with you. Your encrypted budget data is never tracked either way. You can change this any time from Settings → Security."
+#~ msgstr "Pick which cookies are OK with you. Your encrypted budget data is never tracked either way. You can change this any time from Settings → Security."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Pick your path"
@@ -13278,8 +13289,8 @@ msgstr "Post transaction"
 #~ msgstr "Posted"
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "PostHog (EU)"
-msgstr "PostHog (EU)"
+#~ msgid "PostHog (EU)"
+#~ msgstr "PostHog (EU)"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/pages/analytics/AnalyticsPage.tsx
@@ -13441,8 +13452,8 @@ msgid "Processing..."
 msgstr "Processing..."
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Product analytics"
-msgstr "Product analytics"
+#~ msgid "Product analytics"
+#~ msgstr "Product analytics"
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Product Feedback"
@@ -13546,12 +13557,12 @@ msgid "Purchase date (when you paid)"
 msgstr "Purchase date (when you paid)"
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Purpose"
-msgstr "Purpose"
+#~ msgid "Purpose"
+#~ msgstr "Purpose"
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Purposes"
-msgstr "Purposes"
+#~ msgid "Purposes"
+#~ msgstr "Purposes"
 
 #: src/pages/settings/push-api/PushApiPage.tsx
 #: src/shared/model/nav-registry.ts
@@ -14070,8 +14081,8 @@ msgid "Regular expression"
 msgstr "Regular expression"
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Reject all"
-msgstr "Reject all"
+#~ msgid "Reject all"
+#~ msgstr "Reject all"
 
 #: src/features/currencies/ui/CurrencyConversionOverlay.tsx
 msgid "Reload Application"
@@ -14322,8 +14333,8 @@ msgid "Requesting..."
 msgstr "Requesting..."
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Required, no consent needed."
-msgstr "Required, no consent needed."
+#~ msgid "Required, no consent needed."
+#~ msgstr "Required, no consent needed."
 
 #: src/features/budget-management/ui/create-budget-form/RestoreBackupTab.tsx
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
@@ -14789,7 +14800,6 @@ msgstr "Same date and amount in this account"
 #: src/pages/explorer-page/ExplorerPage.tsx
 #: src/pages/settings/components/WorkspaceRow.tsx
 #: src/pages/settings/DataManagementPage.tsx
-#: src/shared/lib/analytics/klaro-config.ts
 msgid "Save"
 msgstr "Save"
 
@@ -14826,8 +14836,8 @@ msgid "Save Chat Settings"
 msgstr "Save Chat Settings"
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Save choices"
-msgstr "Save choices"
+#~ msgid "Save choices"
+#~ msgstr "Save choices"
 
 #: src/features/import/ui/steps/configure/TemplatesTab.tsx
 msgid "Save current settings as template"
@@ -15478,8 +15488,8 @@ msgid "Self-Host is free forever. If Budgero is useful to you, you can support i
 msgstr "Self-Host is free forever. If Budgero is useful to you, you can support its development with a one-time, pay-what-you-want donation."
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Self-hosted-friendly product analytics. Tracks event names and page views, never amounts or personal data."
-msgstr "Self-hosted-friendly product analytics. Tracks event names and page views, never amounts or personal data."
+#~ msgid "Self-hosted-friendly product analytics. Tracks event names and page views, never amounts or personal data."
+#~ msgstr "Self-hosted-friendly product analytics. Tracks event names and page views, never amounts or personal data."
 
 #: src/pages/settings/push-api/PushApiPage.tsx
 msgid "Send a JSON object with an encrypted payload:"
@@ -15548,8 +15558,8 @@ msgstr "Server URL"
 #~ msgstr "Server: {0}://{1}"
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "service"
-msgstr "service"
+#~ msgid "service"
+#~ msgstr "service"
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Service worker updates are not available in this build."
@@ -15564,8 +15574,8 @@ msgid "Service workers not supported in this browser."
 msgstr "Service workers not supported in this browser."
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "services"
-msgstr "services"
+#~ msgid "services"
+#~ msgstr "services"
 
 #. placeholder {0}: details?.activity?.windowDays ?? 365
 #: src/pages/admin/admin-users/user-details/ActivityTab.tsx
@@ -18851,8 +18861,8 @@ msgid "We could not apply this rule. Try again in a moment."
 msgstr "We could not apply this rule. Try again in a moment."
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "We do not collect transaction amounts, payee names, category names, account balances, or any other financial information. Your budget data stays entirely private."
-msgstr "We do not collect transaction amounts, payee names, category names, account balances, or any other financial information. Your budget data stays entirely private."
+#~ msgid "We do not collect transaction amounts, payee names, category names, account balances, or any other financial information. Your budget data stays entirely private."
+#~ msgstr "We do not collect transaction amounts, payee names, category names, account balances, or any other financial information. Your budget data stays entirely private."
 
 #: src/pages/settings/SecurityPage.tsx
 msgid "We keep your master password in volatile memory only. Refreshing or closing the tab will require it again."
@@ -18867,8 +18877,8 @@ msgid "We switched you to the new workspace automatically."
 msgstr "We switched you to the new workspace automatically."
 
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "We use a couple of cookies for product analytics and ad attribution. Your encrypted budget data is never tracked. Up to you whether to allow these."
-msgstr "We use a couple of cookies for product analytics and ad attribution. Your encrypted budget data is never tracked. Up to you whether to allow these."
+#~ msgid "We use a couple of cookies for product analytics and ad attribution. Your encrypted budget data is never tracked. Up to you whether to allow these."
+#~ msgstr "We use a couple of cookies for product analytics and ad attribution. Your encrypted budget data is never tracked. Up to you whether to allow these."
 
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "We were unable to collect your subscription payment. Update your billing details in the Lemon Squeezy portal below to restore access."
@@ -19032,8 +19042,8 @@ msgid "When enabled, this category won't show budget pace lines in spending char
 msgstr "When enabled, this category won't show budget pace lines in spending charts"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
-msgid "When enabled, we collect <0>only the event name</0>with no personal data, account information, or financial details. All analytics are completely anonymous."
-msgstr "When enabled, we collect <0>only the event name</0>with no personal data, account information, or financial details. All analytics are completely anonymous."
+#~ msgid "When enabled, we collect <0>only the event name</0>with no personal data, account information, or financial details. All analytics are completely anonymous."
+#~ msgstr "When enabled, we collect <0>only the event name</0>with no personal data, account information, or financial details. All analytics are completely anonymous."
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "When enabled, you can assign more money to categories than you have available in Ready to Assign. This will result in a negative Ready to Assign amount."
@@ -19079,9 +19089,17 @@ msgstr "Where this debt came from"
 msgid "Where your recurring transactions show up"
 msgstr "Where your recurring transactions show up"
 
+#: src/pages/settings/components/PrivacySettingsCard.tsx
+msgid "Whether it worked, with our own error code. Crash reports contain the error type and code location, never the message."
+msgstr "Whether it worked, with our own error code. Crash reports contain the error type and code location, never the message."
+
 #: src/shared/lib/analytics/klaro-config.ts
-msgid "Which features get used. No personal or financial data."
-msgstr "Which features get used. No personal or financial data."
+#~ msgid "Which features get used. No personal or financial data."
+#~ msgstr "Which features get used. No personal or financial data."
+
+#: src/pages/settings/components/PrivacySettingsCard.tsx
+msgid "Which features you use, with fixed options such as the setting you changed or the import type, and rough counts like “10-100 rows”."
+msgstr "Which features you use, with fixed options such as the setting you changed or the import type, and rough counts like “10-100 rows”."
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Which should I pick?"
@@ -19608,6 +19626,10 @@ msgstr "Your account has reached the 5-person collaborator limit across owned wo
 #: src/pages/settings/push-api/TokenStatusCard.tsx
 msgid "Your API Token"
 msgstr "Your API Token"
+
+#: src/pages/settings/components/PrivacySettingsCard.tsx
+msgid "Your app version, language, and whether you use the web or the installed app."
+msgstr "Your app version, language, and whether you use the web or the installed app."
 
 #: src/pages/settings/AutomationRulesPage.tsx
 msgid "Your automation rule is ready to run."

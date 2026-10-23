@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { track } from '@shared/lib/analytics/track';
 import type { PendingToolExecution } from '@features/ai/lib/tools/types';
 import type { ToolEvent } from '@features/ai/lib/chat-client';
 
@@ -78,3 +79,8 @@ export const useChatStore = create<ChatState>((set) => ({
   inputText: '',
   setInputText: (text) => set({ inputText: text }),
 }));
+
+// Analytics: count opening the assistant (never what is asked or answered).
+useChatStore.subscribe((state, prev) => {
+  if (state.isOpen && !prev.isOpen) track('ai_assistant_opened');
+});

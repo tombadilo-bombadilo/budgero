@@ -70,7 +70,10 @@ export function BankAutoSync() {
       const initial = await runtime.waitForInitialSync({ timeoutMs: 20_000 });
       if (cancelled || (initial.connected && !initial.synced) || !due()) return;
       try {
-        const result = await runBankSync(runtime, budgetId, { providers: dueProviders() });
+        const result = await runBankSync(runtime, budgetId, {
+          providers: dueProviders(),
+          trigger: 'auto',
+        });
         if (result.imported) {
           toast.success(
             plural(result.imported, {

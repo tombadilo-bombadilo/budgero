@@ -11,6 +11,7 @@ import { useUiStore } from '@shared/store/useUiStore';
 import { ClerkTokenSetup } from '@app/system/ClerkTokenSetup';
 import { useUser } from '@clerk/clerk-react';
 import { ClerkSignoutHandler } from '@features/auth/ui/ClerkSignoutHandler';
+import { AnalyticsGate } from '@app/system/AnalyticsGate';
 import { GlobalUndoHotkeys } from '@app/system/GlobalUndoHotkeys';
 import { ThemePresetProvider } from '@shared/contexts/ThemePresetContext';
 import { useRecurringNotifications } from '@features/recurring/api/useRecurringNotifications';
@@ -238,6 +239,7 @@ function App() {
           <ClerkTokenSetup>
             <CommonProviders>
               <ClerkSignoutHandler />
+              <AnalyticsGate />
               <AppContentAuthed />
             </CommonProviders>
           </ClerkTokenSetup>

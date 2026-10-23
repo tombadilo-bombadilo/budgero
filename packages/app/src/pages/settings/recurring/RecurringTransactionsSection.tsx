@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
 import { useMemo, useState } from 'react';
 import { Button } from '@shared/ui/button';
 import { Plus } from 'lucide-react';
@@ -264,6 +265,7 @@ export function RecurringTransactionsSection() {
         occurrenceId: occurrence.id,
         transactionDate,
       });
+      track('recurring_posted', { how: transactionDate ? 'post_now' : 'mark_ready' });
       const accountName = accountsById.get(result.occurrence.template.accountId)?.Name;
       toast.success(t`Transaction posted`, {
         description: accountName

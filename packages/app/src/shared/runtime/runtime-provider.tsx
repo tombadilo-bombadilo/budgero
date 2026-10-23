@@ -1,4 +1,6 @@
 import { useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
+import { syncErrorCode } from '@shared/lib/analytics/error-codes';
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
@@ -35,6 +37,7 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
       }
       if (status.syncError === lastShownError) return;
       lastShownError = status.syncError;
+      track('sync_error', { code: syncErrorCode(status.syncError) });
       toast.warning(t`Sync needs attention`, {
         description: status.syncError,
         duration: 15_000,

@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { trackSettingChanged } from '@shared/lib/analytics/track';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { Switch } from '@shared/ui/switch';
 import { Label } from '@shared/ui/label';
@@ -50,12 +51,14 @@ function RtaModeCard() {
     updateRtaMode.mutate(
       { id: budgetId, mode: next as RtaMode },
       {
-        onSuccess: () =>
+        onSuccess: () => {
+          trackSettingChanged('rta_mode', next as RtaMode);
           toast.success(
             next === 'monthly'
               ? t`Ready to Assign is now calculated monthly`
               : t`Ready to Assign is now calculated cumulatively`
-          ),
+          );
+        },
         onError: () => toast.error(t`Could not change the Ready to Assign calculation`),
       }
     );

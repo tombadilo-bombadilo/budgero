@@ -44,6 +44,7 @@ import AdminSqlExplorer from '@pages/admin/sql-explorer';
 import WarrantiesPage from '@pages/warranties/WarrantiesPage';
 import { hideStartupPreload } from '@/app/startup/preload';
 import { trackPageView } from '@shared/lib/analytics/analytics';
+import { trackFeatureRoute } from '@shared/lib/analytics/feature-usage';
 
 function PreloadRouteBridge() {
   const location = useLocation();
@@ -66,6 +67,7 @@ function PageviewTracker() {
 
   React.useEffect(() => {
     trackPageView(location.pathname);
+    trackFeatureRoute(location.pathname);
   }, [location.pathname]);
 
   return null;

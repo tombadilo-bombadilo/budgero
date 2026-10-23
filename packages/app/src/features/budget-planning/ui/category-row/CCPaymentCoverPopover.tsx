@@ -77,7 +77,7 @@ export function CCPaymentCoverPopover({
     setOpen(next);
   };
 
-  const addTransaction = useAddTransaction();
+  const addTransaction = useAddTransaction('cc_payment');
 
   const sourceAccount = sourceAccounts.find((a) => a.ID === sourceAccountId);
 

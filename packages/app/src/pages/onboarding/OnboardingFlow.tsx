@@ -32,6 +32,8 @@ import { getTodayISO } from '@shared/lib/date-utils';
 import { readPendingSpaceInvite } from '@features/budget-sharing/lib/pending-space-invite';
 import { hasCompleteCreditPaymentMappings } from '@features/budget-management/ui/create-budget-form/ynab-credit-payment-matching';
 import { YnabImportStatus } from '@features/budget-management/ui/create-budget-form/YnabImportStatus';
+import { track } from '@shared/lib/analytics/track';
+import { durationBucket, type OnboardingStepId } from '@shared/lib/analytics/events';
 import {
   INITIAL_STATE,
   ONBOARDING_STEPS,
@@ -154,6 +156,27 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   const curId = pathIds[safeStep];
   const cur = ONBOARDING_STEPS.find((s) => s.id === curId) ?? ONBOARDING_STEPS[0];
 
+  const startedAtRef = useRef<number | null>(null);
+  const analyticsStep = curId as OnboardingStepId;
+  const lastViewedStepRef = useRef<string | null>(null);
+  useEffect(() => {
+    // Once per step: picking a start mode changes the path, not the step.
+    startedAtRef.current ??= Date.now();
+    if (lastViewedStepRef.current === analyticsStep) return;
+    lastViewedStepRef.current = analyticsStep;
+    track('onboarding_step_viewed', { step: analyticsStep, path: activePath });
+  }, [analyticsStep, activePath]);
+  const trackStepCompleted = useCallback(() => {
+    track('onboarding_step_completed', { step: analyticsStep, path: activePath });
+  }, [analyticsStep, activePath]);
+  const completeOnboarding = useCallback(() => {
+    track('onboarding_finished', {
+      path: activePath,
+      duration_bucket: durationBucket(Date.now() - (startedAtRef.current ?? Date.now())),
+    });
+    onComplete();
+  }, [activePath, onComplete]);
+
   const canAdvance = useMemo(() => {
     switch (curId) {
       case 'start_mode':
@@ -212,8 +235,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   }, [curId, state]);
 
   const next = useCallback(() => {
+    trackStepCompleted();
     setStepIndex((s) => Math.min(s + 1, total - 1));
-  }, [total]);
+  }, [total, trackStepCompleted]);
   const back = useCallback(() => {
     setStepIndex((s) => Math.max(s - 1, 0));
   }, []);
@@ -338,7 +362,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       profileId: profile?.id,
       setThemeId,
       updateOnboardingAsync,
-      onComplete,
+      onComplete: completeOnboarding,
       setApplyStatus,
       setApplyError,
       onYnabProgress: handleYnabProgress,
@@ -351,7 +375,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
     activePath,
     handleYnabProgress,
     navigate,
-    onComplete,
+    completeOnboarding,
     profile?.id,
     queryClient,
     runtime,
@@ -383,11 +407,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   const primaryAction = isFinal
     ? () => {
         if (applyStatus === 'running') return;
+        trackStepCompleted();
         void applyOnboarding();
       }
     : launchesYnabImport
       ? () => {
           if (applyStatus === 'running') return;
+          trackStepCompleted();
           setStepIndex((current) => Math.min(current + 1, total - 1));
           void applyOnboarding();
         }

@@ -1,4 +1,5 @@
 import { msg } from '@lingui/core/macro';
+import { track } from '@shared/lib/analytics/track';
 import { useLingui } from '@lingui/react/macro';
 import React, { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
@@ -371,6 +372,7 @@ export default function StartupController() {
         queryClient,
         spaceId,
       });
+      track('workspace_switched');
       toast.success(t`Workspace switched`, {
         description: t`You are now viewing this workspace.`,
       });

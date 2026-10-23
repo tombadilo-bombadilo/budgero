@@ -1,4 +1,5 @@
 import { Plural, Trans, useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
 import { useGoalFundingSettings } from '@entities/budget/api/useGoalFundingSettings';
 import { FundingPriorityEditor } from '@features/category-management/ui/FundingPriorityEditor';
 import { CategoryNoteEditor } from '@features/category-management/ui/CategoryNoteEditor';
@@ -572,7 +573,8 @@ export function BudgetContextPanel({
 
   const handleApplyAssignments = (
     assignments: { categoryId: number; amount: number }[],
-    message: string
+    message: string,
+    onDone?: () => void
   ) => {
     if (!assignments.length) {
       toast.error(t`Select at least one category.`);
@@ -583,6 +585,7 @@ export function BudgetContextPanel({
       {
         onSuccess: () => {
           toast.success(message);
+          onDone?.();
         },
         onError: (error) => {
           toastError('Update failed', error, 'Please try again.');
@@ -641,7 +644,11 @@ export function BudgetContextPanel({
       selectedBudgetRows,
       settings.GoalFundingDistribution
     );
-    if (batchAssignments.length) handleApplyAssignments(batchAssignments, 'Added goal funding');
+    if (batchAssignments.length) {
+      handleApplyAssignments(batchAssignments, 'Added goal funding', () =>
+        track('goal_funded', { method: 'fund_goal' })
+      );
+    }
   };
 
   const handleReduceOverfunding = () => {
@@ -682,7 +689,8 @@ export function BudgetContextPanel({
     const total = sumMilli(assignments.map((assignment) => assignment.amount));
     handleApplyAssignments(
       batchAssignments,
-      `Funded ${assignments.length} goal${assignments.length === 1 ? '' : 's'} (${formatAmount(total)})`
+      `Funded ${assignments.length} goal${assignments.length === 1 ? '' : 's'} (${formatAmount(total)})`,
+      () => track('goal_funded', { method: 'fund_underfunded' })
     );
   };
 

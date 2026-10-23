@@ -72,6 +72,7 @@ export function InlineTransactionRow({
   const { t } = useLingui();
   const { handleAddTransaction, handleAddTransfer } = useAddTransactionHandler({
     onDialogClose: onClose,
+    entry: 'inline',
   });
   const {
     form,

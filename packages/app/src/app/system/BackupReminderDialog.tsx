@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { track } from '@shared/lib/analytics/track';
 import { useEffect, useState } from 'react';
 import {
   AlertDialog,
@@ -84,6 +85,7 @@ export default function BackupReminderDialog(props: BackupReminderDialogProps) {
       }
 
       downloadFile(dbData, filename, 'application/x-sqlite3');
+      track('backup_downloaded', { format: 'sqlite' });
       toast.success(t`Database backup downloaded`);
       if (!recordedOnServer) {
         queryClient.setQueryData<User | undefined>(['profile'], (prev) => {
