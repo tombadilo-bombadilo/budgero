@@ -79,7 +79,8 @@ const OFF_BUDGET_PARTNER_TRANSFERS = `(
 )`;
 
 // A transfer inflow on a credit account `t` is a card payment unless its
-// partner leg is on another on-budget debt account (credit, loan, mortgage):
+// partner leg is on another debt account (credit, loan, mortgage; on or off
+// budget):
 // a balance transfer moves debt, not cash, so it must not drain the card's CC
 // Payment category (#69). Money already set aside for the paid-down card stays
 // there; moving it to the other card's payment category is left to the user.
@@ -96,8 +97,7 @@ const partnerLeg = (t: string, account: string) => `(CASE
     WHERE p.TransferID = ${t}.TransferID AND p.TransferID != '' AND p.ID != ${t}.ID
       AND ${account})
 END)`;
-export const DEBT_PARTNER_LEG = (t: string) =>
-  partnerLeg(t, `pa.OnBudget = TRUE AND LOWER(pa.Type) IN ${DEBT_TYPES}`);
+export const DEBT_PARTNER_LEG = (t: string) => partnerLeg(t, `LOWER(pa.Type) IN ${DEBT_TYPES}`);
 
 // A card leg moving money out to an on-budget cash account (checking,
 // savings, cash, PayPal...): a cash advance (#67). The part of it that grows

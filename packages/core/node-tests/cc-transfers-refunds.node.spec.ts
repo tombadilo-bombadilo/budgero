@@ -137,7 +137,7 @@ function reads(c: Ctx, mode: Mode) {
 beforeAll(() => configureBudgetSnapshot({ enabled: true, verify: true }));
 afterAll(() => configureBudgetSnapshot({ enabled: undefined, verify: undefined }));
 
-describe('#69: transfers from another on-budget debt account are not card payments', () => {
+describe('#69: transfers from another debt account are not card payments', () => {
   for (const mode of ['cumulative', 'monthly'] as Mode[]) {
     it(`[${mode}] card, loan and split-mirror balance transfers leave payment categories alone`, async () => {
       const c = await setup();
@@ -180,12 +180,14 @@ describe('#69: transfers from another on-budget debt account are not card paymen
         expect(after.rta[m].readyToAssign).toBe(before.rta[m].readyToAssign);
       }
 
-      // Real payments still count: checking, an off-budget loan, an unpaired leg.
+      // Debt moved in from an off-budget loan is no payment either.
+      await transfer(c, offLoan, c.card, 20, '2024-03-06', 'bt-offloan');
+      expect(reads(c, mode).avail('2024-03', pay)).toBe(before.avail('2024-03', pay));
+      // Real payments still count: checking and an unpaired leg.
       await transfer(c, c.chk, c.card, 100, '2024-03-05', 'pay-chk');
-      await transfer(c, offLoan, c.card, 20, '2024-03-06', 'pay-offloan');
       await tx(c, c.card, c.transfers, 30, '2024-03-07', 'unpaired');
       const paid = reads(c, mode);
-      expect(paid.avail('2024-03', pay)).toBe(before.avail('2024-03', pay) - 150);
+      expect(paid.avail('2024-03', pay)).toBe(before.avail('2024-03', pay) - 130);
     });
   }
 });

@@ -37,17 +37,17 @@
 const NO_SPLITS =
   'AND NOT EXISTS (SELECT 1 FROM transaction_splits s2 WHERE s2.TransactionID = t.ID)';
 
-// Transfers from another on-budget debt account (balance transfers) are not
+// Transfers from another debt account (balance transfers) are not
 // card payments; same rule as DEBT_PARTNER_LEG in monthly-budgets/queries.ts.
 const DEBT_PARTNER_LEG = `(CASE
   WHEN t.TransferID GLOB 'split_transfer_*' THEN EXISTS (
     SELECT 1 FROM transactions p JOIN accounts pa ON pa.ID = p.AccountID
     WHERE p.ID = CAST(substr(t.TransferID, 16) AS INTEGER)
-      AND pa.OnBudget = TRUE AND LOWER(pa.Type) IN ('credit', 'loan', 'mortgage'))
+      AND LOWER(pa.Type) IN ('credit', 'loan', 'mortgage'))
   ELSE EXISTS (
     SELECT 1 FROM transactions p JOIN accounts pa ON pa.ID = p.AccountID
     WHERE p.TransferID = t.TransferID AND p.TransferID != '' AND p.ID != t.ID
-      AND pa.OnBudget = TRUE AND LOWER(pa.Type) IN ('credit', 'loan', 'mortgage'))
+      AND LOWER(pa.Type) IN ('credit', 'loan', 'mortgage'))
 END)`;
 
 /**
