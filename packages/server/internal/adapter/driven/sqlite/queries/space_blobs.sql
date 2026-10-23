@@ -30,6 +30,13 @@ UPDATE budget_space_blobs
 SET blob_path = ?, current_hash = ?, sync_version = ?, size_bytes = ?, updated_at = datetime('now')
 WHERE space_id = ?;
 
+-- name: UpdateSpaceBlobPath :exec
+-- Moves only the path, and only from the path the caller read, so it never
+-- rewinds the sync state a concurrent upload just advanced.
+UPDATE budget_space_blobs
+SET blob_path = ?, updated_at = datetime('now')
+WHERE space_id = ? AND blob_path = ?;
+
 -- name: DeleteSpaceBlob :exec
 DELETE FROM budget_space_blobs WHERE space_id = ?;
 

@@ -148,6 +148,25 @@ func (q *Queries) UpdateSpaceBlobMetadata(ctx context.Context, arg UpdateSpaceBl
 	return err
 }
 
+const updateSpaceBlobPath = `-- name: UpdateSpaceBlobPath :exec
+UPDATE budget_space_blobs
+SET blob_path = ?, updated_at = datetime('now')
+WHERE space_id = ? AND blob_path = ?
+`
+
+type UpdateSpaceBlobPathParams struct {
+	BlobPath   string `json:"blob_path"`
+	SpaceID    string `json:"space_id"`
+	BlobPath_2 string `json:"blob_path_2"`
+}
+
+// Moves only the path, and only from the path the caller read, so it never
+// rewinds the sync state a concurrent upload just advanced.
+func (q *Queries) UpdateSpaceBlobPath(ctx context.Context, arg UpdateSpaceBlobPathParams) error {
+	_, err := q.db.ExecContext(ctx, updateSpaceBlobPath, arg.BlobPath, arg.SpaceID, arg.BlobPath_2)
+	return err
+}
+
 const updateSpaceSyncState = `-- name: UpdateSpaceSyncState :one
 UPDATE budget_space_blobs
 SET current_hash = ?,
