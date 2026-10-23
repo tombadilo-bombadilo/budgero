@@ -26,6 +26,7 @@ import {
   CASH_ADVANCE_SPLIT,
   DEBT_PARTNER_LEG,
   SPLIT_OFF_BUDGET_LEGS,
+  SPLIT_OFF_BUDGET_LEGS_IN,
 } from '../queries.js';
 import { createLogger } from '../../../logger.js';
 import {
@@ -325,9 +326,10 @@ const transfersSql = (mf: string, all: boolean) => `
     }
   GROUP BY t.Month, t.CategoryID`;
 
-const splitOffBudgetSql = (months: string[] | null) => `
-  SELECT Month, IFNULL(SUM(Off), 0) AS Off, IFNULL(SUM(Inb), 0) AS Inb
-  FROM (${SPLIT_OFF_BUDGET_LEGS((x) => monthFilter(`${x}.Month`, months))}) GROUP BY Month`;
+const splitOffBudgetSql = (months: string[] | null) =>
+  months
+    ? SPLIT_OFF_BUDGET_LEGS_IN(`IN (${months.map((_, i) => `?${i + 2}`).join(', ')})`)
+    : SPLIT_OFF_BUDGET_LEGS(() => '');
 
 const assignmentsSql = (mf: string) => `
   SELECT Month, CategoryID, SUM(Amount) AS Amount FROM assignments
@@ -343,6 +345,8 @@ interface BudgetState {
   version: number;
   fold: { key: string; fold: MonthlyFold } | null;
   memo: Map<string, unknown>;
+  /** Derived caches of the transaction sums only (kept across assignment changes). */
+  txMemo: Map<string, unknown>;
 }
 
 class UnsupportedMonth extends Error {}
@@ -558,6 +562,7 @@ export class BudgetSnapshotStore {
       version: 0,
       fold: null,
       memo: new Map(),
+      txMemo: new Map(),
     };
   }
 
@@ -568,6 +573,7 @@ export class BudgetSnapshotStore {
       state.dirtyTx.clear();
       this.loadTx(budgetId, state.data, months);
       this.stats.refreshedMonths += months.length;
+      state.txMemo.clear();
     }
     if (state.dirtyAssigned.size > 0) {
       const months = [...state.dirtyAssigned];
@@ -670,7 +676,7 @@ export class BudgetSnapshotStore {
       addTo(tx.inBudgetTransfers, r.CategoryID, r.InBudget);
     }
 
-    for (const r of allRows<{ Month: string; Off: number; Inb: number }>(
+    for (const r of allRows<{ Month: string; Day: string | null; Off: number; Inb: number }>(
       this.db,
       splitOffBudgetSql(months),
       ...params
@@ -678,6 +684,7 @@ export class BudgetSnapshotStore {
       const tx = get(r.Month);
       tx.splitOffBudget += r.Off;
       tx.splitInBudget += r.Inb;
+      tx.splitLegs.push({ day: r.Day ?? '', off: r.Off, inb: r.Inb });
     }
 
     if (monthIndexes === null) data.tx.clear();
@@ -737,6 +744,16 @@ export class SnapshotHandle {
     const value = compute();
     if (this.state.memo.size > 256) this.state.memo.clear();
     this.state.memo.set(k, value);
+    return value;
+  }
+
+  /** Like memo, for values derived from the transaction sums alone. */
+  txMemo<T>(key: string, compute: () => T): T {
+    const k = `${this.store.currentMetaVersion}|${key}`;
+    if (this.state.txMemo.has(k)) return this.state.txMemo.get(k) as T;
+    const value = compute();
+    if (this.state.txMemo.size > 64) this.state.txMemo.clear();
+    this.state.txMemo.set(k, value);
     return value;
   }
 

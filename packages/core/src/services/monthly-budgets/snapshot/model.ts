@@ -59,9 +59,11 @@ export interface TxMonth {
   /** Legs with an off-budget non-debt partner, on-budget account, not excluded from RTA. */
   offBudgetTransfers: Map<CategoryKey, number>;
   inBudgetTransfers: Map<CategoryKey, number>;
-  /** SPLIT_OFF_BUDGET_LEGS: split-transfer legs to / from off-budget accounts. */
+  /** SPLIT_OFF_BUDGET_LEGS: split-transfer legs to / from off-budget accounts (totals). */
   splitOffBudget: number;
   splitInBudget: number;
+  /** The same legs one by one with their day (cumulative RTA is day-bounded). */
+  splitLegs: { day: string; off: number; inb: number }[];
 }
 
 export function emptyTxMonth(): TxMonth {
@@ -82,6 +84,7 @@ export function emptyTxMonth(): TxMonth {
     inBudgetTransfers: new Map(),
     splitOffBudget: 0,
     splitInBudget: 0,
+    splitLegs: [],
   };
 }
 
@@ -96,8 +99,7 @@ export function isEmptyTxMonth(m: TxMonth): boolean {
     m.income.size === 0 &&
     m.offBudgetTransfers.size === 0 &&
     m.inBudgetTransfers.size === 0 &&
-    m.splitOffBudget === 0 &&
-    m.splitInBudget === 0
+    m.splitLegs.length === 0
   );
 }
 

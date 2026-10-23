@@ -130,23 +130,47 @@ export const CASH_ADVANCE_SPLIT = (s: string, t: string) => `(CASE
 // money that left the budget, Inb = what came in. `bound(alias)` adds the
 // month / date filter on the on-budget row.
 export const SPLIT_OFF_BUDGET_LEGS = (bound: (alias: string) => string) => `
-  SELECT t.Month AS Month, s.OutflowConverted AS Off, s.InflowConverted AS Inb
-  FROM transaction_splits s JOIN transactions t ON t.ID = s.TransactionID
+  SELECT t.Month AS Month, DATE(t.Date) AS Day, s.OutflowConverted AS Off, s.InflowConverted AS Inb
+  FROM (SELECT DISTINCT m.TransferID AS TransferID, m.AccountID AS AccountID
+        FROM accounts oa CROSS JOIN transactions m ON m.AccountID = oa.ID
+        WHERE oa.OnBudget = FALSE AND LOWER(oa.Type) NOT IN ${DEBT_TYPES}
+          AND +m.TransferID GLOB 'split_transfer_*') mirror
+  CROSS JOIN transactions t ON t.ID = CAST(substr(mirror.TransferID, 16) AS INTEGER)
+  CROSS JOIN transaction_splits s ON s.TransactionID = t.ID
+  JOIN accounts src ON src.ID = t.AccountID
+  WHERE mirror.TransferID = 'split_transfer_' || t.ID || '_' || t.Date
+    AND s.TransferAccountID = mirror.AccountID
+    AND t.BudgetID = ?1 ${bound('t')} AND src.OnBudget = TRUE
+    AND t.ExcludeFromReadyToAssign = FALSE
+  UNION ALL
+  SELECT m.Month, DATE(m.Date), m.OutflowConverted, m.InflowConverted
+  FROM accounts pa CROSS JOIN transactions p ON p.AccountID = pa.ID
+  CROSS JOIN transactions m ON m.TransferID = 'split_transfer_' || p.ID || '_' || p.Date
+  JOIN accounts dst ON dst.ID = m.AccountID
+  WHERE pa.OnBudget = FALSE AND LOWER(pa.Type) NOT IN ${DEBT_TYPES}
+    AND m.TransferID != '' AND +m.BudgetID = ?1 ${bound('m')}
+    AND dst.OnBudget = TRUE AND m.ExcludeFromReadyToAssign = FALSE
+    AND +m.CategoryID IN (${categoriesInGroup('Transfers')})`;
+
+// SPLIT_OFF_BUDGET_LEGS for a few months (`months` is `IN (...)` on Month):
+// driven by those months' rows instead of every off-budget account's rows.
+export const SPLIT_OFF_BUDGET_LEGS_IN = (months: string) => `
+  SELECT t.Month AS Month, DATE(t.Date) AS Day, s.OutflowConverted AS Off, s.InflowConverted AS Inb
+  FROM transactions t CROSS JOIN transaction_splits s ON s.TransactionID = t.ID
   JOIN accounts src ON src.ID = t.AccountID
   JOIN accounts dst ON dst.ID = s.TransferAccountID
-  WHERE t.BudgetID = ?1 ${bound('t')} AND src.OnBudget = TRUE
+  WHERE t.Month ${months} AND t.BudgetID = ?1 AND src.OnBudget = TRUE
     AND dst.OnBudget = FALSE AND LOWER(dst.Type) NOT IN ${DEBT_TYPES}
     AND t.ExcludeFromReadyToAssign = FALSE
     AND EXISTS (SELECT 1 FROM transactions m
       WHERE m.TransferID = 'split_transfer_' || t.ID || '_' || t.Date AND m.TransferID != ''
         AND m.AccountID = s.TransferAccountID)
   UNION ALL
-  SELECT m.Month, m.OutflowConverted, m.InflowConverted
+  SELECT m.Month, DATE(m.Date), m.OutflowConverted, m.InflowConverted
   FROM transactions m JOIN accounts dst ON dst.ID = m.AccountID
   JOIN transactions p ON p.ID = CAST(substr(m.TransferID, 16) AS INTEGER)
   JOIN accounts pa ON pa.ID = p.AccountID
-  WHERE m.TransferID != '' AND m.TransferID >= 'split_transfer_' AND m.TransferID < 'split_transfer\`'
-    AND m.TransferID GLOB 'split_transfer_*' AND +m.BudgetID = ?1 ${bound('m')}
+  WHERE m.Month ${months} AND +m.BudgetID = ?1 AND +m.TransferID GLOB 'split_transfer_*'
     AND m.TransferID = 'split_transfer_' || p.ID || '_' || p.Date
     AND dst.OnBudget = TRUE AND pa.OnBudget = FALSE AND LOWER(pa.Type) NOT IN ${DEBT_TYPES}
     AND m.ExcludeFromReadyToAssign = FALSE
