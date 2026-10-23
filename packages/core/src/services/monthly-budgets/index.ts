@@ -92,6 +92,9 @@ export class MonthlyBudgetService {
     // Get CC Payment adjustments for YNAB-style tracking
     const ccAdjustments = src.getCCPaymentAdjustments(month, budgetId);
     const ccSpendingByCategoryAndAccount = src.getCCSpendingByCategoryAndAccount(month, budgetId);
+    const ccRefundsByCategoryAndAccount = isMonthly
+      ? new Map<number, Map<number, number>>()
+      : src.getCCRefundsByCategoryAndAccount(month, budgetId);
     const ccAccountToPaymentCategory = src.getCCAccountPaymentCategoryMap(budgetId);
     // Card balance per payment category — display-only context for the UI
     // (shows "owed" next to "set aside"; never feeds the Available math).
@@ -109,15 +112,29 @@ export class MonthlyBudgetService {
     const fundedByPaymentCategory = new Map<number, number>();
     const breakdownByPaymentCategory = new Map<number, FundingSource[]>();
 
-    if (ccSpendingByCategoryAndAccount.size > 0) {
+    // Refunds left over per card once they cancelled that card's purchases in
+    // the same category (net spending < 0): they take money back out of the
+    // card's CC Payment category, as monthly mode's refunds do (#68).
+    const leftoverRefundsByCard = new Map<number, number>();
+    if (ccSpendingByCategoryAndAccount.size > 0 || ccRefundsByCategoryAndAccount.size > 0) {
       for (const row of rows) {
-        const byAccount = ccSpendingByCategoryAndAccount.get(row.CategoryID);
-        if (!byAccount || ccAdjustments.has(row.CategoryID)) continue;
+        if (ccAdjustments.has(row.CategoryID)) continue;
+        const spending = ccSpendingByCategoryAndAccount.get(row.CategoryID);
+        const refunds = ccRefundsByCategoryAndAccount.get(row.CategoryID);
+        if (!spending && !refunds) continue;
+        const byAccount = spending ?? new Map<number, { current: number; prior: number }>();
 
-        // Total CC spending across all cards on this category
+        // Net CC spending per card on this category: a refund first cancels the
+        // same card's purchases; what is left of it is a refund to the card.
+        const netByCard = new Map<number, number>();
+        for (const [accountId, sp] of byAccount) netByCard.set(accountId, sp.current + sp.prior);
+        for (const [accountId, refund] of refunds ?? [])
+          netByCard.set(accountId, (netByCard.get(accountId) ?? 0) - refund);
         let totalCCSpending = 0;
-        for (const sp of byAccount.values()) {
-          totalCCSpending += sp.current + sp.prior;
+        for (const [accountId, net] of netByCard) {
+          if (net > 0) totalCCSpending += net;
+          else if (net < 0)
+            leftoverRefundsByCard.set(accountId, (leftoverRefundsByCard.get(accountId) ?? 0) - net);
         }
         if (totalCCSpending <= 0) continue;
 
@@ -128,8 +145,8 @@ export class MonthlyBudgetService {
         if (funded <= 0) continue;
 
         // Distribute funded amount proportionally per CC account
-        for (const [accountId, sp] of byAccount) {
-          const accountSpending = sp.current + sp.prior;
+        for (const accountId of byAccount.keys()) {
+          const accountSpending = netByCard.get(accountId) ?? 0;
           if (accountSpending <= 0) continue;
 
           const paymentCategoryId = ccAccountToPaymentCategory.get(accountId);
@@ -166,7 +183,7 @@ export class MonthlyBudgetService {
         if (adjustment) {
           // CC Payment model:
           // - Activity = Only CC payments (negative, money leaving the "envelope" to pay the card)
-          // - Available = Assigned + Funded (from budgeted CC spending) - Payments
+          // - Available = Assigned + Funded (from budgeted CC spending) - Refunded - Payments
           //
           // "Funded" only comes from categories that had budget to cover the CC spending
           // Overspent CC purchases don't fund this category - they're CC debt
@@ -177,17 +194,31 @@ export class MonthlyBudgetService {
           // Activity = negative payments (money spent from this envelope to pay CC)
           row.Activity = asMilli(-currentPayments || 0);
 
-          // Available = Assigned + Funded - Payments (all time)
+          // Available = Assigned + Funded - Refunded - Payments (all time)
           const priorAssigned = priorAssignedByCategory.get(row.CategoryID) || 0;
           const totalAssigned = priorAssigned + row.Assigned;
           const totalFunded = asMilli(fundedByPaymentCategory.get(row.CategoryID) || 0);
           const totalPayments = priorPayments + currentPayments;
 
-          row.Available = asMilli(totalAssigned + totalFunded - totalPayments);
+          // Refunds give back at most what the category holds, and the part of
+          // a refund that pushed the card into credit is cash, not a give-back.
+          let refundRequests = 0;
+          for (const [accountId, paymentCategoryId] of ccAccountToPaymentCategory) {
+            if (paymentCategoryId !== row.CategoryID) continue;
+            const leftover = leftoverRefundsByCard.get(accountId) ?? 0;
+            refundRequests +=
+              leftover - Math.min(leftover, Math.max(0, ccBalances.get(accountId) ?? 0));
+          }
+          const totalRefunded = asMilli(
+            Math.min(refundRequests, Math.max(0, totalAssigned + totalFunded - totalPayments))
+          );
+
+          row.Available = asMilli(totalAssigned + totalFunded - totalRefunded - totalPayments);
 
           // Attach funding breakdown for UI tooltip (per-card)
           row.fundingBreakdown = breakdownByPaymentCategory.get(row.CategoryID) || [];
           row.totalFunded = totalFunded;
+          if (totalRefunded > 0) row.totalRefunded = totalRefunded;
           row.cardBalance = asMilli(balanceByPaymentCategory.get(row.CategoryID) ?? 0);
         }
       }
@@ -228,6 +259,7 @@ export class MonthlyBudgetService {
             refunds: asMilli(calculation.refunds),
           };
           row.totalFunded = asMilli(calculation.funded);
+          delete row.totalRefunded; // monthly refunds are in paymentCalculation
           row.fundingBreakdown = [
             ...(currentFundingByPaymentCategory.get(row.CategoryID) ?? []),
           ].map(([categoryId, amount]) => ({

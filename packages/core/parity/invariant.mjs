@@ -21,7 +21,7 @@
 //   reval       revaluations in months <= M - RTA revaluations
 //   assign      RTA assignments - assignments <= M of the budget-row categories
 //   model       how Available departs from "assigned + activity so far":
-//               cumulative: CC payment rows hold assigned + funded - payments (transfers in,
+//               cumulative: CC payment rows hold assigned + funded - refunded - payments (transfers in,
 //                 except from another on-budget debt account) instead of
 //                 their own activity -> sum over CC rows of (activity <= M + payments <= M
 //                 - totalFunded); every other row must equal assigned + activity <= M
@@ -165,7 +165,9 @@ export function checkZeroBasedIdentity(side, budgetId, months, reads) {
       if (reads.mode === 'cumulative') {
         if (ccRows.has(r.CategoryID) && r.totalFunded !== undefined)
           model +=
-            (actByCat.get(r.CategoryID) ?? 0) + (payByPc.get(r.CategoryID) ?? 0) - r.totalFunded;
+            (actByCat.get(r.CategoryID) ?? 0) +
+            (payByPc.get(r.CategoryID) ?? 0) -
+            (r.totalFunded - (r.totalRefunded ?? 0));
       } else if (groups.get(r.CategoryID) === 'Credit Card Payments' && !ccRows.has(r.CategoryID)) {
         // unlinked CC-group categories keep their cumulative Available in monthly
         // mode: expected raw - Available = 0, nothing to add

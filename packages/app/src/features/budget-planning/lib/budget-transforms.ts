@@ -60,6 +60,7 @@ export interface BudgetRow {
   fundingBreakdown?: FundingSource[];
   /** For CC Payment categories: total funded from spending categories */
   totalFunded?: MilliUnits;
+  totalRefunded?: MilliUnits;
   paymentCalculation?: GetMonthlyBudgetRow['paymentCalculation'];
   /** For CC Payment categories: linked card's signed balance (negative = debt) */
   cardBalance?: MilliUnits;
@@ -180,6 +181,7 @@ export function transformBudgetRows(
         goalProgress,
         fundingBreakdown: item.fundingBreakdown,
         totalFunded: item.totalFunded,
+        totalRefunded: item.totalRefunded,
         paymentCalculation: item.paymentCalculation,
         cardBalance: item.cardBalance,
         cashActivity: item.CashActivity,

@@ -327,3 +327,76 @@ describe('#68: refund taken out of a CC Payment category is category cash (month
     expect(r.rta['2024-05'].readyToAssign).toBe(950);
   });
 });
+
+describe('cumulative: card refunds take funding back out of the CC Payment category', () => {
+  const run = async (
+    build: (c: Ctx, shop: number, other: number) => Promise<void>
+  ): Promise<{ pay: number; shop: number; other: number; refunded: number | undefined }> => {
+    const c = await setup();
+    const shop = category(c, 'Shopping');
+    const other = category(c, 'Other');
+    await build(c, shop, other);
+    const r = reads(c, 'cumulative');
+    const pc = paymentCategoryOf(c, c.card);
+    const row = r.budget['2024-05'].find((x) => x.CategoryID === pc)!;
+    return {
+      pay: row.Available,
+      shop: r.avail('2024-05', shop),
+      other: r.avail('2024-05', other),
+      refunded: row.totalRefunded,
+    };
+  };
+
+  it('funded purchase refunded later: card owes 0, payment category 0', async () => {
+    const out = await run(async (c, shop) => {
+      assign(c, shop, 100, '2024-01');
+      await tx(c, c.card, shop, -100, '2024-01-10');
+      await tx(c, c.card, shop, 100, '2024-02-10');
+    });
+    expect(out).toMatchObject({ pay: 0, shop: 100 });
+  });
+
+  it('partly funded purchase, partial refund: the refund cancels the purchase first', async () => {
+    const out = await run(async (c, shop) => {
+      assign(c, shop, 60, '2024-01');
+      await tx(c, c.card, shop, -100, '2024-01-10');
+      await tx(c, c.card, shop, 30, '2024-02-10');
+    });
+    // card owes 70: 60 funded, the category is 10 overspent
+    expect(out).toMatchObject({ pay: 60, shop: -10 });
+  });
+
+  it('unfunded purchase refunded: nothing to give back', async () => {
+    const out = await run(async (c, shop) => {
+      await tx(c, c.card, shop, -50, '2024-01-10');
+      await tx(c, c.card, shop, 50, '2024-02-10');
+    });
+    expect(out).toMatchObject({ pay: 0, shop: 0, refunded: undefined });
+  });
+
+  it('refund in another category takes back what the payment category holds', async () => {
+    const out = await run(async (c, shop, other) => {
+      assign(c, shop, 100, '2024-01');
+      await tx(c, c.card, shop, -100, '2024-01-10');
+      await tx(c, c.card, other, 100, '2024-02-10'); // card back to 0
+    });
+    expect(out).toMatchObject({ pay: 0, shop: 0, other: 100, refunded: 100 });
+  });
+
+  it('refund past the card debt: the part that puts the card in credit is cash', async () => {
+    const out = await run(async (c, shop, other) => {
+      assign(c, shop, 100, '2024-01');
+      await tx(c, c.card, shop, -100, '2024-01-10');
+      await tx(c, c.card, other, 150, '2024-02-10'); // card ends at +50
+    });
+    expect(out).toMatchObject({ pay: 0, other: 150, refunded: 100 });
+  });
+
+  it('refund onto a card in credit leaves money assigned to the payment category', async () => {
+    const out = await run(async (c, _shop, other) => {
+      assign(c, paymentCategoryOf(c, c.card), 100, '2024-01');
+      await tx(c, c.card, other, 100, '2024-02-10'); // card +100, owes nothing
+    });
+    expect(out).toMatchObject({ pay: 100, other: 100, refunded: undefined });
+  });
+});

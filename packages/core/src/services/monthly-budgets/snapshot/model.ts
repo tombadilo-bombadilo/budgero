@@ -44,6 +44,8 @@ export interface TxMonth {
    * budget (any OnBudget), split-aware; total and row count per category, card.
    */
   ccSpend: Map<CategoryKey, Map<number, { total: number; count: number }>>;
+  /** getCCRefundsByCategoryAndAccount: non-transfer card inflows per category, card. */
+  ccRefund: Map<CategoryKey, Map<number, number>>;
   /** Credit accounts (rows, not split-aware): SUM(Inflow - Outflow) per account. */
   cardNet: Map<number, number>;
   /** Credit accounts: transfer inflows (TransferID set, Inflow > 0) per account. */
@@ -63,6 +65,7 @@ export function emptyTxMonth(): TxMonth {
     creditAmount: [],
     creditByCategory: new Map(),
     ccSpend: new Map(),
+    ccRefund: new Map(),
     cardNet: new Map(),
     cardPayments: new Map(),
     income: new Map(),
@@ -76,6 +79,7 @@ export function isEmptyTxMonth(m: TxMonth): boolean {
     m.nonCredit.size === 0 &&
     m.creditAmount.length === 0 &&
     m.ccSpend.size === 0 &&
+    m.ccRefund.size === 0 &&
     m.cardNet.size === 0 &&
     m.cardPayments.size === 0 &&
     m.income.size === 0 &&
@@ -254,6 +258,48 @@ export function ccSpendingAt(
   for (const [cat, card, e] of sorted) if (e.rows > 0) ensure(cat, card).current = e.current;
   for (const [cat, card, e] of sorted) ensure(cat, card).prior = e.prior;
   return result;
+}
+
+/** Every month's card refunds as flat (month, category, card, amount) rows, for ccRefundsThrough. */
+export interface RefundRows {
+  month: number[];
+  category: number[];
+  card: number[];
+  amount: number[];
+}
+
+export function ccRefundsFlat(
+  data: BudgetData,
+  keepCategory: (cat: CategoryKey) => boolean
+): RefundRows {
+  const out: RefundRows = { month: [], category: [], card: [], amount: [] };
+  for (const [m, tx] of data.tx) {
+    for (const [cat, byCard] of tx.ccRefund) {
+      if (cat === null || !keepCategory(cat)) continue;
+      for (const [card, v] of byCard) {
+        out.month.push(m);
+        out.category.push(cat);
+        out.card.push(card);
+        out.amount.push(v);
+      }
+    }
+  }
+  return out;
+}
+
+/** getCCRefundsByCategoryAndAccount(M): refunds of every month <= M per (category, card). */
+export function ccRefundsThrough(
+  rows: RefundRows,
+  monthIndex: number
+): Map<number, Map<number, number>> {
+  const out = new Map<number, Map<number, number>>();
+  for (let i = 0; i < rows.month.length; i++) {
+    if (rows.month[i] > monthIndex) continue;
+    let o = out.get(rows.category[i]);
+    if (!o) out.set(rows.category[i], (o = new Map()));
+    add(o, rows.card[i], rows.amount[i]);
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------- monthly fold

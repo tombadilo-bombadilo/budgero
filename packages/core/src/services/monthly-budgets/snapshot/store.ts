@@ -240,19 +240,26 @@ const creditLinesSql = (mf: string) => `
 
 const ccSpendSql = (mf: string) => `
   SELECT x.Month AS Month, x.CategoryID AS CategoryID, x.AccountID AS AccountID,
-         SUM(x.OutflowConverted) AS Total, COUNT(*) AS N
+         SUM(x.Spend) AS Total, COUNT(CASE WHEN x.Spend > 0 THEN 1 END) AS N,
+         SUM(x.Refund) AS Refund
   FROM (
     SELECT t.Month AS Month, s.CategoryID AS CategoryID, t.AccountID AS AccountID,
-           s.OutflowConverted AS OutflowConverted
+           s.OutflowConverted AS Spend,
+           CASE WHEN ${REFUND('t')} THEN s.InflowConverted ELSE 0 END AS Refund
     FROM transactions t CROSS JOIN transaction_splits s ON s.TransactionID = t.ID
     WHERE t.AccountID IN (SELECT ID FROM accounts WHERE BudgetID = ?1 AND LOWER(Type) = 'credit')
-      AND t.BudgetID = ?1 ${mf} AND s.OutflowConverted > 0
+      AND t.BudgetID = ?1 ${mf}
+      AND (s.OutflowConverted > 0 OR (s.InflowConverted > 0 AND ${REFUND('t')}))
     UNION ALL
-    SELECT t.Month, t.CategoryID, t.AccountID, t.OutflowConverted
+    SELECT t.Month, t.CategoryID, t.AccountID, t.OutflowConverted,
+           CASE WHEN ${REFUND('t')} THEN t.InflowConverted ELSE 0 END
     FROM transactions t
     WHERE t.AccountID IN (SELECT ID FROM accounts WHERE BudgetID = ?1 AND LOWER(Type) = 'credit')
-      AND t.BudgetID = ?1 ${mf} AND t.OutflowConverted > 0 ${NO_SPLITS_FILTER}
+      AND t.BudgetID = ?1 ${mf}
+      AND (t.OutflowConverted > 0 OR (t.InflowConverted > 0 AND ${REFUND('t')})) ${NO_SPLITS_FILTER}
   ) x GROUP BY x.Month, x.CategoryID, x.AccountID`;
+// A card inflow that is a refund (getCCRefundsByCategoryAndAccount): not a transfer.
+const REFUND = (t: string) => `(${t}.TransferID IS NULL OR ${t}.TransferID = '')`;
 
 const cardsSql = (mf: string) => `
   SELECT t.Month AS Month, t.AccountID AS AccountID,
@@ -594,11 +601,19 @@ export class BudgetSnapshotStore {
       AccountID: number;
       Total: number;
       N: number;
+      Refund: number;
     }>(this.db, ccSpendSql(mf), ...params)) {
       const tx = get(r.Month);
-      let byCard = tx.ccSpend.get(r.CategoryID);
-      if (!byCard) tx.ccSpend.set(r.CategoryID, (byCard = new Map()));
-      byCard.set(r.AccountID, { total: r.Total, count: r.N });
+      if (r.N > 0) {
+        let byCard = tx.ccSpend.get(r.CategoryID);
+        if (!byCard) tx.ccSpend.set(r.CategoryID, (byCard = new Map()));
+        byCard.set(r.AccountID, { total: r.Total, count: r.N });
+      }
+      if (r.Refund > 0) {
+        let byCard = tx.ccRefund.get(r.CategoryID);
+        if (!byCard) tx.ccRefund.set(r.CategoryID, (byCard = new Map()));
+        byCard.set(r.AccountID, r.Refund);
+      }
     }
 
     for (const r of allRows<{ Month: string; AccountID: number; Net: number; Payments: number }>(

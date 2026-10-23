@@ -92,6 +92,8 @@ export interface GetMonthlyBudgetRow {
   debtBreakdown?: DebtSource[];
   /** For CC Payment categories: total funded from spending categories */
   totalFunded?: MilliUnits;
+  /** Cumulative mode: card refunds taken back out of this CC Payment category (all time). */
+  totalRefunded?: MilliUnits;
   /** Monthly-mode card envelope calculation; payments/refunds are positive deductions. */
   paymentCalculation?: {
     previousAvailable: MilliUnits;

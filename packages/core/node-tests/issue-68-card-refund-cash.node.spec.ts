@@ -226,11 +226,9 @@ describe('issue #68: card refund later spent from cash', () => {
     expect(ccPay(s, '2024-02', b)).toBe(asMilli(0));
   });
 
-  // Side finding (not #68): cumulative mode leaves CC Payment at 100 after the
-  // refund although the card owes 0, so envelopes exceed cash by 100. Different
-  // mechanism (cumulative funding counts gross card outflows; refunds never
-  // reduce it), left open: `it.fails` pins it until that is decided.
-  it.fails('[cumulative] side: refund does not reduce CC Payment available', async () => {
+  // Side finding: cumulative mode used to leave CC Payment at 100 after the
+  // refund although the card owes 0, so envelopes exceeded cash by 100.
+  it('[cumulative] side: refund does not reduce CC Payment available', async () => {
     const ctx = await setup('cumulative');
     const { services: s, budgetId: b, shopping, card } = ctx;
     s.monthlyBudgets.upsertMonthlyAssignment(shopping, asMilli(100), '2024-01', b);

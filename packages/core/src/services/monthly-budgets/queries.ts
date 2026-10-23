@@ -1754,6 +1754,54 @@ export class MonthlyBudgetQueries {
   }
 
   /**
+   * Card refunds per spending category and card through `month`: non-transfer
+   * inflows on credit accounts (any OnBudget), split-aware, same categories as
+   * getCCSpendingByCategoryAndAccount. Cumulative CC funding nets them against
+   * that card's spending in the category (#68 side finding).
+   */
+  getCCRefundsByCategoryAndAccount(
+    month: string,
+    budgetId: number
+  ): Map<number, Map<number, number>> {
+    const rows = allRows<{ CategoryID: number; AccountID: number; Refunds: number }>(
+      this.db,
+      `
+      SELECT x.CategoryID AS CategoryID, x.AccountID AS AccountID, SUM(x.Amount) AS Refunds
+      FROM (
+        SELECT s.CategoryID AS CategoryID, t.AccountID AS AccountID, s.InflowConverted AS Amount
+        FROM transactions t
+        CROSS JOIN transaction_splits s ON s.TransactionID = t.ID
+        WHERE t.AccountID IN (SELECT ID FROM accounts WHERE BudgetID = ?1 AND LOWER(Type) = 'credit')
+          AND t.BudgetID = ?1 AND t.Month <= ?2 AND s.InflowConverted > 0
+          AND (t.TransferID IS NULL OR t.TransferID = '')
+        UNION ALL
+        SELECT t.CategoryID, t.AccountID, t.InflowConverted
+        FROM transactions t
+        WHERE t.AccountID IN (SELECT ID FROM accounts WHERE BudgetID = ?1 AND LOWER(Type) = 'credit')
+          AND t.BudgetID = ?1 AND t.Month <= ?2 AND t.InflowConverted > 0
+          AND (t.TransferID IS NULL OR t.TransferID = '')
+          ${NO_SPLITS_FILTER}
+      ) x
+      WHERE +x.CategoryID IN (
+        SELECT c.ID FROM categories c
+        JOIN category_groups cg ON c.CategoryGroupID = cg.ID
+        WHERE cg.Name NOT IN ('Income', 'Transfers', 'Uncategorized', 'Credit Card Payments')
+      )
+      GROUP BY x.CategoryID, x.AccountID
+    `,
+      budgetId,
+      month
+    );
+    const result = new Map<number, Map<number, number>>();
+    for (const r of rows) {
+      let byCard = result.get(r.CategoryID);
+      if (!byCard) result.set(r.CategoryID, (byCard = new Map()));
+      byCard.set(r.AccountID, r.Refunds);
+    }
+    return result;
+  }
+
+  /**
    * GetCCAccountPaymentCategoryMap - Returns a map of CC accountId -> the
    * `cc_payment_category_id` stored in that account's metadata. Used to route
    * per-account funding to the correct CC Payment category.

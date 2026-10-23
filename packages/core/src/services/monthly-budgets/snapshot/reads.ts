@@ -19,6 +19,8 @@ import {
   activityByKindAt,
   activityInMonth,
   availableThrough,
+  ccRefundsFlat,
+  ccRefundsThrough,
   ccSpendingAt,
   overspendBefore,
   rollforwardAt,
@@ -41,6 +43,7 @@ export type MonthlyBudgetSource = Pick<
   | 'getActivityByAccountKind'
   | 'getCCPaymentAdjustments'
   | 'getCCSpendingByCategoryAndAccount'
+  | 'getCCRefundsByCategoryAndAccount'
   | 'getCCAccountPaymentCategoryMap'
   | 'getCCAccountBalances'
   | 'getAssignedPriorToMonthByCategory'
@@ -250,6 +253,25 @@ export class SnapshotMonthlyBudgetQueries implements MonthlyBudgetSource {
       const group = this.groupOf(cat);
       return group !== undefined && !excluded.has(group);
     });
+  }
+
+  getCCRefundsByCategoryAndAccount(
+    month: string,
+    _budgetId: number
+  ): Map<number, Map<number, number>> {
+    const index = this.monthIndex(month);
+    const excluded = new Set([
+      GROUP_INCOME,
+      GROUP_TRANSFERS,
+      GROUP_UNCATEGORIZED,
+      GROUP_CC_PAYMENTS,
+    ]);
+    const keep = (cat: CategoryKey) => {
+      const group = this.groupOf(cat);
+      return group !== undefined && !excluded.has(group);
+    };
+    const flat = this.snap.memo('ccRefundsFlat', () => ccRefundsFlat(this.data, keep));
+    return this.snap.memo(`ccRefunds:${index}`, () => ccRefundsThrough(flat, index));
   }
 
   getCCAccountBalances(month: string, _budgetId: number): Map<number, number> {
