@@ -2,7 +2,8 @@
  * Property-based fuzzing of the budget snapshot (fast-check, with shrinking).
  *
  * Random op sequences (back-dated edits, date / category / account moves across
- * months and years, splits with transfer lines, CC payments, deletes, category
+ * months and years, splits with transfer lines, CC payments, card refunds in a
+ * later month, card-to-card transfers, funded card purchases, deletes, category
  * delete / merge / group moves, on/off-budget toggles, account type changes,
  * RtaMode switches, FX rate edits, revaluations, restore of an exported copy,
  * writes that roll back, a second budget) run against one database; after every
@@ -15,7 +16,10 @@
  *   (c) transfer legs pair up (two legs, opposite signs, same date; split-transfer
  *       mirrors offset their split lines);
  *   (d) split lines sum to their parent;
- *   (e) the zero-based identity (parity/invariant.mjs) holds.
+ *   (e) the zero-based identity (parity/invariant.mjs) holds;
+ *   (f) cash conservation (parity/cash-invariant.mjs) holds, tolerating only the
+ *       open deviations in parity/cash-known.mjs (their hits are counted in
+ *       CASH_KNOWN and printed in long mode).
  *
  * Shared by budget-snapshot*.fuzz.node.spec.ts (one per starting RtaMode, so
  * the two run in parallel). Default: a short deterministic run (100 runs of up
@@ -36,6 +40,8 @@ import {
   type Services,
 } from '../src';
 import { checkZeroBasedIdentity } from '../parity/invariant.mjs';
+import { checkCashConservation } from '../parity/cash-invariant.mjs';
+import { KNOWN_DEVIATIONS } from '../parity/cash-known.mjs';
 
 const RUNS = Number(process.env.FUZZ_RUNS ?? 100);
 const MAX_STEPS = Number(process.env.FUZZ_STEPS ?? 6);
@@ -77,6 +83,8 @@ interface World {
 
 /** How often each known pre-existing violation was skipped (printed in long mode). */
 export const KNOWN = { splitParentAmountEdit: 0, splitParentFxReconversion: 0, mirrorDeleted: 0 };
+/** Month checks where a tolerated cash-conservation deviation was non-zero, per key. */
+export const CASH_KNOWN: Record<string, number> = {};
 
 let template: Uint8Array;
 let ids: Omit<World, 'adapter' | 's'>;
@@ -245,6 +253,39 @@ const opArb = fc.oneof(
       m: nat(MONTHS + 2),
       d: fc.integer({ min: 1, max: 28 }),
       amt: fc.integer({ min: 1, max: 5000 }),
+    }),
+  },
+  {
+    weight: 3,
+    arbitrary: fc.record({
+      k: fc.constant('cardRefund' as const),
+      pick: nat(500),
+      later: nat(3),
+      d: fc.integer({ min: 1, max: 28 }),
+      part: fc.integer({ min: 1, max: 4 }),
+    }),
+  },
+  {
+    weight: 2,
+    arbitrary: fc.record({
+      k: fc.constant('cardToCard' as const),
+      forward: fc.boolean(),
+      m: nat(MONTHS + 2),
+      d: fc.integer({ min: 1, max: 28 }),
+      amt: fc.integer({ min: 1, max: 5000 }),
+    }),
+  },
+  {
+    weight: 3,
+    arbitrary: fc.record({
+      k: fc.constant('fundedCardPurchase' as const),
+      cat: nat(20),
+      card: nat(1),
+      m: nat(MONTHS),
+      d: fc.integer({ min: 1, max: 28 }),
+      amt: fc.integer({ min: 1, max: 3000 }),
+      refund: nat(4),
+      later: fc.integer({ min: 1, max: 3 }),
     }),
   },
   {
@@ -431,6 +472,83 @@ async function apply(w: World, op: Op): Promise<void> {
       const date = dateOf(op.m, op.d);
       await s.transactions.addTransaction(asMilli(0), amount, from, tc, b, date, 'pay', tid);
       await s.transactions.addTransaction(amount, asMilli(0), card, tc, b, date, 'pay', tid);
+      return;
+    }
+    case 'cardRefund': {
+      // a refund of an earlier card purchase, same card and category, possibly months later
+      const cards = [...w.cards, w.acc2.cc];
+      const id = pickTx(
+        w,
+        op.pick,
+        `AccountID IN (${cards.join(',')}) AND OutflowConverted > 0 AND (TransferID IS NULL OR TransferID = '')
+         AND NOT EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = transactions.ID)`
+      );
+      if (!id) return;
+      const t = rowsOf<{ a: number; c: number; b: number; m: string; o: number }>(
+        w,
+        'SELECT AccountID a, CategoryID c, BudgetID b, Month m, OutflowNative o FROM transactions WHERE ID = ?',
+        id
+      )[0];
+      const amount = asMilli(Math.max(1, Math.floor((t.o * op.part) / 4)));
+      const date = `${shift(t.m, op.later)}-${String(op.d).padStart(2, '0')}`;
+      await s.transactions.addTransaction(
+        amount,
+        asMilli(0),
+        t.a,
+        t.c,
+        t.b,
+        date,
+        'refund',
+        '',
+        'P'
+      );
+      return;
+    }
+    case 'cardToCard': {
+      // balance transfer: debt moves from one card to the other, no cash moves
+      const [from, to] = op.forward ? w.cards : [...w.cards].reverse();
+      const tc = transfersCat(w, w.b1);
+      const amount = asMilli(op.amt * 100);
+      const tid = `fuzz_${Math.random().toString(36).slice(2)}`;
+      const date = dateOf(op.m, op.d);
+      await s.transactions.addTransaction(asMilli(0), amount, from, tc, w.b1, date, 'bt', tid);
+      await s.transactions.addTransaction(amount, asMilli(0), to, tc, w.b1, date, 'bt', tid);
+      return;
+    }
+    case 'fundedCardPurchase': {
+      // assign, buy on a card in the same month (funded), optionally refund it later
+      const c = cat1(op.cat);
+      const month = shift(BASE_MONTH, op.m);
+      const amount = asMilli(op.amt * 100);
+      const assigned = s.monthlyBudgets.getMonthlyAssignmentValue(c, month, w.b1);
+      s.monthlyBudgets.upsertMonthlyAssignment(c, asMilli(assigned + amount), month, w.b1);
+      const card = w.cards[op.card];
+      await s.transactions.addTransaction(
+        asMilli(0),
+        amount,
+        card,
+        c,
+        w.b1,
+        dateOf(op.m, op.d),
+        'buy',
+        '',
+        'P'
+      );
+      if (op.refund > 0) {
+        const back = asMilli(Math.max(1, Math.floor((amount * op.refund) / 4)));
+        const date = dateOf(op.m + op.later, op.d);
+        await s.transactions.addTransaction(
+          back,
+          asMilli(0),
+          card,
+          c,
+          w.b1,
+          date,
+          'refund',
+          '',
+          'P'
+        );
+      }
       return;
     }
     case 'split': {
@@ -648,6 +766,21 @@ function checkAll(w: World, label: string, full = false): void {
         rta: rta as never,
       });
       expect(violations, `${label}: zero-based identity, budget ${b}, ${mode}`).toEqual([]);
+      // (f) cash conservation
+      const cash = checkCashConservation(
+        { adapter: w.adapter },
+        b,
+        months,
+        {
+          mode,
+          budget: budget as never,
+          rta: rta as never,
+        },
+        { known: KNOWN_DEVIATIONS }
+      );
+      expect(cash.violations, `${label}: cash conservation, budget ${b}, ${mode}`).toEqual([]);
+      for (const k of new Set(cash.known.map((x) => x.key)))
+        CASH_KNOWN[k] = (CASH_KNOWN[k] ?? 0) + 1;
     }
     w.adapter.exec(`UPDATE budgets SET RtaMode='${saved}' WHERE ID=${b}`);
   }
@@ -777,7 +910,7 @@ export function defineSnapshotFuzz(
       if (process.env.FUZZ_KNOWN_FILE)
         appendFileSync(
           process.env.FUZZ_KNOWN_FILE,
-          `${JSON.stringify({ name, runs: RUNS, ...KNOWN })}\n`
+          `${JSON.stringify({ name, runs: RUNS, ...KNOWN, cash: CASH_KNOWN })}\n`
         );
     });
 
