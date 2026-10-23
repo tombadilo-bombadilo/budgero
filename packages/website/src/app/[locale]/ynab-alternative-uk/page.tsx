@@ -115,9 +115,9 @@ const makeComparisonData = (
   },
   {
     feature: t('comparisonData_telemetry_tracking'),
-    budgero: t('comparisonData_opt_in_only'),
+    budgero: t('comparisonData_no_ads_no_cookies'),
     ynab: true,
-    budgeroNote: t('comparisonData_no_telemetry_unless_you_explicitly_allow'),
+    budgeroNote: t('comparisonData_cookieless_analytics_you_can_switch_off'),
     ynabNote: t('comparisonData_third_party_analytics_by_default'),
   },
   {
