@@ -296,9 +296,9 @@ describe('#68: refund taken out of a CC Payment category is category cash (month
     expect(r.rta['2024-05'].readyToAssign).toBe(900); // checking 850 + card 50
   });
 
-  it('several categories refund to one card: realized refund goes by ascending CategoryID', async () => {
+  it('several categories refund to one card: every refund comes back in full', async () => {
     const c = await setup();
-    const x = category(c, 'X'); // lower ID
+    const x = category(c, 'X');
     const y = category(c, 'Y');
     const pay = paymentCategoryOf(c, c.card);
     assign(c, x, 60, '2024-01');
@@ -309,11 +309,11 @@ describe('#68: refund taken out of a CC Payment category is category cash (month
     await tx(c, c.chk, x, -60, '2024-03-10');
     await tx(c, c.chk, y, -40, '2024-03-10');
     const r = reads(c, 'monthly');
-    // 60 of the 100 refunded comes back (all the payment category held): X
-    // first, up to its 60; Y gets nothing, so its later spend is cash overspend.
-    expect(r.avail('2024-02', pay)).toBe(0);
+    // 100 refunded, the payment category held 60: it ends February at -40, which
+    // is charged in March; both refunds are cash, so spending them is not.
+    expect(r.avail('2024-02', pay)).toBe(-40);
     expect(r.rta['2024-05'].priorCashOverspendDetails).toEqual([
-      expect.objectContaining({ categoryId: y, month: '2024-03', amount: 40 }),
+      expect.objectContaining({ categoryId: pay, month: '2024-02', amount: 40 }),
     ]);
     expect(r.rta['2024-05'].readyToAssign).toBe(900); // income 1000 - X 60 - overspend 40
   });
@@ -598,19 +598,37 @@ describe('monthly: a card sending its positive balance off budget', () => {
   });
 });
 
-describe('monthly: refund money that was never cash', () => {
-  it('funding a card purchase from it is charged like spending it from cash', async () => {
+describe('card refunds always come out of the CC Payment category (YNAB-observed)', () => {
+  for (const later of ['purchase', 'none'] as const)
+    it(`[monthly] refund of an unfunded purchase is charged next month (later: ${later})`, async () => {
+      const c = await setup();
+      const shop = category(c, 'Shopping');
+      const pay = paymentCategoryOf(c, c.card);
+      await tx(c, c.card, shop, -50, '2024-01-10'); // unfunded
+      await tx(c, c.card, shop, 50, '2024-02-10'); // refund: Shopping +50, CC Payment -50
+      if (later === 'purchase') {
+        await tx(c, c.card, shop, -50, '2024-03-10'); // funded from the refund money
+        await transfer(c, c.chk, c.card, 50, '2024-04-10', 'pay');
+      }
+      const r = reads(c, 'monthly');
+      expect(r.avail('2024-02', pay)).toBe(-50);
+      expect(r.rta['2024-02'].readyToAssign).toBe(1000);
+      expect(r.rta['2024-03'].readyToAssign).toBe(950);
+      expect(r.rta['2024-05'].readyToAssign).toBe(950);
+      expect(r.rta['2024-05'].priorCashOverspendDetails).toEqual([
+        expect.objectContaining({ categoryId: pay, month: '2024-02', amount: 50 }),
+      ]);
+    });
+
+  it('[cumulative] the CC Payment category goes negative and stays', async () => {
     const c = await setup();
     const shop = category(c, 'Shopping');
-    await tx(c, c.card, shop, -50, '2024-01-10'); // unfunded
-    await tx(c, c.card, shop, 50, '2024-02-10'); // refunded: Shopping +50, nothing drawn
-    await tx(c, c.card, shop, -50, '2024-03-10'); // funded from that refund money
-    await transfer(c, c.chk, c.card, 50, '2024-04-10', 'pay'); // card paid from checking
-    const r = reads(c, 'monthly');
-    // checking 950, card 0: envelopes 950
-    expect(r.rta['2024-05'].readyToAssign).toBe(950);
-    expect(r.rta['2024-05'].priorCashOverspendDetails).toEqual([
-      expect.objectContaining({ categoryId: shop, month: '2024-03', amount: 50 }),
-    ]);
+    const pay = paymentCategoryOf(c, c.card);
+    await tx(c, c.card, shop, -50, '2024-01-10');
+    await tx(c, c.card, shop, 30, '2024-02-10'); // nets against the purchase: no draw
+    const other = category(c, 'Other');
+    await tx(c, c.card, other, 20, '2024-02-12'); // leftover refund in another category
+    const r = reads(c, 'cumulative');
+    expect(r.avail('2024-05', pay)).toBe(-20);
   });
 });

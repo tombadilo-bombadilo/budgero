@@ -494,7 +494,6 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
     displayed.set(categoryId, values);
     const base = new Float64Array(months);
     cashBase.set(categoryId, base);
-    let monthFunded = 0;
     let carryTotal = 0;
     for (let m = presence.get(categoryId)!; m <= last; m++) {
       const tx = data.tx.get(m);
@@ -521,7 +520,6 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
         0,
         availableToCover + [...refunds.values()].reduce((sum, value) => sum + value, 0)
       );
-      monthFunded = 0;
       for (const c of bought) {
         const paymentCatId = cardToPaymentCat.get(c.card);
         if (!paymentCatId) continue;
@@ -532,7 +530,6 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
           if (!list) funding.set(m, (list = []));
           list.push({ paymentCategoryId: paymentCatId, categoryId, amount: funded });
           series(fundedByPc, paymentCatId)[m - first] += funded;
-          monthFunded += funded;
         }
         if (c.spend > funded) {
           let byKey = debt.get(paymentCatId);
@@ -556,8 +553,7 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
 
       const shown = carryTotal + assigned + cash + credit;
       values[m - first] = shown;
-      // cash after sending the funding of card purchases to CC Payment (see the cash pass)
-      base[m - first] = assigned + cash - monthFunded;
+      base[m - first] = assigned + cash;
       carryTotal = Math.max(0, shown);
     }
   }
@@ -594,22 +590,12 @@ export function foldMonthly(data: BudgetData, meta: FoldMeta): MonthlyFold {
       const assigned = isPaymentGroup ? (data.assigned.get(m)?.get(paymentCatId) ?? 0) : 0;
       const funded = fundedArr ? fundedArr[i] : 0;
       const payments = paymentsArr ? paymentsArr[i] : 0;
-      const refunded = Math.min(
-        refundsArr ? refundsArr[i] : 0,
-        Math.max(0, carry + assigned + funded)
-      );
-      // Realized refund back to the categories: ascending CategoryID, each up
-      // to its own refund (as computeMonthlyRollforward).
-      const requests = refunded > 0 ? refundRequests.get(paymentCatId)?.get(m) : undefined;
-      if (requests) {
-        let left = refunded;
-        for (const r of [...requests].sort((a, b) => a.categoryId - b.categoryId)) {
-          const share = Math.min(r.amount, left);
-          if (share <= 0) break;
-          left -= share;
-          series(realizedRefunds, r.categoryId)[i] += share;
-        }
-      }
+      // Refunds are taken out in full, even past 0 (YNAB-observed, see
+      // computeMonthlyRollforward): each category gets all of its refund as cash.
+      const refunded = refundsArr ? refundsArr[i] : 0;
+      if (refunded > 0)
+        for (const r of refundRequests.get(paymentCatId)?.get(m) ?? [])
+          series(realizedRefunds, r.categoryId)[i] += r.amount;
       const activity = funded - payments - refunded;
       const raw = carry + assigned + activity;
       s.previousAvailable[i] = carry;

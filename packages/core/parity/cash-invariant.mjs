@@ -58,15 +58,17 @@
 //                   purchases first, leftover refunds add to the cover), reference
 //                   CC Payment balances (carry + assigned + funded - payments - drawn,
 //                   floored at 0 each month; payments = card inflows from on-budget
-//                   cash or off-budget non-debt accounts); a leftover refund is drawn
-//                   from its card's payment balance (up to carry + assigned + funded).
+//                   cash or off-budget non-debt accounts); a leftover refund's credit
+//                   part is drawn from its card's payment balance IN FULL, even past
+//                   0. YNAB-observed (ynab-cc-transfers-repro.json cases 16-18): the
+//                   payment category goes negative and, like any overspent category,
+//                   is charged to RTA the next month and reset (that balances by
+//                   itself); the part of a refund that puts the card in credit is
+//                   cash (case 19).
 //                     unfunded(M): this month's credit spending that no envelope
 //                       covered (it is reset next month and becomes card debt)
-//                     phantom(M): refund credit parts that were NOT drawn from a
-//                       payment balance (they reduce unfunded debt, no cash backs
-//                       them), still in their category. Phantom money that leaves
-//                       the category (displayed balance falls below it at a month
-//                       end) must be charged to RTA the next month as cash overspend.
+//                     phantom(M): refund credit parts not drawn because the card has
+//                       no CC Payment category, still in their category.
 //   rtaAsOfToday    cumulative only: Ready to Assign is computed for today (income,
 //                   transfers, cash advances, revaluations dated <= today, every assignment); the
 //                   difference to the same parts as of the end of M
@@ -74,8 +76,8 @@
 //                   spending netted per card: funded = min(net purchases, max(0,
 //                   assigned + cash activity + leftover refunds)) split per card;
 //                   a card's leftover refunds are then drawn from its CC Payment
-//                   balance (assigned + funded - payments, floored at 0), except the
-//                   part that put the card in credit
+//                   in full (YNAB-observed, as in monthly mode; no reset, it may
+//                   stay negative), except the part that put the card in credit
 //
 // Known model deviations (opts.known; added only when listed, so a listed one
 // that is fixed makes the check fail until it is removed from the list):
@@ -497,14 +499,9 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
         const carry = payCarry.get(pc) ?? 0;
         const list = byPc.get(pc) ?? [];
         const total = list.reduce((t, x) => t + x.amount, 0);
-        let drawable = Math.min(total, Math.max(0, carry + A + f));
-        for (const x of list) {
-          const d = Math.min(x.amount, drawable);
-          drawable -= d;
-          add(created, x.cat, x.amount - d);
-        }
-        const drawn = Math.min(total, Math.max(0, carry + A + f));
-        payCarry.set(pc, Math.max(0, carry + A + f - pay - drawn));
+        // YNAB-observed: drawn in full, even past 0 (a negative payment balance
+        // is charged next month and resets, which balances by itself)
+        payCarry.set(pc, Math.max(0, carry + A + f - pay - total));
       }
       let phantom = 0;
       for (const c of spendingCats) {
@@ -534,21 +531,18 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
     // (a refund first cancels the same card's purchases in the category); cards
     // with net spending are funded from assigned + cash + the category's leftover
     // refunds, proportionally per card (rounded per card, as displayed); a card's
-    // leftover refunds take money back out of its CC Payment balance (assigned +
-    // funded - payments, floored at 0), except the part that put the card in
-    // credit (it is the card's positive balance).
+    // leftover refunds take money back out of its CC Payment in full (it may go
+    // negative), except the part that put the card in credit (it is the card's
+    // positive balance).
     const cum = new Map(); // cat -> { A, act, cash, credit, out: Map(card -> outflow), net }
-    const pcAssigned = new Map(); // payment category -> assigned so far
     const cardBalance = new Map(); // card -> balance so far
-    const cardPaid = new Map(); // card -> payments so far
     const months2 = new Set(axis);
     for (const m of axis) {
-      for (const pc of pcSet) add(pcAssigned, pc, asg.get(pc)?.get(m) ?? 0);
-      for (const [card, byM] of payments) add(cardPaid, card, byM.get(m) ?? 0);
       for (const l of lines) if (l.m === m && l.card) add(cardBalance, l.acc, l.amt);
       for (const c of spendingCats) {
         let t = cum.get(c);
-        if (!t) cum.set(c, (t = { A: 0, act: 0, cash: 0, credit: 0, out: new Map(), net: new Map() }));
+        if (!t)
+          cum.set(c, (t = { A: 0, act: 0, cash: 0, credit: 0, out: new Map(), net: new Map() }));
         const s = series.get(c)?.get(m);
         t.A += asg.get(c)?.get(m) ?? 0;
         if (s) {
@@ -562,7 +556,6 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
       if (!months2.has(m)) continue;
       let spending = 0;
       let gross = 0;
-      const fundedPc = new Map();
       const leftoverCard = new Map();
       for (const c of spendingCats) {
         const t = cum.get(c);
@@ -582,7 +575,6 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
             if (v <= 0 || !cardToPc.has(card)) continue;
             const share = Math.round(fTotal * (v / P));
             fRef += share;
-            add(fundedPc, cardToPc.get(card), share);
           }
         spending += t.credit + fRef;
         // model mirror: gross card outflows, proportional per card, rounded
@@ -602,11 +594,8 @@ export function checkCashConservation(side, budgetId, months, reads, opts = {}) 
         if (!pc) continue;
         add(requests, pc, v - Math.min(v, Math.max(0, cardBalance.get(card) ?? 0)));
       }
-      for (const [pc, want] of requests) {
-        let paid = 0;
-        for (const [card, p] of cardToPc) if (p === pc) paid += cardPaid.get(card) ?? 0;
-        const holds = (pcAssigned.get(pc) ?? 0) + (fundedPc.get(pc) ?? 0) - paid;
-        spending -= Math.min(want, Math.max(0, holds));
+      for (const want of requests.values()) {
+        spending -= want; // drawn in full (YNAB-observed), may leave it negative
       }
       refByMonth.set(m, { spending, gross });
     }

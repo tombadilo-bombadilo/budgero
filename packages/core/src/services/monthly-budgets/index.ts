@@ -200,8 +200,8 @@ export class MonthlyBudgetService {
           const totalFunded = asMilli(fundedByPaymentCategory.get(row.CategoryID) || 0);
           const totalPayments = priorPayments + currentPayments;
 
-          // Refunds give back at most what the category holds, and the part of
-          // a refund that pushed the card into credit is cash, not a give-back.
+          // Leftover refunds always come back out of the card's CC Payment, even
+          // past 0 (YNAB-observed); the part that put the card in credit is cash.
           let refundRequests = 0;
           for (const [accountId, paymentCategoryId] of ccAccountToPaymentCategory) {
             if (paymentCategoryId !== row.CategoryID) continue;
@@ -209,9 +209,7 @@ export class MonthlyBudgetService {
             refundRequests +=
               leftover - Math.min(leftover, Math.max(0, ccBalances.get(accountId) ?? 0));
           }
-          const totalRefunded = asMilli(
-            Math.min(refundRequests, Math.max(0, totalAssigned + totalFunded - totalPayments))
-          );
+          const totalRefunded = asMilli(refundRequests);
 
           row.Available = asMilli(totalAssigned + totalFunded - totalRefunded - totalPayments);
 
