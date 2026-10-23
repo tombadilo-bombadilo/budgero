@@ -291,10 +291,6 @@ export default async function PrivacyPolicy({
                   <td> {t('up_to_12_months_of_inactivity')} </td>
                 </tr>
                 <tr>
-                  <td>{t('website_statistics_umami')}</td>
-                  <td>{t('up_to_24_months_then_deleted')}</td>
-                </tr>
-                <tr>
                   <td>{t('server_security_logs')}</td>
                   <td> {t('up_to_30_days_for_routine')} </td>
                 </tr>
