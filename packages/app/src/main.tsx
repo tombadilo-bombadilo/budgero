@@ -9,6 +9,7 @@ import { shadcn } from '@clerk/themes';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import { HelmetProvider } from 'react-helmet-async';
 import { initAnalytics } from '@shared/lib/analytics/analytics';
+import { installErrorCapture } from '@shared/lib/analytics/error-capture';
 import { writePendingSpaceInvite } from '@features/budget-sharing/lib/pending-space-invite';
 import { relayBankCallbackFromPopup } from '@features/bank-sync/model/bank-auth-popup';
 
@@ -69,9 +70,10 @@ function renderAppBody() {
     /* no-op: storage access failed */
   }
   // Cloud analytics is cookieless and on by default; PostHog itself loads once
-  // AnalyticsGate knows whether the user opted out. Self-host: no-op.
+  // AnalyticsGate knows whether the user opted out. Self-host: both no-ops.
   if (!IS_SELF_HOSTABLE_BUILD) {
     initAnalytics();
+    installErrorCapture();
   }
   return <App />;
 }
