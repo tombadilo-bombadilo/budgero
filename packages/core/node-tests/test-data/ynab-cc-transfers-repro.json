@@ -1,5 +1,5 @@
 {
-  "_source": "Captured from the disposable YNAB trial plan \"Aleksa's Plan\" (USD) on 2026-10-23 via the YNAB API, for Budgero #67 (cash advance), #68 (later card refund), #69 (card-to-card transfer), a tracking-loan-to-card transfer (debt consolidation) and a refund on unfunded card debt. Ids are anonymized; untouched default categories are dropped. Month values are YNAB's own.",
+  "_source": "Captured from the disposable YNAB trial plan (USD) on 2026-10-23 via the YNAB API, for Budgero #67 (cash advance), #68 (later card refund), #69 (card-to-card transfer), a tracking-loan-to-card transfer (debt consolidation) and a refund on unfunded card debt. Ids are anonymized; untouched default categories are dropped. Month values are YNAB's own.",
   "currency_format": {
     "iso_code": "USD",
     "example_format": "123,456.78",
