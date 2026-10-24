@@ -8,14 +8,14 @@ SELECT * FROM users WHERE email = ?;
 SELECT * FROM users WHERE customer_id = ?;
 
 -- name: CreateUser :one
--- Analytics is OPT-IN: new users start with analytics disabled and must
--- enable it explicitly in Settings (the column's legacy DEFAULT 0 predates
--- the opt-in policy and only governs pre-existing rows).
+-- Analytics is OPT-OUT on Cloud: new users start with analytics enabled and
+-- can switch it off in Settings (privacy policy section 3.5). Self-host builds never
+-- send analytics regardless of this flag.
 INSERT INTO users (
     id, name, email, db_path, is_master_password_set,
     subscription_status, trial_ends_at, created_at, primary_space_id,
     current_db_hash, sync_version, is_analytics_disabled
-) VALUES (?, ?, ?, '', 0, ?, ?, ?, NULL, '', 0, 1)
+) VALUES (?, ?, ?, '', 0, ?, ?, ?, NULL, '', 0, 0)
 RETURNING *;
 
 -- name: UpdateUser :exec

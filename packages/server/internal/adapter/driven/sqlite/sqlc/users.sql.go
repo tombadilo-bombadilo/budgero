@@ -63,7 +63,7 @@ INSERT INTO users (
     id, name, email, db_path, is_master_password_set,
     subscription_status, trial_ends_at, created_at, primary_space_id,
     current_db_hash, sync_version, is_analytics_disabled
-) VALUES (?, ?, ?, '', 0, ?, ?, ?, NULL, '', 0, 1)
+) VALUES (?, ?, ?, '', 0, ?, ?, ?, NULL, '', 0, 0)
 RETURNING id, name, email, db_path, is_master_password_set, current_db_hash, sync_version, created_at, last_user_db_backup, backup_reminder_frequency_days, is_blocked, subscription_status, subscription_id, customer_id, variant_id, subscription_ends_at, trial_ends_at, current_period_end, has_beta_access, beta_expires_at, is_founding_member, has_collaboration_access, onboarding_status, onboarding_completed_at, onboarding_snoozed_until, primary_space_id, is_analytics_disabled, subscribed_at, where_heard_about
 `
 
@@ -76,9 +76,9 @@ type CreateUserParams struct {
 	CreatedAt          sql.NullTime   `json:"created_at"`
 }
 
-// Analytics is OPT-IN: new users start with analytics disabled and must
-// enable it explicitly in Settings (the column's legacy DEFAULT 0 predates
-// the opt-in policy and only governs pre-existing rows).
+// Analytics is OPT-OUT on Cloud: new users start with analytics enabled and
+// can switch it off in Settings (privacy policy section 3.5). Self-host builds never
+// send analytics regardless of this flag.
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRowContext(ctx, createUser,
 		arg.ID,

@@ -231,16 +231,14 @@ describe('sending', () => {
     expect(posthog.reset).toHaveBeenCalled();
   });
 
-  it('keeps an old local opt-out until the server holds it', async () => {
+  it('ignores an old local opt-out: only the server flag counts', async () => {
     localStorage.setItem('budgero:analytics_consent', 'denied');
+    localStorage.setItem('budgero:analytics_disabled', '1');
     const a = await loadTrack();
     a.setAnalyticsSubject({ kind: 'user', id: 'user_1', optedOut: false });
     a.track('workspace_switched');
     await settle();
-    expect(posthog.capture).not.toHaveBeenCalled();
-    expect(a.hasLegacyLocalOptOut()).toBe(true);
-    a.clearLegacyConsent();
-    expect(a.hasLegacyLocalOptOut()).toBe(false);
+    expect(posthog.capture).toHaveBeenCalledWith('workspace_switched', expect.anything());
   });
 
   it('boot cleanup removes old PostHog and Klaro storage', async () => {
