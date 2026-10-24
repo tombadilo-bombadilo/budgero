@@ -21,12 +21,26 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.19.2',
+    date: 'October 24, 2026',
+    summary:
+      'New Cloud accounts start with usage analytics on, as described in the privacy policy, and only the setting saved to your account counts.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Analytics setting',
+        description:
+          'New Cloud accounts start with usage analytics switched on; you can turn it off any time in Settings → Security & Privacy. Only the choice saved to your account is used, so an old setting left in a browser no longer overrides it. Self-host still sends nothing.',
+      },
+    ],
+  },
+  {
     version: 'v1.19.1',
     date: 'October 24, 2026',
     summary:
       'Credit card transfers, cash advances and refunds now work out exactly like YNAB, and Budgero no longer shows a cookie banner.',
-    isLatest: true,
-    items: [
+        items: [
       {
         type: 'improved',
         title: 'Cash advances',
