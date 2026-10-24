@@ -21,6 +21,8 @@ type AnalyticsOptions struct {
 	FlushInterval time.Duration // default 10s
 	SendTimeout   time.Duration // default 5s
 	OptOutTTL     time.Duration // default 10m
+	// Telemetry receives queue depth, drops and send results. Nil records nothing.
+	Telemetry external.AnalyticsTelemetry
 }
 
 func (o AnalyticsOptions) withDefaults() AnalyticsOptions {
@@ -38,6 +40,9 @@ func (o AnalyticsOptions) withDefaults() AnalyticsOptions {
 	}
 	if o.OptOutTTL <= 0 {
 		o.OptOutTTL = 10 * time.Minute
+	}
+	if o.Telemetry == nil {
+		o.Telemetry = external.NoopTelemetry{}
 	}
 	return o
 }
@@ -98,6 +103,10 @@ func NewAnalyticsService(sender external.AnalyticsSender, users repository.UserR
 	}
 	s.queue = make(chan queuedEvent, s.opts.QueueSize)
 	s.stop = make(chan struct{})
+	s.opts.Telemetry.ObserveAnalyticsQueue(
+		func() int64 { return int64(len(s.queue)) },
+		s.dropped.Load,
+	)
 	go s.run()
 	return s
 }
@@ -201,8 +210,11 @@ func (s *AnalyticsService) flush(batch []queuedEvent) {
 		return
 	}
 	if err := s.sender.Send(ctx, out); err != nil {
+		s.opts.Telemetry.AnalyticsSendError()
 		log.Warn().Err(err).Int("events", len(out)).Msg("analytics batch dropped")
+		return
 	}
+	s.opts.Telemetry.AnalyticsBatchSent(len(out))
 }
 
 // isOptedOut reads the cached flag, falling back to one user lookup. Any

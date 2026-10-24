@@ -11,6 +11,7 @@ import (
 	synchub "budgero-server/internal/adapter/driving/http/websocket"
 	"budgero-server/internal/config"
 	"budgero-server/internal/domain"
+	"budgero-server/internal/port/driven/external"
 
 	clerkjwt "github.com/clerk/clerk-sdk-go/v2/jwt"
 	"github.com/gorilla/websocket"
@@ -150,6 +151,7 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 
 	if userID == "" {
 		log.Warn().Msg("WebSocket connection attempt without authentication")
+		h.telemetry.WSConnectAttempt(external.WSOutcomeUnauthenticated)
 		return echo.NewHTTPError(http.StatusUnauthorized, "user not authenticated")
 	}
 
@@ -159,12 +161,14 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	// block check itself (both Clerk and self-host tokens land here).
 	if err := middleware.CheckNotBlocked(ctx, h.services.User, userID); err != nil {
 		log.Warn().Err(err).Str("user_id", userID).Msg("WebSocket connection rejected: account blocked or status unavailable")
+		h.telemetry.WSConnectAttempt(wsOutcomeForError(err, external.WSOutcomeBlocked))
 		return err
 	}
 	spaceParam := c.QueryParam("space_id")
 	spaceID, err := h.ensureWorkspaceAccess(ctx, userID, spaceParam)
 	if err != nil {
 		log.Error().Err(err).Str("user_id", userID).Str("space_param", spaceParam).Msg("Failed to authorize workspace for WebSocket connection")
+		h.telemetry.WSConnectAttempt(wsOutcomeForError(err, external.WSOutcomeForbidden))
 		return err
 	}
 
@@ -182,12 +186,14 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 				Int64("blob_format", blob.DataFormatVersion).
 				Int64("client_format", clientSupportedFormat(c)).
 				Msg("WebSocket rejected: client does not support space data format")
+			h.telemetry.WSConnectAttempt(external.WSOutcomeUpgradeRequired)
 			return gateErr
 		}
 	case errors.Is(blobErr, domain.ErrSpaceNotFound):
 		// No blob yet — nothing to gate.
 	default:
 		log.Error().Err(blobErr).Str("space_id", spaceID).Msg("Failed to read blob metadata for format gate")
+		h.telemetry.WSConnectAttempt(external.WSOutcomeError)
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to verify space data format")
 	}
 
@@ -205,6 +211,7 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 			Str("user_id", userID).
 			Str("space_id", spaceID).
 			Msg("Failed to upgrade connection to WebSocket")
+		h.telemetry.WSConnectAttempt(wsUpgradeOutcome(err))
 		return err
 	}
 
@@ -248,9 +255,11 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	// closed the user's sockets.
 	if err := middleware.CheckNotBlocked(ctx, h.services.User, userID); err != nil {
 		log.Warn().Err(err).Str("user_id", userID).Msg("Closing WebSocket: account blocked during connect")
+		h.telemetry.WSConnectAttempt(wsOutcomeForError(err, external.WSOutcomeBlocked))
 		h.syncHub.Unregister <- client
 		return nil
 	}
+	h.telemetry.WSConnectAttempt(external.WSOutcomeOK)
 
 	// Run the read pump in this goroutine (blocks until disconnect)
 	// This keeps the handler alive until the client disconnects
@@ -288,4 +297,35 @@ func (h *Handlers) verifyWebsocketTokenWithRetry(c echo.Context, token string, a
 
 type authClaims struct {
 	Subject string
+}
+
+// wsOutcomeForError maps a connect-time error onto a bounded outcome: the
+// status says which kind of refusal it was, and anything 5xx is an error.
+func wsOutcomeForError(err error, refused external.WSOutcome) external.WSOutcome {
+	var he *echo.HTTPError
+	if !errors.As(err, &he) {
+		return external.WSOutcomeError
+	}
+	switch he.Code {
+	case http.StatusUnauthorized:
+		return external.WSOutcomeUnauthenticated
+	case http.StatusForbidden:
+		return refused
+	case http.StatusNotFound, http.StatusPaymentRequired:
+		return external.WSOutcomeForbidden
+	case http.StatusUpgradeRequired:
+		return external.WSOutcomeUpgradeRequired
+	default:
+		return external.WSOutcomeError
+	}
+}
+
+// wsUpgradeOutcome classifies a failed upgrade; a rejected Origin is a
+// forbidden attempt (usually WEBSOCKET_ALLOWED_ORIGINS), the rest are errors.
+func wsUpgradeOutcome(err error) external.WSOutcome {
+	var he websocket.HandshakeError
+	if errors.As(err, &he) && strings.Contains(err.Error(), "origin") {
+		return external.WSOutcomeForbidden
+	}
+	return external.WSOutcomeError
 }

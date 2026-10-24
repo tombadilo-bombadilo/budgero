@@ -8,10 +8,12 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"budgero-server/internal/adapter/driving/http/middleware"
 	"budgero-server/internal/domain"
 	"budgero-server/internal/pkg/crypto"
+	"budgero-server/internal/port/driven/external"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog/log"
@@ -640,6 +642,48 @@ func (h *Handlers) resolveUploadMutationVersion(c echo.Context, spaceID string) 
 
 // PostDatabaseBlob accepts an encrypted database blob from the user (Layer 2: HTTP blob storage)
 func (h *Handlers) PostDatabaseBlob(c echo.Context) error {
+	start := time.Now()
+	var rec blobUploadRecord
+	err := h.postDatabaseBlob(c, &rec)
+	h.telemetry.BlobUpload(rec.outcome(c, err), rec.size, time.Since(start))
+	return err
+}
+
+// blobUploadRecord carries what the upload metric needs out of the handler.
+type blobUploadRecord struct {
+	size int64
+	// keyOutdated marks the 409 sent for a stale encryption key, which is a
+	// client-side refusal rather than a version (CAS) conflict.
+	keyOutdated bool
+}
+
+func (r *blobUploadRecord) outcome(c echo.Context, err error) external.BlobUploadOutcome {
+	status := responseStatusFor(c, err)
+	switch {
+	case status >= 200 && status < 300:
+		return external.BlobUploadOK
+	case status == http.StatusConflict && !r.keyOutdated:
+		return external.BlobUploadCASConflict
+	case status >= 400 && status < 500:
+		return external.BlobUploadRejected
+	default:
+		return external.BlobUploadError
+	}
+}
+
+// responseStatusFor is the status written for c, or the one err will produce.
+func responseStatusFor(c echo.Context, err error) int {
+	if err == nil {
+		return c.Response().Status
+	}
+	var he *echo.HTTPError
+	if errors.As(err, &he) {
+		return he.Code
+	}
+	return http.StatusInternalServerError
+}
+
+func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error {
 	userID := middleware.GetUserIDFromContext(c)
 	if userID == "" {
 		log.Warn().Msg("Database blob upload request without authentication")
@@ -699,6 +743,7 @@ func (h *Handlers) PostDatabaseBlob(c echo.Context) error {
 		return err
 	}
 
+	rec.size = int64(len(data))
 	if len(data) == 0 {
 		log.Warn().
 			Str("user_id", userID).
@@ -772,6 +817,7 @@ func (h *Handlers) PostDatabaseBlob(c echo.Context) error {
 					Int64("client_key_version", clientKeyVersion).
 					Int64("server_key_version", currentState.EncryptionKeyVersion).
 					Msg("Blob upload rejected due to encryption key version mismatch")
+				rec.keyOutdated = true
 				return c.JSON(http.StatusConflict, map[string]any{
 					"error":              "encryption_key_outdated",
 					"message":            "Encryption key has been changed. Please re-enter your master password.",

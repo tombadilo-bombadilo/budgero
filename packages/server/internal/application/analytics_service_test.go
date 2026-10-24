@@ -2,6 +2,7 @@ package application_test
 
 import (
 	"context"
+	"errors"
 	"sort"
 	"strings"
 	"testing"
@@ -162,5 +163,40 @@ func TestAnalytics_FullQueueDropsWithoutBlocking(t *testing.T) {
 	svc.Close()
 	if sent := len(sender.Events()); int64(sent)+svc.Dropped() != n {
 		t.Fatalf("sent %d + dropped %d != %d", sent, svc.Dropped(), n)
+	}
+}
+
+func TestAnalytics_ReportsPipelineTelemetry(t *testing.T) {
+	users := fake.NewUserRepository()
+	seedAnalyticsUser(t, users, "u1", false)
+	tel := &fake.Telemetry{}
+	sender := &fake.AnalyticsSender{}
+	svc := application.NewAnalyticsService(sender, users, application.AnalyticsOptions{QueueSize: 4, BatchSize: 50, FlushInterval: time.Hour, Telemetry: tel})
+
+	if depth, dropped := tel.AnalyticsQueue(); depth < 0 || dropped != 0 {
+		t.Fatalf("queue callbacks not registered: depth=%d dropped=%d", depth, dropped)
+	}
+	svc.Track("u1", analytics.MemberLeft())
+	svc.Track("u1", analytics.MemberLeft())
+	svc.Close()
+	if got := tel.Snapshot(); got.SentEvents != 2 || got.SendErrors != 0 {
+		t.Errorf("sent=%d errors=%d, want 2/0", got.SentEvents, got.SendErrors)
+	}
+
+	failing := &fake.AnalyticsSender{Err: errors.New("posthog down")}
+	tel2 := &fake.Telemetry{}
+	svc2 := application.NewAnalyticsService(failing, users, application.AnalyticsOptions{FlushInterval: time.Hour, Telemetry: tel2})
+	svc2.Track("u1", analytics.MemberLeft())
+	svc2.Close()
+	if got := tel2.Snapshot(); got.SendErrors != 1 || got.SentEvents != 0 {
+		t.Errorf("sent=%d errors=%d, want 0/1", got.SentEvents, got.SendErrors)
+	}
+}
+
+func TestAnalytics_DisabledRegistersNoTelemetry(t *testing.T) {
+	tel := &fake.Telemetry{}
+	application.NewAnalyticsService(&fake.AnalyticsSender{Disabled: true}, fake.NewUserRepository(), application.AnalyticsOptions{Telemetry: tel})
+	if depth, _ := tel.AnalyticsQueue(); depth != -1 {
+		t.Errorf("disabled tracker registered queue callbacks")
 	}
 }

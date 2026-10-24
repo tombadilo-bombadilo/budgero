@@ -14,6 +14,8 @@ var _ external.AnalyticsSender = (*AnalyticsSender)(nil)
 type AnalyticsSender struct {
 	Disabled bool
 	Gate     chan struct{}
+	// Err, when set, is returned by Send instead of recording the batch.
+	Err error
 
 	mu      sync.Mutex
 	batches [][]external.AnalyticsEvent
@@ -30,6 +32,9 @@ func (s *AnalyticsSender) Send(ctx context.Context, events []external.AnalyticsE
 		case <-ctx.Done():
 			return ctx.Err()
 		}
+	}
+	if s.Err != nil {
+		return s.Err
 	}
 	cp := append([]external.AnalyticsEvent(nil), events...)
 	s.mu.Lock()

@@ -54,12 +54,14 @@ type Repositories struct {
 	CurrencyProvider external.CurrencyProvider
 	// AnalyticsSender ships server-side analytics events. Nil disables them.
 	AnalyticsSender external.AnalyticsSender
-	Queries         *sqlc.Queries
+	// Telemetry records aggregate server metrics. Nil records nothing.
+	Telemetry external.Telemetry
+	Queries   *sqlc.Queries
 }
 
 // NewServices creates all application services with their dependencies.
 func NewServices(repos *Repositories, cfg *config.Config) *Services {
-	tracker := NewAnalyticsService(repos.AnalyticsSender, repos.User, AnalyticsOptions{})
+	tracker := NewAnalyticsService(repos.AnalyticsSender, repos.User, AnalyticsOptions{Telemetry: repos.Telemetry})
 	users := NewUserService(repos.User, repos.Space, cfg)
 	users.SetAnalytics(tracker)
 	return &Services{

@@ -6,18 +6,22 @@ import (
 	"context"
 	"crypto/rand"
 	"database/sql"
+	"errors"
 	"fmt"
 	"io/fs"
 	"math/big"
 	"mime"
 	"net/http"
 	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	serverpkg "budgero-server"
 	"budgero-server/internal/adapter/driven/currencyapi"
+	"budgero-server/internal/adapter/driven/otelmetrics"
 	"budgero-server/internal/adapter/driven/posthog"
 	"budgero-server/internal/adapter/driven/sqlite"
 	"budgero-server/internal/adapter/driven/sqlite/sqlc"
@@ -91,6 +95,11 @@ func Run(selfHost bool) {
 	// Walks XFF right-to-left and stops at the first non-private hop.
 	e.IPExtractor = echo.ExtractIPFromXFFHeader()
 
+	telemetry := newTelemetry(cfg, selfHost)
+
+	// First, so it sees the final status of everything below (incl. recovered
+	// panics and rate-limit rejections). No-op unless metrics are enabled.
+	e.Use(appmw.Metrics(telemetry))
 	e.Use(middleware.Recover())
 	// Log failed API requests: 4xx/5xx are invisible otherwise, which has
 	// hidden silent client-side failures (e.g. backup recording) for weeks.
@@ -183,7 +192,7 @@ func Run(selfHost bool) {
 		log.Fatal().Err(dbErr).Msg("Failed to initialize database")
 	}
 
-	services := WireServices(dbConn, cfg, selfHost)
+	services := wireServices(dbConn, cfg, selfHost, telemetry)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -208,6 +217,7 @@ func Run(selfHost bool) {
 	}()
 	hub := synchub.NewHub(mutationLog)
 	hub.SetKeyVersionIncrementer(services.Space) // Allow WebSocket clients to increment encryption key version
+	hub.SetTelemetry(telemetry)
 	go hub.Run()
 
 	// Email service is SaaS-only. Self-host has no billing / trial and
@@ -236,6 +246,7 @@ func Run(selfHost bool) {
 		Config:               cfg,
 		Email:                emailSvc,
 		LatestVersion:        newLatestVersionSource(cfg, selfHost),
+		Telemetry:            telemetry,
 	})
 	if !selfHost {
 		h.StartProviderSyncLoop(context.Background(), time.Hour)
@@ -253,7 +264,67 @@ func Run(selfHost bool) {
 		WriteTimeout: 15 * time.Second,
 		IdleTimeout:  60 * time.Second,
 	}
-	log.Fatal().Err(server.ListenAndServe()).Msg("Server failed to start")
+	serveUntilSignal(server, func(ctx context.Context) {
+		// Flush the last metrics interval and queued analytics events.
+		if closer, ok := services.Analytics.(interface{ Close() }); ok {
+			closer.Close()
+		}
+		if err := telemetry.Shutdown(ctx); err != nil {
+			log.Warn().Err(err).Msg("Failed to flush metrics on shutdown")
+		}
+	})
+}
+
+// shutdownTimeout bounds the graceful stop; Docker/Swarm kill after 10s.
+const shutdownTimeout = 8 * time.Second
+
+// serveUntilSignal runs server until SIGINT/SIGTERM, then stops accepting
+// requests, waits for in-flight ones and runs flush within shutdownTimeout.
+func serveUntilSignal(server *http.Server, flush func(ctx context.Context)) {
+	errCh := make(chan error, 1)
+	go func() { errCh <- server.ListenAndServe() }()
+
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(sigCh)
+
+	select {
+	case err := <-errCh:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatal().Err(err).Msg("Server failed to start") //nolint:gocritic // nothing to flush before the server ever ran
+		}
+		return
+	case sig := <-sigCh:
+		log.Info().Str("signal", sig.String()).Msg("Shutting down")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Warn().Err(err).Msg("Graceful HTTP shutdown incomplete")
+	}
+	flush(ctx)
+}
+
+// newTelemetry returns the OpenTelemetry metrics recorder for cloud builds
+// with OTEL_METRICS_ENABLED, POSTHOG_METRICS_ENDPOINT and POSTHOG_KEY set,
+// and a no-op otherwise. Self-host never exports metrics, whatever the env says.
+func newTelemetry(cfg *config.Config, selfHost bool) external.Telemetry {
+	t, err := otelmetrics.New(context.Background(), otelmetrics.Options{
+		Enabled:        cfg.Metrics.Enabled,
+		SelfHost:       selfHost || cfg.IsSelfHost(),
+		Endpoint:       cfg.Metrics.Endpoint,
+		Token:          cfg.Analytics.PostHogKey,
+		ServiceVersion: appmeta.BuildVersion(),
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Server metrics disabled")
+		return external.NoopTelemetry{}
+	}
+	if t.Enabled() {
+		log.Info().Msg("Server metrics enabled (OTLP/HTTP, 60s interval)")
+	}
+	return t
 }
 
 const (
@@ -288,6 +359,10 @@ func newLatestVersionSource(cfg *config.Config, selfHost bool) handler.LatestVer
 
 // WireServices creates all repositories and services (composition root).
 func WireServices(dbConn *sql.DB, cfg *config.Config, selfHost bool) *application.Services {
+	return wireServices(dbConn, cfg, selfHost, nil)
+}
+
+func wireServices(dbConn *sql.DB, cfg *config.Config, selfHost bool, telemetry external.Telemetry) *application.Services {
 	queries := sqlc.New(dbConn)
 
 	repos := &application.Repositories{
@@ -306,6 +381,7 @@ func WireServices(dbConn *sql.DB, cfg *config.Config, selfHost bool) *applicatio
 		UserPurge:        sqlite.NewUserPurgeRepository(dbConn),
 		CurrencyProvider: currencyapi.New(cfg.External.CurrencyAPIBaseURL),
 		AnalyticsSender:  newAnalyticsSender(cfg, selfHost),
+		Telemetry:        telemetry,
 		Queries:          queries,
 	}
 

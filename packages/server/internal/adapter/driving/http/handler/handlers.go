@@ -18,6 +18,7 @@ import (
 	"budgero-server/internal/config"
 	"budgero-server/internal/domain"
 	"budgero-server/internal/domain/analytics"
+	"budgero-server/internal/port/driven/external"
 	"budgero-server/internal/port/driving"
 
 	"github.com/labstack/echo/v4"
@@ -40,6 +41,8 @@ type Options struct {
 	// BankRelay serves the opaque bank sync tunnel. Optional — nil builds one
 	// with production settings (Enable Banking only).
 	BankRelay *bankrelay.Relay
+	// Telemetry records aggregate sync metrics. Optional — nil records nothing.
+	Telemetry external.SyncTelemetry
 }
 
 // Handlers contains HTTP request handlers for the API.
@@ -59,6 +62,7 @@ type Handlers struct {
 	email                *email.Service
 	bankRelay            *bankrelay.Relay
 	blobLocks            spaceBlobLocks
+	telemetry            external.SyncTelemetry
 }
 
 // NewHandlers creates a new Handlers instance.
@@ -92,7 +96,13 @@ func NewHandlers(services *application.Services, syncHub *synchub.Hub, opts Opti
 		bankRelay = bankrelay.New(&bankrelay.Options{})
 	}
 
+	var telemetry external.SyncTelemetry = external.NoopTelemetry{}
+	if opts.Telemetry != nil {
+		telemetry = opts.Telemetry
+	}
+
 	return &Handlers{
+		telemetry:            telemetry,
 		bankRelay:            bankRelay,
 		cfg:                  opts.Config,
 		services:             services,
