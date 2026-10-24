@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"time"
 
+	"budgero-server/internal/port/driven/external"
+
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
 )
@@ -106,8 +108,10 @@ func (c *Client) ReadPump() {
 				switch {
 				case hasType && msgType == "mutation":
 					// Handle incoming mutation
+					c.hub.telemetry.MutationReceived()
 					var mutation MutationMessage
 					if err := json.Unmarshal(data, &mutation); err != nil {
+						c.hub.telemetry.MutationProcessed(external.MutationRejectedInvalid)
 						log.Error().
 							Err(err).
 							Str("user_id", c.userID).
@@ -122,15 +126,19 @@ func (c *Client) ReadPump() {
 							// Handle the mutation
 						mutation.SpaceID = c.spaceID
 						if err := c.hub.HandleMutation(c.spaceID, c.userID, &mutation, c); err != nil {
+							c.hub.telemetry.MutationProcessed(external.MutationRejectedError)
 							log.Error().
 								Err(err).
 								Str("user_id", c.userID).
 								Str("space_id", c.spaceID).
 								Str("mutation_id", mutation.ID).
 								Msg("Failed to handle mutation")
+						} else {
+							c.hub.telemetry.MutationProcessed(external.MutationAppended)
 						}
 					}
 				case hasType && msgType == "catch_up_request":
+					c.hub.telemetry.CatchUpRequested()
 					// Handle catch-up request
 					if sinceVersion, ok := msg["sinceVersion"].(float64); ok {
 						since := int64(sinceVersion)

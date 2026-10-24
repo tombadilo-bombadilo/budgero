@@ -200,9 +200,14 @@ function ensureClient(): Promise<PostHog | null> {
   if (client) return Promise.resolve(client);
   if (!isCloudBuild()) return Promise.resolve(null);
   if (loading) return loading;
+  // A user already known at load starts PostHog with their id. With memory
+  // persistence, identify() would otherwise attach a fresh anonymous id to the
+  // person on every page load; with the bootstrapped id it has nothing to merge.
+  const known = subject.kind === 'user' && !subject.optedOut ? subject.id : null;
   loading = import('posthog-js')
     .then(({ default: posthog }) => {
       posthog.init(POSTHOG_KEY as string, {
+        ...(known ? { bootstrap: { distinctID: known, isIdentifiedID: true } } : {}),
         api_host: POSTHOG_HOST,
         ui_host: 'https://eu.posthog.com',
         defaults: '2026-05-30',

@@ -76,6 +76,11 @@ This reference tracks the feature flags and environment toggles that change how 
 - **Key usage**: `packages/server/cmd/shared/server.go` (`newAnalyticsSender`) wires the PostHog batch sender (`internal/adapter/driven/posthog`) into `application.AnalyticsService`.
 - **Purpose**: Server-side product analytics for the cloud build (signup, subscription, push, workspace, invite and bank relay events; enum properties only, see `internal/domain/analytics`). Unset `POSTHOG_KEY` or any self-host build sends nothing. `POSTHOG_HOST` defaults to `https://eu.i.posthog.com`. Users with `is_analytics_disabled` are skipped.
 
+### `OTEL_METRICS_ENABLED` / `POSTHOG_METRICS_ENDPOINT`
+
+- **Purpose**: Aggregate server metrics (OpenTelemetry, OTLP/HTTP every 60s) for the cloud build, sent to PostHog Metrics. Exporting needs all of `OTEL_METRICS_ENABLED=true`, `POSTHOG_METRICS_ENDPOINT` (EU: `https://eu.i.posthog.com/i/v1/metrics`) and `POSTHOG_KEY` (the project token, sent as `Authorization: Bearer`). Otherwise, and on any self-host build, the server builds no exporter and starts nothing.
+- **What is sent**: request counts and latency by route template, method and status class; sync WebSocket connection attempts by outcome and open connections; mutations received/processed; catch-up requests; snapshot blob uploads by outcome with size and duration; analytics queue depth, drops and send results; Go runtime memory/goroutine/GC gauges. Resource: `service.name=budgero-server`, `service.version`. No user ids, space ids, emails, IPs or raw paths. Code: `internal/adapter/driven/otelmetrics`.
+
 ### Other notable server envs
 - Subscription & payment (`LEMONSQUEEZY_*`), newsletter (`MAILERLITE_*`), Clerk (`CLERK_SECRET_KEY`), and URL/port (`APP_URL`, `PORT`) variables are documented in `packages/server/README.md`. While not "flags" in the feature-toggle sense, they gate integrations and should be considered when packaging alternative flavors.
 

@@ -23,6 +23,17 @@ type Config struct {
 	Email        EmailConfig
 	UpdateCheck  UpdateCheckConfig
 	Analytics    AnalyticsConfig
+	Metrics      MetricsConfig
+}
+
+// MetricsConfig configures aggregate server metrics (OpenTelemetry OTLP/HTTP
+// to PostHog Metrics), cloud only. Exporting needs OTEL_METRICS_ENABLED=true,
+// POSTHOG_METRICS_ENDPOINT and POSTHOG_KEY; self-host never exports.
+type MetricsConfig struct {
+	Enabled bool `env:"OTEL_METRICS_ENABLED" envDefault:"false"`
+	// Endpoint is the full OTLP/HTTP metrics URL, e.g.
+	// https://eu.i.posthog.com/i/v1/metrics.
+	Endpoint string `env:"POSTHOG_METRICS_ENDPOINT"`
 }
 
 // AnalyticsConfig configures server-side product analytics (cloud only).

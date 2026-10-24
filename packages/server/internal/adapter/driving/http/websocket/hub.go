@@ -6,6 +6,8 @@ import (
 	"sync"
 	"time"
 
+	"budgero-server/internal/port/driven/external"
+
 	"github.com/rs/zerolog/log"
 )
 
@@ -59,6 +61,9 @@ type Hub struct {
 
 	// KeyVersionIncrementer for handling encryption key version increments via WebSocket
 	keyVersionIncrementer KeyVersionIncrementer
+
+	// telemetry records aggregate sync metrics (no-op unless SetTelemetry).
+	telemetry external.SyncTelemetry
 }
 
 // Message represents a sync state change notification
@@ -96,7 +101,29 @@ func NewHub(mutationLog *MutationLog) *Hub {
 		Register:               make(chan *Client, 100),                      // Buffered for client registrations
 		Unregister:             make(chan *Client, 100),                      // Buffered for client disconnections
 		clients:                make(map[string]map[*Client]bool),
+		telemetry:              external.NoopTelemetry{},
 	}
+}
+
+// SetTelemetry wires sync metrics and registers the open-connection gauge.
+// Call it before Run.
+func (h *Hub) SetTelemetry(t external.SyncTelemetry) {
+	if t == nil {
+		return
+	}
+	h.telemetry = t
+	t.ObserveWSConnections(h.ConnectionCount)
+}
+
+// ConnectionCount returns the number of registered sync sockets.
+func (h *Hub) ConnectionCount() int64 {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	var n int64
+	for _, clients := range h.clients {
+		n += int64(len(clients))
+	}
+	return n
 }
 
 // SetKeyVersionIncrementer sets the callback for incrementing encryption key versions.
