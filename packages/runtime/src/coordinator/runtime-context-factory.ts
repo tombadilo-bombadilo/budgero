@@ -199,6 +199,7 @@ export class RuntimeContextFactory {
 
     const sync = new SyncTransport(params.spaceId, {
       getToken: () => this.deps.getToken(),
+      checkApiHealth: () => this.deps.checkApiHealth(),
       encryptPayload: async (payload) =>
         params.encryption.encryptMutation(payload as { op: string; args: Record<string, unknown> }),
       decryptPayload: async (encrypted) => params.encryption.decryptMutation(encrypted),

@@ -86,7 +86,8 @@ export function syncErrorCode(message: string): ErrorCode {
   if (/app update|newer changes|newer than this app/i.test(message)) return 'version_mismatch';
   if (/quota|storage|opfs|disk/i.test(message)) return 'storage_error';
   if (/network|fetch|websocket|connection|timed? ?out/i.test(message)) return 'network';
-  if (/unauthori[sz]ed|401|token/i.test(message)) return 'unauthorized';
+  if (/unauthori[sz]ed|401|token|session expired|accept this session/i.test(message))
+    return 'unauthorized';
   if (/forbidden|403/i.test(message)) return 'forbidden';
   return 'unknown';
 }

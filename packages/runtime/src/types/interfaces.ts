@@ -172,6 +172,11 @@ export interface SyncTransportDeps {
   getWebSocketUrl?(spaceId: string, token: string | null): string;
   subscribeNetworkStatus?(handlers: { online: () => void; offline: () => void }): () => void;
   getReconnectDelayMs?(attempt: number): number;
+  /**
+   * Is the HTTP API reachable? Used after a failed handshake to tell a server
+   * that is down (retry fast) from one refusing our session (back off).
+   */
+  checkApiHealth?(): Promise<boolean>;
   onEncryptionKeyChanged?(spaceId: string, version: number): void;
   /** A payload arrived in a format newer than this build understands — prompt for update. */
   onFormatTooNew?(spaceId: string, receivedVersion: number): void;

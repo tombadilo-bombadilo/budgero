@@ -297,6 +297,11 @@ export class AppRuntime {
     this.coordinator.notifyMasterPasswordChanged();
   }
 
+  /** A fresh auth token may be available: let a waiting sync socket retry now. */
+  notifyAuthChanged(): void {
+    this.coordinator.notifyAuthChanged();
+  }
+
   sendMutation(payload: {
     id: string;
     op: string;
