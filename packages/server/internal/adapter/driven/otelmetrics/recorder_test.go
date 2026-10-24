@@ -218,8 +218,19 @@ func TestRecorder_RecordsExpectedMetrics(t *testing.T) {
 			t.Errorf("%s: %d series, want %d", name, len(got[name]), n)
 		}
 	}
-	req := got["budgero.http.server.requests"][0]
-	for k, v := range map[string]string{"http.route": "/api/v1/budget-spaces/:spaceID", "http.request.method": "GET", "http.response.status_class": "2xx"} {
+	// Data points come back in no fixed order: find the route under test.
+	var req *attribute.Set
+	for i := range got["budgero.http.server.requests"] {
+		set := got["budgero.http.server.requests"][i]
+		if val, _ := set.Value("http.route"); val.AsString() == "/api/v1/budget-spaces/:spaceID" {
+			req = &set
+			break
+		}
+	}
+	if req == nil {
+		t.Fatalf("no budgero.http.server.requests series for /api/v1/budget-spaces/:spaceID")
+	}
+	for k, v := range map[string]string{"http.request.method": "GET", "http.response.status_class": "2xx"} {
 		if val, _ := req.Value(attribute.Key(k)); val.AsString() != v {
 			t.Errorf("%s = %q, want %q", k, val.AsString(), v)
 		}
