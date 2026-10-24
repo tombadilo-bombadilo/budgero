@@ -1,6 +1,6 @@
 {
   "name": "budgero",
-  "version": "1.19.2",
+  "version": "1.19.3",
   "license": "AGPL-3.0-only",
   "description": "Personal budget management application",
   "private": true,
