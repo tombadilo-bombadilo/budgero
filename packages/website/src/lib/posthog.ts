@@ -16,9 +16,14 @@ export function browserObjectsToTracking(): boolean {
 }
 
 /**
- * Initialize PostHog on the marketing site, cookieless: identifiers live in
- * memory only, so nothing is written to cookies, localStorage or
- * sessionStorage and every page load gets a fresh anonymous id. Nothing on the
+ * Initialize PostHog on the marketing site in cookieless server hash mode:
+ * nothing is written to cookies, localStorage or sessionStorage, and PostHog
+ * derives the visitor id on its servers from a hash of the IP, user agent and
+ * hostname with a salt that changes (and is deleted) daily. A visitor counts
+ * once per day, cannot be followed across days, and is never identified.
+ * Requires "Cookieless server hash mode" in the PostHog project settings
+ * (Web analytics), otherwise PostHog discards these events. No GeoIP or bot
+ * filtering on these events (Umami covers visit geography). Nothing on the
  * device needs consent, so there is no banner (privacy policy §3.6, §8).
  *
  * Paranoid flag set: NO session recording, NO autocapture, NO heatmaps,
@@ -38,10 +43,9 @@ export function initPostHogBrowser(): void {
     defaults: '2026-05-30',
     capture_pageview: false, // fired manually on App Router pathname change
     capture_pageleave: true,
-    // Anonymous visitors never get a person profile.
-    person_profiles: 'identified_only',
-    persistence: 'memory',
-    disable_persistence: true,
+    // Server-side daily hash instead of a device id; nobody is ever identified.
+    cookieless_mode: 'always',
+    person_profiles: 'never',
     disable_session_recording: true,
     autocapture: false,
     capture_heatmaps: false,

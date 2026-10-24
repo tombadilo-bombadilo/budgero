@@ -51,7 +51,7 @@ export default async function PrivacyPolicy({
             {t('privacy_policy')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-1">
-            <strong>{t('last_updated')}</strong> {t('23_october_2026')}{' '}
+            <strong>{t('last_updated')}</strong> {t('24_october_2026')}{' '}
           </p>
           <p className="text-gray-600 dark:text-gray-400 mb-8">
             <strong>{t('effective')}</strong> {t('29_april_2026')}{' '}
