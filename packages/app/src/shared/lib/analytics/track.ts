@@ -78,33 +78,10 @@ function isCloudBuild(): boolean {
 // Opt-out state
 // ---------------------------------------------------------------------------
 
-/** An explicit opt-out from the old local consent model, not yet migrated. */
-export function hasLegacyLocalOptOut(): boolean {
-  try {
-    return (
-      localStorage.getItem(LEGACY_CONSENT_KEY) === 'denied' ||
-      localStorage.getItem(LEGACY_OPT_OUT_KEY) === '1'
-    );
-  } catch {
-    return false;
-  }
-}
-
-/** Remove the old local consent keys (after the server holds the choice). */
-export function clearLegacyConsent(): void {
-  try {
-    localStorage.removeItem(LEGACY_CONSENT_KEY);
-    localStorage.removeItem(LEGACY_OPT_OUT_KEY);
-  } catch {
-    /* no-op */
-  }
-}
-
 /** Whether this session must not send anything. */
 export function isAnalyticsDisabled(): boolean {
   if (!isCloudBuild()) return true;
-  if (subject.kind === 'user' && subject.optedOut) return true;
-  return hasLegacyLocalOptOut();
+  return subject.kind === 'user' && subject.optedOut;
 }
 
 function canSendNow(): boolean {
@@ -456,9 +433,8 @@ export function initAnalytics(): void {
         localStorage.removeItem(key);
       }
     }
-    if (localStorage.getItem(LEGACY_CONSENT_KEY) === 'granted') {
-      localStorage.removeItem(LEGACY_CONSENT_KEY);
-    }
+    localStorage.removeItem(LEGACY_CONSENT_KEY);
+    localStorage.removeItem(LEGACY_OPT_OUT_KEY);
   } catch {
     /* no-op */
   }

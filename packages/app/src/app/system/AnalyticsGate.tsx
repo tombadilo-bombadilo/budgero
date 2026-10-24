@@ -1,26 +1,19 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '@clerk/clerk-react';
-import { useProfile, useSetAnalyticsDisabled } from '@entities/user/api/useAuth';
+import { useProfile } from '@entities/user/api/useAuth';
 import { useUiStore } from '@shared/store/useUiStore';
-import {
-  clearLegacyConsent,
-  hasLegacyLocalOptOut,
-  setAnalyticsBudgetContext,
-  setAnalyticsSubject,
-} from '@shared/lib/analytics/analytics';
+import { setAnalyticsBudgetContext, setAnalyticsSubject } from '@shared/lib/analytics/analytics';
 
 /**
  * Cloud only (mounted inside ClerkProvider). Tells analytics who is using the
  * app, so nothing is sent before we know whether the user opted out:
  * signed out → anonymous; signed in → wait for the profile, then honour
- * `is_analytics_disabled`. Also migrates an explicit opt-out from the old
- * local consent model to the server, once.
+ * `is_analytics_disabled` (the only opt-out that counts; old local consent
+ * keys are dropped at startup).
  */
 export function AnalyticsGate() {
   const { isLoaded, isSignedIn } = useAuth();
   const { data: profile } = useProfile();
-  const setDisabled = useSetAnalyticsDisabled();
-  const migratingRef = useRef(false);
   const rtaMode = useUiStore((state) => state.selectedBudget?.RtaMode ?? null);
 
   const userId = profile?.id ?? null;
@@ -41,28 +34,6 @@ export function AnalyticsGate() {
     }
     setAnalyticsSubject({ kind: 'user', id: userId, optedOut: serverDisabled });
   }, [isLoaded, isSignedIn, userId, serverDisabled]);
-
-  // One-time migration: a local 'denied' becomes the server opt-out. Until the
-  // server confirms, hasLegacyLocalOptOut() keeps analytics off.
-  const { mutate } = setDisabled;
-  useEffect(() => {
-    if (!userId || serverDisabled === undefined || migratingRef.current) return;
-    if (!hasLegacyLocalOptOut()) return;
-    if (serverDisabled) {
-      clearLegacyConsent();
-      return;
-    }
-    migratingRef.current = true;
-    mutate(
-      { disabled: true },
-      {
-        onSuccess: () => clearLegacyConsent(),
-        onSettled: () => {
-          migratingRef.current = false;
-        },
-      }
-    );
-  }, [userId, serverDisabled, mutate]);
 
   useEffect(() => {
     setAnalyticsBudgetContext(rtaMode);
