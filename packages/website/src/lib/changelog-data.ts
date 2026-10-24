@@ -21,12 +21,43 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.19.3',
+    date: 'October 24, 2026',
+    summary:
+      'Fixes a sync reconnect loop after a session expires, counts website visitors correctly without cookies, and updates the analytics library.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Sync after an expired session',
+        description:
+          'A tab left in the background no longer keeps retrying sync without a valid login. It waits for the session to refresh, reconnects as soon as you are back, and tells you if you need to sign in again.',
+      },
+      {
+        type: 'improved',
+        title: 'Website analytics',
+        description:
+          'Visits to budgero.app are now counted once per visitor per day, still without cookies or anything stored on your device. The privacy policy is updated accordingly.',
+      },
+      {
+        type: 'improved',
+        title: 'Analytics library',
+        description: 'Updated to the latest version, with no change to what is collected.',
+      },
+      {
+        type: 'improved',
+        title: 'Graceful server shutdown',
+        description:
+          'When the server stops, it now finishes running requests for up to 8 seconds instead of stopping immediately. This applies to self-host too.',
+      },
+    ],
+  },
+  {
     version: 'v1.19.2',
     date: 'October 24, 2026',
     summary:
       'New Cloud accounts start with usage analytics on, as described in the privacy policy, and only the setting saved to your account counts.',
-    isLatest: true,
-    items: [
+        items: [
       {
         type: 'fixed',
         title: 'Analytics setting',
