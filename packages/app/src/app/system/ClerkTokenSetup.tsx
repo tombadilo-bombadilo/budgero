@@ -3,6 +3,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { setGlobalTokenGetter } from '@shared/lib/clerk-token-manager';
 import { checkApiHealth } from '@shared/api/health';
 import { getConnectivityService } from '@shared/runtime/connectivity-service';
+import { getRuntime } from '@shared/runtime/global';
 
 /** Extended Clerk instance with optional internal methods */
 interface ClerkWithInternalMethods {
@@ -75,6 +76,8 @@ export function ClerkTokenSetup({ children }: { children: React.ReactNode }) {
     setGlobalTokenGetter(async () => {
       return fetchToken({ ensureClerkReady: false, forceFreshToken: false });
     });
+    // Auth state changed: a sync socket waiting for a token can retry now.
+    getRuntime()?.notifyAuthChanged();
   }, [fetchToken]);
 
   useEffect(() => {
@@ -91,6 +94,7 @@ export function ClerkTokenSetup({ children }: { children: React.ReactNode }) {
         if (token) {
           // Kick the connectivity service to re-evaluate with the fresh token
           cs.refresh();
+          getRuntime()?.notifyAuthChanged();
         }
       } finally {
         replayingRef.current = false;

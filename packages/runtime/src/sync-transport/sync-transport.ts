@@ -46,6 +46,25 @@ export interface SyncStatus {
   syncError: string | null;
 }
 
+/** Shown when sync stops because there is no usable sign-in session. */
+export const SYNC_SESSION_EXPIRED_MESSAGE =
+  'Sync is paused because your session expired. Sign in again to resume syncing.';
+
+/** Shown when the server keeps refusing the sync handshake while its API is up. */
+export const SYNC_SESSION_REJECTED_MESSAGE =
+  'Sync is paused because the server did not accept this session. Sign in again to resume syncing.';
+
+/** Consecutive auth failures before the app is told the session is gone. */
+const AUTH_FAILURES_BEFORE_SURFACING = 3;
+
+const AUTH_RETRY_BASE_MS = 2_000;
+
+const AUTH_RETRY_MAX_MS = 5 * 60_000;
+
+function isPageHidden(): boolean {
+  return typeof document !== 'undefined' && document.visibilityState === 'hidden';
+}
+
 export class SyncTransport {
   private readonly spaceId: string;
 
@@ -67,6 +86,21 @@ export class SyncTransport {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
   private reconnectAttempts = 0;
+
+  /**
+   * Consecutive attempts that failed for auth reasons: no token to send, or
+   * a handshake refused while the API itself is reachable. Drives a slower
+   * backoff than network failures and surfaces the expired session.
+   */
+  private authFailures = 0;
+
+  /** Which syncError (if any) this transport set for an auth problem. */
+  private authErrorShown: string | null = null;
+
+  /** A reconnect was wanted while the page was hidden; run it on visible. */
+  private reconnectDeferredWhileHidden = false;
+
+  private handleVisibilityListener: (() => void) | null = null;
 
   private localVersion = 0;
 
@@ -170,6 +204,14 @@ export class SyncTransport {
       this.handleOnlineListener = handleOnline;
       window.addEventListener('offline', this.handleOfflineListener);
       window.addEventListener('online', this.handleOnlineListener);
+    }
+
+    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+      this.handleVisibilityListener = () => {
+        if (document.visibilityState !== 'visible') return;
+        this.resumeAfterHidden();
+      };
+      document.addEventListener('visibilitychange', this.handleVisibilityListener);
     }
   }
 
@@ -277,13 +319,27 @@ export class SyncTransport {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
     }
-    const token = await this.deps.getToken();
+    let token: string | null = null;
+    try {
+      token = await this.deps.getToken();
+    } catch {
+      token = null;
+    }
     if (
       this.destroyed ||
       this.suspended ||
       this.syncDisabled ||
       generation !== this.connectionGeneration
     ) {
+      return;
+    }
+    if (typeof token !== 'string' || token.length === 0) {
+      // No session token (e.g. the auth session expired in a background
+      // tab). The server would refuse the handshake, so don't open one:
+      // wait for a fresh token with backoff, or for visible/online/auth
+      // changes to retry sooner.
+      this.noteAuthFailure(SYNC_SESSION_EXPIRED_MESSAGE, 'no auth token');
+      this.scheduleReconnect();
       return;
     }
     const url =
@@ -299,9 +355,12 @@ export class SyncTransport {
         generation === this.connectionGeneration &&
         this.ws === ws;
 
+      let opened = false;
       ws.onopen = () => {
         if (!isCurrentConnection()) return;
+        opened = true;
         this.reconnectAttempts = 0;
+        this.clearAuthFailures();
         this.notifyConnection(true);
         this.catchUpPages = 0;
         this.catchUpMutationBuffer = [];
@@ -314,7 +373,17 @@ export class SyncTransport {
         this.catchUpRequestedSince = null;
         this.catchUpMutationBuffer = [];
         this.notifyConnection(false);
-        this.scheduleReconnect();
+        if (opened || !this.deps.checkApiHealth) {
+          this.scheduleReconnect();
+          return;
+        }
+        // Closed before it ever opened: the handshake failed. Browsers
+        // hide the HTTP status, so ask the API whether it is up — if it is,
+        // the server refused us (expired/invalid session) and hammering it
+        // won't help.
+        this.handleHandshakeFailure(generation).catch(() => {
+          this.scheduleReconnect();
+        });
       };
       ws.onerror = () => {
         /* onclose will handle reconnect */
@@ -495,6 +564,7 @@ export class SyncTransport {
       this.reconnectTimer = null;
     }
     this.reconnectAttempts = 0;
+    this.reconnectDeferredWhileHidden = false;
     this.catchUpInProgress = false;
     this.catchUpRequestedSince = null;
     this.catchUpPages = 0;
@@ -549,22 +619,129 @@ export class SyncTransport {
         this.handleOnlineListener = null;
       }
     }
+
+    if (this.handleVisibilityListener && typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', this.handleVisibilityListener);
+      this.handleVisibilityListener = null;
+    }
+  }
+
+  /**
+   * Retry right away if the transport is waiting to reconnect — e.g. the
+   * app just obtained a fresh auth token. No-op while connected/connecting,
+   * suspended or destroyed.
+   */
+  retryNow(): void {
+    if (this.destroyed || this.suspended || this.syncDisabled) return;
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)
+    ) {
+      return;
+    }
+    if (isPageHidden()) {
+      this.reconnectDeferredWhileHidden = true;
+      return;
+    }
+    this.reconnectDeferredWhileHidden = false;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.connect().catch(() => {
+      /* reconnect errors trigger retry */
+    });
   }
 
   // ---- Internals ----
 
+  private resumeAfterHidden(): void {
+    if (!this.reconnectDeferredWhileHidden && !this.reconnectTimer) return;
+    // Back in the foreground: try now (with a fresh token) rather than
+    // waiting out a backoff that grew while nobody was looking.
+    this.retryNow();
+  }
+
+  private noteAuthFailure(message: string, reason: string): void {
+    this.authFailures += 1;
+    if (this.authFailures === 1 || this.authFailures === AUTH_FAILURES_BEFORE_SURFACING) {
+      this.log('warn', 'Sync connection waiting for a valid session', {
+        reason,
+        attempts: this.authFailures,
+        spaceId: this.spaceId,
+      });
+    }
+    // Only tell someone who can see it; a hidden tab finds out on return.
+    if (
+      this.authFailures >= AUTH_FAILURES_BEFORE_SURFACING &&
+      this.authErrorShown !== message &&
+      !isPageHidden()
+    ) {
+      this.authErrorShown = message;
+      this.updateSyncStatus({ isSyncing: false, syncError: message });
+    }
+  }
+
+  private clearAuthFailures(): void {
+    this.authFailures = 0;
+    if (this.authErrorShown) {
+      if (this.syncStatus.syncError === this.authErrorShown) {
+        this.updateSyncStatus({ syncError: null });
+      }
+      this.authErrorShown = null;
+    }
+  }
+
+  private async handleHandshakeFailure(generation: number): Promise<void> {
+    let rejectedWhileApiUp = false;
+    try {
+      rejectedWhileApiUp = (await this.deps.checkApiHealth?.()) === true;
+    } catch {
+      rejectedWhileApiUp = false;
+    }
+    if (
+      this.destroyed ||
+      this.suspended ||
+      this.syncDisabled ||
+      generation !== this.connectionGeneration ||
+      this.ws
+    ) {
+      return;
+    }
+    if (rejectedWhileApiUp) {
+      this.noteAuthFailure(SYNC_SESSION_REJECTED_MESSAGE, 'handshake rejected');
+    }
+    this.scheduleReconnect();
+  }
+
   private scheduleReconnect(): void {
     if (this.destroyed || this.suspended || this.syncDisabled) return;
     if (this.reconnectTimer) return;
+    if (isPageHidden()) {
+      // Nobody is looking: don't keep dialing the server from a background
+      // tab. The visibilitychange handler reconnects when the page returns.
+      this.reconnectDeferredWhileHidden = true;
+      return;
+    }
+    this.reconnectDeferredWhileHidden = false;
     this.reconnectAttempts++;
-    const defaultDelay = Math.min(1000 * 2 ** (this.reconnectAttempts - 1), 10000);
-    const configured = this.deps.getReconnectDelayMs?.(this.reconnectAttempts);
-    const delay =
-      typeof configured === 'number' && Number.isFinite(configured) && configured >= 0
-        ? configured
-        : defaultDelay;
+    let delay: number;
+    if (this.authFailures > 0) {
+      delay = Math.min(AUTH_RETRY_BASE_MS * 2 ** (this.authFailures - 1), AUTH_RETRY_MAX_MS);
+    } else {
+      const defaultDelay = Math.min(1000 * 2 ** (this.reconnectAttempts - 1), 10000);
+      const configured = this.deps.getReconnectDelayMs?.(this.reconnectAttempts);
+      delay =
+        typeof configured === 'number' && Number.isFinite(configured) && configured >= 0
+          ? configured
+          : defaultDelay;
+    }
     this.reconnectTimer = setTimeout(() => {
       this.reconnectTimer = null;
+      if (isPageHidden()) {
+        this.reconnectDeferredWhileHidden = true;
+        return;
+      }
       this.connect().catch(() => {
         /* reconnect errors trigger retry */
       });

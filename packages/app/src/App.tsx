@@ -22,6 +22,7 @@ import { UpdateRequiredDialog } from '@shared/pwa/UpdateRequiredDialog';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import { useSelfHostAuth } from '@shared/model/useSelfHostAuth';
 import { setGlobalTokenGetter } from '@shared/lib/clerk-token-manager';
+import { getRuntime } from '@shared/runtime/global';
 import { ChatBubble } from '@features/chat/ui/ChatBubble';
 import { ChatPanel } from '@features/chat/ui/chat-panel';
 import { TooltipProvider } from '@shared/ui/tooltip';
@@ -318,6 +319,10 @@ function AppContentSelfHost() {
     // Read the store directly so requests fired in the same commit as a
     // login (before this effect would re-run) still see the fresh token.
     setGlobalTokenGetter(async () => useSelfHostAuth.getState().token || null);
+    // A new session token lets a sync socket waiting for one retry now.
+    return useSelfHostAuth.subscribe((state, prev) => {
+      if (state.token && state.token !== prev.token) getRuntime()?.notifyAuthChanged();
+    });
   }, []);
   useRecurringNotifications();
 

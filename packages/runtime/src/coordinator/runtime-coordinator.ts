@@ -699,6 +699,11 @@ export class RuntimeCoordinator {
     this.activeContext?.sync.notifyMasterPasswordChanged();
   }
 
+  /** A fresh auth token may be available: let a waiting sync socket retry now. */
+  notifyAuthChanged(): void {
+    this.activeContext?.sync.retryNow();
+  }
+
   async refreshSpaces(): Promise<void> {
     try {
       await this.lifecycle.refreshSpaces(async (fallbackSpaceId) => {
