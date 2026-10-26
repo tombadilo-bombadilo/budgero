@@ -21,11 +21,25 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.19.5',
+    date: 'October 26, 2026',
+    summary:
+      'Brings the v1.19.4 improvements to Budgero Cloud. No changes for self-hosted installs.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Cloud release build',
+        description:
+          'The v1.19.4 Cloud build failed before it shipped. This release completes it, with the same YNAB import and error report improvements.',
+      },
+    ],
+  },
+  {
     version: 'v1.19.4',
     date: 'October 26, 2026',
     summary:
       'Makes the YNAB import step in onboarding easier to get through, and improves error reporting so problems can be found and fixed faster.',
-    isLatest: true,
     items: [
       {
         type: 'improved',
