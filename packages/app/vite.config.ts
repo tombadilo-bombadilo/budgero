@@ -320,7 +320,10 @@ export default defineConfig(({ mode, isPreview }) => {
     },
     build: {
       outDir: 'dist',
-      sourcemap: false,
+      // Release builds set APP_SOURCEMAPS=hidden: maps without a
+      // sourceMappingURL, uploaded to PostHog and deleted before the image is
+      // built (app.Dockerfile). They are never served.
+      sourcemap: env.APP_SOURCEMAPS === 'hidden' ? 'hidden' : false,
       emptyOutDir: true,
     },
     optimizeDeps: {

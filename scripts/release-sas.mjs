@@ -40,6 +40,27 @@ const DOCKER_PLATFORMS = (process.env.DOCKER_PLATFORMS || 'linux/amd64,linux/arm
 const VITE_CLERK_PUBLISHABLE_KEY = process.env.VITE_CLERK_PUBLISHABLE_KEY || '';
 const VITE_POSTHOG_KEY = process.env.VITE_POSTHOG_KEY || '';
 const VITE_POSTHOG_HOST = process.env.VITE_POSTHOG_HOST || '';
+// Optional PostHog source map upload (error tracking); see app.Dockerfile.
+const POSTHOG_CLI_TOKEN = process.env.POSTHOG_CLI_TOKEN || '';
+const POSTHOG_CLI_ENV_ID = process.env.POSTHOG_CLI_ENV_ID || '';
+
+/** Docker args for the source map step. Missing secrets skip it, never fail. */
+function sourcemapBuildArgs() {
+  // A dry run checks the step without credentials and sends nothing.
+  if (dryRun) return ['--build-arg POSTHOG_SOURCEMAPS=verify'];
+  if (!POSTHOG_CLI_TOKEN || !POSTHOG_CLI_ENV_ID) {
+    console.log(
+      '::notice title=PostHog source maps::POSTHOG_CLI_TOKEN or POSTHOG_CLI_ENV_ID is not set; building without the source map upload.'
+    );
+    return [];
+  }
+  // Values are read by buildx from the environment, not put on the command line.
+  return [
+    '--build-arg POSTHOG_SOURCEMAPS=upload',
+    '--secret id=posthog_cli_token,env=POSTHOG_CLI_TOKEN',
+    '--secret id=posthog_cli_env_id,env=POSTHOG_CLI_ENV_ID',
+  ];
+}
 
 function run(cmd, opts = {}) {
   execSync(cmd, { stdio: 'inherit', cwd: root, shell: true, ...opts });
@@ -98,6 +119,7 @@ async function buildAndPushDocker(tag) {
     `--build-arg VITE_POSTHOG_KEY="${VITE_POSTHOG_KEY}"`,
     `--build-arg VITE_POSTHOG_HOST="${VITE_POSTHOG_HOST}"`,
     `--build-arg APP_BUILD_SHA="${buildSha}"`,
+    ...sourcemapBuildArgs(),
   ].join(' ');
   const archTags = [];
   for (const platform of DOCKER_PLATFORMS) {

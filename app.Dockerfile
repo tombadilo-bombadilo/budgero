@@ -48,8 +48,20 @@ ENV APP_BUILD_SHA=$APP_BUILD_SHA
 RUN pnpm --filter @budgero/runtime build
 RUN pnpm --filter @budgero/core build
 
+# PostHog error tracking source maps (scripts/release-sas.mjs sets this):
+# off (default, build unchanged), verify (release dry run) or upload. With
+# verify/upload, vite writes hidden maps; posthog-sourcemaps.sh uploads them
+# (credentials are BuildKit secrets, never stored in a layer) and deletes them,
+# so no .map file reaches the image.
+ARG POSTHOG_SOURCEMAPS=off
+
 # Build app package (run via pnpm workspace to avoid npx resolution issues in containers)
-RUN pnpm --filter @budgero/app exec vite build --config vite.config.ts
+RUN --mount=type=secret,id=posthog_cli_token \
+    --mount=type=secret,id=posthog_cli_env_id \
+    if [ "$POSTHOG_SOURCEMAPS" = off ]; then maps=false; else maps=hidden; fi \
+ && APP_SOURCEMAPS=$maps pnpm --filter @budgero/app exec vite build --config vite.config.ts \
+ && sh packages/app/scripts/posthog-sourcemaps.sh packages/app/dist "$POSTHOG_SOURCEMAPS" \
+      "$(node -p 'require("./package.json").version')"
 
 # Go builder stage
 FROM golang:1.26.10-alpine AS go-builder
