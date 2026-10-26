@@ -59,6 +59,7 @@ import {
   YnabImportStep,
   ZbbStep,
 } from './steps';
+import { classifyYnabZipError } from './steps/ynab-source-errors';
 import './onboarding.css';
 
 interface OnboardingFlowProps {
@@ -270,7 +271,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       } catch (err) {
         if (request !== ynabSourceRequestRef.current) return;
         console.error('[Onboarding] Failed to read YNAB file', err);
-        toast.error(t`Could not read that file — try the raw YNAB export .zip.`);
+        const reason = classifyYnabZipError(err);
+        toast.error(
+          reason === 'not_zip'
+            ? t`That file isn’t a ZIP. Upload the .zip YNAB downloads when you export, without unpacking it.`
+            : reason === 'not_ynab_export'
+              ? t`That ZIP isn’t a YNAB export: its register and plan files are missing. Export again from the YNAB web app.`
+              : t`Could not read that file — try the raw YNAB export .zip.`
+        );
       } finally {
         if (request === ynabSourceRequestRef.current) setIsInspectingYnab(false);
       }

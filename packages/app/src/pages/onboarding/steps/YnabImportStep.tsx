@@ -4,11 +4,15 @@ import React from 'react';
 import type { YNABApiPlanSnapshot, YNABApiPlanSummary } from '@budgero/core/browser';
 import { YNABApiClient } from '@budgero/core/browser';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
-import { YnabPatHelpPopover } from '@features/budget-management/ui/create-budget-form/YnabPatHelpPopover';
+import {
+  YnabPatHelpPopover,
+  YnabPatHelpSteps,
+} from '@features/budget-management/ui/create-budget-form/YnabPatHelpPopover';
 import { YnabCreditPaymentMatching } from '@features/budget-management/ui/create-budget-form/YnabCreditPaymentMatching';
 import { hasCompleteCreditPaymentMappings } from '@features/budget-management/ui/create-budget-form/ynab-credit-payment-matching';
 import { YnabDateOrderChoice } from '@features/budget-management/ui/create-budget-form/YnabDateOrderChoice';
 import { Title, type StepProps } from './shared';
+import { classifyYnabApiError, type YnabApiFailureReason } from './ynab-source-errors';
 
 interface YnabStepProps extends StepProps {
   onFileSelected: (file: File) => Promise<void> | void;
@@ -44,6 +48,21 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
     []
   );
   const hasSource = Boolean(file || apiSnapshot);
+
+  const apiErrorMessage = (reason: YnabApiFailureReason, error: unknown, fallback: string) => {
+    switch (reason) {
+      case 'unauthorized':
+        return t`YNAB didn’t accept that token. Copy the whole token from YNAB’s Developer Settings and paste it again, or create a new one.`;
+      case 'rate_limited':
+        return t`YNAB is limiting requests right now. Wait a few minutes, then connect again.`;
+      case 'network':
+        return t`Couldn’t reach YNAB. Check your connection and try again.`;
+      case 'no_plans':
+        return t`That token works, but YNAB returned no plans for it. Check that you signed in to the YNAB account that has your budget.`;
+      default:
+        return error instanceof Error ? error.message : fallback;
+    }
+  };
   const needsDateOrder = Boolean(file && preview?.dateOrderAmbiguous && !state.ynabDateOrder);
 
   const needsCreditMatching = Boolean(
@@ -78,7 +97,9 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
       await onApiSnapshotSelected(snapshot);
     } catch (error) {
       if (request !== requestRef.current) return;
-      setConnectionError(error instanceof Error ? error.message : t`Could not read that plan`);
+      setConnectionError(
+        apiErrorMessage(classifyYnabApiError(error), error, t`Could not read that plan`)
+      );
     } finally {
       if (request === requestRef.current) setIsConnecting(false);
     }
@@ -104,7 +125,9 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
       if (request !== requestRef.current) return;
       setPlans([]);
       setSelectedPlanId('');
-      setConnectionError(error instanceof Error ? error.message : t`Could not connect to YNAB`);
+      setConnectionError(
+        apiErrorMessage(classifyYnabApiError(error), error, t`Could not connect to YNAB`)
+      );
     } finally {
       if (request === requestRef.current) setIsConnecting(false);
     }
@@ -150,6 +173,16 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
           <Trans>EXPORT ZIP</Trans>
         </button>
       </div>
+      <div style={{ marginTop: 6, fontSize: 11, color: '#393939', lineHeight: 1.5 }}>
+        {sourceMode === 'api' ? (
+          <Trans>
+            Recommended. You need a personal access token from the YNAB web app; creating one takes
+            about a minute.
+          </Trans>
+        ) : (
+          <Trans>Upload the .zip file the YNAB web app gives you when you export your plan.</Trans>
+        )}
+      </div>
 
       {sourceMode === 'api' && (
         <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
@@ -190,7 +223,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
                 fontWeight: 700,
               }}
             >
-              {isConnecting ? t`CONNECTING…` : 'CONNECT'}
+              {isConnecting ? t`CONNECTING…` : t`CONNECT`}
             </button>
           </div>
           <div style={{ fontSize: 10, color: '#393939' }}>
@@ -199,8 +232,33 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
             </Trans>
           </div>
           {connectionError && (
-            <div style={{ fontSize: 11, color: '#9f2d24' }}>{connectionError}</div>
+            <div role="alert" style={{ fontSize: 11, color: '#9f2d24', lineHeight: 1.5 }}>
+              {connectionError}
+            </div>
           )}
+          <details
+            data-testid="ynab-token-howto"
+            style={{
+              padding: '8px 10px',
+              fontSize: 11,
+              color: '#393939',
+              lineHeight: 1.6,
+              border: '1px dashed rgba(57,57,57,0.3)',
+            }}
+          >
+            <summary style={{ cursor: 'pointer', fontWeight: 700, color: '#141414' }}>
+              <Trans>Where do I find my token?</Trans>
+            </summary>
+            <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
+              <YnabPatHelpSteps linkClassName="text-[#141414]" />
+              <span>
+                <Trans>
+                  Personal access tokens are only available in the YNAB web app, not the phone app.
+                  No token? Use EXPORT ZIP instead.
+                </Trans>
+              </span>
+            </div>
+          </details>
         </div>
       )}
 
@@ -214,7 +272,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
             aria-label={t`YNAB plan`}
             className="mt-2.5 w-full min-w-0 border-[#141414] bg-[#fbf7eb] text-[#141414]"
           >
-            <SelectValue placeholder="Select a YNAB plan" />
+            <SelectValue placeholder={t`Select a YNAB plan`} />
           </SelectTrigger>
           <SelectContent>
             {plans.map((plan) => (
@@ -245,7 +303,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
             <em>
               <Trans>Plan Settings</Trans>
             </em>
-            , set Date Format to <code>2025-12-30</code>, Number Format to <code>123,456.78</code>
+            , set Date Format to <code>2025-12-30</code>, Number Format to <code>123,456.78</code>{' '}
             and Currency Placement to “Don’t Show”. Skipping this can shift dates and break amounts.
             Details in the{' '}
             <a
@@ -286,15 +344,15 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
         >
           <div style={{ fontSize: 32, marginBottom: 8 }}>☁</div>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>
-            {isInspecting ? t`Inspecting your YNAB export…` : 'Drop your YNAB export here'}
+            {isInspecting ? t`Inspecting your YNAB export…` : t`Drop your YNAB export here`}
           </div>
           <div style={{ fontSize: 11, color: '#393939', lineHeight: 1.5 }}>
             <Trans>
-              In YNAB:{' '}
+              In the YNAB web app, click your plan name in the top-left corner and choose{' '}
               <em>
-                <Trans>File › Export Budget</Trans>
+                <Trans>Export Budget</Trans>
               </em>
-              . Drop the .zip here —<br />
+              . Drop the .zip here as it is —<br />
               nothing leaves your device until you finish.
             </Trans>
           </div>
@@ -329,6 +387,15 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               if (f) void onFileSelected(f);
             }}
           />
+        </div>
+      )}
+      {!hasSource && (
+        <div style={{ marginTop: 14, fontSize: 11, color: '#393939', textAlign: 'center' }}>
+          {sourceMode === 'api' ? (
+            <Trans>Connect to YNAB to continue.</Trans>
+          ) : (
+            <Trans>Add your YNAB export to continue.</Trans>
+          )}
         </div>
       )}
       {hasSource && (
@@ -366,7 +433,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               <div style={{ fontSize: 10, color: '#393939' }}>
                 {file ? `${file.size} · ` : t`Connected through YNAB API · `}
                 {needsDateOrder
-                  ? 'select the date format below'
+                  ? t`select the date format below`
                   : needsCreditMatching
                     ? t`match payment categories below`
                     : t`ready to import on finish`}
