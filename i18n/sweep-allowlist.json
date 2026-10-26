@@ -120,6 +120,11 @@
       "file": "src/features/bank-sync/lib/provider.ts",
       "text": "Enable Banking",
       "reason": "Brand name of the bank data provider; never translated."
+    },
+    {
+      "file": "src/shared/lib/analytics/error-capture.ts",
+      "text": "Error",
+      "reason": "JavaScript error type name sent to PostHog error tracking; never shown to users."
     }
   ]
 }
