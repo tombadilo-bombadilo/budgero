@@ -56,10 +56,13 @@ RUN pnpm --filter @budgero/core build
 ARG POSTHOG_SOURCEMAPS=off
 
 # Build app package (run via pnpm workspace to avoid npx resolution issues in containers)
+# Source maps roughly double Vite's memory use; Node's default heap on the 12 GB
+# release runner is too small for that (v1.19.4 build ran out of heap).
 RUN --mount=type=secret,id=posthog_cli_token \
     --mount=type=secret,id=posthog_cli_env_id \
     if [ "$POSTHOG_SOURCEMAPS" = off ]; then maps=false; else maps=hidden; fi \
- && APP_SOURCEMAPS=$maps pnpm --filter @budgero/app exec vite build --config vite.config.ts \
+ && APP_SOURCEMAPS=$maps NODE_OPTIONS=--max-old-space-size=6144 \
+      pnpm --filter @budgero/app exec vite build --config vite.config.ts \
  && sh packages/app/scripts/posthog-sourcemaps.sh packages/app/dist "$POSTHOG_SOURCEMAPS" \
       "$(node -p 'require("./package.json").version')"
 
