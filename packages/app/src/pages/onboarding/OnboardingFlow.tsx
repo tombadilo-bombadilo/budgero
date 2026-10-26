@@ -304,6 +304,21 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
     [set, state.budgetName, state.currency]
   );
 
+  // Escape from the YNAB step: same as going back to "How are you starting?"
+  // and picking Fresh start, without walking back through every step.
+  const startFreshInstead = useCallback(() => {
+    set({
+      startMode: 'fresh',
+      ynabFile: null,
+      ynabApiSnapshot: null,
+      ynabPreview: null,
+      ynabDateOrder: undefined,
+      ynabCreditPaymentMappings: undefined,
+      ynabSourceNumberFormat: undefined,
+    });
+    setStepIndex(PATH_STEPS.fresh.indexOf('accounts'));
+  }, [set]);
+
   const handleYnabProgress = useCallback(async (update: YNABImportProgressUpdate) => {
     setYnabImportUpdates((current) => [...current, update]);
     await yieldAfterPaint();
@@ -562,6 +577,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
             onFileSelected={handleYnabFile}
             onApiSnapshotSelected={handleYnabApiSnapshot}
             isInspecting={isInspectingYnab}
+            onStartFresh={startFreshInstead}
           />
         )}
         {curId === 'accounts' && <AccountsStep cur={cur} state={state} set={set} />}

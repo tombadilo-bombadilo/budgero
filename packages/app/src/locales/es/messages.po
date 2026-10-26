@@ -11916,6 +11916,10 @@ msgstr "No se han detectado filas de tabla en el PDF."
 msgid "No table structure detected in PDF. The file has text but the parser couldn't find a consistent table layout. If the statement is available as CSV, that usually works better."
 msgstr "No se ha detectado una estructura de tabla en el PDF. El archivo tiene texto, pero no se ha encontrado un diseño de tabla coherente. Si el extracto está disponible en CSV, suele funcionar mejor."
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "No token or export at hand?"
+msgstr "¿No tienes a mano un token ni una exportación?"
+
 #: src/pages/settings/simplefin/SimpleFINPage.tsx
 #~ msgid "No transactions available for this account."
 #~ msgstr "No hay transacciones disponibles para esta cuenta."
@@ -16373,6 +16377,10 @@ msgstr "Empezar cada mes con una cantidad disponible determinada"
 msgid "Start fresh"
 msgstr "Empezar de cero"
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "Start fresh instead"
+msgstr "Mejor empezar de cero"
+
 #: src/pages/auth/AuthPage.tsx
 msgid "Start fresh or bring your YNAB budget"
 msgstr "Empieza de cero o trae tu presupuesto de YNAB"
@@ -19604,6 +19612,10 @@ msgstr "Puedes instalar Budgero en cualquier momento desde el menú de tu navega
 #: src/features/subscription/ui/SubscriptionSuccess.tsx
 msgid "You can manage your subscription anytime from your account settings."
 msgstr "Puedes gestionar tu suscripción en cualquier momento desde los ajustes de tu cuenta."
+
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "You can still import from YNAB later as a new budget."
+msgstr "Podrás importar desde YNAB más adelante como un presupuesto nuevo."
 
 #: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx

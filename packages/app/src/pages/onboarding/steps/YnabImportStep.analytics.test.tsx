@@ -15,7 +15,7 @@ vi.mock('@budgero/core/browser', async (importOriginal) => ({
 }));
 vi.mock('@shared/lib/analytics/track', () => ({ track: mocks.track }));
 
-function Form() {
+function Form({ onStartFresh }: { onStartFresh?: () => void }) {
   const [state, setState] = React.useState<OnboardingFormState>(INITIAL_STATE);
   return (
     <YnabImportStep
@@ -25,6 +25,7 @@ function Form() {
       isInspecting={false}
       onFileSelected={vi.fn()}
       onApiSnapshotSelected={(ynabApiSnapshot) => setState((s) => ({ ...s, ynabApiSnapshot }))}
+      onStartFresh={onStartFresh}
     />
   );
 }
@@ -75,4 +76,12 @@ it('reports method switches and opened help', () => {
   details.open = true;
   fireEvent(details, new Event('toggle'));
   expect(mocks.track).toHaveBeenCalledWith('ynab_import_help_opened', { topic: 'token_steps' });
+});
+
+it('offers a way out to the fresh path while no source is loaded', () => {
+  const onStartFresh = vi.fn();
+  render(<Form onStartFresh={onStartFresh} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Start fresh instead' }));
+  expect(onStartFresh).toHaveBeenCalledTimes(1);
+  expect(mocks.track).toHaveBeenCalledWith('ynab_import_method_chosen', { method: 'start_fresh' });
 });

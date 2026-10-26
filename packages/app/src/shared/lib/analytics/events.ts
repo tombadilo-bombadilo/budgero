@@ -101,6 +101,8 @@ const IMPORT_CONTEXTS = ['onboarding', 'app'] as const;
 /** Onboarding YNAB step: how the user tried to bring their data. */
 export const YNAB_IMPORT_METHODS = ['api', 'zip'] as const;
 export type YnabImportMethod = (typeof YNAB_IMPORT_METHODS)[number];
+/** A method, or leaving the YNAB step for the fresh path without importing. */
+const YNAB_IMPORT_CHOICES = [...YNAB_IMPORT_METHODS, 'start_fresh'] as const;
 /** Why a YNAB token or export was rejected (pages/onboarding/steps/ynab-source-errors.ts). */
 export const YNAB_SOURCE_FAILURE_REASONS = [
   'unauthorized',
@@ -261,7 +263,7 @@ export const EVENT_SCHEMA = {
   onboarding_finished: { path: ONBOARDING_PATHS, duration_bucket: DURATION_BUCKETS },
 
   // Onboarding YNAB step (before import_started, which fires only after the password step)
-  ynab_import_method_chosen: { method: YNAB_IMPORT_METHODS },
+  ynab_import_method_chosen: { method: YNAB_IMPORT_CHOICES },
   ynab_import_source_loaded: { method: YNAB_IMPORT_METHODS },
   ynab_import_validation_failed: {
     method: YNAB_IMPORT_METHODS,

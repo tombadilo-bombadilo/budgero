@@ -20,6 +20,8 @@ interface YnabStepProps extends StepProps {
   onFileSelected: (file: File) => Promise<void> | void;
   onApiSnapshotSelected: (snapshot: YNABApiPlanSnapshot) => Promise<void> | void;
   isInspecting: boolean;
+  /** Leave the YNAB path for the fresh one, keeping what was entered so far. */
+  onStartFresh?: () => void;
 }
 
 export const YnabImportStep: React.FC<YnabStepProps> = ({
@@ -29,6 +31,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
   onFileSelected,
   onApiSnapshotSelected,
   isInspecting,
+  onStartFresh,
 }) => {
   const { t } = useLingui();
 
@@ -409,6 +412,33 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
             <Trans>Connect to YNAB to continue.</Trans>
           ) : (
             <Trans>Add your YNAB export to continue.</Trans>
+          )}
+          {onStartFresh && (
+            <div style={{ marginTop: 6, lineHeight: 1.6 }}>
+              <Trans>No token or export at hand?</Trans>{' '}
+              <button
+                type="button"
+                onClick={() => {
+                  track('ynab_import_method_chosen', { method: 'start_fresh' });
+                  onStartFresh();
+                }}
+                style={{
+                  padding: 0,
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#141414',
+                  fontFamily: 'inherit',
+                  fontSize: 'inherit',
+                  fontWeight: 700,
+                  textDecoration: 'underline',
+                  cursor: 'pointer',
+                }}
+              >
+                <Trans>Start fresh instead</Trans>
+              </button>
+              <br />
+              <Trans>You can still import from YNAB later as a new budget.</Trans>
+            </div>
           )}
         </div>
       )}
