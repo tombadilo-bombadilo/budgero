@@ -268,10 +268,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
           ynabPreview: preview,
           budgetName: state.budgetName || file.name.replace(/\.(zip|json)$/i, ''),
         });
+        track('ynab_import_source_loaded', { method: 'zip' });
       } catch (err) {
         if (request !== ynabSourceRequestRef.current) return;
         console.error('[Onboarding] Failed to read YNAB file', err);
         const reason = classifyYnabZipError(err);
+        track('ynab_import_validation_failed', { method: 'zip', reason });
         toast.error(
           reason === 'not_zip'
             ? t`That file isn’t a ZIP. Upload the .zip YNAB downloads when you export, without unpacking it.`

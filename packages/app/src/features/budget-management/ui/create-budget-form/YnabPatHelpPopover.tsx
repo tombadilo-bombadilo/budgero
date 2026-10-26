@@ -8,10 +8,11 @@ export const YNAB_DEVELOPER_SETTINGS_URL = 'https://app.ynab.com/settings/develo
 
 interface YnabPatHelpStepsProps {
   linkClassName?: string;
+  onLinkClick?: () => void;
 }
 
 /** The numbered "create a personal access token" steps, shared by the popover and onboarding. */
-export function YnabPatHelpSteps({ linkClassName }: YnabPatHelpStepsProps) {
+export function YnabPatHelpSteps({ linkClassName, onLinkClick }: YnabPatHelpStepsProps) {
   return (
     <>
       <ol className="list-decimal space-y-1.5 pl-4">
@@ -38,6 +39,7 @@ export function YnabPatHelpSteps({ linkClassName }: YnabPatHelpStepsProps) {
         href={YNAB_DEVELOPER_SETTINGS_URL}
         target="_blank"
         rel="noopener noreferrer"
+        onClick={onLinkClick}
         className={cn(
           'inline-flex items-center gap-1 font-medium underline underline-offset-2',
           linkClassName

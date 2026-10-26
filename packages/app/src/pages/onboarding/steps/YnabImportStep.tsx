@@ -11,6 +11,8 @@ import {
 import { YnabCreditPaymentMatching } from '@features/budget-management/ui/create-budget-form/YnabCreditPaymentMatching';
 import { hasCompleteCreditPaymentMappings } from '@features/budget-management/ui/create-budget-form/ynab-credit-payment-matching';
 import { YnabDateOrderChoice } from '@features/budget-management/ui/create-budget-form/YnabDateOrderChoice';
+import { track } from '@shared/lib/analytics/track';
+import type { YnabHelpTopic } from '@shared/lib/analytics/events';
 import { Title, type StepProps } from './shared';
 import { classifyYnabApiError, type YnabApiFailureReason } from './ynab-source-errors';
 
@@ -48,6 +50,12 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
     []
   );
   const hasSource = Boolean(file || apiSnapshot);
+  const helpOpened = (topic: YnabHelpTopic) => track('ynab_import_help_opened', { topic });
+  const apiFailed = (error: unknown, fallback: string) => {
+    const reason = classifyYnabApiError(error);
+    track('ynab_import_validation_failed', { method: 'api', reason });
+    setConnectionError(apiErrorMessage(reason, error, fallback));
+  };
 
   const apiErrorMessage = (reason: YnabApiFailureReason, error: unknown, fallback: string) => {
     switch (reason) {
@@ -97,9 +105,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
       await onApiSnapshotSelected(snapshot);
     } catch (error) {
       if (request !== requestRef.current) return;
-      setConnectionError(
-        apiErrorMessage(classifyYnabApiError(error), error, t`Could not read that plan`)
-      );
+      apiFailed(error, t`Could not read that plan`);
     } finally {
       if (request === requestRef.current) setIsConnecting(false);
     }
@@ -121,19 +127,19 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
       if (request !== requestRef.current) return;
       setSelectedPlanId(firstPlanId);
       await onApiSnapshotSelected(snapshot);
+      track('ynab_import_source_loaded', { method: 'api' });
     } catch (error) {
       if (request !== requestRef.current) return;
       setPlans([]);
       setSelectedPlanId('');
-      setConnectionError(
-        apiErrorMessage(classifyYnabApiError(error), error, t`Could not connect to YNAB`)
-      );
+      apiFailed(error, t`Could not connect to YNAB`);
     } finally {
       if (request === requestRef.current) setIsConnecting(false);
     }
   };
 
   const switchSource = (mode: 'api' | 'zip') => {
+    if (mode !== sourceMode) track('ynab_import_method_chosen', { method: mode });
     requestRef.current += 1;
     setIsConnecting(false);
     setSourceMode(mode);
@@ -190,7 +196,10 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
             <div style={{ fontSize: 11, fontWeight: 700 }}>
               <Trans>YNAB PERSONAL ACCESS TOKEN</Trans>
             </div>
-            <YnabPatHelpPopover className="text-[#393939] hover:bg-black/10 hover:text-[#141414]" />
+            <YnabPatHelpPopover
+              className="text-[#393939] hover:bg-black/10 hover:text-[#141414]"
+              onOpenChange={(open) => open && helpOpened('token_popover')}
+            />
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <input
@@ -238,6 +247,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
           )}
           <details
             data-testid="ynab-token-howto"
+            onToggle={(event) => event.currentTarget.open && helpOpened('token_steps')}
             style={{
               padding: '8px 10px',
               fontSize: 11,
@@ -250,7 +260,10 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               <Trans>Where do I find my token?</Trans>
             </summary>
             <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
-              <YnabPatHelpSteps linkClassName="text-[#141414]" />
+              <YnabPatHelpSteps
+                linkClassName="text-[#141414]"
+                onLinkClick={() => helpOpened('ynab_developer_settings')}
+              />
               <span>
                 <Trans>
                   Personal access tokens are only available in the YNAB web app, not the phone app.
@@ -310,6 +323,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               href="https://budgero.app/docs/ynab-import"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => helpOpened('import_guide')}
               style={{ color: '#141414', fontWeight: 700 }}
             >
               <Trans>import guide</Trans>
