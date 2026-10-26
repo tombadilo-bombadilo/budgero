@@ -72,7 +72,7 @@ export const ONBOARDING_STEPS: OnboardingStepDef[] = [
   {
     id: 'ynab_import',
     title: msg`Bring your YNAB budget over`,
-    subtitle: msg`Drop your YNAB export and we’ll rebuild accounts, categories, and history in Budgero.`,
+    subtitle: msg`Connect your YNAB account or upload a YNAB export, and we’ll rebuild accounts, categories, and history in Budgero.`,
     hint: msg`Import & map`,
   },
   {

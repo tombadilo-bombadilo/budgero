@@ -98,6 +98,30 @@ export const IMPORT_SOURCES = ['ynab_api', 'ynab_zip', 'csv', 'pdf', 'ofx', 'qif
 export type ImportSource = (typeof IMPORT_SOURCES)[number];
 const IMPORT_CONTEXTS = ['onboarding', 'app'] as const;
 
+/** Onboarding YNAB step: how the user tried to bring their data. */
+export const YNAB_IMPORT_METHODS = ['api', 'zip'] as const;
+export type YnabImportMethod = (typeof YNAB_IMPORT_METHODS)[number];
+/** A method, or leaving the YNAB step for the fresh path without importing. */
+const YNAB_IMPORT_CHOICES = [...YNAB_IMPORT_METHODS, 'start_fresh'] as const;
+/** Why a YNAB token or export was rejected (pages/onboarding/steps/ynab-source-errors.ts). */
+export const YNAB_SOURCE_FAILURE_REASONS = [
+  'unauthorized',
+  'rate_limited',
+  'network',
+  'no_plans',
+  'not_zip',
+  'not_ynab_export',
+  'unknown',
+] as const;
+/** Which help the user opened on the YNAB step. */
+export const YNAB_HELP_TOPICS = [
+  'token_steps',
+  'token_popover',
+  'ynab_developer_settings',
+  'import_guide',
+] as const;
+export type YnabHelpTopic = (typeof YNAB_HELP_TOPICS)[number];
+
 const BANK_PROVIDERS = ['simplefin', 'enablebanking'] as const;
 const BANK_SYNC_TRIGGERS = ['manual', 'auto', 'link'] as const;
 
@@ -237,6 +261,15 @@ export const EVENT_SCHEMA = {
   onboarding_step_viewed: { step: ONBOARDING_STEP_IDS, path: ONBOARDING_PATHS },
   onboarding_step_completed: { step: ONBOARDING_STEP_IDS, path: ONBOARDING_PATHS },
   onboarding_finished: { path: ONBOARDING_PATHS, duration_bucket: DURATION_BUCKETS },
+
+  // Onboarding YNAB step (before import_started, which fires only after the password step)
+  ynab_import_method_chosen: { method: YNAB_IMPORT_CHOICES },
+  ynab_import_source_loaded: { method: YNAB_IMPORT_METHODS },
+  ynab_import_validation_failed: {
+    method: YNAB_IMPORT_METHODS,
+    reason: YNAB_SOURCE_FAILURE_REASONS,
+  },
+  ynab_import_help_opened: { topic: YNAB_HELP_TOPICS },
 
   // Imports
   import_started: { source: IMPORT_SOURCES, context: IMPORT_CONTEXTS },

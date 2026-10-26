@@ -2234,8 +2234,12 @@ msgid "<0>Available</0>: What's left to spend"
 msgstr "<0>Available</0>: What's left to spend"
 
 #: src/pages/onboarding/steps/YnabImportStep.tsx
-msgid "<0>Before you export:</0> in YNAB’s <1>Plan Settings</1>, set Date Format to <2>2025-12-30</2>, Number Format to <3>123,456.78</3>and Currency Placement to “Don’t Show”. Skipping this can shift dates and break amounts. Details in the <4>import guide</4>."
-msgstr "<0>Before you export:</0> in YNAB’s <1>Plan Settings</1>, set Date Format to <2>2025-12-30</2>, Number Format to <3>123,456.78</3>and Currency Placement to “Don’t Show”. Skipping this can shift dates and break amounts. Details in the <4>import guide</4>."
+msgid "<0>Before you export:</0> in YNAB’s <1>Plan Settings</1>, set Date Format to <2>2025-12-30</2>, Number Format to <3>123,456.78</3> and Currency Placement to “Don’t Show”. Skipping this can shift dates and break amounts. Details in the <4>import guide</4>."
+msgstr "<0>Before you export:</0> in YNAB’s <1>Plan Settings</1>, set Date Format to <2>2025-12-30</2>, Number Format to <3>123,456.78</3> and Currency Placement to “Don’t Show”. Skipping this can shift dates and break amounts. Details in the <4>import guide</4>."
+
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+#~ msgid "<0>Before you export:</0> in YNAB’s <1>Plan Settings</1>, set Date Format to <2>2025-12-30</2>, Number Format to <3>123,456.78</3>and Currency Placement to “Don’t Show”. Skipping this can shift dates and break amounts. Details in the <4>import guide</4>."
+#~ msgstr "<0>Before you export:</0> in YNAB’s <1>Plan Settings</1>, set Date Format to <2>2025-12-30</2>, Number Format to <3>123,456.78</3>and Currency Placement to “Don’t Show”. Skipping this can shift dates and break amounts. Details in the <4>import guide</4>."
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 #~ msgid "<0>Budget Created</0>— when you create a new budget"
@@ -3077,6 +3081,10 @@ msgstr "Add Widget"
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Add your first accounts"
 msgstr "Add your first accounts"
+
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "Add your YNAB export to continue."
+msgstr "Add your YNAB export to continue."
 
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "Added to every monthly payment throughout the plan."
@@ -5565,6 +5573,10 @@ msgid "Connect"
 msgstr "Connect"
 
 #: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "CONNECT"
+msgstr "CONNECT"
+
+#: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "CONNECT DIRECTLY"
 msgstr "CONNECT DIRECTLY"
 
@@ -5592,9 +5604,17 @@ msgstr "Connect to LM Studio server"
 #~ msgid "Connect to SimpleFIN Bridge to sync your bank accounts."
 #~ msgstr "Connect to SimpleFIN Bridge to sync your bank accounts."
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "Connect to YNAB to continue."
+msgstr "Connect to YNAB to continue."
+
 #: src/pages/settings/simplefin/SimpleFINPage.tsx
 #~ msgid "Connect to your bank accounts via SimpleFIN Bridge for automatic transaction sync."
 #~ msgstr "Connect to your bank accounts via SimpleFIN Bridge for automatic transaction sync."
+
+#: src/pages/onboarding/onboarding-data.ts
+msgid "Connect your YNAB account or upload a YNAB export, and we’ll rebuild accounts, categories, and history in Budgero."
+msgstr "Connect your YNAB account or upload a YNAB export, and we’ll rebuild accounts, categories, and history in Budgero."
 
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Connected"
@@ -5973,6 +5993,10 @@ msgstr "Couldn't reach Enable Banking through the Budgero relay. Check your conn
 msgid "Couldn't reach SimpleFIN. Check your connection and try again."
 msgstr "Couldn't reach SimpleFIN. Check your connection and try again."
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "Couldn’t reach YNAB. Check your connection and try again."
+msgstr "Couldn’t reach YNAB. Check your connection and try again."
+
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
 msgid "Couldn't resolve this match"
 msgstr "Couldn't resolve this match"
@@ -6092,6 +6116,10 @@ msgstr "Create a new category group to organize your budget categories"
 #: src/features/category-management/ui/AddCategoryDialog.tsx
 msgid "Create a new category in this group"
 msgstr "Create a new category in this group"
+
+#: src/features/budget-management/ui/create-budget-form/YnabPatHelpPopover.tsx
+msgid "Create a YNAB personal access token"
+msgstr "Create a YNAB personal access token"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Create account"
@@ -7065,8 +7093,12 @@ msgid "Drop garbage rows from the top of the file (titles, blank lines, page ban
 msgstr "Drop garbage rows from the top of the file (titles, blank lines, page banners). Header detection and the previews below update automatically."
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Drop your YNAB export and we’ll rebuild accounts, categories, and history in Budgero."
-msgstr "Drop your YNAB export and we’ll rebuild accounts, categories, and history in Budgero."
+#~ msgid "Drop your YNAB export and we’ll rebuild accounts, categories, and history in Budgero."
+#~ msgstr "Drop your YNAB export and we’ll rebuild accounts, categories, and history in Budgero."
+
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "Drop your YNAB export here"
+msgstr "Drop your YNAB export here"
 
 #: src/pages/admin/sql-explorer/QueryCard.tsx
 msgid "Dry Run"
@@ -9334,14 +9366,18 @@ msgstr "In progress / interrupted"
 msgid "In the billing portal, you can:"
 msgstr "In the billing portal, you can:"
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "In the YNAB web app, click your plan name in the top-left corner and choose <0>Export Budget</0>. Drop the .zip here as it is —<1/>nothing leaves your device until you finish."
+msgstr "In the YNAB web app, click your plan name in the top-left corner and choose <0>Export Budget</0>. Drop the .zip here as it is —<1/>nothing leaves your device until you finish."
+
 #: src/pages/analytics/AnalyticsPage.tsx
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "In vs Out"
 msgstr "In vs Out"
 
 #: src/pages/onboarding/steps/YnabImportStep.tsx
-msgid "In YNAB: <0>File › Export Budget</0>. Drop the .zip here —<1/>nothing leaves your device until you finish."
-msgstr "In YNAB: <0>File › Export Budget</0>. Drop the .zip here —<1/>nothing leaves your device until you finish."
+#~ msgid "In YNAB: <0>File › Export Budget</0>. Drop the .zip here —<1/>nothing leaves your device until you finish."
+#~ msgstr "In YNAB: <0>File › Export Budget</0>. Drop the .zip here —<1/>nothing leaves your device until you finish."
 
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Inactive"
@@ -11882,6 +11918,10 @@ msgstr "No table rows detected in PDF."
 msgid "No table structure detected in PDF. The file has text but the parser couldn't find a consistent table layout. If the statement is available as CSV, that usually works better."
 msgstr "No table structure detected in PDF. The file has text but the parser couldn't find a consistent table layout. If the statement is available as CSV, that usually works better."
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "No token or export at hand?"
+msgstr "No token or export at hand?"
+
 #: src/pages/settings/simplefin/SimpleFINPage.tsx
 #~ msgid "No transactions available for this account."
 #~ msgstr "No transactions available for this account."
@@ -12907,6 +12947,10 @@ msgstr "Periodic Available Target"
 msgid "Permanently delete {0}. This removes their memberships and owned spaces."
 msgstr "Permanently delete {0}. This removes their memberships and owned spaces."
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "Personal access tokens are only available in the YNAB web app, not the phone app. No token? Use EXPORT ZIP instead."
+msgstr "Personal access tokens are only available in the YNAB web app, not the phone app. No token? Use EXPORT ZIP instead."
+
 #: src/app/startup/screens.tsx
 msgid "Personal Budget Space"
 msgstr "Personal Budget Space"
@@ -13850,6 +13894,10 @@ msgstr "Recent users"
 #: src/pages/settings/ai/RecommendedModelsPanel.tsx
 msgid "Recommended Models"
 msgstr "Recommended Models"
+
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "Recommended. You need a personal access token from the YNAB web app; creating one takes about a minute."
+msgstr "Recommended. You need a personal access token from the YNAB web app; creating one takes about a minute."
 
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Reconcile Account"
@@ -15266,6 +15314,10 @@ msgstr "Select a saved chart to pin to this dashboard."
 msgid "Select a saved template"
 msgstr "Select a saved template"
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "Select a YNAB plan"
+msgstr "Select a YNAB plan"
+
 #: src/features/ai/ui/receipt-scanner/AIReceiptScannerDialog.tsx
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
 #: src/features/import/ui/steps/ConfigureStep.tsx
@@ -15398,6 +15450,10 @@ msgstr "Select new chart"
 msgid "Select New Chart"
 msgstr "Select New Chart"
 
+#: src/features/budget-management/ui/create-budget-form/YnabPatHelpPopover.tsx
+msgid "Select New Token, enter your password, and choose Generate."
+msgstr "Select New Token, enter your password, and choose Generate."
+
 #: src/pages/settings/AutomationRulesPage.tsx
 msgid "Select or create a budget to configure automation rules."
 msgstr "Select or create a budget to configure automation rules."
@@ -15448,6 +15504,10 @@ msgstr "Select target date to calculate"
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 msgid "Select the Budgero backup file you want to restore."
 msgstr "Select the Budgero backup file you want to restore."
+
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "select the date format below"
+msgstr "select the date format below"
 
 #: src/features/transactions/ui/form/AccountSelect.tsx
 msgid "Select to account"
@@ -16319,6 +16379,10 @@ msgstr "Start each month with a certain amount available"
 msgid "Start fresh"
 msgstr "Start fresh"
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "Start fresh instead"
+msgstr "Start fresh instead"
+
 #: src/pages/auth/AuthPage.tsx
 msgid "Start fresh or bring your YNAB budget"
 msgstr "Start fresh or bring your YNAB budget"
@@ -16869,9 +16933,21 @@ msgstr "That doesn't look like a SimpleFIN setup token."
 msgid "That file isn't a private key."
 msgstr "That file isn't a private key."
 
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "That file isn’t a ZIP. Upload the .zip YNAB downloads when you export, without unpacking it."
+msgstr "That file isn’t a ZIP. Upload the .zip YNAB downloads when you export, without unpacking it."
+
 #: src/features/bank-sync/lib/enable-banking/jwt.ts
 msgid "That file isn't an RSA private key. Upload the .pem Enable Banking gave you."
 msgstr "That file isn't an RSA private key. Upload the .pem Enable Banking gave you."
+
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "That token works, but YNAB returned no plans for it. Check that you signed in to the YNAB account that has your budget."
+msgstr "That token works, but YNAB returned no plans for it. Check that you signed in to the YNAB account that has your budget."
+
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "That ZIP isn’t a YNAB export: its register and plan files are missing. Export again from the YNAB web app."
+msgstr "That ZIP isn’t a YNAB export: its register and plan files are missing. Export again from the YNAB web app."
 
 #: src/features/bank-sync/ui/ConnectSimpleFINCard.tsx
 msgid "The access key is stored encrypted inside this budget and syncs to your devices. Anyone you share this budget with can sync it too."
@@ -18502,6 +18578,10 @@ msgstr "Upload a Budgero database file to restore your data."
 msgid "Upload a receipt or bank statement image to extract transactions"
 msgstr "Upload a receipt or bank statement image to extract transactions"
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "Upload the .zip file the YNAB web app gives you when you export your plan."
+msgstr "Upload the .zip file the YNAB web app gives you when you export your plan."
+
 #: src/features/bank-sync/ui/EnableBankingSetupCard.tsx
 msgid "Upload the downloaded .pem key and enter the application ID."
 msgstr "Upload the downloaded .pem key and enter the application ID."
@@ -19065,6 +19145,10 @@ msgstr "When viewing transactions from all accounts, amounts are always shown in
 msgid "When you add a transaction for a payee you've used before, the category pre-fills with whatever you chose last time, marked with an amber ring. An autofill rule always wins over this, and it never touches imports or a category you've already picked."
 msgstr "When you add a transaction for a payee you've used before, the category pre-fills with whatever you chose last time, marked with an amber ring. An autofill rule always wins over this, and it never touches imports or a category you've already picked."
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "Where do I find my token?"
+msgstr "Where do I find my token?"
+
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Where do you keep your money?"
 msgstr "Where do you keep your money?"
@@ -19288,6 +19372,10 @@ msgstr "Yes, Replace All Data"
 msgid "YNAB applies loan interest to balances without exporting a separate transaction. Budgero added visible ledger adjustments so these balances remain exact."
 msgstr "YNAB applies loan interest to balances without exporting a separate transaction. Budgero added visible ledger adjustments so these balances remain exact."
 
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "YNAB didn’t accept that token. Copy the whole token from YNAB’s Developer Settings and paste it again, or create a new one."
+msgstr "YNAB didn’t accept that token. Copy the whole token from YNAB’s Developer Settings and paste it again, or create a new one."
+
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
 msgid "YNAB does not reliably export account types. Budgero recognizes credit cards where possible and imports other accounts as Checking, so verify every account before budgeting."
 msgstr "YNAB does not reliably export account types. Budgero recognizes credit cards where possible and imports other accounts as Checking, so verify every account before budgeting."
@@ -19315,6 +19403,10 @@ msgstr "YNAB import stopped"
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 msgid "YNAB import verified"
 msgstr "YNAB import verified"
+
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "YNAB is limiting requests right now. Wait a few minutes, then connect again."
+msgstr "YNAB is limiting requests right now. Wait a few minutes, then connect again."
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
 #: src/pages/onboarding/steps/YnabImportStep.tsx
@@ -19522,6 +19614,10 @@ msgstr "You can install Budgero anytime from your browser menu"
 #: src/features/subscription/ui/SubscriptionSuccess.tsx
 msgid "You can manage your subscription anytime from your account settings."
 msgstr "You can manage your subscription anytime from your account settings."
+
+#: src/pages/onboarding/steps/YnabImportStep.tsx
+msgid "You can still import from YNAB later as a new budget."
+msgstr "You can still import from YNAB later as a new budget."
 
 #: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
