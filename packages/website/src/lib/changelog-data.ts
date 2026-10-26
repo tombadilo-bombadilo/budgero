@@ -21,12 +21,32 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.19.4',
+    date: 'October 26, 2026',
+    summary:
+      'Makes the YNAB import step in onboarding easier to get through, and improves error reporting so problems can be found and fixed faster.',
+    isLatest: true,
+    items: [
+      {
+        type: 'improved',
+        title: 'YNAB import in onboarding',
+        description:
+          'Clear steps for finding your YNAB token, a note that you need the YNAB web app, error messages that say what to do next, and a Start fresh instead option if you don’t have a token or export at hand.',
+      },
+      {
+        type: 'improved',
+        title: 'Error reports',
+        description:
+          'Crash reports now say what kind of error happened and where in the app, so problems get fixed sooner. They still never contain your data or any text you typed.',
+      },
+    ],
+  },
+  {
     version: 'v1.19.3',
     date: 'October 24, 2026',
     summary:
       'Fixes a sync reconnect loop after a session expires, counts website visitors correctly without cookies, and updates the analytics library.',
-    isLatest: true,
-    items: [
+        items: [
       {
         type: 'fixed',
         title: 'Sync after an expired session',
