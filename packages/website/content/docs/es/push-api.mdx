@@ -55,6 +55,7 @@ Los valores monetarios son milunidades enteras (1/1000 de una unidad de moneda),
 ### Operación soportada actualmente
 
 - `transactions.add` — envía un ingreso o gasto. Usa `inflow` para ingresos y `outflow` para gastos (solo uno debe ser distinto de cero). Proporciona los IDs existentes de tu presupuesto, cuenta y categoría. Usa `"cleared": true` si la transacción ya se ha liquidado en el banco; si se omite, se añade como no liquidada.
+- **Coincidencias con movimientos registrados a mano:** un `transactions.add` enviado que se parece a una transacción que registraste tú (misma cuenta y dirección, importe y fecha dentro de **Ajustes → Transacciones duplicadas**, 1 % y ±7 días por defecto) no se añade dos veces. Espera en la lista **por revisar** de la cuenta: **Emparejar** conserva tu movimiento y lo marca como confirmado, y **Añadir como nueva** añade exactamente lo enviado. Las transferencias y las transacciones divididas siempre se añaden directamente.
 
 ## Requisitos de cifrado
 

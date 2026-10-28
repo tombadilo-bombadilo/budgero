@@ -50,7 +50,7 @@ import {
 } from '@shared/lib/analytics/mutation-events';
 import { track } from '@shared/lib/analytics/track';
 import { ageBucket } from '@shared/lib/analytics/events';
-import { withPushIdentity } from './push-identity';
+import { pushMatchReview, withPushIdentity } from './push-identity';
 
 /** Ops whose new rows the continuous rules run over (see applyContinuousRulesIfNeeded). */
 const CONTINUOUS_RULE_TRIGGERS = new Set([
@@ -586,6 +586,16 @@ export class AppRuntime {
 
           if (op === 'transactions.add' && item.message_id && args) {
             args = withPushIdentity(args, item.message_id);
+            // Same matching as statement imports and bank sync: a push that may
+            // be a transaction typed by hand waits in the review list instead.
+            const review = pushMatchReview(
+              this.services() as Parameters<typeof pushMatchReview>[0],
+              args
+            );
+            if (review) {
+              op = 'bankSync.addReviews';
+              args = review;
+            }
             parsedArgs = args;
           }
 

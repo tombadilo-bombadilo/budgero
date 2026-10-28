@@ -1,6 +1,7 @@
 import type { DatabaseAdapter } from '../../database/interface.js';
 import { allRows, getRow, run } from '../../database/sql.js';
 import { getLocalDateString } from '../../utils/date.js';
+import { DUPLICATE_HINT_DEFAULTS, UserMetaQueries } from '../user-meta/queries.js';
 
 /** Immutable source values: ledger edits must not erase import identity. */
 export interface ImportIdentity {
@@ -15,6 +16,11 @@ export interface ImportIdentity {
   currency: string;
   /** Imported from a bank while still pending; settled once the bank books it. */
   pending?: boolean;
+  /**
+   * Push API rows waiting in review: the original transactions.add args, so
+   * "Add as new" replays exactly what was sent (category, label, cleared...).
+   */
+  pushArgs?: Record<string, unknown>;
 }
 export interface DuplicateInput extends ImportIdentity {
   index: number;
@@ -71,6 +77,19 @@ const dayNumber = (date: string) => {
   return Date.UTC(y, m - 1, d) / 86_400_000;
 };
 const signedAmount = (t: { inflow: number; outflow: number }) => t.inflow - t.outflow;
+/** Never tighter than 0.01 (10 milliunits), so "exact" still absorbs rounding. */
+const amountTolerance = (amount: number, toleranceBps: number) =>
+  Math.max(10, Math.round((Math.abs(amount) * toleranceBps) / 10_000));
+
+/** A statement/bank/push row to look up hand-entered matches for. */
+export interface ManualMatchQuery {
+  budgetId: number;
+  accountId: number;
+  date: string;
+  inflow: number;
+  outflow: number;
+  payee?: string;
+}
 const toCandidate = ({ id, date, inflow, outflow, payee, memo }: DuplicateCandidate) => ({
   id,
   date,
@@ -88,6 +107,59 @@ const equalAmounts = (a: ImportIdentity, b: ImportIdentity) =>
 
 export class ImportDuplicateService {
   constructor(private readonly db: DatabaseAdapter) {}
+
+  /** The hand-entry duplicate settings (Settings → Duplicate transactions), shared by every import path. */
+  tolerance(): DuplicateTolerance {
+    try {
+      const { toleranceBps, dayWindow } = new UserMetaQueries(this.db).getDuplicateHintSettings();
+      return { toleranceBps, dayWindow };
+    } catch {
+      return {
+        toleranceBps: DUPLICATE_HINT_DEFAULTS.toleranceBps,
+        dayWindow: DUPLICATE_HINT_DEFAULTS.dayWindow,
+      };
+    }
+  }
+
+  /**
+   * Hand-entered, unreconciled transactions (no import provenance) that a
+   * bank or pushed row could be the cleared copy of: same direction, amount
+   * and date within the tolerance. Nearest date first, then closest amount,
+   * then same payee. Transfers count: a typed transfer is still the entry.
+   */
+  manualMatches(query: ManualMatchQuery, tolerance = this.tolerance()): DuplicateCandidate[] {
+    const amount = signedAmount(query);
+    if (!amount) return [];
+    const rows = allRows<LedgerRow>(
+      this.db,
+      `SELECT t.ID as id, t.Date as date, t.InflowNative as inflow, t.OutflowNative as outflow,
+        COALESCE(t.Payee, '') as payee, COALESCE(t.Memo, '') as memo,
+        COALESCE(t.Reconciled, 0) as reconciled, 0 as imported
+      FROM transactions t
+      WHERE t.BudgetID = ? AND t.AccountID = ? AND t.Date BETWEEN ? AND ?
+        AND COALESCE(t.Reconciled, 0) = 0
+        AND NOT EXISTS (SELECT 1 FROM import_provenance p WHERE p.TransactionID = t.ID)`,
+      query.budgetId,
+      query.accountId,
+      shiftDate(query.date, -tolerance.dayWindow),
+      shiftDate(query.date, tolerance.dayWindow)
+    );
+    const limit = amountTolerance(amount, tolerance.toleranceBps);
+    const payee = normalized(query.payee ?? '');
+    return rows
+      .filter((t) => {
+        const other = signedAmount(t);
+        return other > 0 === amount > 0 && Math.abs(other - amount) <= limit;
+      })
+      .map((t) => ({
+        t,
+        days: Math.abs(dayNumber(t.date) - dayNumber(query.date)),
+        diff: Math.abs(signedAmount(t) - amount),
+        payee: Number(normalized(t.payee) !== payee),
+      }))
+      .sort((a, b) => a.days - b.days || a.diff - b.diff || a.payee - b.payee || a.t.id - b.t.id)
+      .map(({ t }) => toCandidate(t));
+  }
 
   identities(transactionId: number): ImportIdentity[] {
     return allRows<ProvenanceRow>(
@@ -329,7 +401,7 @@ export class ImportDuplicateService {
     for (const row of open) {
       const amount = signedAmount(row);
       if (!amount) continue;
-      const tolerance = Math.max(10, Math.round((Math.abs(amount) * toleranceBps) / 10_000));
+      const tolerance = amountTolerance(amount, toleranceBps);
       for (const t of pool) {
         const other = signedAmount(t);
         const days = Math.abs(dayNumber(t.date) - dayNumber(row.date));

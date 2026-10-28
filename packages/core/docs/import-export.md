@@ -47,7 +47,12 @@ unreconciled transactions inside it (nearest date, closest amount, same payee).
 `suggestMatch` marks a row whose only candidate is such a transaction; the
 wizard then defaults it to Match, which records the identity
 (`importHistory.match`) and sets the transaction cleared, inside the import's
-undo group. Bank sync does not pass a tolerance (it has its own manual match). Similar rows inside one file are reviewed;
+undo group. Bank sync and Push API use the same rule through
+`ImportDuplicateService.manualMatches(query, tolerance())`: bank rows that fit a
+hand entry become bank reviews; a pushed plain `transactions.add` that fits
+becomes a review too (`BankSyncService.reviewForPushed`), keeping the pushed
+args in `identity.pushArgs` so "Add as new" replays them. Pushed transfers and
+splits are added directly. Similar rows inside one file are reviewed;
 identical legitimate purchases are preserved. Every row is accessible through
 pagination and filters.
 

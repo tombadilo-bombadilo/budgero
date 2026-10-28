@@ -13628,6 +13628,7 @@ msgstr "Date d'achat (quand vous avez payé)"
 #~ msgid "Purposes"
 #~ msgstr "Finalités"
 
+#: src/features/bank-sync/ui/BankReviewDialog.tsx
 #: src/pages/settings/push-api/PushApiPage.tsx
 #: src/shared/model/nav-registry.ts
 msgid "Push API"

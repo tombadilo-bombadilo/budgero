@@ -165,15 +165,30 @@ export function resolveBankReview(
   return runInUndoGroup(async () => {
     const { BudgetID: budgetId, AccountID: accountId, identity } = review;
     if (action === 'match' && review.candidate) {
+      const { pushArgs: _pushArgs, ...matchIdentity } = identity;
       await executeSpaceMutation(runtime, {
         op: 'importHistory.match',
-        payload: { budgetId, accountId, transactionId: review.candidate.id, identity },
+        payload: {
+          budgetId,
+          accountId,
+          transactionId: review.candidate.id,
+          identity: matchIdentity,
+        },
         meta: { label: 'bank-sync' },
       });
       await executeSpaceMutation(runtime, {
         op: 'transactions.setCleared',
         payload: { budgetId, ids: [review.candidate.id], cleared: true },
         meta: { label: 'bank-sync' },
+      });
+    } else if (action !== 'dismiss' && identity.pushArgs) {
+      // A Push API row: replay exactly what was sent, now with its identity.
+      const { pushArgs, ...pushIdentity } = identity;
+      await executeSpaceMutation(runtime, {
+        op: 'transactions.add',
+        payload: { ...pushArgs, importIdentities: [pushIdentity] },
+        idempotencyKey: await bankIdempotencyKey(identity.operationId),
+        meta: { label: 'push-api' },
       });
     } else if (action !== 'dismiss') {
       await executeSpaceMutation(runtime, {

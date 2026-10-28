@@ -1,5 +1,9 @@
 import type { DatabaseAdapter } from '../../database/interface.js';
-import { ImportDuplicateService, type DuplicateInput } from '../import/duplicate-planner.js';
+import {
+  ImportDuplicateService,
+  type DuplicateInput,
+  type ImportIdentity,
+} from '../import/duplicate-planner.js';
 import { fromDecimalString, subMilli, ZERO_MILLI, type MilliUnits } from '../../money/index.js';
 import { getLocalDateString } from '../../utils/date.js';
 import { applyBankFeedSettings, DEFAULT_BANK_FEED_SETTINGS } from './feed-settings.js';
@@ -25,7 +29,6 @@ import type {
 export * from './types.js';
 export * from './feed-settings.js';
 
-const MANUAL_MATCH_DAYS = 5;
 const REISSUE_DAYS = 3;
 /** A pending card payment usually books within a few days, sometimes a week. */
 const SETTLE_DAYS = 7;
@@ -228,6 +231,26 @@ export class BankSyncService {
     return this.queries.listPendingReviews(budgetId, accountId);
   }
 
+  /**
+   * A Push API transaction that may be the cleared copy of one typed by hand
+   * (same matching as statement imports and bank sync) becomes a match
+   * review instead of a second transaction. Null: add it as usual.
+   */
+  reviewForPushed(input: {
+    budgetId: number;
+    accountId: number;
+    identity: ImportIdentity;
+  }): BankReviewInput | null {
+    const { budgetId, accountId, identity } = input;
+    const duplicates = new ImportDuplicateService(this.db);
+    if (duplicates.findOperation(identity.operationId) !== undefined) return null;
+    const claimed = this.queries.pendingCandidateIds(budgetId, accountId);
+    const match = duplicates
+      .manualMatches({ budgetId, accountId, ...identity })
+      .find((candidate) => !claimed.has(candidate.id));
+    return match ? { budgetId, accountId, identity, candidateTransactionId: match.id } : null;
+  }
+
   addReviews(reviews: BankReviewInput[]): void {
     this.queries.addReviews(reviews);
   }
@@ -330,7 +353,9 @@ export class BankSyncService {
     const rekeys: BankImportPlan['rekeys'] = [];
     const normalized = (s: string) => s.trim().toLowerCase();
 
-    const plans = new ImportDuplicateService(this.db).plan(rows);
+    const duplicates = new ImportDuplicateService(this.db);
+    const tolerance = duplicates.tolerance();
+    const plans = duplicates.plan(rows);
     const claimed = this.queries.pendingCandidateIds(budgetId, accountId);
     const imports: BankImportPlan['imports'] = [];
     const reviews: BankReviewInput[] = [];
@@ -394,15 +419,9 @@ export class BankSyncService {
         orphans.splice(reissued, 1);
         continue;
       }
-      const manual = this.queries
-        .findManualMatches(
-          budgetId,
-          accountId,
-          identity.inflow,
-          identity.outflow,
-          shiftDate(identity.date, -MANUAL_MATCH_DAYS),
-          shiftDate(identity.date, MANUAL_MATCH_DAYS)
-        )
+      // Same matching as statement imports: the duplicate settings' amount % and ± days.
+      const manual = duplicates
+        .manualMatches({ budgetId, accountId, ...identity }, tolerance)
         .find((match) => !claimed.has(match.id));
       // A pending row that looks like an entry typed by hand isn't imported:
       // the booked version asks for review instead, so nothing doubles up.

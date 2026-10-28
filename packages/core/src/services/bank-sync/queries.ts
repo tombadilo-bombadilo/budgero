@@ -282,29 +282,4 @@ export class BankSyncQueries {
       identity: JSON.parse(row.IdentityJSON) as ImportIdentity,
     }));
   }
-
-  /** Manually entered rows (no import provenance) that a bank row could be the cleared copy of. */
-  findManualMatches(
-    budgetId: number,
-    accountId: number,
-    inflow: number,
-    outflow: number,
-    from: string,
-    to: string
-  ): { id: number; date: string }[] {
-    return allRows<{ id: number; date: string }>(
-      this.db,
-      `SELECT t.ID as id, t.Date as date FROM transactions t
-      WHERE t.BudgetID = ? AND t.AccountID = ? AND t.InflowNative = ? AND t.OutflowNative = ?
-        AND t.Date BETWEEN ? AND ? AND t.Reconciled = 0
-        AND NOT EXISTS (SELECT 1 FROM import_provenance p WHERE p.TransactionID = t.ID)
-      ORDER BY t.Date, t.ID`,
-      budgetId,
-      accountId,
-      inflow,
-      outflow,
-      from,
-      to
-    );
-  }
 }

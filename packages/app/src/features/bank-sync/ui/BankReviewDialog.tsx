@@ -60,7 +60,7 @@ function ReviewItem({ review, account }: { review: BankReview; account: Account 
         <div className="text-[11px] font-medium text-muted-foreground">{account.Name}</div>
       )}
       <Row
-        label={t`Bank`}
+        label={review.identity.sourceKey === 'push-api' ? t`Push API` : t`Bank`}
         date={review.identity.date}
         payee={review.identity.payee}
         amount={formatSignedIdentity(review.identity, currency)}
