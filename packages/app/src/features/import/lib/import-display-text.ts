@@ -8,6 +8,7 @@ const messages: Record<string, MessageDescriptor> = {
   'Bank transaction ID was already imported': msg`Bank transaction ID was already imported`,
   'Repeated bank transaction ID; verify the details': msg`Repeated bank transaction ID; verify the details`,
   'Same date and amount in this account': msg`Same date and amount in this account`,
+  'Similar amount and date in this account': msg`Similar amount and date in this account`,
   'Similar row in this file; both may be real transactions': msg`Similar row in this file; both may be real transactions`,
   'No amount column mapped': msg`No amount column mapped`,
   'No amount value — row will be skipped': msg`No amount value — row will be skipped`,

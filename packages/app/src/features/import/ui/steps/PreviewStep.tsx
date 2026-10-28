@@ -3,7 +3,12 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
-import type { PreviewRow, ColumnMapping, ImportConfig } from '@features/import/model/types';
+import type {
+  PreviewRow,
+  ColumnMapping,
+  ImportConfig,
+  ImportDecision,
+} from '@features/import/model/types';
 import { translateImportText } from '../../lib/import-display-text';
 
 interface PreviewStepProps {
@@ -17,8 +22,8 @@ interface PreviewStepProps {
   hasBudgetSelected: boolean;
   onBack: () => void;
   onStartImport: () => void;
-  onDecision: (index: number, decision: 'skip' | 'import') => void;
-  onResolveAll: (decision: 'skip' | 'import') => void;
+  onDecision: (index: number, decision: ImportDecision) => void;
+  onResolveAll: (decision: ImportDecision) => void;
 }
 
 export function PreviewStep({
@@ -47,8 +52,15 @@ export function PreviewStep({
     (r) =>
       r.input.valid &&
       r.decision !== 'skip' &&
+      r.decision !== 'match' &&
       (r.duplicate.status === 'new' || r.decision === 'import')
   ).length;
+  const matching = previewData.filter(
+    (r) => r.input.valid && r.decision === 'match' && r.duplicate.candidates.length > 0
+  ).length;
+  const unresolvedWithCandidate = previewData.some(
+    (r) => r.duplicate.status === 'needs-review' && !r.decision && r.duplicate.candidates.length > 0
+  );
   const filtered = previewData.filter((r) => filter === 'all' || r.duplicate.status === filter);
   const pages = Math.max(1, Math.ceil(filtered.length / 50));
   const currentPage = Math.min(page, pages - 1);
@@ -60,8 +72,9 @@ export function PreviewStep({
         </CardTitle>
         <CardDescription>
           <Trans>
-            {importing} to import · {previewData.filter((r) => r.decision === 'skip').length}{' '}
-            skipped · {unresolved} need a decision
+            {importing} to import · {matching} matched ·{' '}
+            {previewData.filter((r) => r.decision === 'skip').length} skipped · {unresolved} need a
+            decision
           </Trans>
         </CardDescription>
       </CardHeader>
@@ -81,15 +94,28 @@ export function PreviewStep({
             </Button>
           ))}
         </div>
+        {matching > 0 && (
+          <p className="text-sm">
+            <Trans>
+              Rows marked Match keep the transaction you entered (category, memo, payee, splits) and
+              mark it cleared. Undo right after importing reverts the matches too.
+            </Trans>
+          </p>
+        )}
         {unresolved > 0 && (
           <div className="space-y-2">
             <p className="text-sm">
               <Trans>
-                Review possible duplicates before importing. Skipping keeps the existing transaction
-                unchanged.
+                Review possible duplicates before importing. Match keeps the existing transaction
+                and marks it cleared; Skip keeps it unchanged.
               </Trans>
             </p>
             <div className="flex flex-wrap gap-2">
+              {unresolvedWithCandidate && (
+                <Button variant="outline" onClick={() => onResolveAll('match')}>
+                  <Trans>Match all unresolved</Trans>
+                </Button>
+              )}
               <Button variant="outline" onClick={() => onResolveAll('skip')}>
                 <Trans>Skip all unresolved</Trans>
               </Button>
@@ -164,6 +190,16 @@ export function PreviewStep({
                   <td className="p-2">
                     {row.input.valid && (
                       <div className="flex flex-col gap-2">
+                        {row.duplicate.status !== 'already-imported' &&
+                          row.duplicate.candidates.length > 0 && (
+                            <Button
+                              size="sm"
+                              variant={row.decision === 'match' ? 'default' : 'outline'}
+                              onClick={() => onDecision(row.input.index, 'match')}
+                            >
+                              <Trans>Match</Trans>
+                            </Button>
+                          )}
                         <Button
                           size="sm"
                           variant={row.decision === 'skip' ? 'default' : 'outline'}
@@ -209,7 +245,7 @@ export function PreviewStep({
             <Trans>Next</Trans>
           </Button>
         </div>
-        {!importing && !unresolved && (
+        {!importing && !matching && !unresolved && (
           <p>
             <Trans>Nothing new to import.</Trans>
           </p>
@@ -224,7 +260,12 @@ export function PreviewStep({
                   one: `Import # transaction`,
                   other: `Import # transactions`,
                 })
-              : t`Finish`}
+              : matching
+                ? plural(matching, {
+                    one: `Match # transaction`,
+                    other: `Match # transactions`,
+                  })
+                : t`Finish`}
           </Button>
         </div>
       </CardContent>

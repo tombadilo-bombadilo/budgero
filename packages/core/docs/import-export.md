@@ -40,7 +40,14 @@ Notes:
 CSV, PDF, OFX/QFX, QIF, and CAMT share an account-scoped review step. Exact
 file-row identities and reliable bank IDs are skipped by default. Other rows
 with the same native amount, direction, currency, and date need an explicit
-Skip or Import as new decision. Similar rows inside one file are reviewed;
+Match, Skip or Import as new decision. Statement files also pass the
+duplicate-hint tolerance (`plan(rows, { tolerance })`, user_meta amount bps and
+day window): rows with no exact match are paired one to one with hand-entered,
+unreconciled transactions inside it (nearest date, closest amount, same payee).
+`suggestMatch` marks a row whose only candidate is such a transaction; the
+wizard then defaults it to Match, which records the identity
+(`importHistory.match`) and sets the transaction cleared, inside the import's
+undo group. Bank sync does not pass a tolerance (it has its own manual match). Similar rows inside one file are reviewed;
 identical legitimate purchases are preserved. Every row is accessible through
 pagination and filters.
 

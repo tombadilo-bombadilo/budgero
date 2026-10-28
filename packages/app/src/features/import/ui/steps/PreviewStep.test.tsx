@@ -65,4 +65,28 @@ describe('import review', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Finish' }));
     expect(callbacks.onStartImport).toHaveBeenCalledOnce();
   });
+  it('offers Match for a candidate and labels a match-only run', () => {
+    const row = makeRow(0);
+    row.duplicate = {
+      index: 0,
+      status: 'needs-review',
+      reason: 'Similar amount and date in this account',
+      candidates: [
+        { id: 7, date: '2026-08-30', inflow: 0, outflow: 10000, payee: 'Coffee', memo: '' },
+      ],
+    };
+    const unresolved = props([row]);
+    render(<PreviewStep {...unresolved} />);
+    fireEvent.click(screen.getByRole('button', { name: /^Match$/ }));
+    expect(unresolved.onDecision).toHaveBeenCalledWith(0, 'match');
+    fireEvent.click(screen.getByRole('button', { name: 'Match all unresolved' }));
+    expect(unresolved.onResolveAll).toHaveBeenCalledWith('match');
+    cleanup();
+
+    const decided = props([{ ...row, decision: 'match' }]);
+    render(<PreviewStep {...decided} />);
+    expect(screen.getByText(/0 to import · 1 matched/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Match 1 transaction' }));
+    expect(decided.onStartImport).toHaveBeenCalledOnce();
+  });
 });

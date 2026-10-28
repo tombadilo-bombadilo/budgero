@@ -75,6 +75,8 @@ export interface ImportProgress {
 
 export interface ImportSummary {
   duplicatesSkipped?: number;
+  /** Rows matched to an existing transaction, which was marked cleared. */
+  transactionsMatched?: number;
   userSkipped?: number;
   invalidRows?: number;
   failedRows?: number;
@@ -88,10 +90,16 @@ export interface ImportSummary {
   destinationAccountName?: string;
 }
 
+/**
+ * skip: keep the existing transaction unchanged; import: add the row as new;
+ * match: keep the existing transaction and mark it cleared (YNAB-style).
+ */
+export type ImportDecision = 'skip' | 'import' | 'match';
+
 export interface PreviewRow {
   input: DuplicateInput;
   duplicate: DuplicatePlan;
-  decision?: 'skip' | 'import';
+  decision?: ImportDecision;
   original: Record<string, string>;
   parsed: {
     date?: string;

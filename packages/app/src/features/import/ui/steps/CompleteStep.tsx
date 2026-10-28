@@ -46,6 +46,14 @@ export function CompleteStep({ importSummary, onReset }: CompleteStepProps) {
                 </span>
                 <span className="font-medium">{importSummary.transactionsImported}</span>
               </li>
+              {!!importSummary.transactionsMatched && (
+                <li className="flex justify-between">
+                  <span>
+                    <Trans>Matched to existing (marked cleared):</Trans>
+                  </span>
+                  <span className="font-medium">{importSummary.transactionsMatched}</span>
+                </li>
+              )}
               {(
                 [
                   ['Duplicates skipped', importSummary.duplicatesSkipped],

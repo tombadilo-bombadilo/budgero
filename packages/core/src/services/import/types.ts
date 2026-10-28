@@ -491,6 +491,8 @@ export interface YNABImportVerificationSummary {
 
 export interface ImportRunSummary {
   duplicatesSkipped?: number;
+  /** Statement rows matched to an existing (hand-entered) transaction, which was marked cleared. */
+  transactionsMatched?: number;
   userSkipped?: number;
   invalidRows?: number;
   failedRows?: number;

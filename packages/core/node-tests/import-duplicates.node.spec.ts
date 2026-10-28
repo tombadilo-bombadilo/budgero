@@ -250,3 +250,78 @@ describe('File import duplicate planning and provenance', () => {
     expect(importSourceKey('ofx', { Account: '', FITID: 'missing-account' })).toBeUndefined();
   });
 });
+
+describe('Statement matching within the duplicate tolerance', () => {
+  const tolerance = { toleranceBps: 100, dayWindow: 7 };
+
+  it('finds a hand-entered purchase the bank booked days later and suggests Match', async () => {
+    const { row, add, duplicates } = await setup();
+    const id = await add(row, false); // typed by hand on Sep 1
+    const bank = { ...row, date: '2026-09-03', fileRowKey: 'file-b:0', operationId: 'b:0' };
+    expect(duplicates.plan([bank])[0].status).toBe('new'); // exact-only check misses it
+    expect(duplicates.plan([bank], { tolerance })[0]).toMatchObject({
+      status: 'needs-review',
+      reason: 'Similar amount and date in this account',
+      candidates: [{ id }],
+      suggestMatch: true,
+    });
+    // Outside the window, or outside the amount tolerance: nothing.
+    expect(duplicates.plan([{ ...bank, date: '2026-09-09' }], { tolerance })[0].status).toBe('new');
+    expect(duplicates.plan([{ ...bank, outflow: 10200 }], { tolerance })[0].status).toBe('new');
+    // Within 1%: still a candidate.
+    expect(duplicates.plan([{ ...bank, outflow: 10090 }], { tolerance })[0].candidates).toEqual([
+      expect.objectContaining({ id }),
+    ]);
+    // Opposite direction never matches.
+    expect(duplicates.plan([{ ...bank, inflow: 10000, outflow: 0 }], { tolerance })[0].status).toBe(
+      'new'
+    );
+  });
+
+  it('suggests Match for an exact same-day hand entry, but not for an imported one', async () => {
+    const { row, add, duplicates } = await setup();
+    const manual = await add(row, false);
+    const bank = { ...row, fileRowKey: 'file-b:0', operationId: 'b:0' };
+    expect(duplicates.plan([bank], { tolerance })[0]).toMatchObject({
+      status: 'needs-review',
+      candidates: [{ id: manual }],
+      suggestMatch: true,
+    });
+    const { row: row2, add: add2, duplicates: dup2 } = await setup();
+    const imported = await add2(row2, true);
+    const plan = dup2.plan([{ ...row2, fileRowKey: 'file-c:0', operationId: 'c:0' }], {
+      tolerance,
+    })[0];
+    expect(plan).toMatchObject({ status: 'needs-review', candidates: [{ id: imported }] });
+    expect(plan.suggestMatch).toBeUndefined();
+  });
+
+  it('pairs same-price purchases one to one, nearest date first, and leaves the rest new', async () => {
+    const { row, add, duplicates } = await setup();
+    const a = await add({ ...row, date: '2026-09-01' }, false);
+    const b = await add({ ...row, date: '2026-09-04' }, false);
+    const rows = ['2026-09-05', '2026-09-02', '2026-09-20'].map((date, index) => ({
+      ...row,
+      index,
+      date,
+      fileRowKey: `file-b:${index}`,
+      operationId: `b:${index}`,
+    }));
+    const plans = duplicates.plan(rows, { tolerance });
+    expect(plans[0].candidates.map((c) => c.id)).toEqual([b]);
+    expect(plans[1].candidates.map((c) => c.id)).toEqual([a]);
+    expect(plans[2].status).toBe('new');
+    // Two hand entries fit each of the first two rows: review, but no default Match.
+    expect(plans[0].suggestMatch).toBeUndefined();
+    expect(plans[1].suggestMatch).toBeUndefined();
+  });
+
+  it('ignores reconciled and already-imported transactions', async () => {
+    const { db, row, add, duplicates } = await setup();
+    const reconciled = await add(row, false);
+    db.exec(`UPDATE transactions SET Reconciled = 1 WHERE ID = ${reconciled}`);
+    await add({ ...row, date: '2026-09-02', fileRowKey: 'file-a:1', operationId: 'a:1' }, true);
+    const bank = { ...row, date: '2026-09-04', fileRowKey: 'file-b:0', operationId: 'b:0' };
+    expect(duplicates.plan([bank], { tolerance })[0].status).toBe('new');
+  });
+});

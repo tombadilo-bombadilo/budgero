@@ -125,6 +125,83 @@ async function preview() {
   return hook;
 }
 describe('import wizard execution', () => {
+  const candidate = (id: number, date: string) => ({
+    id,
+    date,
+    inflow: 0,
+    outflow: 10000,
+    payee: 'Coffee',
+    memo: 'typed by hand',
+  });
+  const reviewWithMatch = (suggest: (index: number) => boolean) =>
+    mocks.plan.mockImplementation((rows) =>
+      rows.map((row: { index: number }) => ({
+        index: row.index,
+        status: 'needs-review',
+        candidates: [candidate(row.index + 50, '2026-08-30')],
+        reason: 'Similar amount and date in this account',
+        ...(suggest(row.index) ? { suggestMatch: true } : {}),
+      }))
+    );
+
+  it('defaults a single hand-entered candidate to Match, then keeps it and marks it cleared', async () => {
+    reviewWithMatch((index) => index === 0);
+    const { result } = await preview();
+    // The statement tolerance comes from the duplicate-hint settings (defaults here).
+    expect(mocks.plan.mock.calls.at(-1)?.[1]).toEqual({
+      tolerance: { toleranceBps: 100, dayWindow: 7 },
+    });
+    expect(result.current.previewData.map((r) => r.decision)).toEqual(['match', undefined]);
+    act(() => result.current.setRowDecision(1, 'match'));
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    const ops = mocks.mutate.mock.calls.map((call) => [call[1].op, call[1].payload]);
+    expect(ops).toEqual([
+      ['importHistory.match', expect.objectContaining({ transactionId: 50 })],
+      ['transactions.setCleared', expect.objectContaining({ ids: [50], cleared: true })],
+      ['importHistory.match', expect.objectContaining({ transactionId: 51 })],
+      ['transactions.setCleared', expect.objectContaining({ ids: [51], cleared: true })],
+    ]);
+    expect(result.current.importSummary).toMatchObject({
+      transactionsImported: 0,
+      transactionsMatched: 2,
+      duplicatesSkipped: 0,
+    });
+    expect(mocks.addAccount).not.toHaveBeenCalled();
+  });
+
+  it('matches some rows and imports the rest in one run', async () => {
+    reviewWithMatch(() => true);
+    const { result } = await preview();
+    act(() => result.current.setRowDecision(1, 'import'));
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    const ops = mocks.mutate.mock.calls.map((call) => call[1].op);
+    expect(ops.filter((op) => op === 'transactions.import')).toHaveLength(1);
+    expect(ops.filter((op) => op === 'transactions.setCleared')).toHaveLength(1);
+    expect(result.current.importSummary).toMatchObject({
+      transactionsImported: 1,
+      transactionsMatched: 1,
+    });
+  });
+
+  it('Match all unresolved only applies to rows with a candidate', async () => {
+    mocks.plan.mockImplementation((rows) =>
+      rows.map((row: { index: number }) => ({
+        index: row.index,
+        status: 'needs-review',
+        candidates: row.index === 0 ? [candidate(50, '2026-09-01')] : [],
+        reason: '',
+        ...(row.index === 1 ? { sameFileIndex: 0 } : {}),
+      }))
+    );
+    const { result } = await preview();
+    act(() => result.current.resolveAll('match'));
+    expect(result.current.previewData.map((r) => r.decision)).toEqual(['match', undefined]);
+  });
+
   it('finishes an all-duplicate file without creating accounts, categories, or transactions', async () => {
     mocks.plan.mockImplementation((rows) =>
       rows.map((row: { index: number }) => ({

@@ -994,8 +994,13 @@ msgstr "{importing, plural, one {# Transaktion importieren} other {# Transaktion
 
 #. placeholder {0}: previewData.filter((r) => r.decision === 'skip').length
 #: src/features/import/ui/steps/PreviewStep.tsx
-msgid "{importing} to import · {0} skipped · {unresolved} need a decision"
-msgstr "{importing} zu importieren · {0} übersprungen · {unresolved} erfordern eine Entscheidung"
+#~ msgid "{importing} to import · {0} skipped · {unresolved} need a decision"
+#~ msgstr "{importing} zu importieren · {0} übersprungen · {unresolved} erfordern eine Entscheidung"
+
+#. placeholder {0}: previewData.filter((r) => r.decision === 'skip').length
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "{importing} to import · {matching} matched · {0} skipped · {unresolved} need a decision"
+msgstr "{importing} zu importieren · {matching} zugeordnet · {0} übersprungen · {unresolved} brauchen eine Entscheidung"
 
 #: src/pages/settings/push-api/usePushApiState.ts
 msgid "{label} ID copied: {id}"
@@ -1008,6 +1013,10 @@ msgstr "{matchedCount, plural, one {# Transaktion aktualisiert.} other {# Transa
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "{matchedCount, plural, one {Updated # transaction across this budget.} other {Updated # transactions across this budget.}}"
 msgstr "{matchedCount, plural, one {# Transaktion in diesem Budget aktualisiert.} other {# Transaktionen in diesem Budget aktualisiert.}}"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "{matching, plural, one {Match # transaction} other {Match # transactions}}"
+msgstr "{matching, plural, one {# Transaktion zuordnen} other {# Transaktionen zuordnen}}"
 
 #: src/pages/accounts/AccountsPage.tsx
 msgid "{months, plural, one {# month} other {# months}}"
@@ -9287,8 +9296,8 @@ msgid "Import transactions from"
 msgstr "Transaktionen importieren ab"
 
 #: src/pages/settings/ImportsPage.tsx
-msgid "Import transactions from {SUPPORTED_IMPORT_FORMATS_LABEL} files and manage previous imports."
-msgstr "Transaktionen aus {SUPPORTED_IMPORT_FORMATS_LABEL}-Dateien importieren und frühere Importe verwalten."
+msgid "Import transactions from {formats} files and manage previous imports."
+msgstr "Transaktionen aus {formats}-Dateien importieren und frühere Importe verwalten."
 
 #: src/pages/settings/bank-sync/BankSyncPage.tsx
 msgid "Import transactions from your banks through SimpleFIN Bridge (US and Canada) or Enable Banking (Europe)."
@@ -10628,12 +10637,17 @@ msgid "Master password will now stay in memory only."
 msgstr "Master-Passwort bleibt ab jetzt nur im Speicher."
 
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
+#: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Match"
 msgstr "Zuordnen"
 
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Match / reason"
 msgstr "Zuordnung / Grund"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Match all unresolved"
+msgstr "Alle ungeklärten zuordnen"
 
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "MATCH CARDS"
@@ -10650,6 +10664,10 @@ msgstr "Ordne vor dem Import jede Kreditkarte ihrer Zahlungskategorie zu."
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "match payment categories below"
 msgstr "Zahlungskategorien unten zuordnen"
+
+#: src/features/import/ui/steps/CompleteStep.tsx
+msgid "Matched to existing (marked cleared):"
+msgstr "Vorhandenen zugeordnet (als gebucht markiert):"
 
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Matches your bank? Click to use it"
@@ -14607,8 +14625,12 @@ msgid "Review imported account types before budgeting."
 msgstr "Prüfe die importierten Kontotypen, bevor du budgetierst."
 
 #: src/features/import/ui/steps/PreviewStep.tsx
-msgid "Review possible duplicates before importing. Skipping keeps the existing transaction unchanged."
-msgstr "Prüfe mögliche Duplikate vor dem Import. Beim Überspringen bleibt die bestehende Transaktion unverändert."
+msgid "Review possible duplicates before importing. Match keeps the existing transaction and marks it cleared; Skip keeps it unchanged."
+msgstr "Prüfe mögliche Duplikate vor dem Import. Zuordnen behält die vorhandene Transaktion und markiert sie als gebucht; Überspringen lässt sie unverändert."
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+#~ msgid "Review possible duplicates before importing. Skipping keeps the existing transaction unchanged."
+#~ msgstr "Prüfe mögliche Duplikate vor dem Import. Beim Überspringen bleibt die bestehende Transaktion unverändert."
 
 #: src/pages/settings/ImportsPage.tsx
 msgid "Review recent imports and undo or archive them if something looks off."
@@ -14715,6 +14737,10 @@ msgstr "Zeilen oberhalb des sichtbaren Bereichs"
 #: src/features/transactions/ui/desktop-table/TransactionTableBody.tsx
 msgid "Rows below the visible area"
 msgstr "Zeilen unterhalb des sichtbaren Bereichs"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Rows marked Match keep the transaction you entered (category, memo, payee, splits) and mark it cleared. Undo right after importing reverts the matches too."
+msgstr "Zeilen mit „Zuordnen“ behalten die von dir erfasste Transaktion (Kategorie, Notiz, Empfänger, Aufteilungen) und markieren sie als gebucht. Rückgängig direkt nach dem Import macht auch die Zuordnungen rückgängig."
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Rows per page"
@@ -16027,6 +16053,10 @@ msgstr "Anmeldung läuft…"
 #: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Signing out..."
 msgstr "Abmeldung läuft..."
+
+#: src/features/import/lib/import-display-text.ts
+msgid "Similar amount and date in this account"
+msgstr "Ähnlicher Betrag und ähnliches Datum in diesem Konto"
 
 #: src/features/import/lib/import-display-text.ts
 msgid "Similar row in this file; both may be real transactions"
@@ -18901,8 +18931,12 @@ msgid "Warn about possible duplicates"
 msgstr "Vor möglichen Duplikaten warnen"
 
 #: src/pages/settings/components/DuplicateHintSettingsCard.tsx
-msgid "Warn while adding a transaction by hand if it looks like one already in the account. Imports use their own duplicate check."
-msgstr "Warnt beim manuellen Hinzufügen, wenn eine Transaktion einer bereits im Konto vorhandenen ähnelt. Importe haben eine eigene Duplikatprüfung."
+#~ msgid "Warn while adding a transaction by hand if it looks like one already in the account. Imports use their own duplicate check."
+#~ msgstr "Warnt beim manuellen Hinzufügen, wenn eine Transaktion einer bereits im Konto vorhandenen ähnelt. Importe haben eine eigene Duplikatprüfung."
+
+#: src/pages/settings/components/DuplicateHintSettingsCard.tsx
+msgid "Warn while adding a transaction by hand if it looks like one already in the account. Statement imports use the same amount and date range to find transactions to match."
+msgstr "Warnen, wenn eine von Hand erfasste Transaktion einer vorhandenen im Konto ähnelt. Kontoauszug-Importe nutzen denselben Betrags- und Datumsbereich, um Transaktionen zum Zuordnen zu finden."
 
 #: src/pages/admin/admin-users/ActionDialog.tsx
 msgid "Warning"

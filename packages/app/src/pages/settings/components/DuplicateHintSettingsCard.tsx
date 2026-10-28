@@ -49,7 +49,7 @@ export function DuplicateHintSettingsCard() {
         <CardDescription>
           <Trans>
             Warn while adding a transaction by hand if it looks like one already in the account.
-            Imports use their own duplicate check.
+            Statement imports use the same amount and date range to find transactions to match.
           </Trans>
         </CardDescription>
       </CardHeader>

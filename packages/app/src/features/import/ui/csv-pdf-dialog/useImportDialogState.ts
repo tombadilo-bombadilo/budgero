@@ -30,6 +30,7 @@ import {
   type ImportProgress,
   type ImportSummary,
   type PreviewRow,
+  type ImportDecision,
   type RawTableData,
 } from '@features/import/model/types';
 import {
@@ -38,7 +39,7 @@ import {
   createImportNameMaps,
   resolveImportCategoryId,
 } from '@budgero/core/browser';
-import { buildFileImportPreview } from '@features/import/lib/plan-file-import';
+import { buildFileImportPreview, importTolerance } from '@features/import/lib/plan-file-import';
 import { trackImportedCsvPdf } from '@shared/lib/analytics/analytics';
 import { startImportRun } from '@shared/lib/analytics/import-tracking';
 import { parseImportFile } from '@features/import/lib/parse-import-file';
@@ -56,8 +57,8 @@ export interface ImportDialogState {
   importConfig: ImportConfig;
   setImportConfig: (config: ImportConfig) => void;
   previewData: PreviewRow[];
-  setRowDecision: (index: number, decision: 'skip' | 'import') => void;
-  resolveAll: (decision: 'skip' | 'import') => void;
+  setRowDecision: (index: number, decision: ImportDecision) => void;
+  resolveAll: (decision: ImportDecision) => void;
   isChecking: boolean;
   previewTotalCount: number;
   previewImportableCount: number;
@@ -94,7 +95,7 @@ export interface ImportDialogState {
   resetForm: () => void;
 }
 
-function withDecision(row: PreviewRow, decision: 'skip' | 'import'): PreviewRow {
+function withDecision(row: PreviewRow, decision: ImportDecision): PreviewRow {
   if (row.decision === decision) return row;
   return {
     ...row,
@@ -122,14 +123,18 @@ export function useImportDialogState(): ImportDialogState {
   const importLock = useRef(false);
   const runKey = useRef(crypto.randomUUID());
   const previewGeneration = useRef(0);
-  const setRowDecision = (index: number, decision: 'skip' | 'import') =>
+  const setRowDecision = (index: number, decision: ImportDecision) =>
     setPreviewData((rows) =>
       rows.map((row) => (row.input.index === index ? withDecision(row, decision) : row))
     );
-  const resolveAll = (decision: 'skip' | 'import') =>
+  const resolveAll = (decision: ImportDecision) =>
     setPreviewData((rows) =>
       rows.map((row) =>
-        row.duplicate.status === 'needs-review' && !row.decision ? withDecision(row, decision) : row
+        row.duplicate.status === 'needs-review' &&
+        !row.decision &&
+        (decision !== 'match' || row.duplicate.candidates.length > 0)
+          ? withDecision(row, decision)
+          : row
       )
     );
   // Counts cover the full statement, independently of preview pagination.
@@ -363,6 +368,7 @@ export function useImportDialogState(): ImportDialogState {
       selectedHeaderIndex,
       runKey: runKey.current,
       duplicates: runtime.services().importHistory.duplicates,
+      tolerance: importTolerance(runtime.services()),
     });
   }, [
     parsedData,
@@ -474,7 +480,24 @@ export function useImportDialogState(): ImportDialogState {
     } finally {
       setIsChecking(false);
     }
-    const selectedRows = fresh.filter((r) => r.input.valid && r.decision !== 'skip');
+    const selectedRows = fresh.filter(
+      (r) => r.input.valid && r.decision !== 'skip' && r.decision !== 'match'
+    );
+    const matchCandidate = (r: PreviewRow) =>
+      r.input.valid && r.decision === 'match' ? r.duplicate.candidates[0]?.id : undefined;
+    const transactionsMatched = fresh.filter((r) => matchCandidate(r) !== undefined).length;
+    // Match = keep the existing transaction, link this statement row to it and
+    // mark it cleared. Undoable, together with the rest of the import.
+    const applyMatch = async (r: PreviewRow, accountId: number, transactionId: number) => {
+      await executeSpaceMutation(runtime, {
+        op: 'importHistory.match',
+        payload: { budgetId: r.input.budgetId, accountId, transactionId, identity: r.input },
+      });
+      await executeSpaceMutation(runtime, {
+        op: 'transactions.setCleared',
+        payload: { budgetId: r.input.budgetId, ids: [transactionId], cleared: true },
+      });
+    };
     let duplicatesSkipped = fresh.filter(
       (r) => r.input.valid && r.decision === 'skip' && r.duplicate.status !== 'new'
     ).length;
@@ -487,9 +510,16 @@ export function useImportDialogState(): ImportDialogState {
     ).length;
     const importRun = startImportRun(parsedData.source.type, 'app');
     if (!selectedRows.length) {
+      if (transactionsMatched) useUndoStore.getState().beginGroup();
       try {
         const matchedIds = new Map<number, number>();
         for (const reviewed of fresh) {
+          const matchId = matchCandidate(reviewed);
+          if (matchId !== undefined) {
+            await applyMatch(reviewed, reviewed.input.accountId, matchId);
+            matchedIds.set(reviewed.input.index, matchId);
+            continue;
+          }
           const candidate =
             reviewed.duplicate.candidates[0]?.id ??
             (reviewed.duplicate.sameFileIndex !== undefined
@@ -517,6 +547,7 @@ export function useImportDialogState(): ImportDialogState {
         const summary = {
           budgetId: selectedBudget.ID,
           transactionsImported: 0,
+          ...(transactionsMatched ? { transactionsMatched } : {}),
           duplicatesSkipped,
           userSkipped,
           invalidRows,
@@ -544,6 +575,7 @@ export function useImportDialogState(): ImportDialogState {
         importRun.error(err);
         setError(getErrorMessage(err, t`Could not finish import`));
       } finally {
+        if (transactionsMatched) useUndoStore.getState().endGroup();
         importLock.current = false;
       }
       return;
@@ -664,6 +696,7 @@ export function useImportDialogState(): ImportDialogState {
             sourceName: parsedData.source.fileName,
             summary: {
               transactionsImported: importedTransactionIds.length,
+              ...(transactionsMatched ? { transactionsMatched } : {}),
               accountsCreated: createdAccountIds.length,
               categoriesCreated: createdCategoryIds.length,
               duplicatesSkipped,
@@ -704,6 +737,18 @@ export function useImportDialogState(): ImportDialogState {
 
           if (!plan.valid) {
             // Missing or unparseable amount — already surfaced in the preview.
+            processedCount++;
+            continue;
+          }
+
+          const matchId = matchCandidate(reviewed);
+          if (matchId !== undefined) {
+            await applyMatch(
+              reviewed,
+              plan.accountId === -1 ? defaultAccountId : plan.accountId,
+              matchId
+            );
+            matchedIds.set(plan.index, matchId);
             processedCount++;
             continue;
           }
@@ -780,7 +825,7 @@ export function useImportDialogState(): ImportDialogState {
         await checkpoint();
       }
 
-      const skippedCount = totalRows - successCount;
+      const skippedCount = totalRows - successCount - transactionsMatched;
 
       setProgress({
         step: 'Finalizing import...',
@@ -809,6 +854,7 @@ export function useImportDialogState(): ImportDialogState {
         budgetId,
         transactionsImported: successCount,
         transactionsSkipped: skippedCount,
+        ...(transactionsMatched ? { transactionsMatched } : {}),
         duplicatesSkipped,
         userSkipped,
         invalidRows,
