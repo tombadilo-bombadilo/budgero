@@ -17,7 +17,7 @@ import { useRecordImportRun } from '@features/import/api/useImportHistory';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUiStore } from '@shared/store/useUiStore';
 import { getErrorMessage } from '@shared/lib/errors';
-import { invalidateRoots } from '@shared/lib/query-utils';
+import { applyOpInvalidations, invalidateRoots } from '@shared/lib/query-utils';
 import { useRuntime } from '@shared/runtime/runtime-provider';
 
 import {
@@ -831,10 +831,11 @@ export function useImportDialogState(): ImportDialogState {
         }
       }
 
-      void queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      void queryClient.invalidateQueries({ queryKey: ['categories', budgetId] });
-      void queryClient.invalidateQueries({ queryKey: ['accounts', budgetId] });
-      invalidateRoots(queryClient, 'transactions');
+      // Space queries are keyed [root, spaceKey, ...], so refresh whole roots:
+      // the account header and register read accounts/accountTransaction*.
+      applyOpInvalidations(queryClient, 'transactions.import');
+      applyOpInvalidations(queryClient, 'importHistory.match');
+      invalidateRoots(queryClient, 'budgets', 'categories');
 
       setCurrentStep('complete');
     } catch (err) {

@@ -158,6 +158,20 @@ describe('import wizard execution', () => {
       true
     );
   });
+  it('refreshes the space-keyed account balance and register queries after import', async () => {
+    const { result } = await preview();
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    const predicates = mocks.queryClient.invalidateQueries.mock.calls
+      .map((call) => call[0]?.predicate)
+      .filter(Boolean);
+    const refreshed = (queryKey: unknown[]) => predicates.some((p) => p({ queryKey }));
+    expect(refreshed(['accounts', 'space-1', 1])).toBe(true);
+    expect(refreshed(['accountTransactionSummary', 'space-1', 10, '', ''])).toBe(true);
+    expect(refreshed(['accountTransactionPages', 'space-1', 10, '', '', 50])).toBe(true);
+    expect(refreshed(['categories', 'space-1', 1])).toBe(true);
+  });
   it('returns changed ledger matches to review before any write', async () => {
     const { result } = await preview();
     mocks.plan.mockImplementation((rows) =>
