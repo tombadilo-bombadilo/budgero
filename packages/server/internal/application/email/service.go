@@ -89,6 +89,16 @@ func NewService(cfg *config.Config, store *Store) (*Service, error) {
 	return &Service{cfg: cfg, store: store, sender: sender, tpls: tpls}, nil
 }
 
+// NewServiceWithSender builds a Service around a caller-supplied transport
+// (tests use a fake that records messages instead of calling Resend).
+func NewServiceWithSender(cfg *config.Config, store *Store, sender Sender) (*Service, error) {
+	tpls, err := parseTemplates()
+	if err != nil {
+		return nil, err
+	}
+	return &Service{cfg: cfg, store: store, sender: sender, tpls: tpls}, nil
+}
+
 // NewRenderer returns a render-only Service (nil sender, nil store).
 // Render works; SendDirect / SendOnce will panic — those require a sender.
 // Used by the CLI email-preview subcommand so you can inspect templates
@@ -123,12 +133,32 @@ type renderData struct {
 	DiscordURL string
 	RedditURL  string
 	LogoURL    string
+	// Answers are the one-tap reason links (day-2, trial-ending); empty for
+	// templates without reasons.
+	Answers []AnswerLink
+}
+
+// AnswerLink is one rendered reason link.
+type AnswerLink struct {
+	URL   string
+	Label string
 }
 
 // Render produces a fully-rendered Message for the given template. Exported
 // so the CLI test subcommand can render without sending.
 func (s *Service) Render(templateName, to, firstName string) (Message, error) {
+	return s.render(templateName, to, firstName, "preview")
+}
+
+// render is Render with the answer token used in the reason links.
+func (s *Service) render(templateName, to, firstName, answerToken string) (Message, error) {
 	data := s.buildData(templateName, firstName)
+	for _, r := range ReasonsFor(templateName) {
+		data.Answers = append(data.Answers, AnswerLink{
+			URL:   data.AppURL + "/api/v1/email/answer/" + answerToken + "?r=" + r.Key,
+			Label: r.Label,
+		})
+	}
 	body, err := s.renderHTML(templateName, &data)
 	if err != nil {
 		return Message{}, err
@@ -180,7 +210,14 @@ func (s *Service) SendOnceKeyed(ctx context.Context, userID, email, firstName, t
 		return nil
 	}
 
-	msg, err := s.Render(templateName, email, firstName)
+	token := "preview"
+	if len(ReasonsFor(templateName)) > 0 {
+		if token, err = s.store.CreateAnswer(ctx, userID, templateName, time.Now()); err != nil {
+			return fmt.Errorf("create answer token: %w", err)
+		}
+	}
+
+	msg, err := s.render(templateName, email, firstName, token)
 	if err != nil {
 		return fmt.Errorf("render %s: %w", templateName, err)
 	}
@@ -190,6 +227,9 @@ func (s *Service) SendOnceKeyed(ctx context.Context, userID, email, firstName, t
 			Str("subject", msg.Subject).Msg("email: DRY RUN (not sent)")
 	} else {
 		if err := s.sender.Send(ctx, msg); err != nil {
+			if token != "preview" {
+				_ = s.store.DeleteAnswer(ctx, token)
+			}
 			return fmt.Errorf("send %s: %w", templateName, err)
 		}
 	}
