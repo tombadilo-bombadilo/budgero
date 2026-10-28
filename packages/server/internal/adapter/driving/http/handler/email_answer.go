@@ -72,9 +72,9 @@ a { color:inherit; }
   </form>
 {{else}}
   {{if eq .State "noted"}}
-    <h1>Thank you, I'll read it.</h1>
-    <p>I answer when there's something to answer. If you want a reply, write to
-    <a href="mailto:hello@budgero.app">hello@budgero.app</a>.</p>
+    <h1>Thank you, this really helps.</h1>
+    <p>I read every one of these myself. If you'd like to talk it through, just
+    email me at <a href="mailto:hello@budgero.app">hello@budgero.app</a>.</p>
   {{else}}
     <h1>Thanks, got it.</h1>
     <p>Your answer: <strong>{{.Label}}</strong></p>

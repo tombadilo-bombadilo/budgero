@@ -101,7 +101,7 @@ func TestEmailAnswer_GetNeverWrites_PostRecords(t *testing.T) {
 	}
 
 	rec = do(e, http.MethodPost, path, url.Values{"note": {"  importing from my bank took forever  "}})
-	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "I'll read it") {
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "this really helps") {
 		t.Fatalf("POST note: %d %s", rec.Code, rec.Body.String())
 	}
 	r, n := answerRow(t, db, userID)
