@@ -90,6 +90,7 @@ func (r *UserPurgeRepository) Purge(ctx context.Context, userID string) (_ *doma
 		{&report.ActivityDaysDeleted, "user_daily_activity",
 			`DELETE FROM user_daily_activity WHERE user_id = ?`, []any{userID}},
 		{&report.EmailsDeleted, "sent_emails", `DELETE FROM sent_emails WHERE user_id = ?`, []any{userID}},
+		{nil, "email_answers", `DELETE FROM email_answers WHERE user_id = ?`, []any{userID}},
 		// beta_invites references users without ON DELETE, which would block
 		// the user delete below.
 		{nil, "beta_invites", `DELETE FROM beta_invites WHERE created_by = ?`, []any{userID}},

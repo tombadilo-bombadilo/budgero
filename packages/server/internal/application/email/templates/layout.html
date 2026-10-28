@@ -161,6 +161,11 @@
         margin: 12px 0 0 0;
       }
 
+      /* One-tap answers (stacked, full-width; inline styles carry the look
+         in clients that drop <style>) */
+      .answers { margin: 18px 0 6px 0; }
+      .answers a:hover { background-color: #111c34 !important; color: #f8fafc !important; }
+
       /* Responsive */
       @media only screen and (max-width: 560px) {
         .wrap { padding: 20px 10px !important; }
@@ -223,3 +228,11 @@
     </center>
   </body>
 </html>{{end}}
+
+{{define "answers"}}{{if .Answers}}
+<div class="answers">
+  {{range .Answers}}<a href="{{.URL}}" target="_blank" rel="noopener" style="display:block;margin:0 0 8px 0;padding:12px 16px;border:1px solid #111c34;color:#111c34;background-color:#fffdf8;text-decoration:none;font-size:14px;font-weight:500;">{{.Label}} &rarr;</a>
+  {{end}}
+</div>
+<p class="body muted" style="font-size:12px;">One tap, no login. You can add a sentence on the next page if you like.</p>
+{{end}}{{end}}

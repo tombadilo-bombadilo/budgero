@@ -41,6 +41,10 @@ func SetupRoutes(e *echo.Echo, h *handler.Handlers, services *application.Servic
 	// Webhook route (public, verified by signature)
 	if !opts.SelfHost {
 		api.POST("/webhooks/lemonsqueezy", h.HandleLemonSqueezyWebhook)
+		// One-tap answer links from the day-2 / trial-ending emails (token in
+		// the path is the credential; GET never writes).
+		api.GET("/email/answer/:token", h.GetEmailAnswer)
+		api.POST("/email/answer/:token", h.PostEmailAnswer)
 	} else {
 		log.Info().Msg("Self-host mode: skipping LemonSqueezy webhook route")
 	}
