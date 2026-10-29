@@ -55,6 +55,7 @@ Geldwaarden zijn gehele milli-eenheden (1/1000 van een valuta-eenheid), dus 42,5
 ### Vandaag ondersteunde bewerking
 
 - `transactions.add` — stuur inkomsten of uitgaven. Gebruik `inflow` voor inkomsten en `outflow` voor uitgaven (slechts één mag niet-nul zijn). Geef je bestaande budget-, rekening- en categorie-ID's op. Zet `"cleared": true` als de transactie al door de bank is verwerkt; zonder dit veld wordt ze als niet-verwerkt toegevoegd.
+- **Matchen met zelf ingevoerde transacties:** een gepushte `transactions.add` die lijkt op een transactie die je zelf invoerde (dezelfde rekening en richting, bedrag en datum binnen **Instellingen → Dubbele transacties**, standaard 1% en ±7 dagen) wordt niet dubbel toegevoegd. Die wacht in de lijst **na te kijken** van de rekening: **Matchen** behoudt je invoer en markeert die als bevestigd, **Als nieuw toevoegen** voegt precies toe wat is gepusht. Overboekingen en gesplitste transacties worden altijd direct toegevoegd.
 
 ## Versleutelingsvereisten
 

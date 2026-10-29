@@ -104,7 +104,7 @@ Select **Link and import**. Transactions appear right away and are marked cleare
 - **Booked transactions by default.** Pending card payments are skipped until your bank books them, unless you turn on **Import pending transactions** for the account (see below). Cancelled and rejected payments are never imported.
 - **Clean descriptions.** Many banks, especially in Germany and Austria, prefix descriptions with SEPA codes such as `SVWZ+` or `EREF+`. Budgero removes those prefixes.
 - **No duplicates.** Each bank transaction is imported once, even after you renew access. Some banks send transactions without a reference; Budgero still tells two identical coffees on the same day apart.
-- **Possible matches.** When a bank transaction has the same amount as an entry you typed in within five days of it, Budgero asks you to **Match**, **Add as new**, or **Skip** instead of guessing.
+- **Possible matches.** When a bank transaction looks like an entry you typed in (same direction, amount and date within the range in **Settings → Duplicate transactions**, 1% and ±7 days by default), Budgero asks you to **Match**, **Add as new**, or **Skip** instead of guessing.
 - **User-present syncing.** Banks may limit how often an app can read your accounts in the background, often to four times a day. Budgero syncs while you're using the app and tells Enable Banking so, which usually keeps you clear of that limit.
 
 ## Bank feed settings

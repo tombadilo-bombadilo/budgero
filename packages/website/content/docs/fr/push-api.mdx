@@ -55,6 +55,7 @@ Les valeurs monétaires sont des milliunités entières (1/1000 d'une unité mon
 ### Opération prise en charge à ce jour
 
 - `transactions.add` — envoyez un revenu ou une dépense. Utilisez `inflow` pour les revenus et `outflow` pour les dépenses (un seul doit être non nul). Indiquez vos identifiants de budget, de compte et de catégorie existants. Ajoutez `"cleared": true` si la transaction est déjà passée à la banque ; sinon elle est ajoutée comme non pointée.
+- **Correspondance avec les saisies manuelles :** un `transactions.add` envoyé qui ressemble à une transaction que vous avez saisie vous-même (même compte et même sens, montant et date dans **Paramètres → Transactions en double**, 1 % et ±7 jours par défaut) n'est pas ajouté deux fois. Il attend dans la liste **à vérifier** du compte : **Associer** conserve votre saisie et la marque comme pointée, **Ajouter comme nouvelle** ajoute exactement ce qui a été envoyé. Les virements et les transactions ventilées sont toujours ajoutés directement.
 
 ## Exigences de chiffrement
 

@@ -104,7 +104,7 @@ Sélectionnez **Lier et importer**. Les transactions apparaissent immédiatement
 - **Transactions comptabilisées par défaut.** Les paiements par carte en attente sont ignorés jusqu'à ce que votre banque les comptabilise, sauf si vous activez **Importer les transactions en attente** pour le compte (voir ci-dessous). Les paiements annulés ou rejetés ne sont jamais importés.
 - **Descriptions nettoyées.** De nombreuses banques, notamment en Allemagne et en Autriche, font précéder les descriptions de codes SEPA comme `SVWZ+` ou `EREF+`. Budgero supprime ces préfixes.
 - **Pas de doublons.** Chaque transaction bancaire n'est importée qu'une fois, même après un renouvellement de l'accès. Certaines banques envoient des transactions sans référence ; Budgero distingue malgré tout deux cafés identiques pris le même jour.
-- **Correspondances possibles.** Lorsqu'une transaction bancaire a le même montant qu'une saisie que vous avez faite, à cinq jours près, Budgero vous laisse choisir entre **Associer**, **Ajouter comme nouvelle** et **Ignorer** au lieu de deviner.
+- **Correspondances possibles.** Lorsqu'une transaction bancaire ressemble à une saisie que vous avez faite (même sens, montant et date dans la plage définie dans **Paramètres → Transactions en double**, 1 % et ±7 jours par défaut), Budgero vous laisse choisir entre **Associer**, **Ajouter comme nouvelle** et **Ignorer** au lieu de deviner.
 - **Synchronisation en votre présence.** Les banques peuvent limiter la fréquence à laquelle une application lit vos comptes en arrière-plan, souvent à quatre fois par jour. Budgero se synchronise pendant que vous utilisez l'application et le signale à Enable Banking, ce qui vous maintient généralement en deçà de cette limite.
 
 ## Réglages du flux bancaire

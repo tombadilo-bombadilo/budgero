@@ -24,7 +24,31 @@ export function BankSyncButton({ budgetId, accountId, currency }: BankSyncButton
   const { data: reviews = [] } = useBankReviews(budgetId, accountId);
   const sync = useRunBankSync();
   const link = links.find((candidate) => candidate.AccountID === accountId);
-  if (!link) return null;
+  const reviewBadge = reviews.length > 0 && (
+    <Button
+      size="sm"
+      variant="outline"
+      className="h-7 px-2 text-xs text-amber-600 border-amber-600/40"
+      onClick={() => setReviewOpen(true)}
+    >
+      <Trans>{reviews.length} to review</Trans>
+    </Button>
+  );
+  // Push API matches land in the same review list, also on accounts with no bank link.
+  if (!link) {
+    if (!reviewBadge) return null;
+    return (
+      <div className="flex items-center gap-1">
+        {reviewBadge}
+        <BankReviewDialog
+          budgetId={budgetId}
+          accountId={accountId}
+          open={reviewOpen}
+          onOpenChange={setReviewOpen}
+        />
+      </div>
+    );
+  }
 
   const syncedAgo = formatSyncedAgo(link.LastSyncAt);
   const onSync = () =>
@@ -49,16 +73,7 @@ export function BankSyncButton({ budgetId, accountId, currency }: BankSyncButton
 
   return (
     <div className="flex items-center gap-1">
-      {reviews.length > 0 && (
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs text-amber-600 border-amber-600/40"
-          onClick={() => setReviewOpen(true)}
-        >
-          <Trans>{reviews.length} to review</Trans>
-        </Button>
-      )}
+      {reviewBadge}
       <Tooltip>
         <TooltipTrigger asChild>
           <Button

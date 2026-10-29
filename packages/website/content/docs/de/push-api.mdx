@@ -55,6 +55,7 @@ Geldwerte sind ganzzahlige Millieinheiten (1/1000 einer Währungseinheit), daher
 ### Derzeit unterstützte Operation
 
 - `transactions.add` — sende eine Einnahme oder Ausgabe. Verwende `inflow` für Einnahmen und `outflow` für Ausgaben (nur eines sollte ungleich null sein). Gib deine bestehenden Budget-, Konto- und Kategorie-IDs an. Setze `"cleared": true`, wenn die Transaktion bei der Bank bereits gebucht ist; ohne Angabe wird sie als nicht gebucht hinzugefügt.
+- **Abgleich mit erfassten Transaktionen:** Ein gepushtes `transactions.add`, das wie eine selbst erfasste Transaktion aussieht (gleiches Konto und gleiche Richtung, Betrag und Datum innerhalb von **Einstellungen → Doppelte Transaktionen**, standardmäßig 1 % und ±7 Tage), wird nicht doppelt angelegt. Es wartet in der Liste **zu prüfen** des Kontos: **Zuordnen** behält deinen Eintrag und markiert ihn als gebucht, **Als neu hinzufügen** legt genau das Gepushte an. Umbuchungen und aufgeteilte Transaktionen werden immer direkt angelegt.
 
 ## Verschlüsselungsanforderungen
 

@@ -3,9 +3,22 @@ import {
   planImportRows,
   importSourceKey,
   type ImportDuplicateService,
+  type DuplicateTolerance,
 } from '@budgero/core/browser';
 import { toDecimal } from '@shared/lib/currency/milli';
 import type { ParsedData, ColumnMapping, ImportConfig, PreviewRow } from '../model/types';
+
+const DEFAULT_TOLERANCE: DuplicateTolerance = { toleranceBps: 100, dayWindow: 7 };
+
+/** The hand-entry duplicate settings (Settings → Duplicate transactions), reused for imports. */
+export function importTolerance(services: unknown): DuplicateTolerance {
+  const settings = (
+    services as { userMeta?: { getDuplicateHintSettings?: () => DuplicateTolerance } }
+  ).userMeta?.getDuplicateHintSettings?.();
+  return settings
+    ? { toleranceBps: settings.toleranceBps, dayWindow: settings.dayWindow }
+    : DEFAULT_TOLERANCE;
+}
 
 interface FilePreviewOptions {
   parsedData: ParsedData;
@@ -17,6 +30,8 @@ interface FilePreviewOptions {
   selectedHeaderIndex: number | null;
   runKey: string;
   duplicates: Pick<ImportDuplicateService, 'plan'>;
+  /** The duplicate-hint settings; rows within it can be matched to hand-entered transactions. */
+  tolerance?: DuplicateTolerance;
 }
 
 export async function buildFileImportPreview({
@@ -29,6 +44,7 @@ export async function buildFileImportPreview({
   selectedHeaderIndex,
   runKey,
   duplicates,
+  tolerance,
 }: FilePreviewOptions): Promise<PreviewRow[]> {
   const bytes = await parsedData.source.file.arrayBuffer();
   const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -83,11 +99,16 @@ export async function buildFileImportPreview({
       sourceKey: importSourceKey(parsedData.source.type, row),
     };
   });
-  const matches = duplicates.plan(inputs);
+  const matches = duplicates.plan(inputs, tolerance ? { tolerance } : {});
   return inputs.map((input, index) => ({
     input,
     duplicate: matches[index],
-    decision: matches[index].status === 'already-imported' ? 'skip' : undefined,
+    decision:
+      matches[index].status === 'already-imported'
+        ? 'skip'
+        : matches[index].suggestMatch
+          ? 'match'
+          : undefined,
     original: parsedData.rows[index],
     errors: plans[index].errors,
     parsed: {

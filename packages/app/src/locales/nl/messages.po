@@ -994,8 +994,13 @@ msgstr "{importing, plural, one {# transactie importeren} other {# transacties i
 
 #. placeholder {0}: previewData.filter((r) => r.decision === 'skip').length
 #: src/features/import/ui/steps/PreviewStep.tsx
-msgid "{importing} to import · {0} skipped · {unresolved} need a decision"
-msgstr "{importing} te importeren · {0} overgeslagen · {unresolved} vereisen een keuze"
+#~ msgid "{importing} to import · {0} skipped · {unresolved} need a decision"
+#~ msgstr "{importing} te importeren · {0} overgeslagen · {unresolved} vereisen een keuze"
+
+#. placeholder {0}: previewData.filter((r) => r.decision === 'skip').length
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "{importing} to import · {matching} matched · {0} skipped · {unresolved} need a decision"
+msgstr "{importing} te importeren · {matching} gematcht · {0} overgeslagen · {unresolved} wachten op een beslissing"
 
 #: src/pages/settings/push-api/usePushApiState.ts
 msgid "{label} ID copied: {id}"
@@ -1008,6 +1013,10 @@ msgstr "{matchedCount, plural, one {# transactie bijgewerkt.} other {# transacti
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "{matchedCount, plural, one {Updated # transaction across this budget.} other {Updated # transactions across this budget.}}"
 msgstr "{matchedCount, plural, one {# transactie bijgewerkt in dit budget.} other {# transacties bijgewerkt in dit budget.}}"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "{matching, plural, one {Match # transaction} other {Match # transactions}}"
+msgstr "{matching, plural, one {# transactie matchen} other {# transacties matchen}}"
 
 #: src/pages/accounts/AccountsPage.tsx
 msgid "{months, plural, one {# month} other {# months}}"
@@ -1690,7 +1699,7 @@ msgstr "<0/>Gegevens importeren"
 
 #: src/pages/settings/ImportsPage.tsx
 msgid "<0/>Import History"
-msgstr "<0/>Geschiedenis importeren"
+msgstr "<0/>Importgeschiedenis"
 
 #: src/features/import/ui/steps/UploadStep.tsx
 msgid "<0/>Import Transactions"
@@ -9287,8 +9296,8 @@ msgid "Import transactions from"
 msgstr "Transacties importeren vanaf"
 
 #: src/pages/settings/ImportsPage.tsx
-msgid "Import transactions from {SUPPORTED_IMPORT_FORMATS_LABEL} files and manage previous imports."
-msgstr "Importeer transacties uit {SUPPORTED_IMPORT_FORMATS_LABEL}-bestanden en beheer eerdere imports."
+msgid "Import transactions from {formats} files and manage previous imports."
+msgstr "Importeer transacties uit {formats}-bestanden en beheer eerdere imports."
 
 #: src/pages/settings/bank-sync/BankSyncPage.tsx
 msgid "Import transactions from your banks through SimpleFIN Bridge (US and Canada) or Enable Banking (Europe)."
@@ -10628,12 +10637,17 @@ msgid "Master password will now stay in memory only."
 msgstr "Hoofdwachtwoord blijft nu alleen in het geheugen."
 
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
+#: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Match"
 msgstr "Matchen"
 
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Match / reason"
 msgstr "Overeenkomst / reden"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Match all unresolved"
+msgstr "Alle onbesliste matchen"
 
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "MATCH CARDS"
@@ -10650,6 +10664,10 @@ msgstr "Koppel elke creditcard aan de bijbehorende betalingscategorie voordat je
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "match payment categories below"
 msgstr "koppel hieronder de betalingscategorieën"
+
+#: src/features/import/ui/steps/CompleteStep.tsx
+msgid "Matched to existing (marked cleared):"
+msgstr "Gematcht met bestaande (als bevestigd gemarkeerd):"
 
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Matches your bank? Click to use it"
@@ -13610,6 +13628,7 @@ msgstr "Aankoopdatum (wanneer je betaalde)"
 #~ msgid "Purposes"
 #~ msgstr "Doelen"
 
+#: src/features/bank-sync/ui/BankReviewDialog.tsx
 #: src/pages/settings/push-api/PushApiPage.tsx
 #: src/shared/model/nav-registry.ts
 msgid "Push API"
@@ -14589,10 +14608,6 @@ msgstr "Controleer eerst de rekeningsaldi en transacties."
 msgid "Review account types after import"
 msgstr "Rekeningtypen na het importeren controleren"
 
-#: src/features/bank-sync/ui/BankReviewDialog.tsx
-msgid "Review bank transactions"
-msgstr "Banktransacties nakijken"
-
 #: src/widgets/dashboard/OverspentCategoriesCard.tsx
 msgid "Review budget<0/>"
 msgstr "Budget bekijken<0/>"
@@ -14607,8 +14622,16 @@ msgid "Review imported account types before budgeting."
 msgstr "Controleer de geïmporteerde rekeningtypen voordat je gaat budgetteren."
 
 #: src/features/import/ui/steps/PreviewStep.tsx
-msgid "Review possible duplicates before importing. Skipping keeps the existing transaction unchanged."
-msgstr "Controleer mogelijke duplicaten voordat je importeert. Bij overslaan blijft de bestaande transactie ongewijzigd."
+msgid "Review possible duplicates before importing. Match keeps the existing transaction and marks it cleared; Skip keeps it unchanged."
+msgstr "Controleer mogelijke duplicaten vóór het importeren. Matchen behoudt de bestaande transactie en markeert die als bevestigd; Overslaan laat die ongewijzigd."
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+#~ msgid "Review possible duplicates before importing. Skipping keeps the existing transaction unchanged."
+#~ msgstr "Controleer mogelijke duplicaten voordat je importeert. Bij overslaan blijft de bestaande transactie ongewijzigd."
+
+#: src/features/bank-sync/ui/BankReviewDialog.tsx
+msgid "Review possible matches"
+msgstr "Mogelijke matches nakijken"
 
 #: src/pages/settings/ImportsPage.tsx
 msgid "Review recent imports and undo or archive them if something looks off."
@@ -14715,6 +14738,10 @@ msgstr "Rijen boven het zichtbare gebied"
 #: src/features/transactions/ui/desktop-table/TransactionTableBody.tsx
 msgid "Rows below the visible area"
 msgstr "Rijen onder het zichtbare gebied"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Rows marked Match keep the transaction you entered (category, memo, payee, splits) and mark it cleared. Undo right after importing reverts the matches too."
+msgstr "Rijen met Matchen behouden de transactie die je zelf invoerde (categorie, notitie, begunstigde, splitsingen) en markeren die als bevestigd. Ongedaan maken direct na het importeren draait ook de matches terug."
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Rows per page"
@@ -16029,6 +16056,10 @@ msgid "Signing out..."
 msgstr "Uitloggen..."
 
 #: src/features/import/lib/import-display-text.ts
+msgid "Similar amount and date in this account"
+msgstr "Vergelijkbaar bedrag en vergelijkbare datum op deze rekening"
+
+#: src/features/import/lib/import-display-text.ts
 msgid "Similar row in this file; both may be real transactions"
 msgstr "Vergelijkbare rij in dit bestand; beide kunnen echte transacties zijn"
 
@@ -17193,13 +17224,13 @@ msgstr "Daarna {monthly}/maand of {yearly}/jaar, inclusief belasting."
 msgid "There is no server copy to download yet."
 msgstr "Er is nog geen serverkopie om te downloaden."
 
-#: src/features/bank-sync/ui/BankReviewDialog.tsx
-msgid "These bank transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
-msgstr "Deze banktransacties lijken op transacties die je al hebt ingevoerd. Match ze om je invoer als bevestigd te markeren, of voeg ze toe als nieuwe transacties."
-
 #: src/features/budget-management/ui/create-budget-form/YnabDateOrderChoice.tsx
 msgid "These dates can be read two ways. Select the date format used in YNAB."
 msgstr "Deze datums kunnen op twee manieren worden gelezen. Selecteer de datumnotatie die in YNAB wordt gebruikt."
+
+#: src/features/bank-sync/ui/BankReviewDialog.tsx
+msgid "These incoming transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
+msgstr "Deze binnenkomende transacties lijken op transacties die je al hebt ingevoerd. Match ze om je invoer als bevestigd te markeren, of voeg ze toe als nieuwe transacties."
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "They arrive uncleared and are updated once your bank books them. Pending transactions your bank drops, like a released card hold, are removed."
@@ -18901,8 +18932,12 @@ msgid "Warn about possible duplicates"
 msgstr "Waarschuwen voor mogelijke duplicaten"
 
 #: src/pages/settings/components/DuplicateHintSettingsCard.tsx
-msgid "Warn while adding a transaction by hand if it looks like one already in the account. Imports use their own duplicate check."
-msgstr "Waarschuwt bij het handmatig toevoegen van een transactie als die lijkt op een die al in de rekening staat. Imports hebben hun eigen duplicaatcontrole."
+#~ msgid "Warn while adding a transaction by hand if it looks like one already in the account. Imports use their own duplicate check."
+#~ msgstr "Waarschuwt bij het handmatig toevoegen van een transactie als die lijkt op een die al in de rekening staat. Imports hebben hun eigen duplicaatcontrole."
+
+#: src/pages/settings/components/DuplicateHintSettingsCard.tsx
+msgid "Warn while adding a transaction by hand if it looks like one already in the account. Statement imports use the same amount and date range to find transactions to match."
+msgstr "Waarschuwen bij het handmatig toevoegen van een transactie die lijkt op een bestaande op de rekening. Afschriftimports gebruiken hetzelfde bedrag- en datumbereik om transacties te vinden om te matchen."
 
 #: src/pages/admin/admin-users/ActionDialog.tsx
 msgid "Warning"

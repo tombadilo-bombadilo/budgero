@@ -221,6 +221,35 @@ describe('op undo specs', () => {
       expect(withoutProvenanceIds(h.dump(tables))).toEqual(withoutProvenanceIds(after));
     });
 
+    it('a pushed review added as new replays what was sent (category, memo, cleared)', async () => {
+      h.services.bankSync.addReviews([
+        {
+          budgetId: h.budgetId,
+          accountId: h.accountId,
+          identity: {
+            ...identity('push-1'),
+            sourceKey: 'push-api',
+            pushArgs: {
+              budgetId: h.budgetId,
+              accountId: h.accountId,
+              categoryId: h.categoryId,
+              date: '2026-09-01',
+              outflow: 2500,
+              memo: 'pushed',
+              cleared: true,
+            },
+          },
+          candidateTransactionId: null,
+        },
+      ]);
+      const [pending] = h.services.bankSync.listPendingReviews(h.budgetId);
+      await resolveBankReview(h.runtime as never, pending!, 'import');
+      const [row] = h.dump(['transactions']).transactions;
+      expect(row).toMatchObject({ CategoryID: h.categoryId, Memo: 'pushed', Cleared: 1 });
+      // Recorded under the push identity: a replay of the same message is a no-op.
+      expect(h.dump(['import_provenance']).import_provenance).toHaveLength(1);
+    });
+
     it('one undo reverts an import and puts the review back to pending', async () => {
       const pending = await review(null);
       const before = h.dump(tables);

@@ -172,6 +172,82 @@ describe('SimpleFIN import planning', () => {
     expect(later.imports).toHaveLength(1);
   });
 
+  it('matches hand entries with the duplicate settings: amount % and ± days', async () => {
+    const { plan, services, account, budgetId } = await setup();
+    const add = (date: string, outflow: number, payee: string) =>
+      services.transactions.addTransaction(
+        asMilli(0),
+        asMilli(outflow),
+        account.ID,
+        0,
+        budgetId,
+        date,
+        '',
+        '',
+        payee
+      );
+    const tip = await add('2026-09-01', 42000, 'Diner'); // bank books 42.30 (tip), 6 days later
+    const far = await add('2026-08-20', 15000, 'Gym'); // 12 days off
+    let result = plan([tx('a', '2026-09-07', '-42.30'), tx('b', '2026-09-01', '-15.00')]);
+    expect(result.reviews.map((r) => r.candidateTransactionId)).toEqual([tip]);
+    expect(result.imports).toHaveLength(1);
+    // A wider window picks up the Gym entry; a tighter one drops the Diner match.
+    services.userMeta.setDuplicateHintSettings({ dayWindow: 14 });
+    result = plan([tx('b', '2026-09-01', '-15.00')]);
+    expect(result.reviews.map((r) => r.candidateTransactionId)).toEqual([far]);
+    services.userMeta.setDuplicateHintSettings({ dayWindow: 3, toleranceBps: 0 });
+    expect(plan([tx('a', '2026-09-07', '-42.30')]).reviews).toEqual([]);
+  });
+
+  it('turns a pushed transaction matching a hand entry into a review, once', async () => {
+    const { services, account, budgetId } = await setup();
+    const manualId = await services.transactions.addTransaction(
+      asMilli(0),
+      asMilli(12500),
+      account.ID,
+      0,
+      budgetId,
+      '2026-09-01',
+      '',
+      '',
+      'Coffee'
+    );
+    const identity = {
+      operationId: 'push:m1',
+      fileRowKey: 'push:m1',
+      sourceKey: 'push-api',
+      date: '2026-09-03',
+      inflow: 0,
+      outflow: 12500,
+      payee: 'COFFEE #12',
+      memo: '',
+      currency: '',
+      pushArgs: { categoryId: 7 },
+    };
+    const review = services.bankSync.reviewForPushed({ budgetId, accountId: account.ID, identity });
+    expect(review).toMatchObject({
+      candidateTransactionId: manualId,
+      identity: { pushArgs: { categoryId: 7 } },
+    });
+    services.bankSync.addReviews([review!]);
+    // The candidate is claimed by the pending review; another push for it is added as usual.
+    expect(
+      services.bankSync.reviewForPushed({
+        budgetId,
+        accountId: account.ID,
+        identity: { ...identity, operationId: 'push:m2', fileRowKey: 'push:m2' },
+      })
+    ).toBeNull();
+    // Nothing to match: add as usual.
+    expect(
+      services.bankSync.reviewForPushed({
+        budgetId,
+        accountId: account.ID,
+        identity: { ...identity, operationId: 'push:m3', outflow: 99000 },
+      })
+    ).toBeNull();
+  });
+
   it('queues a manual entry a few days off as a match review instead of importing', async () => {
     const { plan, services, account, budgetId } = await setup();
     const manualId = await services.transactions.addTransaction(

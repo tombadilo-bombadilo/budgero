@@ -60,7 +60,7 @@ function ReviewItem({ review, account }: { review: BankReview; account: Account 
         <div className="text-[11px] font-medium text-muted-foreground">{account.Name}</div>
       )}
       <Row
-        label={t`Bank`}
+        label={review.identity.sourceKey === 'push-api' ? t`Push API` : t`Bank`}
         date={review.identity.date}
         payee={review.identity.payee}
         amount={formatSignedIdentity(review.identity, currency)}
@@ -114,12 +114,12 @@ export function BankReviewDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
-            <Trans>Review bank transactions</Trans>
+            <Trans>Review possible matches</Trans>
           </DialogTitle>
           <DialogDescription>
             <Trans>
-              These bank transactions look like ones you already entered. Match them to mark your
-              entry as cleared, or add them as new transactions.
+              These incoming transactions look like ones you already entered. Match them to mark
+              your entry as cleared, or add them as new transactions.
             </Trans>
           </DialogDescription>
         </DialogHeader>

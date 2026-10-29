@@ -90,6 +90,9 @@ function parseSummary(value: string): ImportRunSummary {
         ? { verification: summarizeImportVerification(parsed.verification) }
         : {}),
       ...(parsed.acceptedWithWarnings === true ? { acceptedWithWarnings: true } : {}),
+      ...(Number(parsed.transactionsMatched) > 0
+        ? { transactionsMatched: Number(parsed.transactionsMatched) }
+        : {}),
     };
   } catch {
     return { transactionsImported: 0, accountsCreated: 0, categoriesCreated: 0 };

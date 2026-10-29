@@ -1,5 +1,7 @@
 import type { DatabaseAdapter } from '../../database/interface.js';
 import { allRows, getRow, run } from '../../database/sql.js';
+import { getLocalDateString } from '../../utils/date.js';
+import { DUPLICATE_HINT_DEFAULTS, UserMetaQueries } from '../user-meta/queries.js';
 
 /** Immutable source values: ledger edits must not erase import identity. */
 export interface ImportIdentity {
@@ -14,6 +16,11 @@ export interface ImportIdentity {
   currency: string;
   /** Imported from a bank while still pending; settled once the bank books it. */
   pending?: boolean;
+  /**
+   * Push API rows waiting in review: the original transactions.add args, so
+   * "Add as new" replays exactly what was sent (category, label, cleared...).
+   */
+  pushArgs?: Record<string, unknown>;
 }
 export interface DuplicateInput extends ImportIdentity {
   index: number;
@@ -35,11 +42,62 @@ export interface DuplicatePlan {
   reason: string;
   candidates: DuplicateCandidate[];
   sameFileIndex?: number;
+  /**
+   * The candidate is the only hand-entered transaction this row could be, so
+   * the review can default to Match (keep it, mark it cleared).
+   */
+  suggestMatch?: boolean;
+}
+/** Same meaning as the hand-entry duplicate hint settings (user_meta). */
+export interface DuplicateTolerance {
+  /** Basis points of the amount: 100 = 1%. Never tighter than 0.01. */
+  toleranceBps: number;
+  /** Dates within ± this many days. */
+  dayWindow: number;
+}
+export interface DuplicatePlanOptions {
+  /** Also look for hand-entered transactions within this tolerance (statement files). */
+  tolerance?: DuplicateTolerance;
 }
 interface ProvenanceRow {
   TransactionID: number;
   IdentityJSON: string;
 }
+interface LedgerRow extends DuplicateCandidate {
+  imported: number;
+  reconciled: number;
+}
+// Same calendar-day arithmetic as bank sync (local dates, no UTC drift).
+const shiftDate = (date: string, days: number) => {
+  const [y, m, d] = date.split('-').map(Number);
+  return getLocalDateString(new Date(y, m - 1, d + days));
+};
+const dayNumber = (date: string) => {
+  const [y, m, d] = date.split('-').map(Number);
+  return Date.UTC(y, m - 1, d) / 86_400_000;
+};
+const signedAmount = (t: { inflow: number; outflow: number }) => t.inflow - t.outflow;
+/** Never tighter than 0.01 (10 milliunits), so "exact" still absorbs rounding. */
+const amountTolerance = (amount: number, toleranceBps: number) =>
+  Math.max(10, Math.round((Math.abs(amount) * toleranceBps) / 10_000));
+
+/** A statement/bank/push row to look up hand-entered matches for. */
+export interface ManualMatchQuery {
+  budgetId: number;
+  accountId: number;
+  date: string;
+  inflow: number;
+  outflow: number;
+  payee?: string;
+}
+const toCandidate = ({ id, date, inflow, outflow, payee, memo }: DuplicateCandidate) => ({
+  id,
+  date,
+  inflow,
+  outflow,
+  payee,
+  memo,
+});
 const normalized = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
 const equalAmounts = (a: ImportIdentity, b: ImportIdentity) =>
   a.date === b.date &&
@@ -49,6 +107,59 @@ const equalAmounts = (a: ImportIdentity, b: ImportIdentity) =>
 
 export class ImportDuplicateService {
   constructor(private readonly db: DatabaseAdapter) {}
+
+  /** The hand-entry duplicate settings (Settings → Duplicate transactions), shared by every import path. */
+  tolerance(): DuplicateTolerance {
+    try {
+      const { toleranceBps, dayWindow } = new UserMetaQueries(this.db).getDuplicateHintSettings();
+      return { toleranceBps, dayWindow };
+    } catch {
+      return {
+        toleranceBps: DUPLICATE_HINT_DEFAULTS.toleranceBps,
+        dayWindow: DUPLICATE_HINT_DEFAULTS.dayWindow,
+      };
+    }
+  }
+
+  /**
+   * Hand-entered, unreconciled transactions (no import provenance) that a
+   * bank or pushed row could be the cleared copy of: same direction, amount
+   * and date within the tolerance. Nearest date first, then closest amount,
+   * then same payee. Transfers count: a typed transfer is still the entry.
+   */
+  manualMatches(query: ManualMatchQuery, tolerance = this.tolerance()): DuplicateCandidate[] {
+    const amount = signedAmount(query);
+    if (!amount) return [];
+    const rows = allRows<LedgerRow>(
+      this.db,
+      `SELECT t.ID as id, t.Date as date, t.InflowNative as inflow, t.OutflowNative as outflow,
+        COALESCE(t.Payee, '') as payee, COALESCE(t.Memo, '') as memo,
+        COALESCE(t.Reconciled, 0) as reconciled, 0 as imported
+      FROM transactions t
+      WHERE t.BudgetID = ? AND t.AccountID = ? AND t.Date BETWEEN ? AND ?
+        AND COALESCE(t.Reconciled, 0) = 0
+        AND NOT EXISTS (SELECT 1 FROM import_provenance p WHERE p.TransactionID = t.ID)`,
+      query.budgetId,
+      query.accountId,
+      shiftDate(query.date, -tolerance.dayWindow),
+      shiftDate(query.date, tolerance.dayWindow)
+    );
+    const limit = amountTolerance(amount, tolerance.toleranceBps);
+    const payee = normalized(query.payee ?? '');
+    return rows
+      .filter((t) => {
+        const other = signedAmount(t);
+        return other > 0 === amount > 0 && Math.abs(other - amount) <= limit;
+      })
+      .map((t) => ({
+        t,
+        days: Math.abs(dayNumber(t.date) - dayNumber(query.date)),
+        diff: Math.abs(signedAmount(t) - amount),
+        payee: Number(normalized(t.payee) !== payee),
+      }))
+      .sort((a, b) => a.days - b.days || a.diff - b.diff || a.payee - b.payee || a.t.id - b.t.id)
+      .map(({ t }) => toCandidate(t));
+  }
 
   identities(transactionId: number): ImportIdentity[] {
     return allRows<ProvenanceRow>(
@@ -99,7 +210,8 @@ export class ImportDuplicateService {
     );
   }
 
-  plan(rows: DuplicateInput[]): DuplicatePlan[] {
+  plan(rows: DuplicateInput[], options: DuplicatePlanOptions = {}): DuplicatePlan[] {
+    const window = options.tolerance?.dayWindow ?? 0;
     // Fetch once per destination/date range, never once per statement row.
     const groups = new Map<string, DuplicateInput[]>();
     for (const row of rows) {
@@ -112,18 +224,22 @@ export class ImportDuplicateService {
     for (const group of groups.values()) {
       const first = group[0];
       const dates = group.map((row) => row.date).sort();
-      const transactions = allRows<DuplicateCandidate>(
+      const transactions = allRows<LedgerRow>(
         this.db,
         `SELECT t.ID as id, t.Date as date,
         t.InflowNative as inflow, t.OutflowNative as outflow, COALESCE(t.Payee, '') as payee,
-        COALESCE(t.Memo, '') as memo FROM transactions t JOIN accounts a ON a.ID=t.AccountID
+        COALESCE(t.Memo, '') as memo, COALESCE(t.Reconciled, 0) as reconciled,
+        EXISTS (SELECT 1 FROM import_provenance p WHERE p.TransactionID = t.ID) as imported
+        FROM transactions t JOIN accounts a ON a.ID=t.AccountID
         WHERE t.BudgetID=? AND t.AccountID=? AND a.Currency=? AND t.Date BETWEEN ? AND ?`,
         first.budgetId,
         first.accountId,
         first.currency,
-        dates[0],
-        dates[dates.length - 1]
+        window ? shiftDate(dates[0], -window) : dates[0],
+        window ? shiftDate(dates[dates.length - 1], window) : dates[dates.length - 1]
       );
+      // Hand-entered, not yet reconciled: what a statement row can be matched to.
+      const manual = (t: LedgerRow) => !t.imported && !t.reconciled;
       const provenance = allRows<ProvenanceRow & DuplicateCandidate>(
         this.db,
         `SELECT p.TransactionID, p.IdentityJSON, t.ID as id, t.Date as date,
@@ -145,7 +261,7 @@ export class ImportDuplicateService {
         if (identity.sourceKey)
           sources.set(identity.sourceKey, [...(sources.get(identity.sourceKey) ?? []), p]);
       }
-      const byAmountAndDate = new Map<string, DuplicateCandidate[]>();
+      const byAmountAndDate = new Map<string, LedgerRow[]>();
       for (const transaction of transactions) {
         const key = `${transaction.date}:${transaction.inflow}:${transaction.outflow}`;
         const bucket = byAmountAndDate.get(key) ?? [];
@@ -222,7 +338,7 @@ export class ImportDuplicateService {
           (row.sourceKey ? seenSources.get(row.sourceKey) : undefined) ?? seen.get(key);
         if (pending.has(row)) {
           const candidates = (byAmountAndDate.get(key) ?? []).filter((t) => !used.has(t.id));
-          const score = (t: DuplicateCandidate) =>
+          const score = (t: LedgerRow) =>
             Number(normalized(t.payee) === normalized(row.payee)) * 2 +
             Number(normalized(t.memo) === normalized(row.memo));
           candidates.sort((a, b) => score(b) - score(a) || a.id - b.id);
@@ -236,15 +352,95 @@ export class ImportDuplicateService {
               : previous !== undefined
                 ? 'Similar row in this file; both may be real transactions'
                 : '',
-            candidates: candidates.slice(0, 1),
+            candidates: candidates.slice(0, 1).map(toCandidate),
             sameFileIndex: previous,
+            ...(candidates.length === 1 && previous === undefined && manual(candidates[0])
+              ? { suggestMatch: true }
+              : {}),
           });
         }
         seen.set(key, row.index);
         if (row.sourceKey) seenSources.set(row.sourceKey, row.index);
       }
+      if (options.tolerance)
+        this.matchWithinTolerance(group, transactions, results, used, options.tolerance, manual);
     }
     return rows.map((row) => results.get(row.index)!);
+  }
+
+  /**
+   * Rows with no exact match may still be a transaction typed by hand: the
+   * bank often books a card purchase a few days later, or for a slightly
+   * different amount (tips, FX). Pair each row with a hand-entered
+   * transaction inside the tolerance, nearest date first, then closest
+   * amount, then same payee; each transaction is used at most once.
+   */
+  private matchWithinTolerance(
+    group: DuplicateInput[],
+    transactions: LedgerRow[],
+    results: Map<number, DuplicatePlan>,
+    used: Set<number>,
+    { toleranceBps, dayWindow }: DuplicateTolerance,
+    manual: (t: LedgerRow) => boolean
+  ): void {
+    const open = group.filter((row) => {
+      const plan = results.get(row.index);
+      return (
+        plan && (plan.status === 'new' || plan.status === 'needs-review') && !plan.candidates.length
+      );
+    });
+    const pool = transactions.filter((t) => manual(t) && !used.has(t.id));
+    const pairs: {
+      row: DuplicateInput;
+      t: LedgerRow;
+      days: number;
+      diff: number;
+      payee: number;
+    }[] = [];
+    const options = new Map<number, number>();
+    for (const row of open) {
+      const amount = signedAmount(row);
+      if (!amount) continue;
+      const tolerance = amountTolerance(amount, toleranceBps);
+      for (const t of pool) {
+        const other = signedAmount(t);
+        const days = Math.abs(dayNumber(t.date) - dayNumber(row.date));
+        const diff = Math.abs(other - amount);
+        if (other > 0 !== amount > 0 || diff > tolerance || days > dayWindow) continue;
+        pairs.push({
+          row,
+          t,
+          days,
+          diff,
+          payee: Number(normalized(t.payee) !== normalized(row.payee)),
+        });
+        options.set(row.index, (options.get(row.index) ?? 0) + 1);
+      }
+    }
+    pairs.sort(
+      (a, b) =>
+        a.days - b.days ||
+        a.diff - b.diff ||
+        a.payee - b.payee ||
+        a.row.index - b.row.index ||
+        a.t.id - b.t.id
+    );
+    const matchedRows = new Set<number>();
+    for (const { row, t } of pairs) {
+      if (matchedRows.has(row.index) || used.has(t.id)) continue;
+      matchedRows.add(row.index);
+      used.add(t.id);
+      const plan = results.get(row.index)!;
+      results.set(row.index, {
+        ...plan,
+        status: 'needs-review',
+        reason: 'Similar amount and date in this account',
+        candidates: [toCandidate(t)],
+        ...(options.get(row.index) === 1 && plan.sameFileIndex === undefined
+          ? { suggestMatch: true }
+          : {}),
+      });
+    }
   }
 }
 

@@ -74,4 +74,21 @@ describe('file preview identity and destinations', () => {
     expect(after.input.fileRowKey).not.toBe(before.input.fileRowKey);
     expect(after.input.operationId).not.toBe(before.input.operationId);
   });
+  it('forwards the statement tolerance and defaults suggested matches to Match', async () => {
+    const input = options();
+    const plan = vi.fn((rows: DuplicateInput[], _options?: unknown) =>
+      rows.map((row) => ({
+        index: row.index,
+        status: 'needs-review' as const,
+        candidates: [],
+        reason: 'Similar amount and date in this account',
+        suggestMatch: true,
+      }))
+    );
+    input.duplicates = { plan } as Pick<ImportDuplicateService, 'plan'>;
+    const tolerance = { toleranceBps: 50, dayWindow: 3 };
+    const [row] = await buildFileImportPreview({ ...input, tolerance });
+    expect(plan.mock.calls[0][1]).toEqual({ tolerance });
+    expect(row.decision).toBe('match');
+  });
 });
