@@ -19,6 +19,7 @@ const { mockSwitchWorkspaceAndSyncBudgetState, mockSetMasterPasswordStatus } = v
 let runtimeState = 'Ready';
 let runtimeInitialized = true;
 let runtimeServicesReady = true;
+let connectivity = { overall: false, apiReachable: false };
 let authSnapshot: AuthStartupSnapshot;
 let introSnapshot: IntroStartupSnapshot;
 let masterPasswordSnapshot: MasterPasswordStartupSnapshot;
@@ -31,7 +32,9 @@ const runtimeMock = {
   state: () => runtimeState,
   init: vi.fn(),
   getActiveSpaceId: () => 'space-a',
-  connectivityState: () => ({ overall: false, apiReachable: false }),
+  connectivityState: () => connectivity,
+  waitForInitialSync: vi.fn(),
+  processPushQueue: vi.fn(),
 };
 
 vi.mock('@shared/lib/crypto', () => ({
@@ -123,7 +126,11 @@ vi.mock('./screens', () => ({
   StartupErrorScreen: ({ error }: { error: string }) => (
     <div data-testid="startup-error-screen">{error}</div>
   ),
-  StartupSyncStatus: () => null,
+  StartupSyncStatus: ({ phase, message }: { phase: string; message: string }) => (
+    <div data-testid="sync-status" data-phase={phase}>
+      {message}
+    </div>
+  ),
 }));
 
 function createAuthSnapshot(overrides: Partial<AuthStartupSnapshot> = {}): AuthStartupSnapshot {
@@ -247,6 +254,7 @@ describe('StartupController', () => {
     runtimeState = 'Ready';
     runtimeInitialized = true;
     runtimeServicesReady = true;
+    connectivity = { overall: false, apiReachable: false };
     runtimeMock.init.mockResolvedValue(undefined);
     authSnapshot = createAuthSnapshot();
     introSnapshot = createIntroSnapshot();
@@ -433,5 +441,31 @@ describe('StartupController', () => {
 
     expect(acknowledgeIntro).toHaveBeenCalledOnce();
     expect(await screen.findByTestId('app-route')).toBeInTheDocument();
+  });
+
+  it('clears the initial-sync toast when the runtime starts reconnecting mid-wait', async () => {
+    connectivity = { overall: true, apiReachable: true };
+    let finishFirstWait: (result: { synced: boolean }) => void = () => undefined;
+    runtimeMock.waitForInitialSync
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishFirstWait = resolve;
+          })
+      )
+      .mockResolvedValue({ synced: true });
+    runtimeMock.processPushQueue.mockResolvedValue({ failed: 0 });
+    const view = renderController();
+
+    expect(await screen.findByTestId('sync-status')).toHaveTextContent('Finishing initial sync');
+
+    // Ready -> Reconnecting on the first reconnect cancels the running wait.
+    runtimeState = 'Reconnecting';
+    view.rerender(<TestHarness path="/dashboard" queryClient={view.queryClient} />);
+    finishFirstWait({ synced: true });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('sync-status')).toHaveAttribute('data-phase', 'complete');
+    });
   });
 });
