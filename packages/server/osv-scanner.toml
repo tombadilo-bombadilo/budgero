@@ -1,0 +1,26 @@
+# Scanned by osv-scanner for packages/server/go.mod: it only reads the config next to the scanned file.
+
+[[IgnoredVulns]]
+id = "GHSA-vvm8-gf78-28g4"
+ignoreUntil = 2026-12-10T00:00:00Z
+reason = "go-jose v3 is pinned by clerk-sdk-go (latest v2.7.0 still uses v3; fixed only in go-jose v4). It parses Clerk session tokens before their signature is checked, so the server rejects tokens over 8 KB before parsing (middleware.CheckClerkTokenSize), the workaround the advisory gives"
+
+[[IgnoredVulns]]
+id = "GHSA-mgcc-cww5-fp2q"
+ignoreUntil = 2026-12-10T00:00:00Z
+reason = "go-jose v3 via clerk-sdk-go, no v3 fix. Clerk's JWKS comes from Clerk over TLS; a JWK embedded in a client token is bounded by the 8 KB token cap (middleware.CheckClerkTokenSize), so the crafted-RSA-key CPU cost stays small"
+
+[[IgnoredVulns]]
+id = "GHSA-4w3g-jfj2-cw2q"
+ignoreUntil = 2026-12-10T00:00:00Z
+reason = "go-jose v3 via clerk-sdk-go, no v3 fix. The panic is in JWE decryption with CBC-HMAC; Budgero and the Clerk SDK only verify signed tokens (JWS) and never decrypt JWE"
+
+[[IgnoredVulns]]
+id = "GHSA-246p-cpwv-v3jq"
+ignoreUntil = 2026-12-10T00:00:00Z
+reason = "echo v4 has no fix (fixed in v5). Only affects echo.New() without Echo#IPExtractor; the server sets IPExtractor explicitly (cmd/shared/server.go), so the rate limiter does not trust a client-supplied X-Forwarded-For"
+
+[[IgnoredVulns]]
+id = "GHSA-99jh-6h7p-pp36"
+ignoreUntil = 2026-12-10T00:00:00Z
+reason = "echo v4 has no fix (fixed in v5). Only affects echo's proxy middleware, which the server does not use"
