@@ -380,3 +380,43 @@ func (h *Handlers) GetAdminSelfHostInstalls(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, summary)
 }
+
+// GetAdminSignups returns signups per day, week or month (granularity) for
+// the UTC days from..to, both inclusive. Defaults: the last 90 days, daily.
+// SaaS only, like the rest of the growth analytics.
+func (h *Handlers) GetAdminSignups(c echo.Context) error {
+	if h.selfHostMode {
+		return echo.NewHTTPError(http.StatusNotFound, "saas admin dashboard unavailable in self-host mode")
+	}
+	to := time.Now().UTC()
+	from := to.AddDate(0, 0, -89)
+	granularity := domain.AnalyticsGranularityDaily
+	for name, dst := range map[string]*time.Time{"from": &from, "to": &to} {
+		if s := c.QueryParam(name); s != "" {
+			t, err := time.Parse(time.RFC3339, s)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "invalid "+name+": must be RFC3339")
+			}
+			*dst = t
+		}
+	}
+	if s := c.QueryParam("granularity"); s != "" {
+		granularity = domain.AnalyticsGranularity(strings.ToLower(s))
+		if !granularity.IsValid() {
+			return echo.NewHTTPError(http.StatusBadRequest, "granularity must be daily, weekly, or monthly")
+		}
+	}
+	if to.Before(from) {
+		return echo.NewHTTPError(http.StatusBadRequest, "from must not be after to")
+	}
+	if to.Sub(from) > 5*366*24*time.Hour {
+		return echo.NewHTTPError(http.StatusBadRequest, "range is limited to 5 years")
+	}
+
+	out, err := h.services.Admin.GetSignupSeries(c.Request().Context(), from, to, granularity)
+	if err != nil {
+		log.Error().Err(err).Msg("signup series query failed")
+		return echo.NewHTTPError(http.StatusInternalServerError, "analytics query failed")
+	}
+	return c.JSON(http.StatusOK, out)
+}

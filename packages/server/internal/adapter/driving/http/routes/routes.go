@@ -229,6 +229,7 @@ func SetupRoutes(e *echo.Echo, h *handler.Handlers, services *application.Servic
 	// that doesn't exist in self-host).
 	if !opts.SelfHost {
 		admin.GET("/stickiness", h.GetAdminStickinessAnalytics)
+		admin.GET("/signups", h.GetAdminSignups)
 	}
 
 	// Weekly active self-host installs from the update check (cloud only —

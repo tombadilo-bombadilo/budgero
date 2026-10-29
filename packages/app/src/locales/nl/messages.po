@@ -2013,6 +2013,10 @@ msgstr "<0/>Chatballon tonen"
 msgid "<0/>Show hidden"
 msgstr "<0/>Verborgen tonen"
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "<0/>Signups"
+msgstr "<0/>Aanmeldingen"
+
 #: src/pages/admin/sql-explorer/AdminSqlExplorer.tsx
 msgid "<0/>SQL Explorer"
 msgstr "<0/>SQL-verkenner"
@@ -2131,6 +2135,13 @@ msgstr "<0/>Garanties"
 #: src/pages/auth/AuthPage.tsx
 msgid "<0/>Your budget is encrypted on your device before it syncs. Budgero cannot read its contents."
 msgstr "<0/>Je budget wordt op je apparaat versleuteld voordat het wordt gesynchroniseerd. Budgero kan de inhoud niet lezen."
+
+#. placeholder {0}: data.total
+#. placeholder {1}: data.from
+#. placeholder {2}: data.to
+#: src/pages/admin/SignupsSection.tsx
+msgid "<0>{0}</0> signups from {1} to {2} (UTC)"
+msgstr "<0>{0}</0> aanmeldingen van {1} tot en met {2} (UTC)"
 
 #. placeholder {0}: stats?.foundingMembers || 0
 #. placeholder {1}: stats?.betaUsers || 0
@@ -3620,6 +3631,7 @@ msgstr "Alleen toegepast in de eerste maand van het schema."
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/import/ui/steps/configure/TemplatesTab.tsx
+#: src/pages/admin/SignupsSection.tsx
 msgid "Apply"
 msgstr "Toepassen"
 
@@ -6626,6 +6638,10 @@ msgstr "Datums in deze export"
 msgid "DAU/MAU"
 msgstr "DAU/MAU"
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Day"
+msgstr "Dag"
+
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Day-N window"
 msgstr "Dag-N-venster"
@@ -8161,6 +8177,10 @@ msgstr "Profiel kon niet worden geladen."
 msgid "Failed to load Push API settings. Please try again later."
 msgstr "Push API-instellingen laden mislukt. Probeer het later opnieuw."
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Failed to load signups"
+msgstr "Aanmeldingen konden niet worden geladen"
+
 #: src/shared/hooks/useWhisperVoiceInput.ts
 msgid "Failed to load speech model"
 msgstr "Spraakmodel kon niet worden geladen"
@@ -8624,6 +8644,7 @@ msgstr "Nieuw begin, of neem je een budget mee?"
 msgid "Friend or colleague"
 msgstr "Vriend of collega"
 
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "From"
@@ -8902,6 +8923,10 @@ msgstr "Boodschappen"
 #: src/features/budget-management/model/icon-options.ts
 msgid "Groceries & Food"
 msgstr "Boodschappen & Voeding"
+
+#: src/pages/admin/SignupsSection.tsx
+msgid "Group by"
+msgstr "Groeperen op"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -10401,6 +10426,7 @@ msgstr "Laden..."
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Loading…"
 msgstr "Laden…"
@@ -10897,6 +10923,7 @@ msgstr "Monochrome budgetteringswerkruimte met perkamenten canvas en rood/groene
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Month"
 msgstr "Maand"
@@ -11634,6 +11661,7 @@ msgstr "Geen gegevens beschikbaar voor statistiek"
 msgid "No data available for table"
 msgstr "Geen gegevens beschikbaar voor tabel"
 
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "No data yet"
 msgstr "Nog geen gegevens"
@@ -16063,6 +16091,14 @@ msgstr "Inloggen…"
 msgid "Signing out..."
 msgstr "Uitloggen..."
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Signups"
+msgstr "Aanmeldingen"
+
+#: src/pages/admin/SignupsSection.tsx
+msgid "Signups over time"
+msgstr "Aanmeldingen door de tijd"
+
 #: src/features/import/lib/import-display-text.ts
 msgid "Similar row in this file; both may be real transactions"
 msgstr "Vergelijkbare rij in dit bestand; beide kunnen echte transacties zijn"
@@ -17636,6 +17672,7 @@ msgstr "TIP:"
 msgid "Title (Optional)"
 msgstr "Titel (optioneel)"
 
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "To"
@@ -19079,8 +19116,14 @@ msgstr "Website"
 msgid "WebSocket"
 msgstr "WebSocket"
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Week"
+msgstr "Week"
+
+#. placeholder {0}: point.start
 #. placeholder {0}: week.week
 #: src/pages/admin/SelfHostInstallsSection.tsx
+#: src/pages/admin/SignupsSection.tsx
 msgid "Week of {0}"
 msgstr "Week van {0}"
 

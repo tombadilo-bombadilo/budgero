@@ -2013,6 +2013,10 @@ msgstr "<0/>Mostrar burbuja de chat"
 msgid "<0/>Show hidden"
 msgstr "<0/>Mostrar ocultos"
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "<0/>Signups"
+msgstr "<0/>Registros"
+
 #: src/pages/admin/sql-explorer/AdminSqlExplorer.tsx
 msgid "<0/>SQL Explorer"
 msgstr "<0/>Explorador SQL"
@@ -2131,6 +2135,13 @@ msgstr "<0/>Garantías"
 #: src/pages/auth/AuthPage.tsx
 msgid "<0/>Your budget is encrypted on your device before it syncs. Budgero cannot read its contents."
 msgstr "<0/>Tu presupuesto se cifra en tu dispositivo antes de sincronizarse. Budgero no puede leer su contenido."
+
+#. placeholder {0}: data.total
+#. placeholder {1}: data.from
+#. placeholder {2}: data.to
+#: src/pages/admin/SignupsSection.tsx
+msgid "<0>{0}</0> signups from {1} to {2} (UTC)"
+msgstr "<0>{0}</0> registros del {1} al {2} (UTC)"
 
 #. placeholder {0}: stats?.foundingMembers || 0
 #. placeholder {1}: stats?.betaUsers || 0
@@ -3620,6 +3631,7 @@ msgstr "Se aplica solo en el primer mes del calendario."
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/import/ui/steps/configure/TemplatesTab.tsx
+#: src/pages/admin/SignupsSection.tsx
 msgid "Apply"
 msgstr "Aplicar"
 
@@ -6626,6 +6638,10 @@ msgstr "Fechas de esta exportación"
 msgid "DAU/MAU"
 msgstr "DAU/MAU"
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Day"
+msgstr "Día"
+
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Day-N window"
 msgstr "Ventana de N días"
@@ -8161,6 +8177,10 @@ msgstr "No se ha podido cargar el perfil."
 msgid "Failed to load Push API settings. Please try again later."
 msgstr "Error al cargar la configuración de Push API. Inténtalo de nuevo más tarde."
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Failed to load signups"
+msgstr "No se pudieron cargar los registros"
+
 #: src/shared/hooks/useWhisperVoiceInput.ts
 msgid "Failed to load speech model"
 msgstr "No se ha podido cargar el modelo de voz"
@@ -8624,6 +8644,7 @@ msgstr "¿Empezar de cero, o traes un presupuesto contigo?"
 msgid "Friend or colleague"
 msgstr "Amigo o colega"
 
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "From"
@@ -8902,6 +8923,10 @@ msgstr "Compra"
 #: src/features/budget-management/model/icon-options.ts
 msgid "Groceries & Food"
 msgstr "Compra y alimentación"
+
+#: src/pages/admin/SignupsSection.tsx
+msgid "Group by"
+msgstr "Agrupar por"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -10401,6 +10426,7 @@ msgstr "Cargando..."
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Loading…"
 msgstr "Cargando…"
@@ -10897,6 +10923,7 @@ msgstr "Espacio de trabajo de presupuestos monocromo con lienzo de pergamino y a
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Month"
 msgstr "Mes"
@@ -11634,6 +11661,7 @@ msgstr "Sin datos disponibles para la estadística"
 msgid "No data available for table"
 msgstr "Sin datos disponibles para la tabla"
 
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "No data yet"
 msgstr "Aún no hay datos"
@@ -16063,6 +16091,14 @@ msgstr "Iniciando sesión…"
 msgid "Signing out..."
 msgstr "Cerrando sesión..."
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Signups"
+msgstr "Registros"
+
+#: src/pages/admin/SignupsSection.tsx
+msgid "Signups over time"
+msgstr "Registros a lo largo del tiempo"
+
 #: src/features/import/lib/import-display-text.ts
 msgid "Similar row in this file; both may be real transactions"
 msgstr "Fila similar en este archivo; ambas pueden ser transacciones reales"
@@ -17636,6 +17672,7 @@ msgstr "CONSEJO:"
 msgid "Title (Optional)"
 msgstr "Título (opcional)"
 
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "To"
@@ -19079,8 +19116,14 @@ msgstr "Sitio web"
 msgid "WebSocket"
 msgstr "WebSocket"
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Week"
+msgstr "Semana"
+
+#. placeholder {0}: point.start
 #. placeholder {0}: week.week
 #: src/pages/admin/SelfHostInstallsSection.tsx
+#: src/pages/admin/SignupsSection.tsx
 msgid "Week of {0}"
 msgstr "Semana del {0}"
 

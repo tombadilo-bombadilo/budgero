@@ -174,3 +174,54 @@ func (q *Queries) AnalyticsMAURollingForDay(ctx context.Context, arg AnalyticsMA
 	err := row.Scan(&mau)
 	return mau, err
 }
+
+const analyticsSignupsByPeriod = `-- name: AnalyticsSignupsByPeriod :many
+SELECT
+    strftime(?1, substr(created_at, 1, 19)) AS period,
+    COUNT(*) AS signups
+FROM users
+WHERE created_at IS NOT NULL
+  AND substr(created_at, 1, 19) >= CAST(?2 AS TEXT)
+  AND substr(created_at, 1, 19) < CAST(?3 AS TEXT)
+  AND email NOT LIKE '%@clerk.user'
+GROUP BY period
+ORDER BY period
+`
+
+type AnalyticsSignupsByPeriodParams struct {
+	PeriodFormat interface{} `json:"period_format"`
+	FromAt       string      `json:"from_at"`
+	ToAt         string      `json:"to_at"`
+}
+
+type AnalyticsSignupsByPeriodRow struct {
+	Period  interface{} `json:"period"`
+	Signups int64       `json:"signups"`
+}
+
+// Signups per strftime bucket in [from, to). Same filter as the cohort
+// sizes above (skips Clerk placeholder accounts). created_at holds Go's
+// default time string, so bounds are compared on its first 19 characters
+// ("YYYY-MM-DD HH:MM:SS"), passed in that exact format.
+func (q *Queries) AnalyticsSignupsByPeriod(ctx context.Context, arg AnalyticsSignupsByPeriodParams) ([]AnalyticsSignupsByPeriodRow, error) {
+	rows, err := q.db.QueryContext(ctx, analyticsSignupsByPeriod, arg.PeriodFormat, arg.FromAt, arg.ToAt)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := []AnalyticsSignupsByPeriodRow{}
+	for rows.Next() {
+		var i AnalyticsSignupsByPeriodRow
+		if err := rows.Scan(&i.Period, &i.Signups); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

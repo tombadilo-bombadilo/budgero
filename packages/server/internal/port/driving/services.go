@@ -391,6 +391,9 @@ type AdminService interface {
 	// GetStickinessAnalytics returns DAU/MAU stickiness time-series and a
 	// signup-cohort retention matrix. SaaS-only at the route layer.
 	GetStickinessAnalytics(ctx context.Context, params domain.StickinessAnalyticsParams) (*domain.StickinessAnalytics, error)
+	// GetSignupSeries returns signups per day, week or month for the
+	// inclusive UTC date range from..to, zero-filled.
+	GetSignupSeries(ctx context.Context, from, to time.Time, granularity domain.AnalyticsGranularity) (*domain.SignupSeries, error)
 }
 
 // DatabaseBrowserService defines the interface for database browsing (admin only).

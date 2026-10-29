@@ -45,3 +45,19 @@ WHERE u.created_at IS NOT NULL
   AND CAST(julianday(a.day) - julianday(date(substr(u.created_at, 1, 19))) AS INTEGER) <= CAST(? AS INTEGER)
 GROUP BY cohort, day_n
 ORDER BY cohort, day_n;
+
+-- name: AnalyticsSignupsByPeriod :many
+-- Signups per strftime bucket in [from, to). Same filter as the cohort
+-- sizes above (skips Clerk placeholder accounts). created_at holds Go's
+-- default time string, so bounds are compared on its first 19 characters
+-- ("YYYY-MM-DD HH:MM:SS"), passed in that exact format.
+SELECT
+    strftime(sqlc.arg(period_format), substr(created_at, 1, 19)) AS period,
+    COUNT(*) AS signups
+FROM users
+WHERE created_at IS NOT NULL
+  AND substr(created_at, 1, 19) >= CAST(sqlc.arg(from_at) AS TEXT)
+  AND substr(created_at, 1, 19) < CAST(sqlc.arg(to_at) AS TEXT)
+  AND email NOT LIKE '%@clerk.user'
+GROUP BY period
+ORDER BY period;

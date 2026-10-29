@@ -103,3 +103,20 @@ export interface SelfHostInstallSummary {
   /** Window, in days, that `versions` covers. */
   days: number;
 }
+
+/** Signups per day, week or month over an inclusive UTC date range. */
+export interface SignupSeriesPoint {
+  /** SQLite strftime label (e.g. 2026-10-29, 2026-W43, 2026-10). */
+  period: string;
+  /** First day of the bucket inside the range, YYYY-MM-DD. */
+  start: string;
+  signups: number;
+}
+
+export interface SignupSeries {
+  from: string;
+  to: string;
+  granularity: AnalyticsGranularity;
+  total: number;
+  points: SignupSeriesPoint[];
+}
