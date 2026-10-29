@@ -295,6 +295,7 @@ export default function StartupController() {
 
     postReadyStartedRef.current = true;
     let cancelled = false;
+    let settled = false;
     let hideTimer: number | undefined;
 
     void (async () => {
@@ -342,11 +343,16 @@ export default function StartupController() {
         if (cancelled) return;
         setSyncPhase('warning');
         setSyncMessage(t`Working from local data while sync reconnects.`);
+      } finally {
+        if (!cancelled) settled = true;
       }
     })();
 
     return () => {
       cancelled = true;
+      // Re-run when cancelled mid-wait (e.g. Ready -> Reconnecting on the
+      // first reconnect), or the "Finishing initial sync…" toast never clears.
+      if (!settled) postReadyStartedRef.current = false;
       if (hideTimer) {
         window.clearTimeout(hideTimer);
       }

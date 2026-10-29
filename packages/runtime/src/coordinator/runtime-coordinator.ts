@@ -170,7 +170,7 @@ export class RuntimeCoordinator {
         lastSnapshotDownloadAt: this.lastSnapshotDownloadAt,
         hasLocalChangesSinceLastDownload: this.hasLocalChangesSinceLastDownload,
       }),
-      downloadLatest: () => this.downloadLatest(),
+      downloadLatest: () => this.downloadIfServerSnapshotNewer(),
       getActiveContext: () => this.session.getContext(),
       emitOverlay: (phase) => this.events.emitOverlay(phase),
       policy: deps.reconnectionPolicy,
@@ -596,8 +596,40 @@ export class RuntimeCoordinator {
       }
       throw error;
     }
-    if (restored) await this.afterSnapshotRestore();
+    if (restored) {
+      await this.afterSnapshotRestore();
+      // The restore moved the cursor back to the blob's bound version: pull
+      // the log tail after it, or the device sits behind until a reconnect.
+      this.activeContext?.sync.requestCatchUp();
+    }
     this.lastSnapshotDownloadAt = Date.now();
+  }
+
+  /**
+   * Reconnect path: download only when the server holds a blob this device
+   * has not seen (e.g. an out-of-band import while offline). A blob it
+   * already has is usually behind the cursor, so restoring it would just
+   * roll the DB back to the blob's bound version.
+   */
+  private async downloadIfServerSnapshotNewer(): Promise<void> {
+    const ctx = this.activeContext;
+    const spaceId = this.getActiveSpaceId();
+    if (ctx && spaceId && this.deps.getDatabaseState) {
+      try {
+        const state = await this.deps.getDatabaseState(spaceId);
+        const local = ctx.dbSync.getBlobVersion() ?? 0;
+        if (typeof state?.version === 'number' && local > 0 && state.version <= local) {
+          this.log('debug', 'Skipped reconnect download: server blob already known', {
+            serverBlobVersion: state.version,
+            localBlobVersion: local,
+          });
+          return;
+        }
+      } catch {
+        /* state unknown: fall through to the download */
+      }
+    }
+    await this.downloadLatest();
   }
 
   /**

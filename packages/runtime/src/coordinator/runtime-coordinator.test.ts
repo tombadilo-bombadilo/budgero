@@ -17,6 +17,11 @@ function createDb() {
   };
 }
 
+type RestoreTestContext = {
+  dbSync: { downloadAndRestore(): Promise<boolean>; setBlobVersion(version: number): void };
+  sync: { requestCatchUp(): boolean };
+};
+
 describe('RuntimeCoordinator', () => {
   const localStorageMock = createStorageMock();
   const sessionStorageMock = createStorageMock();
@@ -179,6 +184,57 @@ describe('RuntimeCoordinator', () => {
     // deliver it to this device.
     handler.handleRemoteBlobVersion('local-core-space', 99);
     await vi.waitFor(() => expect(deps.downloadBlob).toHaveBeenCalledWith('local-core-space'));
+
+    coordinator.destroy();
+  });
+
+  it('replays the log tail after a snapshot restore', async () => {
+    vi.stubGlobal('localStorage', localStorageMock as unknown as Storage);
+    vi.stubGlobal('sessionStorage', sessionStorageMock as unknown as Storage);
+
+    const { coordinator, queryClient } = createCoordinator();
+    await coordinator.init({ masterPassword: 'master', queryClient });
+    (coordinator as unknown as { lastSnapshotDownloadAt: number }).lastSnapshotDownloadAt = 0;
+
+    const ctx = (coordinator as unknown as { activeContext: RestoreTestContext }).activeContext;
+    vi.spyOn(ctx.dbSync, 'downloadAndRestore').mockResolvedValue(true);
+    const requestCatchUp = vi.spyOn(ctx.sync, 'requestCatchUp').mockReturnValue(true);
+
+    // The restore reseeds the cursor to the blob's bound version, which can
+    // be behind the log head: without a catch-up the device stays behind.
+    await coordinator.downloadLatest();
+    expect(requestCatchUp).toHaveBeenCalledTimes(1);
+
+    coordinator.destroy();
+  });
+
+  it('skips the reconnect download when the server blob is already known', async () => {
+    vi.stubGlobal('localStorage', localStorageMock as unknown as Storage);
+    vi.stubGlobal('sessionStorage', sessionStorageMock as unknown as Storage);
+
+    const getDatabaseState = vi.fn(async () => ({ version: 5, mutation_version: 40 }));
+    const { coordinator, queryClient } = createCoordinator({ getDatabaseState });
+    await coordinator.init({ masterPassword: 'master', queryClient });
+    (coordinator as unknown as { lastSnapshotDownloadAt: number }).lastSnapshotDownloadAt = 0;
+
+    const ctx = (coordinator as unknown as { activeContext: RestoreTestContext }).activeContext;
+    const restore = vi.spyOn(ctx.dbSync, 'downloadAndRestore').mockResolvedValue(true);
+    vi.spyOn(ctx.sync, 'requestCatchUp').mockReturnValue(true);
+    const reconnectDownload = () =>
+      (
+        coordinator as unknown as { downloadIfServerSnapshotNewer(): Promise<void> }
+      ).downloadIfServerSnapshotNewer();
+
+    // Same blob this device already has (it uploaded it): restoring would
+    // only roll the DB back to the blob's bound mutation version.
+    ctx.dbSync.setBlobVersion(5);
+    await reconnectDownload();
+    expect(restore).not.toHaveBeenCalled();
+
+    // A newer blob (e.g. an out-of-band import while offline) is downloaded.
+    getDatabaseState.mockResolvedValueOnce({ version: 6, mutation_version: 40 });
+    await reconnectDownload();
+    expect(restore).toHaveBeenCalledTimes(1);
 
     coordinator.destroy();
   });
