@@ -78,6 +78,8 @@ export class NodeSqlJsAdapter extends BaseDatabaseAdapter {
     }
   }
 
+  private fkSuspended = false;
+
   private enableForeignKeys(): void {
     try {
       this.db.exec('PRAGMA foreign_keys = ON');
@@ -88,6 +90,7 @@ export class NodeSqlJsAdapter extends BaseDatabaseAdapter {
 
   /** See MigrationDatabase.setForeignKeysSuspended — used during table-rebuild migrations. */
   setForeignKeysSuspended(suspended: boolean): void {
+    this.fkSuspended = suspended;
     try {
       this.db.exec(`PRAGMA foreign_keys = ${suspended ? 'OFF' : 'ON'}`);
     } catch {
@@ -187,8 +190,10 @@ export class NodeSqlJsAdapter extends BaseDatabaseAdapter {
   }
 
   backup(): Uint8Array {
-    // sql.js export() re-opens the connection (TEMP objects and functions are gone).
+    // sql.js export() re-opens the connection (TEMP objects and functions are
+    // gone, and foreign keys are OFF again until re-enabled).
     const data = this.db.export();
+    if (!this.fkSuspended) this.enableForeignKeys();
     this.emitConnectionEvent('export');
     return data;
   }

@@ -419,6 +419,10 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
     // gone); listeners re-install theirs before any other statement runs.
     // backup() also serves forceSave() and saveToOPFSPublic().
     const data = this.db.export();
+    // The re-opened connection also starts with foreign keys OFF: without this,
+    // every save left cascades (import provenance, split lines...) off until the
+    // periodic re-check, so deletes orphaned rows and exact undo restores failed.
+    if (!this.fkSuspended) this.db.exec('PRAGMA foreign_keys = ON');
     this.emitConnectionEvent('export');
     return data;
   }
