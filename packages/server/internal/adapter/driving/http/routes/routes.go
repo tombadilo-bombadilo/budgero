@@ -231,6 +231,12 @@ func SetupRoutes(e *echo.Echo, h *handler.Handlers, services *application.Servic
 		admin.GET("/stickiness", h.GetAdminStickinessAnalytics)
 	}
 
+	// Weekly active self-host installs from the update check (cloud only —
+	// self-host servers never record update checks).
+	if !opts.SelfHost {
+		admin.GET("/selfhost-installs", h.GetAdminSelfHostInstalls)
+	}
+
 	// Quarterly feedback broadcast (cloud only — needs the Resend email service)
 	if !opts.SelfHost {
 		admin.GET("/broadcast/feedback", h.GetFeedbackBroadcastStatus)

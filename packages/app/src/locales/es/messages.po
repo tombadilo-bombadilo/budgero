@@ -652,6 +652,12 @@ msgstr "{0} de {1} valores exactos"
 msgid "{0} of {1}{2}"
 msgstr "{0} de {1}{2}"
 
+#. placeholder {0}: v.pings
+#. placeholder {1}: v.days
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "{0} pings · {1} days"
+msgstr "{0} pings · {1} días"
+
 #. placeholder {0}: maskText(queryResult.rowCount.toLocaleString())
 #. placeholder {0}: result.rowCount
 #. placeholder {0}: table.rowCount.toLocaleString()
@@ -1991,6 +1997,10 @@ msgstr "<0/>Ajustes de seguridad"
 msgid "<0/>Select a budget to view its import history."
 msgstr "<0/>Selecciona un presupuesto para ver su historial de importación."
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "<0/>Self-host installs"
+msgstr "<0/>Instalaciones autoalojadas"
+
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
 msgid "<0/>Series"
 msgstr "<0/>Series"
@@ -2901,6 +2911,10 @@ msgstr "Activo"
 #: src/pages/admin/admin-users/user-details/OverviewTab.tsx
 msgid "Active Days"
 msgstr "Días activos"
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Active installs"
+msgstr "Instalaciones activas"
 
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Active spaces"
@@ -5979,6 +5993,10 @@ msgstr "No se pudieron cargar los bancos de Enable Banking"
 msgid "Couldn't load inactive users"
 msgstr "No se pudieron cargar los usuarios inactivos"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Couldn’t load self-host installs."
+msgstr "No se pudieron cargar las instalaciones autoalojadas."
+
 #: src/features/sync-diagnostics/ui/MutationLogCard.tsx
 msgid "Couldn't load the mutation log"
 msgstr "No se pudo cargar el registro de cambios"
@@ -7006,6 +7024,10 @@ msgstr "Mostrar el botón flotante de chat"
 #: src/shared/ui/sidebar.tsx
 msgid "Displays the mobile sidebar."
 msgstr "Muestra la barra lateral en el móvil."
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Distinct servers sending the update check each week (UTC, Monday start). Installs with the check turned off aren’t counted."
+msgstr "Servidores distintos que envían la comprobación de actualizaciones cada semana (UTC, empezando el lunes). No se cuentan las instalaciones con la comprobación desactivada."
 
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "Do we live within our means?"
@@ -9943,6 +9965,10 @@ msgstr "Última copia de seguridad"
 msgid "Last checked"
 msgstr "Última comprobación"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Last full week"
+msgstr "Última semana completa"
+
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Last login"
 msgstr "Último inicio de sesión"
@@ -11982,6 +12008,10 @@ msgstr "No hay fechas próximas"
 #~ msgid "No upcoming occurrences"
 #~ msgstr "No hay próximas ocurrencias"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "No update checks counted yet."
+msgstr "Todavía no se ha contado ninguna comprobación de actualizaciones."
+
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "No users created yet."
 msgstr "Aún no se han creado usuarios."
@@ -13046,6 +13076,11 @@ msgstr "SELECCIONADO PARA TI"
 #: src/shared/lib/analytics/visualization-labels.ts
 msgid "Pie Chart"
 msgstr "Gráfico de sectores"
+
+#. placeholder {0}: data.days
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Pings by version, last {0} days"
+msgstr "Pings por versión, últimos {0} días"
 
 #: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
@@ -17463,6 +17498,10 @@ msgstr "Este usuario cerrará sesión inmediatamente y no podrá volver a inicia
 msgid "This week"
 msgstr "Esta semana"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "This week so far"
+msgstr "Esta semana hasta ahora"
+
 #: src/features/budget-planning/ui/FutureOverspendingWarning.tsx
 msgid "This will cause overspending"
 msgstr "Esto provocará un gasto excesivo"
@@ -19040,12 +19079,26 @@ msgstr "Sitio web"
 msgid "WebSocket"
 msgstr "WebSocket"
 
+#. placeholder {0}: week.week
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Week of {0}"
+msgstr "Semana del {0}"
+
+#. placeholder {0}: week.week
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Week of {0} (so far)"
+msgstr "Semana del {0} (hasta ahora)"
+
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
 #: src/features/transactions/ui/add-transaction/recurring-form.ts
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 msgid "Weekly"
 msgstr "Semanal"
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Weekly active self-host installs"
+msgstr "Instalaciones autoalojadas activas por semana"
 
 #: src/app/system/ReconnectionOverlay.tsx
 msgid "Welcome back online!"

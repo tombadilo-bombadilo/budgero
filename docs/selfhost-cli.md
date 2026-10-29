@@ -45,7 +45,7 @@ The process still loads `.env` from the working directory (using `godotenv`) bef
 
 ### Update check
 
-When someone opens the app, the server checks whether a newer Budgero release exists by calling `https://my.budgero.app/api/v1/version/latest` — at most once every 12 hours, cached in between. The request carries exactly three values: your install's version, its build sha, and the string `selfhost`. No instance ID, no user data, no cookies. On the receiving side these are aggregated into daily version counters so we know roughly how many installs exist and which versions are in use — nothing per-instance is stored.
+When someone opens the app, the server checks whether a newer Budgero release exists by calling `https://my.budgero.app/api/v1/version/latest` — at most once every 12 hours, cached in between. The request carries exactly three values: your install's version, its build sha, and the string `selfhost`. No instance ID, no user data, no cookies. On the receiving side these are aggregated into daily version counters, so we know which versions are in use. To estimate how many installs are active, we also count distinct senders per week: the request's IP address is hashed with a random key that exists only for the current week. When the week ends, only the weekly total is kept, and the key and the hashes are deleted. IP addresses are never stored, and nothing per install outlives its week.
 
 Set `UPDATE_CHECK_DISABLED=true` to turn this off completely; the app then reports its own version as latest and makes no unsolicited outbound calls. Air-gapped installs need no configuration — a failed check is cached quietly and the app behaves as if up to date.
 

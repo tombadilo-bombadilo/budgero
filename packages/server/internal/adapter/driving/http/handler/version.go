@@ -2,7 +2,9 @@ package handler
 
 import (
 	"context"
+	"net"
 	"net/http"
+	"strings"
 
 	"budgero-server/internal/appmeta"
 
@@ -51,7 +53,22 @@ func (h *Handlers) recordUpdatePing(c echo.Context) {
 		version = appmeta.BuildVersion()
 		build = ""
 	}
-	if err := h.services.UpdatePing.Record(c.Request().Context(), version, build, clientType); err != nil {
+	senderIP := ""
+	if clientType == "selfhost" {
+		senderIP = updatePingSenderIP(c)
+	}
+	if err := h.services.UpdatePing.Record(c.Request().Context(), version, build, clientType, senderIP); err != nil {
 		log.Debug().Err(err).Msg("failed to record update ping")
 	}
+}
+
+// updatePingSenderIP is the address a self-host update check came from, used
+// only to count distinct installs per week. Production sits behind Cloudflare
+// and its firewall admits nothing else, so CF-Connecting-IP is the client;
+// RealIP() would be Cloudflare's edge there.
+func updatePingSenderIP(c echo.Context) string {
+	if ip := strings.TrimSpace(c.Request().Header.Get("CF-Connecting-IP")); net.ParseIP(ip) != nil {
+		return ip
+	}
+	return c.RealIP()
 }

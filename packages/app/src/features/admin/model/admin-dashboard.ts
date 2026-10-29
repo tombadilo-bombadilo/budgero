@@ -81,3 +81,25 @@ export interface StickinessAnalytics {
   series: StickinessSeriesPoint[];
   cohorts: CohortRetentionMatrix;
 }
+
+/** Weekly active self-host installs: distinct update-check senders per UTC week. */
+export interface SelfHostInstallWeek {
+  /** Monday of the UTC week, YYYY-MM-DD. */
+  week: string;
+  installs: number;
+  /** The current, still-open week. */
+  partial: boolean;
+}
+
+export interface SelfHostVersionPing {
+  version: string;
+  pings: number;
+  days: number;
+}
+
+export interface SelfHostInstallSummary {
+  weeks: SelfHostInstallWeek[];
+  versions: SelfHostVersionPing[];
+  /** Window, in days, that `versions` covers. */
+  days: number;
+}

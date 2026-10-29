@@ -652,6 +652,12 @@ msgstr "{0} van {1} waarden exact"
 msgid "{0} of {1}{2}"
 msgstr "{0} van {1}{2}"
 
+#. placeholder {0}: v.pings
+#. placeholder {1}: v.days
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "{0} pings · {1} days"
+msgstr "{0} pings · {1} dagen"
+
 #. placeholder {0}: maskText(queryResult.rowCount.toLocaleString())
 #. placeholder {0}: result.rowCount
 #. placeholder {0}: table.rowCount.toLocaleString()
@@ -1991,6 +1997,10 @@ msgstr "<0/>Beveiligingsinstellingen"
 msgid "<0/>Select a budget to view its import history."
 msgstr "<0/>Selecteer een budget om de importgeschiedenis te bekijken."
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "<0/>Self-host installs"
+msgstr "<0/>Zelf gehoste installaties"
+
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
 msgid "<0/>Series"
 msgstr "<0/>Reeks"
@@ -2901,6 +2911,10 @@ msgstr "Actief"
 #: src/pages/admin/admin-users/user-details/OverviewTab.tsx
 msgid "Active Days"
 msgstr "Actieve dagen"
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Active installs"
+msgstr "Actieve installaties"
 
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Active spaces"
@@ -5979,6 +5993,10 @@ msgstr "Banken konden niet worden geladen van Enable Banking"
 msgid "Couldn't load inactive users"
 msgstr "Inactieve gebruikers konden niet worden geladen"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Couldn’t load self-host installs."
+msgstr "Zelf gehoste installaties konden niet worden geladen."
+
 #: src/features/sync-diagnostics/ui/MutationLogCard.tsx
 msgid "Couldn't load the mutation log"
 msgstr "Kon het wijzigingslogboek niet laden"
@@ -7006,6 +7024,10 @@ msgstr "Zwevende chatknop weergeven"
 #: src/shared/ui/sidebar.tsx
 msgid "Displays the mobile sidebar."
 msgstr "Toont de mobiele zijbalk."
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Distinct servers sending the update check each week (UTC, Monday start). Installs with the check turned off aren’t counted."
+msgstr "Unieke servers die elke week de updatecontrole sturen (UTC, week begint op maandag). Installaties waarop de controle is uitgeschakeld, worden niet geteld."
 
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "Do we live within our means?"
@@ -9943,6 +9965,10 @@ msgstr "Laatste back-up"
 msgid "Last checked"
 msgstr "Laatst gecontroleerd"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Last full week"
+msgstr "Laatste volledige week"
+
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Last login"
 msgstr "Laatste aanmelding"
@@ -11982,6 +12008,10 @@ msgstr "Geen aankomende data"
 #~ msgid "No upcoming occurrences"
 #~ msgstr "Geen aankomende gebeurtenissen"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "No update checks counted yet."
+msgstr "Nog geen updatecontroles geteld."
+
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "No users created yet."
 msgstr "Nog geen gebruikers aangemaakt."
@@ -13046,6 +13076,11 @@ msgstr "VOOR JOU GEKOZEN"
 #: src/shared/lib/analytics/visualization-labels.ts
 msgid "Pie Chart"
 msgstr "Taartdiagram"
+
+#. placeholder {0}: data.days
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Pings by version, last {0} days"
+msgstr "Pings per versie, afgelopen {0} dagen"
 
 #: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
@@ -17463,6 +17498,10 @@ msgstr "Deze gebruiker wordt onmiddellijk uitgelogd en kan niet opnieuw inloggen
 msgid "This week"
 msgstr "Deze week"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "This week so far"
+msgstr "Deze week tot nu toe"
+
 #: src/features/budget-planning/ui/FutureOverspendingWarning.tsx
 msgid "This will cause overspending"
 msgstr "Dit leidt tot overschrijding"
@@ -19040,12 +19079,26 @@ msgstr "Website"
 msgid "WebSocket"
 msgstr "WebSocket"
 
+#. placeholder {0}: week.week
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Week of {0}"
+msgstr "Week van {0}"
+
+#. placeholder {0}: week.week
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Week of {0} (so far)"
+msgstr "Week van {0} (tot nu toe)"
+
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
 #: src/features/transactions/ui/add-transaction/recurring-form.ts
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 msgid "Weekly"
 msgstr "Wekelijks"
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Weekly active self-host installs"
+msgstr "Wekelijks actieve zelf gehoste installaties"
 
 #: src/app/system/ReconnectionOverlay.tsx
 msgid "Welcome back online!"

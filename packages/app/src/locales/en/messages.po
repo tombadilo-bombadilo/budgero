@@ -654,6 +654,12 @@ msgstr "{0} of {1} values exact"
 msgid "{0} of {1}{2}"
 msgstr "{0} of {1}{2}"
 
+#. placeholder {0}: v.pings
+#. placeholder {1}: v.days
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "{0} pings · {1} days"
+msgstr "{0} pings · {1} days"
+
 #. placeholder {0}: maskText(queryResult.rowCount.toLocaleString())
 #. placeholder {0}: result.rowCount
 #. placeholder {0}: table.rowCount.toLocaleString()
@@ -1993,6 +1999,10 @@ msgstr "<0/>Security Settings"
 msgid "<0/>Select a budget to view its import history."
 msgstr "<0/>Select a budget to view its import history."
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "<0/>Self-host installs"
+msgstr "<0/>Self-host installs"
+
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
 msgid "<0/>Series"
 msgstr "<0/>Series"
@@ -2903,6 +2913,10 @@ msgstr "Active"
 #: src/pages/admin/admin-users/user-details/OverviewTab.tsx
 msgid "Active Days"
 msgstr "Active Days"
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Active installs"
+msgstr "Active installs"
 
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Active spaces"
@@ -5981,6 +5995,10 @@ msgstr "Couldn't load banks from Enable Banking"
 msgid "Couldn't load inactive users"
 msgstr "Couldn't load inactive users"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Couldn’t load self-host installs."
+msgstr "Couldn’t load self-host installs."
+
 #: src/features/sync-diagnostics/ui/MutationLogCard.tsx
 msgid "Couldn't load the mutation log"
 msgstr "Couldn't load the mutation log"
@@ -7008,6 +7026,10 @@ msgstr "Display the floating chat button"
 #: src/shared/ui/sidebar.tsx
 msgid "Displays the mobile sidebar."
 msgstr "Displays the mobile sidebar."
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Distinct servers sending the update check each week (UTC, Monday start). Installs with the check turned off aren’t counted."
+msgstr "Distinct servers sending the update check each week (UTC, Monday start). Installs with the check turned off aren’t counted."
 
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "Do we live within our means?"
@@ -9945,6 +9967,10 @@ msgstr "Last backup"
 msgid "Last checked"
 msgstr "Last checked"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Last full week"
+msgstr "Last full week"
+
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Last login"
 msgstr "Last login"
@@ -11984,6 +12010,10 @@ msgstr "No upcoming dates"
 #~ msgid "No upcoming occurrences"
 #~ msgstr "No upcoming occurrences"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "No update checks counted yet."
+msgstr "No update checks counted yet."
+
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "No users created yet."
 msgstr "No users created yet."
@@ -13048,6 +13078,11 @@ msgstr "PICKED FOR YOU"
 #: src/shared/lib/analytics/visualization-labels.ts
 msgid "Pie Chart"
 msgstr "Pie Chart"
+
+#. placeholder {0}: data.days
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Pings by version, last {0} days"
+msgstr "Pings by version, last {0} days"
 
 #: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
@@ -17465,6 +17500,10 @@ msgstr "This user will be signed out immediately and prevented from logging back
 msgid "This week"
 msgstr "This week"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "This week so far"
+msgstr "This week so far"
+
 #: src/features/budget-planning/ui/FutureOverspendingWarning.tsx
 msgid "This will cause overspending"
 msgstr "This will cause overspending"
@@ -19042,12 +19081,26 @@ msgstr "Website"
 msgid "WebSocket"
 msgstr "WebSocket"
 
+#. placeholder {0}: week.week
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Week of {0}"
+msgstr "Week of {0}"
+
+#. placeholder {0}: week.week
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Week of {0} (so far)"
+msgstr "Week of {0} (so far)"
+
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
 #: src/features/transactions/ui/add-transaction/recurring-form.ts
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 msgid "Weekly"
 msgstr "Weekly"
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Weekly active self-host installs"
+msgstr "Weekly active self-host installs"
 
 #: src/app/system/ReconnectionOverlay.tsx
 msgid "Welcome back online!"

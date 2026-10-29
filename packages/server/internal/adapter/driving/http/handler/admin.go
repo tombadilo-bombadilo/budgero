@@ -365,3 +365,18 @@ func (h *Handlers) GetAdminStickinessAnalytics(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, out)
 }
+
+// GetAdminSelfHostInstalls returns weekly active self-host installs (distinct
+// update-check senders) and self-host pings per version. SaaS only: the
+// counts come from the update-check endpoint, which only SaaS records.
+func (h *Handlers) GetAdminSelfHostInstalls(c echo.Context) error {
+	if h.selfHostMode {
+		return echo.NewHTTPError(http.StatusNotFound, "saas admin dashboard unavailable in self-host mode")
+	}
+	summary, err := h.services.UpdatePing.SelfHostSummary(c.Request().Context(), 12, 14)
+	if err != nil {
+		log.Error().Err(err).Msg("failed to load self-host install counts")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to load self-host install counts")
+	}
+	return c.JSON(http.StatusOK, summary)
+}

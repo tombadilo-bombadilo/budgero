@@ -2,6 +2,11 @@ package application
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
+	"net"
 	"strings"
 	"time"
 
@@ -26,18 +31,19 @@ var validPingClientTypes = map[string]struct{}{
 // UpdatePingService implements driving.UpdatePingService.
 type UpdatePingService struct {
 	repo repository.UpdatePingRepository
+	now  func() time.Time
 }
 
 // NewUpdatePingService creates a new UpdatePingService.
 func NewUpdatePingService(repo repository.UpdatePingRepository) *UpdatePingService {
-	return &UpdatePingService{repo: repo}
+	return &UpdatePingService{repo: repo, now: time.Now}
 }
 
 var _ driving.UpdatePingService = (*UpdatePingService)(nil)
 
 // Record counts one update check under today's UTC date. Unknown client types
 // are silently dropped rather than erroring.
-func (s *UpdatePingService) Record(ctx context.Context, version, build, clientType string) error {
+func (s *UpdatePingService) Record(ctx context.Context, version, build, clientType, senderIP string) error {
 	clientType = strings.ToLower(strings.TrimSpace(clientType))
 	if _, ok := validPingClientTypes[clientType]; !ok {
 		return nil
@@ -49,8 +55,87 @@ func (s *UpdatePingService) Record(ctx context.Context, version, build, clientTy
 	}
 	build = sanitizePingToken(build, maxPingBuildLen)
 
-	day := time.Now().UTC().Format("2006-01-02")
-	return s.repo.Record(ctx, day, version, build, clientType)
+	now := s.now().UTC()
+	if err := s.repo.Record(ctx, now.Format("2006-01-02"), version, build, clientType); err != nil {
+		return err
+	}
+	if clientType == "selfhost" {
+		return s.recordSender(ctx, now, senderIP)
+	}
+	return nil
+}
+
+// recordSender counts senderIP once for the current UTC week. The IP is
+// hashed with that week's random key and never stored; the key and hashes
+// are deleted when the week rolls over (see repository.WeekKey).
+func (s *UpdatePingService) recordSender(ctx context.Context, now time.Time, senderIP string) error {
+	ip := net.ParseIP(strings.TrimSpace(senderIP))
+	if ip == nil {
+		return nil
+	}
+	newKey := make([]byte, 32)
+	if _, err := rand.Read(newKey); err != nil {
+		return err
+	}
+	week := weekStart(now)
+	key, err := s.repo.WeekKey(ctx, week, newKey)
+	if err != nil {
+		return err
+	}
+	mac := hmac.New(sha256.New, key)
+	mac.Write([]byte(ip.String()))
+	return s.repo.AddSender(ctx, week, hex.EncodeToString(mac.Sum(nil)[:16]))
+}
+
+// SelfHostSummary implements driving.UpdatePingService.
+func (s *UpdatePingService) SelfHostSummary(ctx context.Context, weeks, days int) (driving.SelfHostInstallSummary, error) {
+	now := s.now().UTC()
+	current := weekStart(now)
+	// Roll finished weeks over even when no ping has arrived since, so their
+	// key and hashes don't linger. The fresh key is only kept if this is the
+	// week's first use.
+	newKey := make([]byte, 32)
+	if _, err := rand.Read(newKey); err != nil {
+		return driving.SelfHostInstallSummary{}, err
+	}
+	if _, err := s.repo.WeekKey(ctx, current, newKey); err != nil {
+		return driving.SelfHostInstallSummary{}, err
+	}
+
+	since := weekStart(now.AddDate(0, 0, -7*(weeks-1)))
+	counts, err := s.repo.WeeklyInstalls(ctx, since)
+	if err != nil {
+		return driving.SelfHostInstallSummary{}, err
+	}
+	out := driving.SelfHostInstallSummary{
+		Weeks:    make([]driving.SelfHostWeek, 0, len(counts)),
+		Versions: []driving.SelfHostVersionPing{},
+		Days:     days,
+	}
+	for _, c := range counts {
+		out.Weeks = append(out.Weeks, driving.SelfHostWeek{
+			Week: c.Week, Installs: c.Installs, Partial: c.Week == current,
+		})
+	}
+
+	sinceDay := now.AddDate(0, 0, -(days - 1)).Format("2006-01-02")
+	versions, err := s.repo.VersionPings(ctx, sinceDay, "selfhost")
+	if err != nil {
+		return driving.SelfHostInstallSummary{}, err
+	}
+	for _, v := range versions {
+		out.Versions = append(out.Versions, driving.SelfHostVersionPing{
+			Version: v.Version, Pings: v.Pings, Days: v.Days,
+		})
+	}
+	return out, nil
+}
+
+// weekStart returns the Monday (UTC) of t's week as YYYY-MM-DD.
+func weekStart(t time.Time) string {
+	t = t.UTC()
+	offset := (int(t.Weekday()) + 6) % 7 // Monday = 0
+	return time.Date(t.Year(), t.Month(), t.Day()-offset, 0, 0, 0, 0, time.UTC).Format("2006-01-02")
 }
 
 // sanitizePingToken keeps only version-ish characters and truncates, so

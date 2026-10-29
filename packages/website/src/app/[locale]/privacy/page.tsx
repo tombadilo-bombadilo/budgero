@@ -51,7 +51,7 @@ export default async function PrivacyPolicy({
             {t('privacy_policy')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-1">
-            <strong>{t('last_updated')}</strong> {t('24_october_2026')}{' '}
+            <strong>{t('last_updated')}</strong> {t('29_october_2026')}{' '}
           </p>
           <p className="text-gray-600 dark:text-gray-400 mb-8">
             <strong>{t('effective')}</strong> {t('29_april_2026')}{' '}
@@ -186,7 +186,10 @@ export default async function PrivacyPolicy({
               </li>
             </ul>
 
-            <h3>{t('3_7_server_security_logs')}</h3>
+            <h3>{t('3_7_self_hosted_update_checks')}</h3>
+            <p>{t('self_hosted_update_checks_desc')}</p>
+
+            <h3>{t('3_8_server_security_logs')}</h3>
             <ul>
               <li> {t('request_logs_from_the_hosting_provider')} </li>
             </ul>

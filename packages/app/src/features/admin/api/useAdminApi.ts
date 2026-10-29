@@ -26,6 +26,7 @@ import type {
   FeedbackBroadcastStatus,
   AnalyticsGranularity,
   StickinessAnalytics,
+  SelfHostInstallSummary,
 } from '@features/admin/model/admin-dashboard';
 
 // Admin ad-hoc SQL can scan large tables; give it more room than the 15s
@@ -107,6 +108,9 @@ export function useAdminApi() {
         });
         return apiClient.get<StickinessAnalytics>(`/admin/stickiness?${params.toString()}`);
       },
+
+      // Weekly active self-host installs from the update check (SaaS only)
+      getSelfHostInstalls: () => apiClient.get<SelfHostInstallSummary>('/admin/selfhost-installs'),
 
       getDatabaseTables: () => apiClient.get<DatabaseTableSummary[]>('/admin/database/tables'),
       getSavedQueries: () =>

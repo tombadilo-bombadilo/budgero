@@ -3,6 +3,7 @@ package handler_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -140,5 +141,83 @@ func TestGetLatestVersion_SaaS_DropsUnknownClientType(t *testing.T) {
 	}
 	if rows != 0 {
 		t.Errorf("unknown client type recorded %d rows, want 0", rows)
+	}
+}
+
+func countSenders(t *testing.T, tc *testkit.TestContext) int {
+	t.Helper()
+	var n int
+	if err := tc.DB.QueryRowContext(context.Background(),
+		"SELECT COUNT(*) FROM update_ping_week_senders").Scan(&n); err != nil {
+		t.Fatalf("failed to count senders: %v", err)
+	}
+	return n
+}
+
+func pingFrom(t *testing.T, h *handler.Handlers, e *echo.Echo, cfIP, remote string) {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/version/latest?version=1.19.5&build=abc&type=selfhost", http.NoBody)
+	if cfIP != "" {
+		req.Header.Set("CF-Connecting-IP", cfIP)
+	}
+	req.RemoteAddr = remote + ":443"
+	if err := h.GetLatestVersion(e.NewContext(req, httptest.NewRecorder())); err != nil {
+		t.Fatalf("GetLatestVersion() error = %v", err)
+	}
+}
+
+func TestGetLatestVersion_SaaS_CountsSelfHostSendersByCloudflareIP(t *testing.T) {
+	h, e, tc := setupVersionHandler(t, false, nil)
+
+	// Same Cloudflare edge, two real clients: two senders.
+	pingFrom(t, h, e, "203.0.113.7", "172.70.1.1")
+	pingFrom(t, h, e, "198.51.100.2", "172.70.1.1")
+	pingFrom(t, h, e, "203.0.113.7", "172.70.1.2")
+	if n := countSenders(t, tc); n != 2 {
+		t.Fatalf("senders = %d, want 2", n)
+	}
+}
+
+func TestGetLatestVersion_SelfHost_RecordsNoSenders(t *testing.T) {
+	h, e, tc := setupVersionHandler(t, true, nil)
+	pingFrom(t, h, e, "203.0.113.7", "203.0.113.7")
+	if n := countSenders(t, tc); n != 0 {
+		t.Fatalf("self-host recorded %d senders", n)
+	}
+}
+
+func TestGetAdminSelfHostInstalls(t *testing.T) {
+	h, e, _ := setupVersionHandler(t, false, nil)
+	pingFrom(t, h, e, "203.0.113.7", "172.70.1.1")
+
+	rec := httptest.NewRecorder()
+	if err := h.GetAdminSelfHostInstalls(e.NewContext(httptest.NewRequest(http.MethodGet, "/", http.NoBody), rec)); err != nil {
+		t.Fatalf("GetAdminSelfHostInstalls() error = %v", err)
+	}
+	var body struct {
+		Weeks []struct {
+			Installs int  `json:"installs"`
+			Partial  bool `json:"partial"`
+		} `json:"weeks"`
+		Versions []struct {
+			Version string `json:"version"`
+			Pings   int    `json:"pings"`
+		} `json:"versions"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatal(err)
+	}
+	if len(body.Weeks) != 1 || body.Weeks[0].Installs != 1 || !body.Weeks[0].Partial {
+		t.Fatalf("weeks = %+v", body.Weeks)
+	}
+	if len(body.Versions) != 1 || body.Versions[0].Version != "1.19.5" || body.Versions[0].Pings != 1 {
+		t.Fatalf("versions = %+v", body.Versions)
+	}
+
+	hs, es, _ := setupVersionHandler(t, true, nil)
+	err := hs.GetAdminSelfHostInstalls(es.NewContext(httptest.NewRequest(http.MethodGet, "/", http.NoBody), httptest.NewRecorder()))
+	var he *echo.HTTPError
+	if !errors.As(err, &he) || he.Code != http.StatusNotFound {
+		t.Fatalf("self-host err = %v, want 404", err)
 	}
 }

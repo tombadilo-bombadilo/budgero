@@ -206,7 +206,7 @@ Elke invoer moet exact overeenkomen met de origin van de browser: schema, host e
 
 ### Updatecontrole
 
-Als iemand de app opent, controleert de server of er een nieuwere Budgero-release bestaat — hoogstens één keer per 12 uur, daartussenin gecached. Het verzoek aan <code>budgero.app</code> bevat precies drie waarden: de versie van je installatie, de build-sha en de string <code>selfhost</code>. Geen instance-ID, geen gebruikersgegevens, geen cookies. We voegen deze samen tot dagelijkse versietellers om ongeveer te weten hoeveel installaties er zijn en welke versies in gebruik zijn — er wordt niets per installatie opgeslagen.
+Als iemand de app opent, controleert de server of er een nieuwere Budgero-release bestaat — hoogstens één keer per 12 uur, daartussenin gecached. Het verzoek aan <code>budgero.app</code> bevat precies drie waarden: de versie van je installatie, de build-sha en de string <code>selfhost</code>. Geen instance-ID, geen gebruikersgegevens, geen cookies. We voegen deze samen tot dagelijkse versietellers, zodat we weten welke versies in gebruik zijn. Om te schatten hoeveel installaties actief zijn, tellen we ook unieke afzenders per week: het IP-adres van het verzoek wordt gehasht met een willekeurige sleutel die alleen voor de lopende week bestaat. Aan het eind van de week blijft alleen het weektotaal over; de sleutel en de hashes worden verwijderd. IP-adressen worden nooit opgeslagen, en niets per installatie overleeft zijn week.
 
 Stel <code>UPDATE_CHECK_DISABLED=true</code> in om het volledig uit te schakelen; de app doet dan geen ongevraagde uitgaande verzoeken. Air-gapped installaties hebben geen configuratie nodig — een mislukte controle wordt stil gecached en de app gedraagt zich gewoon alsof alles up-to-date is.
 

@@ -322,8 +322,35 @@ type FeedbackSubmission struct {
 // wired in both builds.
 type UpdatePingService interface {
 	// Record counts one update check. Unknown client types are silently
-	// dropped — the endpoint is public and unauthenticated.
-	Record(ctx context.Context, version, build, clientType string) error
+	// dropped — the endpoint is public and unauthenticated. For self-host
+	// checks, senderIP (when non-empty) is also counted as a distinct sender
+	// for the week; only a keyed hash of it is stored, and only for that week.
+	Record(ctx context.Context, version, build, clientType, senderIP string) error
+	// SelfHostSummary returns weekly active self-host installs for the last
+	// weeks weeks and self-host pings per version for the last days days.
+	SelfHostSummary(ctx context.Context, weeks, days int) (SelfHostInstallSummary, error)
+}
+
+// SelfHostInstallSummary backs the SaaS admin "Self-host" card.
+type SelfHostInstallSummary struct {
+	Weeks    []SelfHostWeek        `json:"weeks"`
+	Versions []SelfHostVersionPing `json:"versions"`
+	Days     int                   `json:"days"`
+}
+
+// SelfHostWeek is one UTC week (starting Monday) of distinct senders.
+type SelfHostWeek struct {
+	Week     string `json:"week"`
+	Installs int    `json:"installs"`
+	// Partial marks the current, still-open week.
+	Partial bool `json:"partial"`
+}
+
+// SelfHostVersionPing is the self-host ping total for one version.
+type SelfHostVersionPing struct {
+	Version string `json:"version"`
+	Pings   int    `json:"pings"`
+	Days    int    `json:"days"`
 }
 
 // AdminService defines the interface for admin operations.
