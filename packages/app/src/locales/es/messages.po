@@ -4924,8 +4924,12 @@ msgid "Change category of selected rows"
 msgstr "Cambiar la categoría de las filas seleccionadas"
 
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
-msgid "Change category, account or payee"
-msgstr "Cambiar categoría, cuenta o beneficiario"
+#~ msgid "Change category, account or payee"
+#~ msgstr "Cambiar categoría, cuenta o beneficiario"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Change category, account, payee or label"
+msgstr "Cambiar categoría, cuenta, beneficiario o etiqueta"
 
 #: src/features/account-management/ui/AccountCurrencyChangeDialog.tsx
 msgid "Change currency"
@@ -6889,6 +6893,11 @@ msgstr "Eliminar espacio de trabajo"
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Deleted \"{name}\""
 msgstr "Eliminado \"{name}\""
+
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
+#: src/features/rules/ui/RuleSummary.tsx
+msgid "Deleted label"
+msgstr "Etiqueta eliminada"
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
@@ -9873,6 +9882,10 @@ msgstr "Mantener tipos de cambio en caché durante"
 msgid "Keep Clerk users aligned with Budgero."
 msgstr "Mantén a los usuarios de Clerk sincronizados con Budgero."
 
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Keep current labels"
+msgstr "Mantener las etiquetas actuales"
+
 #: src/pages/settings/SecurityPage.tsx
 msgid "Keep in memory only (recommended)"
 msgstr "Mantener solo en memoria (recomendado)"
@@ -9907,6 +9920,10 @@ msgstr "Atajos de teclado"
 msgid "Know what you can spend. Keep your budget private. Create your account to start your free trial."
 msgstr "Ten claro cuánto puedes gastar. Mantén tu presupuesto privado. Crea tu cuenta para empezar tu prueba gratuita."
 
+#: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+msgid "Label"
+msgstr "Etiqueta"
+
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Label (optional)"
 msgstr "Etiqueta (opcional)"
@@ -9935,6 +9952,10 @@ msgstr "Etiqueta eliminada"
 msgid "Label updated"
 msgstr "Etiqueta actualizada"
 
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
+msgid "Label:"
+msgstr "Etiqueta:"
+
 #: src/features/transactions/ui/TransactionLabelBadge.tsx
 msgid "Label: {label}"
 msgstr "Etiqueta: {label}"
@@ -9962,6 +9983,10 @@ msgstr "Etiquetas"
 #: src/pages/settings/LabelsPage.tsx
 msgid "Labels ({count})"
 msgstr "Etiquetas ({count})"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Labels will be removed from the selected transactions."
+msgstr "Se quitarán las etiquetas de las transacciones seleccionadas."
 
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 12 months"
@@ -11769,7 +11794,9 @@ msgid "No invoices yet. Invoices will appear here after your first payment."
 msgstr "Aún no hay facturas. Las facturas aparecerán aquí después de tu primer pago."
 
 #: src/features/labels/ui/LabelCombobox.tsx
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
 msgid "No label"
 msgstr "Sin etiqueta"
 
@@ -13071,6 +13098,10 @@ msgstr "Elige una fecha"
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "Pick a different account."
 msgstr "Elige otra cuenta."
+
+#: src/features/rules/ui/rule-editor/rule-editor.utils.ts
+msgid "Pick a label for the label action, or \"No label\" to clear it."
+msgstr "Elige una etiqueta para la acción de etiqueta, o \"Sin etiqueta\" para quitarla."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Pick a look"
@@ -15785,6 +15816,15 @@ msgstr "Reservar cada mes"
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "Set category"
 msgstr "Establecer categoría"
+
+#: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+#: src/features/rules/ui/RuleSummary.tsx
+msgid "Set label"
+msgstr "Establecer etiqueta"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Set Label"
+msgstr "Establecer etiqueta"
 
 #: src/app/startup/screens.tsx
 msgid "Set Master Password"

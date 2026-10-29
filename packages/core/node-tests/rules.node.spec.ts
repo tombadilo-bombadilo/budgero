@@ -90,6 +90,120 @@ describe('Rules payee actions (Node/sql.js)', () => {
     expect(restored?.Payee ?? '').toBe('');
   });
 
+  it('applies, undoes and redoes label.set actions, and clears labels with null', async () => {
+    const coffee = services.labels.addLabel(budgetId, 'Coffee', '#aa5500');
+    const today = getLocalDateString();
+    const transactionId = await services.transactions.addTransaction(
+      0,
+      25,
+      accountId,
+      categoryId,
+      budgetId,
+      today,
+      'Morning coffee'
+    );
+    const rule = services.rules.createRule({
+      budgetId,
+      name: 'Label coffee',
+      conditions: [{ field: 'memo', operator: 'contains', value: 'coffee' }],
+      actions: [{ type: 'label.set', payload: { labelId: coffee } }],
+    });
+    const execution = await services.rules.executeRule(rule.id, {
+      transactionIds: [transactionId],
+      trigger: 'manual',
+    });
+    expect(execution.changes).toEqual([
+      expect.objectContaining({ field: 'labelId', oldValue: null, newValue: coffee }),
+    ]);
+    expect(services.transactions.getTransactionByID(transactionId).LabelID).toBe(coffee);
+
+    await services.rules.undoRun(execution.run.id);
+    expect(services.transactions.getTransactionByID(transactionId).LabelID ?? null).toBeNull();
+    await services.rules.redoRun(execution.run.id);
+    expect(services.transactions.getTransactionByID(transactionId).LabelID).toBe(coffee);
+
+    // A second rule clears the label again.
+    const clear = services.rules.createRule({
+      budgetId,
+      name: 'Clear label',
+      conditions: [{ field: 'memo', operator: 'contains', value: 'coffee' }],
+      actions: [{ type: 'label.set', payload: { labelId: null } }],
+    });
+    await services.rules.executeRule(clear.id, { transactionIds: [transactionId] });
+    expect(services.transactions.getTransactionByID(transactionId).LabelID ?? null).toBeNull();
+  });
+
+  it('skips a label.set whose label was deleted or belongs to another budget', async () => {
+    const otherBudget = await services.budgets.createBudget({
+      name: 'Other',
+      display_currency: 'USD',
+      badge_icon: 'bolt',
+      number_format: 'dollar',
+      create_default_categories: false,
+    });
+    const foreign = services.labels.addLabel(otherBudget, 'Foreign', '#000000');
+    const transactionId = await services.transactions.addTransaction(
+      0,
+      10,
+      accountId,
+      categoryId,
+      budgetId,
+      getLocalDateString(),
+      'Snack'
+    );
+    const rule = services.rules.createRule({
+      budgetId,
+      name: 'Foreign label',
+      conditions: [{ field: 'memo', operator: 'contains', value: 'snack' }],
+      actions: [
+        { type: 'label.set', payload: { labelId: foreign } },
+        { type: 'memo.set', payload: { memo: 'Snack (checked)' } },
+      ],
+    });
+    const execution = await services.rules.executeRule(rule.id, {
+      transactionIds: [transactionId],
+    });
+    expect(execution.changes.map((change) => change.field)).toEqual(['memo']);
+    expect(services.transactions.getTransactionByID(transactionId).LabelID ?? null).toBeNull();
+  });
+
+  it('batch edit sets and clears labels in one undoable write', async () => {
+    const travel = services.labels.addLabel(budgetId, 'Travel', '#3355ff');
+    const ids = await Promise.all(
+      ['Train', 'Hotel'].map((memo) =>
+        services.transactions.addTransaction(
+          0,
+          10,
+          accountId,
+          categoryId,
+          budgetId,
+          getLocalDateString(),
+          memo
+        )
+      )
+    );
+    await services.transactions.editTransactions(ids.map((id) => ({ id, labelId: travel })));
+    expect(ids.map((id) => services.transactions.getTransactionByID(id).LabelID)).toEqual([
+      travel,
+      travel,
+    ]);
+    await services.transactions.editTransactions([{ id: ids[0], labelId: null }]);
+    expect(services.transactions.getTransactionByID(ids[0]).LabelID ?? null).toBeNull();
+    const foreignBudget = await services.budgets.createBudget({
+      name: 'Elsewhere',
+      display_currency: 'USD',
+      badge_icon: 'bolt',
+      number_format: 'dollar',
+      create_default_categories: false,
+    });
+    const foreign = services.labels.addLabel(foreignBudget, 'Nope', '#000000');
+    await expect(
+      services.transactions.editTransactions([{ id: ids[1], labelId: foreign }])
+    ).rejects.toThrow();
+    // The failed batch changed nothing.
+    expect(services.transactions.getTransactionByID(ids[1]).LabelID).toBe(travel);
+  });
+
   it('applies and undoes memo.set actions', async () => {
     const today = getLocalDateString();
     const transactionId = await services.transactions.addTransaction(

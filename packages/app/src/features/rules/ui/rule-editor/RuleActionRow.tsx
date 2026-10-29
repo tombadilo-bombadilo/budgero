@@ -13,6 +13,7 @@ import {
 } from '@shared/ui/select';
 import { X } from 'lucide-react';
 import type { RuleActionType, Category, Account } from '@budgero/core/browser';
+import { LabelCombobox } from '@features/labels/ui/LabelCombobox';
 import { PayeeCombobox } from '@features/payees/ui/PayeeCombobox';
 import { SearchableCategorySelect } from '@features/category-management/ui/SearchableCategorySelect';
 import type { RuleFormAction } from './rule-editor.utils';
@@ -102,6 +103,14 @@ export const RuleActionRow = React.memo(function RuleActionRow({
             </SelectLabel>
             <SelectItem value="account.set">
               <Trans>Set account</Trans>
+            </SelectItem>
+          </SelectGroup>
+          <SelectGroup>
+            <SelectLabel>
+              <Trans>Label</Trans>
+            </SelectLabel>
+            <SelectItem value="label.set">
+              <Trans>Set label</Trans>
             </SelectItem>
           </SelectGroup>
         </SelectContent>
@@ -200,6 +209,17 @@ const ActionPayloadEditor = React.memo(function ActionPayloadEditor({
           value={String(action.payload.payee ?? '')}
           onChange={(value) => onChange({ payee: value })}
           placeholder={t`Payee (blank clears it)`}
+          triggerClassName="h-8 w-full"
+          allowClear
+        />
+      );
+    case 'label.set':
+      return (
+        <LabelCombobox
+          budgetId={budgetId}
+          value={action.payload.labelId ? Number(action.payload.labelId) : null}
+          // null = "No label": the rule clears the label.
+          onChange={(labelId) => onChange({ labelId: labelId ?? '' })}
           triggerClassName="h-8 w-full"
           allowClear
         />

@@ -333,6 +333,29 @@ describe('computeAutofillSuggestions', () => {
     });
   });
 
+  it('suggests a label from label.set, unless one is set, rejected, or the rule clears labels', () => {
+    const context: AutofillContext = { memo: '', payee: 'Lidl', amount: null, accountId: null };
+    const labelRule = {
+      ...groceriesRule,
+      actions: [{ type: 'label.set' as const, payload: { labelId: 7 } }],
+    };
+    const current = { ...defaultCurrentValues, payee: 'Lidl', labelId: null };
+    expect(computeAutofillSuggestions([labelRule], context, current, new Set())).toEqual([
+      { field: 'label', value: 7, ruleId: 1, ruleName: 'Groceries' },
+    ]);
+    expect(
+      computeAutofillSuggestions([labelRule], context, { ...current, labelId: 3 }, new Set())
+    ).toEqual([]);
+    expect(computeAutofillSuggestions([labelRule], context, current, new Set(['label']))).toEqual(
+      []
+    );
+    const clearRule = {
+      ...groceriesRule,
+      actions: [{ type: 'label.set' as const, payload: { labelId: null } }],
+    };
+    expect(computeAutofillSuggestions([clearRule], context, current, new Set())).toEqual([]);
+  });
+
   it('does not suggest category when already set', () => {
     const context: AutofillContext = {
       memo: '',

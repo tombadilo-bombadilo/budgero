@@ -44,6 +44,7 @@ import { PayeeCombobox } from '@features/payees/ui/PayeeCombobox';
 import type { GetTransactionsByAccountRow } from '@budgero/core/browser';
 import { useActiveAccounts } from '@entities/account/api/useActiveAccounts';
 import { SearchableCategorySelect } from '@features/category-management/ui/SearchableCategorySelect';
+import { LabelCombobox } from '@features/labels/ui/LabelCombobox';
 import { useConnectivity } from '@shared/hooks/useConnectivity';
 import { ManualRatePrompt } from '@features/currencies/ui/ManualRatePrompt';
 import { getLocalOrManualRate, saveManualRate } from '@entities/currency/lib/currency-utils';
@@ -70,6 +71,8 @@ export function TransactionsBatchToolbar({
   const [newCategoryID, setNewCategoryID] = useState<number>(-1);
   const [newAccountID, setNewAccountID] = useState<string>('-1');
   const [newPayee, setNewPayee] = useState<string>('');
+  // undefined: leave labels alone; null: remove them; a number: set that label.
+  const [newLabelId, setNewLabelId] = useState<number | null | undefined>(undefined);
   const [working, setWorking] = useState<boolean>(false);
   // Edit menu opened from the keyboard: G jumps to the category picker, M to the account picker.
   const [editMenuOpen, setEditMenuOpen] = useState(false);
@@ -162,10 +165,11 @@ export function TransactionsBatchToolbar({
     const categoryId = overrides.categoryId ?? (shortcutPick ? -1 : newCategoryID);
     const accountId = overrides.accountId ?? (shortcutPick ? '-1' : newAccountID);
     const payee = overrides.payee ?? (shortcutPick ? '' : newPayee);
+    const labelId = shortcutPick ? undefined : newLabelId;
     setWorking(true);
 
-    if (categoryId === -1 && accountId === '-1' && !payee) {
-      console.error('No category, account, or payee selected.');
+    if (categoryId === -1 && accountId === '-1' && !payee && labelId === undefined) {
+      console.error('No category, account, payee, or label selected.');
       setWorking(false);
       return;
     }
@@ -201,6 +205,7 @@ export function TransactionsBatchToolbar({
           ...(newAccountIdInt != -1 ? { accountId: newAccountIdInt } : {}),
           ...(categoryId != -1 ? { categoryId } : {}),
           ...(payee ? { payee } : {}),
+          ...(labelId !== undefined ? { labelId } : {}),
         })),
       });
 
@@ -214,6 +219,7 @@ export function TransactionsBatchToolbar({
 
       clearSelection();
       setNewPayee('');
+      setNewLabelId(undefined);
     } catch (error) {
       console.error('Error applying batch edits:', error);
       toastError('Failed to apply batch edits', error, 'Please try again.');
@@ -312,7 +318,7 @@ export function TransactionsBatchToolbar({
               variant="outline"
               size="sm"
               className="h-8 px-2"
-              aria-label={t`Change category, account or payee`}
+              aria-label={t`Change category, account, payee or label`}
               title={t`Change category (${CATEGORIZE_SHORTCUT_KEY}), move (${MOVE_SHORTCUT_KEY}) or set payee (${PAYEE_SHORTCUT_KEY})`}
             >
               <Tag className="h-3 w-3" />
@@ -404,6 +410,25 @@ export function TransactionsBatchToolbar({
                     popoverContentClassName="w-64 max-w-[calc(100vw-2rem)]"
                     placeholder={t`Select payee`}
                   />
+                </div>
+                <DropdownMenuSeparator />
+                <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground">
+                  <Trans>Set Label</Trans>
+                </div>
+                <div className="px-2 pb-2 space-y-1">
+                  <LabelCombobox
+                    budgetId={selectedBudget.ID}
+                    value={newLabelId ?? null}
+                    onChange={(labelId) => setNewLabelId(labelId)}
+                    placeholder={newLabelId === undefined ? t`Keep current labels` : t`No label`}
+                    triggerClassName="w-full text-xs h-8"
+                    allowClear
+                  />
+                  {newLabelId === null && (
+                    <p className="text-[11px] text-muted-foreground">
+                      <Trans>Labels will be removed from the selected transactions.</Trans>
+                    </p>
+                  )}
                 </div>
               </>
             )}

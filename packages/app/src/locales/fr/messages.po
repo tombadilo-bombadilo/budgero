@@ -4924,8 +4924,12 @@ msgid "Change category of selected rows"
 msgstr "Changer la catégorie des lignes sélectionnées"
 
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
-msgid "Change category, account or payee"
-msgstr "Changer la catégorie, le compte ou le bénéficiaire"
+#~ msgid "Change category, account or payee"
+#~ msgstr "Changer la catégorie, le compte ou le bénéficiaire"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Change category, account, payee or label"
+msgstr "Modifier la catégorie, le compte, le bénéficiaire ou l’étiquette"
 
 #: src/features/account-management/ui/AccountCurrencyChangeDialog.tsx
 msgid "Change currency"
@@ -6889,6 +6893,11 @@ msgstr "Supprimer l'espace de travail"
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Deleted \"{name}\""
 msgstr "« {name} » supprimé"
+
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
+#: src/features/rules/ui/RuleSummary.tsx
+msgid "Deleted label"
+msgstr "Étiquette supprimée"
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
@@ -9873,6 +9882,10 @@ msgstr "Conserver les taux en cache pendant"
 msgid "Keep Clerk users aligned with Budgero."
 msgstr "Garder les utilisateurs Clerk synchronisés avec Budgero."
 
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Keep current labels"
+msgstr "Conserver les étiquettes actuelles"
+
 #: src/pages/settings/SecurityPage.tsx
 msgid "Keep in memory only (recommended)"
 msgstr "Conserver en mémoire uniquement (recommandé)"
@@ -9907,6 +9920,10 @@ msgstr "Raccourcis clavier"
 msgid "Know what you can spend. Keep your budget private. Create your account to start your free trial."
 msgstr "Sachez ce que vous pouvez dépenser. Gardez votre budget privé. Créez votre compte pour commencer votre essai gratuit."
 
+#: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+msgid "Label"
+msgstr "Étiquette"
+
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Label (optional)"
 msgstr "Étiquette (facultatif)"
@@ -9935,6 +9952,10 @@ msgstr "Étiquette supprimée"
 msgid "Label updated"
 msgstr "Étiquette mise à jour"
 
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
+msgid "Label:"
+msgstr "Étiquette :"
+
 #: src/features/transactions/ui/TransactionLabelBadge.tsx
 msgid "Label: {label}"
 msgstr "Étiquette : {label}"
@@ -9962,6 +9983,10 @@ msgstr "Étiquettes"
 #: src/pages/settings/LabelsPage.tsx
 msgid "Labels ({count})"
 msgstr "Étiquettes ({count})"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Labels will be removed from the selected transactions."
+msgstr "Les étiquettes seront retirées des transactions sélectionnées."
 
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 12 months"
@@ -11769,7 +11794,9 @@ msgid "No invoices yet. Invoices will appear here after your first payment."
 msgstr "Aucune facture pour le moment. Les factures apparaîtront ici après votre premier paiement."
 
 #: src/features/labels/ui/LabelCombobox.tsx
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
 msgid "No label"
 msgstr "Aucune étiquette"
 
@@ -13071,6 +13098,10 @@ msgstr "Choisissez une date"
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "Pick a different account."
 msgstr "Choisissez un autre compte."
+
+#: src/features/rules/ui/rule-editor/rule-editor.utils.ts
+msgid "Pick a label for the label action, or \"No label\" to clear it."
+msgstr "Choisissez une étiquette pour l’action d’étiquette, ou \"Aucune étiquette\" pour la retirer."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Pick a look"
@@ -15785,6 +15816,15 @@ msgstr "Mettre de côté chaque mois"
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "Set category"
 msgstr "Définir la catégorie"
+
+#: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+#: src/features/rules/ui/RuleSummary.tsx
+msgid "Set label"
+msgstr "Définir l’étiquette"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Set Label"
+msgstr "Définir l’étiquette"
 
 #: src/app/startup/screens.tsx
 msgid "Set Master Password"

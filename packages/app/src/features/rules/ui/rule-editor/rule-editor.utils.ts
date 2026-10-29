@@ -91,6 +91,9 @@ export function normalizeAction(action: RuleAction): RuleFormAction {
   if (action.type === 'amount.adjust_value') {
     return { type: action.type, payload: { delta: milliToDecimalString(action.payload.delta) } };
   }
+  if (action.type === 'label.set') {
+    return { type: action.type, payload: { labelId: action.payload.labelId ?? '' } };
+  }
   return {
     type: action.type,
     payload: { ...action.payload },
@@ -135,6 +138,9 @@ export function getDefaultPayload(
       return { payee: '' };
     case 'account.set':
       return { accountId: accounts[0]?.ID ?? '' };
+    case 'label.set':
+      // '' = "No label": the action clears the label.
+      return { labelId: '' };
     case 'amount.set':
       return { amount: '' };
     case 'amount.adjust_value':
@@ -223,6 +229,13 @@ export function convertAction(action: RuleFormAction): RuleAction {
         type: 'account.set',
         payload: { accountId: Number(action.payload.accountId) },
       };
+    case 'label.set': {
+      const labelId = Number(action.payload.labelId);
+      return {
+        type: 'label.set',
+        payload: { labelId: Number.isSafeInteger(labelId) && labelId > 0 ? labelId : null },
+      };
+    }
     case 'amount.set':
       return {
         type: 'amount.set',
@@ -304,6 +317,11 @@ export function validateForm(
       case 'account.set':
         if (!Number.isFinite(Number(action.payload.accountId))) {
           return t`Choose an account for the account action.`;
+        }
+        break;
+      case 'label.set':
+        if (action.payload.labelId !== '' && !Number.isFinite(Number(action.payload.labelId))) {
+          return t`Pick a label for the label action, or "No label" to clear it.`;
         }
         break;
       case 'amount.set':

@@ -4924,8 +4924,12 @@ msgid "Change category of selected rows"
 msgstr "Kategorie der ausgewählten Zeilen ändern"
 
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
-msgid "Change category, account or payee"
-msgstr "Kategorie, Konto oder Empfänger ändern"
+#~ msgid "Change category, account or payee"
+#~ msgstr "Kategorie, Konto oder Empfänger ändern"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Change category, account, payee or label"
+msgstr "Kategorie, Konto, Empfänger oder Label ändern"
 
 #: src/features/account-management/ui/AccountCurrencyChangeDialog.tsx
 msgid "Change currency"
@@ -6889,6 +6893,11 @@ msgstr "Arbeitsbereich löschen"
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Deleted \"{name}\""
 msgstr "\"{name}\" gelöscht"
+
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
+#: src/features/rules/ui/RuleSummary.tsx
+msgid "Deleted label"
+msgstr "Gelöschtes Label"
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
@@ -9873,6 +9882,10 @@ msgstr "Zwischengespeicherte Kurse behalten für"
 msgid "Keep Clerk users aligned with Budgero."
 msgstr "Clerk-Benutzer mit Budgero synchron halten."
 
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Keep current labels"
+msgstr "Aktuelle Labels behalten"
+
 #: src/pages/settings/SecurityPage.tsx
 msgid "Keep in memory only (recommended)"
 msgstr "Nur im Speicher behalten (empfohlen)"
@@ -9907,6 +9920,10 @@ msgstr "Tastenkürzel"
 msgid "Know what you can spend. Keep your budget private. Create your account to start your free trial."
 msgstr "Wisse, was du ausgeben kannst. Halte dein Budget privat. Erstelle dein Konto und starte deinen kostenlosen Testzeitraum."
 
+#: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+msgid "Label"
+msgstr "Label"
+
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Label (optional)"
 msgstr "Beschriftung (optional)"
@@ -9935,6 +9952,10 @@ msgstr "Label entfernt"
 msgid "Label updated"
 msgstr "Label aktualisiert"
 
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
+msgid "Label:"
+msgstr "Label:"
+
 #: src/features/transactions/ui/TransactionLabelBadge.tsx
 msgid "Label: {label}"
 msgstr "Label: {label}"
@@ -9962,6 +9983,10 @@ msgstr "Labels"
 #: src/pages/settings/LabelsPage.tsx
 msgid "Labels ({count})"
 msgstr "Labels ({count})"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Labels will be removed from the selected transactions."
+msgstr "Die Labels werden von den ausgewählten Transaktionen entfernt."
 
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 12 months"
@@ -11769,7 +11794,9 @@ msgid "No invoices yet. Invoices will appear here after your first payment."
 msgstr "Noch keine Rechnungen. Rechnungen erscheinen hier nach deiner ersten Zahlung."
 
 #: src/features/labels/ui/LabelCombobox.tsx
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
 msgid "No label"
 msgstr "Kein Label"
 
@@ -13071,6 +13098,10 @@ msgstr "Datum auswählen"
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "Pick a different account."
 msgstr "Wähle ein anderes Konto."
+
+#: src/features/rules/ui/rule-editor/rule-editor.utils.ts
+msgid "Pick a label for the label action, or \"No label\" to clear it."
+msgstr "Wähle ein Label für die Label-Aktion oder \"Kein Label\", um es zu entfernen."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Pick a look"
@@ -15785,6 +15816,15 @@ msgstr "Jeden Monat zurücklegen"
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "Set category"
 msgstr "Kategorie festlegen"
+
+#: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+#: src/features/rules/ui/RuleSummary.tsx
+msgid "Set label"
+msgstr "Label festlegen"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Set Label"
+msgstr "Label festlegen"
 
 #: src/app/startup/screens.tsx
 msgid "Set Master Password"

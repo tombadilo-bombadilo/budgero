@@ -94,6 +94,8 @@ export interface TransactionBatchEdit {
   accountId?: number;
   categoryId?: number;
   payee?: string | null;
+  /** null clears the label. */
+  labelId?: number | null;
 }
 
 export interface ReconcileResult {
@@ -1571,10 +1573,10 @@ export class TransactionService {
   }
 
   /**
-   * Apply per-row account / category / payee edits (the register's batch
-   * toolbar) in ONE DB transaction: one synced op and one undo step for the
-   * whole selection. Per row the order is account, category, payee, as when
-   * the edits were sent one by one.
+   * Apply per-row account / category / payee / label edits (the register's
+   * batch toolbar) in ONE DB transaction: one synced op and one undo step for
+   * the whole selection. Per row the order is account, category, payee, label,
+   * as when the edits were sent one by one.
    */
   async editTransactions(edits: TransactionBatchEdit[]): Promise<void> {
     const steps: (() => void)[] = [];
@@ -1590,10 +1592,26 @@ export class TransactionService {
         const { payee } = edit;
         steps.push(() => this.setTransactionPayee(this.getTransactionByID(edit.id), payee));
       }
+      if (edit.labelId !== undefined) {
+        const { labelId } = edit;
+        steps.push(() => this.setTransactionLabel(edit.id, labelId));
+      }
     }
     atomically(this.db, () => {
       for (const step of steps) step();
     });
+  }
+
+  /** Set (or clear, with null) a transaction's label; the label must be in its budget. */
+  setTransactionLabel(transactionId: number, labelId: number | null, budgetId?: number): void {
+    const next = this.normalizeLabelId(labelId);
+    if (next !== null) {
+      this.assertLabelBelongsToBudget(
+        next,
+        budgetId ?? this.getTransactionByID(transactionId).BudgetID
+      );
+    }
+    this.queries.updateTransactionLabel(transactionId, next);
   }
 
   /**
@@ -2214,12 +2232,7 @@ export class TransactionService {
               ? parseInt(newValue, 10)
               : NaN;
         const nextLabelId = Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-
-        if (nextLabelId !== null) {
-          this.assertLabelBelongsToBudget(nextLabelId, transaction.BudgetID);
-        }
-
-        this.queries.updateTransactionLabel(transactionId, nextLabelId);
+        this.setTransactionLabel(transactionId, nextLabelId, transaction.BudgetID);
         break;
       }
       case 'date':
