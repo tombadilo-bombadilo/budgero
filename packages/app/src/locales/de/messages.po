@@ -14608,10 +14608,6 @@ msgstr "Überprüfe zuerst Kontostände und Transaktionen."
 msgid "Review account types after import"
 msgstr "Kontotypen nach dem Import prüfen"
 
-#: src/features/bank-sync/ui/BankReviewDialog.tsx
-msgid "Review bank transactions"
-msgstr "Banktransaktionen prüfen"
-
 #: src/widgets/dashboard/OverspentCategoriesCard.tsx
 msgid "Review budget<0/>"
 msgstr "Budget überprüfen<0/>"
@@ -14632,6 +14628,10 @@ msgstr "Prüfe mögliche Duplikate vor dem Import. Zuordnen behält die vorhande
 #: src/features/import/ui/steps/PreviewStep.tsx
 #~ msgid "Review possible duplicates before importing. Skipping keeps the existing transaction unchanged."
 #~ msgstr "Prüfe mögliche Duplikate vor dem Import. Beim Überspringen bleibt die bestehende Transaktion unverändert."
+
+#: src/features/bank-sync/ui/BankReviewDialog.tsx
+msgid "Review possible matches"
+msgstr "Mögliche Übereinstimmungen prüfen"
 
 #: src/pages/settings/ImportsPage.tsx
 msgid "Review recent imports and undo or archive them if something looks off."
@@ -17224,13 +17224,13 @@ msgstr "Danach {monthly}/Monat oder {yearly}/Jahr, inklusive Steuern."
 msgid "There is no server copy to download yet."
 msgstr "Es gibt noch keine Serverkopie zum Herunterladen."
 
-#: src/features/bank-sync/ui/BankReviewDialog.tsx
-msgid "These bank transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
-msgstr "Diese Banktransaktionen sehen aus wie welche, die du schon erfasst hast. Ordne sie zu, um deinen Eintrag als gebucht zu markieren, oder füge sie als neue Transaktionen hinzu."
-
 #: src/features/budget-management/ui/create-budget-form/YnabDateOrderChoice.tsx
 msgid "These dates can be read two ways. Select the date format used in YNAB."
 msgstr "Diese Datumsangaben sind mehrdeutig. Wähle das in YNAB verwendete Datumsformat."
+
+#: src/features/bank-sync/ui/BankReviewDialog.tsx
+msgid "These incoming transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
+msgstr "Diese eingehenden Transaktionen sehen aus wie welche, die du schon erfasst hast. Ordne sie zu, um deinen Eintrag als gebucht zu markieren, oder füge sie als neue Transaktionen hinzu."
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "They arrive uncleared and are updated once your bank books them. Pending transactions your bank drops, like a released card hold, are removed."

@@ -14610,10 +14610,6 @@ msgstr "Review account balances and transactions first."
 msgid "Review account types after import"
 msgstr "Review account types after import"
 
-#: src/features/bank-sync/ui/BankReviewDialog.tsx
-msgid "Review bank transactions"
-msgstr "Review bank transactions"
-
 #: src/widgets/dashboard/OverspentCategoriesCard.tsx
 msgid "Review budget<0/>"
 msgstr "Review budget<0/>"
@@ -14634,6 +14630,10 @@ msgstr "Review possible duplicates before importing. Match keeps the existing tr
 #: src/features/import/ui/steps/PreviewStep.tsx
 #~ msgid "Review possible duplicates before importing. Skipping keeps the existing transaction unchanged."
 #~ msgstr "Review possible duplicates before importing. Skipping keeps the existing transaction unchanged."
+
+#: src/features/bank-sync/ui/BankReviewDialog.tsx
+msgid "Review possible matches"
+msgstr "Review possible matches"
 
 #: src/pages/settings/ImportsPage.tsx
 msgid "Review recent imports and undo or archive them if something looks off."
@@ -17226,13 +17226,13 @@ msgstr "Then {monthly}/month or {yearly}/year, tax included."
 msgid "There is no server copy to download yet."
 msgstr "There is no server copy to download yet."
 
-#: src/features/bank-sync/ui/BankReviewDialog.tsx
-msgid "These bank transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
-msgstr "These bank transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
-
 #: src/features/budget-management/ui/create-budget-form/YnabDateOrderChoice.tsx
 msgid "These dates can be read two ways. Select the date format used in YNAB."
 msgstr "These dates can be read two ways. Select the date format used in YNAB."
+
+#: src/features/bank-sync/ui/BankReviewDialog.tsx
+msgid "These incoming transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
+msgstr "These incoming transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "They arrive uncleared and are updated once your bank books them. Pending transactions your bank drops, like a released card hold, are removed."
