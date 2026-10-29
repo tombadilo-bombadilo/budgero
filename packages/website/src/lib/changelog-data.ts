@@ -80,6 +80,12 @@ export const changelogEntries: ChangelogEntry[] = [
         title: 'Imports page text',
         description: 'The Imports page lists the supported file formats again instead of “[object Object]”.',
       },
+      {
+        type: 'improved',
+        title: 'Sign-in hardening',
+        description:
+          'The server now refuses oversized sign-in tokens before reading them, which protects it against recently published flaws in a token library used for signing in. Self-host is protected too.',
+      },
     ],
   },
   {

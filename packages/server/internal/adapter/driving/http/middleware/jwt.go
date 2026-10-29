@@ -94,7 +94,28 @@ func JWTMiddleware(cfg *config.Config) echo.MiddlewareFunc {
 	}
 }
 
+// MaxClerkTokenBytes caps a session token before it is parsed. Clerk session
+// JWTs are 1-2 KB. The token's JSON is parsed by go-jose before its signature
+// is checked, and go-jose v3 (pinned by clerk-sdk-go) can crash on deeply
+// nested JSON or burn CPU on a crafted embedded RSA key (GHSA-vvm8-gf78-28g4,
+// GHSA-mgcc-cww5-fp2q); its own advice is to reject large inputs first.
+const MaxClerkTokenBytes = 8 << 10
+
+// ErrTokenTooLarge is returned for tokens over MaxClerkTokenBytes.
+var ErrTokenTooLarge = errors.New("token too large")
+
+// CheckClerkTokenSize rejects a token too large to be a Clerk session token.
+func CheckClerkTokenSize(token string) error {
+	if len(token) > MaxClerkTokenBytes {
+		return ErrTokenTooLarge
+	}
+	return nil
+}
+
 func verifyClerkToken(ctx context.Context, token string, leeway time.Duration) (*clerk.SessionClaims, error) {
+	if err := CheckClerkTokenSize(token); err != nil {
+		return nil, err
+	}
 	decoded, err := clerkDecodeToken(ctx, &clerkjwt.DecodeParams{Token: token})
 	if err != nil {
 		return nil, err

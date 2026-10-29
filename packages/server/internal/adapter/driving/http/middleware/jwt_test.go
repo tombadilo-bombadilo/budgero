@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -196,5 +197,42 @@ func TestVerifyClerkToken_WithoutKIDFallsBackToDirectVerify(t *testing.T) {
 	}
 	if verifyCalls != 1 {
 		t.Errorf("Verify() calls = %d, want 1", verifyCalls)
+	}
+}
+
+func TestVerifyClerkToken_RejectsOversizedTokenBeforeParsing(t *testing.T) {
+	origDecode := clerkDecodeToken
+	origVerify := clerkVerifyToken
+	origGetKey := clerkGetJSONWebKey
+	origNow := clerkNowUTC
+	t.Cleanup(func() {
+		restoreClerkFunctions(origDecode, origVerify, origGetKey, origNow)
+		resetClerkJWKCache()
+	})
+	resetClerkJWKCache()
+
+	parsed := false
+	clerkDecodeToken = func(_ context.Context, _ *clerkjwt.DecodeParams) (*clerk.UnverifiedToken, error) {
+		parsed = true
+		return &clerk.UnverifiedToken{}, nil
+	}
+	clerkVerifyToken = func(_ context.Context, _ *clerkjwt.VerifyParams) (*clerk.SessionClaims, error) {
+		parsed = true
+		return &clerk.SessionClaims{}, nil
+	}
+
+	huge := strings.Repeat("[", MaxClerkTokenBytes+1)
+	if _, err := verifyClerkToken(context.Background(), huge, 0); !errors.Is(err, ErrTokenTooLarge) {
+		t.Fatalf("verifyClerkToken(oversized) error = %v, want ErrTokenTooLarge", err)
+	}
+	if parsed {
+		t.Fatal("oversized token reached the Clerk/go-jose parser")
+	}
+
+	if _, err := verifyClerkToken(context.Background(), strings.Repeat("a", 2048), 0); err != nil {
+		t.Fatalf("verifyClerkToken(normal size) error = %v", err)
+	}
+	if !parsed {
+		t.Fatal("normal-size token was not passed to Clerk")
 	}
 }

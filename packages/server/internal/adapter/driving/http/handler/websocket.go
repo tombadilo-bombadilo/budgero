@@ -282,6 +282,9 @@ func (h *Handlers) verifyWebsocketTokenWithRetry(c echo.Context, token string, a
 		}
 		return &authClaims{Subject: claims.Subject}, nil
 	}
+	if err := middleware.CheckClerkTokenSize(token); err != nil {
+		return nil, err
+	}
 	claims, err := clerkjwt.Verify(c.Request().Context(), &clerkjwt.VerifyParams{Token: token})
 	if err != nil {
 		errStr := strings.ToLower(err.Error())
