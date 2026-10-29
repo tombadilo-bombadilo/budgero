@@ -652,6 +652,12 @@ msgstr "{0} de {1} valores exactos"
 msgid "{0} of {1}{2}"
 msgstr "{0} de {1}{2}"
 
+#. placeholder {0}: v.pings
+#. placeholder {1}: v.days
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "{0} pings · {1} days"
+msgstr "{0} pings · {1} días"
+
 #. placeholder {0}: maskText(queryResult.rowCount.toLocaleString())
 #. placeholder {0}: result.rowCount
 #. placeholder {0}: table.rowCount.toLocaleString()
@@ -2000,6 +2006,10 @@ msgstr "<0/>Ajustes de seguridad"
 msgid "<0/>Select a budget to view its import history."
 msgstr "<0/>Selecciona un presupuesto para ver su historial de importación."
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "<0/>Self-host installs"
+msgstr "<0/>Instalaciones autoalojadas"
+
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
 msgid "<0/>Series"
 msgstr "<0/>Series"
@@ -2011,6 +2021,10 @@ msgstr "<0/>Mostrar burbuja de chat"
 #: src/features/budgeting/ui/BudgetToolbar.tsx
 msgid "<0/>Show hidden"
 msgstr "<0/>Mostrar ocultos"
+
+#: src/pages/admin/SignupsSection.tsx
+msgid "<0/>Signups"
+msgstr "<0/>Registros"
 
 #: src/pages/admin/sql-explorer/AdminSqlExplorer.tsx
 msgid "<0/>SQL Explorer"
@@ -2130,6 +2144,13 @@ msgstr "<0/>Garantías"
 #: src/pages/auth/AuthPage.tsx
 msgid "<0/>Your budget is encrypted on your device before it syncs. Budgero cannot read its contents."
 msgstr "<0/>Tu presupuesto se cifra en tu dispositivo antes de sincronizarse. Budgero no puede leer su contenido."
+
+#. placeholder {0}: data.total
+#. placeholder {1}: data.from
+#. placeholder {2}: data.to
+#: src/pages/admin/SignupsSection.tsx
+msgid "<0>{0}</0> signups from {1} to {2} (UTC)"
+msgstr "<0>{0}</0> registros del {1} al {2} (UTC)"
 
 #. placeholder {0}: stats?.foundingMembers || 0
 #. placeholder {1}: stats?.betaUsers || 0
@@ -2911,6 +2932,10 @@ msgstr "Activo"
 msgid "Active Days"
 msgstr "Días activos"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Active installs"
+msgstr "Instalaciones activas"
+
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Active spaces"
 msgstr "Espacios activos"
@@ -3615,6 +3640,7 @@ msgstr "Se aplica solo en el primer mes del calendario."
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/import/ui/steps/configure/TemplatesTab.tsx
+#: src/pages/admin/SignupsSection.tsx
 msgid "Apply"
 msgstr "Aplicar"
 
@@ -5988,6 +6014,10 @@ msgstr "No se pudieron cargar los bancos de Enable Banking"
 msgid "Couldn't load inactive users"
 msgstr "No se pudieron cargar los usuarios inactivos"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Couldn’t load self-host installs."
+msgstr "No se pudieron cargar las instalaciones autoalojadas."
+
 #: src/features/sync-diagnostics/ui/MutationLogCard.tsx
 msgid "Couldn't load the mutation log"
 msgstr "No se pudo cargar el registro de cambios"
@@ -6617,6 +6647,10 @@ msgstr "Fechas de esta exportación"
 msgid "DAU/MAU"
 msgstr "DAU/MAU"
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Day"
+msgstr "Día"
+
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Day-N window"
 msgstr "Ventana de N días"
@@ -7015,6 +7049,10 @@ msgstr "Mostrar el botón flotante de chat"
 #: src/shared/ui/sidebar.tsx
 msgid "Displays the mobile sidebar."
 msgstr "Muestra la barra lateral en el móvil."
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Distinct servers sending the update check each week (UTC, Monday start). Installs with the check turned off aren’t counted."
+msgstr "Servidores distintos que envían la comprobación de actualizaciones cada semana (UTC, empezando el lunes). No se cuentan las instalaciones con la comprobación desactivada."
 
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "Do we live within our means?"
@@ -8148,6 +8186,10 @@ msgstr "No se ha podido cargar el perfil."
 msgid "Failed to load Push API settings. Please try again later."
 msgstr "Error al cargar la configuración de Push API. Inténtalo de nuevo más tarde."
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Failed to load signups"
+msgstr "No se pudieron cargar los registros"
+
 #: src/shared/hooks/useWhisperVoiceInput.ts
 msgid "Failed to load speech model"
 msgstr "No se ha podido cargar el modelo de voz"
@@ -8611,6 +8653,7 @@ msgstr "¿Empezar de cero, o traes un presupuesto contigo?"
 msgid "Friend or colleague"
 msgstr "Amigo o colega"
 
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "From"
@@ -8889,6 +8932,10 @@ msgstr "Compra"
 #: src/features/budget-management/model/icon-options.ts
 msgid "Groceries & Food"
 msgstr "Compra y alimentación"
+
+#: src/pages/admin/SignupsSection.tsx
+msgid "Group by"
+msgstr "Agrupar por"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -9952,6 +9999,10 @@ msgstr "Última copia de seguridad"
 msgid "Last checked"
 msgstr "Última comprobación"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Last full week"
+msgstr "Última semana completa"
+
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Last login"
 msgstr "Último inicio de sesión"
@@ -10384,6 +10435,7 @@ msgstr "Cargando..."
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Loading…"
 msgstr "Cargando…"
@@ -10889,6 +10941,7 @@ msgstr "Espacio de trabajo de presupuestos monocromo con lienzo de pergamino y a
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Month"
 msgstr "Mes"
@@ -11626,6 +11679,7 @@ msgstr "Sin datos disponibles para la estadística"
 msgid "No data available for table"
 msgstr "Sin datos disponibles para la tabla"
 
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "No data yet"
 msgstr "Aún no hay datos"
@@ -11999,6 +12053,10 @@ msgstr "No hay fechas próximas"
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 #~ msgid "No upcoming occurrences"
 #~ msgstr "No hay próximas ocurrencias"
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "No update checks counted yet."
+msgstr "Todavía no se ha contado ninguna comprobación de actualizaciones."
 
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "No users created yet."
@@ -13064,6 +13122,11 @@ msgstr "SELECCIONADO PARA TI"
 #: src/shared/lib/analytics/visualization-labels.ts
 msgid "Pie Chart"
 msgstr "Gráfico de sectores"
+
+#. placeholder {0}: data.days
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Pings by version, last {0} days"
+msgstr "Pings por versión, últimos {0} días"
 
 #: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
@@ -16055,6 +16118,14 @@ msgstr "Iniciando sesión…"
 msgid "Signing out..."
 msgstr "Cerrando sesión..."
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Signups"
+msgstr "Registros"
+
+#: src/pages/admin/SignupsSection.tsx
+msgid "Signups over time"
+msgstr "Registros a lo largo del tiempo"
+
 #: src/features/import/lib/import-display-text.ts
 msgid "Similar amount and date in this account"
 msgstr "Importe y fecha similares en esta cuenta"
@@ -17494,6 +17565,10 @@ msgstr "Este usuario cerrará sesión inmediatamente y no podrá volver a inicia
 msgid "This week"
 msgstr "Esta semana"
 
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "This week so far"
+msgstr "Esta semana hasta ahora"
+
 #: src/features/budget-planning/ui/FutureOverspendingWarning.tsx
 msgid "This will cause overspending"
 msgstr "Esto provocará un gasto excesivo"
@@ -17628,6 +17703,7 @@ msgstr "CONSEJO:"
 msgid "Title (Optional)"
 msgstr "Título (opcional)"
 
+#: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "To"
@@ -19075,12 +19151,32 @@ msgstr "Sitio web"
 msgid "WebSocket"
 msgstr "WebSocket"
 
+#: src/pages/admin/SignupsSection.tsx
+msgid "Week"
+msgstr "Semana"
+
+#. placeholder {0}: point.start
+#. placeholder {0}: week.week
+#: src/pages/admin/SelfHostInstallsSection.tsx
+#: src/pages/admin/SignupsSection.tsx
+msgid "Week of {0}"
+msgstr "Semana del {0}"
+
+#. placeholder {0}: week.week
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Week of {0} (so far)"
+msgstr "Semana del {0} (hasta ahora)"
+
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
 #: src/features/transactions/ui/add-transaction/recurring-form.ts
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 msgid "Weekly"
 msgstr "Semanal"
+
+#: src/pages/admin/SelfHostInstallsSection.tsx
+msgid "Weekly active self-host installs"
+msgstr "Instalaciones autoalojadas activas por semana"
 
 #: src/app/system/ReconnectionOverlay.tsx
 msgid "Welcome back online!"

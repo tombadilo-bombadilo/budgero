@@ -25,6 +25,8 @@ import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import { StatCard } from '@pages/admin/components/StatCard';
 import SelfHostAdminDashboard from '@pages/admin/SelfHostAdminDashboard';
 import StickinessAnalyticsSection from '@pages/admin/StickinessAnalyticsSection';
+import SelfHostInstallsSection from '@pages/admin/SelfHostInstallsSection';
+import SignupsSection from '@pages/admin/SignupsSection';
 import type {
   AdminStats,
   ClerkSyncResult,
@@ -405,8 +407,14 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
+      {/* Signups per day / week / month over a date range. */}
+      <SignupsSection />
+
       {/* Stickiness & retention — DAU/MAU + signup-cohort retention. */}
       <StickinessAnalyticsSection />
+
+      {/* Weekly active self-host installs (SaaS admin only). */}
+      <SelfHostInstallsSection />
 
       {/* Quick Actions */}
       <Card>

@@ -65,6 +65,16 @@ type BudgetSpaceMember struct {
 	AcceptedAt        sql.NullTime   `json:"accepted_at"`
 }
 
+type EmailAnswer struct {
+	Token      string         `json:"token"`
+	UserID     string         `json:"user_id"`
+	Template   string         `json:"template"`
+	Reason     sql.NullString `json:"reason"`
+	Note       sql.NullString `json:"note"`
+	CreatedAt  time.Time      `json:"created_at"`
+	AnsweredAt sql.NullTime   `json:"answered_at"`
+}
+
 type ExchangeRate struct {
 	BaseCurrency   string    `json:"base_currency"`
 	TargetCurrency string    `json:"target_currency"`
@@ -131,6 +141,11 @@ type SavedQuery struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type SelfhostWeeklyInstall struct {
+	Week     string `json:"week"`
+	Installs int64  `json:"installs"`
+}
+
 type SentEmail struct {
 	UserID   string    `json:"user_id"`
 	Template string    `json:"template"`
@@ -144,6 +159,16 @@ type UpdatePing struct {
 	ClientType string    `json:"client_type"`
 	Count      int64     `json:"count"`
 	UpdatedAt  time.Time `json:"updated_at"`
+}
+
+type UpdatePingWeekKey struct {
+	Week string `json:"week"`
+	Key  []byte `json:"key"`
+}
+
+type UpdatePingWeekSender struct {
+	Week   string `json:"week"`
+	Sender string `json:"sender"`
 }
 
 type User struct {
