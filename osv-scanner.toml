@@ -37,3 +37,8 @@ reason = "zod 3.x is only pulled in by build and lint tooling (contentlayer2 for
 id = "GHSA-h895-cgqg-jf52"
 ignoreUntil = 2026-12-23T00:00:00Z
 reason = "toml 4.x prototype pollution when parsing a TOML document; only pulled in by the website build (contentlayer2 -> mdx-bundler -> remark-mdx-frontmatter) to parse our own docs frontmatter, never untrusted input; no fixed version yet"
+
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+ignoreUntil = 2026-12-10T00:00:00Z
+reason = "deepmerge 4.3.1 is only pulled in at build time (vite-plugin-pwa -> workbox-build -> @rollup/plugin-node-resolve) to merge our own build config, never untrusted input; no fixed version yet"

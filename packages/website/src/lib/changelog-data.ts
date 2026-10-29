@@ -21,11 +21,72 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.20.0',
+    date: 'October 29, 2026',
+    summary:
+      'Imports, bank sync and the Push API now match transactions you entered by hand instead of adding them twice, and rules can set labels. Update Budgero on all your devices: older versions pause sync until updated when a label is set by a rule or on several transactions at once.',
+    isLatest: true,
+    items: [
+      {
+        type: 'new',
+        title: 'Match imports to transactions you entered',
+        description:
+          'Statement imports (CSV, PDF, OFX/QFX, QIF, CAMT) now find a transaction you typed in yourself even when the bank books it a few days later or for a slightly different amount, using the range in Settings → Duplicate transactions (1% and ±7 days by default). Choose Match to keep your transaction, with its category, memo, payee and splits, and mark it cleared. When only one entry fits, the row starts on Match.',
+      },
+      {
+        type: 'improved',
+        title: 'Bank sync and Push API use the same matching',
+        description:
+          'SimpleFIN and Enable Banking use the same amount and date range to find entries you already typed in. A Push API transaction that looks like one of yours now waits in the account’s review list instead of being added twice; Add as new adds exactly what was sent.',
+      },
+      {
+        type: 'new',
+        title: 'Set labels with rules',
+        description:
+          'Rules have a new Set label action, or Clear label to remove one. It works for every rule type, including autofill rules that fill in the label while you add a transaction, and a rule run can be undone.',
+      },
+      {
+        type: 'new',
+        title: 'Label several transactions at once',
+        description:
+          'Select transactions and choose Set Label in the edit menu to label them all, or clear their labels, in one step you can undo.',
+      },
+      {
+        type: 'improved',
+        title: 'Quick answers in emails',
+        description:
+          'The day-two and trial-ending emails on Budgero Cloud let you answer with one tap, with an optional note, so telling us what is working takes seconds.',
+      },
+      {
+        type: 'fixed',
+        title: 'Undo after editing imported transactions',
+        description:
+          'Undoing an edit of an imported transaction could fail with an error, and deleting one could leave its import record behind so the same file row looked imported. Both are fixed.',
+      },
+      {
+        type: 'fixed',
+        title: 'Balances after an import',
+        description:
+          'The account balance and register now update as soon as a file import finishes, instead of after a reload.',
+      },
+      {
+        type: 'fixed',
+        title: 'Sync after reconnecting',
+        description:
+          'A device that reconnected after being offline could stay behind until the next reconnect, and the “Finishing initial sync” message could stay on screen. Both are fixed.',
+      },
+      {
+        type: 'fixed',
+        title: 'Imports page text',
+        description: 'The Imports page lists the supported file formats again instead of “[object Object]”.',
+      },
+    ],
+  },
+  {
     version: 'v1.19.5',
     date: 'October 26, 2026',
     summary:
       'Brings the v1.19.4 improvements to Budgero Cloud. No changes for self-hosted installs.',
-    isLatest: true,
     items: [
       {
         type: 'fixed',
