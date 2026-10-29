@@ -6,6 +6,7 @@ import {
   type RuleCondition,
   type TransactionRule,
 } from '@budgero/core/browser';
+import { useLabels } from '@entities/label/api/useLabels';
 import { asMilli, toDecimal } from '@shared/lib/currency/milli';
 import { getOperatorLabel } from './rule-editor/rule-editor.utils';
 
@@ -35,6 +36,10 @@ function Line({ label, value }: { label: ReactNode; value: ReactNode }) {
 
 export function RuleSummary({ rule, categoryNames, accountNames }: RuleSummaryProps) {
   const { t } = useLingui();
+  const { byId: labelsById } = useLabels(
+    rule.budgetId,
+    rule.actions.some((action) => action.type === 'label.set')
+  );
 
   const fieldLabel = (field: RuleCondition['field']) =>
     ({ memo: t`Memo`, payee: t`Payee`, amount: t`Amount`, account: t`Account` })[field];
@@ -77,6 +82,13 @@ export function RuleSummary({ rule, categoryNames, accountNames }: RuleSummaryPr
         return {
           label: t`Set account`,
           value: accountNames.get(action.payload.accountId) ?? t`Unknown account`,
+        };
+      case 'label.set':
+        return {
+          label: t`Set label`,
+          value: action.payload.labelId
+            ? (labelsById.get(action.payload.labelId)?.Name ?? t`Deleted label`)
+            : t`(clear)`,
         };
       default:
         return { label: String((action as RuleAction).type), value: '' };

@@ -4924,8 +4924,12 @@ msgid "Change category of selected rows"
 msgstr "Categorie van geselecteerde rijen wijzigen"
 
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
-msgid "Change category, account or payee"
-msgstr "Categorie, rekening of begunstigde wijzigen"
+#~ msgid "Change category, account or payee"
+#~ msgstr "Categorie, rekening of begunstigde wijzigen"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Change category, account, payee or label"
+msgstr "Categorie, rekening, begunstigde of label wijzigen"
 
 #: src/features/account-management/ui/AccountCurrencyChangeDialog.tsx
 msgid "Change currency"
@@ -6889,6 +6893,11 @@ msgstr "Werkruimte verwijderen"
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Deleted \"{name}\""
 msgstr "\"{name}\" verwijderd"
+
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
+#: src/features/rules/ui/RuleSummary.tsx
+msgid "Deleted label"
+msgstr "Verwijderd label"
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
@@ -9873,6 +9882,10 @@ msgstr "Wisselkoersen bewaren voor"
 msgid "Keep Clerk users aligned with Budgero."
 msgstr "Clerk-gebruikers gesynchroniseerd houden met Budgero."
 
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Keep current labels"
+msgstr "Huidige labels behouden"
+
 #: src/pages/settings/SecurityPage.tsx
 msgid "Keep in memory only (recommended)"
 msgstr "Alleen in geheugen bewaren (aanbevolen)"
@@ -9907,6 +9920,10 @@ msgstr "Sneltoetsen"
 msgid "Know what you can spend. Keep your budget private. Create your account to start your free trial."
 msgstr "Weet wat je kunt uitgeven. Houd je budget privé. Maak je account aan om je gratis proefperiode te starten."
 
+#: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+msgid "Label"
+msgstr "Label"
+
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Label (optional)"
 msgstr "Label (optioneel)"
@@ -9935,6 +9952,10 @@ msgstr "Label verwijderd"
 msgid "Label updated"
 msgstr "Label bijgewerkt"
 
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
+msgid "Label:"
+msgstr "Label:"
+
 #: src/features/transactions/ui/TransactionLabelBadge.tsx
 msgid "Label: {label}"
 msgstr "Label: {label}"
@@ -9962,6 +9983,10 @@ msgstr "Labels"
 #: src/pages/settings/LabelsPage.tsx
 msgid "Labels ({count})"
 msgstr "Labels ({count})"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Labels will be removed from the selected transactions."
+msgstr "De labels worden van de geselecteerde transacties verwijderd."
 
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 12 months"
@@ -11769,7 +11794,9 @@ msgid "No invoices yet. Invoices will appear here after your first payment."
 msgstr "Nog geen facturen. Facturen verschijnen hier na je eerste betaling."
 
 #: src/features/labels/ui/LabelCombobox.tsx
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
 msgid "No label"
 msgstr "Geen label"
 
@@ -13071,6 +13098,10 @@ msgstr "Kies een datum"
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "Pick a different account."
 msgstr "Kies een andere rekening."
+
+#: src/features/rules/ui/rule-editor/rule-editor.utils.ts
+msgid "Pick a label for the label action, or \"No label\" to clear it."
+msgstr "Kies een label voor de labelactie, of \"Geen label\" om het te verwijderen."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Pick a look"
@@ -15785,6 +15816,15 @@ msgstr "Elke maand opzijzetten"
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "Set category"
 msgstr "Categorie instellen"
+
+#: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+#: src/features/rules/ui/RuleSummary.tsx
+msgid "Set label"
+msgstr "Label instellen"
+
+#: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+msgid "Set Label"
+msgstr "Label instellen"
 
 #: src/app/startup/screens.tsx
 msgid "Set Master Password"

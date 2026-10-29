@@ -32,6 +32,7 @@ export function useAutofillRules(
     memo: string;
     amount: number | null;
     accountId: number | null;
+    labelId?: number | null;
   },
   options: UseAutofillRulesOptions
 ): UseAutofillRulesReturn {

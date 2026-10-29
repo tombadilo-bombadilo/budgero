@@ -56,7 +56,8 @@ export type RuleActionType =
   | 'amount.set'
   | 'amount.adjust_value'
   | 'amount.adjust_percent'
-  | 'account.set';
+  | 'account.set'
+  | 'label.set';
 
 export interface RuleActionBase<TType extends RuleActionType, TMeta = Record<string, unknown>> {
   type: TType;
@@ -120,6 +121,14 @@ export type AccountSetAction = RuleActionBase<
   }
 >;
 
+/** Sets the transaction's label; null clears it. */
+export type LabelSetAction = RuleActionBase<
+  'label.set',
+  {
+    labelId: number | null;
+  }
+>;
+
 export type RuleAction =
   | MemoRemoveRegexAction
   | MemoSetAction
@@ -128,7 +137,8 @@ export type RuleAction =
   | AmountSetAction
   | AmountAdjustValueAction
   | AmountAdjustPercentAction
-  | AccountSetAction;
+  | AccountSetAction
+  | LabelSetAction;
 
 export interface TransactionRule {
   id: number;
@@ -282,6 +292,8 @@ type RuleRollback = {
   inflow?: number;
   outflow?: number;
   payee?: string;
+  /** null clears the label. */
+  labelId?: number | null;
 };
 
 /** One transaction's write in an undo / redo of a run. */
@@ -320,6 +332,7 @@ const EXISTENCE_TABLES: ReadonlySet<string> = new Set([
   ...RUN_RESTORE_TABLES,
   'categories',
   'accounts',
+  'labels',
 ]);
 
 /** Tables the undo of a rule delete may put back. */
@@ -368,6 +381,7 @@ interface TransactionWorkingState {
   inflow: MilliUnits;
   outflow: MilliUnits;
   payee: string;
+  labelId: number | null;
 }
 
 interface TransactionRuleRow {
@@ -982,6 +996,11 @@ export class RulesService {
           entry.payee = oldPayee;
           break;
         }
+        case 'labelId': {
+          const previous = metadata.previousLabelId ?? change.oldValue;
+          entry.labelId = Number(previous) > 0 ? Number(previous) : null;
+          break;
+        }
         case 'amount': {
           const oldInflow = Number(metadata.oldInflow ?? change.oldValue);
           const oldOutflow = Number(metadata.oldOutflow ?? 0);
@@ -1031,6 +1050,11 @@ export class RulesService {
                 ? change.newValue
                 : '';
           break;
+        case 'labelId': {
+          const next = metadata.nextLabelId ?? change.newValue;
+          entry.labelId = Number(next) > 0 ? Number(next) : null;
+          break;
+        }
         case 'amount': {
           const inflow = Number(metadata.newInflow);
           const outflow = Number(metadata.newOutflow);
@@ -1094,6 +1118,13 @@ export class RulesService {
       ) {
         delete next.categoryId;
       }
+      if (
+        next.labelId !== undefined &&
+        next.labelId !== null &&
+        !this.rowExists('labels', next.labelId)
+      ) {
+        delete next.labelId;
+      }
       if (next.accountId !== undefined && !this.rowExists('accounts', next.accountId)) continue;
       if (Object.keys(next).length === 0) continue;
       const structural =
@@ -1120,6 +1151,10 @@ export class RulesService {
       if (typeof category === 'number' && category > 0 && !this.rowExists('categories', category)) {
         delete values.CategoryID;
       }
+      const label = values.LabelID;
+      if (typeof label === 'number' && label > 0 && !this.rowExists('labels', label)) {
+        delete values.LabelID;
+      }
       if (Object.keys(values).length) changed.push({ ...entry, values });
     }
     const deleted: RowJournal['deleted'] = [];
@@ -1129,6 +1164,12 @@ export class RulesService {
       if (rows.length) deleted.push({ ...entry, rows });
     }
     return { ...journal, changed, deleted };
+  }
+
+  private labelExists(labelId: number, budgetId: number): boolean {
+    return Boolean(
+      getRow(this.db, 'SELECT 1 AS ok FROM labels WHERE ID = ? AND BudgetID = ?', labelId, budgetId)
+    );
   }
 
   private rowExists(table: string, id: number): boolean {
@@ -1193,6 +1234,9 @@ export class RulesService {
         values.memo ?? tx.Memo ?? '',
         values.payee
       );
+      if (values.labelId !== undefined) {
+        this.transactions.setTransactionLabel(step.transactionId, values.labelId);
+      }
     } catch (error) {
       throw new Error(
         `Failed to ${purpose} transaction ${step.transactionId}: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1353,6 +1397,9 @@ export class RulesService {
           nextMemo,
           nextPayee
         );
+        if (values.labelId !== undefined) {
+          this.transactions.setTransactionLabel(transactionId, values.labelId);
+        }
         return;
       }
       await this.transactions.updateTransaction(
@@ -1365,6 +1412,9 @@ export class RulesService {
         nextMemo,
         nextPayee
       );
+      if (values.labelId !== undefined) {
+        this.transactions.setTransactionLabel(transactionId, values.labelId);
+      }
     } catch (error) {
       throw new Error(
         `Failed to ${purpose} transaction ${transactionId}: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1515,6 +1565,7 @@ export class RulesService {
       inflow: asMilli(Number(transaction.InflowConverted ?? 0)),
       outflow: asMilli(Number(transaction.OutflowConverted ?? 0)),
       payee: transaction.Payee?.toString?.() ?? '',
+      labelId: Number(transaction.LabelID) > 0 ? Number(transaction.LabelID) : null,
     };
     const working: TransactionWorkingState = { ...original };
     const changeSources = new Map<string, RuleActionType | string>();
@@ -1667,6 +1718,25 @@ export class RulesService {
           });
           break;
         }
+        case 'label.set': {
+          const raw = action.payload?.labelId;
+          const labelId =
+            raw === null || raw === undefined || Number(raw) <= 0 ? null : Number(raw);
+          if (labelId !== null && !Number.isSafeInteger(labelId)) {
+            throw new ValidationError('label.set action requires a numeric labelId or null');
+          }
+          // A label deleted since the rule was saved is left alone, not an error.
+          if (labelId !== null && !this.labelExists(labelId, Number(transaction.BudgetID))) break;
+          if (labelId !== working.labelId) {
+            metadataByField.set('labelId', {
+              previousLabelId: original.labelId,
+              nextLabelId: labelId,
+            });
+            working.labelId = labelId;
+            changeSources.set('labelId', action.type);
+          }
+          break;
+        }
         default: {
           // Compile-time exhaustiveness guard: adding a RuleActionType without a
           // handler here fails typecheck instead of silently no-op'ing at runtime.
@@ -1682,12 +1752,20 @@ export class RulesService {
     const categoryChanged = working.categoryId !== original.categoryId;
     const accountChanged = working.accountId !== original.accountId;
     const payeeChanged = working.payee !== original.payee;
+    const labelChanged = working.labelId !== original.labelId;
     const amountChanged = !this.amountsEqual(
       this.calculateNetAmount(original),
       this.calculateNetAmount(working)
     );
 
-    if (!memoChanged && !categoryChanged && !accountChanged && !amountChanged && !payeeChanged) {
+    if (
+      !memoChanged &&
+      !categoryChanged &&
+      !accountChanged &&
+      !amountChanged &&
+      !payeeChanged &&
+      !labelChanged
+    ) {
       return [];
     }
 
@@ -1702,6 +1780,7 @@ export class RulesService {
     if (!transaction.TransferID && !accountChanged && !amountChanged) {
       const capture = newCapture().addKeys('transactions', [id], false);
       this.transactions.updatePlainTransactionMetadata(id, working.categoryId, working.memo, payee);
+      if (labelChanged) this.transactions.setTransactionLabel(id, working.labelId);
       rowJournal = capture.finish();
     } else {
       const capture = this.captureWrite(newCapture(), id);
@@ -1715,6 +1794,7 @@ export class RulesService {
         working.memo,
         payee
       );
+      if (labelChanged) this.transactions.setTransactionLabel(id, working.labelId);
       rowJournal = capture.finish();
     }
     if (isEmptyJournal(rowJournal)) rowJournal = null;
@@ -1755,6 +1835,13 @@ export class RulesService {
         fallbackActionType: 'payee',
         oldValue: original.payee,
         newValue: working.payee,
+      },
+      {
+        changed: labelChanged,
+        field: 'labelId',
+        fallbackActionType: 'label',
+        oldValue: original.labelId,
+        newValue: working.labelId,
       },
       {
         changed: amountChanged,

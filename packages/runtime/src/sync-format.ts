@@ -5,7 +5,9 @@
  * floats. Format 2 (app v1.5): all monetary values in op args and stored
  * blobs are integer milliunits (1/1000 currency unit). Format 3 (app v1.19):
  * same encoding as format 2, plus the op codes listed in
- * {@link OP_CODE_FORMAT_VERSIONS}.
+ * {@link OP_CODE_FORMAT_VERSIONS}. Format 4 (app v1.20): no new op codes;
+ * calls that set labels through rules (label.set) or batch edits ask for it
+ * per call (REQUIRES_FORMAT_ARG, see the app's legacy-format rules).
  *
  * Each outgoing mutation is stamped with the LOWEST format that can express
  * it ({@link mutationFormatVersion}): ops every format-2 build knows stay
@@ -30,7 +32,7 @@
 export const MILLIUNIT_FORMAT_VERSION = 2;
 
 /** Highest mutation format this build reads (and the highest it writes). */
-export const MUTATION_FORMAT_VERSION = 3;
+export const MUTATION_FORMAT_VERSION = 4;
 
 /** Format of mutations whose op codes every milliunit build knows. */
 export const BASE_MUTATION_FORMAT_VERSION = MILLIUNIT_FORMAT_VERSION;

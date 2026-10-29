@@ -35,7 +35,30 @@ type Args = Record<string, unknown>;
 /** Format 3: the first format v1.18 builds reject. */
 const NEWER_THAN_V1_18 = 3;
 
-type LegacyRule = (args: Args, checks: LegacyReplayService | null) => boolean;
+/** Format 4: the first format v1.19 builds reject (labels set by rules and batch edits). */
+const NEWER_THAN_V1_19 = 4;
+
+/**
+ * true: the call needs format 3 (v1.18 would apply it differently); a number:
+ * the call needs that format; false: the base format will do.
+ */
+type LegacyRule = (args: Args, checks: LegacyReplayService | null) => boolean | number;
+
+/** A rule call that sets or names labels (label.set actions): v1.19 builds can't run those. */
+const mentionsLabelAction = (args: Args): boolean => JSON.stringify(args).includes('"label.set"');
+
+const ruleHasLabelAction = (ruleId: unknown): boolean => {
+  const ruleIdNum = id(ruleId);
+  const rule = ruleIdNum ? services()?.rules?.getRule(ruleIdNum) : undefined;
+  return Boolean(rule?.actions?.some((action) => action.type === 'label.set'));
+};
+
+/** A run whose logged changes include a label: v1.19 undo/redo would skip or misplace it. */
+const runChangedLabels = (runId: unknown): boolean => {
+  const runIdNum = id(runId);
+  const changes = runIdNum ? services()?.rules?.listRunChanges(runIdNum) : undefined;
+  return Boolean(changes?.some((change) => change.field === 'labelId'));
+};
 
 const has = (args: Args, ...keys: string[]) => keys.some((key) => args[key] !== undefined);
 
@@ -134,11 +157,23 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
 
   // Restores metadata-only changes without rewriting amounts, puts the rule's
   // run bookkeeping back from ruleState, and split parents follow amount edits.
-  'rules.undoRun': () => true,
+  'rules.undoRun': (args) => (runChangedLabels(args.runId) ? NEWER_THAN_V1_19 : true),
+  'rules.redoRun': (args) => runChangedLabels(args.runId) && NEWER_THAN_V1_19,
+  'rules.create': (args) => mentionsLabelAction(args) && NEWER_THAN_V1_19,
+  'rules.update': (args) => mentionsLabelAction(args) && NEWER_THAN_V1_19,
+  'rules.restore': (args) => mentionsLabelAction(args) && NEWER_THAN_V1_19,
+  'rules.restoreDeleted': (args) => mentionsLabelAction(args) && NEWER_THAN_V1_19,
+
+  // v1.19 builds ignore labelId and would apply the rest of the edit.
+  'transactions.batchEdit': (args) =>
+    Array.isArray(args.edits) &&
+    (args.edits as Args[]).some((edit) => edit?.labelId !== undefined) &&
+    NEWER_THAN_V1_19,
 
   // Amount / account actions on a split parent now move its lines and mirrors,
   // and a stored '' payee the rule leaves alone stays '' (v1.18 wrote NULL).
   'rules.execute': (args, checks) => {
+    if (ruleHasLabelAction(args.ruleId)) return NEWER_THAN_V1_19;
     const rule = checks ? services()?.rules?.getRule(Number(args.ruleId)) : undefined;
     if (!checks || !rule) return false;
     const structural = (rule.actions ?? []).some(
@@ -283,25 +318,38 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
 };
 
 /**
- * `args` with REQUIRES_FORMAT_ARG set when v1.18 builds would apply this call
+ * `args` with REQUIRES_FORMAT_ARG set when older builds would apply this call
  * differently (and without it otherwise: a redo copies the first run's args,
- * so a stale marker is dropped and the call re-checked). A check that throws
- * leaves the call at the base format; the op itself then reports the error.
+ * so a stale marker is dropped and the call re-checked). Calls nested in a
+ * list-of-ops payload (`args.ops`: history.applyOps, history.redoWithIds) are
+ * checked one by one, so mutationFormatVersion sees what each one needs. A
+ * check that throws leaves the call at the base format; the op itself then
+ * reports the error.
  */
 export function withLegacyFormat(op: string, args: Args): Args {
   const { [REQUIRES_FORMAT_ARG]: _stale, ...rest } = args;
-  const rule = LEGACY_FORMAT_RULES[op];
-  if (!rule) return REQUIRES_FORMAT_ARG in args ? rest : args;
-  let newer = false;
-  try {
-    newer = rule(rest, services()?.legacyReplay ?? null);
-  } catch {
-    newer = false;
+  if (Array.isArray(rest.ops)) {
+    rest.ops = (rest.ops as unknown[]).map((call) => {
+      const entry = call as { op?: unknown; args?: unknown } | null;
+      if (!entry || typeof entry.op !== 'string' || !entry.args || typeof entry.args !== 'object') {
+        return call;
+      }
+      return { ...entry, args: withLegacyFormat(entry.op, entry.args as Args) };
+    });
   }
-  const format = Math.min(NEWER_THAN_V1_18, MUTATION_FORMAT_VERSION);
-  return newer && format > BASE_MUTATION_FORMAT_VERSION
+  const rule = LEGACY_FORMAT_RULES[op];
+  if (!rule) return Array.isArray(rest.ops) || REQUIRES_FORMAT_ARG in args ? rest : args;
+  let needed: boolean | number = false;
+  try {
+    needed = rule(rest, services()?.legacyReplay ?? null);
+  } catch {
+    needed = false;
+  }
+  const wanted = needed === true ? NEWER_THAN_V1_18 : typeof needed === 'number' ? needed : 0;
+  const format = Math.min(wanted, MUTATION_FORMAT_VERSION);
+  return format > BASE_MUTATION_FORMAT_VERSION
     ? { ...rest, [REQUIRES_FORMAT_ARG]: format }
-    : REQUIRES_FORMAT_ARG in args
+    : Array.isArray(rest.ops) || REQUIRES_FORMAT_ARG in args
       ? rest
       : args;
 }

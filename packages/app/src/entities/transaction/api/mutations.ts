@@ -488,10 +488,16 @@ export function useMoveTransactionToNewAccount() {
 
 /** One row of a batch edit (omitted fields stay as they are). */
 export type BatchEditTransactionsInput = {
-  edits: { id: number; accountId?: number; categoryId?: number; payee?: string }[];
+  edits: {
+    id: number;
+    accountId?: number;
+    categoryId?: number;
+    payee?: string;
+    labelId?: number | null;
+  }[];
 };
 
-/** Account / category / payee for many rows: one op, one write, one undo step. */
+/** Account / category / payee / label for many rows: one op, one write, one undo step. */
 export function useBatchEditTransactions() {
   const runtime = useRuntime();
   return useMutation<void, Error, BatchEditTransactionsInput>({

@@ -9,6 +9,7 @@ import { Separator } from '@shared/ui/separator';
 import { Skeleton } from '@shared/ui/skeleton';
 import { Button } from '@shared/ui/button';
 import { ConfirmDialog } from '@shared/ui/confirm-dialog';
+import { useLabels } from '@entities/label/api/useLabels';
 import { useRuleRunChanges, useRuleRuns } from '@entities/rule/api/useRules';
 import type {
   TransactionRule,
@@ -231,7 +232,7 @@ function RunAccordionItem({
         ) : (
           <div className="space-y-3">
             {changes.map((change) => (
-              <RuleChangeRow key={change.id} change={change} />
+              <RuleChangeRow key={change.id} change={change} budgetId={budgetId} />
             ))}
           </div>
         )}
@@ -240,8 +241,18 @@ function RunAccordionItem({
   );
 }
 
-function RuleChangeRow({ change }: { change: TransactionRuleRunChange }) {
+function RuleChangeRow({
+  change,
+  budgetId,
+}: {
+  change: TransactionRuleRunChange;
+  budgetId: number;
+}) {
+  const { t } = useLingui();
   const metadata = (change.metadata ?? {}) as Record<string, unknown>;
+  const { byId: labelsById } = useLabels(budgetId, change.field === 'labelId');
+  const labelName = (value: unknown) =>
+    Number(value) > 0 ? (labelsById.get(Number(value))?.Name ?? t`Deleted label`) : t`No label`;
   return (
     <div className="rounded-lg border bg-muted/40 p-3 text-sm">
       <div className="flex flex-wrap items-center gap-2">
@@ -273,6 +284,15 @@ function RuleChangeRow({ change }: { change: TransactionRuleRunChange }) {
             </span>{' '}
             {String(metadata.previousCategoryId ?? change.oldValue ?? '')} →{' '}
             {String(metadata.nextCategoryId ?? change.newValue ?? '')}
+          </div>
+        ) : null}
+        {change.field === 'labelId' ? (
+          <div>
+            <span className="font-medium text-foreground">
+              <Trans>Label:</Trans>
+            </span>{' '}
+            {labelName(metadata.previousLabelId ?? change.oldValue)} →{' '}
+            {labelName(metadata.nextLabelId ?? change.newValue)}
           </div>
         ) : null}
         {change.field === 'accountId' ? (

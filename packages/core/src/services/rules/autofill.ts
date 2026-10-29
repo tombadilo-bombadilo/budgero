@@ -16,7 +16,7 @@ export interface AutofillContext {
 }
 
 export interface AutofillSuggestion {
-  field: 'category' | 'payee' | 'memo' | 'amount' | 'account';
+  field: 'category' | 'payee' | 'memo' | 'amount' | 'account' | 'label';
   value: string | number;
   ruleId: number;
   ruleName: string;
@@ -165,6 +165,8 @@ export function computeAutofillSuggestions(
     memo: string;
     amount: number | null;
     accountId: number | null;
+    /** Omitted by callers without a label field: label suggestions are then always offered. */
+    labelId?: number | null;
   },
   rejectedFields: Set<string>,
   options: ComputeAutofillOptions = {}
@@ -211,6 +213,8 @@ function actionToSuggestion(
     memo: string;
     amount: number | null;
     accountId: number | null;
+    /** Omitted by callers without a label field: label suggestions are then always offered. */
+    labelId?: number | null;
   },
   rejectedFields: Set<string>,
   suggestedFields: Set<string>,
@@ -266,6 +270,19 @@ function actionToSuggestion(
     return {
       field: 'amount',
       value: action.payload.amount,
+      ruleId: rule.id,
+      ruleName: rule.name,
+    };
+  }
+
+  if (action.type === 'label.set') {
+    const { labelId } = action.payload;
+    if (labelId === null || labelId === undefined || labelId <= 0) return null;
+    if ((currentValues.labelId ?? null) !== null && !ignoreCurrentValues) return null;
+    if (rejectedFields.has('label') || suggestedFields.has('label')) return null;
+    return {
+      field: 'label',
+      value: labelId,
       ruleId: rule.id,
       ruleName: rule.name,
     };

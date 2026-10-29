@@ -131,11 +131,62 @@ beforeEach(async () => {
 });
 
 describe('the rule list', () => {
-  it('only covers op codes v1.18 has (newer ones are format 3 by name)', () => {
+  it('only covers op codes v1.18 has, plus v1.19 ones that gained a format-4 call', () => {
+    // Format-3 op codes are format 3 by name; a rule on one may only ask for a
+    // newer format (label calls v1.19 can't apply), never lower it.
+    const FORMAT_3_OPS_WITH_V1_19_RULES = new Set([
+      'rules.redoRun',
+      'rules.restoreDeleted',
+      'transactions.batchEdit',
+    ]);
     for (const op of Object.keys(LEGACY_FORMAT_RULES)) {
       expect(KNOWN_OP_CODES.has(op), op).toBe(true);
+      if (FORMAT_3_OPS_WITH_V1_19_RULES.has(op)) continue;
       expect(OP_CODE_FORMAT_VERSIONS[op], op).toBeUndefined();
     }
+  });
+
+  it('labels set by rules or batch edits go out as format 4; the same calls without labels do not', async () => {
+    const label = services.labels.addLabel(budgetId, 'Trip', '#3355ff');
+    const tx = await services.transactions.addTransaction(
+      asMilli(0),
+      asMilli(1000),
+      checking,
+      groceries,
+      budgetId,
+      '2026-09-01',
+      'train'
+    );
+    expect(
+      await sentFormat('transactions.batchEdit', { edits: [{ id: tx, labelId: label }] })
+    ).toBe(4);
+    expect(await sentFormat('transactions.batchEdit', { edits: [{ id: tx, labelId: null }] })).toBe(
+      4
+    );
+    expect(await sentFormat('transactions.batchEdit', { edits: [{ id: tx, payee: 'X' }] })).toBe(3);
+
+    const input = {
+      budgetId,
+      name: 'Trips',
+      conditions: [{ field: 'memo', operator: 'contains', value: 'train' }],
+      actions: [{ type: 'label.set', payload: { labelId: label } }],
+    };
+    expect(await sentFormat('rules.create', { input })).toBe(4);
+    const plain = { ...input, actions: [{ type: 'memo.set', payload: { memo: 'x' } }] };
+    expect(await sentFormat('rules.create', { input: plain })).toBe(BASE_MUTATION_FORMAT_VERSION);
+
+    const rule = services.rules.createRule(input as never);
+    expect(await sentFormat('rules.execute', { ruleId: rule.id, options: {} })).toBe(4);
+    const run = await services.rules.executeRule(rule.id, { transactionIds: [tx] });
+    expect(await sentFormat('rules.undoRun', { runId: run.run.id })).toBe(4);
+    await services.rules.undoRun(run.run.id);
+    expect(await sentFormat('rules.redoRun', { runId: run.run.id })).toBe(4);
+
+    // Inside an undo/redo bundle the nested call carries its own format.
+    const bundle = {
+      ops: [{ op: 'transactions.batchEdit', args: { edits: [{ id: tx, labelId: label }] } }],
+    };
+    expect(await sentFormat('history.applyOps', bundle)).toBe(4);
   });
 
   it('stamps a format v1.18 rejects, and drops a stale stamp a redo copied', () => {

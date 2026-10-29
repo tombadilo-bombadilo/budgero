@@ -59,6 +59,8 @@ function fieldToActionType(field: string): string {
       return 'amount.set';
     case 'account':
       return 'account.set';
+    case 'label':
+      return 'label.set';
     default:
       return field;
   }
@@ -107,8 +109,16 @@ export function useAutofillIntegration({
       memo: form.memo,
       amount: form.amount,
       accountId: form.selectedFromAccount ? parseInt(form.selectedFromAccount, 10) : null,
+      labelId: form.selectedLabelId,
     }),
-    [selectedCategoryId, form.payee, form.memo, form.amount, form.selectedFromAccount]
+    [
+      selectedCategoryId,
+      form.payee,
+      form.memo,
+      form.amount,
+      form.selectedFromAccount,
+      form.selectedLabelId,
+    ]
   );
 
   const {
@@ -129,6 +139,7 @@ export function useAutofillIntegration({
   const previousCategory = React.useRef(form.selectedCategory);
   const previousMemo = React.useRef(form.memo);
   const previousAccount = React.useRef(form.selectedFromAccount);
+  const previousLabel = React.useRef(form.selectedLabelId ? String(form.selectedLabelId) : '');
 
   // Apply autofill suggestions when they appear
   React.useEffect(() => {
@@ -162,6 +173,11 @@ export function useAutofillIntegration({
         const accountIdStr = suggestion.value.toString();
         previousAccount.current = accountIdStr;
         setFromAccount(accountIdStr);
+        applyAutofillSuggestion(suggestion);
+      } else if (suggestion.field === 'label' && typeof suggestion.value === 'number') {
+        // Update ref BEFORE setting value so the tracking effect doesn't clear it
+        previousLabel.current = String(suggestion.value);
+        form.setLabelId(suggestion.value);
         applyAutofillSuggestion(suggestion);
       }
     }
@@ -324,6 +340,14 @@ export function useAutofillIntegration({
     'account',
     form.selectedFromAccount,
     previousAccount,
+    autofillAppliedFields,
+    clearAutofillAppliedField,
+    rejectAutofillField
+  );
+  useAutofillFieldTracking(
+    'label',
+    form.selectedLabelId ? String(form.selectedLabelId) : '',
+    previousLabel,
     autofillAppliedFields,
     clearAutofillAppliedField,
     rejectAutofillField
