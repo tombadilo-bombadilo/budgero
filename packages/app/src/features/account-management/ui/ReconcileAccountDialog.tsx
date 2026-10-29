@@ -54,8 +54,11 @@ export function ReconcileAccountDialog({ account, budgetId }: ReconcileAccountDi
   // which also drops scheduled future rows). Matches "Cleared" in the account header.
   const currentBalance = asMilli(account.BalanceNative - (account.UnclearedNative ?? 0));
 
-  // Differences under one cent (10 milliunits) are treated as matching so
-  // milliunit-precision residue never creates a phantom adjustment.
+  // Cross-currency transfers can leave sub-cent residue (a few milliunits) in
+  // an account. It displays as 0.00 but the balance is not zero, so any
+  // non-zero difference gets an adjustment, even one smaller than a cent;
+  // otherwise the user can never bring the account to exactly what the bank
+  // shows. Sub-cent differences only get a different explanation in the UI.
   const ONE_CENT_MILLI = 10;
 
   const handleSubmit = async () => {
@@ -71,7 +74,7 @@ export function ReconcileAccountDialog({ account, budgetId }: ReconcileAccountDi
 
     // Capture the difference at submission time (exact integer milliunits)
     const difference = actualBalance - currentBalance;
-    const needsAdjustment = Math.abs(difference) >= ONE_CENT_MILLI;
+    const needsAdjustment = difference !== 0;
 
     // Validate income category before starting submission
     if (needsAdjustment && !incomeCategory) {
@@ -108,7 +111,11 @@ export function ReconcileAccountDialog({ account, budgetId }: ReconcileAccountDi
           : undefined,
       });
 
-      if (needsAdjustment) {
+      if (needsAdjustment && adjustmentAmount < ONE_CENT_MILLI) {
+        toast.success(
+          t`Account reconciled successfully. Cleared a fraction of a cent of rounding residue.`
+        );
+      } else if (needsAdjustment) {
         toast.success(
           t`Account reconciled successfully. ${isInflow ? 'Added' : 'Removed'} ${formatMilli(accountLocalizer, adjustmentAmount)}`
         );
@@ -131,15 +138,12 @@ export function ReconcileAccountDialog({ account, budgetId }: ReconcileAccountDi
   // While the user is typing, preview against the live value; otherwise the committed one.
   const effectiveBalance = isEditingBalance ? liveBalance : actualBalance;
 
-  const calculateDifference = (): MilliUnits | null => {
-    if (effectiveBalance === null) return null;
-    const raw = effectiveBalance - currentBalance;
-    // Snap sub-cent residue to zero so matching balances don't render a
-    // phantom "-0.00" adjustment in red.
-    return asMilli(Math.abs(raw) < ONE_CENT_MILLI ? 0 : raw);
-  };
-
-  const difference = calculateDifference();
+  const difference: MilliUnits | null =
+    effectiveBalance === null ? null : asMilli(effectiveBalance - currentBalance);
+  // Sub-cent residue renders as 0.00; show it neutrally with its own note
+  // instead of a red "-0.00", but still adjust it on submit.
+  const isSubCent =
+    difference !== null && difference !== 0 && Math.abs(difference) < ONE_CENT_MILLI;
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
@@ -247,21 +251,30 @@ export function ReconcileAccountDialog({ account, budgetId }: ReconcileAccountDi
                 </Label>
                 <span
                   className={`text-sm md:text-base font-semibold whitespace-nowrap ${
-                    difference > 0
-                      ? 'text-success'
-                      : difference < 0
-                        ? 'text-destructive'
-                        : 'text-muted-foreground'
+                    isSubCent || difference === 0
+                      ? 'text-muted-foreground'
+                      : difference > 0
+                        ? 'text-success'
+                        : 'text-destructive'
                   }`}
                 >
-                  {difference > 0 ? '+' : ''}
-                  {formatMilli(accountLocalizer, difference)}
+                  {isSubCent
+                    ? `< ${formatMilli(accountLocalizer, asMilli(ONE_CENT_MILLI))}`
+                    : `${difference > 0 ? '+' : ''}${formatMilli(accountLocalizer, difference)}`}
                 </span>
               </div>
-              {Math.abs(difference) < ONE_CENT_MILLI && (
+              {difference === 0 && (
                 <p className="text-xs md:text-sm text-muted-foreground mt-1">
                   <Trans>
                     Balances match - reconciliation will mark transactions as reconciled
+                  </Trans>
+                </p>
+              )}
+              {isSubCent && (
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                  <Trans>
+                    The balance is off by a fraction of a cent (rounding from a currency
+                    conversion). Reconciling clears it so the account matches your bank exactly.
                   </Trans>
                 </p>
               )}
