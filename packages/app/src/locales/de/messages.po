@@ -2809,6 +2809,10 @@ msgstr "Konto erfolgreich abgeglichen. {0} {1}"
 msgid "Account reconciled successfully. Balance matches - no adjustment needed."
 msgstr "Konto erfolgreich abgeglichen. Saldo stimmt überein – keine Anpassung nötig."
 
+#: src/features/account-management/ui/ReconcileAccountDialog.tsx
+msgid "Account reconciled successfully. Cleared a fraction of a cent of rounding residue."
+msgstr "Konto erfolgreich abgeglichen. Ein Rundungsrest von einem Bruchteil eines Cents wurde bereinigt."
+
 #: src/pages/settings/AccountSettingsPage.tsx
 msgid "Account settings need a live connection to Clerk. Please reconnect to the internet and try again."
 msgstr "Die Kontoeinstellungen benötigen eine aktive Verbindung zu Clerk. Bitte stelle die Internetverbindung wieder her und versuche es erneut."
@@ -17121,6 +17125,10 @@ msgstr "Der Assistent führt Aktionen automatisch aus, ohne um Bestätigung zu f
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The available balance you want in this category each month."
 msgstr "Der verfügbare Saldo, den du in dieser Kategorie jeden Monat haben möchtest."
+
+#: src/features/account-management/ui/ReconcileAccountDialog.tsx
+msgid "The balance is off by a fraction of a cent (rounding from a currency conversion). Reconciling clears it so the account matches your bank exactly."
+msgstr "Der Saldo weicht um einen Bruchteil eines Cents ab (Rundung aus einer Währungsumrechnung). Beim Abgleichen wird er bereinigt, damit das Konto genau deiner Bank entspricht."
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The balance you want to build up in this category. Spending lowers it again."

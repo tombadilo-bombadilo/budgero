@@ -2809,6 +2809,10 @@ msgstr "Compte rapproché avec succès. {0} {1}"
 msgid "Account reconciled successfully. Balance matches - no adjustment needed."
 msgstr "Compte rapproché avec succès. Le solde correspond — aucun ajustement nécessaire."
 
+#: src/features/account-management/ui/ReconcileAccountDialog.tsx
+msgid "Account reconciled successfully. Cleared a fraction of a cent of rounding residue."
+msgstr "Compte rapproché avec succès. Un résidu d’arrondi d’une fraction de centime a été corrigé."
+
 #: src/pages/settings/AccountSettingsPage.tsx
 msgid "Account settings need a live connection to Clerk. Please reconnect to the internet and try again."
 msgstr "Les paramètres du compte nécessitent une connexion active à Clerk. Reconnectez-vous à Internet et réessayez."
@@ -17121,6 +17125,10 @@ msgstr "L'assistant exécutera automatiquement les actions sans demander de conf
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The available balance you want in this category each month."
 msgstr "Le solde disponible que vous souhaitez dans cette catégorie chaque mois."
+
+#: src/features/account-management/ui/ReconcileAccountDialog.tsx
+msgid "The balance is off by a fraction of a cent (rounding from a currency conversion). Reconciling clears it so the account matches your bank exactly."
+msgstr "Le solde diffère d’une fraction de centime (arrondi issu d’une conversion de devise). Le rapprochement le corrige pour que le compte corresponde exactement à votre banque."
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The balance you want to build up in this category. Spending lowers it again."

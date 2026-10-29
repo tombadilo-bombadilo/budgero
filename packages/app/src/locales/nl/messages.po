@@ -2809,6 +2809,10 @@ msgstr "Rekening succesvol afgestemd. {0} {1}"
 msgid "Account reconciled successfully. Balance matches - no adjustment needed."
 msgstr "Rekening succesvol afgestemd. Saldo komt overeen - geen aanpassing nodig."
 
+#: src/features/account-management/ui/ReconcileAccountDialog.tsx
+msgid "Account reconciled successfully. Cleared a fraction of a cent of rounding residue."
+msgstr "Rekening succesvol afgestemd. Een afrondingsrest van een fractie van een cent is weggewerkt."
+
 #: src/pages/settings/AccountSettingsPage.tsx
 msgid "Account settings need a live connection to Clerk. Please reconnect to the internet and try again."
 msgstr "Rekeninginstellingen hebben een actieve verbinding met Clerk nodig. Maak opnieuw verbinding met het internet en probeer het opnieuw."
@@ -17121,6 +17125,10 @@ msgstr "De assistent voert acties automatisch uit zonder om bevestiging te vrage
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The available balance you want in this category each month."
 msgstr "Het beschikbare saldo dat je elke maand in deze categorie wilt hebben."
+
+#: src/features/account-management/ui/ReconcileAccountDialog.tsx
+msgid "The balance is off by a fraction of a cent (rounding from a currency conversion). Reconciling clears it so the account matches your bank exactly."
+msgstr "Het saldo wijkt een fractie van een cent af (afronding door een valutaomrekening). Afstemmen werkt dit weg zodat de rekening precies overeenkomt met je bank."
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The balance you want to build up in this category. Spending lowers it again."

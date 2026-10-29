@@ -2811,6 +2811,10 @@ msgstr "Account reconciled successfully. {0} {1}"
 msgid "Account reconciled successfully. Balance matches - no adjustment needed."
 msgstr "Account reconciled successfully. Balance matches - no adjustment needed."
 
+#: src/features/account-management/ui/ReconcileAccountDialog.tsx
+msgid "Account reconciled successfully. Cleared a fraction of a cent of rounding residue."
+msgstr "Account reconciled successfully. Cleared a fraction of a cent of rounding residue."
+
 #: src/pages/settings/AccountSettingsPage.tsx
 msgid "Account settings need a live connection to Clerk. Please reconnect to the internet and try again."
 msgstr "Account settings need a live connection to Clerk. Please reconnect to the internet and try again."
@@ -17123,6 +17127,10 @@ msgstr "The assistant will automatically execute actions without asking for conf
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The available balance you want in this category each month."
 msgstr "The available balance you want in this category each month."
+
+#: src/features/account-management/ui/ReconcileAccountDialog.tsx
+msgid "The balance is off by a fraction of a cent (rounding from a currency conversion). Reconciling clears it so the account matches your bank exactly."
+msgstr "The balance is off by a fraction of a cent (rounding from a currency conversion). Reconciling clears it so the account matches your bank exactly."
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The balance you want to build up in this category. Spending lowers it again."
