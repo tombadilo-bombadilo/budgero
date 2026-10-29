@@ -21,11 +21,25 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.20.1',
+    date: 'October 29, 2026',
+    summary:
+      'Reconciling an account whose balance is off by a fraction of a cent now brings it to exactly what your bank shows.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Reconcile clears sub-cent rounding residue',
+        description:
+          'Transfers between currencies can leave an account a fraction of a cent off, which shows as 0.00 but is not zero. Reconcile used to call that a match and change nothing, so the account could never be zeroed. It now writes the adjustment for any difference, shows it as “< 0.01” with an explanation, and leaves the account at exactly the balance you entered.',
+      },
+    ],
+  },
+  {
     version: 'v1.20.0',
     date: 'October 29, 2026',
     summary:
       'Imports, bank sync and the Push API now match transactions you entered by hand instead of adding them twice, and rules can set labels. Update Budgero on all your devices: older versions pause sync until updated when a label is set by a rule or on several transactions at once.',
-    isLatest: true,
     items: [
       {
         type: 'new',
