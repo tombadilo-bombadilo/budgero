@@ -114,6 +114,9 @@ export function useRedownloadFromServer() {
 export function useLastSyncError(): string | null {
   const runtime = useRuntime();
   const [error, setError] = useState<string | null>(null);
-  useEffect(() => runtime.onSyncStatus((status) => setError(status.syncError)), [runtime]);
+  useEffect(
+    () => runtime.onSyncStatus((status) => setError(status.syncError?.message ?? null)),
+    [runtime]
+  );
   return error;
 }

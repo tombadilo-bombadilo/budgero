@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro';
 import { track } from '@shared/lib/analytics/track';
 import { syncErrorCode } from '@shared/lib/analytics/error-codes';
+import { createSyncErrorGate } from '@shared/runtime/sync-error-gate';
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useEffect, useMemo, useSyncExternalStore } from 'react';
 import { toast } from 'sonner';
@@ -29,17 +30,12 @@ export function RuntimeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    let lastShownError: string | null = null;
+    const shouldSurface = createSyncErrorGate();
     return runtime.onSyncStatus((status) => {
-      if (!status.syncError) {
-        lastShownError = null;
-        return;
-      }
-      if (status.syncError === lastShownError) return;
-      lastShownError = status.syncError;
+      if (!shouldSurface(status) || !status.syncError) return;
       track('sync_error', { code: syncErrorCode(status.syncError) });
       toast.warning(t`Sync needs attention`, {
-        description: status.syncError,
+        description: status.syncError.message,
         duration: 15_000,
       });
     });
