@@ -55,7 +55,7 @@ func TestReadPump_InvalidMutationGetsNack(t *testing.T) {
 	// baseVersion must be a number: the mutation does not unmarshal.
 	sendText(t, conn, `{"type":"mutation","id":"mut-bad","baseVersion":"not-a-number","encryptedPayload":"xx"}`)
 
-	frame := readJSONWithin(t, conn, 2*time.Second)
+	frame := readJSONWithin(t, conn)
 	if frame["type"] != "mutation_nack" || frame["id"] != "mut-bad" || frame["code"] != websocket.NackInvalid || frame["space_id"] != "space-nack" {
 		t.Fatalf("frame = %v, want mutation_nack mut-bad invalid", frame)
 	}
@@ -67,7 +67,7 @@ func TestReadPump_UnparseableFrameGetsNackWithoutID(t *testing.T) {
 
 	sendText(t, conn, `this is not json`)
 
-	frame := readJSONWithin(t, conn, 2*time.Second)
+	frame := readJSONWithin(t, conn)
 	if frame["type"] != "mutation_nack" || frame["id"] != "" || frame["code"] != websocket.NackInvalid {
 		t.Fatalf("frame = %v, want mutation_nack with empty id and code invalid", frame)
 	}
@@ -81,9 +81,9 @@ func TestReadPump_DuplicateMutationIsAckedNotNacked(t *testing.T) {
 
 	mutation := `{"type":"mutation","id":"mut-dup","baseVersion":0,"encryptedPayload":"c2VjcmV0","timestamp":"2026-10-30T10:00:00Z"}`
 	sendText(t, conn, mutation)
-	first := readJSONWithin(t, conn, 2*time.Second)
+	first := readJSONWithin(t, conn)
 	sendText(t, conn, mutation)
-	second := readJSONWithin(t, conn, 2*time.Second)
+	second := readJSONWithin(t, conn)
 
 	for i, frame := range []map[string]interface{}{first, second} {
 		if frame["type"] != "mutation_ack" || frame["mutationId"] != "mut-dup" || frame["success"] != true {
