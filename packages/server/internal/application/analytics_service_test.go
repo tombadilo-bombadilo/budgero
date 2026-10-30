@@ -209,10 +209,11 @@ func TestAnalytics_CaptureException(t *testing.T) {
 	svc := application.NewAnalyticsService(sender, users, application.AnalyticsOptions{})
 
 	exc := analytics.ServerException{Type: "*errors.errorString", Code: analytics.ErrCodeInternal, Route: "/api/v1/profile", Method: "GET", Status: 500}
-	svc.CaptureException("opted-out", exc)
-	svc.CaptureException("kept", exc)
-	svc.CaptureException("", exc) // no user: attributed to the server, no opt-out lookup
-	svc.CaptureException("unknown-user", exc)
+	svc.CaptureException("opted-out", &exc)
+	svc.CaptureException("kept", &exc)
+	svc.CaptureException("", &exc) // no user: attributed to the server, no opt-out lookup
+	svc.CaptureException("unknown-user", &exc)
+	svc.CaptureException("kept", nil)
 	svc.Close()
 
 	got := sender.Events()
@@ -233,6 +234,6 @@ func TestAnalytics_CaptureException(t *testing.T) {
 
 	// Disabled tracker (self-host / no key) drops exceptions too.
 	off := application.NewAnalyticsService(&fake.AnalyticsSender{Disabled: true}, users, application.AnalyticsOptions{})
-	off.CaptureException("", exc)
+	off.CaptureException("", &exc)
 	off.Close()
 }

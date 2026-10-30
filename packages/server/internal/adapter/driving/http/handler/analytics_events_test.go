@@ -35,7 +35,7 @@ func (r *recordingTracker) Track(userID string, event analytics.Event) {
 
 func (r *recordingTracker) SetOptOut(string, bool) {}
 
-func (r *recordingTracker) CaptureException(string, analytics.ServerException) {}
+func (r *recordingTracker) CaptureException(string, *analytics.ServerException) {}
 
 func (r *recordingTracker) names() []string {
 	r.mu.Lock()

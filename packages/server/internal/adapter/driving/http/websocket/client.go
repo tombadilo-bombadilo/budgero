@@ -249,7 +249,7 @@ func nackCodeFor(err error) string {
 
 // closeFrame returns the close code and reason recorded when the hub closed
 // this client, defaulting to a normal closure.
-func (c *Client) closeFrame() (int, string) {
+func (c *Client) closeFrame() (code int, reason string) {
 	c.hub.mu.RLock()
 	defer c.hub.mu.RUnlock()
 	if c.closeCode == 0 {

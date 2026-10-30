@@ -39,7 +39,7 @@ func TestEventsUseOnlyRegisteredProps(t *testing.T) {
 		analytics.MemberLeft(),
 		analytics.BankRelayOK(analytics.BankProviderEnableBanking),
 		analytics.BankRelayFailed(analytics.BankProviderEnableBanking, analytics.BankRelayErrThrottled),
-		analytics.ServerException{Type: "*sqlite.Error", Code: analytics.ErrCodeDBLocked, Route: "/api/v1/sync", Method: "POST", Status: 500, RequestID: "req-1", ServerVersion: "1.2.3"}.Event(),
+		(&analytics.ServerException{Type: "*sqlite.Error", Code: analytics.ErrCodeDBLocked, Route: "/api/v1/sync", Method: "POST", Status: 500, RequestID: "req-1", ServerVersion: "1.2.3"}).Event(),
 	}
 	seen := map[string]bool{}
 	for _, ev := range events {
@@ -155,7 +155,7 @@ func TestServerExceptionEvent(t *testing.T) {
 	}
 
 	// Defaults: unknown type, code, mechanism and route all fall back to fixed values.
-	ev = analytics.ServerException{Status: 503}.Event()
+	ev = (&analytics.ServerException{Status: 503}).Event()
 	props = ev.Properties()
 	if props["error_code"] != "internal" || props["route"] != "unmatched" {
 		t.Errorf("default props = %v", props)

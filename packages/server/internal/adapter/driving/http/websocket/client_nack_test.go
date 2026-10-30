@@ -17,14 +17,14 @@ func sendText(t *testing.T, conn *gws.Conn, payload string) {
 	}
 }
 
-// awaitConnected polls until the hub's Run loop has registered n clients.
+// awaitConnected polls until the hub's Run loop has registered the one client.
 // (awaitRegistered reads from client.Send, which a running WritePump owns.)
-func awaitConnected(t *testing.T, hub *websocket.Hub, n int64) {
+func awaitConnected(t *testing.T, hub *websocket.Hub) {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)
-	for hub.ConnectionCount() != n {
+	for hub.ConnectionCount() != 1 {
 		if time.Now().After(deadline) {
-			t.Fatalf("hub has %d connections, want %d", hub.ConnectionCount(), n)
+			t.Fatalf("hub has %d connections, want 1", hub.ConnectionCount())
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
@@ -98,7 +98,7 @@ func TestReadPump_DuplicateMutationIsAckedNotNacked(t *testing.T) {
 func TestHub_ResetSpaceClosesWithSpaceResetReason(t *testing.T) {
 	hub := newRunningHub(t)
 	conn, _ := dialPumpServer(t, hub, "space-reset")
-	awaitConnected(t, hub, 1)
+	awaitConnected(t, hub)
 
 	if err := hub.ResetSpace("space-reset"); err != nil {
 		t.Fatalf("ResetSpace: %v", err)
@@ -113,7 +113,7 @@ func TestHub_ResetSpaceClosesWithSpaceResetReason(t *testing.T) {
 func TestHub_CloseUserClientsSendsPolicyViolation(t *testing.T) {
 	hub := newRunningHub(t)
 	conn, client := dialPumpServer(t, hub, "space-removed")
-	awaitConnected(t, hub, 1)
+	awaitConnected(t, hub)
 
 	hub.CloseUserClients("space-removed", "user-1")
 
@@ -129,7 +129,7 @@ func TestHub_CloseUserClientsSendsPolicyViolation(t *testing.T) {
 func TestHub_CloseAllUserClientsSendsBlocked(t *testing.T) {
 	hub := newRunningHub(t)
 	conn, _ := dialPumpServer(t, hub, "space-blocked")
-	awaitConnected(t, hub, 1)
+	awaitConnected(t, hub)
 
 	if n := hub.CloseAllUserClients("user-1"); n != 1 {
 		t.Fatalf("closed %d clients, want 1", n)
@@ -150,7 +150,7 @@ func TestReadPump_CatchUpFailureClosesWithReason(t *testing.T) {
 	hub := websocket.NewHub(ml)
 	go hub.Run()
 	conn, _ := dialPumpServer(t, hub, "space-catchup")
-	awaitConnected(t, hub, 1)
+	awaitConnected(t, hub)
 
 	// Every mutation log query fails from here on.
 	if err := db.Close(); err != nil {

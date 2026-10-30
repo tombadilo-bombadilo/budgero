@@ -46,7 +46,7 @@ const maxFrames = 30
 
 // ExceptionSink receives server exceptions; the analytics tracker implements it.
 type ExceptionSink interface {
-	CaptureException(distinctID string, exc analytics.ServerException)
+	CaptureException(distinctID string, exc *analytics.ServerException)
 }
 
 // panicError carries a recovered panic through the error handler: the value,
@@ -90,7 +90,7 @@ func WithStack(err error) error {
 func InternalError(status int, publicMsg string, cause error) *echo.HTTPError {
 	he := echo.NewHTTPError(status, publicMsg)
 	if cause != nil {
-		he.SetInternal(&causeWithStack{err: cause, pcs: callers(3)})
+		he = he.SetInternal(&causeWithStack{err: cause, pcs: callers(3)})
 	}
 	return he
 }
@@ -238,7 +238,7 @@ func reportServerError(c echo.Context, err error, he *echo.HTTPError, sink Excep
 		}
 	}
 	exc.Frames = frames(pcs)
-	sink.CaptureException(GetUserIDFromContext(c), exc)
+	sink.CaptureException(GetUserIDFromContext(c), &exc)
 }
 
 // wrapperTypes are error types that only wrap another error; the reported
@@ -346,8 +346,8 @@ func frames(pcs []uintptr) []analytics.Frame {
 	iter := runtime.CallersFrames(pcs)
 	for {
 		f, more := iter.Next()
-		if inModule(f) {
-			out = append(out, moduleFrame(f))
+		if inModule(&f) {
+			out = append(out, moduleFrame(&f))
 			if len(out) == maxFrames {
 				break
 			}
@@ -364,7 +364,7 @@ func frames(pcs []uintptr) []analytics.Frame {
 
 // inModule reports whether the frame's source file belongs to this module.
 // Falls back to the symbol's import path when the module root is unknown.
-func inModule(f runtime.Frame) bool {
+func inModule(f *runtime.Frame) bool {
 	if moduleRoot != "" {
 		return strings.HasPrefix(f.File, moduleRoot)
 	}
@@ -374,7 +374,7 @@ func inModule(f runtime.Frame) bool {
 // moduleFrame builds a Frame with the module-relative file path and the
 // function's short symbol (import path stripped), so no build directory
 // ever appears in the output.
-func moduleFrame(f runtime.Frame) analytics.Frame {
+func moduleFrame(f *runtime.Frame) analytics.Frame {
 	file := filepath.Base(f.File)
 	if moduleRoot != "" {
 		file = strings.TrimPrefix(f.File, moduleRoot)

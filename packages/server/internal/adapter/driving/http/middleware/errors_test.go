@@ -32,7 +32,7 @@ import (
 
 type capturedException struct {
 	distinctID string
-	exc        analytics.ServerException
+	exc        *analytics.ServerException
 }
 
 type recordingSink struct {
@@ -40,7 +40,7 @@ type recordingSink struct {
 	excs []capturedException
 }
 
-func (r *recordingSink) CaptureException(distinctID string, exc analytics.ServerException) {
+func (r *recordingSink) CaptureException(distinctID string, exc *analytics.ServerException) {
 	r.mu.Lock()
 	r.excs = append(r.excs, capturedException{distinctID, exc})
 	r.mu.Unlock()
@@ -301,12 +301,12 @@ func TestErrorHandler_4xxIsNotAnException(t *testing.T) {
 }
 
 // Secrets planted in a panic value and in a wrapped error message must never
-// reach the serialised PostHog batch.
+// reach the serialized PostHog batch.
 func TestErrorHandler_SecretsNeverReachPostHog(t *testing.T) {
 	captureLogs(t)
-	const panicSecret = "PANIC-SECRET-7f3a"
-	const errSecret = "ERR-SECRET-9c1d"
-	const pathSecret = "/srv/budgero/data/user_db/u-9c1d.db"
+	const panicMarker = "PANIC-MARKER-7f3a"
+	const errMarker = "ERR-MARKER-9c1d"
+	const pathMarker = "/srv/budgero/data/user_db/u-9c1d.db"
 
 	var mu sync.Mutex
 	var bodies []string
@@ -326,20 +326,20 @@ func TestErrorHandler_SecretsNeverReachPostHog(t *testing.T) {
 	tracker := application.NewAnalyticsService(posthog.NewSender(srv.URL, "phc_test", time.Second), users, application.AnalyticsOptions{})
 
 	e := newApp(tracker)
-	e.GET("/api/v1/panic", func(echo.Context) error { panic(panicSecret) }, withUser("u1"))
-	e.GET("/api/v1/panic-err", func(echo.Context) error { panic(fmt.Errorf("wrapped %s", panicSecret)) })
+	e.GET("/api/v1/panic", func(echo.Context) error { panic(panicMarker) }, withUser("u1"))
+	e.GET("/api/v1/panic-err", func(echo.Context) error { panic(fmt.Errorf("wrapped %s", panicMarker)) })
 	e.GET("/api/v1/wrapped", func(echo.Context) error {
-		cause := fmt.Errorf("query users: %w", &fs.PathError{Op: "open", Path: pathSecret, Err: fmt.Errorf("inner %s", errSecret)})
+		cause := fmt.Errorf("query users: %w", &fs.PathError{Op: "open", Path: pathMarker, Err: fmt.Errorf("inner %s", errMarker)})
 		return appmw.InternalError(http.StatusInternalServerError, "internal server error", cause)
 	}, withUser("u1"))
-	e.GET("/api/v1/plain", func(echo.Context) error { return errors.New(errSecret) })
+	e.GET("/api/v1/plain", func(echo.Context) error { return errors.New(errMarker) })
 
-	for _, p := range []string{"/api/v1/panic?token=" + errSecret, "/api/v1/panic-err", "/api/v1/wrapped", "/api/v1/plain"} {
+	for _, p := range []string{"/api/v1/panic?token=" + errMarker, "/api/v1/panic-err", "/api/v1/wrapped", "/api/v1/plain"} {
 		rec := do(e, http.MethodGet, p)
 		if rec.Code != 500 {
 			t.Fatalf("%s: status %d", p, rec.Code)
 		}
-		if strings.Contains(rec.Body.String(), "SECRET") || strings.Contains(rec.Body.String(), "user_db") {
+		if strings.Contains(rec.Body.String(), "MARKER") || strings.Contains(rec.Body.String(), "user_db") {
 			t.Fatalf("%s: response leaks: %s", p, rec.Body.String())
 		}
 	}
@@ -354,7 +354,7 @@ func TestErrorHandler_SecretsNeverReachPostHog(t *testing.T) {
 	if strings.Count(all, `"event":"$exception"`) != 4 {
 		t.Fatalf("want 4 $exception events, got batch:\n%s", all)
 	}
-	for _, needle := range []string{panicSecret, errSecret, pathSecret, "user_db", "token=", "query users", "inner ", "permission"} {
+	for _, needle := range []string{panicMarker, errMarker, pathMarker, "user_db", "token=", "query users", "inner ", "permission"} {
 		if strings.Contains(all, needle) {
 			t.Errorf("PostHog batch contains %q:\n%s", needle, all)
 		}
@@ -396,9 +396,12 @@ func TestErrorHandler_OptedOutUserExceptionIsDropped(t *testing.T) {
 	if len(got) != 2 {
 		t.Fatalf("events = %+v, want loud + server only", got)
 	}
-	ids := []string{got[0].DistinctID, got[1].DistinctID}
-	if ids[0] != "loud" || ids[1] != application.ServerDistinctID {
-		t.Errorf("distinct ids = %v", ids)
+	ids := make([]string, 0, len(got))
+	for _, ev := range got {
+		ids = append(ids, ev.DistinctID)
+	}
+	if want := "[loud " + application.ServerDistinctID + "]"; fmt.Sprint(ids) != want {
+		t.Errorf("distinct ids = %v, want %s", ids, want)
 	}
 }
 

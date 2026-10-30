@@ -62,7 +62,7 @@ type ServerException struct {
 
 // Event builds the $exception event. Flat properties are enum/identifier
 // strings; the structured $exception_list goes through Payload.
-func (x ServerException) Event() Event {
+func (x *ServerException) Event() Event {
 	typ := x.Type
 	if typ == "" {
 		typ = "error"

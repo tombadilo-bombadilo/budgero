@@ -125,14 +125,17 @@ func (s *AnalyticsService) Track(userID string, event analytics.Event) {
 	if !s.Enabled() || userID == "" || !event.Valid() {
 		return
 	}
-	s.enqueue(queuedEvent{userID: userID, event: event, at: s.now()})
+	s.enqueue(&queuedEvent{userID: userID, event: event, at: s.now()})
 }
 
 // CaptureException queues a $exception event. With a user it is subject to
 // that user's opt-out like any other event; without one it is attributed to
 // ServerDistinctID and always sent.
-func (s *AnalyticsService) CaptureException(distinctID string, exc analytics.ServerException) {
+func (s *AnalyticsService) CaptureException(distinctID string, exc *analytics.ServerException) {
 	if !s.Enabled() {
+		return
+	}
+	if exc == nil {
 		return
 	}
 	q := queuedEvent{userID: distinctID, event: exc.Event(), at: s.now()}
@@ -140,17 +143,17 @@ func (s *AnalyticsService) CaptureException(distinctID string, exc analytics.Ser
 		q.userID = ServerDistinctID
 		q.noOptOut = true
 	}
-	s.enqueue(q)
+	s.enqueue(&q)
 }
 
-func (s *AnalyticsService) enqueue(q queuedEvent) {
+func (s *AnalyticsService) enqueue(q *queuedEvent) {
 	select {
 	case <-s.stop:
 		return
 	default:
 	}
 	select {
-	case s.queue <- q:
+	case s.queue <- *q:
 	default:
 		s.dropped.Add(1)
 	}

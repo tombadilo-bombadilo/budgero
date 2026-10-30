@@ -446,7 +446,7 @@ type AnalyticsTracker interface {
 
 	// CaptureException queues a server exception. distinctID is the
 	// authenticated user (opt-out applies) or "" for the server itself.
-	CaptureException(distinctID string, exc analytics.ServerException)
+	CaptureException(distinctID string, exc *analytics.ServerException)
 
 	// SetOptOut updates the cached opt-out flag after the user changes it.
 	SetOptOut(userID string, disabled bool)

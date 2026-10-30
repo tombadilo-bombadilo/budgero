@@ -32,14 +32,13 @@ func RequestLogger(redactURI func(string) string) echo.MiddlewareFunc {
 			if logged, _ := c.Get(errorLoggedKey).(bool); logged {
 				return nil
 			}
-			logger := Logger(c)
-			var ev *zerolog.Event
+			level := zerolog.WarnLevel
 			if v.Status >= 500 {
-				ev = logger.Error()
-			} else {
-				ev = logger.Warn()
+				level = zerolog.ErrorLevel
 			}
-			ev.Int("status", v.Status).
+			logger := Logger(c)
+			logger.WithLevel(level).
+				Int("status", v.Status).
 				Str("method", v.Method).
 				Str("uri", redactURI(v.URI)).
 				Err(v.Error).
