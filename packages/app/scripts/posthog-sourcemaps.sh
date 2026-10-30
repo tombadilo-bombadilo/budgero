@@ -13,7 +13,9 @@
 #
 # verify/upload expect dist built with APP_SOURCEMAPS=hidden. In every mode the
 # maps are deleted afterwards and the script fails if any is left, so they are
-# never served. A PostHog failure only warns: it must not block a release.
+# never served. In upload mode any failure (CLI download, inject, upload, no
+# release id in the bundle) fails the build: a Cloud release without symbols is
+# blind for its whole life (v1.19.4 shipped that way), so it is not a release.
 set -eu
 
 dist=$1
@@ -43,7 +45,7 @@ if [ "$mode" = verify ] || [ "$mode" = upload ]; then
     if [ "$mode" = verify ]; then
       # shellcheck disable=SC2086
       "$cli" --dry-run sourcemap process --directory "$dist" $release \
-        || echo "WARNING: posthog-cli dry run failed"
+        || { echo "ERROR: posthog-cli dry run failed" >&2; exit 1; }
     else
       POSTHOG_CLI_API_KEY=$(cat /run/secrets/posthog_cli_token)
       POSTHOG_CLI_PROJECT_ID=$(cat /run/secrets/posthog_cli_env_id)
@@ -51,14 +53,21 @@ if [ "$mode" = verify ] || [ "$mode" = upload ]; then
       # shellcheck disable=SC2086
       if "$cli" --host https://eu.posthog.com sourcemap inject --directory "$dist" $release \
         && "$cli" --host https://eu.posthog.com sourcemap upload --directory "$dist" $release --delete-after; then
-        echo "==> PostHog source maps uploaded for budgero-app@$version"
+        injected=$(grep -l '_posthogReleaseId' "$dist"/assets/*.js 2>/dev/null | wc -l | tr -d ' ')
+        if [ "$injected" = 0 ]; then
+          echo "ERROR: no chunk carries a PostHog release id after inject" >&2
+          exit 1
+        fi
+        echo "==> PostHog source maps uploaded for budgero-app@$version ($injected chunks)"
       else
-        echo "WARNING: PostHog source map upload failed; the image is built without it"
+        echo "ERROR: PostHog source map inject/upload failed" >&2
+        exit 1
       fi
       unset POSTHOG_CLI_API_KEY POSTHOG_CLI_PROJECT_ID
     fi
   else
-    echo "WARNING: could not fetch posthog-cli $CLI_VERSION; skipping the source map upload"
+    echo "ERROR: could not fetch posthog-cli $CLI_VERSION" >&2
+    exit 1
   fi
   rm -rf "$tmp"
 fi
