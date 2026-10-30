@@ -18,6 +18,9 @@ export interface WsMessage {
   success?: boolean;
   new_version?: number;
   error?: string;
+  /** mutation_nack: the rejected mutation id and a fixed-list reason code. */
+  id?: string;
+  code?: string;
   payload?: {
     op?: string;
     args?: string | Record<string, unknown>;

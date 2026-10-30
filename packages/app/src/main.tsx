@@ -1,4 +1,5 @@
 import { createRoot } from 'react-dom/client';
+import { AppErrorBoundary } from '@app/system/AppErrorBoundary';
 import '@/fonts';
 import '@/index.css';
 import App from '@/App';
@@ -75,7 +76,11 @@ function renderAppBody() {
     initAnalytics();
     installErrorCapture();
   }
-  return <App />;
+  return (
+    <AppErrorBoundary name="root" variant="page">
+      <App />
+    </AppErrorBoundary>
+  );
 }
 
 // Catalogs load before mount so no screen renders in the wrong language first.

@@ -44,15 +44,17 @@ const VITE_POSTHOG_HOST = process.env.VITE_POSTHOG_HOST || '';
 const POSTHOG_CLI_TOKEN = process.env.POSTHOG_CLI_TOKEN || '';
 const POSTHOG_CLI_ENV_ID = process.env.POSTHOG_CLI_ENV_ID || '';
 
-/** Docker args for the source map step. Missing secrets skip it, never fail. */
+/**
+ * Docker args for the source map step. A real release needs the PostHog
+ * credentials: an image without symbols cannot be debugged for its whole life.
+ */
 function sourcemapBuildArgs() {
   // A dry run checks the step without credentials and sends nothing.
   if (dryRun) return ['--build-arg POSTHOG_SOURCEMAPS=verify'];
   if (!POSTHOG_CLI_TOKEN || !POSTHOG_CLI_ENV_ID) {
-    console.log(
-      '::notice title=PostHog source maps::POSTHOG_CLI_TOKEN or POSTHOG_CLI_ENV_ID is not set; building without the source map upload.'
+    throw new Error(
+      'POSTHOG_CLI_TOKEN and POSTHOG_CLI_ENV_ID must be set: the Cloud image is not released without its source maps.'
     );
-    return [];
   }
   // Values are read by buildx from the environment, not put on the command line.
   return [

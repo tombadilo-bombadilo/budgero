@@ -34,7 +34,7 @@ import {
 } from '@features/ai/lib/tools';
 import { buildBudgetContext } from '@budgero/core/browser';
 import { executeReportQuery, type SqlDatabase } from '@shared/lib/sql/report-query-executor';
-import { getErrorMessage } from '@shared/lib/errors';
+import { getErrorMessage, toastError } from '@shared/lib/errors';
 import type { ToolContext } from '@features/ai/lib/tools/types';
 import {
   getMostRecentConversation,
@@ -349,12 +349,18 @@ export function useChatPanelState() {
       track('ai_message_sent', { outcome: 'error', error_code: toErrorCode(error, 'ai') });
       const errorMsg = getErrorMessage(error, String(error));
       console.error('[Chat] handleSend error:', errorMsg, error);
-      await addMessage.mutateAsync({
-        conversationId: activeConversationId,
-        budgetId,
-        role: 'assistant',
-        content: `Sorry, I encountered an error: ${errorMsg}`,
-      });
+      try {
+        await addMessage.mutateAsync({
+          conversationId: activeConversationId,
+          budgetId,
+          role: 'assistant',
+          content: `Sorry, I encountered an error: ${errorMsg}`,
+        });
+      } catch (saveError) {
+        // The failure above may be the database itself (seen in production as an
+        // unhandled DatabaseError): tell the user instead of throwing again.
+        toastError(t`Could not save the message`, saveError);
+      }
     } finally {
       setIsGenerating(false);
       setStreamingToolEvents([]);

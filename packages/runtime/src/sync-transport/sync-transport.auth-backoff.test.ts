@@ -97,7 +97,7 @@ describe('SyncTransport auth and visibility handling', () => {
     };
     const transport = new SyncTransport('space_1', deps);
     const statuses: (string | null)[] = [];
-    transport.addSyncStatusListener((s) => statuses.push(s.syncError));
+    transport.addSyncStatusListener((s) => statuses.push(s.syncError?.message ?? null));
     return { transport, deps, statuses };
   }
 

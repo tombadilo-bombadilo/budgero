@@ -9,6 +9,7 @@
  * Everything else delegates to RuntimeCoordinator from @budgero/runtime.
  */
 
+import { runtimeErrorBridge } from '@shared/runtime/runtime-error-bridge';
 import {
   FormatTooNewError,
   normalizeMutationPayload,
@@ -109,6 +110,8 @@ export class AppRuntime {
       }
     };
     deps.resolveHistoryBudgetId = (context) => this.resolveHistoryBudgetId(context);
+    // Runtime warn/error logs become error reports (console output alone is stripped in prod).
+    deps.runtimeLog = runtimeErrorBridge;
 
     this.coordinator = new RuntimeCoordinator(deps);
   }

@@ -191,9 +191,9 @@ jobs:
           VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.VITE_CLERK_PUBLISHABLE_KEY }}
           VITE_POSTHOG_KEY: ${{ secrets.VITE_POSTHOG_KEY }}
           VITE_POSTHOG_HOST: ${{ secrets.VITE_POSTHOG_HOST }}
-          # Optional: upload the app's source maps to PostHog error tracking
-          # (maps are deleted before the image is built). When either secret is
-          # missing, the image builds as before and a notice says it was skipped.
+          # Required: upload the app's source maps to PostHog error tracking
+          # (maps are deleted before the image is built). A missing secret or a
+          # failed upload fails the Cloud build: no release without symbols.
           POSTHOG_CLI_TOKEN: ${{ secrets.POSTHOG_CLI_TOKEN }}
           POSTHOG_CLI_ENV_ID: ${{ secrets.POSTHOG_CLI_ENV_ID }}
 

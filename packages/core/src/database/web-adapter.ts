@@ -3,6 +3,7 @@ import {
   Statement,
   DatabaseOptions,
   DatabaseError,
+  classifySqliteError,
   LocalPersistenceCipher,
   SqlFunctionValue,
 } from './interface.js';
@@ -171,7 +172,10 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
         throw error;
       }
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new DatabaseError(`Failed to initialize web database: ${errorMsg}`);
+      throw new DatabaseError(
+        `Failed to initialize web database: ${errorMsg}`,
+        classifySqliteError(errorMsg)
+      );
     }
   }
 
@@ -333,7 +337,8 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);
           throw new DatabaseError(
-            `Query execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}] [Params: ${JSON.stringify(params)}]`
+            `Query execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}] [Params: ${JSON.stringify(params)}]`,
+            classifySqliteError(errorMsg)
           );
         }
       },
@@ -349,7 +354,8 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);
           throw new DatabaseError(
-            `Query execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}] [Params: ${JSON.stringify(params)}]`
+            `Query execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}] [Params: ${JSON.stringify(params)}]`,
+            classifySqliteError(errorMsg)
           );
         }
       },
@@ -372,7 +378,8 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);
           throw new DatabaseError(
-            `Query execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}] [Params: ${JSON.stringify(params)}]`
+            `Query execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}] [Params: ${JSON.stringify(params)}]`,
+            classifySqliteError(errorMsg)
           );
         }
       },
@@ -391,7 +398,10 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
       return result;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      throw new DatabaseError(`SQL execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}]`);
+      throw new DatabaseError(
+        `SQL execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}]`,
+        classifySqliteError(errorMsg)
+      );
     }
   }
 

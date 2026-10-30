@@ -1,7 +1,16 @@
 import React, { useEffect } from 'react';
 import AppRouter from '@/app/router';
 import { Toaster as SonnerToaster } from '@shared/ui/sonner';
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import {
+  MutationCache,
+  QueryCache,
+  QueryClient,
+  QueryClientProvider,
+  useQueryClient,
+} from '@tanstack/react-query';
+import { captureAppError } from '@shared/lib/analytics/error-capture';
+import { toErrorCode } from '@shared/lib/analytics/error-codes';
+import { AppErrorBoundary } from '@app/system/AppErrorBoundary';
 import { ThemeProvider } from 'next-themes';
 import { RuntimeProvider } from '@shared/runtime/runtime-provider';
 import { ReconnectionOverlay } from '@app/system/ReconnectionOverlay';
@@ -88,7 +97,36 @@ function dispatchStartupIntent(intent: string): void {
   );
 }
 
+/** Codes that are not bugs: connectivity and session expiry are tracked by their own events. */
+const NOT_A_BUG = new Set(['network', 'offline', 'timeout', 'cancelled', 'unauthorized']);
+
+/** Report every failed query/mutation once; the hooks keep their own toasts. */
+function reportCacheError(
+  error: unknown,
+  source: 'query' | 'mutation',
+  label: unknown,
+  meta: Record<string, unknown> | undefined
+): void {
+  const code = toErrorCode(error);
+  if (NOT_A_BUG.has(code)) return;
+  const name =
+    typeof meta?.label === 'string' ? meta.label : typeof label === 'string' ? label : undefined;
+  captureAppError(error, {
+    source,
+    handled: true,
+    component: name ? `${source}:${name}` : source,
+    code,
+  });
+}
+
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: (error, query) => reportCacheError(error, 'query', query.queryKey[0], query.meta),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, _variables, _context, mutation) =>
+      reportCacheError(error, 'mutation', mutation.options.mutationKey?.[0], mutation.meta),
+  }),
   defaultOptions: {
     queries: {
       retry: 1,
@@ -278,8 +316,10 @@ function AppContentBase({ topSlot }: { topSlot?: React.ReactNode }) {
       {/* SW update prompts handled via ServiceWorkerUpdateProvider */}
       <GlobalUndoHotkeys />
       <AppRouter />
-      <ChatBubble />
-      <ChatPanel />
+      <AppErrorBoundary name="chat" variant="hidden">
+        <ChatBubble />
+        <ChatPanel />
+      </AppErrorBoundary>
       <ReconnectionOverlay isVisible={isVisible} phase={phase} onComplete={hideOverlay} />
       <CurrencyConversionOverlay
         isVisible={currencyConversion.isActive}

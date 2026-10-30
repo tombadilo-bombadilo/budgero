@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { buildExceptionProps, errorFromEvent, parseStackFrames } from './error-capture';
+import {
+  __resetErrorCaptureForTests,
+  addBreadcrumb,
+  buildExceptionProps,
+  errorFromEvent,
+  parseStackFrames,
+  slugifyEvent,
+} from './error-capture';
 import { syncErrorCode, toErrorCode } from './error-codes';
 
 const posthog = { init: vi.fn(), capture: vi.fn(), identify: vi.fn(), reset: vi.fn() };
@@ -59,7 +66,7 @@ describe('error capture scrubbing', () => {
     expectNoSecret(props);
     const exception = exceptionOf(props);
     expect(exception.type).toBe('TypeError');
-    expect(exception.value).toBe('TypeError');
+    expect(exception.value).toBe('TypeError · unknown · /');
     expect(props.error_code).toBe('unknown');
     expect(exception.stacktrace.frames).toEqual([
       { platform: 'web:javascript', filename: '<external>', lineno: 3, colno: 4, in_app: false },
@@ -178,7 +185,7 @@ describe('error capture scrubbing', () => {
       source: 'onerror',
     });
     expect(Object.keys(props).sort()).toEqual(
-      ['$exception_level', '$exception_list', 'area', 'error_code'].sort()
+      ['$exception_level', '$exception_list', 'area', 'breadcrumbs', 'error_code', 'online'].sort()
     );
     expect(props.$exception_level).toBe('error');
     const list = props.$exception_list as ExceptionEntry[];
@@ -211,7 +218,7 @@ describe('error capture scrubbing', () => {
     const error = Object.assign(new Error(SECRET), { name: 'ApiError', status: 429 });
     const exception = exceptionOf(buildExceptionProps(error, { handled: true, source: 'manual' }));
     expect(exception.type).toBe('ApiError');
-    expect(exception.value).toBe('rate_limited');
+    expect(exception.value).toBe('ApiError · rate_limited · /');
   });
 
   it('keeps DOMException names', () => {
@@ -340,7 +347,7 @@ describe('error capture end to end', () => {
   it('sends type and frames but never the message', async () => {
     const { track, capture } = await load();
     track.setAnalyticsSubject({ kind: 'user', id: 'u1', optedOut: false });
-    capture.captureAppError(minifiedChromeTypeError(), 'onerror', false);
+    capture.captureAppError(minifiedChromeTypeError(), { source: 'onerror', handled: false });
     await settle();
     const events = sent(track);
     expect(events).toHaveLength(1);
@@ -353,7 +360,7 @@ describe('error capture end to end', () => {
   it('sends nothing when opted out', async () => {
     const { track, capture } = await load();
     track.setAnalyticsSubject({ kind: 'user', id: 'u1', optedOut: true });
-    capture.captureAppError(minifiedChromeTypeError(), 'onerror', false);
+    capture.captureAppError(minifiedChromeTypeError(), { source: 'onerror', handled: false });
     await settle();
     expect(posthog.init).not.toHaveBeenCalled();
     expect(posthog.capture).not.toHaveBeenCalled();
@@ -363,7 +370,7 @@ describe('error capture end to end', () => {
     envState.selfHost = true;
     const { track, capture } = await load();
     track.setAnalyticsSubject({ kind: 'anonymous' });
-    capture.captureAppError(minifiedChromeTypeError(), 'onerror', false);
+    capture.captureAppError(minifiedChromeTypeError(), { source: 'onerror', handled: false });
     await settle();
     expect(posthog.init).not.toHaveBeenCalled();
     expect(posthog.capture).not.toHaveBeenCalled();
@@ -384,10 +391,105 @@ describe('error codes', () => {
     expect(toErrorCode(new Error(SECRET))).toBe('unknown');
   });
 
-  it('maps sync messages to codes', () => {
-    expect(syncErrorCode('This device needs an app update to apply newer changes.')).toBe(
-      'version_mismatch'
-    );
-    expect(syncErrorCode(SECRET)).toBe('unknown');
+  it('maps runtime sync error codes, never free text', () => {
+    expect(syncErrorCode({ code: 'update_required' })).toBe('update_required');
+    expect(syncErrorCode({ code: SECRET })).toBe('unknown');
+  });
+});
+
+describe('error capture context (component, event, request id, breadcrumbs)', () => {
+  beforeEach(() => {
+    __resetErrorCaptureForTests();
+  });
+
+  it('titles the issue with type · code · component and keeps the code', () => {
+    const props = buildExceptionProps(minifiedChromeTypeError(), {
+      handled: true,
+      source: 'react',
+      component: 'route',
+      code: 'render_error',
+    });
+    expectNoSecret(props);
+    expect(exceptionOf(props).value).toBe('TypeError · render_error · route');
+    expect(props.component).toBe('route');
+    expect(props.error_code).toBe('render_error');
+    expect(exceptionOf(props).mechanism).toEqual({
+      handled: true,
+      synthetic: false,
+      type: 'react',
+    });
+  });
+
+  it('falls back to the route when the component is not one of our identifiers', () => {
+    const props = buildExceptionProps(new TypeError('x'), {
+      handled: true,
+      source: 'mutation',
+      component: `mutation:${SECRET}`,
+      event: 'has spaces and "quotes"',
+    });
+    expectNoSecret(props);
+    expect(props.component).toBeUndefined();
+    expect(props.runtime_event).toBeUndefined();
+    expect(exceptionOf(props).value).toBe(`TypeError · unknown · ${window.location.pathname}`);
+  });
+
+  it('keeps a well-formed request id from a failed API call and nothing else from it', () => {
+    const error = Object.assign(new Error(SECRET), {
+      name: 'ApiError',
+      status: 500,
+      response: SECRET,
+      requestId: 'f00dbabecafe0042',
+    });
+    const props = buildExceptionProps(error, { handled: true, source: 'query' });
+    expectNoSecret(props);
+    expect(props.request_id).toBe('f00dbabecafe0042');
+    expect(props.error_code).toBe('server_error');
+  });
+
+  it('attaches breadcrumbs made of routes, components and slugs, never free text', () => {
+    addBreadcrumb('route', '/accounts/acc_987654321');
+    addBreadcrumb('runtime', `SyncTransport:${slugifyEvent('Blob upload failed; retry armed')}`);
+    addBreadcrumb('runtime', `SyncTransport:${slugifyEvent('Blob upload failed; retry armed')}`); // repeat collapses
+    addBreadcrumb('ui', SECRET); // not an identifier: dropped
+    const props = buildExceptionProps(new Error('x'), { handled: false, source: 'onerror' });
+    expectNoSecret(props);
+    expect(props.breadcrumbs).toEqual([
+      { k: 'route', n: '/accounts/:accountId', ago_s: expect.any(Number) },
+      {
+        k: 'runtime',
+        n: 'SyncTransport:blob_upload_failed_retry_armed',
+        ago_s: expect.any(Number),
+      },
+    ]);
+  });
+
+  it('reports a retry loop once per minute per type/code/component', async () => {
+    envState.selfHost = false;
+    vi.resetModules();
+    vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
+    for (const fn of Object.values(posthog)) fn.mockReset();
+    const track = await import('./track');
+    const capture = await import('./error-capture');
+    track.setAnalyticsSubject({ kind: 'user', id: 'user_1', optedOut: false });
+
+    for (let i = 0; i < 5; i++) {
+      capture.captureAppError(new Error(`attempt ${i}`), {
+        source: 'runtime',
+        component: 'DatabaseSync',
+        event: 'upload_failed',
+      });
+    }
+    capture.captureAppError(new Error('other'), {
+      source: 'runtime',
+      component: 'DatabaseSync',
+      event: 'restore_failed',
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    const exceptions = posthog.capture.mock.calls.filter(([name]) => name === '$exception');
+    expect(
+      exceptions.map(([, props]) => (props as { runtime_event: string }).runtime_event)
+    ).toEqual(['upload_failed', 'restore_failed']);
+    vi.unstubAllEnvs();
   });
 });

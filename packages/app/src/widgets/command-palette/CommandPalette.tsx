@@ -107,6 +107,8 @@ export function CommandPalette() {
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      // Autofill and some IMEs dispatch keydown without a key (seen in production).
+      if (typeof e.key !== 'string') return;
       const key = e.key.toLowerCase();
       const { code } = e; // code is layout-agnostic and unaffected by Option/Alt combos
 

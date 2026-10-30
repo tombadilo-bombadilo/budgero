@@ -2,21 +2,52 @@
  * Scrubbed error reports (PostHog error tracking, `$exception`).
  *
  * What leaves the device: the error type/name, our error_code, the normalized
- * route (area) and stack frames (same-origin path, line, column, minified
- * function name, PostHog chunk id). Never the message text, locals, arguments,
- * breadcrumbs or full URLs. Frames from other origins become `<external>`.
+ * route (area), the component that caught it, stack frames (same-origin path,
+ * line, column, minified function name, PostHog chunk id), the request id of
+ * a failed API call, and breadcrumbs made of our own route/component names.
+ * Never the message text, locals, arguments, user content or full URLs.
+ * Frames from other origins become `<external>`.
+ *
+ * Capture paths (all end in captureAppError): window error +
+ * unhandledrejection (main.tsx), React error boundaries (AppErrorBoundary),
+ * TanStack query/mutation caches (App.tsx), runtime warn/error logs
+ * (runtime-error-bridge.ts).
  *
  * The event follows PostHog's `$exception_list` format so error tracking can
  * group issues (type + in-app frames) and resolve frames with the source maps
  * uploaded at release time (chunk_id + $release_id, injected by posthog-cli).
  */
-import { toErrorCode } from './error-codes';
+import { toErrorCode, type ErrorArea } from './error-codes';
+import type { ErrorCode } from './events';
 import { captureScrubbedException, normalizePagePath } from './track';
 
 const MAX_FRAMES = 30;
 const MAX_PER_MINUTE = 10;
+/** One report per (type, code, component, event) per minute: retry loops count once. */
+const REPEAT_WINDOW_MS = 60_000;
+const MAX_BREADCRUMBS = 20;
 const SAFE_NAME = /^[A-Za-z_$][\w$.]{0,63}$/;
 const SAFE_ID = /^[\w.:-]{1,128}$/;
+/** Our own identifiers only: route paths, component names, log literals turned into slugs. */
+const SAFE_CRUMB = /^[\w/:.-]{1,80}$/;
+
+export type CaptureSource =
+  'onerror' | 'onunhandledrejection' | 'react' | 'query' | 'mutation' | 'runtime' | 'manual';
+
+export interface CaptureOptions {
+  /** How the error reached us (PostHog mechanism.type). */
+  source?: CaptureSource;
+  handled?: boolean;
+  /** The error object was built by us (no original Error). */
+  synthetic?: boolean;
+  /** Error boundary name, mutation/query label or runtime component. */
+  component?: string;
+  /** Runtime log literal (slugified) that produced the report. */
+  event?: string;
+  /** Mapping area for toErrorCode; an explicit `code` wins. */
+  area?: ErrorArea;
+  code?: ErrorCode;
+}
 
 export interface ScrubbedFrame {
   platform: 'web:javascript';
@@ -154,24 +185,86 @@ function stackWithoutMessage(error: unknown): string | undefined {
   return stack;
 }
 
+/** Component / event names are our own identifiers; anything else is dropped. */
+function safeLabel(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const label = raw.length > 80 ? raw.slice(0, 80) : raw;
+  return SAFE_CRUMB.test(label) ? label : undefined;
+}
+
+/** A log literal from our source ("Blob upload failed; retry armed") as a stable slug. */
+export function slugifyEvent(literal: string): string {
+  return literal
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 64);
+}
+
+function requestIdOf(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') return undefined;
+  const id = (error as { requestId?: unknown }).requestId;
+  return typeof id === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(id) ? id : undefined;
+}
+
+// ---------------------------------------------------------------------------
+// Breadcrumbs: the sequence of screens and internal events before an error.
+// Names are our own route paths, component names and log literals; no values.
+// ---------------------------------------------------------------------------
+
+export type BreadcrumbKind = 'route' | 'runtime' | 'query' | 'mutation' | 'ui';
+
+interface Breadcrumb {
+  k: BreadcrumbKind;
+  n: string;
+  t: number;
+}
+
+let crumbs: Breadcrumb[] = [];
+
+export function addBreadcrumb(kind: BreadcrumbKind, name: string): void {
+  const safe = safeLabel(kind === 'route' ? normalizePagePath(name) : name);
+  if (!safe) return;
+  const last = crumbs[crumbs.length - 1];
+  if (last && last.k === kind && last.n === safe) {
+    last.t = Date.now();
+    return;
+  }
+  crumbs.push({ k: kind, n: safe, t: Date.now() });
+  if (crumbs.length > MAX_BREADCRUMBS) crumbs.shift();
+}
+
+/** Breadcrumbs as {k, n, ago_s}, oldest first. */
+function breadcrumbsForReport(now: number): Record<string, unknown>[] {
+  return crumbs.map((c) => ({
+    k: c.k,
+    n: c.n,
+    ago_s: Math.max(0, Math.round((now - c.t) / 1000)),
+  }));
+}
+
 /** Build the `$exception` props for an error. Exported for tests. */
 export function buildExceptionProps(
   error: unknown,
-  options: { handled: boolean; source: string; synthetic?: boolean }
+  options: Omit<CaptureOptions, 'source'> & { handled: boolean; source: string }
 ): Record<string, unknown> {
   const type = errorType(error);
-  const code = toErrorCode(error, 'app');
+  const code = options.code ?? toErrorCode(error, options.area ?? 'app');
   const stack = stackWithoutMessage(error);
   const area =
     typeof window !== 'undefined' ? normalizePagePath(window.location.pathname) : 'unknown';
+  const component = safeLabel(options.component);
+  const event = safeLabel(options.event);
+  const requestId = requestIdOf(error);
   const release = releaseId();
+  const now = Date.now();
   return {
     $exception_list: [
       {
         type,
-        // Stable, text-free value: PostHog shows it as the issue description and
-        // falls back to type + value for grouping when no frame is in-app.
-        value: code === 'unknown' ? type : code,
+        // Readable, text-free issue title: PostHog shows `value` in the issue
+        // list and uses type + value for grouping when no frame is in-app.
+        value: [type, code, component ?? area].join(' · '),
         mechanism: {
           handled: options.handled,
           synthetic: options.synthetic ?? false,
@@ -184,32 +277,53 @@ export function buildExceptionProps(
     ...(release ? { $release_id: release } : {}),
     error_code: code,
     area,
+    ...(component ? { component } : {}),
+    ...(event ? { runtime_event: event } : {}),
+    ...(requestId ? { request_id: requestId } : {}),
+    online: typeof navigator === 'undefined' ? 'unknown' : navigator.onLine ? 'yes' : 'no',
+    breadcrumbs: breadcrumbsForReport(now),
   };
 }
 
 let windowStart = 0;
 let windowCount = 0;
 const seen = new WeakSet();
+const recent = new Map<string, number>();
 
-/** Report one error (deduplicated, rate limited). */
-export function captureAppError(
-  error: unknown,
-  source = 'manual',
-  handled = true,
-  synthetic = false
-): void {
-  if (error && typeof error === 'object') {
-    if (seen.has(error)) return;
-    seen.add(error);
-  }
-  const now = Date.now();
-  if (now - windowStart > 60_000) {
-    windowStart = now;
-    windowCount = 0;
-  }
-  if (++windowCount > MAX_PER_MINUTE) return;
+function isRepeat(props: Record<string, unknown>, now: number): boolean {
+  const key = [
+    (props.$exception_list as { type: string }[])[0].type,
+    props.error_code,
+    props.component ?? '',
+    props.runtime_event ?? '',
+  ].join('|');
+  const last = recent.get(key);
+  if (last !== undefined && now - last < REPEAT_WINDOW_MS) return true;
+  if (recent.size > 200) recent.clear();
+  recent.set(key, now);
+  return false;
+}
+
+/** Report one error (deduplicated, rate limited). Never throws. */
+export function captureAppError(error: unknown, options: CaptureOptions = {}): void {
   try {
-    captureScrubbedException(buildExceptionProps(error, { handled, source, synthetic }));
+    if (error && typeof error === 'object') {
+      if (seen.has(error)) return;
+      seen.add(error);
+    }
+    const now = Date.now();
+    if (now - windowStart > 60_000) {
+      windowStart = now;
+      windowCount = 0;
+    }
+    if (++windowCount > MAX_PER_MINUTE) return;
+    const props = buildExceptionProps(error, {
+      ...options,
+      handled: options.handled ?? true,
+      source: options.source ?? 'manual',
+    });
+    if (isRepeat(props, now)) return;
+    captureScrubbedException(props);
   } catch {
     /* never let reporting throw */
   }
@@ -249,9 +363,17 @@ export function installErrorCapture(): void {
   window.addEventListener('error', (event: ErrorEvent) => {
     const error = errorFromEvent(event);
     if (error == null) return;
-    captureAppError(error, 'onerror', false, event.error == null);
+    captureAppError(error, { source: 'onerror', handled: false, synthetic: event.error == null });
   });
   window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
-    captureAppError(event.reason, 'onunhandledrejection', false);
+    captureAppError(event.reason, { source: 'onunhandledrejection', handled: false });
   });
+}
+
+/** Test-only: reset module state. */
+export function __resetErrorCaptureForTests(): void {
+  windowStart = 0;
+  windowCount = 0;
+  recent.clear();
+  crumbs = [];
 }

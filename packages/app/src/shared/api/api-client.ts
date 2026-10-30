@@ -11,13 +11,18 @@ import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import { useSelfHostAuth } from '@shared/model/useSelfHostAuth';
 
 export class ApiError extends Error {
+  /** Server-minted X-Request-Id of the failed call, for correlating error reports with server logs. */
+  public requestId?: string;
+
   constructor(
     message: string,
     public status: number,
-    public response?: unknown
+    public response?: unknown,
+    requestId?: string | null
   ) {
     super(message);
     this.name = 'ApiError';
+    if (requestId && /^[A-Za-z0-9_-]{8,64}$/.test(requestId)) this.requestId = requestId;
   }
 }
 
@@ -86,7 +91,12 @@ class ApiClient {
           notifyUpdateRequired('server-426');
         }
         const errorText = await response.text();
-        throw new ApiError(errorText || `HTTP ${response.status}`, response.status, errorText);
+        throw new ApiError(
+          errorText || `HTTP ${response.status}`,
+          response.status,
+          errorText,
+          response.headers.get('x-request-id')
+        );
       }
 
       return response;

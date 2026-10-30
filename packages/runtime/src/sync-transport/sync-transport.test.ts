@@ -151,6 +151,28 @@ describe('SyncTransport', () => {
     }
   );
 
+  it('surfaces a server mutation_nack as a coded sync error and keeps syncing', async () => {
+    const { transport } = createTransport();
+    const statuses: unknown[] = [];
+    transport.addSyncStatusListener((s) => statuses.push(s.syncError));
+    await transport.connect();
+    const ws = FakeWebSocket.instances[0]!;
+    ws.emitOpen();
+
+    ws.emitMessage({ type: 'mutation_nack', id: 'm_1', code: 'storage_error' });
+    expect(statuses.at(-1)).toEqual({
+      code: 'mutation_rejected',
+      message: expect.any(String),
+      detail: 'storage_error',
+    });
+
+    // Unknown server codes are not passed through verbatim.
+    ws.emitMessage({ type: 'mutation_nack', id: 'm_2', code: 'something with details' });
+    expect(statuses.at(-1)).toEqual(expect.objectContaining({ detail: 'other' }));
+    expect(ws.readyState).toBe(FakeWebSocket.OPEN);
+    transport.destroy();
+  });
+
   it('does not overwrite a newer session cursor when a save completes after destroy', async () => {
     const persisted = deferred<boolean>();
     const persistLocalDatabase = vi.fn(() => persisted.promise);
@@ -1154,7 +1176,10 @@ describe('SyncTransport', () => {
     expect(transport.getLocalVersion()).toBe(9);
     expect(onSyncStatus).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        syncError: expect.stringContaining('c9'),
+        syncError: expect.objectContaining({
+          code: 'mutation_quarantined',
+          message: expect.stringContaining('c9'),
+        }),
       })
     );
     transport.destroy();
@@ -1364,7 +1389,10 @@ describe('SyncTransport', () => {
     const ws = FakeWebSocket.instances[0]!;
     ws.emitOpen();
 
-    transport.updateSyncStatus({ isSyncing: true, syncError: 'x' });
+    transport.updateSyncStatus({
+      isSyncing: true,
+      syncError: { code: 'snapshot_upload_failed', message: 'x' },
+    });
     expect(onSync).toHaveBeenCalled();
 
     offConn();

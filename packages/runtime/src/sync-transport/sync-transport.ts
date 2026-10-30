@@ -40,10 +40,27 @@ export type OverlayPhase = 'syncing' | 'success' | 'hidden';
 export type OverlayListener = (phase: OverlayPhase) => void;
 export type SyncStatusListener = (status: SyncStatus) => void;
 
+/** Why sync stopped or skipped something. `code` is what gets reported; `message` is for the UI. */
+export type SyncErrorCode =
+  | 'session_expired'
+  | 'session_rejected'
+  | 'update_required'
+  | 'mutation_quarantined'
+  | 'snapshot_unavailable'
+  | 'snapshot_upload_failed'
+  | 'mutation_rejected';
+
+export interface SyncError {
+  code: SyncErrorCode;
+  message: string;
+  /** Fixed-list refinement (e.g. 'format_too_new', '5xx', a server nack code). */
+  detail?: string;
+}
+
 export interface SyncStatus {
   isSyncing: boolean;
   lastSyncTime: Date | null;
-  syncError: string | null;
+  syncError: SyncError | null;
 }
 
 /** Shown when sync stops because there is no usable sign-in session. */
@@ -53,6 +70,19 @@ export const SYNC_SESSION_EXPIRED_MESSAGE =
 /** Shown when the server keeps refusing the sync handshake while its API is up. */
 export const SYNC_SESSION_REJECTED_MESSAGE =
   'Sync is paused because the server did not accept this session. Sign in again to resume syncing.';
+
+export const SYNC_SESSION_EXPIRED: SyncError = {
+  code: 'session_expired',
+  message: SYNC_SESSION_EXPIRED_MESSAGE,
+};
+
+export const SYNC_SESSION_REJECTED: SyncError = {
+  code: 'session_rejected',
+  message: SYNC_SESSION_REJECTED_MESSAGE,
+};
+
+/** Server nack codes we pass through as `detail`; anything else becomes 'other'. */
+const NACK_CODES = new Set(['invalid', 'format_too_new', 'storage_error', 'internal']);
 
 /** Consecutive auth failures before the app is told the session is gone. */
 const AUTH_FAILURES_BEFORE_SURFACING = 3;
@@ -95,7 +125,7 @@ export class SyncTransport {
   private authFailures = 0;
 
   /** Which syncError (if any) this transport set for an auth problem. */
-  private authErrorShown: string | null = null;
+  private authErrorShown: SyncError | null = null;
 
   /** A reconnect was wanted while the page was hidden; run it on visible. */
   private reconnectDeferredWhileHidden = false;
@@ -338,7 +368,7 @@ export class SyncTransport {
       // tab). The server would refuse the handshake, so don't open one:
       // wait for a fresh token with backoff, or for visible/online/auth
       // changes to retry sooner.
-      this.noteAuthFailure(SYNC_SESSION_EXPIRED_MESSAGE, 'no auth token');
+      this.noteAuthFailure(SYNC_SESSION_EXPIRED, 'no auth token');
       this.scheduleReconnect();
       return;
     }
@@ -662,7 +692,7 @@ export class SyncTransport {
     this.retryNow();
   }
 
-  private noteAuthFailure(message: string, reason: string): void {
+  private noteAuthFailure(error: SyncError, reason: string): void {
     this.authFailures += 1;
     if (this.authFailures === 1 || this.authFailures === AUTH_FAILURES_BEFORE_SURFACING) {
       this.log('warn', 'Sync connection waiting for a valid session', {
@@ -674,18 +704,18 @@ export class SyncTransport {
     // Only tell someone who can see it; a hidden tab finds out on return.
     if (
       this.authFailures >= AUTH_FAILURES_BEFORE_SURFACING &&
-      this.authErrorShown !== message &&
+      this.authErrorShown?.code !== error.code &&
       !isPageHidden()
     ) {
-      this.authErrorShown = message;
-      this.updateSyncStatus({ isSyncing: false, syncError: message });
+      this.authErrorShown = error;
+      this.updateSyncStatus({ isSyncing: false, syncError: error });
     }
   }
 
   private clearAuthFailures(): void {
     this.authFailures = 0;
     if (this.authErrorShown) {
-      if (this.syncStatus.syncError === this.authErrorShown) {
+      if (this.syncStatus.syncError?.code === this.authErrorShown.code) {
         this.updateSyncStatus({ syncError: null });
       }
       this.authErrorShown = null;
@@ -709,7 +739,7 @@ export class SyncTransport {
       return;
     }
     if (rejectedWhileApiUp) {
-      this.noteAuthFailure(SYNC_SESSION_REJECTED_MESSAGE, 'handshake rejected');
+      this.noteAuthFailure(SYNC_SESSION_REJECTED, 'handshake rejected');
     }
     this.scheduleReconnect();
   }
@@ -866,8 +896,30 @@ export class SyncTransport {
       this.handleMasterPasswordChanged();
     } else if (msg.type === 'encryption_key_version_ack') {
       this.handleKeyVersionAck(msg);
+    } else if (msg.type === 'mutation_nack') {
+      this.handleMutationNack(msg);
     }
     // ignore other control messages
+  }
+
+  /**
+   * The server refused a mutation (`mutation_nack`). Without this frame the
+   * client could only guess from a missing ack. The change stays in the local
+   * queue (at-least-once); the status tells the app, and the app reports the
+   * code. Server codes: invalid | format_too_new | storage_error | internal.
+   */
+  private handleMutationNack(msg: WsMessage): void {
+    const mutationId = msg.id ?? msg.mutationId ?? '';
+    const code = typeof msg.code === 'string' && NACK_CODES.has(msg.code) ? msg.code : 'other';
+    this.log('warn', 'Server rejected a mutation', { mutationId, code, spaceId: this.spaceId });
+    this.updateSyncStatus({
+      isSyncing: false,
+      syncError: {
+        code: 'mutation_rejected',
+        message: 'The server could not accept one of your changes. It is kept on this device.',
+        detail: code,
+      },
+    });
   }
 
   /**
@@ -1220,7 +1272,14 @@ export class SyncTransport {
     this.catchUpMutationBuffer = [];
     this.updateSyncStatus({
       isSyncing: false,
-      syncError: 'This device needs an app update to apply newer changes.',
+      syncError: {
+        code: 'update_required',
+        message: 'This device needs an app update to apply newer changes.',
+        detail:
+          error instanceof UnknownOpCodeError || error.name === 'UnknownOpCodeError'
+            ? 'unknown_op'
+            : 'format_too_new',
+      },
     });
     if (error instanceof UnknownOpCodeError || error.name === 'UnknownOpCodeError') {
       const { op } = error as UnknownOpCodeError;
@@ -1276,7 +1335,10 @@ export class SyncTransport {
     });
     await this.updateLocalVersion(version);
     if (this.destroyed) return;
-    this.updateSyncStatus({ isSyncing: false, syncError: message });
+    this.updateSyncStatus({
+      isSyncing: false,
+      syncError: { code: 'mutation_quarantined', message },
+    });
   }
 
   private requestCatchUpIfNeeded(ws: WebSocket | null, sinceVersion = this.localVersion): void {
@@ -1400,7 +1462,10 @@ export class SyncTransport {
         // the server has no snapshot/blob. Retrying would loop through the
         // same failure, so stop syncing this space until the next activation.
         this.syncDisabled = true;
-        this.updateSyncStatus({ isSyncing: false, syncError: errorMessage(error) });
+        this.updateSyncStatus({
+          isSyncing: false,
+          syncError: { code: 'snapshot_unavailable', message: errorMessage(error) },
+        });
         this.resolveInitialCatchUpWaiters({ completed: false, timedOut: false });
         this.log('error', 'Catch-up recovery is impossible — sync disabled for this space', {
           reason,
