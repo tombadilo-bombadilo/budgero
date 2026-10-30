@@ -97,30 +97,16 @@ func Run(selfHost bool) {
 
 	telemetry := newTelemetry(cfg, selfHost)
 
-	// First, so it sees the final status of everything below (incl. recovered
-	// panics and rate-limit rejections). No-op unless metrics are enabled.
+	// Request id first: every later middleware, handler log line and error
+	// body carries it, so a user-reported failure can be found in the logs.
+	e.Use(appmw.RequestIDMiddleware())
+	// Metrics next, so it sees the final status of everything below (incl.
+	// recovered panics and rate-limit rejections). No-op unless metrics are enabled.
 	e.Use(appmw.Metrics(telemetry))
 	e.Use(middleware.Recover())
 	// Log failed API requests: 4xx/5xx are invisible otherwise, which has
 	// hidden silent client-side failures (e.g. backup recording) for weeks.
-	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
-		LogStatus: true,
-		LogMethod: true,
-		LogURI:    true,
-		LogError:  true,
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			if v.Status < 400 {
-				return nil
-			}
-			log.Warn().
-				Int("status", v.Status).
-				Str("method", v.Method).
-				Str("uri", redactURI(v.URI)).
-				Err(v.Error).
-				Msg("request failed")
-			return nil
-		},
-	}))
+	e.Use(appmw.RequestLogger(redactURI))
 	e.Use(
 		middleware.GzipWithConfig(middleware.GzipConfig{
 			Skipper: func(c echo.Context) bool {
