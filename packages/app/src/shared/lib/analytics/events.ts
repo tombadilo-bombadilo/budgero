@@ -70,6 +70,21 @@ export const ERROR_CODES = [
   // sync
   'version_mismatch',
   'storage_error',
+  'update_required',
+  'sync_rejected',
+  'mutation_quarantined',
+  'snapshot_unavailable',
+  'snapshot_upload_failed',
+  'queue_persist_failed',
+  // local database (SQLite failure class, never the message)
+  'db_constraint',
+  'db_locked',
+  'db_corrupt',
+  'db_readonly',
+  'db_full',
+  'db_error',
+  // rendering
+  'render_error',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 

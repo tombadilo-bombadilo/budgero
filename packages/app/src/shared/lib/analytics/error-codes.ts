@@ -28,6 +28,24 @@ function statusCode(status: number): ErrorCode | null {
   return null;
 }
 
+/** `DatabaseError.code` is a SQLite failure class set by the adapter (core classifySqliteError). */
+function databaseErrorCode(code: unknown): ErrorCode {
+  switch (code) {
+    case 'constraint':
+      return 'db_constraint';
+    case 'locked':
+      return 'db_locked';
+    case 'corrupt':
+      return 'db_corrupt';
+    case 'readonly':
+      return 'db_readonly';
+    case 'full':
+      return 'db_full';
+    default:
+      return 'db_error';
+  }
+}
+
 /**
  * Best-effort mapping of an unknown error to an ErrorCode. Messages are
  * inspected only to recognise a few fixed browser/library strings (fetch
@@ -50,6 +68,11 @@ export function toErrorCode(error: unknown, area: ErrorArea = 'app'): ErrorCode 
     return 'network';
   }
   if (name === 'FormatTooNewError') return 'format_too_new';
+  if (name === 'DatabaseError') return databaseErrorCode(e.code);
+  if (name === 'ApiError' && e.status === 0) {
+    // api-client uses status 0 for its own failures: an aborted timeout or a fetch that never got a response.
+    return (e as { response?: unknown }).response === 'timeout' ? 'timeout' : 'network';
+  }
 
   if (area === 'bank') {
     if (name === 'InvalidPrivateKeyError') return 'invalid_key';
@@ -81,13 +104,24 @@ export function toErrorCode(error: unknown, area: ErrorArea = 'app'): ErrorCode 
  * The runtime reports sync problems as display text only; map the few we can
  * recognise to codes. The text itself never leaves the device.
  */
-export function syncErrorCode(message: string): ErrorCode {
+/** The fixed code the runtime attached to a sync error (see runtime SyncErrorCode). */
+export function syncErrorCode(error: { code: string } | null | undefined): ErrorCode {
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
-  if (/app update|newer changes|newer than this app/i.test(message)) return 'version_mismatch';
-  if (/quota|storage|opfs|disk/i.test(message)) return 'storage_error';
-  if (/network|fetch|websocket|connection|timed? ?out/i.test(message)) return 'network';
-  if (/unauthori[sz]ed|401|token|session expired|accept this session/i.test(message))
-    return 'unauthorized';
-  if (/forbidden|403/i.test(message)) return 'forbidden';
-  return 'unknown';
+  switch (error?.code) {
+    case 'session_expired':
+    case 'session_rejected':
+      return 'unauthorized';
+    case 'update_required':
+      return 'update_required';
+    case 'mutation_quarantined':
+      return 'mutation_quarantined';
+    case 'snapshot_unavailable':
+      return 'snapshot_unavailable';
+    case 'snapshot_upload_failed':
+      return 'snapshot_upload_failed';
+    case 'mutation_rejected':
+      return 'sync_rejected';
+    default:
+      return 'unknown';
+  }
 }
