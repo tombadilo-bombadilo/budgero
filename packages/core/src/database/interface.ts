@@ -185,3 +185,22 @@ export class DatabaseError extends Error {
     this.name = 'DatabaseError';
   }
 }
+
+/** Failure classes a DatabaseError can carry in `code` (besides adapter-specific ones). */
+export type SqliteFailureClass =
+  'constraint' | 'locked' | 'corrupt' | 'readonly' | 'full' | 'error';
+
+/**
+ * Classify a SQLite error message into a fixed failure class. The message is
+ * only matched here; callers report the class, never the text (it can name
+ * tables, columns and values).
+ */
+export function classifySqliteError(message: string): SqliteFailureClass {
+  if (/constraint failed|constraint violation|SQLITE_CONSTRAINT/i.test(message))
+    return 'constraint';
+  if (/database is locked|SQLITE_BUSY|SQLITE_LOCKED/i.test(message)) return 'locked';
+  if (/malformed|not a database|SQLITE_CORRUPT|SQLITE_NOTADB/i.test(message)) return 'corrupt';
+  if (/readonly database|SQLITE_READONLY/i.test(message)) return 'readonly';
+  if (/database or disk is full|SQLITE_FULL/i.test(message)) return 'full';
+  return 'error';
+}
