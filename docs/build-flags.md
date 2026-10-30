@@ -74,7 +74,7 @@ This reference tracks the feature flags and environment toggles that change how 
 
 ### `POSTHOG_KEY` / `POSTHOG_HOST`
 - **Key usage**: `packages/server/cmd/shared/server.go` (`newAnalyticsSender`) wires the PostHog batch sender (`internal/adapter/driven/posthog`) into `application.AnalyticsService`.
-- **Purpose**: Server-side product analytics for the cloud build (signup, subscription, push, workspace, invite and bank relay events; enum properties only, see `internal/domain/analytics`). Unset `POSTHOG_KEY` or any self-host build sends nothing. `POSTHOG_HOST` defaults to `https://eu.i.posthog.com`. Users with `is_analytics_disabled` are skipped.
+- **Purpose**: Server-side product analytics for the cloud build (signup, subscription, push, workspace, invite and bank relay events; enum properties only, see `internal/domain/analytics`), plus one `$exception` event per 5xx response or recovered panic (PostHog error tracking: error class, Go error type, route template, method, status, request id, server version and our own stack frames; never the error message, see `internal/adapter/driving/http/middleware/errors.go`). Unset `POSTHOG_KEY` or any self-host build sends nothing. `POSTHOG_HOST` defaults to `https://eu.i.posthog.com`. Users with `is_analytics_disabled` are skipped; exceptions on unauthenticated requests are attributed to the distinct id `server`.
 
 ### `OTEL_METRICS_ENABLED` / `POSTHOG_METRICS_ENDPOINT`
 

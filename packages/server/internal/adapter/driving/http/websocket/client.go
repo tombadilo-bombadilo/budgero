@@ -2,13 +2,30 @@ package websocket
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"time"
 
 	"budgero-server/internal/port/driven/external"
 
 	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
+	sqlite "modernc.org/sqlite"
+)
+
+// Mutation nack codes (mutation_nack.code). A nack means the mutation was NOT
+// appended; a re-sent mutation whose id is already in the log is acked, not
+// nacked, so clients can always re-send after a reconnect.
+const (
+	// NackInvalid: the frame or mutation could not be parsed. A client bug;
+	// re-sending the same bytes will fail again.
+	NackInvalid = "invalid"
+	// NackStorage: the mutation log could not be written (locked, I/O).
+	// Transient; re-send after a short delay.
+	NackStorage = "storage_error"
+	// NackInternal: any other server failure. Re-send after a short delay.
+	NackInternal = "internal"
 )
 
 const (
@@ -37,6 +54,10 @@ type Client struct {
 	// only set (and the channel only closed) via Hub.removeAndCloseClient
 	// under the write lock, and checked by senders under the read lock.
 	sendClosed bool
+	// closeCode and closeReason are what WritePump sends in the close frame
+	// once Send is closed. Set with sendClosed, under the same lock.
+	closeCode   int
+	closeReason string
 }
 
 // NewClient creates a new Client instance
@@ -76,32 +97,26 @@ func (c *Client) ReadPump() {
 			break
 		}
 
-		// Log every message received
-		log.Info().
+		// Frame bodies are encrypted payloads: log their size and type only.
+		log.Debug().
 			Str("user_id", c.userID).
 			Str("space_id", c.spaceID).
 			Int("msg_type", msgType).
 			Int("data_len", len(data)).
-			Bool("is_text", msgType == websocket.TextMessage).
-			Bool("is_binary", msgType == websocket.BinaryMessage).
 			Msg("Message received")
 
 		// Handle text messages (mutations and other messages)
 		if msgType == websocket.TextMessage {
-			log.Info().
-				Str("user_id", c.userID).
-				Str("space_id", c.spaceID).
-				Str("data", string(data)).
-				Msg("Received text message")
-
 			// Parse JSON message
 			var msg map[string]interface{}
 			if err := json.Unmarshal(data, &msg); err != nil {
-				log.Error().
+				log.Debug().
 					Err(err).
 					Str("user_id", c.userID).
-					Str("data", string(data)).
+					Str("space_id", c.spaceID).
+					Int("data_len", len(data)).
 					Msg("Failed to parse text message")
+				c.nack("", NackInvalid)
 			} else {
 				msgType, hasType := msg["type"].(string)
 
@@ -112,10 +127,13 @@ func (c *Client) ReadPump() {
 					var mutation MutationMessage
 					if err := json.Unmarshal(data, &mutation); err != nil {
 						c.hub.telemetry.MutationProcessed(external.MutationRejectedInvalid)
-						log.Error().
+						log.Warn().
 							Err(err).
 							Str("user_id", c.userID).
+							Str("space_id", c.spaceID).
 							Msg("Failed to parse mutation message")
+						id, _ := msg["id"].(string)
+						c.nack(id, NackInvalid)
 					} else {
 						log.Info().
 							Str("user_id", c.userID).
@@ -127,12 +145,15 @@ func (c *Client) ReadPump() {
 						mutation.SpaceID = c.spaceID
 						if err := c.hub.HandleMutation(c.spaceID, c.userID, &mutation, c); err != nil {
 							c.hub.telemetry.MutationProcessed(external.MutationRejectedError)
+							code := nackCodeFor(err)
 							log.Error().
 								Err(err).
 								Str("user_id", c.userID).
 								Str("space_id", c.spaceID).
 								Str("mutation_id", mutation.ID).
+								Str("nack_code", code).
 								Msg("Failed to handle mutation")
+							c.nack(mutation.ID, code)
 						} else {
 							c.hub.telemetry.MutationProcessed(external.MutationAppended)
 						}
@@ -198,6 +219,45 @@ func (c *Client) ReadPump() {
 	}
 }
 
+// nack tells the sender a mutation was rejected. Routed through the Send
+// channel like every other frame (WritePump is the sole socket writer).
+func (c *Client) nack(mutationID, code string) {
+	frame := map[string]interface{}{
+		"type":     "mutation_nack",
+		"id":       mutationID,
+		"code":     code,
+		"space_id": c.spaceID,
+	}
+	if !c.hub.TrySend(c, &Message{Type: "mutation_nack", SpaceID: c.spaceID, Raw: frame}) {
+		log.Warn().
+			Str("user_id", c.userID).
+			Str("space_id", c.spaceID).
+			Str("mutation_id", mutationID).
+			Msg("Failed to queue mutation nack - channel full or closed")
+	}
+}
+
+// nackCodeFor classifies a HandleMutation error: mutation log (SQLite) and
+// database/sql failures are storage errors the client should retry later.
+func nackCodeFor(err error) string {
+	var se *sqlite.Error
+	if errors.As(err, &se) || errors.Is(err, sql.ErrConnDone) || errors.Is(err, sql.ErrTxDone) || isRetryableMutationAppendError(err) {
+		return NackStorage
+	}
+	return NackInternal
+}
+
+// closeFrame returns the close code and reason recorded when the hub closed
+// this client, defaulting to a normal closure.
+func (c *Client) closeFrame() (code int, reason string) {
+	c.hub.mu.RLock()
+	defer c.hub.mu.RUnlock()
+	if c.closeCode == 0 {
+		return websocket.CloseNormalClosure, ""
+	}
+	return c.closeCode, c.closeReason
+}
+
 func buildCatchUpResponse(spaceID string, sinceVersion int64, mutations []*MutationEntry, latestVersion int64) map[string]interface{} {
 	if mutations == nil {
 		mutations = make([]*MutationEntry, 0)
@@ -235,7 +295,7 @@ func (c *Client) handleCatchUpRequest(since int64) {
 			Str("space_id", c.spaceID).
 			Int64("since_version", since).
 			Msg("Failed to get mutations for catch-up; closing connection so the client retries")
-		_ = c.conn.Close()
+		c.hub.CloseClient(c, websocket.CloseInternalServerErr, CloseReasonCatchUpFailed)
 		return
 	}
 
@@ -251,7 +311,7 @@ func (c *Client) handleCatchUpRequest(since int64) {
 			Str("user_id", c.userID).
 			Str("space_id", c.spaceID).
 			Msg("Failed to fetch latest mutation version for catch-up; closing connection so the client retries")
-		_ = c.conn.Close()
+		c.hub.CloseClient(c, websocket.CloseInternalServerErr, CloseReasonCatchUpFailed)
 		return
 	}
 
@@ -261,7 +321,7 @@ func (c *Client) handleCatchUpRequest(since int64) {
 			Str("user_id", c.userID).
 			Str("space_id", c.spaceID).
 			Msg("Failed to queue catch-up response; closing connection so the client retries")
-		_ = c.conn.Close()
+		c.hub.CloseClient(c, websocket.CloseInternalServerErr, CloseReasonCatchUpFailed)
 		return
 	}
 
@@ -308,8 +368,10 @@ func (c *Client) WritePump() {
 		case message, ok := <-c.Send:
 			_ = c.conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
-				// The hub closed the channel
-				_ = c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				// The hub closed the channel: say why, so the client knows
+				// whether to reconnect.
+				code, reason := c.closeFrame()
+				_ = c.conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(code, reason))
 				return
 			}
 

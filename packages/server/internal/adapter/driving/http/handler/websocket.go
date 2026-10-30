@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -192,9 +193,8 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	case errors.Is(blobErr, domain.ErrSpaceNotFound):
 		// No blob yet — nothing to gate.
 	default:
-		log.Error().Err(blobErr).Str("space_id", spaceID).Msg("Failed to read blob metadata for format gate")
 		h.telemetry.WSConnectAttempt(external.WSOutcomeError)
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to verify space data format")
+		return internalErr("failed to verify space data format", fmt.Errorf("blob metadata for space %s: %w", spaceID, blobErr))
 	}
 
 	log.Info().
@@ -256,7 +256,7 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	if err := middleware.CheckNotBlocked(ctx, h.services.User, userID); err != nil {
 		log.Warn().Err(err).Str("user_id", userID).Msg("Closing WebSocket: account blocked during connect")
 		h.telemetry.WSConnectAttempt(wsOutcomeForError(err, external.WSOutcomeBlocked))
-		h.syncHub.Unregister <- client
+		h.syncHub.CloseClient(client, websocket.ClosePolicyViolation, synchub.CloseReasonBlocked)
 		return nil
 	}
 	h.telemetry.WSConnectAttempt(external.WSOutcomeOK)

@@ -68,8 +68,11 @@ func (s *Sender) Send(ctx context.Context, events []external.AnalyticsEvent) err
 	}
 	body := batchBody{APIKey: s.apiKey, Batch: make([]batchEvent, 0, len(events))}
 	for _, ev := range events {
-		props := make(map[string]any, len(ev.Properties)+3)
+		props := make(map[string]any, len(ev.Properties)+len(ev.Payload)+3)
 		for k, v := range ev.Properties {
+			props[k] = v
+		}
+		for k, v := range ev.Payload {
 			props[k] = v
 		}
 		props["distinct_id"] = ev.DistinctID

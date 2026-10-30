@@ -16,6 +16,9 @@ import (
 type Event struct {
 	name  string
 	props map[string]string
+	// payload holds structured (nested JSON) properties. Only the
+	// $exception event uses it, for PostHog's $exception_list.
+	payload map[string]any
 }
 
 // Name returns the event name.
@@ -29,6 +32,10 @@ func (e Event) Properties() map[string]string {
 	}
 	return out
 }
+
+// Payload returns the structured properties, or nil for plain events. The
+// values are built by this package only; callers must not mutate them.
+func (e Event) Payload() map[string]any { return e.payload }
 
 // Valid reports whether the event was built by a constructor in this package.
 func (e Event) Valid() bool { return e.name != "" }
@@ -51,6 +58,9 @@ var Registry = map[string][]string{
 	"member_removed":        {},
 	"member_left":           {},
 	"bank_relay_call":       {"provider", "outcome", "error_code"},
+	// Server exceptions (PostHog error tracking). $exception_list is a
+	// structured payload (see exception.go), not a flat property.
+	ExceptionEventName: {"$exception_level", "error_code", "route", "method", "status", "request_id", "server_version"},
 }
 
 func newEvent(name string, props map[string]string) Event {

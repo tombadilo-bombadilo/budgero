@@ -54,9 +54,9 @@ func dialPumpServer(t *testing.T, hub *websocket.Hub, spaceID string) (*gws.Conn
 	}
 }
 
-func readJSONWithin(t *testing.T, conn *gws.Conn, d time.Duration) map[string]interface{} {
+func readJSONWithin(t *testing.T, conn *gws.Conn) map[string]interface{} {
 	t.Helper()
-	_ = conn.SetReadDeadline(time.Now().Add(d))
+	_ = conn.SetReadDeadline(time.Now().Add(2 * time.Second))
 	var payload map[string]interface{}
 	if err := conn.ReadJSON(&payload); err != nil {
 		t.Fatalf("failed to read JSON from socket: %v", err)
@@ -88,7 +88,7 @@ func TestWritePump_MutationApplied_UsesAttachedPayload(t *testing.T) {
 		t.Fatal("TrySend() failed")
 	}
 
-	msg := readJSONWithin(t, conn, 2*time.Second)
+	msg := readJSONWithin(t, conn)
 	if msg["type"] != "mutation_applied" {
 		t.Fatalf("type = %v, want mutation_applied", msg["type"])
 	}
@@ -137,7 +137,7 @@ func TestReadPump_CatchUpRequest_RespondsViaWritePump(t *testing.T) {
 		t.Fatalf("failed to send catch-up request: %v", err)
 	}
 
-	msg := readJSONWithin(t, conn, 2*time.Second)
+	msg := readJSONWithin(t, conn)
 	if msg["type"] != "catch_up_response" {
 		t.Fatalf("type = %v, want catch_up_response", msg["type"])
 	}
@@ -202,7 +202,7 @@ func TestReadPump_EncryptionKeyAck_DeliveredViaWritePump(t *testing.T) {
 		t.Fatalf("failed to send key increment request: %v", err)
 	}
 
-	msg := readJSONWithin(t, conn, 2*time.Second)
+	msg := readJSONWithin(t, conn)
 	if msg["type"] != "encryption_key_version_ack" {
 		t.Fatalf("type = %v, want encryption_key_version_ack", msg["type"])
 	}

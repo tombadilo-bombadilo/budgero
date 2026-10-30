@@ -104,7 +104,7 @@ func (s *Scheduler) runFlow(
 		firstName := strutil.FirstWord(c.FirstName)
 		if err := s.svc.SendOnce(ctx, c.UserID, c.Email, firstName, template); err != nil {
 			log.Error().Err(err).Str("flow", flowName).
-				Str("user_id", c.UserID).Str("to", c.Email).
+				Str("user_id", c.UserID).
 				Msg("email scheduler: send failed")
 		}
 	}

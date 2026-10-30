@@ -39,6 +39,7 @@ func TestEventsUseOnlyRegisteredProps(t *testing.T) {
 		analytics.MemberLeft(),
 		analytics.BankRelayOK(analytics.BankProviderEnableBanking),
 		analytics.BankRelayFailed(analytics.BankProviderEnableBanking, analytics.BankRelayErrThrottled),
+		(&analytics.ServerException{Type: "*sqlite.Error", Code: analytics.ErrCodeDBLocked, Route: "/api/v1/sync", Method: "POST", Status: 500, RequestID: "req-1", ServerVersion: "1.2.3"}).Event(),
 	}
 	seen := map[string]bool{}
 	for _, ev := range events {
@@ -109,5 +110,60 @@ func TestPlanFromInterval(t *testing.T) {
 		if got := analytics.PlanFromInterval(in); got != want {
 			t.Errorf("PlanFromInterval(%q) = %v, want %v", in, got, want)
 		}
+	}
+}
+
+func TestServerExceptionEvent(t *testing.T) {
+	exc := analytics.ServerException{
+		Type:      "*fs.PathError",
+		Code:      analytics.ErrCodeStorage,
+		Mechanism: analytics.MechanismHTTP5xx,
+		Route:     "/api/v1/sync/blob",
+		Method:    "PUT",
+		Status:    500,
+		RequestID: "abc123",
+		Frames: []analytics.Frame{
+			{Filename: "internal/adapter/driving/http/handler/sync.go", Function: "handler.(*Handlers).Upload", Line: 42},
+		},
+	}
+	ev := exc.Event()
+	if ev.Name() != "$exception" {
+		t.Fatalf("name = %q", ev.Name())
+	}
+	props := ev.Properties()
+	if props["error_code"] != "storage_error" || props["status"] != "500" || props["route"] != "/api/v1/sync/blob" || props["request_id"] != "abc123" {
+		t.Errorf("props = %v", props)
+	}
+	if _, ok := props["server_version"]; ok {
+		t.Error("empty server_version must be omitted")
+	}
+	list, ok := ev.Payload()["$exception_list"].([]map[string]any)
+	if !ok || len(list) != 1 {
+		t.Fatalf("$exception_list = %#v", ev.Payload()["$exception_list"])
+	}
+	if list[0]["type"] != "*fs.PathError" || list[0]["value"] != "*fs.PathError · storage_error · /api/v1/sync/blob" {
+		t.Errorf("exception = %v", list[0])
+	}
+	mech, _ := list[0]["mechanism"].(map[string]any)
+	if mech["type"] != "http_5xx" || mech["handled"] != false {
+		t.Errorf("mechanism = %v", mech)
+	}
+	st, _ := list[0]["stacktrace"].(map[string]any)
+	frames, _ := st["frames"].([]map[string]any)
+	if st["type"] != "raw" || len(frames) != 1 || frames[0]["filename"] != "internal/adapter/driving/http/handler/sync.go" || frames[0]["lineno"] != 42 || frames[0]["in_app"] != true {
+		t.Errorf("stacktrace = %v", st)
+	}
+
+	// Defaults: unknown type, code, mechanism and route all fall back to fixed values.
+	ev = (&analytics.ServerException{Status: 503}).Event()
+	props = ev.Properties()
+	if props["error_code"] != "internal" || props["route"] != "unmatched" {
+		t.Errorf("default props = %v", props)
+	}
+	if _, ok := props["method"]; ok {
+		t.Error("empty method must be omitted")
+	}
+	if analytics.UserSignedUp().Payload() != nil {
+		t.Error("plain events have no payload")
 	}
 }

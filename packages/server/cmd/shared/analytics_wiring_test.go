@@ -29,6 +29,11 @@ func TestAnalyticsWiring_SelfHostSendsNothing(t *testing.T) {
 		}
 		tracker := application.NewAnalyticsService(newAnalyticsSender(cfg, selfHost), users, application.AnalyticsOptions{})
 		tracker.Track("u1", analytics.UserSignedUp())
+		// Server exceptions ride the same pipeline: a self-host build must
+		// not report them either, with or without a user.
+		exc := analytics.ServerException{Type: "panic", Code: analytics.ErrCodePanic, Route: "/api/v1/profile", Method: "GET", Status: 500}
+		tracker.CaptureException("u1", &exc)
+		tracker.CaptureException("", &exc)
 		tracker.Close()
 		return tracker.Enabled()
 	}
