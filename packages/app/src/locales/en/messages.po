@@ -4383,6 +4383,10 @@ msgstr "Budgero has been installed successfully!"
 msgid "Budgero helps budgets breathe easier."
 msgstr "Budgero helps budgets breathe easier."
 
+#: src/app/system/AppErrorBoundary.tsx
+msgid "Budgero hit an error it could not recover from. Your data is safe on this device; reloading usually fixes it."
+msgstr "Budgero hit an error it could not recover from. Your data is safe on this device; reloading usually fixes it."
+
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Budgero is better together. Share this workspace with up to five others — included free."
 msgstr "Budgero is better together. Share this workspace with up to five others — included free."
@@ -5960,6 +5964,10 @@ msgstr "Could not save the accepted import. You can cancel it safely."
 #: src/pages/settings/components/CalendarSettingsCard.tsx
 msgid "Could not save the first day of the week"
 msgstr "Could not save the first day of the week"
+
+#: src/features/chat/ui/chat-panel/useChatPanelState.ts
+msgid "Could not save the message"
+msgstr "Could not save the message"
 
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Could not save the query."
@@ -12826,6 +12834,10 @@ msgstr "Paid Users"
 msgid "Paper"
 msgstr "Paper"
 
+#: src/app/system/AppErrorBoundary.tsx
+msgid "Part of the app stopped working"
+msgstr "Part of the app stopped working"
+
 #: src/widgets/sync-status/ConnectivityStatus.tsx
 msgid "Partial"
 msgstr "Partial"
@@ -14252,6 +14264,10 @@ msgstr "Regular expression"
 #: src/shared/lib/analytics/klaro-config.ts
 #~ msgid "Reject all"
 #~ msgstr "Reject all"
+
+#: src/app/system/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Reload"
 
 #: src/features/currencies/ui/CurrencyConversionOverlay.tsx
 msgid "Reload Application"
@@ -16286,6 +16302,10 @@ msgstr "Someone shared their budget with you. We’ll set up an encryption key o
 msgid "Something else"
 msgstr "Something else"
 
+#: src/app/system/AppErrorBoundary.tsx
+msgid "Something went wrong"
+msgstr "Something went wrong"
+
 #: src/pages/auth/AuthPage.tsx
 msgid "Something went wrong, please try again."
 msgstr "Something went wrong, please try again."
@@ -17205,6 +17225,14 @@ msgstr "The direct transfer rate is manually overridden."
 msgid "The downward trend is statistically solid (p = {0}, R² = {1}): {2}/month."
 msgstr "The downward trend is statistically solid (p = {0}, R² = {1}): {2}/month."
 
+#: src/app/system/AppErrorBoundary.tsx
+msgid "The error has been recorded. Reload the page if it keeps happening."
+msgstr "The error has been recorded. Reload the page if it keeps happening."
+
+#: src/app/system/AppErrorBoundary.tsx
+msgid "The error has been recorded. You can try again or open another page."
+msgstr "The error has been recorded. You can try again or open another page."
+
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "The goal has been permanently removed."
 msgstr "The goal has been permanently removed."
@@ -17522,6 +17550,10 @@ msgstr "THIS MONTH'S PAYCHECK"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "This month's target met! Continue with {monthlyTarget}/month to stay on track"
 msgstr "This month's target met! Continue with {monthlyTarget}/month to stay on track"
+
+#: src/app/system/AppErrorBoundary.tsx
+msgid "This page could not be shown"
+msgstr "This page could not be shown"
 
 #: src/features/import/lib/parse-import-file.ts
 msgid "This PDF has no extractable text — it looks like a scanned image. Budgero imports PDFs by reading their text layer, which this file doesn't have. Try exporting the statement as CSV from your bank, or use a text-based PDF generated directly by the bank (not a scan or screenshot)."
@@ -18200,6 +18232,7 @@ msgstr "Try a different search term"
 msgid "Try adjusting your search filters or add a new transaction"
 msgstr "Try adjusting your search filters or add a new transaction"
 
+#: src/app/system/AppErrorBoundary.tsx
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "Try again"
 msgstr "Try again"

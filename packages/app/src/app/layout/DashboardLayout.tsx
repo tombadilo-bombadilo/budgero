@@ -1,6 +1,7 @@
 import { MobileBottomNav } from '@widgets/navigation/MobileBottomNav';
 import { MobileTopBar } from '@widgets/navigation/MobileTopBar';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
+import { AppErrorBoundary } from '@app/system/AppErrorBoundary';
 import { useIsMobile } from '@shared/hooks/useIsMobile';
 import { DesktopShell } from '@/app/layout/desktop-shell';
 import { TrialEndingBanner } from '@features/subscription/ui/TrialEndingBanner';
@@ -13,6 +14,12 @@ import { SchedulingGuideDialog } from '@features/transactions/ui/SchedulingGuide
 
 export default function DashboardLayout() {
   const isMobile = useIsMobile();
+  const { pathname } = useLocation();
+  const page = (
+    <AppErrorBoundary name="route" variant="section" resetKey={pathname}>
+      <Outlet />
+    </AppErrorBoundary>
+  );
 
   return (
     <div className="flex min-h-screen flex-col relative">
@@ -25,7 +32,9 @@ export default function DashboardLayout() {
       <UpdateAvailableBanner />
 
       {/* Global Command Palette */}
-      <CommandPalette />
+      <AppErrorBoundary name="command_palette" variant="hidden">
+        <CommandPalette />
+      </AppErrorBoundary>
 
       {/* Surfaces invite links generated during onboarding once the user
           has actually landed on the dashboard. Reads sessionStorage and
@@ -36,13 +45,7 @@ export default function DashboardLayout() {
 
       {isMobile && <MobileTopBar />}
       <main className={cn('flex-1 bg-background', isMobile && 'overflow-auto')}>
-        {isMobile ? (
-          <Outlet />
-        ) : (
-          <DesktopShell>
-            <Outlet />
-          </DesktopShell>
-        )}
+        {isMobile ? page : <DesktopShell>{page}</DesktopShell>}
       </main>
       {isMobile ? <MobileBottomNav /> : null}
     </div>

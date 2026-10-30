@@ -4381,6 +4381,10 @@ msgstr "¡Budgero se ha instalado correctamente!"
 msgid "Budgero helps budgets breathe easier."
 msgstr "Budgero ayuda a los presupuestos a respirar mejor."
 
+#: src/app/system/AppErrorBoundary.tsx
+msgid "Budgero hit an error it could not recover from. Your data is safe on this device; reloading usually fixes it."
+msgstr "Budgero encontró un error del que no pudo recuperarse. Tus datos están seguros en este dispositivo; recargar suele solucionarlo."
+
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Budgero is better together. Share this workspace with up to five others — included free."
 msgstr "Budgero es mejor en compañía. Comparte este espacio de trabajo con hasta cinco personas más, incluido gratis."
@@ -5958,6 +5962,10 @@ msgstr "No se ha podido guardar la importación aceptada. Puedes cancelarla sin 
 #: src/pages/settings/components/CalendarSettingsCard.tsx
 msgid "Could not save the first day of the week"
 msgstr "No se ha podido guardar el primer día de la semana"
+
+#: src/features/chat/ui/chat-panel/useChatPanelState.ts
+msgid "Could not save the message"
+msgstr "No se pudo guardar el mensaje"
 
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Could not save the query."
@@ -12824,6 +12832,10 @@ msgstr "Usuarios de pago"
 msgid "Paper"
 msgstr "Papel"
 
+#: src/app/system/AppErrorBoundary.tsx
+msgid "Part of the app stopped working"
+msgstr "Una parte de la aplicación dejó de funcionar"
+
 #: src/widgets/sync-status/ConnectivityStatus.tsx
 msgid "Partial"
 msgstr "Parcial"
@@ -14250,6 +14262,10 @@ msgstr "Expresión regular"
 #: src/shared/lib/analytics/klaro-config.ts
 #~ msgid "Reject all"
 #~ msgstr "Rechazar todo"
+
+#: src/app/system/AppErrorBoundary.tsx
+msgid "Reload"
+msgstr "Recargar"
 
 #: src/features/currencies/ui/CurrencyConversionOverlay.tsx
 msgid "Reload Application"
@@ -16284,6 +16300,10 @@ msgstr "Alguien ha compartido su presupuesto contigo. Configuraremos una clave d
 msgid "Something else"
 msgstr "Otra cosa"
 
+#: src/app/system/AppErrorBoundary.tsx
+msgid "Something went wrong"
+msgstr "Algo salió mal"
+
 #: src/pages/auth/AuthPage.tsx
 msgid "Something went wrong, please try again."
 msgstr "Algo ha salido mal. Vuelve a intentarlo."
@@ -17203,6 +17223,14 @@ msgstr "El tipo de cambio directo de la transferencia se ha modificado manualmen
 msgid "The downward trend is statistically solid (p = {0}, R² = {1}): {2}/month."
 msgstr "La tendencia a la baja es estadísticamente sólida (p = {0}, R² = {1}): {2}/mes."
 
+#: src/app/system/AppErrorBoundary.tsx
+msgid "The error has been recorded. Reload the page if it keeps happening."
+msgstr "El error se ha registrado. Recarga la página si sigue ocurriendo."
+
+#: src/app/system/AppErrorBoundary.tsx
+msgid "The error has been recorded. You can try again or open another page."
+msgstr "El error se ha registrado. Puedes volver a intentarlo o abrir otra página."
+
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "The goal has been permanently removed."
 msgstr "El objetivo ha sido eliminado permanentemente."
@@ -17520,6 +17548,10 @@ msgstr "NÓMINA DE ESTE MES"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "This month's target met! Continue with {monthlyTarget}/month to stay on track"
 msgstr "¡Objetivo de este mes alcanzado! Continúa con {monthlyTarget}/mes para no desviarte"
+
+#: src/app/system/AppErrorBoundary.tsx
+msgid "This page could not be shown"
+msgstr "No se pudo mostrar esta página"
 
 #: src/features/import/lib/parse-import-file.ts
 msgid "This PDF has no extractable text — it looks like a scanned image. Budgero imports PDFs by reading their text layer, which this file doesn't have. Try exporting the statement as CSV from your bank, or use a text-based PDF generated directly by the bank (not a scan or screenshot)."
@@ -18198,6 +18230,7 @@ msgstr "Prueba con otro término de búsqueda"
 msgid "Try adjusting your search filters or add a new transaction"
 msgstr "Prueba a ajustar tus filtros de búsqueda o añade una transacción nueva"
 
+#: src/app/system/AppErrorBoundary.tsx
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "Try again"
 msgstr "Volver a intentar"
