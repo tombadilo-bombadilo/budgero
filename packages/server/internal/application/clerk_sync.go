@@ -205,7 +205,7 @@ func (uc *ClerkSyncUsecase) findOrCreateUser(ctx context.Context, clerkID string
 			defer cancel()
 			firstName := strutil.FirstWord(userName)
 			if err := uc.email.SendOnce(sendCtx, userID, userEmail, firstName, emailpkg.TemplateWelcome); err != nil {
-				log.Warn().Err(err).Str("user_id", userID).Str("email", userEmail).
+				log.Warn().Err(err).Str("user_id", userID).
 					Msg("Failed to send welcome email (scheduler will retry)")
 			}
 		}()

@@ -223,7 +223,7 @@ func (s *Service) SendOnceKeyed(ctx context.Context, userID, email, firstName, t
 	}
 
 	if s.cfg.Email.DryRun {
-		log.Info().Str("template", templateName).Str("to", email).
+		log.Info().Str("template", templateName).Str("user_id", userID).
 			Str("subject", msg.Subject).Msg("email: DRY RUN (not sent)")
 	} else {
 		if err := s.sender.Send(ctx, msg); err != nil {
@@ -348,7 +348,7 @@ func (r *resendSender) Send(ctx context.Context, msg Message) error {
 	if err != nil {
 		return err
 	}
-	log.Info().Str("resend_id", resp.Id).Str("to", msg.To).
+	log.Info().Str("resend_id", resp.Id).
 		Str("subject", msg.Subject).Msg("email: sent")
 	return nil
 }
