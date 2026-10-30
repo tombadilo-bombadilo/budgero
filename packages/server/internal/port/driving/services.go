@@ -444,6 +444,10 @@ type AnalyticsTracker interface {
 	// Track queues event for userID (the PostHog distinct_id).
 	Track(userID string, event analytics.Event)
 
+	// CaptureException queues a server exception. distinctID is the
+	// authenticated user (opt-out applies) or "" for the server itself.
+	CaptureException(distinctID string, exc analytics.ServerException)
+
 	// SetOptOut updates the cached opt-out flag after the user changes it.
 	SetOptOut(userID string, disabled bool)
 }

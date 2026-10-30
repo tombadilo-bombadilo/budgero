@@ -11,7 +11,10 @@ type AnalyticsEvent struct {
 	Name       string
 	DistinctID string
 	Properties map[string]string
-	Timestamp  time.Time
+	// Payload holds structured properties (nested JSON, e.g. the
+	// $exception_list of a server exception). Merged after Properties.
+	Payload   map[string]any
+	Timestamp time.Time
 }
 
 // AnalyticsSender ships batches of product analytics events (e.g. PostHog).

@@ -200,3 +200,39 @@ func TestAnalytics_DisabledRegistersNoTelemetry(t *testing.T) {
 		t.Errorf("disabled tracker registered queue callbacks")
 	}
 }
+
+func TestAnalytics_CaptureException(t *testing.T) {
+	users := fake.NewUserRepository()
+	seedAnalyticsUser(t, users, "opted-out", true)
+	seedAnalyticsUser(t, users, "kept", false)
+	sender := &fake.AnalyticsSender{}
+	svc := application.NewAnalyticsService(sender, users, application.AnalyticsOptions{})
+
+	exc := analytics.ServerException{Type: "*errors.errorString", Code: analytics.ErrCodeInternal, Route: "/api/v1/profile", Method: "GET", Status: 500}
+	svc.CaptureException("opted-out", exc)
+	svc.CaptureException("kept", exc)
+	svc.CaptureException("", exc) // no user: attributed to the server, no opt-out lookup
+	svc.CaptureException("unknown-user", exc)
+	svc.Close()
+
+	got := sender.Events()
+	if len(got) != 2 {
+		t.Fatalf("sent %d events, want 2 (kept + server): %+v", len(got), got)
+	}
+	for _, ev := range got {
+		if ev.Name != "$exception" {
+			t.Errorf("name = %q", ev.Name)
+		}
+		if ev.Payload["$exception_list"] == nil {
+			t.Errorf("event for %s has no $exception_list", ev.DistinctID)
+		}
+	}
+	if got[0].DistinctID != "kept" || got[1].DistinctID != application.ServerDistinctID {
+		t.Errorf("distinct ids = %s, %s", got[0].DistinctID, got[1].DistinctID)
+	}
+
+	// Disabled tracker (self-host / no key) drops exceptions too.
+	off := application.NewAnalyticsService(&fake.AnalyticsSender{Disabled: true}, users, application.AnalyticsOptions{})
+	off.CaptureException("", exc)
+	off.Close()
+}

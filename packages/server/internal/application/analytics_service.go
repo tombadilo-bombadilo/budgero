@@ -51,7 +51,13 @@ type queuedEvent struct {
 	userID string
 	event  analytics.Event
 	at     time.Time
+	// noOptOut skips the per-user opt-out lookup: the event belongs to the
+	// server itself, not to a user.
+	noOptOut bool
 }
+
+// ServerDistinctID is the PostHog distinct_id for events with no user.
+const ServerDistinctID = "server"
 
 type optOutEntry struct {
 	disabled bool
@@ -119,13 +125,32 @@ func (s *AnalyticsService) Track(userID string, event analytics.Event) {
 	if !s.Enabled() || userID == "" || !event.Valid() {
 		return
 	}
+	s.enqueue(queuedEvent{userID: userID, event: event, at: s.now()})
+}
+
+// CaptureException queues a $exception event. With a user it is subject to
+// that user's opt-out like any other event; without one it is attributed to
+// ServerDistinctID and always sent.
+func (s *AnalyticsService) CaptureException(distinctID string, exc analytics.ServerException) {
+	if !s.Enabled() {
+		return
+	}
+	q := queuedEvent{userID: distinctID, event: exc.Event(), at: s.now()}
+	if distinctID == "" {
+		q.userID = ServerDistinctID
+		q.noOptOut = true
+	}
+	s.enqueue(q)
+}
+
+func (s *AnalyticsService) enqueue(q queuedEvent) {
 	select {
 	case <-s.stop:
 		return
 	default:
 	}
 	select {
-	case s.queue <- queuedEvent{userID: userID, event: event, at: s.now()}:
+	case s.queue <- q:
 	default:
 		s.dropped.Add(1)
 	}
@@ -196,13 +221,14 @@ func (s *AnalyticsService) flush(batch []queuedEvent) {
 	defer cancel()
 	out := make([]external.AnalyticsEvent, 0, len(batch))
 	for _, q := range batch {
-		if s.isOptedOut(ctx, q.userID) {
+		if !q.noOptOut && s.isOptedOut(ctx, q.userID) {
 			continue
 		}
 		out = append(out, external.AnalyticsEvent{
 			Name:       q.event.Name(),
 			DistinctID: q.userID,
 			Properties: q.event.Properties(),
+			Payload:    q.event.Payload(),
 			Timestamp:  q.at,
 		})
 	}

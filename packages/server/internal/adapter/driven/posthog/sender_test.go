@@ -152,3 +152,25 @@ func TestNoop(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestSender_MergesStructuredPayload(t *testing.T) {
+	srv, requests := newCaptureServer(t, http.StatusOK)
+	sender := posthog.NewSender(srv.URL, "phc_test", time.Second)
+
+	err := sender.Send(context.Background(), []external.AnalyticsEvent{{
+		Name:       "$exception",
+		DistinctID: "server",
+		Properties: map[string]string{"error_code": "panic"},
+		Payload:    map[string]any{"$exception_list": []map[string]any{{"type": "panic"}}},
+		Timestamp:  time.Now(),
+	}})
+	if err != nil {
+		t.Fatalf("Send: %v", err)
+	}
+	batch, _ := requests()[0].body["batch"].([]any)
+	props, _ := batch[0].(map[string]any)["properties"].(map[string]any)
+	list, _ := props["$exception_list"].([]any)
+	if props["error_code"] != "panic" || len(list) != 1 {
+		t.Fatalf("properties = %v", props)
+	}
+}
