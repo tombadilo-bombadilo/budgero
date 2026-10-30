@@ -8,7 +8,27 @@ import (
 
 	"budgero-server/internal/port/driven/external"
 
+	"github.com/gorilla/websocket"
 	"github.com/rs/zerolog/log"
+)
+
+// Close reasons sent to the client in the close frame, with the close code
+// each one uses. The client decides from them whether to reconnect.
+const (
+	// CloseReasonSpaceReset (1000): the space's sync state was reset; the
+	// client must reload its snapshot before reconnecting.
+	CloseReasonSpaceReset = "space_reset"
+	// CloseReasonBlocked (1008): the account is blocked; do not reconnect.
+	CloseReasonBlocked = "blocked"
+	// CloseReasonMemberRemoved (1008): the user lost access to the space; do
+	// not reconnect to it.
+	CloseReasonMemberRemoved = "member_removed"
+	// CloseReasonCatchUpFailed (1011): the server could not serve a catch-up
+	// request; reconnect and request catch-up again.
+	CloseReasonCatchUpFailed = "catch_up_failed"
+	// CloseReasonSendBufferFull (1011): the client fell too far behind;
+	// reconnect and catch up.
+	CloseReasonSendBufferFull = "send_buffer_full"
 )
 
 // KeyVersionIncrementer is an interface for incrementing encryption key versions.
@@ -152,7 +172,7 @@ func (h *Hub) Run() {
 				Msg("WebSocket client connected")
 
 		case client := <-h.Unregister:
-			h.removeAndCloseClient(client)
+			h.removeAndCloseClient(client, websocket.CloseNormalClosure, "")
 
 			log.Info().
 				Str("user_id", client.userID).
@@ -170,7 +190,7 @@ func (h *Hub) Run() {
 						Msg("Sent sync notification to client")
 				} else {
 					// Client's send channel is full (or already closed), drop it
-					h.removeAndCloseClient(client)
+					h.removeAndCloseClient(client, websocket.CloseInternalServerErr, CloseReasonSendBufferFull)
 				}
 			}
 
@@ -197,7 +217,7 @@ func (h *Hub) Run() {
 						Msg("Sent mutation applied notification to client")
 				} else {
 					// Client's send channel is full (or already closed), drop it
-					h.removeAndCloseClient(client)
+					h.removeAndCloseClient(client, websocket.CloseInternalServerErr, CloseReasonSendBufferFull)
 				}
 			}
 
@@ -222,7 +242,7 @@ func (h *Hub) Run() {
 						Msg("Sent encryption key changed notification to client")
 				} else {
 					// Client's send channel is full (or already closed), drop it
-					h.removeAndCloseClient(client)
+					h.removeAndCloseClient(client, websocket.CloseInternalServerErr, CloseReasonSendBufferFull)
 				}
 			}
 
@@ -289,9 +309,11 @@ func (h *Hub) sendOrTimeout(client *Client, message *Message) bool {
 
 // removeAndCloseClient removes a client from the hub and closes its Send
 // channel exactly once. Every disconnect path (Unregister, full-channel drops,
-// ResetSpace, CloseUserClients) goes through here so the channel can never be
-// closed twice or closed while a guarded send is in flight.
-func (h *Hub) removeAndCloseClient(client *Client) {
+// ResetSpace, CloseUserClients, catch-up failures) goes through here so the
+// channel can never be closed twice or closed while a guarded send is in
+// flight. code and reason are what WritePump puts in the close frame; the
+// first close wins.
+func (h *Hub) removeAndCloseClient(client *Client, code int, reason string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	if clients, ok := h.clients[client.spaceID]; ok {
@@ -306,8 +328,17 @@ func (h *Hub) removeAndCloseClient(client *Client) {
 	}
 	if !client.sendClosed {
 		client.sendClosed = true
+		client.closeCode = code
+		client.closeReason = reason
 		close(client.Send)
 	}
+}
+
+// CloseClient disconnects one client with the given close code and reason
+// (see the CloseReason constants). Safe to call from any goroutine and
+// idempotent: a client that is already closing keeps its first reason.
+func (h *Hub) CloseClient(client *Client, code int, reason string) {
+	h.removeAndCloseClient(client, code, reason)
 }
 
 // CloseUserClients disconnects all of a user's clients for a space, e.g. after
@@ -318,7 +349,7 @@ func (h *Hub) CloseUserClients(spaceID, userID string) {
 		if client.userID != userID {
 			continue
 		}
-		h.removeAndCloseClient(client)
+		h.removeAndCloseClient(client, websocket.ClosePolicyViolation, CloseReasonMemberRemoved)
 		closed++
 	}
 	if closed > 0 {
@@ -346,7 +377,7 @@ func (h *Hub) CloseAllUserClients(userID string) int {
 	h.mu.RUnlock()
 
 	for _, client := range targets {
-		h.removeAndCloseClient(client)
+		h.removeAndCloseClient(client, websocket.ClosePolicyViolation, CloseReasonBlocked)
 	}
 	if len(targets) > 0 {
 		log.Info().
@@ -548,7 +579,7 @@ func (h *Hub) ResetSpace(spaceID string) error {
 	}
 
 	for _, client := range h.clientsForSpace(spaceID) {
-		h.removeAndCloseClient(client)
+		h.removeAndCloseClient(client, websocket.CloseNormalClosure, CloseReasonSpaceReset)
 	}
 
 	log.Info().Str("space_id", spaceID).Msg("Reset sync state for space")

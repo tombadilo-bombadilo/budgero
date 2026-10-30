@@ -256,7 +256,7 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	if err := middleware.CheckNotBlocked(ctx, h.services.User, userID); err != nil {
 		log.Warn().Err(err).Str("user_id", userID).Msg("Closing WebSocket: account blocked during connect")
 		h.telemetry.WSConnectAttempt(wsOutcomeForError(err, external.WSOutcomeBlocked))
-		h.syncHub.Unregister <- client
+		h.syncHub.CloseClient(client, websocket.ClosePolicyViolation, synchub.CloseReasonBlocked)
 		return nil
 	}
 	h.telemetry.WSConnectAttempt(external.WSOutcomeOK)
