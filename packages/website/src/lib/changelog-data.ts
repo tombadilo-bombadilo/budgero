@@ -21,11 +21,61 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.20.2',
+    date: 'October 30, 2026',
+    summary:
+      'A page that hits an error now recovers in place instead of going blank, sync warnings stop repeating, and error reports tell us which part of the app failed so bugs get fixed before you have to report them.',
+    isLatest: true,
+    items: [
+      {
+        type: 'improved',
+        title: 'Errors recover in place',
+        description:
+          'If part of Budgero hits an error, that page shows a “Try again” card and the rest of the app keeps working; the assistant and the command palette recover on their own. Before, a crash anywhere meant a blank screen and a reload.',
+      },
+      {
+        type: 'fixed',
+        title: 'Sync warnings no longer repeat',
+        description:
+          'When a sync problem happened, the “Sync needs attention” notice came back every few seconds while Budgero retried. You now see it once per problem, until a sync succeeds.',
+      },
+      {
+        type: 'improved',
+        title: 'Sync says why',
+        description:
+          'When the server cannot accept a change, Budgero now hears back with the reason instead of waiting forever, keeps the change on your device and tells you. Sync problems carry a fixed reason code (session expired, update needed, upload failed…).',
+      },
+      {
+        type: 'fixed',
+        title: 'Keyboard shortcuts with browser autofill',
+        description:
+          'A key press without a key name, which browsers send during autofill, caused an error in the shortcut handler. It is ignored now.',
+      },
+      {
+        type: 'fixed',
+        title: 'Assistant message that cannot be saved',
+        description:
+          'If the assistant’s reply could not be written to your budget, the chat failed silently. You now get a “Could not save the message” notice.',
+      },
+      {
+        type: 'improved',
+        title: 'Better error reports, same privacy',
+        description:
+          'Budgero Cloud error reports now name the part of the app that failed, our own error code, the request id of a failed server call, and the sequence of screens and internal events before the error (names only, never values). The server reports its own failures the same way. Nothing you type, no amounts and no error message text leave your device; the privacy policy describes the addition. Self-hosted Budgero still sends nothing.',
+      },
+      {
+        type: 'improved',
+        title: 'Request ids for support',
+        description:
+          'Every server response now carries an X-Request-Id, and a failed request returns it in the error body, so a problem can be traced in the server log without any personal detail.',
+      },
+    ],
+  },
+  {
     version: 'v1.20.1',
     date: 'October 29, 2026',
     summary:
       'Reconciling an account whose balance is off by a fraction of a cent now brings it to exactly what your bank shows.',
-    isLatest: true,
     items: [
       {
         type: 'fixed',
