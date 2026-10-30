@@ -1,4 +1,5 @@
 import type { RuntimeState, MutationPayload, MutationSpec } from '../types';
+import type { SyncError } from '../sync-transport/sync-transport';
 import type { ConnectivityMonitor } from '../connectivity';
 import { scopedLogger, type RuntimeLogFn } from '../logging';
 import { CancellationError, errorMessage } from '../utils/diagnostics';
@@ -13,7 +14,7 @@ interface SnapshotState {
 interface SyncStatusPatch {
   isSyncing?: boolean;
   lastSyncTime?: Date | null;
-  syncError?: string | null;
+  syncError?: SyncError | null;
 }
 
 interface ReconnectionContext {
@@ -293,7 +294,16 @@ export class ReconnectionService {
       await ctx.dbSync.upload();
       ctx.sync.updateSyncStatus({ isSyncing: false, lastSyncTime: new Date(), syncError: null });
     } catch (error) {
-      ctx.sync.updateSyncStatus({ isSyncing: false, syncError: errorMessage(error) });
+      const { status } = error as { status?: unknown };
+      ctx.sync.updateSyncStatus({
+        isSyncing: false,
+        syncError: {
+          code: 'snapshot_upload_failed',
+          message: errorMessage(error),
+          detail:
+            typeof status === 'number' && status > 0 ? `${Math.floor(status / 100)}xx` : 'network',
+        },
+      });
     }
 
     this.log('debug', 'Replay finished', {

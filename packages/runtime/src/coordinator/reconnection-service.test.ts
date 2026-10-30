@@ -199,7 +199,13 @@ describe('ReconnectionService', () => {
     // ...and replay proceeds to the blob upload, whose failure lands in status.
     expect(dbUpload).toHaveBeenCalled();
     expect(updateSyncStatus).toHaveBeenCalledWith(
-      expect.objectContaining({ isSyncing: false, syncError: 'upload failed' })
+      expect.objectContaining({
+        isSyncing: false,
+        syncError: expect.objectContaining({
+          code: 'snapshot_upload_failed',
+          message: 'upload failed',
+        }),
+      })
     );
   });
 
