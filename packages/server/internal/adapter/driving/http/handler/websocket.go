@@ -2,6 +2,7 @@ package handler
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -192,9 +193,8 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	case errors.Is(blobErr, domain.ErrSpaceNotFound):
 		// No blob yet — nothing to gate.
 	default:
-		log.Error().Err(blobErr).Str("space_id", spaceID).Msg("Failed to read blob metadata for format gate")
 		h.telemetry.WSConnectAttempt(external.WSOutcomeError)
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to verify space data format")
+		return internalErr("failed to verify space data format", fmt.Errorf("blob metadata for space %s: %w", spaceID, blobErr))
 	}
 
 	log.Info().

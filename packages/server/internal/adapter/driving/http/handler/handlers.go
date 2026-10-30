@@ -12,6 +12,7 @@ import (
 
 	"budgero-server/internal/adapter/driven/lemonsqueezy"
 	"budgero-server/internal/adapter/driving/http/bankrelay"
+	"budgero-server/internal/adapter/driving/http/middleware"
 	synchub "budgero-server/internal/adapter/driving/http/websocket"
 	"budgero-server/internal/application"
 	"budgero-server/internal/application/email"
@@ -202,9 +203,16 @@ func mapServiceError(err error) error {
 	if errors.Is(err, domain.ErrUserNotFound) {
 		return echo.NewHTTPError(http.StatusNotFound, "user not found")
 	}
-	// Don't leak raw internal/driver error strings to clients; log and return generic.
-	log.Error().Err(err).Msg("unmapped service error")
-	return echo.NewHTTPError(http.StatusInternalServerError, "internal server error")
+	// Don't leak raw internal/driver error strings to clients: the central
+	// error handler logs and reports the cause, the client gets a fixed message.
+	return internalErr("internal server error", err)
+}
+
+// internalErr is the 500 the client sees (fixed public message) with cause
+// attached for the central error handler to log and report. Handlers use it
+// instead of logging next to a 500 return.
+func internalErr(publicMsg string, cause error) *echo.HTTPError {
+	return middleware.InternalError(http.StatusInternalServerError, publicMsg, cause)
 }
 
 // SubscriptionService handles subscription-related operations.

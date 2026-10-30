@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/mail"
 	"strings"
@@ -125,13 +126,11 @@ func (h *Handlers) GetProfile(c echo.Context) error {
 					if existing, getErr := h.services.User.GetByID(ctx, userID); getErr == nil {
 						localUser = existing
 					} else {
-						log.Error().Err(err).Str("user_id", userID).Msg("failed to bootstrap local user")
-						return echo.NewHTTPError(http.StatusInternalServerError, "failed to create user")
+						return internalErr("failed to create user", err)
 					}
 				}
 			} else {
-				log.Error().Err(err).Str("user_id", userID).Msg("failed to get local user")
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to load user")
+				return internalErr("failed to load user", err)
 			}
 		}
 	}
@@ -152,8 +151,7 @@ func (h *Handlers) RecordActivityHeartbeat(c echo.Context) error {
 	}
 
 	if err := h.services.Activity.RecordHeartbeat(c.Request().Context(), userID); err != nil {
-		log.Error().Err(err).Str("user_id", userID).Msg("failed to record activity heartbeat")
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to record activity heartbeat")
+		return internalErr("failed to record activity heartbeat", err)
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -184,7 +182,7 @@ func (h *Handlers) UpdateProfile(c echo.Context) error {
 
 	current, err := h.services.User.GetByID(ctx, userID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to load user")
+		return internalErr("failed to load user", err)
 	}
 
 	// Update name in Clerk (non-critical: profile sync can fail silently)
@@ -195,7 +193,7 @@ func (h *Handlers) UpdateProfile(c echo.Context) error {
 	}
 
 	if err := h.services.User.Update(ctx, userID, req.Name, current.Email); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update user")
+		return internalErr("failed to update user", err)
 	}
 
 	updated, _ := h.services.User.GetByID(ctx, userID)
@@ -254,8 +252,7 @@ func (h *Handlers) UpdateOnboardingState(c echo.Context) error {
 	}
 
 	if err := h.services.User.SetOnboardingState(ctx, userID, status, completedAt, snoozedUntil); err != nil {
-		log.Error().Err(err).Str("user_id", userID).Msg("failed to update onboarding state")
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update onboarding state")
+		return internalErr("failed to update onboarding state", err)
 	}
 
 	return c.NoContent(http.StatusNoContent)
@@ -286,8 +283,7 @@ func (h *Handlers) UpdateBackupSettings(c echo.Context) error {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "user not found")
 		}
-		log.Error().Err(err).Str("user_id", userID).Msg("failed to update backup settings")
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update backup settings")
+		return internalErr("failed to update backup settings", err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -317,8 +313,7 @@ func (h *Handlers) RecordDatabaseBackup(c echo.Context) error {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "user not found")
 		}
-		log.Error().Err(err).Str("user_id", userID).Msg("failed to record backup")
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to record backup")
+		return internalErr("failed to record backup", err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -344,7 +339,7 @@ func (h *Handlers) SetMasterPasswordStatus(c echo.Context) error {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "user not found")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update master password status")
+		return internalErr("failed to update master password status", err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -366,15 +361,13 @@ func (h *Handlers) ResetMasterPassword(c echo.Context) error {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "user not found")
 		}
-		log.Error().Err(err).Str("user_id", userID).Msg("failed to reset user data")
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to reset user data")
+		return internalErr("failed to reset user data", err)
 	}
 
 	if h.syncHub != nil {
 		for _, spaceID := range spaceIDs {
 			if err := h.syncHub.ResetSpace(spaceID); err != nil {
-				log.Error().Err(err).Str("user_id", userID).Str("space_id", spaceID).Msg("failed to reset sync state")
-				return echo.NewHTTPError(http.StatusInternalServerError, "failed to reset sync state")
+				return internalErr("failed to reset sync state", fmt.Errorf("space %s: %w", spaceID, err))
 			}
 		}
 	}
@@ -402,7 +395,7 @@ func (h *Handlers) SetAnalyticsDisabled(c echo.Context) error {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "user not found")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update analytics preference")
+		return internalErr("failed to update analytics preference", err)
 	}
 
 	return c.JSON(http.StatusOK, map[string]interface{}{
@@ -423,7 +416,7 @@ func (h *Handlers) GetUserPreferences(c echo.Context) error {
 		if errors.Is(err, domain.ErrUserNotFound) {
 			return echo.NewHTTPError(http.StatusNotFound, "user not found")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to load user preferences")
+		return internalErr("failed to load user preferences", err)
 	}
 
 	return c.JSON(http.StatusOK, prefs)
@@ -459,7 +452,7 @@ func (h *Handlers) UpdateUserPreferences(c echo.Context) error {
 		if errors.Is(err, domain.ErrInvalidUserPreferences) {
 			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update user preferences")
+		return internalErr("failed to update user preferences", err)
 	}
 
 	return c.JSON(http.StatusOK, prefs)
@@ -494,12 +487,12 @@ func (h *Handlers) SelfHostRegister(c echo.Context) error {
 
 	user, isAdmin, err := h.usecases.AuthenticateLocal.Execute(ctx, req.Username, req.Password)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to finalize registration")
+		return internalErr("failed to finalize registration", err)
 	}
 
 	token, err := middleware.GenerateSelfHostToken(user.ID, isAdmin)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to issue token")
+		return internalErr("failed to issue token", err)
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"token": token,
@@ -523,7 +516,7 @@ func (h *Handlers) SelfHostLogin(c echo.Context) error {
 	}
 	token, err := middleware.GenerateSelfHostToken(user.ID, isAdmin)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to issue token")
+		return internalErr("failed to issue token", err)
 	}
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"token": token,
@@ -557,7 +550,7 @@ func (h *Handlers) SelfHostUpdatePassword(c echo.Context) error {
 	}
 	isAdmin := h.services.Credential.IsAdmin(ctx, userID)
 	if err := h.services.Credential.SetPassword(ctx, userID, req.NewPassword, isAdmin); err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to update password")
+		return internalErr("failed to update password", err)
 	}
 	return c.JSON(http.StatusOK, map[string]string{"message": "password updated"})
 }

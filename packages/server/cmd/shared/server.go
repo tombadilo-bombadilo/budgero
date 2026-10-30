@@ -103,7 +103,9 @@ func Run(selfHost bool) {
 	// Metrics next, so it sees the final status of everything below (incl.
 	// recovered panics and rate-limit rejections). No-op unless metrics are enabled.
 	e.Use(appmw.Metrics(telemetry))
-	e.Use(middleware.Recover())
+	// Panics reach the central error handler as errors (one log line with
+	// the stack, one $exception) instead of being printed by Echo's logger.
+	e.Use(middleware.RecoverWithConfig(appmw.RecoverConfig()))
 	// Log failed API requests: 4xx/5xx are invisible otherwise, which has
 	// hidden silent client-side failures (e.g. backup recording) for weeks.
 	e.Use(appmw.RequestLogger(redactURI))
@@ -179,6 +181,12 @@ func Run(selfHost bool) {
 	}
 
 	services := wireServices(dbConn, cfg, selfHost, telemetry)
+
+	// Central error handling: the same statuses and public messages as
+	// before plus the request id in every error body; 5xx and panics get one
+	// Error log line with the cause and one $exception event (cloud only,
+	// see newAnalyticsSender; opted-out users are dropped by the tracker).
+	e.HTTPErrorHandler = appmw.ErrorHandler(services.Analytics, appmeta.BuildVersion())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
