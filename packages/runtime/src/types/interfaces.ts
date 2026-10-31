@@ -224,6 +224,13 @@ export interface DatabaseSyncDeps {
    */
   hasUnackedMutations?(): boolean;
   /**
+   * False until this device has caught up with the server's mutation log for
+   * the current activation. A snapshot uploaded before that (e.g. right after a
+   * local reset) is bound to an older log position and would replace a
+   * complete budget with a partial one.
+   */
+  canUploadSnapshot?(): boolean;
+  /**
    * Run a pending debounced local persist (and wait for in-flight ones)
    * before a snapshot upload or restore, so the local file never lags the
    * server blob and an old write can't land after the restored DB's.
