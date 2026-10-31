@@ -12,7 +12,12 @@ import {
   type RuntimeLogContext,
   type RuntimeLogLevel,
 } from '@budgero/runtime';
-import { addBreadcrumb, captureAppError, slugifyEvent } from '@shared/lib/analytics/error-capture';
+import {
+  addBreadcrumb,
+  captureAppError,
+  slugifyEvent,
+  withoutConsoleCapture,
+} from '@shared/lib/analytics/error-capture';
 import { runtimeMessageCode } from '@shared/lib/analytics/error-codes';
 
 /** Runtime loggers attach the thrown error as `originalError` or `error` (sometimes already a string). */
@@ -41,7 +46,8 @@ export const runtimeErrorBridge: RuntimeComponentLogFn = (
   message: string,
   context?: RuntimeLogContext
 ): void => {
-  logRuntime(level, component, message, context);
+  // The bridge reports warn/error itself; the console copy must not be reported again.
+  withoutConsoleCapture(() => logRuntime(level, component, message, context));
   if (level !== 'warn' && level !== 'error') return;
   const event = slugifyEvent(message);
   addBreadcrumb('runtime', `${component}:${event}`);
