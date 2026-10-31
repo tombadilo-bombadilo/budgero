@@ -165,19 +165,22 @@ func (h *Hub) Run() {
 			totalConnections := len(h.clients[client.spaceID])
 			h.mu.Unlock()
 
-			log.Info().
-				Str("user_id", client.userID).
-				Str("space_id", client.spaceID).
+			l := client.logger()
+			l.Info().
 				Int("total_connections", totalConnections).
 				Msg("WebSocket client connected")
 
 		case client := <-h.Unregister:
 			h.removeAndCloseClient(client, websocket.CloseNormalClosure, "")
 
-			log.Info().
-				Str("user_id", client.userID).
-				Str("space_id", client.spaceID).
-				Msg("WebSocket client disconnected")
+			// A close the server initiated earlier (send buffer full, catch-up
+			// failure, block, removal, reset) kept its reason: say why.
+			l := client.logger()
+			ev := l.Info()
+			if code, reason := client.closeFrame(); reason != "" {
+				ev = ev.Int("close_code", code).Str("close_reason", reason)
+			}
+			ev.Msg("WebSocket client disconnected")
 
 		case message := <-h.broadcast:
 			// Send to all clients of the same space

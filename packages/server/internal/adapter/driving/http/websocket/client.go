@@ -10,6 +10,7 @@ import (
 	"budgero-server/internal/port/driven/external"
 
 	"github.com/gorilla/websocket"
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	sqlite "modernc.org/sqlite"
 )
@@ -49,6 +50,10 @@ type Client struct {
 	Send    chan *Message
 	userID  string
 	spaceID string
+	// clientSession is the web client's random per-page-load id (the
+	// client_session query parameter), "" when absent. Set before the client
+	// is registered and never changed, so it needs no lock.
+	clientSession string
 
 	// sendClosed marks the Send channel as closed. Guarded by hub.mu: it is
 	// only set (and the channel only closed) via Hub.removeAndCloseClient
@@ -69,6 +74,30 @@ func NewClient(hub *Hub, conn *websocket.Conn, userID, spaceID string) *Client {
 		userID:  userID,
 		spaceID: spaceID,
 	}
+}
+
+// WithClientSession records the client's per-page-load session id (already
+// validated by the caller) so this connection's log lines can be matched
+// with the client's own error reports. Call it before registering the client.
+func (c *Client) WithClientSession(id string) *Client {
+	c.clientSession = id
+	return c
+}
+
+// ClientSession returns the client's per-page-load session id, or "".
+func (c *Client) ClientSession() string { return c.clientSession }
+
+// logger returns the global logger with this connection's user, space and
+// client session attached. Used for lifecycle and failure lines only; per
+// frame debug lines stay on the bare logger.
+func (c *Client) logger() zerolog.Logger { return c.withLogFields(&log.Logger) }
+
+func (c *Client) withLogFields(base *zerolog.Logger) zerolog.Logger {
+	ctx := base.With().Str("user_id", c.userID).Str("space_id", c.spaceID)
+	if c.clientSession != "" {
+		ctx = ctx.Str("client_session", c.clientSession)
+	}
+	return ctx.Logger()
 }
 
 // ReadPump pumps messages from the websocket connection to the hub
@@ -92,7 +121,8 @@ func (c *Client) ReadPump() {
 		msgType, data, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Error().Err(err).Str("user_id", c.userID).Msg("WebSocket read error")
+				l := c.logger()
+				l.Error().Err(err).Msg("WebSocket read error")
 			}
 			break
 		}
@@ -127,10 +157,9 @@ func (c *Client) ReadPump() {
 					var mutation MutationMessage
 					if err := json.Unmarshal(data, &mutation); err != nil {
 						c.hub.telemetry.MutationProcessed(external.MutationRejectedInvalid)
-						log.Warn().
+						l := c.logger()
+						l.Warn().
 							Err(err).
-							Str("user_id", c.userID).
-							Str("space_id", c.spaceID).
 							Msg("Failed to parse mutation message")
 						id, _ := msg["id"].(string)
 						c.nack(id, NackInvalid)
@@ -146,10 +175,9 @@ func (c *Client) ReadPump() {
 						if err := c.hub.HandleMutation(c.spaceID, c.userID, &mutation, c); err != nil {
 							c.hub.telemetry.MutationProcessed(external.MutationRejectedError)
 							code := nackCodeFor(err)
-							log.Error().
+							l := c.logger()
+							l.Error().
 								Err(err).
-								Str("user_id", c.userID).
-								Str("space_id", c.spaceID).
 								Str("mutation_id", mutation.ID).
 								Str("nack_code", code).
 								Msg("Failed to handle mutation")
@@ -200,9 +228,8 @@ func (c *Client) ReadPump() {
 					// Route through the Send channel: WritePump is the sole
 					// socket writer (gorilla/websocket forbids concurrent writes).
 					if !c.hub.TrySend(c, &Message{Type: "encryption_key_version_ack", SpaceID: c.spaceID, Raw: response}) {
-						log.Error().
-							Str("user_id", c.userID).
-							Str("space_id", c.spaceID).
+						l := c.logger()
+						l.Error().
 							Msg("Failed to queue encryption key version ack - channel full or closed")
 					}
 				default:
@@ -229,9 +256,8 @@ func (c *Client) nack(mutationID, code string) {
 		"space_id": c.spaceID,
 	}
 	if !c.hub.TrySend(c, &Message{Type: "mutation_nack", SpaceID: c.spaceID, Raw: frame}) {
-		log.Warn().
-			Str("user_id", c.userID).
-			Str("space_id", c.spaceID).
+		l := c.logger()
+		l.Warn().
 			Str("mutation_id", mutationID).
 			Msg("Failed to queue mutation nack - channel full or closed")
 	}
@@ -289,10 +315,9 @@ const catchUpFetchMaxAttempts = 3
 func (c *Client) handleCatchUpRequest(since int64) {
 	mutations, err := c.getMutationsSinceWithRetry(since)
 	if err != nil {
-		log.Error().
+		l := c.logger()
+		l.Error().
 			Err(err).
-			Str("user_id", c.userID).
-			Str("space_id", c.spaceID).
 			Int64("since_version", since).
 			Msg("Failed to get mutations for catch-up; closing connection so the client retries")
 		c.hub.CloseClient(c, websocket.CloseInternalServerErr, CloseReasonCatchUpFailed)
@@ -306,10 +331,9 @@ func (c *Client) handleCatchUpRequest(since int64) {
 		latestVersion, latestErr = c.hub.GetLatestMutationVersion(c.spaceID)
 	}
 	if latestErr != nil {
-		log.Error().
+		l := c.logger()
+		l.Error().
 			Err(latestErr).
-			Str("user_id", c.userID).
-			Str("space_id", c.spaceID).
 			Msg("Failed to fetch latest mutation version for catch-up; closing connection so the client retries")
 		c.hub.CloseClient(c, websocket.CloseInternalServerErr, CloseReasonCatchUpFailed)
 		return
@@ -317,9 +341,8 @@ func (c *Client) handleCatchUpRequest(since int64) {
 
 	response := buildCatchUpResponse(c.spaceID, since, mutations, latestVersion)
 	if !c.hub.sendOrTimeout(c, &Message{Type: "catch_up_response", SpaceID: c.spaceID, Raw: response}) {
-		log.Error().
-			Str("user_id", c.userID).
-			Str("space_id", c.spaceID).
+		l := c.logger()
+		l.Error().
 			Msg("Failed to queue catch-up response; closing connection so the client retries")
 		c.hub.CloseClient(c, websocket.CloseInternalServerErr, CloseReasonCatchUpFailed)
 		return
@@ -380,9 +403,9 @@ func (c *Client) WritePump() {
 			// through the single-writer Send channel.
 			if message.Raw != nil {
 				if err := c.conn.WriteJSON(message.Raw); err != nil {
-					log.Error().
+					l := c.logger()
+					l.Error().
 						Err(err).
-						Str("user_id", c.userID).
 						Str("type", message.Type).
 						Msg("Failed to write raw payload to WebSocket")
 					return
@@ -403,9 +426,9 @@ func (c *Client) WritePump() {
 				}
 
 				if err := c.conn.WriteJSON(ackMsg); err != nil {
-					log.Error().
+					l := c.logger()
+					l.Error().
 						Err(err).
-						Str("user_id", c.userID).
 						Msg("Failed to write mutation ack to WebSocket")
 					return
 				}
@@ -444,9 +467,9 @@ func (c *Client) WritePump() {
 				}
 
 				if err := c.conn.WriteJSON(appliedMsg); err != nil {
-					log.Error().
+					l := c.logger()
+					l.Error().
 						Err(err).
-						Str("user_id", c.userID).
 						Msg("Failed to write mutation applied to WebSocket")
 					return
 				}
@@ -460,9 +483,9 @@ func (c *Client) WritePump() {
 			default:
 				// Regular message
 				if err := c.conn.WriteJSON(message); err != nil {
-					log.Error().
+					l := c.logger()
+					l.Error().
 						Err(err).
-						Str("user_id", c.userID).
 						Msg("Failed to write message to WebSocket")
 					return
 				}

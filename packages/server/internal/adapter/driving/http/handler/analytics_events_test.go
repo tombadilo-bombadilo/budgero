@@ -23,6 +23,12 @@ type trackedEvent struct {
 type recordingTracker struct {
 	mu     sync.Mutex
 	events []trackedEvent
+	excs   []trackedException
+}
+
+type trackedException struct {
+	distinctID string
+	exc        *analytics.ServerException
 }
 
 func (r *recordingTracker) Enabled() bool { return true }
@@ -35,7 +41,17 @@ func (r *recordingTracker) Track(userID string, event analytics.Event) {
 
 func (r *recordingTracker) SetOptOut(string, bool) {}
 
-func (r *recordingTracker) CaptureException(string, *analytics.ServerException) {}
+func (r *recordingTracker) CaptureException(distinctID string, exc *analytics.ServerException) {
+	r.mu.Lock()
+	r.excs = append(r.excs, trackedException{distinctID: distinctID, exc: exc})
+	r.mu.Unlock()
+}
+
+func (r *recordingTracker) exceptions() []trackedException {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return append([]trackedException(nil), r.excs...)
+}
 
 func (r *recordingTracker) names() []string {
 	r.mu.Lock()

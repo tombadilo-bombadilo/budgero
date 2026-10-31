@@ -60,7 +60,7 @@ var Registry = map[string][]string{
 	"bank_relay_call":       {"provider", "outcome", "error_code"},
 	// Server exceptions (PostHog error tracking). $exception_list is a
 	// structured payload (see exception.go), not a flat property.
-	ExceptionEventName: {"$exception_level", "error_code", "route", "method", "status", "request_id", "server_version"},
+	ExceptionEventName: {"$exception_level", "error_code", "route", "method", "status", "request_id", "client_session", "server_version"},
 }
 
 func newEvent(name string, props map[string]string) Event {

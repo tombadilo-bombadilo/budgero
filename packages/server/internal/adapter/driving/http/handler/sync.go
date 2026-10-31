@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"budgero-server/internal/adapter/driving/http/middleware"
+	"budgero-server/internal/appmeta"
 	"budgero-server/internal/domain"
+	"budgero-server/internal/domain/analytics"
 	"budgero-server/internal/pkg/crypto"
 	"budgero-server/internal/port/driven/external"
 
@@ -272,12 +274,13 @@ func (h *Handlers) UploadDatabase(c echo.Context) error {
 	// to an older mutation-log position (out-of-band uploads excepted).
 	if stateErr == nil && c.Request().Header.Get("X-Out-Of-Band") != "1" &&
 		mutationVersion < currentState.SnapshotMutationVersion {
-		log.Warn().
-			Str("user_id", userID).
+		reqLog := middleware.Logger(c)
+		reqLog.Warn().
 			Str("space_id", blob.SpaceID).
 			Int64("client_mutation_version", mutationVersion).
 			Int64("server_mutation_version", currentState.SnapshotMutationVersion).
 			Msg("Legacy upload rejected: snapshot would regress the mutation log position")
+		h.reportRefusal(c, refusalSnapshotRegression)
 		return c.JSON(http.StatusConflict, map[string]any{
 			"error":                   "mutation_version_regression",
 			"message":                 "This snapshot is older than the one on the server. Download the latest first.",
@@ -706,12 +709,41 @@ func responseStatusFor(c echo.Context, err error) int {
 	return http.StatusInternalServerError
 }
 
+// Blob upload refusals reported as handled warning exceptions: the sync
+// failures a client is expected to recover from, and the ones whose cause
+// otherwise has to be guessed from client reports.
+var (
+	refusalSnapshotRegression = middleware.Refusal{
+		Type: "SnapshotRegression", Code: analytics.ErrCodeSnapshotRegression, Status: http.StatusConflict,
+	}
+	refusalSnapshotConflict = middleware.Refusal{
+		Type: "SnapshotConflict", Code: analytics.ErrCodeSnapshotConflict, Status: http.StatusConflict,
+	}
+	refusalEncryptionKeyOutdated = middleware.Refusal{
+		Type: "EncryptionKeyOutdated", Code: analytics.ErrCodeEncryptionKeyOutdated, Status: http.StatusConflict,
+	}
+	refusalFormatTooNew = middleware.Refusal{
+		Type: "FormatTooNew", Code: analytics.ErrCodeFormatTooNew, Status: http.StatusUpgradeRequired,
+	}
+)
+
+// reportRefusal sends one handled $exception (level warning) for a request
+// this handler refused on purpose. Safe when analytics is not wired; at
+// most one event per request.
+func (h *Handlers) reportRefusal(c echo.Context, r middleware.Refusal) {
+	if h.services == nil || h.services.Analytics == nil {
+		return
+	}
+	middleware.ReportRefusal(c, h.services.Analytics, appmeta.BuildVersion(), r)
+}
+
 func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error {
 	userID := middleware.GetUserIDFromContext(c)
 	if userID == "" {
 		log.Warn().Msg("Database blob upload request without authentication")
 		return echo.NewHTTPError(http.StatusUnauthorized, "user not authenticated")
 	}
+	logger := middleware.Logger(c)
 
 	ctx := c.Request().Context()
 	spaceParam := c.QueryParam("space_id")
@@ -720,8 +752,7 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 		return mapServiceError(err)
 	}
 
-	log.Info().
-		Str("user_id", userID).
+	logger.Info().
 		Str("space_id", blob.SpaceID).
 		Str("db_path", blob.BlobPath).
 		Msg("Database blob upload request")
@@ -730,12 +761,12 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 	// exactly the corruption path this gate exists to close.
 	uploadFormat := clientDeclaredFormat(c)
 	if uploadFormat < blob.DataFormatVersion {
-		log.Warn().
-			Str("user_id", userID).
+		logger.Warn().
 			Str("space_id", blob.SpaceID).
 			Int64("blob_format", blob.DataFormatVersion).
 			Int64("upload_format", uploadFormat).
 			Msg("Blob upload rejected: blob is in a newer data format than the client writes")
+		h.reportRefusal(c, refusalFormatTooNew)
 		return echo.NewHTTPError(
 			http.StatusUpgradeRequired,
 			"this space uses a newer data format; update the app to continue syncing",
@@ -743,9 +774,8 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 	}
 
 	if err = os.MkdirAll(filepath.Dir(blob.BlobPath), 0o750); err != nil {
-		log.Error().
+		logger.Error().
 			Err(err).
-			Str("user_id", userID).
 			Str("space_id", blob.SpaceID).
 			Msg("Failed to create space directory")
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to prepare storage directory")
@@ -758,9 +788,8 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 		"failed to read blob request body",
 	)
 	if err != nil {
-		log.Error().
+		logger.Error().
 			Err(err).
-			Str("user_id", userID).
 			Str("space_id", blob.SpaceID).
 			Msg("Failed to read blob request body")
 		return err
@@ -768,8 +797,7 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 
 	rec.size = int64(len(data))
 	if len(data) == 0 {
-		log.Warn().
-			Str("user_id", userID).
+		logger.Warn().
 			Str("space_id", blob.SpaceID).
 			Msg("Empty blob upload attempted")
 		return echo.NewHTTPError(http.StatusBadRequest, "empty blob data")
@@ -790,13 +818,13 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 	// are exempt; the catch-up path handles every other case by downloading.
 	outOfBand := c.Request().Header.Get("X-Out-Of-Band") == "1"
 	if stateErr == nil && !outOfBand && mutationVersion < currentState.SnapshotMutationVersion {
-		log.Warn().
-			Str("user_id", userID).
+		logger.Warn().
 			Str("space_id", blob.SpaceID).
 			Int64("client_mutation_version", mutationVersion).
 			Int64("server_mutation_version", currentState.SnapshotMutationVersion).
 			Msg("Blob upload rejected: snapshot would regress the mutation log position")
 		rec.regressed = true
+		h.reportRefusal(c, refusalSnapshotRegression)
 		return c.JSON(http.StatusConflict, map[string]any{
 			"error":                   "mutation_version_regression",
 			"message":                 "This snapshot is older than the one on the server. Download the latest first.",
@@ -813,8 +841,7 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 		if parsed, parseErr := strconv.ParseInt(raw, 10, 64); parseErr == nil && parsed >= 0 {
 			clientVersion = parsed
 		} else {
-			log.Warn().
-				Str("user_id", userID).
+			logger.Warn().
 				Str("space_id", blob.SpaceID).
 				Str("header", raw).
 				Msg("Ignoring unparseable X-Database-Version header on blob upload")
@@ -823,12 +850,12 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 
 	if clientVersion >= 0 && stateErr == nil {
 		if clientVersion != 0 && clientVersion < currentState.Version {
-			log.Warn().
-				Str("user_id", userID).
+			logger.Warn().
 				Str("space_id", blob.SpaceID).
 				Int64("client_version", clientVersion).
 				Int64("server_version", currentState.Version).
 				Msg("Blob upload rejected due to version conflict")
+			h.reportRefusal(c, refusalSnapshotConflict)
 			return c.JSON(http.StatusConflict, map[string]any{
 				"error":          "version_conflict",
 				"message":        "Database version conflict. Client must download latest blob first.",
@@ -838,11 +865,11 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 			})
 		}
 		if clientVersion == 0 && currentState.Version > 0 {
-			log.Warn().
-				Str("user_id", userID).
+			logger.Warn().
 				Str("space_id", blob.SpaceID).
 				Int64("server_version", currentState.Version).
 				Msg("Client attempting blob upload with version 0 when server has existing data")
+			h.reportRefusal(c, refusalSnapshotConflict)
 			return c.JSON(http.StatusConflict, map[string]any{
 				"error":          "version_conflict",
 				"message":        "Server already has a database blob. Please download it first.",
@@ -859,13 +886,13 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 		var clientKeyVersion int64
 		if _, scanErr := fmt.Sscanf(clientKeyVersionStr, "%d", &clientKeyVersion); scanErr == nil {
 			if clientKeyVersion < currentState.EncryptionKeyVersion {
-				log.Warn().
-					Str("user_id", userID).
+				logger.Warn().
 					Str("space_id", blob.SpaceID).
 					Int64("client_key_version", clientKeyVersion).
 					Int64("server_key_version", currentState.EncryptionKeyVersion).
 					Msg("Blob upload rejected due to encryption key version mismatch")
 				rec.keyOutdated = true
+				h.reportRefusal(c, refusalEncryptionKeyOutdated)
 				return c.JSON(http.StatusConflict, map[string]any{
 					"error":              "encryption_key_outdated",
 					"message":            "Encryption key has been changed. Please re-enter your master password.",
@@ -882,9 +909,8 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 	// Stage the bytes in a private temp file first; nothing is visible yet.
 	tempPath, err := writeBlobTemp(blob.BlobPath, data)
 	if err != nil {
-		log.Error().
+		logger.Error().
 			Err(err).
-			Str("user_id", userID).
 			Str("space_id", blob.SpaceID).
 			Str("db_path", blob.BlobPath).
 			Int("data_size", len(data)).
@@ -902,8 +928,7 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 		if clientVersion >= 0 {
 			return h.services.Space.UpdateSyncStateCAS(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion, clientVersion)
 		}
-		log.Warn().
-			Str("user_id", userID).
+		logger.Warn().
 			Str("space_id", blob.SpaceID).
 			Msg("Blob upload without usable X-Database-Version header; advancing sync version unconditionally")
 		return h.services.Space.UpdateSyncState(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion)
@@ -913,12 +938,12 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 		if refreshed, refreshErr := h.services.Space.GetSyncState(ctx, userID, blob.SpaceID); refreshErr == nil {
 			serverVersion = refreshed.Version
 		}
-		log.Warn().
-			Str("user_id", userID).
+		logger.Warn().
 			Str("space_id", blob.SpaceID).
 			Int64("client_version", clientVersion).
 			Int64("server_version", serverVersion).
 			Msg("Blob upload lost version compare-and-swap; rejecting")
+		h.reportRefusal(c, refusalSnapshotConflict)
 		return c.JSON(http.StatusConflict, map[string]any{
 			"error":          "version_conflict",
 			"message":        "Database version conflict. Client must download latest blob first.",
@@ -931,9 +956,8 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 		// Loud on purpose: the version was advanced but the rename failed, so
 		// the stored blob lags the recorded hash until the client re-uploads.
 		// Downloading clients detect the mismatch via X-Database-Hash.
-		log.Error().
+		logger.Error().
 			Err(err).
-			Str("user_id", userID).
 			Str("space_id", blob.SpaceID).
 			Str("db_path", blob.BlobPath).
 			Int64("reserved_version", newVersion).
@@ -941,9 +965,8 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to save blob")
 	}
 	if err != nil {
-		log.Error().
+		logger.Error().
 			Err(err).
-			Str("user_id", userID).
 			Str("space_id", blob.SpaceID).
 			Str("hash", hash).
 			Msg("Failed to update sync state for blob upload")
@@ -955,15 +978,14 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 		// recorded format a later legacy upload would be allowed to overwrite
 		// them. The client retries the (idempotent) upload.
 		if err := h.services.Space.RaiseDataFormatVersion(ctx, userID, blob.SpaceID, uploadFormat); err != nil {
-			log.Error().
+			logger.Error().
 				Err(err).
-				Str("user_id", userID).
 				Str("space_id", blob.SpaceID).
 				Int64("upload_format", uploadFormat).
 				Msg("Failed to record blob data format version")
 			return echo.NewHTTPError(http.StatusInternalServerError, "failed to record data format version")
 		}
-		log.Info().
+		logger.Info().
 			Str("space_id", blob.SpaceID).
 			Int64("data_format", uploadFormat).
 			Msg("Space blob data format raised")
@@ -973,8 +995,7 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 		h.syncHub.NotifyDatabaseUpdate(blob.SpaceID, userID, newVersion, hash, outOfBand)
 	}
 
-	log.Info().
-		Str("user_id", userID).
+	logger.Info().
 		Str("space_id", blob.SpaceID).
 		Str("db_path", blob.BlobPath).
 		Int("data_size", len(data)).
