@@ -7952,7 +7952,7 @@ msgstr "Execution failed"
 
 #. placeholder {0}: candidate.id
 #. placeholder {1}: candidate.date
-#. placeholder {2}: (candidate.inflow - candidate.outflow) / 1000
+#. placeholder {2}: scaledToDecimal( candidate.inflow - candidate.outflow, row.input.currency )
 #. placeholder {3}: row.input.currency
 #. placeholder {4}: candidate.payee
 #. placeholder {5}: candidate.memo
@@ -11365,6 +11365,10 @@ msgstr "Need {needed} more available"
 #: src/pages/onboarding/steps/CurrencyStep.tsx
 msgid "NEED A DIFFERENT CURRENCY?"
 msgstr "NEED A DIFFERENT CURRENCY?"
+
+#: src/features/import/ui/steps/UploadStep.tsx
+msgid "Need a template? <0>Spreadsheet template (.xlsx)</0> · <1>CSV template</1>"
+msgstr "Need a template? <0>Spreadsheet template (.xlsx)</0> · <1>CSV template</1>"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Need an account? <0>Sign up</0>"

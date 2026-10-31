@@ -7950,7 +7950,7 @@ msgstr "Error en la ejecución"
 
 #. placeholder {0}: candidate.id
 #. placeholder {1}: candidate.date
-#. placeholder {2}: (candidate.inflow - candidate.outflow) / 1000
+#. placeholder {2}: scaledToDecimal( candidate.inflow - candidate.outflow, row.input.currency )
 #. placeholder {3}: row.input.currency
 #. placeholder {4}: candidate.payee
 #. placeholder {5}: candidate.memo
@@ -11363,6 +11363,10 @@ msgstr "Faltan {needed} para alcanzar el saldo disponible objetivo"
 #: src/pages/onboarding/steps/CurrencyStep.tsx
 msgid "NEED A DIFFERENT CURRENCY?"
 msgstr "¿NECESITAS OTRA DIVISA?"
+
+#: src/features/import/ui/steps/UploadStep.tsx
+msgid "Need a template? <0>Spreadsheet template (.xlsx)</0> · <1>CSV template</1>"
+msgstr "¿Necesitas una plantilla? <0>Plantilla de hoja de cálculo (.xlsx)</0> · <1>Plantilla CSV</1>"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Need an account? <0>Sign up</0>"

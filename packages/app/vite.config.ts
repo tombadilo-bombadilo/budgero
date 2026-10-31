@@ -250,7 +250,7 @@ export default defineConfig(({ mode, isPreview }) => {
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
         navigateFallback: '/index.html',
         navigateFallbackAllowlist: [/^\/(?!__).*/], // Allow all routes starting with / except /__*
-        navigateFallbackDenylist: [/^\/api\//], // Never fallback navigations hitting /api
+        navigateFallbackDenylist: [/^\/api\//, /^\/templates\//], // Never fallback navigations hitting /api or downloadable templates
         runtimeCaching: [
           {
             urlPattern: ({ url, sameOrigin }) =>

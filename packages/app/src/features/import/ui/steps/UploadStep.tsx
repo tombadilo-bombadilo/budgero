@@ -7,6 +7,9 @@ import { Alert, AlertDescription } from '@shared/ui/alert';
 import { Upload, AlertTriangle } from 'lucide-react';
 import { SUPPORTED_IMPORT_FORMATS_LABEL } from '@features/import/lib/constants';
 
+/** Import templates shipped in public/templates (served next to the app). */
+const TEMPLATE_BASE = `${import.meta.env.BASE_URL}templates/`;
+
 interface UploadStepProps {
   fileInputRef: RefObject<HTMLInputElement | null>;
   onFileChange: (e: ChangeEvent<HTMLInputElement>) => void;
@@ -63,6 +66,26 @@ export function UploadStep({
           <p className="text-sm text-muted-foreground">
             <Trans>
               Supported formats: CSV, TSV, TXT, PDF (table data), OFX, QFX, QIF, CAMT.053 (XML)
+            </Trans>
+          </p>
+          <p className="text-sm text-muted-foreground" data-testid="import-templates">
+            <Trans>
+              Need a template?{' '}
+              <a
+                href={`${TEMPLATE_BASE}budgero-import-template.xlsx`}
+                download
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                Spreadsheet template (.xlsx)
+              </a>{' '}
+              ·{' '}
+              <a
+                href={`${TEMPLATE_BASE}budgero-import-template.csv`}
+                download
+                className="font-medium text-primary underline underline-offset-2"
+              >
+                CSV template
+              </a>
             </Trans>
           </p>
         </div>

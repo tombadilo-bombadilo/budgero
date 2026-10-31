@@ -22,6 +22,15 @@ Der Importer akzeptiert mehr als nur CSV:
 
 Der letzte Punkt ist wichtiger, als er klingt: Viele Banken bieten Kontoauszüge nur als PDF an, und die Tabellenextraktion bedeutet, dass du sie nicht abtippen musst. (Es handelt sich um Tabellenextraktion, nicht um Belegscanning — richte es auf Kontoauszüge, nicht auf zerknitterte Kassenbons.)
 
+## Mit einer Vorlage starten
+
+Kein Bankexport, oder du führst Buch von Hand (Bargeld, eine Krypto-Wallet, eine alte Tabelle)? Starte mit der Importvorlage. Sie ist auch im Upload-Schritt des Importdialogs verlinkt.
+
+- [Tabellenvorlage (.xlsx)](https://my.budgero.app/templates/budgero-import-template.xlsx) — ein Tab „How to use“, ein leerer Tab „Transactions“ und ein ausgefüllter Tab „Example“. Öffne sie in Excel, Google Sheets oder Numbers, fülle den Tab „Transactions“ aus und lade diesen Tab als CSV herunter.
+- [CSV-Vorlage](https://my.budgero.app/templates/budgero-import-template.csv) — nur die Kopfzeile: `Date, Payee, Amount, Memo, Category, Account`.
+
+Date, Payee, Amount und Memo werden beim Import automatisch zugeordnet; Category und Account wählst du im Zuordnungsschritt selbst. Ausgaben trägst du als negative Beträge ein. Für Krypto-Konten gibst du ganze Coins ein (zum Beispiel `0.0035` BTC); Budgero speichert sie auf 8 Nachkommastellen genau. Die Anleitung in der Vorlage ist auf Englisch.
+
 ## Deine Datei zuordnen
 
 Bankexporte sind sich bei Spaltennamen nie einig, deshalb zeigt der Importer eine Vorschau und lässt dich die Spalten selbst zuordnen:
