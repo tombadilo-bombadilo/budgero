@@ -1807,7 +1807,7 @@
     "account_data_email_account_id_preferences": "Données du compte (e-mail, identifiant de compte, préférences)",
     "for_the_life_of_your_account": "Pendant toute la durée de vie de votre compte, plus jusqu'à 30 jours après suppression pour permettre la récupération et la purge des sauvegardes",
     "encrypted_vault_data": "Données du coffre-fort chiffrées",
-    "for_the_life_of_your_account_2": "Pendant toute la durée de vie de votre compte ; supprimées dans les 30 jours suivant la suppression du compte (Budgero ne peut y accéder à aucun moment)",
+    "for_the_life_of_your_account_2": "Pendant toute la durée de vie de votre compte ; supprimées dans les 30 jours suivant la suppression du compte (Budgero ne peut y accéder à aucun moment). Les copies chiffrées précédentes d’un espace de travail sont conservées jusqu’à 7 jours pour pouvoir annuler un problème de synchronisation.",
     "billing_records_orders_invoices": "Registres de facturation (commandes, factures)",
     "retained_as_required_by_applicable_tax": "Conservés conformément aux lois fiscales et comptables applicables (généralement 5 à 10 ans) ; ensuite, supprimés",
     "service_email_send_open_bounce_metadata": "Métadonnées d'envoi/ouverture/rebond des e-mails de service",

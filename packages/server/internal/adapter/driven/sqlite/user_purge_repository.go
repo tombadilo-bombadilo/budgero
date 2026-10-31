@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 
 	"budgero-server/internal/domain"
@@ -70,6 +71,11 @@ func (r *UserPurgeRepository) Purge(ctx context.Context, userID string) (_ *doma
 		return nil, nil, err
 	}
 	files = append(files, blobPaths...)
+	historyFiles, err := r.snapshotHistoryFiles(ctx, tx, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	files = append(files, historyFiles...)
 
 	ownedSpaces := `(SELECT space_id FROM budget_spaces WHERE owner_user_id = ?)`
 	steps := []struct {
@@ -110,6 +116,7 @@ func (r *UserPurgeRepository) Purge(ctx context.Context, userID string) (_ *doma
 		{nil, "budget_space_members",
 			`DELETE FROM budget_space_members WHERE user_id = ? OR space_id IN ` + ownedSpaces,
 			[]any{userID, userID}},
+		{nil, "space_blob_history", `DELETE FROM space_blob_history WHERE space_id IN ` + ownedSpaces, []any{userID}},
 		{nil, "budget_space_blobs", `DELETE FROM budget_space_blobs WHERE space_id IN ` + ownedSpaces, []any{userID}},
 		{nil, "budget_spaces", `DELETE FROM budget_spaces WHERE owner_user_id = ?`, []any{userID}},
 		{nil, "push_api_tokens", `DELETE FROM push_api_tokens WHERE user_id = ?`, []any{userID}},
@@ -195,6 +202,50 @@ ORDER BY u.created_at`)
 		out = append(out, u)
 	}
 	return out, rows.Err()
+}
+
+// snapshotHistoryFiles lists the user's owned spaces' snapshot history files,
+// followed by each space's existing history folder, so removing the list in
+// order leaves the (then empty) folders removable too.
+func (r *UserPurgeRepository) snapshotHistoryFiles(ctx context.Context, tx *sql.Tx, userID string) ([]string, error) {
+	ok, err := tableExists(ctx, tx, "space_blob_history")
+	if err != nil || !ok {
+		return nil, err
+	}
+	files, err := queryStrings(ctx, tx, `SELECT h.file_path FROM space_blob_history h
+		JOIN budget_spaces s ON s.space_id = h.space_id
+		WHERE s.owner_user_id = ? AND h.file_path <> ''`, userID)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := tx.QueryContext(ctx, `SELECT b.space_id, b.blob_path FROM budget_space_blobs b
+		JOIN budget_spaces s ON s.space_id = b.space_id
+		WHERE s.owner_user_id = ? AND b.blob_path <> ''`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	dirs := map[string]bool{}
+	for rows.Next() {
+		var spaceID, blobPath string
+		if err := rows.Scan(&spaceID, &blobPath); err != nil {
+			return nil, err
+		}
+		dirs[domain.SpaceBlobHistoryDir(SpaceBlobPath(spaceID), spaceID)] = true
+		dirs[domain.SpaceBlobHistoryDir(blobPath, spaceID)] = true
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	for _, f := range files {
+		delete(dirs, f)
+	}
+	for dir := range dirs {
+		if info, statErr := os.Stat(dir); statErr == nil && info.IsDir() {
+			files = append(files, dir)
+		}
+	}
+	return files, nil
 }
 
 func queryStrings(ctx context.Context, tx *sql.Tx, query string, args ...any) ([]string, error) {

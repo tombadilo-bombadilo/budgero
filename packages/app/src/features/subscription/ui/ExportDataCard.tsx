@@ -1,4 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { loadSqlJs } from '@shared/lib/sql/load-sql-js';
 import { useState } from 'react';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
@@ -21,68 +22,6 @@ import { downloadBlob } from '@shared/lib/download';
 import { getErrorMessage } from '@shared/lib/errors';
 import { resultsToCsv } from '@shared/lib/sql/csv';
 import { unwrapSpaceKeyWithMaster, encodeSpaceKey } from '@budgero/runtime';
-
-// SQL.js types (loaded globally via script tag)
-interface SqlJsDatabase {
-  exec(sql: string): { columns: string[]; values: unknown[][] }[];
-  close(): void;
-}
-
-interface SqlJsStatic {
-  Database: new (data?: Uint8Array) => SqlJsDatabase;
-}
-
-async function loadSqlJs(): Promise<SqlJsStatic> {
-  const globalWindow = window as Window & {
-    initSqlJs?: (config: { locateFile: (file: string) => string }) => Promise<SqlJsStatic>;
-  };
-
-  if (typeof globalWindow.initSqlJs === 'function') {
-    return globalWindow.initSqlJs({
-      locateFile: (file) => `/sql.js/${file}`,
-    });
-  }
-
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      reject(new Error('Timeout loading SQL.js'));
-    }, 15000);
-
-    const script = document.createElement('script');
-    script.src = '/sql.js/sql-wasm.js';
-    script.onload = () => {
-      let attempts = 0;
-      const waitForInit = () => {
-        if (typeof globalWindow.initSqlJs === 'function') {
-          globalWindow
-            .initSqlJs({
-              locateFile: (file) => `/sql.js/${file}`,
-            })
-            .then((SQL) => {
-              clearTimeout(timeout);
-              resolve(SQL);
-            })
-            .catch((err) => {
-              clearTimeout(timeout);
-              reject(err);
-            });
-        } else if (attempts < 50) {
-          attempts++;
-          setTimeout(waitForInit, 100);
-        } else {
-          clearTimeout(timeout);
-          reject(new Error('SQL.js failed to initialize'));
-        }
-      };
-      waitForInit();
-    };
-    script.onerror = () => {
-      clearTimeout(timeout);
-      reject(new Error('Failed to load SQL.js script'));
-    };
-    document.head.appendChild(script);
-  });
-}
 
 interface ExportDataCardProps {
   spaceId: string | null | undefined;

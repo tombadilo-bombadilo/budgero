@@ -229,8 +229,10 @@ msgstr "{0, plural, one {{1}: # {itemLabel}} other {{2}: # {itemLabel}}}"
 msgid "{0, plural, one {{1}/day left · # day} other {{2}/day left · # days}}"
 msgstr "{0, plural, one {{1}/Tag übrig · # Tag} other {{2}/Tag übrig · # Tage}}"
 
+#. placeholder {0}: data.accounts
 #. placeholder {0}: preview.accountCount
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "{0, plural, one {# account} other {# accounts}}"
 msgstr "{0, plural, one {# Konto} other {# Konten}}"
 
@@ -239,6 +241,11 @@ msgstr "{0, plural, one {# Konto} other {# Konten}}"
 msgid "{0, plural, one {# bank transaction needs review} other {# bank transactions need review}}"
 msgstr "{0, plural, one {# Banktransaktion muss geprüft werden} other {# Banktransaktionen müssen geprüft werden}}"
 
+#. placeholder {0}: data.budgets
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "{0, plural, one {# budget} other {# budgets}}"
+msgstr "{0, plural, one {# Budget} other {# Budgets}}"
+
 #. placeholder {0}: overspentCategories.length
 #. placeholder {1}: formatMilli(globalLocalizer, asMilli(Math.min(totalOverspent, readyToAssign)))
 #. placeholder {2}: formatMilli(globalLocalizer, asMilli(Math.min(totalOverspent, readyToAssign)))
@@ -246,8 +253,10 @@ msgstr "{0, plural, one {# Banktransaktion muss geprüft werden} other {# Banktr
 msgid "{0, plural, one {# category needs {1}} other {# categories need {2}}}"
 msgstr "{0, plural, one {# Kategorie benötigt {1}} other {# Kategorien benötigen {2}}}"
 
+#. placeholder {0}: data.categories
 #. placeholder {0}: preview.categoryCount
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "{0, plural, one {# category} other {# categories}}"
 msgstr "{0, plural, one {# Kategorie} other {# Kategorien}}"
 
@@ -305,6 +314,11 @@ msgstr "{0, plural, one {# geteilte Transaktion erkannt} other {# geteilte Trans
 #: src/features/transactions/api/useDuplicateShortcut.ts
 msgid "{0, plural, one {# transaction duplicated} other {# transactions duplicated}}"
 msgstr "{0, plural, one {# Transaktion dupliziert} other {# Transaktionen dupliziert}}"
+
+#. placeholder {0}: data.transactions
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "{0, plural, one {# transaction} other {# transactions}}"
+msgstr "{0, plural, one {# Transaktion} other {# Transaktionen}}"
 
 #. placeholder {0}: users.length
 #: src/pages/admin/admin-users/UsersTable.tsx
@@ -499,6 +513,11 @@ msgstr "{0} Banktransaktionen passen eventuell zu Einträgen, die du schon hast.
 msgid "{0} behind"
 msgstr "{0} zurück"
 
+#. placeholder {0}: data.budgets
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#~ msgid "{0} budgets"
+#~ msgstr "{0} Budgets"
+
 #. placeholder {0}: actionDialog.user.email
 #. placeholder {0}: user.email
 #: src/pages/admin/admin-users/useAdminUsersState.ts
@@ -510,6 +529,17 @@ msgstr "{0} kann sich wieder anmelden"
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "{0} cannot log in"
 msgstr "{0} kann sich nicht anmelden"
+
+#. placeholder {0}: data.categories
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#~ msgid "{0} categories"
+#~ msgstr "{0} Kategorien"
+
+#. placeholder {0}: data.current.mutation_version
+#. placeholder {0}: entry.mutation_version
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#~ msgid "{0} changes"
+#~ msgstr "{0} Änderungen"
 
 #. placeholder {0}: hasRequiredColumns ? t`Update` : t`Add`
 #: src/features/reports/ui/SaveReportDialog.tsx
@@ -732,6 +762,11 @@ msgstr "{0}Transaktion{1}"
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "{0} transaction{1} waiting"
 msgstr "{0}Transaktion{1} wartend"
+
+#. placeholder {0}: data.transactions
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#~ msgid "{0} transactions"
+#~ msgstr "{0} Transaktionen"
 
 #. placeholder {0}: transactionStats.recentCount
 #: src/pages/accounts/AllTransactionsPage.tsx
@@ -4192,7 +4227,9 @@ msgstr "Am besten für Dokumente (~6GB)"
 
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 #: src/pages/settings/bank-sync/BankSyncPage.tsx
+#: src/pages/settings/SyncStatusPage.tsx
 msgid "Beta"
 msgstr "Beta"
 
@@ -4696,6 +4733,7 @@ msgstr "Kanadischer Dollar"
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 #: src/features/subscription/ui/ExportDataCard.tsx
 #: src/features/transactions/api/useTransferConversion.tsx
 #: src/features/transactions/ui/add-transaction/AddTransactionForm.tsx
@@ -5076,6 +5114,10 @@ msgstr "Girokonto"
 #: src/app/startup/resolve.ts
 msgid "Checking authentication and connectivity"
 msgstr "Authentifizierung und Verbindung werden geprüft"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Checking contents…"
+msgstr "Inhalt wird geprüft…"
 
 #: src/features/import/ui/csv-pdf-dialog/CSVPDFImportDialog.tsx
 msgid "Checking for duplicates…"
@@ -5723,6 +5765,10 @@ msgstr "Verbindungsstatus"
 msgid "Consecutive months"
 msgstr "Monate in Folge"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Contents can't be read on this device."
+msgstr "Der Inhalt kann auf diesem Gerät nicht gelesen werden."
+
 #. placeholder {0}: selectedCategories.length
 #: src/pages/budgeting/BudgetingPage.mobile.tsx
 msgid "Context ({0})"
@@ -5827,6 +5873,10 @@ msgstr "Pfad kopiert"
 #: src/pages/admin/admin-users/useAdminUsersState.ts
 msgid "Copied!"
 msgstr "Kopiert!"
+
+#: src/pages/settings/SnapshotHistoryPage.tsx
+msgid "Copies of this workspace kept by the server, to undo a sync problem."
+msgstr "Vom Server aufbewahrte Kopien dieses Arbeitsbereichs, um ein Synchronisierungsproblem rückgängig zu machen."
 
 #: src/features/bank-sync/ui/EnableBankingSetupCard.tsx
 #: src/pages/admin/SelfHostAdminDashboard.tsx
@@ -6053,6 +6103,10 @@ msgstr "YNAB ist nicht erreichbar. Prüfe deine Verbindung und versuche es erneu
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
 msgid "Couldn't resolve this match"
 msgstr "Diese Zuordnung konnte nicht abgeschlossen werden"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Couldn't restore this version"
+msgstr "Diese Version konnte nicht wiederhergestellt werden"
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Couldn't save the settings"
@@ -6457,6 +6511,10 @@ msgstr "Aktuelle Serie"
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "Current Streak:"
 msgstr "Aktuelle Serie:"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Current version"
+msgstr "Aktuelle Version"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Currently Available"
@@ -7293,6 +7351,24 @@ msgstr "Jede Zeile einer geteilten Transaktion benötigt eine Kategorie. Bitte w
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Each split line needs either an inflow or an outflow amount."
 msgstr "Jede Teilbuchung benötigt entweder einen Einnahme- oder einen Ausgabebetrag."
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Earlier version restored"
+msgstr "Frühere Version wiederhergestellt"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#: src/pages/settings/SnapshotHistoryPage.tsx
+#: src/shared/model/nav-registry.ts
+msgid "Earlier versions"
+msgstr "Frühere Versionen"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Earlier versions are not available right now."
+msgstr "Frühere Versionen sind gerade nicht verfügbar."
+
+#: src/pages/settings/SyncStatusPage.tsx
+msgid "Earlier versions of this workspace"
+msgstr "Frühere Versionen dieses Arbeitsbereichs"
 
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetCategoryRow.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
@@ -9339,6 +9415,10 @@ msgstr "Import-Einschränkungen"
 msgid "Import my budget →"
 msgstr "Mein Budget importieren →"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Import or restore"
+msgstr "Import oder Wiederherstellung"
+
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Import pending transactions"
 msgstr "Ausstehende Transaktionen importieren"
@@ -10472,6 +10552,7 @@ msgstr "Wird geladen..."
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Loading…"
@@ -10545,6 +10626,10 @@ msgstr "Edles dunkles Design mit Kohle- und warmen Kupferakzenten."
 #: src/pages/admin/admin-users/useAdminUsersState.ts
 msgid "Made {0} an admin"
 msgstr "{0} zum Admin gemacht"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "made before the master password changed"
+msgstr "vor der Änderung des Master-Passworts erstellt"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Make a few envelopes"
@@ -11437,6 +11522,11 @@ msgstr "Neueste zuerst, oder nach Betrag: erst Ausgaben, dann Einnahmen, jeweils
 msgid "Newest first"
 msgstr "Neueste zuerst"
 
+#. placeholder {0}: formatDate(newest, 'PP')
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "newest transaction {0}"
+msgstr "neueste Transaktion {0}"
+
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Next"
 msgstr "Weiter"
@@ -11732,6 +11822,10 @@ msgstr "Kein Datum gefunden — heute wird verwendet"
 #: src/features/ai/ui/AICategorizeDialog.tsx
 msgid "No description"
 msgstr "Keine Beschreibung"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "No earlier versions yet. One is kept each time this workspace syncs."
+msgstr "Noch keine früheren Versionen. Bei jeder Synchronisierung dieses Arbeitsbereichs wird eine aufbewahrt."
 
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
 msgid "No exchange rate available"
@@ -14585,6 +14679,10 @@ msgstr "Zurücksetzen..."
 msgid "Resize column"
 msgstr "Spaltenbreite ändern"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Restore"
+msgstr "Wiederherstellen"
+
 #. placeholder {0}: run.transactionCount
 #. placeholder {1}: run.transactionCount === 1 ? '' : 's'
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
@@ -14628,6 +14726,14 @@ msgstr "Die Wiederherstellung ist nicht verfügbar, solange dein Arbeitsbereich-
 msgid "Restore real rates"
 msgstr "Aktuelle Wechselkurse wiederherstellen"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Restore this version?"
+msgstr "Diese Version wiederherstellen?"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Restored copy"
+msgstr "Wiederhergestellte Kopie"
+
 #: src/features/budget-management/ui/create-budget-form/RestoreBackupTab.tsx
 msgid "Restoring a Budgero backup replaces all data in this workspace. Use it right after setting up Budgero Cloud or when you're ready to move your offline database into sync."
 msgstr "Das Wiederherstellen eines Budgero-Backups ersetzt alle Daten in diesem Arbeitsbereich. Verwende es direkt nach der Einrichtung von Budgero Cloud oder wenn du bereit bist, deine Offline-Datenbank zu synchronisieren."
@@ -14649,6 +14755,7 @@ msgid "Restoring..."
 msgstr "Wird wiederhergestellt..."
 
 #: src/features/account-management/ui/DevSimulateRateMoveButton.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Restoring…"
 msgstr "Wird wiederhergestellt…"
 
@@ -16890,6 +16997,10 @@ msgstr "Zu \"{0}\" gewechselt."
 msgid "Switched to your new budget."
 msgstr "Zu deinem neuen Budget gewechselt."
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Sync"
+msgstr "Synchronisierung"
+
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Sync Clerk -> Budgero"
 msgstr "Sync Clerk -> Budgero"
@@ -17307,6 +17418,10 @@ msgstr "Der gesendete Betrag bleibt unverändert. Beim Speichern werden der empf
 msgid "The server has confirmed all changes from this device."
 msgstr "Der Server hat alle Änderungen dieses Geräts bestätigt."
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "The server keeps the last few copies of this workspace, and one a day for the past week. Restoring a copy replaces the workspace on all devices and then re-applies every change made after it, so no edits are lost. Use it when a workspace looks empty or broken after syncing."
+msgstr "Der Server bewahrt die letzten Kopien dieses Arbeitsbereichs auf und eine pro Tag für die vergangene Woche. Beim Wiederherstellen wird der Arbeitsbereich auf allen Geräten ersetzt und danach jede spätere Änderung erneut angewendet, sodass keine Bearbeitungen verloren gehen. Nutze es, wenn ein Arbeitsbereich nach dem Synchronisieren leer oder kaputt aussieht."
+
 #: src/features/category-management/lib/delete-block.ts
 msgid "The system Income category can't be deleted."
 msgstr "Die Systemkategorie „Einnahmen“ kann nicht gelöscht werden."
@@ -17346,6 +17461,11 @@ msgstr "Der Arbeitsbereich und seine Daten wurden dauerhaft gelöscht."
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "The workspace name was updated successfully."
 msgstr "Der Name des Arbeitsbereichs wurde erfolgreich aktualisiert."
+
+#. placeholder {0}: formatDate(new Date(pending.became_current_at), 'PPp')
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "The workspace on all devices is replaced with the copy from {0}, then every change made after it is applied again. Download a backup first if you are unsure."
+msgstr "Der Arbeitsbereich wird auf allen Geräten durch die Kopie vom {0} ersetzt, danach wird jede spätere Änderung erneut angewendet. Lade zuerst ein Backup herunter, wenn du unsicher bist."
 
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "The workspace owner needs to renew access"
@@ -18600,6 +18720,12 @@ msgstr "Nicht unterstützte Datei"
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Up to 5 seats · free"
 msgstr "Bis zu 5 Plätze · kostenlos"
+
+#. placeholder {0}: data.current.mutation_version
+#. placeholder {0}: entry.mutation_version
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "up to change #{0}"
+msgstr "bis Änderung #{0}"
 
 #: src/features/bank-sync/ui/BankSyncButton.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
@@ -20042,6 +20168,10 @@ msgstr "Dein Name"
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "Your new goal has been created."
 msgstr "Dein neues Ziel wurde erstellt."
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Your other devices will reload it the next time they sync."
+msgstr "Deine anderen Geräte laden sie bei der nächsten Synchronisierung neu."
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Your other workspaces are not affected"

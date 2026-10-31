@@ -406,7 +406,55 @@ export const syncApi = {
   },
 };
 
+/** One stored earlier copy of a workspace snapshot (server keeps the last few). */
+export interface SnapshotHistoryEntry {
+  id: number;
+  sync_version: number;
+  mutation_version: number;
+  size_bytes: number;
+  became_current_at: string;
+  replaced_at: string;
+  origin: 'sync' | 'out_of_band' | 'restore';
+  encryption_key_version: number;
+  restorable: boolean;
+}
+
+export interface SnapshotHistory {
+  current: {
+    sync_version: number;
+    mutation_version: number;
+    size_bytes: number;
+    updated_at: string;
+    encryption_key_version: number;
+    origin: 'sync' | 'out_of_band' | 'restore';
+  } | null;
+  entries: SnapshotHistoryEntry[];
+}
+
 export const blobApi = {
+  /** Earlier copies of this workspace's snapshot kept by the server. */
+  listHistory: (spaceId: string): Promise<SnapshotHistory> =>
+    apiClient.get<SnapshotHistory>(
+      `/database/blob/history?space_id=${encodeURIComponent(spaceId)}`
+    ),
+
+  /** The encrypted bytes of one earlier copy (decrypted on the device only). */
+  downloadHistory: (spaceId: string, entryId: number) =>
+    apiClient.downloadBinary(
+      `/database/blob/history/${entryId}?space_id=${encodeURIComponent(spaceId)}`,
+      { 'X-Budgero-Protocol': String(SYNC_PROTOCOL_VERSION) }
+    ),
+
+  /** Make an earlier copy the workspace's snapshot again (every device reloads it). */
+  restoreHistory: (
+    spaceId: string,
+    entryId: number
+  ): Promise<{ version: number; mutation_version: number }> =>
+    apiClient.post(
+      `/database/blob/history/${entryId}/restore?space_id=${encodeURIComponent(spaceId)}`,
+      {}
+    ),
+
   // Get lightweight sync state (version/hash) for a space
   getState: async (spaceId: string): Promise<DatabaseState | null> => {
     try {

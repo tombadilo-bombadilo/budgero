@@ -1,4 +1,4 @@
-import { useLingui } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import {
   MutationLogCard,
   PendingChangesCard,
@@ -6,7 +6,10 @@ import {
   SyncPositionCard,
   VersionsCard,
 } from '@features/sync-diagnostics';
+import { Link } from 'react-router-dom';
+import { ArchiveRestore } from 'lucide-react';
 import { SettingsPageHeader } from '@pages/settings/SettingsPageHeader';
+import { Badge } from '@shared/ui/badge';
 
 export default function SyncStatusPage() {
   const { t } = useLingui();
@@ -21,6 +24,16 @@ export default function SyncStatusPage() {
       <PendingChangesCard />
       <MutationLogCard />
       <VersionsCard />
+      <Link
+        to="/settings/sync/history"
+        className="flex items-center gap-2 rounded-md border p-3 text-sm hover:bg-muted"
+      >
+        <ArchiveRestore className="h-4 w-4" />
+        <Trans>Earlier versions of this workspace</Trans>
+        <Badge variant="outline" className="text-[11px]">
+          <Trans>Beta</Trans>
+        </Badge>
+      </Link>
     </div>
   );
 }

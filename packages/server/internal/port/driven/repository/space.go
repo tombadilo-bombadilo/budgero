@@ -55,8 +55,32 @@ type SpaceRepository interface {
 	// RaiseDataFormatVersion records the blob's client data-format version (never lowers it).
 	RaiseDataFormatVersion(ctx context.Context, spaceID string, version int64) error
 
-	// DeleteBlob deletes blob metadata for a space.
+	// DeleteBlob deletes blob metadata for a space, including its snapshot
+	// history rows (the caller removes the files).
 	DeleteBlob(ctx context.Context, spaceID string) error
+
+	// MarkBlobPublished records how and when the current snapshot was published.
+	MarkBlobPublished(ctx context.Context, spaceID, origin string, at time.Time) error
+
+	// RestoreSyncStateCAS makes a history entry's metadata current at the next
+	// sync version, only if the current version still equals expectedVersion;
+	// returns domain.ErrSyncVersionConflict otherwise.
+	RestoreSyncStateCAS(ctx context.Context, spaceID string, entry *domain.SnapshotHistoryEntry, expectedVersion int64) (int64, error)
+
+	// Snapshot history operations
+
+	// InsertSnapshotHistory records a replaced snapshot and returns its id.
+	InsertSnapshotHistory(ctx context.Context, entry *domain.SnapshotHistoryEntry) (int64, error)
+
+	// ListSnapshotHistory returns a space's history entries, newest first.
+	ListSnapshotHistory(ctx context.Context, spaceID string) ([]domain.SnapshotHistoryEntry, error)
+
+	// GetSnapshotHistoryEntry returns one entry of the space's history, or
+	// domain.ErrSnapshotHistoryNotFound.
+	GetSnapshotHistoryEntry(ctx context.Context, spaceID string, id int64) (*domain.SnapshotHistoryEntry, error)
+
+	// DeleteSnapshotHistoryEntry deletes one entry row of the space's history.
+	DeleteSnapshotHistoryEntry(ctx context.Context, spaceID string, id int64) error
 
 	// ListBlobsByOwner lists all space blobs owned by a user.
 	ListBlobsByOwner(ctx context.Context, ownerID string) ([]domain.SpaceBlob, error)

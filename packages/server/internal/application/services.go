@@ -23,6 +23,8 @@ type Services struct {
 	Feedback        driving.FeedbackService
 	UpdatePing      driving.UpdatePingService
 	UserPurge       driving.UserPurgeService
+	// SnapshotHistory keeps replaced workspace snapshots for restore.
+	SnapshotHistory driving.SnapshotHistoryService
 	// Analytics is the server-side product analytics tracker. It drops
 	// everything on self-host and when POSTHOG_KEY is unset.
 	Analytics driving.AnalyticsTracker
@@ -79,5 +81,6 @@ func NewServices(repos *Repositories, cfg *config.Config) *Services {
 		Feedback:        NewFeedbackService(repos.Feedback),
 		UpdatePing:      NewUpdatePingService(repos.UpdatePing),
 		UserPurge:       NewUserPurgeService(repos.UserPurge),
+		SnapshotHistory: NewSnapshotHistoryService(repos.Space, cfg),
 	}
 }

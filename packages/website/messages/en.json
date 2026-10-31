@@ -1807,7 +1807,7 @@
     "account_data_email_account_id_preferences": "Account data (email, account ID, preferences)",
     "for_the_life_of_your_account": "For the life of your account, plus up to 30 days after deletion to allow for recovery and to flush backups",
     "encrypted_vault_data": "Encrypted vault data",
-    "for_the_life_of_your_account_2": "For the life of your account; deleted within 30 days of account deletion (Budgero cannot read it at any point)",
+    "for_the_life_of_your_account_2": "For the life of your account; deleted within 30 days of account deletion (Budgero cannot read it at any point). Earlier encrypted copies of a workspace are kept for up to 7 days so a sync problem can be undone.",
     "billing_records_orders_invoices": "Billing records (orders, invoices)",
     "retained_as_required_by_applicable_tax": "Retained as required by applicable tax and accounting law (typically 5–10 years); after that, deleted",
     "service_email_send_open_bounce_metadata": "Service-email send/open/bounce metadata",

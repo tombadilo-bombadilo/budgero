@@ -126,4 +126,45 @@ describe('WebDatabaseAdapter local persistence', () => {
     expect(encryptInput).toBeInstanceOf(Uint8Array);
     expect(Array.from(encryptInput as Uint8Array)).toEqual([10, 20, 30]);
   });
+
+  it('saves through the worker writer when the browser has no createWritable (Safari < 26)', async () => {
+    const posted: { filename: string; size: number }[] = [];
+    const { __setOpfsWorkerFactoryForTests } = await import('../src/database/opfs-sync-writer');
+    const w = {
+      onmessage: null as ((e: MessageEvent) => void) | null,
+      onerror: null,
+      terminate: vi.fn(),
+      postMessage(message: unknown) {
+        const msg = message as { id: number; filename: string; buffer: ArrayBuffer };
+        posted.push({ filename: msg.filename, size: msg.buffer.byteLength });
+        queueMicrotask(() => w.onmessage?.({ data: { id: msg.id, ok: true } } as MessageEvent));
+      },
+    };
+    __setOpfsWorkerFactoryForTests(() => w);
+    Object.defineProperty(globalThis, 'navigator', {
+      value: {
+        storage: {
+          async getDirectory() {
+            return {
+              // Safari 18: the handle exists, createWritable does not.
+              async getFileHandle() {
+                return {};
+              },
+            };
+          },
+        },
+      },
+      writable: true,
+      configurable: true,
+    });
+    const adapter = createAdapterStub(async () => new Uint8Array([1, 2, 3, 4]), {
+      encrypt: vi.fn(async (data: Uint8Array) => data),
+      decrypt: vi.fn(async () => ({ decrypted: new Uint8Array(), wasEncrypted: false })),
+    });
+
+    await adapter.saveToOPFSPublic();
+
+    expect(posted).toEqual([{ filename: 'test.db', size: 4 }]);
+    __setOpfsWorkerFactoryForTests(null);
+  });
 });

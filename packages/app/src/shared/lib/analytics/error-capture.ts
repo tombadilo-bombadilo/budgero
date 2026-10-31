@@ -32,8 +32,12 @@ import { captureScrubbedException, normalizePagePath } from './track';
 
 const MAX_FRAMES = 30;
 const MAX_PER_MINUTE = 10;
-/** One report per (type, code, component, event) per minute: retry loops count once. */
-const REPEAT_WINDOW_MS = 60_000;
+/**
+ * One report per (type, code, component, event) per 10 minutes: a device stuck
+ * in a retry loop (seen: a save failing every minute for hours) counts once per
+ * window instead of flooding error tracking.
+ */
+const REPEAT_WINDOW_MS = 10 * 60_000;
 const MAX_BREADCRUMBS = 20;
 const SAFE_NAME = /^[A-Za-z_$][\w$.]{0,63}$/;
 const SAFE_ID = /^[\w.:-]{1,128}$/;
@@ -558,6 +562,20 @@ function consoleCallSite(level: 'error' | 'warn'): { name: string; stack: string
     name: level === 'error' ? 'ConsoleError' : 'ConsoleWarning',
     stack: lines.slice(skip).join('\n'),
   };
+}
+
+/**
+ * Run fn without console capture: for code that already reports what it logs
+ * (the runtime log bridge), so one failure is not reported twice.
+ */
+export function withoutConsoleCapture<T>(fn: () => T): T {
+  if (inConsoleCapture) return fn();
+  inConsoleCapture = true;
+  try {
+    return fn();
+  } finally {
+    inConsoleCapture = false;
+  }
 }
 
 export function installConsoleCapture(): void {

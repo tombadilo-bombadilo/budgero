@@ -1807,7 +1807,7 @@
     "account_data_email_account_id_preferences": "Kontodaten (E-Mail, Konto-ID, Einstellungen)",
     "for_the_life_of_your_account": "Für die gesamte Laufzeit deines Kontos, zuzüglich bis zu 30 Tage nach Löschung zur Wiederherstellung und Bereinigung von Backups",
     "encrypted_vault_data": "Verschlüsselte Tresordaten",
-    "for_the_life_of_your_account_2": "Für die gesamte Laufzeit deines Kontos; innerhalb von 30 Tagen nach Kontolöschung gelöscht (Budgero kann diese zu keinem Zeitpunkt einsehen)",
+    "for_the_life_of_your_account_2": "Für die gesamte Laufzeit deines Kontos; innerhalb von 30 Tagen nach Kontolöschung gelöscht (Budgero kann diese zu keinem Zeitpunkt einsehen). Frühere verschlüsselte Kopien eines Arbeitsbereichs werden bis zu 7 Tage aufbewahrt, damit ein Synchronisierungsproblem rückgängig gemacht werden kann.",
     "billing_records_orders_invoices": "Abrechnungsunterlagen (Bestellungen, Rechnungen)",
     "retained_as_required_by_applicable_tax": "Aufbewahrt gemäß geltendem Steuer- und Buchführungsrecht (in der Regel 5–10 Jahre); danach gelöscht",
     "service_email_send_open_bounce_metadata": "Metadaten zu Service-E-Mails (Senden/Öffnen/Bounce)",

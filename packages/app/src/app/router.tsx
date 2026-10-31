@@ -33,6 +33,7 @@ import AISettingsPage from '@pages/settings/ai';
 import BankSyncPage from '@pages/settings/bank-sync';
 import BankSyncCallbackPage from '@pages/settings/bank-sync/BankSyncCallbackPage';
 import SyncStatusPage from '@pages/settings/SyncStatusPage';
+import SnapshotHistoryPage from '@pages/settings/SnapshotHistoryPage';
 import { DashboardPage } from '@pages/dashboard/DashboardPage';
 import { BudgetingPage } from '@pages/budgeting/BudgetingPage';
 import SubscriptionSuccess from '@features/subscription/ui/SubscriptionSuccess';
@@ -128,6 +129,7 @@ function AppRouter() {
             <Route path="/settings/imports" element={<ImportsPage />} />
             <Route path="/settings/data" element={<DataManagementPage />} />
             <Route path="/settings/sync" element={<SyncStatusPage />} />
+            <Route path="/settings/sync/history" element={<SnapshotHistoryPage />} />
             <Route path="/settings/budget" element={<BudgetSettingsPage />} />
             <Route path="/settings/currencies" element={<CurrencySettingsPage />} />
             <Route path="/settings/payees" element={<PayeesPage />} />

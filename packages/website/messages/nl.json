@@ -1807,7 +1807,7 @@
     "account_data_email_account_id_preferences": "Accountgegevens (e-mail, account-ID, voorkeuren)",
     "for_the_life_of_your_account": "Gedurende de levensduur van je account, plus tot 30 dagen na verwijdering om herstel mogelijk te maken en back-ups te wissen",
     "encrypted_vault_data": "Versleutelde kluisgegevens",
-    "for_the_life_of_your_account_2": "Gedurende de levensduur van je account; verwijderd binnen 30 dagen na verwijdering van je account (Budgero kan dit op geen enkel moment lezen)",
+    "for_the_life_of_your_account_2": "Gedurende de levensduur van je account; verwijderd binnen 30 dagen na verwijdering van je account (Budgero kan dit op geen enkel moment lezen). Eerdere versleutelde kopieën van een werkruimte worden tot 7 dagen bewaard, zodat een synchronisatieprobleem ongedaan kan worden gemaakt.",
     "billing_records_orders_invoices": "Factuurgegevens (bestellingen, facturen)",
     "retained_as_required_by_applicable_tax": "Bewaard zoals vereist door de toepasselijke belasting- en boekhoudwetgeving (meestal 5–10 jaar); daarna verwijderd",
     "service_email_send_open_bounce_metadata": "Metagegevens van service-e-mails (verzonden/geopend/teruggestuurd)",

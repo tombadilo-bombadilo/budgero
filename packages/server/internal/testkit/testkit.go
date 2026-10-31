@@ -89,6 +89,10 @@ func NewTestConfig(selfHost bool) *config.Config {
 		Features: config.FeatureConfig{
 			TrialDurationDays: 35,
 		},
+		SnapshotHistory: config.SnapshotHistoryConfig{
+			Keep: config.DefaultSnapshotHistoryKeep,
+			Days: config.DefaultSnapshotHistoryDays,
+		},
 	}
 	return cfg
 }

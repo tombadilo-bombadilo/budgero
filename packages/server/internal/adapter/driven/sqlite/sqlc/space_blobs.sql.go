@@ -36,7 +36,7 @@ func (q *Queries) DeleteSpaceBlob(ctx context.Context, spaceID string) error {
 }
 
 const getSpaceBlob = `-- name: GetSpaceBlob :one
-SELECT space_id, blob_path, current_hash, sync_version, size_bytes, updated_at, encryption_key_version, data_format_version, mutation_version FROM budget_space_blobs WHERE space_id = ?
+SELECT space_id, blob_path, current_hash, sync_version, size_bytes, updated_at, encryption_key_version, data_format_version, mutation_version, origin, published_at FROM budget_space_blobs WHERE space_id = ?
 `
 
 func (q *Queries) GetSpaceBlob(ctx context.Context, spaceID string) (BudgetSpaceBlob, error) {
@@ -52,6 +52,8 @@ func (q *Queries) GetSpaceBlob(ctx context.Context, spaceID string) (BudgetSpace
 		&i.EncryptionKeyVersion,
 		&i.DataFormatVersion,
 		&i.MutationVersion,
+		&i.Origin,
+		&i.PublishedAt,
 	)
 	return i, err
 }

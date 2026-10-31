@@ -12,6 +12,7 @@
 import {
   type SpaceActivationOutcome,
   FormatTooNewError,
+  decryptAndDecompressDatabase,
   normalizeMutationPayload,
   RuntimeCoordinator,
   type RuntimeState,
@@ -270,6 +271,18 @@ export class AppRuntime {
 
   getDatabase(): WebDatabaseInstance | null {
     return this.coordinator.getDatabase() as WebDatabaseInstance | null;
+  }
+
+  /**
+   * Decrypt a snapshot of the active workspace (e.g. an earlier copy from the
+   * server's history) without loading it: returns the raw SQLite bytes.
+   */
+  async decryptSnapshot(data: Uint8Array): Promise<Uint8Array> {
+    const spaceId = this.coordinator.getActiveSpaceId();
+    const passphrase = spaceId ? this.coordinator.getSpacePassphrase(spaceId) : null;
+    if (!passphrase) throw new Error('Workspace encryption key unavailable');
+    const { decrypted } = await decryptAndDecompressDatabase(data, passphrase);
+    return decrypted;
   }
 
   getActiveSpaceId(): string | null {

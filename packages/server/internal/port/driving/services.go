@@ -433,6 +433,40 @@ type UserPurgeService interface {
 	ListActivity(ctx context.Context) ([]domain.UserActivitySummary, error)
 }
 
+// SnapshotHistoryService keeps replaced workspace snapshots on the server.
+// It never takes the space's blob lock: callers that move files hold it.
+type SnapshotHistoryService interface {
+	// Enabled reports whether replaced snapshots are kept (SNAPSHOT_HISTORY_KEEP > 0).
+	Enabled() bool
+
+	// Current returns the space's current blob metadata (no access check).
+	Current(ctx context.Context, spaceID string) (*domain.SpaceBlob, error)
+
+	// Archive moves the current snapshot file into the history folder and
+	// records it, before a new snapshot replaces it. It returns nil (and a
+	// nil undo) when there is nothing to keep: history disabled, or no
+	// current file yet. undo moves the file back and drops the row.
+	Archive(ctx context.Context, current *domain.SpaceBlob, replacedAt time.Time) (entry *domain.SnapshotHistoryEntry, undo func() error, err error)
+
+	// MarkPublished records how and when the current snapshot was published.
+	MarkPublished(ctx context.Context, spaceID, origin string, at time.Time) error
+
+	// AdvanceToEntry makes entry's metadata current at expectedVersion+1
+	// (compare-and-swap; domain.ErrSyncVersionConflict when it moved).
+	AdvanceToEntry(ctx context.Context, spaceID string, entry *domain.SnapshotHistoryEntry, expectedVersion int64) (int64, error)
+
+	// Prune applies retention to the space's history and returns how many
+	// entries it removed.
+	Prune(ctx context.Context, spaceID string, now time.Time) (int, error)
+
+	// List returns the space's history, newest first.
+	List(ctx context.Context, spaceID string) ([]domain.SnapshotHistoryEntry, error)
+
+	// Get returns one entry of the space's history, or
+	// domain.ErrSnapshotHistoryNotFound.
+	Get(ctx context.Context, spaceID string, id int64) (*domain.SnapshotHistoryEntry, error)
+}
+
 // AnalyticsTracker records server-side product analytics events. Track never
 // blocks and never fails: events are queued and dropped when the queue is full,
 // when analytics is disabled (self-host, no key) or when the user opted out.

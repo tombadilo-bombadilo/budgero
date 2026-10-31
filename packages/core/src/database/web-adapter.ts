@@ -10,6 +10,7 @@ import {
 import { MigrationRunner } from './migrations.js';
 import { createMigrationDatabase } from './migration-database-factory.js';
 import { readAllRows, readRow } from './sqljs-rows.js';
+import { needsOpfsWorkerWriter, writeOpfsFileViaWorker } from './opfs-sync-writer.js';
 
 import { createLogger } from '../logger.js';
 
@@ -483,6 +484,15 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
 
       const opfsRoot = await navigator.storage.getDirectory();
       const fileHandle = await opfsRoot.getFileHandle(this.dbFilename, { create: true });
+      if (needsOpfsWorkerWriter(fileHandle)) {
+        // Safari < 26: no createWritable() on the main thread.
+        await writeOpfsFileViaWorker(this.dbFilename, toArrayBuffer(data));
+        debugLog(`Saved database to OPFS via worker (${this.dbFilename})`, {
+          encryptedSize: data.length,
+          encrypted,
+        });
+        return;
+      }
       writable = await fileHandle.createWritable();
       // Write as Blob to satisfy FileSystemWriteChunkType and avoid ArrayBufferLike typing issues
       await writable.write(new Blob([toArrayBuffer(data)]));

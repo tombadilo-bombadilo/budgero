@@ -159,8 +159,8 @@ func (s *UserService) ResetData(ctx context.Context, id string) ([]string, error
 	}
 
 	spaceIDs := make([]string, 0, len(blobs))
-	for _, blob := range blobs {
-		spaceIDs = append(spaceIDs, blob.SpaceID)
+	for i := range blobs {
+		spaceIDs = append(spaceIDs, blobs[i].SpaceID)
 	}
 
 	if err := s.spaceRepo.DeleteAllMembershipsForUser(ctx, id); err != nil {
@@ -172,7 +172,8 @@ func (s *UserService) ResetData(ctx context.Context, id string) ([]string, error
 	}
 
 	// Clean up owned spaces
-	for _, blob := range blobs {
+	for i := range blobs {
+		blob := &blobs[i]
 		if err := s.spaceRepo.DeleteBlob(ctx, blob.SpaceID); err != nil {
 			log.Warn().Err(err).Str("space_id", blob.SpaceID).Msg("failed to delete space blob during reset")
 		}
@@ -185,6 +186,9 @@ func (s *UserService) ResetData(ctx context.Context, id string) ([]string, error
 		if blob.BlobPath != "" {
 			if err := os.Remove(blob.BlobPath); err != nil {
 				log.Warn().Err(err).Str("path", blob.BlobPath).Msg("failed to remove blob file during reset")
+			}
+			if err := removeSnapshotHistoryFiles(blob.BlobPath, blob.SpaceID); err != nil {
+				log.Warn().Err(err).Str("space_id", blob.SpaceID).Msg("failed to remove snapshot history during reset")
 			}
 		}
 	}

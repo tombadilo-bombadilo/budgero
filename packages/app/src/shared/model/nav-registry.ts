@@ -8,6 +8,7 @@ import {
   Users,
   Inbox,
   Tag,
+  ArchiveRestore,
   History,
   Database,
   SlidersHorizontal,
@@ -58,6 +59,7 @@ export const NAV_SETTINGS_DATA: NavRouteItem[] = [
   { to: '/settings/audit-log', icon: History, label: msg`Audit Log` },
   { to: '/settings/data', icon: Database, label: msg`Data Management` },
   { to: '/settings/sync', icon: Activity, label: msg`Sync status` },
+  { to: '/settings/sync/history', icon: ArchiveRestore, label: msg`Earlier versions`, beta: true },
   { to: '/settings/budget', icon: SlidersHorizontal, label: msg`Budget Settings` },
   { to: '/settings/currencies', icon: Coins, label: msg`Currencies` },
 ];

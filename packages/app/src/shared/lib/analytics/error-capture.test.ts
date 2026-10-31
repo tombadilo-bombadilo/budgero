@@ -633,3 +633,32 @@ describe('report context and extra capture paths', () => {
     }
   });
 });
+
+describe('console capture vs the runtime bridge', () => {
+  it('does not report a console call made inside withoutConsoleCapture', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
+    envState.selfHost = false;
+    for (const fn of Object.values(posthog)) fn.mockReset();
+    const track = await import('./track');
+    const capture = await import('./error-capture');
+    track.setAnalyticsSubject({ kind: 'user', id: 'u1', optedOut: false });
+    const realWarn = console.warn;
+    console.warn = () => undefined;
+    try {
+      capture.installConsoleCapture();
+      capture.withoutConsoleCapture(() => console.warn('[Runtime][X] failed', new TypeError('x')));
+      console.warn('outside', new RangeError('y'));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const types = posthog.capture.mock.calls
+        .filter(([name]) => name === '$exception')
+        .map(
+          ([, p]) => ((p as Record<string, unknown>).$exception_list as ExceptionEntry[])[0]!.type
+        );
+      expect(types).toEqual(['RangeError']);
+    } finally {
+      console.warn = realWarn;
+      vi.unstubAllEnvs();
+    }
+  });
+});

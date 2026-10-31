@@ -28,15 +28,17 @@ type BudgetSpace struct {
 }
 
 type BudgetSpaceBlob struct {
-	SpaceID              string    `json:"space_id"`
-	BlobPath             string    `json:"blob_path"`
-	CurrentHash          string    `json:"current_hash"`
-	SyncVersion          int64     `json:"sync_version"`
-	SizeBytes            int64     `json:"size_bytes"`
-	UpdatedAt            time.Time `json:"updated_at"`
-	EncryptionKeyVersion int64     `json:"encryption_key_version"`
-	DataFormatVersion    int64     `json:"data_format_version"`
-	MutationVersion      int64     `json:"mutation_version"`
+	SpaceID              string         `json:"space_id"`
+	BlobPath             string         `json:"blob_path"`
+	CurrentHash          string         `json:"current_hash"`
+	SyncVersion          int64          `json:"sync_version"`
+	SizeBytes            int64          `json:"size_bytes"`
+	UpdatedAt            time.Time      `json:"updated_at"`
+	EncryptionKeyVersion int64          `json:"encryption_key_version"`
+	DataFormatVersion    int64          `json:"data_format_version"`
+	MutationVersion      int64          `json:"mutation_version"`
+	Origin               sql.NullString `json:"origin"`
+	PublishedAt          sql.NullTime   `json:"published_at"`
 }
 
 type BudgetSpaceInvite struct {
@@ -150,6 +152,21 @@ type SentEmail struct {
 	UserID   string    `json:"user_id"`
 	Template string    `json:"template"`
 	SentAt   time.Time `json:"sent_at"`
+}
+
+type SpaceBlobHistory struct {
+	ID                   int64     `json:"id"`
+	SpaceID              string    `json:"space_id"`
+	FilePath             string    `json:"file_path"`
+	SyncVersion          int64     `json:"sync_version"`
+	MutationVersion      int64     `json:"mutation_version"`
+	SizeBytes            int64     `json:"size_bytes"`
+	Hash                 string    `json:"hash"`
+	EncryptionKeyVersion int64     `json:"encryption_key_version"`
+	DataFormatVersion    int64     `json:"data_format_version"`
+	Origin               string    `json:"origin"`
+	BecameCurrentAt      time.Time `json:"became_current_at"`
+	ReplacedAt           time.Time `json:"replaced_at"`
 }
 
 type UpdatePing struct {

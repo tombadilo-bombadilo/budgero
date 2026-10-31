@@ -360,6 +360,7 @@ export const EVENT_SCHEMA = {
 
   // Health
   sync_error: { code: ERROR_CODES },
+  snapshot_restore: { outcome: OK_ERROR, error_code: ERROR_CODES },
   // Every workspace open: the denominator for sync failures. A fallback path
   // (local_after_download_failure, local_reset) with outcome ok is still a
   // failure worth counting; error_code is the code of what caused it.
