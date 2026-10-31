@@ -4,7 +4,15 @@ import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } f
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { changedPaths, isVersionOnlyChange, planChanges, planEvent } from './changes.mjs';
+import {
+  alreadyPassed,
+  changedPaths,
+  isVersionOnlyChange,
+  passedArtifactName,
+  planChanges,
+  planEvent,
+  treeOf,
+} from './changes.mjs';
 
 const none = { app: false, website: false, server: false };
 const all = { app: true, website: true, server: true };
@@ -158,3 +166,63 @@ test('actual required gate scripts reject failed, cancelled, and unexpectedly sk
     }
   }
 });
+
+test('a tree that passed on its pull request is recognised, anything doubtful is not', async () => {
+  const tree = 'a'.repeat(40);
+  const base = { tree, repository: 'o/r', repositoryId: 42, token: 't' };
+  const respond = (artifacts, ok = true) => async () => ({ ok, json: async () => ({ artifacts }) });
+  const marker = (extra = {}) => ({
+    name: passedArtifactName(tree),
+    expired: false,
+    workflow_run: { head_repository_id: 42 },
+    ...extra,
+  });
+  assert.equal(await alreadyPassed({ ...base, fetchImpl: respond([marker()]) }), true);
+  assert.equal(await alreadyPassed({ ...base, fetchImpl: respond([]) }), false);
+  assert.equal(await alreadyPassed({ ...base, fetchImpl: respond([marker({ expired: true })]) }), false);
+  // A fork's run could have edited ci.yml; only this repository's runs count.
+  assert.equal(
+    await alreadyPassed({ ...base, fetchImpl: respond([marker({ workflow_run: { head_repository_id: 7 } })]) }),
+    false
+  );
+  assert.equal(await alreadyPassed({ ...base, fetchImpl: respond([marker({ name: 'ci-passed-other' })]) }), false);
+  assert.equal(await alreadyPassed({ ...base, fetchImpl: respond([marker()], false) }), false);
+  assert.equal(
+    await alreadyPassed({
+      ...base,
+      fetchImpl: async () => {
+        throw new Error('network');
+      },
+    }),
+    false
+  );
+  assert.equal(await alreadyPassed({ ...base, token: '', fetchImpl: respond([marker()]) }), false);
+  assert.equal(await alreadyPassed({ ...base, tree: null, fetchImpl: respond([marker()]) }), false);
+});
+
+test('a merge commit has the same tree as the merge its pull request tested', () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'budgero-ci-tree-'));
+  const git = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+  const id = ['-c', 'user.name=CI Test', '-c', 'user.email=ci@example.invalid', '-c', 'commit.gpgsign=false'];
+  try {
+    git('init', '-q', '-b', 'master');
+    writeFileSync(join(cwd, 'a.txt'), 'a\n');
+    git('add', '-A');
+    git(...id, 'commit', '-qm', 'base');
+    git('checkout', '-q', '-b', 'feature');
+    writeFileSync(join(cwd, 'b.txt'), 'b\n');
+    git('add', '-A');
+    git(...id, 'commit', '-qm', 'feature');
+    git('checkout', '-q', 'master');
+    git(...id, 'merge', '-q', '--no-ff', '-m', 'tested merge', 'feature');
+    const tested = treeOf('HEAD', cwd);
+    git('reset', '-q', '--hard', 'HEAD~1');
+    git(...id, 'merge', '-q', '--no-ff', '-m', 'Merge pull request #1', 'feature');
+    assert.match(tested, /^[a-f0-9]{40}$/);
+    assert.equal(treeOf('HEAD', cwd), tested);
+    assert.equal(treeOf('not-a-ref', cwd), null);
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
