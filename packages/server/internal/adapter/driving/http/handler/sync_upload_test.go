@@ -386,3 +386,36 @@ func TestPostDatabaseBlob_MutationVersionRegression_Returns409AndKeepsFile(t *te
 		t.Fatalf("out-of-band upload: err=%v status=%d body=%s", err, rec.Code, rec.Body.String())
 	}
 }
+
+func TestUploadDatabase_LegacyRouteRefusesMutationVersionRegression(t *testing.T) {
+	h, e, tc := setupTestHandler(t)
+
+	userID := testkit.SeedUser(t, tc.Queries, "legacy-regress@example.com")
+	spaceID := testkit.SeedSpace(t, tc.DB, tc.Queries, userID, "Legacy Regress Space")
+
+	rec, err := postBlob(t, h, e, userID, spaceID, "blob-full", map[string]string{
+		"X-Database-Version": "0",
+		"X-Mutation-Version": "500",
+	})
+	if err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("first upload: err=%v status=%d body=%s", err, rec.Code, rec.Body.String())
+	}
+
+	rec, err = doUpload(t, h, e, userID, spaceID, "blob-near-empty", map[string]string{
+		"X-Database-Version": "1",
+		"X-Mutation-Version": "3",
+	})
+	if err != nil {
+		t.Fatalf("legacy UploadDatabase() error = %v", err)
+	}
+	if rec.Code != http.StatusConflict || !strings.Contains(rec.Body.String(), "mutation_version_regression") {
+		t.Fatalf("legacy regressing upload: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	blob, blobErr := tc.Queries.GetSpaceBlob(context.Background(), spaceID)
+	if blobErr != nil {
+		t.Fatalf("GetSpaceBlob() error = %v", blobErr)
+	}
+	if blob.MutationVersion != 500 {
+		t.Fatalf("stored mutation_version = %d, want 500", blob.MutationVersion)
+	}
+}

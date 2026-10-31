@@ -268,6 +268,26 @@ func (h *Handlers) UploadDatabase(c echo.Context) error {
 		return mvErr
 	}
 
+	// Same guard as PostDatabaseBlob: never replace a snapshot with one bound
+	// to an older mutation-log position (out-of-band uploads excepted).
+	if stateErr == nil && c.Request().Header.Get("X-Out-Of-Band") != "1" &&
+		mutationVersion < currentState.SnapshotMutationVersion {
+		log.Warn().
+			Str("user_id", userID).
+			Str("space_id", blob.SpaceID).
+			Int64("client_mutation_version", mutationVersion).
+			Int64("server_mutation_version", currentState.SnapshotMutationVersion).
+			Msg("Legacy upload rejected: snapshot would regress the mutation log position")
+		return c.JSON(http.StatusConflict, map[string]any{
+			"error":                   "mutation_version_regression",
+			"message":                 "This snapshot is older than the one on the server. Download the latest first.",
+			"server_version":          currentState.Version,
+			"server_mutation_version": currentState.SnapshotMutationVersion,
+			"client_mutation_version": mutationVersion,
+			"space_id":                currentState.SpaceID,
+		})
+	}
+
 	tempPath, err := writeBlobTemp(blob.BlobPath, data)
 	if err != nil {
 		log.Error().
