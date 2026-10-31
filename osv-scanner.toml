@@ -42,3 +42,8 @@ reason = "toml 4.x prototype pollution when parsing a TOML document; only pulled
 id = "GHSA-gcqx-w48m-w2h4"
 ignoreUntil = 2026-12-10T00:00:00Z
 reason = "deepmerge 4.3.1 is only pulled in at build time (vite-plugin-pwa -> workbox-build -> @rollup/plugin-node-resolve) to merge our own build config, never untrusted input; no fixed version yet"
+
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2026-12-31T00:00:00Z
+reason = "minimatch 3/5/9/10 is only pulled in by lint and build tooling (eslint, eslint-plugin-import, contentlayer2 globs) on our own patterns; nothing shipped uses it, and the fix is only in 11.x, which these packages do not support yet"
