@@ -11,6 +11,14 @@ export function getMonthlyTarget(row: BudgetRow): number | null {
   return roundMilli(row.goalProgress.monthlyTarget);
 }
 
+/** How much of this month's target is funded, 0–100 (the goal's own progress). */
+export function getTargetFundedPercent(row: BudgetRow): number {
+  const progress = row.goalProgress;
+  if (!progress) return 0;
+  if (progress.isFunded) return 100;
+  return Math.min(100, Math.max(0, progress.percentage));
+}
+
 export function getAvailableColorByGoalStatus(status: string): string {
   switch (status) {
     case 'completed':

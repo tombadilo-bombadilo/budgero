@@ -30,11 +30,13 @@ import { AvailableInfoPopover } from '@features/budget-planning/ui/AvailableInfo
 import {
   getAvailableColorByGoalStatus,
   getMonthlyTarget,
+  getTargetFundedPercent,
   shouldPreventRowSelection,
 } from './utils';
 import { useSortableDragHandle } from './useSortableDragHandle';
 import type { DesktopBudgetCategoryRowProps } from './types';
 import { PlanningAnimatedNumber } from '../PlanningNumberAnimation';
+import { TargetPill } from './TargetPill';
 
 export function DesktopBudgetCategoryRow({
   row,
@@ -277,24 +279,6 @@ export function DesktopBudgetCategoryRow({
           </Popover>
         </div>
       </TableCell>
-      {showTarget && (
-        <TableCell className="align-middle text-right py-1.5">
-          <div
-            className={`inline-flex ${rowMinH} w-full items-center justify-end font-mono text-sm text-muted-foreground`}
-            data-testid={`target-${row.name.toLowerCase().replace(/\s+/g, '-')}`}
-          >
-            {monthlyTarget === null ? (
-              <span aria-hidden="true">—</span>
-            ) : (
-              <PlanningAnimatedNumber
-                value={monthlyTarget}
-                formatter={formatAmount}
-                className="tabular-nums"
-              />
-            )}
-          </div>
-        </TableCell>
-      )}
       <TableCell className="align-middle text-right py-1.5" data-budget-prevent-row-select="true">
         <div className={`inline-flex ${rowMinH} w-full items-center justify-end`}>
           <CalculatorCell
@@ -354,7 +338,7 @@ export function DesktopBudgetCategoryRow({
           <ExternalLink className="h-3 w-3 text-muted-foreground" />
         </button>
       </TableCell>
-      <TableCell className="align-middle text-right pr-6 py-1.5">
+      <TableCell className={cn('align-middle text-right py-1.5', !showTarget && 'pr-6')}>
         <div className={`flex ${rowMinH} items-center justify-end gap-2`}>
           {row.available > 0 && row.fundingBreakdown !== undefined ? (
             <CCPaymentCoverPopover
@@ -471,6 +455,20 @@ export function DesktopBudgetCategoryRow({
           />
         </div>
       </TableCell>
+      {showTarget && (
+        <TableCell className="align-middle text-right pr-6 py-1.5">
+          <div
+            className={`inline-flex ${rowMinH} w-full items-center justify-end`}
+            data-testid={`target-${row.name.toLowerCase().replace(/\s+/g, '-')}`}
+          >
+            <TargetPill
+              target={monthlyTarget}
+              percent={getTargetFundedPercent(row)}
+              formatter={formatAmount}
+            />
+          </div>
+        </TableCell>
+      )}
     </TableRow>
   );
 }

@@ -8,6 +8,8 @@ export interface BudgetGroupTotals {
   available: number;
   /** Sum of this month's goal targets; undefined when no category in the group has a goal. */
   target?: number;
+  /** Funded part of `target` (each category capped at its own target). */
+  targetFunded?: number;
 }
 
 export type Sensors = ReturnType<typeof useSensors>;

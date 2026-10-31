@@ -8,6 +8,7 @@ export { AvailableInfoPopover } from '@features/budget-planning/ui/AvailableInfo
 export {
   getAvailableColorByGoalStatus,
   getMonthlyTarget,
+  getTargetFundedPercent,
   shouldPreventRowSelection,
 } from './utils';
 export type {

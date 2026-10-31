@@ -4,7 +4,7 @@ import { GoalPurpose, GoalType, type Goal, type GetMonthlyBudgetRow } from '@bud
 import { useUiStore } from '@shared/store/useUiStore';
 import { transformBudgetRows } from '../../lib/budget-transforms';
 import { DesktopBudgetTableView } from './DesktopBudgetTableView';
-import { getMonthlyTarget, type BudgetGroupTotals, type Sensors } from '.';
+import { getMonthlyTarget, getTargetFundedPercent, type BudgetGroupTotals, type Sensors } from '.';
 
 vi.mock('@features/budget-planning/ui/AvailableInfoPopover', () => ({
   AvailableInfoPopover: () => null,
@@ -58,7 +58,11 @@ function groupTotals(): Map<string, BudgetGroupTotals> {
     const current = totals.get(row.parentId) ?? { assigned: 0, activity: 0, available: 0 };
     current.assigned += row.assigned;
     const target = getMonthlyTarget(row);
-    if (target !== null) current.target = (current.target ?? 0) + target;
+    if (target !== null) {
+      current.target = (current.target ?? 0) + target;
+      current.targetFunded =
+        (current.targetFunded ?? 0) + (target * getTargetFundedPercent(row)) / 100;
+    }
     totals.set(row.parentId, current);
   }
   return totals;
@@ -110,13 +114,29 @@ describe('DesktopBudgetTableView target column', () => {
     renderTable();
 
     expect(screen.getByRole('columnheader', { name: 'Target' })).toBeInTheDocument();
+    const headers = screen.getAllByRole('columnheader').map((h) => h.textContent);
+    expect(headers[headers.length - 1]).toBe('Target');
+
+    // Rent: $1,000 of $1,200 available → 83% funded; Phone: $30 of $50 → 60%.
     expect(screen.getByTestId('target-rent')).toHaveTextContent('$1,200.00');
+    expect(screen.getByTestId('target-rent').querySelector('[data-funded]')).toHaveAttribute(
+      'data-funded',
+      '83'
+    );
     expect(screen.getByTestId('target-phone')).toHaveTextContent('$50.00');
+    expect(screen.getByTestId('target-phone').querySelector('[data-funded]')).toHaveAttribute(
+      'data-funded',
+      '60'
+    );
     expect(screen.getByTestId('target-misc')).toHaveTextContent('—');
 
+    // Group: $1,250 target, $1,030 of it funded → 82%.
     const groupRow = screen.getByText('Bills').closest('tr');
     expect(groupRow).not.toBeNull();
-    expect(within(groupRow as HTMLElement).getByText('$1,250.00')).toBeInTheDocument();
+    const groupPill = within(groupRow as HTMLElement)
+      .getByText('$1,250.00')
+      .closest('[data-funded]');
+    expect(groupPill).toHaveAttribute('data-funded', '82');
   });
 
   it('remembers the choice on this device', () => {

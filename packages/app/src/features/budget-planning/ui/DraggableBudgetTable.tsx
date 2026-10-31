@@ -33,7 +33,12 @@ import { DraggableCategoryRow } from './DraggableCategoryRow';
 import { CategoryGroupRow } from './CategoryGroupRow';
 import { CategoryRow } from './category-row';
 import { EmptyStateDisplay } from './EmptyStateDisplay';
-import { DesktopBudgetTableView, getMonthlyTarget, type BudgetGroupTotals } from './desktop-table';
+import {
+  DesktopBudgetTableView,
+  getMonthlyTarget,
+  getTargetFundedPercent,
+  type BudgetGroupTotals,
+} from './desktop-table';
 
 interface DraggableBudgetTableProps {
   data: BudgetRow[];
@@ -260,7 +265,11 @@ export function DraggableBudgetTable({
         current.activity += row.activity;
         current.available += row.available;
         const target = getMonthlyTarget(row);
-        if (target !== null) current.target = (current.target ?? 0) + target;
+        if (target !== null) {
+          current.target = (current.target ?? 0) + target;
+          current.targetFunded =
+            (current.targetFunded ?? 0) + (target * getTargetFundedPercent(row)) / 100;
+        }
         totals.set(row.parentId, current);
       }
     });

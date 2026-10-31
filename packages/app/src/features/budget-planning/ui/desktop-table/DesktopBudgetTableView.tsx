@@ -71,20 +71,20 @@ export function DesktopBudgetTableView({
         <TableHead className={cn(headClass, 'w-auto')}>
           <Trans>Category</Trans>
         </TableHead>
-        {showTarget && (
-          <TableHead className={cn(headClass, 'w-[140px] text-right')}>
-            <Trans>Target</Trans>
-          </TableHead>
-        )}
         <TableHead className={cn(headClass, 'w-[140px] text-right')}>
           <Trans>Assigned</Trans>
         </TableHead>
         <TableHead className={cn(headClass, 'hidden w-[140px] text-right min-[1250px]:table-cell')}>
           <Trans>Activity</Trans>
         </TableHead>
-        <TableHead className={cn(headClass, 'w-[160px] text-right pr-6')}>
+        <TableHead className={cn(headClass, 'w-[160px] text-right', !showTarget && 'pr-6')}>
           <Trans>Available</Trans>
         </TableHead>
+        {showTarget && (
+          <TableHead className={cn(headClass, 'w-[150px] text-right pr-6')}>
+            <Trans>Target</Trans>
+          </TableHead>
+        )}
       </TableRow>
     </TableHeader>
   );

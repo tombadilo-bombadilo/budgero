@@ -1027,6 +1027,10 @@ msgstr "{duration} mo"
 msgid "{first}'s Budget Space"
 msgstr "{first}'s Budget Space"
 
+#: src/features/budget-planning/ui/desktop-table/TargetPill.tsx
+msgid "{funded}% funded"
+msgstr "{funded}% funded"
+
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "{horizon} months"
 msgstr "{horizon} months"
