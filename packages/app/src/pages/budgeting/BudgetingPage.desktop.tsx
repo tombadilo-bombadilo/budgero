@@ -236,7 +236,7 @@ export function BudgetingPageDesktop() {
   return (
     <div className="p-6">
       <div className="grid gap-4 min-[1020px]:grid-cols-[1fr_340px] min-[1020px]:items-stretch min-[1020px]:h-[calc(100dvh-var(--app-topbar-height,6.5rem))]">
-        <Card className="min-w-0 flex flex-col min-h-0 h-full overflow-hidden">
+        <Card className="min-w-0 flex flex-col min-h-0 h-full overflow-hidden pt-0 pb-2">
           <CardContent className="px-0 flex-1 min-h-0 h-full overflow-hidden">
             <ScrollArea className="h-full">
               <BudgetTable
