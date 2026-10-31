@@ -1,20 +1,58 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import { History, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SnapshotHistoryEntry } from '@shared/api/api-client';
 import { formatDate, formatRelativeToNow } from '@shared/lib/date-format';
+import { parseDateKey } from '@shared/lib/date-utils';
 import { getErrorMessage } from '@shared/lib/errors';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { ConfirmDialog } from '@shared/ui/confirm-dialog';
-import { useRestoreSnapshot, useSnapshotHistory } from '../api/useSnapshotHistory';
+import {
+  useRestoreSnapshot,
+  useSnapshotHistory,
+  useSnapshotSummary,
+} from '../api/useSnapshotHistory';
 
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** What a copy contains, decrypted and counted on this device. */
+function SnapshotContents({ entry, enabled }: { entry: number | 'current'; enabled: boolean }) {
+  const { t } = useLingui();
+  const { data, isLoading, error } = useSnapshotSummary(entry, enabled);
+  if (!enabled) return null;
+  if (isLoading) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        <Trans>Checking contents…</Trans>
+      </p>
+    );
+  }
+  if (error || !data) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        <Trans>Contents can't be read on this device.</Trans>
+      </p>
+    );
+  }
+  const parts = [
+    plural(data.transactions, { one: '# transaction', other: '# transactions' }),
+    plural(data.accounts, { one: '# account', other: '# accounts' }),
+    plural(data.categories, { one: '# category', other: '# categories' }),
+    plural(data.budgets, { one: '# budget', other: '# budgets' }),
+  ];
+  const newest = data.lastTransactionDate ? parseDateKey(data.lastTransactionDate) : null;
+  if (newest) {
+    parts.push(t`newest transaction ${formatDate(newest, 'PP')}`);
+  }
+  return <p className="text-xs">{parts.join(' · ')}</p>;
 }
 
 export function SnapshotHistoryList() {
@@ -85,9 +123,10 @@ export function SnapshotHistoryList() {
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {formatDate(new Date(data.current.updated_at), 'PPp')} ·{' '}
-                    {t`${data.current.mutation_version} changes`} ·{' '}
+                    {t`up to change #${data.current.mutation_version}`} ·{' '}
                     {formatSize(data.current.size_bytes)}
                   </p>
+                  <SnapshotContents entry="current" enabled />
                 </div>
               </li>
             ) : null}
@@ -102,10 +141,11 @@ export function SnapshotHistoryList() {
                     </span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t`${entry.mutation_version} changes`} · {formatSize(entry.size_bytes)} ·{' '}
+                    {t`up to change #${entry.mutation_version}`} · {formatSize(entry.size_bytes)} ·{' '}
                     {originLabel(entry.origin)}
                     {entry.restorable ? '' : ` · ${t`made before the master password changed`}`}
                   </p>
+                  <SnapshotContents entry={entry.id} enabled={entry.restorable} />
                 </div>
                 <Button
                   size="sm"

@@ -3,6 +3,7 @@ import { blobApi } from '@shared/api/api-client';
 import { toErrorCode } from '@shared/lib/analytics/error-codes';
 import { track } from '@shared/lib/analytics/track';
 import { useActiveSpaceId, useRuntime } from '@shared/runtime/runtime-provider';
+import { summarizeSnapshot, type SnapshotSummary } from '../lib/snapshot-summary';
 
 const HISTORY_KEY = 'snapshotHistory';
 
@@ -40,6 +41,30 @@ export function useRestoreSnapshot() {
     },
     onError: (error) => {
       track('snapshot_restore', { outcome: 'error', error_code: toErrorCode(error) });
+    },
+  });
+}
+
+/**
+ * Download one copy (an earlier one by id, or the current one with 'current'),
+ * decrypt it on this device and count what is inside. Copies don't change, so
+ * the result is cached for the session.
+ */
+export function useSnapshotSummary(entry: number | 'current', enabled = true) {
+  const spaceId = useActiveSpaceId();
+  const runtime = useRuntime();
+  return useQuery<SnapshotSummary | null>({
+    queryKey: [HISTORY_KEY, spaceId, 'summary', entry],
+    enabled: Boolean(spaceId) && enabled,
+    staleTime: Infinity,
+    retry: false,
+    queryFn: async () => {
+      const blob =
+        entry === 'current'
+          ? await blobApi.downloadBlob(spaceId!)
+          : await blobApi.downloadHistory(spaceId!, entry);
+      if (!blob) return null;
+      return summarizeSnapshot(await runtime.decryptSnapshot(blob.data));
     },
   });
 }

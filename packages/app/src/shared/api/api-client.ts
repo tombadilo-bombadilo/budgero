@@ -438,6 +438,13 @@ export const blobApi = {
       `/database/blob/history?space_id=${encodeURIComponent(spaceId)}`
     ),
 
+  /** The encrypted bytes of one earlier copy (decrypted on the device only). */
+  downloadHistory: (spaceId: string, entryId: number) =>
+    apiClient.downloadBinary(
+      `/database/blob/history/${entryId}?space_id=${encodeURIComponent(spaceId)}`,
+      { 'X-Budgero-Protocol': String(SYNC_PROTOCOL_VERSION) }
+    ),
+
   /** Make an earlier copy the workspace's snapshot again (every device reloads it). */
   restoreHistory: (
     spaceId: string,

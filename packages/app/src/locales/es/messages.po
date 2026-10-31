@@ -229,8 +229,10 @@ msgstr "{0, plural, one {{1}: # {itemLabel}} other {{2}: # {itemLabel}}}"
 msgid "{0, plural, one {{1}/day left · # day} other {{2}/day left · # days}}"
 msgstr "{0, plural, one {{1}/día disponible · # día} other {{2}/día disponible · # días}}"
 
+#. placeholder {0}: data.accounts
 #. placeholder {0}: preview.accountCount
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "{0, plural, one {# account} other {# accounts}}"
 msgstr "{0, plural, one {# cuenta} other {# cuentas}}"
 
@@ -239,6 +241,11 @@ msgstr "{0, plural, one {# cuenta} other {# cuentas}}"
 msgid "{0, plural, one {# bank transaction needs review} other {# bank transactions need review}}"
 msgstr "{0, plural, one {# transacción bancaria necesita revisión} other {# transacciones bancarias necesitan revisión}}"
 
+#. placeholder {0}: data.budgets
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "{0, plural, one {# budget} other {# budgets}}"
+msgstr "{0, plural, one {# presupuesto} other {# presupuestos}}"
+
 #. placeholder {0}: overspentCategories.length
 #. placeholder {1}: formatMilli(globalLocalizer, asMilli(Math.min(totalOverspent, readyToAssign)))
 #. placeholder {2}: formatMilli(globalLocalizer, asMilli(Math.min(totalOverspent, readyToAssign)))
@@ -246,8 +253,10 @@ msgstr "{0, plural, one {# transacción bancaria necesita revisión} other {# tr
 msgid "{0, plural, one {# category needs {1}} other {# categories need {2}}}"
 msgstr "{0, plural, one {# categoría necesita {1}} other {# categorías necesitan {2}}}"
 
+#. placeholder {0}: data.categories
 #. placeholder {0}: preview.categoryCount
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "{0, plural, one {# category} other {# categories}}"
 msgstr "{0, plural, one {# categoría} other {# categorías}}"
 
@@ -305,6 +314,11 @@ msgstr "{0, plural, one {# transacción dividida detectada} other {# transaccion
 #: src/features/transactions/api/useDuplicateShortcut.ts
 msgid "{0, plural, one {# transaction duplicated} other {# transactions duplicated}}"
 msgstr "{0, plural, one {# transacción duplicada} other {# transacciones duplicadas}}"
+
+#. placeholder {0}: data.transactions
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "{0, plural, one {# transaction} other {# transactions}}"
+msgstr "{0, plural, one {# transacción} other {# transacciones}}"
 
 #. placeholder {0}: users.length
 #: src/pages/admin/admin-users/UsersTable.tsx
@@ -499,6 +513,11 @@ msgstr "{0} transacciones bancarias podrían coincidir con movimientos que ya ti
 msgid "{0} behind"
 msgstr "{0} por detrás"
 
+#. placeholder {0}: data.budgets
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#~ msgid "{0} budgets"
+#~ msgstr "{0} presupuestos"
+
 #. placeholder {0}: actionDialog.user.email
 #. placeholder {0}: user.email
 #: src/pages/admin/admin-users/useAdminUsersState.ts
@@ -511,11 +530,16 @@ msgstr "{0} puede iniciar sesión de nuevo"
 msgid "{0} cannot log in"
 msgstr "{0} no puede iniciar sesión"
 
+#. placeholder {0}: data.categories
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#~ msgid "{0} categories"
+#~ msgstr "{0} categorías"
+
 #. placeholder {0}: data.current.mutation_version
 #. placeholder {0}: entry.mutation_version
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
-msgid "{0} changes"
-msgstr "{0} cambios"
+#~ msgid "{0} changes"
+#~ msgstr "{0} cambios"
 
 #. placeholder {0}: hasRequiredColumns ? t`Update` : t`Add`
 #: src/features/reports/ui/SaveReportDialog.tsx
@@ -738,6 +762,11 @@ msgstr "{0}transacción{1}"
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "{0} transaction{1} waiting"
 msgstr "{0}transacción{1} en espera"
+
+#. placeholder {0}: data.transactions
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#~ msgid "{0} transactions"
+#~ msgstr "{0} transacciones"
 
 #. placeholder {0}: transactionStats.recentCount
 #: src/pages/accounts/AllTransactionsPage.tsx
@@ -5086,6 +5115,10 @@ msgstr "Cuenta corriente"
 msgid "Checking authentication and connectivity"
 msgstr "Comprobando autenticación y conectividad"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Checking contents…"
+msgstr "Comprobando el contenido…"
+
 #: src/features/import/ui/csv-pdf-dialog/CSVPDFImportDialog.tsx
 msgid "Checking for duplicates…"
 msgstr "Buscando duplicados…"
@@ -5731,6 +5764,10 @@ msgstr "Estado de conexión"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Consecutive months"
 msgstr "Meses consecutivos"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Contents can't be read on this device."
+msgstr "El contenido no se puede leer en este dispositivo."
 
 #. placeholder {0}: selectedCategories.length
 #: src/pages/budgeting/BudgetingPage.mobile.tsx
@@ -11484,6 +11521,11 @@ msgstr "La más reciente primero, o por importe: primero salidas, luego entradas
 #: src/pages/settings/AppearancePage.tsx
 msgid "Newest first"
 msgstr "Más reciente primero"
+
+#. placeholder {0}: formatDate(newest, 'PP')
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "newest transaction {0}"
+msgstr "transacción más reciente {0}"
 
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Next"
@@ -18678,6 +18720,12 @@ msgstr "Archivo no compatible"
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Up to 5 seats · free"
 msgstr "Hasta 5 plazas · gratis"
+
+#. placeholder {0}: data.current.mutation_version
+#. placeholder {0}: entry.mutation_version
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "up to change #{0}"
+msgstr "hasta el cambio n.º {0}"
 
 #: src/features/bank-sync/ui/BankSyncButton.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx

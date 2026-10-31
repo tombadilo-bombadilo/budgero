@@ -40,9 +40,24 @@ const history = {
   ],
 };
 
+const summaries: Record<string, unknown> = {
+  current: { budgets: 1, accounts: 0, categories: 0, transactions: 0, lastTransactionDate: null },
+  7: {
+    budgets: 1,
+    accounts: 4,
+    categories: 31,
+    transactions: 2840,
+    lastTransactionDate: '2026-10-30',
+  },
+};
 vi.mock('../api/useSnapshotHistory', () => ({
   useSnapshotHistory: () => ({ data: history, isLoading: false, error: null }),
   useRestoreSnapshot: () => ({ mutateAsync, isPending: false }),
+  useSnapshotSummary: (entry: number | 'current', enabled: boolean) => ({
+    data: enabled ? summaries[String(entry)] : undefined,
+    isLoading: false,
+    error: null,
+  }),
 }));
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
@@ -60,10 +75,18 @@ function renderList() {
 describe('SnapshotHistoryList', () => {
   beforeEach(() => mutateAsync.mockClear());
 
-  it('lists the current version and earlier copies with size and change count', () => {
+  it('lists the current version and earlier copies with size, log position and contents', () => {
     renderList();
     expect(screen.getByText('Current version')).toBeTruthy();
-    expect(screen.getByText(/19369 changes/)).toBeTruthy();
+    expect(screen.getByText(/up to change #19369/)).toBeTruthy();
+    // Decrypted on the device: the near-empty current copy vs the full earlier one.
+    expect(
+      screen.getByText(/0 transactions · 0 accounts · 0 categories · 1 budget\b/)
+    ).toBeTruthy();
+    expect(
+      screen.getByText(/2,840 transactions · 4 accounts · 31 categories · 1 budget\b/)
+    ).toBeTruthy();
+    expect(screen.getByText(/newest transaction Oct 30, 2026/)).toBeTruthy();
     expect(screen.getByText(/2\.4 MB/)).toBeTruthy();
     expect(screen.getByText(/made before the master password changed/)).toBeTruthy();
   });
