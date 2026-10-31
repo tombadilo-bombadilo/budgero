@@ -168,7 +168,8 @@ export class RuntimeContextFactory {
       checkApiHealth: () => this.deps.checkApiHealth(),
       getMutationCursor: () => syncRef?.getLocalVersion() ?? 0,
       hasUnackedMutations: () => (offlineQueueRef?.peekQueueLength() ?? 0) > 0,
-      canUploadSnapshot: () => syncRef?.hasInitialCatchUpSettled() ?? false,
+      canUploadSnapshot: () =>
+        (syncRef?.hasInitialCatchUpSettled() ?? false) && !(syncRef?.isCursorBehindAcks() ?? false),
       flushLocalPersistence,
       // Restore invariant: after ANY snapshot restore the DB content changed
       // out from under the cursor and the dedup sets. Reseed the cursor to

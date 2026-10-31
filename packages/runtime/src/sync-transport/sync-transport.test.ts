@@ -138,6 +138,8 @@ describe('SyncTransport', () => {
           mutations: [{ id: 'pending', version: 1, encryptedPayload: 'cipher' }],
         });
       }
+      // Cursor messages are handled in arrival order, so let the queue run.
+      await new Promise((resolve) => setTimeout(resolve, 0));
       expect(decryptPayload).toHaveBeenCalledTimes(1);
 
       transport.destroy();
@@ -335,6 +337,8 @@ describe('SyncTransport', () => {
       version: 1,
       payload: { encryptedPayload: 'cipher' },
     });
+    // Let the ordered queue start applying it (decryption stays pending).
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     transport.suspend();
     await transport.connect();
@@ -1304,7 +1308,7 @@ describe('SyncTransport', () => {
     ws.emitMessage({ type: 'catch_up_response', mutations: [{ id: 'x', args: '{bad' }] });
     ws.emitMessage({ type: 'not_json' });
 
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(onRemoteMutation).not.toHaveBeenCalled();
     expect(onCatchUpUnsafe).toHaveBeenCalled();
   });
@@ -1843,5 +1847,94 @@ describe('SyncTransport', () => {
         }
       ).location.reload
     ).toHaveBeenCalled();
+  });
+
+  it('advances the cursor through a burst of acks whose bookkeeping is slow', async () => {
+    // Onboarding sends ~11 mutations at once and the acks arrive back to
+    // back. Handled concurrently, each ack compared its version to a cursor
+    // the earlier ones had not advanced yet: the cursor stuck at 1 and the
+    // next snapshot was bound to position 1 while holding all 11.
+    // Earlier acks take longer (e.g. the first one also persists the queue),
+    // so concurrent handling would finish them in reverse.
+    const onMutationAck = vi.fn(
+      (id: string) => new Promise<void>((resolve) => setTimeout(resolve, 12 - Number(id.slice(1))))
+    );
+    const { transport } = createTransport({ onMutationAck });
+    await transport.connect();
+    const ws = FakeWebSocket.instances[0]!;
+    ws.emitOpen();
+    ws.emitMessage({ type: 'catch_up_response', mutations: [], hasMore: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    ws.sent = [];
+
+    for (let version = 1; version <= 11; version += 1) {
+      ws.emitMessage({ type: 'mutation_ack', mutationId: `m${version}`, version });
+    }
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    expect(onMutationAck.mock.calls.map((call) => call[0])).toEqual(
+      Array.from({ length: 11 }, (_, i) => `m${i + 1}`)
+    );
+    expect(transport.getLocalVersion()).toBe(11);
+    const catchUps = ws.sent
+      .map((entry) => JSON.parse(entry) as { type?: string })
+      .filter((entry) => entry.type === 'catch_up_request');
+    expect(catchUps).toHaveLength(0);
+  });
+
+  it('keeps arrival order when a message arrives while the restore buffer drains', async () => {
+    const order: string[] = [];
+    const onMutationAck = vi.fn(async (id: string) => {
+      order.push(id);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+    });
+    const { transport } = createTransport({ onMutationAck });
+    await transport.connect();
+    const ws = FakeWebSocket.instances[0]!;
+    ws.emitOpen();
+    ws.emitMessage({ type: 'catch_up_response', mutations: [], hasMore: false });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    transport.setBufferMode(true);
+    ws.emitMessage({ type: 'mutation_ack', mutationId: 'a', version: 1 });
+    ws.emitMessage({ type: 'mutation_ack', mutationId: 'b', version: 2 });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const drained = transport.flushBuffer();
+    ws.emitMessage({ type: 'mutation_ack', mutationId: 'c', version: 3 });
+    await drained;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(order).toEqual(['a', 'b', 'c']);
+    expect(transport.getLocalVersion()).toBe(3);
+  });
+
+  it('reports the cursor behind its own acks until the gap is caught up', async () => {
+    const { transport } = createTransport({ onMutationAck: vi.fn(async () => undefined) });
+    transport.setLocalVersion(4);
+    await transport.connect();
+    const ws = FakeWebSocket.instances[0]!;
+    ws.emitOpen();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    ws.emitMessage({ type: 'mutation_ack', mutationId: 'mine', version: 6 });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(transport.getLocalVersion()).toBe(4);
+    expect(transport.isCursorBehindAcks()).toBe(true);
+
+    ws.emitMessage({
+      type: 'catch_up_response',
+      mutations: [
+        { id: 'theirs', version: 5, op: 'x', args: {} },
+        { id: 'mine', version: 6, op: 'x', args: {} },
+      ],
+      hasMore: false,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(transport.getLocalVersion()).toBe(6);
+    expect(transport.isCursorBehindAcks()).toBe(false);
+
+    // A reseed to an earlier position (snapshot restore) does not block uploads.
+    transport.setLocalVersion(2);
+    expect(transport.isCursorBehindAcks()).toBe(false);
   });
 });

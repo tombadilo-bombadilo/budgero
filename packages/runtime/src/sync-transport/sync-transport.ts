@@ -96,6 +96,19 @@ function isPageHidden(): boolean {
   return typeof document !== 'undefined' && document.visibilityState === 'hidden';
 }
 
+/** Message types whose handlers read and advance the mutation cursor. */
+const CURSOR_MESSAGE_TYPES = new Set(['mutation_ack', 'mutation_applied', 'catch_up_response']);
+
+function movesCursor(raw: unknown): boolean {
+  if (typeof raw !== 'string') return false;
+  try {
+    const { type } = JSON.parse(raw) as { type?: unknown };
+    return typeof type === 'string' && CURSOR_MESSAGE_TYPES.has(type);
+  } catch {
+    return false;
+  }
+}
+
 export class SyncTransport {
   private readonly spaceId: string;
 
@@ -134,6 +147,9 @@ export class SyncTransport {
   private handleVisibilityListener: (() => void) | null = null;
 
   private localVersion = 0;
+
+  /** Highest log version any of our own mutations was acked at. */
+  private highestAckedVersion = 0;
 
   /** Highest cursor written to storage by a deferred (debounced) persist. */
   private durableVersion = 0;
@@ -273,6 +289,17 @@ export class SyncTransport {
     return this.initialCatchUpSettled;
   }
 
+  /**
+   * One of our mutations was acked at a log position the cursor has not
+   * reached (a broadcast in between was missed and is being caught up). The
+   * local DB then holds that mutation but not the gap, so a snapshot taken
+   * now can't be bound to any single log position: hold uploads until the
+   * cursor catches up.
+   */
+  isCursorBehindAcks(): boolean {
+    return this.highestAckedVersion > this.localVersion;
+  }
+
   async waitForInitialCatchUp(options?: {
     timeoutMs?: number;
   }): Promise<{ completed: boolean; timedOut: boolean }> {
@@ -320,17 +347,22 @@ export class SyncTransport {
    * Flush buffered messages, applying them via deps.onRemoteMutation.
    */
   async flushBuffer(): Promise<void> {
-    this.bufferMode = false;
-    const buffer = [...this.messageBuffer];
-    this.messageBuffer = [];
-
-    for (const msg of buffer) {
+    // Stay in buffer mode while draining: a message arriving mid-drain joins
+    // the end of the buffer instead of running live ahead of older buffered
+    // ones. Live handling resumes once the buffer is empty.
+    while (this.messageBuffer.length > 0) {
+      const msg = this.messageBuffer.shift()!;
       try {
         await this.processMessage(msg);
       } catch {
         /* message processing errors logged internally */
       }
+      if (this.destroyed) {
+        this.messageBuffer = [];
+        break;
+      }
     }
+    this.bufferMode = false;
   }
 
   // ---- Connection ----
@@ -421,9 +453,15 @@ export class SyncTransport {
       };
       ws.onmessage = (ev) => {
         if (!isCurrentConnection()) return;
-        this.handleRawMessage(ev.data).catch(() => {
-          /* message handling errors logged internally */
-        });
+        if (!movesCursor(ev.data)) {
+          this.handleRawMessage(ev.data).catch(() => {
+            /* message handling errors logged internally */
+          });
+          return;
+        }
+        // Accepted while this connection was current: handled even if a
+        // reconnect happens while it waits its turn, as before the queue.
+        this.enqueueReceive(() => this.handleRawMessage(ev.data));
       };
     } catch {
       this.scheduleReconnect();
@@ -432,6 +470,32 @@ export class SyncTransport {
 
   /** Serializes send() calls so wire order always matches call order. */
   private sendChain: Promise<unknown> = Promise.resolve();
+
+  /** Tail of the receive queue; null when no message is being handled. */
+  private receiveTail: Promise<void> | null = null;
+
+  /**
+   * Handle cursor-moving messages (acks, live mutations, catch-up pages) one
+   * at a time, in arrival order. Handlers await
+   * (ack bookkeeping, applying a remote mutation, persisting), and running
+   * them concurrently let a later ack test the cursor before an earlier one
+   * advanced it: a burst of acks (onboarding sends ~11 mutations at once)
+   * left the cursor at 1 with every mutation acked, so the next snapshot was
+   * bound to log position 1 while holding 1..11 and devices replayed 2..11
+   * on top of it (duplicate categories, a second goal for one category).
+   * An idle queue starts the handler synchronously, as before.
+   */
+  private enqueueReceive(handle: () => Promise<void>): void {
+    const run = () =>
+      handle().catch(() => {
+        /* message handling errors logged internally */
+      });
+    const previous = this.receiveTail;
+    const tail: Promise<void> = (previous ? previous.then(run) : run()).finally(() => {
+      if (this.receiveTail === tail) this.receiveTail = null;
+    });
+    this.receiveTail = tail;
+  }
 
   /**
    * Send a mutation payload over WebSocket.
@@ -854,6 +918,7 @@ export class SyncTransport {
       }
       if (this.destroyed) return;
       if (typeof msg.version === 'number' && Number.isFinite(msg.version)) {
+        this.highestAckedVersion = Math.max(this.highestAckedVersion, msg.version);
         if (msg.version > this.localVersion + 1) {
           // Our mutation landed at a version beyond the next contiguous one:
           // broadcasts in between were missed (e.g. dropped server-side).
@@ -1559,6 +1624,9 @@ export class SyncTransport {
     if (!Number.isFinite(version) || version < 0) return;
     if (version === this.localVersion) return;
     this.localVersion = version;
+    // An explicit reseed (snapshot restore, server reset) is authoritative;
+    // acks from before it must not hold uploads back forever.
+    this.highestAckedVersion = Math.min(this.highestAckedVersion, version);
     this.cursorEpoch += 1;
     this.durableVersion = version;
     if (version > 0) {
