@@ -21,11 +21,37 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.20.3',
+    date: 'October 31, 2026',
+    summary:
+      'A device that could not open its own copy of a workspace can no longer replace the copy on the server, and error reports now show the real cause of a failure.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Sync never replaces a newer snapshot with an older one',
+        description:
+          'If a browser could not read its stored copy of a workspace, it started again from an empty copy and could upload that to the server before catching up, replacing the full snapshot. The server now refuses any snapshot that is older than the one it holds, and a device only uploads after it has caught up with all changes. Your change history on the server was never affected, so devices that already have your budget keep it.',
+      },
+      {
+        type: 'improved',
+        title: 'Error reports show the real cause',
+        description:
+          'Budgero Cloud error reports now include the underlying error behind a failure (for example a storage or network error), the state of the app at that moment as fixed values (such as whether sync was connected and the storage type) and a random id for the visit that links a report to the server log of the same requests. Still never your data, amounts or any message text. The privacy policy describes the addition; self-hosted Budgero still sends nothing.',
+      },
+      {
+        type: 'improved',
+        title: 'Safer server logs',
+        description:
+          'The server no longer writes sign-in tokens into its logs when a sync connection is refused.',
+      },
+    ],
+  },
+  {
     version: 'v1.20.2',
     date: 'October 30, 2026',
     summary:
       'A page that hits an error now recovers in place instead of going blank, sync warnings stop repeating, and error reports tell us which part of the app failed so bugs get fixed before you have to report them.',
-    isLatest: true,
     items: [
       {
         type: 'improved',
@@ -142,7 +168,8 @@ export const changelogEntries: ChangelogEntry[] = [
       {
         type: 'fixed',
         title: 'Imports page text',
-        description: 'The Imports page lists the supported file formats again instead of “[object Object]”.',
+        description:
+          'The Imports page lists the supported file formats again instead of “[object Object]”.',
       },
       {
         type: 'improved',
@@ -191,7 +218,7 @@ export const changelogEntries: ChangelogEntry[] = [
     date: 'October 24, 2026',
     summary:
       'Fixes a sync reconnect loop after a session expires, counts website visitors correctly without cookies, and updates the analytics library.',
-        items: [
+    items: [
       {
         type: 'fixed',
         title: 'Sync after an expired session',
@@ -222,7 +249,7 @@ export const changelogEntries: ChangelogEntry[] = [
     date: 'October 24, 2026',
     summary:
       'New Cloud accounts start with usage analytics on, as described in the privacy policy, and only the setting saved to your account counts.',
-        items: [
+    items: [
       {
         type: 'fixed',
         title: 'Analytics setting',
@@ -236,7 +263,7 @@ export const changelogEntries: ChangelogEntry[] = [
     date: 'October 24, 2026',
     summary:
       'Credit card transfers, cash advances and refunds now work out exactly like YNAB, and Budgero no longer shows a cookie banner.',
-        items: [
+    items: [
       {
         type: 'improved',
         title: 'Cash advances',
@@ -291,7 +318,7 @@ export const changelogEntries: ChangelogEntry[] = [
     date: 'October 23, 2026',
     summary:
       'Makes large budgets much faster, makes undo exact and all-or-nothing everywhere, keeps devices from silently drifting apart, and adds converting a transaction to a transfer and a daily allowance in budget pacing.',
-        items: [
+    items: [
       {
         type: 'new',
         title: 'Convert to a transfer',
@@ -372,7 +399,7 @@ export const changelogEntries: ChangelogEntry[] = [
     date: 'October 15, 2026',
     summary:
       'Adds keyboard navigation and batch shortcuts to the register, compact rows, your own exchange rate on foreign-currency transactions and Post now for recurring transactions, and fixes categories mixing up after switching budgets.',
-        items: [
+    items: [
       {
         type: 'new',
         title: 'Keyboard navigation in the register',
