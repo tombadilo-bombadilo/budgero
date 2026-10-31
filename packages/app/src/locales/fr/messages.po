@@ -3832,6 +3832,7 @@ msgstr "Affectez pour atteindre l'objectif"
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Assigned"
 msgstr "Affecté"
@@ -4892,6 +4893,7 @@ msgstr "Catégories correspondant à « {0} »"
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Category"
 msgstr "Catégorie"
@@ -7343,6 +7345,10 @@ msgstr "Sur la page Planification, chaque groupe de catégories affiche, à côt
 #: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
 msgid "Each link contains a one-time secret that unlocks your shared workspace. <0>Budgero never sees it</0> — but whatever channel you use to share will. For the strongest privacy, hand the link off in person or through an end-to-end encrypted app (Signal, iMessage, WhatsApp). Plain email works too — just remember your email provider can read what you send."
 msgstr "Chaque lien contient un secret à usage unique qui déverrouille votre espace de travail partagé. <0>Budgero ne le voit jamais</0> — mais le canal que vous utilisez pour le partager le verra. Pour une confidentialité maximale, transmettez le lien en personne ou via une application avec chiffrement de bout en bout (Signal, iMessage, WhatsApp). L'email classique fonctionne aussi — n'oubliez pas que votre fournisseur de messagerie peut lire ce que vous envoyez."
+
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Each month's goal target added up over the period, against what you assigned and spent."
+msgstr "L'objectif de chaque mois additionné sur la période, comparé à ce que vous avez attribué et dépensé."
 
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Each row is a signup cohort. Cells show the % of that cohort active on day N after signup. Look for cliffs (every cohort drops at the same day) and cross-cohort drift (recent cohorts retaining better or worse than older ones). Daily cohorts are noisy at low signup volume — switch to weekly if rows look jagged."
@@ -11147,6 +11153,10 @@ msgstr "Objectif mensuel"
 msgid "months"
 msgstr "mois"
 
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Months met"
+msgstr "Mois atteints"
+
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Months on plan"
 msgstr "Mois sur le plan"
@@ -11158,6 +11168,10 @@ msgstr "Mois restants :"
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
 msgid "months starting from:"
 msgstr "mois à partir de :"
+
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Months the target was fully funded"
+msgstr "Mois où l'objectif était entièrement financé"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Montserrat"
@@ -11733,6 +11747,10 @@ msgstr "Aucune catégorie trouvée !"
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "No categories found."
 msgstr "Aucune catégorie trouvée."
+
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "No categories in this period."
+msgstr "Aucune catégorie sur cette période."
 
 #: src/features/ai/ui/AICategorizeDialog.tsx
 msgid "No categories to apply"
@@ -16563,6 +16581,7 @@ msgstr "Répartition des dépenses"
 msgid "Spending this month"
 msgstr "Dépenses ce mois-ci"
 
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Spent"
 msgstr "Dépensé"
@@ -17115,6 +17134,7 @@ msgstr "Prend environ 2 minutes"
 
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budgeting/ui/BudgetToolbar.tsx
+#: src/pages/analytics/components/TargetTable.tsx
 msgid "Target"
 msgstr "Objectif"
 
@@ -17180,6 +17200,10 @@ msgstr "Objectif : affecter {target} d'ici le {targetDate}"
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "Target<0/>%"
 msgstr "Cible<0/>%"
+
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Targets"
+msgstr "Objectifs"
 
 #: src/pages/settings/push-api/EncryptionInfoPanel.tsx
 msgid "Technical details for encrypting your payloads."
@@ -17678,6 +17702,10 @@ msgstr "Cette dette a désormais un solde positif. Il n'y a rien à rembourser p
 msgid "This month"
 msgstr "Ce mois-ci"
 
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "This month's goal targets against what you assigned and spent."
+msgstr "Les objectifs de ce mois comparés à ce que vous avez attribué et dépensé."
+
 #: src/pages/onboarding/steps/ZbbStep.tsx
 msgid "THIS MONTH'S PAYCHECK"
 msgstr "SALAIRE DE CE MOIS"
@@ -18016,6 +18044,7 @@ msgid "Top payees by spending (30d)"
 msgstr "Top bénéficiaires par dépenses (30 j)"
 
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx

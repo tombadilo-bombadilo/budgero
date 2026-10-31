@@ -3834,6 +3834,7 @@ msgstr "Assign this to reach target"
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Assigned"
 msgstr "Assigned"
@@ -4894,6 +4895,7 @@ msgstr "Categories matching \"{0}\""
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Category"
 msgstr "Category"
@@ -7345,6 +7347,10 @@ msgstr "Each category group on the Planning page shows its share of everything a
 #: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
 msgid "Each link contains a one-time secret that unlocks your shared workspace. <0>Budgero never sees it</0> — but whatever channel you use to share will. For the strongest privacy, hand the link off in person or through an end-to-end encrypted app (Signal, iMessage, WhatsApp). Plain email works too — just remember your email provider can read what you send."
 msgstr "Each link contains a one-time secret that unlocks your shared workspace. <0>Budgero never sees it</0> — but whatever channel you use to share will. For the strongest privacy, hand the link off in person or through an end-to-end encrypted app (Signal, iMessage, WhatsApp). Plain email works too — just remember your email provider can read what you send."
+
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Each month's goal target added up over the period, against what you assigned and spent."
+msgstr "Each month's goal target added up over the period, against what you assigned and spent."
 
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Each row is a signup cohort. Cells show the % of that cohort active on day N after signup. Look for cliffs (every cohort drops at the same day) and cross-cohort drift (recent cohorts retaining better or worse than older ones). Daily cohorts are noisy at low signup volume — switch to weekly if rows look jagged."
@@ -11149,6 +11155,10 @@ msgstr "Monthly Target"
 msgid "months"
 msgstr "months"
 
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Months met"
+msgstr "Months met"
+
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Months on plan"
 msgstr "Months on plan"
@@ -11160,6 +11170,10 @@ msgstr "Months Remaining:"
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
 msgid "months starting from:"
 msgstr "months starting from:"
+
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Months the target was fully funded"
+msgstr "Months the target was fully funded"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Montserrat"
@@ -11735,6 +11749,10 @@ msgstr "No categories found!"
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "No categories found."
 msgstr "No categories found."
+
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "No categories in this period."
+msgstr "No categories in this period."
 
 #: src/features/ai/ui/AICategorizeDialog.tsx
 msgid "No categories to apply"
@@ -16565,6 +16583,7 @@ msgstr "Spending share"
 msgid "Spending this month"
 msgstr "Spending this month"
 
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Spent"
 msgstr "Spent"
@@ -17117,6 +17136,7 @@ msgstr "Takes about 2 minutes"
 
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budgeting/ui/BudgetToolbar.tsx
+#: src/pages/analytics/components/TargetTable.tsx
 msgid "Target"
 msgstr "Target"
 
@@ -17182,6 +17202,10 @@ msgstr "Target: allocate {target} by {targetDate}"
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "Target<0/>%"
 msgstr "Target<0/>%"
+
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Targets"
+msgstr "Targets"
 
 #: src/pages/settings/push-api/EncryptionInfoPanel.tsx
 msgid "Technical details for encrypting your payloads."
@@ -17680,6 +17704,10 @@ msgstr "This liability now has a positive balance. There's nothing to pay off ri
 msgid "This month"
 msgstr "This month"
 
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "This month's goal targets against what you assigned and spent."
+msgstr "This month's goal targets against what you assigned and spent."
+
 #: src/pages/onboarding/steps/ZbbStep.tsx
 msgid "THIS MONTH'S PAYCHECK"
 msgstr "THIS MONTH'S PAYCHECK"
@@ -18018,6 +18046,7 @@ msgid "Top payees by spending (30d)"
 msgstr "Top payees by spending (30d)"
 
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
