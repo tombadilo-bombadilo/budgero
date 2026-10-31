@@ -3,10 +3,9 @@ import { useMemo } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { EChart } from '@shared/ui/echart';
 import { AnimatedNumber } from '@shared/ui/animated-number';
-import { useGoals } from '@entities/goal/api/useGoals';
-import { cn } from '@shared/lib/utils';
 import { trendTextClass } from '@shared/lib/amount-color';
-import { buildGoalCoverage, buildPlanVsReality } from '../analytics-model';
+import { buildPlanVsReality } from '../analytics-model';
+import { GoalFundingList } from '../components/GoalFundingList';
 import { planInsights } from '../insights';
 import { usePlanData } from '../usePlanData';
 import { useTargetData } from '../useTargetData';
@@ -44,35 +43,10 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
   const palette = usePalette();
   const money = useMoneyFormatters();
   const { data: planInputs, isLoading: planLoading } = usePlanData(months, data.budgetId);
-  const { data: goals } = useGoals(data.budgetId);
 
   const plan = useMemo(() => buildPlanVsReality(planInputs ?? []), [planInputs]);
   const { data: targetInputs, isLoading: targetLoading } = useTargetData(months, data.budgetId);
   const targetReport = useMemo(() => buildTargetReport(targetInputs ?? []), [targetInputs]);
-
-  const goalRows = useMemo(() => {
-    if (!goals || goals.length === 0) return [];
-    const assignedByCategory = new Map<number, number>();
-    for (const month of planInputs ?? []) {
-      for (const row of month.rows) {
-        assignedByCategory.set(
-          row.categoryId,
-          (assignedByCategory.get(row.categoryId) ?? 0) + row.assigned
-        );
-      }
-    }
-    return buildGoalCoverage(
-      goals.map((goal) => ({
-        id: goal.ID,
-        categoryId: goal.CategoryID,
-        type: goal.Type,
-        target: goal.Target,
-      })),
-      assignedByCategory,
-      new Map(data.categories.map((category) => [category.id, category.name])),
-      months.length
-    );
-  }, [goals, planInputs, data.categories, months.length]);
 
   const planColor = palette.series[0];
   const spentColor = palette.flow.negative;
@@ -249,49 +223,17 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
               </>
             ) : null}
 
-            {goalRows.length > 0 ? (
+            {targetReport.groups.some((group) => group.target) ? (
               <>
                 <PanelSectionTitle>
                   <Trans>Goal funding (this period)</Trans>
                 </PanelSectionTitle>
-                <div className="space-y-2">
-                  {goalRows.map((goal) => {
-                    const pct = Math.min(1, goal.coverage);
-                    const met = goal.coverage >= 1;
-                    return (
-                      <div key={goal.goalId}>
-                        <div className="flex items-baseline justify-between gap-3">
-                          <span className="min-w-0 flex-1 truncate text-sm">
-                            {goal.categoryName}
-                          </span>
-                          <span
-                            className={cn(
-                              'whitespace-nowrap text-sm font-medium tabular-nums',
-                              met ? 'text-green-600' : 'text-muted-foreground'
-                            )}
-                          >
-                            {Math.round(goal.coverage * 100)}%
-                          </span>
-                        </div>
-                        <div className="mt-1 h-1 rounded-full bg-muted">
-                          <div
-                            className="h-1 rounded-full"
-                            style={{
-                              width: `${Math.max(2, pct * 100)}%`,
-                              backgroundColor: met ? palette.flow.positive : palette.series[0],
-                            }}
-                          />
-                        </div>
-                        <div className="mt-0.5 text-xs text-muted-foreground">
-                          <Trans>
-                            {money.amount(goal.funded)} of {money.amount(goal.expected)}
-                            {goal.isMonthly ? t` (target × months)` : ''}
-                          </Trans>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                <GoalFundingList
+                  groups={targetReport.groups}
+                  money={money.amount}
+                  positiveColor={palette.flow.positive}
+                  progressColor={palette.series[0]}
+                />
               </>
             ) : null}
           </>

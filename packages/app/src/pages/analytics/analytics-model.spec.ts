@@ -5,7 +5,6 @@ import {
   buildDimensionTotals,
   buildFlowGraph,
   buildMonthlyFlow,
-  buildGoalCoverage,
   buildNetWorthSeries,
   buildPlanVsReality,
   buildRunway,
@@ -470,31 +469,6 @@ describe('buildPlanVsReality', () => {
     ]);
     expect(chronic.categories[0].monthsOver).toBe(3);
     expect(chronic.categories[0].chronic).toBe(true);
-  });
-});
-
-describe('buildGoalCoverage', () => {
-  it('scales monthly goals by month count and ranks by coverage', () => {
-    const rows = buildGoalCoverage(
-      [
-        { id: 1, categoryId: 10, type: 'monthly-savings', target: 50_000 },
-        { id: 2, categoryId: 11, type: 'target-date', target: 600_000 },
-      ],
-      new Map([
-        [10, 120_000],
-        [11, 600_000],
-      ]),
-      new Map([
-        [10, 'Vacation'],
-        [11, 'New car'],
-      ]),
-      3
-    );
-    // Monthly: expects 150k, funded 120k → 0.8; ranked first (lowest coverage).
-    expect(rows[0].categoryName).toBe('Vacation');
-    expect(rows[0].expected).toBe(150_000);
-    expect(rows[0].coverage).toBeCloseTo(0.8, 8);
-    expect(rows[1].coverage).toBeCloseTo(1, 8);
   });
 });
 

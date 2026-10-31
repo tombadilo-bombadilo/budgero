@@ -1,5 +1,7 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Button } from '@shared/ui/button';
 import { Card } from '@shared/ui/card';
 import { Skeleton } from '@shared/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
@@ -24,6 +26,16 @@ const moneyCell = 'text-right font-mono text-sm tabular-nums';
  */
 export function TargetTable({ report, money, monthCount, isLoading }: TargetTableProps) {
   const { t } = useLingui();
+  const [openGroups, setOpenGroups] = useState<Set<string>>(() => new Set());
+  const allOpen =
+    report.groups.length > 0 && report.groups.every((group) => openGroups.has(group.name));
+  const toggleGroup = (name: string) =>
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
 
   const metLabel = (row: TargetReportRow) =>
     row.monthsWithTarget > 0 ? `${row.monthsMet}/${row.monthsWithTarget}` : '';
@@ -31,9 +43,25 @@ export function TargetTable({ report, money, monthCount, isLoading }: TargetTabl
   return (
     <Card className="overflow-hidden border-dashed p-0" data-testid="target-table">
       <div className="p-5 pb-3 sm:px-6">
-        <h2 className="text-base font-semibold text-muted-foreground">
-          <Trans>Targets</Trans>
-        </h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-muted-foreground">
+            <Trans>Targets</Trans>
+          </h2>
+          {report.groups.length > 0 ? (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1 text-xs text-muted-foreground"
+              onClick={() =>
+                setOpenGroups(
+                  allOpen ? new Set() : new Set(report.groups.map((group) => group.name))
+                )
+              }
+            >
+              {allOpen ? <Trans>Collapse all</Trans> : <Trans>Expand all</Trans>}
+            </Button>
+          ) : null}
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">
           {monthCount > 1 ? (
             <Trans>
@@ -85,9 +113,30 @@ export function TargetTable({ report, money, monthCount, isLoading }: TargetTabl
             <TableBody>
               {report.groups.map((group) => (
                 <Fragment key={group.name}>
-                  <TableRow className="bg-muted/40 text-sm">
-                    <TableCell className="pl-6 font-semibold uppercase tracking-wide">
-                      {group.name}
+                  <TableRow
+                    className="cursor-pointer bg-muted/40 text-sm hover:bg-muted/60"
+                    onClick={() => toggleGroup(group.name)}
+                  >
+                    <TableCell className="pl-4 font-semibold uppercase tracking-wide">
+                      <button
+                        type="button"
+                        className="flex items-center gap-1.5 uppercase"
+                        aria-expanded={openGroups.has(group.name)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          toggleGroup(group.name);
+                        }}
+                      >
+                        {openGroups.has(group.name) ? (
+                          <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                        )}
+                        {group.name}
+                        <span className="text-xs font-normal normal-case text-muted-foreground">
+                          · {group.rows.length}
+                        </span>
+                      </button>
                     </TableCell>
                     <TableCell className={cn(moneyCell, 'font-semibold')}>
                       {money(group.assigned)}
@@ -105,9 +154,9 @@ export function TargetTable({ report, money, monthCount, isLoading }: TargetTabl
                       />
                     </TableCell>
                   </TableRow>
-                  {group.rows.map((row) => (
+                  {(openGroups.has(group.name) ? group.rows : []).map((row) => (
                     <TableRow key={row.categoryId} className="text-sm">
-                      <TableCell className="pl-6">{row.name}</TableCell>
+                      <TableCell className="pl-10">{row.name}</TableCell>
                       <TableCell className={moneyCell}>{money(row.assigned)}</TableCell>
                       <TableCell className={cn(moneyCell, 'text-muted-foreground')}>
                         {money(row.spent)}

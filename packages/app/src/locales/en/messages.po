@@ -64,8 +64,8 @@ msgid " (suggested)"
 msgstr " (suggested)"
 
 #: src/pages/analytics/reports/PlanRealityReport.tsx
-msgid " (target × months)"
-msgstr " (target × months)"
+#~ msgid " (target × months)"
+#~ msgstr " (target × months)"
 
 #. placeholder {0}: inUse.length === 1 ? 'One of them is' : `${inUse.length} of them are`
 #. placeholder {1}: affected.toLocaleString()
@@ -681,8 +681,8 @@ msgstr "{0} of {1} values exact"
 #. placeholder {1}: money.amount(goal.expected)
 #. placeholder {2}: goal.isMonthly ? t` (target × months)` : ''
 #: src/pages/analytics/reports/PlanRealityReport.tsx
-msgid "{0} of {1}{2}"
-msgstr "{0} of {1}{2}"
+#~ msgid "{0} of {1}{2}"
+#~ msgstr "{0} of {1}{2}"
 
 #. placeholder {0}: v.pings
 #. placeholder {1}: v.days
@@ -1027,9 +1027,21 @@ msgstr "{duration} mo"
 msgid "{first}'s Budget Space"
 msgstr "{first}'s Budget Space"
 
+#: src/pages/analytics/components/GoalFundingList.tsx
+msgid "{funded} of {target}"
+msgstr "{funded} of {target}"
+
+#: src/pages/analytics/components/GoalFundingList.tsx
+msgid "{funded} of {target} · met {monthsMet}/{monthsWithTarget} mo"
+msgstr "{funded} of {target} · met {monthsMet}/{monthsWithTarget} mo"
+
 #: src/features/budget-planning/ui/desktop-table/TargetPill.tsx
 msgid "{funded}% funded"
 msgstr "{funded}% funded"
+
+#: src/pages/analytics/components/GoalFundingList.tsx
+msgid "{groupFunded} of {groupTarget}"
+msgstr "{groupFunded} of {groupTarget}"
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "{horizon} months"
@@ -5527,6 +5539,7 @@ msgstr "Collaborator Workspaces"
 msgid "Collapse"
 msgstr "Collapse"
 
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Collapse all"
 msgstr "Collapse all"
@@ -7963,6 +7976,7 @@ msgstr "Exo 2"
 msgid "Expand"
 msgstr "Expand"
 
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Expand all"
 msgstr "Expand all"
