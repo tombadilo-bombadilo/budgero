@@ -22,10 +22,15 @@ jobs:
     if: github.server_url == 'https://github.com'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      # Reads the record-pass markers of pull request runs.
+      actions: read
     outputs:
       app: ${{ steps.paths.outputs.app }}
       website: ${{ steps.paths.outputs.website }}
       server: ${{ steps.paths.outputs.server }}
+      tree: ${{ steps.paths.outputs.tree }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -38,6 +43,8 @@ jobs:
 
       - name: Select affected checks
         id: paths
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: node scripts/ci/changes.mjs
 
   web-checks:
@@ -226,3 +233,22 @@ jobs:
           else
             test "$CHECKS_RESULT" = skipped
           fi
+
+  # Marks the exact tree this pull request tested as passing. When the PR is
+  # merged and master's tree is identical (master didn't move meanwhile), the
+  # push run finds the marker and skips the suite instead of repeating it.
+  record-pass:
+    needs: [changes, web, server]
+    if: github.event_name == 'pull_request' && needs.changes.outputs.tree != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Write marker
+        run: echo "${{ needs.changes.outputs.tree }}" > tree.txt
+      - name: Upload marker
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-passed-${{ needs.changes.outputs.tree }}
+          path: tree.txt
+          retention-days: 14
+          overwrite: true

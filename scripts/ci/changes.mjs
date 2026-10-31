@@ -117,10 +117,68 @@ export function planEvent(event, cwd) {
     : planChanges(paths, (path) => changedLinesOf(base, head, Boolean(pr), path, cwd));
 }
 
+/** Git tree of a commit: the exact content CI checks, independent of history. */
+export function treeOf(sha, cwd = process.cwd()) {
+  try {
+    return execFileSync('git', ['rev-parse', `${sha}^{tree}`], {
+      cwd,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    }).trim();
+  } catch {
+    return null;
+  }
+}
+
+export const passedArtifactName = (tree) => `ci-passed-${tree}`;
+
+/**
+ * True when a pull request from this repository already passed every CI gate
+ * on exactly this tree (its `record-pass` job uploads a marker artifact named
+ * after the tree). A merge commit whose tree matches what the PR tested — the
+ * usual case when master didn't move in between — needs no second run.
+ * Any doubt (API error, fork run, expired marker, different tree) means run.
+ */
+export async function alreadyPassed({ tree, repository, repositoryId, token, fetchImpl = fetch }) {
+  if (!tree || !/^[a-f0-9]{40}$/.test(tree) || !repository || !repositoryId || !token) return false;
+  try {
+    const url = `https://api.github.com/repos/${repository}/actions/artifacts?name=${passedArtifactName(tree)}&per_page=20`;
+    const response = await fetchImpl(url, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' },
+    });
+    if (!response.ok) return false;
+    const { artifacts = [] } = await response.json();
+    return artifacts.some(
+      (artifact) =>
+        artifact.name === passedArtifactName(tree) &&
+        !artifact.expired &&
+        artifact.workflow_run?.head_repository_id === repositoryId
+    );
+  } catch {
+    return false;
+  }
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const event = JSON.parse(readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'));
-  const plan = planEvent(event);
-  const output = Object.entries(plan).map(([key, value]) => `${key}=${value}`).join('\n') + '\n';
+  const isPush = !event.pull_request;
+  const tree = treeOf(isPush ? event.after : 'HEAD');
+  let plan = planEvent(event);
+  if (
+    isPush &&
+    (plan.app || plan.website || plan.server) &&
+    (await alreadyPassed({
+      tree,
+      repository: process.env.GITHUB_REPOSITORY,
+      repositoryId: event.repository?.id,
+      token: process.env.GH_TOKEN,
+    }))
+  ) {
+    console.log(`Tree ${tree} already passed CI on its pull request; skipping the checks.`);
+    plan = { app: false, website: false, server: false };
+  }
+  const output =
+    Object.entries(plan).map(([key, value]) => `${key}=${value}`).join('\n') + `\ntree=${tree ?? ''}\n`;
   appendFileSync(process.env.GITHUB_OUTPUT, output);
   console.log(output);
 }
