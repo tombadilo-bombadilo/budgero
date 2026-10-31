@@ -1,6 +1,7 @@
 import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
+import { scaledToDecimal } from '@budgero/core/browser';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import type {
@@ -152,7 +153,8 @@ export function PreviewStep({
                     {row.parsed.account}
                   </td>
                   <td className="p-2">
-                    {row.input.date} · {(row.input.inflow - row.input.outflow) / 1000}{' '}
+                    {row.input.date} ·{' '}
+                    {scaledToDecimal(row.input.inflow - row.input.outflow, row.input.currency)}{' '}
                     {row.input.currency}
                     <br />
                     {row.input.payee}
@@ -166,7 +168,11 @@ export function PreviewStep({
                       <p key={candidate.id} className="mt-2">
                         <Trans>
                           Existing #{candidate.id}: {candidate.date} ·{' '}
-                          {(candidate.inflow - candidate.outflow) / 1000} {row.input.currency}
+                          {scaledToDecimal(
+                            candidate.inflow - candidate.outflow,
+                            row.input.currency
+                          )}{' '}
+                          {row.input.currency}
                           <br />
                           {candidate.payee}
                           <br />

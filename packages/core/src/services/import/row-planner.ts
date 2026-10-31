@@ -17,7 +17,13 @@
  * reported every row as imported. See `import-row-planner.node.spec.ts`.
  */
 
-import { fromDecimal, ZERO_MILLI, type MilliUnits } from '../../money/index.js';
+import {
+  asMilli,
+  fromDecimal,
+  MILLIS_PER_UNIT,
+  ZERO_MILLI,
+  type MilliUnits,
+} from '../../money/index.js';
 import { parseAmountDetailed, parseDateDetailed } from './parsing.js';
 import type { ColumnMapping } from './types.js';
 
@@ -50,6 +56,13 @@ export interface PlannedImportRow {
   errors: string[];
 }
 
+/**
+ * Storage scale of the row's destination account (`getCurrencyScale`), so
+ * `inflow`/`outflow` come out in that account's native units. Omitted or
+ * 1000 = milliunits, the fiat scale.
+ */
+export type ImportAmountScale = (row: Record<string, string>, index: number) => number;
+
 interface AmountResult {
   inflow: MilliUnits;
   outflow: MilliUnits;
@@ -57,13 +70,24 @@ interface AmountResult {
   errors: string[];
 }
 
+/**
+ * Decimal → integer storage units of the destination account. Fiat accounts
+ * store milliunits (scale 1000) and go through `fromDecimal` exactly as
+ * before; crypto accounts store at their own scale (sats for BTC).
+ */
+function toStorageUnits(value: number, scale: number): MilliUnits {
+  if (scale === MILLIS_PER_UNIT) return fromDecimal(value);
+  return asMilli(Math.round(value * scale));
+}
+
 function resolveAmounts(
   row: Record<string, string>,
   columnMapping: ColumnMapping,
-  config: ImportRowParseConfig
+  config: ImportRowParseConfig,
+  scale: number
 ): AmountResult {
   const errors: string[] = [];
-  // Parsed cell values are decimal floats; converted to milliunits at assignment
+  // Parsed cell values are decimal floats; converted to storage units at assignment
   let inflow = ZERO_MILLI;
   let outflow = ZERO_MILLI;
   // A cell parsed to a real number (including an explicit 0 like "$0.00").
@@ -81,8 +105,8 @@ function resolveAmounts(
       hadParseError = true;
     } else {
       parsedAny = true;
-      if (parsed.value > 0) inflow = fromDecimal(parsed.value);
-      else outflow = fromDecimal(Math.abs(parsed.value));
+      if (parsed.value > 0) inflow = toStorageUnits(parsed.value, scale);
+      else outflow = toStorageUnits(Math.abs(parsed.value), scale);
     }
   } else if (columnMapping.inflow || columnMapping.outflow) {
     if (columnMapping.inflow) {
@@ -94,7 +118,7 @@ function resolveAmounts(
           hadParseError = true;
         } else {
           parsedAny = true;
-          inflow = fromDecimal(parsed.value);
+          inflow = toStorageUnits(parsed.value, scale);
         }
       }
     }
@@ -107,7 +131,7 @@ function resolveAmounts(
           hadParseError = true;
         } else {
           parsedAny = true;
-          outflow = fromDecimal(parsed.value);
+          outflow = toStorageUnits(parsed.value, scale);
         }
       }
     }
@@ -145,7 +169,8 @@ export function planImportRow(
   row: Record<string, string>,
   index: number,
   columnMapping: ColumnMapping,
-  config: ImportRowParseConfig
+  config: ImportRowParseConfig,
+  scale: number = MILLIS_PER_UNIT
 ): PlannedImportRow {
   const errors: string[] = [];
 
@@ -162,7 +187,7 @@ export function planImportRow(
   }
   const { date } = parsedDate;
 
-  const amount = resolveAmounts(row, columnMapping, config);
+  const amount = resolveAmounts(row, columnMapping, config, scale);
   errors.push(...amount.errors);
 
   const payee = columnMapping.payee ? String(row[columnMapping.payee] || '').trim() : '';
@@ -189,9 +214,12 @@ export function planImportRow(
 export function planImportRows(
   rows: Record<string, string>[],
   columnMapping: ColumnMapping,
-  config: ImportRowParseConfig
+  config: ImportRowParseConfig,
+  amountScale?: ImportAmountScale
 ): PlannedImportRow[] {
-  return rows.map((row, index) => planImportRow(row, index, columnMapping, config));
+  return rows.map((row, index) =>
+    planImportRow(row, index, columnMapping, config, amountScale?.(row, index) ?? MILLIS_PER_UNIT)
+  );
 }
 
 export interface ImportPlanSummary {
