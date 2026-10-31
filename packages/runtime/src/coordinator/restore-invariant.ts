@@ -60,6 +60,7 @@ export async function reapplyQueueAfterRestore(params: ReapplyQueueParams): Prom
         id: mutation.id,
         op: mutation.op,
         error: errorMessage(error),
+        originalError: error,
       });
     }
     offlineQueue.addInFlight(mutation.id);

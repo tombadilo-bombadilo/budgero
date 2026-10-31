@@ -634,6 +634,7 @@ describe('SpaceActivationService', () => {
   });
 
   it('falls back to local database when remote download fails for non-decryption error', async () => {
+    const onActivated = vi.fn();
     const db = createDb();
     const context = createOnlineContext(db);
     const createDatabase = vi.fn(async () => db);
@@ -665,6 +666,7 @@ describe('SpaceActivationService', () => {
       cleanupDatabaseFile: vi.fn(async () => undefined),
       isE2E: false,
       opfsSuffix: '_sas',
+      onActivated,
     });
 
     await service.activateSpace({
@@ -683,9 +685,19 @@ describe('SpaceActivationService', () => {
     });
 
     expect(createDatabase).toHaveBeenCalled();
+    // The activation reports how it got its database and why it fell back.
+    expect(onActivated).toHaveBeenCalledTimes(1);
+    expect(onActivated).toHaveBeenCalledWith(
+      expect.objectContaining({
+        ok: true,
+        path: 'local_after_download_failure',
+        fallbackError: 'network failed',
+      })
+    );
   });
 
   it('resets local database file when decryption error occurs during local open', async () => {
+    const onActivated = vi.fn();
     const db = createDb();
     const createDatabase = vi
       .fn()
@@ -718,6 +730,7 @@ describe('SpaceActivationService', () => {
       cleanupDatabaseFile: cleanup,
       isE2E: false,
       opfsSuffix: '_sas',
+      onActivated,
     });
 
     await service.activateSpace({
@@ -736,6 +749,11 @@ describe('SpaceActivationService', () => {
 
     expect(cleanup).toHaveBeenCalled();
     expect(createDatabase).toHaveBeenCalledTimes(2);
+    const [outcome] = onActivated.mock.calls[0]!;
+    expect(outcome).toMatchObject({ ok: true, path: 'local_reset' });
+    expect((outcome as { fallbackError: Error }).fallbackError.message).toBe(
+      'wrong key or password'
+    );
   });
 
   it('throws normalized decryption error when local reset cannot recover', async () => {

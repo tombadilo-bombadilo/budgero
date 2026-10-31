@@ -59,7 +59,7 @@ export function createLocalPersistenceCipher(masterPassword: string): LocalPersi
             'warn',
             'LocalPersistenceCipher',
             'Decrypt failed; assuming plaintext SQLite payload',
-            { error: errorMessage(error) }
+            { error: errorMessage(error), originalError: error }
           );
           return { decrypted: data, wasEncrypted: false };
         }
@@ -67,7 +67,7 @@ export function createLocalPersistenceCipher(masterPassword: string): LocalPersi
           'warn',
           'LocalPersistenceCipher',
           'Decrypt failed; encrypted payload cannot be unlocked',
-          { error: errorMessage(error) }
+          { error: errorMessage(error), originalError: error }
         );
         throw new Error('Decryption failed: invalid master password or corrupted data', {
           cause: error instanceof Error ? error : undefined,

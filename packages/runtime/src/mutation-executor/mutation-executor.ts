@@ -74,6 +74,7 @@ export class MutationExecutor {
         logRuntime('warn', 'MutationExecutor', 'Undo capture failed; no undo recorded', {
           op: spec.op,
           error: errorMessage(captureError),
+          originalError: captureError,
         });
       }
     }
@@ -198,6 +199,7 @@ export class MutationExecutor {
     } catch (historyError) {
       logRuntime('warn', 'MutationExecutor', 'Failed to record mutation history', {
         error: errorMessage(historyError),
+        originalError: historyError,
       });
     }
 

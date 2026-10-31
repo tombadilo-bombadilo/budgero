@@ -138,6 +138,7 @@ export class RuntimeCoordinator {
       cleanupDatabaseFile: deps.cleanupDatabaseFile,
       isE2E: deps.isE2E,
       opfsSuffix: deps.opfsSuffix,
+      onActivated: (outcome) => deps.onSpaceActivated?.(outcome),
       log: scopedLogger('SpaceActivationService', deps.runtimeLog),
     });
     const spaceCatalog = new SpaceCatalogService({
@@ -486,6 +487,7 @@ export class RuntimeCoordinator {
       this.log('warn', 'Failed to reseed sync state from server; keeping local sync cursor', {
         spaceId,
         error: errorMessage(error),
+        originalError: error,
       });
       return {};
     }
@@ -496,6 +498,7 @@ export class RuntimeCoordinator {
       this.log('warn', 'Failed to enqueue mutation', {
         id: mutation.id,
         error: errorMessage(error),
+        originalError: error,
       });
     });
   }
@@ -564,6 +567,7 @@ export class RuntimeCoordinator {
         spaceId: pending.spaceId,
         version: pending.version,
         error: errorMessage(error),
+        originalError: error,
       });
     }
 
@@ -744,6 +748,7 @@ export class RuntimeCoordinator {
     } catch (error) {
       this.log('warn', 'Failed to refresh spaces', {
         error: errorMessage(error),
+        originalError: error,
       });
     }
   }

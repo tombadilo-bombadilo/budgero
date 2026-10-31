@@ -52,6 +52,7 @@ export class DatabaseLoader {
     } catch (error) {
       logRuntime('warn', 'DatabaseLoader', 'Failed to run migrations', {
         error: errorMessage(error),
+        originalError: error,
       });
       throw error;
     }
@@ -67,6 +68,7 @@ export class DatabaseLoader {
     } catch (error) {
       logRuntime('warn', 'DatabaseLoader', 'Failed to reconcile space scope', {
         error: errorMessage(error),
+        originalError: error,
       });
     }
   }

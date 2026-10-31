@@ -5,6 +5,7 @@ import {
   isDecryptionError,
   isLocalEncryptionError,
   checkAbort,
+  CancellationError,
 } from '../utils/diagnostics';
 import { readStoredVersion, writeStoredVersion, clearStoredVersion } from '../utils/stored-version';
 import { scopedLogger, type RuntimeLogFn } from '../logging';
@@ -15,6 +16,7 @@ import { RuntimeContextFactory, RuntimeContext } from './runtime-context-factory
 import { reapplyQueueAfterRestore } from './restore-invariant';
 import { OfflineQueue } from '../offline-queue';
 import { MutationExecutor } from '../mutation-executor';
+import type { SpaceActivationOutcome, SpaceActivationPath } from './runtime-coordinator-types';
 
 interface ActivateSpaceParams {
   spaceId: string;
@@ -59,6 +61,7 @@ interface SpaceActivationServiceDeps {
   isE2E?: boolean;
   opfsSuffix?: string;
   log?: RuntimeLogFn;
+  onActivated?(outcome: SpaceActivationOutcome): void;
 }
 
 // Replaying ops through catch-up is cheap (they're local SQL statements);
@@ -72,12 +75,60 @@ export class SpaceActivationService {
 
   private readonly log: RuntimeLogFn;
 
+  /** What the current activation went through; reported once it ends. */
+  private trail: {
+    hydratedFromServer: boolean;
+    downloadFailed: boolean;
+    localReset: boolean;
+    fallbackError?: unknown;
+  } = { hydratedFromServer: false, downloadFailed: false, localReset: false };
+
   constructor(deps: SpaceActivationServiceDeps) {
     this.deps = deps;
     this.log = deps.log ?? scopedLogger('SpaceActivationService');
   }
 
   async activateSpace(params: ActivateSpaceParams): Promise<RuntimeContext> {
+    const started = Date.now();
+    this.trail = { hydratedFromServer: false, downloadFailed: false, localReset: false };
+    let hadLocal = false;
+    const report = (ok: boolean, path: SpaceActivationPath, error?: unknown) => {
+      try {
+        this.deps.onActivated?.({
+          ok,
+          path,
+          durationMs: Date.now() - started,
+          ...(error !== undefined ? { error } : {}),
+          ...(this.trail.fallbackError !== undefined
+            ? { fallbackError: this.trail.fallbackError }
+            : {}),
+        });
+      } catch {
+        /* reporting never breaks activation */
+      }
+    };
+    const pathFor = (): SpaceActivationPath => {
+      if (this.trail.hydratedFromServer) return 'server_snapshot';
+      if (this.trail.localReset) return 'local_reset';
+      if (this.trail.downloadFailed) return 'local_after_download_failure';
+      return hadLocal ? 'local' : 'fresh';
+    };
+    try {
+      const context = await this.activateSpaceInner(params, (local) => {
+        hadLocal = local;
+      });
+      report(true, pathFor());
+      return context;
+    } catch (error) {
+      if (!(error instanceof CancellationError)) report(false, pathFor(), error);
+      throw error;
+    }
+  }
+
+  private async activateSpaceInner(
+    params: ActivateSpaceParams,
+    noteLocal: (hasLocal: boolean) => void
+  ): Promise<RuntimeContext> {
     const spaceKey = await this.deps.keyVault.ensureSpaceKey(
       params.spaceId,
       params.masterPassword,
@@ -99,6 +150,7 @@ export class SpaceActivationService {
       `${MUTATION_CURSOR_STORAGE_PREFIX}${params.spaceId}`
     );
     const hasLocalSnapshotForPath = await this.tryHasLocalDatabase(dbPath);
+    noteLocal(hasLocalSnapshotForPath);
 
     let dbInstance: WebDatabaseInstance | undefined;
     let hydratedFromServer = false;
@@ -163,6 +215,7 @@ export class SpaceActivationService {
           this.log('warn', 'Local replay startup unavailable; falling back to full snapshot', {
             spaceId: params.spaceId,
             error: errorMessage(error),
+            originalError: error,
           });
         }
       } else if (!hasLocalMutationCursor) {
@@ -259,8 +312,11 @@ export class SpaceActivationService {
               cause: error,
             });
           }
+          this.trail.downloadFailed = true;
+          this.trail.fallbackError = error;
           this.log('warn', 'Snapshot download failed; falling back to local', {
             error: errorMessage(error),
+            originalError: error,
           });
           dbInstance = await this.createLocalDatabase(params.localPersistenceCipher, dbPath, {
             spaceId: params.spaceId,
@@ -278,6 +334,7 @@ export class SpaceActivationService {
     }
 
     checkAbort(params.signal);
+    this.trail.hydratedFromServer = hydratedFromServer;
 
     const encryption = await MutationEncryption.fromSpaceKey(spaceKey);
     const context = this.deps.contextFactory.createOnlineContext({
@@ -300,6 +357,7 @@ export class SpaceActivationService {
     } catch (error) {
       this.log('warn', 'Initial migrations failed', {
         error: errorMessage(error),
+        originalError: error,
       });
     }
     context.dbLoader.reconcileSpaceScope(dbInstance, params.spaceId);
@@ -321,6 +379,7 @@ export class SpaceActivationService {
       } catch (error) {
         this.log('warn', 'Queue re-apply after snapshot bootstrap failed', {
           error: errorMessage(error),
+          originalError: error,
         });
       }
     }
@@ -357,8 +416,11 @@ export class SpaceActivationService {
             cause: error instanceof Error ? error : undefined,
           });
         }
+        this.trail.localReset = true;
+        this.trail.fallbackError ??= error;
         this.log('warn', 'Local DB decrypt failed; attempting reset', {
           error: errorMessage(error),
+          originalError: error,
         });
         try {
           await this.deps.cleanupDatabaseFile?.(dbPath);
@@ -370,6 +432,7 @@ export class SpaceActivationService {
         } catch (cleanupError) {
           this.log('warn', 'Local reset failed', {
             error: errorMessage(cleanupError),
+            originalError: cleanupError,
           });
           throw new Error('Decryption failed: invalid password or corrupted data', {
             cause: error,
@@ -381,6 +444,12 @@ export class SpaceActivationService {
         throw error instanceof Error ? error : new Error(String(error));
       }
 
+      this.trail.localReset = true;
+      this.trail.fallbackError ??= error;
+      this.log('warn', 'Local DB open failed; resetting', {
+        error: errorMessage(error),
+        originalError: error,
+      });
       await this.deps.cleanupDatabaseFile?.(dbPath);
       this.clearPersistedVersions(options.spaceId);
       return await this.deps.createDatabase(undefined, {
@@ -398,6 +467,7 @@ export class SpaceActivationService {
       this.log('warn', 'Failed to check local OPFS snapshot presence', {
         path,
         error: errorMessage(error),
+        originalError: error,
       });
       return false;
     }
@@ -430,6 +500,7 @@ export class SpaceActivationService {
       this.log('debug', 'Failed to fetch lightweight server sync state', {
         spaceId,
         error: errorMessage(error),
+        originalError: error,
       });
       return undefined;
     }
