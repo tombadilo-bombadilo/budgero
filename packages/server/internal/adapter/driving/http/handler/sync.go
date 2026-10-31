@@ -307,7 +307,7 @@ func (h *Handlers) UploadDatabase(c echo.Context) error {
 	// happen together under the space's blob lock.
 	hash := crypto.ComputeDataHash(data)
 	legacyOutOfBand := c.Request().Header.Get("X-Out-Of-Band") == "1"
-	newVersion, err := h.commitBlob(ctx, blob.SpaceID, tempPath, blob.BlobPath, uploadOrigin(legacyOutOfBand), func() (int64, error) {
+	newVersion, err := h.commitBlob(ctx, blob.SpaceID, tempPath, blob.BlobPath, uploadOrigin(legacyOutOfBand), mutationVersion, func() (int64, error) {
 		return h.services.Space.UpdateSyncState(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion)
 	})
 	if errors.Is(err, errBlobPublish) {
@@ -928,7 +928,7 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 	// concurrent upload that raced past the pre-checks above loses here and its
 	// temp file is discarded instead of overwriting the blob. Downloads take the
 	// same lock, so they see old metadata with old bytes or new with new.
-	newVersion, err := h.commitBlob(ctx, blob.SpaceID, tempPath, blob.BlobPath, uploadOrigin(outOfBand), func() (int64, error) {
+	newVersion, err := h.commitBlob(ctx, blob.SpaceID, tempPath, blob.BlobPath, uploadOrigin(outOfBand), mutationVersion, func() (int64, error) {
 		if clientVersion >= 0 {
 			return h.services.Space.UpdateSyncStateCAS(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion, clientVersion)
 		}

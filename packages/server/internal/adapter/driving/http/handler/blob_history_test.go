@@ -29,6 +29,7 @@ import (
 
 const (
 	originSync          = "sync"
+	originOutOfBand     = "out_of_band"
 	historyRoute        = "/api/v1/database/blob/history"
 	testUserHeader      = "X-Test-User"
 	adminHistoryPattern = "/api/v1/admin/spaces/%s/blob-history"
@@ -282,13 +283,13 @@ func TestSnapshotHistory_OriginOfReplacedSnapshotIsKept(t *testing.T) {
 	f := newHistoryFixture(t, historyOptions{keep: 10, days: 7})
 
 	v1 := f.upload([]byte("imported"), 0, 10, map[string]string{"X-Out-Of-Band": "1"})
-	if got := f.list(f.ownerID).Current.Origin; got != "out_of_band" {
+	if got := f.list(f.ownerID).Current.Origin; got != originOutOfBand {
 		t.Fatalf("current origin = %q", got)
 	}
 	f.upload([]byte("synced"), v1, 11, nil)
 
 	l := f.list(f.ownerID)
-	if len(l.Entries) != 1 || l.Entries[0].Origin != "out_of_band" || l.Current.Origin != originSync {
+	if len(l.Entries) != 1 || l.Entries[0].Origin != originOutOfBand || l.Current.Origin != originSync {
 		t.Fatalf("listing = %+v", l)
 	}
 }
@@ -733,4 +734,36 @@ func TestSnapshotHistory_DeletePathsRemoveHistory(t *testing.T) {
 		}
 		requireGone(t, f)
 	})
+}
+
+func TestSnapshotHistory_SamePositionSyncUploadIsNotKept(t *testing.T) {
+	f := newHistoryFixture(t, historyOptions{keep: 10, days: 7})
+
+	v1 := f.upload([]byte("at-40"), 0, 40, nil)
+	v2 := f.upload([]byte("at-41"), v1, 41, nil)
+	// Same log position as the current one: the replaced copy is the same
+	// budget and must not take a history slot.
+	v3 := f.upload([]byte("at-41-again"), v2, 41, nil)
+	v4 := f.upload([]byte("at-41-once-more"), v3, 41, nil)
+
+	l := f.list(f.ownerID)
+	if len(l.Entries) != 1 || l.Entries[0].MutationVersion != 40 {
+		t.Fatalf("entries = %+v, want only the copy at 40", l.Entries)
+	}
+	if f.currentBytes() != "at-41-once-more" || l.Current.SyncVersion != v4 {
+		t.Fatalf("current = %q / %+v", f.currentBytes(), l.Current)
+	}
+
+	// An import at the same position is different content: the replaced copy is kept.
+	f.upload([]byte("imported"), v4, 41, map[string]string{"X-Out-Of-Band": "1"})
+	l = f.list(f.ownerID)
+	if len(l.Entries) != 2 || l.Entries[0].SyncVersion != v4 {
+		t.Fatalf("after import entries = %+v, want the replaced sync copy kept", l.Entries)
+	}
+	// And a normal upload over the import keeps the import.
+	f.upload([]byte("after-import"), l.Current.SyncVersion, 41, nil)
+	l = f.list(f.ownerID)
+	if len(l.Entries) != 3 || l.Entries[0].Origin != originOutOfBand {
+		t.Fatalf("after sync over import entries = %+v, want the import kept", l.Entries)
+	}
 }

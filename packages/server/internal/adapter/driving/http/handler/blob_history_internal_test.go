@@ -38,7 +38,7 @@ func TestPublishLocked_RenameFailureMovesArchivedSnapshotBack(t *testing.T) {
 	}
 
 	missingTemp := filepath.Join(t.TempDir(), "never-written.upload")
-	_, err = h.publishLocked(ctx, prev, missingTemp, domain.SnapshotOriginSync, func() (int64, error) {
+	_, err = h.publishLocked(ctx, prev, missingTemp, domain.SnapshotOriginSync, 0, func() (int64, error) {
 		return services.Space.UpdateSyncState(ctx, userID, spaceID, "hash-2", 9, 4)
 	})
 	if !errors.Is(err, errBlobPublish) {

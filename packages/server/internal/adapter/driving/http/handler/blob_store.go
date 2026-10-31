@@ -116,6 +116,7 @@ func writeBlobTemp(blobPath string, data []byte) (string, error) {
 func (h *Handlers) commitBlob(
 	ctx context.Context,
 	spaceID, tempPath, blobPath, origin string,
+	mutationVersion int64,
 	advance func() (int64, error),
 ) (int64, error) {
 	lock := h.blobLocks.get(spaceID)
@@ -133,7 +134,7 @@ func (h *Handlers) commitBlob(
 		}
 	}
 	prev.BlobPath = blobPath
-	return h.publishLocked(ctx, prev, tempPath, origin, advance)
+	return h.publishLocked(ctx, prev, tempPath, origin, mutationVersion, advance)
 }
 
 // publishLocked is the publish protocol; the caller holds prev.SpaceID's
@@ -145,6 +146,7 @@ func (h *Handlers) publishLocked(
 	ctx context.Context,
 	prev *domain.SpaceBlob,
 	tempPath, origin string,
+	mutationVersion int64,
 	advance func() (int64, error),
 ) (int64, error) {
 	version, err := advance()
@@ -156,7 +158,7 @@ func (h *Handlers) publishLocked(
 	hist := h.snapshotHistory()
 	now := time.Now().UTC()
 	var undo func() error
-	if hist != nil {
+	if hist != nil && !sameLogPosition(prev, origin, mutationVersion) {
 		archived, undoFn, archiveErr := hist.Archive(ctx, prev, now)
 		if archiveErr != nil {
 			log.Error().Err(archiveErr).
@@ -191,6 +193,22 @@ func (h *Handlers) publishLocked(
 		}
 	}
 	return version, nil
+}
+
+// sameLogPosition reports a normal sync upload at the same mutation-log
+// position as the snapshot it replaces: both describe the same budget, so the
+// replaced one is not worth a history slot (it would push out a different,
+// older copy). Imports and restores are always kept: their content is not in
+// the log, and an unknown position (0, legacy) is kept too.
+func sameLogPosition(prev *domain.SpaceBlob, origin string, mutationVersion int64) bool {
+	prevOrigin := prev.Origin
+	if prevOrigin == "" {
+		prevOrigin = domain.SnapshotOriginSync
+	}
+	return origin == domain.SnapshotOriginSync &&
+		prevOrigin == domain.SnapshotOriginSync &&
+		prev.MutationVersion > 0 &&
+		prev.MutationVersion == mutationVersion
 }
 
 // snapshotHistory is the history service, or nil when it isn't wired.

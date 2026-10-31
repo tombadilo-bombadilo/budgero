@@ -361,7 +361,7 @@ func (h *Handlers) restoreSnapshot(
 		return entry, 0, "", err
 	}
 
-	version, err = h.publishLocked(ctx, current, tempPath, domain.SnapshotOriginRestore, func() (int64, error) {
+	version, err = h.publishLocked(ctx, current, tempPath, domain.SnapshotOriginRestore, entry.MutationVersion, func() (int64, error) {
 		return hist.AdvanceToEntry(ctx, spaceID, entry, current.SyncVersion)
 	})
 	return entry, version, entry.Hash, err
