@@ -21,11 +21,54 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.20.5',
+    date: 'October 31, 2026',
+    summary:
+      'See goal targets next to what you assigned and spent, on Planning and in a new Targets report, and crypto imports now keep the right amounts.',
+    isLatest: true,
+    items: [
+      {
+        type: 'new',
+        title: 'Target column on Planning',
+        description:
+          'On the desktop Planning table, the new Target button adds a column with each category’s goal target for the month and a total per group. The pill fills up as the target gets funded. The choice is remembered on each device.',
+      },
+      {
+        type: 'new',
+        title: 'Targets in Plan vs Reality',
+        description:
+          'Reports → Plan vs Reality now lists every category’s goal target for the chosen period next to what you assigned and spent, with group subtotals and how many months each target was met. Groups start folded; click one to open it.',
+      },
+      {
+        type: 'fixed',
+        title: 'Crypto imports',
+        description:
+          'Importing a file into a crypto account stored amounts 100,000 times too small, and amounts under 0.001 BTC became zero. Amounts are now stored at full 8-decimal precision. Imports into regular accounts work exactly as before.',
+      },
+      {
+        type: 'fixed',
+        title: 'Goal funding in Plan vs Reality',
+        description:
+          'The goal funding list counted a monthly goal’s target for every month in the period, even months before the goal existed. It now uses each month’s actual target and is grouped by category group.',
+      },
+      {
+        type: 'new',
+        title: 'Import templates',
+        description:
+          'The import dialog now offers a spreadsheet (.xlsx) and a CSV template for bank, cash, credit card or crypto records you keep yourself.',
+      },
+      {
+        type: 'improved',
+        title: 'More room on Planning',
+        description: 'Removed the empty space above the Planning toolbar on desktop and mobile.',
+      },
+    ],
+  },
+  {
     version: 'v1.20.4',
     date: 'October 31, 2026',
     summary:
       'Budgero now saves your budget on Macs with Safari 18 and earlier, and you can see and restore earlier versions of a workspace (beta).',
-    isLatest: true,
     items: [
       {
         type: 'fixed',
