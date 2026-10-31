@@ -25,6 +25,11 @@ var (
 	ErrCodeSnapshotConflict      = ErrorCode{"snapshot_conflict"}
 	ErrCodeEncryptionKeyOutdated = ErrorCode{"encryption_key_outdated"}
 	ErrCodeFormatTooNew          = ErrorCode{"format_too_new"}
+	// Snapshot history warnings: accepted requests worth seeing in error
+	// tracking. A large snapshot replaced by a much smaller one, and an
+	// explicit restore from the server-side history.
+	ErrCodeSnapshotShrink   = ErrorCode{"snapshot_shrink"}
+	ErrCodeSnapshotRestored = ErrorCode{"snapshot_restored"}
 )
 
 // String returns the wire value.

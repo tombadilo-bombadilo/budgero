@@ -69,6 +69,7 @@ See [Self-Host CLI Guide](../../docs/selfhost-cli.md) for full details.
 | `SELF_HOSTABLE` | For self-host | Enables local JWT auth |
 | `CLERK_SECRET_KEY` | For SaaS | Clerk API key |
 | `LEMONSQUEEZY_*` | For SaaS | Payment processing |
+| `SNAPSHOT_HISTORY_KEEP` / `SNAPSHOT_HISTORY_DAYS` | No | Workspace snapshot history retention (default 10 newest + newest per day for 7 days; `KEEP=0` disables) |
 | `CURRENCY_API_BASE_URL` | No | Self-hosted exchange-rate mirror URL (rates need no key by default) |
 
 See [Build Flags Reference](../../docs/build-flags.md) for all runtime flags.

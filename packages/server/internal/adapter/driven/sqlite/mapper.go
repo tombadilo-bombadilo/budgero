@@ -89,6 +89,14 @@ func ToUserPreferences(p *sqlc.UserPreference) *domain.UserPreferences {
 
 // ToSpaceBlob converts a sqlc.BudgetSpaceBlob to a domain.SpaceBlob.
 func ToSpaceBlob(b *sqlc.BudgetSpaceBlob) *domain.SpaceBlob {
+	origin := domain.SnapshotOriginSync
+	if b.Origin.Valid && b.Origin.String != "" {
+		origin = b.Origin.String
+	}
+	publishedAt := b.UpdatedAt
+	if b.PublishedAt.Valid {
+		publishedAt = b.PublishedAt.Time
+	}
 	return &domain.SpaceBlob{
 		SpaceID:              b.SpaceID,
 		BlobPath:             b.BlobPath,
@@ -99,6 +107,26 @@ func ToSpaceBlob(b *sqlc.BudgetSpaceBlob) *domain.SpaceBlob {
 		MutationVersion:      b.MutationVersion,
 		DataFormatVersion:    b.DataFormatVersion,
 		UpdatedAt:            b.UpdatedAt,
+		Origin:               origin,
+		PublishedAt:          publishedAt,
+	}
+}
+
+// ToSnapshotHistoryEntry converts a sqlc.SpaceBlobHistory to a domain.SnapshotHistoryEntry.
+func ToSnapshotHistoryEntry(h *sqlc.SpaceBlobHistory) *domain.SnapshotHistoryEntry {
+	return &domain.SnapshotHistoryEntry{
+		ID:                   h.ID,
+		SpaceID:              h.SpaceID,
+		FilePath:             h.FilePath,
+		SyncVersion:          h.SyncVersion,
+		MutationVersion:      h.MutationVersion,
+		SizeBytes:            h.SizeBytes,
+		Hash:                 h.Hash,
+		EncryptionKeyVersion: h.EncryptionKeyVersion,
+		DataFormatVersion:    h.DataFormatVersion,
+		Origin:               h.Origin,
+		BecameCurrentAt:      h.BecameCurrentAt,
+		ReplacedAt:           h.ReplacedAt,
 	}
 }
 

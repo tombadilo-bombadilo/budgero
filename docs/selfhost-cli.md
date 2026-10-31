@@ -40,6 +40,8 @@ The process still loads `.env` from the working directory (using `godotenv`) bef
 | `WEBSOCKET_ALLOWED_ORIGINS` | localhost origins only | Comma-separated browser origins allowed to connect to sync (e.g. `https://budget.example.com,http://192.168.1.50:3001`). **Required for any non-localhost access** — without it the sync WebSocket is rejected and the app can't load the budget. Exact match on scheme/host/port, no wildcards. |
 | `LOG_LEVEL`                | `info`             | `debug`, `info`, `warn`, `error`               |
 | `CURRENCY_API_BASE_URL`    | public jsDelivr CDN | Optional: base URL of a self-hosted [exchange-api](https://github.com/fawazahmed0/exchange-api) mirror for multi-currency rates (`{date}` is substituted). Rates work out of the box with no key. |
+| `SNAPSHOT_HISTORY_KEEP`    | `10`               | Replaced workspace snapshots kept on disk for restore (`0` disables). See [build flags](build-flags.md#snapshot_history_keep--snapshot_history_days) |
+| `SNAPSHOT_HISTORY_DAYS`    | `7`                | Also keep the newest snapshot of each day for this many days |
 | `UPDATE_CHECK_DISABLED`    | `false`            | Set `true` to disable the update check entirely (see below) |
 | `UPDATE_CHECK_URL`         | Budgero cloud endpoint | Override the update-check source URL       |
 

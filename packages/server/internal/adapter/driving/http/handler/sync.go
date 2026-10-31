@@ -306,7 +306,8 @@ func (h *Handlers) UploadDatabase(c echo.Context) error {
 	// Same publish protocol as PostDatabaseBlob: metadata advance and rename
 	// happen together under the space's blob lock.
 	hash := crypto.ComputeDataHash(data)
-	newVersion, err := h.commitBlob(blob.SpaceID, tempPath, blob.BlobPath, func() (int64, error) {
+	legacyOutOfBand := c.Request().Header.Get("X-Out-Of-Band") == "1"
+	newVersion, err := h.commitBlob(ctx, blob.SpaceID, tempPath, blob.BlobPath, uploadOrigin(legacyOutOfBand), func() (int64, error) {
 		return h.services.Space.UpdateSyncState(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion)
 	})
 	if errors.Is(err, errBlobPublish) {
@@ -348,9 +349,12 @@ func (h *Handlers) UploadDatabase(c echo.Context) error {
 			Msg("Space blob data format raised")
 	}
 
+	if !legacyOutOfBand && stateErr == nil {
+		h.checkSnapshotShrink(c, blob.SpaceID, currentState.SnapshotSizeBytes, int64(len(data)), newVersion)
+	}
+
 	if h.syncHub != nil {
-		outOfBand := c.Request().Header.Get("X-Out-Of-Band") == "1"
-		h.syncHub.NotifyDatabaseUpdate(blob.SpaceID, userID, newVersion, hash, outOfBand)
+		h.syncHub.NotifyDatabaseUpdate(blob.SpaceID, userID, newVersion, hash, legacyOutOfBand)
 	}
 
 	log.Info().
@@ -924,7 +928,7 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 	// concurrent upload that raced past the pre-checks above loses here and its
 	// temp file is discarded instead of overwriting the blob. Downloads take the
 	// same lock, so they see old metadata with old bytes or new with new.
-	newVersion, err := h.commitBlob(blob.SpaceID, tempPath, blob.BlobPath, func() (int64, error) {
+	newVersion, err := h.commitBlob(ctx, blob.SpaceID, tempPath, blob.BlobPath, uploadOrigin(outOfBand), func() (int64, error) {
 		if clientVersion >= 0 {
 			return h.services.Space.UpdateSyncStateCAS(ctx, userID, blob.SpaceID, hash, int64(len(data)), mutationVersion, clientVersion)
 		}
@@ -989,6 +993,10 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 			Str("space_id", blob.SpaceID).
 			Int64("data_format", uploadFormat).
 			Msg("Space blob data format raised")
+	}
+
+	if !outOfBand && stateErr == nil {
+		h.checkSnapshotShrink(c, blob.SpaceID, currentState.SnapshotSizeBytes, int64(len(data)), newVersion)
 	}
 
 	if h.syncHub != nil {

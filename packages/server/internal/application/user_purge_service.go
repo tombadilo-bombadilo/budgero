@@ -26,6 +26,7 @@ var _ driving.UserPurgeService = (*UserPurgeService)(nil)
 
 // Purge deletes the user and everything tied to them, then their files.
 // Database rows go in one transaction; files are removed only after it commits.
+// The list holds snapshot history files before their (by then empty) folders.
 func (s *UserPurgeService) Purge(ctx context.Context, userID string) (*domain.UserPurgeReport, error) {
 	report, files, err := s.repo.Purge(ctx, userID)
 	if err != nil {

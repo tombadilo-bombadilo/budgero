@@ -38,4 +38,8 @@ var (
 
 	// Sync errors
 	ErrSyncVersionConflict = errors.New("sync version conflict")
+
+	// Snapshot history errors
+	ErrSnapshotHistoryNotFound = errors.New("snapshot history entry not found")
+	ErrSnapshotNotRestorable   = errors.New("snapshot history entry not restorable")
 )

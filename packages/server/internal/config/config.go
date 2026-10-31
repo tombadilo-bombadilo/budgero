@@ -24,7 +24,25 @@ type Config struct {
 	UpdateCheck  UpdateCheckConfig
 	Analytics    AnalyticsConfig
 	Metrics      MetricsConfig
+	// SnapshotHistory configures server-side workspace snapshot history.
+	SnapshotHistory SnapshotHistoryConfig
 }
+
+// SnapshotHistoryConfig controls how many replaced workspace snapshots the
+// server keeps (data/budget_spaces/history/<space>/<version>.db), in SaaS and
+// self-host alike. After each publish it keeps the newest Keep entries plus,
+// for the last Days days, the newest entry of each UTC day. Keep = 0
+// disables history entirely.
+type SnapshotHistoryConfig struct {
+	Keep int `env:"SNAPSHOT_HISTORY_KEEP" envDefault:"10"`
+	Days int `env:"SNAPSHOT_HISTORY_DAYS" envDefault:"7"`
+}
+
+// Default snapshot history retention, used when no config is wired.
+const (
+	DefaultSnapshotHistoryKeep = 10
+	DefaultSnapshotHistoryDays = 7
+)
 
 // MetricsConfig configures aggregate server metrics (OpenTelemetry OTLP/HTTP
 // to PostHog Metrics), cloud only. Exporting needs OTEL_METRICS_ENABLED=true,

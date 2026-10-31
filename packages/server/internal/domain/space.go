@@ -26,6 +26,11 @@ type SpaceBlob struct {
 	// server cannot inspect the encrypted blob itself.
 	DataFormatVersion int64     `json:"data_format_version"`
 	UpdatedAt         time.Time `json:"updated_at"`
+	// Origin is how the current snapshot was published (SnapshotOrigin*).
+	Origin string `json:"origin"`
+	// PublishedAt is when the current snapshot was published. Snapshots
+	// published before history existed report UpdatedAt.
+	PublishedAt time.Time `json:"published_at"`
 }
 
 // SyncState represents the sync state of a space.

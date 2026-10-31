@@ -213,9 +213,94 @@ func (r *SpaceRepository) RaiseDataFormatVersion(ctx context.Context, spaceID st
 	})
 }
 
-// DeleteBlob removes the blob entry for a space.
+// DeleteBlob removes the blob entry for a space and its snapshot history rows.
 func (r *SpaceRepository) DeleteBlob(ctx context.Context, spaceID string) error {
+	if err := r.queries.DeleteSpaceBlobHistory(ctx, spaceID); err != nil {
+		return err
+	}
 	return r.queries.DeleteSpaceBlob(ctx, spaceID)
+}
+
+// MarkBlobPublished records how and when the current snapshot was published.
+func (r *SpaceRepository) MarkBlobPublished(ctx context.Context, spaceID, origin string, at time.Time) error {
+	return r.queries.MarkSpaceBlobPublished(ctx, sqlc.MarkSpaceBlobPublishedParams{
+		Origin:      sql.NullString{String: origin, Valid: true},
+		PublishedAt: sql.NullTime{Time: at.UTC(), Valid: true},
+		SpaceID:     spaceID,
+	})
+}
+
+// RestoreSyncStateCAS makes a history entry's metadata current at the next
+// sync version when the stored version still equals expectedVersion.
+func (r *SpaceRepository) RestoreSyncStateCAS(
+	ctx context.Context,
+	spaceID string,
+	entry *domain.SnapshotHistoryEntry,
+	expectedVersion int64,
+) (int64, error) {
+	version, err := r.queries.RestoreSpaceSyncStateCAS(ctx, sqlc.RestoreSpaceSyncStateCASParams{
+		CurrentHash:          entry.Hash,
+		SizeBytes:            entry.SizeBytes,
+		MutationVersion:      entry.MutationVersion,
+		EncryptionKeyVersion: entry.EncryptionKeyVersion,
+		DataFormatVersion:    entry.DataFormatVersion,
+		SpaceID:              spaceID,
+		SyncVersion:          expectedVersion,
+	})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, domain.ErrSyncVersionConflict
+		}
+		return 0, err
+	}
+	return version, nil
+}
+
+// InsertSnapshotHistory records a replaced snapshot and returns its id.
+func (r *SpaceRepository) InsertSnapshotHistory(ctx context.Context, entry *domain.SnapshotHistoryEntry) (int64, error) {
+	return r.queries.InsertSpaceBlobHistory(ctx, sqlc.InsertSpaceBlobHistoryParams{
+		SpaceID:              entry.SpaceID,
+		FilePath:             entry.FilePath,
+		SyncVersion:          entry.SyncVersion,
+		MutationVersion:      entry.MutationVersion,
+		SizeBytes:            entry.SizeBytes,
+		Hash:                 entry.Hash,
+		EncryptionKeyVersion: entry.EncryptionKeyVersion,
+		DataFormatVersion:    entry.DataFormatVersion,
+		Origin:               entry.Origin,
+		BecameCurrentAt:      entry.BecameCurrentAt.UTC(),
+		ReplacedAt:           entry.ReplacedAt.UTC(),
+	})
+}
+
+// ListSnapshotHistory returns a space's history entries, newest first.
+func (r *SpaceRepository) ListSnapshotHistory(ctx context.Context, spaceID string) ([]domain.SnapshotHistoryEntry, error) {
+	rows, err := r.queries.ListSpaceBlobHistory(ctx, spaceID)
+	if err != nil {
+		return nil, err
+	}
+	entries := make([]domain.SnapshotHistoryEntry, 0, len(rows))
+	for i := range rows {
+		entries = append(entries, *ToSnapshotHistoryEntry(&rows[i]))
+	}
+	return entries, nil
+}
+
+// GetSnapshotHistoryEntry returns one entry of the space's history.
+func (r *SpaceRepository) GetSnapshotHistoryEntry(ctx context.Context, spaceID string, id int64) (*domain.SnapshotHistoryEntry, error) {
+	row, err := r.queries.GetSpaceBlobHistoryEntry(ctx, sqlc.GetSpaceBlobHistoryEntryParams{SpaceID: spaceID, ID: id})
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrSnapshotHistoryNotFound
+		}
+		return nil, err
+	}
+	return ToSnapshotHistoryEntry(&row), nil
+}
+
+// DeleteSnapshotHistoryEntry deletes one entry row of the space's history.
+func (r *SpaceRepository) DeleteSnapshotHistoryEntry(ctx context.Context, spaceID string, id int64) error {
+	return r.queries.DeleteSpaceBlobHistoryEntry(ctx, sqlc.DeleteSpaceBlobHistoryEntryParams{SpaceID: spaceID, ID: id})
 }
 
 // ListBlobsByOwner returns all blobs owned by the specified user.

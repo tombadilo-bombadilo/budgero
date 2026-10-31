@@ -170,6 +170,9 @@ func (s *SpaceService) Delete(ctx context.Context, actorID, spaceID string) erro
 		if err := os.Remove(blobPath); err != nil && !os.IsNotExist(err) {
 			return fmt.Errorf("%w: %w", domain.ErrSpaceDeleteFailed, err)
 		}
+		if err := removeSnapshotHistoryFiles(blobPath, resolvedID); err != nil {
+			return fmt.Errorf("%w: %w", domain.ErrSpaceDeleteFailed, err)
+		}
 	}
 
 	return nil

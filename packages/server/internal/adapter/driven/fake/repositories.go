@@ -428,6 +428,8 @@ type SpaceRepository struct {
 	blobs     map[string]*domain.SpaceBlob
 	invites   map[string]*domain.SpaceInvite // inviteSecret -> invite
 	inviteIDs map[string]*domain.SpaceInvite // inviteID -> invite
+	history   []domain.SnapshotHistoryEntry
+	historyID int64
 }
 
 // NewSpaceRepository creates a new fake space repository.
@@ -639,11 +641,104 @@ func (r *SpaceRepository) RaiseDataFormatVersion(ctx context.Context, spaceID st
 	return domain.ErrSpaceNotFound
 }
 
-// DeleteBlob removes the blob for a space.
+// DeleteBlob removes the blob for a space and its snapshot history.
 func (r *SpaceRepository) DeleteBlob(ctx context.Context, spaceID string) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	delete(r.blobs, spaceID)
+	kept := r.history[:0]
+	for i := range r.history {
+		if r.history[i].SpaceID != spaceID {
+			kept = append(kept, r.history[i])
+		}
+	}
+	r.history = kept
+	return nil
+}
+
+// MarkBlobPublished records how and when the current snapshot was published.
+func (r *SpaceRepository) MarkBlobPublished(ctx context.Context, spaceID, origin string, at time.Time) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if b, ok := r.blobs[spaceID]; ok {
+		b.Origin = origin
+		b.PublishedAt = at
+	}
+	return nil
+}
+
+// RestoreSyncStateCAS makes a history entry's metadata current at the next version.
+func (r *SpaceRepository) RestoreSyncStateCAS(
+	ctx context.Context,
+	spaceID string,
+	entry *domain.SnapshotHistoryEntry,
+	expectedVersion int64,
+) (int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	b, ok := r.blobs[spaceID]
+	if !ok {
+		return 0, domain.ErrSpaceNotFound
+	}
+	if b.SyncVersion != expectedVersion {
+		return 0, domain.ErrSyncVersionConflict
+	}
+	b.CurrentHash = entry.Hash
+	b.SizeBytes = entry.SizeBytes
+	b.MutationVersion = entry.MutationVersion
+	b.EncryptionKeyVersion = entry.EncryptionKeyVersion
+	b.DataFormatVersion = entry.DataFormatVersion
+	b.SyncVersion++
+	return b.SyncVersion, nil
+}
+
+// InsertSnapshotHistory records a replaced snapshot and returns its id.
+func (r *SpaceRepository) InsertSnapshotHistory(ctx context.Context, entry *domain.SnapshotHistoryEntry) (int64, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.historyID++
+	e := *entry
+	e.ID = r.historyID
+	r.history = append(r.history, e)
+	return e.ID, nil
+}
+
+// ListSnapshotHistory returns a space's history entries, newest first.
+func (r *SpaceRepository) ListSnapshotHistory(ctx context.Context, spaceID string) ([]domain.SnapshotHistoryEntry, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	result := []domain.SnapshotHistoryEntry{}
+	for i := len(r.history) - 1; i >= 0; i-- {
+		if r.history[i].SpaceID == spaceID {
+			result = append(result, r.history[i])
+		}
+	}
+	return result, nil
+}
+
+// GetSnapshotHistoryEntry returns one entry of the space's history.
+func (r *SpaceRepository) GetSnapshotHistoryEntry(ctx context.Context, spaceID string, id int64) (*domain.SnapshotHistoryEntry, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	for i := range r.history {
+		if r.history[i].SpaceID == spaceID && r.history[i].ID == id {
+			found := r.history[i]
+			return &found, nil
+		}
+	}
+	return nil, domain.ErrSnapshotHistoryNotFound
+}
+
+// DeleteSnapshotHistoryEntry deletes one entry of the space's history.
+func (r *SpaceRepository) DeleteSnapshotHistoryEntry(ctx context.Context, spaceID string, id int64) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for i := range r.history {
+		if r.history[i].SpaceID == spaceID && r.history[i].ID == id {
+			r.history = append(r.history[:i], r.history[i+1:]...)
+			return nil
+		}
+	}
 	return nil
 }
 

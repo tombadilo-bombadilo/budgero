@@ -117,6 +117,9 @@ func SetupRoutes(e *echo.Echo, h *handler.Handlers, services *application.Servic
 		log.Info().Msg("Self-host mode: skipping RequireWorkspaceBlobExportAccess middleware")
 	}
 	workspaceExport.GET("/database/blob", h.GetDatabaseBlob) // Download encrypted database blob
+	// Server-side snapshot history: list and download kept snapshots.
+	workspaceExport.GET("/database/blob/history", h.GetSnapshotHistory)
+	workspaceExport.GET("/database/blob/history/:id", h.GetSnapshotHistoryEntry)
 
 	// Workspace write routes (allow collaboration-only users to sync/edit shared data)
 	workspaceWrite := api.Group("")
@@ -133,6 +136,7 @@ func SetupRoutes(e *echo.Echo, h *handler.Handlers, services *application.Servic
 	workspaceWrite.POST("/profile/backup/record", h.RecordDatabaseBackup)
 	workspaceWrite.POST("/database/blob", h.PostDatabaseBlob) // Upload encrypted database blob
 	workspaceWrite.POST("/database/upload", h.UploadDatabase) // Legacy upload route
+	workspaceWrite.POST("/database/blob/history/:id/restore", h.RestoreSnapshotHistoryEntry)
 
 	// Protected routes (require JWT auth AND active subscription)
 	protected := api.Group("")
@@ -213,6 +217,10 @@ func SetupRoutes(e *echo.Echo, h *handler.Handlers, services *application.Servic
 	// Inactive users and permanent purge (data, mutation log, Clerk account)
 	admin.GET("/users/inactive", h.GetInactiveUsers)
 	admin.POST("/users/purge", h.PurgeUsers)
+
+	// Workspace snapshot history (support restores)
+	admin.GET("/spaces/:space_id/blob-history", h.AdminGetSnapshotHistory)
+	admin.POST("/spaces/:space_id/blob-history/:id/restore", h.AdminRestoreSnapshotHistoryEntry)
 
 	// Sync utilities
 	admin.POST("/sync/clerk", h.SyncClerkUsers)
