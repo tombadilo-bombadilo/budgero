@@ -4,7 +4,11 @@ import type {
   BudgetSpaceInvite,
   SpaceInviteInspection,
 } from '@shared/model/budget-spaces';
-import { SNAPSHOT_DATA_FORMAT_VERSION, SYNC_PROTOCOL_VERSION } from '@budgero/runtime';
+import {
+  SNAPSHOT_DATA_FORMAT_VERSION,
+  SYNC_PROTOCOL_VERSION,
+  getClientSessionId,
+} from '@budgero/runtime';
 import { getGlobalToken } from '@shared/lib/clerk-token-manager';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
@@ -76,6 +80,10 @@ class ApiClient {
         : null;
 
     const config = buildConfig(controller.signal, token);
+    // Per-visit id the server logs with this request (error report ↔ server log).
+    const headers = new Headers(config.headers);
+    headers.set('X-Client-Session', getClientSessionId());
+    config.headers = headers;
 
     try {
       const response = await fetch(url, config);

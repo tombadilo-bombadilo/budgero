@@ -9,14 +9,23 @@
  * Frames from other origins become `<external>`.
  *
  * Capture paths (all end in captureAppError): window error +
- * unhandledrejection (main.tsx), React error boundaries (AppErrorBoundary),
- * TanStack query/mutation caches (App.tsx), runtime warn/error logs
- * (runtime-error-bridge.ts).
+ * unhandledrejection and failed chunk loads (installErrorCapture), React
+ * error boundaries (AppErrorBoundary), TanStack query/mutation caches
+ * (App.tsx), runtime warn/error logs with the original error object
+ * (runtime-error-bridge.ts), app console.error/console.warn
+ * (installConsoleCapture), error toasts (toastError), and space activations
+ * that failed or fell back (app-runtime.ts).
+ *
+ * Every report also carries: the cause chain (types + frames of each wrapped
+ * error), the app state at that moment as fixed values (setErrorContext
+ * providers: runtime/sync state, queue size, storage type and range), and the
+ * per-visit client session id the server logs with every request.
  *
  * The event follows PostHog's `$exception_list` format so error tracking can
  * group issues (type + in-app frames) and resolve frames with the source maps
  * uploaded at release time (chunk_id + $release_id, injected by posthog-cli).
  */
+import { getClientSessionId } from '@budgero/runtime';
 import { toErrorCode, type ErrorArea } from './error-codes';
 import type { ErrorCode } from './events';
 import { captureScrubbedException, normalizePagePath } from './track';
@@ -32,7 +41,106 @@ const SAFE_ID = /^[\w.:-]{1,128}$/;
 const SAFE_CRUMB = /^[\w/:.-]{1,80}$/;
 
 export type CaptureSource =
-  'onerror' | 'onunhandledrejection' | 'react' | 'query' | 'mutation' | 'runtime' | 'manual';
+  | 'onerror'
+  | 'onunhandledrejection'
+  | 'react'
+  | 'query'
+  | 'mutation'
+  | 'runtime'
+  | 'console'
+  | 'toast'
+  | 'chunk'
+  | 'activation'
+  | 'manual';
+
+// ---------------------------------------------------------------------------
+// App state at the moment of an error. Providers return fixed values only
+// (enums, booleans, buckets); anything else is dropped.
+// ---------------------------------------------------------------------------
+
+type ContextValue = string | boolean | number;
+type ContextProvider = () => Record<string, ContextValue | null | undefined>;
+
+const contextProviders = new Map<string, ContextProvider>();
+const SAFE_CONTEXT_KEY = /^[a-z][a-z0-9_]{0,40}$/;
+const SAFE_CONTEXT_VALUE = /^[\w.:<>+-]{0,40}$/;
+
+/** Register (or replace) a named provider of state for error reports. */
+export function setErrorContext(name: string, provider: ContextProvider | null): void {
+  if (provider) contextProviders.set(name, provider);
+  else contextProviders.delete(name);
+}
+
+function collectContext(): Record<string, ContextValue> {
+  const out: Record<string, ContextValue> = {};
+  for (const provider of contextProviders.values()) {
+    let values: Record<string, ContextValue | null | undefined>;
+    try {
+      values = provider();
+    } catch {
+      continue;
+    }
+    for (const [key, value] of Object.entries(values)) {
+      if (!SAFE_CONTEXT_KEY.test(key) || value == null) continue;
+      if (typeof value === 'boolean' || (typeof value === 'number' && Number.isFinite(value))) {
+        out[`ctx_${key}`] = value;
+      } else if (typeof value === 'string' && SAFE_CONTEXT_VALUE.test(value)) {
+        out[`ctx_${key}`] = value;
+      }
+    }
+  }
+  return out;
+}
+
+/** Browser storage facts, refreshed in the background (estimate() is async). */
+let storageContext: Record<string, ContextValue> = {};
+
+function mbBucket(bytes: number | undefined): string {
+  if (bytes === undefined || !Number.isFinite(bytes)) return 'unknown';
+  const mb = bytes / 1_000_000;
+  if (mb < 10) return '<10MB';
+  if (mb < 100) return '10-100MB';
+  if (mb < 1000) return '100MB-1GB';
+  if (mb < 10_000) return '1-10GB';
+  return '10GB+';
+}
+
+export async function refreshStorageContext(): Promise<void> {
+  try {
+    const storage = typeof navigator !== 'undefined' ? navigator.storage : undefined;
+    const estimate = await storage?.estimate?.();
+    const persisted = await storage?.persisted?.();
+    storageContext = {
+      opfs: typeof storage?.getDirectory === 'function',
+      storage_persisted: persisted === undefined ? 'unknown' : persisted ? 'yes' : 'no',
+      storage_usage: mbBucket(estimate?.usage),
+      storage_quota: mbBucket(estimate?.quota),
+      storage_used_pct:
+        estimate?.usage !== undefined && estimate?.quota
+          ? `${Math.min(100, Math.round((estimate.usage / estimate.quota) * 10) * 10)}`
+          : 'unknown',
+    };
+  } catch {
+    /* keep the last known values */
+  }
+}
+
+const loadedAt = Date.now();
+function uptimeBucket(): string {
+  const s = (Date.now() - loadedAt) / 1000;
+  if (s < 10) return '<10s';
+  if (s < 60) return '10-60s';
+  if (s < 600) return '1-10m';
+  if (s < 3600) return '10-60m';
+  return '1h+';
+}
+
+setErrorContext('storage', () => storageContext);
+setErrorContext('page', () => ({
+  visible: typeof document === 'undefined' ? null : document.visibilityState === 'visible',
+  uptime: uptimeBucket(),
+  isolated: typeof crossOriginIsolated === 'boolean' ? crossOriginIsolated : null,
+}));
 
 export interface CaptureOptions {
   /** How the error reached us (PostHog mechanism.type). */
@@ -54,7 +162,7 @@ export interface ScrubbedFrame {
   filename: string;
   lineno: number;
   colno: number;
-  function?: string;
+  function: string;
   in_app: boolean;
   chunk_id?: string;
 }
@@ -147,7 +255,10 @@ export function parseStackFrames(stack: string | undefined): ScrubbedFrame[] {
       filename,
       lineno: raw.lineno,
       colno: raw.colno,
-      ...(fn ? { function: fn } : {}),
+      // PostHog's frame parser needs `function` on every frame: events with a
+      // nameless frame were never turned into issues (9 of 10 on 2026-10-31).
+      // '?' is what posthog-js itself sends for anonymous frames.
+      function: fn ?? '?',
       in_app: inApp,
       ...(chunkId ? { chunk_id: chunkId } : {}),
     };
@@ -243,13 +354,40 @@ function breadcrumbsForReport(now: number): Record<string, unknown>[] {
   }));
 }
 
+const MAX_CAUSES = 4;
+
+/**
+ * The error and its `cause` chain, outermost first. Runtime code wraps
+ * failures ("Decryption failed", "Failed to restore workspace snapshot") and
+ * keeps the original as `cause`: the original is the one that says what
+ * actually broke (QuotaExceededError, NotReadableError, a SQLite error, a
+ * network TypeError), so it is reported too — type and frames, never text.
+ */
+function causeChain(error: unknown): unknown[] {
+  const chain: unknown[] = [error];
+  let current = error;
+  while (chain.length <= MAX_CAUSES && current && typeof current === 'object') {
+    const next = (current as { cause?: unknown }).cause;
+    if (!next || typeof next !== 'object' || chain.includes(next)) break;
+    chain.push(next);
+    current = next;
+  }
+  return chain;
+}
+
 /** Build the `$exception` props for an error. Exported for tests. */
 export function buildExceptionProps(
   error: unknown,
   options: Omit<CaptureOptions, 'source'> & { handled: boolean; source: string }
 ): Record<string, unknown> {
   const type = errorType(error);
-  const code = options.code ?? toErrorCode(error, options.area ?? 'app');
+  const chain = causeChain(error);
+  // The first specific code along the chain: a wrapper is usually 'unknown',
+  // the cause it wraps is not.
+  const code =
+    options.code ??
+    chain.map((e) => toErrorCode(e, options.area ?? 'app')).find((c) => c !== 'unknown') ??
+    'unknown';
   const stack = stackWithoutMessage(error);
   const area =
     typeof window !== 'undefined' ? normalizePagePath(window.location.pathname) : 'unknown';
@@ -272,7 +410,15 @@ export function buildExceptionProps(
         },
         stacktrace: { type: 'raw', frames: parseStackFrames(stack) },
       },
+      // Causes: PostHog lists them under the issue, outermost first.
+      ...chain.slice(1).map((cause) => ({
+        type: errorType(cause),
+        value: [errorType(cause), toErrorCode(cause, options.area ?? 'app')].join(' · '),
+        mechanism: { handled: options.handled, synthetic: false, type: 'cause' },
+        stacktrace: { type: 'raw', frames: parseStackFrames(stackWithoutMessage(cause)) },
+      })),
     ],
+    ...(chain.length > 1 ? { root_cause_type: errorType(chain[chain.length - 1]) } : {}),
     $exception_level: 'error',
     ...(release ? { $release_id: release } : {}),
     error_code: code,
@@ -280,8 +426,10 @@ export function buildExceptionProps(
     ...(component ? { component } : {}),
     ...(event ? { runtime_event: event } : {}),
     ...(requestId ? { request_id: requestId } : {}),
+    client_session: getClientSessionId(),
     online: typeof navigator === 'undefined' ? 'unknown' : navigator.onLine ? 'yes' : 'no',
     breadcrumbs: breadcrumbsForReport(now),
+    ...collectContext(),
   };
 }
 
@@ -356,10 +504,23 @@ export function errorFromEvent(event: ErrorEvent): unknown {
 
 let installed = false;
 
-/** Window error + unhandledrejection handlers. Idempotent. */
+/** Window error + unhandledrejection + failed chunk loads. Idempotent. */
 export function installErrorCapture(): void {
   if (installed || typeof window === 'undefined') return;
   installed = true;
+  void refreshStorageContext();
+  window.setInterval(() => void refreshStorageContext(), 10 * 60_000);
+  // Vite's lazy-chunk loader: a chunk that 404s after a deploy, or a network
+  // failure mid-navigation. The page usually breaks without any other error.
+  window.addEventListener('vite:preloadError', (event: Event) => {
+    const { payload } = event as Event & { payload?: unknown };
+    captureAppError(payload instanceof Error ? payload : { name: 'ChunkLoadError' }, {
+      source: 'chunk',
+      handled: false,
+      synthetic: !(payload instanceof Error),
+      code: 'chunk_load_failed',
+    });
+  });
   window.addEventListener('error', (event: ErrorEvent) => {
     const error = errorFromEvent(event);
     if (error == null) return;
@@ -368,6 +529,65 @@ export function installErrorCapture(): void {
   window.addEventListener('unhandledrejection', (event: PromiseRejectionEvent) => {
     captureAppError(event.reason, { source: 'onunhandledrejection', handled: false });
   });
+}
+
+// ---------------------------------------------------------------------------
+// console.error / console.warn. Production keeps these calls (vite.config.ts
+// strips only log/info/debug) so every place that already logs a failure
+// reports it: with the Error object when one is passed, otherwise as a
+// synthetic ConsoleError whose frames point at the exact console call site.
+// Arguments are never sent.
+// ---------------------------------------------------------------------------
+
+let consoleInstalled = false;
+let inConsoleCapture = false;
+
+function firstError(args: unknown[]): unknown {
+  return args.find(
+    (a) => a instanceof Error || (a && typeof a === 'object' && 'stack' in a && 'name' in a)
+  );
+}
+
+/** A synthetic error whose stack starts at the console call site. */
+function consoleCallSite(level: 'error' | 'warn'): { name: string; stack: string } {
+  const lines = (new Error().stack ?? '').split('\n');
+  // V8: [0] "Error", [1] consoleCallSite, [2] the console wrapper, [3+] the caller.
+  // SpiderMonkey/JSC have no header line: [0] consoleCallSite, [1] wrapper.
+  const skip = /^\s*at /.test(lines[1] ?? '') ? 3 : 2;
+  return {
+    name: level === 'error' ? 'ConsoleError' : 'ConsoleWarning',
+    stack: lines.slice(skip).join('\n'),
+  };
+}
+
+export function installConsoleCapture(): void {
+  if (consoleInstalled || typeof console === 'undefined') return;
+  consoleInstalled = true;
+  for (const level of ['error', 'warn'] as const) {
+    const original = console[level].bind(console);
+    console[level] = (...args: unknown[]) => {
+      original(...args);
+      if (inConsoleCapture) return;
+      inConsoleCapture = true;
+      try {
+        const error = firstError(args);
+        const site = consoleCallSite(level);
+        // A call from another origin (extension, injected script) is not ours.
+        const caller = parseStackFrames(site.stack).at(-1);
+        if (!error && caller && !caller.in_app) return;
+        captureAppError(error ?? site, {
+          source: 'console',
+          handled: true,
+          synthetic: !error,
+          component: `console.${level}`,
+        });
+      } catch {
+        /* never let reporting break logging */
+      } finally {
+        inConsoleCapture = false;
+      }
+    };
+  }
 }
 
 /** Test-only: reset module state. */

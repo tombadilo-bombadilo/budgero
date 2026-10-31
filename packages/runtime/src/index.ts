@@ -88,6 +88,7 @@ export {
   checkAbort,
 } from './utils';
 export { logRuntime, logRuntimeError, scopedLogger } from './logging';
+export { getClientSessionId } from './utils/client-session';
 export type {
   RuntimeLogLevel,
   RuntimeLogContext,
@@ -163,4 +164,6 @@ export type {
   RuntimeCoordinatorDeps,
   StateChangeListener,
   SyncDiagnostics,
+  SpaceActivationOutcome,
+  SpaceActivationPath,
 } from './coordinator';

@@ -390,6 +390,7 @@ export class RuntimeContextFactory {
         this.deps.log?.('warn', 'RuntimeContextFactory', 'Failed to persist local database', {
           spaceId,
           error: errorMessage(error),
+          originalError: error,
         });
         return false;
       }

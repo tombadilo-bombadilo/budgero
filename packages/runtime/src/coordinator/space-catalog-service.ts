@@ -63,6 +63,7 @@ export class SpaceCatalogService {
           this.log('warn', 'Failed to ensure space key during refresh', {
             spaceId: summary.space_id,
             error: errorMessage(error),
+            originalError: error,
           });
         }
       }
@@ -92,6 +93,7 @@ export class SpaceCatalogService {
     } catch (error) {
       this.log('warn', 'Failed to load profile', {
         error: errorMessage(error),
+        originalError: error,
       });
       return null;
     }
@@ -105,6 +107,7 @@ export class SpaceCatalogService {
     } catch (error) {
       this.log('warn', 'Failed to list spaces; attempting offline cache', {
         error: errorMessage(error),
+        originalError: error,
       });
       const cached = this.deps.spaceRegistry.loadCachedSpaceSummaries();
       if (cached?.length) {
@@ -147,6 +150,7 @@ export class SpaceCatalogService {
         this.log('warn', 'Failed to provision space key', {
           spaceId: summary.space_id,
           error: errorMessage(error),
+          originalError: error,
         });
       }
     }

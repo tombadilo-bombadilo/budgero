@@ -18,6 +18,13 @@ var (
 	ErrCodeUpstream     = ErrorCode{"upstream_error"}
 	ErrCodeTimeout      = ErrorCode{"timeout"}
 	ErrCodePanic        = ErrorCode{"panic"}
+	// Sync refusals: handled 4xx answers the client is expected to recover
+	// from, reported as warnings because they are the sync failures that
+	// are otherwise invisible server-side.
+	ErrCodeSnapshotRegression    = ErrorCode{"snapshot_regression"}
+	ErrCodeSnapshotConflict      = ErrorCode{"snapshot_conflict"}
+	ErrCodeEncryptionKeyOutdated = ErrorCode{"encryption_key_outdated"}
+	ErrCodeFormatTooNew          = ErrorCode{"format_too_new"}
 )
 
 // String returns the wire value.
@@ -30,6 +37,17 @@ type ExceptionMechanism struct{ v string }
 var (
 	MechanismPanic   = ExceptionMechanism{"panic"}
 	MechanismHTTP5xx = ExceptionMechanism{"http_5xx"}
+	// MechanismRefusal is a request the server deliberately refused.
+	MechanismRefusal = ExceptionMechanism{"refusal"}
+)
+
+// ExceptionLevel is PostHog's $exception_level.
+type ExceptionLevel struct{ v string }
+
+// ExceptionLevel values.
+var (
+	LevelError   = ExceptionLevel{"error"}
+	LevelWarning = ExceptionLevel{"warning"}
 )
 
 // Frame is one stack frame of our own module. Filename is module-relative
@@ -43,19 +61,29 @@ type Frame struct {
 
 // ServerException describes one failed request for PostHog error tracking.
 // Every field is a fixed identifier: a Go type name, an ErrorCode, a route
-// template, an HTTP method/status, a request id or one of our own frames.
-// It never carries the error message.
+// template, an HTTP method/status, a request id, the client's random
+// per-page-load session token or one of our own frames. It never carries
+// the error message.
 type ServerException struct {
-	// Type is the Go type name of the root error (e.g. *sqlite.Error) or
-	// "panic".
-	Type          string
-	Code          ErrorCode
-	Mechanism     ExceptionMechanism
-	Route         string
-	Method        string
-	Status        int
-	RequestID     string
+	// Type is the Go type name of the root error (e.g. *sqlite.Error),
+	// "panic", or a fixed refusal name (e.g. SnapshotRegression).
+	Type      string
+	Code      ErrorCode
+	Mechanism ExceptionMechanism
+	Route     string
+	Method    string
+	Status    int
+	RequestID string
+	// ClientSession is the client's random per-page-load token
+	// (X-Client-Session), empty when the client sent none. It identifies a
+	// page load, not a person.
+	ClientSession string
 	ServerVersion string
+	// Level defaults to LevelError.
+	Level ExceptionLevel
+	// Handled marks a failure the server answered on purpose (a refusal)
+	// rather than one it did not expect.
+	Handled bool
 	// Frames are ordered oldest first, crashing frame last.
 	Frames []Frame
 }
@@ -79,8 +107,12 @@ func (x *ServerException) Event() Event {
 	if mech.v == "" {
 		mech = MechanismHTTP5xx
 	}
+	level := x.Level
+	if level.v == "" {
+		level = LevelError
+	}
 	props := map[string]string{
-		"$exception_level": "error",
+		"$exception_level": level.v,
 		"error_code":       code.v,
 		"route":            route,
 		"method":           x.Method,
@@ -91,6 +123,9 @@ func (x *ServerException) Event() Event {
 	}
 	if x.RequestID != "" {
 		props["request_id"] = x.RequestID
+	}
+	if x.ClientSession != "" {
+		props["client_session"] = x.ClientSession
 	}
 	if x.ServerVersion != "" {
 		props["server_version"] = x.ServerVersion
@@ -112,7 +147,7 @@ func (x *ServerException) Event() Event {
 			"type":  typ,
 			"value": typ + " · " + code.v + " · " + route,
 			"mechanism": map[string]any{
-				"handled":   false,
+				"handled":   x.Handled,
 				"synthetic": false,
 				"type":      mech.v,
 			},

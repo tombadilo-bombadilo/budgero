@@ -60,6 +60,16 @@ export function toErrorCode(error: unknown, area: ErrorArea = 'app'): ErrorCode 
   if (name === 'AbortError') return 'cancelled';
   if (name === 'TimeoutError') return 'timeout';
   if (name === 'QuotaExceededError') return 'quota_exceeded';
+  // Browser storage (OPFS / IndexedDB) failures are DOMExceptions with fixed names.
+  if (
+    /^(NotReadableError|NoModificationAllowedError|InvalidModificationError|InvalidStateError|UnknownError|DataError|ReadOnlyError|VersionError|TransactionInactiveError)$/.test(
+      name
+    )
+  ) {
+    return 'storage_error';
+  }
+  // WebCrypto signals a failed decrypt (wrong key, tampered data) as OperationError.
+  if (name === 'OperationError') return 'decryption_failed';
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
   if (
     name === 'TypeError' &&
@@ -124,4 +134,33 @@ export function syncErrorCode(error: { code: string } | null | undefined): Error
     default:
       return 'unknown';
   }
+}
+
+/**
+ * Code for a runtime log entry that carries only an error *message* (the
+ * runtime logs `errorMessage(error)`, a string). The text is matched here and
+ * never leaves the device; only the code does.
+ */
+export function runtimeMessageCode(message: string | undefined, event: string): ErrorCode {
+  const text = `${event} ${message ?? ''}`;
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return 'offline';
+  if (/decrypt|invalid password|bad mac|cipher/i.test(text)) return 'decryption_failed';
+  if (/opfs|persist|quota|storage|disk|indexeddb/i.test(text)) return 'storage_error';
+  if (/constraint/i.test(text)) return 'db_constraint';
+  if (/database is locked|sqlite_busy/i.test(text)) return 'db_locked';
+  if (/malformed|not a database/i.test(text)) return 'db_corrupt';
+  if (/unauthori[sz]ed|\b401\b|session expired|accept this session/i.test(text))
+    return 'unauthorized';
+  if (/forbidden|\b403\b/i.test(text)) return 'forbidden';
+  if (/\b404\b|not found/i.test(text)) return 'not_found';
+  if (/\b409\b|conflict/i.test(text)) return 'conflict';
+  if (/\b5\d\d\b|server error|internal error/i.test(text)) return 'server_error';
+  if (/timed? ?out|timeout/i.test(text)) return 'timeout';
+  if (/failed to fetch|network|websocket|connection|load failed/i.test(text)) return 'network';
+  if (/snapshot_unavailable|no snapshot|snapshot.*(missing|unavailable)/i.test(text))
+    return 'snapshot_unavailable';
+  if (/snapshot|blob|download|upload/i.test(text)) return 'snapshot_upload_failed';
+  if (/format|op code|opcode|newer than/i.test(text)) return 'format_too_new';
+  if (/apply|mutation/i.test(text)) return 'mutation_error';
+  return 'unknown';
 }

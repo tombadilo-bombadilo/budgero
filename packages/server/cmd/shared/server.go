@@ -12,6 +12,7 @@ import (
 	"math/big"
 	"mime"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -335,20 +336,20 @@ func newLatestVersionSource(cfg *config.Config, selfHost bool) handler.LatestVer
 	if cfg.UpdateCheck.Disabled || appmeta.HasLatestVersionOverride() {
 		return nil
 	}
-	url := cfg.UpdateCheck.URL
+	checkURL := cfg.UpdateCheck.URL
 	if selfHost {
-		if url == "" {
-			url = defaultCloudVersionURL
+		if checkURL == "" {
+			checkURL = defaultCloudVersionURL
 		}
 		return updatecheck.NewServerProvider(
-			url, appmeta.BuildVersion(), os.Getenv("APP_BUILD_SHA"), "selfhost",
+			checkURL, appmeta.BuildVersion(), os.Getenv("APP_BUILD_SHA"), "selfhost",
 			12*time.Hour, time.Hour,
 		)
 	}
-	if url == "" {
-		url = defaultReleaseBucketLatestURL
+	if checkURL == "" {
+		checkURL = defaultReleaseBucketLatestURL
 	}
-	return updatecheck.NewBucketProvider(url, 10*time.Minute, time.Minute)
+	return updatecheck.NewBucketProvider(checkURL, 10*time.Minute, time.Minute)
 }
 
 // WireServices creates all repositories and services (composition root).
@@ -555,9 +556,23 @@ func getContentType(path string) string {
 // user) out of the logs. The relay records counters only.
 func redactURI(uri string) string {
 	const relayPrefix = "/api/v1/bank-relay/"
-	path, _, _ := strings.Cut(uri, "?")
+	path, query, hasQuery := strings.Cut(uri, "?")
 	if strings.HasPrefix(path, relayPrefix) && path != relayPrefix+"ticket" {
 		return relayPrefix + "[redacted]"
 	}
-	return uri
+	if !hasQuery {
+		return uri
+	}
+	// The sync socket authenticates with ?token=<JWT>; a refused connect is
+	// logged with its URI, so credentials must never reach the log.
+	values, err := url.ParseQuery(query)
+	if err != nil {
+		return path + "?[redacted]"
+	}
+	for _, key := range []string{"token", "access_token", "ticket"} {
+		if values.Has(key) {
+			values.Set(key, "[redacted]")
+		}
+	}
+	return path + "?" + values.Encode()
 }

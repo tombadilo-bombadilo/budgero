@@ -101,7 +101,10 @@ export class ReconnectionService {
 
     this.resendSweepTimer = (this.deps.setInterval ?? setInterval)(() => {
       void this.resendSweep().catch((error) => {
-        this.log('warn', 'Resend sweep failed', { error: errorMessage(error) });
+        this.log('warn', 'Resend sweep failed', {
+          error: errorMessage(error),
+          originalError: error,
+        });
       });
     }, this.getResendSweepMs());
 
@@ -195,6 +198,7 @@ export class ReconnectionService {
         } catch (error) {
           this.log('warn', 'Download failed after becoming online', {
             error: errorMessage(error),
+            originalError: error,
           });
         }
       }
@@ -222,6 +226,7 @@ export class ReconnectionService {
       if (error instanceof CancellationError) return;
       this.log('warn', 'Reconnection failed', {
         error: errorMessage(error),
+        originalError: error,
       });
       const stateAfterFailure = this.deps.getRuntimeState();
       if (stateAfterFailure === 'Reconnecting' || stateAfterFailure === 'Ready') {
@@ -286,6 +291,7 @@ export class ReconnectionService {
         ctx.sync.setBufferMode(false);
         this.log('warn', 'Failed to flush buffered sync messages', {
           error: errorMessage(error),
+          originalError: error,
         });
       }
     }

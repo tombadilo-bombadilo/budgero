@@ -315,7 +315,13 @@ export default defineConfig(({ mode, isPreview }) => {
       allowedHosts,
     },
     esbuild: {
-      drop: mode === 'production' ? ['console', 'debugger'] : [],
+      // Keep console.error/console.warn in production: installConsoleCapture
+      // turns them into error reports (the arguments are never sent).
+      drop: mode === 'production' ? ['debugger'] : [],
+      pure:
+        mode === 'production'
+          ? ['console.log', 'console.info', 'console.debug', 'console.trace']
+          : [],
       legalComments: 'none',
     },
     build: {

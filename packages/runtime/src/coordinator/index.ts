@@ -4,4 +4,6 @@ export type {
   RuntimeCoordinatorDeps,
   StateChangeListener,
   SyncDiagnostics,
+  SpaceActivationOutcome,
+  SpaceActivationPath,
 } from './runtime-coordinator-types';

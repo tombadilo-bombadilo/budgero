@@ -207,7 +207,7 @@ func reportServerError(c echo.Context, err error, he *echo.HTTPError, sink Excep
 		ev.Msg("request failed")
 	}
 
-	if sink == nil {
+	if sink == nil || !claimException(c) {
 		return
 	}
 	exc := analytics.ServerException{
@@ -218,6 +218,7 @@ func reportServerError(c echo.Context, err error, he *echo.HTTPError, sink Excep
 		Method:        method,
 		Status:        he.Code,
 		RequestID:     RequestID(c),
+		ClientSession: ClientSession(c),
 		ServerVersion: version,
 	}
 	var pcs []uintptr
@@ -238,6 +239,56 @@ func reportServerError(c echo.Context, err error, he *echo.HTTPError, sink Excep
 		}
 	}
 	exc.Frames = frames(pcs)
+	sink.CaptureException(GetUserIDFromContext(c), &exc)
+}
+
+// exceptionReportedKey marks a request that already produced a $exception:
+// one request yields at most one event, whichever path reports first.
+const exceptionReportedKey = "exception_reported"
+
+// claimException reports whether c may still send its $exception, and marks
+// it as sent.
+func claimException(c echo.Context) bool {
+	if done, _ := c.Get(exceptionReportedKey).(bool); done {
+		return false
+	}
+	c.Set(exceptionReportedKey, true)
+	return true
+}
+
+// Refusal names a request a handler refused on purpose: a fixed type name
+// (e.g. "SnapshotRegression"), its ErrorCode and the status sent.
+type Refusal struct {
+	Type   string
+	Code   analytics.ErrorCode
+	Status int
+}
+
+// ReportRefusal sends one handled $exception at warning level for a request
+// the handler refused deliberately, so refusals the client has to recover
+// from show up in error tracking next to real failures. It carries the same
+// fixed identifiers as a 5xx (route, method, status, request id, client
+// session, server version) and frames starting at the caller; never a
+// message. distinct_id is the authenticated user, so their opt-out applies.
+// A request that already reported an exception sends nothing.
+func ReportRefusal(c echo.Context, sink ExceptionSink, version string, r Refusal) {
+	if sink == nil || !claimException(c) {
+		return
+	}
+	exc := analytics.ServerException{
+		Type:          r.Type,
+		Code:          r.Code,
+		Mechanism:     analytics.MechanismRefusal,
+		Route:         c.Path(),
+		Method:        c.Request().Method,
+		Status:        r.Status,
+		RequestID:     RequestID(c),
+		ClientSession: ClientSession(c),
+		ServerVersion: version,
+		Level:         analytics.LevelWarning,
+		Handled:       true,
+		Frames:        frames(callers(3)),
+	}
 	sink.CaptureException(GetUserIDFromContext(c), &exc)
 }
 

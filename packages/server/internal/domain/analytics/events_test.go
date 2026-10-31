@@ -39,7 +39,7 @@ func TestEventsUseOnlyRegisteredProps(t *testing.T) {
 		analytics.MemberLeft(),
 		analytics.BankRelayOK(analytics.BankProviderEnableBanking),
 		analytics.BankRelayFailed(analytics.BankProviderEnableBanking, analytics.BankRelayErrThrottled),
-		(&analytics.ServerException{Type: "*sqlite.Error", Code: analytics.ErrCodeDBLocked, Route: "/api/v1/sync", Method: "POST", Status: 500, RequestID: "req-1", ServerVersion: "1.2.3"}).Event(),
+		(&analytics.ServerException{Type: "*sqlite.Error", Code: analytics.ErrCodeDBLocked, Route: "/api/v1/sync", Method: "POST", Status: 500, RequestID: "req-1", ClientSession: "page-load-1", ServerVersion: "1.2.3"}).Event(),
 	}
 	seen := map[string]bool{}
 	for _, ev := range events {
@@ -165,5 +165,46 @@ func TestServerExceptionEvent(t *testing.T) {
 	}
 	if analytics.UserSignedUp().Payload() != nil {
 		t.Error("plain events have no payload")
+	}
+}
+
+func TestServerExceptionEvent_HandledRefusal(t *testing.T) {
+	ev := (&analytics.ServerException{
+		Type:          "SnapshotRegression",
+		Code:          analytics.ErrCodeSnapshotRegression,
+		Mechanism:     analytics.MechanismRefusal,
+		Route:         "/api/v1/database/blob",
+		Method:        "POST",
+		Status:        409,
+		RequestID:     "req-1",
+		ClientSession: "page-load-1",
+		Level:         analytics.LevelWarning,
+		Handled:       true,
+	}).Event()
+	props := ev.Properties()
+	if props["$exception_level"] != "warning" || props["error_code"] != "snapshot_regression" || props["client_session"] != "page-load-1" || props["status"] != "409" {
+		t.Errorf("props = %v", props)
+	}
+	list, _ := ev.Payload()["$exception_list"].([]map[string]any)
+	if len(list) != 1 || list[0]["value"] != "SnapshotRegression · snapshot_regression · /api/v1/database/blob" {
+		t.Fatalf("exception = %v", list)
+	}
+	mech, _ := list[0]["mechanism"].(map[string]any)
+	if mech["handled"] != true || mech["type"] != "refusal" {
+		t.Errorf("mechanism = %v", mech)
+	}
+
+	// Defaults: level error, unhandled, no client_session key.
+	props = (&analytics.ServerException{Status: 500}).Event().Properties()
+	if props["$exception_level"] != "error" {
+		t.Errorf("default level = %q", props["$exception_level"])
+	}
+	if _, ok := props["client_session"]; ok {
+		t.Error("empty client_session must be omitted")
+	}
+	for _, c := range []analytics.ErrorCode{analytics.ErrCodeSnapshotConflict, analytics.ErrCodeEncryptionKeyOutdated, analytics.ErrCodeFormatTooNew} {
+		if c.String() == "" {
+			t.Errorf("empty error code %v", c)
+		}
 	}
 }

@@ -308,6 +308,7 @@ export class DatabaseSync {
     } catch (error) {
       logRuntime('error', 'DatabaseSync', 'Failed to decrypt snapshot', {
         error: errorMessage(error),
+        originalError: error,
       });
       if (isDecryptionError(error)) {
         throw new Error('Decryption failed: invalid password or corrupted data', {
@@ -387,6 +388,7 @@ export class DatabaseSync {
     } catch (error) {
       logRuntime('warn', 'DatabaseSync', 'onDatabaseRestored hook failed', {
         error: errorMessage(error),
+        originalError: error,
       });
     }
     return true;
@@ -398,6 +400,7 @@ export class DatabaseSync {
     } catch (error) {
       logRuntime('warn', 'DatabaseSync', 'Local persist flush failed', {
         error: errorMessage(error),
+        originalError: error,
       });
     }
   }
@@ -475,6 +478,7 @@ export class DatabaseSync {
         logRuntime('warn', 'DatabaseSync', 'Blob upload failed; retry armed', {
           reason,
           error: errorMessage(error),
+          originalError: error,
         });
         this.clearUploadTimer();
         this.uploadTimer = this.scheduleTimer(() => {

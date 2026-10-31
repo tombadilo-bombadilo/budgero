@@ -67,6 +67,8 @@ export interface RuntimeCoordinatorDeps {
     context: import('../types').MutationBudgetResolutionContext
   ): number | null | undefined;
   onAnalyticsEvent?(op: string): void;
+  /** Every space activation, successful or not, with how the local database was obtained. */
+  onSpaceActivated?(outcome: SpaceActivationOutcome): void;
 
   migrationRunner?: MigrationRunner;
 
@@ -95,6 +97,27 @@ export interface RuntimeCoordinatorDeps {
 }
 
 /** Read-only snapshot of the active space's sync position, for diagnostics UI. */
+/**
+ * How a space activation obtained its local database:
+ *  - server_snapshot: downloaded and restored the server snapshot
+ *  - local: opened this device's stored copy
+ *  - local_after_download_failure: the snapshot download/restore failed, fell back to the stored copy
+ *  - local_reset: the stored copy could not be opened and was wiped (catch-up rebuilds it)
+ *  - fresh: no stored copy and no server snapshot (new space)
+ */
+export type SpaceActivationPath =
+  'server_snapshot' | 'local' | 'local_after_download_failure' | 'local_reset' | 'fresh';
+
+export interface SpaceActivationOutcome {
+  ok: boolean;
+  path: SpaceActivationPath;
+  durationMs: number;
+  /** Set when ok is false. */
+  error?: unknown;
+  /** The error that sent activation down a fallback path (download or local open), if any. */
+  fallbackError?: unknown;
+}
+
 export interface SyncDiagnostics {
   spaceId: string;
   /** Last mutation-log version applied to the local database. */

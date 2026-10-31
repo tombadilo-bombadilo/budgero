@@ -9,6 +9,7 @@
  * Has bufferMode for reconnection ordering guarantees.
  */
 
+import { getClientSessionId } from '../utils/client-session';
 import type { SyncTransportDeps, WsMessage, WsCatchUpMutation } from '../types';
 import {
   type FormatTooNewError,
@@ -486,6 +487,7 @@ export class SyncTransport {
       if (this.destroyed) return false;
       this.log('error', 'Failed to send mutation', {
         error: errorMessage(e),
+        originalError: e,
         spaceId: this.spaceId,
       });
 
@@ -846,6 +848,7 @@ export class SyncTransport {
           this.log('warn', 'onMutationAck handler failed', {
             mutationId: ackedId,
             error: errorMessage(error),
+            originalError: error,
           });
         }
       }
@@ -1035,6 +1038,7 @@ export class SyncTransport {
       this.log('warn', 'Failed to apply remote mutation', {
         mutationId: id,
         error: errorMessage(error),
+        originalError: error,
       });
     }
   }
@@ -1153,6 +1157,7 @@ export class SyncTransport {
         this.log('warn', 'Failed to apply catch-up mutation', {
           mutationId: id,
           error: errorMessage(error),
+          originalError: error,
         });
         const failureKey = this.catchUpFailureKey(m);
         const previousFailure = this.catchUpApplyFailures.get(failureKey);
@@ -1331,6 +1336,7 @@ export class SyncTransport {
       version: mutation.version,
       precedingVersion: this.localVersion,
       error: errorMessage(error),
+      originalError: error,
       spaceId: this.spaceId,
     });
     await this.updateLocalVersion(version);
@@ -1375,6 +1381,7 @@ export class SyncTransport {
       this.log('warn', 'Failed to request catch-up mutations', {
         sinceVersion,
         error: errorMessage(error),
+        originalError: error,
       });
     }
   }
@@ -1475,6 +1482,7 @@ export class SyncTransport {
         this.log('error', 'Catch-up snapshot recovery failed', {
           reason,
           error: errorMessage(error),
+          originalError: error,
           spaceId: this.spaceId,
         });
       }
@@ -1577,6 +1585,7 @@ export class SyncTransport {
         version,
         spaceId: this.spaceId,
         error: errorMessage(error),
+        originalError: error,
       });
       return false;
     }
@@ -1613,6 +1622,7 @@ export class SyncTransport {
           version,
           spaceId: this.spaceId,
           error: errorMessage(error),
+          originalError: error,
         });
       }
     );
@@ -1639,6 +1649,7 @@ export class SyncTransport {
         version: this.localVersion,
         spaceId: this.spaceId,
         error: errorMessage(error),
+        originalError: error,
       });
       return false;
     }
@@ -1703,6 +1714,6 @@ export class SyncTransport {
     const wsHost = window.location.host;
     return `${wsProtocol}//${wsHost}/api/v1/ws/sync?token=${encodeURIComponent(
       token || ''
-    )}&space_id=${encodeURIComponent(this.spaceId)}&protocol=${SYNC_PROTOCOL_VERSION}`;
+    )}&space_id=${encodeURIComponent(this.spaceId)}&protocol=${SYNC_PROTOCOL_VERSION}&client_session=${getClientSessionId()}`;
   }
 }

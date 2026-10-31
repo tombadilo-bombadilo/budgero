@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '@shared/api/api-client';
-import { toErrorCode } from './error-codes';
+import { runtimeMessageCode, toErrorCode } from './error-codes';
 
 class DatabaseError extends Error {
   constructor(
@@ -37,5 +37,34 @@ describe('toErrorCode', () => {
     expect(new ApiError('x', 500, undefined, 'short').requestId).toBeUndefined();
     expect(new ApiError('x', 500, undefined, 'has space 1234567').requestId).toBeUndefined();
     expect(new ApiError('x', 500, undefined, null).requestId).toBeUndefined();
+  });
+});
+
+describe('runtimeMessageCode', () => {
+  it('derives a fixed code from a runtime log message without keeping the text', () => {
+    expect(
+      runtimeMessageCode(
+        'Decryption failed: invalid password or corrupted data',
+        'snapshot_download_failed'
+      )
+    ).toBe('decryption_failed');
+    expect(
+      runtimeMessageCode(
+        'OPFS write failed: QuotaExceededError',
+        'failed_to_persist_local_database'
+      )
+    ).toBe('storage_error');
+    expect(runtimeMessageCode('HTTP 409 {"error":"version_conflict"}', 'blob_upload_failed')).toBe(
+      'conflict'
+    );
+    expect(runtimeMessageCode('HTTP 503', 'blob_upload_failed')).toBe('server_error');
+    expect(runtimeMessageCode('Failed to fetch', 'catch_up_request_failed')).toBe('network');
+    expect(runtimeMessageCode(undefined, 'catch_up_snapshot_recovery_failed')).toBe(
+      'snapshot_upload_failed'
+    );
+    expect(
+      runtimeMessageCode('UNIQUE constraint failed: x.y', 'failed_to_apply_catch_up_mutation')
+    ).toBe('db_constraint');
+    expect(runtimeMessageCode('something odd', 'mystery_event')).toBe('unknown');
   });
 });

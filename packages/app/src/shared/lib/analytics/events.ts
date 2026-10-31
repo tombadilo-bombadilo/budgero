@@ -83,8 +83,18 @@ export const ERROR_CODES = [
   'db_readonly',
   'db_full',
   'db_error',
-  // rendering
+  // rendering and loading
   'render_error',
+  'chunk_load_failed',
+] as const;
+
+/** How a space activation obtained its local database (runtime SpaceActivationPath). */
+export const ACTIVATION_PATHS = [
+  'server_snapshot',
+  'local',
+  'local_after_download_failure',
+  'local_reset',
+  'fresh',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
@@ -350,6 +360,15 @@ export const EVENT_SCHEMA = {
 
   // Health
   sync_error: { code: ERROR_CODES },
+  // Every workspace open: the denominator for sync failures. A fallback path
+  // (local_after_download_failure, local_reset) with outcome ok is still a
+  // failure worth counting; error_code is the code of what caused it.
+  space_activation: {
+    outcome: OK_ERROR,
+    path: ACTIVATION_PATHS,
+    error_code: ERROR_CODES,
+    duration_bucket: DURATION_BUCKETS,
+  },
   update_required_shown: NONE,
   money_integrity_warning_shown: { kind: MONEY_INTEGRITY_KINDS },
 

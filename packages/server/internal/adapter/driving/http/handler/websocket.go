@@ -122,7 +122,12 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 			log.Error().Interface("panic", r).Msg("WebSocket handler panicked")
 		}
 	}()
-	log.Info().
+	// Browsers cannot set headers on a WebSocket, so the client's
+	// per-page-load session id comes as a query parameter. Stored on the
+	// request context (log lines, exceptions) and on the Client below.
+	middleware.SetClientSession(c, c.QueryParam(middleware.QueryClientSession))
+	logger := middleware.Logger(c)
+	logger.Info().
 		Str("method", c.Request().Method).
 		Str("path", c.Request().URL.Path).
 		Str("remote_addr", c.Request().RemoteAddr).
@@ -151,7 +156,7 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	}
 
 	if userID == "" {
-		log.Warn().Msg("WebSocket connection attempt without authentication")
+		logger.Warn().Msg("WebSocket connection attempt without authentication")
 		h.telemetry.WSConnectAttempt(external.WSOutcomeUnauthenticated)
 		return echo.NewHTTPError(http.StatusUnauthorized, "user not authenticated")
 	}
@@ -161,14 +166,14 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	// This route sits outside the auth middleware chain, so it applies the
 	// block check itself (both Clerk and self-host tokens land here).
 	if err := middleware.CheckNotBlocked(ctx, h.services.User, userID); err != nil {
-		log.Warn().Err(err).Str("user_id", userID).Msg("WebSocket connection rejected: account blocked or status unavailable")
+		logger.Warn().Err(err).Str("user_id", userID).Msg("WebSocket connection rejected: account blocked or status unavailable")
 		h.telemetry.WSConnectAttempt(wsOutcomeForError(err, external.WSOutcomeBlocked))
 		return err
 	}
 	spaceParam := c.QueryParam("space_id")
 	spaceID, err := h.ensureWorkspaceAccess(ctx, userID, spaceParam)
 	if err != nil {
-		log.Error().Err(err).Str("user_id", userID).Str("space_param", spaceParam).Msg("Failed to authorize workspace for WebSocket connection")
+		logger.Error().Err(err).Str("user_id", userID).Str("space_param", spaceParam).Msg("Failed to authorize workspace for WebSocket connection")
 		h.telemetry.WSConnectAttempt(wsOutcomeForError(err, external.WSOutcomeForbidden))
 		return err
 	}
@@ -181,7 +186,7 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	switch {
 	case blobErr == nil:
 		if gateErr := requireFormatSupport(c, blob.DataFormatVersion); gateErr != nil {
-			log.Warn().
+			logger.Warn().
 				Str("user_id", userID).
 				Str("space_id", spaceID).
 				Int64("blob_format", blob.DataFormatVersion).
@@ -206,7 +211,7 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	upgrader := getUpgrader(h.cfg)
 	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
-		log.Error().
+		logger.Error().
 			Err(err).
 			Str("user_id", userID).
 			Str("space_id", spaceID).
@@ -216,7 +221,8 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	}
 
 	// Create client and register with hub
-	client := synchub.NewClient(h.syncHub, ws, userID, spaceID)
+	client := synchub.NewClient(h.syncHub, ws, userID, spaceID).
+		WithClientSession(middleware.ClientSession(c))
 	h.syncHub.Register <- client
 
 	// Start the write pump FIRST so it can send our initial data
@@ -239,12 +245,12 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 		}
 
 		if !h.syncHub.TrySend(client, initialMsg) {
-			log.Warn().Str("user_id", userID).Msg("Failed to send initial sync state")
+			logger.Warn().Str("user_id", userID).Msg("Failed to send initial sync state")
 		}
 
 		// Note: Database blobs no longer sent via WebSocket - clients use HTTP Layer 2 endpoints
 	} else {
-		log.Warn().
+		logger.Warn().
 			Str("user_id", userID).
 			Err(err).
 			Msg("Failed to get sync state")
@@ -254,7 +260,7 @@ func (h *Handlers) WebSocketHandler(c echo.Context) error {
 	// this connection was being set up would have missed it when BlockUser
 	// closed the user's sockets.
 	if err := middleware.CheckNotBlocked(ctx, h.services.User, userID); err != nil {
-		log.Warn().Err(err).Str("user_id", userID).Msg("Closing WebSocket: account blocked during connect")
+		logger.Warn().Err(err).Str("user_id", userID).Msg("Closing WebSocket: account blocked during connect")
 		h.telemetry.WSConnectAttempt(wsOutcomeForError(err, external.WSOutcomeBlocked))
 		h.syncHub.CloseClient(client, websocket.ClosePolicyViolation, synchub.CloseReasonBlocked)
 		return nil
