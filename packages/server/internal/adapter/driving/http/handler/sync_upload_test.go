@@ -324,3 +324,65 @@ func TestDeleteBudgetSpace_ClearsMutationLogAndDisconnectsClients(t *testing.T) 
 
 	awaitSendClosed(t, client)
 }
+
+func TestPostDatabaseBlob_MutationVersionRegression_Returns409AndKeepsFile(t *testing.T) {
+	h, e, tc := setupTestHandler(t)
+
+	userID := testkit.SeedUser(t, tc.Queries, "regress@example.com")
+	spaceID := testkit.SeedSpace(t, tc.DB, tc.Queries, userID, "Regress Space")
+
+	rec, err := postBlob(t, h, e, userID, spaceID, "blob-full", map[string]string{
+		"X-Database-Version": "0",
+		"X-Mutation-Version": "19369",
+	})
+	if err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("first upload: err=%v status=%d body=%s", err, rec.Code, rec.Body.String())
+	}
+
+	// A device that reset its local DB and caught up only 25 mutations must
+	// not replace the full snapshot, even though its base version is current.
+	rec, err = postBlob(t, h, e, userID, spaceID, "blob-near-empty", map[string]string{
+		"X-Database-Version": "1",
+		"X-Mutation-Version": "25",
+	})
+	if err != nil {
+		t.Fatalf("regressing PostDatabaseBlob() error = %v", err)
+	}
+	if rec.Code != http.StatusConflict {
+		t.Fatalf("regressing upload status = %d, want %d (body %s)", rec.Code, http.StatusConflict, rec.Body.String())
+	}
+	var body map[string]any
+	if unmarshalErr := json.Unmarshal(rec.Body.Bytes(), &body); unmarshalErr != nil {
+		t.Fatalf("failed to parse response: %v", unmarshalErr)
+	}
+	if body["error"] != "mutation_version_regression" {
+		t.Fatalf("error = %v, want mutation_version_regression", body["error"])
+	}
+	if body["server_mutation_version"] != float64(19369) || body["client_mutation_version"] != float64(25) {
+		t.Fatalf("versions in body = %v / %v", body["server_mutation_version"], body["client_mutation_version"])
+	}
+	blob, blobErr := tc.Queries.GetSpaceBlob(context.Background(), spaceID)
+	if blobErr != nil {
+		t.Fatalf("GetSpaceBlob() error = %v", blobErr)
+	}
+	if blob.SyncVersion != 1 || blob.MutationVersion != 19369 {
+		t.Fatalf("stored sync_version/mutation_version = %d/%d, want 1/19369", blob.SyncVersion, blob.MutationVersion)
+	}
+	content, readErr := os.ReadFile(blob.BlobPath)
+	if readErr != nil {
+		t.Fatalf("failed to read blob file: %v", readErr)
+	}
+	if string(content) != "blob-full" {
+		t.Fatalf("stored blob = %q, want the full snapshot", string(content))
+	}
+
+	// Out-of-band uploads (imports, restores) rewrite history on purpose.
+	rec, err = postBlob(t, h, e, userID, spaceID, "blob-restored", map[string]string{
+		"X-Database-Version": "1",
+		"X-Mutation-Version": "25",
+		"X-Out-Of-Band":      "1",
+	})
+	if err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("out-of-band upload: err=%v status=%d body=%s", err, rec.Code, rec.Body.String())
+	}
+}

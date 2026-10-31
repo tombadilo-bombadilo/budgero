@@ -655,6 +655,9 @@ type blobUploadRecord struct {
 	// keyOutdated marks the 409 sent for a stale encryption key, which is a
 	// client-side refusal rather than a version (CAS) conflict.
 	keyOutdated bool
+	// regressed marks the 409 sent for a snapshot bound to an older mutation
+	// position than the stored one: also a refusal, not a CAS conflict.
+	regressed bool
 }
 
 func (r *blobUploadRecord) outcome(c echo.Context, err error) external.BlobUploadOutcome {
@@ -662,7 +665,7 @@ func (r *blobUploadRecord) outcome(c echo.Context, err error) external.BlobUploa
 	switch {
 	case status >= 200 && status < 300:
 		return external.BlobUploadOK
-	case status == http.StatusConflict && !r.keyOutdated:
+	case status == http.StatusConflict && !r.keyOutdated && !r.regressed:
 		return external.BlobUploadCASConflict
 	case status >= 400 && status < 500:
 		return external.BlobUploadRejected
@@ -758,6 +761,31 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 	}
 
 	currentState, stateErr := h.services.Space.GetSyncState(ctx, userID, blob.SpaceID)
+
+	// A snapshot bound to an older log position than the stored one would
+	// replace a complete budget with a partial one (seen in production: a
+	// device that reset its local DB uploaded a near-empty snapshot bound to
+	// mutation 25 over one bound to 19369, eight seconds after the reset).
+	// Out-of-band uploads (imports, restores) legitimately rewrite history and
+	// are exempt; the catch-up path handles every other case by downloading.
+	outOfBand := c.Request().Header.Get("X-Out-Of-Band") == "1"
+	if stateErr == nil && !outOfBand && mutationVersion < currentState.SnapshotMutationVersion {
+		log.Warn().
+			Str("user_id", userID).
+			Str("space_id", blob.SpaceID).
+			Int64("client_mutation_version", mutationVersion).
+			Int64("server_mutation_version", currentState.SnapshotMutationVersion).
+			Msg("Blob upload rejected: snapshot would regress the mutation log position")
+		rec.regressed = true
+		return c.JSON(http.StatusConflict, map[string]any{
+			"error":                   "mutation_version_regression",
+			"message":                 "This snapshot is older than the one on the server. Download the latest first.",
+			"server_version":          currentState.Version,
+			"server_mutation_version": currentState.SnapshotMutationVersion,
+			"client_mutation_version": mutationVersion,
+			"space_id":                currentState.SpaceID,
+		})
+	}
 
 	// -1 means "no usable version header": legacy clients and first uploads.
 	clientVersion := int64(-1)
@@ -922,7 +950,6 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 	}
 
 	if h.syncHub != nil {
-		outOfBand := c.Request().Header.Get("X-Out-Of-Band") == "1"
 		h.syncHub.NotifyDatabaseUpdate(blob.SpaceID, userID, newVersion, hash, outOfBand)
 	}
 
