@@ -21,11 +21,31 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.20.6',
+    date: 'October 31, 2026',
+    summary:
+      'Fixes a sync problem that could duplicate the categories created during onboarding.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Duplicate categories after onboarding',
+        description:
+          'Right after onboarding, a device could save a copy of the new workspace that looked older than it was. Loading or restoring that copy then created the starter category groups and categories a second time, and the starter goal failed to sync. Sync confirmations are now handled strictly in order, and Budgero no longer saves a copy while it is still catching up on changes.',
+      },
+      {
+        type: 'fixed',
+        title: 'Admin SQL dry run',
+        description:
+          'The dry-run preview of an UPDATE or DELETE whose WHERE clause spans several lines now shows only the rows it would change, not the whole table.',
+      },
+    ],
+  },
+  {
     version: 'v1.20.5',
     date: 'October 31, 2026',
     summary:
       'See goal targets next to what you assigned and spent, on Planning and in a new Targets report, and crypto imports now keep the right amounts.',
-    isLatest: true,
     items: [
       {
         type: 'new',
