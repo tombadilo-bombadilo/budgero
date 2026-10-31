@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { captureAppError } from '@shared/lib/analytics/error-capture';
 
 /**
  * Extract a human-readable message from an unknown thrown value.
@@ -20,4 +21,7 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
  */
 export function toastError(title: string, error: unknown, fallback?: string): void {
   toast.error(title, { description: getErrorMessage(error, fallback) });
+  // A failure the user saw is always worth a report (deduplicated with the
+  // query/mutation capture of the same error object).
+  captureAppError(error, { source: 'toast', handled: true, component: 'toast' });
 }

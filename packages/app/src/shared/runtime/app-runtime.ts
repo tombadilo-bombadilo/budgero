@@ -9,8 +9,8 @@
  * Everything else delegates to RuntimeCoordinator from @budgero/runtime.
  */
 
-import { runtimeErrorBridge } from '@shared/runtime/runtime-error-bridge';
 import {
+  type SpaceActivationOutcome,
   FormatTooNewError,
   normalizeMutationPayload,
   RuntimeCoordinator,
@@ -27,6 +27,10 @@ import {
   type PendingMutationInfo,
   type SyncDiagnostics,
 } from '@budgero/runtime';
+import { captureAppError, setErrorContext } from '@shared/lib/analytics/error-capture';
+import { toErrorCode } from '@shared/lib/analytics/error-codes';
+import { countBucket, durationBucket, ageBucket } from '@shared/lib/analytics/events';
+import { runtimeErrorBridge } from '@shared/runtime/runtime-error-bridge';
 import {
   ServiceManager,
   type Services,
@@ -50,7 +54,6 @@ import {
   type MutationAnalyticsServices,
 } from '@shared/lib/analytics/mutation-events';
 import { track } from '@shared/lib/analytics/track';
-import { ageBucket } from '@shared/lib/analytics/events';
 import { pushMatchReview, withPushIdentity } from './push-identity';
 
 /** Ops whose new rows the continuous rules run over (see applyContinuousRulesIfNeeded). */
@@ -63,6 +66,29 @@ const CONTINUOUS_RULE_TRIGGERS = new Set([
 
 /** Ids per rules.execute op; keeps the IN (...) list well under SQLite's bind limit. */
 const CONTINUOUS_RULE_BATCH_SIZE = 500;
+
+/**
+ * Every space activation becomes a space_activation event (the denominator),
+ * and a failed one or a fallback (download failed, local copy wiped) is also
+ * reported as an error with the error that caused it.
+ */
+export function reportSpaceActivation(outcome: SpaceActivationOutcome): void {
+  const cause = outcome.ok ? outcome.fallbackError : outcome.error;
+  const code = cause === undefined ? 'none' : toErrorCode(cause);
+  track('space_activation', {
+    outcome: outcome.ok ? 'ok' : 'error',
+    path: outcome.path,
+    error_code: code === 'unknown' && cause === undefined ? 'none' : code,
+    duration_bucket: durationBucket(outcome.durationMs),
+  });
+  if (cause !== undefined) {
+    captureAppError(typeof cause === 'object' && cause !== null ? cause : { name: 'NonError' }, {
+      source: 'activation',
+      handled: outcome.ok,
+      component: `activation:${outcome.path}`,
+    });
+  }
+}
 
 export class AppRuntime {
   private coordinator: RuntimeCoordinator;
@@ -112,8 +138,26 @@ export class AppRuntime {
     deps.resolveHistoryBudgetId = (context) => this.resolveHistoryBudgetId(context);
     // Runtime warn/error logs become error reports (console output alone is stripped in prod).
     deps.runtimeLog = runtimeErrorBridge;
+    deps.onSpaceActivated = reportSpaceActivation;
 
     this.coordinator = new RuntimeCoordinator(deps);
+
+    // Runtime and sync state at the moment of any error report.
+    setErrorContext('runtime', () => {
+      const diag = this.coordinator.getSyncDiagnostics();
+      return {
+        runtime_state: this.coordinator.state,
+        sync_connected: diag?.connected ?? null,
+        catch_up_settled: diag?.initialCatchUpSettled ?? null,
+        catch_up_running: diag?.catchUpInProgress ?? null,
+        pending_bucket: diag ? countBucket(diag.pendingCount) : null,
+        cursor_known: diag ? diag.cursor > 0 : null,
+        cursor_behind_snapshot:
+          diag && typeof diag.lastDownloadedMutationVersion === 'number'
+            ? diag.cursor < diag.lastDownloadedMutationVersion
+            : null,
+      };
+    });
   }
 
   async init(options?: {

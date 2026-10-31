@@ -5,6 +5,7 @@ import {
   buildExceptionProps,
   errorFromEvent,
   parseStackFrames,
+  setErrorContext,
   slugifyEvent,
 } from './error-capture';
 import { syncErrorCode, toErrorCode } from './error-codes';
@@ -69,12 +70,20 @@ describe('error capture scrubbing', () => {
     expect(exception.value).toBe('TypeError · unknown · /');
     expect(props.error_code).toBe('unknown');
     expect(exception.stacktrace.frames).toEqual([
-      { platform: 'web:javascript', filename: '<external>', lineno: 3, colno: 4, in_app: false },
+      {
+        platform: 'web:javascript',
+        filename: '<external>',
+        lineno: 3,
+        colno: 4,
+        function: '?',
+        in_app: false,
+      },
       {
         platform: 'web:javascript',
         filename: '/assets/index-IgKWHLwQ.js',
         lineno: 25,
         colno: 28846,
+        function: '?',
         in_app: true,
       },
       {
@@ -82,6 +91,7 @@ describe('error capture scrubbing', () => {
         filename: '/assets/AccountPage-Dk3.js',
         lineno: 1,
         colno: 2207,
+        function: '?',
         in_app: true,
       },
       {
@@ -112,8 +122,8 @@ describe('error capture scrubbing', () => {
       ].join('\n')
     );
     expect(frames.map((f) => [f.function, f.lineno, f.colno])).toEqual([
-      [undefined, 2, 6],
-      [undefined, 1, 5],
+      ['?', 2, 6],
+      ['?', 1, 5],
       ['zq', 12, 9041],
     ]);
   });
@@ -135,8 +145,22 @@ describe('error capture scrubbing', () => {
         function: 'ok',
         in_app: true,
       },
-      { platform: 'web:javascript', filename: '<external>', lineno: 5, colno: 6, in_app: false },
-      { platform: 'web:javascript', filename: '<external>', lineno: 1, colno: 2, in_app: false },
+      {
+        platform: 'web:javascript',
+        filename: '<external>',
+        lineno: 5,
+        colno: 6,
+        function: '?',
+        in_app: false,
+      },
+      {
+        platform: 'web:javascript',
+        filename: '<external>',
+        lineno: 1,
+        colno: 2,
+        function: '?',
+        in_app: false,
+      },
     ]);
     const json = JSON.stringify(frames);
     for (const bit of ['example.com', '9876', 'stealPayee', 'leak', 'moz-extension']) {
@@ -162,7 +186,7 @@ describe('error capture scrubbing', () => {
 
   it('drops function names that are not plain identifiers', () => {
     const [frame] = parseStackFrames(`    at ${SECRET} (${ORIGIN}/assets/index-a.js:1:2)`);
-    expect(frame.function).toBeUndefined();
+    expect(frame.function).toBe('?');
     expectNoSecret(frame);
   });
 
@@ -184,9 +208,22 @@ describe('error capture scrubbing', () => {
       handled: false,
       source: 'onerror',
     });
-    expect(Object.keys(props).sort()).toEqual(
-      ['$exception_level', '$exception_list', 'area', 'breadcrumbs', 'error_code', 'online'].sort()
+    const keys = Object.keys(props);
+    expect(keys.filter((k) => !k.startsWith('ctx_')).sort()).toEqual(
+      [
+        '$exception_level',
+        '$exception_list',
+        'area',
+        'breadcrumbs',
+        'client_session',
+        'error_code',
+        'online',
+      ].sort()
     );
+    // App state travels as ctx_* fixed values only.
+    for (const key of keys.filter((k) => k.startsWith('ctx_'))) {
+      expect(['string', 'boolean', 'number']).toContain(typeof props[key]);
+    }
     expect(props.$exception_level).toBe('error');
     const list = props.$exception_list as ExceptionEntry[];
     expect(list).toHaveLength(1);
@@ -286,7 +323,14 @@ describe('window error events without an Error object', () => {
     );
     expect(exception.type).toBe('ScriptError');
     expect(exception.stacktrace.frames).toEqual([
-      { platform: 'web:javascript', filename: '<external>', lineno: 1, colno: 2, in_app: false },
+      {
+        platform: 'web:javascript',
+        filename: '<external>',
+        lineno: 1,
+        colno: 2,
+        function: '?',
+        in_app: false,
+      },
     ]);
   });
 
@@ -310,6 +354,7 @@ describe('window error events without an Error object', () => {
         filename: '/assets/index-a.js',
         lineno: 3,
         colno: 4,
+        function: '?',
         in_app: true,
       },
     ]);
@@ -491,5 +536,100 @@ describe('error capture context (component, event, request id, breadcrumbs)', ()
       exceptions.map(([, props]) => (props as { runtime_event: string }).runtime_event)
     ).toEqual(['upload_failed', 'restore_failed']);
     vi.unstubAllEnvs();
+  });
+});
+
+describe('frame shape for PostHog ingestion', () => {
+  it('gives every frame a function name so PostHog can parse the stack', () => {
+    const error = new Error('x');
+    error.stack = [
+      'Error: x',
+      `    at ${ORIGIN}/assets/index-abc.js:15:167858`,
+      `    at xct (${ORIGIN}/assets/index-abc.js:28:80022)`,
+      '    at https://cdn.example.com/lib.js:1:1',
+    ].join('\n');
+    const frames = parseStackFrames(error.stack);
+    expect(frames.map((f) => f.function)).toEqual(['?', 'xct', '?']);
+  });
+});
+
+describe('report context and extra capture paths', () => {
+  beforeEach(() => {
+    __resetErrorCaptureForTests();
+  });
+
+  it('attaches the per-visit client session id', () => {
+    const props = buildExceptionProps(new Error('x'), { handled: true, source: 'manual' });
+    expect(props.client_session).toMatch(/^[0-9a-f]{24}$/);
+    const again = buildExceptionProps(new Error('y'), { handled: true, source: 'manual' });
+    expect(again.client_session).toBe(props.client_session);
+  });
+
+  it('adds provider state as ctx_* and drops values that are not fixed tokens', () => {
+    setErrorContext('test', () => ({
+      runtime_state: 'Degraded',
+      sync_connected: false,
+      pending_bucket: '1-10',
+      leaky: SECRET,
+      'Bad Key': 'x',
+    }));
+    const props = buildExceptionProps(new Error('x'), { handled: true, source: 'manual' });
+    expect(props).toMatchObject({
+      ctx_runtime_state: 'Degraded',
+      ctx_sync_connected: false,
+      ctx_pending_bucket: '1-10',
+    });
+    expect(props).not.toHaveProperty('ctx_leaky');
+    expectNoSecret(props);
+    setErrorContext('test', null);
+  });
+
+  it('reports the cause chain with types and frames, and takes the code from the cause', () => {
+    const root = Object.assign(new Error(SECRET), { name: 'NotReadableError' });
+    const wrapper = Object.assign(new Error('Failed to restore workspace snapshot'), {
+      cause: root,
+    });
+    const props = buildExceptionProps(wrapper, { handled: true, source: 'runtime' });
+    expectNoSecret(props);
+    const list = props.$exception_list as ExceptionEntry[];
+    expect(list.map((e) => e.type)).toEqual(['Error', 'NotReadableError']);
+    expect(list[1]!.mechanism.type).toBe('cause');
+    expect(props.root_cause_type).toBe('NotReadableError');
+    expect(props.error_code).toBe('storage_error');
+  });
+
+  it('reports console.error with the Error passed, or the call site, never the arguments', async () => {
+    vi.resetModules();
+    vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
+    envState.selfHost = false;
+    for (const fn of Object.values(posthog)) fn.mockReset();
+    const track = await import('./track');
+    const capture = await import('./error-capture');
+    track.setAnalyticsSubject({ kind: 'user', id: 'u1', optedOut: false });
+    const realError = console.error;
+    const realWarn = console.warn;
+    console.error = () => undefined;
+    console.warn = () => undefined;
+    try {
+      capture.installConsoleCapture();
+      console.error('[Chat] handleSend error:', SECRET, new TypeError(SECRET));
+      console.warn('Something odd with', SECRET);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      const sent = posthog.capture.mock.calls.filter(([name]) => name === '$exception');
+      expect(sent).toHaveLength(2);
+      expectNoSecret(sent);
+      const types = sent.map(
+        ([, p]) => ((p as Record<string, unknown>).$exception_list as ExceptionEntry[])[0]!.type
+      );
+      expect(types).toEqual(['TypeError', 'ConsoleWarning']);
+      expect(sent.map(([, p]) => (p as Record<string, unknown>).component)).toEqual([
+        'console.error',
+        'console.warn',
+      ]);
+    } finally {
+      console.error = realError;
+      console.warn = realWarn;
+      vi.unstubAllEnvs();
+    }
   });
 });
