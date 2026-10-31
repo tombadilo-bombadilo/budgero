@@ -105,7 +105,7 @@ export function TargetTable({ report, money, monthCount, isLoading }: TargetTabl
                     <Trans>Months met</Trans>
                   </TableHead>
                 ) : null}
-                <TableHead className={cn(headClass, 'w-[150px] text-right pr-6')}>
+                <TableHead className={cn(headClass, 'w-px whitespace-nowrap text-right pr-6')}>
                   <Trans>Target</Trans>
                 </TableHead>
               </TableRow>

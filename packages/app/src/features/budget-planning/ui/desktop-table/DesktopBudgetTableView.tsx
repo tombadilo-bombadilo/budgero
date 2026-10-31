@@ -81,7 +81,7 @@ export function DesktopBudgetTableView({
           <Trans>Available</Trans>
         </TableHead>
         {showTarget && (
-          <TableHead className={cn(headClass, 'w-[150px] text-right pr-6')}>
+          <TableHead className={cn(headClass, 'w-px whitespace-nowrap text-right pr-6')}>
             <Trans>Target</Trans>
           </TableHead>
         )}

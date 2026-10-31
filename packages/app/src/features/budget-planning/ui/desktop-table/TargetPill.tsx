@@ -21,7 +21,7 @@ export function TargetPill({ target, percent, formatter, bold = false }: TargetP
     return (
       <span
         aria-hidden="true"
-        className="inline-flex w-[112px] justify-center text-muted-foreground"
+        className="flex w-full min-w-[112px] justify-center text-muted-foreground"
       >
         —
       </span>
@@ -34,7 +34,7 @@ export function TargetPill({ target, percent, formatter, bold = false }: TargetP
   return (
     <span
       className={cn(
-        'relative inline-flex w-[112px] items-center justify-center overflow-hidden rounded-full border px-2 py-0.5 font-mono text-xs tabular-nums',
+        'relative flex w-full min-w-[112px] items-center justify-center overflow-hidden whitespace-nowrap rounded-full border px-2.5 py-0.5 font-mono text-xs tabular-nums',
         bold && 'font-semibold',
         complete
           ? 'border-emerald-500/40 text-emerald-700 dark:text-emerald-300'
