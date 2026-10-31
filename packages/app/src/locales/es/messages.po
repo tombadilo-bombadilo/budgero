@@ -511,6 +511,12 @@ msgstr "{0} puede iniciar sesión de nuevo"
 msgid "{0} cannot log in"
 msgstr "{0} no puede iniciar sesión"
 
+#. placeholder {0}: data.current.mutation_version
+#. placeholder {0}: entry.mutation_version
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "{0} changes"
+msgstr "{0} cambios"
+
 #. placeholder {0}: hasRequiredColumns ? t`Update` : t`Add`
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "{0} Chart"
@@ -4192,7 +4198,9 @@ msgstr "Ideal para documentos (~6GB)"
 
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 #: src/pages/settings/bank-sync/BankSyncPage.tsx
+#: src/pages/settings/SyncStatusPage.tsx
 msgid "Beta"
 msgstr "Beta"
 
@@ -4696,6 +4704,7 @@ msgstr "Dólar canadiense"
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 #: src/features/subscription/ui/ExportDataCard.tsx
 #: src/features/transactions/api/useTransferConversion.tsx
 #: src/features/transactions/ui/add-transaction/AddTransactionForm.tsx
@@ -5828,6 +5837,10 @@ msgstr "Ruta copiada"
 msgid "Copied!"
 msgstr "¡Copiado!"
 
+#: src/pages/settings/SnapshotHistoryPage.tsx
+msgid "Copies of this workspace kept by the server, to undo a sync problem."
+msgstr "Copias de este espacio de trabajo que guarda el servidor para deshacer un problema de sincronización."
+
 #: src/features/bank-sync/ui/EnableBankingSetupCard.tsx
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Copy"
@@ -6053,6 +6066,10 @@ msgstr "No se ha podido contactar con YNAB. Revisa tu conexión e inténtalo de 
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
 msgid "Couldn't resolve this match"
 msgstr "No se pudo resolver esta coincidencia"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Couldn't restore this version"
+msgstr "No se pudo restaurar esta versión"
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Couldn't save the settings"
@@ -6457,6 +6474,10 @@ msgstr "Racha actual"
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "Current Streak:"
 msgstr "Racha actual:"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Current version"
+msgstr "Versión actual"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Currently Available"
@@ -7293,6 +7314,24 @@ msgstr "Cada línea dividida necesita una categoría. Asigna una categoría a ca
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Each split line needs either an inflow or an outflow amount."
 msgstr "Cada línea dividida necesita un importe de ingreso o de gasto."
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Earlier version restored"
+msgstr "Versión anterior restaurada"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#: src/pages/settings/SnapshotHistoryPage.tsx
+#: src/shared/model/nav-registry.ts
+msgid "Earlier versions"
+msgstr "Versiones anteriores"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Earlier versions are not available right now."
+msgstr "Las versiones anteriores no están disponibles en este momento."
+
+#: src/pages/settings/SyncStatusPage.tsx
+msgid "Earlier versions of this workspace"
+msgstr "Versiones anteriores de este espacio de trabajo"
 
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetCategoryRow.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
@@ -9339,6 +9378,10 @@ msgstr "Limitaciones de importación"
 msgid "Import my budget →"
 msgstr "Importar mi presupuesto →"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Import or restore"
+msgstr "Importación o restauración"
+
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Import pending transactions"
 msgstr "Importar transacciones pendientes"
@@ -10472,6 +10515,7 @@ msgstr "Cargando..."
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Loading…"
@@ -10545,6 +10589,10 @@ msgstr "Oscuro editorial de lujo con acentos de carbón y cobre cálido."
 #: src/pages/admin/admin-users/useAdminUsersState.ts
 msgid "Made {0} an admin"
 msgstr "Has hecho a {0} administrador"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "made before the master password changed"
+msgstr "creada antes del cambio de la contraseña maestra"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Make a few envelopes"
@@ -11732,6 +11780,10 @@ msgstr "No se ha encontrado fecha: se usa hoy"
 #: src/features/ai/ui/AICategorizeDialog.tsx
 msgid "No description"
 msgstr "Sin descripción"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "No earlier versions yet. One is kept each time this workspace syncs."
+msgstr "Todavía no hay versiones anteriores. Se guarda una cada vez que este espacio de trabajo se sincroniza."
 
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
 msgid "No exchange rate available"
@@ -14585,6 +14637,10 @@ msgstr "Restableciendo..."
 msgid "Resize column"
 msgstr "Redimensionar columna"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Restore"
+msgstr "Restaurar"
+
 #. placeholder {0}: run.transactionCount
 #. placeholder {1}: run.transactionCount === 1 ? '' : 's'
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
@@ -14628,6 +14684,14 @@ msgstr "La restauración no está disponible mientras tu acceso al espacio de tr
 msgid "Restore real rates"
 msgstr "Restaurar los tipos de cambio reales"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Restore this version?"
+msgstr "¿Restaurar esta versión?"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Restored copy"
+msgstr "Copia restaurada"
+
 #: src/features/budget-management/ui/create-budget-form/RestoreBackupTab.tsx
 msgid "Restoring a Budgero backup replaces all data in this workspace. Use it right after setting up Budgero Cloud or when you're ready to move your offline database into sync."
 msgstr "Restaurar una copia de seguridad de Budgero reemplaza todos los datos de este espacio de trabajo. Úsalo justo después de configurar Budgero Cloud o cuando estés listo para sincronizar tu base de datos sin conexión."
@@ -14649,6 +14713,7 @@ msgid "Restoring..."
 msgstr "Restaurando..."
 
 #: src/features/account-management/ui/DevSimulateRateMoveButton.tsx
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Restoring…"
 msgstr "Restaurando…"
 
@@ -16890,6 +16955,10 @@ msgstr "Cambiado a \"{0}\"."
 msgid "Switched to your new budget."
 msgstr "Cambiado a tu nuevo presupuesto."
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Sync"
+msgstr "Sincronización"
+
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Sync Clerk -> Budgero"
 msgstr "Sincronizar Clerk -> Budgero"
@@ -17307,6 +17376,10 @@ msgstr "El importe enviado permanece fijo. Al guardar se recalculan conjuntament
 msgid "The server has confirmed all changes from this device."
 msgstr "El servidor ha confirmado todos los cambios de este dispositivo."
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "The server keeps the last few copies of this workspace, and one a day for the past week. Restoring a copy replaces the workspace on all devices and then re-applies every change made after it, so no edits are lost. Use it when a workspace looks empty or broken after syncing."
+msgstr "El servidor guarda las últimas copias de este espacio de trabajo y una al día durante la última semana. Al restaurar una copia se reemplaza el espacio de trabajo en todos los dispositivos y luego se vuelve a aplicar cada cambio posterior, así que no se pierde ninguna edición. Úsalo cuando un espacio de trabajo parezca vacío o dañado después de sincronizar."
+
 #: src/features/category-management/lib/delete-block.ts
 msgid "The system Income category can't be deleted."
 msgstr "La categoría de sistema Ingresos no se puede eliminar."
@@ -17346,6 +17419,11 @@ msgstr "El espacio de trabajo y sus datos se han eliminado permanentemente."
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "The workspace name was updated successfully."
 msgstr "El nombre del espacio de trabajo se ha actualizado correctamente."
+
+#. placeholder {0}: formatDate(new Date(pending.became_current_at), 'PPp')
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "The workspace on all devices is replaced with the copy from {0}, then every change made after it is applied again. Download a backup first if you are unsure."
+msgstr "El espacio de trabajo se reemplaza en todos los dispositivos por la copia del {0} y luego se vuelve a aplicar cada cambio posterior. Descarga primero una copia de seguridad si no estás seguro."
 
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "The workspace owner needs to renew access"
@@ -20042,6 +20120,10 @@ msgstr "Tu nombre"
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "Your new goal has been created."
 msgstr "Tu nuevo objetivo se ha creado correctamente."
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Your other devices will reload it the next time they sync."
+msgstr "Tus otros dispositivos la volverán a cargar en la próxima sincronización."
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Your other workspaces are not affected"
