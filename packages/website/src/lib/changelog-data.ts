@@ -21,11 +21,37 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.20.4',
+    date: 'October 31, 2026',
+    summary:
+      'Budgero now saves your budget on Macs with Safari 18 and earlier, and you can see and restore earlier versions of a workspace (beta).',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Saving on Safari 18 and earlier',
+        description:
+          'On Macs with Safari before version 26 (for example on macOS Ventura), Budgero could not save its local copy of your budget, so it had to rebuild it on every start and sync could stall. It now saves through a method those Safari versions support.',
+      },
+      {
+        type: 'new',
+        title: 'Earlier versions (beta)',
+        description:
+          'Settings → Earlier versions lists the copies of your workspace the server keeps: the last few and one a day for the past week. Each one shows what it contains (transactions, accounts, categories, budgets), counted on your device. Restoring a copy puts it back on all your devices and then re-applies every change made after it, so no edits are lost.',
+      },
+      {
+        type: 'improved',
+        title: 'Fewer duplicate error reports',
+        description:
+          'A device that keeps hitting the same problem now sends one report every ten minutes instead of every minute.',
+      },
+    ],
+  },
+  {
     version: 'v1.20.3',
     date: 'October 31, 2026',
     summary:
       'A device that could not open its own copy of a workspace can no longer replace the copy on the server, and error reports now show the real cause of a failure.',
-    isLatest: true,
     items: [
       {
         type: 'fixed',
