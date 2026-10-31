@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { changedPaths, planChanges, planEvent } from './changes.mjs';
+import { changedPaths, isVersionOnlyChange, planChanges, planEvent } from './changes.mjs';
 
 const none = { app: false, website: false, server: false };
 const all = { app: true, website: true, server: true };
@@ -22,7 +22,10 @@ for (const [name, paths, expected] of [
   ['other workflows, including deletions', ['.github/workflows/release.yml', '.github/workflows/dco.yml'], none],
   ['ci workflow changes', ['.github/workflows/ci.yml'], all],
   ['ci workflow alongside other workflows', ['.github/workflows/release.yml', '.github/workflows/ci.yml'], all],
-  ['classifier changes', ['scripts/ci/changes.mjs'], all],
+  ['classifier changes (tested by the changes job itself)', ['scripts/ci/changes.mjs', 'scripts/ci/changes.test.mjs'], none],
+  ['release-only files', ['packages/server/internal/appmeta/version.txt', 'packages/app/src/features/ai/lib/knowledge/knowledge-base.generated.ts'], none],
+  ['manifests without line info still run checks', ['package.json'], all],
+  ['app manifest without line info', ['packages/app/package.json'], { ...none, app: true }],
   ['shared lockfile', ['pnpm-lock.yaml'], all],
   ['workspace manifest', ['pnpm-workspace.yaml'], all],
   ['dependency patches', ['packages/website/patches/@contentlayer2__utils@0.5.8.patch'], all],
@@ -31,6 +34,78 @@ for (const [name, paths, expected] of [
 ]) {
   test(name, () => assert.deepEqual(planChanges(paths), expected));
 }
+
+const version = ['  "version": "1.20.4",', '  "version": "1.20.5",'];
+for (const [name, paths, lines, expected] of [
+  ['release version bump', ['package.json', 'packages/app/package.json', 'packages/server/package.json', 'packages/server/internal/appmeta/version.txt', 'packages/website/src/lib/changelog-data.ts'], version, { ...none, website: true }],
+  ['dependency next to a version bump', ['packages/app/package.json'], [...version, '    "react": "19.1.1",'], { ...none, app: true }],
+  ['server manifest script change', ['packages/server/package.json'], ['    "build": "go build ./..."'], { ...none, app: true, server: true }],
+]) {
+  test(name, () => assert.deepEqual(planChanges(paths, () => lines), expected));
+}
+
+test('version-only detection', () => {
+  assert.equal(isVersionOnlyChange(version), true);
+  assert.equal(isVersionOnlyChange([]), false);
+  assert.equal(isVersionOnlyChange(null), false);
+  assert.equal(isVersionOnlyChange(['  "name": "x",']), false);
+});
+
+test('the assistant knowledge base matches the docs it is generated from', () => {
+  // Release builds fail on a stale file; catch it on the PR instead. This job
+  // has no node_modules, so run the generator on a scratch copy of its inputs
+  // with a no-op prettier and compare the generated docs, not the formatting.
+  const repo = new URL('../../', import.meta.url).pathname;
+  const file = 'packages/app/src/features/ai/lib/knowledge/knowledge-base.generated.ts';
+  const cwd = mkdtempSync(join(tmpdir(), 'budgero-kb-'));
+  const docsOf = (source) => {
+    const literal = source.split('KNOWLEDGE_DOCS: KnowledgeDoc[] =')[1].trim().replace(/;\s*$/, '');
+    return new Function(`return ${literal}`)();
+  };
+  try {
+    for (const dir of ['packages/app/scripts', 'packages/website/content/docs']) {
+      cpSync(join(repo, dir), join(cwd, dir), { recursive: true });
+    }
+    const stub = join(cwd, 'packages/app/node_modules/prettier');
+    mkdirSync(stub, { recursive: true });
+    writeFileSync(join(stub, 'package.json'), '{"name":"prettier","type":"module","main":"index.js"}');
+    writeFileSync(join(stub, 'index.js'), 'export const format = (s) => s;\nexport const resolveConfig = async () => null;\n');
+    execFileSync('node', [join(cwd, 'packages/app/scripts/build-knowledge.mjs')], { stdio: 'ignore' });
+    assert.deepEqual(
+      docsOf(readFileSync(join(repo, file), 'utf8')),
+      docsOf(readFileSync(join(cwd, file), 'utf8')),
+      'knowledge-base.generated.ts is stale: run pnpm --dir packages/app run build:knowledge'
+    );
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
+
+test('version-only manifest bumps are read from real git diffs', () => {
+  const cwd = mkdtempSync(join(tmpdir(), 'budgero-ci-test-'));
+  const git = (...args) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
+  const commit = () => {
+    git('add', '-A');
+    git('-c', 'user.name=CI Test', '-c', 'user.email=ci@example.invalid', '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture');
+    return git('rev-parse', 'HEAD');
+  };
+  const manifest = (v, extra = '') => `{\n  "name": "app",\n  "version": "${v}",\n  "scripts": {}${extra}\n}\n`;
+  try {
+    git('init', '-q');
+    mkdirSync(join(cwd, 'packages/app'), { recursive: true });
+    writeFileSync(join(cwd, 'packages/app/package.json'), manifest('1.0.0'));
+    const base = commit();
+    writeFileSync(join(cwd, 'packages/app/package.json'), manifest('1.0.1'));
+    const bump = commit();
+    assert.deepEqual(planEvent({ pull_request: { base: { sha: base }, head: { sha: bump } } }, cwd), none);
+    assert.deepEqual(planEvent({ before: base, after: bump }, cwd), none);
+    writeFileSync(join(cwd, 'packages/app/package.json'), manifest('1.0.1', ',\n  "type": "module"'));
+    const real = commit();
+    assert.deepEqual(planEvent({ before: base, after: real }, cwd), { ...none, app: true });
+  } finally {
+    rmSync(cwd, { recursive: true, force: true });
+  }
+});
 
 test('real git ranges include every PR commit, deletions, and both sides of renames', () => {
   const cwd = mkdtempSync(join(tmpdir(), 'budgero-ci-test-'));
