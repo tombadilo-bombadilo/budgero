@@ -33,7 +33,12 @@ import { DraggableCategoryRow } from './DraggableCategoryRow';
 import { CategoryGroupRow } from './CategoryGroupRow';
 import { CategoryRow } from './category-row';
 import { EmptyStateDisplay } from './EmptyStateDisplay';
-import { DesktopBudgetTableView } from './desktop-table';
+import {
+  DesktopBudgetTableView,
+  getMonthlyTarget,
+  getTargetFundedPercent,
+  type BudgetGroupTotals,
+} from './desktop-table';
 
 interface DraggableBudgetTableProps {
   data: BudgetRow[];
@@ -251,7 +256,7 @@ export function DraggableBudgetTable({
   };
 
   const groupTotals = useMemo(() => {
-    const totals = new Map<string, { assigned: number; activity: number; available: number }>();
+    const totals = new Map<string, BudgetGroupTotals>();
     const dataForTotals = unfilteredData || data;
     dataForTotals.forEach((row) => {
       if (!row.isGroup && row.parentId) {
@@ -259,6 +264,12 @@ export function DraggableBudgetTable({
         current.assigned += row.assigned;
         current.activity += row.activity;
         current.available += row.available;
+        const target = getMonthlyTarget(row);
+        if (target !== null) {
+          current.target = (current.target ?? 0) + target;
+          current.targetFunded =
+            (current.targetFunded ?? 0) + (target * getTargetFundedPercent(row)) / 100;
+        }
         totals.set(row.parentId, current);
       }
     });

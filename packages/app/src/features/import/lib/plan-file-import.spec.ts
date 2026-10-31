@@ -92,3 +92,73 @@ describe('file preview identity and destinations', () => {
     expect(row.decision).toBe('match');
   });
 });
+
+describe('amounts at the destination account scale', () => {
+  function btcOptions() {
+    const input = options();
+    input.parsedData.rows = [
+      { Date: '2026-10-01', Amount: '0.025', Payee: 'Exchange' },
+      { Date: '2026-10-02', Amount: '-0.0000085', Payee: 'Network fee' },
+    ];
+    input.accounts = [
+      { ID: 1, Name: 'Checking', Currency: 'USD' },
+      { ID: 2, Name: 'Wallet', Currency: 'BTC' },
+    ];
+    input.importConfig.defaultAccountId = 2;
+    return input;
+  }
+
+  it('plans sats for an existing BTC account and previews whole BTC', async () => {
+    const rows = await buildFileImportPreview(btcOptions());
+    expect(rows.map((row) => [row.input.inflow, row.input.outflow])).toEqual([
+      [2_500_000, 0],
+      [0, 850],
+    ]);
+    expect(rows.map((row) => row.parsed.amount)).toEqual([0.025, -0.0000085]);
+    expect(rows[0].input.currency).toBe('BTC');
+  });
+
+  it('plans sats for a new Import Account in BTC', async () => {
+    const input = btcOptions();
+    input.importConfig = { ...input.importConfig, defaultAccountId: -1, accountCurrency: 'BTC' };
+    const rows = await buildFileImportPreview(input);
+    expect(rows[1].input.outflow).toBe(850);
+    expect(rows[1].parsed.account).toBe('Import Account (new)');
+  });
+
+  it('routes rows by the Account column, each at its own scale', async () => {
+    const input = btcOptions();
+    input.parsedData.rows = [
+      { Date: '2026-10-01', Amount: '2500.50', Payee: 'Checking' },
+      { Date: '2026-10-02', Amount: '-0.0000085', Payee: 'Wallet' },
+    ];
+    input.columnMapping = {
+      ...input.columnMapping,
+      account: 'Payee',
+    } as typeof input.columnMapping;
+    const rows = await buildFileImportPreview(input);
+    expect(rows.map((row) => [row.input.accountId, row.input.inflow, row.input.outflow])).toEqual([
+      [1, 2_500_500, 0],
+      [2, 0, 850],
+    ]);
+  });
+
+  it('keeps fiat amounts and row keys exactly as before', async () => {
+    const [row] = await buildFileImportPreview(options());
+    expect([row.input.inflow, row.input.outflow]).toEqual([0, 10_000]);
+    expect(row.parsed.amount).toBe(-10);
+    const [, , index, interpretation] = JSON.parse(row.input.fileRowKey);
+    expect(index).toBe(0);
+    expect(interpretation).toEqual([
+      '2026-09-01',
+      0,
+      10_000,
+      'Coffee',
+      'Imported transaction',
+      'USD',
+      '',
+      DEFAULT_IMPORT_CONFIG.skipRows,
+      null,
+    ]);
+  });
+});

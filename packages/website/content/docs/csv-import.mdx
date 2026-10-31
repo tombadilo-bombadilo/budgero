@@ -22,6 +22,15 @@ The importer accepts more than CSV:
 
 That last one matters more than it sounds: plenty of banks only offer statements as PDFs, and table extraction means you don't need to retype them. (This is table extraction, not receipt scanning — point it at statements, not crumpled grocery receipts.)
 
+## Starting from a template
+
+No bank export, or keeping records by hand (cash, a crypto wallet, an old spreadsheet)? Start from the import template. It's also linked on the import dialog's upload screen.
+
+- [Spreadsheet template (.xlsx)](https://my.budgero.app/templates/budgero-import-template.xlsx) — a "How to use" tab, an empty "Transactions" tab and a filled-in "Example" tab. Open it in Excel, Google Sheets or Numbers, fill in the Transactions tab and download that tab as CSV.
+- [CSV template](https://my.budgero.app/templates/budgero-import-template.csv) — just the header row: `Date, Payee, Amount, Memo, Category, Account`.
+
+Date, Payee, Amount and Memo are mapped automatically when you import; pick Category and Account by hand in the mapping step. Use negative amounts for money going out. For crypto accounts, enter whole coins (for example `0.0035` BTC); Budgero stores them to 8 decimals. The template's instructions are in English.
+
 ## Mapping your file
 
 Bank exports never agree on column names, so the importer shows a preview and lets you map columns yourself:

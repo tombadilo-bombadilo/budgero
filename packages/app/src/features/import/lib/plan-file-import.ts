@@ -2,10 +2,11 @@ import { t } from '@lingui/core/macro';
 import {
   planImportRows,
   importSourceKey,
+  getCurrencyScale,
+  scaledToDecimal,
   type ImportDuplicateService,
   type DuplicateTolerance,
 } from '@budgero/core/browser';
-import { toDecimal } from '@shared/lib/currency/milli';
 import type { ParsedData, ColumnMapping, ImportConfig, PreviewRow } from '../model/types';
 
 const DEFAULT_TOLERANCE: DuplicateTolerance = { toleranceBps: 100, dayWindow: 7 };
@@ -51,21 +52,34 @@ export async function buildFileImportPreview({
   const fileHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join(
     ''
   );
-  const plans = planImportRows(parsedData.rows, columnMapping, importConfig);
-  const inputs = plans.map((plan) => {
-    const row = parsedData.rows[plan.index];
+  // The destination account (Account column match, else the default, else a
+  // new "Import Account" in importConfig.accountCurrency) decides the storage
+  // scale amounts are planned at: milliunits for fiat, sats for BTC.
+  const destinationOf = (row: Record<string, string>) => {
     const accountName = columnMapping.account ? row[columnMapping.account]?.trim() : '';
     const matches = accountName
       ? accounts?.filter((a) => a.Name.toLowerCase() === accountName.toLowerCase())
       : [];
     const destinationId = matches?.length === 1 ? matches[0].ID : importConfig.defaultAccountId;
     const account = accounts?.find((a) => a.ID === destinationId);
+    return {
+      accountName,
+      destinationId,
+      account,
+      currency: account?.Currency ?? importConfig.accountCurrency,
+    };
+  };
+  const plans = planImportRows(parsedData.rows, columnMapping, importConfig, (row) =>
+    getCurrencyScale(destinationOf(row).currency)
+  );
+  const inputs = plans.map((plan) => {
+    const row = parsedData.rows[plan.index];
+    const { accountName, destinationId, account, currency } = destinationOf(row);
     const valid = plan.status === 'ready' && !skippedRowIndices.has(plan.index);
     if (valid && !account && destinationId !== -1)
       throw new Error(
         t`Choose a destination account in Configuration for row ${plan.index + 1}${accountName ? ` (${accountName})` : ''}.`
       );
-    const currency = account?.Currency ?? importConfig.accountCurrency;
     if (
       valid &&
       (parsedData.source.type === 'ofx' || parsedData.source.type === 'camt') &&
@@ -113,7 +127,7 @@ export async function buildFileImportPreview({
     errors: plans[index].errors,
     parsed: {
       date: input.date,
-      amount: toDecimal(input.inflow) - toDecimal(input.outflow),
+      amount: scaledToDecimal(input.inflow - input.outflow, input.currency),
       payee: input.payee,
       memo: input.memo,
       account: accounts?.find((a) => a.ID === input.accountId)?.Name ?? 'Import Account (new)',

@@ -781,51 +781,6 @@ export function buildPlanVsReality(inputs: PlanMonthInput[]): PlanVsReality {
   return { months, categories, totalAssigned, totalSpent, monthsOnPlan };
 }
 
-export interface GoalCoverageRow {
-  goalId: number;
-  categoryId: number;
-  categoryName: string;
-  /** 'monthly' kinds expect target × months in the period; others expect target once. */
-  isMonthly: boolean;
-  target: number;
-  expected: number;
-  funded: number;
-  /** funded / expected, clamped to [0, +∞). */
-  coverage: number;
-}
-
-/**
- * Funding coverage per goal over the report period: how much was assigned to
- * the goal's category vs what the goal expects. Monthly goal types expect
- * their target every month; yearly/target-date goals expect the target once.
- * An honest period-scoped view, not the app's full goal-cycle math.
- */
-export function buildGoalCoverage(
-  goals: { id: number; categoryId: number; type: string; target: number }[],
-  assignedByCategory: Map<number, number>,
-  categoryNames: Map<number, string>,
-  monthCount: number
-): GoalCoverageRow[] {
-  return goals
-    .filter((goal) => goal.target > 0)
-    .map((goal) => {
-      const isMonthly = goal.type === 'monthly' || goal.type === 'monthly-savings';
-      const expected = isMonthly ? goal.target * Math.max(1, monthCount) : goal.target;
-      const funded = Math.max(0, assignedByCategory.get(goal.categoryId) ?? 0);
-      return {
-        goalId: goal.id,
-        categoryId: goal.categoryId,
-        categoryName: categoryNames.get(goal.categoryId) ?? `Category ${goal.categoryId}`,
-        isMonthly,
-        target: goal.target,
-        expected,
-        funded,
-        coverage: expected > 0 ? funded / expected : 0,
-      };
-    })
-    .sort((a, b) => a.coverage - b.coverage);
-}
-
 // ---------------------------------------------------------------------------
 // Scenario planner (stress-test projection)
 

@@ -27,10 +27,16 @@ import { CCPaymentCoverPopover } from '@features/budget-planning/ui/category-row
 import { CoverOverspendingPopover } from '@features/budget-planning/ui/category-row/CoverOverspendingPopover';
 import { overspendTone } from '@features/budget-planning/ui/category-row/category-row.utils';
 import { AvailableInfoPopover } from '@features/budget-planning/ui/AvailableInfoPopover';
-import { getAvailableColorByGoalStatus, shouldPreventRowSelection } from './utils';
+import {
+  getAvailableColorByGoalStatus,
+  getMonthlyTarget,
+  getTargetFundedPercent,
+  shouldPreventRowSelection,
+} from './utils';
 import { useSortableDragHandle } from './useSortableDragHandle';
 import type { DesktopBudgetCategoryRowProps } from './types';
 import { PlanningAnimatedNumber } from '../PlanningNumberAnimation';
+import { TargetPill } from './TargetPill';
 
 export function DesktopBudgetCategoryRow({
   row,
@@ -48,6 +54,7 @@ export function DesktopBudgetCategoryRow({
   dragHandleProps,
   selectable,
   compact = false,
+  showTarget = false,
 }: DesktopBudgetCategoryRowProps) {
   const { t } = useLingui();
 
@@ -67,6 +74,7 @@ export function DesktopBudgetCategoryRow({
   const rowMinH = compact ? 'min-h-6' : 'min-h-[28px]';
 
   const isAssignmentHighlighted = highlightAssignmentCategoryId === row.categoryId;
+  const monthlyTarget = showTarget ? getMonthlyTarget(row) : null;
 
   const goalProgress = useMemo(() => {
     if (!row.goal) return null;
@@ -330,7 +338,7 @@ export function DesktopBudgetCategoryRow({
           <ExternalLink className="h-3 w-3 text-muted-foreground" />
         </button>
       </TableCell>
-      <TableCell className="align-middle text-right pr-6 py-1.5">
+      <TableCell className={cn('align-middle text-right py-1.5', !showTarget && 'pr-6')}>
         <div className={`flex ${rowMinH} items-center justify-end gap-2`}>
           {row.available > 0 && row.fundingBreakdown !== undefined ? (
             <CCPaymentCoverPopover
@@ -447,6 +455,20 @@ export function DesktopBudgetCategoryRow({
           />
         </div>
       </TableCell>
+      {showTarget && (
+        <TableCell className="align-middle text-right pr-6 py-1.5">
+          <div
+            className={`inline-flex ${rowMinH} w-full items-center justify-end`}
+            data-testid={`target-${row.name.toLowerCase().replace(/\s+/g, '-')}`}
+          >
+            <TargetPill
+              target={monthlyTarget}
+              percent={getTargetFundedPercent(row)}
+              formatter={formatAmount}
+            />
+          </div>
+        </TableCell>
+      )}
     </TableRow>
   );
 }

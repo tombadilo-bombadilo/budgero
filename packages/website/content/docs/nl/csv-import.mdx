@@ -22,6 +22,15 @@ De importer accepteert meer dan alleen CSV:
 
 Die laatste is belangrijker dan het klinkt: heel wat banken bieden afschriften alleen als PDF aan, en tabelextractie betekent dat je ze niet hoeft over te typen. (Dit is tabelextractie, geen bonnetjes scannen — richt het op afschriften, niet op verfrommelde kassabonnetjes.)
 
+## Beginnen met een sjabloon
+
+Geen bankexport, of houd je alles met de hand bij (contant geld, een cryptowallet, een oude spreadsheet)? Begin met het importsjabloon. Het staat ook in het uploadscherm van het importvenster.
+
+- [Spreadsheetsjabloon (.xlsx)](https://my.budgero.app/templates/budgero-import-template.xlsx) — een tabblad "How to use", een leeg tabblad "Transactions" en een ingevuld tabblad "Example". Open het in Excel, Google Sheets of Numbers, vul het tabblad Transactions in en download dat tabblad als CSV.
+- [CSV-sjabloon](https://my.budgero.app/templates/budgero-import-template.csv) — alleen de kopregel: `Date, Payee, Amount, Memo, Category, Account`.
+
+Date, Payee, Amount en Memo worden bij het importeren automatisch gekoppeld; Category en Account kies je zelf in de koppelstap. Gebruik negatieve bedragen voor geld dat eruit gaat. Voor cryptorekeningen vul je hele munten in (bijvoorbeeld `0.0035` BTC); Budgero bewaart ze tot op 8 decimalen. De uitleg in het sjabloon is in het Engels.
+
 ## Je bestand koppelen
 
 Bankexports gebruiken nooit dezelfde kolomnamen, dus de importer toont een voorbeeld en laat je de kolommen zelf koppelen:

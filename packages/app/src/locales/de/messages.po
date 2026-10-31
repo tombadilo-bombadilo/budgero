@@ -62,8 +62,8 @@ msgid " (suggested)"
 msgstr " (vorgeschlagen)"
 
 #: src/pages/analytics/reports/PlanRealityReport.tsx
-msgid " (target × months)"
-msgstr " (Ziel × Monate)"
+#~ msgid " (target × months)"
+#~ msgstr " (Ziel × Monate)"
 
 #. placeholder {0}: inUse.length === 1 ? 'One of them is' : `${inUse.length} of them are`
 #. placeholder {1}: affected.toLocaleString()
@@ -679,8 +679,8 @@ msgstr "{0} von {1} Werten exakt"
 #. placeholder {1}: money.amount(goal.expected)
 #. placeholder {2}: goal.isMonthly ? t` (target × months)` : ''
 #: src/pages/analytics/reports/PlanRealityReport.tsx
-msgid "{0} of {1}{2}"
-msgstr "{0} von {1}{2}"
+#~ msgid "{0} of {1}{2}"
+#~ msgstr "{0} von {1}{2}"
 
 #. placeholder {0}: v.pings
 #. placeholder {1}: v.days
@@ -1024,6 +1024,22 @@ msgstr "{duration} Mon."
 #: src/app/startup/screens.tsx
 msgid "{first}'s Budget Space"
 msgstr "{first}s Budget-Bereich"
+
+#: src/pages/analytics/components/GoalFundingList.tsx
+msgid "{funded} of {target}"
+msgstr "{funded} von {target}"
+
+#: src/pages/analytics/components/GoalFundingList.tsx
+msgid "{funded} of {target} · met {monthsMet}/{monthsWithTarget} mo"
+msgstr "{funded} von {target} · erreicht {monthsMet}/{monthsWithTarget} Mon."
+
+#: src/features/budget-planning/ui/desktop-table/TargetPill.tsx
+msgid "{funded}% funded"
+msgstr "{funded} % finanziert"
+
+#: src/pages/analytics/components/GoalFundingList.tsx
+msgid "{groupFunded} of {groupTarget}"
+msgstr "{groupFunded} von {groupTarget}"
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "{horizon} months"
@@ -3828,6 +3844,7 @@ msgstr "Zum Erreichen des Ziels zuweisen"
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Assigned"
 msgstr "Zugewiesen"
@@ -4888,6 +4905,7 @@ msgstr "Kategorien, die \"{0}\" entsprechen"
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Category"
 msgstr "Kategorie"
@@ -5519,6 +5537,7 @@ msgstr "Gemeinsame Arbeitsbereiche"
 msgid "Collapse"
 msgstr "Einklappen"
 
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Collapse all"
 msgstr "Alle einklappen"
@@ -7340,6 +7359,10 @@ msgstr "Jede Kategoriengruppe auf der Planungsseite zeigt neben ihrer zugewiesen
 msgid "Each link contains a one-time secret that unlocks your shared workspace. <0>Budgero never sees it</0> — but whatever channel you use to share will. For the strongest privacy, hand the link off in person or through an end-to-end encrypted app (Signal, iMessage, WhatsApp). Plain email works too — just remember your email provider can read what you send."
 msgstr "Jeder Link enthält ein einmaliges Geheimnis, das deinen freigegebenen Arbeitsbereich entsperrt. <0>Budgero sieht es nie</0> — aber der Kanal, den du zum Teilen verwendest, schon. Für maximale Privatsphäre übergib den Link persönlich oder über eine Ende-zu-Ende-verschlüsselte App (Signal, iMessage, WhatsApp). Normale E-Mail funktioniert auch — denk nur daran, dass dein E-Mail-Anbieter mitlesen kann, was du sendest."
 
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Each month's goal target added up over the period, against what you assigned and spent."
+msgstr "Das Ziel jedes Monats über den Zeitraum summiert, verglichen mit Zugewiesenem und Ausgegebenem."
+
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Each row is a signup cohort. Cells show the % of that cohort active on day N after signup. Look for cliffs (every cohort drops at the same day) and cross-cohort drift (recent cohorts retaining better or worse than older ones). Daily cohorts are noisy at low signup volume — switch to weekly if rows look jagged."
 msgstr "Jede Zeile ist eine Anmelde-Kohorte. Die Zellen zeigen den Prozentsatz der Kohorte, der an Tag N nach der Anmeldung aktiv ist. Achte auf Abbrüche (jede Kohorte bricht am selben Tag ab) und kohortenübergreifende Trends (neuere Kohorten schneiden besser oder schlechter ab als ältere). Tägliche Kohorten sind bei geringem Anmeldevolumen verrauscht – wechsle zu wöchentlichen, wenn die Zeilen unruhig wirken."
@@ -7927,7 +7950,7 @@ msgstr "Ausführung fehlgeschlagen"
 
 #. placeholder {0}: candidate.id
 #. placeholder {1}: candidate.date
-#. placeholder {2}: (candidate.inflow - candidate.outflow) / 1000
+#. placeholder {2}: scaledToDecimal( candidate.inflow - candidate.outflow, row.input.currency )
 #. placeholder {3}: row.input.currency
 #. placeholder {4}: candidate.payee
 #. placeholder {5}: candidate.memo
@@ -7951,6 +7974,7 @@ msgstr "Exo 2"
 msgid "Expand"
 msgstr "Ausklappen"
 
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Expand all"
 msgstr "Alle ausklappen"
@@ -9167,6 +9191,10 @@ msgstr "Passwort verbergen"
 #: src/features/chat/ui/chat-panel/ChatHeader.tsx
 msgid "Hide sidebar"
 msgstr "Seitenleiste ausblenden"
+
+#: src/features/budgeting/ui/BudgetToolbar.tsx
+msgid "Hide target column"
+msgstr "Zielspalte ausblenden"
 
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 msgid "Hide upcoming"
@@ -11139,6 +11167,10 @@ msgstr "Monatliches Ziel"
 msgid "months"
 msgstr "Monate"
 
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Months met"
+msgstr "Monate erreicht"
+
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Months on plan"
 msgstr "Monate im Plan"
@@ -11150,6 +11182,10 @@ msgstr "Verbleibende Monate:"
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
 msgid "months starting from:"
 msgstr "Monate ab:"
+
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Months the target was fully funded"
+msgstr "Monate, in denen das Ziel vollständig finanziert war"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Montserrat"
@@ -11327,6 +11363,10 @@ msgstr "Zum verfügbaren Zielbetrag fehlen noch {needed}"
 #: src/pages/onboarding/steps/CurrencyStep.tsx
 msgid "NEED A DIFFERENT CURRENCY?"
 msgstr "ANDERE WÄHRUNG BENÖTIGT?"
+
+#: src/features/import/ui/steps/UploadStep.tsx
+msgid "Need a template? <0>Spreadsheet template (.xlsx)</0> · <1>CSV template</1>"
+msgstr "Brauchst du eine Vorlage? <0>Tabellenvorlage (.xlsx)</0> · <1>CSV-Vorlage</1>"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Need an account? <0>Sign up</0>"
@@ -11725,6 +11765,10 @@ msgstr "Keine Kategorien gefunden!"
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "No categories found."
 msgstr "Keine Kategorien gefunden."
+
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "No categories in this period."
+msgstr "Keine Kategorien in diesem Zeitraum."
 
 #: src/features/ai/ui/AICategorizeDialog.tsx
 msgid "No categories to apply"
@@ -16155,6 +16199,10 @@ msgstr "Prioritätsabzeichen anzeigen"
 msgid "Show sidebar"
 msgstr "Seitenleiste anzeigen"
 
+#: src/features/budgeting/ui/BudgetToolbar.tsx
+msgid "Show target column"
+msgstr "Zielspalte anzeigen"
+
 #: src/features/transactions/ui/SchedulingGuideDialog.tsx
 msgid "Show the next 30 days"
 msgstr "Die nächsten 30 Tage zeigen"
@@ -16551,6 +16599,7 @@ msgstr "Ausgabenanteile"
 msgid "Spending this month"
 msgstr "Ausgaben diesen Monat"
 
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Spent"
 msgstr "Ausgegeben"
@@ -17101,6 +17150,12 @@ msgstr "Foto aufnehmen"
 msgid "Takes about 2 minutes"
 msgstr "Dauert ca. 2 Minuten"
 
+#: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
+#: src/features/budgeting/ui/BudgetToolbar.tsx
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Target"
+msgstr "Ziel"
+
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Target Amount"
 msgstr "Zielbetrag"
@@ -17163,6 +17218,10 @@ msgstr "Ziel: {target} zuweisen bis {targetDate}"
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "Target<0/>%"
 msgstr "Ziel<0/>%"
+
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "Targets"
+msgstr "Ziele"
 
 #: src/pages/settings/push-api/EncryptionInfoPanel.tsx
 msgid "Technical details for encrypting your payloads."
@@ -17661,6 +17720,10 @@ msgstr "Diese Verbindlichkeit hat nun einen positiven Saldo. Es ist momentan nic
 msgid "This month"
 msgstr "Diesen Monat"
 
+#: src/pages/analytics/components/TargetTable.tsx
+msgid "This month's goal targets against what you assigned and spent."
+msgstr "Die Ziele dieses Monats verglichen mit Zugewiesenem und Ausgegebenem."
+
 #: src/pages/onboarding/steps/ZbbStep.tsx
 msgid "THIS MONTH'S PAYCHECK"
 msgstr "GEHALT DIESEN MONAT"
@@ -17999,6 +18062,7 @@ msgid "Top payees by spending (30d)"
 msgstr "Top-Empfänger nach Ausgaben (30 Tage)"
 
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
+#: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx

@@ -72,7 +72,7 @@ export function BudgetingPageMobile() {
 
   return (
     <div className="flex h-[calc(100dvh-6rem)] flex-col p-4">
-      <Card className="flex-1 min-h-0 overflow-hidden">
+      <Card className="flex-1 min-h-0 overflow-hidden py-0">
         <CardContent className="h-full px-0 overflow-hidden">
           <div className="h-full overflow-y-auto pb-24">
             <BudgetTable

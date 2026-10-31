@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { Eye, EyeOff, ChevronUp, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, ChevronUp, ChevronDown, Target } from 'lucide-react';
 import { AssignDropdown } from '@features/budget-planning/ui/assign-dropdown';
 import { SearchAndFilterControls } from '@features/budget-planning/ui/SearchAndFilterControls';
 import type { BudgetTableToolbarControls } from '@features/budget-planning/ui/BudgetTable';
@@ -37,6 +37,9 @@ interface BudgetToolbarProps {
   showHiddenCategories?: boolean;
   onToggleHiddenCategories?: () => void;
   hasHiddenCategories?: boolean;
+  /** Desktop table only: show/hide the goal Target column. */
+  showTargetColumn?: boolean;
+  onToggleTargetColumn?: () => void;
 }
 
 export function BudgetToolbar({
@@ -60,6 +63,8 @@ export function BudgetToolbar({
   showHiddenCategories = false,
   onToggleHiddenCategories,
   hasHiddenCategories = false,
+  showTargetColumn = false,
+  onToggleTargetColumn,
 }: BudgetToolbarProps) {
   const { t } = useLingui();
 
@@ -261,33 +266,53 @@ export function BudgetToolbar({
             disableSticky
             inlineFilterOnDesktop
             extraButtons={
-              hasHiddenCategories && onToggleHiddenCategories ? (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={onToggleHiddenCategories}
-                  className="h-8 shrink-0 gap-1.5 rounded-lg px-2.5 text-xs text-muted-foreground"
-                  title={
-                    showHiddenCategories ? t`Hide hidden categories` : t`Show hidden categories`
-                  }
-                >
-                  {showHiddenCategories ? (
-                    <>
-                      <EyeOff className="h-3.5 w-3.5" />
-                      <span className="hidden xl:inline">
-                        <Trans>Hide hidden</Trans>
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <Eye className="h-3.5 w-3.5" />
-                      <span className="hidden xl:inline">
-                        <Trans>Show hidden</Trans>
-                      </span>
-                    </>
-                  )}
-                </Button>
-              ) : null
+              <>
+                {onToggleTargetColumn ? (
+                  <Button
+                    variant={showTargetColumn ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={onToggleTargetColumn}
+                    className={cn(
+                      'h-8 shrink-0 gap-1.5 rounded-lg px-2.5 text-xs',
+                      !showTargetColumn && 'text-muted-foreground'
+                    )}
+                    title={showTargetColumn ? t`Hide target column` : t`Show target column`}
+                    aria-pressed={showTargetColumn}
+                  >
+                    <Target className="h-3.5 w-3.5" />
+                    <span className="hidden xl:inline">
+                      <Trans>Target</Trans>
+                    </span>
+                  </Button>
+                ) : null}
+                {hasHiddenCategories && onToggleHiddenCategories ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onToggleHiddenCategories}
+                    className="h-8 shrink-0 gap-1.5 rounded-lg px-2.5 text-xs text-muted-foreground"
+                    title={
+                      showHiddenCategories ? t`Hide hidden categories` : t`Show hidden categories`
+                    }
+                  >
+                    {showHiddenCategories ? (
+                      <>
+                        <EyeOff className="h-3.5 w-3.5" />
+                        <span className="hidden xl:inline">
+                          <Trans>Hide hidden</Trans>
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-3.5 w-3.5" />
+                        <span className="hidden xl:inline">
+                          <Trans>Show hidden</Trans>
+                        </span>
+                      </>
+                    )}
+                  </Button>
+                ) : null}
+              </>
             }
           />
         </div>

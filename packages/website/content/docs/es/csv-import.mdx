@@ -22,6 +22,15 @@ El importador acepta más que solo CSV:
 
 Ese último punto importa más de lo que parece: muchos bancos solo ofrecen extractos en PDF, y la extracción de tablas significa que no tienes que volver a teclearlos. (Esto es extracción de tablas, no escaneado de recibos — apúntalo a extractos, no a tickets de compra arrugados.)
 
+## Empezar con una plantilla
+
+¿No tienes una exportación del banco o llevas registros a mano (efectivo, una billetera cripto, una hoja de cálculo antigua)? Empieza con la plantilla de importación. También está enlazada en la pantalla de carga del diálogo de importación.
+
+- [Plantilla de hoja de cálculo (.xlsx)](https://my.budgero.app/templates/budgero-import-template.xlsx) — una pestaña "How to use", una pestaña "Transactions" vacía y una pestaña "Example" ya rellenada. Ábrela en Excel, Google Sheets o Numbers, rellena la pestaña Transactions y descarga esa pestaña como CSV.
+- [Plantilla CSV](https://my.budgero.app/templates/budgero-import-template.csv) — solo la fila de encabezados: `Date, Payee, Amount, Memo, Category, Account`.
+
+Date, Payee, Amount y Memo se asignan automáticamente al importar; Category y Account los eliges a mano en el paso de mapeo. Usa importes negativos para el dinero que sale. En cuentas cripto, escribe monedas enteras (por ejemplo `0.0035` BTC); Budgero las guarda con 8 decimales. Las instrucciones de la plantilla están en inglés.
+
 ## Mapeo de tu archivo
 
 Las exportaciones bancarias nunca se ponen de acuerdo en los nombres de las columnas, así que el importador muestra una vista previa y te permite mapear las columnas tú mismo:

@@ -90,6 +90,7 @@ const COMPACT_MOBILE_LAYOUT_KEY = 'budgero:compact-mobile-layout';
 const MOBILE_BUDGET_LAYOUT_KEY = 'budgero:mobile-budget-layout';
 const LEGACY_COMPACT_MOBILE_TABLE_KEY = 'budgero:compact-mobile-table';
 const HOME_PAGE_STORAGE_KEY = 'budgero:home-page';
+const BUDGET_TARGET_COLUMN_KEY = 'budgero:budget-target-column';
 
 /**
  * Read a persisted UI preference. `validate` maps the raw stored string to a
@@ -233,6 +234,10 @@ interface UiState {
 
   showHiddenCategories: boolean;
   setShowHiddenCategories: (show: boolean) => void;
+
+  // Goal target column on the desktop planning table (this device only)
+  showBudgetTargetColumn: boolean;
+  toggleBudgetTargetColumn: () => void;
 
   // Privacy mode - masks visible numeric digits across the UI
   privacyMaskNumbers: boolean;
@@ -445,6 +450,18 @@ export const useUiStore = create<UiState>((set) => ({
 
   showHiddenCategories: false,
   setShowHiddenCategories: (show) => set({ showHiddenCategories: show }),
+
+  showBudgetTargetColumn: readStoredPref(
+    BUDGET_TARGET_COLUMN_KEY,
+    (stored) => stored === '1',
+    false
+  ),
+  toggleBudgetTargetColumn: () =>
+    set((state) => {
+      const next = !state.showBudgetTargetColumn;
+      writeStoredPref(BUDGET_TARGET_COLUMN_KEY, next ? '1' : null);
+      return { showBudgetTargetColumn: next };
+    }),
 
   // Privacy mode (session-only, non-persistent)
   privacyMaskNumbers: false,

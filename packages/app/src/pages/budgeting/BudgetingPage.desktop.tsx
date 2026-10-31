@@ -36,6 +36,8 @@ export function BudgetingPageDesktop() {
   const desktopBudgetLayout = useUiStore((state) => state.desktopBudgetLayout);
   const showHiddenCategories = useUiStore((state) => state.showHiddenCategories);
   const setShowHiddenCategories = useUiStore((state) => state.setShowHiddenCategories);
+  const showTargetColumn = useUiStore((state) => state.showBudgetTargetColumn);
+  const toggleTargetColumn = useUiStore((state) => state.toggleBudgetTargetColumn);
 
   const focusCategoryId = useFocusCategoryFromNavState();
 
@@ -234,7 +236,7 @@ export function BudgetingPageDesktop() {
   return (
     <div className="p-6">
       <div className="grid gap-4 min-[1020px]:grid-cols-[1fr_340px] min-[1020px]:items-stretch min-[1020px]:h-[calc(100dvh-var(--app-topbar-height,6.5rem))]">
-        <Card className="min-w-0 flex flex-col min-h-0 h-full overflow-hidden">
+        <Card className="min-w-0 flex flex-col min-h-0 h-full overflow-hidden pt-0 pb-2">
           <CardContent className="px-0 flex-1 min-h-0 h-full overflow-hidden">
             <ScrollArea className="h-full">
               <BudgetTable
@@ -266,6 +268,10 @@ export function BudgetingPageDesktop() {
                     showHiddenCategories={showHiddenCategories}
                     onToggleHiddenCategories={() => setShowHiddenCategories(!showHiddenCategories)}
                     hasHiddenCategories={hasHiddenCategories}
+                    showTargetColumn={showTargetColumn}
+                    onToggleTargetColumn={
+                      desktopBudgetLayout === 'table' ? toggleTargetColumn : undefined
+                    }
                   />
                 )}
               />

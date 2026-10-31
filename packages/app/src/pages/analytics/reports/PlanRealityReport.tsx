@@ -3,12 +3,14 @@ import { useMemo } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { EChart } from '@shared/ui/echart';
 import { AnimatedNumber } from '@shared/ui/animated-number';
-import { useGoals } from '@entities/goal/api/useGoals';
-import { cn } from '@shared/lib/utils';
 import { trendTextClass } from '@shared/lib/amount-color';
-import { buildGoalCoverage, buildPlanVsReality } from '../analytics-model';
+import { buildPlanVsReality } from '../analytics-model';
+import { GoalFundingList } from '../components/GoalFundingList';
 import { planInsights } from '../insights';
 import { usePlanData } from '../usePlanData';
+import { useTargetData } from '../useTargetData';
+import { buildTargetReport } from '../target-report';
+import { TargetTable } from '../components/TargetTable';
 import type { AnalyticsData } from '../useAnalyticsData';
 import {
   BASE_GRID,
@@ -41,33 +43,10 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
   const palette = usePalette();
   const money = useMoneyFormatters();
   const { data: planInputs, isLoading: planLoading } = usePlanData(months, data.budgetId);
-  const { data: goals } = useGoals(data.budgetId);
 
   const plan = useMemo(() => buildPlanVsReality(planInputs ?? []), [planInputs]);
-
-  const goalRows = useMemo(() => {
-    if (!goals || goals.length === 0) return [];
-    const assignedByCategory = new Map<number, number>();
-    for (const month of planInputs ?? []) {
-      for (const row of month.rows) {
-        assignedByCategory.set(
-          row.categoryId,
-          (assignedByCategory.get(row.categoryId) ?? 0) + row.assigned
-        );
-      }
-    }
-    return buildGoalCoverage(
-      goals.map((goal) => ({
-        id: goal.ID,
-        categoryId: goal.CategoryID,
-        type: goal.Type,
-        target: goal.Target,
-      })),
-      assignedByCategory,
-      new Map(data.categories.map((category) => [category.id, category.name])),
-      months.length
-    );
-  }, [goals, planInputs, data.categories, months.length]);
+  const { data: targetInputs, isLoading: targetLoading } = useTargetData(months, data.budgetId);
+  const targetReport = useMemo(() => buildTargetReport(targetInputs ?? []), [targetInputs]);
 
   const planColor = palette.series[0];
   const spentColor = palette.flow.negative;
@@ -151,143 +130,121 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
   );
 
   return (
-    <ReportShell
-      title={t`Plan vs Reality`}
-      hero={
-        <AnimatedNumber
-          value={slack}
-          formatter={(value) =>
-            `${value >= 0 ? '+' : ''}${money.amount(value)} ${value >= 0 ? 'under' : 'over'} plan`
-          }
-          rounding="integer"
-        />
-      }
-      heroClassName={trendTextClass(slack)}
-      subtitle={t`What you assigned vs what actually happened — only possible because you budget`}
-      insights={<InsightStrip insights={insights} />}
-      legend={
-        <LegendChips
-          items={[
-            { color: planColor, label: t`Assigned` },
-            { color: palette.chrome.other, label: t`Spent (within plan)` },
-            { color: spentColor, label: t`Spent (over plan)` },
-          ]}
-        />
-      }
-      chart={<EChart option={option} ariaLabel="Assigned versus spent per month" />}
-      isLoading={data.isLoading || planLoading}
-      isEmpty={isEmpty}
-      emptyText={t`No assignments in this period — assign money on the Planning page first.`}
-      panel={
-        <>
-          <div className="grid grid-cols-2 gap-2">
-            <StatTile label={t`Assigned`} value={money.tile(plan.totalAssigned)} />
-            <StatTile
-              label={t`Spent`}
-              value={money.tile(plan.totalSpent)}
-              detail={
-                plan.totalAssigned > 0
-                  ? `${Math.round((plan.totalSpent / plan.totalAssigned) * 100)}% of plan`
-                  : undefined
-              }
-            />
-            <StatTile
-              label={t`Months on plan`}
-              value={`${Math.round(plan.monthsOnPlan * 100)}%`}
-              valueClassName={
-                plan.monthsOnPlan >= 0.5 ? 'text-green-600' : 'text-red-600 dark:text-red-300'
-              }
-            />
-            <StatTile
-              label={slack >= 0 ? t`Left in plan` : t`Over plan`}
-              value={money.tile(Math.abs(slack))}
-              valueClassName={trendTextClass(slack)}
-            />
-          </div>
+    <div className="space-y-4">
+      <ReportShell
+        title={t`Plan vs Reality`}
+        hero={
+          <AnimatedNumber
+            value={slack}
+            formatter={(value) =>
+              `${value >= 0 ? '+' : ''}${money.amount(value)} ${value >= 0 ? 'under' : 'over'} plan`
+            }
+            rounding="integer"
+          />
+        }
+        heroClassName={trendTextClass(slack)}
+        subtitle={t`What you assigned vs what actually happened — only possible because you budget`}
+        insights={<InsightStrip insights={insights} />}
+        legend={
+          <LegendChips
+            items={[
+              { color: planColor, label: t`Assigned` },
+              { color: palette.chrome.other, label: t`Spent (within plan)` },
+              { color: spentColor, label: t`Spent (over plan)` },
+            ]}
+          />
+        }
+        chart={<EChart option={option} ariaLabel="Assigned versus spent per month" />}
+        isLoading={data.isLoading || planLoading}
+        isEmpty={isEmpty}
+        emptyText={t`No assignments in this period — assign money on the Planning page first.`}
+        panel={
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <StatTile label={t`Assigned`} value={money.tile(plan.totalAssigned)} />
+              <StatTile
+                label={t`Spent`}
+                value={money.tile(plan.totalSpent)}
+                detail={
+                  plan.totalAssigned > 0
+                    ? `${Math.round((plan.totalSpent / plan.totalAssigned) * 100)}% of plan`
+                    : undefined
+                }
+              />
+              <StatTile
+                label={t`Months on plan`}
+                value={`${Math.round(plan.monthsOnPlan * 100)}%`}
+                valueClassName={
+                  plan.monthsOnPlan >= 0.5 ? 'text-green-600' : 'text-red-600 dark:text-red-300'
+                }
+              />
+              <StatTile
+                label={slack >= 0 ? t`Left in plan` : t`Over plan`}
+                value={money.tile(Math.abs(slack))}
+                valueClassName={trendTextClass(slack)}
+              />
+            </div>
 
-          {overspenders.length > 0 ? (
-            <>
-              <PanelSectionTitle>
-                <Trans>Where the plan leaks</Trans>
-              </PanelSectionTitle>
-              <div className="divide-y divide-border/50">
-                {overspenders.map((row) => (
-                  <div
-                    key={row.categoryId}
-                    className="flex items-baseline justify-between gap-3 py-1.5"
-                  >
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="truncate text-sm font-medium">{row.name}</span>
-                        {row.chronic ? (
-                          <span className="shrink-0 rounded-full border border-red-300 px-1.5 text-[10px] font-medium uppercase tracking-wide text-red-600 dark:border-red-800 dark:text-red-300">
-                            <Trans>chronic</Trans>
-                          </span>
-                        ) : null}
+            {overspenders.length > 0 ? (
+              <>
+                <PanelSectionTitle>
+                  <Trans>Where the plan leaks</Trans>
+                </PanelSectionTitle>
+                <div className="divide-y divide-border/50">
+                  {overspenders.map((row) => (
+                    <div
+                      key={row.categoryId}
+                      className="flex items-baseline justify-between gap-3 py-1.5"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="truncate text-sm font-medium">{row.name}</span>
+                          {row.chronic ? (
+                            <span className="shrink-0 rounded-full border border-red-300 px-1.5 text-[10px] font-medium uppercase tracking-wide text-red-600 dark:border-red-800 dark:text-red-300">
+                              <Trans>chronic</Trans>
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          <Trans>
+                            {money.amount(row.spent)} of {money.amount(row.assigned)} assigned
+                            {row.monthsWithPlan > 0
+                              ? t` · over in ${row.monthsOver}/${row.monthsWithPlan} mo`
+                              : ''}
+                          </Trans>
+                        </div>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        <Trans>
-                          {money.amount(row.spent)} of {money.amount(row.assigned)} assigned
-                          {row.monthsWithPlan > 0
-                            ? t` · over in ${row.monthsOver}/${row.monthsWithPlan} mo`
-                            : ''}
-                        </Trans>
-                      </div>
+                      <span className="whitespace-nowrap text-sm font-semibold text-red-600 tabular-nums dark:text-red-300">
+                        {Math.round((row.usage ?? 0) * 100)}%
+                      </span>
                     </div>
-                    <span className="whitespace-nowrap text-sm font-semibold text-red-600 tabular-nums dark:text-red-300">
-                      {Math.round((row.usage ?? 0) * 100)}%
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </>
-          ) : null}
+                  ))}
+                </div>
+              </>
+            ) : null}
 
-          {goalRows.length > 0 ? (
-            <>
-              <PanelSectionTitle>
-                <Trans>Goal funding (this period)</Trans>
-              </PanelSectionTitle>
-              <div className="space-y-2">
-                {goalRows.map((goal) => {
-                  const pct = Math.min(1, goal.coverage);
-                  const met = goal.coverage >= 1;
-                  return (
-                    <div key={goal.goalId}>
-                      <div className="flex items-baseline justify-between gap-3">
-                        <span className="min-w-0 flex-1 truncate text-sm">{goal.categoryName}</span>
-                        <span
-                          className={cn(
-                            'whitespace-nowrap text-sm font-medium tabular-nums',
-                            met ? 'text-green-600' : 'text-muted-foreground'
-                          )}
-                        >
-                          {Math.round(goal.coverage * 100)}%
-                        </span>
-                      </div>
-                      <div className="mt-1 h-1 rounded-full bg-muted">
-                        <div
-                          className="h-1 rounded-full"
-                          style={{
-                            width: `${Math.max(2, pct * 100)}%`,
-                            backgroundColor: met ? palette.flow.positive : palette.series[0],
-                          }}
-                        />
-                      </div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">
-                        <Trans>
-                          {money.amount(goal.funded)} of {money.amount(goal.expected)}
-                          {goal.isMonthly ? t` (target × months)` : ''}
-                        </Trans>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : null}
-        </>
-      }
-    />
+            {targetReport.groups.some((group) => group.target) ? (
+              <>
+                <PanelSectionTitle>
+                  <Trans>Goal funding (this period)</Trans>
+                </PanelSectionTitle>
+                <GoalFundingList
+                  groups={targetReport.groups}
+                  money={money.amount}
+                  positiveColor={palette.flow.positive}
+                  progressColor={palette.series[0]}
+                />
+              </>
+            ) : null}
+          </>
+        }
+      />
+      <TargetTable
+        report={targetReport}
+        money={money.amount}
+        monthCount={months.length}
+        isLoading={data.isLoading || targetLoading}
+      />
+    </div>
   );
 }

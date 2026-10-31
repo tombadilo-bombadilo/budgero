@@ -15,6 +15,7 @@ import { useSortableDragHandle } from './useSortableDragHandle';
 import type { DesktopBudgetGroupRowProps } from './types';
 import { GroupShareBadge } from '../GroupShareBadge';
 import { PlanningAnimatedNumber } from '../PlanningNumberAnimation';
+import { TargetPill } from './TargetPill';
 
 export function DesktopBudgetGroupRow({
   row,
@@ -30,6 +31,7 @@ export function DesktopBudgetGroupRow({
   dragHandleProps,
   showGroupPercent = false,
   compact = false,
+  showTarget = false,
 }: DesktopBudgetGroupRowProps) {
   const [editingOpen, setEditingOpen] = useState(false);
   const [editingName, setEditingName] = useState(row.name);
@@ -156,7 +158,8 @@ export function DesktopBudgetGroupRow({
       </TableCell>
       <TableCell
         className={cn(
-          'text-right font-mono text-sm pr-6 font-semibold',
+          'text-right font-mono text-sm font-semibold',
+          !showTarget && 'pr-6',
           totalsAvailable < 0 ? 'text-red-600' : 'text-foreground'
         )}
       >
@@ -166,6 +169,16 @@ export function DesktopBudgetGroupRow({
           className="tabular-nums"
         />
       </TableCell>
+      {showTarget && (
+        <TableCell className="text-right pr-6">
+          <TargetPill
+            target={totals?.target ?? null}
+            percent={totals?.target ? ((totals.targetFunded ?? 0) / totals.target) * 100 : 0}
+            formatter={formatAmount}
+            bold
+          />
+        </TableCell>
+      )}
     </TableRow>
   );
 }

@@ -5,8 +5,14 @@ export {
   SortableDesktopBudgetCategoryRow,
 } from './DesktopBudgetCategoryRow';
 export { AvailableInfoPopover } from '@features/budget-planning/ui/AvailableInfoPopover';
-export { getAvailableColorByGoalStatus, shouldPreventRowSelection } from './utils';
+export {
+  getAvailableColorByGoalStatus,
+  getMonthlyTarget,
+  getTargetFundedPercent,
+  shouldPreventRowSelection,
+} from './utils';
 export type {
+  BudgetGroupTotals,
   DesktopBudgetTableViewProps,
   DesktopBudgetGroupRowProps,
   DesktopBudgetCategoryRowProps,

@@ -22,6 +22,15 @@ L'importateur accepte bien plus que le CSV :
 
 Ce dernier point compte plus qu'il n'y paraît : de nombreuses banques ne fournissent des relevés qu'en PDF, et l'extraction de tableaux vous évite de les retaper. (Il s'agit d'extraction de tableaux, pas de numérisation de reçus — visez les relevés, pas les reçus de courses froissés.)
 
+## Partir d'un modèle
+
+Pas d'export bancaire, ou vous tenez vos comptes à la main (espèces, portefeuille crypto, ancien tableur) ? Partez du modèle d'import. Il est aussi proposé sur l'écran d'envoi de la fenêtre d'import.
+
+- [Modèle de tableur (.xlsx)](https://my.budgero.app/templates/budgero-import-template.xlsx) — un onglet « How to use », un onglet « Transactions » vide et un onglet « Example » rempli. Ouvrez-le dans Excel, Google Sheets ou Numbers, remplissez l'onglet Transactions et téléchargez cet onglet au format CSV.
+- [Modèle CSV](https://my.budgero.app/templates/budgero-import-template.csv) — uniquement la ligne d'en-têtes : `Date, Payee, Amount, Memo, Category, Account`.
+
+Date, Payee, Amount et Memo sont associés automatiquement à l'import ; choisissez Category et Account vous-même à l'étape de mappage. Saisissez les sorties d'argent en montants négatifs. Pour les comptes crypto, saisissez des unités entières (par exemple `0.0035` BTC) ; Budgero les enregistre avec 8 décimales. Les instructions du modèle sont en anglais.
+
 ## Mappage de votre fichier
 
 Les exports bancaires ne s'accordent jamais sur les noms de colonnes, l'importateur affiche donc un aperçu et vous permet de mapper les colonnes vous-même :
