@@ -1,3 +1,16 @@
+import { roundMilli } from '@shared/lib/currency/round-amount';
+import type { BudgetRow } from '../../lib/budget-transforms';
+
+/**
+ * This month's goal target for a category: the amount the goal asks for this
+ * month (the full target for monthly goals, the monthly pace for yearly and
+ * target-date goals). Null when the category has no goal.
+ */
+export function getMonthlyTarget(row: BudgetRow): number | null {
+  if (!row.goal || !row.goalProgress) return null;
+  return roundMilli(row.goalProgress.monthlyTarget);
+}
+
 export function getAvailableColorByGoalStatus(status: string): string {
   switch (status) {
     case 'completed':

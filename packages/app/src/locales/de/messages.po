@@ -9168,6 +9168,10 @@ msgstr "Passwort verbergen"
 msgid "Hide sidebar"
 msgstr "Seitenleiste ausblenden"
 
+#: src/features/budgeting/ui/BudgetToolbar.tsx
+msgid "Hide target column"
+msgstr "Zielspalte ausblenden"
+
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 msgid "Hide upcoming"
 msgstr "Anstehende ausblenden"
@@ -16155,6 +16159,10 @@ msgstr "Prioritätsabzeichen anzeigen"
 msgid "Show sidebar"
 msgstr "Seitenleiste anzeigen"
 
+#: src/features/budgeting/ui/BudgetToolbar.tsx
+msgid "Show target column"
+msgstr "Zielspalte anzeigen"
+
 #: src/features/transactions/ui/SchedulingGuideDialog.tsx
 msgid "Show the next 30 days"
 msgstr "Die nächsten 30 Tage zeigen"
@@ -17100,6 +17108,11 @@ msgstr "Foto aufnehmen"
 #: src/pages/onboarding/steps/StartModeStep.tsx
 msgid "Takes about 2 minutes"
 msgstr "Dauert ca. 2 Minuten"
+
+#: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
+#: src/features/budgeting/ui/BudgetToolbar.tsx
+msgid "Target"
+msgstr "Ziel"
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Target Amount"

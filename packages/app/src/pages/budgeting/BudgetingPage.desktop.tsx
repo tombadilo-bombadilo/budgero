@@ -36,6 +36,8 @@ export function BudgetingPageDesktop() {
   const desktopBudgetLayout = useUiStore((state) => state.desktopBudgetLayout);
   const showHiddenCategories = useUiStore((state) => state.showHiddenCategories);
   const setShowHiddenCategories = useUiStore((state) => state.setShowHiddenCategories);
+  const showTargetColumn = useUiStore((state) => state.showBudgetTargetColumn);
+  const toggleTargetColumn = useUiStore((state) => state.toggleBudgetTargetColumn);
 
   const focusCategoryId = useFocusCategoryFromNavState();
 
@@ -266,6 +268,10 @@ export function BudgetingPageDesktop() {
                     showHiddenCategories={showHiddenCategories}
                     onToggleHiddenCategories={() => setShowHiddenCategories(!showHiddenCategories)}
                     hasHiddenCategories={hasHiddenCategories}
+                    showTargetColumn={showTargetColumn}
+                    onToggleTargetColumn={
+                      desktopBudgetLayout === 'table' ? toggleTargetColumn : undefined
+                    }
                   />
                 )}
               />

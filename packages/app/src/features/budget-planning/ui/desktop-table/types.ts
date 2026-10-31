@@ -2,6 +2,14 @@ import type { CSSProperties, MouseEvent } from 'react';
 import type { DragStartEvent, DragOverEvent, DragEndEvent, useSensors } from '@dnd-kit/core';
 import type { BudgetRow } from '../../lib/budget-transforms';
 
+export interface BudgetGroupTotals {
+  assigned: number;
+  activity: number;
+  available: number;
+  /** Sum of this month's goal targets; undefined when no category in the group has a goal. */
+  target?: number;
+}
+
 export type Sensors = ReturnType<typeof useSensors>;
 
 export interface DragHandleProps {
@@ -15,7 +23,7 @@ export interface DragHandleProps {
 
 export interface DesktopBudgetGroupRowProps {
   row: BudgetRow;
-  totals?: { assigned: number; activity: number; available: number };
+  totals?: BudgetGroupTotals;
   isCollapsed: boolean;
   onToggle: () => void;
   onAddCategory: (groupId: number) => void;
@@ -28,6 +36,7 @@ export interface DesktopBudgetGroupRowProps {
   showGroupPercent?: boolean;
   /** Compact row density (Settings → Appearance → Budget table). */
   compact?: boolean;
+  showTarget?: boolean;
 }
 
 export interface DesktopBudgetCategoryRowProps {
@@ -47,13 +56,14 @@ export interface DesktopBudgetCategoryRowProps {
   selectable: boolean;
   /** Compact row density (Settings → Appearance → Budget table). */
   compact?: boolean;
+  showTarget?: boolean;
 }
 
 export interface DesktopBudgetTableViewProps {
   data: BudgetRow[];
   showGroupPercent?: boolean;
   collapsedGroups: Set<string>;
-  groupTotals: Map<string, { assigned: number; activity: number; available: number }>;
+  groupTotals: Map<string, BudgetGroupTotals>;
   onToggleGroup: (groupId: string) => void;
   onAddCategory: (groupId: number) => void;
   onUpdateGroup: (id: number, name: string) => Promise<void>;

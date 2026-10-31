@@ -27,7 +27,11 @@ import { CCPaymentCoverPopover } from '@features/budget-planning/ui/category-row
 import { CoverOverspendingPopover } from '@features/budget-planning/ui/category-row/CoverOverspendingPopover';
 import { overspendTone } from '@features/budget-planning/ui/category-row/category-row.utils';
 import { AvailableInfoPopover } from '@features/budget-planning/ui/AvailableInfoPopover';
-import { getAvailableColorByGoalStatus, shouldPreventRowSelection } from './utils';
+import {
+  getAvailableColorByGoalStatus,
+  getMonthlyTarget,
+  shouldPreventRowSelection,
+} from './utils';
 import { useSortableDragHandle } from './useSortableDragHandle';
 import type { DesktopBudgetCategoryRowProps } from './types';
 import { PlanningAnimatedNumber } from '../PlanningNumberAnimation';
@@ -48,6 +52,7 @@ export function DesktopBudgetCategoryRow({
   dragHandleProps,
   selectable,
   compact = false,
+  showTarget = false,
 }: DesktopBudgetCategoryRowProps) {
   const { t } = useLingui();
 
@@ -67,6 +72,7 @@ export function DesktopBudgetCategoryRow({
   const rowMinH = compact ? 'min-h-6' : 'min-h-[28px]';
 
   const isAssignmentHighlighted = highlightAssignmentCategoryId === row.categoryId;
+  const monthlyTarget = showTarget ? getMonthlyTarget(row) : null;
 
   const goalProgress = useMemo(() => {
     if (!row.goal) return null;
@@ -271,6 +277,24 @@ export function DesktopBudgetCategoryRow({
           </Popover>
         </div>
       </TableCell>
+      {showTarget && (
+        <TableCell className="align-middle text-right py-1.5">
+          <div
+            className={`inline-flex ${rowMinH} w-full items-center justify-end font-mono text-sm text-muted-foreground`}
+            data-testid={`target-${row.name.toLowerCase().replace(/\s+/g, '-')}`}
+          >
+            {monthlyTarget === null ? (
+              <span aria-hidden="true">—</span>
+            ) : (
+              <PlanningAnimatedNumber
+                value={monthlyTarget}
+                formatter={formatAmount}
+                className="tabular-nums"
+              />
+            )}
+          </div>
+        </TableCell>
+      )}
       <TableCell className="align-middle text-right py-1.5" data-budget-prevent-row-select="true">
         <div className={`inline-flex ${rowMinH} w-full items-center justify-end`}>
           <CalculatorCell

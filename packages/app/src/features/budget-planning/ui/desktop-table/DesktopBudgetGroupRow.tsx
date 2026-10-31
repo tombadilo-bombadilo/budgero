@@ -30,6 +30,7 @@ export function DesktopBudgetGroupRow({
   dragHandleProps,
   showGroupPercent = false,
   compact = false,
+  showTarget = false,
 }: DesktopBudgetGroupRowProps) {
   const [editingOpen, setEditingOpen] = useState(false);
   const [editingName, setEditingName] = useState(row.name);
@@ -131,6 +132,19 @@ export function DesktopBudgetGroupRow({
           )}
         </div>
       </TableCell>
+      {showTarget && (
+        <TableCell className="text-right font-mono text-sm font-semibold text-muted-foreground">
+          {totals?.target === undefined ? (
+            <span aria-hidden="true">—</span>
+          ) : (
+            <PlanningAnimatedNumber
+              value={totals.target}
+              formatter={formatAmount}
+              className="tabular-nums"
+            />
+          )}
+        </TableCell>
+      )}
       <TableCell className="text-right font-mono text-sm font-semibold">
         <PlanningAnimatedNumber
           value={totalsAssigned}

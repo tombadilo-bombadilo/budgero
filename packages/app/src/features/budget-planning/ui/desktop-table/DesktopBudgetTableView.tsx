@@ -11,6 +11,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { cn } from '@shared/lib/utils';
 import { useCompactBudgetRows } from '@shared/hooks/useUserPreferences';
+import { useUiStore } from '@shared/store/useUiStore';
 import { restrictToVerticalAxis } from '@features/budget-planning/lib/dnd-modifiers';
 import type { BudgetRow } from '../../lib/budget-transforms';
 import { DesktopBudgetGroupRow, SortableDesktopBudgetGroupRow } from './DesktopBudgetGroupRow';
@@ -51,6 +52,7 @@ export function DesktopBudgetTableView({
   isDeletingGroup = false,
 }: DesktopBudgetTableViewProps) {
   const { data: compact = false } = useCompactBudgetRows();
+  const showTarget = useUiStore((state) => state.showBudgetTargetColumn);
   const filteredData = useMemo(
     () =>
       data.filter((row) => {
@@ -69,6 +71,11 @@ export function DesktopBudgetTableView({
         <TableHead className={cn(headClass, 'w-auto')}>
           <Trans>Category</Trans>
         </TableHead>
+        {showTarget && (
+          <TableHead className={cn(headClass, 'w-[140px] text-right')}>
+            <Trans>Target</Trans>
+          </TableHead>
+        )}
         <TableHead className={cn(headClass, 'w-[140px] text-right')}>
           <Trans>Assigned</Trans>
         </TableHead>
@@ -115,6 +122,7 @@ export function DesktopBudgetTableView({
                 isUpdating: isUpdatingGroup,
                 isDeleting: isDeletingGroup,
                 compact,
+                showTarget,
               };
               return sortable ? (
                 <SortableDesktopBudgetGroupRow key={item.id} {...groupProps} overId={overId} />
@@ -137,6 +145,7 @@ export function DesktopBudgetTableView({
               isSelected: Boolean(selectedCategoryIds?.has(item.categoryId)),
               selectable: !disableSelection,
               compact,
+              showTarget,
             };
             return sortable ? (
               <SortableDesktopBudgetCategoryRow key={item.id} {...categoryProps} overId={overId} />
