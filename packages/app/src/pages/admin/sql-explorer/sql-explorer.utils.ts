@@ -24,7 +24,9 @@ export function convertToDryRunQuery(queryToRun: string): string {
     // Convert UPDATE to SELECT to show affected rows
     // UPDATE table SET ... WHERE ... -> SELECT * FROM table WHERE ...
     const tableMatch = queryToRun.match(/UPDATE\s+(\S+)\s+SET/i);
-    const whereMatch = queryToRun.match(/WHERE\s+(.+)$/i);
+    // [\s\S]: a WHERE spanning several lines must be kept whole, or the
+    // preview drops it and lists the entire table.
+    const whereMatch = queryToRun.match(/\bWHERE\s+([\s\S]+)$/i);
 
     if (tableMatch && tableMatch[1]) {
       const tableName = tableMatch[1];
@@ -35,7 +37,9 @@ export function convertToDryRunQuery(queryToRun: string): string {
     // Convert DELETE to SELECT to show affected rows
     // DELETE FROM table WHERE ... -> SELECT * FROM table WHERE ...
     const tableMatch = queryToRun.match(/DELETE\s+FROM\s+(\S+)/i);
-    const whereMatch = queryToRun.match(/WHERE\s+(.+)$/i);
+    // [\s\S]: a WHERE spanning several lines must be kept whole, or the
+    // preview drops it and lists the entire table.
+    const whereMatch = queryToRun.match(/\bWHERE\s+([\s\S]+)$/i);
 
     if (tableMatch && tableMatch[1]) {
       const tableName = tableMatch[1];
