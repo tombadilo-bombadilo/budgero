@@ -1807,7 +1807,7 @@
     "account_data_email_account_id_preferences": "Datos de la cuenta (correo electrónico, ID de cuenta, preferencias)",
     "for_the_life_of_your_account": "Durante la vida de tu cuenta, más un máximo de 30 días tras su eliminación para permitir la recuperación y purgar las copias de seguridad",
     "encrypted_vault_data": "Datos cifrados de la caja fuerte",
-    "for_the_life_of_your_account_2": "Durante la vida de tu cuenta; se eliminan en un plazo de 30 días desde la eliminación de la cuenta (Budgero no puede leerlos en ningún momento)",
+    "for_the_life_of_your_account_2": "Durante la vida de tu cuenta; se eliminan en un plazo de 30 días desde la eliminación de la cuenta (Budgero no puede leerlos en ningún momento). Las copias cifradas anteriores de un espacio de trabajo se guardan hasta 7 días para poder deshacer un problema de sincronización.",
     "billing_records_orders_invoices": "Registros de facturación (pedidos, facturas)",
     "retained_as_required_by_applicable_tax": "Se conservan según lo exigido por la legislación fiscal y contable aplicable (normalmente de 5 a 10 años); después, se eliminan",
     "service_email_send_open_bounce_metadata": "Metadatos de envío/apertura/rebote de correos del servicio",
