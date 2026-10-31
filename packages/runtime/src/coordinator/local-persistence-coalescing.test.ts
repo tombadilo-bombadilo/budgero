@@ -219,6 +219,8 @@ describe('local persistence coalescing', () => {
   it('flushes a pending persist before a snapshot upload', async () => {
     const { db, writes } = controlledDb();
     const ctx = createContext(db);
+    // Snapshot uploads wait for the initial catch-up; this test has no server.
+    vi.spyOn(ctx.sync, 'hasInitialCatchUpSettled').mockReturnValue(true);
     void ctx.persistLocalDatabaseSoon?.();
 
     const upload = ctx.dbSync.upload();

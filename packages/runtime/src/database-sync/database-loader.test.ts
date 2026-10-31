@@ -6,7 +6,9 @@ describe('DatabaseLoader', () => {
     const exec = vi.fn();
     const loader = new DatabaseLoader();
 
-    const ran = loader.runMigrations({ exec } as unknown as Parameters<typeof loader.runMigrations>[0]);
+    const ran = loader.runMigrations({ exec } as unknown as Parameters<
+      typeof loader.runMigrations
+    >[0]);
     expect(ran).toBe(false);
     expect(exec).toHaveBeenCalledWith('PRAGMA foreign_keys = ON');
   });

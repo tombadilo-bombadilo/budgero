@@ -166,9 +166,12 @@ describe('recurring occurrences addressed by template and due date', () => {
 
     const farDate = isoDate(addMonths(new Date(), 18));
     a.services.recurring.ensureOccurrencesThrough(a.budgetId, farDate);
+    // The last generated occurrence, not one ON farDate: on the 31st the
+    // monthly schedule lands on the 30th in short months (anchor clamping).
     const target = a.services.recurring
-      .listOccurrences(a.budgetId, { status: 'scheduled', fromDate: farDate })
-      .find((o) => o.recurringTransactionId === rent.id)!;
+      .listOccurrences(a.budgetId, { status: 'scheduled', toDate: farDate })
+      .filter((o) => o.recurringTransactionId === rent.id)
+      .at(-1)!;
     expect(target).toBeDefined();
 
     const skipped = await b.services.recurring.skipOccurrence({

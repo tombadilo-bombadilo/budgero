@@ -146,6 +146,14 @@ export class DatabaseSync {
   async upload(options?: { outOfBand?: boolean }): Promise<void> {
     const db = this.deps.getDatabase();
     if (!db) return;
+    if (!options?.outOfBand && this.deps.canUploadSnapshot && !this.deps.canUploadSnapshot()) {
+      logRuntime(
+        'debug',
+        'DatabaseSync',
+        'Upload skipped: not caught up with the mutation log yet'
+      );
+      return;
+    }
 
     const apiReachable = await this.deps.checkApiHealth();
     if (!apiReachable) {
@@ -434,8 +442,18 @@ export class DatabaseSync {
       return;
     }
 
-    if (this.deps.hasUnackedMutations?.()) {
-      logRuntime('debug', 'DatabaseSync', 'Upload deferred: unacked mutations', { reason });
+    if (
+      this.deps.hasUnackedMutations?.() ||
+      (this.deps.canUploadSnapshot && !this.deps.canUploadSnapshot())
+    ) {
+      logRuntime(
+        'debug',
+        'DatabaseSync',
+        'Upload deferred: unacked mutations or catch-up pending',
+        {
+          reason,
+        }
+      );
       this.clearUploadTimer();
       this.uploadTimer = this.scheduleTimer(() => {
         this.uploadTimer = null;
@@ -533,8 +551,11 @@ function getConflictDetails(error: unknown): {
   const serverVersion = responseDetails.serverVersion ?? messageDetails.serverVersion;
 
   if (errorCode) {
+    // mutation_version_regression: the server holds a snapshot bound to a
+    // later log position than ours; recover the same way (download, restore).
     return {
-      isVersionConflict: errorCode === 'version_conflict',
+      isVersionConflict:
+        errorCode === 'version_conflict' || errorCode === 'mutation_version_regression',
       serverVersion,
     };
   }

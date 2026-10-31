@@ -123,6 +123,59 @@ describe('DatabaseSync', () => {
     expect(sync.getBlobVersion()).toBe(22);
   });
 
+  it('does not upload a snapshot before this device has caught up with the log', async () => {
+    const { deps } = createDeps();
+    const canUploadSnapshot = vi.fn(() => false);
+    const sync = new DatabaseSync('s1', { ...deps, canUploadSnapshot } as never);
+    vi.spyOn(crypto, 'compressAndEncryptDatabase').mockResolvedValue({
+      encrypted: new Uint8Array([7]),
+      compressed: new Uint8Array([6]),
+    });
+
+    // Right after a local reset the DB holds a handful of replayed mutations;
+    // uploading it would replace the full snapshot on the server (2026-10-31).
+    await sync.upload();
+    expect(deps.uploadBlob).not.toHaveBeenCalled();
+
+    // Out-of-band content (import, restore) is the exception: it is the truth.
+    await sync.upload({ outOfBand: true });
+    expect(deps.uploadBlob).toHaveBeenCalledTimes(1);
+
+    canUploadSnapshot.mockReturnValue(true);
+    await sync.upload();
+    expect(deps.uploadBlob).toHaveBeenCalledTimes(2);
+  });
+
+  it('treats a mutation_version_regression refusal like a version conflict: restore, then retry', async () => {
+    const { db, deps } = createDeps();
+    const sync = new DatabaseSync('s1', deps as never);
+    vi.spyOn(crypto, 'compressAndEncryptDatabase').mockResolvedValue({
+      encrypted: new Uint8Array([7]),
+      compressed: new Uint8Array([6]),
+    });
+    vi.spyOn(crypto, 'decryptAndDecompressDatabase').mockResolvedValue({
+      decrypted: new Uint8Array([1, 1, 1]),
+    });
+    deps.uploadBlob
+      .mockRejectedValueOnce({
+        status: 409,
+        response: JSON.stringify({
+          error: 'mutation_version_regression',
+          server_version: 112,
+          server_mutation_version: 19369,
+          client_mutation_version: 25,
+        }),
+      })
+      .mockResolvedValueOnce({ version: 113 });
+
+    await sync.upload();
+
+    expect(deps.downloadBlob).toHaveBeenCalled();
+    expect(db.restore).toHaveBeenCalledWith(new Uint8Array([1, 1, 1]));
+    expect(deps.uploadBlob).toHaveBeenCalledTimes(2);
+    expect(sync.getBlobVersion()).toBe(113);
+  });
+
   it('threads the outOfBand flag through to uploadBlob', async () => {
     const { deps } = createDeps();
     vi.spyOn(crypto, 'compressAndEncryptDatabase').mockResolvedValue({
