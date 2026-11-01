@@ -114,17 +114,26 @@ describe('MutationExecutor', () => {
     await execution;
   });
 
-  it('rejects budget edits for non-owner local mutators', async () => {
+  it('keeps creating and deleting budgets with the owner', async () => {
     const { deps } = createDeps();
-    deps.getSpaceRole.mockReturnValue('viewer');
+    deps.getSpaceRole.mockReturnValue('member');
+    const executor = new MutationExecutor(deps as never);
+
+    for (const op of ['budgets.create', 'budgets.delete']) {
+      await expect(executor.execute({ op, payload: { budgetId: 2 } })).rejects.toThrow(
+        'Only the workspace owner'
+      );
+    }
+  });
+
+  it('lets members change budget settings', async () => {
+    const { deps } = createDeps();
+    deps.getSpaceRole.mockReturnValue('member');
     const executor = new MutationExecutor(deps as never);
 
     await expect(
-      executor.execute({
-        op: 'budgets.update',
-        payload: { budgetId: 2 },
-      })
-    ).rejects.toThrow('Only the workspace owner');
+      executor.execute({ op: 'budgets.updateRtaMode', payload: { id: 2, mode: 'monthly' } })
+    ).resolves.toBeDefined();
   });
 
   it('handles forced invalidation for local mutation and wildcard keys', async () => {

@@ -21,6 +21,9 @@ export interface ExecuteResult<T = unknown> {
   isReceiver: boolean;
 }
 
+/** Ops only the workspace owner may run. */
+const OWNER_ONLY_OPS = new Set(['budgets.create', 'budgets.delete']);
+
 export class MutationExecutor {
   private readonly deps: MutationExecutorDeps;
 
@@ -42,13 +45,13 @@ export class MutationExecutor {
       throw new Error('[MutationExecutor] No active budget space');
     }
 
-    // Owner check for budget mutations
-    const isBudgetMutation = spec.op.startsWith('budgets.');
-    if (isMutator && isBudgetMutation) {
+    // Creating and deleting budgets stays with the workspace owner; members
+    // may change a budget's settings (name, currency, RTA mode, …).
+    if (isMutator && OWNER_ONLY_OPS.has(spec.op)) {
       const role = this.deps.getSpaceRole(activeSpaceId);
       if (role !== 'owner') {
         throw new Error(
-          'Only the workspace owner can create or edit budgets. Ask the owner to make this change.'
+          'Only the workspace owner can create or delete budgets. Ask the owner to make this change.'
         );
       }
     }
