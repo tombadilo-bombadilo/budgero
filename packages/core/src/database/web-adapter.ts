@@ -64,6 +64,49 @@ declare global {
  * Web database adapter using sql.js (SQLite compiled to WebAssembly)
  * Always encrypted with sync capability
  */
+/** Pending-write chain per OPFS file name (shared by every adapter of this tab). */
+const opfsWriteChains = new Map<string, Promise<void>>();
+
+/** Run `write` after every earlier write to the same file has settled. */
+export function enqueueOpfsWrite(filename: string, write: () => Promise<void>): Promise<void> {
+  const previous = opfsWriteChains.get(filename) ?? Promise.resolve();
+  const result = previous.then(write, write);
+  const tail = result.then(
+    () => undefined,
+    () => undefined
+  );
+  opfsWriteChains.set(filename, tail);
+  void tail.then(() => {
+    if (opfsWriteChains.get(filename) === tail) opfsWriteChains.delete(filename);
+  });
+  return result;
+}
+
+const FILE_BUSY_RETRY_MS = [50, 200, 600, 1500];
+
+/**
+ * Another writer outside this tab's queue (the same workspace open in a second
+ * tab, a lingering stream) holds the file: Firefox reports
+ * NoModificationAllowedError, Chrome/Safari may report InvalidStateError. Wait
+ * briefly and try again before giving up.
+ */
+export async function retryWhileFileBusy(
+  write: () => Promise<void>,
+  delays: readonly number[] = FILE_BUSY_RETRY_MS
+): Promise<void> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await write();
+      return;
+    } catch (error) {
+      const name = (error as { name?: unknown })?.name;
+      const busy = name === 'NoModificationAllowedError' || name === 'InvalidStateError';
+      if (!busy || attempt >= delays.length) throw error;
+      await new Promise((resolve) => setTimeout(resolve, delays[attempt]));
+    }
+  }
+}
+
 export class WebDatabaseAdapter extends BaseDatabaseAdapter {
   private db: SqlJsDatabase;
 
@@ -475,7 +518,20 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
     this.db.close();
   }
 
-  private async saveToOPFS(data: Uint8Array, encrypted: boolean): Promise<void> {
+  /**
+   * Saves to the same OPFS file run one at a time, in call order. Firefox gives
+   * a file one writer at a time: a second createWritable() while the first is
+   * open throws NoModificationAllowedError (seen during a snapshot restore,
+   * whose save overlapped the debounced one). Chrome allows both, but then the
+   * older save can finish last and leave stale data on disk.
+   */
+  private saveToOPFS(data: Uint8Array, encrypted: boolean): Promise<void> {
+    return enqueueOpfsWrite(this.dbFilename, () =>
+      retryWhileFileBusy(() => this.writeToOPFS(data, encrypted))
+    );
+  }
+
+  private async writeToOPFS(data: Uint8Array, encrypted: boolean): Promise<void> {
     let writable: FileSystemWritableFileStream | undefined;
     try {
       if (!globalThis.navigator?.storage?.getDirectory) {
