@@ -85,7 +85,9 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
   // Manual creation state
   const [name, setName] = useState('');
   const [displayCurrency, setDisplayCurrency] = useState('USD');
-  const [badgeIcon, setBadgeIcon] = useState('');
+  // Same default as onboarding and the YNAB tab: an empty icon fails
+  // validation and the form doesn't require picking one.
+  const [badgeIcon, setBadgeIcon] = useState('💰');
   const [selectedFormat, setSelectedFormat] = useState<string>('$1,096.56');
   const [createDefaultCategories, setCreateDefaultCategories] = useState(true);
 
