@@ -12,7 +12,7 @@ import { compressAndEncryptDatabase } from '../crypto';
 import { BLOB_VERSION_STORAGE_PREFIX } from '../types/storage-keys';
 import { errorMessage, isDecryptionError } from '../utils/diagnostics';
 import { readStoredVersion, writeStoredVersion } from '../utils/stored-version';
-import { logRuntime } from '../logging';
+import { scopedLogger, type RuntimeLogFn } from '../logging';
 import type { DatabaseSyncDeps, WebDatabaseInstance } from '../types';
 import { downloadSnapshot, type DownloadedSnapshot } from './snapshot-download';
 
@@ -31,6 +31,19 @@ export class ApiUnreachableError extends Error {
   constructor(message = 'API unreachable') {
     super(message);
     this.name = 'ApiUnreachableError';
+  }
+}
+
+/**
+ * An upload held back on purpose (a change is still being versioned, or
+ * queued mutations await their ack): not a failure, just retry shortly.
+ */
+export class UploadDeferredError extends Error {
+  readonly deferred = true;
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'UploadDeferredError';
   }
 }
 
@@ -68,7 +81,10 @@ export class DatabaseSync {
     this.flushPendingUpload('visibility_hidden');
   };
 
+  private readonly log: RuntimeLogFn;
+
   constructor(spaceId: string, deps: DatabaseSyncDeps) {
+    this.log = deps.log ?? scopedLogger('DatabaseSync');
     this.spaceId = spaceId;
     this.deps = deps;
     this.blobVersion = readStoredVersion(`${BLOB_VERSION_STORAGE_PREFIX}${spaceId}`);
@@ -147,23 +163,19 @@ export class DatabaseSync {
     const db = this.deps.getDatabase();
     if (!db) return;
     if (!options?.outOfBand && this.deps.canUploadSnapshot && !this.deps.canUploadSnapshot()) {
-      logRuntime(
-        'debug',
-        'DatabaseSync',
-        'Upload skipped: not caught up with the mutation log yet'
-      );
+      this.log('debug', 'Upload skipped: not caught up with the mutation log yet');
       return;
     }
 
     const apiReachable = await this.deps.checkApiHealth();
     if (!apiReachable) {
-      logRuntime('debug', 'DatabaseSync', 'API unreachable: skipping upload');
+      this.log('debug', 'API unreachable: skipping upload');
       return;
     }
 
     const passphrase = this.deps.getPassphrase(this.spaceId);
     if (!passphrase) {
-      logRuntime('warn', 'DatabaseSync', 'No passphrase available for upload');
+      this.log('warn', 'No passphrase available for upload');
       return;
     }
 
@@ -189,20 +201,15 @@ export class DatabaseSync {
         // destroy the import. Take the server's version and re-upload as-is;
         // any log tail we're missing arrives via catch-up and is applied on
         // top afterwards.
-        logRuntime(
-          'warn',
-          'DatabaseSync',
-          'Version conflict on out-of-band upload; retrying without restore',
-          {
-            clientVersion: this.blobVersion,
-            serverVersion: conflict.serverVersion,
-          }
-        );
+        this.log('warn', 'Version conflict on out-of-band upload; retrying without restore', {
+          clientVersion: this.blobVersion,
+          serverVersion: conflict.serverVersion,
+        });
         await this.doUpload(db, passphrase, keyVersion, true);
         this.settlePending(pendingAtStart);
         return;
       }
-      logRuntime('warn', 'DatabaseSync', 'Version conflict, downloading latest and retrying', {
+      this.log('warn', 'Version conflict, downloading latest and retrying', {
         clientVersion: this.blobVersion,
         serverVersion: conflict.serverVersion,
       });
@@ -213,7 +220,7 @@ export class DatabaseSync {
     // queued local mutations, so cursor and DB content agree again.
     const restored = await this.downloadAndRestore();
     if (!restored) {
-      logRuntime('warn', 'DatabaseSync', 'Could not download latest after version conflict');
+      this.log('warn', 'Could not download latest after version conflict');
       return;
     }
 
@@ -222,7 +229,9 @@ export class DatabaseSync {
     // a fresh device would double-apply them once they land. Defer until the
     // queue drains (throw → flushPendingUpload arms the retry).
     if (this.deps.hasUnackedMutations?.()) {
-      throw new Error('Deferred re-upload after version conflict: unacked mutations pending');
+      throw new UploadDeferredError(
+        'Deferred re-upload after version conflict: unacked mutations pending'
+      );
     }
 
     // Cursor now matches content (hook), so the normal bind-from-cursor
@@ -247,13 +256,13 @@ export class DatabaseSync {
     // Never capture mid-operation (an upload's own awaits can let one start).
     // Nothing may await between this check and backup() below.
     if (this.activeOperations > 0) {
-      logRuntime('debug', 'DatabaseSync', 'Upload waiting for running operations');
+      this.log('debug', 'Upload waiting for running operations');
       await this.waitForNoOperation();
       // The op that just finished is in the DB but not yet versioned in the
       // log: binding it into this blob would make a fresh device apply it
       // twice. Defer (flushPendingUpload re-arms the retry).
       if (this.deps.hasUnackedMutations?.()) {
-        throw new Error('Deferred upload: an operation finished during the upload');
+        throw new UploadDeferredError('Deferred upload: an operation finished during the upload');
       }
     }
     // Capture the cursor synchronously adjacent to backup() so the bound
@@ -262,7 +271,7 @@ export class DatabaseSync {
     const data: Uint8Array = await db.backup();
     const { encrypted, compressed } = await compressAndEncryptDatabase(data, passphrase);
 
-    logRuntime('debug', 'DatabaseSync', 'Uploading database blob', {
+    this.log('debug', 'Uploading database blob', {
       originalSize: data.length,
       compressedSize: compressed.length,
       encryptedSize: encrypted.length,
@@ -280,7 +289,7 @@ export class DatabaseSync {
       outOfBand
     );
     this.setBlobVersion(result.version);
-    logRuntime('info', 'DatabaseSync', 'Upload succeeded', { blobVersion: this.blobVersion });
+    this.log('info', 'Upload succeeded', { blobVersion: this.blobVersion });
   }
 
   /**
@@ -290,7 +299,7 @@ export class DatabaseSync {
   async download(): Promise<Uint8Array | null> {
     const apiReachable = await this.deps.checkApiHealth();
     if (!apiReachable) {
-      logRuntime('debug', 'DatabaseSync', 'API unreachable: skipping download');
+      this.log('debug', 'API unreachable: skipping download');
       // Throw, don't return null: null means "the server has no snapshot",
       // which catch-up recovery treats as terminal (sync disabled). An
       // unreachable API is transient and must stay retryable.
@@ -306,7 +315,7 @@ export class DatabaseSync {
     try {
       snapshot = await downloadSnapshot(this.deps, this.spaceId, passphrase);
     } catch (error) {
-      logRuntime('error', 'DatabaseSync', 'Failed to decrypt snapshot', {
+      this.log('error', 'Failed to decrypt snapshot', {
         error: errorMessage(error),
         originalError: error,
       });
@@ -321,7 +330,7 @@ export class DatabaseSync {
     }
 
     if (!snapshot) {
-      logRuntime('debug', 'DatabaseSync', 'No snapshot available on server');
+      this.log('debug', 'No snapshot available on server');
       return null;
     }
 
@@ -375,7 +384,7 @@ export class DatabaseSync {
 
     await this.flushLocalPersistence();
     await db.restore(decrypted);
-    logRuntime('info', 'DatabaseSync', 'Database restored via restore()');
+    this.log('info', 'Database restored via restore()');
 
     // Restore invariant hook: the DB content just changed out from under
     // every piece of sync state derived from it. The wiring (context
@@ -386,7 +395,7 @@ export class DatabaseSync {
     try {
       await this.deps.onDatabaseRestored?.(this.lastDownloadedMutationVersion);
     } catch (error) {
-      logRuntime('warn', 'DatabaseSync', 'onDatabaseRestored hook failed', {
+      this.log('warn', 'onDatabaseRestored hook failed', {
         error: errorMessage(error),
         originalError: error,
       });
@@ -398,7 +407,7 @@ export class DatabaseSync {
     try {
       await this.deps.flushLocalPersistence?.();
     } catch (error) {
-      logRuntime('warn', 'DatabaseSync', 'Local persist flush failed', {
+      this.log('warn', 'Local persist flush failed', {
         error: errorMessage(error),
         originalError: error,
       });
@@ -439,7 +448,7 @@ export class DatabaseSync {
 
     if (this.activeOperations > 0) {
       // Retried by the release of the last running operation.
-      logRuntime('debug', 'DatabaseSync', 'Upload deferred: operation in progress', { reason });
+      this.log('debug', 'Upload deferred: operation in progress', { reason });
       this.clearUploadTimer();
       this.flushAfterOperations = reason;
       return;
@@ -449,14 +458,9 @@ export class DatabaseSync {
       this.deps.hasUnackedMutations?.() ||
       (this.deps.canUploadSnapshot && !this.deps.canUploadSnapshot())
     ) {
-      logRuntime(
-        'debug',
-        'DatabaseSync',
-        'Upload deferred: unacked mutations or catch-up pending',
-        {
-          reason,
-        }
-      );
+      this.log('debug', 'Upload deferred: unacked mutations or catch-up pending', {
+        reason,
+      });
       this.clearUploadTimer();
       this.uploadTimer = this.scheduleTimer(() => {
         this.uploadTimer = null;
@@ -465,7 +469,7 @@ export class DatabaseSync {
       return;
     }
 
-    logRuntime('debug', 'DatabaseSync', 'Uploading pending changes', {
+    this.log('debug', 'Uploading pending changes', {
       reason,
       pendingMutations: this.pendingMutations,
     });
@@ -475,12 +479,24 @@ export class DatabaseSync {
         // The mutation log owns correctness, but a silently stale blob
         // degrades every fresh-device bootstrap — log loudly and re-arm a
         // retry instead of waiting for the next mutation to trigger one.
-        logRuntime('warn', 'DatabaseSync', 'Blob upload failed; retry armed', {
+        this.clearUploadTimer();
+        if (error instanceof UploadDeferredError) {
+          // Held back on purpose (see UploadDeferredError): retry quietly.
+          this.log('debug', 'Upload deferred; retry armed', {
+            reason,
+            error: errorMessage(error),
+          });
+          this.uploadTimer = this.scheduleTimer(() => {
+            this.uploadTimer = null;
+            this.flushPendingUpload(`${reason}_retry`);
+          }, this.getUnackedRetryMs());
+          return;
+        }
+        this.log('warn', 'Blob upload failed; retry armed', {
           reason,
           error: errorMessage(error),
           originalError: error,
         });
-        this.clearUploadTimer();
         this.uploadTimer = this.scheduleTimer(() => {
           this.uploadTimer = null;
           this.flushPendingUpload('failed_upload_retry');

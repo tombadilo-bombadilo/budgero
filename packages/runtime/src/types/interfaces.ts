@@ -201,6 +201,8 @@ export interface ConnectivityMonitorDeps {
  * DatabaseSync dependency injection interface.
  */
 export interface DatabaseSyncDeps {
+  /** Component logger; the app routes it into error reports. */
+  log?: RuntimeLogFn;
   getDatabase(): WebDatabaseInstance | null;
   getPassphrase(spaceId: string): string | null;
   getEncryptionKeyVersion(spaceId: string): number;

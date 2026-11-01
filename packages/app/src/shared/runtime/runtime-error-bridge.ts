@@ -18,7 +18,7 @@ import {
   slugifyEvent,
   withoutConsoleCapture,
 } from '@shared/lib/analytics/error-capture';
-import { runtimeMessageCode } from '@shared/lib/analytics/error-codes';
+import { runtimeMessageCode, toErrorCode } from '@shared/lib/analytics/error-codes';
 
 /** Runtime loggers attach the thrown error as `originalError` or `error` (sometimes already a string). */
 function errorFrom(context: RuntimeLogContext | undefined): unknown {
@@ -57,9 +57,15 @@ export const runtimeErrorBridge: RuntimeComponentLogFn = (
     Object.assign(new Error(message), {
       name: level === 'error' ? 'RuntimeError' : 'RuntimeWarning',
     });
-  // Without an Error object the code is derived from the logged message text
-  // (matched locally, never sent) so sync/storage failures stop being 'unknown'.
-  const code = original === undefined ? runtimeMessageCode(messageFrom(context), event) : undefined;
+  // Without an Error object, or with one too generic to classify, the code is
+  // derived from the logged message text (matched locally, never sent) so
+  // sync/storage failures stop being 'unknown'.
+  const code =
+    original === undefined
+      ? runtimeMessageCode(messageFrom(context), event)
+      : toErrorCode(original) === 'unknown'
+        ? runtimeMessageCode((original as Error).message, event)
+        : undefined;
   captureAppError(error, {
     source: 'runtime',
     handled: true,

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiUnreachableError, DatabaseSync } from './database-sync';
+import { ApiUnreachableError, DatabaseSync, UploadDeferredError } from './database-sync';
 import * as crypto from '../crypto';
 
 function createDeps() {
@@ -458,5 +458,40 @@ describe('DatabaseSync', () => {
     vi.spyOn(sync, 'download').mockResolvedValueOnce(new Uint8Array([1]));
     deps.getDatabase.mockReturnValue(null);
     await expect(sync.downloadAndRestore()).rejects.toThrow('No database available for restore');
+  });
+
+  it('retries a held-back upload quietly, but warns about a real failure', async () => {
+    vi.useFakeTimers();
+    try {
+      const { deps } = createDeps();
+      const log = vi.fn();
+      const sync = new DatabaseSync('s1', { ...deps, log } as never);
+      const upload = vi
+        .spyOn(sync, 'upload')
+        .mockRejectedValueOnce(new UploadDeferredError('Deferred upload: an operation finished'))
+        .mockRejectedValueOnce(Object.assign(new Error('Request failed'), { status: 503 }))
+        .mockResolvedValue(undefined);
+
+      sync.scheduleUpload();
+      sync.flushPendingUpload('test');
+      await vi.advanceTimersByTimeAsync(0);
+      expect(log.mock.calls.filter(([level]) => level === 'warn')).toHaveLength(0);
+      expect(log).toHaveBeenCalledWith(
+        'debug',
+        'Upload deferred; retry armed',
+        expect.objectContaining({ reason: 'test' })
+      );
+
+      // The deferred retry runs on the short unacked cadence and this time fails for real.
+      await vi.advanceTimersByTimeAsync(60_000);
+      // (then the failed-upload retry follows and succeeds)
+      expect(upload.mock.calls.length).toBeGreaterThanOrEqual(2);
+      const warns = log.mock.calls.filter(([level]) => level === 'warn');
+      expect(warns).toHaveLength(1);
+      expect(warns[0][1]).toBe('Blob upload failed; retry armed');
+      expect(warns[0][2].originalError).toBeInstanceOf(Error);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
