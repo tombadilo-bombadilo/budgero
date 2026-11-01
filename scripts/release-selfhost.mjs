@@ -130,13 +130,13 @@ async function main() {
 
   const dest = `${bucketUri}/${tag}/`;
   console.log(`\n==> Uploading artifacts to ${dest}`);
-  run(`gcloud storage cp --recursive dist/* ${dest}`);
+  // Only what installers and the self-host updater download: the raw binaries
+  // and metadata. The .zip archives are on the GitHub release; storing them
+  // here too (and a second full copy under latest/) tripled what every
+  // release wrote to the multi-region bucket.
+  run(`gcloud storage rsync --recursive --exclude='.*\\.zip$' dist ${dest}`);
 
   if (!tag.includes('-')) {
-    const latestDest = `${bucketUri}/latest/`;
-    run(
-      `gcloud storage rsync --recursive --delete-unmatched-destination-objects dist ${latestDest}`
-    );
     run(
       `printf %s ${tag} | gcloud storage cp --cache-control="no-store" - ${bucketUri}/latest.txt`
     );

@@ -40,9 +40,9 @@ The single **release** workflow runs dependency and Go vulnerability scans, then
 
 1. Builds Linux, macOS, and Windows binaries for amd64 and arm64, six ZIP archives,
    and SHA-256 checksums.
-2. Uploads the existing binary layout and archives to `gs://budgero_releases/vX.Y.Z/`.
-   Stable versions also update the existing `latest/` and `latest.txt` locations.
-   Installers that use Google Cloud therefore continue to work.
+2. Uploads the binary layout (no `.zip` archives; those are on the GitHub release) to
+   `gs://budgero_releases/vX.Y.Z/`. Stable versions also update `latest.txt`, which the
+   installers and the self-host updater read to find the versioned folder.
 3. Publishes `budgero/budgero:vX.Y.Z` for amd64/arm64 and `budgero/cloud:vX.Y.Z` for
    amd64. Stable versions update Docker `latest`; prereleases do not.
 4. Creates a draft GitHub Release, uploads the six archives and `checksums.txt`, and
