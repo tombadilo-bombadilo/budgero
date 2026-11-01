@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -67,7 +68,9 @@ i18n.activate('en');
 function renderList() {
   return render(
     <I18nProvider i18n={i18n}>
-      <SnapshotHistoryList />
+      <MemoryRouter>
+        <SnapshotHistoryList />
+      </MemoryRouter>
     </I18nProvider>
   );
 }
@@ -106,5 +109,15 @@ describe('SnapshotHistoryList', () => {
     const confirm = screen.getAllByRole('button', { name: 'Restore' }).at(-1)!;
     fireEvent.click(confirm);
     await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith(7));
+  });
+
+  it('explains that restoring does not undo imports and links to Import History', () => {
+    renderList();
+    const hint = screen.getByTestId('restore-import-hint');
+    expect(hint).toHaveTextContent(/doesn't undo changes/);
+    expect(screen.getByRole('link', { name: /Import History/ })).toHaveAttribute(
+      'href',
+      '/settings/imports'
+    );
   });
 });

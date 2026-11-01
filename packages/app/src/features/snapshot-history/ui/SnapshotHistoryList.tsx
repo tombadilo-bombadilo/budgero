@@ -1,7 +1,8 @@
 import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
-import { History, RotateCcw } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { History, Info, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SnapshotHistoryEntry } from '@shared/api/api-client';
 import { formatDate, formatRelativeToNow } from '@shared/lib/date-format';
@@ -101,6 +102,22 @@ export function SnapshotHistoryList() {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
+        <div
+          className="flex gap-2 rounded-md border border-border/70 bg-muted/40 p-3 text-xs text-muted-foreground"
+          data-testid="restore-import-hint"
+        >
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <p>
+            <Trans>
+              Restoring doesn't undo changes: everything made after the copy is applied again,
+              imports included. To remove an import, undo it in{' '}
+              <Link to="/settings/imports" className="font-medium text-foreground underline">
+                Imports → Import History
+              </Link>
+              .
+            </Trans>
+          </p>
+        </div>
         {isLoading ? (
           <p className="text-sm text-muted-foreground">
             <Trans>Loading…</Trans>
@@ -166,7 +183,7 @@ export function SnapshotHistoryList() {
           title={t`Restore this version?`}
           description={
             pending
-              ? t`The workspace on all devices is replaced with the copy from ${formatDate(new Date(pending.became_current_at), 'PPp')}, then every change made after it is applied again. Download a backup first if you are unsure.`
+              ? t`The workspace on all devices is replaced with the copy from ${formatDate(new Date(pending.became_current_at), 'PPp')}, then every change made after it is applied again, so later imports and edits come back. To remove an import, undo it in Imports → Import History instead. Download a backup first if you are unsure.`
               : ''
           }
           confirmText={t`Restore`}

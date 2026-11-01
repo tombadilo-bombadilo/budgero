@@ -14786,6 +14786,10 @@ msgstr "Das Wiederherstellen eines Budgero-Backups ersetzt alle Daten in diesem 
 msgid "Restoring Database"
 msgstr "Datenbank wird wiederhergestellt"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Restoring doesn't undo changes: everything made after the copy is applied again, imports included. To remove an import, undo it in <0>Imports → Import History</0>."
+msgstr "Wiederherstellen macht keine Änderungen rückgängig: Alles, was nach der Kopie passiert ist, wird erneut angewendet, auch Importe. Um einen Import zu entfernen, mach ihn unter <0>Importe → Importverlauf</0> rückgängig."
+
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "Restoring previous values"
 msgstr "Vorherige Werte werden wiederhergestellt"
@@ -17523,8 +17527,13 @@ msgstr "Der Name des Arbeitsbereichs wurde erfolgreich aktualisiert."
 
 #. placeholder {0}: formatDate(new Date(pending.became_current_at), 'PPp')
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
-msgid "The workspace on all devices is replaced with the copy from {0}, then every change made after it is applied again. Download a backup first if you are unsure."
-msgstr "Der Arbeitsbereich wird auf allen Geräten durch die Kopie vom {0} ersetzt, danach wird jede spätere Änderung erneut angewendet. Lade zuerst ein Backup herunter, wenn du unsicher bist."
+msgid "The workspace on all devices is replaced with the copy from {0}, then every change made after it is applied again, so later imports and edits come back. To remove an import, undo it in Imports → Import History instead. Download a backup first if you are unsure."
+msgstr "Der Arbeitsbereich wird auf allen Geräten durch die Kopie vom {0} ersetzt, danach wird jede spätere Änderung erneut angewendet, sodass spätere Importe und Änderungen zurückkommen. Um einen Import zu entfernen, mach ihn stattdessen unter Importe → Importverlauf rückgängig. Lade vorher eine Sicherung herunter, wenn du unsicher bist."
+
+#. placeholder {0}: formatDate(new Date(pending.became_current_at), 'PPp')
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#~ msgid "The workspace on all devices is replaced with the copy from {0}, then every change made after it is applied again. Download a backup first if you are unsure."
+#~ msgstr "Der Arbeitsbereich wird auf allen Geräten durch die Kopie vom {0} ersetzt, danach wird jede spätere Änderung erneut angewendet. Lade zuerst ein Backup herunter, wenn du unsicher bist."
 
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "The workspace owner needs to renew access"
