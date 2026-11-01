@@ -224,6 +224,8 @@ export interface DatabaseSyncDeps {
    * deferred then: the cursor wouldn't match the blob's contents, and a
    * mismatch means skipped or double-applied mutations on fresh devices.
    */
+  /** Our own mutation was acked past the cursor (a gap is being caught up). */
+  isCursorBehindAcks?(): boolean;
   hasUnackedMutations?(): boolean;
   /**
    * False until this device has caught up with the server's mutation log for
@@ -256,6 +258,10 @@ export interface DatabaseSyncDeps {
     unackedRetryMs?: number;
     /** Retry delay after a failed upload. Default 30 s. */
     failedUploadRetryMs?: number;
+    /** How long an out-of-band upload waits for our sent changes to be confirmed. Default 30 s. */
+    outOfBandWaitMs?: number;
+    /** Poll interval while it waits. Default 250 ms. */
+    outOfBandPollMs?: number;
   };
   setTimeout?: (callback: () => void, ms: number) => ReturnType<typeof setTimeout>;
   clearTimeout?: (timer: ReturnType<typeof setTimeout>) => void;

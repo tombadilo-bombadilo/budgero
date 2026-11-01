@@ -186,7 +186,11 @@ export class DatabaseSync {
     const pendingAtStart = this.pendingMutations;
 
     try {
-      await this.doUpload(db, passphrase, keyVersion, options?.outOfBand);
+      if (options?.outOfBand) {
+        await this.uploadOutOfBandWhenSafe(db, passphrase, keyVersion);
+      } else {
+        await this.doUpload(db, passphrase, keyVersion, options?.outOfBand);
+      }
       this.settlePending(pendingAtStart);
       return;
     } catch (error) {
@@ -264,6 +268,15 @@ export class DatabaseSync {
       if (this.deps.hasUnackedMutations?.()) {
         throw new UploadDeferredError('Deferred upload: an operation finished during the upload');
       }
+    }
+    // Every upload, out-of-band ones included, binds the cursor as the log
+    // position of its contents. Our own sent-but-unconfirmed mutations are in
+    // the DB but not covered by the cursor yet: capturing now would mislabel
+    // the snapshot and devices loading it would apply them a second time
+    // (duplicate categories, a goal UNIQUE failure — 2026-11-01, where the
+    // daily rate refresh's out-of-band upload ran right after onboarding).
+    if (!this.isCaptureSafe()) {
+      throw new UploadDeferredError('Deferred upload: sent changes not confirmed yet');
     }
     // Capture the cursor synchronously adjacent to backup() so the bound
     // mutation version matches the blob contents exactly.
@@ -516,6 +529,51 @@ export class DatabaseSync {
     if (typeof window !== 'undefined' && typeof window.removeEventListener === 'function') {
       window.removeEventListener('pagehide', this.onHidden);
     }
+  }
+
+  /** No sent-but-unconfirmed mutation and the cursor covers our own acks. */
+  private isCaptureSafe(): boolean {
+    if (this.deps.hasUnackedMutations?.()) return false;
+    if (this.deps.isCursorBehindAcks?.()) return false;
+    return true;
+  }
+
+  /**
+   * Out-of-band content (an import, a restore, a rate refresh) exists only in
+   * this DB, so it must be uploaded — but only once our own in-flight
+   * mutations are confirmed, or the snapshot's log position is wrong. Waits
+   * for that (normally milliseconds), then gives up rather than mislabel.
+   */
+  private async uploadOutOfBandWhenSafe(
+    db: WebDatabaseInstance,
+    passphrase: string,
+    keyVersion: number
+  ): Promise<void> {
+    const deadline = Date.now() + this.getOutOfBandWaitMs();
+    for (;;) {
+      if (this.isCaptureSafe()) {
+        try {
+          await this.doUpload(db, passphrase, keyVersion, true);
+          return;
+        } catch (error) {
+          if (!(error instanceof UploadDeferredError)) throw error;
+        }
+      }
+      if (Date.now() >= deadline) {
+        throw new Error('Out-of-band upload not taken: sent changes were not confirmed in time');
+      }
+      await new Promise<void>((resolve) => {
+        this.scheduleTimer(resolve, this.getOutOfBandPollMs());
+      });
+    }
+  }
+
+  private getOutOfBandWaitMs(): number {
+    return this.deps.uploadPolicy?.outOfBandWaitMs ?? 30_000;
+  }
+
+  private getOutOfBandPollMs(): number {
+    return this.deps.uploadPolicy?.outOfBandPollMs ?? 250;
   }
 
   // ---- Debounce internals ----

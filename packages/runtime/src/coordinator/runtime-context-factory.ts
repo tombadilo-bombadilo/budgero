@@ -169,6 +169,7 @@ export class RuntimeContextFactory {
       checkApiHealth: () => this.deps.checkApiHealth(),
       getMutationCursor: () => syncRef?.getLocalVersion() ?? 0,
       hasUnackedMutations: () => (offlineQueueRef?.peekQueueLength() ?? 0) > 0,
+      isCursorBehindAcks: () => syncRef?.isCursorBehindAcks() ?? false,
       canUploadSnapshot: () =>
         (syncRef?.hasInitialCatchUpSettled() ?? false) && !(syncRef?.isCursorBehindAcks() ?? false),
       flushLocalPersistence,
