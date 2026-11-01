@@ -55,7 +55,8 @@ if ($Version -notmatch '^v') {
     $Version = "v$Version"
 }
 
-$downloadPrefix = if ($versionExplicit) { "$bucketHost/$Version" } else { "$bucketHost/latest" }
+# Always the versioned folder: latest.txt names it (releases no longer copy to latest/).
+$downloadPrefix = "$bucketHost/$Version"
 
 $arch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
 switch ($arch) {

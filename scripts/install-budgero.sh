@@ -121,10 +121,9 @@ if [[ "$VERSION" != v* ]]; then
   VERSION="v${VERSION}"
 fi
 
-DOWNLOAD_PREFIX="${BUCKET_HOST}/latest"
-if [ "$VERSION_EXPLICIT" = true ]; then
-  DOWNLOAD_PREFIX="${BUCKET_HOST}/${VERSION}"
-fi
+# Always the versioned folder: latest.txt names it, and releases no longer
+# keep a second full copy under latest/.
+DOWNLOAD_PREFIX="${BUCKET_HOST}/${VERSION}"
 
 if [ -z "$INSTALL_DIR" ]; then
   echo "error: install directory resolved to an empty path; set BUDGERO_INSTALL_DIR" >&2
