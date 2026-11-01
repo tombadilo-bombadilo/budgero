@@ -68,4 +68,21 @@ describe('runtimeErrorBridge', () => {
     expect(options).toMatchObject({ synthetic: false });
     expect(options).not.toHaveProperty('code');
   });
+
+  it('labels a generic upload error by its log message, and keeps a specific code', () => {
+    runtimeErrorBridge('warn', 'DatabaseSync', 'Blob upload failed; retry armed', {
+      originalError: new Error('Request failed'),
+    });
+    expect(captureAppError.mock.calls[0]![1]).toMatchObject({
+      synthetic: false,
+      code: 'snapshot_upload_failed',
+    });
+
+    captureAppError.mockClear();
+    runtimeErrorBridge('warn', 'DatabaseSync', 'Blob upload failed; retry armed', {
+      originalError: new TypeError('Failed to fetch'),
+    });
+    // A network failure classifies itself: the bridge leaves the code to it.
+    expect(captureAppError.mock.calls[0]![1].code).toBeUndefined();
+  });
 });

@@ -157,6 +157,7 @@ export class RuntimeContextFactory {
     const flushLocalPersistence = (): Promise<boolean> => localPersist.flush();
 
     const dbSync = new DatabaseSync(params.spaceId, {
+      log: scopedLogger('DatabaseSync', this.deps.log),
       getDatabase: () => params.db,
       getPassphrase: (spaceId) => this.deps.getPassphrase(spaceId),
       getEncryptionKeyVersion: (spaceId) => this.deps.getEncryptionKeyVersion(spaceId),
