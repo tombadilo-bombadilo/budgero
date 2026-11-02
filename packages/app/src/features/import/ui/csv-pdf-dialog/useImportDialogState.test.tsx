@@ -322,4 +322,60 @@ describe('import wizard execution', () => {
     });
     expect(mocks.mutate.mock.calls[0][1].payload.importIdentities[0].operationId).toBe(override);
   });
+
+  it('imports oldest first, keeping file order within a day', async () => {
+    const file = { arrayBuffer: async () => new TextEncoder().encode('desc').buffer } as File;
+    mocks.parse.mockResolvedValue({
+      data: {
+        source: { file, fileName: 'newest-first.csv', type: 'csv' },
+        headers: ['Date', 'Amount'],
+        rows: [
+          { Date: '2026-09-03', Amount: '-30' },
+          { Date: '2026-09-02', Amount: '-21' },
+          { Date: '2026-09-02', Amount: '-22' },
+          { Date: '2026-09-01', Amount: '-10' },
+        ],
+      },
+    });
+    const { result } = await preview();
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    const imported = mocks.mutate.mock.calls
+      .map(([, spec]) => spec)
+      .filter((spec) => spec.op === 'transactions.import')
+      .map((spec) => [spec.payload.date, spec.payload.outflow]);
+    expect(imported).toEqual([
+      ['2026-09-01', 10000],
+      ['2026-09-02', 21000],
+      ['2026-09-02', 22000],
+      ['2026-09-03', 30000],
+    ]);
+  });
+
+  it('saves the run record in batches carrying only the new transactions', async () => {
+    const file = { arrayBuffer: async () => new TextEncoder().encode('big').buffer } as File;
+    mocks.parse.mockResolvedValue({
+      data: {
+        source: { file, fileName: 'big.csv', type: 'csv' },
+        headers: ['Date', 'Amount'],
+        rows: Array.from({ length: 250 }, (_, i) => ({
+          Date: `2026-0${1 + Math.floor(i / 28)}-${String(1 + (i % 28)).padStart(2, '0')}`,
+          Amount: `-${i + 1}`,
+        })),
+      },
+    });
+    const { result } = await preview();
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    const calls = mocks.record.mock.calls.map(([arg]) => arg.input);
+    // Opening record, two full batches of 100, and the final record.
+    expect(calls.length).toBeLessThanOrEqual(5);
+    expect(Math.max(...calls.map((c) => c.transactionIds.length))).toBeLessThanOrEqual(100);
+    const all = calls.flatMap((c) => c.transactionIds);
+    expect(new Set(all).size).toBe(250);
+    expect(all).toHaveLength(250);
+    expect(calls.at(-1)?.status).toBe('completed');
+  });
 });
