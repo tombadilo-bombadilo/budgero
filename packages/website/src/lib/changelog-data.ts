@@ -21,11 +21,67 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.20.7',
+    date: 'November 2, 2026',
+    summary:
+      'Much faster large imports and syncing, a real "go back" in Earlier versions, reliable saving in Firefox, and a fix for the cut-off planning panel.',
+    isLatest: true,
+    items: [
+      {
+        type: 'improved',
+        title: 'Large imports are much faster',
+        description:
+          'A 20,000-row CSV import now takes about a minute instead of more than 20 minutes, and no longer slows down as the account grows. It also sends far less data to the server.',
+      },
+      {
+        type: 'improved',
+        title: 'Faster catching up',
+        description:
+          'A device catching up on many changes (after an import on another device or a restore) applies them about ten times faster.',
+      },
+      {
+        type: 'new',
+        title: 'Go back to an earlier version',
+        description:
+          'Settings → Earlier versions now lets you choose: go back to a copy and discard everything changed after it, imports included, or restore it and keep the later changes as before.',
+      },
+      {
+        type: 'fixed',
+        title: 'Saving in Firefox',
+        description:
+          'In Firefox, two saves of your local budget at the same moment could fail (older Firefox) or leave an older copy on disk (current Firefox). Saves now happen one at a time.',
+      },
+      {
+        type: 'fixed',
+        title: 'Planning side panel cut off',
+        description:
+          'With longer translations, such as the German repeating-goal label, the side panel on Planning was cut off on the right and the goal edit button was hidden.',
+      },
+      {
+        type: 'fixed',
+        title: 'Duplicate categories after onboarding',
+        description:
+          'Another case where a copy of a new workspace could be saved too early, which created the starter categories twice, is fixed.',
+      },
+      {
+        type: 'improved',
+        title: 'Budget settings for shared workspaces',
+        description:
+          'Members of a shared workspace can now change budget settings. Creating and deleting budgets stays with the owner.',
+      },
+      {
+        type: 'fixed',
+        title: 'Small fixes',
+        description:
+          'Creating a budget no longer fails when you don’t pick an icon, and the cleared shortcut (C) no longer errors on some browser autofill events.',
+      },
+    ],
+  },
+  {
     version: 'v1.20.6',
     date: 'October 31, 2026',
     summary:
       'Fixes a sync problem that could duplicate the categories created during onboarding.',
-    isLatest: true,
     items: [
       {
         type: 'fixed',
