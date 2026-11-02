@@ -127,4 +127,21 @@ describe('SnapshotHistoryList', () => {
       history.current.mutation_version = before;
     }
   });
+
+  it('only offers going back for a copy older than the last reset', async () => {
+    const entry = history.entries[0] as { replayable?: boolean };
+    entry.replayable = false;
+    try {
+      renderList();
+      fireEvent.click(screen.getAllByRole('button', { name: /Restore/ })[0]!);
+      await screen.findByText('Restore this version?');
+      expect(screen.getByLabelText(/Restore and keep later changes/)).toBeDisabled();
+      expect(screen.getByText(/Not available for this copy/)).toBeTruthy();
+      expect(screen.getByTestId('confirm-restore')).toHaveTextContent('Go back');
+      fireEvent.click(screen.getByTestId('confirm-restore'));
+      await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ entryId: 7, mode: 'reset' }));
+    } finally {
+      delete entry.replayable;
+    }
+  });
 });

@@ -12314,6 +12314,10 @@ msgstr "Niet toegepast"
 msgid "Not attributed"
 msgstr "Niet toegewezen"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Not available for this copy: it is older than the last time this workspace was taken back to an earlier version, and re-applying would bring back the changes that discarded."
+msgstr "Niet beschikbaar voor deze kopie: hij is ouder dan de laatste keer dat deze werkruimte naar een eerdere versie is teruggezet, en opnieuw toepassen zou de toen verwijderde wijzigingen terugbrengen."
+
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "Not available in self-hosted builds."
 msgstr "Niet beschikbaar in zelf-gehoste versies."

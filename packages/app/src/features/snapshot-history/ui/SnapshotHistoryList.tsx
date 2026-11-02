@@ -7,6 +7,7 @@ import type { SnapshotHistoryEntry } from '@shared/api/api-client';
 import { formatDate, formatRelativeToNow } from '@shared/lib/date-format';
 import { parseDateKey } from '@shared/lib/date-utils';
 import { getErrorMessage } from '@shared/lib/errors';
+import { cn } from '@shared/lib/utils';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
@@ -72,6 +73,7 @@ export function SnapshotHistoryList() {
   const [pending, setPending] = useState<SnapshotHistoryEntry | null>(null);
   // Default keeps every edit; going back is the deliberate choice.
   const [mode, setMode] = useState<RestoreMode>('replay');
+  const canReplay = pending?.replayable !== false;
   const laterChanges =
     pending && data?.current
       ? Math.max(0, data.current.mutation_version - pending.mutation_version)
@@ -171,7 +173,7 @@ export function SnapshotHistoryList() {
                   variant="outline"
                   disabled={!entry.restorable || restore.isPending}
                   onClick={() => {
-                    setMode('replay');
+                    setMode(entry.replayable === false ? 'reset' : 'replay');
                     setPending(entry);
                   }}
                 >
@@ -220,18 +222,34 @@ export function SnapshotHistoryList() {
               </Label>
               <Label
                 htmlFor="restore-mode-replay"
-                className="flex cursor-pointer items-start gap-3 rounded-md border p-3 font-normal"
+                className={cn(
+                  'flex items-start gap-3 rounded-md border p-3 font-normal',
+                  canReplay ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'
+                )}
               >
-                <RadioGroupItem value="replay" id="restore-mode-replay" className="mt-0.5" />
+                <RadioGroupItem
+                  value="replay"
+                  id="restore-mode-replay"
+                  className="mt-0.5"
+                  disabled={!canReplay}
+                />
                 <span className="space-y-1">
                   <span className="block text-sm font-medium">
                     <Trans>Restore and keep later changes</Trans>
                   </span>
                   <span className="block text-xs text-muted-foreground">
-                    <Trans>
-                      Re-applies every change made after it, so no edits are lost. Use this when the
-                      workspace looks empty or broken after syncing.
-                    </Trans>
+                    {canReplay ? (
+                      <Trans>
+                        Re-applies every change made after it, so no edits are lost. Use this when
+                        the workspace looks empty or broken after syncing.
+                      </Trans>
+                    ) : (
+                      <Trans>
+                        Not available for this copy: it is older than the last time this workspace
+                        was taken back to an earlier version, and re-applying would bring back the
+                        changes that discarded.
+                      </Trans>
+                    )}
                   </span>
                 </span>
               </Label>

@@ -139,6 +139,18 @@ func (s *SnapshotHistoryService) AdvanceToEntry(
 	return s.spaceRepo.RestoreSyncStateCAS(ctx, spaceID, entry, expectedVersion)
 }
 
+// ResetFloor is the change-log position of the latest "go back" restore: a
+// copy older than it can only be gone back to, never replayed (the replay
+// would bring back the changes that restore discarded).
+func (s *SnapshotHistoryService) ResetFloor(ctx context.Context, spaceID string) (int64, error) {
+	return s.spaceRepo.ResetFloor(ctx, spaceID)
+}
+
+// RaiseResetFloor records a "go back" restore bound at floor.
+func (s *SnapshotHistoryService) RaiseResetFloor(ctx context.Context, spaceID string, floor int64) error {
+	return s.spaceRepo.RaiseResetFloor(ctx, spaceID, floor)
+}
+
 // Prune keeps the newest keep entries plus, for the last days days, the
 // newest entry of each UTC day (by when it became current), and deletes the
 // rest (row first, then file: a leftover file is harmless, a row without a

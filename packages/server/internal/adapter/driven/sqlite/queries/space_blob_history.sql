@@ -39,3 +39,11 @@ WHERE space_id = ? AND id = ?;
 
 -- name: DeleteSpaceBlobHistory :exec
 DELETE FROM space_blob_history WHERE space_id = ?;
+
+-- name: GetSpaceResetFloor :one
+SELECT reset_floor FROM budget_space_blobs WHERE space_id = ?;
+
+-- name: RaiseSpaceResetFloor :exec
+UPDATE budget_space_blobs
+SET reset_floor = MAX(reset_floor, CAST(sqlc.arg(floor) AS INTEGER))
+WHERE space_id = sqlc.arg(space_id);

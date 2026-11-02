@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"errors"
 	"path/filepath"
 	"time"
 )
@@ -14,6 +15,10 @@ const (
 	// SnapshotOriginRestore is a promotion from the server-side history.
 	SnapshotOriginRestore = "restore"
 )
+
+// ErrSnapshotNotReplayable means the copy is older than the latest "go back"
+// restore, so replaying the changes after it would bring discarded ones back.
+var ErrSnapshotNotReplayable = errors.New("snapshot is older than the last reset and can only be gone back to")
 
 // SnapshotHistoryEntry is a space snapshot that was replaced and kept on the
 // server so it can be downloaded or restored.

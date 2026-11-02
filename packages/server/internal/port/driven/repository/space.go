@@ -67,6 +67,13 @@ type SpaceRepository interface {
 	// returns domain.ErrSyncVersionConflict otherwise.
 	RestoreSyncStateCAS(ctx context.Context, spaceID string, entry *domain.SnapshotHistoryEntry, expectedVersion int64) (int64, error)
 
+	// ResetFloor is the change-log position of the space's latest "go back"
+	// restore (0 when there was none).
+	ResetFloor(ctx context.Context, spaceID string) (int64, error)
+
+	// RaiseResetFloor moves the reset floor up to floor (never down).
+	RaiseResetFloor(ctx context.Context, spaceID string, floor int64) error
+
 	// Snapshot history operations
 
 	// InsertSnapshotHistory records a replaced snapshot and returns its id.

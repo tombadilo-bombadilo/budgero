@@ -465,6 +465,10 @@ type SnapshotHistoryService interface {
 	// Get returns one entry of the space's history, or
 	// domain.ErrSnapshotHistoryNotFound.
 	Get(ctx context.Context, spaceID string, id int64) (*domain.SnapshotHistoryEntry, error)
+	// ResetFloor is the change-log position of the latest "go back" restore.
+	ResetFloor(ctx context.Context, spaceID string) (int64, error)
+	// RaiseResetFloor records a "go back" restore bound at floor.
+	RaiseResetFloor(ctx context.Context, spaceID string, floor int64) error
 }
 
 // AnalyticsTracker records server-side product analytics events. Track never

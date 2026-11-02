@@ -39,6 +39,7 @@ type BudgetSpaceBlob struct {
 	MutationVersion      int64          `json:"mutation_version"`
 	Origin               sql.NullString `json:"origin"`
 	PublishedAt          sql.NullTime   `json:"published_at"`
+	ResetFloor           int64          `json:"reset_floor"`
 }
 
 type BudgetSpaceInvite struct {

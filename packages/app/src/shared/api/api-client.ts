@@ -417,6 +417,8 @@ export interface SnapshotHistoryEntry {
   origin: 'sync' | 'out_of_band' | 'restore';
   encryption_key_version: number;
   restorable: boolean;
+  /** False for copies older than the latest "go back": only going back is possible. */
+  replayable?: boolean;
 }
 
 export interface SnapshotHistory {

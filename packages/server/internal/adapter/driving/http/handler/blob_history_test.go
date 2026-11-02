@@ -164,6 +164,7 @@ type historyListing struct {
 		EncryptionKeyVersion int64     `json:"encryption_key_version"`
 		DataFormatVersion    int64     `json:"data_format_version"`
 		Restorable           bool      `json:"restorable"`
+		Replayable           bool      `json:"replayable"`
 	} `json:"entries"`
 }
 
@@ -506,12 +507,42 @@ func TestRestoreSnapshot_ResetDiscardsLaterChanges(t *testing.T) {
 	if dl.Header().Get("X-Mutation-Version") != "23446" || !bytes.Equal(dl.Body.Bytes(), good) {
 		t.Fatalf("download after reset: %v", dl.Header())
 	}
-	// The kept copy itself is unchanged and can still be restored with replay.
+	// The kept copies are unchanged, but every one of them predates the reset:
+	// replaying from them would bring the discarded changes back.
 	l := f.list(f.ownerID)
 	for _, e := range l.Entries {
 		if e.ID == entryID && e.MutationVersion != 100 {
 			t.Fatalf("history entry changed: %+v", e)
 		}
+		if e.Replayable {
+			t.Fatalf("entry older than the reset is replayable: %+v", e)
+		}
+	}
+	replay := f.do(http.MethodPost, fmt.Sprintf("%s/%d/restore?space_id=%s", historyRoute, entryID, f.spaceID), f.ownerID, nil, nil)
+	if replay.Code != http.StatusConflict || !strings.Contains(replay.Body.String(), "replay_unavailable") {
+		t.Fatalf("replay of a pre-reset copy = %d %s", replay.Code, replay.Body.String())
+	}
+	// Going back to it again is still allowed.
+	again := f.do(http.MethodPost, fmt.Sprintf("%s/%d/restore?space_id=%s&mode=reset", historyRoute, entryID, f.spaceID), f.ownerID, nil, nil)
+	if again.Code != http.StatusOK {
+		t.Fatalf("second reset = %d %s", again.Code, again.Body.String())
+	}
+
+	// Copies made after the reset replay normally.
+	var cur struct {
+		Version int64 `json:"version"`
+	}
+	if err := json.Unmarshal(again.Body.Bytes(), &cur); err != nil {
+		t.Fatal(err)
+	}
+	f.upload([]byte("after-reset"), cur.Version, 23447, nil)
+	l = f.list(f.ownerID)
+	if !l.Entries[0].Replayable || l.Entries[0].MutationVersion != 23446 {
+		t.Fatalf("post-reset copy = %+v", l.Entries[0])
+	}
+	ok := f.do(http.MethodPost, fmt.Sprintf("%s/%d/restore?space_id=%s", historyRoute, l.Entries[0].ID, f.spaceID), f.ownerID, nil, nil)
+	if ok.Code != http.StatusOK {
+		t.Fatalf("replay of a post-reset copy = %d %s", ok.Code, ok.Body.String())
 	}
 }
 

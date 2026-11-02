@@ -12314,6 +12314,10 @@ msgstr "Sin aplicar"
 msgid "Not attributed"
 msgstr "Sin atribuir"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Not available for this copy: it is older than the last time this workspace was taken back to an earlier version, and re-applying would bring back the changes that discarded."
+msgstr "No disponible para esta copia: es anterior a la última vez que este espacio de trabajo volvió a una versión anterior, y volver a aplicar traería de vuelta los cambios que se descartaron entonces."
+
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "Not available in self-hosted builds."
 msgstr "No disponible en compilaciones autoalojadas."

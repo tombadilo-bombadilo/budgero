@@ -72,7 +72,7 @@ func snapshotCurrentJSON(b *domain.SpaceBlob) map[string]any {
 }
 
 // snapshotEntryJSON is one entry of a history listing.
-func snapshotEntryJSON(e *domain.SnapshotHistoryEntry, current *domain.SpaceBlob) map[string]any {
+func snapshotEntryJSON(e *domain.SnapshotHistoryEntry, current *domain.SpaceBlob, resetFloor int64) map[string]any {
 	return map[string]any{
 		"id":                     e.ID,
 		"sync_version":           e.SyncVersion,
@@ -84,6 +84,9 @@ func snapshotEntryJSON(e *domain.SnapshotHistoryEntry, current *domain.SpaceBlob
 		"encryption_key_version": e.EncryptionKeyVersion,
 		"data_format_version":    e.DataFormatVersion,
 		"restorable":             e.RestorableOver(current),
+		// False for copies older than the latest "go back": they can be gone
+		// back to, but replaying from them would bring discarded changes back.
+		"replayable": e.MutationVersion >= resetFloor,
 	}
 }
 
@@ -99,8 +102,12 @@ func (h *Handlers) listSnapshotHistory(c echo.Context, spaceID string) error {
 	lock.RLock()
 	current, err := hist.Current(ctx, spaceID)
 	var entries []domain.SnapshotHistoryEntry
+	var resetFloor int64
 	if err == nil {
 		entries, err = hist.List(ctx, spaceID)
+	}
+	if err == nil {
+		resetFloor, err = hist.ResetFloor(ctx, spaceID)
 	}
 	lock.RUnlock()
 	if err != nil {
@@ -109,7 +116,7 @@ func (h *Handlers) listSnapshotHistory(c echo.Context, spaceID string) error {
 
 	out := make([]map[string]any, 0, len(entries))
 	for i := range entries {
-		out = append(out, snapshotEntryJSON(&entries[i], current))
+		out = append(out, snapshotEntryJSON(&entries[i], current, resetFloor))
 	}
 	c.Response().Header().Set("Cache-Control", "no-store")
 	return c.JSON(http.StatusOK, map[string]any{
@@ -300,6 +307,11 @@ func (h *Handlers) restoreSnapshotAndRespond(
 			"error":   "not_restorable",
 			"message": "This snapshot was saved with a different encryption key or a newer data format and can't be restored.",
 		})
+	case errors.Is(err, domain.ErrSnapshotNotReplayable):
+		return c.JSON(http.StatusConflict, map[string]any{
+			"error":   "replay_unavailable",
+			"message": "This copy is older than the last time the workspace was taken back to an earlier version. You can go back to it, but not keep later changes.",
+		})
 	case errors.Is(err, domain.ErrSyncVersionConflict):
 		return c.JSON(http.StatusConflict, map[string]any{
 			"error":   "version_conflict",
@@ -379,6 +391,15 @@ func (h *Handlers) restoreSnapshot(
 	if !entry.RestorableOver(current) {
 		return entry, 0, "", domain.ErrSnapshotNotRestorable
 	}
+	if !reset {
+		floor, floorErr := hist.ResetFloor(ctx, spaceID)
+		if floorErr != nil {
+			return entry, 0, "", floorErr
+		}
+		if entry.MutationVersion < floor {
+			return entry, 0, "", domain.ErrSnapshotNotReplayable
+		}
+	}
 	if reset {
 		latest, latestErr := h.services.Sync.GetLatestVersion(ctx, spaceID)
 		if latestErr != nil {
@@ -405,5 +426,9 @@ func (h *Handlers) restoreSnapshot(
 	version, err = h.publishLocked(ctx, current, tempPath, domain.SnapshotOriginRestore, entry.MutationVersion, func() (int64, error) {
 		return hist.AdvanceToEntry(ctx, spaceID, entry, current.SyncVersion)
 	})
+	if err == nil && reset {
+		// From here on, copies older than this point can only be gone back to.
+		err = hist.RaiseResetFloor(ctx, spaceID, entry.MutationVersion)
+	}
 	return entry, version, entry.Hash, err
 }
