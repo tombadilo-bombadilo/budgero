@@ -21,11 +21,34 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.20.8',
+    date: 'November 2, 2026',
+    summary: 'Fixes for new budgets: the first account is always created, and reloading during setup works.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'First account missing after setup',
+        description:
+          'If you left the account name empty during setup, the account was not created. It is now created with its type as the name, such as "Checking".',
+      },
+      {
+        type: 'fixed',
+        title: 'Blank page when reloading setup',
+        description: 'Reloading the page or opening a link during setup showed a blank page instead of the app.',
+      },
+      {
+        type: 'fixed',
+        title: 'Keyboard shortcut error',
+        description: 'Some keyboard events, such as from autofill, could trigger an error in the shortcut handlers.',
+      },
+    ],
+  },
+  {
     version: 'v1.20.7',
     date: 'November 2, 2026',
     summary:
       'Much faster large imports and syncing, a real "go back" in Earlier versions, reliable saving in Firefox, and a fix for the cut-off planning panel.',
-    isLatest: true,
     items: [
       {
         type: 'improved',
