@@ -467,6 +467,54 @@ func TestRestoreSnapshot_PromotesBumpsVersionAndNotifiesOutOfBand(t *testing.T) 
 	f.upload([]byte("after-restore"), resp.Version, 19371, nil)
 }
 
+func TestRestoreSnapshot_ResetDiscardsLaterChanges(t *testing.T) {
+	f := newHistoryFixture(t, historyOptions{keep: 10, days: 7, withHub: true})
+	good := bytes.Repeat([]byte("g"), 4096)
+	v1 := f.upload(good, 0, 100, nil)
+	f.upload([]byte("after-import"), v1, 23441, nil)
+	// The log holds changes up to #23446 (e.g. a large import plus edits).
+	if _, err := f.tc.DB.Exec(
+		`INSERT INTO mutation_log (id, space_id, user_id, version, op, args, timestamp, base_version)
+		 VALUES ('m-last', ?, ?, 23446, '', '{}', CURRENT_TIMESTAMP, 23445)`,
+		f.spaceID, f.ownerID,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	entryID := f.list(f.ownerID).Entries[0].ID
+	bad := f.do(http.MethodPost, fmt.Sprintf("%s/%d/restore?space_id=%s&mode=undo", historyRoute, entryID, f.spaceID), f.ownerID, nil, nil)
+	if bad.Code != http.StatusBadRequest {
+		t.Fatalf("unknown mode status = %d", bad.Code)
+	}
+
+	rec := f.do(http.MethodPost, fmt.Sprintf("%s/%d/restore?space_id=%s&mode=reset", historyRoute, entryID, f.spaceID), f.ownerID, nil, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("reset status = %d body %s", rec.Code, rec.Body.String())
+	}
+	var resp struct {
+		MutationVersion int64 `json:"mutation_version"`
+		Reset           bool  `json:"reset"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	// Bound to the latest log position: devices skip #101..#23446.
+	if resp.MutationVersion != 23446 || !resp.Reset {
+		t.Fatalf("reset response = %+v", resp)
+	}
+	dl := f.do(http.MethodGet, "/api/v1/database/blob?space_id="+f.spaceID, f.ownerID, nil, nil)
+	if dl.Header().Get("X-Mutation-Version") != "23446" || !bytes.Equal(dl.Body.Bytes(), good) {
+		t.Fatalf("download after reset: %v", dl.Header())
+	}
+	// The kept copy itself is unchanged and can still be restored with replay.
+	l := f.list(f.ownerID)
+	for _, e := range l.Entries {
+		if e.ID == entryID && e.MutationVersion != 100 {
+			t.Fatalf("history entry changed: %+v", e)
+		}
+	}
+}
+
 func TestRestoreSnapshot_RefusesNotRestorable(t *testing.T) {
 	for _, tc := range []struct {
 		name  string

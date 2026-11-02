@@ -102,22 +102,29 @@ describe('SnapshotHistoryList', () => {
     expect((buttons[1] as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('asks for confirmation, then restores the chosen copy', async () => {
+  it('restores and keeps later changes by default', async () => {
     renderList();
     fireEvent.click(screen.getAllByRole('button', { name: /Restore/ })[0]!);
     expect(await screen.findByText('Restore this version?')).toBeTruthy();
-    const confirm = screen.getAllByRole('button', { name: 'Restore' }).at(-1)!;
-    fireEvent.click(confirm);
-    await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith(7));
+    fireEvent.click(screen.getByTestId('confirm-restore'));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ entryId: 7, mode: 'replay' }));
   });
 
-  it('explains that restoring does not undo imports and links to Import History', () => {
-    renderList();
-    const hint = screen.getByTestId('restore-import-hint');
-    expect(hint).toHaveTextContent(/doesn't undo changes/);
-    expect(screen.getByRole('link', { name: /Import History/ })).toHaveAttribute(
-      'href',
-      '/settings/imports'
-    );
+  it('can go back to the copy, discarding the later changes', async () => {
+    const before = history.current.mutation_version;
+    history.current.mutation_version = 19500;
+    try {
+      renderList();
+      fireEvent.click(screen.getAllByRole('button', { name: /Restore/ })[0]!);
+      await screen.findByText('Restore this version?');
+      fireEvent.click(screen.getByLabelText(/Go back to this version/));
+      expect(screen.getByText(/Discards the 131 changes made after it/)).toBeTruthy();
+      const confirm = screen.getByTestId('confirm-restore');
+      expect(confirm).toHaveTextContent('Go back');
+      fireEvent.click(confirm);
+      await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ entryId: 7, mode: 'reset' }));
+    } finally {
+      history.current.mutation_version = before;
+    }
   });
 });

@@ -1,8 +1,7 @@
 import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { History, Info, RotateCcw } from 'lucide-react';
+import { History, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import type { SnapshotHistoryEntry } from '@shared/api/api-client';
 import { formatDate, formatRelativeToNow } from '@shared/lib/date-format';
@@ -11,9 +10,19 @@ import { getErrorMessage } from '@shared/lib/errors';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
-import { ConfirmDialog } from '@shared/ui/confirm-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@shared/ui/dialog';
+import { Label } from '@shared/ui/label';
+import { RadioGroup, RadioGroupItem } from '@shared/ui/radio-group';
 import {
   useRestoreSnapshot,
+  type RestoreMode,
   useSnapshotHistory,
   useSnapshotSummary,
 } from '../api/useSnapshotHistory';
@@ -61,6 +70,12 @@ export function SnapshotHistoryList() {
   const { data, isLoading, error } = useSnapshotHistory();
   const restore = useRestoreSnapshot();
   const [pending, setPending] = useState<SnapshotHistoryEntry | null>(null);
+  // Default keeps every edit; going back is the deliberate choice.
+  const [mode, setMode] = useState<RestoreMode>('replay');
+  const laterChanges =
+    pending && data?.current
+      ? Math.max(0, data.current.mutation_version - pending.mutation_version)
+      : 0;
 
   const originLabel = (origin: SnapshotHistoryEntry['origin']) =>
     origin === 'out_of_band'
@@ -72,10 +87,13 @@ export function SnapshotHistoryList() {
   const confirmRestore = async () => {
     if (!pending) return;
     try {
-      await restore.mutateAsync(pending.id);
-      toast.success(t`Earlier version restored`, {
-        description: t`Your other devices will reload it the next time they sync.`,
-      });
+      await restore.mutateAsync({ entryId: pending.id, mode });
+      toast.success(
+        mode === 'reset' ? t`Workspace reset to the earlier version` : t`Earlier version restored`,
+        {
+          description: t`Your other devices will reload it the next time they sync.`,
+        }
+      );
       setPending(null);
     } catch (err) {
       toast.error(t`Couldn't restore this version`, { description: getErrorMessage(err) });
@@ -95,29 +113,13 @@ export function SnapshotHistoryList() {
         <CardDescription>
           <Trans>
             The server keeps the last few copies of this workspace, and one a day for the past week.
-            Restoring a copy replaces the workspace on all devices and then re-applies every change
-            made after it, so no edits are lost. Use it when a workspace looks empty or broken after
-            syncing.
+            You can go back to a copy and discard everything changed after it, or restore it and
+            re-apply the later changes. Use it when a workspace looks empty or broken after syncing,
+            or to undo a batch of changes.
           </Trans>
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
-        <div
-          className="flex gap-2 rounded-md border border-border/70 bg-muted/40 p-3 text-xs text-muted-foreground"
-          data-testid="restore-import-hint"
-        >
-          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-          <p>
-            <Trans>
-              Restoring doesn't undo changes: everything made after the copy is applied again,
-              imports included. To remove an import, undo it in{' '}
-              <Link to="/settings/imports" className="font-medium text-foreground underline">
-                Imports → Import History
-              </Link>
-              .
-            </Trans>
-          </p>
-        </div>
         {isLoading ? (
           <p className="text-sm text-muted-foreground">
             <Trans>Loading…</Trans>
@@ -168,7 +170,10 @@ export function SnapshotHistoryList() {
                   size="sm"
                   variant="outline"
                   disabled={!entry.restorable || restore.isPending}
-                  onClick={() => setPending(entry)}
+                  onClick={() => {
+                    setMode('replay');
+                    setPending(entry);
+                  }}
                 >
                   <RotateCcw className="h-4 w-4 mr-1" />
                   <Trans>Restore</Trans>
@@ -177,21 +182,88 @@ export function SnapshotHistoryList() {
             ))}
           </ul>
         )}
-        <ConfirmDialog
-          open={pending !== null}
-          onOpenChange={(open) => !open && setPending(null)}
-          title={t`Restore this version?`}
-          description={
-            pending
-              ? t`The workspace on all devices is replaced with the copy from ${formatDate(new Date(pending.became_current_at), 'PPp')}, then every change made after it is applied again, so later imports and edits come back. To remove an import, undo it in Imports → Import History instead. Download a backup first if you are unsure.`
-              : ''
-          }
-          confirmText={t`Restore`}
-          cancelText={t`Cancel`}
-          loadingText={t`Restoring…`}
-          isLoading={restore.isPending}
-          onConfirm={confirmRestore}
-        />
+        <Dialog open={pending !== null} onOpenChange={(open) => !open && setPending(null)}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>
+                <Trans>Restore this version?</Trans>
+              </DialogTitle>
+              <DialogDescription>
+                {pending
+                  ? t`Copy from ${formatDate(new Date(pending.became_current_at), 'PPp')}. The workspace is replaced on all your devices.`
+                  : ''}
+              </DialogDescription>
+            </DialogHeader>
+            <RadioGroup
+              value={mode}
+              onValueChange={(value) => setMode(value as RestoreMode)}
+              className="gap-3"
+            >
+              <Label
+                htmlFor="restore-mode-reset"
+                className="flex cursor-pointer items-start gap-3 rounded-md border p-3 font-normal"
+              >
+                <RadioGroupItem value="reset" id="restore-mode-reset" className="mt-0.5" />
+                <span className="space-y-1">
+                  <span className="block text-sm font-medium">
+                    <Trans>Go back to this version</Trans>
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    {laterChanges > 0
+                      ? plural(laterChanges, {
+                          one: 'Discards the # change made after it, imports included.',
+                          other: 'Discards the # changes made after it, imports included.',
+                        })
+                      : t`Discards any change made after it, imports included.`}
+                  </span>
+                </span>
+              </Label>
+              <Label
+                htmlFor="restore-mode-replay"
+                className="flex cursor-pointer items-start gap-3 rounded-md border p-3 font-normal"
+              >
+                <RadioGroupItem value="replay" id="restore-mode-replay" className="mt-0.5" />
+                <span className="space-y-1">
+                  <span className="block text-sm font-medium">
+                    <Trans>Restore and keep later changes</Trans>
+                  </span>
+                  <span className="block text-xs text-muted-foreground">
+                    <Trans>
+                      Re-applies every change made after it, so no edits are lost. Use this when the
+                      workspace looks empty or broken after syncing.
+                    </Trans>
+                  </span>
+                </span>
+              </Label>
+            </RadioGroup>
+            <p className="text-xs text-muted-foreground">
+              <Trans>Download a backup first if you are unsure.</Trans>
+            </p>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setPending(null)}
+                disabled={restore.isPending}
+              >
+                <Trans>Cancel</Trans>
+              </Button>
+              <Button
+                variant={mode === 'reset' ? 'destructive' : 'default'}
+                onClick={confirmRestore}
+                disabled={restore.isPending}
+                data-testid="confirm-restore"
+              >
+                {restore.isPending ? (
+                  <Trans>Restoring…</Trans>
+                ) : mode === 'reset' ? (
+                  <Trans>Go back</Trans>
+                ) : (
+                  <Trans>Restore</Trans>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );

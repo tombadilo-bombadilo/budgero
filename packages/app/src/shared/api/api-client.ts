@@ -446,12 +446,17 @@ export const blobApi = {
     ),
 
   /** Make an earlier copy the workspace's snapshot again (every device reloads it). */
+  /**
+   * mode 'replay' re-applies every change made after the copy; 'reset' goes
+   * back to exactly that copy and discards them.
+   */
   restoreHistory: (
     spaceId: string,
-    entryId: number
+    entryId: number,
+    mode: 'replay' | 'reset' = 'replay'
   ): Promise<{ version: number; mutation_version: number }> =>
     apiClient.post(
-      `/database/blob/history/${entryId}/restore?space_id=${encodeURIComponent(spaceId)}`,
+      `/database/blob/history/${entryId}/restore?space_id=${encodeURIComponent(spaceId)}&mode=${mode}`,
       {}
     ),
 

@@ -238,7 +238,24 @@ func (h *Handlers) RestoreSnapshotHistoryEntry(c echo.Context) error {
 	if err != nil {
 		return mapServiceError(err)
 	}
-	return h.restoreSnapshotAndRespond(c, userID, spaceID, id, false)
+	reset, err := parseRestoreMode(c)
+	if err != nil {
+		return err
+	}
+	return h.restoreSnapshotAndRespond(c, userID, spaceID, id, false, reset)
+}
+
+// parseRestoreMode reads ?mode=: "replay" (default) re-applies every change
+// made after the copy; "reset" goes back to the copy and discards them.
+func parseRestoreMode(c echo.Context) (reset bool, err error) {
+	switch c.QueryParam("mode") {
+	case "", "replay":
+		return false, nil
+	case "reset":
+		return true, nil
+	default:
+		return false, echo.NewHTTPError(http.StatusBadRequest, "mode must be replay or reset")
+	}
 }
 
 // AdminGetSnapshotHistory lists any space's kept snapshots, for support
@@ -262,13 +279,19 @@ func (h *Handlers) AdminRestoreSnapshotHistoryEntry(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return h.restoreSnapshotAndRespond(c, middleware.GetUserIDFromContext(c), spaceID, id, true)
+	reset, err := parseRestoreMode(c)
+	if err != nil {
+		return err
+	}
+	return h.restoreSnapshotAndRespond(c, middleware.GetUserIDFromContext(c), spaceID, id, true, reset)
 }
 
 // restoreSnapshotAndRespond runs the promotion and writes the response.
-func (h *Handlers) restoreSnapshotAndRespond(c echo.Context, actorID, spaceID string, id int64, byAdmin bool) error {
+func (h *Handlers) restoreSnapshotAndRespond(
+	c echo.Context, actorID, spaceID string, id int64, byAdmin, reset bool,
+) error {
 	logger := middleware.Logger(c)
-	entry, version, hash, err := h.restoreSnapshot(c.Request().Context(), spaceID, id)
+	entry, version, hash, err := h.restoreSnapshot(c.Request().Context(), spaceID, id, reset)
 	switch {
 	case errors.Is(err, domain.ErrSnapshotHistoryNotFound):
 		return echo.NewHTTPError(http.StatusNotFound, "snapshot history entry not found")
@@ -308,12 +331,14 @@ func (h *Handlers) restoreSnapshotAndRespond(c echo.Context, actorID, spaceID st
 		Int64("mutation_version", entry.MutationVersion).
 		Int64("size_bytes", entry.SizeBytes).
 		Bool("by_admin", byAdmin).
+		Bool("reset", reset).
 		Msg("Snapshot restored from history")
 	h.reportRefusal(c, refusalSnapshotRestored)
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"version":          version,
 		"mutation_version": entry.MutationVersion,
+		"reset":            reset,
 		"space_id":         spaceID,
 		"hash":             hash,
 	})
@@ -324,10 +349,15 @@ func (h *Handlers) restoreSnapshotAndRespond(c echo.Context, actorID, spaceID st
 // copy of the entry is published at the next sync version with the entry's
 // metadata and origin "restore". The entry itself stays in history. The
 // mutation-version regression guard deliberately does not apply.
+//
+// reset binds the copy to the latest log position instead of its own: devices
+// then treat every later change as already included and skip it, so the
+// workspace goes back to exactly that copy. The log itself is kept.
 func (h *Handlers) restoreSnapshot(
 	ctx context.Context,
 	spaceID string,
 	id int64,
+	reset bool,
 ) (entry *domain.SnapshotHistoryEntry, version int64, hash string, err error) {
 	hist := h.snapshotHistory()
 	if hist == nil {
@@ -348,6 +378,17 @@ func (h *Handlers) restoreSnapshot(
 	}
 	if !entry.RestorableOver(current) {
 		return entry, 0, "", domain.ErrSnapshotNotRestorable
+	}
+	if reset {
+		latest, latestErr := h.services.Sync.GetLatestVersion(ctx, spaceID)
+		if latestErr != nil {
+			return entry, 0, "", latestErr
+		}
+		bound := *entry
+		if latest > bound.MutationVersion {
+			bound.MutationVersion = latest
+		}
+		entry = &bound
 	}
 
 	if mkErr := os.MkdirAll(filepath.Dir(current.BlobPath), 0o750); mkErr != nil {

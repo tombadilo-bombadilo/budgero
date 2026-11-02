@@ -1063,6 +1063,10 @@ msgstr "{importing} para importar · {matching} emparejadas · {0} omitidas · {
 msgid "{label} ID copied: {id}"
 msgstr "ID de {label} copiado: {id}"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "{laterChanges, plural, one {Discards the # change made after it, imports included.} other {Discards the # changes made after it, imports included.}}"
+msgstr "{laterChanges, plural, one {Descarta el # cambio hecho después, importaciones incluidas.} other {Descarta los # cambios hechos después, importaciones incluidas.}}"
+
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "{matchedCount, plural, one {# transaction updated.} other {# transactions updated.}}"
 msgstr "{matchedCount, plural, one {# transacción actualizada.} other {# transacciones actualizadas.}}"
@@ -5916,6 +5920,11 @@ msgstr "Copiar diagnóstico"
 msgid "Copy Failed"
 msgstr "Copia fallida"
 
+#. placeholder {0}: formatDate(new Date(pending.became_current_at), 'PPp')
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Copy from {0}. The workspace is replaced on all your devices."
+msgstr "Copia del {0}. El espacio de trabajo se sustituye en todos tus dispositivos."
+
 #: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
 msgid "Copy link"
 msgstr "Copiar enlace"
@@ -7107,6 +7116,10 @@ msgstr "Desactivado"
 msgid "Disabled by DISABLE_REGISTRATION. Remove this environment flag and restart the server to enable sign-ups here."
 msgstr "Desactivado por DISABLE_REGISTRATION. Elimina esta variable de entorno y reinicia el servidor para habilitar los registros aquí."
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Discards any change made after it, imports included."
+msgstr "Descarta cualquier cambio hecho después, importaciones incluidas."
+
 #: src/features/bank-sync/ui/BankConnectionPanel.tsx
 msgid "Disconnect"
 msgstr "Desconectar"
@@ -7177,6 +7190,10 @@ msgstr "Punto (.)"
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 msgid "Double amount"
 msgstr "Duplicar importe"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Download a backup first if you are unsure."
+msgstr "Descarga antes una copia de seguridad si no estás seguro."
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Download CSV Files"
@@ -8938,6 +8955,14 @@ msgstr "Dale a tu espacio de trabajo un nombre descriptivo para que los colabora
 #: src/pages/onboarding/steps/CurrencyStep.tsx
 msgid "Globe with currencies orbiting around it"
 msgstr "Globo con monedas orbitando a su alrededor"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Go back"
+msgstr "Volver"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Go back to this version"
+msgstr "Volver a esta versión"
 
 #: src/features/ai/ui/AINotConfiguredWarning.tsx
 msgid "Go to Settings → AI Assistant to configure your local LLM connection."
@@ -14018,6 +14043,10 @@ msgstr "Tasa actualizada"
 msgid "Rate: 1 {fromCurrency} = {0} {toCurrency}"
 msgstr "Tipo: 1 {fromCurrency} = {0} {toCurrency}"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Re-applies every change made after it, so no edits are lost. Use this when the workspace looks empty or broken after syncing."
+msgstr "Vuelve a aplicar todos los cambios posteriores, así no se pierde nada. Úsalo cuando el espacio de trabajo parezca vacío o roto tras sincronizar."
+
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "Re-download"
 msgstr "Volver a descargar"
@@ -14733,6 +14762,10 @@ msgstr "Restaurar"
 msgid "Restore {0} transaction{1} to their pre-run values."
 msgstr "Restaurar {0}transacciones{1} a sus valores anteriores a la ejecución."
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Restore and keep later changes"
+msgstr "Restaurar y conservar los cambios posteriores"
+
 #: src/app/startup/screens.tsx
 msgid "Restore backup"
 msgstr "Restaurar copia de seguridad"
@@ -14787,8 +14820,8 @@ msgid "Restoring Database"
 msgstr "Restaurando base de datos"
 
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
-msgid "Restoring doesn't undo changes: everything made after the copy is applied again, imports included. To remove an import, undo it in <0>Imports → Import History</0>."
-msgstr "Restaurar no deshace cambios: todo lo hecho después de la copia se vuelve a aplicar, incluidas las importaciones. Para quitar una importación, deshazla en <0>Importaciones → Historial de importaciones</0>."
+#~ msgid "Restoring doesn't undo changes: everything made after the copy is applied again, imports included. To remove an import, undo it in <0>Imports → Import History</0>."
+#~ msgstr "Restaurar no deshace cambios: todo lo hecho después de la copia se vuelve a aplicar, incluidas las importaciones. Para quitar una importación, deshazla en <0>Importaciones → Historial de importaciones</0>."
 
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "Restoring previous values"
@@ -17482,8 +17515,12 @@ msgid "The server has confirmed all changes from this device."
 msgstr "El servidor ha confirmado todos los cambios de este dispositivo."
 
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
-msgid "The server keeps the last few copies of this workspace, and one a day for the past week. Restoring a copy replaces the workspace on all devices and then re-applies every change made after it, so no edits are lost. Use it when a workspace looks empty or broken after syncing."
-msgstr "El servidor guarda las últimas copias de este espacio de trabajo y una al día durante la última semana. Al restaurar una copia se reemplaza el espacio de trabajo en todos los dispositivos y luego se vuelve a aplicar cada cambio posterior, así que no se pierde ninguna edición. Úsalo cuando un espacio de trabajo parezca vacío o dañado después de sincronizar."
+#~ msgid "The server keeps the last few copies of this workspace, and one a day for the past week. Restoring a copy replaces the workspace on all devices and then re-applies every change made after it, so no edits are lost. Use it when a workspace looks empty or broken after syncing."
+#~ msgstr "El servidor guarda las últimas copias de este espacio de trabajo y una al día durante la última semana. Al restaurar una copia se reemplaza el espacio de trabajo en todos los dispositivos y luego se vuelve a aplicar cada cambio posterior, así que no se pierde ninguna edición. Úsalo cuando un espacio de trabajo parezca vacío o dañado después de sincronizar."
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
+msgstr "El servidor guarda las últimas copias de este espacio de trabajo y una al día durante la última semana. Puedes volver a una copia y descartar todo lo cambiado después, o restaurarla y volver a aplicar los cambios posteriores. Úsalo cuando un espacio de trabajo parezca vacío o roto tras sincronizar, o para deshacer un conjunto de cambios."
 
 #: src/features/category-management/lib/delete-block.ts
 msgid "The system Income category can't be deleted."
@@ -17527,8 +17564,8 @@ msgstr "El nombre del espacio de trabajo se ha actualizado correctamente."
 
 #. placeholder {0}: formatDate(new Date(pending.became_current_at), 'PPp')
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
-msgid "The workspace on all devices is replaced with the copy from {0}, then every change made after it is applied again, so later imports and edits come back. To remove an import, undo it in Imports → Import History instead. Download a backup first if you are unsure."
-msgstr "El espacio de trabajo se sustituye en todos los dispositivos por la copia del {0} y después se vuelven a aplicar todos los cambios posteriores, así que las importaciones y ediciones posteriores vuelven. Para quitar una importación, deshazla en Importaciones → Historial de importaciones. Descarga antes una copia de seguridad si no estás seguro."
+#~ msgid "The workspace on all devices is replaced with the copy from {0}, then every change made after it is applied again, so later imports and edits come back. To remove an import, undo it in Imports → Import History instead. Download a backup first if you are unsure."
+#~ msgstr "El espacio de trabajo se sustituye en todos los dispositivos por la copia del {0} y después se vuelven a aplicar todos los cambios posteriores, así que las importaciones y ediciones posteriores vuelven. Para quitar una importación, deshazla en Importaciones → Historial de importaciones. Descarga antes una copia de seguridad si no estás seguro."
 
 #. placeholder {0}: formatDate(new Date(pending.became_current_at), 'PPp')
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
@@ -19691,6 +19728,10 @@ msgstr "Nombre del espacio de trabajo"
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "Workspace renamed"
 msgstr "Espacio de trabajo renombrado"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Workspace reset to the earlier version"
+msgstr "Espacio de trabajo devuelto a la versión anterior"
 
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "Workspace Sharing"
