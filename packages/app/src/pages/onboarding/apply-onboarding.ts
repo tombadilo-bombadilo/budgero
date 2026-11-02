@@ -446,7 +446,7 @@ export async function runOnboardingApply(
     if (state.startMode === 'fresh') {
       for (const a of state.accounts) {
         const typeDef = ACCOUNT_TYPES.find((t) => t.id === a.type) ?? ACCOUNT_TYPES[0];
-        const name = a.name.trim() || typeDef.name;
+        const name = a.name.trim() || i18n._(typeDef.name);
         // For a credit card the field asks for the amount OWED (a positive
         // magnitude); the account balance for a debt is negative. Assets take
         // the entered balance as-is. abs() keeps it correct even if a user

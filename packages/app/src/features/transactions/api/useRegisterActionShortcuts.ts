@@ -18,7 +18,7 @@ export function useRegisterActionShortcuts({
     const handler = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
       if (isTypingTarget(event.target)) return;
-      if (event.shiftKey && event.key.toUpperCase() === ADD_TRANSACTION_SHORTCUT_KEY) {
+      if (event.shiftKey && event.key?.toUpperCase() === ADD_TRANSACTION_SHORTCUT_KEY) {
         event.preventDefault();
         onAdd();
       } else if (

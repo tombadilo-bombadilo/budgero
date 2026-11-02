@@ -57,7 +57,7 @@ export function useRegisterKeyboard({
       const cursorIndex =
         cursorId === null ? -1 : transactions.findIndex((row) => row.ID === cursorId);
 
-      if (mod && !event.shiftKey && event.key.toLowerCase() === 'a') {
+      if (mod && !event.shiftKey && event.key?.toLowerCase() === 'a') {
         if (!transactions.length) return;
         event.preventDefault();
         onSelectAll();

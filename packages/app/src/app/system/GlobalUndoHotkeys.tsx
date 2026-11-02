@@ -28,7 +28,7 @@ export function GlobalUndoHotkeys() {
           (!!target.closest && !!target.closest('.cm-editor')));
       if (inEditable) return; // don't hijack text editors
 
-      const k = e.key.toLowerCase();
+      const k = e.key?.toLowerCase() ?? '';
       if (k === 'z' && !e.shiftKey) {
         if (canUndo()) {
           e.preventDefault();
