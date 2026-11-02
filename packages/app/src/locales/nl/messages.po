@@ -1063,6 +1063,10 @@ msgstr "{importing} te importeren · {matching} gematcht · {0} overgeslagen · 
 msgid "{label} ID copied: {id}"
 msgstr "{label}-ID gekopieerd: {id}"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "{laterChanges, plural, one {Discards the # change made after it, imports included.} other {Discards the # changes made after it, imports included.}}"
+msgstr "{laterChanges, plural, one {Verwijdert de # wijziging daarna, importen inbegrepen.} other {Verwijdert de # wijzigingen daarna, importen inbegrepen.}}"
+
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "{matchedCount, plural, one {# transaction updated.} other {# transactions updated.}}"
 msgstr "{matchedCount, plural, one {# transactie bijgewerkt.} other {# transacties bijgewerkt.}}"
@@ -5916,6 +5920,11 @@ msgstr "Diagnose kopiëren"
 msgid "Copy Failed"
 msgstr "Kopiëren mislukt"
 
+#. placeholder {0}: formatDate(new Date(pending.became_current_at), 'PPp')
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Copy from {0}. The workspace is replaced on all your devices."
+msgstr "Kopie van {0}. De werkruimte wordt op al je apparaten vervangen."
+
 #: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
 msgid "Copy link"
 msgstr "Link kopiëren"
@@ -7107,6 +7116,10 @@ msgstr "Uitgeschakeld"
 msgid "Disabled by DISABLE_REGISTRATION. Remove this environment flag and restart the server to enable sign-ups here."
 msgstr "Uitgeschakeld door DISABLE_REGISTRATION. Verwijder deze omgevingsvariabele en herstart de server om registratie hier toe te staan."
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Discards any change made after it, imports included."
+msgstr "Verwijdert elke wijziging daarna, importen inbegrepen."
+
 #: src/features/bank-sync/ui/BankConnectionPanel.tsx
 msgid "Disconnect"
 msgstr "Verbreken"
@@ -7177,6 +7190,10 @@ msgstr "Punt (.)"
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 msgid "Double amount"
 msgstr "Bedrag verdubbelen"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Download a backup first if you are unsure."
+msgstr "Download eerst een back-up als je twijfelt."
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Download CSV Files"
@@ -8938,6 +8955,14 @@ msgstr "Geef je werkruimte een beschrijvende naam zodat medewerkers weten wat er
 #: src/pages/onboarding/steps/CurrencyStep.tsx
 msgid "Globe with currencies orbiting around it"
 msgstr "Wereldbol met valuta die eromheen draaien"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Go back"
+msgstr "Teruggaan"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Go back to this version"
+msgstr "Teruggaan naar deze versie"
 
 #: src/features/ai/ui/AINotConfiguredWarning.tsx
 msgid "Go to Settings → AI Assistant to configure your local LLM connection."
@@ -12289,6 +12314,10 @@ msgstr "Niet toegepast"
 msgid "Not attributed"
 msgstr "Niet toegewezen"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Not available for this copy: it is older than the last time this workspace was taken back to an earlier version, and re-applying would bring back the changes that discarded."
+msgstr "Niet beschikbaar voor deze kopie: hij is ouder dan de laatste keer dat deze werkruimte naar een eerdere versie is teruggezet, en opnieuw toepassen zou de toen verwijderde wijzigingen terugbrengen."
+
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "Not available in self-hosted builds."
 msgstr "Niet beschikbaar in zelf-gehoste versies."
@@ -14018,6 +14047,10 @@ msgstr "Koers bijgewerkt"
 msgid "Rate: 1 {fromCurrency} = {0} {toCurrency}"
 msgstr "Koers: 1 {fromCurrency} = {0} {toCurrency}"
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Re-applies every change made after it, so no edits are lost. Use this when the workspace looks empty or broken after syncing."
+msgstr "Past elke latere wijziging opnieuw toe, zodat er niets verloren gaat. Gebruik dit als de werkruimte na het synchroniseren leeg of kapot lijkt."
+
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "Re-download"
 msgstr "Opnieuw downloaden"
@@ -14733,6 +14766,10 @@ msgstr "Herstellen"
 msgid "Restore {0} transaction{1} to their pre-run values."
 msgstr "Herstel {0}transacties{1} naar hun waarden vóór de uitvoering."
 
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Restore and keep later changes"
+msgstr "Herstellen en latere wijzigingen behouden"
+
 #: src/app/startup/screens.tsx
 msgid "Restore backup"
 msgstr "Back-up herstellen"
@@ -14785,6 +14822,10 @@ msgstr "Het herstellen van een Budgero-back-up vervangt alle gegevens in deze we
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Restoring Database"
 msgstr "Database wordt hersteld"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#~ msgid "Restoring doesn't undo changes: everything made after the copy is applied again, imports included. To remove an import, undo it in <0>Imports → Import History</0>."
+#~ msgstr "Herstellen maakt geen wijzigingen ongedaan: alles wat na de kopie is gedaan, wordt opnieuw toegepast, ook importen. Om een import te verwijderen, maak je hem ongedaan via <0>Importen → Importgeschiedenis</0>."
 
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "Restoring previous values"
@@ -17478,8 +17519,12 @@ msgid "The server has confirmed all changes from this device."
 msgstr "De server heeft alle wijzigingen van dit apparaat bevestigd."
 
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
-msgid "The server keeps the last few copies of this workspace, and one a day for the past week. Restoring a copy replaces the workspace on all devices and then re-applies every change made after it, so no edits are lost. Use it when a workspace looks empty or broken after syncing."
-msgstr "De server bewaart de laatste kopieën van deze werkruimte en één per dag voor de afgelopen week. Bij herstellen wordt de werkruimte op alle apparaten vervangen en daarna wordt elke latere wijziging opnieuw toegepast, zodat er geen bewerkingen verloren gaan. Gebruik het als een werkruimte na het synchroniseren leeg of kapot lijkt."
+#~ msgid "The server keeps the last few copies of this workspace, and one a day for the past week. Restoring a copy replaces the workspace on all devices and then re-applies every change made after it, so no edits are lost. Use it when a workspace looks empty or broken after syncing."
+#~ msgstr "De server bewaart de laatste kopieën van deze werkruimte en één per dag voor de afgelopen week. Bij herstellen wordt de werkruimte op alle apparaten vervangen en daarna wordt elke latere wijziging opnieuw toegepast, zodat er geen bewerkingen verloren gaan. Gebruik het als een werkruimte na het synchroniseren leeg of kapot lijkt."
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
+msgstr "De server bewaart de laatste kopieën van deze werkruimte en één per dag voor de afgelopen week. Je kunt teruggaan naar een kopie en alles verwijderen wat daarna is gewijzigd, of hem herstellen en de latere wijzigingen opnieuw toepassen. Gebruik dit als een werkruimte na het synchroniseren leeg of kapot lijkt, of om een reeks wijzigingen ongedaan te maken."
 
 #: src/features/category-management/lib/delete-block.ts
 msgid "The system Income category can't be deleted."
@@ -17523,8 +17568,13 @@ msgstr "De naam van de werkruimte is succesvol bijgewerkt."
 
 #. placeholder {0}: formatDate(new Date(pending.became_current_at), 'PPp')
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
-msgid "The workspace on all devices is replaced with the copy from {0}, then every change made after it is applied again. Download a backup first if you are unsure."
-msgstr "De werkruimte wordt op alle apparaten vervangen door de kopie van {0}, daarna wordt elke latere wijziging opnieuw toegepast. Download eerst een back-up als je twijfelt."
+#~ msgid "The workspace on all devices is replaced with the copy from {0}, then every change made after it is applied again, so later imports and edits come back. To remove an import, undo it in Imports → Import History instead. Download a backup first if you are unsure."
+#~ msgstr "De werkruimte wordt op alle apparaten vervangen door de kopie van {0}, daarna wordt elke latere wijziging opnieuw toegepast, dus latere importen en wijzigingen komen terug. Om een import te verwijderen, maak je hem in plaats daarvan ongedaan via Importen → Importgeschiedenis. Download eerst een back-up als je twijfelt."
+
+#. placeholder {0}: formatDate(new Date(pending.became_current_at), 'PPp')
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+#~ msgid "The workspace on all devices is replaced with the copy from {0}, then every change made after it is applied again. Download a backup first if you are unsure."
+#~ msgstr "De werkruimte wordt op alle apparaten vervangen door de kopie van {0}, daarna wordt elke latere wijziging opnieuw toegepast. Download eerst een back-up als je twijfelt."
 
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "The workspace owner needs to renew access"
@@ -19682,6 +19732,10 @@ msgstr "Werkruimtesaam"
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "Workspace renamed"
 msgstr "Werkruimte hernoemd"
+
+#: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
+msgid "Workspace reset to the earlier version"
+msgstr "Werkruimte teruggezet naar de eerdere versie"
 
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "Workspace Sharing"

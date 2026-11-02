@@ -72,7 +72,7 @@ func snapshotCurrentJSON(b *domain.SpaceBlob) map[string]any {
 }
 
 // snapshotEntryJSON is one entry of a history listing.
-func snapshotEntryJSON(e *domain.SnapshotHistoryEntry, current *domain.SpaceBlob) map[string]any {
+func snapshotEntryJSON(e *domain.SnapshotHistoryEntry, current *domain.SpaceBlob, resetFloor int64) map[string]any {
 	return map[string]any{
 		"id":                     e.ID,
 		"sync_version":           e.SyncVersion,
@@ -84,6 +84,9 @@ func snapshotEntryJSON(e *domain.SnapshotHistoryEntry, current *domain.SpaceBlob
 		"encryption_key_version": e.EncryptionKeyVersion,
 		"data_format_version":    e.DataFormatVersion,
 		"restorable":             e.RestorableOver(current),
+		// False for copies older than the latest "go back": they can be gone
+		// back to, but replaying from them would bring discarded changes back.
+		"replayable": e.MutationVersion >= resetFloor,
 	}
 }
 
@@ -99,8 +102,12 @@ func (h *Handlers) listSnapshotHistory(c echo.Context, spaceID string) error {
 	lock.RLock()
 	current, err := hist.Current(ctx, spaceID)
 	var entries []domain.SnapshotHistoryEntry
+	var resetFloor int64
 	if err == nil {
 		entries, err = hist.List(ctx, spaceID)
+	}
+	if err == nil {
+		resetFloor, err = hist.ResetFloor(ctx, spaceID)
 	}
 	lock.RUnlock()
 	if err != nil {
@@ -109,7 +116,7 @@ func (h *Handlers) listSnapshotHistory(c echo.Context, spaceID string) error {
 
 	out := make([]map[string]any, 0, len(entries))
 	for i := range entries {
-		out = append(out, snapshotEntryJSON(&entries[i], current))
+		out = append(out, snapshotEntryJSON(&entries[i], current, resetFloor))
 	}
 	c.Response().Header().Set("Cache-Control", "no-store")
 	return c.JSON(http.StatusOK, map[string]any{
@@ -238,7 +245,24 @@ func (h *Handlers) RestoreSnapshotHistoryEntry(c echo.Context) error {
 	if err != nil {
 		return mapServiceError(err)
 	}
-	return h.restoreSnapshotAndRespond(c, userID, spaceID, id, false)
+	reset, err := parseRestoreMode(c)
+	if err != nil {
+		return err
+	}
+	return h.restoreSnapshotAndRespond(c, userID, spaceID, id, false, reset)
+}
+
+// parseRestoreMode reads ?mode=: "replay" (default) re-applies every change
+// made after the copy; "reset" goes back to the copy and discards them.
+func parseRestoreMode(c echo.Context) (reset bool, err error) {
+	switch c.QueryParam("mode") {
+	case "", "replay":
+		return false, nil
+	case "reset":
+		return true, nil
+	default:
+		return false, echo.NewHTTPError(http.StatusBadRequest, "mode must be replay or reset")
+	}
 }
 
 // AdminGetSnapshotHistory lists any space's kept snapshots, for support
@@ -262,13 +286,19 @@ func (h *Handlers) AdminRestoreSnapshotHistoryEntry(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	return h.restoreSnapshotAndRespond(c, middleware.GetUserIDFromContext(c), spaceID, id, true)
+	reset, err := parseRestoreMode(c)
+	if err != nil {
+		return err
+	}
+	return h.restoreSnapshotAndRespond(c, middleware.GetUserIDFromContext(c), spaceID, id, true, reset)
 }
 
 // restoreSnapshotAndRespond runs the promotion and writes the response.
-func (h *Handlers) restoreSnapshotAndRespond(c echo.Context, actorID, spaceID string, id int64, byAdmin bool) error {
+func (h *Handlers) restoreSnapshotAndRespond(
+	c echo.Context, actorID, spaceID string, id int64, byAdmin, reset bool,
+) error {
 	logger := middleware.Logger(c)
-	entry, version, hash, err := h.restoreSnapshot(c.Request().Context(), spaceID, id)
+	entry, version, hash, err := h.restoreSnapshot(c.Request().Context(), spaceID, id, reset)
 	switch {
 	case errors.Is(err, domain.ErrSnapshotHistoryNotFound):
 		return echo.NewHTTPError(http.StatusNotFound, "snapshot history entry not found")
@@ -276,6 +306,11 @@ func (h *Handlers) restoreSnapshotAndRespond(c echo.Context, actorID, spaceID st
 		return c.JSON(http.StatusConflict, map[string]any{
 			"error":   "not_restorable",
 			"message": "This snapshot was saved with a different encryption key or a newer data format and can't be restored.",
+		})
+	case errors.Is(err, domain.ErrSnapshotNotReplayable):
+		return c.JSON(http.StatusConflict, map[string]any{
+			"error":   "replay_unavailable",
+			"message": "This copy is older than the last time the workspace was taken back to an earlier version. You can go back to it, but not keep later changes.",
 		})
 	case errors.Is(err, domain.ErrSyncVersionConflict):
 		return c.JSON(http.StatusConflict, map[string]any{
@@ -308,12 +343,14 @@ func (h *Handlers) restoreSnapshotAndRespond(c echo.Context, actorID, spaceID st
 		Int64("mutation_version", entry.MutationVersion).
 		Int64("size_bytes", entry.SizeBytes).
 		Bool("by_admin", byAdmin).
+		Bool("reset", reset).
 		Msg("Snapshot restored from history")
 	h.reportRefusal(c, refusalSnapshotRestored)
 
 	return c.JSON(http.StatusOK, map[string]any{
 		"version":          version,
 		"mutation_version": entry.MutationVersion,
+		"reset":            reset,
 		"space_id":         spaceID,
 		"hash":             hash,
 	})
@@ -324,10 +361,15 @@ func (h *Handlers) restoreSnapshotAndRespond(c echo.Context, actorID, spaceID st
 // copy of the entry is published at the next sync version with the entry's
 // metadata and origin "restore". The entry itself stays in history. The
 // mutation-version regression guard deliberately does not apply.
+//
+// reset binds the copy to the latest log position instead of its own: devices
+// then treat every later change as already included and skip it, so the
+// workspace goes back to exactly that copy. The log itself is kept.
 func (h *Handlers) restoreSnapshot(
 	ctx context.Context,
 	spaceID string,
 	id int64,
+	reset bool,
 ) (entry *domain.SnapshotHistoryEntry, version int64, hash string, err error) {
 	hist := h.snapshotHistory()
 	if hist == nil {
@@ -349,6 +391,26 @@ func (h *Handlers) restoreSnapshot(
 	if !entry.RestorableOver(current) {
 		return entry, 0, "", domain.ErrSnapshotNotRestorable
 	}
+	if !reset {
+		floor, floorErr := hist.ResetFloor(ctx, spaceID)
+		if floorErr != nil {
+			return entry, 0, "", floorErr
+		}
+		if entry.MutationVersion < floor {
+			return entry, 0, "", domain.ErrSnapshotNotReplayable
+		}
+	}
+	if reset {
+		latest, latestErr := h.services.Sync.GetLatestVersion(ctx, spaceID)
+		if latestErr != nil {
+			return entry, 0, "", latestErr
+		}
+		bound := *entry
+		if latest > bound.MutationVersion {
+			bound.MutationVersion = latest
+		}
+		entry = &bound
+	}
 
 	if mkErr := os.MkdirAll(filepath.Dir(current.BlobPath), 0o750); mkErr != nil {
 		return entry, 0, "", mkErr
@@ -364,5 +426,9 @@ func (h *Handlers) restoreSnapshot(
 	version, err = h.publishLocked(ctx, current, tempPath, domain.SnapshotOriginRestore, entry.MutationVersion, func() (int64, error) {
 		return hist.AdvanceToEntry(ctx, spaceID, entry, current.SyncVersion)
 	})
+	if err == nil && reset {
+		// From here on, copies older than this point can only be gone back to.
+		err = hist.RaiseResetFloor(ctx, spaceID, entry.MutationVersion)
+	}
 	return entry, version, entry.Hash, err
 }

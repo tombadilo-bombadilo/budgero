@@ -430,6 +430,7 @@ type SpaceRepository struct {
 	inviteIDs map[string]*domain.SpaceInvite // inviteID -> invite
 	history   []domain.SnapshotHistoryEntry
 	historyID int64
+	floors    map[string]int64
 }
 
 // NewSpaceRepository creates a new fake space repository.
@@ -663,6 +664,26 @@ func (r *SpaceRepository) MarkBlobPublished(ctx context.Context, spaceID, origin
 	if b, ok := r.blobs[spaceID]; ok {
 		b.Origin = origin
 		b.PublishedAt = at
+	}
+	return nil
+}
+
+// ResetFloor returns the space's reset floor (0 when never reset).
+func (r *SpaceRepository) ResetFloor(_ context.Context, spaceID string) (int64, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.floors[spaceID], nil
+}
+
+// RaiseResetFloor moves the reset floor up (never down).
+func (r *SpaceRepository) RaiseResetFloor(_ context.Context, spaceID string, floor int64) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.floors == nil {
+		r.floors = map[string]int64{}
+	}
+	if floor > r.floors[spaceID] {
+		r.floors[spaceID] = floor
 	}
 	return nil
 }

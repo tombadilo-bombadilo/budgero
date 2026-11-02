@@ -65,6 +65,17 @@ func (q *Queries) GetSpaceBlobHistoryEntry(ctx context.Context, arg GetSpaceBlob
 	return i, err
 }
 
+const getSpaceResetFloor = `-- name: GetSpaceResetFloor :one
+SELECT reset_floor FROM budget_space_blobs WHERE space_id = ?
+`
+
+func (q *Queries) GetSpaceResetFloor(ctx context.Context, spaceID string) (int64, error) {
+	row := q.db.QueryRowContext(ctx, getSpaceResetFloor, spaceID)
+	var reset_floor int64
+	err := row.Scan(&reset_floor)
+	return reset_floor, err
+}
+
 const insertSpaceBlobHistory = `-- name: InsertSpaceBlobHistory :one
 INSERT INTO space_blob_history (
     space_id, file_path, sync_version, mutation_version, size_bytes, hash,
@@ -162,6 +173,22 @@ type MarkSpaceBlobPublishedParams struct {
 
 func (q *Queries) MarkSpaceBlobPublished(ctx context.Context, arg MarkSpaceBlobPublishedParams) error {
 	_, err := q.db.ExecContext(ctx, markSpaceBlobPublished, arg.Origin, arg.PublishedAt, arg.SpaceID)
+	return err
+}
+
+const raiseSpaceResetFloor = `-- name: RaiseSpaceResetFloor :exec
+UPDATE budget_space_blobs
+SET reset_floor = MAX(reset_floor, CAST(?1 AS INTEGER))
+WHERE space_id = ?2
+`
+
+type RaiseSpaceResetFloorParams struct {
+	Floor   int64  `json:"floor"`
+	SpaceID string `json:"space_id"`
+}
+
+func (q *Queries) RaiseSpaceResetFloor(ctx context.Context, arg RaiseSpaceResetFloorParams) error {
+	_, err := q.db.ExecContext(ctx, raiseSpaceResetFloor, arg.Floor, arg.SpaceID)
 	return err
 }
 

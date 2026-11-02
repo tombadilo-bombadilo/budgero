@@ -222,7 +222,8 @@ describe('DatabaseSync', () => {
 
   it('defers the conflict-retry upload while unacked mutations are pending', async () => {
     const { db, deps } = createDeps();
-    deps.hasUnackedMutations.mockReturnValue(true);
+    // The first capture is clean; the restore after the conflict re-applies
+    // queued mutations, which are then unacked.
     const sync = new DatabaseSync('s1', deps as never);
 
     vi.spyOn(crypto, 'compressAndEncryptDatabase').mockResolvedValue({
@@ -233,7 +234,10 @@ describe('DatabaseSync', () => {
       decrypted: new Uint8Array([1, 1, 1]),
     });
 
-    deps.uploadBlob.mockRejectedValueOnce({ status: 409, response: 'version_conflict' });
+    deps.uploadBlob.mockImplementationOnce(async () => {
+      deps.hasUnackedMutations.mockReturnValue(true);
+      throw { status: 409, response: 'version_conflict' };
+    });
 
     // Re-applied queued mutations are in the DB but not yet in the log —
     // uploading now would bind effects the log can't account for.
@@ -493,5 +497,77 @@ describe('DatabaseSync', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  describe('never binds a snapshot while our sent changes are unconfirmed', () => {
+    const encrypt = () =>
+      vi.spyOn(crypto, 'compressAndEncryptDatabase').mockResolvedValue({
+        encrypted: new Uint8Array([7]),
+        compressed: new Uint8Array([6]),
+      });
+
+    it('waits for the acks, then uploads out-of-band content at the confirmed position', async () => {
+      // 2026-11-01: the rate refresh's out-of-band upload ran right after
+      // onboarding while #26-#27 were in flight and was bound to #25.
+      encrypt();
+      const { deps } = createDeps();
+      let cursor = 25;
+      let unacked = 2;
+      deps.getMutationCursor.mockImplementation(() => cursor);
+      deps.hasUnackedMutations.mockImplementation(() => unacked > 0);
+      const sync = new DatabaseSync('s1', {
+        ...deps,
+        uploadPolicy: { outOfBandPollMs: 1, outOfBandWaitMs: 1_000 },
+      } as never);
+
+      const done = sync.upload({ outOfBand: true });
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      expect(deps.uploadBlob).not.toHaveBeenCalled();
+      unacked = 0;
+      cursor = 27;
+      await done;
+
+      expect(deps.uploadBlob).toHaveBeenCalledTimes(1);
+      expect(deps.uploadBlob.mock.calls[0][4]).toBe(27);
+      expect(deps.uploadBlob.mock.calls[0][5]).toBe(true);
+    });
+
+    it('waits while the cursor trails our own acks, too', async () => {
+      encrypt();
+      const { deps } = createDeps();
+      let behind = true;
+      const sync = new DatabaseSync('s1', {
+        ...deps,
+        isCursorBehindAcks: () => behind,
+        uploadPolicy: { outOfBandPollMs: 1, outOfBandWaitMs: 1_000 },
+      } as never);
+      const done = sync.upload({ outOfBand: true });
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      expect(deps.uploadBlob).not.toHaveBeenCalled();
+      behind = false;
+      await done;
+      expect(deps.uploadBlob).toHaveBeenCalledTimes(1);
+    });
+
+    it('gives up instead of uploading a mislabelled snapshot', async () => {
+      encrypt();
+      const { deps } = createDeps();
+      deps.hasUnackedMutations.mockReturnValue(true);
+      const sync = new DatabaseSync('s1', {
+        ...deps,
+        uploadPolicy: { outOfBandPollMs: 1, outOfBandWaitMs: 10 },
+      } as never);
+      await expect(sync.upload({ outOfBand: true })).rejects.toThrow(/not confirmed in time/);
+      expect(deps.uploadBlob).not.toHaveBeenCalled();
+    });
+
+    it('holds back a regular upload instead of capturing', async () => {
+      encrypt();
+      const { deps } = createDeps();
+      deps.hasUnackedMutations.mockReturnValue(true);
+      const sync = new DatabaseSync('s1', deps as never);
+      await expect(sync.upload()).rejects.toBeInstanceOf(UploadDeferredError);
+      expect(deps.uploadBlob).not.toHaveBeenCalled();
+    });
   });
 });

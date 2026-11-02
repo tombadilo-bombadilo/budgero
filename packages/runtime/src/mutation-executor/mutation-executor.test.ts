@@ -114,17 +114,26 @@ describe('MutationExecutor', () => {
     await execution;
   });
 
-  it('rejects budget edits for non-owner local mutators', async () => {
+  it('keeps creating and deleting budgets with the owner', async () => {
     const { deps } = createDeps();
-    deps.getSpaceRole.mockReturnValue('viewer');
+    deps.getSpaceRole.mockReturnValue('member');
+    const executor = new MutationExecutor(deps as never);
+
+    for (const op of ['budgets.create', 'budgets.delete']) {
+      await expect(executor.execute({ op, payload: { budgetId: 2 } })).rejects.toThrow(
+        'Only the workspace owner'
+      );
+    }
+  });
+
+  it('lets members change budget settings', async () => {
+    const { deps } = createDeps();
+    deps.getSpaceRole.mockReturnValue('member');
     const executor = new MutationExecutor(deps as never);
 
     await expect(
-      executor.execute({
-        op: 'budgets.update',
-        payload: { budgetId: 2 },
-      })
-    ).rejects.toThrow('Only the workspace owner');
+      executor.execute({ op: 'budgets.updateRtaMode', payload: { id: 2, mode: 'monthly' } })
+    ).resolves.toBeDefined();
   });
 
   it('handles forced invalidation for local mutation and wildcard keys', async () => {
@@ -281,5 +290,33 @@ describe('MutationExecutor', () => {
     });
 
     expect(deps.recordHistory).toHaveBeenCalledWith(expect.objectContaining({ budgetId: 91 }));
+  });
+
+  it('runs each distinct invalidation once at the end of a remote batch', async () => {
+    const { deps, invalidateQueries } = createDeps();
+    const executor = new MutationExecutor(deps as never);
+    const end = executor.beginInvalidationBatch();
+    for (let i = 0; i < 5; i += 1) {
+      await executor.execute({
+        op: 'transactions.import',
+        payload: { budgetId: 2 },
+        mutationId: `remote-${i}`,
+        spaceId: 'space-a',
+      });
+    }
+    expect(invalidateQueries).not.toHaveBeenCalled();
+    await end();
+    // Same keys from every mutation: each distinct one once, not five times.
+    const perMutation = invalidateQueries.mock.calls.length;
+    expect(perMutation).toBeGreaterThan(0);
+    invalidateQueries.mockClear();
+    await executor.execute({
+      op: 'transactions.import',
+      payload: { budgetId: 2 },
+      mutationId: 'after-batch',
+      spaceId: 'space-a',
+    });
+    expect(invalidateQueries.mock.calls.length).toBe(perMutation);
+    await end(); // ending twice is harmless
   });
 });

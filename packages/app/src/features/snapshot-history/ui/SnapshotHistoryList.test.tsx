@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { i18n } from '@lingui/core';
 import { I18nProvider } from '@lingui/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -67,7 +68,9 @@ i18n.activate('en');
 function renderList() {
   return render(
     <I18nProvider i18n={i18n}>
-      <SnapshotHistoryList />
+      <MemoryRouter>
+        <SnapshotHistoryList />
+      </MemoryRouter>
     </I18nProvider>
   );
 }
@@ -99,12 +102,46 @@ describe('SnapshotHistoryList', () => {
     expect((buttons[1] as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it('asks for confirmation, then restores the chosen copy', async () => {
+  it('restores and keeps later changes by default', async () => {
     renderList();
     fireEvent.click(screen.getAllByRole('button', { name: /Restore/ })[0]!);
     expect(await screen.findByText('Restore this version?')).toBeTruthy();
-    const confirm = screen.getAllByRole('button', { name: 'Restore' }).at(-1)!;
-    fireEvent.click(confirm);
-    await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith(7));
+    fireEvent.click(screen.getByTestId('confirm-restore'));
+    await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ entryId: 7, mode: 'replay' }));
+  });
+
+  it('can go back to the copy, discarding the later changes', async () => {
+    const before = history.current.mutation_version;
+    history.current.mutation_version = 19500;
+    try {
+      renderList();
+      fireEvent.click(screen.getAllByRole('button', { name: /Restore/ })[0]!);
+      await screen.findByText('Restore this version?');
+      fireEvent.click(screen.getByLabelText(/Go back to this version/));
+      expect(screen.getByText(/Discards the 131 changes made after it/)).toBeTruthy();
+      const confirm = screen.getByTestId('confirm-restore');
+      expect(confirm).toHaveTextContent('Go back');
+      fireEvent.click(confirm);
+      await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ entryId: 7, mode: 'reset' }));
+    } finally {
+      history.current.mutation_version = before;
+    }
+  });
+
+  it('only offers going back for a copy older than the last reset', async () => {
+    const entry = history.entries[0] as { replayable?: boolean };
+    entry.replayable = false;
+    try {
+      renderList();
+      fireEvent.click(screen.getAllByRole('button', { name: /Restore/ })[0]!);
+      await screen.findByText('Restore this version?');
+      expect(screen.getByLabelText(/Restore and keep later changes/)).toBeDisabled();
+      expect(screen.getByText(/Not available for this copy/)).toBeTruthy();
+      expect(screen.getByTestId('confirm-restore')).toHaveTextContent('Go back');
+      fireEvent.click(screen.getByTestId('confirm-restore'));
+      await waitFor(() => expect(mutateAsync).toHaveBeenCalledWith({ entryId: 7, mode: 'reset' }));
+    } finally {
+      delete entry.replayable;
+    }
   });
 });

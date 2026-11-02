@@ -52,4 +52,12 @@ describe('useClearedShortcut', () => {
     fireEvent.keyDown(window, { key: 'c' });
     expect(mutate).not.toHaveBeenCalled();
   });
+
+  it('ignores a keydown without a key (autofill, extensions)', () => {
+    render(<Harness ids={[1]} rows={[row(1)]} />);
+    const event = new KeyboardEvent('keydown');
+    Object.defineProperty(event, 'key', { value: undefined });
+    expect(() => window.dispatchEvent(event)).not.toThrow();
+    expect(mutate).not.toHaveBeenCalled();
+  });
 });

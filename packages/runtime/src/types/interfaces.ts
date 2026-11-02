@@ -149,6 +149,12 @@ export interface SyncTransportDeps {
   decryptPayload(encrypted: string): Promise<{ v?: number; op: string; args: unknown }>;
   onRemoteMutation(op: string, args: Record<string, unknown>, id: string): Promise<void>;
   /**
+   * Start applying a batch of remote mutations (a catch-up page): UI query
+   * invalidations are collected and run once when the returned function is
+   * called, instead of after every mutation.
+   */
+  beginRemoteBatch?(): () => Promise<void>;
+  /**
    * The server acknowledged a mutation we sent. At-least-once delivery:
    * a mutation stays in the offline queue until this fires for its ID.
    */
@@ -224,6 +230,8 @@ export interface DatabaseSyncDeps {
    * deferred then: the cursor wouldn't match the blob's contents, and a
    * mismatch means skipped or double-applied mutations on fresh devices.
    */
+  /** Our own mutation was acked past the cursor (a gap is being caught up). */
+  isCursorBehindAcks?(): boolean;
   hasUnackedMutations?(): boolean;
   /**
    * False until this device has caught up with the server's mutation log for
@@ -256,6 +264,10 @@ export interface DatabaseSyncDeps {
     unackedRetryMs?: number;
     /** Retry delay after a failed upload. Default 30 s. */
     failedUploadRetryMs?: number;
+    /** How long an out-of-band upload waits for our sent changes to be confirmed. Default 30 s. */
+    outOfBandWaitMs?: number;
+    /** Poll interval while it waits. Default 250 ms. */
+    outOfBandPollMs?: number;
   };
   setTimeout?: (callback: () => void, ms: number) => ReturnType<typeof setTimeout>;
   clearTimeout?: (timer: ReturnType<typeof setTimeout>) => void;

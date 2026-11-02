@@ -3,6 +3,7 @@ import type { SyncError } from '../sync-transport/sync-transport';
 import type { ConnectivityMonitor } from '../connectivity';
 import { scopedLogger, type RuntimeLogFn } from '../logging';
 import { CancellationError, errorMessage } from '../utils/diagnostics';
+import { UploadDeferredError } from '../database-sync/database-sync';
 
 type OverlayPhase = 'syncing' | 'success' | 'hidden';
 
@@ -44,6 +45,7 @@ interface ReconnectionContext {
   };
   dbSync: {
     upload(): Promise<void>;
+    scheduleUpload?(): void;
   };
 }
 
@@ -300,6 +302,13 @@ export class ReconnectionService {
       await ctx.dbSync.upload();
       ctx.sync.updateSyncStatus({ isSyncing: false, lastSyncTime: new Date(), syncError: null });
     } catch (error) {
+      if (error instanceof UploadDeferredError) {
+        // Held back until resent changes are confirmed; the debounced flush
+        // uploads afterwards. Not a sync error.
+        ctx.dbSync.scheduleUpload?.();
+        ctx.sync.updateSyncStatus({ isSyncing: false, syncError: null });
+        return;
+      }
       const { status } = error as { status?: unknown };
       ctx.sync.updateSyncStatus({
         isSyncing: false,

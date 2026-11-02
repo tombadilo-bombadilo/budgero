@@ -45,6 +45,25 @@ import { startImportRun } from '@shared/lib/analytics/import-tracking';
 import { parseImportFile } from '@features/import/lib/parse-import-file';
 import { useImportTemplates } from './useImportTemplates';
 
+/** Run record batch size (rows) and maximum age (ms) between saves. */
+const CHECKPOINT_ROWS = 100;
+const CHECKPOINT_MS = 2000;
+
+/**
+ * Rows in date order, oldest first, keeping file order within a day. Each
+ * new transaction updates the running balance of every later one in its
+ * account, so a newest-first bank export imported as-is did that for every
+ * row (quadratic: ~265M row updates for 23k rows). Oldest-first makes each
+ * insert an append. File order within a day keeps same-day rows in the order
+ * they were imported before, and keeps a same-file duplicate after the row it
+ * duplicates.
+ */
+export function inDateOrder<T extends { input: { date: string; index: number } }>(rows: T[]): T[] {
+  return [...rows].sort(
+    (a, b) => a.input.date.localeCompare(b.input.date) || a.input.index - b.input.index
+  );
+}
+
 export const STEPS: ImportStep[] = ['upload', 'configure', 'preview', 'import', 'complete'];
 
 export interface ImportDialogState {
@@ -686,8 +705,16 @@ export function useImportDialogState(): ImportDialogState {
       const totalRows = fresh.length;
       const failures: { index: number; message: string }[] = [];
       const matchedIds = new Map<number, number>();
-      const checkpoint = async (complete = false) =>
-        recordImportRunMutation.mutateAsync({
+      // The run record is saved in batches (every CHECKPOINT_ROWS rows or
+      // CHECKPOINT_MS) and each save carries only the transactions added since
+      // the previous one; recordImportRun merges them into the stored list.
+      // Saving the whole list after every row made a 20k-row import send
+      // ~1.6 GB through sync and spend ~17 ms per row in the undo journal.
+      let checkpointedIds = 0;
+      let lastCheckpointAt = Date.now();
+      const checkpoint = async (complete = false) => {
+        const newIds = importedTransactionIds.slice(checkpointedIds);
+        await recordImportRunMutation.mutateAsync({
           budgetId,
           input: {
             runKey: runKey.current,
@@ -705,7 +732,7 @@ export function useImportDialogState(): ImportDialogState {
               failedRows: failures.length,
               failures,
             },
-            transactionIds: importedTransactionIds,
+            transactionIds: newIds,
             accountIds: createdAccountIds,
             categoryIds: createdCategoryIds,
             status: !complete
@@ -715,6 +742,17 @@ export function useImportDialogState(): ImportDialogState {
                 : 'completed',
           },
         });
+        checkpointedIds += newIds.length;
+        lastCheckpointAt = Date.now();
+      };
+      const checkpointIfDue = async () => {
+        if (
+          importedTransactionIds.length - checkpointedIds >= CHECKPOINT_ROWS ||
+          Date.now() - lastCheckpointAt >= CHECKPOINT_MS
+        ) {
+          await checkpoint();
+        }
+      };
       await checkpoint();
       let processedCount = 0;
       let successCount = 0;
@@ -724,7 +762,7 @@ export function useImportDialogState(): ImportDialogState {
       const resolvedIncomeId = incomeId ?? 0;
       const resolvedUncategorizedId = uncategorizedId ?? 0;
 
-      for (const reviewed of fresh) {
+      for (const reviewed of inDateOrder(fresh)) {
         const plan = reviewed.input;
         const row = reviewed.original;
         try {
@@ -822,7 +860,7 @@ export function useImportDialogState(): ImportDialogState {
 
         processedCount++;
         // A history-write error stops the run; it must not relabel a committed row as failed.
-        await checkpoint();
+        await checkpointIfDue();
       }
 
       const skippedCount = totalRows - successCount - transactionsMatched;

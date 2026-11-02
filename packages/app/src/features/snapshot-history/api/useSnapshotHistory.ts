@@ -20,27 +20,30 @@ export function useSnapshotHistory() {
 /**
  * Restore an earlier snapshot: the server makes it the workspace snapshot
  * (and tells the other devices to reload), then this device reloads it too.
- * Changes made after that copy are still in the change log and are replayed
- * on top, so the result is the earlier copy plus every later edit.
+ * 'replay' re-applies every change made after that copy (the earlier copy
+ * plus every later edit); 'reset' goes back to exactly that copy: the server
+ * binds it to the latest change, so devices skip everything after it.
  */
+export type RestoreMode = 'replay' | 'reset';
+
 export function useRestoreSnapshot() {
   const spaceId = useActiveSpaceId();
   const runtime = useRuntime();
   const queryClient = useQueryClient();
   return useMutation({
     meta: { label: 'snapshot.restore' },
-    mutationFn: async (entryId: number) => {
+    mutationFn: async ({ entryId, mode }: { entryId: number; mode: RestoreMode }) => {
       if (!spaceId) throw new Error('No active workspace');
-      const result = await blobApi.restoreHistory(spaceId, entryId);
+      const result = await blobApi.restoreHistory(spaceId, entryId, mode);
       await runtime.redownloadFromServer();
       return result;
     },
-    onSuccess: () => {
-      track('snapshot_restore', { outcome: 'ok', error_code: 'none' });
+    onSuccess: (_result, { mode }) => {
+      track('snapshot_restore', { outcome: 'ok', error_code: 'none', mode });
       void queryClient.invalidateQueries();
     },
-    onError: (error) => {
-      track('snapshot_restore', { outcome: 'error', error_code: toErrorCode(error) });
+    onError: (error, { mode }) => {
+      track('snapshot_restore', { outcome: 'error', error_code: toErrorCode(error), mode });
     },
   });
 }

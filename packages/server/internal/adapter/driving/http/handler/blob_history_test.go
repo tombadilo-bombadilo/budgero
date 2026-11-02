@@ -164,6 +164,7 @@ type historyListing struct {
 		EncryptionKeyVersion int64     `json:"encryption_key_version"`
 		DataFormatVersion    int64     `json:"data_format_version"`
 		Restorable           bool      `json:"restorable"`
+		Replayable           bool      `json:"replayable"`
 	} `json:"entries"`
 }
 
@@ -465,6 +466,84 @@ func TestRestoreSnapshot_PromotesBumpsVersionAndNotifiesOutOfBand(t *testing.T) 
 
 	// A restored snapshot is a normal base for the next upload.
 	f.upload([]byte("after-restore"), resp.Version, 19371, nil)
+}
+
+func TestRestoreSnapshot_ResetDiscardsLaterChanges(t *testing.T) {
+	f := newHistoryFixture(t, historyOptions{keep: 10, days: 7, withHub: true})
+	good := bytes.Repeat([]byte("g"), 4096)
+	v1 := f.upload(good, 0, 100, nil)
+	f.upload([]byte("after-import"), v1, 23441, nil)
+	// The log holds changes up to #23446 (e.g. a large import plus edits).
+	if _, err := f.tc.DB.Exec(
+		`INSERT INTO mutation_log (id, space_id, user_id, version, op, args, timestamp, base_version)
+		 VALUES ('m-last', ?, ?, 23446, '', '{}', CURRENT_TIMESTAMP, 23445)`,
+		f.spaceID, f.ownerID,
+	); err != nil {
+		t.Fatal(err)
+	}
+
+	entryID := f.list(f.ownerID).Entries[0].ID
+	bad := f.do(http.MethodPost, fmt.Sprintf("%s/%d/restore?space_id=%s&mode=undo", historyRoute, entryID, f.spaceID), f.ownerID, nil, nil)
+	if bad.Code != http.StatusBadRequest {
+		t.Fatalf("unknown mode status = %d", bad.Code)
+	}
+
+	rec := f.do(http.MethodPost, fmt.Sprintf("%s/%d/restore?space_id=%s&mode=reset", historyRoute, entryID, f.spaceID), f.ownerID, nil, nil)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("reset status = %d body %s", rec.Code, rec.Body.String())
+	}
+	var resp struct {
+		MutationVersion int64 `json:"mutation_version"`
+		Reset           bool  `json:"reset"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	// Bound to the latest log position: devices skip #101..#23446.
+	if resp.MutationVersion != 23446 || !resp.Reset {
+		t.Fatalf("reset response = %+v", resp)
+	}
+	dl := f.do(http.MethodGet, "/api/v1/database/blob?space_id="+f.spaceID, f.ownerID, nil, nil)
+	if dl.Header().Get("X-Mutation-Version") != "23446" || !bytes.Equal(dl.Body.Bytes(), good) {
+		t.Fatalf("download after reset: %v", dl.Header())
+	}
+	// The kept copies are unchanged, but every one of them predates the reset:
+	// replaying from them would bring the discarded changes back.
+	l := f.list(f.ownerID)
+	for _, e := range l.Entries {
+		if e.ID == entryID && e.MutationVersion != 100 {
+			t.Fatalf("history entry changed: %+v", e)
+		}
+		if e.Replayable {
+			t.Fatalf("entry older than the reset is replayable: %+v", e)
+		}
+	}
+	replay := f.do(http.MethodPost, fmt.Sprintf("%s/%d/restore?space_id=%s", historyRoute, entryID, f.spaceID), f.ownerID, nil, nil)
+	if replay.Code != http.StatusConflict || !strings.Contains(replay.Body.String(), "replay_unavailable") {
+		t.Fatalf("replay of a pre-reset copy = %d %s", replay.Code, replay.Body.String())
+	}
+	// Going back to it again is still allowed.
+	again := f.do(http.MethodPost, fmt.Sprintf("%s/%d/restore?space_id=%s&mode=reset", historyRoute, entryID, f.spaceID), f.ownerID, nil, nil)
+	if again.Code != http.StatusOK {
+		t.Fatalf("second reset = %d %s", again.Code, again.Body.String())
+	}
+
+	// Copies made after the reset replay normally.
+	var cur struct {
+		Version int64 `json:"version"`
+	}
+	if err := json.Unmarshal(again.Body.Bytes(), &cur); err != nil {
+		t.Fatal(err)
+	}
+	f.upload([]byte("after-reset"), cur.Version, 23447, nil)
+	l = f.list(f.ownerID)
+	if !l.Entries[0].Replayable || l.Entries[0].MutationVersion != 23446 {
+		t.Fatalf("post-reset copy = %+v", l.Entries[0])
+	}
+	ok := f.do(http.MethodPost, fmt.Sprintf("%s/%d/restore?space_id=%s", historyRoute, l.Entries[0].ID, f.spaceID), f.ownerID, nil, nil)
+	if ok.Code != http.StatusOK {
+		t.Fatalf("replay of a post-reset copy = %d %s", ok.Code, ok.Body.String())
+	}
 }
 
 func TestRestoreSnapshot_RefusesNotRestorable(t *testing.T) {

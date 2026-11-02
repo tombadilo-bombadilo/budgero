@@ -167,4 +167,89 @@ describe('WebDatabaseAdapter local persistence', () => {
     expect(posted).toEqual([{ filename: 'test.db', size: 4 }]);
     __setOpfsWorkerFactoryForTests(null);
   });
+
+  describe('Firefox: one writer per file', () => {
+    /** OPFS like Firefox: a second createWritable() while one is open throws. */
+    function mockExclusiveOPFS(options: { busyAttempts?: number } = {}) {
+      let open = false;
+      let busy = options.busyAttempts ?? 0;
+      const file = { data: new Uint8Array() };
+      const busyError = () =>
+        Object.assign(new Error('file is locked'), { name: 'NoModificationAllowedError' });
+      Object.defineProperty(globalThis, 'navigator', {
+        value: {
+          storage: {
+            async getDirectory() {
+              return {
+                async getFileHandle() {
+                  return {
+                    async createWritable() {
+                      if (busy > 0) {
+                        busy -= 1;
+                        throw busyError();
+                      }
+                      if (open) throw busyError();
+                      open = true;
+                      let pending = new Uint8Array();
+                      return {
+                        async write(chunk: Blob) {
+                          await new Promise((resolve) => setTimeout(resolve, 5));
+                          pending = new Uint8Array(await chunk.arrayBuffer());
+                        },
+                        async close() {
+                          file.data = pending;
+                          open = false;
+                        },
+                        async abort() {
+                          open = false;
+                        },
+                      };
+                    },
+                  };
+                },
+              };
+            },
+          },
+        },
+        writable: true,
+        configurable: true,
+      });
+      return file;
+    }
+
+    const plainCipher: LocalPersistenceCipher = {
+      encrypt: vi.fn(async (data: Uint8Array) => data),
+      decrypt: vi.fn(async () => ({ decrypted: new Uint8Array(), wasEncrypted: false })),
+    };
+
+    it('saves overlapping in call order instead of failing the second one', async () => {
+      const file = mockExclusiveOPFS();
+      let next = 1;
+      const adapter = createAdapterStub(() => new Uint8Array([next++]), plainCipher);
+
+      // A restore's save overlapping the debounced save (2026-11-01, Firefox 115).
+      await Promise.all([
+        adapter.saveToOPFSPublic(),
+        adapter.saveToOPFSPublic(),
+        adapter.saveToOPFSPublic(),
+      ]);
+
+      expect(Array.from(file.data)).toEqual([3]);
+    });
+
+    it('retries while another tab holds the file', async () => {
+      const file = mockExclusiveOPFS({ busyAttempts: 2 });
+      const adapter = createAdapterStub(() => new Uint8Array([9]), plainCipher);
+      await adapter.saveToOPFSPublic();
+      expect(Array.from(file.data)).toEqual([9]);
+    });
+
+    it('gives up with the original error when the file stays busy', async () => {
+      mockExclusiveOPFS({ busyAttempts: 99 });
+      const adapter = createAdapterStub(() => new Uint8Array([9]), plainCipher);
+      await expect(adapter.saveToOPFSPublic()).rejects.toMatchObject({
+        name: 'NoModificationAllowedError',
+      });
+    }, 10_000);
+  });
 });

@@ -256,6 +256,20 @@ func (r *SpaceRepository) RestoreSyncStateCAS(
 	return version, nil
 }
 
+// ResetFloor returns the change-log position of the latest "go back" restore.
+func (r *SpaceRepository) ResetFloor(ctx context.Context, spaceID string) (int64, error) {
+	floor, err := r.queries.GetSpaceResetFloor(ctx, spaceID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, nil
+	}
+	return floor, err
+}
+
+// RaiseResetFloor moves the reset floor up to floor (never down).
+func (r *SpaceRepository) RaiseResetFloor(ctx context.Context, spaceID string, floor int64) error {
+	return r.queries.RaiseSpaceResetFloor(ctx, sqlc.RaiseSpaceResetFloorParams{Floor: floor, SpaceID: spaceID})
+}
+
 // InsertSnapshotHistory records a replaced snapshot and returns its id.
 func (r *SpaceRepository) InsertSnapshotHistory(ctx context.Context, entry *domain.SnapshotHistoryEntry) (int64, error) {
 	return r.queries.InsertSpaceBlobHistory(ctx, sqlc.InsertSpaceBlobHistoryParams{

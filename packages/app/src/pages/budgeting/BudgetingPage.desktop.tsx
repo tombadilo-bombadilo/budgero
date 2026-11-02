@@ -280,7 +280,10 @@ export function BudgetingPageDesktop() {
         </Card>
 
         <div className="min-w-0 flex flex-col min-h-0 h-full overflow-hidden">
-          <ScrollArea className="h-full">
+          {/* Radix lays the viewport content out as a table, so one unwrappable
+              element (a long translated label) widened the whole panel and cut
+              its right edge off. Block layout keeps it at the panel width. */}
+          <ScrollArea className="h-full [&_[data-slot=scroll-area-viewport]>div]:!block">
             <div className="px-1 pb-4">
               <BudgetContextPanel
                 budgetId={budgetId}

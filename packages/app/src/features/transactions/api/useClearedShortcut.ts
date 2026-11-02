@@ -31,7 +31,8 @@ export function useClearedShortcut(selectedRowIds: number[], rows: GetTransactio
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      if (event.key.toLowerCase() !== 'c') return;
+      // Synthetic keydowns (autofill, extensions) can arrive without a key.
+      if (event.key?.toLowerCase() !== 'c') return;
       if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || event.repeat) return;
       if (isTypingTarget(event.target)) return;
 
