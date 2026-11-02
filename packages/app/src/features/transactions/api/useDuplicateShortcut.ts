@@ -54,7 +54,7 @@ export function useDuplicateShortcut(selectedRowIds: number[], rows: DuplicateSo
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
-      if (event.key.toUpperCase() !== DUPLICATE_SHORTCUT_KEY || !event.shiftKey) return;
+      if (event.key?.toUpperCase() !== DUPLICATE_SHORTCUT_KEY || !event.shiftKey) return;
       if (event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
       if (isTypingTarget(event.target)) return;
 

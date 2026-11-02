@@ -308,4 +308,7 @@ it('reuses the selected envelope for the default goal instead of creating a dupl
   );
   expect(emergency).toHaveLength(1);
   expect(calls.some((c) => c.op === 'goals.create')).toBe(true);
+  // A blank account name falls back to the type's label as a plain string.
+  const account = calls.find((c) => c.op === 'accounts.create');
+  expect(account?.payload.name).toBe('Checking');
 });

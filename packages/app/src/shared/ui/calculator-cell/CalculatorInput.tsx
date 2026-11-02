@@ -181,7 +181,7 @@ export function CalculatorInput({
       e.stopPropagation();
       onCancel();
     } else if (shortcuts && (e.ctrlKey || e.metaKey)) {
-      const shortcut = applyShortcut(e.key.toLowerCase(), value);
+      const shortcut = applyShortcut(e.key?.toLowerCase() ?? '', value);
       if (shortcut) {
         e.preventDefault();
         e.stopPropagation();

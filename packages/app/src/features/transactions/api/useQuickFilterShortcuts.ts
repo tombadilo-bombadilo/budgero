@@ -15,7 +15,7 @@ export function useQuickFilterShortcuts(
     const handler = (event: KeyboardEvent) => {
       if (!event.shiftKey || event.ctrlKey || event.metaKey || event.altKey || event.repeat) return;
       if (isTypingTarget(event.target)) return;
-      const key = event.key.toLowerCase();
+      const key = event.key?.toLowerCase() ?? '';
       if (key === UNCLEARED_FILTER_KEY.toLowerCase()) toggleUncleared();
       else if (key === UNCATEGORIZED_FILTER_KEY.toLowerCase()) toggleUncategorized();
       else return;

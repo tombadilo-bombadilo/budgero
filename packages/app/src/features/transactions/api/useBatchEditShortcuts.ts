@@ -19,7 +19,7 @@ export function useBatchEditShortcuts(open: (target: BatchEditTarget) => boolean
     const handler = (event: KeyboardEvent) => {
       if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey || event.repeat) return;
       if (isTypingTarget(event.target)) return;
-      const key = event.key.toUpperCase();
+      const key = event.key?.toUpperCase() ?? '';
       const targets: Record<string, BatchEditTarget> = {
         [CATEGORIZE_SHORTCUT_KEY]: 'category',
         [MOVE_SHORTCUT_KEY]: 'account',

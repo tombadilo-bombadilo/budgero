@@ -473,12 +473,30 @@ func setupPWAMimeTypes() {
 	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
 }
 
+// webAssets is the embedded frontend; a variable so tests can swap it.
+var webAssets fs.FS = serverpkg.WebAssets
+
+// errAssetIsDirectory: the path names a directory of the bundle (e.g.
+// /onboarding, which is both an app route and public/onboarding/ images).
+var errAssetIsDirectory = errors.New("asset path is a directory")
+
+// openEmbeddedAsset opens a file of the built frontend. Directories are not
+// assets: opening one succeeded and was streamed as an empty, year-cached
+// response (or a 500 with a trailing slash), so /onboarding showed a blank
+// page instead of the app.
 func openEmbeddedAsset(path string) (fs.File, error) {
-	file, err := serverpkg.WebAssets.Open("dist" + path)
-	if err == nil {
+	for _, root := range []string{"dist", "dist-fallback"} {
+		file, err := webAssets.Open(root + strings.TrimSuffix(path, "/"))
+		if err != nil {
+			continue
+		}
+		if info, statErr := file.Stat(); statErr == nil && info.IsDir() {
+			_ = file.Close()
+			return nil, errAssetIsDirectory
+		}
 		return file, nil
 	}
-	return serverpkg.WebAssets.Open("dist-fallback" + path)
+	return nil, fs.ErrNotExist
 }
 
 func pwaStaticMiddleware() echo.MiddlewareFunc {
