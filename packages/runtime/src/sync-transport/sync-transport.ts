@@ -1187,59 +1187,66 @@ export class SyncTransport {
     let firstVersion: number | null = null;
     let lastVersion: number | null = null;
 
-    for (const m of mutations) {
-      if (this.destroyed) return;
-      const { id } = m;
-      if (typeof m.version !== 'number' || !Number.isFinite(m.version) || m.version <= 0) {
-        await this.handleCatchUpUnsafe('invalid_mutation_version');
-        return;
-      }
-      if (m.version <= previousVersion) {
-        await this.handleCatchUpUnsafe('non_monotonic_version');
-        return;
-      }
-      previousVersion = m.version;
-      if (firstVersion === null) firstVersion = m.version;
-      lastVersion = m.version;
-
-      try {
-        const { op, args } = await this.decodeMutationPayload(m);
+    // One UI refresh per page instead of one per mutation: during a long
+    // replay every invalidation re-ran the open screens' queries.
+    const endBatch = mutations.length > 1 ? this.deps.beginRemoteBatch?.() : undefined;
+    try {
+      for (const m of mutations) {
         if (this.destroyed) return;
-
-        await this.deps.onRemoteMutation(op, args, id || '');
-        if (this.destroyed) return;
-        this.catchUpApplyFailures.delete(this.catchUpFailureKey(m));
-        await this.updateLocalVersion(m.version);
-      } catch (error) {
-        if (this.destroyed) return;
-        if (isUpdateRequiredError(error)) {
-          // A snapshot fallback cannot fix a format or op code we don't
-          // understand, and quarantining would skip the change for good —
-          // stop here and prompt for an app update instead.
-          this.haltForUpdate(error, id, m.version);
+        const { id } = m;
+        if (typeof m.version !== 'number' || !Number.isFinite(m.version) || m.version <= 0) {
+          await this.handleCatchUpUnsafe('invalid_mutation_version');
           return;
         }
-        this.log('warn', 'Failed to apply catch-up mutation', {
-          mutationId: id,
-          error: errorMessage(error),
-          originalError: error,
-        });
-        const failureKey = this.catchUpFailureKey(m);
-        const previousFailure = this.catchUpApplyFailures.get(failureKey);
-        if (
-          previousFailure?.version === m.version &&
-          previousFailure.precedingVersion === this.localVersion
-        ) {
-          await this.quarantineCatchUpMutation(m, error);
-          continue;
+        if (m.version <= previousVersion) {
+          await this.handleCatchUpUnsafe('non_monotonic_version');
+          return;
         }
-        this.catchUpApplyFailures.set(failureKey, {
-          version: m.version,
-          precedingVersion: this.localVersion,
-        });
-        await this.handleCatchUpUnsafe('apply_failed');
-        return;
+        previousVersion = m.version;
+        if (firstVersion === null) firstVersion = m.version;
+        lastVersion = m.version;
+
+        try {
+          const { op, args } = await this.decodeMutationPayload(m);
+          if (this.destroyed) return;
+
+          await this.deps.onRemoteMutation(op, args, id || '');
+          if (this.destroyed) return;
+          this.catchUpApplyFailures.delete(this.catchUpFailureKey(m));
+          await this.updateLocalVersion(m.version);
+        } catch (error) {
+          if (this.destroyed) return;
+          if (isUpdateRequiredError(error)) {
+            // A snapshot fallback cannot fix a format or op code we don't
+            // understand, and quarantining would skip the change for good —
+            // stop here and prompt for an app update instead.
+            this.haltForUpdate(error, id, m.version);
+            return;
+          }
+          this.log('warn', 'Failed to apply catch-up mutation', {
+            mutationId: id,
+            error: errorMessage(error),
+            originalError: error,
+          });
+          const failureKey = this.catchUpFailureKey(m);
+          const previousFailure = this.catchUpApplyFailures.get(failureKey);
+          if (
+            previousFailure?.version === m.version &&
+            previousFailure.precedingVersion === this.localVersion
+          ) {
+            await this.quarantineCatchUpMutation(m, error);
+            continue;
+          }
+          this.catchUpApplyFailures.set(failureKey, {
+            version: m.version,
+            precedingVersion: this.localVersion,
+          });
+          await this.handleCatchUpUnsafe('apply_failed');
+          return;
+        }
       }
+    } finally {
+      await endBatch?.();
     }
 
     if (this.destroyed) return;

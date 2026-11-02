@@ -1937,4 +1937,33 @@ describe('SyncTransport', () => {
     transport.setLocalVersion(2);
     expect(transport.isCursorBehindAcks()).toBe(false);
   });
+
+  it('applies a catch-up page inside one remote batch', async () => {
+    const events: string[] = [];
+    const onRemoteMutation = vi.fn(async (_op: string, _args: unknown, id: string) => {
+      events.push(`apply ${id}`);
+    });
+    const beginRemoteBatch = vi.fn(() => {
+      events.push('begin');
+      return async () => {
+        events.push('end');
+      };
+    });
+    const { transport } = createTransport({ onRemoteMutation, beginRemoteBatch });
+    await transport.connect();
+    const ws = FakeWebSocket.instances[0]!;
+    ws.emitOpen();
+    ws.emitMessage({
+      type: 'catch_up_response',
+      mutations: [
+        { id: 'a', version: 1, op: 'x', args: {} },
+        { id: 'b', version: 2, op: 'x', args: {} },
+        { id: 'c', version: 3, op: 'x', args: {} },
+      ],
+      hasMore: false,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(events).toEqual(['begin', 'apply a', 'apply b', 'apply c', 'end']);
+    expect(transport.getLocalVersion()).toBe(3);
+  });
 });

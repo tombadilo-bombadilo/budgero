@@ -217,6 +217,7 @@ export class RuntimeContextFactory {
           release();
         }
       },
+      beginRemoteBatch: () => executor.beginInvalidationBatch(),
       onMutationAck: (mutationId) => offlineQueue.ackMutation(mutationId),
       persistLocalDatabase,
       persistLocalDatabaseSoon,

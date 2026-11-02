@@ -22,13 +22,43 @@ export interface ExecuteResult<T = unknown> {
 }
 
 /** Ops only the workspace owner may run. */
+type InvalidationCall = {
+  queryKey?: string[];
+  predicate?: (q: { queryKey: unknown[] }) => boolean;
+};
+
 const OWNER_ONLY_OPS = new Set(['budgets.create', 'budgets.delete']);
 
 export class MutationExecutor {
   private readonly deps: MutationExecutorDeps;
 
+  /** Open remote batches (catch-up pages); > 0 defers query invalidation. */
+  private batchDepth = 0;
+
+  private pendingInvalidations = new Map<string, InvalidationCall>();
+
   constructor(deps: MutationExecutorDeps) {
     this.deps = deps;
+  }
+
+  /**
+   * Collect query invalidations until the returned function is called, then
+   * run each distinct one once. Replaying thousands of remote mutations used
+   * to invalidate (and refetch the open screens) after every single one.
+   */
+  beginInvalidationBatch(): () => Promise<void> {
+    this.batchDepth += 1;
+    let ended = false;
+    return async () => {
+      if (ended) return;
+      ended = true;
+      this.batchDepth -= 1;
+      if (this.batchDepth > 0 || this.pendingInvalidations.size === 0) return;
+      const calls = [...this.pendingInvalidations.values()];
+      this.pendingInvalidations.clear();
+      const qc = this.deps.getQueryClient();
+      if (qc) await Promise.all(calls.map((options) => qc.invalidateQueries(options)));
+    };
   }
 
   async execute<T>(spec: MutationSpec): Promise<ExecuteResult<T>> {
@@ -109,10 +139,7 @@ export class MutationExecutor {
     if (shouldInvalidate && invalidates) {
       const qc = this.deps.getQueryClient();
       if (qc) {
-        const invalidationCalls = new Map<
-          string,
-          { queryKey?: string[]; predicate?: (q: { queryKey: unknown[] }) => boolean }
-        >();
+        const invalidationCalls = new Map<string, InvalidationCall>();
         for (const key of invalidates) {
           if (key.length === 0) continue;
           const spaceAwareKey = this.ensureSpaceAwareKey(key, activeSpaceId);
@@ -130,9 +157,14 @@ export class MutationExecutor {
             }
           }
         }
-        await Promise.all(
-          [...invalidationCalls.values()].map((options) => qc.invalidateQueries(options))
-        );
+        if (this.batchDepth > 0) {
+          for (const [key, options] of invalidationCalls)
+            this.pendingInvalidations.set(key, options);
+        } else {
+          await Promise.all(
+            [...invalidationCalls.values()].map((options) => qc.invalidateQueries(options))
+          );
+        }
       }
     }
 

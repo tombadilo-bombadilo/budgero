@@ -149,6 +149,12 @@ export interface SyncTransportDeps {
   decryptPayload(encrypted: string): Promise<{ v?: number; op: string; args: unknown }>;
   onRemoteMutation(op: string, args: Record<string, unknown>, id: string): Promise<void>;
   /**
+   * Start applying a batch of remote mutations (a catch-up page): UI query
+   * invalidations are collected and run once when the returned function is
+   * called, instead of after every mutation.
+   */
+  beginRemoteBatch?(): () => Promise<void>;
+  /**
    * The server acknowledged a mutation we sent. At-least-once delivery:
    * a mutation stays in the offline queue until this fires for its ID.
    */

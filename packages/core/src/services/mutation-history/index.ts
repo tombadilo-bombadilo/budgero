@@ -21,7 +21,11 @@ import type {
   OpCall,
 } from './types.js';
 
+const PRUNE_EVERY = 25;
+
 export class MutationHistoryService {
+  private insertsSincePrune = 0;
+
   private queries: MutationHistoryQueries;
 
   constructor(private db: DatabaseAdapter) {
@@ -70,8 +74,14 @@ export class MutationHistoryService {
       input.errorCode ?? null
     );
 
-    // Prune old entries to maintain 500 limit
-    this.queries.pruneOldEntries(input.budgetId);
+    // Keep about the last 500 per budget. Pruning sorts the budget's history,
+    // so do it every PRUNE_EVERY inserts rather than on each one (a long
+    // catch-up records thousands of entries); at most PRUNE_EVERY extra rows.
+    this.insertsSincePrune += 1;
+    if (this.insertsSincePrune >= PRUNE_EVERY) {
+      this.insertsSincePrune = 0;
+      this.queries.pruneOldEntries(input.budgetId);
+    }
 
     return id;
   }
