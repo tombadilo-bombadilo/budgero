@@ -397,20 +397,26 @@ export function GoalCard({
   return (
     <div className={className}>
       <div className="pb-3">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="text-lg flex items-center gap-2">
+        {/* min-w-0 + wrapping: in a narrow panel (or a long translation, e.g.
+            "Wiederholt sich alle 6 Monate") the title row must wrap instead of
+            pushing the edit button out of view. */}
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0 flex-1">
+            <CardTitle className="text-lg flex flex-wrap items-center gap-x-2 gap-y-1 break-words">
               {getGoalTypeIcon()}
               {getGoalTypeLabel()}
               {cadenceLabel && (
-                <Badge variant="outline" className="text-[9px] uppercase tracking-wide">
+                <Badge
+                  variant="outline"
+                  className="max-w-full shrink whitespace-normal text-left text-[9px] uppercase tracking-wide"
+                >
                   <Trans>Repeats {cadenceLabel}</Trans>
                 </Badge>
               )}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">{categoryName}</p>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             {(compact || localExpanded) && (
               <Button
                 variant="ghost"
