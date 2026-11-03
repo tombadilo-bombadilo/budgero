@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { GetTransactionsByAccountRow } from '@budgero/core/browser';
 import { Table } from '@shared/ui/table';
 import { useRegisterKeyboard } from '@features/transactions/api/useRegisterKeyboard';
+import { useEmptyStateViewed } from '@shared/lib/analytics/first-month';
 import { TransactionTableHeader } from './TransactionTableHeader';
 import { TransactionTableBody } from './TransactionTableBody';
 import { SplitDetailsDialog } from './SplitDetailsDialog';
@@ -233,6 +234,8 @@ export function DesktopTransactionTable({
   const handleSplitCreate = useCallback((transaction: GetTransactionsByAccountRow) => {
     setSplitDialogState({ transaction, startEditing: true });
   }, []);
+
+  useEmptyStateViewed('transactions', transactions.length === 0 && !inlineAdd);
 
   // Empty state
   if (transactions.length === 0 && !inlineAdd) {

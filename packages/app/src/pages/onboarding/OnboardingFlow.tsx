@@ -32,7 +32,7 @@ import { getTodayISO } from '@shared/lib/date-utils';
 import { readPendingSpaceInvite } from '@features/budget-sharing/lib/pending-space-invite';
 import { hasCompleteCreditPaymentMappings } from '@features/budget-management/ui/create-budget-form/ynab-credit-payment-matching';
 import { YnabImportStatus } from '@features/budget-management/ui/create-budget-form/YnabImportStatus';
-import { track } from '@shared/lib/analytics/track';
+import { track, trackOnUnload } from '@shared/lib/analytics/track';
 import { durationBucket, type OnboardingStepId } from '@shared/lib/analytics/events';
 import {
   INITIAL_STATE,
@@ -159,18 +159,46 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 
   const startedAtRef = useRef<number | null>(null);
   const analyticsStep = curId as OnboardingStepId;
-  const lastViewedStepRef = useRef<string | null>(null);
+  const lastViewedStepRef = useRef<OnboardingStepId | null>(null);
+  const stepViewedAtRef = useRef(0);
+  const finishedRef = useRef(false);
+  const leftRef = useRef({ step: analyticsStep, path: activePath });
+  leftRef.current = { step: analyticsStep, path: activePath };
   useEffect(() => {
     // Once per step: picking a start mode changes the path, not the step.
     startedAtRef.current ??= Date.now();
-    if (lastViewedStepRef.current === analyticsStep) return;
+    const prev = lastViewedStepRef.current;
+    if (prev === analyticsStep) return;
     lastViewedStepRef.current = analyticsStep;
+    stepViewedAtRef.current = Date.now();
+    const from = PATH_STEPS[activePath].indexOf(prev ?? '');
+    if (prev && from > PATH_STEPS[activePath].indexOf(analyticsStep)) {
+      track('onboarding_step_back', { from: prev, to: analyticsStep, path: activePath });
+    }
     track('onboarding_step_viewed', { step: analyticsStep, path: activePath });
   }, [analyticsStep, activePath]);
+  useEffect(() => {
+    // Closing the tab mid-setup: where, and after how long.
+    const onPageHide = () => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      trackOnUnload('onboarding_left', {
+        ...leftRef.current,
+        duration_bucket: durationBucket(Date.now() - (startedAtRef.current ?? Date.now())),
+      });
+    };
+    window.addEventListener('pagehide', onPageHide);
+    return () => window.removeEventListener('pagehide', onPageHide);
+  }, []);
   const trackStepCompleted = useCallback(() => {
-    track('onboarding_step_completed', { step: analyticsStep, path: activePath });
+    track('onboarding_step_completed', {
+      step: analyticsStep,
+      path: activePath,
+      duration_bucket: durationBucket(Date.now() - stepViewedAtRef.current),
+    });
   }, [analyticsStep, activePath]);
   const completeOnboarding = useCallback(() => {
+    finishedRef.current = true;
     track('onboarding_finished', {
       path: activePath,
       duration_bucket: durationBucket(Date.now() - (startedAtRef.current ?? Date.now())),

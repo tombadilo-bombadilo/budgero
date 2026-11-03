@@ -7,9 +7,19 @@ import type { YNABApiPlanSnapshot, YNABImportResult } from '@budgero/core/browse
 
 import OnboardingFlow from './OnboardingFlow';
 
-const { mockRunOnboardingApply, mockReviewDecision } = vi.hoisted(() => ({
-  mockRunOnboardingApply: vi.fn(),
-  mockReviewDecision: vi.fn(),
+const { mockRunOnboardingApply, mockReviewDecision, mockTrack, mockTrackOnUnload } = vi.hoisted(
+  () => ({
+    mockRunOnboardingApply: vi.fn(),
+    mockReviewDecision: vi.fn(),
+    mockTrack: vi.fn(),
+    mockTrackOnUnload: vi.fn(),
+  })
+);
+
+vi.mock('@shared/lib/analytics/track', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@shared/lib/analytics/track')>()),
+  track: mockTrack,
+  trackOnUnload: mockTrackOnUnload,
 }));
 
 vi.mock('./apply-onboarding', () => ({
@@ -382,4 +392,38 @@ it('ignores late ZIP inspection after the source changes to an API plan with unm
     inspectZip.mockRestore();
     inspectApi.mockRestore();
   }
+});
+
+it('reports going back a step and leaving onboarding mid-way', () => {
+  mockTrack.mockReset();
+  mockTrackOnUnload.mockReset();
+  render(
+    <MemoryRouter>
+      <QueryClientProvider client={new QueryClient()}>
+        <OnboardingFlow onComplete={vi.fn()} />
+      </QueryClientProvider>
+    </MemoryRouter>
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Load ambiguous ZIP' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Use month-first dates' }));
+  fireEvent.click(screen.getByRole('button', { name: /Let’s begin/ }));
+  expect(mockTrack).toHaveBeenCalledWith('onboarding_step_completed', {
+    step: 'ynab_import',
+    path: 'ynab',
+    duration_bucket: '<10s',
+  });
+  fireEvent.click(screen.getByRole('button', { name: /Back/ }));
+  expect(mockTrack).toHaveBeenCalledWith('onboarding_step_back', {
+    from: 'password',
+    to: 'ynab_import',
+    path: 'ynab',
+  });
+  window.dispatchEvent(new Event('pagehide'));
+  window.dispatchEvent(new Event('pagehide'));
+  expect(mockTrackOnUnload).toHaveBeenCalledTimes(1);
+  expect(mockTrackOnUnload).toHaveBeenCalledWith('onboarding_left', {
+    step: 'ynab_import',
+    path: 'ynab',
+    duration_bucket: '<10s',
+  });
 });

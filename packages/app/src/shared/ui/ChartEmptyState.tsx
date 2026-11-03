@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useEmptyStateViewed } from '@shared/lib/analytics/first-month';
 
 const DefaultChartIcon = (
   <svg
@@ -38,6 +39,7 @@ export function ChartEmptyState({
   icon = DefaultChartIcon,
   className = 'flex h-[300px] flex-col items-center justify-center space-y-3',
 }: ChartEmptyStateProps) {
+  useEmptyStateViewed('reports');
   return (
     <div className={className}>
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">{icon}</div>

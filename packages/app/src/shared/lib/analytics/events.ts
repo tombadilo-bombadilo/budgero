@@ -27,6 +27,7 @@ export const ACTIONS_BUCKETS = ['1', '2-3', '4+'] as const;
 export type ActionsBucket = (typeof ACTIONS_BUCKETS)[number];
 
 const OUTCOMES = ['ok', 'error', 'cancelled'] as const;
+const YES_NO = ['yes', 'no'] as const;
 const OK_ERROR = ['ok', 'error'] as const;
 
 /**
@@ -118,6 +119,21 @@ export const ONBOARDING_STEP_IDS = [
 ] as const;
 export type OnboardingStepId = (typeof ONBOARDING_STEP_IDS)[number];
 const ONBOARDING_PATHS = ['fresh', 'ynab', 'join'] as const;
+
+/** Days since signup, for first-month events (first-month.ts sends nothing after day 30). */
+export const SIGNUP_DAY_BUCKETS = ['0', '1', '2', '3', '4-7', '8-14', '15-30'] as const;
+export type SignupDayBucket = (typeof SIGNUP_DAY_BUCKETS)[number];
+/** The first time a user reaches each early step (once per user per device). */
+export const ACTIVATION_MILESTONES = [
+  'first_transaction',
+  'first_assign',
+  'rta_zero',
+  'first_import',
+] as const;
+export type ActivationMilestone = (typeof ACTIVATION_MILESTONES)[number];
+/** Screens whose empty state we count. */
+export const EMPTY_STATE_SCREENS = ['budget', 'transactions', 'reports'] as const;
+export type EmptyStateScreen = (typeof EMPTY_STATE_SCREENS)[number];
 
 export const IMPORT_SOURCES = ['ynab_api', 'ynab_zip', 'csv', 'pdf', 'ofx', 'qif', 'camt'] as const;
 export type ImportSource = (typeof IMPORT_SOURCES)[number];
@@ -233,7 +249,6 @@ const CANCEL_REASONS = [
   'switching_apps',
   'other',
 ] as const;
-const YES_NO = ['yes', 'no'] as const;
 
 /** Each setting and the values it may report. */
 export const SETTING_VALUES = {
@@ -284,8 +299,35 @@ export const EVENT_SCHEMA = {
 
   // Onboarding
   onboarding_step_viewed: { step: ONBOARDING_STEP_IDS, path: ONBOARDING_PATHS },
-  onboarding_step_completed: { step: ONBOARDING_STEP_IDS, path: ONBOARDING_PATHS },
+  onboarding_step_completed: {
+    step: ONBOARDING_STEP_IDS,
+    path: ONBOARDING_PATHS,
+    duration_bucket: DURATION_BUCKETS,
+  },
+  onboarding_step_back: {
+    from: ONBOARDING_STEP_IDS,
+    to: ONBOARDING_STEP_IDS,
+    path: ONBOARDING_PATHS,
+  },
+  // The tab was closed or hidden for good while onboarding was open.
+  onboarding_left: {
+    step: ONBOARDING_STEP_IDS,
+    path: ONBOARDING_PATHS,
+    duration_bucket: DURATION_BUCKETS,
+  },
   onboarding_finished: { path: ONBOARDING_PATHS, duration_bucket: DURATION_BUCKETS },
+
+  // First month (first-month.ts)
+  app_opened: { day: SIGNUP_DAY_BUCKETS },
+  activation_milestone: { milestone: ACTIVATION_MILESTONES, day: SIGNUP_DAY_BUCKETS },
+  session_summary: {
+    day: SIGNUP_DAY_BUCKETS,
+    duration_bucket: DURATION_BUCKETS,
+    transactions_bucket: COUNT_BUCKETS,
+    assignments_bucket: COUNT_BUCKETS,
+    imported: YES_NO,
+  },
+  empty_state_viewed: { screen: EMPTY_STATE_SCREENS },
 
   // Onboarding YNAB step (before import_started, which fires only after the password step)
   ynab_import_method_chosen: { method: YNAB_IMPORT_CHOICES },

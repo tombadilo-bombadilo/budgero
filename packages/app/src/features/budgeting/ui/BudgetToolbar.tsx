@@ -7,7 +7,8 @@ import type { Goal, GetMonthlyBudgetRow } from '@budgero/core/browser';
 import { ReadyToAssignHelpPopover } from '@features/budgeting/ui/ReadyToAssignHelpPopover';
 import { Button } from '@shared/ui/button';
 import { cn } from '@shared/lib/utils';
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
+import { noteReadyToAssign } from '@shared/lib/analytics/first-month';
 import { useFormatMaskedMilli } from '@features/budget-planning/lib/useFormatMaskedMilli';
 import { PlanningAnimatedNumber } from '@features/budget-planning/ui/PlanningNumberAnimation';
 
@@ -71,6 +72,10 @@ export function BudgetToolbar({
   // readyToAssign is stored milliunits; AnimatedNumber interpolates the raw
   // value, so the formatter converts to decimal each frame.
   const formatAmount = useFormatMaskedMilli(globalLocalizer);
+
+  useEffect(() => {
+    noteReadyToAssign(readyToAssign);
+  }, [readyToAssign]);
 
   // Tone the Ready-to-Assign pill by state: money to assign (green),
   // over-budgeted (red), or fully assigned (neutral).

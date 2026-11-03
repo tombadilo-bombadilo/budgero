@@ -288,11 +288,17 @@ function underRateLimit(name: string): boolean {
   return window.count <= RATE_LIMIT_PER_MINUTE;
 }
 
-function send(ph: PostHog, name: string, props: Record<string, unknown>): void {
+function send(
+  ph: PostHog,
+  name: string,
+  props: Record<string, unknown>,
+  options?: { transport: 'sendBeacon' }
+): void {
   if (!canSendNow()) return;
   if (!underRateLimit(name)) return;
   try {
-    ph.capture(name, { ...props, ...superProps() });
+    if (options) ph.capture(name, { ...props, ...superProps() }, options);
+    else ph.capture(name, { ...props, ...superProps() });
   } catch (err) {
     if (import.meta.env.DEV) console.warn('[analytics] capture failed', name, err);
   }
@@ -328,6 +334,41 @@ export function track<E extends AnalyticsEventName>(name: E, ...args: AnalyticsE
     return;
   }
   dispatch(name, clean);
+  notifyObservers(name, clean);
+}
+
+/**
+ * Capture from a pagehide handler: sent at once with sendBeacon so it survives
+ * the tab closing. Dropped (not queued) when PostHog isn't ready yet.
+ */
+export function trackOnUnload<E extends AnalyticsEventName>(
+  name: E,
+  ...args: AnalyticsEventArgs<E>
+): void {
+  if (!isCloudBuild() || !client) return;
+  const clean = sanitizeEvent(name, args[0]);
+  if (!clean) return;
+  send(client, name, clean, { transport: 'sendBeacon' });
+}
+
+type TrackObserver = (name: AnalyticsEventName, props: Record<string, string>) => void;
+const observers = new Set<TrackObserver>();
+
+/** Watch sanitized events as they're tracked (first-month.ts counts them). */
+export function observeTrackedEvents(observer: TrackObserver): () => void {
+  observers.add(observer);
+  return () => observers.delete(observer);
+}
+
+function notifyObservers(name: AnalyticsEventName, props: Record<string, string>): void {
+  if (isAnalyticsDisabled()) return;
+  for (const observer of observers) {
+    try {
+      observer(name, props);
+    } catch {
+      /* no-op */
+    }
+  }
 }
 
 /** setting_changed with the value list of that setting. */
