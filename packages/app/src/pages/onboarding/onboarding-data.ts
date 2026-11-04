@@ -114,7 +114,7 @@ export const ONBOARDING_STEPS: OnboardingStepDef[] = [
   {
     id: 'done',
     title: msg`You’re ready`,
-    subtitle: msg`Every coin now has a place to land.`,
+    subtitle: msg`Next, you give every coin a job. We’ll show you how.`,
     hint: msg`Finish line`,
   },
 ];
@@ -125,35 +125,10 @@ export const PATH_STEPS: Record<ActivePath, string[]> = {
   // Workspace/budget/accounts/categories/goal/theme all live with the
   // existing space they're joining — they don't need to build their own.
   join: ['welcome', 'where_heard', 'password', 'done'],
-  fresh: [
-    'welcome',
-    'start_mode',
-    'rules',
-    'currency',
-    'zbb',
-    'workspace',
-    'share',
-    'accounts',
-    'categories',
-    'goal',
-    'where_heard',
-    'theme',
-    'password',
-    'done',
-  ],
-  ynab: [
-    'welcome',
-    'start_mode',
-    'rules',
-    'currency',
-    'workspace',
-    'share',
-    'ynab_import',
-    'where_heard',
-    'theme',
-    'password',
-    'done',
-  ],
+  // Setup asks only what the budget can't work without; how zero-based
+  // budgeting works is explained in the app, at the moment it matters.
+  fresh: ['start_mode', 'currency', 'accounts', 'categories', 'password', 'done'],
+  ynab: ['start_mode', 'ynab_import', 'password', 'done'],
 };
 
 export interface CurrencyDef {

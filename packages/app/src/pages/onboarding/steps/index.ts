@@ -12,7 +12,7 @@ export { PasswordStep } from './PasswordStep';
 export { AccountsStep } from './AccountsStep';
 export { CategoriesStep } from './CategoriesStep';
 export { GoalStep } from './GoalStep';
-export { WhereHeardStep } from './WhereHeardStep';
+export { WhereHeardPicker, WhereHeardStep } from './WhereHeardStep';
 export { ThemeStep } from './ThemeStep';
 export { YnabImportStep } from './YnabImportStep';
 export { DoneStep } from './DoneStep';

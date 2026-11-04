@@ -39,6 +39,7 @@ vi.mock('@features/budgeting/ui/BudgetToolbar', () => ({
   BudgetToolbar: ({ extraContent }: { extraContent: ReactNode }) => <div>{extraContent}</div>,
 }));
 vi.mock('@features/budgeting/ui/BudgetContextPanel', () => ({ BudgetContextPanel: () => null }));
+vi.mock('@features/first-steps/ui/FirstStepsCard', () => ({ FirstStepsCard: () => null }));
 vi.mock('@features/budgeting/ui/ReadyToAssignHelpPopover', () => ({
   ReadyToAssignHelpPopover: () => null,
 }));

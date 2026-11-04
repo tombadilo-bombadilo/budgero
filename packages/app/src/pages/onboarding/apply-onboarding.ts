@@ -45,6 +45,7 @@ import {
   PENDING_ONBOARDING_INVITES_KEY,
 } from '@features/budget-sharing/ui/OnboardingInviteShareDialog';
 import { clearPendingSpaceInvite } from '@features/budget-sharing/lib/pending-space-invite';
+import { startFirstSteps } from '@shared/lib/first-steps/first-steps';
 import {
   ACCOUNT_TYPES,
   CATEGORY_PRESETS,
@@ -427,6 +428,7 @@ export async function runOnboardingApply(
         meta: { label: 'onboarding.addBudget' },
       });
       budgetId = result.result;
+      startFirstSteps(spaceId);
     }
 
     // Tell the UI store which budget we just made — otherwise the

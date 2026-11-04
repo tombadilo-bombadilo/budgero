@@ -54,6 +54,7 @@ import {
   StartModeStep,
   ThemeStep,
   WelcomeStep,
+  WhereHeardPicker,
   WhereHeardStep,
   WorkspaceStep,
   YnabImportStep,
@@ -344,7 +345,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       ynabCreditPaymentMappings: undefined,
       ynabSourceNumberFormat: undefined,
     });
-    setStepIndex(PATH_STEPS.fresh.indexOf('accounts'));
+    setStepIndex(PATH_STEPS.fresh.indexOf('currency'));
   }, [set]);
 
   const handleYnabProgress = useCallback(async (update: YNABImportProgressUpdate) => {
@@ -613,7 +614,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
         {curId === 'goal' && <GoalStep cur={cur} state={state} set={set} />}
         {curId === 'where_heard' && <WhereHeardStep cur={cur} state={state} set={set} />}
         {curId === 'theme' && <ThemeStep cur={cur} state={state} set={set} />}
-        {curId === 'password' && <PasswordStep cur={cur} state={state} set={set} />}
+        {curId === 'password' && (
+          <>
+            <PasswordStep cur={cur} state={state} set={set} />
+            {activePath !== 'join' && <WhereHeardPicker state={state} set={set} />}
+          </>
+        )}
         {curId === 'done' &&
           (isShowingYnabStatus ? (
             <YnabImportStatus

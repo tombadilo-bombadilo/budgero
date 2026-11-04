@@ -1,8 +1,7 @@
-import { plural, msg } from '@lingui/core/macro';
+import { msg } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import React from 'react';
-import { THEMES_AVAILABLE } from '../onboarding-data';
-import { StepHeroImage, Title, formatDateLabel, getCurrencySym, type StepProps } from './shared';
+import { StepHeroImage, Title, getCurrencySym, type StepProps } from './shared';
 
 interface DoneStepExtraProps {
   applyState: 'idle' | 'running' | 'error';
@@ -24,42 +23,13 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
           ['Source', '↓ Imported from YNAB'] as const,
           ['Budget', state.budgetName || 'My budget'] as const,
           ['Currency', `${state.currency} (${sym})`] as const,
-          [
-            'Shared with',
-            state.invites.length > 0
-              ? plural(state.invites.length, {
-                  one: `# person`,
-                  other: `# people`,
-                })
-              : '— (just you for now)',
-          ] as const,
           ['Security', state.password ? '✓ Master password set' : '— not set'] as const,
-          ['Theme', THEMES_AVAILABLE.find((t) => t.id === state.theme)?.name ?? 'Paper'] as const,
         ]
       : [
-          ['Budget', state.budgetName || 'My budget'] as const,
           ['Currency', `${state.currency} (${sym})`] as const,
           ['Accounts', `${state.accounts.length} added`] as const,
-          [
-            'Shared with',
-            state.invites.length > 0
-              ? plural(state.invites.length, {
-                  one: `# person`,
-                  other: `# people`,
-                })
-              : '— (just you for now)',
-          ] as const,
-          ['Security', state.password ? '✓ Master password set' : '— not set'] as const,
           ['Envelopes', `${state.selectedCats.length} categories`] as const,
-          [
-            'Goal',
-            state.goal.target > 0
-              ? state.goal.mode === 'monthly'
-                ? `${state.goal.label} · ${sym}${state.goal.target.toLocaleString()}/mo`
-                : `${state.goal.label} · ${sym}${state.goal.target.toLocaleString()} by ${formatDateLabel(state.goal.targetDate)}`
-              : '—',
-          ] as const,
-          ['Theme', THEMES_AVAILABLE.find((t) => t.id === state.theme)?.name ?? 'Paper'] as const,
+          ['Security', state.password ? '✓ Master password set' : '— not set'] as const,
         ];
 
   // Summary of choices shown on the Done screen (fresh/ynab paths only).

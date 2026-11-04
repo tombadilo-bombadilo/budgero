@@ -18,8 +18,8 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
       title: t`Fresh start`,
       sub: t`I’m new to zero-based budgeting, or starting clean.`,
       bullets: [
-        t`Learn ZBB with a short walkthrough`,
-        t`Set up accounts & envelopes by hand`,
+        t`We show you how it works as you go`,
+        t`Add your accounts and pick categories`,
         t`Takes about 2 minutes`,
       ],
       glyph: '✎',
@@ -39,8 +39,8 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
   return (
     <div>
       <Title
-        h={msg`How are you starting?`}
-        sub={msg`Budgero works either way. Pick the path that fits.`}
+        h={msg`Welcome to Budgero.`}
+        sub={msg`Every coin you earn gets a job before you spend it. How do you want to start?`}
       />
       <div
         className="bo-stack-mobile"

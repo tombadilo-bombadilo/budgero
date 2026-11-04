@@ -54,6 +54,7 @@ import {
   reportMutationAnalytics,
   type MutationAnalyticsServices,
 } from '@shared/lib/analytics/mutation-events';
+import { noteFirstStepsMutation } from '@shared/lib/first-steps/first-steps';
 import { track } from '@shared/lib/analytics/track';
 import { pushMatchReview, withPushIdentity } from './push-identity';
 
@@ -233,6 +234,7 @@ export class AppRuntime {
         } catch {
           /* analytics must never fail a mutation */
         }
+        noteFirstStepsMutation(this.getActiveSpaceId(), prepared.op);
       }
       await this.applyContinuousRulesIfNeeded(result.result, prepared, isLocal);
       return result;

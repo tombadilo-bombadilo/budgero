@@ -17,6 +17,8 @@ import { cn } from '@shared/lib/utils';
 import { useFocusCategoryFromNavState } from '@shared/hooks/useFocusCategoryFromNavState';
 import { useClearCategorySelectionOnMount } from '@shared/hooks/useClearCategorySelectionOnMount';
 import { useNavigateMonth } from '@shared/hooks/useNavigateMonth';
+import { FirstStepsCard } from '@features/first-steps/ui/FirstStepsCard';
+import { useFormatMaskedMilli } from '@features/budget-planning/lib/useFormatMaskedMilli';
 
 export function BudgetingPageMobile() {
   const { t } = useLingui();
@@ -40,6 +42,7 @@ export function BudgetingPageMobile() {
   const { data: budgetData = [] } = useMonthlyBudget(currentMonth, budgetId);
   const { data: goalsData = [] } = useGoals(budgetId);
   const { data: readyToAssign = 0 } = useReadyToAssign(budgetId, currentMonth);
+  const formatAmount = useFormatMaskedMilli(globalLocalizer);
   const { hideCategory, hasHiddenCategories } = useHideCategory(budgetId);
 
   const transformedRows = useMemo(
@@ -72,6 +75,12 @@ export function BudgetingPageMobile() {
 
   return (
     <div className="flex h-[calc(100dvh-6rem)] flex-col p-4">
+      <FirstStepsCard
+        className="mb-3 shrink-0"
+        readyToAssign={readyToAssign}
+        readyToAssignLabel={formatAmount(readyToAssign)}
+        rows={budgetData || []}
+      />
       <Card className="flex-1 min-h-0 overflow-hidden py-0">
         <CardContent className="h-full px-0 overflow-hidden">
           <div className="h-full overflow-y-auto pb-24">

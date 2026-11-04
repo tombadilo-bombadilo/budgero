@@ -24,6 +24,7 @@ import MonthPickerPopover from '@shared/ui/MonthPickerPopover';
 import { useFocusCategoryFromNavState } from '@shared/hooks/useFocusCategoryFromNavState';
 import { useClearCategorySelectionOnMount } from '@shared/hooks/useClearCategorySelectionOnMount';
 import { useNavigateMonth } from '@shared/hooks/useNavigateMonth';
+import { FirstStepsCard } from '@features/first-steps/ui/FirstStepsCard';
 
 export function BudgetingPageDesktop() {
   const { t } = useLingui();
@@ -285,6 +286,12 @@ export function BudgetingPageDesktop() {
               its right edge off. Block layout keeps it at the panel width. */}
           <ScrollArea className="h-full [&_[data-slot=scroll-area-viewport]>div]:!block">
             <div className="px-1 pb-4">
+              <FirstStepsCard
+                className="mb-4"
+                readyToAssign={readyToAssign}
+                readyToAssignLabel={formatMilliAmount(readyToAssign)}
+                rows={budgetData || []}
+              />
               <BudgetContextPanel
                 budgetId={budgetId}
                 currentMonth={currentMonth}
