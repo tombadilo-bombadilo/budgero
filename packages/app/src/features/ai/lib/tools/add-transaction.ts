@@ -4,16 +4,17 @@ import { getErrorMessage } from '@shared/lib/errors';
 import { matchByName } from './match-by-name';
 import type { ToolContext, ToolExecutionResult } from './types';
 
+// Optional fields are nullish: many models send null for a field they leave out.
 export const addTransactionSchema = z.object({
-  amount: z.number().positive().describe('Transaction amount (always positive)'),
+  amount: z.coerce.number().positive().describe('Transaction amount (always positive)'),
   isExpense: z.boolean().describe('True if expense/outflow, false if income/inflow'),
-  accountId: z.number().optional().describe('Account ID to use'),
-  accountName: z.string().optional().describe('Account name to match'),
-  categoryId: z.number().optional().describe('Category ID to use'),
-  categoryName: z.string().optional().describe('Category name to match'),
+  accountId: z.number().nullish().describe('Account ID to use'),
+  accountName: z.string().nullish().describe('Account name to match'),
+  categoryId: z.number().nullish().describe('Category ID to use'),
+  categoryName: z.string().nullish().describe('Category name to match'),
   date: z.string().describe('Date in YYYY-MM-DD format'),
-  memo: z.string().describe('Transaction description/memo'),
-  payee: z.string().optional().describe('Payee/merchant name'),
+  memo: z.string().nullish().describe('Transaction description/memo'),
+  payee: z.string().nullish().describe('Payee/merchant name'),
 });
 
 export type AddTransactionArgs = z.infer<typeof addTransactionSchema>;
@@ -23,7 +24,11 @@ export async function executeAddTransaction(
   context: ToolContext
 ): Promise<ToolExecutionResult> {
   try {
-    let { accountId } = args;
+    // An ID the budget doesn't have (models sometimes make one up) counts as
+    // no ID, so the name is matched instead.
+    let accountId = context.accounts.some((a) => a.ID === args.accountId)
+      ? (args.accountId ?? undefined)
+      : undefined;
     if (!accountId && args.accountName) {
       const match = matchByName(context.accounts, args.accountName, (a) => a.Name);
       accountId = match?.ID;
@@ -38,8 +43,10 @@ export async function executeAddTransaction(
       };
     }
 
-    let { categoryId } = args;
-    let { categoryName } = args;
+    let categoryId = context.categories.some((c) => c.ID === args.categoryId)
+      ? (args.categoryId ?? undefined)
+      : undefined;
+    let categoryName = args.categoryName ?? undefined;
     if (!categoryId && args.categoryName) {
       const match = matchByName(context.categories, args.categoryName, (c) => c.Name);
       categoryId = match?.ID;
@@ -66,7 +73,7 @@ export async function executeAddTransaction(
           date: args.date,
           memo,
           transferId: '',
-          payee: args.payee,
+          payee: args.payee ?? undefined,
         },
         invalidates: [
           ['transactions', '*'],
@@ -84,7 +91,7 @@ export async function executeAddTransaction(
         args.date,
         memo,
         '',
-        args.payee
+        args.payee ?? undefined
       );
     }
 
