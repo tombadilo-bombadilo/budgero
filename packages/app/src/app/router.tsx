@@ -38,6 +38,7 @@ import { DashboardPage } from '@pages/dashboard/DashboardPage';
 import { BudgetingPage } from '@pages/budgeting/BudgetingPage';
 import SubscriptionSuccess from '@features/subscription/ui/SubscriptionSuccess';
 import JoinWorkspacePage from '@pages/JoinWorkspacePage';
+import StartOwnBudgetPage from '@pages/StartOwnBudgetPage';
 import AuthPage from '@pages/auth/AuthPage';
 import AdminDashboard from '@pages/admin/AdminDashboard';
 import { AdminUsers } from '@pages/admin/admin-users';
@@ -101,6 +102,7 @@ function AppRouter() {
               is loaded. Sits inside StartupController so the runtime is
               initialized before useRedeemSpaceInvite runs. */}
           <Route path="/join" element={<JoinWorkspacePage />} />
+          <Route path="/start-own-budget" element={<StartOwnBudgetPage />} />
           <Route path="/subscription/success" element={<SubscriptionSuccess />} />
           <Route path="/" element={<DashboardLayout />}>
             <Route index element={<Navigate to={homePath} replace />} />

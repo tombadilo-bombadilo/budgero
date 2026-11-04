@@ -46,6 +46,8 @@ import {
 } from '@features/budget-sharing/ui/OnboardingInviteShareDialog';
 import { clearPendingSpaceInvite } from '@features/budget-sharing/lib/pending-space-invite';
 import { startFirstSteps } from '@shared/lib/first-steps/first-steps';
+import { getDemoSpaceId, setDemoSpaceId } from '@shared/lib/demo-space';
+import { seedDemoBudget } from '@features/demo-budget/lib/seed-demo-budget';
 import {
   ACCOUNT_TYPES,
   CATEGORY_PRESETS,
@@ -75,6 +77,19 @@ export interface OnboardingApplyDeps {
   reviewYnabImport: (result: YNABImportResult) => Promise<'accept' | 'cancel'>;
   onYnabImportCancelled: () => void;
   waitForYnabContinue: () => Promise<boolean>;
+}
+
+/** The demo's currency: the euro for euro-area languages, else the US dollar. */
+function guessCurrency(): string {
+  const lang = (typeof navigator !== 'undefined' ? navigator.language : 'en-US') || 'en-US';
+  if (/^en-GB/i.test(lang)) return 'GBP';
+  if (
+    /^(de|fr|es|nl|it|pt|fi|el|sk|sl|et|lv|lt|ga|mt)\b/i.test(lang) &&
+    !/-(CH|CA|MX|AR|CO|CL|BR)$/i.test(lang)
+  ) {
+    return 'EUR';
+  }
+  return 'USD';
 }
 
 async function removeIncompleteYnabWorkspace(
@@ -237,11 +252,16 @@ export async function runOnboardingApply(
     // (spaceApi.createSpace) is server-authoritative so a failure there
     // is recoverable on reload (the StartupController workspace gate
     // would then route them through normal workspace setup).
-    await MasterPasswordManager.store(state.password);
+    // Leaving the demo: the password and the runtime already exist.
+    const fromDemo = activePath === 'from_demo';
+    const demoSpaceId = fromDemo ? getDemoSpaceId() : null;
+    if (!fromDemo) await MasterPasswordManager.store(state.password);
 
     // 2. Workspace. createSpace returns a fresh BudgetSpaceSummary; the
     // space row exists server-side from this point on.
-    const summary = await spaceApi.createSpace(state.budgetName.trim() || 'My budget');
+    const summary = await spaceApi.createSpace(
+      activePath === 'demo' ? t`Demo budget` : state.budgetName.trim() || 'My budget'
+    );
     const spaceId = summary.space_id;
 
     // Record the master password on the server as soon as the workspace
@@ -249,10 +269,12 @@ export async function runOnboardingApply(
     // the flag unset whenever a later step was interrupted (e.g. a reload on
     // the YNAB report), so other devices were sent back into onboarding.
     // Step 11 repeats this, and StartupController heals it on next launch.
-    try {
-      await authApi.setMasterPasswordStatus(true);
-    } catch (err) {
-      console.warn('[Onboarding] Failed to mark master password set on server', err);
+    if (!fromDemo) {
+      try {
+        await authApi.setMasterPasswordStatus(true);
+      } catch (err) {
+        console.warn('[Onboarding] Failed to mark master password set on server', err);
+      }
     }
 
     // 3. Initialise the runtime so services + opcodes have a DB to talk to.
@@ -263,6 +285,33 @@ export async function runOnboardingApply(
     }
     await runtime.refreshSpaces();
     await runtime.switchSpace(spaceId);
+
+    // DEMO PATH — fill the new workspace with sample data and open it. The
+    // banner in the app offers "Start my own budget" (the from_demo path).
+    if (activePath === 'demo') {
+      const demoBudgetId = await seedDemoBudget(runtime, spaceId, guessCurrency());
+      setDemoSpaceId(spaceId);
+      syncBudgetStateFromRuntime({
+        runtime,
+        queryClient,
+        spaceId,
+        preferredBudgetId: demoBudgetId,
+      });
+      try {
+        await updateOnboardingAsync({
+          status: 'completed',
+          snoozed_until: null,
+          where_heard_about: whereHeard,
+        });
+      } catch (err) {
+        console.warn('[Onboarding] Failed to mark onboarding completed', err);
+      }
+      writeIntroAcknowledged(profileId ?? null);
+      await queryClient.invalidateQueries();
+      await navigate('/budgeting', { replace: true });
+      onComplete();
+      return;
+    }
 
     // 4. Budget. Fresh path uses the budgets.create op; YNAB path runs the
     // core YNAB importer which creates its own budget record (out-of-band,
@@ -700,6 +749,19 @@ export async function runOnboardingApply(
       });
       toast.success(t`YNAB import complete`, { description: ynabSummaryDescription });
       if (!(await continueFromYnabReport)) return;
+    }
+
+    // The real budget exists now, so the demo can go. If deleting it fails
+    // it stays as an ordinary workspace the owner can delete in Settings.
+    if (fromDemo && demoSpaceId && demoSpaceId !== spaceId) {
+      setDemoSpaceId(null);
+      try {
+        await spaceApi.deleteSpace(demoSpaceId);
+        await runtime.refreshSpaces();
+        await queryClient.invalidateQueries({ queryKey: BUDGET_SPACES_QUERY_KEY });
+      } catch (err) {
+        console.warn('[Onboarding] Could not delete the demo workspace', err);
+      }
     }
 
     // 11. Tell the server master password is set so future sign-ins skip

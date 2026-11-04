@@ -118,7 +118,7 @@ export const ONBOARDING_STEP_IDS = [
   'done',
 ] as const;
 export type OnboardingStepId = (typeof ONBOARDING_STEP_IDS)[number];
-const ONBOARDING_PATHS = ['fresh', 'ynab', 'join'] as const;
+const ONBOARDING_PATHS = ['fresh', 'ynab', 'join', 'demo', 'from_demo'] as const;
 
 /** Days since signup, for first-month events (first-month.ts sends nothing after day 30). */
 export const SIGNUP_DAY_BUCKETS = ['0', '1', '2', '3', '4-7', '8-14', '15-30'] as const;
@@ -316,6 +316,8 @@ export const EVENT_SCHEMA = {
     duration_bucket: DURATION_BUCKETS,
   },
   onboarding_finished: { path: ONBOARDING_PATHS, duration_bucket: DURATION_BUCKETS },
+  // The demo budget's banner: "Start my own budget".
+  demo_start_own_clicked: NONE,
 
   // First month (first-month.ts)
   app_opened: { day: SIGNUP_DAY_BUCKETS },

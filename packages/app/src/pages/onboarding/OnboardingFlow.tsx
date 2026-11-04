@@ -65,6 +65,8 @@ import './onboarding.css';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
+  /** 'from_demo': set up a real budget after trying the demo (no password step). */
+  mode?: 'intro' | 'from_demo';
 }
 
 function formatFileSize(bytes: number): string {
@@ -87,7 +89,7 @@ function yieldAfterPaint(): Promise<void> {
   });
 }
 
-const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
+const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'intro' }) => {
   const { t } = useLingui();
 
   const runtime = useRuntime();
@@ -98,7 +100,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   const { setThemeId } = useThemePreset();
   const { mutateAsync: updateOnboardingAsync } = useUpdateOnboarding();
 
-  const [state, setState] = useState<OnboardingFormState>(INITIAL_STATE);
+  const [state, setState] = useState<OnboardingFormState>(() =>
+    // Leaving the demo is a fresh start without the "how are you starting" step.
+    mode === 'from_demo' ? { ...INITIAL_STATE, startMode: 'fresh' } : INITIAL_STATE
+  );
   // Cross-tab invite handoff is encrypted in IndexedDB, so hydration is
   // asynchronous. Prime the invitee shortcut as soon as the vault resolves.
   useEffect(() => {
@@ -147,11 +152,16 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   // Invitee shortcut path takes precedence when a /join secret was captured
   // before mount — those users are joining an existing workspace, not
   // setting up their own. Otherwise pick fresh/ynab as before.
-  const activePath: ActivePath = state.joinSecret
-    ? 'join'
-    : state.startMode === 'ynab'
-      ? 'ynab'
-      : 'fresh';
+  const activePath: ActivePath =
+    mode === 'from_demo'
+      ? 'from_demo'
+      : state.joinSecret
+        ? 'join'
+        : state.startMode === 'ynab'
+          ? 'ynab'
+          : state.startMode === 'demo'
+            ? 'demo'
+            : 'fresh';
   const pathIds = PATH_STEPS[activePath];
   const total = pathIds.length;
   const safeStep = Math.min(stepIndex, total - 1);
@@ -456,7 +466,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       : isFinal
         ? activePath === 'join'
           ? t`Join workspace →`
-          : t`Open my budget →`
+          : activePath === 'demo'
+            ? t`Open the demo →`
+            : t`Open my budget →`
         : t`Next →`;
   const primaryAction = isFinal
     ? () => {
@@ -618,6 +630,16 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
           <>
             <PasswordStep cur={cur} state={state} set={set} />
             {activePath !== 'join' && <WhereHeardPicker state={state} set={set} />}
+            {activePath === 'demo' && applyStatus === 'running' && (
+              <div role="status" style={{ marginTop: 16, fontSize: 13 }}>
+                <Trans>Setting up the demo budget…</Trans>
+              </div>
+            )}
+            {activePath === 'demo' && applyStatus === 'error' && applyError && (
+              <div role="alert" style={{ marginTop: 16, fontSize: 13, color: '#c6392c' }}>
+                {applyError}
+              </div>
+            )}
           </>
         )}
         {curId === 'done' &&
@@ -741,7 +763,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
         </span>
         <button
           type="button"
-          onClick={() => logout.mutate()}
+          onClick={() => (mode === 'from_demo' ? navigate('/budgeting') : logout.mutate())}
           style={{
             background: 'transparent',
             border: 'none',
@@ -753,7 +775,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
             padding: 0,
           }}
         >
-          <Trans>SIGN OUT</Trans>
+          {mode === 'from_demo' ? <Trans>BACK TO THE DEMO</Trans> : <Trans>SIGN OUT</Trans>}
         </button>
       </div>
     </div>

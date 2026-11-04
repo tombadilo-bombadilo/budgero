@@ -1,13 +1,14 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { msg } from '@lingui/core/macro';
 import React from 'react';
+import type { StartMode } from '../onboarding-data';
 import { OnboardingOptionTile, Title, type StepProps } from './shared';
 
 export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
   const { t } = useLingui();
 
   const modes: {
-    id: 'fresh' | 'ynab';
+    id: StartMode;
     title: string;
     sub: string;
     bullets: string[];
@@ -35,6 +36,17 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
       ],
       glyph: '↳',
     },
+    {
+      id: 'demo',
+      title: t`Try a demo first`,
+      sub: t`See a filled-in budget before you set up your own.`,
+      bullets: [
+        t`Two months of sample spending and goals`,
+        t`Click around: none of it is yours yet`,
+        t`Start your own budget whenever you like`,
+      ],
+      glyph: '◎',
+    },
   ];
   return (
     <div>
@@ -44,7 +56,7 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
       />
       <div
         className="bo-stack-mobile"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12, marginTop: 8 }}
+        style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 8 }}
       >
         {modes.map((m) => {
           const active = state.startMode === m.id;

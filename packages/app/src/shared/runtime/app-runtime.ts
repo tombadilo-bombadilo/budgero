@@ -231,10 +231,10 @@ export class AppRuntime {
       if (isLocal) {
         try {
           reportMutationAnalytics(prepared, result.result, this.analyticsServices(), before);
+          noteFirstStepsMutation(this.getActiveSpaceId(), prepared.op);
         } catch {
-          /* analytics must never fail a mutation */
+          /* analytics and the first-steps checklist must never fail a mutation */
         }
-        noteFirstStepsMutation(this.getActiveSpaceId(), prepared.op);
       }
       await this.applyContinuousRulesIfNeeded(result.result, prepared, isLocal);
       return result;

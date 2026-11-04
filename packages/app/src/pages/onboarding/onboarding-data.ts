@@ -12,12 +12,14 @@ import type {
   YNABImportPreview,
 } from '@budgero/core/browser';
 
-export type StartMode = 'fresh' | 'ynab';
+export type StartMode = 'fresh' | 'ynab' | 'demo';
 
 // 'join' is an invitee-only path — used when a brand new user lands via a
 // /join#code=… link. It bypasses workspace/budget/accounts setup entirely
 // since they're joining an existing space owned by someone else.
-export type ActivePath = StartMode | 'join';
+// 'from_demo' is the setup a demo user runs from "Start my own budget": the
+// master password already exists, so it is only the budget's own steps.
+export type ActivePath = StartMode | 'join' | 'from_demo';
 
 export interface OnboardingStepDef {
   id: string;
@@ -129,6 +131,9 @@ export const PATH_STEPS: Record<ActivePath, string[]> = {
   // budgeting works is explained in the app, at the moment it matters.
   fresh: ['start_mode', 'currency', 'accounts', 'categories', 'password', 'done'],
   ynab: ['start_mode', 'ynab_import', 'password', 'done'],
+  // The demo needs an encryption key before it can exist, so it asks only for that.
+  demo: ['start_mode', 'password'],
+  from_demo: ['currency', 'accounts', 'categories', 'done'],
 };
 
 export interface CurrencyDef {
