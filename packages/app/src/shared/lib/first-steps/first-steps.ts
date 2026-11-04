@@ -1,6 +1,7 @@
 /**
  * The week-one checklist for a budget set up through "Fresh start": give
- * every coin a job, add a transaction (or import one), come back another day.
+ * every coin a job, add a transaction (or import one), come back another day,
+ * and (optional) invite someone to budget with.
  *
  * Progress lives on this device only (localStorage, per workspace) and is
  * worked out from what happens in the app, never sent anywhere: the server
@@ -8,17 +9,19 @@
  */
 import { useSyncExternalStore } from 'react';
 
-export type FirstStepId = 'assign' | 'transaction' | 'return';
+export type FirstStepId = 'assign' | 'transaction' | 'return' | 'share';
 
 export interface FirstStepsState {
   /** Local calendar day the checklist started (YYYY-MM-DD). */
   startedOn: string;
-  done: Record<FirstStepId, boolean>;
+  /** `share` is optional: it isn't counted in FIRST_STEP_IDS. */
+  done: Record<Exclude<FirstStepId, 'share'>, boolean> & { share?: boolean };
   dismissed: boolean;
 }
 
 const KEY = 'budgero:first-steps';
-export const FIRST_STEP_IDS: FirstStepId[] = ['assign', 'transaction', 'return'];
+/** The steps that count toward "x of 3 done". */
+export const FIRST_STEP_IDS: Exclude<FirstStepId, 'share'>[] = ['assign', 'transaction', 'return'];
 
 /** Ops that put a transaction in the budget, typed or imported. */
 const TRANSACTION_OPS = new Set([

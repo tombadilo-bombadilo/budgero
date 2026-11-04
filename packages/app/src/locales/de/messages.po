@@ -4653,6 +4653,10 @@ msgstr "Budget erfolgreich aktualisiert"
 msgid "Budget valuation"
 msgstr "Bewertung im Budget"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Budget with someone?"
+msgstr "Gemeinsam budgetieren?"
+
 #: src/app/layout/desktop-shell/constants.ts
 #: src/features/budget-management/model/icon-options.ts
 #: src/widgets/navigation/MobileBottomNav.tsx
@@ -9948,6 +9952,10 @@ msgstr "Investition"
 msgid "Investments"
 msgstr "Investitionen"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Invite a partner or housemate. They get their own login and see the same budget."
+msgstr "Lade deine Partnerin, deinen Partner oder Mitbewohner ein. Sie bekommen ein eigenes Login und sehen dasselbe Budget."
+
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "Invite cancelled"
 msgstr "Einladung abgebrochen"
@@ -9976,6 +9984,10 @@ msgstr "Einladung bereit — teile den Link unten"
 #: src/features/budget-sharing/ui/RedeemInviteDialog.tsx
 msgid "Invite secret"
 msgstr "Einladungscode"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Invite someone"
+msgstr "Jemanden einladen"
 
 #: src/pages/admin/sql-explorer/constants.ts
 msgid "Invite summary"
@@ -12811,6 +12823,7 @@ msgstr "Lokaler Arbeitsbereich wird geöffnet"
 msgid "Operator"
 msgstr "Operator"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Optional"
 msgstr "Optional"

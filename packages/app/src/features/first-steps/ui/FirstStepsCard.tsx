@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { CheckCircle2, Circle, X } from 'lucide-react';
+import { CheckCircle2, Circle, Users, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -109,6 +109,7 @@ export function FirstStepsCard({
     },
   ];
   const nextId = items.find((item) => !steps.done[item.id])?.id;
+  const shared = steps.done.share ?? false;
 
   return (
     <Card className={cn('gap-0 py-0', className)} data-testid="first-steps">
@@ -166,6 +167,37 @@ export function FirstStepsCard({
             );
           })}
         </ol>
+        <div className="mt-3 flex gap-2.5 border-t pt-3">
+          {shared ? (
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+          ) : (
+            <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          )}
+          <div className="min-w-0 text-xs leading-relaxed text-muted-foreground">
+            <span
+              className={cn('text-sm', shared ? 'line-through' : 'font-medium text-foreground')}
+            >
+              <Trans>Budget with someone?</Trans>
+            </span>{' '}
+            <span className="text-muted-foreground">
+              <Trans>Optional</Trans>
+            </span>
+            {!shared && (
+              <div>
+                <Trans>
+                  Invite a partner or housemate. They get their own login and see the same budget.
+                </Trans>
+                <div>
+                  <Button asChild size="sm" variant="outline" className="mt-2 h-7">
+                    <Link to="/settings/workspaces" onClick={() => markFirstStep(spaceId, 'share')}>
+                      <Trans>Invite someone</Trans>
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

@@ -65,3 +65,13 @@ it('can be hidden', () => {
   fireEvent.click(screen.getByRole('button', { name: 'Hide first steps' }));
   expect(screen.queryByTestId('first-steps')).toBeNull();
 });
+
+it('offers sharing as an optional step that does not count toward the three', () => {
+  startFirstSteps('space-1');
+  renderCard(100, [row(0)]);
+  const link = screen.getByRole('link', { name: 'Invite someone' });
+  expect(link).toHaveAttribute('href', '/settings/workspaces');
+  fireEvent.click(link);
+  expect(getFirstSteps('space-1')?.done.share).toBe(true);
+  expect(screen.getByText('0 of 3 done')).toBeInTheDocument();
+});
