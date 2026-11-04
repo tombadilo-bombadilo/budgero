@@ -48,7 +48,15 @@ export interface ImportConfig {
    * CIBC statements). Ignored when dates already include a year.
    */
   defaultYear?: number;
+  /**
+   * Where each value of the file's Account column goes (see
+   * lib/account-routes.ts). Values without a route use defaultAccountId.
+   */
+  accountRoutes?: Record<string, AccountRoute>;
 }
+
+export type AccountRoute =
+  { kind: 'existing'; accountId: number } | { kind: 'new'; name: string } | { kind: 'skip' };
 
 export interface ImportTemplate {
   id: string;

@@ -49,6 +49,7 @@ export function CSVPDFImportDialog() {
           onSetSkippedRowsInRange={state.setSkippedRowsInRange}
           accounts={state.accounts}
           hasBudgetSelected={state.hasBudgetSelected}
+          budgetId={state.budgetId}
           onColumnMappingChange={state.setColumnMapping}
           onImportConfigChange={state.setImportConfig}
           onTemplateSelect={state.setSelectedTemplate}

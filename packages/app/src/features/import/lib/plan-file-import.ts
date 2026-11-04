@@ -8,6 +8,7 @@ import {
   type DuplicateTolerance,
 } from '@budgero/core/browser';
 import type { ParsedData, ColumnMapping, ImportConfig, PreviewRow } from '../model/types';
+import { isNewAccountPlaceholder, placeholderIdFor, sourceAccountsOf } from './account-routes';
 
 const DEFAULT_TOLERANCE: DuplicateTolerance = { toleranceBps: 100, dayWindow: 7 };
 
@@ -52,14 +53,40 @@ export async function buildFileImportPreview({
   const fileHash = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join(
     ''
   );
-  // The destination account (Account column match, else the default, else a
-  // new "Import Account" in importConfig.accountCurrency) decides the storage
-  // scale amounts are planned at: milliunits for fiat, sats for BTC.
+  // The destination account decides the storage scale amounts are planned at
+  // (milliunits for fiat, sats for BTC). In order: the route chosen for the
+  // row's Account value, an account with that name, the default account, or
+  // a new "Import Account" in importConfig.accountCurrency.
+  const sources = sourceAccountsOf(parsedData.rows, columnMapping.account);
+  const routes = importConfig.accountRoutes ?? {};
   const destinationOf = (row: Record<string, string>) => {
     const accountName = columnMapping.account ? row[columnMapping.account]?.trim() : '';
-    const matches = accountName
-      ? accounts?.filter((a) => a.Name.toLowerCase() === accountName.toLowerCase())
-      : [];
+    const route = accountName ? routes[accountName] : undefined;
+    if (route?.kind === 'skip') {
+      return {
+        accountName,
+        destinationId: null,
+        account: undefined,
+        currency: importConfig.accountCurrency,
+        skipped: true,
+      };
+    }
+    if (route?.kind === 'new') {
+      return {
+        accountName,
+        destinationId: placeholderIdFor(accountName, sources),
+        account: undefined,
+        currency: row.Currency || importConfig.accountCurrency,
+        newAccountName: route.name.trim() || accountName,
+        skipped: false,
+      };
+    }
+    const matches =
+      route?.kind === 'existing'
+        ? accounts.filter((a) => a.ID === route.accountId)
+        : accountName
+          ? accounts?.filter((a) => a.Name.toLowerCase() === accountName.toLowerCase())
+          : [];
     const destinationId = matches?.length === 1 ? matches[0].ID : importConfig.defaultAccountId;
     const account = accounts?.find((a) => a.ID === destinationId);
     return {
@@ -67,6 +94,7 @@ export async function buildFileImportPreview({
       destinationId,
       account,
       currency: account?.Currency ?? importConfig.accountCurrency,
+      skipped: false,
     };
   };
   const plans = planImportRows(parsedData.rows, columnMapping, importConfig, (row) =>
@@ -74,9 +102,13 @@ export async function buildFileImportPreview({
   );
   const inputs = plans.map((plan) => {
     const row = parsedData.rows[plan.index];
-    const { accountName, destinationId, account, currency } = destinationOf(row);
-    const valid = plan.status === 'ready' && !skippedRowIndices.has(plan.index);
-    if (valid && !account && destinationId !== -1)
+    const destination = destinationOf(row);
+    const { accountName, destinationId, account, currency } = destination;
+    const valid =
+      plan.status === 'ready' && !skippedRowIndices.has(plan.index) && !destination.skipped;
+    const isNew =
+      destinationId === -1 || (destinationId != null && isNewAccountPlaceholder(destinationId));
+    if (valid && !account && !isNew)
       throw new Error(
         t`Choose a destination account in Configuration for row ${plan.index + 1}${accountName ? ` (${accountName})` : ''}.`
       );
@@ -114,6 +146,7 @@ export async function buildFileImportPreview({
     };
   });
   const matches = duplicates.plan(inputs, tolerance ? { tolerance } : {});
+  const newNameOf = (row: Record<string, string>) => destinationOf(row).newAccountName ?? '';
   return inputs.map((input, index) => ({
     input,
     duplicate: matches[index],
@@ -130,7 +163,11 @@ export async function buildFileImportPreview({
       amount: scaledToDecimal(input.inflow - input.outflow, input.currency),
       payee: input.payee,
       memo: input.memo,
-      account: accounts?.find((a) => a.ID === input.accountId)?.Name ?? 'Import Account (new)',
+      account:
+        accounts?.find((a) => a.ID === input.accountId)?.Name ??
+        (isNewAccountPlaceholder(input.accountId)
+          ? t`${newNameOf(parsedData.rows[index])} (new)`
+          : t`Import Account (new)`),
     },
   }));
 }

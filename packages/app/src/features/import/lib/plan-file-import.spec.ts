@@ -162,3 +162,45 @@ describe('amounts at the destination account scale', () => {
     ]);
   });
 });
+
+describe('accounts in the file', () => {
+  function multi() {
+    const input = options();
+    input.parsedData.headers = ['Date', 'Amount', 'Payee', 'Account'];
+    input.parsedData.rows = [
+      { Date: '2026-09-01', Amount: '-10', Payee: 'Coffee', Account: '12345678' },
+      { Date: '2026-09-02', Amount: '-20', Payee: 'Fuel', Account: 'VISA-99' },
+      { Date: '2026-09-03', Amount: '-30', Payee: 'Rent', Account: 'OLD-01' },
+    ] as unknown as typeof input.parsedData.rows;
+    input.columnMapping = {
+      ...input.columnMapping,
+      account: 'Account',
+    } as typeof input.columnMapping;
+    input.importConfig = {
+      ...input.importConfig,
+      defaultAccountId: null as unknown as number,
+      accountRoutes: {
+        '12345678': { kind: 'existing', accountId: 1 },
+        'VISA-99': { kind: 'new', name: 'Visa card' },
+        'OLD-01': { kind: 'skip' },
+      },
+    };
+    return input;
+  }
+
+  it('sends each account to its choice: existing, new, or skipped', async () => {
+    const rows = await buildFileImportPreview(multi());
+    expect(rows[0].input).toMatchObject({ accountId: 1, valid: true });
+    expect(rows[1].input.accountId).toBeLessThanOrEqual(-100);
+    expect(rows[1].input.valid).toBe(true);
+    expect(rows[1].parsed.account).toBe('Visa card (new)');
+    expect(rows[2].input.valid).toBe(false);
+  });
+
+  it('gives every new account its own placeholder', async () => {
+    const input = multi();
+    input.importConfig.accountRoutes!['OLD-01'] = { kind: 'new', name: 'Old' };
+    const rows = await buildFileImportPreview(input);
+    expect(new Set([rows[1].input.accountId, rows[2].input.accountId]).size).toBe(2);
+  });
+});

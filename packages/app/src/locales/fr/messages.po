@@ -409,6 +409,11 @@ msgstr "{0, plural, one {# mutation traitée} other {# mutations traitées}}"
 msgid "{0, plural, one {Remove # payee?} other {Remove # payees?}}"
 msgstr "{0, plural, one {Supprimer # bénéficiaire ?} other {Supprimer # bénéficiaires ?}}"
 
+#. placeholder {0}: sources.length
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "{0, plural, one {The \"{column}\" column names one account. Choose where its transactions go.} other {The \"{column}\" column names # accounts. Choose where each one’s transactions go.}}"
+msgstr "{0, plural, one {La colonne « {column} » indique un compte. Choisissez où vont ses transactions.} other {La colonne « {column} » indique # comptes. Choisissez où vont les transactions de chacun.}}"
+
 #. placeholder {0}: associatedCategories.length
 #: src/features/budget-planning/ui/budget-table/useCategoryOperations.ts
 msgid "{0, plural, one {This group contains # category. Please move or delete them first.} other {This group contains # categories. Please move or delete them first.}}"
@@ -461,6 +466,11 @@ msgstr "{0} · Autres développé"
 msgid "{0} (header)"
 msgstr "{0}(en-tête)"
 
+#. placeholder {0}: newNameOf(parsedData.rows[index])
+#: src/features/import/lib/plan-file-import.ts
+msgid "{0} (new)"
+msgstr "{0} (nouveau)"
+
 #. placeholder {0}: formatAmount(sourceOutflow)
 #. placeholder {1}: sourceAccount.Currency
 #. placeholder {2}: ccAccount.Name
@@ -482,8 +492,10 @@ msgstr "{0}• {1} règle"
 msgid "{0} | Eligible {1} | Already sent {2}{3}"
 msgstr "{0}| Éligible {1}| Déjà envoyé {2}{3}"
 
+#. placeholder {0}: destinationIds.length
 #. placeholder {0}: session.accounts.length
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
+#: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "{0} accounts"
 msgstr "{0} comptes"
 
@@ -946,6 +958,10 @@ msgstr "{count, plural, one {# transaction recalculée.} other {# transactions r
 msgid "{count, plural, one {# transaction updated} other {# transactions updated}}"
 msgstr "{count, plural, one {# transaction mise à jour} other {# transactions mises à jour}}"
 
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "{count, plural, one {# transaction} other {# transactions}}"
+msgstr "{count, plural, one {# transaction} other {# transactions}}"
+
 #: src/pages/settings/PayeesPage.tsx
 msgid "{count, plural, one {Delete # payee} other {Delete # payees}}"
 msgstr "{count, plural, one {Supprimer # bénéficiaire} other {Supprimer # bénéficiaires}}"
@@ -1155,6 +1171,12 @@ msgstr "{restoredCount, plural, one {# transaction restaurée.} other {# transac
 #: src/features/account-management/ui/DevSimulateRateMoveButton.tsx
 msgid "{revalued, plural, one {Today's cache refetched; # account revalued.} other {Today's cache refetched; # accounts revalued.}}"
 msgstr "{revalued, plural, one {Cache du jour rechargé ; # compte réévalué.} other {Cache du jour rechargé ; # comptes réévalués.}}"
+
+#. placeholder {0}: columnMapping.account
+#. placeholder {1}: columnMapping.account
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "{rowsWithoutAccount, plural, one {One row has an empty \"{0}\" value. It goes into this account:} other {# rows have an empty \"{1}\" value. They go into this account:}}"
+msgstr "{rowsWithoutAccount, plural, one {Une ligne n’a pas de valeur « {0} ». Elle va dans ce compte :} other {# lignes n’ont pas de valeur « {1} ». Elles vont dans ce compte :}}"
 
 #. placeholder {0}: categorizedTransactions.length
 #: src/features/ai/ui/AICategorizeDialog.tsx
@@ -2464,6 +2486,10 @@ msgstr "<0>Base de données SQLite :</0>Télécharge le fichier de base de donn�
 #~ msgid "<0>Subscription Canceled</0>— cancellation reason (so we can improve the product)"
 #~ msgstr "<0>Abonnement annulé</0>— raison de l'annulation (pour nous aider à améliorer le produit)"
 
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "<0>This looks like a YNAB register.</0> Imported here, your transactions and categories come in, but not your category groups or what you assigned each month. To bring your whole YNAB budget, import the YNAB export ZIP instead: open the budget switcher, choose Create New Budget, then the YNAB tab."
+msgstr "<0>Cela ressemble à un registre YNAB.</0> Importé ici, vos transactions et catégories arrivent, mais pas vos groupes de catégories ni ce que vous avez affecté chaque mois. Pour reprendre tout votre budget YNAB, importez plutôt le ZIP d’export YNAB : ouvrez le sélecteur de budget, choisissez « Créer un nouveau budget », puis l’onglet « YNAB »."
+
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 #~ msgid "<0>Transaction Logged / Edited / Deleted</0>— when you add, modify, or remove a transaction"
 #~ msgstr "<0>Transaction enregistrée / modifiée / supprimée</0>— lorsque vous ajoutez, modifiez ou supprimez une transaction"
@@ -2817,8 +2843,8 @@ msgid "Account balances"
 msgstr "Soldes des comptes"
 
 #: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Account Column Mapped"
-msgstr "Colonne de compte associée"
+#~ msgid "Account Column Mapped"
+#~ msgstr "Colonne de compte associée"
 
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Account created"
@@ -2844,6 +2870,14 @@ msgstr "Compte supprimé"
 #: src/pages/settings/simplefin/SimpleFINPage.tsx
 #~ msgid "Account Errors"
 #~ msgstr "Erreurs de compte"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Account for {source}"
+msgstr "Compte pour {source}"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Account name"
+msgstr "Nom du compte"
 
 #: src/features/account-management/ui/AddAccountDialog.tsx
 #: src/features/account-management/ui/EditAccountDialog.tsx
@@ -2918,6 +2952,10 @@ msgstr "Comptes"
 #: src/pages/settings/ImportsPage.tsx
 msgid "Accounts Created"
 msgstr "Comptes créés"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Accounts in this file"
+msgstr "Comptes dans ce fichier"
 
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Accounts with no heartbeat, Clerk activity or sign-up in the chosen period. Deleting removes everything: budgets, sync history, activity and, optionally, the Clerk account. Admins, paying subscribers and founding members can't be deleted."
@@ -6232,6 +6270,10 @@ msgstr "Créez un compte gratuit dans le <0>panneau de contrôle Enable Banking<
 msgid "Create a goal to track your financial progress"
 msgstr "Créez un objectif pour suivre vos progrès financiers"
 
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Create a new account"
+msgstr "Créer un nouveau compte"
+
 #: src/features/bank-sync/ui/ConnectSimpleFINCard.tsx
 msgid "Create a new app connection and copy its setup token."
 msgstr "Créez une nouvelle connexion d'application et copiez son jeton de configuration."
@@ -6292,6 +6334,10 @@ msgstr "Échec de la création"
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Create Goal"
 msgstr "Créer un objectif"
+
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "Create Import Account"
+msgstr "Créer un compte importé"
 
 #: src/pages/settings/LabelsPage.tsx
 msgid "Create labels with custom colors and reuse them across transactions."
@@ -7169,6 +7215,10 @@ msgstr "Serveurs distincts envoyant la vérification des mises à jour chaque se
 msgid "Do we live within our means?"
 msgstr "Vivons-nous selon nos moyens ?"
 
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Don’t import"
+msgstr "Ne pas importer"
+
 #: src/features/ai/ui/AICategorizeDialog.tsx
 #: src/features/ai/ui/receipt-scanner/ScanProgress.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
@@ -7976,6 +8026,7 @@ msgid "Existing #{0}: {1} · {2} {3}<0/>{4}<1/>{5}"
 msgstr "Existant n° {0} : {1} · {2} {3}<0/>{4}<1/>{5}"
 
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
+#: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "Existing account"
 msgstr "Compte existant"
 
@@ -8522,8 +8573,8 @@ msgid "Failed to write to clipboard. Please try again."
 msgstr "Échec de la copie dans le presse-papiers. Veuillez réessayer."
 
 #: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Fallback Account (for unmatched account names)"
-msgstr "Compte de repli (pour les noms de compte sans correspondance)"
+#~ msgid "Fallback Account (for unmatched account names)"
+#~ msgstr "Compte de repli (pour les noms de compte sans correspondance)"
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Family"
@@ -9409,7 +9460,11 @@ msgstr "Importer et associer"
 
 #: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "Import Account"
-msgstr "Importer un compte"
+msgstr "Compte importé"
+
+#: src/features/import/lib/plan-file-import.ts
+msgid "Import Account (new)"
+msgstr "Compte importé (nouveau)"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 msgid "Import accounts"
@@ -11519,8 +11574,13 @@ msgid "New"
 msgstr "Nouveau"
 
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
+#: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "New account"
 msgstr "Nouveau compte"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "New account name for {source}"
+msgstr "Nom du nouveau compte pour {source}"
 
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 msgid "New amount"
@@ -15053,6 +15113,10 @@ msgstr "Les lignes marquées Associer conservent la transaction que vous avez sa
 msgid "Rows per page"
 msgstr "Lignes par page"
 
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "Rows without an account"
+msgstr "Lignes sans compte"
+
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Rows:"
 msgstr "Lignes :"
@@ -15737,8 +15801,8 @@ msgid "Select days"
 msgstr "Sélectionner les jours"
 
 #: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Select fallback account"
-msgstr "Sélectionner le compte de secours"
+#~ msgid "Select fallback account"
+#~ msgstr "Sélectionner le compte de secours"
 
 #: src/features/import/ui/steps/UploadStep.tsx
 msgid "Select File"
@@ -18329,8 +18393,8 @@ msgstr "Les transactions ont été restaurées à leurs valeurs précédentes."
 
 #. placeholder {0}: columnMapping.account
 #: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Transactions will use accounts from the \"{0}\" column. If an account name doesn't match any existing account, you'll need to select a default account below:"
-msgstr "Les transactions utiliseront les comptes de la colonne « {0} ». Si un nom de compte ne correspond à aucun compte existant, vous devrez sélectionner un compte par défaut ci-dessous :"
+#~ msgid "Transactions will use accounts from the \"{0}\" column. If an account name doesn't match any existing account, you'll need to select a default account below:"
+#~ msgstr "Les transactions utiliseront les comptes de la colonne « {0} ». Si un nom de compte ne correspond à aucun compte existant, vous devrez sélectionner un compte par défaut ci-dessous :"
 
 #: src/features/chat/ui/VoiceInputButton.tsx
 msgid "Transcribing"
