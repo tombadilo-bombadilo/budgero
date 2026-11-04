@@ -155,6 +155,10 @@ msgstr "(leeren)"
 msgid "(cleared)"
 msgstr "(Gebucht)"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "(done)"
+msgstr "(erledigt)"
+
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 msgid "(goal reached)"
 msgstr "(Ziel erreicht)"
@@ -286,8 +290,8 @@ msgstr "{0, plural, one {# Empfänger entfernt} other {# Empfänger entfernt}}"
 
 #. placeholder {0}: state.invites.length
 #: src/pages/onboarding/steps/DoneStep.tsx
-msgid "{0, plural, one {# person} other {# people}}"
-msgstr "{0, plural, one {# Person} other {# Personen}}"
+#~ msgid "{0, plural, one {# person} other {# people}}"
+#~ msgstr "{0, plural, one {# Person} other {# Personen}}"
 
 #. placeholder {0}: preview.missingCategories.length
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
@@ -1012,6 +1016,11 @@ msgstr "vor {diffHours}h"
 #: src/pages/settings/AuditLogPage.tsx
 msgid "{diffMins}m ago"
 msgstr "vor {diffMins}m"
+
+#. placeholder {0}: FIRST_STEP_IDS.length
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "{doneCount} of {0} done"
+msgstr "{doneCount} von {0} erledigt"
 
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "{drilldownTitle} {drilldownItemLabel} breakdown"
@@ -3048,6 +3057,10 @@ msgstr "Notiz für diese Umbuchung hinzufügen…"
 msgid "Add a note…"
 msgstr "Notiz hinzufügen…"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Add a transaction"
+msgstr "Eine Transaktion erfassen"
+
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Add Account"
 msgstr "Konto hinzufügen"
@@ -3168,6 +3181,10 @@ msgstr "Garantie hinzufügen"
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
 msgid "Add Widget"
 msgstr "Widget hinzufügen"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Add your accounts and pick categories"
+msgstr "Konten hinzufügen und Kategorien wählen"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Add your first accounts"
@@ -4513,8 +4530,8 @@ msgid "Budgero will revert every transaction touched by this run back to its ori
 msgstr "Budgero setzt jede Transaktion, die von diesem Durchlauf betroffen war, auf ihre ursprünglichen Werte zurück. Du kannst die Regel danach bei Bedarf erneut ausführen."
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Budgero works either way. Pick the path that fits."
-msgstr "Budgero funktioniert auf beide Arten. Wähle den Weg, der zu dir passt."
+#~ msgid "Budgero works either way. Pick the path that fits."
+#~ msgstr "Budgero funktioniert auf beide Arten. Wähle den Weg, der zu dir passt."
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 msgid "Budgero-side amounts that may explain these differences. They are hints for comparing with YNAB, not an exact breakdown."
@@ -5587,6 +5604,10 @@ msgstr "Spaltenzuordnung"
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Columns"
 msgstr "Spalten"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Come back tomorrow"
+msgstr "Komm morgen wieder"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Comfortable"
@@ -7888,9 +7909,17 @@ msgstr "Alle 6 Monate"
 msgid "Every category, every month"
 msgstr "Jede Kategorie, jeden Monat"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Every coin has a job."
+msgstr "Jeder Cent hat eine Aufgabe."
+
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Every coin now has a place to land."
-msgstr "Jede Münze hat jetzt ihren Platz."
+#~ msgid "Every coin now has a place to land."
+#~ msgstr "Jede Münze hat jetzt ihren Platz."
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Every coin you earn gets a job before you spend it. How do you want to start?"
+msgstr "Jeder Cent, den du verdienst, bekommt eine Aufgabe, bevor du ihn ausgibst. Wie möchtest du starten?"
 
 #: src/pages/onboarding/steps/RulesStep.tsx
 msgid "Every dollar gets a job"
@@ -8936,6 +8965,7 @@ msgstr "Verbindung wird wiederhergestellt"
 msgid "Gifts & Donations"
 msgstr "Geschenke & Spenden"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Give every coin a job"
 msgstr "Gib jedem Cent eine Aufgabe"
@@ -8967,6 +8997,10 @@ msgstr "Zu dieser Version zurückgehen"
 #: src/features/ai/ui/AINotConfiguredWarning.tsx
 msgid "Go to Settings → AI Assistant to configure your local LLM connection."
 msgstr "Gehe zu Einstellungen → KI-Assistent, um deine lokale LLM-Verbindung zu konfigurieren."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Go to transactions"
+msgstr "Zu den Transaktionen"
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Goal"
@@ -9196,6 +9230,10 @@ msgstr "Saldo-Spalte ausblenden"
 msgid "Hide details"
 msgstr "Details ausblenden"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Hide first steps"
+msgstr "Erste Schritte ausblenden"
+
 #: src/features/budgeting/ui/BudgetToolbar.tsx
 msgid "Hide hidden"
 msgstr "Versteckte ausblenden"
@@ -9263,7 +9301,6 @@ msgid "Household 2026"
 msgstr "Haushalt 2026"
 
 #: src/pages/onboarding/onboarding-data.ts
-#: src/pages/onboarding/steps/StartModeStep.tsx
 msgid "How are you starting?"
 msgstr "Wie startest du?"
 
@@ -10271,8 +10308,8 @@ msgid "Learn more about Budgero or get in touch with the team."
 msgstr "Erfahre mehr über Budgero oder kontaktiere das Team."
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Learn ZBB with a short walkthrough"
-msgstr "Lerne ZBB mit einer kurzen Einführung"
+#~ msgid "Learn ZBB with a short walkthrough"
+#~ msgstr "Lerne ZBB mit einer kurzen Einführung"
 
 #: src/features/budget-sharing/ui/RedeemInviteDialog.tsx
 msgid "leave blank to use cached password"
@@ -11617,6 +11654,10 @@ msgstr "Nächster Monat"
 msgid "Next year"
 msgstr "Nächstes Jahr"
 
+#: src/pages/onboarding/onboarding-data.ts
+msgid "Next, you give every coin a job. We’ll show you how."
+msgstr "Als Nächstes gibst du jedem Cent eine Aufgabe. Wir zeigen dir, wie."
+
 #: src/features/budget-planning/ui/spending-drawer-mobile/TransactionList.tsx
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Next<0/>"
@@ -12624,6 +12665,10 @@ msgstr "Öffne die <0>Arbeitsbereichseinstellungen</0>, um gesperrte Arbeitsbere
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "Open <0>workspace settings</0> to see which shared workspaces are locked."
 msgstr "Öffne die <0>Arbeitsbereichseinstellungen</0>, um zu sehen, welche freigegebenen Arbeitsbereiche gesperrt sind."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Open Budgero tomorrow and record yesterday’s spending. A minute a day keeps it right."
+msgstr "Öffne Budgero morgen und erfasse die Ausgaben von gestern. Eine Minute am Tag hält alles aktuell."
 
 #: src/features/chat/ui/ChatBubble.tsx
 msgid "Open chat assistant"
@@ -14220,6 +14265,10 @@ msgstr "Abgleichen…"
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
 msgid "Reconnect"
 msgstr "Erneut verbinden"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Record something you spent today, or import a file from your bank."
+msgstr "Erfasse etwas, das du heute ausgegeben hast, oder importiere eine Datei deiner Bank."
 
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 msgid "Recorded in {accountName}. You can review it in the Transactions view."
@@ -16070,8 +16119,8 @@ msgid "Set up a new budget to track your finances"
 msgstr "Richte ein neues Budget ein, um deine Finanzen zu verfolgen"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Set up accounts & envelopes by hand"
-msgstr "Konten & Umschläge manuell einrichten"
+#~ msgid "Set up accounts & envelopes by hand"
+#~ msgstr "Konten & Umschläge manuell einrichten"
 
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 msgid "Set up recurring paycheques, bills, or transfers and Budgero will remind you when they are due."
@@ -17323,6 +17372,10 @@ msgstr "Der Token funktioniert, aber YNAB liefert dafür keine Pläne. Prüfe, o
 #: src/pages/onboarding/OnboardingFlow.tsx
 msgid "That ZIP isn’t a YNAB export: its register and plan files are missing. Export again from the YNAB web app."
 msgstr "Diese ZIP ist kein YNAB-Export: Die Register- und Plandateien fehlen. Exportiere erneut aus der YNAB-Web-App."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "That’s the whole method: when money comes in, give it a job here."
+msgstr "Das ist die ganze Methode: Wenn Geld reinkommt, gib ihm hier eine Aufgabe."
 
 #: src/features/bank-sync/ui/ConnectSimpleFINCard.tsx
 msgid "The access key is stored encrypted inside this budget and syncs to your devices. Anyone you share this budget with can sync it too."
@@ -19383,6 +19436,10 @@ msgid "We keep your master password in volatile memory only. Refreshing or closi
 msgstr "Wir speichern dein Master-Passwort ausschließlich im flüchtigen Speicher. Beim Aktualisieren oder Schließen des Tabs musst du es erneut eingeben."
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "We show you how it works as you go"
+msgstr "Wir zeigen dir unterwegs, wie es funktioniert"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
 msgid "We skip the basics — you know the drill"
 msgstr "Wir überspringen die Grundlagen — du kennst das ja"
 
@@ -19515,6 +19572,7 @@ msgstr "Willkommen bei Budgero"
 msgid "Welcome to Budgero!"
 msgstr "Willkommen bei Budgero!"
 
+#: src/pages/onboarding/steps/StartModeStep.tsx
 #: src/pages/onboarding/steps/WelcomeStep.tsx
 msgid "Welcome to Budgero."
 msgstr "Willkommen bei Budgero."
@@ -19594,6 +19652,10 @@ msgstr "Wenn du Transaktionen aller Konten anzeigst, werden Beträge aus Gründe
 #: src/features/rules/ui/PayeeCategoryMemoryCard.tsx
 msgid "When you add a transaction for a payee you've used before, the category pre-fills with whatever you chose last time, marked with an amber ring. An autofill rule always wins over this, and it never touches imports or a category you've already picked."
 msgstr "Wenn du eine Transaktion für einen Empfänger anlegst, den du schon einmal verwendet hast, wird die Kategorie mit deiner letzten Auswahl vorbelegt und mit einem bernsteinfarbenen Ring markiert. Eine Autofill-Regel hat immer Vorrang und greift nie bei Importen oder einer bereits gewählten Kategorie."
+
+#: src/pages/onboarding/steps/WhereHeardStep.tsx
+msgid "Where did you hear about Budgero? (optional)"
+msgstr "Wie hast du von Budgero erfahren? (optional)"
 
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "Where do I find my token?"
@@ -20053,6 +20115,10 @@ msgstr "Du siehst dir diesen Arbeitsbereich jetzt an."
 msgid "You are the accountant"
 msgstr "Du bist der Buchhalter"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "You assigned more than you have. Take some back until Ready to Assign shows 0."
+msgstr "Du hast mehr zugewiesen, als du hast. Nimm etwas zurück, bis „Zu budgetieren“ 0 zeigt."
+
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 msgid "You can enable notifications later from your browser or system settings."
 msgstr "Du kannst Benachrichtigungen später in deinen Browser- oder Systemeinstellungen aktivieren."
@@ -20091,6 +20157,10 @@ msgstr "Du hast keine Berechtigung, auf das Admin-Panel zuzugreifen."
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "You have {0} set aside but the card only needs {1}. The extra is your money — it just isn't needed for this card."
 msgstr "Du hast {0} zurückgelegt, aber die Karte benötigt nur {1}. Der Rest ist dein Geld — es wird lediglich für diese Karte nicht benötigt."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "You have <0>{readyToAssignLabel}</0> to assign. Type an amount in the Assigned column for each category until Ready to Assign shows 0. Only budget money you already have."
+msgstr "Du hast <0>{readyToAssignLabel}</0> zu budgetieren. Trag in der Spalte „Zugewiesen“ für jede Kategorie einen Betrag ein, bis „Zu budgetieren“ 0 zeigt. Budgetiere nur Geld, das du schon hast."
 
 #. placeholder {0}: format(betaExpiresAt, 'MMMM dd, yyyy')
 #. placeholder {1}: daysLeftInBeta <= 7 && ( <span className="font-semibold"> <Trans>Only {daysLeftInBeta} days remaining!</Trans> </span> )
@@ -20164,6 +20234,10 @@ msgstr "Du trittst einem Budgero-Arbeitsbereich bei."
 #: src/pages/onboarding/onboarding-data.ts
 msgid "You’re ready"
 msgstr "Du bist bereit"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "You’re set up"
+msgstr "Alles eingerichtet"
 
 #: src/pages/settings/ai/PrivacyWarnings.tsx
 msgid "You've configured a third-party server. Your financial data — transactions, payees, balances, receipt images and chat messages — will be sent to that provider, who can read and retain it. Only continue if you trust them and have reviewed their privacy policy. For full privacy, use a local server (Ollama or LM Studio) instead."
@@ -20245,6 +20319,10 @@ msgstr "Deine verschlüsselten Daten gehen dauerhaft verloren. Du kannst dein Ma
 #: src/pages/settings/push-api/EncryptionInfoPanel.tsx
 msgid "Your Encryption Key (Base64)"
 msgstr "Dein Verschlüsselungsschlüssel (Base64)"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Your first steps"
+msgstr "Deine ersten Schritte"
 
 #. placeholder {0}: user.customer_id ? ( <> We'll process your first subscription charge on{' '} <span className="font-semibold"> {trialEndsAt ? format(trialEndsAt, 'MMM dd, yyyy') : t`your trial end date`} </span>{' '} when your trial ends. You can review or change your billing details anytime from the Lemon Squeezy portal below. </> ) : ( <> Enjoy full access to Budgero during your trial. When your trial ends, you'll need to subscribe to continue using the app. </> )
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
