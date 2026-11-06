@@ -362,8 +362,8 @@ export function filterSummary(
       const amount = filter.amount ?? 1;
       const unit = unitLabel(filter.unit ?? 'month', amount);
       return filter.includeCurrent === false
-        ? t`${name}: previous ${amount} ${unit}`
-        : t`${name}: last ${amount} ${unit}, including this one`;
+        ? t`${name}: previous ${amount} full ${unit}`
+        : t`${name}: last ${amount} ${unit}`;
     }
     case 'current': {
       switch (filter.unit) {

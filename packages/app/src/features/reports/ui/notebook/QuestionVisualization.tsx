@@ -191,6 +191,9 @@ function ChartView({
             data: slices.map((slice) => ({
               name: format.masked ? '•••' : xLabels[slice.position],
               value: slice.value,
+              // Small slices get no label (or leader line); the legend names them.
+              label: { show: slice.value / total > 0.05 },
+              labelLine: { show: slice.value / total > 0.05 },
               itemStyle: {
                 color: colorOf(slice.position),
                 borderColor: chrome.surface,
@@ -201,7 +204,7 @@ function ChartView({
               color: chrome.inkPrimary,
               fontSize: 11,
               formatter: (params: { name: string; percent?: number }) =>
-                (params.percent ?? 0) > 5 ? `${params.name}\n${params.percent?.toFixed(0)}%` : '',
+                `${params.name}\n${params.percent?.toFixed(0)}%`,
             },
             labelLine: { lineStyle: { color: chrome.axisLine } },
           },
@@ -219,7 +222,7 @@ function ChartView({
         : visualization === 'bar' && model.seriesColumn !== null && visible.length > 3;
 
     return {
-      grid: { left: 8, right: 16, top: 16, bottom: 4, containLabel: true },
+      grid: { left: 8, right: 28, top: 16, bottom: 4, containLabel: true },
       xAxis: {
         type: 'category' as const,
         data: xLabels,

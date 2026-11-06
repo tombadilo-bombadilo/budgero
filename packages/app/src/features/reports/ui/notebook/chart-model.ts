@@ -46,17 +46,20 @@ export function buildChartModel(result: QueryResult, columns: QuestionColumn[]):
   const xIndex = index.get(x.key);
   if (xIndex === undefined) return empty;
 
-  const xKeys: string[] = [];
-  const xValues: unknown[] = [];
-  const xPosition = new Map<string, number>();
+  let xKeys: string[] = [];
+  const firstValue = new Map<string, unknown>();
   for (const row of result.rows) {
     const key = String(row[xIndex] ?? '');
-    if (!xPosition.has(key)) {
-      xPosition.set(key, xKeys.length);
+    if (!firstValue.has(key)) {
+      firstValue.set(key, row[xIndex]);
       xKeys.push(key);
-      xValues.push(row[xIndex]);
     }
   }
+  // Time axes always read left to right, whatever the rows are sorted by.
+  // Bucket labels (YYYY, YYYY-MM, YYYY-Qn, YYYY-MM-DD) sort as text.
+  if (x.kind === 'breakout' && x.breakout.bucket) xKeys = [...xKeys].sort();
+  const xValues = xKeys.map((key) => firstValue.get(key));
+  const xPosition = new Map(xKeys.map((key, position) => [key, position]));
 
   const seriesColumn = breakouts[1] ?? null;
   if (!seriesColumn) {

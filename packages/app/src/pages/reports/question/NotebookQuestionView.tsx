@@ -186,7 +186,7 @@ export function NotebookQuestionView({
         )}
       </QuestionHeader>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(20rem,28rem)_minmax(0,1fr)] lg:items-start">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(20rem,28rem)_minmax(0,1fr)] lg:items-start">
         <NotebookEditor spec={spec} onChange={setSpec} valueOptions={valueOptions} />
         <QuestionResult
           spec={spec}

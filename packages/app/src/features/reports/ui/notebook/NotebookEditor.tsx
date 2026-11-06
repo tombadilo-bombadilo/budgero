@@ -108,7 +108,7 @@ export function NotebookEditor({ spec, onChange, valueOptions }: NotebookEditorP
   const hiddenSteps = addButtons.filter(({ step }) => !visible[step]);
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       <ol className="space-y-3" aria-label={t`Question steps`}>
         <NotebookStep title={t`Data`} icon={Database} tone="data">
           <DataStep
@@ -215,7 +215,7 @@ function NotebookStep({
   return (
     <li
       className={cn(
-        'rounded-lg border border-l-4 bg-card p-3 text-card-foreground shadow-xs',
+        'min-w-0 rounded-lg border border-l-4 bg-card p-3 text-card-foreground shadow-xs',
         TONES[tone]
       )}
     >
@@ -463,7 +463,7 @@ function FilterStep({
             onOpenChange={(isOpen) => setEditing(isOpen ? index : null)}
           >
             <PopoverAnchor asChild>
-              <span>
+              <span className="inline-flex min-w-0 max-w-full">
                 <Chip
                   label={label}
                   editLabel={t`Edit filter: ${label}`}
@@ -604,7 +604,7 @@ function SummarizeStep({
               onOpenChange={(isOpen) => setMetricOpen(isOpen ? index : null)}
             >
               <PopoverAnchor asChild>
-                <span>
+                <span className="inline-flex min-w-0 max-w-full">
                   <Chip
                     label={label}
                     editLabel={t`Change metric: ${label}`}

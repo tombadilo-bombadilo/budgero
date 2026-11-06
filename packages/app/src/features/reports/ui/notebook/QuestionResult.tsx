@@ -62,6 +62,8 @@ export function QuestionResult({
   const showTable = spec.visualization === 'table' || !chartable;
   const rowCount = result?.rows.length ?? 0;
   const rowCountText = rowCount.toLocaleString();
+  const totalText = (result?.rowCount ?? 0).toLocaleString();
+  const truncated = (result?.rowCount ?? 0) > rowCount;
 
   return (
     <section
@@ -124,7 +126,15 @@ export function QuestionResult({
           {isRunning && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {result && !shownError && (
             <span aria-live="polite">
-              {rowCount === 1 ? <Trans>1 row</Trans> : <Trans>{rowCountText} rows</Trans>}
+              {truncated ? (
+                <Trans>
+                  First {rowCountText} of {totalText} rows
+                </Trans>
+              ) : rowCount === 1 ? (
+                <Trans>1 row</Trans>
+              ) : (
+                <Trans>{rowCountText} rows</Trans>
+              )}
             </span>
           )}
           <Button

@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { t } from '@lingui/core/macro';
 import type { QuestionColumn, QuestionSource } from '@features/reports/lib/question';
 import { currencyDisplayFor } from '@shared/lib/number-format';
 import { formatMaskedMilli, maskFormattedIfEnabled } from '@shared/lib/privacy/mask-numbers';
@@ -54,7 +53,7 @@ export function useQuestionFormatters(source: QuestionSource): QuestionFormatter
           ? formatMaskedMilli(localizer, Math.round(numeric * 1000), masked)
           : mask(plain.format(numeric));
       }
-      if (value === null || value === undefined || value === '') return t`(empty)`;
+      if (value === null || value === undefined || value === '') return '—';
       return String(value);
     };
 
