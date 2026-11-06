@@ -5,7 +5,7 @@
 import { createRequire } from 'node:module';
 import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type * as DuckDbBlocking from '@duckdb/duckdb-wasm/dist/duckdb-node-blocking';
+import type * as DuckDbBlocking from '@duckdb/duckdb-wasm/blocking';
 import { TRANSACTIONS_ANALYTICS_VIEW_SQL } from '@shared/lib/sql/analytics-views';
 import { stripLeadingSqlComments } from '@shared/lib/sql/read-only';
 import {
@@ -78,7 +78,7 @@ beforeAll(async () => {
     new duckdb.VoidLogger(),
     duckdb.NODE_RUNTIME
   );
-  await db.instantiate();
+  await db.instantiate(() => undefined);
   conn = db.connect();
   conn.query('SET old_implicit_casting = true');
   for (const statement of SCHEMA.split(';').map((part) => part.trim())) {

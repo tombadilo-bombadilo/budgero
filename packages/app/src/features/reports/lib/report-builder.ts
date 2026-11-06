@@ -573,6 +573,11 @@ export function parseBuilderHeader(query: string | null | undefined): ReportBuil
   }
 }
 
+/** True when a saved query was produced by the builder (has a valid header). */
+export function isBuilderQuery(query: string | null | undefined): boolean {
+  return parseBuilderHeader(query) !== null;
+}
+
 /** The SQL body of a saved query without the builder header line. */
 export function stripBuilderHeader(query: string): string {
   const trimmed = query.replace(/^\s+/, '');
@@ -604,7 +609,7 @@ export const BUILDER_TEMPLATES: Record<BuilderTemplateId, ReportBuilderSpec> = {
     measure: 'incomeVsSpending',
     groupBy: 'month',
     dateRange: { preset: 'last12Months' },
-    chartType: 'bar',
+    chartType: 'line',
   }),
   netByMonth: createDefaultSpec({
     measure: 'net',
