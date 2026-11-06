@@ -144,13 +144,19 @@ export function QuestionResult({
               }}
               aria-label={t`Series`}
             >
-              <ToggleGroupItem value="none" className="px-2.5">
+              <ToggleGroupItem value="none" className="w-auto flex-none whitespace-nowrap px-2.5">
                 <Trans>Side by side</Trans>
               </ToggleGroupItem>
-              <ToggleGroupItem value="stacked" className="px-2.5">
+              <ToggleGroupItem
+                value="stacked"
+                className="w-auto flex-none whitespace-nowrap px-2.5"
+              >
                 <Trans>Stacked</Trans>
               </ToggleGroupItem>
-              <ToggleGroupItem value="percent" className="px-2.5">
+              <ToggleGroupItem
+                value="percent"
+                className="w-auto flex-none whitespace-nowrap px-2.5"
+              >
                 100%
               </ToggleGroupItem>
             </ToggleGroup>
