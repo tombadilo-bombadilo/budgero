@@ -1,6 +1,7 @@
 import { MasterPasswordManager } from '@shared/lib/crypto';
 
 import type { QueryClient } from '@tanstack/react-query';
+import { clearIdbFiles } from '@budgero/core/browser';
 
 /** OPFS FileSystemDirectoryHandle with iteration support */
 interface OPFSDirectoryHandle {
@@ -110,6 +111,8 @@ async function clearOpfsStorage(): Promise<void> {
   } catch (opfsError) {
     console.warn('[ServiceGuard] Failed to clear OPFS storage', opfsError);
   }
+  // Copies kept in IndexedDB where OPFS is refused (Firefox private windows).
+  await clearIdbFiles().catch(() => undefined);
 }
 
 /**

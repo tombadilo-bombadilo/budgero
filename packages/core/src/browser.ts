@@ -13,6 +13,12 @@ export type {
 } from './database/interface.js';
 export { DatabaseError } from './database/interface.js';
 export { WebDatabaseAdapter } from './database/web-adapter.js';
+export {
+  clearIdbFiles,
+  getOpfsRoot,
+  localFileBackend,
+  localFileExists,
+} from './database/local-file-store.js';
 
 export { MigrationRunner, getMaxSupportedSchemaVersion } from './database/migrations.js';
 export { reconcileSpaceScope } from './database/space-scope.js';

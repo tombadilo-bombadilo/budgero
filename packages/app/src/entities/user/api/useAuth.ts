@@ -8,6 +8,7 @@ import { getRuntime } from '@shared/runtime/global';
 import { getConnectivityService } from '@shared/runtime/connectivity-service';
 import type { OnboardingStatus, User } from '@shared/model/auth';
 import { useSelfHostAuth } from '@shared/model/useSelfHostAuth';
+import { clearIdbFiles } from '@budgero/core/browser';
 
 export { useOptionalClerkAuth };
 
@@ -248,6 +249,8 @@ export function useLogout() {
         } catch (error) {
           console.error('Failed to clear OPFS:', error);
         }
+        // Copies kept in IndexedDB where OPFS is refused (Firefox private windows).
+        await clearIdbFiles().catch(() => undefined);
       }
 
       // 3. Clear IndexedDB (used by some caching mechanisms)
