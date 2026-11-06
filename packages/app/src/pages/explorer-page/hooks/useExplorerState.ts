@@ -63,42 +63,18 @@ export function useExplorerState() {
         const db = runtime.getDatabase() as SqlDatabase | null;
         if (!db) throw new Error('Database not available');
 
-        if (isSelectQuery(queryToRun)) {
-          const result = await executeReportQuery(queryToRun, db, { maxRows: MAX_ROWS });
-          setQueryResult(result);
-          if (result.rowCount > result.rows.length && result.rows.length === MAX_ROWS) {
-            toast.warning(t`Results Limited`, {
-              description: t`Showing first ${MAX_ROWS.toLocaleString()} rows. Add a LIMIT clause for better performance.`,
-            });
-          }
-        } else {
-          const startTime = performance.now();
-          const result = db.exec(queryToRun);
-          const endTime = performance.now();
-          const executionTime = endTime - startTime;
-
-          if (result && result.length > 0) {
-            const lastResult = result[result.length - 1];
-            setQueryResult({
-              columns: lastResult.columns || [],
-              rows: lastResult.values || [],
-              rowCount: lastResult.values?.length || 0,
-              executionTime,
-            });
-          } else {
-            setQueryResult({
-              columns: [],
-              rows: [],
-              rowCount: 0,
-              executionTime,
-            });
-          }
-
-          // Raw SQL writes bypass op-code mutation log; finalize as out-of-band mutation.
-          await runtime.finalizeOutOfBandMutation({ uploadSnapshot: true });
-
-          toast.success(t`Query Executed`, {
-            description: t`Query executed successfully`,
+        // Read-only by design: every run goes through the DuckDB report snapshot,
+        // never the live SQLite database (writes here would bypass the mutation log).
+        if (!isSelectQuery(queryToRun)) {
+          throw new Error(
+            t`Only read-only queries can run here (SELECT, WITH, EXPLAIN, DESCRIBE, SHOW, PRAGMA).`
+          );
+        }
+        const result = await executeReportQuery(queryToRun, db, { maxRows: MAX_ROWS });
+        setQueryResult(result);
+        if (result.rowCount > result.rows.length && result.rows.length === MAX_ROWS) {
+          toast.warning(t`Results Limited`, {
+            description: t`Showing first ${MAX_ROWS.toLocaleString()} rows. Add a LIMIT clause for better performance.`,
           });
         }
       } catch (error) {
