@@ -14,6 +14,14 @@ import {
   type SqlDatabase,
 } from '@shared/lib/sql/report-query-executor';
 import { ChartViewer } from '@features/analytics/ui/chart-viewer';
+import {
+  allowedVisualizations,
+  parseQuestionHeader,
+  questionColumns,
+  resolveVisualization,
+  type ResolvedVisualization,
+} from '@features/reports/lib/question';
+import { QuestionVisualization } from '@features/reports/ui/notebook/QuestionVisualization';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
@@ -201,6 +209,30 @@ export function WidgetCard({
     staleTime: 30 * 1000,
   });
 
+  // Saved questions render with the notebook's visualization (legend, human
+  // labels, money formatting); other reports use the generic chart viewer.
+  const question = useMemo(() => {
+    const spec = parseQuestionHeader(report?.query);
+    if (!spec || !chart || chart.id !== report?.charts?.[0]?.id) return null;
+    const fromChart: Partial<Record<ChartConfiguration['chartType'], ResolvedVisualization>> = {
+      stat: 'number',
+      line: 'line',
+      bar: 'bar',
+      area: 'area',
+      pie: 'pie',
+      table: 'table',
+    };
+    const wanted = fromChart[chart.chartType];
+    return {
+      spec,
+      columns: questionColumns(spec),
+      visualization:
+        wanted && allowedVisualizations(spec).includes(wanted)
+          ? wanted
+          : resolveVisualization(spec),
+    };
+  }, [report, chart]);
+
   const title = widget.titleOverride || chart?.title || report?.name || t`Widget`;
 
   const refreshWidgetData = async () => {
@@ -279,8 +311,8 @@ export function WidgetCard({
               <Button
                 variant="ghost"
                 size="icon"
-                title={t`Open source report in Explorer`}
-                aria-label={t`Open source report in Explorer`}
+                title={t`Open the question`}
+                aria-label={t`Open the question`}
                 onClick={() => onOpenReportInExplorer(report.id)}
               >
                 <SquareArrowOutUpRight className="h-4 w-4" />
@@ -331,7 +363,18 @@ export function WidgetCard({
             <Trans>Loading chart...</Trans>
           </div>
         )}
-        {!dataQuery.isPending && dataQuery.data && (
+        {!dataQuery.isPending && dataQuery.data && question && (
+          <div className="h-full overflow-auto">
+            <QuestionVisualization
+              result={dataQuery.data}
+              columns={question.columns}
+              source={question.spec.source}
+              visualization={question.visualization}
+              fitHeight
+            />
+          </div>
+        )}
+        {!dataQuery.isPending && dataQuery.data && !question && (
           <div className="h-full overflow-hidden">
             <ChartViewer
               queryResult={dataQuery.data}

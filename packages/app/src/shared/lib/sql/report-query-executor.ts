@@ -72,7 +72,7 @@ export async function executeReportQuery(
   await acquireExecutionSlot();
 
   try {
-    // Leading comments (e.g. the report builder's `-- budgero-builder:` header)
+    // Leading comments (e.g. a saved question's `-- budgero-question:v2` header)
     // are dropped so the read-only check and automatic LIMIT see the statement.
     const trimmedQuery = stripLeadingSqlComments(query).trim();
     if (!trimmedQuery) {

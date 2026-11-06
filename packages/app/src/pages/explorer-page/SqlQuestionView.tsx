@@ -1,0 +1,266 @@
+import { Trans, useLingui } from '@lingui/react/macro';
+import { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Copy, Database, LayoutGrid, Menu, Play, Save } from 'lucide-react';
+import type { UnifiedReport } from '@budgero/core/browser';
+import { Button } from '@shared/ui/button';
+import { Card, CardContent } from '@shared/ui/card';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@shared/ui/sheet';
+import { SaveReportDialog } from '@features/reports/ui/SaveReportDialog';
+import { stripQuestionHeader } from '@features/reports/lib/question';
+import { QuestionHeader } from '@pages/reports/question/QuestionHeader';
+import { usePinToDashboard } from '@pages/reports/question/usePinToDashboard';
+import { useExplorerState } from './hooks/useExplorerState';
+import { SQLEditor, SchemaSidebar, ResultsTable, ChartsPanel } from './components';
+import { COMMON_QUERIES } from './sql-utils';
+
+interface SqlQuestionViewProps {
+  budgetId: number;
+  /**
+   * The saved report this editor saves to: a SQL report, or a notebook
+   * question being converted (saving then drops its notebook header).
+   */
+  report: UnifiedReport | null;
+  /** SQL to start from (a converted question); defaults to the report's query. */
+  initialSql?: string;
+  openSaveDialog?: boolean;
+}
+
+/** SQL (advanced) editor for a question. Runs read-only queries only. */
+export function SqlQuestionView({
+  budgetId,
+  report,
+  initialSql,
+  openSaveDialog = false,
+}: SqlQuestionViewProps) {
+  const { t } = useLingui();
+  const navigate = useNavigate();
+  const pin = usePinToDashboard(budgetId);
+  const {
+    sqlQuery,
+    queryResult,
+    isExecuting,
+    error,
+    tableSchema,
+    expandedTables,
+    sidebarOpen,
+    showSaveReportDialog,
+    editingReport,
+    selectedChartConfig,
+    editorTheme,
+    editorModules,
+    extensions,
+    setSqlQuery,
+    setSidebarOpen,
+    setShowSaveReportDialog,
+    setEditingReport,
+    setSelectedChartConfig,
+    executeQuery,
+    toggleTable,
+    insertTableName,
+    insertColumnName,
+    formatSQL,
+    copyResultsAsCSV,
+    handleSaveReport,
+    handleCreateReport,
+  } = useExplorerState();
+
+  // Load the starting SQL once.
+  const loadedRef = useRef(false);
+  useEffect(() => {
+    if (loadedRef.current) return;
+    loadedRef.current = true;
+    const start = initialSql ?? (report ? stripQuestionHeader(report.query) : null);
+    // Deferred: opening a report updates several pieces of page state.
+    void Promise.resolve().then(() => {
+      if (report) {
+        setEditingReport(report);
+        setSelectedChartConfig(report.charts?.[0] ?? null);
+      }
+      if (start) {
+        setSqlQuery(start);
+        void executeQuery(start);
+      }
+      if (openSaveDialog && report) setShowSaveReportDialog(true);
+    });
+  }, [
+    initialSql,
+    report,
+    openSaveDialog,
+    setEditingReport,
+    setSelectedChartConfig,
+    setSqlQuery,
+    executeQuery,
+    setShowSaveReportDialog,
+  ]);
+
+  const converting = initialSql !== undefined && report !== null;
+  const title = editingReport?.name ?? t`New SQL question`;
+
+  const schemaSidebar = (onClose?: () => void) => (
+    <SchemaSidebar
+      tableSchema={tableSchema}
+      expandedTables={expandedTables}
+      onToggleTable={toggleTable}
+      onInsertTableName={insertTableName}
+      onInsertColumnName={insertColumnName}
+      onCloseSidebar={onClose}
+    />
+  );
+
+  return (
+    <div className="flex w-full">
+      <div className="hidden w-80 min-h-0 flex-shrink-0 flex-col border-r bg-muted/10 lg:flex">
+        {schemaSidebar()}
+      </div>
+
+      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+        <SheetContent side="left" className="flex h-full w-80 min-h-0 flex-col p-0">
+          <SheetHeader className="border-b p-4">
+            <SheetTitle className="flex items-center gap-2 text-sm">
+              <Database className="h-4 w-4" aria-hidden />
+              <Trans>Database Schema</Trans>
+            </SheetTitle>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            {schemaSidebar(() => setSidebarOpen(false))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <div className="min-w-0 flex-1 space-y-4 p-4 pb-24 sm:p-6 md:pb-6">
+        <QuestionHeader
+          title={title}
+          subtitle={
+            converting
+              ? t`Converted to SQL. Saving replaces the notebook version.`
+              : t`SQL (advanced) · read-only queries`
+          }
+        >
+          <Button
+            variant="outline"
+            size="sm"
+            className="lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+            aria-label={t`Database Schema`}
+          >
+            <Menu className="h-4 w-4" aria-hidden />
+          </Button>
+          {editingReport && !converting && (
+            <Button variant="outline" size="sm" onClick={() => pin.open(editingReport)}>
+              <LayoutGrid className="h-4 w-4" aria-hidden />
+              <span className="hidden sm:inline">
+                <Trans>Add to dashboard</Trans>
+              </span>
+            </Button>
+          )}
+          <Button size="sm" onClick={handleCreateReport} disabled={!sqlQuery.trim()}>
+            <Save className="h-4 w-4" aria-hidden />
+            {editingReport ? t`Save` : t`Save question`}
+          </Button>
+        </QuestionHeader>
+
+        <div className="flex flex-wrap gap-1 sm:gap-2">
+          {COMMON_QUERIES.map((item) => (
+            <Button
+              key={item.query}
+              variant="outline"
+              size="sm"
+              onClick={() => setSqlQuery(item.query)}
+              className="whitespace-nowrap text-xs"
+            >
+              {t(item.name)}
+            </Button>
+          ))}
+        </div>
+
+        <div className="space-y-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Caption, not a <label>: the CodeMirror editor is not a labelable control. */}
+            <span className="mr-auto text-sm font-medium">
+              <Trans>SQL Query</Trans>
+            </span>
+            <Button variant="outline" size="sm" onClick={formatSQL} className="text-xs">
+              <Trans>Format SQL</Trans>
+            </Button>
+            {queryResult && (
+              <Button variant="outline" onClick={copyResultsAsCSV} size="sm" className="text-xs">
+                <Copy className="h-3 w-3" aria-hidden />
+                CSV
+              </Button>
+            )}
+            <Button
+              onClick={() => executeQuery()}
+              disabled={isExecuting}
+              size="sm"
+              className="text-xs"
+            >
+              <Play className="h-3 w-3" aria-hidden />
+              {isExecuting ? t`Running...` : t`Run`}
+            </Button>
+          </div>
+          <div className="overflow-hidden rounded-md border">
+            <SQLEditor
+              value={sqlQuery}
+              onChange={setSqlQuery}
+              extensions={extensions}
+              theme={editorTheme}
+              onRun={() => executeQuery()}
+              editorModules={editorModules}
+            />
+          </div>
+        </div>
+
+        {error && (
+          <Card className="border-destructive">
+            <CardContent className="p-4">
+              <h3 className="mb-2 font-semibold text-destructive">
+                <Trans>Query Error</Trans>
+              </h3>
+              <pre className="overflow-auto rounded bg-destructive/10 p-3 text-xs text-destructive">
+                {error}
+              </pre>
+            </CardContent>
+          </Card>
+        )}
+
+        {queryResult && <ResultsTable result={queryResult} />}
+
+        {editingReport?.charts && editingReport.charts.length > 0 && queryResult && (
+          <ChartsPanel
+            queryResult={queryResult}
+            charts={editingReport.charts}
+            selectedChartConfig={selectedChartConfig}
+            onSelectChart={setSelectedChartConfig}
+          />
+        )}
+      </div>
+
+      <SaveReportDialog
+        open={showSaveReportDialog}
+        onOpenChange={setShowSaveReportDialog}
+        sqlQuery={sqlQuery}
+        queryResult={queryResult}
+        onSave={async (data) => {
+          const saved = await handleSaveReport(data);
+          if (!report || converting) {
+            void navigate(`/reports/question/${saved.id}`, { replace: true });
+          }
+          return saved;
+        }}
+        onSaveAndPin={pin.open}
+        initialData={
+          editingReport
+            ? {
+                name: editingReport.name,
+                description: editingReport.description,
+                charts: editingReport.charts || [],
+              }
+            : undefined
+        }
+        mode={editingReport ? 'edit' : 'create'}
+      />
+      {pin.dialog}
+    </div>
+  );
+}
