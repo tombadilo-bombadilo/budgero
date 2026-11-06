@@ -4,6 +4,7 @@ import type { EChartsCoreOption } from 'echarts/core';
 import type {
   QuestionColumn,
   QuestionSource,
+  ResolvedStacking,
   ResolvedVisualization,
 } from '@features/reports/lib/question';
 import type { QueryResult } from '@shared/lib/sql/report-query-executor';
@@ -27,6 +28,8 @@ interface QuestionVisualizationProps {
   columns: QuestionColumn[];
   source: QuestionSource;
   visualization: ResolvedVisualization;
+  /** Bar/area: side by side, stacked, or stacked to 100% (see resolveStacking). */
+  stacking?: ResolvedStacking;
   /** Fill the parent's height (dashboard widgets). */
   fitHeight?: boolean;
   className?: string;
@@ -41,6 +44,7 @@ export function QuestionVisualization({
   columns,
   source,
   visualization,
+  stacking = 'none',
   fitHeight = false,
   className,
 }: QuestionVisualizationProps) {
@@ -70,6 +74,7 @@ export function QuestionVisualization({
       columns={columns}
       source={source}
       visualization={visualization}
+      stacking={stacking}
       fitHeight={fitHeight}
       className={className}
     />
@@ -81,7 +86,7 @@ function NumberView({
   columns,
   source,
   className,
-}: Omit<QuestionVisualizationProps, 'visualization'>) {
+}: Omit<QuestionVisualizationProps, 'visualization' | 'stacking'>) {
   const format = useQuestionFormatters(source);
   const metrics = columns.filter((column) => column.kind === 'aggregation');
   const index = new Map(result.columns.map((name, position) => [name, position]));
@@ -112,6 +117,7 @@ function ChartView({
   columns,
   source,
   visualization,
+  stacking = 'none',
   fitHeight,
   className,
 }: QuestionVisualizationProps) {
@@ -216,10 +222,20 @@ function ChartView({
       .map((series, position) => ({ series, position }))
       .filter(({ series }) => !hidden.has(series.id));
     if (visible.length === 0) return null;
-    const stack =
-      visualization === 'area'
-        ? visible.length > 1
-        : visualization === 'bar' && model.seriesColumn !== null && visible.length > 3;
+    const stack = stacking !== 'none' && visible.length > 1;
+    const percent = stack && stacking === 'percent';
+    // 100%: each x value's visible series as shares of their total.
+    const totals = model.xValues.map((_, index) =>
+      visible.reduce((sum, { series }) => sum + Math.abs(series.values[index] ?? 0), 0)
+    );
+    const plotted = (values: number[]) =>
+      percent
+        ? values.map((value, index) =>
+            totals[index] > 0 ? (Math.abs(value ?? 0) / totals[index]) * 100 : 0
+          )
+        : values;
+    const share = (value: number, index: number) =>
+      totals[index] > 0 ? `${((Math.abs(value) / totals[index]) * 100).toFixed(0)}%` : '0%';
 
     return {
       grid: { left: 8, right: 28, top: 16, bottom: 4, containLabel: true },
@@ -237,10 +253,11 @@ function ChartView({
       },
       yAxis: {
         type: 'value' as const,
+        ...(percent ? { max: 100 } : {}),
         axisLabel: {
           color: chrome.axisText,
           fontSize: 11,
-          formatter: (value: number) => format.compact(metric, value),
+          formatter: (value: number) => (percent ? `${value}%` : format.compact(metric, value)),
         },
         splitLine: { lineStyle: { color: chrome.grid, width: 1 } },
         axisLine: { show: false },
@@ -256,7 +273,9 @@ function ChartView({
           const rows: TooltipRow[] = visible.map(({ series, position }) => ({
             color: colorOf(position),
             name: seriesName(series),
-            value: format.cell(series.metric, series.values[dataIndex]),
+            value: stack
+              ? `${format.cell(series.metric, series.values[dataIndex])} · ${share(series.values[dataIndex] ?? 0, dataIndex)}`
+              : format.cell(series.metric, series.values[dataIndex]),
           }));
           return tooltipHtml(xLongLabels[dataIndex] ?? '', rows);
         },
@@ -267,7 +286,7 @@ function ChartView({
               name: series.id,
               type: 'bar' as const,
               stack: stack ? 'stack' : undefined,
-              data: series.values,
+              data: plotted(series.values),
               barMaxWidth: BAR_MAX_WIDTH,
               itemStyle: stack
                 ? { color: colorOf(position), borderColor: chrome.surface, borderWidth: 1 }
@@ -277,14 +296,14 @@ function ChartView({
               name: series.id,
               type: 'line' as const,
               stack: stack ? 'stack' : undefined,
-              data: series.values,
+              data: plotted(series.values),
               lineStyle: { color: colorOf(position), width: 2 },
               itemStyle: { color: colorOf(position), borderColor: chrome.surface, borderWidth: 2 },
               symbol: 'circle',
               symbolSize: 7,
               showSymbol: series.values.length <= 36,
               ...(visualization === 'area'
-                ? { areaStyle: { color: colorOf(position), opacity: 0.15 } }
+                ? { areaStyle: { color: colorOf(position), opacity: stack ? 0.55 : 0.15 } }
                 : {}),
             }
       ),
@@ -296,6 +315,7 @@ function ChartView({
     format,
     isPie,
     visualization,
+    stacking,
     xLabels,
     xLongLabels,
     source,

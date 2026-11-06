@@ -88,6 +88,11 @@ export const VISUALIZATIONS = ['auto', 'number', 'line', 'bar', 'area', 'pie', '
 export type Visualization = (typeof VISUALIZATIONS)[number];
 export type ResolvedVisualization = Exclude<Visualization, 'auto'>;
 
+/** How bar/area series combine: side by side, stacked, or stacked to 100%. */
+export const STACKINGS = ['auto', 'none', 'stacked', 'percent'] as const;
+export type Stacking = (typeof STACKINGS)[number];
+export type ResolvedStacking = Exclude<Stacking, 'auto'>;
+
 export interface QuestionSpec {
   v: 2;
   source: QuestionSource;
@@ -99,6 +104,8 @@ export interface QuestionSpec {
   /** Raw-mode column picker; null = the source's default columns. */
   columns: string[] | null;
   visualization: Visualization;
+  /** Bar/area only; 'auto' stacks a second grouping and keeps several metrics side by side. */
+  stacking: Stacking;
 }
 
 export const MAX_QUESTION_LIMIT = 10_000;
@@ -131,6 +138,7 @@ export function createQuestion(
     limit: null,
     columns: null,
     visualization: 'auto',
+    stacking: 'auto',
     ...overrides,
   });
 }
@@ -369,6 +377,7 @@ export function normalizeQuestion(input: unknown): QuestionSpec {
     limit,
     columns: aggregations.length > 0 ? null : columns,
     visualization: oneOf(VISUALIZATIONS, raw.visualization) ?? 'auto',
+    stacking: oneOf(STACKINGS, raw.stacking) ?? 'auto',
   };
   // Drop sorts on columns this question doesn't output.
   const keys = new Set(questionColumnKeys(spec));
@@ -452,6 +461,25 @@ export function autoVisualization(spec: QuestionSpec): ResolvedVisualization {
   const first = getField(spec.source, spec.breakouts[0].field);
   if (first?.type === 'date') return 'line';
   return 'bar';
+}
+
+/** Whether a stacking choice applies: bar/area with more than one series. */
+export function canStack(spec: QuestionSpec, visualization: ResolvedVisualization): boolean {
+  if (visualization !== 'bar' && visualization !== 'area') return false;
+  return spec.breakouts.length >= 2 || spec.aggregations.length >= 2;
+}
+
+/**
+ * Stacking for a chart. 'auto' stacks the series of a second grouping (parts
+ * of one total) and keeps several metrics side by side (e.g. income vs spending).
+ */
+export function resolveStacking(
+  spec: QuestionSpec,
+  visualization: ResolvedVisualization
+): ResolvedStacking {
+  if (!canStack(spec, visualization)) return 'none';
+  if (spec.stacking !== 'auto') return spec.stacking;
+  return spec.breakouts.length >= 2 ? 'stacked' : 'none';
 }
 
 export function resolveVisualization(spec: QuestionSpec): ResolvedVisualization {

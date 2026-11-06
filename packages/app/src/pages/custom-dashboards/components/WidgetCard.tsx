@@ -18,6 +18,7 @@ import {
   allowedVisualizations,
   parseQuestionHeader,
   questionColumns,
+  resolveStacking,
   resolveVisualization,
   type ResolvedVisualization,
 } from '@features/reports/lib/question';
@@ -370,6 +371,7 @@ export function WidgetCard({
               columns={question.columns}
               source={question.spec.source}
               visualization={question.visualization}
+              stacking={resolveStacking(question.spec, question.visualization)}
               fitHeight
             />
           </div>
