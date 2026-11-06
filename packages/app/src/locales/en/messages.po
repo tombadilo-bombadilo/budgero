@@ -185,6 +185,10 @@ msgstr "(Required - or use InflowConverted/OutflowConverted)"
 msgid "(Required)"
 msgstr "(Required)"
 
+#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+msgid "(selected)"
+msgstr "(selected)"
+
 #. placeholder {0}: result.accountsRemoved
 #: src/pages/settings/ImportsPage.tsx
 msgid "{0, plural, one {, # account} other {, # accounts}}"
@@ -754,6 +758,11 @@ msgstr "{0} RTA · {1} category differences"
 msgid "{0} runs over its assignment almost every month — {1} of {2} planned months. The assignment may be set too low."
 msgstr "{0} runs over its assignment almost every month — {1} of {2} planned months. The assignment may be set too low."
 
+#. placeholder {0}: selected.length
+#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+msgid "{0} selected"
+msgstr "{0} selected"
+
 #. placeholder {0}: selectedCategory.name
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 msgid "{0} Summary"
@@ -940,6 +949,10 @@ msgstr "{0}total rows"
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "{0}Undo changes"
 msgstr "{0}Undo changes"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "{activeFilters} active"
+msgstr "{activeFilters} active"
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
 msgid "{ccCategoryName} payments"
@@ -1128,6 +1141,10 @@ msgstr "{matchedCount, plural, one {Updated # transaction across this budget.} o
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "{matching, plural, one {Match # transaction} other {Match # transactions}}"
 msgstr "{matching, plural, one {Match # transaction} other {Match # transactions}}"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "{measure} by {dimension}"
+msgstr "{measure} by {dimension}"
 
 #: src/pages/accounts/AccountsPage.tsx
 msgid "{months, plural, one {# month} other {# months}}"
@@ -2150,8 +2167,8 @@ msgid "<0/>SQL Explorer"
 msgstr "<0/>SQL Explorer"
 
 #: src/pages/explorer-page/ExplorerPage.tsx
-msgid "<0/>SQL Query Editor"
-msgstr "<0/>SQL Query Editor"
+#~ msgid "<0/>SQL Query Editor"
+#~ msgstr "<0/>SQL Query Editor"
 
 #. placeholder {0}: template.schedule.startDate
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
@@ -2868,6 +2885,7 @@ msgstr "Access until:"
 
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
@@ -2982,6 +3000,7 @@ msgstr "Account<0/>"
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/features/transactions/ui/form/AccountSelect.tsx
 #: src/pages/accounts/AccountsPage.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
@@ -3389,6 +3408,8 @@ msgstr "Algorithm"
 
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 #: src/features/import/ui/steps/PreviewStep.tsx
+#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 msgid "All"
 msgstr "All"
 
@@ -3483,6 +3504,7 @@ msgstr "All payees"
 msgid "all time"
 msgstr "all time"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/accounts/components/ValueChangeStat.tsx
 #: src/pages/analytics/analytics-state.ts
 msgid "All time"
@@ -3581,6 +3603,10 @@ msgstr "Allow public sign-ups"
 #: src/pages/admin/admin-users/ActionDialog.tsx
 msgid "Allow this user to log in again and resume normal access."
 msgstr "Allow this user to log in again and resume normal access."
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Alphabetical"
+msgstr "Alphabetical"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Already have an account? <0>Sign in</0>"
@@ -3734,6 +3760,10 @@ msgstr "Animate planning amounts"
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Annual percentage rate, e.g., 5 for 5%."
 msgstr "Annual percentage rate, e.g., 5 for 5%."
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Any date"
+msgstr "Any date"
 
 #: src/pages/settings/ai/ai-settings.constants.ts
 msgid "Any OpenAI-compatible API"
@@ -3894,6 +3924,10 @@ msgstr "Are you sure you want to delete \"{0}\"? This action cannot be undone."
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Are you sure you want to reveal the key?"
 msgstr "Are you sure you want to reveal the key?"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Area"
+msgstr "Area"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -4176,6 +4210,10 @@ msgstr "Average monthly spend: <0>{0}</0>"
 msgid "Average Saved"
 msgstr "Average Saved"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Average transaction (spending)"
+msgstr "Average transaction (spending)"
+
 #. placeholder {0}: money.tile(Math.round(totalSpending / monthCount))
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "avg {0}/mo"
@@ -4335,6 +4373,10 @@ msgstr "Banks often list a pending charge and the settled one on different dates
 #: src/features/transactions/ui/form/DuplicateTransactionHint.tsx
 msgid "Banks often list a pending charge and the settled one on different dates. This flags transactions in the same account with the same amount up to {days} days apart."
 msgstr "Banks often list a pending charge and the settled one on different dates. This flags transactions in the same account with the same amount up to {days} days apart."
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Bar"
+msgstr "Bar"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -4805,6 +4847,11 @@ msgstr "Build metadata for support or troubleshooting."
 msgid "Build up to an amount available, with no date and no repeat"
 msgstr "Build up to an amount available, with no date and no repeat"
 
+#: src/pages/explorer-page/components/ReportsPanel.tsx
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "Builder"
+msgstr "Builder"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Building habits takes time - keep trying!"
 msgstr "Building habits takes time - keep trying!"
@@ -4886,6 +4933,7 @@ msgstr "Canadian Dollar"
 #: src/features/category-management/ui/CreateCategoryDialog.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 #: src/features/currencies/ui/ManualRatePrompt.tsx
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
@@ -5009,6 +5057,7 @@ msgid "categories"
 msgstr "categories"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
@@ -5042,6 +5091,7 @@ msgstr "Categories matching \"{0}\""
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/pages/analytics/components/TargetTable.tsx
@@ -5066,8 +5116,17 @@ msgid "Category deleted"
 msgstr "Category deleted"
 
 #: src/features/category-management/ui/CreateCategoryDialog.tsx
+#: src/features/reports/ui/report-builder/builder-labels.ts
 msgid "Category group"
 msgstr "Category group"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Category groups"
+msgstr "Category groups"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Category groups over time"
+msgstr "Category groups over time"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
@@ -5199,6 +5258,7 @@ msgstr "Changes saved successfully."
 msgid "Changing..."
 msgstr "Changing..."
 
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/custom-dashboards/components/ReportChartSelectFields.tsx
 msgid "Chart"
@@ -5470,6 +5530,10 @@ msgstr "Clean, neutral, out of the way."
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
 msgid "Clear"
 msgstr "Clear"
+
+#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+msgid "Clear {label} filter"
+msgstr "Clear {label} filter"
 
 #: src/features/transactions/ui/SearchActiveFilters.tsx
 msgid "Clear all"
@@ -6729,9 +6793,14 @@ msgstr "Custom cadence"
 msgid "Custom Dashboards"
 msgstr "Custom Dashboards"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/analytics/analytics-state.ts
 msgid "Custom range"
 msgstr "Custom range"
+
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "Custom reports"
+msgstr "Custom reports"
 
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
 msgid "Custom widget title (optional)"
@@ -6860,6 +6929,10 @@ msgstr "Database restored successfully!"
 msgid "Database schema"
 msgstr "Database schema"
 
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "Database Schema"
+msgstr "Database Schema"
+
 #: src/pages/admin/sql-explorer/constants.ts
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Database size"
@@ -6890,6 +6963,7 @@ msgstr "Date Format"
 msgid "DATE FORMAT"
 msgstr "DATE FORMAT"
 
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/settings/components/DuplicateHintSettingsCard.tsx
 msgid "Date range"
 msgstr "Date range"
@@ -7197,6 +7271,7 @@ msgid "Describe the conditions and actions you want Budgero to apply automatical
 msgstr "Describe the conditions and actions you want Budgero to apply automatically."
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/rules/ui/rule-editor/RuleMetadataForm.tsx
 msgid "Description"
@@ -7619,6 +7694,10 @@ msgstr "Edit account"
 msgid "Edit Account"
 msgstr "Edit Account"
 
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Edit as SQL"
+msgstr "Edit as SQL"
+
 #: src/features/rules/ui/rule-editor/useRuleEditorState.ts
 msgid "Edit automation rule"
 msgstr "Edit automation rule"
@@ -7700,6 +7779,10 @@ msgstr "Edit splits"
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Edit Warranty"
 msgstr "Edit Warranty"
+
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Editing saved report"
+msgstr "Editing saved report"
 
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Editing transfer splits is not supported."
@@ -8648,6 +8731,10 @@ msgstr "Failed to save order"
 msgid "Failed to save recurring transaction"
 msgstr "Failed to save recurring transaction"
 
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+msgid "Failed to save report"
+msgstr "Failed to save report"
+
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Failed to save split transaction"
 msgstr "Failed to save split transaction"
@@ -8814,6 +8901,10 @@ msgstr "Filter import rows"
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
 msgid "Filter series..."
 msgstr "Filter series..."
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Filters"
+msgstr "Filters"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Final month! Allocate {stillNeeded} to complete"
@@ -9005,6 +9096,7 @@ msgstr "Fresh, or bringing a budget with you?"
 msgid "Friend or colleague"
 msgstr "Friend or colleague"
 
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
@@ -9303,6 +9395,7 @@ msgstr "Groceries"
 msgid "Groceries & Food"
 msgstr "Groceries & Food"
 
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/admin/SignupsSection.tsx
 msgid "Group by"
 msgstr "Group by"
@@ -9837,9 +9930,17 @@ msgstr "Inactive for"
 msgid "Inactive users"
 msgstr "Inactive users"
 
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Include off-budget accounts"
+msgstr "Include off-budget accounts"
+
 #: src/features/import/ui/steps/configure/MappingTab.tsx
 msgid "Include this row in import"
 msgstr "Include this row in import"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Include transfers"
+msgstr "Include transfers"
 
 #: src/pages/settings/push-api/PushApiPage.tsx
 msgid "Include your API token in the Authorization header:"
@@ -9853,6 +9954,7 @@ msgstr "Includes occurrences already posted or skipped."
 #: src/features/budget-management/model/icon-options.ts
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/features/transactions/ui/form/TransactionTypeSelector.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -9914,6 +10016,14 @@ msgstr "Income to spending flow"
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
 msgid "Income vs expense trend"
 msgstr "Income vs expense trend"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Income vs spending"
+msgstr "Income vs spending"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Income vs spending by month"
+msgstr "Income vs spending by month"
 
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Incoming transaction"
@@ -10074,6 +10184,10 @@ msgstr "Invalid master password - please try again"
 #: src/features/import/lib/import-display-text.ts
 msgid "Invalid or manually skipped row"
 msgstr "Invalid or manually skipped row"
+
+#: src/features/reports/ui/report-builder/useReportBuilderQuery.ts
+msgid "Invalid report"
+msgstr "Invalid report"
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Invalid split amount"
@@ -10319,6 +10433,7 @@ msgstr "Keyboard shortcuts"
 msgid "Know what you can spend. Keep your budget private. Create your account to start your free trial."
 msgstr "Know what you can spend. Keep your budget private. Create your account to start your free trial."
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 msgid "Label"
 msgstr "Label"
@@ -10372,6 +10487,7 @@ msgid "Label<0/>"
 msgstr "Label<0/>"
 
 #: src/features/labels/ui/LabelCombobox.tsx
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -10391,6 +10507,11 @@ msgstr "Labels will be removed from the selected transactions."
 msgid "Landlord"
 msgstr "Landlord"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Largest first"
+msgstr "Largest first"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 12 months"
 msgstr "Last 12 months"
@@ -10399,6 +10520,7 @@ msgstr "Last 12 months"
 msgid "Last 24 months"
 msgstr "Last 24 months"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 3 months"
 msgstr "Last 3 months"
@@ -10407,6 +10529,7 @@ msgstr "Last 3 months"
 msgid "Last 30 days"
 msgstr "Last 30 days"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 6 months"
 msgstr "Last 6 months"
@@ -10636,6 +10759,10 @@ msgstr "Lighter option (~3GB)"
 #: src/widgets/sync-status/ConnectivityStatus.tsx
 msgid "Limited - WebSocket connected but API/Auth may be degraded"
 msgstr "Limited - WebSocket connected but API/Auth may be degraded"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Line"
+msgstr "Line"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -11175,6 +11302,10 @@ msgstr "max(calc(env(safe-area-inset-bottom, 0px) - 12px), 0px)"
 msgid "Maximum"
 msgstr "Maximum"
 
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Measure"
+msgstr "Measure"
+
 #: src/features/ai/ui/AICategorizeDialog.tsx
 msgid "Medium"
 msgstr "Medium"
@@ -11372,6 +11503,7 @@ msgstr "Monochrome budgeting workspace with parchment canvas and red/green utili
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/analytics/reports/InOutReport.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -11608,6 +11740,7 @@ msgid "name"
 msgstr "name"
 
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
@@ -11694,9 +11827,17 @@ msgstr "Needs review"
 msgid "Net"
 msgstr "Net"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Net (income − spending)"
+msgstr "Net (income − spending)"
+
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Net amount"
 msgstr "Net amount"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Net cash flow by month"
+msgstr "Net cash flow by month"
 
 #: src/widgets/dashboard/CashflowTrendCard.tsx
 msgid "Net cashflow<0/>"
@@ -11785,6 +11926,7 @@ msgstr "Never share this key publicly"
 
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 #: src/features/import/ui/steps/PreviewStep.tsx
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
 #: src/pages/explorer-page/ExplorerPage.tsx
 msgid "New"
 msgstr "New"
@@ -11910,6 +12052,10 @@ msgstr "Next<0><1/></0>"
 #: src/shared/model/access.ts
 msgid "No Access"
 msgstr "No Access"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "No account"
+msgstr "No account"
 
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "No account activity in this period."
@@ -12258,6 +12404,7 @@ msgid "No invoices yet. Invoices will appear here after your first payment."
 msgstr "No invoices yet. Invoices will appear here after your first payment."
 
 #: src/features/labels/ui/LabelCombobox.tsx
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
@@ -12275,6 +12422,10 @@ msgstr "No labels found."
 #: src/features/labels/ui/LabelCombobox.tsx
 msgid "No labels yet."
 msgstr "No labels yet."
+
+#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+msgid "No matches."
+msgstr "No matches."
 
 #: src/features/rules/ui/rule-editor/RuleAccountSelect.tsx
 #: src/features/transactions/ui/form/AccountSelect.tsx
@@ -12360,6 +12511,7 @@ msgid "No password"
 msgstr "No password"
 
 #: src/features/budget-management/ui/create-budget-form/YnabCreditPaymentMatching.tsx
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 #: src/pages/analytics/analytics-model.ts
 msgid "No payee"
@@ -12521,6 +12673,10 @@ msgstr "No transactions found in this QIF file. Only Bank, CCard, and Cash secti
 msgid "No transactions found."
 msgstr "No transactions found."
 
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "No transactions match this report"
+msgstr "No transactions match this report"
+
 #: src/features/ai/ui/receipt-scanner/useReceiptScannerState.ts
 msgid "No transactions selected"
 msgstr "No transactions selected"
@@ -12588,6 +12744,7 @@ msgstr "No workspaces yet. Use the button above to create your first workspace."
 #: src/features/import/ui/steps/CompleteStep.tsx
 #: src/features/import/ui/steps/configure/FormattingTab.tsx
 #: src/features/import/ui/steps/configure/MappingTab.tsx
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -12728,6 +12885,10 @@ msgstr "Number of accounts to seed"
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 msgid "Number of occurrences"
 msgstr "Number of occurrences"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Number of transactions"
+msgstr "Number of transactions"
 
 #: src/features/account-management/ui/DevSeedTransactionsButton.tsx
 msgid "Number of transactions to seed"
@@ -12897,6 +13058,10 @@ msgstr "Only a workspace owner can create the first budget here."
 msgid "Only money you have now"
 msgstr "Only money you have now"
 
+#: src/pages/explorer-page/hooks/useExplorerState.ts
+msgid "Only read-only queries can run here (SELECT, WITH, EXPLAIN, DESCRIBE, SHOW, PRAGMA)."
+msgstr "Only read-only queries can run here (SELECT, WITH, EXPLAIN, DESCRIBE, SHOW, PRAGMA)."
+
 #: src/shared/mutations/useMutationHistory.ts
 msgid "Only the most recent change can be undone. Undo the newer changes first."
 msgstr "Only the most recent change can be undone. Undo the newer changes first."
@@ -13047,6 +13212,7 @@ msgstr "Optional but encouraged"
 msgid "Optional context for your future self"
 msgstr "Optional context for your future self"
 
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Optional description..."
 msgstr "Optional description..."
@@ -13396,6 +13562,7 @@ msgstr "Pay"
 
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
@@ -13437,6 +13604,7 @@ msgid "Payee<0/>"
 msgstr "Payee<0/>"
 
 #: src/features/payees/ui/PayeeCombobox.tsx
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
@@ -13650,6 +13818,10 @@ msgstr "Pick range"
 msgid "Pick two different accounts for a transfer"
 msgstr "Pick two different accounts for a transfer"
 
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "Pick what to measure, how to group it and which transactions to include."
+msgstr "Pick what to measure, how to group it and which transactions to include."
+
 #: src/shared/lib/analytics/klaro-config.ts
 #~ msgid "Pick which cookies are OK with you. Your encrypted budget data is never tracked either way. You can change this any time from Settings → Security."
 #~ msgstr "Pick which cookies are OK with you. Your encrypted budget data is never tracked either way. You can change this any time from Settings → Security."
@@ -13661,6 +13833,10 @@ msgstr "Pick your path"
 #: src/pages/onboarding/steps/ThemeStep.tsx
 msgid "PICKED FOR YOU"
 msgstr "PICKED FOR YOU"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Pie"
+msgstr "Pie"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -13760,6 +13936,7 @@ msgstr "Please drop an image file"
 msgid "Please enter a name for this query."
 msgstr "Please enter a name for this query."
 
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Please enter a report name"
 msgstr "Please enter a report name"
@@ -14265,6 +14442,10 @@ msgstr "Push API {0}"
 msgid "qualify pivot unpivot sample using asof lateral recursive"
 msgstr "qualify pivot unpivot sample using asof lateral recursive"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Quarter"
+msgstr "Quarter"
+
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Quarter (3 months)"
 msgstr "Quarter (3 months)"
@@ -14298,13 +14479,16 @@ msgid "Query Error"
 msgstr "Query Error"
 
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
-#: src/pages/explorer-page/hooks/useExplorerState.ts
 msgid "Query Executed"
 msgstr "Query Executed"
 
 #: src/pages/explorer-page/hooks/useExplorerState.ts
-msgid "Query executed successfully"
-msgstr "Query executed successfully"
+#~ msgid "Query executed successfully"
+#~ msgstr "Query executed successfully"
+
+#: src/features/reports/ui/report-builder/useReportBuilderQuery.ts
+msgid "Query failed"
+msgstr "Query failed"
 
 #: src/pages/admin/sql-explorer/AdminSqlExplorer.tsx
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
@@ -14728,6 +14912,7 @@ msgstr "Reduction failed"
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
 msgid "Refresh"
 msgstr "Refresh"
 
@@ -15008,6 +15193,10 @@ msgstr "Report a Bug"
 msgid "Report Deleted"
 msgstr "Report Deleted"
 
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "Report editor"
+msgstr "Report editor"
+
 #: src/pages/explorer-page/hooks/useReportActions.ts
 msgid "Report Loaded"
 msgstr "Report Loaded"
@@ -15016,9 +15205,18 @@ msgstr "Report Loaded"
 msgid "Report Name *"
 msgstr "Report Name *"
 
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+msgid "Report saved"
+msgstr "Report saved"
+
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+msgid "Report updated"
+msgstr "Report updated"
+
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/pages/analytics/components/ReportPicker.tsx
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
 #: src/pages/explorer-page/ExplorerPage.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
 #: src/widgets/navigation/MobileBottomNav.tsx
@@ -15501,6 +15699,10 @@ msgstr "Running"
 msgid "Running automation rule"
 msgstr "Running automation rule"
 
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Running report…"
+msgstr "Running report…"
+
 #: src/pages/explorer-page/ExplorerPage.tsx
 msgid "Running..."
 msgstr "Running..."
@@ -15529,6 +15731,7 @@ msgstr "Same date and amount in this account"
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 #: src/features/currencies/ui/ManualRatePrompt.tsx
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
@@ -15560,6 +15763,10 @@ msgstr "Save a report with at least one chart in Explorer first."
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Save and add another"
 msgstr "Save and add another"
+
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+msgid "Save and pin"
+msgstr "Save and pin"
 
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 msgid "Save changes"
@@ -15605,6 +15812,11 @@ msgstr "Save rate"
 msgid "Save recurring transaction"
 msgstr "Save recurring transaction"
 
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Save report"
+msgstr "Save report"
+
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Save Report"
 msgstr "Save Report"
@@ -15641,6 +15853,10 @@ msgstr "Saved Queries"
 #: src/pages/explorer-page/components/ReportsPanel.tsx
 msgid "Saved Reports ({0})"
 msgstr "Saved Reports ({0})"
+
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+msgid "Saved reports appear under Reports and can be pinned to a dashboard. You can reopen them in the builder at any time."
+msgstr "Saved reports appear under Reports and can be pinned to a dashboard. You can reopen them in the builder at any time."
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Saved scenarios"
@@ -15886,6 +16102,10 @@ msgstr "Search Users"
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Search: groceries, last 30 days, outflows..."
 msgstr "Search: groceries, last 30 days, outflows..."
+
+#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+msgid "Search…"
+msgstr "Search…"
 
 #. placeholder {0}: parsed.textQuery
 #: src/features/transactions/ui/SearchActiveFilters.tsx
@@ -16627,6 +16847,10 @@ msgstr "Show target column"
 msgid "Show the next 30 days"
 msgstr "Show the next 30 days"
 
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Show top"
+msgstr "Show top"
+
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show uncategorized only"
 msgstr "Show uncategorized only"
@@ -16808,6 +17032,10 @@ msgstr "Simulated a market move"
 msgid "Since no account column is mapped, transactions will be imported into the selected account:"
 msgstr "Since no account column is mapped, transactions will be imported into the selected account:"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Single number"
+msgstr "Single number"
+
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Size"
@@ -16851,6 +17079,10 @@ msgstr "Small"
 msgid "Smaller cards, Activity hidden."
 msgstr "Smaller cards, Activity hidden."
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Smallest first"
+msgstr "Smallest first"
+
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Snapshot updated"
 msgstr "Snapshot updated"
@@ -16892,6 +17124,10 @@ msgstr "Something went wrong."
 #: src/features/chat/ui/chat-panel/useChatPanelState.ts
 msgid "Sorry, I encountered an error generating a response."
 msgstr "Sorry, I encountered an error generating a response."
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Sort"
+msgstr "Sort"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/pages/settings/ImportsPage.tsx
@@ -16948,6 +17184,7 @@ msgid "Speed up budgeting without leaving the keyboard."
 msgstr "Speed up budgeting without leaving the keyboard."
 
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/analytics/report-questions.ts
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -16977,6 +17214,14 @@ msgstr "Spending Breakdown"
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Spending by {0}"
 msgstr "Spending by {0}"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Spending by category (last 12 months)"
+msgstr "Spending by category (last 12 months)"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Spending by label"
+msgstr "Spending by label"
 
 #: src/pages/explorer-page/sql-utils.ts
 msgid "Spending by label (90d)"
@@ -17039,6 +17284,10 @@ msgstr "Spent (within plan)"
 msgid "Split"
 msgstr "Split"
 
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Split by"
+msgstr "Split by"
+
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Split details"
@@ -17089,6 +17338,10 @@ msgstr "Spot how cash flows in and out across the selected period grouping."
 msgid "Spreadsheet-style table with collapsible groups and goal column."
 msgstr "Spreadsheet-style table with collapsible groups and goal column."
 
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "SQL (advanced)"
+msgstr "SQL (advanced)"
+
 #: src/pages/admin/sql-explorer/QueryCard.tsx
 #: src/pages/explorer-page/ExplorerPage.tsx
 msgid "SQL Query"
@@ -17127,6 +17380,10 @@ msgstr "Start fresh instead"
 #: src/pages/auth/AuthPage.tsx
 msgid "Start fresh or bring your YNAB budget"
 msgstr "Start fresh or bring your YNAB budget"
+
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Start from a template"
+msgstr "Start from a template"
 
 #: src/pages/settings/subscription/PlanSelection.tsx
 msgid "Start monthly plan"
@@ -17561,6 +17818,7 @@ msgstr "System"
 msgid "System Overview"
 msgstr "System Overview"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/pages/settings/AppearancePage.tsx
@@ -18178,6 +18436,7 @@ msgstr "This liability has a positive balance."
 msgid "This liability now has a positive balance. There's nothing to pay off right now."
 msgstr "This liability now has a positive balance. There's nothing to pay off right now."
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/shared/lib/search-query-parser.ts
 msgid "This month"
 msgstr "This month"
@@ -18231,6 +18490,10 @@ msgstr "This replaces the data on this device with the server copy, then applies
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "This replaces the data on this device with the server copy, then applies the changes made after it. Use it if this device shows something different from your other devices."
 msgstr "This replaces the data on this device with the server copy, then applies the changes made after it. Use it if this device shows something different from your other devices."
+
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "This report could not be run"
+msgstr "This report could not be run"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "This report query is not read-only and cannot run in dashboard widgets."
@@ -18428,6 +18691,7 @@ msgstr "TIP:"
 msgid "Title (Optional)"
 msgstr "Title (Optional)"
 
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
@@ -18518,6 +18782,10 @@ msgstr "Top label"
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Top payee"
 msgstr "Top payee"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Top payees"
+msgstr "Top payees"
 
 #: src/pages/explorer-page/sql-utils.ts
 msgid "Top payees by spending (30d)"
@@ -18885,6 +19153,10 @@ msgstr "Try a demo first"
 msgid "Try a different search term"
 msgstr "Try a different search term"
 
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Try a longer date range or remove some filters."
+msgstr "Try a longer date range or remove some filters."
+
 #: src/features/transactions/ui/MobileTransactionList.tsx
 msgid "Try adjusting your search filters or add a new transaction"
 msgstr "Try adjusting your search filters or add a new transaction"
@@ -19094,6 +19366,7 @@ msgid "Uncategorised"
 msgstr "Uncategorised"
 
 #: src/features/analytics/ui/SpendingBreakdownContent.tsx
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/analytics/analytics-model.ts
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Uncategorized"
@@ -19300,6 +19573,7 @@ msgstr "Upcoming bill: {0}"
 #~ msgid "Upcoming transactions"
 #~ msgstr "Upcoming transactions"
 
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
 #: src/pages/explorer-page/ExplorerPage.tsx
@@ -19352,6 +19626,11 @@ msgstr "Update payment methods and billing information"
 #: src/pages/settings/subscription/PlanSelection.tsx
 msgid "Update payment methods, download invoices, or manage billing details"
 msgstr "Update payment methods, download invoices, or manage billing details"
+
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Update report"
+msgstr "Update report"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Update Report"
@@ -19920,6 +20199,7 @@ msgstr "Website"
 msgid "WebSocket"
 msgstr "WebSocket"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/admin/SignupsSection.tsx
 msgid "Week"
 msgstr "Week"
@@ -19999,6 +20279,10 @@ msgstr "What is still available right now"
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "What this means"
 msgstr "What this means"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "What to show"
+msgstr "What to show"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "What we collect"
@@ -20250,6 +20534,11 @@ msgstr "X-Axis"
 msgid "Y-Axis"
 msgstr "Y-Axis"
 
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Year"
+msgstr "Year"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/accounts/AccountsPage.tsx
 #: src/pages/analytics/analytics-state.ts
 msgid "Year to date"
@@ -20895,455 +21184,3 @@ msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-
 #: src/app/startup/StartupLayout.tsx
 msgid "Zero-based budgeting. Zero-knowledge privacy."
 msgstr "Zero-based budgeting. Zero-knowledge privacy."
-
-#. placeholder {0}: row.monthsOver
-#. placeholder {1}: row.monthsWithPlan
-#: src/pages/analytics/reports/PlanRealityReport.tsx
-msgid " · over in {0}/{1} mo"
-msgstr " · over in {0}/{1} mo"
-
-#: src/pages/analytics/reports/ScenarioReport.tsx
-msgid " (beyond the charted window)"
-msgstr " (beyond the charted window)"
-
-#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
-msgid "(selected)"
-msgstr "(selected)"
-
-#. placeholder {0}: state.invites.length
-#: src/pages/onboarding/steps/DoneStep.tsx
-msgid "{0, plural, one {# person} other {# people}}"
-msgstr "{0, plural, one {# person} other {# people}}"
-
-#. placeholder {0}: row.name
-#: src/pages/analytics/reports/FlowReport.tsx
-msgid "{0} — inspect"
-msgstr "{0} — inspect"
-
-#. placeholder {0}: money.amount(row.spent)
-#. placeholder {1}: money.amount(row.assigned)
-#. placeholder {2}: row.monthsWithPlan > 0 ? t` · over in ${row.monthsOver}/${row.monthsWithPlan} mo` : ''
-#: src/pages/analytics/reports/PlanRealityReport.tsx
-msgid "{0} of {1} assigned{2}"
-msgstr "{0} of {1} assigned{2}"
-
-#. placeholder {0}: selected.length
-#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
-msgid "{0} selected"
-msgstr "{0} selected"
-
-#. placeholder {0}: delta >= 0 ? '+' : ''
-#. placeholder {1}: money.amount(delta)
-#: src/pages/analytics/reports/WealthReport.tsx
-msgid "{0}{1} vs prev"
-msgstr "{0}{1} vs prev"
-
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "{activeFilters} active"
-msgstr "{activeFilters} active"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "{measure} by {dimension}"
-msgstr "{measure} by {dimension}"
-
-#: src/pages/explorer-page/ExplorerPage.tsx
-#~ msgid "<0/>SQL Query Editor"
-#~ msgstr "<0/>SQL Query Editor"
-
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Account Column Mapped"
-msgstr "Account Column Mapped"
-
-#: src/pages/analytics/reports/SpendingReport.tsx
-msgid "all charted"
-msgstr "all charted"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Alphabetical"
-msgstr "Alphabetical"
-
-#: src/pages/analytics/AnalyticsPage.tsx
-msgid "Am I growing?"
-msgstr "Am I growing?"
-
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Any date"
-msgstr "Any date"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Area"
-msgstr "Area"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Average transaction (spending)"
-msgstr "Average transaction (spending)"
-
-#. placeholder {0}: payload.horizon
-#: src/pages/analytics/reports/ScenarioReport.tsx
-msgid "Balance after {0} months under this scenario"
-msgstr "Balance after {0} months under this scenario"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Bar"
-msgstr "Bar"
-
-#: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Budgero works either way. Pick the path that fits."
-msgstr "Budgero works either way. Pick the path that fits."
-
-#: src/pages/explorer-page/components/ReportsPanel.tsx
-#: src/pages/explorer-page/ExplorerPage.tsx
-msgid "Builder"
-msgstr "Builder"
-
-#. placeholder {0}: money.amount(runway.avgMonthlySpend)
-#: src/pages/analytics/reports/WealthReport.tsx
-msgid "burn <0>{0}</0>/month"
-msgstr "burn <0>{0}</0>/month"
-
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Category groups"
-msgstr "Category groups"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Category groups over time"
-msgstr "Category groups over time"
-
-#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
-msgid "Clear {label} filter"
-msgstr "Clear {label} filter"
-
-#: src/pages/explorer-page/ExplorerPage.tsx
-msgid "Custom reports"
-msgstr "Custom reports"
-
-#: src/pages/explorer-page/ExplorerPage.tsx
-msgid "Database Schema"
-msgstr "Database Schema"
-
-#: src/pages/analytics/AnalyticsPage.tsx
-msgid "Did the budget hold?"
-msgstr "Did the budget hold?"
-
-#: src/pages/analytics/reports/InOutReport.tsx
-msgid "Do we live within our means?"
-msgstr "Do we live within our means?"
-
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Edit as SQL"
-msgstr "Edit as SQL"
-
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Editing saved report"
-msgstr "Editing saved report"
-
-#: src/pages/analytics/AnalyticsPage.tsx
-msgid "Every category, every month"
-msgstr "Every category, every month"
-
-#: src/pages/onboarding/onboarding-data.ts
-msgid "Every coin now has a place to land."
-msgstr "Every coin now has a place to land."
-
-#: src/pages/analytics/reports/FlowReport.tsx
-msgid "Every stream from income to {dimensionLabel}"
-msgstr "Every stream from income to {dimensionLabel}"
-
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-msgid "Failed to save report"
-msgstr "Failed to save report"
-
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Fallback Account (for unmatched account names)"
-msgstr "Fallback Account (for unmatched account names)"
-
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Filters"
-msgstr "Filters"
-
-#: src/pages/analytics/reports/WealthReport.tsx
-msgid "funds last until <0>{runsOut}</0>if income stopped"
-msgstr "funds last until <0>{runsOut}</0>if income stopped"
-
-#: src/pages/analytics/AnalyticsPage.tsx
-msgid "How does it move?"
-msgstr "How does it move?"
-
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Include off-budget accounts"
-msgstr "Include off-budget accounts"
-
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Include transfers"
-msgstr "Include transfers"
-
-#. placeholder {0}: savingsRate.toFixed(0)
-#: src/pages/analytics/reports/FlowReport.tsx
-msgid "Income → {dimensionLabel}; {0}% saved"
-msgstr "Income → {dimensionLabel}; {0}% saved"
-
-#. placeholder {0}: money.amount(-net)
-#: src/pages/analytics/reports/FlowReport.tsx
-msgid "Income → {dimensionLabel}; overspent by {0}"
-msgstr "Income → {dimensionLabel}; overspent by {0}"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Income vs spending"
-msgstr "Income vs spending"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Income vs spending by month"
-msgstr "Income vs spending by month"
-
-#: src/features/reports/ui/report-builder/useReportBuilderQuery.ts
-msgid "Invalid report"
-msgstr "Invalid report"
-
-#. placeholder {0}: savingsRate.toFixed(0)
-#. placeholder {1}: target !== null ? ` (target ${target}%)` : ''
-#: src/pages/analytics/reports/InOutReport.tsx
-msgid "Keeping {0}% of income{1}"
-msgstr "Keeping {0}% of income{1}"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Largest first"
-msgstr "Largest first"
-
-#: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Learn ZBB with a short walkthrough"
-msgstr "Learn ZBB with a short walkthrough"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Line"
-msgstr "Line"
-
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Measure"
-msgstr "Measure"
-
-#: src/pages/analytics/reports/FlowReport.tsx
-msgid "Money Map spending detail"
-msgstr "Money Map spending detail"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Net (income − spending)"
-msgstr "Net (income − spending)"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Net cash flow by month"
-msgstr "Net cash flow by month"
-
-#: src/pages/analytics/reports/VsExpenseReport.tsx
-msgid "Net per category across months — click any amount to see its transactions"
-msgstr "Net per category across months — click any amount to see its transactions"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "No account"
-msgstr "No account"
-
-#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
-msgid "No matches."
-msgstr "No matches."
-
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "No transactions match this report"
-msgstr "No transactions match this report"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Number of transactions"
-msgstr "Number of transactions"
-
-#: src/pages/explorer-page/hooks/useExplorerState.ts
-msgid "Only read-only queries can run here (SELECT, WITH, EXPLAIN, DESCRIBE, SHOW, PRAGMA)."
-msgstr "Only read-only queries can run here (SELECT, WITH, EXPLAIN, DESCRIBE, SHOW, PRAGMA)."
-
-#: src/pages/analytics/reports/SpendingReport.tsx
-msgid "Other ({foldedCount} more) — inspect"
-msgstr "Other ({foldedCount} more) — inspect"
-
-#. placeholder {0}: collapsedGraph.foldedDestinations.length
-#: src/pages/analytics/reports/FlowReport.tsx
-msgid "Other spending ({0} {dimensionLabel}) — inspect"
-msgstr "Other spending ({0} {dimensionLabel}) — inspect"
-
-#: src/pages/explorer-page/ExplorerPage.tsx
-msgid "Pick what to measure, how to group it and which transactions to include."
-msgstr "Pick what to measure, how to group it and which transactions to include."
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Pie"
-msgstr "Pie"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Quarter"
-msgstr "Quarter"
-
-#: src/pages/explorer-page/hooks/useExplorerState.ts
-#~ msgid "Query executed successfully"
-#~ msgstr "Query executed successfully"
-
-#: src/features/reports/ui/report-builder/useReportBuilderQuery.ts
-msgid "Query failed"
-msgstr "Query failed"
-
-#: src/pages/explorer-page/ExplorerPage.tsx
-msgid "Report editor"
-msgstr "Report editor"
-
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-msgid "Report saved"
-msgstr "Report saved"
-
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-msgid "Report updated"
-msgstr "Report updated"
-
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Running report…"
-msgstr "Running report…"
-
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-msgid "Save and pin"
-msgstr "Save and pin"
-
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Save report"
-msgstr "Save report"
-
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-msgid "Saved reports appear under Reports and can be pinned to a dashboard. You can reopen them in the builder at any time."
-msgstr "Saved reports appear under Reports and can be pinned to a dashboard. You can reopen them in the builder at any time."
-
-#: src/pages/analytics/reports/ScenarioReport.tsx
-msgid "Scenario Planner"
-msgstr "Scenario Planner"
-
-#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
-msgid "Search…"
-msgstr "Search…"
-
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Select fallback account"
-msgstr "Select fallback account"
-
-#: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Set up accounts & envelopes by hand"
-msgstr "Set up accounts & envelopes by hand"
-
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Show top"
-msgstr "Show top"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Single number"
-msgstr "Single number"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Smallest first"
-msgstr "Smallest first"
-
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Sort"
-msgstr "Sort"
-
-#. placeholder {0}: Math.abs(savingsRate).toFixed(0)
-#: src/pages/analytics/reports/InOutReport.tsx
-msgid "Spending {0}% more than income"
-msgstr "Spending {0}% more than income"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Spending by category (last 12 months)"
-msgstr "Spending by category (last 12 months)"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Spending by label"
-msgstr "Spending by label"
-
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Split by"
-msgstr "Split by"
-
-#: src/pages/explorer-page/ExplorerPage.tsx
-msgid "SQL (advanced)"
-msgstr "SQL (advanced)"
-
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Start from a template"
-msgstr "Start from a template"
-
-#: src/pages/analytics/reports/InOutReport.tsx
-msgid "Target<0/>%"
-msgstr "Target<0/>%"
-
-#: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
-msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
-msgstr "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
-
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "This report could not be run"
-msgstr "This report could not be run"
-
-#. placeholder {0}: shortMonthLabel(scenario.breakMonthKey)
-#. placeholder {1}: breakBeyondChart ? t` (beyond the charted window)` : ''
-#: src/pages/analytics/reports/ScenarioReport.tsx
-msgid "This scenario breaks in {0}{1}"
-msgstr "This scenario breaks in {0}{1}"
-
-#: src/pages/analytics/reports/SpendingReport.tsx
-msgid "top {MAX_SLICES} + Other"
-msgstr "top {MAX_SLICES} + Other"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Top payees"
-msgstr "Top payees"
-
-#. placeholder {0}: columnMapping.account
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Transactions will use accounts from the \"{0}\" column. If an account name doesn't match any existing account, you'll need to select a default account below:"
-msgstr "Transactions will use accounts from the \"{0}\" column. If an account name doesn't match any existing account, you'll need to select a default account below:"
-
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Try a longer date range or remove some filters."
-msgstr "Try a longer date range or remove some filters."
-
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Update report"
-msgstr "Update report"
-
-#: src/pages/analytics/reports/WealthReport.tsx
-msgid "Wealth chart mode"
-msgstr "Wealth chart mode"
-
-#: src/pages/analytics/AnalyticsPage.tsx
-msgid "What if?"
-msgstr "What if?"
-
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "What to show"
-msgstr "What to show"
-
-#: src/pages/analytics/reports/PlanRealityReport.tsx
-msgid "What you assigned vs what actually happened — only possible because you budget"
-msgstr "What you assigned vs what actually happened — only possible because you budget"
-
-#: src/pages/analytics/reports/WealthReport.tsx
-msgid "What you own, what you owe, and where it's heading"
-msgstr "What you own, what you owe, and where it's heading"
-
-#: src/pages/analytics/AnalyticsPage.tsx
-msgid "Where does it go?"
-msgstr "Where does it go?"
-
-#: src/pages/analytics/reports/SpendingReport.tsx
-msgid "Where the money goes"
-msgstr "Where the money goes"
-
-#: src/pages/analytics/AnalyticsPage.tsx
-msgid "Within our means?"
-msgstr "Within our means?"
-
-#: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Year"
-msgstr "Year"
