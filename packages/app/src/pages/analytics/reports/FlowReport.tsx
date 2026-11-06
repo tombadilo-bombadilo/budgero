@@ -14,7 +14,7 @@ import {
 import type { AnalyticsData } from '../useAnalyticsData';
 import {
   inkOnFill,
-  shortMonthLabel,
+  longMonthLabel,
   tooltipBase,
   tooltipHtml,
   useMoneyFormatters,
@@ -433,7 +433,7 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
     };
   });
   const tableTotal = destinationRows.reduce((sum, row) => sum + row.value, 0);
-  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: shortMonthLabel };
+  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: longMonthLabel };
 
   return (
     <ReportLayout

@@ -12,11 +12,12 @@ import {
 import { spendingInsights } from '../insights';
 import type { AnalyticsData } from '../useAnalyticsData';
 import {
-  BASE_GRID,
   BAR_MAX_WIDTH,
+  BASE_GRID,
   inkOnFill,
-  monthAxis,
+  longMonthLabel,
   moneyAxis,
+  monthAxis,
   shortMonthLabel,
   tooltipBase,
   tooltipHtml,
@@ -160,7 +161,7 @@ export function SpendingReport({ data, months }: SpendingReportProps) {
     () =>
       spendingInsights(trendSeries, {
         money: (milli) => money.amount(milli),
-        monthLabel: shortMonthLabel,
+        monthLabel: longMonthLabel,
       }),
     [trendSeries, money]
   );
@@ -308,7 +309,7 @@ export function SpendingReport({ data, months }: SpendingReportProps) {
       firstMonth: months[0] ?? null,
       top: top && total > 0 ? { name: top.name, share: top.total / total } : null,
     },
-    { money: (milli) => money.amount(milli), monthLabel: shortMonthLabel }
+    { money: (milli) => money.amount(milli), monthLabel: longMonthLabel }
   );
 
   return (

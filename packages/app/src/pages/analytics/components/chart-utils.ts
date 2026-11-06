@@ -68,6 +68,11 @@ export function shortMonthLabel(monthKey: string): string {
   return formatMonthLabel(monthKey, { month: 'short', year: '2-digit' });
 }
 
+/** Month for sentences ("since December 2025"): "Dec 25" reads like a date there. */
+export function longMonthLabel(monthKey: string): string {
+  return formatMonthLabel(monthKey, { month: 'long', year: 'numeric' });
+}
+
 /** Category (month) axis with hairline baseline and muted labels. */
 export function monthAxis(months: string[], chrome: ChartChrome) {
   return {
