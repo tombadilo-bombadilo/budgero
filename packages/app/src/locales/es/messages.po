@@ -183,7 +183,7 @@ msgstr "(Obligatorio - o usa InflowConverted/OutflowConverted)"
 msgid "(Required)"
 msgstr "(Obligatorio)"
 
-#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+#: src/features/reports/ui/notebook/FilterEditor.tsx
 msgid "(selected)"
 msgstr "(seleccionado)"
 
@@ -758,8 +758,8 @@ msgstr "{0} supera su asignación casi todos los meses — {1} de {2} meses plan
 
 #. placeholder {0}: selected.length
 #: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
-msgid "{0} selected"
-msgstr "{0} seleccionados"
+#~ msgid "{0} selected"
+#~ msgstr "{0} seleccionados"
 
 #. placeholder {0}: selectedCategory.name
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
@@ -949,8 +949,8 @@ msgid "{0}Undo changes"
 msgstr "{0}Deshacer cambios"
 
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "{activeFilters} active"
-msgstr "{activeFilters} activos"
+#~ msgid "{activeFilters} active"
+#~ msgstr "{activeFilters} activos"
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
 msgid "{ccCategoryName} payments"
@@ -1074,9 +1074,21 @@ msgstr "Desglose: {drilldownTitle} · {drilldownItemLabel}"
 msgid "{duration} mo"
 msgstr "{duration} meses"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{field}: {bucket}"
+msgstr "{field}: {bucket}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{first}, {second} and {more} more"
+msgstr "{first}, {second} y {more} más"
+
 #: src/app/startup/screens.tsx
 msgid "{first}'s Budget Space"
 msgstr "Espacio de presupuesto de {first}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{firstGroup} and {secondGroup}"
+msgstr "{firstGroup} y {secondGroup}"
 
 #: src/pages/analytics/components/GoalFundingList.tsx
 msgid "{funded} of {target}"
@@ -1120,9 +1132,21 @@ msgstr "Entraron {incomeText} y salieron {spent}: {gap} salieron de tus ahorros.
 msgid "{incomeText} came in and {spent} went out — you kept {rate}%."
 msgstr "Entraron {incomeText} y salieron {spent}: te quedaste con el {rate}%."
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "{label} granularity"
+msgstr "Granularidad de {label}"
+
 #: src/pages/settings/push-api/usePushApiState.ts
 msgid "{label} ID copied: {id}"
 msgstr "ID de {label} copiado: {id}"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "{label}: ascending. Switch to descending"
+msgstr "{label}: ascendente. Cambiar a descendente"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "{label}: descending. Switch to ascending"
+msgstr "{label}: descendente. Cambiar a ascendente"
 
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "{laterChanges, plural, one {Discards the # change made after it, imports included.} other {Discards the # changes made after it, imports included.}}"
@@ -1141,8 +1165,20 @@ msgid "{matching, plural, one {Match # transaction} other {Match # transactions}
 msgstr "{matching, plural, one {Emparejar # transacción} other {Emparejar # transacciones}}"
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "{measure} by {dimension}"
-msgstr "{measure} por {dimension}"
+#~ msgid "{measure} by {dimension}"
+#~ msgstr "{measure} por {dimension}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{metric} and {secondMetric}"
+msgstr "{metric} y {secondMetric}"
+
+#: src/features/reports/ui/notebook/QuestionVisualization.tsx
+msgid "{metricName} chart"
+msgstr "Gráfico: {metricName}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{metrics} by {by}"
+msgstr "{metrics} por {by}"
 
 #: src/pages/accounts/AccountsPage.tsx
 msgid "{months, plural, one {# month} other {# months}}"
@@ -1156,6 +1192,30 @@ msgstr "{monthsRemaining} meses restantes"
 msgid "{moved, plural, one {{revalued, plural, one {# rate shifted, # account revalued.} other {# rate shifted, # accounts revalued.}}} other {{revalued, plural, one {# rates shifted, # account revalued.} other {# rates shifted, # accounts revalued.}}}}"
 msgstr "{moved, plural, one {{revalued, plural, one {# tipo modificado, # cuenta revalorizada.} other {# tipo modificado, # cuentas revalorizadas.}}} other {{revalued, plural, one {# tipos modificados, # cuenta revalorizada.} other {# tipos modificados, # cuentas revalorizadas.}}}}"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name} < {first}"
+msgstr "{name} < {first}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name} > {first}"
+msgstr "{name} > {first}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name} after {firstDate}"
+msgstr "{name} después del {firstDate}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name} before {firstDate}"
+msgstr "{name} antes del {firstDate}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name} between {first} and {second}"
+msgstr "{name} entre {first} y {second}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name} contains “{first}”"
+msgstr "{name} contiene «{first}»"
+
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "{name} has been added successfully."
 msgstr "{name} se ha añadido correctamente."
@@ -1163,6 +1223,70 @@ msgstr "{name} se ha añadido correctamente."
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "{name} has been updated successfully."
 msgstr "{name} se ha actualizado correctamente."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name} is {list}"
+msgstr "{name} es {list}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name} is empty"
+msgstr "{name} está vacío"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name} is not {list}"
+msgstr "{name} no es {list}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name} is not empty"
+msgstr "{name} no está vacío"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name} starts with “{first}”"
+msgstr "{name} empieza por «{first}»"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name}: {firstDate}"
+msgstr "{name}: {firstDate}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name}: {firstDate} – {secondDate}"
+msgstr "{name}: {firstDate} – {secondDate}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name}: last {amount} {unit}"
+msgstr "{name}: últimos {amount} {unit}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name}: no"
+msgstr "{name}: no"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name}: previous {amount} full {unit}"
+msgstr "{name}: {amount} {unit} completos anteriores"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name}: this month"
+msgstr "{name}: este mes"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name}: this quarter"
+msgstr "{name}: este trimestre"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name}: this week"
+msgstr "{name}: esta semana"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name}: this year"
+msgstr "{name}: este año"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name}: today"
+msgstr "{name}: hoy"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{name}: yes"
+msgstr "{name}: sí"
 
 #. placeholder {0}: parts.join(', ')
 #. placeholder {1}: parts.join(', ')
@@ -1221,6 +1345,10 @@ msgstr "{restoredCount, plural, one {Restaurada # transacción.} other {Restaura
 msgid "{revalued, plural, one {Today's cache refetched; # account revalued.} other {Today's cache refetched; # accounts revalued.}}"
 msgstr "{revalued, plural, one {Caché de hoy actualizada; # cuenta revalorizada.} other {Caché de hoy actualizada; # cuentas revalorizadas.}}"
 
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "{rowCountText} rows"
+msgstr "{rowCountText} filas"
+
 #. placeholder {0}: columnMapping.account
 #. placeholder {1}: columnMapping.account
 #: src/features/import/ui/steps/ConfigureStep.tsx
@@ -1232,6 +1360,7 @@ msgstr "{rowsWithoutAccount, plural, one {Una fila no tiene valor en «{0}». Va
 msgid "{selectedCount} of {0} selected to apply"
 msgstr "{selectedCount} de {0} seleccionados para aplicar"
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 msgid "{selectedCount} selected"
 msgstr "{selectedCount} seleccionados"
@@ -1671,7 +1800,6 @@ msgstr "<0/>Tipos de cambio personalizados"
 
 #: src/pages/admin/sql-explorer/SchemaSidebar.tsx
 #: src/pages/explorer-page/components/SchemaSidebar.tsx
-#: src/pages/explorer-page/ExplorerPage.tsx
 msgid "<0/>Database Schema"
 msgstr "<0/>Esquema de base de datos"
 
@@ -1739,7 +1867,6 @@ msgstr "<0/>Transacciones duplicadas"
 
 #: src/features/budget-planning/ui/category-row/CategoryRowHeader.tsx
 #: src/features/budget-planning/ui/category-row/CategoryRowTableLayout.tsx
-#: src/pages/explorer-page/components/ReportsPanel.tsx
 msgid "<0/>Edit"
 msgstr "<0/>Editar"
 
@@ -1988,8 +2115,8 @@ msgid "<0/>Overspent categories"
 msgstr "<0/>Categorías excedidas"
 
 #: src/pages/explorer-page/components/ReportsPanel.tsx
-msgid "<0/>Pin chart"
-msgstr "<0/>Fijar gráfico"
+#~ msgid "<0/>Pin chart"
+#~ msgstr "<0/>Fijar gráfico"
 
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 #~ msgid "<0/>Plan ahead with recurring items"
@@ -2671,6 +2798,11 @@ msgstr "1 es la prioridad más alta. Las categorías nuevas empiezan en 3 — No
 msgid "1 month"
 msgstr "1 mes"
 
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+#: src/features/reports/ui/notebook/QuestionTable.tsx
+msgid "1 row"
+msgstr "1 fila"
+
 #: src/pages/accounts/AccountsPage.tsx
 msgid "1 week"
 msgstr "1 semana"
@@ -2883,7 +3015,7 @@ msgstr "Acceso hasta:"
 
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
@@ -2968,6 +3100,10 @@ msgstr "Cuenta conciliada correctamente. Se ha corregido un resto de redondeo de
 msgid "Account settings need a live connection to Clerk. Please reconnect to the internet and try again."
 msgstr "Los ajustes de la cuenta necesitan una conexión activa a Clerk. Vuelve a conectarte a internet e inténtalo de nuevo."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Account type"
+msgstr "Tipo de cuenta"
+
 #: src/features/account-management/ui/AddAccountDialog.tsx
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "Account Type"
@@ -2998,7 +3134,7 @@ msgstr "Cuenta<0/>"
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/form/AccountSelect.tsx
 #: src/pages/accounts/AccountsPage.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
@@ -3119,6 +3255,7 @@ msgstr "Suscriptores activos"
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/goal-management/lib/core-goal-text.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/admin/admin-users/UserDetailsDialog.tsx
 msgid "Activity"
 msgstr "Actividad"
@@ -3156,6 +3293,10 @@ msgstr "Añade una nota para esta transferencia..."
 #: src/features/category-management/ui/CategoryNoteEditor.tsx
 msgid "Add a note…"
 msgstr "Añadir una nota…"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Add a step"
+msgstr "Añadir un paso"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "Add a transaction"
@@ -3226,6 +3367,15 @@ msgstr "Añadir tipo de cambio"
 msgid "Add Expense"
 msgstr "Añadir gasto"
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Add filter"
+msgstr "Añadir filtro"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Add grouping"
+msgstr "Añadir agrupación"
+
 #: src/features/transactions/ui/add-transaction/TransactionFormActions.tsx
 msgid "Add Income"
 msgstr "Añadir ingreso"
@@ -3233,6 +3383,10 @@ msgstr "Añadir ingreso"
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Add line"
 msgstr "Añadir línea"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Add metric"
+msgstr "Añadir métrica"
 
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Add New Account"
@@ -3245,6 +3399,11 @@ msgstr "Añade nuevos beneficiarios, renombra los existentes o elimínalos de tu
 #: src/features/transactions/ui/add-transaction/TransactionFormHeader.tsx
 msgid "Add New Transaction"
 msgstr "Añadir una transacción"
+
+#: src/pages/explorer-page/SqlQuestionView.tsx
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "Add to dashboard"
+msgstr "Añadir al panel"
 
 #: src/app/layout/desktop-shell/HeaderBar.tsx
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
@@ -3293,6 +3452,10 @@ msgstr "Añade tus primeras cuentas"
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "Add your YNAB export to continue."
 msgstr "Añade tu exportación de YNAB para continuar."
+
+#: src/pages/reports/question/usePinToDashboard.tsx
+msgid "Added to dashboard"
+msgstr "Añadido al panel"
 
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "Added to every monthly payment throughout the plan."
@@ -3357,6 +3520,10 @@ msgstr "Panel de administración"
 msgid "Admins"
 msgstr "Administradores"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "After"
+msgstr "Después de"
+
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 msgid "After N occurrences"
 msgstr "Después de N repeticiones"
@@ -3406,8 +3573,7 @@ msgstr "Algoritmo"
 
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 #: src/features/import/ui/steps/PreviewStep.tsx
-#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+#: src/pages/reports/ReportsHomePage.tsx
 msgid "All"
 msgstr "Todos"
 
@@ -3494,6 +3660,10 @@ msgstr "Todas las cuentas en el presupuesto"
 msgid "All payees"
 msgstr "Todos los beneficiarios"
 
+#: src/shared/model/nav-registry.ts
+msgid "All reports"
+msgstr "Todos los informes"
+
 #: src/pages/accounts/components/RecurringTransactionsPanel.tsx
 #~ msgid "All set - nothing scheduled for this account right now."
 #~ msgstr "Todo listo: no hay nada programado para esta cuenta ahora mismo."
@@ -3502,7 +3672,6 @@ msgstr "Todos los beneficiarios"
 msgid "all time"
 msgstr "todo el histórico"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/accounts/components/ValueChangeStat.tsx
 #: src/pages/analytics/analytics-state.ts
 msgid "All time"
@@ -3603,8 +3772,8 @@ msgid "Allow this user to log in again and resume normal access."
 msgstr "Permitir a este usuario iniciar sesión de nuevo y reanudar el acceso normal."
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Alphabetical"
-msgstr "Alfabético"
+#~ msgid "Alphabetical"
+#~ msgstr "Alfabético"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Already have an account? <0>Sign in</0>"
@@ -3657,6 +3826,7 @@ msgstr "Cuadro de amortización"
 #: src/features/budget-planning/ui/category-row/CoverOverspendingPopover.tsx
 #: src/features/budget-planning/ui/category-row/MoveMoneyPopover.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetCategoryRow.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
@@ -3760,8 +3930,8 @@ msgid "Annual percentage rate, e.g., 5 for 5%."
 msgstr "Tasa anual equivalente, p. ej., 5 para 5%."
 
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Any date"
-msgstr "Cualquier fecha"
+#~ msgid "Any date"
+#~ msgstr "Cualquier fecha"
 
 #: src/pages/settings/ai/ai-settings.constants.ts
 msgid "Any OpenAI-compatible API"
@@ -3923,7 +4093,7 @@ msgstr "¿Seguro que quieres eliminar \"{0}\"? Esta acción no se puede deshacer
 msgid "Are you sure you want to reveal the key?"
 msgstr "¿Seguro que quieres mostrar la clave?"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Area"
 msgstr "Áreas"
 
@@ -3932,6 +4102,10 @@ msgstr "Áreas"
 #: src/shared/lib/analytics/visualization-labels.ts
 msgid "Area Chart"
 msgstr "Gráfico de áreas"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Ascending"
+msgstr "Ascendente"
 
 #: src/features/chat/ui/chat-panel/ChatComposer.tsx
 msgid "Ask about your budget...  (Shift+Enter for a new line)"
@@ -3948,6 +4122,10 @@ msgstr "Pregunta a todos los activos en los últimos 30 días qué funciona y qu
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "Ask the owner to resubscribe"
 msgstr "Pide al propietario que vuelva a suscribirse"
+
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "Ask your own: pick data, filter it, summarize it and save it to reuse or pin to a dashboard."
+msgstr "Haz la tuya: elige datos, fíltralos, resúmelos y guárdalos para reutilizarlos o fijarlos en un panel."
 
 #: src/pages/accounts/components/AssetLiabilityHistoryChart.tsx
 msgid "Asset & Liability History (24 months)"
@@ -3989,6 +4167,7 @@ msgstr "Asigna esto para alcanzar el objetivo"
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Assigned"
@@ -4003,6 +4182,10 @@ msgstr "Asignado {0} de Por asignar."
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 msgid "Assigned amount ({0})"
 msgstr "Importe asignado ({0})"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Assigned and activity per category per month."
+msgstr "Asignado y actividad por categoría y mes."
 
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Assigned in future months"
@@ -4180,6 +4363,10 @@ msgstr "Detalles del cálculo del disponible"
 msgid "Available for payment:"
 msgstr "Disponible para pago:"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Available isn’t offered here: it depends on carry-over and credit card rules that only the Budget page applies."
+msgstr "Aquí no se ofrece el disponible: depende de reglas de arrastre y de tarjetas de crédito que solo aplica la página de presupuesto."
+
 #. placeholder {0}: formatAmount(Math.max(0, available || 0))
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
 msgid "Available to cover: {0}"
@@ -4204,13 +4391,21 @@ msgstr "Media"
 msgid "Average monthly spend: <0>{0}</0>"
 msgstr "Gasto medio mensual: <0>{0}</0>"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Average of {field}"
+msgstr "Promedio de {field}"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Average Saved"
 msgstr "Media ahorrada"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Average spending per transaction"
+msgstr "Gasto medio por transacción"
+
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Average transaction (spending)"
-msgstr "Transacción media (gastos)"
+#~ msgid "Average transaction (spending)"
+#~ msgstr "Transacción media (gastos)"
 
 #. placeholder {0}: money.tile(Math.round(totalSpending / monthCount))
 #: src/pages/analytics/reports/InOutReport.tsx
@@ -4273,12 +4468,17 @@ msgstr "Copia de seguridad guardada, pero falló el registro en el servidor"
 msgid "Badge Icon"
 msgstr "Icono de insignia"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/accounts/AccountPage.tsx
 #: src/pages/accounts/components/AccountSummaryCards.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
 #: src/widgets/dashboard/BalanceAreaChart.tsx
 msgid "Balance"
 msgstr "Saldo"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Balance (account currency)"
+msgstr "Saldo (moneda de la cuenta)"
 
 #. placeholder {0}: payload.horizon
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -4372,7 +4572,7 @@ msgstr "Los bancos suelen mostrar un cargo pendiente y el definitivo con fechas 
 msgid "Banks often list a pending charge and the settled one on different dates. This flags transactions in the same account with the same amount up to {days} days apart."
 msgstr "Los bancos suelen mostrar un cargo pendiente y el definitivo con fechas distintas. Se marcan transacciones de la misma cuenta con el mismo importe y hasta {days} días de diferencia."
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Bar"
 msgstr "Barras"
 
@@ -4390,6 +4590,14 @@ msgstr "Base"
 #: src/features/import/lib/client.ts
 #~ msgid "Basic {0}"
 #~ msgstr "Básico {0}"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Basic metrics"
+msgstr "Métricas básicas"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Before"
+msgstr "Antes de"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Before we build anything, here’s how Budgero thinks about money."
@@ -4419,6 +4627,10 @@ msgstr "Beta Tester"
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Beta Testers"
 msgstr "Beta testers"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Between"
+msgstr "Entre"
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "beyond charted window"
@@ -4684,6 +4896,7 @@ msgstr "Importes del lado de Budgero que podrían explicar estas diferencias. So
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/startup/StartupStepper.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Budget"
 msgstr "Presupuesto"
@@ -4728,6 +4941,10 @@ msgstr "Icono de presupuesto"
 #: src/pages/settings/AppearancePage.tsx
 msgid "Budget layout"
 msgstr "Diseño del presupuesto"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Budget metrics"
+msgstr "Métricas del presupuesto"
 
 #: src/features/budget-management/ui/create-budget-form/ManualBudgetTab.tsx
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
@@ -4834,8 +5051,12 @@ msgid "Build consistent savings habits"
 msgstr "Crea hábitos de ahorro constantes"
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Build dashboard layouts from Explorer charts. Drag to reorder, resize on desktop, and use size presets on mobile."
-msgstr "Crea diseños de panel desde los gráficos de Explorer. Arrastra para reordenar, cambia el tamaño en escritorio y usa los ajustes preestablecidos de tamaño en móvil."
+#~ msgid "Build dashboard layouts from Explorer charts. Drag to reorder, resize on desktop, and use size presets on mobile."
+#~ msgstr "Crea diseños de panel desde los gráficos de Explorer. Arrastra para reordenar, cambia el tamaño en escritorio y usa los ajustes preestablecidos de tamaño en móvil."
+
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Build dashboard layouts from saved questions. Drag to reorder, resize on desktop, and use size presets on mobile."
+msgstr "Crea paneles a partir de preguntas guardadas. Arrastra para reordenar, cambia el tamaño en escritorio y usa tamaños predefinidos en el móvil."
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Build metadata for support or troubleshooting."
@@ -4847,8 +5068,8 @@ msgstr "Acumular hasta un importe disponible, sin fecha ni repetición"
 
 #: src/pages/explorer-page/components/ReportsPanel.tsx
 #: src/pages/explorer-page/ExplorerPage.tsx
-msgid "Builder"
-msgstr "Generador"
+#~ msgid "Builder"
+#~ msgstr "Generador"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Building habits takes time - keep trying!"
@@ -4875,6 +5096,10 @@ msgstr "Autobús y transporte"
 #: src/features/budget-management/model/icon-options.ts
 msgid "Business"
 msgstr "Negocios"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "by"
+msgstr "por"
 
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "By"
@@ -4931,7 +5156,8 @@ msgstr "Dólar canadiense"
 #: src/features/category-management/ui/CreateCategoryDialog.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 #: src/features/currencies/ui/ManualRatePrompt.tsx
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
@@ -4952,6 +5178,7 @@ msgstr "Dólar canadiense"
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/pages/custom-dashboards/components/PinChartDialog.tsx
 #: src/pages/JoinWorkspacePage.tsx
+#: src/pages/reports/question/NotebookQuestionView.tsx
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 #: src/pages/settings/components/WorkspaceRow.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
@@ -5055,7 +5282,6 @@ msgid "categories"
 msgstr "categorías"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
@@ -5089,7 +5315,7 @@ msgstr "Categorías que coinciden con \"{0}\""
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/pages/analytics/components/TargetTable.tsx
@@ -5114,17 +5340,17 @@ msgid "Category deleted"
 msgstr "Categoría eliminada"
 
 #: src/features/category-management/ui/CreateCategoryDialog.tsx
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Category group"
 msgstr "Grupo de categorías"
 
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Category groups"
-msgstr "Grupos de categorías"
+#~ msgid "Category groups"
+#~ msgstr "Grupos de categorías"
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Category groups over time"
-msgstr "Grupos de categorías a lo largo del tiempo"
+#~ msgid "Category groups over time"
+#~ msgstr "Grupos de categorías a lo largo del tiempo"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
@@ -5204,6 +5430,10 @@ msgstr "Cambiar moneda"
 msgid "Change Master Password"
 msgstr "Cambiar contraseña maestra"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Change metric: {label}"
+msgstr "Cambiar métrica: {label}"
+
 #: src/shared/ui/MonthPickerPopover.tsx
 msgid "Change month — currently {fullLabel}"
 msgstr "Cambiar mes — actualmente {fullLabel}"
@@ -5256,7 +5486,7 @@ msgstr "Cambios guardados correctamente."
 msgid "Changing..."
 msgstr "Cambiando..."
 
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+#: src/features/reports/ui/notebook/QuestionVisualization.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/custom-dashboards/components/ReportChartSelectFields.tsx
 msgid "Chart"
@@ -5271,8 +5501,8 @@ msgid "Chart data exported to CSV"
 msgstr "Datos del gráfico exportados a CSV"
 
 #: src/pages/explorer-page/ExplorerPage.tsx
-msgid "Chart pinned to dashboard"
-msgstr "Gráfico fijado en el panel"
+#~ msgid "Chart pinned to dashboard"
+#~ msgstr "Gráfico fijado en el panel"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Chart removed from report"
@@ -5282,6 +5512,10 @@ msgstr "Gráfico eliminado del informe"
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Chart title..."
 msgstr "Título del gráfico..."
+
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Chart type"
+msgstr "Tipo de gráfico"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -5412,6 +5646,10 @@ msgstr "Elige una cuenta para la acción de cuenta."
 msgid "Choose another category"
 msgstr "Elige otra categoría"
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "Choose another field"
+msgstr "Elegir otro campo"
+
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 msgid "Choose another income category to receive this category’s transactions and any assignments. Your income totals will stay the same."
 msgstr "Elige otra categoría de ingresos para recibir las transacciones y asignaciones de esta categoría. El total de tus ingresos no cambiará."
@@ -5525,13 +5763,14 @@ msgstr "Clásico"
 msgid "Clean, neutral, out of the way."
 msgstr "Limpio, neutral, discreto."
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
 msgid "Clear"
 msgstr "Borrar"
 
 #: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
-msgid "Clear {label} filter"
-msgstr "Quitar el filtro {label}"
+#~ msgid "Clear {label} filter"
+#~ msgstr "Quitar el filtro {label}"
 
 #: src/features/transactions/ui/SearchActiveFilters.tsx
 msgid "Clear all"
@@ -5562,6 +5801,7 @@ msgstr "Borrar beneficiario"
 msgid "Clear selection"
 msgstr "Limpiar selección"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/ClearedToggle.tsx
 #: src/pages/accounts/AccountPage.tsx
 #: src/pages/accounts/components/AccountSummaryCards.tsx
@@ -5637,8 +5877,8 @@ msgid "Click below and we’ll redeem the invite, decrypt the shared workspace k
 msgstr "Haz clic abajo y canjearemos la invitación, descifraremos la clave del espacio de trabajo compartido en este dispositivo y te llevaremos al presupuesto."
 
 #: src/pages/explorer-page/ExplorerPage.tsx
-msgid "Click on tables and columns in the sidebar to insert them into your query"
-msgstr "Haz clic en las tablas y columnas de la barra lateral para insertarlas en tu consulta"
+#~ msgid "Click on tables and columns in the sidebar to insert them into your query"
+#~ msgstr "Haz clic en las tablas y columnas de la barra lateral para insertarlas en tu consulta"
 
 #. placeholder {0}: visibleSuggestedHeaderIndex !== null && visibleSuggestedHeaderIndex < visibleRawRows.length && t`Row ${visibleSuggestedHeaderIndex + 1} is suggested.`
 #. placeholder {1}: visibleRawRows.length
@@ -5682,10 +5922,10 @@ msgstr "Haz clic en el nombre de tu presupuesto en la esquina superior izquierda
 msgid "Clipboard with checkmarks"
 msgstr "Portapapeles con marcas de verificación"
 
+#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 #: src/features/rules/ui/RuleRunOverlay.tsx
 #: src/pages/admin/sql-explorer/AdminSqlExplorer.tsx
-#: src/pages/explorer-page/components/ReportsPanel.tsx
 #: src/shared/ui/dialog.tsx
 #: src/shared/ui/sheet.tsx
 msgid "Close"
@@ -5694,6 +5934,10 @@ msgstr "Cerrar"
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "Close payment plan"
 msgstr "Cerrar plan de pagos"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Closed"
+msgstr "Cerrada"
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Clothing"
@@ -5777,6 +6021,14 @@ msgstr "Contraer detalles"
 msgid "Collapse sidebar"
 msgstr "Contraer barra lateral"
 
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+msgid "Collection"
+msgstr "Colección"
+
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "Collections"
+msgstr "Colecciones"
+
 #: src/shared/ui/theme-switch.tsx
 msgid "Color mode"
 msgstr "Modo de color"
@@ -5806,6 +6058,14 @@ msgstr "Asignación de columnas"
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Columns"
 msgstr "Columnas"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Columns ({columnCount})"
+msgstr "Columnas ({columnCount})"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Columns to show"
+msgstr "Columnas visibles"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "Come back tomorrow"
@@ -5859,6 +6119,10 @@ msgstr "Completado"
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Composition"
 msgstr "Composición"
+
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "Condition"
+msgstr "Condición"
 
 #: src/features/rules/ui/rule-editor/RuleConditionsEditor.tsx
 msgid "Conditions"
@@ -6011,6 +6275,10 @@ msgstr "Estado de conexión"
 msgid "Consecutive months"
 msgstr "Meses consecutivos"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Contains"
+msgstr "Contiene"
+
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Contents can't be read on this device."
 msgstr "El contenido no se puede leer en este dispositivo."
@@ -6090,6 +6358,10 @@ msgstr "¿Convertir en transferencia?"
 msgid "Convert to regular transaction"
 msgstr "Convertir en transacción normal"
 
+#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
+msgid "Convert to SQL"
+msgstr "Convertir a SQL"
+
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "Convert to transfer"
 msgstr "Convertir en transferencia"
@@ -6106,6 +6378,10 @@ msgstr "Convertida de nuevo en transacción normal"
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "Converted to a transfer with {0}"
 msgstr "Convertida en transferencia con {0}"
+
+#: src/pages/explorer-page/SqlQuestionView.tsx
+msgid "Converted to SQL. Saving replaces the notebook version."
+msgstr "Convertida a SQL. Al guardar se reemplaza la versión del editor visual."
 
 #: src/shared/lib/analytics/klaro-config.ts
 #~ msgid "Cookies on Budgero"
@@ -6125,6 +6401,7 @@ msgid "Copies of this workspace kept by the server, to undo a sync problem."
 msgstr "Copias de este espacio de trabajo que guarda el servidor para deshacer un problema de sincronización."
 
 #: src/features/bank-sync/ui/EnableBankingSetupCard.tsx
+#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Copy"
 msgstr "Copiar"
@@ -6692,6 +6969,7 @@ msgid "Currencies"
 msgstr "Monedas"
 
 #: src/features/currencies/ui/CurrencySelector.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/onboarding/steps/CurrencyStep.tsx
 msgid "Currency"
 msgstr "Moneda"
@@ -6721,6 +6999,7 @@ msgid "Currency rate changes"
 msgstr "Variaciones del tipo de cambio"
 
 #: src/features/analytics/ui/SpendingOverviewContent.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Current"
 msgstr "Actual"
 
@@ -6791,14 +7070,13 @@ msgstr "Cadencia personalizada"
 msgid "Custom Dashboards"
 msgstr "Paneles personalizados"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/analytics/analytics-state.ts
 msgid "Custom range"
 msgstr "Rango personalizado"
 
 #: src/pages/explorer-page/ExplorerPage.tsx
-msgid "Custom reports"
-msgstr "Informes personalizados"
+#~ msgid "Custom reports"
+#~ msgstr "Informes personalizados"
 
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
 msgid "Custom widget title (optional)"
@@ -6888,6 +7166,15 @@ msgstr "Nombre del panel"
 msgid "Dashboard name cannot be empty"
 msgstr "El nombre del panel no puede estar vacío"
 
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "Dashboard widgets that show it will stop working. This can’t be undone."
+msgstr "Los widgets de paneles que la muestran dejarán de funcionar. No se puede deshacer."
+
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "Dashboards"
+msgstr "Paneles"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Data"
 msgstr "Datos"
@@ -6900,6 +7187,10 @@ msgstr "Gestión de datos"
 #: src/pages/admin/admin-users/useAdminUsersState.ts
 msgid "Data reset"
 msgstr "Restablecimiento de datos"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Data source"
+msgstr "Fuente de datos"
 
 #: src/app/layout/AdminSidebar.tsx
 #: src/features/subscription/ui/ExportDataCard.tsx
@@ -6927,7 +7218,7 @@ msgstr "¡Base de datos restaurada correctamente!"
 msgid "Database schema"
 msgstr "Esquema de base de datos"
 
-#: src/pages/explorer-page/ExplorerPage.tsx
+#: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "Database Schema"
 msgstr "Esquema de la base de datos"
 
@@ -6948,6 +7239,8 @@ msgstr "Estadísticas de la base de datos"
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 #: src/features/debt/ui/PayoffPlanSheet.tsx
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 #: src/pages/settings/subscription/InvoicesTable.tsx
 msgid "Date"
@@ -6961,7 +7254,6 @@ msgstr "Formato de fecha"
 msgid "DATE FORMAT"
 msgstr "FORMATO DE FECHA"
 
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/settings/components/DuplicateHintSettingsCard.tsx
 msgid "Date range"
 msgstr "Rango de fechas"
@@ -6991,6 +7283,11 @@ msgstr "Fechas de esta exportación"
 msgid "DAU/MAU"
 msgstr "DAU/MAU"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "day"
+msgstr "día"
+
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/admin/SignupsSection.tsx
 msgid "Day"
 msgstr "Día"
@@ -6998,6 +7295,10 @@ msgstr "Día"
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Day-N window"
 msgstr "Ventana de N días"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "days"
+msgstr "días"
 
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 msgid "Days before the due date; use 0 for the same day."
@@ -7112,7 +7413,7 @@ msgstr "Supr"
 #: src/features/transactions/ui/DeleteTransactionDialog.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
-#: src/pages/explorer-page/components/ReportsPanel.tsx
+#: src/pages/reports/question/NotebookQuestionView.tsx
 #: src/pages/settings/automation-rules/RuleRow.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
@@ -7192,6 +7493,10 @@ msgstr "Eliminar de forma permanente"
 msgid "Delete permanently ({0})"
 msgstr "Eliminar de forma permanente ({0})"
 
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "Delete question"
+msgstr "Eliminar pregunta"
+
 #: src/pages/settings/automation-rules/RuleRow.tsx
 msgid "Delete rule"
 msgstr "Eliminar regla"
@@ -7208,6 +7513,10 @@ msgstr "Eliminar las filas seleccionadas"
 #: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
 msgid "Delete the category \"{pendingName}\"?"
 msgstr "¿Eliminar la categoría \"{pendingName}\"?"
+
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "Delete this question?"
+msgstr "¿Eliminar esta pregunta?"
 
 #: src/features/transactions/ui/DeleteTransactionDialog.tsx
 msgid "Delete this transaction?"
@@ -7264,12 +7573,16 @@ msgstr "Diseño de tarjetas más denso con resúmenes de columnas para una revis
 msgid "Deployment details for this binary."
 msgstr "Detalles de despliegue para este binario."
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Descending"
+msgstr "Descendente"
+
 #: src/features/rules/ui/rule-editor/useRuleEditorState.ts
 msgid "Describe the conditions and actions you want Budgero to apply automatically."
 msgstr "Describe las condiciones y acciones que quieres que Budgero aplique automáticamente."
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/rules/ui/rule-editor/RuleMetadataForm.tsx
 msgid "Description"
@@ -7418,9 +7731,17 @@ msgstr "Mostrar el botón flotante de chat"
 msgid "Displays the mobile sidebar."
 msgstr "Muestra la barra lateral en el móvil."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Distinct {field}"
+msgstr "{field} distintos"
+
 #: src/pages/admin/SelfHostInstallsSection.tsx
 msgid "Distinct servers sending the update check each week (UTC, Monday start). Installs with the check turned off aren’t counted."
 msgstr "Servidores distintos que envían la comprobación de actualizaciones cada semana (UTC, empezando el lunes). No se cuentan las instalaciones con la comprobación desactivada."
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Distinct values"
+msgstr "Valores distintos"
 
 #: src/pages/analytics/reports/InOutReport.tsx
 #~ msgid "Do we live within our means?"
@@ -7629,6 +7950,10 @@ msgstr "ej., Compra"
 msgid "e.g., Monthly Bills"
 msgstr "ej., Facturas mensuales"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Each account with its balance from transactions."
+msgstr "Cada cuenta con su saldo calculado a partir de las transacciones."
+
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Each category group on the Planning page shows its share of everything assigned in the selected month, next to its allocated total."
 msgstr "En la página de planificación, cada grupo de categorías muestra, junto al total asignado, su proporción de todo lo asignado en el mes seleccionado."
@@ -7693,8 +8018,8 @@ msgid "Edit Account"
 msgstr "Editar cuenta"
 
 #: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Edit as SQL"
-msgstr "Editar como SQL"
+#~ msgid "Edit as SQL"
+#~ msgstr "Editar como SQL"
 
 #: src/features/rules/ui/rule-editor/useRuleEditorState.ts
 msgid "Edit automation rule"
@@ -7724,6 +8049,10 @@ msgstr "Editar fecha"
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Edit Exchange Rate"
 msgstr "Editar tipo de cambio"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Edit filter: {label}"
+msgstr "Editar filtro: {label}"
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Edit Goal"
@@ -7779,8 +8108,8 @@ msgid "Edit Warranty"
 msgstr "Editar garantía"
 
 #: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Editing saved report"
-msgstr "Editando un informe guardado"
+#~ msgid "Editing saved report"
+#~ msgstr "Editando un informe guardado"
 
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Editing transfer splits is not supported."
@@ -7941,6 +8270,10 @@ msgstr "Introduce un nombre de categoría."
 #: src/pages/settings/LabelsPage.tsx
 msgid "Enter a label name"
 msgstr "Introduce un nombre de etiqueta"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Enter a limit"
+msgstr "Introduce un límite"
 
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "Enter a memo value for the memo action."
@@ -8158,6 +8491,10 @@ msgstr "Cada 2 semanas"
 msgid "Every 6 months"
 msgstr "Cada 6 meses"
 
+#: src/pages/analytics/report-questions.ts
+msgid "Every category and month in one grid"
+msgstr "Cada categoría y cada mes en una sola tabla"
+
 #: src/pages/analytics/AnalyticsPage.tsx
 #~ msgid "Every category, every month"
 #~ msgstr "Cada categoría, cada mes"
@@ -8181,6 +8518,10 @@ msgstr "Cada dólar tiene su trabajo"
 #: src/pages/analytics/reports/FlowReport.tsx
 #~ msgid "Every stream from income to {dimensionLabel}"
 #~ msgstr "Todos los flujos de ingresos hacia {dimensionLabel}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Every transaction; split transactions count once per category."
+msgstr "Cada transacción; las transacciones divididas cuentan una vez por categoría."
 
 #: src/pages/admin/admin-users/user-details/WorkspacesTab.tsx
 msgid "Every workspace this account belongs to, including invitation status."
@@ -8338,8 +8679,8 @@ msgstr "Explora proyecciones detalladas de amortización. Ajusta la TAE, el pago
 #: src/app/layout/desktop-shell/constants.ts
 #: src/shared/model/nav-registry.ts
 #: src/widgets/command-palette/CommandPalette.tsx
-msgid "Explorer"
-msgstr "Explorador"
+#~ msgid "Explorer"
+#~ msgstr "Explorador"
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Export backups, restore snapshots, and manage your budget data"
@@ -8471,6 +8812,7 @@ msgstr "No se pudo copiar el ID"
 msgid "Failed to copy key"
 msgstr "No se pudo copiar la clave"
 
+#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
 #: src/pages/explorer-page/hooks/useExplorerState.ts
 msgid "Failed to copy to clipboard. Please try again."
 msgstr "No se pudo copiar al portapapeles. Inténtalo de nuevo."
@@ -8540,6 +8882,10 @@ msgstr "No se ha podido eliminar el panel"
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "Failed to delete goal"
 msgstr "Error al eliminar el objetivo"
+
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "Failed to delete the question"
+msgstr "No se pudo eliminar la pregunta"
 
 #: src/features/transactions/api/useDeleteSelected.ts
 msgid "Failed to delete transactions"
@@ -8730,12 +9076,16 @@ msgid "Failed to save recurring transaction"
 msgstr "No se pudo guardar la transacción recurrente"
 
 #: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-msgid "Failed to save report"
-msgstr "No se pudo guardar el informe"
+#~ msgid "Failed to save report"
+#~ msgstr "No se pudo guardar el informe"
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Failed to save split transaction"
 msgstr "No se ha podido guardar la transacción dividida"
+
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+msgid "Failed to save the question"
+msgstr "No se pudo guardar la pregunta"
 
 #: src/pages/warranties/WarrantiesPage.tsx
 msgid "Failed to save warranty"
@@ -8837,8 +9187,8 @@ msgid "Fast and accurate"
 msgstr "Rápido y preciso"
 
 #: src/pages/explorer-page/components/ReportsPanel.tsx
-msgid "Favorite"
-msgstr "Favorito"
+#~ msgid "Favorite"
+#~ msgstr "Favorito"
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Favorites"
@@ -8885,12 +9235,17 @@ msgid "Fill the category from the payee's last transaction"
 msgstr "Rellenar la categoría de la última transacción del beneficiario"
 
 #: src/features/budget-planning/ui/SearchAndFilterControls.tsx
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Filter"
 msgstr "Filtrar"
 
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Filter by name, username, or ID."
 msgstr "Filtrar por nombre, usuario o ID."
+
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "Filter by…"
+msgstr "Filtrar por…"
 
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Filter import rows"
@@ -8901,12 +9256,20 @@ msgid "Filter series..."
 msgstr "Filtrar series..."
 
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Filters"
-msgstr "Filtros"
+#~ msgid "Filters"
+#~ msgstr "Filtros"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Final month! Allocate {stillNeeded} to complete"
 msgstr "¡Último mes! Asigna {stillNeeded} para completarlo"
+
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "Find a field"
+msgstr "Buscar un campo"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Find a metric"
+msgstr "Buscar una métrica"
 
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 msgid "Find the IDs you need for API requests. Click any ID to copy it. Payees are referenced by name, not id."
@@ -8943,6 +9306,10 @@ msgstr "Firefox no expone la API «beforeinstallprompt» en escritorio. Usa el m
 #: src/pages/settings/AppearancePage.tsx
 msgid "Firefox does not expose the install prompt on desktop. Use the menu instructions below:"
 msgstr "Firefox no muestra el aviso de instalación en escritorio. Sigue las instrucciones del menú a continuación:"
+
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "First {rowCountText} of {totalText} rows"
+msgstr "Primeras {rowCountText} de {totalText} filas"
 
 #: src/pages/settings/components/CalendarSettingsCard.tsx
 msgid "First day of the week"
@@ -9018,7 +9385,7 @@ msgid "Forecast: OLS over {0} months, slope {1}/mo ± {2}, p {3}, R² {4}. Shade
 msgstr "Previsión: MCO sobre {0} meses, pendiente {1}/mes ± {2}, p {3}, R² {4}. La banda sombreada es el intervalo de predicción del 95 %."
 
 #: src/pages/admin/sql-explorer/QueryCard.tsx
-#: src/pages/explorer-page/ExplorerPage.tsx
+#: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "Format SQL"
 msgstr "Formatear SQL"
 
@@ -9094,7 +9461,7 @@ msgstr "¿Empezar de cero, o traes un presupuesto contigo?"
 msgid "Friend or colleague"
 msgstr "Amigo o colega"
 
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+#: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
@@ -9383,6 +9750,10 @@ msgstr "¡Buen trabajo! Objetivo mensual alcanzado. Total ahorrado: {totalSaved}
 msgid "Great job! No uncategorised transactions left."
 msgstr "¡Buen trabajo! No quedan transacciones sin categorizar."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Greater than"
+msgstr "Mayor que"
+
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 #: src/pages/onboarding/onboarding-data.ts
 #: src/pages/onboarding/steps/ZbbStep.tsx
@@ -9393,7 +9764,6 @@ msgstr "Compra"
 msgid "Groceries & Food"
 msgstr "Compra y alimentación"
 
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/admin/SignupsSection.tsx
 msgid "Group by"
 msgstr "Agrupar por"
@@ -9407,6 +9777,10 @@ msgstr "Agrupar por"
 msgid "Group by needs, wants, and savings — or invent your own."
 msgstr "Agrupa por necesidades, deseos y ahorro, o inventa los tuyos."
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Group by…"
+msgstr "Agrupar por…"
+
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 msgid "Group name"
 msgstr "Nombre del grupo"
@@ -9415,6 +9789,10 @@ msgstr "Nombre del grupo"
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Group: {0}"
 msgstr "Grupo: {0}"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Groupings"
+msgstr "Agrupaciones"
 
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "groups"
@@ -9626,6 +10004,10 @@ msgstr "Cómo funciona"
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "How it works:"
 msgstr "Cómo funciona:"
+
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "How many"
+msgstr "Cuántos"
 
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "How many months of budget data to include for context"
@@ -9929,16 +10311,24 @@ msgid "Inactive users"
 msgstr "Usuarios inactivos"
 
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Include off-budget accounts"
-msgstr "Incluir cuentas fuera del presupuesto"
+#~ msgid "Include off-budget accounts"
+#~ msgstr "Incluir cuentas fuera del presupuesto"
+
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "Include the current {currentUnit}"
+msgstr "Incluir el periodo actual ({currentUnit})"
 
 #: src/features/import/ui/steps/configure/MappingTab.tsx
 msgid "Include this row in import"
 msgstr "Incluir esta fila en la importación"
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "Include today"
+msgstr "Incluir hoy"
+
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Include transfers"
-msgstr "Incluir transferencias"
+#~ msgid "Include transfers"
+#~ msgstr "Incluir transferencias"
 
 #: src/pages/settings/push-api/PushApiPage.tsx
 msgid "Include your API token in the Authorization header:"
@@ -9952,7 +10342,7 @@ msgstr "Incluye las operaciones ya registradas u omitidas."
 #: src/features/budget-management/model/icon-options.ts
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/form/TransactionTypeSelector.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -9979,6 +10369,10 @@ msgstr "Ingresos"
 #~ msgid "Income → {dimensionLabel}; overspent by {0}"
 #~ msgstr "Ingresos → {dimensionLabel}; exceso de gasto de {0}"
 
+#: src/pages/analytics/report-questions.ts
+msgid "Income against spending, month by month"
+msgstr "Ingresos frente a gastos, mes a mes"
+
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Income and assignments accumulate across all time, so this figure is the same in every month."
 msgstr "Los ingresos y las asignaciones se acumulan a lo largo del tiempo, por lo que esta cifra es la misma en todos los meses."
@@ -10003,6 +10397,14 @@ msgstr "Categoría de ingresos renombrada"
 msgid "Income counts as it arrives, money assigned in future months is already spoken for, and last month’s overspending is pulled from this month (YNAB-style)."
 msgstr "Los ingresos cuentan cuando llegan, el dinero asignado a meses futuros ya está reservado y los excesos del mes anterior se descuentan de este mes (como en YNAB)."
 
+#: src/pages/analytics/report-questions.ts
+msgid "Income flowing into groups and categories"
+msgstr "Ingresos que fluyen hacia grupos y categorías"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Income minus spending"
+msgstr "Ingresos menos gastos"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Income this month"
 msgstr "Ingresos este mes"
@@ -10016,12 +10418,12 @@ msgid "Income vs expense trend"
 msgstr "Tendencia de ingresos frente a gastos"
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Income vs spending"
-msgstr "Ingresos vs. gastos"
+#~ msgid "Income vs spending"
+#~ msgstr "Ingresos vs. gastos"
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Income vs spending by month"
-msgstr "Ingresos vs. gastos por mes"
+#~ msgid "Income vs spending by month"
+#~ msgstr "Ingresos vs. gastos por mes"
 
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Incoming transaction"
@@ -10046,6 +10448,7 @@ msgstr "Rupia india"
 
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/pages/accounts/AccountPage.tsx
@@ -10066,6 +10469,10 @@ msgstr "Ingreso vs Gasto"
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 msgid "Inflow<0/>"
 msgstr "Ingreso<0/>"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Inflows to income categories"
+msgstr "Entradas en categorías de ingresos"
 
 #: src/features/debt/ui/PayoffSimulator.tsx
 msgid "Info"
@@ -10183,9 +10590,13 @@ msgstr "Contraseña maestra no válida: vuelve a intentarlo"
 msgid "Invalid or manually skipped row"
 msgstr "Fila no válida u omitida manualmente"
 
+#: src/features/reports/ui/notebook/useQuestionQuery.ts
+msgid "Invalid question"
+msgstr "Pregunta no válida"
+
 #: src/features/reports/ui/report-builder/useReportBuilderQuery.ts
-msgid "Invalid report"
-msgstr "Informe no válido"
+#~ msgid "Invalid report"
+#~ msgstr "Informe no válido"
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Invalid split amount"
@@ -10269,6 +10680,14 @@ msgstr "MUY FUERTE"
 msgid "Irreversible Action"
 msgstr "Acción irreversible"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Is"
+msgstr "Es"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Is empty"
+msgstr "Está vacío"
+
 #: src/pages/analytics/report-questions.ts
 msgid "Is my net worth growing?"
 msgstr "¿Crece mi patrimonio neto?"
@@ -10276,6 +10695,10 @@ msgstr "¿Crece mi patrimonio neto?"
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "is not"
 msgstr "no es"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Is not"
+msgstr "No es"
 
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "It is linked to a recurring transaction, and that link would be lost."
@@ -10288,6 +10711,10 @@ msgstr "Está vinculada a una garantía, y ese vínculo se perdería."
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "It is waiting in a bank sync review, and that link would be lost."
 msgstr "Está en espera en una revisión de sincronización bancaria, y ese vínculo se perdería."
+
+#: src/pages/reports/question/QuestionPage.tsx
+msgid "It may have been deleted on another device."
+msgstr "Puede que se haya eliminado en otro dispositivo."
 
 #: src/features/category-management/lib/delete-block.ts
 msgid "It tracks payments for the {name} account. Archive or delete the account first."
@@ -10431,7 +10858,7 @@ msgstr "Atajos de teclado"
 msgid "Know what you can spend. Keep your budget private. Create your account to start your free trial."
 msgstr "Ten claro cuánto puedes gastar. Mantén tu presupuesto privado. Crea tu cuenta para empezar tu prueba gratuita."
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 msgid "Label"
 msgstr "Etiqueta"
@@ -10485,7 +10912,6 @@ msgid "Label<0/>"
 msgstr "Etiqueta<0/>"
 
 #: src/features/labels/ui/LabelCombobox.tsx
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -10506,10 +10932,9 @@ msgid "Landlord"
 msgstr "Casero"
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Largest first"
-msgstr "Mayores primero"
+#~ msgid "Largest first"
+#~ msgstr "Mayores primero"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 12 months"
 msgstr "Últimos 12 meses"
@@ -10518,7 +10943,6 @@ msgstr "Últimos 12 meses"
 msgid "Last 24 months"
 msgstr "Últimos 24 meses"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 3 months"
 msgstr "Últimos 3 meses"
@@ -10527,7 +10951,6 @@ msgstr "Últimos 3 meses"
 msgid "Last 30 days"
 msgstr "Últimos 30 días"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 6 months"
 msgstr "Últimos 6 meses"
@@ -10593,6 +11016,10 @@ msgstr "Último error de sincronización"
 #: src/features/bank-sync/ui/BankConnectionPanel.tsx
 msgid "Last synced {syncedAgo}. Syncs automatically when you open Budgero."
 msgstr "Última sincronización {syncedAgo}. Se sincroniza automáticamente al abrir Budgero."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Last transaction"
+msgstr "Última transacción"
 
 #: src/pages/settings/simplefin/SimpleFINPage.tsx
 #~ msgid "Last Updated"
@@ -10669,6 +11096,10 @@ msgstr "Dejar vacío"
 msgid "Leave empty for local servers (Ollama, LM Studio). Sent as a <0>Bearer</0>token to your chosen provider."
 msgstr "Déjalo vacío para servidores locales (Ollama, LM Studio). Se envía como token <0>Bearer</0> a tu proveedor elegido."
 
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+msgid "Leave empty to keep it in My questions."
+msgstr "Déjalo vacío para mantenerla en Mis preguntas."
+
 #: src/pages/settings/AppearancePage.tsx
 msgid "Leave zero amounts empty"
 msgstr "Dejar vacíos los importes cero"
@@ -10701,6 +11132,10 @@ msgstr "El saldo restante pasa al mes siguiente"
 msgid "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (decimal amounts, e.g. <1>25.50</1>) and upgraded on import. New integrations should send format 2."
 msgstr "Los payloads heredados sin el campo <0>\"v\"</0> se tratan como formato 1 (importes decimales, p. ej. <1>25.50</1>) y se actualizan al importar. Las nuevas integraciones deberían enviar el formato 2."
 
+#: src/features/reports/ui/notebook/QuestionVisualization.tsx
+msgid "Legend"
+msgstr "Leyenda"
+
 #: src/pages/admin/admin-users/useAdminUsersState.ts
 msgid "LemonSqueezy subscriptions refreshed"
 msgstr "Suscripciones de LemonSqueezy actualizadas"
@@ -10708,6 +11143,10 @@ msgstr "Suscripciones de LemonSqueezy actualizadas"
 #: src/pages/admin/admin-users/user-details/ActivityHeatmap.tsx
 msgid "Less"
 msgstr "Menos"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Less than"
+msgstr "Menor que"
 
 #: src/features/subscription/ui/TrialEndingBanner.tsx
 msgid "Less than a day"
@@ -10754,11 +11193,15 @@ msgstr "Claro"
 msgid "Lighter option (~3GB)"
 msgstr "Opción ligera (~3GB)"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Limit"
+msgstr "Límite"
+
 #: src/widgets/sync-status/ConnectivityStatus.tsx
 msgid "Limited - WebSocket connected but API/Auth may be degraded"
 msgstr "Limitado - WebSocket conectado, pero la API/Auth puede estar degradada"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Line"
 msgstr "Líneas"
 
@@ -10833,16 +11276,16 @@ msgid "LM Studio"
 msgstr "LM Studio"
 
 #: src/pages/explorer-page/components/ReportsPanel.tsx
-msgid "Load"
-msgstr "Cargar"
+#~ msgid "Load"
+#~ msgstr "Cargar"
 
 #: src/features/sync-diagnostics/ui/MutationLogCard.tsx
 msgid "Load {MUTATION_LOG_PAGE_SIZE} older"
 msgstr "Cargar {MUTATION_LOG_PAGE_SIZE} anteriores"
 
 #: src/pages/explorer-page/components/ReportsPanel.tsx
-msgid "Load a previously saved query or manage your reports."
-msgstr "Carga una consulta guardada o gestiona tus informes."
+#~ msgid "Load a previously saved query or manage your reports."
+#~ msgstr "Carga una consulta guardada o gestiona tus informes."
 
 #: src/features/import/ui/steps/configure/TemplatesTab.tsx
 msgid "Load from Template"
@@ -10990,6 +11433,7 @@ msgstr "Cargando..."
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
+#: src/pages/reports/question/QuestionPage.tsx
 msgid "Loading…"
 msgstr "Cargando…"
 
@@ -11295,14 +11739,23 @@ msgstr "Máximo de tokens que acepta el modelo, usado para el medidor de uso del
 msgid "max(calc(env(safe-area-inset-bottom, 0px) - 12px), 0px)"
 msgstr "max(calc(env(safe-area-inset-bottom, 0px) - 12px), 0px)"
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Maximum"
 msgstr "Máximo"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Maximum number of rows"
+msgstr "Número máximo de filas"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Maximum of {field}"
+msgstr "Máximo de {field}"
+
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Measure"
-msgstr "Medida"
+#~ msgid "Measure"
+#~ msgstr "Medida"
 
 #: src/features/ai/ui/AICategorizeDialog.tsx
 msgid "Medium"
@@ -11327,6 +11780,7 @@ msgstr "Registros de membresía"
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
@@ -11371,6 +11825,10 @@ msgstr "Columna de métrica"
 msgid "Metric column \"{0}\" is missing in query results."
 msgstr "Falta la columna de métrica \"{0}\" en los resultados de la consulta."
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Metrics"
+msgstr "Métricas"
+
 #: src/shared/hooks/useAudioRecorder.ts
 msgid "Microphone permission denied. Please allow microphone access."
 msgstr "Permiso de micrófono denegado. Permite el acceso al micrófono."
@@ -11384,6 +11842,7 @@ msgstr "Pago mensual mín. (calculado)"
 msgid "Minimal rows, tap to expand."
 msgstr "Filas mínimas, toca para expandir."
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Minimum"
@@ -11392,6 +11851,10 @@ msgstr "Mínimo"
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Minimum Monthly Payment"
 msgstr "Pago mensual mínimo"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Minimum of {field}"
+msgstr "Mínimo de {field}"
 
 #: src/features/transactions/ui/add-transaction/add-transaction.utils.ts
 #: src/features/transactions/ui/add-transaction/AddTransactionForm.tsx
@@ -11499,9 +11962,13 @@ msgstr "Supervisa tu despliegue privado de Budgero y actúa sobre las cuentas de
 msgid "Monochrome budgeting workspace with parchment canvas and red/green utility accents."
 msgstr "Espacio de trabajo de presupuestos monocromo con lienzo de pergamino y acentos utilitarios en rojo/verde."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "month"
+msgstr "mes"
+
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/analytics/reports/InOutReport.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -11584,6 +12051,7 @@ msgid "Monthly trend"
 msgstr "Tendencia mensual"
 
 #: src/features/goal-management/ui/GoalForm.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "months"
 msgstr "meses"
 
@@ -11619,6 +12087,10 @@ msgstr "Montserrat"
 #: src/shared/ui/breadcrumb.tsx
 msgid "More"
 msgstr "Más"
+
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "More actions"
+msgstr "Más acciones"
 
 #: src/entities/account/model/accountTypes.ts
 msgid "Mortgage"
@@ -11725,9 +12197,15 @@ msgstr "Mi presupuesto"
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-#: src/pages/explorer-page/ExplorerPage.tsx
+#: src/pages/reports/question/usePinToDashboard.tsx
 msgid "My Dashboard"
 msgstr "Mi panel"
+
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+#: src/pages/reports/question/NotebookQuestionView.tsx
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "My questions"
+msgstr "Mis preguntas"
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "N months…"
@@ -11738,7 +12216,7 @@ msgid "name"
 msgstr "nombre"
 
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
@@ -11825,7 +12303,7 @@ msgstr "Necesita revisión"
 msgid "Net"
 msgstr "Neto"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Net (income − spending)"
 msgstr "Neto (ingresos − gastos)"
 
@@ -11834,8 +12312,8 @@ msgid "Net amount"
 msgstr "Importe neto"
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Net cash flow by month"
-msgstr "Flujo de caja neto por mes"
+#~ msgid "Net cash flow by month"
+#~ msgstr "Flujo de caja neto por mes"
 
 #: src/widgets/dashboard/CashflowTrendCard.tsx
 msgid "Net cashflow<0/>"
@@ -11892,6 +12370,10 @@ msgstr "Patrimonio neto"
 msgid "NET WORTH"
 msgstr "PATRIMONIO NETO"
 
+#: src/pages/analytics/report-questions.ts
+msgid "Net worth and account balances over time"
+msgstr "Patrimonio neto y saldos de cuentas a lo largo del tiempo"
+
 #. placeholder {0}: fmt.money(Math.abs(change))
 #. placeholder {1}: fmt.monthLabel(first.monthKey)
 #. placeholder {2}: fmt.money(Math.abs(perMonth))
@@ -11924,8 +12406,6 @@ msgstr "Nunca compartas esta clave públicamente"
 
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 #: src/features/import/ui/steps/PreviewStep.tsx
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-#: src/pages/explorer-page/ExplorerPage.tsx
 msgid "New"
 msgstr "Nuevo"
 
@@ -11991,9 +12471,26 @@ msgstr "La nueva contraseña debe ser distinta de la actual"
 msgid "New passwords do not match"
 msgstr "Las nuevas contraseñas no coinciden"
 
+#: src/app/layout/desktop-shell/constants.ts
+#: src/pages/reports/question/NotebookQuestionView.tsx
+#: src/pages/reports/question/QuestionPage.tsx
+#: src/pages/reports/ReportsHomePage.tsx
+#: src/shared/model/nav-registry.ts
+#: src/widgets/command-palette/CommandPalette.tsx
+msgid "New question"
+msgstr "Nueva pregunta"
+
 #: src/features/transactions/ui/add-transaction/AddTransactionForm.tsx
 msgid "New Recurring Transaction"
 msgstr "Nueva transacción recurrente"
+
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "New SQL query"
+msgstr "Nueva consulta SQL"
+
+#: src/pages/explorer-page/SqlQuestionView.tsx
+msgid "New SQL question"
+msgstr "Nueva pregunta SQL"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Newest entry first, or by amount: outflows first, then inflows, largest first. Handy when clearing a busy day."
@@ -12047,11 +12544,15 @@ msgstr "Siguiente<0/>"
 msgid "Next<0><1/></0>"
 msgstr "Siguiente<0><1/></0>"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "No"
+msgstr "No"
+
 #: src/shared/model/access.ts
 msgid "No Access"
 msgstr "Sin acceso"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "No account"
 msgstr "Sin cuenta"
 
@@ -12402,7 +12903,7 @@ msgid "No invoices yet. Invoices will appear here after your first payment."
 msgstr "Aún no hay facturas. Las facturas aparecerán aquí después de tu primer pago."
 
 #: src/features/labels/ui/LabelCombobox.tsx
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
@@ -12421,7 +12922,7 @@ msgstr "No se encontraron etiquetas."
 msgid "No labels yet."
 msgstr "Aún no hay etiquetas."
 
-#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+#: src/features/reports/ui/notebook/FilterEditor.tsx
 msgid "No matches."
 msgstr "Sin coincidencias."
 
@@ -12430,9 +12931,17 @@ msgstr "Sin coincidencias."
 msgid "No matching accounts."
 msgstr "No hay cuentas que coincidan."
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "No matching fields."
+msgstr "No hay campos que coincidan."
+
 #: src/features/labels/ui/LabelCombobox.tsx
 msgid "No matching labels."
 msgstr "No hay etiquetas coincidentes."
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "No matching metrics."
+msgstr "No hay métricas que coincidan."
 
 #: src/features/payees/ui/PayeeCombobox.tsx
 msgid "No matching payees. Use \"Create\" below."
@@ -12509,7 +13018,7 @@ msgid "No password"
 msgstr "Sin contraseña"
 
 #: src/features/budget-management/ui/create-budget-form/YnabCreditPaymentMatching.tsx
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 #: src/pages/analytics/analytics-model.ts
 msgid "No payee"
@@ -12534,6 +13043,10 @@ msgstr "No hay invitaciones pendientes."
 #: src/pages/settings/push-api/usePushApiState.ts
 msgid "No pending mutations to process"
 msgstr "No hay cambios pendientes que procesar"
+
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "No prebuilt report matches your search."
+msgstr "Ningún informe predefinido coincide con tu búsqueda."
 
 #: src/pages/onboarding/steps/RulesStep.tsx
 msgid "No projections, no credit limits. We budget paychecks that have actually landed — never money you hope will arrive."
@@ -12564,6 +13077,14 @@ msgstr "No hay cambios registrados para esta ejecución."
 msgid "No results found."
 msgstr "No se han encontrado resultados."
 
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "No rows match this question"
+msgstr "Ninguna fila coincide con esta pregunta"
+
+#: src/features/reports/ui/notebook/QuestionVisualization.tsx
+msgid "No rows match this question."
+msgstr "Ninguna fila coincide con esta pregunta."
+
 #: src/pages/settings/AutomationRulesPage.tsx
 msgid "No rules yet. Create your first automation to categorise subscriptions, split income, or tidy up imported descriptions."
 msgstr "Aún no hay reglas. Crea tu primera automatización para categorizar suscripciones, dividir ingresos o limpiar descripciones importadas."
@@ -12576,13 +13097,21 @@ msgstr "Aún no hay ejecuciones registradas. Activa esta regla para ver los deta
 msgid "No saved queries yet."
 msgstr "Aún no hay consultas guardadas."
 
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "No saved question matches your search."
+msgstr "Ninguna pregunta guardada coincide con tu búsqueda."
+
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "No saved questions yet"
+msgstr "Aún no hay preguntas guardadas"
+
 #: src/pages/custom-dashboards/components/PinChartDialog.tsx
 msgid "No saved report with chart configuration is available yet."
 msgstr "Aún no hay ningún informe guardado con configuración de gráficos disponible."
 
 #: src/pages/explorer-page/components/ReportsPanel.tsx
-msgid "No saved reports yet. Save a query to get started."
-msgstr "Aún no hay informes guardados. Guarda una consulta para empezar."
+#~ msgid "No saved reports yet. Save a query to get started."
+#~ msgstr "Aún no hay informes guardados. Guarda una consulta para empezar."
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "No savings target set"
@@ -12672,8 +13201,8 @@ msgid "No transactions found."
 msgstr "No se han encontrado transacciones."
 
 #: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "No transactions match this report"
-msgstr "Ninguna transacción coincide con este informe"
+#~ msgid "No transactions match this report"
+#~ msgstr "Ninguna transacción coincide con este informe"
 
 #: src/features/ai/ui/receipt-scanner/useReceiptScannerState.ts
 msgid "No transactions selected"
@@ -12742,7 +13271,6 @@ msgstr "Aún no hay espacios de trabajo. Usa el botón de arriba para crear tu p
 #: src/features/import/ui/steps/CompleteStep.tsx
 #: src/features/import/ui/steps/configure/FormattingTab.tsx
 #: src/features/import/ui/steps/configure/MappingTab.tsx
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -12773,6 +13301,10 @@ msgstr "No disponible en compilaciones autoalojadas."
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Not deleted"
 msgstr "No eliminados"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Not empty"
+msgstr "No vacío"
 
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Not in Clerk"
@@ -12826,6 +13358,10 @@ msgstr "No hay nada nuevo que importar."
 msgid "Nothing to apply — no assignments last month."
 msgstr "Nada que aplicar — no hubo asignaciones el mes pasado."
 
+#: src/features/reports/ui/notebook/QuestionVisualization.tsx
+msgid "Nothing to chart for these rows."
+msgstr "No hay nada que representar para estas filas."
+
 #: src/widgets/dashboard/UpcomingTransactionsCard.tsx
 msgid "Nothing upcoming. Recurring charges and transactions dated in the next {ONE_OFF_LOOKAHEAD_MONTHS} months appear here."
 msgstr "Nada próximo. Los cargos recurrentes y las transacciones con fecha en los próximos {ONE_OFF_LOOKAHEAD_MONTHS}meses aparecen aquí."
@@ -12862,6 +13398,10 @@ msgstr "Avísame"
 msgid "Notifying your other devices..."
 msgstr "Avisando a tus otros dispositivos..."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Number"
+msgstr "Número"
+
 #: src/features/budget-management/ui/create-budget-form/ManualBudgetTab.tsx
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
 #: src/features/budget-management/ui/EditBudgetForm.tsx
@@ -12876,6 +13416,10 @@ msgstr "Formato numérico en YNAB"
 msgid "Number Format Preview"
 msgstr "Vista previa del formato de números"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Number of accounts"
+msgstr "Número de cuentas"
+
 #: src/features/account-management/ui/DevSeedAccountsButton.tsx
 msgid "Number of accounts to seed"
 msgstr "Número de cuentas a inicializar"
@@ -12884,7 +13428,11 @@ msgstr "Número de cuentas a inicializar"
 msgid "Number of occurrences"
 msgstr "Número de repeticiones"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Number of rows"
+msgstr "Número de filas"
+
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Number of transactions"
 msgstr "Número de transacciones"
 
@@ -12954,11 +13502,16 @@ msgstr "Los tipos de cambio antiguos se eliminan y se recuperan bajo demanda. Un
 msgid "Ollama"
 msgstr "Ollama"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "On"
+msgstr "El"
+
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 msgid "On a date"
 msgstr "En una fecha"
 
 #: src/features/account-management/ui/AccountOrderCard.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "On budget"
 msgstr "En el presupuesto"
 
@@ -12982,6 +13535,10 @@ msgstr "Por buen camino — aún te faltan {needed} en {monthsMore} meses más."
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "On track — {needed} still needed over 1 more month."
 msgstr "Por buen camino — aún te faltan {needed} en 1 mes más."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "On-budget account"
+msgstr "Cuenta del presupuesto"
 
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "Once the workspace owner renews their plan, your shared workspace access comes back automatically."
@@ -13130,8 +13687,8 @@ msgid "Open schema sidebar"
 msgstr "Abrir barra lateral de esquema"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Open source report in Explorer"
-msgstr "Abrir informe de origen en Explorer"
+#~ msgid "Open source report in Explorer"
+#~ msgstr "Abrir informe de origen en Explorer"
 
 #: src/pages/onboarding/OnboardingFlow.tsx
 msgid "Open the demo →"
@@ -13140,6 +13697,10 @@ msgstr "Abrir la demo →"
 #: src/pages/settings/AppearancePage.tsx
 msgid "Open the prebuilt reports for deeper insights."
 msgstr "Abre los informes predefinidos para un análisis más profundo."
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "Open the question"
+msgstr "Abrir la pregunta"
 
 #: src/shared/ui/theme-switch.tsx
 msgid "Open theme preset menu"
@@ -13210,7 +13771,7 @@ msgstr "Opcional pero recomendado"
 msgid "Optional context for your future self"
 msgstr "Contexto opcional para tu yo del futuro"
 
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Optional description..."
 msgstr "Descripción opcional..."
@@ -13287,6 +13848,10 @@ msgstr "Otros ({foldedCount} más)"
 #~ msgid "Other ({foldedCount} more) — inspect"
 #~ msgstr "Otros ({foldedCount} más): ver detalle"
 
+#: src/features/reports/ui/notebook/QuestionVisualization.tsx
+msgid "Other ({otherCount})"
+msgstr "Otros ({otherCount})"
+
 #: src/entities/account/model/accountTypes.ts
 msgid "Other Asset"
 msgstr "Otro activo"
@@ -13334,6 +13899,7 @@ msgstr "de {0}presupuestado"
 
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/pages/accounts/AccountPage.tsx
@@ -13346,6 +13912,10 @@ msgstr "Gasto"
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 msgid "Outflow<0/>"
 msgstr "Gasto<0/>"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Outflows minus refunds, income categories left out"
+msgstr "Salidas menos reembolsos, sin categorías de ingresos"
 
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "Outstanding"
@@ -13560,7 +14130,7 @@ msgstr "Pagar"
 
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
@@ -13602,7 +14172,6 @@ msgid "Payee<0/>"
 msgstr "Beneficiario<0/>"
 
 #: src/features/payees/ui/PayeeCombobox.tsx
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
@@ -13769,6 +14338,10 @@ msgstr "Efectivo físico y fondos de caja chica"
 msgid "Pick a category for the category action."
 msgstr "Elige una categoría para la acción de categoría."
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Pick a column to sort by"
+msgstr "Elige una columna para ordenar"
+
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 #: src/features/transactions/ui/cells/DatePickerCell.tsx
 #: src/shared/ui/date-range-picker.tsx
@@ -13778,6 +14351,10 @@ msgstr "Elige una fecha"
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "Pick a different account."
 msgstr "Elige otra cuenta."
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Pick a grouping"
+msgstr "Elige una agrupación"
 
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "Pick a label for the label action, or \"No label\" to clear it."
@@ -13790,6 +14367,14 @@ msgstr "Elige un aspecto"
 #: src/pages/onboarding/steps/WelcomeStep.tsx
 msgid "Pick a master password — your encryption key on this device."
 msgstr "Elige una contraseña maestra: tu clave de cifrado en este dispositivo."
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Pick a metric"
+msgstr "Elige una métrica"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Pick a metric…"
+msgstr "Elige una métrica…"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
 msgid "Pick a path to continue."
@@ -13817,8 +14402,8 @@ msgid "Pick two different accounts for a transfer"
 msgstr "Elige dos cuentas diferentes para una transferencia"
 
 #: src/pages/explorer-page/ExplorerPage.tsx
-msgid "Pick what to measure, how to group it and which transactions to include."
-msgstr "Elige qué medir, cómo agruparlo y qué transacciones incluir."
+#~ msgid "Pick what to measure, how to group it and which transactions to include."
+#~ msgstr "Elige qué medir, cómo agruparlo y qué transacciones incluir."
 
 #: src/shared/lib/analytics/klaro-config.ts
 #~ msgid "Pick which cookies are OK with you. Your encrypted budget data is never tracked either way. You can change this any time from Settings → Security."
@@ -13832,7 +14417,7 @@ msgstr "Elige tu camino"
 msgid "PICKED FOR YOU"
 msgstr "SELECCIONADO PARA TI"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Pie"
 msgstr "Sectores"
 
@@ -13930,11 +14515,14 @@ msgstr "Contacta con un administrador del sistema si crees que deberías tener a
 msgid "Please drop an image file"
 msgstr "Suelta un archivo de imagen"
 
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+msgid "Please enter a name"
+msgstr "Introduce un nombre"
+
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Please enter a name for this query."
 msgstr "Introduce un nombre para esta consulta."
 
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Please enter a report name"
 msgstr "Introduce un nombre de informe"
@@ -14147,11 +14735,10 @@ msgid "Power company"
 msgstr "Compañía eléctrica"
 
 #: src/app/layout/desktop-shell/constants.ts
-#: src/shared/model/nav-registry.ts
 msgid "Prebuilt"
 msgstr "Predefinido"
 
-#: src/pages/analytics/AnalyticsPage.tsx
+#: src/pages/reports/ReportsHomePage.tsx
 msgid "Prebuilt reports"
 msgstr "Informes predefinidos"
 
@@ -14225,6 +14812,7 @@ msgstr "Vista previa de tus datos:"
 
 #: src/features/analytics/ui/SpendingOverviewContent.tsx
 #: src/features/import/ui/steps/PreviewStep.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Previous"
 msgstr "Anterior"
 
@@ -14340,6 +14928,10 @@ msgstr "Progreso: {available} de {target} ({pct})"
 msgid "Project Resources"
 msgstr "Recursos del proyecto"
 
+#: src/pages/analytics/report-questions.ts
+msgid "Project your balance under what-ifs"
+msgstr "Proyecta tu saldo con escenarios hipotéticos"
+
 #: src/features/transactions/ui/mobile-transaction-card/MobileTransactionCard.tsx
 msgid "Projected"
 msgstr "Proyectado"
@@ -14436,11 +15028,19 @@ msgstr "Push API"
 msgid "Push API {0}"
 msgstr "Push API {0}"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Q{quarter} {year}"
+msgstr "T{quarter} {year}"
+
 #: src/pages/explorer-page/hooks/useExplorerState.ts
 msgid "qualify pivot unpivot sample using asof lateral recursive"
 msgstr "qualify pivot unpivot sample using asof lateral recursive"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "quarter"
+msgstr "trimestre"
+
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Quarter"
 msgstr "Trimestre"
 
@@ -14462,6 +15062,10 @@ msgstr "Trimestral"
 msgid "Quarterly Feedback Email"
 msgstr "Correo trimestral de comentarios"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "quarters"
+msgstr "trimestres"
+
 #. placeholder {0}: isDryRun ? t` Dry run mode enabled - changes will be simulated.` : t` Changes take effect immediately!`
 #: src/pages/admin/sql-explorer/QueryCard.tsx
 msgid "Queries run against the production database.{0}"
@@ -14472,7 +15076,7 @@ msgid "Query deleted"
 msgstr "Consulta eliminada"
 
 #: src/pages/admin/sql-explorer/AdminSqlExplorer.tsx
-#: src/pages/explorer-page/ExplorerPage.tsx
+#: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "Query Error"
 msgstr "Error de consulta"
 
@@ -14484,7 +15088,7 @@ msgstr "Consulta ejecutada"
 #~ msgid "Query executed successfully"
 #~ msgstr "Consulta ejecutada correctamente"
 
-#: src/features/reports/ui/report-builder/useReportBuilderQuery.ts
+#: src/features/reports/ui/notebook/useQuestionQuery.ts
 msgid "Query failed"
 msgstr "La consulta falló"
 
@@ -14505,6 +15109,30 @@ msgstr "Nombre de la consulta..."
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Query saved"
 msgstr "Consulta guardada"
+
+#: src/app/layout/desktop-shell/useDesktopShellState.ts
+msgid "Question"
+msgstr "Pregunta"
+
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "Question deleted"
+msgstr "Pregunta eliminada"
+
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+msgid "Question saved"
+msgstr "Pregunta guardada"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Question steps"
+msgstr "Pasos de la pregunta"
+
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+msgid "Question updated"
+msgstr "Pregunta actualizada"
+
+#: src/app/layout/desktop-shell/constants.ts
+msgid "Questions"
+msgstr "Preguntas"
 
 #: src/pages/settings/push-api/QueueStatsPanel.tsx
 msgid "Queue Status"
@@ -14594,6 +15222,10 @@ msgstr "¿Volver a descargar del servidor?"
 msgid "Reach a total by a date"
 msgstr "Alcanzar un total en una fecha"
 
+#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
+msgid "Read-only. Convert to SQL to edit it by hand; a converted question can’t go back to the notebook editor."
+msgstr "Solo lectura. Conviértela a SQL para editarla a mano; una pregunta convertida no puede volver al editor visual."
+
 #: src/features/budget-management/model/icon-options.ts
 msgid "Reading"
 msgstr "Leyendo"
@@ -14636,6 +15268,10 @@ msgstr "listo para importar al finalizar"
 #: src/pages/onboarding/steps/DoneStep.tsx
 msgid "Ready to join."
 msgstr "Listo para unirse."
+
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "Ready-made answers to common questions, and the questions you’ve saved."
+msgstr "Respuestas listas a preguntas habituales y las preguntas que has guardado."
 
 #: src/entities/account/model/accountTypes.ts
 #: src/pages/accounts/AccountsPage.tsx
@@ -14907,10 +15543,10 @@ msgstr "Reduciendo…"
 msgid "Reduction failed"
 msgstr "Reducción fallida"
 
+#: src/features/reports/ui/notebook/QuestionResult.tsx
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
 msgid "Refresh"
 msgstr "Actualizar"
 
@@ -15048,6 +15684,10 @@ msgstr "Quitar filtro {0}"
 msgid "Remove {0}?"
 msgstr "¿Eliminar {0}?"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Remove {title} step"
+msgstr "Quitar el paso «{title}»"
+
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 msgid "Remove action"
 msgstr "Quitar acción"
@@ -15056,9 +15696,21 @@ msgstr "Quitar acción"
 msgid "Remove condition"
 msgstr "Quitar condición"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Remove filter: {label}"
+msgstr "Quitar filtro: {label}"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Remove grouping: {label}"
+msgstr "Quitar agrupación: {label}"
+
 #: src/features/chat/ui/chat-panel/ChatComposer.tsx
 msgid "Remove image"
 msgstr "Quitar imagen"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Remove metric: {label}"
+msgstr "Quitar métrica: {label}"
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Remove one-off"
@@ -15068,6 +15720,10 @@ msgstr "Quitar instancia única"
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "Remove pattern from memo"
 msgstr "Eliminar patrón de la nota"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Remove sort: {label}"
+msgstr "Quitar orden: {label}"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Remove split"
@@ -15192,8 +15848,8 @@ msgid "Report Deleted"
 msgstr "Informe eliminado"
 
 #: src/pages/explorer-page/ExplorerPage.tsx
-msgid "Report editor"
-msgstr "Editor de informes"
+#~ msgid "Report editor"
+#~ msgstr "Editor de informes"
 
 #: src/pages/explorer-page/hooks/useReportActions.ts
 msgid "Report Loaded"
@@ -15204,18 +15860,17 @@ msgid "Report Name *"
 msgstr "Nombre del informe *"
 
 #: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-msgid "Report saved"
-msgstr "Informe guardado"
+#~ msgid "Report saved"
+#~ msgstr "Informe guardado"
 
 #: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-msgid "Report updated"
-msgstr "Informe actualizado"
+#~ msgid "Report updated"
+#~ msgstr "Informe actualizado"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/layout/desktop-shell/SidebarNav.tsx
-#: src/pages/analytics/components/ReportPicker.tsx
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-#: src/pages/explorer-page/ExplorerPage.tsx
+#: src/pages/reports/BackToReports.tsx
+#: src/pages/reports/ReportsHomePage.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
 #: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Reports"
@@ -15286,6 +15941,10 @@ msgstr "Error al restablecer"
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Reset password"
 msgstr "Restablecer contraseña"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Reset to default columns"
+msgstr "Restablecer columnas predeterminadas"
 
 #: src/features/budget-planning/ui/SearchAndFilterControls.tsx
 msgid "Reset to default order"
@@ -15394,6 +16053,10 @@ msgstr "Restaurando…"
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "Resubscribing restores access to your owned workspaces immediately and lets you create new ones again."
 msgstr "Al volver a suscribirte, recuperas inmediatamente el acceso a los espacios de trabajo de tu propiedad y puedes crear otros nuevos."
+
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Result"
+msgstr "Resultado"
 
 #: src/pages/explorer-page/components/ResultsTable.tsx
 msgid "Results"
@@ -15579,6 +16242,10 @@ msgstr "Fila / cuenta"
 msgid "Row density"
 msgstr "Densidad de filas"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "rows"
+msgstr "filas"
+
 #. placeholder {0}: widget.desktopLayout.rowSpan
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Rows {0}"
@@ -15645,7 +16312,7 @@ msgstr "Regla actualizada"
 msgid "Rules"
 msgstr "Reglas"
 
-#: src/pages/explorer-page/ExplorerPage.tsx
+#: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "Run"
 msgstr "Ejecutar"
 
@@ -15697,11 +16364,15 @@ msgstr "En curso"
 msgid "Running automation rule"
 msgstr "Ejecutando regla de automatización"
 
-#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Running report…"
-msgstr "Ejecutando el informe…"
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Running question…"
+msgstr "Ejecutando pregunta…"
 
-#: src/pages/explorer-page/ExplorerPage.tsx
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+#~ msgid "Running report…"
+#~ msgstr "Ejecutando el informe…"
+
+#: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "Running..."
 msgstr "Ejecutando..."
 
@@ -15729,14 +16400,15 @@ msgstr "Misma fecha e importe en esta cuenta"
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 #: src/features/currencies/ui/ManualRatePrompt.tsx
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
-#: src/pages/explorer-page/ExplorerPage.tsx
+#: src/pages/explorer-page/SqlQuestionView.tsx
+#: src/pages/reports/question/NotebookQuestionView.tsx
 #: src/pages/settings/components/WorkspaceRow.tsx
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Save"
@@ -15755,16 +16427,24 @@ msgid "Save 17%"
 msgstr "Ahorra 17%"
 
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
-msgid "Save a report with at least one chart in Explorer first."
-msgstr "Guarda primero un informe con al menos un gráfico en el Explorador."
+msgid "Save a question under Reports first."
+msgstr "Primero guarda una pregunta en Informes."
+
+#: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
+#~ msgid "Save a report with at least one chart in Explorer first."
+#~ msgstr "Guarda primero un informe con al menos un gráfico en el Explorador."
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Save and add another"
 msgstr "Guardar y añadir otra"
 
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+msgid "Save and add to dashboard"
+msgstr "Guardar y añadir al panel"
+
 #: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-msgid "Save and pin"
-msgstr "Guardar y fijar"
+#~ msgid "Save and pin"
+#~ msgstr "Guardar y fijar"
 
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 msgid "Save changes"
@@ -15802,6 +16482,12 @@ msgstr "Guardar presupuesto importado"
 msgid "Save name"
 msgstr "Guardar nombre"
 
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+#: src/pages/explorer-page/SqlQuestionView.tsx
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "Save question"
+msgstr "Guardar pregunta"
+
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "Save rate"
 msgstr "Guardar tipo de cambio"
@@ -15812,8 +16498,8 @@ msgstr "Guardar transacción recurrente"
 
 #: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
 #: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Save report"
-msgstr "Guardar informe"
+#~ msgid "Save report"
+#~ msgstr "Guardar informe"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Save Report"
@@ -15847,14 +16533,22 @@ msgstr "Guardado como \"{trimmedName}\""
 msgid "Saved Queries"
 msgstr "Consultas guardadas"
 
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "Saved questions"
+msgstr "Preguntas guardadas"
+
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+msgid "Saved questions appear on the Reports page and can be added to a dashboard. They reopen in the editor."
+msgstr "Las preguntas guardadas aparecen en la página de Informes y se pueden añadir a un panel. Se vuelven a abrir en el editor."
+
 #. placeholder {0}: savedReports.length
 #: src/pages/explorer-page/components/ReportsPanel.tsx
-msgid "Saved Reports ({0})"
-msgstr "Informes guardados ({0})"
+#~ msgid "Saved Reports ({0})"
+#~ msgstr "Informes guardados ({0})"
 
 #: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
-msgid "Saved reports appear under Reports and can be pinned to a dashboard. You can reopen them in the builder at any time."
-msgstr "Los informes guardados aparecen en Informes y se pueden fijar en un panel. Puedes volver a abrirlos en el generador cuando quieras."
+#~ msgid "Saved reports appear under Reports and can be pinned to a dashboard. You can reopen them in the builder at any time."
+#~ msgstr "Los informes guardados aparecen en Informes y se pueden fijar en un panel. Puedes volver a abrirlos en el generador cuando quieras."
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Saved scenarios"
@@ -16001,6 +16695,10 @@ msgstr "Buscar"
 msgid "Search ({0})"
 msgstr "Buscar ({0})"
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "Search {label}"
+msgstr "Buscar en {label}"
+
 #: src/app/layout/desktop-shell/AccountsList.tsx
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Search accounts"
@@ -16079,6 +16777,14 @@ msgstr "Buscar modelos..."
 msgid "Search payees…"
 msgstr "Buscar beneficiarios…"
 
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "Search reports"
+msgstr "Buscar informes"
+
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "Search reports…"
+msgstr "Buscar informes…"
+
 #: src/pages/explorer-page/components/SchemaSidebar.tsx
 msgid "Search tables, views, columns..."
 msgstr "Buscar tablas, vistas, columnas..."
@@ -16101,7 +16807,7 @@ msgstr "Buscar usuarios"
 msgid "Search: groceries, last 30 days, outflows..."
 msgstr "Buscar: compra, últimos 30 días, gastos..."
 
-#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+#: src/features/reports/ui/notebook/FilterEditor.tsx
 msgid "Search…"
 msgstr "Buscar…"
 
@@ -16772,6 +17478,10 @@ msgstr "Mostrar una celda de Ingreso o Gasto vacía en lugar de 0, para que dest
 msgid "Show Archived"
 msgstr "Mostrar archivados"
 
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Show as"
+msgstr "Mostrar como"
+
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show balance column"
 msgstr "Mostrar columna de saldo"
@@ -16807,6 +17517,10 @@ msgstr "Mostrar columna de etiqueta"
 #: src/app/layout/desktop-shell/AccountsList.tsx
 msgid "Show Less"
 msgstr "Mostrar menos"
+
+#: src/features/reports/ui/notebook/QuestionTable.tsx
+msgid "Show more rows"
+msgstr "Mostrar más filas"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Show only month selector and ready to assign in the budget header."
@@ -16846,8 +17560,8 @@ msgid "Show the next 30 days"
 msgstr "Mostrar los próximos 30 días"
 
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Show top"
-msgstr "Mostrar top"
+#~ msgid "Show top"
+#~ msgstr "Mostrar top"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show uncategorized only"
@@ -16884,6 +17598,10 @@ msgstr "Mostrando {0}de {1}filas{2}{3}. Desmarca la casilla para excluir una fil
 #: src/pages/explorer-page/components/ResultsTable.tsx
 msgid "Showing {0} of {1} total rows"
 msgstr "Mostrando {0}de {1} filas en total"
+
+#: src/features/reports/ui/notebook/QuestionTable.tsx
+msgid "Showing {shownCount} of {totalCount} rows"
+msgstr "Mostrando {shownCount} de {totalCount} filas"
 
 #. placeholder {0}: verification.categories.checked - verification.categories.matched
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
@@ -17031,8 +17749,8 @@ msgid "Since no account column is mapped, transactions will be imported into the
 msgstr "Como no se ha mapeado ninguna columna de cuenta, las transacciones se importarán en la cuenta seleccionada:"
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Single number"
-msgstr "Número único"
+#~ msgid "Single number"
+#~ msgstr "Número único"
 
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
@@ -17078,8 +17796,8 @@ msgid "Smaller cards, Activity hidden."
 msgstr "Tarjetas más pequeñas, Actividad oculta."
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Smallest first"
-msgstr "Menores primero"
+#~ msgid "Smallest first"
+#~ msgstr "Menores primero"
 
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Snapshot updated"
@@ -17123,7 +17841,7 @@ msgstr "Algo ha salido mal."
 msgid "Sorry, I encountered an error generating a response."
 msgstr "Lo siento, he encontrado un error al generar una respuesta."
 
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Sort"
 msgstr "Orden"
 
@@ -17182,7 +17900,7 @@ msgid "Speed up budgeting without leaving the keyboard."
 msgstr "Presupuesta más rápido sin soltar el teclado."
 
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/analytics/report-questions.ts
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -17214,16 +17932,24 @@ msgid "Spending by {0}"
 msgstr "Gastos por {0}"
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Spending by category (last 12 months)"
-msgstr "Gastos por categoría (últimos 12 meses)"
+#~ msgid "Spending by category (last 12 months)"
+#~ msgstr "Gastos por categoría (últimos 12 meses)"
+
+#: src/pages/analytics/report-questions.ts
+msgid "Spending by category, payee or label"
+msgstr "Gastos por categoría, beneficiario o etiqueta"
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Spending by label"
-msgstr "Gastos por etiqueta"
+#~ msgid "Spending by label"
+#~ msgstr "Gastos por etiqueta"
 
 #: src/pages/explorer-page/sql-utils.ts
 msgid "Spending by label (90d)"
 msgstr "Gasto por etiqueta (90d)"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Spending divided by the number of spending transactions"
+msgstr "Gastos divididos entre el número de transacciones de gasto"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Spending during the month doesn't reduce progress — only what you assign matters"
@@ -17283,8 +18009,8 @@ msgid "Split"
 msgstr "Dividir"
 
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "Split by"
-msgstr "Dividir por"
+#~ msgid "Split by"
+#~ msgstr "Dividir por"
 
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
@@ -17337,11 +18063,24 @@ msgid "Spreadsheet-style table with collapsible groups and goal column."
 msgstr "Tabla estilo hoja de cálculo con grupos plegables y columna de objetivo."
 
 #: src/pages/explorer-page/ExplorerPage.tsx
-msgid "SQL (advanced)"
-msgstr "SQL (avanzado)"
+#~ msgid "SQL (advanced)"
+#~ msgstr "SQL (avanzado)"
+
+#: src/pages/explorer-page/SqlQuestionView.tsx
+msgid "SQL (advanced) · read-only queries"
+msgstr "SQL (avanzado) · consultas de solo lectura"
+
+#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
+msgid "SQL copied"
+msgstr "SQL copiado"
+
+#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "SQL query"
+msgstr "Consulta SQL"
 
 #: src/pages/admin/sql-explorer/QueryCard.tsx
-#: src/pages/explorer-page/ExplorerPage.tsx
+#: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "SQL Query"
 msgstr "Consulta SQL"
 
@@ -17380,8 +18119,8 @@ msgid "Start fresh or bring your YNAB budget"
 msgstr "Empieza de cero o trae tu presupuesto de YNAB"
 
 #: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Start from a template"
-msgstr "Empezar con una plantilla"
+#~ msgid "Start from a template"
+#~ msgstr "Empezar con una plantilla"
 
 #: src/pages/settings/subscription/PlanSelection.tsx
 msgid "Start monthly plan"
@@ -17463,6 +18202,10 @@ msgstr "Fondos iniciales"
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
 msgid "Starts the day after your latest entry so nothing is imported twice. Entries close to the bank's will be offered as matches."
 msgstr "Empieza el día después de tu último movimiento para no importar nada dos veces. Los movimientos parecidos a los del banco se te ofrecerán para emparejar."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Starts with"
+msgstr "Empieza por"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -17654,9 +18397,17 @@ msgstr "Modelos sugeridos para el mejor rendimiento con tareas de presupuesto"
 msgid "Sum"
 msgstr "Suma"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Sum of {field}"
+msgstr "Suma de {field}"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Sum of assignments in cycle"
 msgstr "Suma de asignaciones en el ciclo"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Summarize"
+msgstr "Resumir"
 
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 #: src/pages/accounts/AccountsPage.tsx
@@ -17816,7 +18567,8 @@ msgstr "Sistema"
 msgid "System Overview"
 msgstr "Resumen del sistema"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
+#: src/features/reports/ui/notebook/QuestionResult.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/pages/settings/AppearancePage.tsx
@@ -18190,6 +18942,10 @@ msgstr "El servidor ha confirmado todos los cambios de este dispositivo."
 msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 msgstr "El servidor guarda las últimas copias de este espacio de trabajo y una al día durante la última semana. Puedes volver a una copia y descartar todo lo cambiado después, o restaurarla y volver a aplicar los cambios posteriores. Úsalo cuando un espacio de trabajo parezca vacío o roto tras sincronizar, o para deshacer un conjunto de cambios."
 
+#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
+msgid "The SQL behind this question"
+msgstr "El SQL detrás de esta pregunta"
+
 #: src/features/category-management/lib/delete-block.ts
 msgid "The system Income category can't be deleted."
 msgstr "La categoría de sistema Ingresos no se puede eliminar."
@@ -18434,7 +19190,6 @@ msgstr "Este pasivo tiene un saldo positivo."
 msgid "This liability now has a positive balance. There's nothing to pay off right now."
 msgstr "Este pasivo ahora tiene un saldo positivo. No hay nada que pagar en este momento."
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/shared/lib/search-query-parser.ts
 msgid "This month"
 msgstr "Este mes"
@@ -18463,6 +19218,14 @@ msgstr "Este PDF no tiene texto extraíble y parece una imagen escaneada. Budger
 msgid "This permanently deletes your encrypted budgets and queued sync state. This cannot be undone."
 msgstr "Esto elimina permanentemente tus presupuestos cifrados y el estado de sincronización en cola. No se puede deshacer."
 
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "This question could not be run"
+msgstr "No se pudo ejecutar esta pregunta"
+
+#: src/pages/reports/question/QuestionPage.tsx
+msgid "This question doesn’t exist"
+msgstr "Esta pregunta no existe"
+
 #: src/features/transactions/ui/cells/ExchangeRateCell.tsx
 msgid "This rate is over 1,000× different. Check the decimal point or confirm it."
 msgstr "Este tipo de cambio difiere en más de 1.000 veces. Comprueba el separador decimal o confírmalo."
@@ -18490,8 +19253,8 @@ msgid "This replaces the data on this device with the server copy, then applies 
 msgstr "Esto reemplaza los datos de este dispositivo por la copia del servidor y luego aplica los cambios hechos después. Úsalo si este dispositivo muestra algo distinto a tus otros dispositivos."
 
 #: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "This report could not be run"
-msgstr "No se pudo ejecutar este informe"
+#~ msgid "This report could not be run"
+#~ msgstr "No se pudo ejecutar este informe"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "This report query is not read-only and cannot run in dashboard widgets."
@@ -18689,7 +19452,7 @@ msgstr "CONSEJO:"
 msgid "Title (Optional)"
 msgstr "Título (opcional)"
 
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+#: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
@@ -18782,8 +19545,8 @@ msgid "Top payee"
 msgstr "Beneficiario principal"
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
-msgid "Top payees"
-msgstr "Principales beneficiarios"
+#~ msgid "Top payees"
+#~ msgstr "Principales beneficiarios"
 
 #: src/pages/explorer-page/sql-utils.ts
 msgid "Top payees by spending (30d)"
@@ -18967,6 +19730,7 @@ msgstr "Transacción con divisiones añadida"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 #: src/features/budget-planning/ui/spending-drawer-mobile/TransactionList.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/settings/ImportsPage.tsx
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Transactions"
@@ -19020,6 +19784,7 @@ msgstr "Error de transcripción"
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
 #: src/features/payees/ui/PayeeCombobox.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/form/TransactionTypeSelector.tsx
 #: src/pages/settings/recurring/components/RecurringKindBadge.tsx
 msgid "Transfer"
@@ -19151,9 +19916,13 @@ msgstr "Probar primero la demo"
 msgid "Try a different search term"
 msgstr "Prueba con otro término de búsqueda"
 
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Try a longer date range or remove a filter."
+msgstr "Prueba un periodo más largo o quita un filtro."
+
 #: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Try a longer date range or remove some filters."
-msgstr "Prueba un rango de fechas más largo o quita algunos filtros."
+#~ msgid "Try a longer date range or remove some filters."
+#~ msgstr "Prueba un rango de fechas más largo o quita algunos filtros."
 
 #: src/features/transactions/ui/MobileTransactionList.tsx
 msgid "Try adjusting your search filters or add a new transaction"
@@ -19364,7 +20133,7 @@ msgid "Uncategorised"
 msgstr "Sin categorizar"
 
 #: src/features/analytics/ui/SpendingBreakdownContent.tsx
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/analytics/analytics-model.ts
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Uncategorized"
@@ -19464,6 +20233,10 @@ msgstr "Deshecho"
 msgid "Ungrouped"
 msgstr "Sin agrupar"
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "Unit"
+msgstr "Unidad"
+
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 #: src/pages/admin/SelfHostAdminDashboard.tsx
@@ -19531,6 +20304,10 @@ msgstr "Espacio de trabajo sin nombre"
 msgid "Unreadable date \"{value}\" for format {format} — using today"
 msgstr "Fecha «{value}» ilegible con formato {format}: se usa hoy"
 
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "Unsaved changes"
+msgstr "Cambios sin guardar"
+
 #: src/features/import/ui/GlobalImportDropHandler.tsx
 msgid "Unsupported file"
 msgstr "Archivo no compatible"
@@ -19571,10 +20348,9 @@ msgstr "Próximo recibo: {0}"
 #~ msgid "Upcoming transactions"
 #~ msgstr "Próximas transacciones"
 
-#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
-#: src/pages/explorer-page/ExplorerPage.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Update"
@@ -19605,6 +20381,10 @@ msgstr "Actualizar gráfico"
 msgid "Update failed"
 msgstr "Error en la actualización"
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "Update filter"
+msgstr "Actualizar filtro"
+
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Update Goal"
 msgstr "Actualizar objetivo"
@@ -19625,10 +20405,14 @@ msgstr "Actualiza los métodos de pago y la información de facturación"
 msgid "Update payment methods, download invoices, or manage billing details"
 msgstr "Actualiza los métodos de pago, descarga facturas o gestiona los datos de facturación"
 
+#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+msgid "Update question"
+msgstr "Actualizar pregunta"
+
 #: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
 #: src/pages/explorer-page/components/ReportBuilderPanel.tsx
-msgid "Update report"
-msgstr "Actualizar informe"
+#~ msgid "Update report"
+#~ msgstr "Actualizar informe"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Update Report"
@@ -19672,10 +20456,14 @@ msgstr "Actualiza tu contraseña maestra para mantener tus datos seguros. Esto v
 msgid "Update your report and chart configurations."
 msgstr "Actualiza las configuraciones de tus informes y gráficos."
 
+#: src/pages/reports/ReportsHomePage.tsx
+msgid "Updated {updated}"
+msgstr "Actualizada el {updated}"
+
 #. placeholder {0}: new Date(report.updatedAt).toLocaleDateString()
 #: src/pages/explorer-page/components/ReportsPanel.tsx
-msgid "Updated: {0}"
-msgstr "Actualizado: {0}"
+#~ msgid "Updated: {0}"
+#~ msgstr "Actualizado: {0}"
 
 #: src/shared/pwa/ServiceWorkerUpdateProvider.tsx
 msgid "Updates are unavailable in this environment."
@@ -19883,6 +20671,10 @@ msgstr "utinyint usmallint uinteger ubigint hugeint uhugeint"
 msgid "Vacation"
 msgstr "Vacaciones"
 
+#: src/features/reports/ui/notebook/FilterEditor.tsx
+msgid "Value"
+msgstr "Valor"
+
 #: src/pages/accounts/components/ValueChangeStat.tsx
 msgid "Value change"
 msgstr "Cambio de valor"
@@ -19898,6 +20690,10 @@ msgstr "Los cambios de valor se registran una vez al día: el historial se va co
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Value date (when the money moved)"
 msgstr "Fecha valor (cuando se movió el dinero)"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "values"
+msgstr "valores"
 
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Values"
@@ -19979,6 +20775,10 @@ msgstr "Ver detalles"
 msgid "View splits"
 msgstr "Ver divisiones"
 
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "View the SQL"
+msgstr "Ver el SQL"
+
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "View workspace status"
 msgstr "Ver estado del espacio de trabajo"
@@ -19990,6 +20790,10 @@ msgstr "Visión"
 #: src/pages/settings/ai/RecommendedModelsPanel.tsx
 msgid "Vision Models (for receipt scanning)"
 msgstr "Modelos de visión (para escaneo de recibos)"
+
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Visualization"
+msgstr "Visualización"
 
 #: src/shared/hooks/useWhisperVoiceInput.ts
 msgid "Voice input is not supported in this browser"
@@ -20197,7 +21001,11 @@ msgstr "Sitio web"
 msgid "WebSocket"
 msgstr "WebSocket"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "week"
+msgstr "semana"
+
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/admin/SignupsSection.tsx
 msgid "Week"
 msgstr "Semana"
@@ -20214,6 +21022,10 @@ msgstr "Semana del {0}"
 msgid "Week of {0} (so far)"
 msgstr "Semana del {0} (hasta ahora)"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Week of {day}"
+msgstr "Semana del {day}"
+
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
 #: src/features/transactions/ui/add-transaction/recurring-form.ts
 #: src/pages/admin/StickinessAnalyticsSection.tsx
@@ -20224,6 +21036,10 @@ msgstr "Semanal"
 #: src/pages/admin/SelfHostInstallsSection.tsx
 msgid "Weekly active self-host installs"
 msgstr "Instalaciones autoalojadas activas por semana"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "weeks"
+msgstr "semanas"
 
 #: src/app/system/ReconnectionOverlay.tsx
 msgid "Welcome back online!"
@@ -20279,12 +21095,16 @@ msgid "What this means"
 msgstr "Qué significa esto"
 
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-msgid "What to show"
-msgstr "Qué mostrar"
+#~ msgid "What to show"
+#~ msgstr "Qué mostrar"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "What we collect"
 msgstr "Qué recopilamos"
+
+#: src/pages/analytics/report-questions.ts
+msgid "What you assigned against what you spent"
+msgstr "Lo que asignaste frente a lo que gastaste"
 
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 #~ msgid "What you assigned vs what actually happened — only possible because you budget"
@@ -20414,6 +21234,10 @@ msgstr "Ancho -"
 msgid "Width +"
 msgstr "Ancho +"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "With two groupings, the limit keeps the top values of the first non-date grouping."
+msgstr "Con dos agrupaciones, el límite conserva los valores más altos de la primera agrupación que no es una fecha."
+
 #: src/features/import/ui/steps/configure/FormattingTab.tsx
 msgid "With your current settings:"
 msgstr "Con tu configuración actual:"
@@ -20532,11 +21356,14 @@ msgstr "Eje X"
 msgid "Y-Axis"
 msgstr "Eje Y"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "year"
+msgstr "año"
+
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Year"
 msgstr "Año"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
 #: src/pages/accounts/AccountsPage.tsx
 #: src/pages/analytics/analytics-state.ts
 msgid "Year to date"
@@ -20563,6 +21390,14 @@ msgstr "Objetivo de asignación anual"
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Yearly Available Target"
 msgstr "Objetivo anual de saldo disponible"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "years"
+msgstr "años"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Yes"
+msgstr "Sí"
 
 #: src/pages/analytics/report-answers.ts
 msgid "Yes — you kept {kept} of the {incomeText} that came in ({rate}% of income)."
@@ -21182,870 +22017,3 @@ msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-
 #: src/app/startup/StartupLayout.tsx
 msgid "Zero-based budgeting. Zero-knowledge privacy."
 msgstr "Presupuesto base cero. Privacidad zero-knowledge."
-
-#. placeholder {0}: state.invites.length
-#: src/pages/onboarding/steps/DoneStep.tsx
-msgid "{0, plural, one {# person} other {# people}}"
-msgstr "{0, plural, one {# persona} other {# personas}}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{field}: {bucket}"
-msgstr "{field}: {bucket}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{first}, {second} and {more} more"
-msgstr "{first}, {second} y {more} más"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{firstGroup} and {secondGroup}"
-msgstr "{firstGroup} y {secondGroup}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "{label} granularity"
-msgstr "Granularidad de {label}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "{label}: ascending. Switch to descending"
-msgstr "{label}: ascendente. Cambiar a descendente"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "{label}: descending. Switch to ascending"
-msgstr "{label}: descendente. Cambiar a ascendente"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{metric} and {secondMetric}"
-msgstr "{metric} y {secondMetric}"
-
-#: src/features/reports/ui/notebook/QuestionVisualization.tsx
-msgid "{metricName} chart"
-msgstr "Gráfico: {metricName}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{metrics} by {by}"
-msgstr "{metrics} por {by}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name} < {first}"
-msgstr "{name} < {first}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name} > {first}"
-msgstr "{name} > {first}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name} after {firstDate}"
-msgstr "{name} después del {firstDate}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name} before {firstDate}"
-msgstr "{name} antes del {firstDate}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name} between {first} and {second}"
-msgstr "{name} entre {first} y {second}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name} contains “{first}”"
-msgstr "{name} contiene «{first}»"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name} is {list}"
-msgstr "{name} es {list}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name} is empty"
-msgstr "{name} está vacío"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name} is not {list}"
-msgstr "{name} no es {list}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name} is not empty"
-msgstr "{name} no está vacío"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name} starts with “{first}”"
-msgstr "{name} empieza por «{first}»"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name}: {firstDate}"
-msgstr "{name}: {firstDate}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name}: {firstDate} – {secondDate}"
-msgstr "{name}: {firstDate} – {secondDate}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name}: last {amount} {unit}"
-msgstr "{name}: últimos {amount} {unit}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name}: no"
-msgstr "{name}: no"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name}: previous {amount} full {unit}"
-msgstr "{name}: {amount} {unit} completos anteriores"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name}: this month"
-msgstr "{name}: este mes"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name}: this quarter"
-msgstr "{name}: este trimestre"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name}: this week"
-msgstr "{name}: esta semana"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name}: this year"
-msgstr "{name}: este año"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name}: today"
-msgstr "{name}: hoy"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{name}: yes"
-msgstr "{name}: sí"
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-msgid "{rowCountText} rows"
-msgstr "{rowCountText} filas"
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-#: src/features/reports/ui/notebook/QuestionTable.tsx
-msgid "1 row"
-msgstr "1 fila"
-
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Account Column Mapped"
-msgstr "Columna de cuenta asignada"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Account type"
-msgstr "Tipo de cuenta"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Add a step"
-msgstr "Añadir un paso"
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Add filter"
-msgstr "Añadir filtro"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Add grouping"
-msgstr "Añadir agrupación"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Add metric"
-msgstr "Añadir métrica"
-
-#: src/pages/explorer-page/SqlQuestionView.tsx
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "Add to dashboard"
-msgstr "Añadir al panel"
-
-#: src/pages/reports/question/usePinToDashboard.tsx
-msgid "Added to dashboard"
-msgstr "Añadido al panel"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "After"
-msgstr "Después de"
-
-#: src/shared/model/nav-registry.ts
-msgid "All reports"
-msgstr "Todos los informes"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Ascending"
-msgstr "Ascendente"
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "Ask your own: pick data, filter it, summarize it and save it to reuse or pin to a dashboard."
-msgstr "Haz la tuya: elige datos, fíltralos, resúmelos y guárdalos para reutilizarlos o fijarlos en un panel."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Assigned and activity per category per month."
-msgstr "Asignado y actividad por categoría y mes."
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Available isn’t offered here: it depends on carry-over and credit card rules that only the Budget page applies."
-msgstr "Aquí no se ofrece el disponible: depende de reglas de arrastre y de tarjetas de crédito que solo aplica la página de presupuesto."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Average of {field}"
-msgstr "Promedio de {field}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Average spending per transaction"
-msgstr "Gasto medio por transacción"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Balance (account currency)"
-msgstr "Saldo (moneda de la cuenta)"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Basic metrics"
-msgstr "Métricas básicas"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Before"
-msgstr "Antes de"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Between"
-msgstr "Entre"
-
-#: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Budgero works either way. Pick the path that fits."
-msgstr "Budgero funciona de ambas maneras. Elige el camino que mejor encaje."
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Budget metrics"
-msgstr "Métricas del presupuesto"
-
-#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Build dashboard layouts from saved questions. Drag to reorder, resize on desktop, and use size presets on mobile."
-msgstr "Crea paneles a partir de preguntas guardadas. Arrastra para reordenar, cambia el tamaño en escritorio y usa tamaños predefinidos en el móvil."
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "by"
-msgstr "por"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Change metric: {label}"
-msgstr "Cambiar métrica: {label}"
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-msgid "Chart type"
-msgstr "Tipo de gráfico"
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "Choose another field"
-msgstr "Elegir otro campo"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Closed"
-msgstr "Cerrada"
-
-#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
-msgid "Collection"
-msgstr "Colección"
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "Collections"
-msgstr "Colecciones"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Columns ({columnCount})"
-msgstr "Columnas ({columnCount})"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Columns to show"
-msgstr "Columnas visibles"
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "Condition"
-msgstr "Condición"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Contains"
-msgstr "Contiene"
-
-#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
-msgid "Convert to SQL"
-msgstr "Convertir a SQL"
-
-#: src/pages/explorer-page/SqlQuestionView.tsx
-msgid "Converted to SQL. Saving replaces the notebook version."
-msgstr "Convertida a SQL. Al guardar se reemplaza la versión del editor visual."
-
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "Dashboard widgets that show it will stop working. This can’t be undone."
-msgstr "Los widgets de paneles que la muestran dejarán de funcionar. No se puede deshacer."
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "Dashboards"
-msgstr "Paneles"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Data source"
-msgstr "Fuente de datos"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "day"
-msgstr "día"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "days"
-msgstr "días"
-
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "Delete question"
-msgstr "Eliminar pregunta"
-
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "Delete this question?"
-msgstr "¿Eliminar esta pregunta?"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Descending"
-msgstr "Descendente"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Distinct {field}"
-msgstr "{field} distintos"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Distinct values"
-msgstr "Valores distintos"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Each account with its balance from transactions."
-msgstr "Cada cuenta con su saldo calculado a partir de las transacciones."
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Edit filter: {label}"
-msgstr "Editar filtro: {label}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Enter a limit"
-msgstr "Introduce un límite"
-
-#: src/pages/analytics/report-questions.ts
-msgid "Every category and month in one grid"
-msgstr "Cada categoría y cada mes en una sola tabla"
-
-#: src/pages/onboarding/onboarding-data.ts
-msgid "Every coin now has a place to land."
-msgstr "Cada moneda tiene ahora su sitio."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Every transaction; split transactions count once per category."
-msgstr "Cada transacción; las transacciones divididas cuentan una vez por categoría."
-
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "Failed to delete the question"
-msgstr "No se pudo eliminar la pregunta"
-
-#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
-msgid "Failed to save the question"
-msgstr "No se pudo guardar la pregunta"
-
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Fallback Account (for unmatched account names)"
-msgstr "Cuenta de respaldo (para nombres de cuenta no coincidentes)"
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "Filter by…"
-msgstr "Filtrar por…"
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "Find a field"
-msgstr "Buscar un campo"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Find a metric"
-msgstr "Buscar una métrica"
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-msgid "First {rowCountText} of {totalText} rows"
-msgstr "Primeras {rowCountText} de {totalText} filas"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Greater than"
-msgstr "Mayor que"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Group by…"
-msgstr "Agrupar por…"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Groupings"
-msgstr "Agrupaciones"
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "How many"
-msgstr "Cuántos"
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "Include the current {currentUnit}"
-msgstr "Incluir el periodo actual ({currentUnit})"
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "Include today"
-msgstr "Incluir hoy"
-
-#: src/pages/analytics/report-questions.ts
-msgid "Income against spending, month by month"
-msgstr "Ingresos frente a gastos, mes a mes"
-
-#: src/pages/analytics/report-questions.ts
-msgid "Income flowing into groups and categories"
-msgstr "Ingresos que fluyen hacia grupos y categorías"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Income minus spending"
-msgstr "Ingresos menos gastos"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Inflows to income categories"
-msgstr "Entradas en categorías de ingresos"
-
-#: src/features/reports/ui/notebook/useQuestionQuery.ts
-msgid "Invalid question"
-msgstr "Pregunta no válida"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Is"
-msgstr "Es"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Is empty"
-msgstr "Está vacío"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Is not"
-msgstr "No es"
-
-#: src/pages/reports/question/QuestionPage.tsx
-msgid "It may have been deleted on another device."
-msgstr "Puede que se haya eliminado en otro dispositivo."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Last transaction"
-msgstr "Última transacción"
-
-#: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Learn ZBB with a short walkthrough"
-msgstr "Aprende ZBB con un breve recorrido"
-
-#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
-msgid "Leave empty to keep it in My questions."
-msgstr "Déjalo vacío para mantenerla en Mis preguntas."
-
-#: src/features/reports/ui/notebook/QuestionVisualization.tsx
-msgid "Legend"
-msgstr "Leyenda"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Less than"
-msgstr "Menor que"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Limit"
-msgstr "Límite"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Maximum number of rows"
-msgstr "Número máximo de filas"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Maximum of {field}"
-msgstr "Máximo de {field}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Metrics"
-msgstr "Métricas"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Minimum of {field}"
-msgstr "Mínimo de {field}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "month"
-msgstr "mes"
-
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "More actions"
-msgstr "Más acciones"
-
-#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
-#: src/pages/reports/question/NotebookQuestionView.tsx
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "My questions"
-msgstr "Mis preguntas"
-
-#: src/pages/analytics/report-questions.ts
-msgid "Net worth and account balances over time"
-msgstr "Patrimonio neto y saldos de cuentas a lo largo del tiempo"
-
-#: src/app/layout/desktop-shell/constants.ts
-#: src/pages/reports/question/NotebookQuestionView.tsx
-#: src/pages/reports/question/QuestionPage.tsx
-#: src/pages/reports/ReportsHomePage.tsx
-#: src/shared/model/nav-registry.ts
-#: src/widgets/command-palette/CommandPalette.tsx
-msgid "New question"
-msgstr "Nueva pregunta"
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "New SQL query"
-msgstr "Nueva consulta SQL"
-
-#: src/pages/explorer-page/SqlQuestionView.tsx
-msgid "New SQL question"
-msgstr "Nueva pregunta SQL"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "No"
-msgstr "No"
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "No matching fields."
-msgstr "No hay campos que coincidan."
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "No matching metrics."
-msgstr "No hay métricas que coincidan."
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "No prebuilt report matches your search."
-msgstr "Ningún informe predefinido coincide con tu búsqueda."
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-msgid "No rows match this question"
-msgstr "Ninguna fila coincide con esta pregunta"
-
-#: src/features/reports/ui/notebook/QuestionVisualization.tsx
-msgid "No rows match this question."
-msgstr "Ninguna fila coincide con esta pregunta."
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "No saved question matches your search."
-msgstr "Ninguna pregunta guardada coincide con tu búsqueda."
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "No saved questions yet"
-msgstr "Aún no hay preguntas guardadas"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Not empty"
-msgstr "No vacío"
-
-#: src/features/reports/ui/notebook/QuestionVisualization.tsx
-msgid "Nothing to chart for these rows."
-msgstr "No hay nada que representar para estas filas."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Number"
-msgstr "Número"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Number of accounts"
-msgstr "Número de cuentas"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Number of rows"
-msgstr "Número de filas"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "On"
-msgstr "El"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "On-budget account"
-msgstr "Cuenta del presupuesto"
-
-#: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Open the question"
-msgstr "Abrir la pregunta"
-
-#: src/features/reports/ui/notebook/QuestionVisualization.tsx
-msgid "Other ({otherCount})"
-msgstr "Otros ({otherCount})"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Outflows minus refunds, income categories left out"
-msgstr "Salidas menos reembolsos, sin categorías de ingresos"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Pick a column to sort by"
-msgstr "Elige una columna para ordenar"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Pick a grouping"
-msgstr "Elige una agrupación"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Pick a metric"
-msgstr "Elige una métrica"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Pick a metric…"
-msgstr "Elige una métrica…"
-
-#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
-msgid "Please enter a name"
-msgstr "Introduce un nombre"
-
-#: src/pages/analytics/report-questions.ts
-msgid "Project your balance under what-ifs"
-msgstr "Proyecta tu saldo con escenarios hipotéticos"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Q{quarter} {year}"
-msgstr "T{quarter} {year}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "quarter"
-msgstr "trimestre"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "quarters"
-msgstr "trimestres"
-
-#: src/app/layout/desktop-shell/useDesktopShellState.ts
-msgid "Question"
-msgstr "Pregunta"
-
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "Question deleted"
-msgstr "Pregunta eliminada"
-
-#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
-msgid "Question saved"
-msgstr "Pregunta guardada"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Question steps"
-msgstr "Pasos de la pregunta"
-
-#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
-msgid "Question updated"
-msgstr "Pregunta actualizada"
-
-#: src/app/layout/desktop-shell/constants.ts
-msgid "Questions"
-msgstr "Preguntas"
-
-#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
-msgid "Read-only. Convert to SQL to edit it by hand; a converted question can’t go back to the notebook editor."
-msgstr "Solo lectura. Conviértela a SQL para editarla a mano; una pregunta convertida no puede volver al editor visual."
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "Ready-made answers to common questions, and the questions you’ve saved."
-msgstr "Respuestas listas a preguntas habituales y las preguntas que has guardado."
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Remove {title} step"
-msgstr "Quitar el paso «{title}»"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Remove filter: {label}"
-msgstr "Quitar filtro: {label}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Remove grouping: {label}"
-msgstr "Quitar agrupación: {label}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Remove metric: {label}"
-msgstr "Quitar métrica: {label}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Remove sort: {label}"
-msgstr "Quitar orden: {label}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Reset to default columns"
-msgstr "Restablecer columnas predeterminadas"
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-msgid "Result"
-msgstr "Resultado"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "rows"
-msgstr "filas"
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-msgid "Running question…"
-msgstr "Ejecutando pregunta…"
-
-#: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
-msgid "Save a question under Reports first."
-msgstr "Primero guarda una pregunta en Informes."
-
-#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
-msgid "Save and add to dashboard"
-msgstr "Guardar y añadir al panel"
-
-#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
-#: src/pages/explorer-page/SqlQuestionView.tsx
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "Save question"
-msgstr "Guardar pregunta"
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "Saved questions"
-msgstr "Preguntas guardadas"
-
-#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
-msgid "Saved questions appear on the Reports page and can be added to a dashboard. They reopen in the editor."
-msgstr "Las preguntas guardadas aparecen en la página de Informes y se pueden añadir a un panel. Se vuelven a abrir en el editor."
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "Search {label}"
-msgstr "Buscar en {label}"
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "Search reports"
-msgstr "Buscar informes"
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "Search reports…"
-msgstr "Buscar informes…"
-
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Select fallback account"
-msgstr "Selecciona la cuenta de respaldo"
-
-#: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Set up accounts & envelopes by hand"
-msgstr "Configurar cuentas y sobres manualmente"
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-msgid "Show as"
-msgstr "Mostrar como"
-
-#: src/features/reports/ui/notebook/QuestionTable.tsx
-msgid "Show more rows"
-msgstr "Mostrar más filas"
-
-#: src/features/reports/ui/notebook/QuestionTable.tsx
-msgid "Showing {shownCount} of {totalCount} rows"
-msgstr "Mostrando {shownCount} de {totalCount} filas"
-
-#: src/pages/analytics/report-questions.ts
-msgid "Spending by category, payee or label"
-msgstr "Gastos por categoría, beneficiario o etiqueta"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Spending divided by the number of spending transactions"
-msgstr "Gastos divididos entre el número de transacciones de gasto"
-
-#: src/pages/explorer-page/SqlQuestionView.tsx
-msgid "SQL (advanced) · read-only queries"
-msgstr "SQL (avanzado) · consultas de solo lectura"
-
-#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
-msgid "SQL copied"
-msgstr "SQL copiado"
-
-#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "SQL query"
-msgstr "Consulta SQL"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Starts with"
-msgstr "Empieza por"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Sum of {field}"
-msgstr "Suma de {field}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Summarize"
-msgstr "Resumir"
-
-#: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
-msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
-msgstr "La transferencia seleccionada no tiene un único origen y destino. Las transferencias recurrentes divididas aún no están disponibles."
-
-#: src/features/reports/ui/notebook/ViewSqlDialog.tsx
-msgid "The SQL behind this question"
-msgstr "El SQL detrás de esta pregunta"
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-msgid "This question could not be run"
-msgstr "No se pudo ejecutar esta pregunta"
-
-#: src/pages/reports/question/QuestionPage.tsx
-msgid "This question doesn’t exist"
-msgstr "Esta pregunta no existe"
-
-#. placeholder {0}: columnMapping.account
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Transactions will use accounts from the \"{0}\" column. If an account name doesn't match any existing account, you'll need to select a default account below:"
-msgstr "Las transacciones usarán cuentas de la columna \"{0}\". Si el nombre de una cuenta no coincide con ninguna cuenta existente, tendrás que seleccionar una cuenta predeterminada a continuación:"
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-msgid "Try a longer date range or remove a filter."
-msgstr "Prueba un periodo más largo o quita un filtro."
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "Unit"
-msgstr "Unidad"
-
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "Unsaved changes"
-msgstr "Cambios sin guardar"
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "Update filter"
-msgstr "Actualizar filtro"
-
-#: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
-msgid "Update question"
-msgstr "Actualizar pregunta"
-
-#: src/pages/reports/ReportsHomePage.tsx
-msgid "Updated {updated}"
-msgstr "Actualizada el {updated}"
-
-#: src/features/reports/ui/notebook/FilterEditor.tsx
-msgid "Value"
-msgstr "Valor"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "values"
-msgstr "valores"
-
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "View the SQL"
-msgstr "Ver el SQL"
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-msgid "Visualization"
-msgstr "Visualización"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "week"
-msgstr "semana"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Week of {day}"
-msgstr "Semana del {day}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "weeks"
-msgstr "semanas"
-
-#: src/pages/analytics/report-questions.ts
-msgid "What you assigned against what you spent"
-msgstr "Lo que asignaste frente a lo que gastaste"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "With two groupings, the limit keeps the top values of the first non-date grouping."
-msgstr "Con dos agrupaciones, el límite conserva los valores más altos de la primera agrupación que no es una fecha."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "year"
-msgstr "año"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "years"
-msgstr "años"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Yes"
-msgstr "Sí"
