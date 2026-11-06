@@ -21,7 +21,7 @@ import {
   Palette,
   Info,
   FileText,
-  TrendingUp,
+  SquarePlus,
   LayoutGrid,
   type LucideIcon,
 } from 'lucide-react';
@@ -38,8 +38,8 @@ export interface NavRouteItem {
 
 /** Reports submenu links (all indented `ml-4 mr-2`). */
 export const NAV_REPORTS: NavRouteItem[] = [
-  { to: '/reports/prebuilt', icon: FileText, label: msg`Prebuilt` },
-  { to: '/reports/explorer', icon: TrendingUp, label: msg`Explorer` },
+  { to: '/reports', icon: FileText, label: msg`All reports` },
+  { to: '/reports/question/new', icon: SquarePlus, label: msg`New question` },
   { to: '/reports/dashboards', icon: LayoutGrid, label: msg`Custom Dashboards`, exact: false },
 ];
 

@@ -87,7 +87,7 @@ export function AddWidgetDialog({
 
         {selectableReports.length === 0 ? (
           <div className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
-            <Trans>Save a report with at least one chart in Explorer first.</Trans>
+            <Trans>Save a question under Reports first.</Trans>
           </div>
         ) : (
           <div className="space-y-4">
