@@ -130,26 +130,31 @@ export function QuestionResult({
         )}
 
         {stackable && (
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            value={stacking}
-            onValueChange={(value) => {
-              if (value) onStackingChange(value as Stacking);
-            }}
-            aria-label={t`Series`}
-          >
-            <ToggleGroupItem value="none" className="px-2.5">
-              <Trans>Side by side</Trans>
-            </ToggleGroupItem>
-            <ToggleGroupItem value="stacked" className="px-2.5">
-              <Trans>Stacked</Trans>
-            </ToggleGroupItem>
-            <ToggleGroupItem value="percent" className="px-2.5">
-              100%
-            </ToggleGroupItem>
-          </ToggleGroup>
+          <div className="flex items-center gap-2 border-l pl-3">
+            <span className="text-xs text-muted-foreground" aria-hidden>
+              <Trans>Series</Trans>
+            </span>
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={stacking}
+              onValueChange={(value) => {
+                if (value) onStackingChange(value as Stacking);
+              }}
+              aria-label={t`Series`}
+            >
+              <ToggleGroupItem value="none" className="px-2.5">
+                <Trans>Side by side</Trans>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="stacked" className="px-2.5">
+                <Trans>Stacked</Trans>
+              </ToggleGroupItem>
+              <ToggleGroupItem value="percent" className="px-2.5">
+                100%
+              </ToggleGroupItem>
+            </ToggleGroup>
+          </div>
         )}
 
         <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
