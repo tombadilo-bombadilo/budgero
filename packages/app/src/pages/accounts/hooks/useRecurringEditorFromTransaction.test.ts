@@ -1,4 +1,9 @@
-import { asMilli, type GetTransactionsByAccountRow, type Transaction } from '@budgero/core/browser';
+import {
+  asMilli,
+  type GetTransactionsByAccountRow,
+  type Transaction,
+  type TransactionSplit,
+} from '@budgero/core/browser';
 import { recurringInitialValuesFromTransaction } from './useRecurringEditorFromTransaction';
 
 type TransactionRowFixture = Transaction & GetTransactionsByAccountRow;
@@ -86,5 +91,54 @@ describe('recurringInitialValuesFromTransaction', () => {
       name: 'Employer',
     });
     expect(values?.toAccountId).toBeUndefined();
+  });
+
+  it('copies a split transaction with its lines in account currency', () => {
+    const line = (overrides: Partial<TransactionSplit>): TransactionSplit => ({
+      ID: 1,
+      TransactionID: 20,
+      Memo: '',
+      InflowConverted: asMilli(0),
+      OutflowConverted: asMilli(0),
+      OrderIndex: 0,
+      ...overrides,
+    });
+    const values = recurringInitialValuesFromTransaction(
+      transactionRow({
+        ID: 20,
+        Category: 'Split',
+        CategoryID: 9,
+        Payee: 'Payday',
+        OutflowConverted: asMilli(90),
+        OutflowNative: asMilli(100),
+      }),
+      1,
+      undefined,
+      [
+        line({
+          CategoryID: 5,
+          Memo: 'rent',
+          OutflowConverted: asMilli(54),
+          OutflowNative: asMilli(60),
+        }),
+        line({
+          ID: 2,
+          TransferAccountID: 3,
+          Payee: 'Me',
+          OutflowConverted: asMilli(36),
+          OutflowNative: asMilli(40),
+        }),
+      ]
+    );
+
+    expect(values).toMatchObject({
+      amount: asMilli(100),
+      direction: 'outflow',
+      categoryId: null,
+      splits: [
+        { categoryId: 5, transferAccountId: null, memo: 'rent', payee: '', inflow: 0, outflow: 60 },
+        { categoryId: null, transferAccountId: 3, memo: '', payee: 'Me', inflow: 0, outflow: 40 },
+      ],
+    });
   });
 });

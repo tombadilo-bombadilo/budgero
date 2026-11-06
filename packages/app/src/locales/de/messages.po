@@ -11913,6 +11913,10 @@ msgstr "Keine Kategorien zum Anwenden"
 msgid "No categories to reset"
 msgstr "Keine Kategorien zum Zurücksetzen"
 
+#: src/features/transactions/ui/form/SplitEditor.tsx
+msgid "No category (transfer)"
+msgstr "Keine Kategorie (Umbuchung)"
+
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "No category activity for the selected period."
 msgstr "Keine Kategorie-Aktivität für den ausgewählten Zeitraum."
@@ -16808,7 +16812,9 @@ msgstr "Ausgegeben (im Plan)"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/mobile-transaction-card/MobileTransactionCard.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 msgid "Split"
 msgstr "Aufteilen"
 
@@ -17676,8 +17682,12 @@ msgstr "Die ausgewählte Datumsspalte enthält kein Jahr (z. B. \"25. Okt.\"). A
 #~ msgstr "Die ausgewählten Transaktionen wurden dauerhaft entfernt."
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
-msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
-msgstr "Die ausgewählte Umbuchung hat nicht genau ein Quell- und ein Zielkonto. Wiederkehrende geteilte Umbuchungen werden noch nicht unterstützt."
+#~ msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
+#~ msgstr "Die ausgewählte Umbuchung hat nicht genau ein Quell- und ein Zielkonto. Wiederkehrende geteilte Umbuchungen werden noch nicht unterstützt."
+
+#: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
+msgid "The selected transfer does not have one source and one destination. To repeat a split with a transfer line, make its split transaction recurring instead."
+msgstr "Die ausgewählte Umbuchung hat nicht genau ein Quell- und ein Zielkonto. Um eine Aufteilung mit einer Umbuchungs-Teilbuchung zu wiederholen, mach stattdessen die geteilte Transaktion wiederkehrend."
 
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "The sent amount stays fixed. Saving recalculates the received amount and both budget valuations atomically."
@@ -18550,11 +18560,12 @@ msgid "Transfer to {0}"
 msgstr "Umbuchung an {0}"
 
 #. placeholder {0}: account.Name
+#. placeholder {0}: accountById(String(line.transferAccountId))?.Name ?? ''
 #. placeholder {0}: selectedTransfer.Name
-#. placeholder {0}: transferAccountRecord.Name
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/cells/TransactionPayeeCell.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/form/SplitEditor.tsx
 msgid "Transfer: {0}"
 msgstr "Umbuchung: {0}"
 

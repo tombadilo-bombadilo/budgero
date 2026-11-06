@@ -218,6 +218,27 @@ describe('RecurringTransactionService.listProjectedTransactions', () => {
     expect(projected.some((row) => row.Date >= beyondDefaultHorizon)).toBe(true);
   });
 
+  it('keeps the payee the projected row showed when marked ready (#127)', async () => {
+    const { services, budgetId, account, categoryId } = await setup();
+    await services.recurring.createRecurringTransaction({
+      budgetId,
+      accountId: account.ID,
+      categoryId,
+      name: 'Netflix',
+      amount: 12,
+      direction: 'outflow',
+      schedule: { startDate: isoDate(new Date()), intervalUnit: 'month', intervalCount: 1 },
+    });
+    const projected = services.recurring.listProjectedTransactions(budgetId, {})[0];
+    const occurrence = services.recurring.listOccurrences(budgetId, { status: 'scheduled' })[0];
+    const ready = await services.recurring.markOccurrenceReady({ occurrenceId: occurrence.id });
+    const posted = services.transactions
+      .getTransactionsByAccount(account.ID)
+      .find((tx) => tx.ID === ready.transactionId);
+    expect(projected.Payee).toBe('Netflix');
+    expect(posted?.Payee).toBe('Netflix');
+  });
+
   it('deleting a template removes unposted occurrences but keeps posted transactions', async () => {
     const { services, budgetId, account, categoryId } = await setup();
     const today = new Date();

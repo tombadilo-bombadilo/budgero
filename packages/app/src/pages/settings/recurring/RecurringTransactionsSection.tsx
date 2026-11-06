@@ -125,6 +125,7 @@ export function RecurringTransactionsSection() {
       accountId: template.accountId,
       toAccountId: template.toAccountId ?? null,
       categoryId: template.categoryId ?? null,
+      splits: template.splits ?? null,
       schedule: template.schedule,
       notifyDaysBefore: template.notifyDaysBefore ?? 0,
       active: template.active,
@@ -151,7 +152,7 @@ export function RecurringTransactionsSection() {
         toast.error(t`Pick two different accounts for a transfer`);
         return;
       }
-    } else if (!values.categoryId) {
+    } else if (!values.categoryId && !values.splits?.length) {
       toast.error(t`Select a category`);
       return;
     }
@@ -167,6 +168,7 @@ export function RecurringTransactionsSection() {
           accountId: values.accountId,
           toAccountId: values.toAccountId,
           categoryId: values.categoryId,
+          splits: values.splits,
           name: values.name,
           memo: values.memo,
           amount: values.amount,
@@ -187,6 +189,7 @@ export function RecurringTransactionsSection() {
             accountId: values.accountId,
             toAccountId: values.toAccountId,
             categoryId: values.categoryId,
+            splits: values.splits,
             name: values.name,
             memo: values.memo,
             amount: values.amount,
@@ -354,7 +357,11 @@ export function RecurringTransactionsSection() {
                 : undefined
             }
             categoryName={
-              template.categoryId ? categoriesById.get(template.categoryId) : 'Unassigned category'
+              template.splits
+                ? t`Split`
+                : template.categoryId
+                  ? categoriesById.get(template.categoryId)
+                  : 'Unassigned category'
             }
             occurrences={occurrencesByTemplate.get(template.id) ?? EMPTY_OCCURRENCES}
             accountLocalizer={accountLocalizersById.get(template.accountId) ?? globalLocalizer}

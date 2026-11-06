@@ -11915,6 +11915,10 @@ msgstr "No categories to apply"
 msgid "No categories to reset"
 msgstr "No categories to reset"
 
+#: src/features/transactions/ui/form/SplitEditor.tsx
+msgid "No category (transfer)"
+msgstr "No category (transfer)"
+
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "No category activity for the selected period."
 msgstr "No category activity for the selected period."
@@ -16810,7 +16814,9 @@ msgstr "Spent (within plan)"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/mobile-transaction-card/MobileTransactionCard.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 msgid "Split"
 msgstr "Split"
 
@@ -17678,8 +17684,12 @@ msgstr "The selected date column has no year (e.g. \"Oct 25\"). All transactions
 #~ msgstr "The selected transaction(s) have been permanently removed."
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
-msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
-msgstr "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
+#~ msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
+#~ msgstr "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
+
+#: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
+msgid "The selected transfer does not have one source and one destination. To repeat a split with a transfer line, make its split transaction recurring instead."
+msgstr "The selected transfer does not have one source and one destination. To repeat a split with a transfer line, make its split transaction recurring instead."
 
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "The sent amount stays fixed. Saving recalculates the received amount and both budget valuations atomically."
@@ -18552,11 +18562,12 @@ msgid "Transfer to {0}"
 msgstr "Transfer to {0}"
 
 #. placeholder {0}: account.Name
+#. placeholder {0}: accountById(String(line.transferAccountId))?.Name ?? ''
 #. placeholder {0}: selectedTransfer.Name
-#. placeholder {0}: transferAccountRecord.Name
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/cells/TransactionPayeeCell.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/form/SplitEditor.tsx
 msgid "Transfer: {0}"
 msgstr "Transfer: {0}"
 

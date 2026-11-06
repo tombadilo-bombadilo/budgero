@@ -28,6 +28,7 @@ import {
   isAccountOnBudget,
   resolveTransferPayees,
   transferInvolvesOffBudgetAccount,
+  type RecurringSplitLine,
 } from '@budgero/core/browser';
 import type { AddTransferRequest } from '@features/transactions/api/useAddTransactionHandler';
 import type {
@@ -72,6 +73,8 @@ export interface UseAddTransactionFormOptions {
   onAddTransfer: (request: AddTransferRequest) => Promise<AddTransferResult>;
   onCancel: () => void;
   initialValues?: TransactionFormInitialValues;
+  /** Split lines to start with (e.g. a recurring template's); split mode is on when set. */
+  initialSplitLines?: SplitLine[];
   disableLastUsed?: boolean;
   disableAutofill?: boolean;
   disableCurrencyConversion?: boolean;
@@ -84,6 +87,7 @@ export function useAddTransactionForm({
   onAddTransfer,
   onCancel,
   initialValues,
+  initialSplitLines,
   disableLastUsed = false,
   disableAutofill = false,
   disableCurrencyConversion = false,
@@ -112,8 +116,8 @@ export function useAddTransactionForm({
   } = form;
 
   // Split mode state (kept local as it's UI-specific)
-  const [isSplit, setIsSplit] = React.useState(false);
-  const [splitLines, setSplitLines] = React.useState<SplitLine[]>([]);
+  const [isSplit, setIsSplit] = React.useState(Boolean(initialSplitLines?.length));
+  const [splitLines, setSplitLines] = React.useState<SplitLine[]>(initialSplitLines ?? []);
 
   // Track the resolved exchange rate for the currency conversion notice
   const [resolvedRate, setResolvedRate] = React.useState<number | null>(null);
@@ -451,6 +455,54 @@ export function useAddTransactionForm({
     lastPrefillKey.current = null;
   }, [form, resetAutofillSession]);
 
+  /**
+   * The split lines ready to save (account-currency amounts, like the
+   * parent's), or null after telling the user what is wrong with them.
+   */
+  const prepareSplitLines = React.useCallback((): RecurringSplitLine[] | null => {
+    const splitValidation = validateSplitTotal(remaining);
+    if (!splitValidation.isValid && splitValidation.error) {
+      toast.error(splitValidation.error.title, {
+        description: splitValidation.error.description,
+      });
+      return null;
+    }
+
+    const invalidAmounts = splitLines.some(
+      (line) =>
+        line.inflow < 0 ||
+        line.outflow < 0 ||
+        (line.inflow === 0 && line.outflow === 0) ||
+        (line.inflow > 0 && line.outflow > 0)
+    );
+    if (invalidAmounts) {
+      toast.error(t`Invalid split amount`, {
+        description: t`Each split line needs either an inflow or an outflow amount.`,
+      });
+      return null;
+    }
+
+    const uncategorizedId = categories.find((c) => c.Name === 'Uncategorized')?.ID ?? null;
+    const missingAssignment = splitLines.some(
+      (l) => (!l.categoryId && !l.transferAccountId) || (l.categoryId && l.transferAccountId)
+    );
+    if (missingAssignment && !uncategorizedId) {
+      toast.error(t`Split requires category`, {
+        description: t`Each split line needs a category. Please assign a category to every split.`,
+      });
+      return null;
+    }
+
+    return splitLines.map((l) => ({
+      categoryId: l.categoryId ?? (l.transferAccountId ? null : uncategorizedId),
+      transferAccountId: l.transferAccountId ?? null,
+      memo: l.memo ?? '',
+      payee: l.payee ?? '',
+      inflow: l.inflow,
+      outflow: l.outflow,
+    }));
+  }, [t, remaining, splitLines, categories]);
+
   const handleSubmit = React.useCallback(
     async (addAnother = false) => {
       if (form.selectedLabelId !== null && !labelsLoaded) return;
@@ -687,49 +739,9 @@ export function useAddTransactionForm({
       }
 
       // Split-mode
-      const splitValidation = validateSplitTotal(remaining);
-      if (!splitValidation.isValid && splitValidation.error) {
-        toast.error(splitValidation.error.title, {
-          description: splitValidation.error.description,
-        });
-        return;
-      }
-
-      const invalidAmounts = splitLines.some(
-        (line) =>
-          line.inflow < 0 ||
-          line.outflow < 0 ||
-          (line.inflow === 0 && line.outflow === 0) ||
-          (line.inflow > 0 && line.outflow > 0)
-      );
-      if (invalidAmounts) {
-        toast.error(t`Invalid split amount`, {
-          description: t`Each split line needs either an inflow or an outflow amount.`,
-        });
-        return;
-      }
-
+      const prepared = prepareSplitLines();
+      if (!prepared) return;
       const accountId = parseInt(form.selectedFromAccount);
-
-      const missingAssignment = splitLines.some(
-        (l) => (!l.categoryId && !l.transferAccountId) || (l.categoryId && l.transferAccountId)
-      );
-      if (missingAssignment && !uncategorizedId) {
-        toast.error(t`Split requires category`, {
-          description: t`Each split line needs a category. Please assign a category to every split.`,
-        });
-        return;
-      }
-
-      // Account-currency amounts, like the parent's.
-      const prepared = splitLines.map((l) => ({
-        categoryId: l.categoryId ?? (l.transferAccountId ? null : uncategorizedId),
-        transferAccountId: l.transferAccountId ?? null,
-        memo: l.memo ?? '',
-        payee: l.payee ?? '',
-        inflow: l.inflow,
-        outflow: l.outflow,
-      }));
 
       try {
         // Parent and lines are one op: stored together or not at all. Keep
@@ -780,13 +792,12 @@ export function useAddTransactionForm({
       form,
       isSplit,
       needsBudgetConversion,
-      splitLines,
       accounts,
       categories,
       selectedBudget,
       selectedAccount,
       canUseCurrencyApi,
-      remaining,
+      prepareSplitLines,
       onAddTransaction,
       onAddTransfer,
       resetFormFields,
@@ -818,6 +829,7 @@ export function useAddTransactionForm({
     splitLines,
     setSplitLines,
     toggleSplit,
+    prepareSplitLines,
 
     // Data
     categories,

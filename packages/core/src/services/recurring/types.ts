@@ -25,6 +25,21 @@ export interface RecurringSchedule {
   };
 }
 
+/**
+ * One split line of a recurring template, in the template account's currency
+ * (like the add form's split lines). Exactly one of categoryId and
+ * transferAccountId is set; a transfer line posts a mirror row there.
+ */
+export interface RecurringSplitLine {
+  categoryId: number | null;
+  transferAccountId: number | null;
+  memo: string;
+  /** Empty means inherit the posted transaction's payee (the template name). */
+  payee: string;
+  inflow: MilliUnits;
+  outflow: MilliUnits;
+}
+
 export interface RecurringTransaction {
   id: number;
   budgetId: number;
@@ -49,6 +64,11 @@ export interface RecurringTransaction {
    */
   budgetAmount?: MilliUnits | null;
   categoryId: number | null;
+  /**
+   * Split lines posted with every occurrence (categoryId is then null). They
+   * sum to the signed amount; never set on transfer templates.
+   */
+  splits: RecurringSplitLine[] | null;
   name: string;
   memo: string;
   amount: MilliUnits;
@@ -68,6 +88,8 @@ export interface CreateRecurringTransactionInput {
   accountId: number;
   toAccountId?: number | null;
   categoryId?: number | null;
+  /** Null or [] means no splits. */
+  splits?: RecurringSplitLine[] | null;
   name: string;
   memo?: string;
   amount: MilliUnits;
@@ -81,6 +103,8 @@ export interface UpdateRecurringTransactionInput {
   accountId?: number;
   toAccountId?: number | null;
   categoryId?: number | null;
+  /** Null or [] clears the splits; omitted keeps them. */
+  splits?: RecurringSplitLine[] | null;
   name?: string;
   memo?: string;
   amount?: MilliUnits;

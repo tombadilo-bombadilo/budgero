@@ -40,6 +40,7 @@ const template: RecurringTransaction = {
   accountId: 1,
   toAccountId: null,
   categoryId: 1,
+  splits: null,
   name: 'Monthly bill',
   memo: longMemo,
   amount: 123_000 as RecurringTransaction['amount'],

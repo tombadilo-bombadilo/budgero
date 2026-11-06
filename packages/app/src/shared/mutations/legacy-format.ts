@@ -38,6 +38,9 @@ const NEWER_THAN_V1_18 = 3;
 /** Format 4: the first format v1.19 builds reject (labels set by rules and batch edits). */
 const NEWER_THAN_V1_19 = 4;
 
+/** Format 5: the first format v1.20 builds reject (recurring templates with split lines). */
+const NEWER_THAN_V1_20 = 5;
+
 /**
  * true: the call needs format 3 (v1.18 would apply it differently); a number:
  * the call needs that format; false: the base format will do.
@@ -58,6 +61,12 @@ const runChangedLabels = (runId: unknown): boolean => {
   const runIdNum = id(runId);
   const changes = runIdNum ? services()?.rules?.listRunChanges(runIdNum) : undefined;
   return Boolean(changes?.some((change) => change.field === 'labelId'));
+};
+
+/** Split lines on a recurring template: v1.20 drops them and posts a plain row. */
+const hasRecurringSplits = (template: unknown): boolean => {
+  const splits = (template as Args | null | undefined)?.splits;
+  return Array.isArray(splits) && splits.length > 0;
 };
 
 const has = (args: Args, ...keys: string[]) => keys.some((key) => args[key] !== undefined);
@@ -152,6 +161,8 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
     return occurrenceKeyed(options) || has(options, 'transferId', 'reuse');
   },
   'recurring.skip': (args) => occurrenceKeyed(args),
+  'recurring.create': (args) => hasRecurringSplits(args.input) && NEWER_THAN_V1_20,
+  'recurring.update': (args) => hasRecurringSplits(args.patch) && NEWER_THAN_V1_20,
   'recurring.markNotified': (args) => occurrenceKeyed(args),
   'recurring.resetOccurrence': (args) => occurrenceKeyed(args),
 

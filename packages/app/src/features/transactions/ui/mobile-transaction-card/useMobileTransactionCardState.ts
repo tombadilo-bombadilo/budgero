@@ -40,8 +40,10 @@ export function useMobileTransactionCardState({
   // Edited transaction total while in split edit mode; null = keep current total
   const [editTotal, setEditTotal] = useState<number | null>(null);
 
+  // Projected rows (a split recurring template's) have no stored lines.
   const shouldLoadSplits =
-    forceLoadSplits || transaction.Category === 'Split' || editSplits !== null;
+    !transaction.IsProjected &&
+    (forceLoadSplits || transaction.Category === 'Split' || editSplits !== null);
 
   const { data: splits = [], isLoading: splitsLoading } = useTransactionSplits(
     shouldLoadSplits ? transaction.ID : null
