@@ -11,6 +11,7 @@ import { MigrationRunner } from './migrations.js';
 import { createMigrationDatabase } from './migration-database-factory.js';
 import { readAllRows, readRow } from './sqljs-rows.js';
 import { needsOpfsWorkerWriter, writeOpfsFileViaWorker } from './opfs-sync-writer.js';
+import { getOpfsRoot, idbDeleteFile, idbReadFile, idbWriteFile } from './local-file-store.js';
 
 import { createLogger } from '../logger.js';
 
@@ -318,12 +319,13 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
 
   private static async loadFromOPFS(filename: string): Promise<Uint8Array | null> {
     try {
-      if (!navigator.storage || !navigator.storage.getDirectory) {
-        debugLog('OPFS not available');
-        return null;
+      const opfsRoot = await getOpfsRoot();
+      if (!opfsRoot) {
+        // OPFS refused (e.g. a Firefox private window): the copy lives in IndexedDB.
+        const data = await idbReadFile(filename);
+        debugLog(`Loaded database from IndexedDB (${filename})`, { size: data?.length ?? 0 });
+        return data;
       }
-
-      const opfsRoot = await navigator.storage.getDirectory();
       const fileHandle = await opfsRoot.getFileHandle(filename);
       const file = await fileHandle.getFile();
       const data = new Uint8Array(await file.arrayBuffer());
@@ -534,11 +536,16 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
   private async writeToOPFS(data: Uint8Array, encrypted: boolean): Promise<void> {
     let writable: FileSystemWritableFileStream | undefined;
     try {
-      if (!globalThis.navigator?.storage?.getDirectory) {
-        throw new Error('Browser storage is unavailable. The budget could not be saved locally.');
+      const opfsRoot = await getOpfsRoot();
+      if (!opfsRoot) {
+        // OPFS refused (e.g. a Firefox private window): keep the copy in IndexedDB.
+        await idbWriteFile(this.dbFilename, data);
+        debugLog(`Saved database to IndexedDB (${this.dbFilename})`, {
+          encryptedSize: data.length,
+          encrypted,
+        });
+        return;
       }
-
-      const opfsRoot = await navigator.storage.getDirectory();
       const fileHandle = await opfsRoot.getFileHandle(this.dbFilename, { create: true });
       if (needsOpfsWorkerWriter(fileHandle)) {
         // Safari < 26: no createWritable() on the main thread.
@@ -688,11 +695,11 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
     try {
       const target = filename || WebDatabaseAdapter.getUserDatabaseFilename();
       if (!target) return;
-      if (!navigator.storage || !navigator.storage.getDirectory) {
+      const opfsRoot = await getOpfsRoot();
+      if (!opfsRoot) {
+        await idbDeleteFile(target);
         return;
       }
-
-      const opfsRoot = await navigator.storage.getDirectory();
       try {
         await opfsRoot.removeEntry(target);
         debugLog(`Cleaned up database file: ${target}`);
@@ -712,15 +719,14 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
     options?: { suffix?: string }
   ): Promise<void> {
     try {
-      if (!navigator.storage || !navigator.storage.getDirectory) {
-        return;
-      }
+      // Only OPFS keeps copies across sessions; an IndexedDB fallback ends with the session.
+      const opfsRoot = await getOpfsRoot();
+      if (!opfsRoot) return;
 
       const suffix = options?.suffix ?? '';
       const filenameFor = (id: string) => `space_${id}${suffix}.db`;
       const relevantSuffix = `${suffix}.db`;
       const keepNames = new Set(keepSpaceIds.map(filenameFor).filter(Boolean));
-      const opfsRoot = await navigator.storage.getDirectory();
       // FileSystemDirectoryHandle.entries() is not in all TypeScript DOM libs, so we use a type assertion
       const { entries } = opfsRoot as unknown as {
         entries?: () => AsyncIterable<[string, FileSystemHandle]>;

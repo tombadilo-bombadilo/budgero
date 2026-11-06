@@ -18,6 +18,7 @@ import {
 import {
   MigrationRunner as CoreMigrationRunner,
   getMaxSupportedSchemaVersion,
+  localFileExists,
   reconcileSpaceScope,
 } from '@budgero/core/browser';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
@@ -99,15 +100,8 @@ export function createRuntimeDeps(): RuntimeCoordinatorDeps {
     },
 
     async hasLocalDatabase(path) {
-      try {
-        if (!path) return false;
-        if (!navigator.storage || !navigator.storage.getDirectory) return false;
-        const opfsRoot = await navigator.storage.getDirectory();
-        await opfsRoot.getFileHandle(path, { create: false });
-        return true;
-      } catch {
-        return false;
-      }
+      if (!path) return false;
+      return localFileExists(path);
     },
 
     async getDatabaseState(spaceId) {

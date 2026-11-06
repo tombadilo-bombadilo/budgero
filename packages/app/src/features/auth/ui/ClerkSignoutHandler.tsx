@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { resetAnalytics } from '@shared/lib/analytics/analytics';
+import { clearIdbFiles } from '@budgero/core/browser';
 import {
   PENDING_SPACE_INVITE_DB_NAME,
   PENDING_SPACE_INVITE_KEY,
@@ -167,6 +168,8 @@ async function runStorageCleanup() {
       console.warn('[runStorageCleanup] OPFS clear failed:', e);
     }
   }
+  // Copies kept in IndexedDB where OPFS is refused (Firefox private windows).
+  await clearIdbFiles().catch(() => undefined);
 
   // 3. Clear IndexedDB
   try {
