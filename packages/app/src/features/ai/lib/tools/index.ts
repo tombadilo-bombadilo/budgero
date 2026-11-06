@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import { tool } from 'ai';
 import type { ToolContext, ToolExecutionResult } from './types';
 import { addTransactionSchema, executeAddTransaction } from './add-transaction';
@@ -99,6 +100,18 @@ export function buildChatTools(context: ToolContext) {
   ) as typeof allTools;
 }
 
+/** A tool call whose arguments don't fit the schema: tell the model what to fix. */
+function invalidToolArgs(error: z.ZodError): ToolExecutionResult {
+  const issues = error.issues
+    .map((issue) => `${issue.path.join('.') || 'arguments'}: ${issue.message}`)
+    .join('; ');
+  return {
+    success: false,
+    message: 'The transaction details were incomplete',
+    error: `Invalid tool arguments (${issues}). Ask the user for what is missing, then try again.`,
+  };
+}
+
 /**
  * Execute the add_transaction tool after user confirmation.
  */
@@ -106,8 +119,9 @@ export async function executeConfirmedAddTransaction(
   args: Record<string, unknown>,
   context: ToolContext
 ): Promise<ToolExecutionResult> {
-  const validatedArgs = addTransactionSchema.parse(args);
-  return executeAddTransaction(validatedArgs, context);
+  const parsed = addTransactionSchema.safeParse(args);
+  if (!parsed.success) return invalidToolArgs(parsed.error);
+  return executeAddTransaction(parsed.data, context);
 }
 
 /**
@@ -117,6 +131,7 @@ export async function executeConfirmedEditTransaction(
   args: Record<string, unknown>,
   context: ToolContext
 ): Promise<ToolExecutionResult> {
-  const validatedArgs = editTransactionSchema.parse(args);
-  return executeEditTransaction(validatedArgs, context);
+  const parsed = editTransactionSchema.safeParse(args);
+  if (!parsed.success) return invalidToolArgs(parsed.error);
+  return executeEditTransaction(parsed.data, context);
 }

@@ -5,13 +5,14 @@ import { roundMilli } from '@shared/lib/currency/round-amount';
 import { matchByName } from './match-by-name';
 import type { ToolContext, ToolExecutionResult } from './types';
 
+// Optional fields are nullish: many models send null for a field they leave out.
 export const editTransactionSchema = z.object({
-  transactionId: z.number().describe('ID of the existing transaction to edit'),
-  categoryId: z.number().optional().describe('New category ID'),
-  categoryName: z.string().optional().describe('New category name to match (re-categorize)'),
-  payee: z.string().optional().describe('New payee/merchant name'),
-  memo: z.string().optional().describe('New description/memo'),
-  date: z.string().optional().describe('New date in YYYY-MM-DD format'),
+  transactionId: z.coerce.number().describe('ID of the existing transaction to edit'),
+  categoryId: z.number().nullish().describe('New category ID'),
+  categoryName: z.string().nullish().describe('New category name to match (re-categorize)'),
+  payee: z.string().nullish().describe('New payee/merchant name'),
+  memo: z.string().nullish().describe('New description/memo'),
+  date: z.string().nullish().describe('New date in YYYY-MM-DD format'),
 });
 
 export type EditTransactionArgs = z.infer<typeof editTransactionSchema>;
@@ -27,9 +28,10 @@ function resolveCategory(
   args: EditTransactionArgs,
   context: ToolContext
 ): { categoryId?: number; categoryName?: string } {
-  if (args.categoryId != null) {
-    const name = context.categories.find((c) => c.ID === args.categoryId)?.Name;
-    return { categoryId: args.categoryId, categoryName: name ?? args.categoryName };
+  // An ID the budget doesn't have counts as no ID, so the name is matched instead.
+  const byId = context.categories.find((c) => c.ID === args.categoryId);
+  if (byId) {
+    return { categoryId: byId.ID, categoryName: byId.Name };
   }
   if (args.categoryName) {
     const match = matchByName(context.categories, args.categoryName, (c) => c.Name);
@@ -50,13 +52,14 @@ function collectChanges(
       label: `category → ${resolved.categoryName ?? resolved.categoryId}`,
     });
   }
-  if (args.payee !== undefined) {
+  // null means "leave it", the same as leaving the field out.
+  if (args.payee != null) {
     changes.push({ columnName: 'Payee', newValue: args.payee, label: `payee → "${args.payee}"` });
   }
-  if (args.memo !== undefined) {
+  if (args.memo != null) {
     changes.push({ columnName: 'Memo', newValue: args.memo, label: `memo → "${args.memo}"` });
   }
-  if (args.date !== undefined) {
+  if (args.date != null) {
     changes.push({ columnName: 'Date', newValue: args.date, label: `date → ${args.date}` });
   }
   return changes;
