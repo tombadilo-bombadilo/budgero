@@ -338,6 +338,8 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
           nodeWidth: 12,
           nodeGap: 10,
           draggable: false,
+          // Slivers' labels would collide; the table below names every node.
+          labelLayout: { hideOverlap: true },
           emphasis: { focus: 'adjacency' as const },
           lineStyle: { color: 'gradient' as const, opacity: 0.25, curveness: 0.5 },
           itemStyle: { borderWidth: 0 },

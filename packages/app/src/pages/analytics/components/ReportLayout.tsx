@@ -168,11 +168,14 @@ export interface KeyFigure {
 export function KeyFigures({ items }: { items: KeyFigure[] }) {
   const { t } = useLingui();
   return (
-    <dl aria-label={t`Key figures`} className="flex flex-wrap gap-y-3 border-y border-border py-3">
+    <dl
+      aria-label={t`Key figures`}
+      className="grid grid-cols-2 gap-x-4 gap-y-3 border-y border-border py-3 sm:flex sm:flex-wrap sm:gap-x-0"
+    >
       {items.map((item) => (
         <div
           key={item.label}
-          className="min-w-[8rem] border-l border-border px-4 first:border-l-0 first:pl-0"
+          className="min-w-0 sm:min-w-[8rem] sm:border-l sm:border-border sm:px-4 sm:first:border-l-0 sm:first:pl-0"
         >
           <dt className="text-xs text-muted-foreground">{item.label}</dt>
           <dd
