@@ -1,25 +1,29 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { Layers3, Tags } from 'lucide-react';
 import { trendTextClass } from '@shared/lib/amount-color';
 import { EChart } from '@shared/ui/echart';
-import { AnimatedNumber } from '@shared/ui/animated-number';
 import {
   buildDimensionTotals,
   buildFlowGraph,
+  buildTrendSeries,
+  type AnalyticsTxn,
   type FlowSpendingDimension,
 } from '../analytics-model';
 import type { AnalyticsData } from '../useAnalyticsData';
 import {
   inkOnFill,
+  shortMonthLabel,
   tooltipBase,
   tooltipHtml,
   useMoneyFormatters,
   usePalette,
 } from '../components/chart-utils';
-import { ModeToggle, ReportShell } from '../components/ReportShell';
-import { PanelSectionTitle, ProportionRow, StatTile } from '../components/panels';
+import { KeyFigures, ReportLayout, ViewSwitch } from '../components/ReportLayout';
+import { BreakdownTable } from '../components/LedgerTable';
+import { reportMeta } from '../report-questions';
+import { flowAnswer } from '../report-answers';
 
 const MAX_DESTINATIONS = 8;
 
@@ -27,9 +31,54 @@ type FlowDrilldown = { kind: 'other' } | { kind: 'group'; name: string };
 
 interface FlowReportProps {
   data: AnalyticsData;
+  /** Month axis of the period; drives the table's trend sparklines. */
+  months?: string[];
 }
 
-export function FlowReport({ data }: FlowReportProps) {
+const NO_MONTHS: string[] = [];
+
+/** Monthly spending per destination name (names, not ids, like the graph). */
+function trendsByName(
+  txns: AnalyticsTxn[],
+  months: string[],
+  dimension: 'group' | 'category',
+  onBudgetAccountIds: Set<number>
+): Map<string, number[]> {
+  const map = new Map<string, number[]>();
+  if (months.length < 2) return map;
+  for (const series of buildTrendSeries(
+    txns,
+    months,
+    dimension,
+    onBudgetAccountIds,
+    Number.MAX_SAFE_INTEGER
+  )) {
+    const name = series.name.trim();
+    const existing = map.get(name);
+    map.set(
+      name,
+      existing ? existing.map((value, index) => value + series.values[index]) : series.values
+    );
+  }
+  return map;
+}
+
+/** Container width, so the vertical Sankey can size its node labels. */
+function useElementWidth() {
+  const [width, setWidth] = useState(0);
+  const observerRef = useRef<ResizeObserver | null>(null);
+  const ref = useCallback((element: HTMLDivElement | null) => {
+    observerRef.current?.disconnect();
+    observerRef.current = null;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => setWidth(entry.contentRect.width));
+    observer.observe(element);
+    observerRef.current = observer;
+  }, []);
+  return [ref, width] as const;
+}
+
+export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
   const { t } = useLingui();
 
   const [dimension, setDimension] = useState<FlowSpendingDimension>('group');
@@ -151,6 +200,47 @@ export function FlowReport({ data }: FlowReportProps) {
       .sort((a, b) => b.value - a.value);
   }, [drilldownRows, graph.links, nodeColors, nodeLabels, palette.chrome.other, showingDrilldown]);
 
+  const destinationTrends = useMemo(
+    () => trendsByName(data.txns, months, dimension, data.onBudgetAccountIds),
+    [data.txns, months, dimension, data.onBudgetAccountIds]
+  );
+  const drilldownTrends = useMemo(
+    () =>
+      drilldown?.kind === 'group'
+        ? trendsByName(
+            data.txns.filter((txn) => txn.groupName === drilldown.name),
+            months,
+            'category',
+            data.onBudgetAccountIds
+          )
+        : destinationTrends,
+    [data.txns, months, drilldown, data.onBudgetAccountIds, destinationTrends]
+  );
+  const otherTrend = useMemo(() => {
+    if (months.length < 2) return undefined;
+    return months.map((_, index) =>
+      collapsedGraph.foldedDestinations.reduce(
+        (sum, destination) => sum + (destinationTrends.get(destination.name.trim())?.[index] ?? 0),
+        0
+      )
+    );
+  }, [months, collapsedGraph.foldedDestinations, destinationTrends]);
+  const systemLabelByName = useMemo(
+    () => new Map(graph.nodes.map((node) => [node.name, node.systemLabel])),
+    [graph.nodes]
+  );
+
+  const [chartRef, chartWidth] = useElementWidth();
+  // Widest layer decides how much room each bottom label gets; when that
+  // is too tight (phones, many categories) labels turn to read downwards.
+  const widestLayer = Math.max(
+    1,
+    graph.nodes.filter((node) => node.slot === 'group' || node.slot === 'result').length,
+    graph.nodes.filter((node) => node.slot === 'income').length
+  );
+  const labelWidth = Math.max(40, Math.floor((chartWidth || 960) / widestLayer) - 12);
+  const rotateLabels = labelWidth < 72;
+
   const option = useMemo<EChartsCoreOption>(() => {
     const { chrome } = palette;
     if (showingDrilldown) {
@@ -240,20 +330,26 @@ export function FlowReport({ data }: FlowReportProps) {
       series: [
         {
           type: 'sankey',
+          orient: 'vertical' as const,
           left: 8,
-          right: 180,
-          top: 12,
-          bottom: 12,
-          nodeWidth: 14,
-          nodeGap: 14,
+          right: 8,
+          top: 26,
+          bottom: rotateLabels ? 112 : 40,
+          nodeWidth: 12,
+          nodeGap: 10,
           draggable: false,
+          // Slivers' labels would collide; the table below names every node.
+          labelLayout: { hideOverlap: true },
           emphasis: { focus: 'adjacency' as const },
-          lineStyle: { color: 'gradient' as const, opacity: 0.25, curveness: 0.55 },
+          lineStyle: { color: 'gradient' as const, opacity: 0.25, curveness: 0.5 },
           itemStyle: { borderWidth: 0 },
           label: {
             color: chrome.inkPrimary,
             fontSize: 12,
-            width: 168,
+            position: 'bottom' as const,
+            width: rotateLabels ? 104 : labelWidth,
+            rotate: rotateLabels ? -90 : 0,
+            align: rotateLabels ? ('left' as const) : ('center' as const),
             overflow: 'truncate',
             formatter: (params: { name: string }) =>
               nodeLabels.get(params.name) ?? params.name.trim(),
@@ -261,6 +357,20 @@ export function FlowReport({ data }: FlowReportProps) {
           data: graph.nodes.map((node) => ({
             name: node.name,
             itemStyle: { color: nodeColors.get(node.name) },
+            // Sources sit on the top edge (label above), the hub spans the
+            // width (label inside), destinations read along the bottom.
+            ...(node.slot === 'income'
+              ? { label: { position: 'top' as const, rotate: 0, align: 'center' as const } }
+              : node.slot === 'hub'
+                ? {
+                    label: {
+                      position: 'inside' as const,
+                      rotate: 0,
+                      align: 'center' as const,
+                      color: inkOnFill(nodeColors.get(node.name) ?? chrome.other),
+                    },
+                  }
+                : {}),
             cursor:
               node.slot === 'group' &&
               (dimension === 'group' || node.name.trim() === 'Other spending')
@@ -288,153 +398,154 @@ export function FlowReport({ data }: FlowReportProps) {
     palette,
     t,
     showingDrilldown,
+    labelWidth,
+    rotateLabels,
   ]);
 
-  const largest = destinationRows[0];
+  const tableRows = destinationRows.map((row) => {
+    const isOther = !showingDrilldown && row.name === 'Other spending';
+    const systemLabel = showingDrilldown
+      ? undefined
+      : systemLabelByName.get(row.key.slice('destination:'.length));
+    const isDrillableGroup =
+      dimension === 'group' &&
+      !systemLabel &&
+      (showingDrilldown ? drilldown?.kind === 'other' : drillableGroupNames.has(row.name));
+    return {
+      key: row.key,
+      name: isOther
+        ? t`Other spending (${collapsedGraph.foldedDestinations.length} ${dimensionLabel})`
+        : 'label' in row
+          ? row.label
+          : row.name,
+      amount: row.value,
+      color: row.color,
+      trend: isOther
+        ? otherTrend
+        : systemLabel
+          ? undefined
+          : (showingDrilldown ? drilldownTrends : destinationTrends).get(row.name),
+      onSelect: isOther
+        ? () => setDrilldown({ kind: 'other' })
+        : isDrillableGroup
+          ? () => setDrilldown({ kind: 'group', name: row.name })
+          : undefined,
+    };
+  });
+  const tableTotal = destinationRows.reduce((sum, row) => sum + row.value, 0);
+  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: shortMonthLabel };
 
   return (
-    <ReportShell
-      title={t`Money Map`}
-      hero={
-        <AnimatedNumber
-          value={graph.totalIncome}
-          formatter={(value) => money.amount(value)}
-          rounding="integer"
-        />
-      }
-      subtitle={
-        showingDrilldown
-          ? t`Inside ${drilldownTitle} · ${drilldownRows.length} ${drilldownItemLabel}`
-          : savingsRate === null
-            ? t`Every stream from income to ${dimensionLabel}`
-            : savingsRate >= 0
-              ? t`Income → ${dimensionLabel}; ${savingsRate.toFixed(0)}% saved`
-              : t`Income → ${dimensionLabel}; overspent by ${money.amount(-net)}`
-      }
-      controls={
-        <ModeToggle
-          value={dimension}
-          onChange={(nextDimension) => {
-            setDimension(nextDimension);
-            setDrilldown(null);
-          }}
-          ariaLabel={t`Money Map spending detail`}
-          options={[
-            { value: 'group', label: t`Groups`, icon: Layers3 },
-            { value: 'category', label: t`Categories`, icon: Tags },
-          ]}
-        />
-      }
-      chart={
-        <EChart
-          option={option}
-          ariaLabel={
-            showingDrilldown
-              ? t`${drilldownTitle} ${drilldownItemLabel} breakdown`
-              : t`Income to spending flow`
-          }
-          className="h-[440px]"
-          onMarkClick={(mark) => {
-            const selectedName = mark.name?.trim();
-            if (!selectedName) return;
-
-            if (drilldown?.kind === 'other' && dimension === 'group') {
-              if (otherRows.some((row) => row.name === selectedName)) {
-                setDrilldown({ kind: 'group', name: selectedName });
-              }
-              return;
-            }
-
-            const selectedNode = graph.nodes[mark.dataIndex];
-            if (!selectedNode || selectedNode.slot !== 'group' || selectedNode.name !== mark.name) {
-              return;
-            }
-            if (selectedName === 'Other spending') {
-              setDrilldown({ kind: 'other' });
-            } else if (dimension === 'group') {
-              setDrilldown({ kind: 'group', name: selectedName });
-            }
-          }}
-        />
-      }
-      isLoading={data.isLoading}
-      isEmpty={isEmpty}
-      emptyText={t`No income or spending to map in this period.`}
-      panel={
+    <ReportLayout
+      question={reportMeta('money-map').question}
+      answer={flowAnswer({ income: graph.totalIncome, spending: graph.totalSpending }, fmt)}
+      toolbar={
         <>
-          <div className="grid grid-cols-2 gap-2">
-            <StatTile label={t`Income`} value={money.tile(graph.totalIncome)} />
-            <StatTile
-              label={t`Spending`}
-              value={money.tile(graph.totalSpending)}
-              valueClassName={
-                graph.totalSpending > 0 ? 'text-red-600 dark:text-red-300' : undefined
-              }
-            />
-            <StatTile
-              label={net >= 0 ? t`Savings` : t`Overspent`}
-              value={money.tile(Math.abs(net))}
-              valueClassName={trendTextClass(net)}
-            />
-            <StatTile
-              label={t`Savings rate`}
-              value={savingsRate === null ? '—' : `${savingsRate.toFixed(0)}%`}
-              valueClassName={savingsRate !== null ? trendTextClass(savingsRate) : undefined}
-            />
-          </div>
+          <ViewSwitch
+            label={t`Destinations`}
+            value={dimension}
+            onChange={(nextDimension) => {
+              setDimension(nextDimension);
+              setDrilldown(null);
+            }}
+            options={[
+              { value: 'group', label: t`Groups`, icon: Layers3 },
+              { value: 'category', label: t`Categories`, icon: Tags },
+            ]}
+          />
           {showingDrilldown ? (
             <button
               type="button"
               onClick={() => setDrilldown(null)}
-              className="mt-4 text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
             >
               <Trans>← Back to Money Map</Trans>
             </button>
           ) : null}
-          <PanelSectionTitle>
-            {showingDrilldown
-              ? t`Inside ${drilldownTitle} · ${drilldownItemLabel}`
-              : dimension === 'group'
-                ? t`Destination groups`
-                : t`Destination categories`}
-          </PanelSectionTitle>
-          <div className={showingDrilldown ? 'max-h-[300px] overflow-y-auto pr-1' : undefined}>
-            {destinationRows.map((row) => {
-              const isOther = !showingDrilldown && row.name === 'Other spending';
-              const isDrillableGroup =
-                dimension === 'group' &&
-                (showingDrilldown
-                  ? drilldown?.kind === 'other'
-                  : drillableGroupNames.has(row.name));
-              return (
-                <ProportionRow
-                  key={row.key}
-                  color={row.color}
-                  name={
-                    isOther
-                      ? t`Other spending (${collapsedGraph.foldedDestinations.length} ${dimensionLabel}) — inspect`
-                      : isDrillableGroup
-                        ? t`${row.name} — inspect`
-                        : 'label' in row
-                          ? row.label
-                          : row.name
-                  }
-                  value={money.amount(row.value)}
-                  fraction={largest && largest.value > 0 ? row.value / largest.value : 0}
-                  onClick={
-                    isOther
-                      ? () => setDrilldown({ kind: 'other' })
-                      : isDrillableGroup
-                        ? () => setDrilldown({ kind: 'group', name: row.name })
-                        : undefined
-                  }
-                  expanded={isOther || isDrillableGroup ? false : undefined}
-                />
-              );
-            })}
-          </div>
         </>
       }
-    />
+      chart={
+        <div ref={chartRef}>
+          <EChart
+            option={option}
+            ariaLabel={
+              showingDrilldown
+                ? t`${drilldownTitle} ${drilldownItemLabel} breakdown`
+                : t`Income to spending flow`
+            }
+            className={showingDrilldown ? 'h-[440px]' : rotateLabels ? 'h-[560px]' : 'h-[500px]'}
+            onMarkClick={(mark) => {
+              const selectedName = mark.name?.trim();
+              if (!selectedName) return;
+
+              if (drilldown?.kind === 'other' && dimension === 'group') {
+                if (otherRows.some((row) => row.name === selectedName)) {
+                  setDrilldown({ kind: 'group', name: selectedName });
+                }
+                return;
+              }
+
+              const selectedNode = graph.nodes[mark.dataIndex];
+              if (
+                !selectedNode ||
+                selectedNode.slot !== 'group' ||
+                selectedNode.name !== mark.name
+              ) {
+                return;
+              }
+              if (selectedName === 'Other spending') {
+                setDrilldown({ kind: 'other' });
+              } else if (dimension === 'group') {
+                setDrilldown({ kind: 'group', name: selectedName });
+              }
+            }}
+          />
+        </div>
+      }
+      isLoading={data.isLoading}
+      isEmpty={isEmpty}
+      emptyText={t`No income or spending to map in this period.`}
+      figures={
+        <KeyFigures
+          items={[
+            { label: t`Income`, value: money.tile(graph.totalIncome) },
+            {
+              label: t`Spending`,
+              value: money.tile(graph.totalSpending),
+              valueClassName:
+                graph.totalSpending > 0 ? 'text-red-600 dark:text-red-300' : undefined,
+            },
+            {
+              label: net >= 0 ? t`Savings` : t`Overspent`,
+              value: money.tile(Math.abs(net)),
+              valueClassName: trendTextClass(net),
+            },
+            {
+              label: t`Savings rate`,
+              value: savingsRate === null ? '—' : `${savingsRate.toFixed(0)}%`,
+              valueClassName: savingsRate !== null ? trendTextClass(savingsRate) : undefined,
+            },
+          ]}
+        />
+      }
+    >
+      {isEmpty ? null : (
+        <BreakdownTable
+          title={
+            showingDrilldown
+              ? t`Inside ${drilldownTitle} · ${drilldownRows.length} ${drilldownItemLabel}`
+              : dimension === 'group'
+                ? t`Destination groups`
+                : t`Destination categories`
+          }
+          nameHeader={t`Name`}
+          rows={tableRows}
+          total={tableTotal}
+          money={money.amount}
+          showTrend={months.length >= 2}
+          maxHeightClassName={showingDrilldown ? 'max-h-[420px]' : undefined}
+        />
+      )}
+    </ReportLayout>
   );
 }

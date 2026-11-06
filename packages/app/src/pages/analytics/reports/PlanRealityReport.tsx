@@ -2,7 +2,6 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useMemo } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { EChart } from '@shared/ui/echart';
-import { AnimatedNumber } from '@shared/ui/animated-number';
 import { trendTextClass } from '@shared/lib/amount-color';
 import { buildPlanVsReality } from '../analytics-model';
 import { GoalFundingList } from '../components/GoalFundingList';
@@ -24,8 +23,11 @@ import {
   useMoneyFormatters,
   usePalette,
 } from '../components/chart-utils';
-import { ReportShell } from '../components/ReportShell';
-import { InsightStrip, LegendChips, PanelSectionTitle, StatTile } from '../components/panels';
+import { KeyFigures, ReportLayout } from '../components/ReportLayout';
+import { LedgerTable } from '../components/LedgerTable';
+import { InsightStrip, LegendChips } from '../components/panels';
+import { reportMeta } from '../report-questions';
+import { planAnswer } from '../report-answers';
 
 interface PlanRealityReportProps {
   data: AnalyticsData;
@@ -129,21 +131,14 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
     [plan.categories]
   );
 
+  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: shortMonthLabel };
+  const hasGoals = targetReport.groups.some((group) => group.target);
+
   return (
     <div className="space-y-4">
-      <ReportShell
-        title={t`Plan vs Reality`}
-        hero={
-          <AnimatedNumber
-            value={slack}
-            formatter={(value) =>
-              `${value >= 0 ? '+' : ''}${money.amount(value)} ${value >= 0 ? 'under' : 'over'} plan`
-            }
-            rounding="integer"
-          />
-        }
-        heroClassName={trendTextClass(slack)}
-        subtitle={t`What you assigned vs what actually happened — only possible because you budget`}
+      <ReportLayout
+        question={reportMeta('plan').question}
+        answer={planAnswer({ assigned: plan.totalAssigned, spent: plan.totalSpent }, fmt)}
         insights={<InsightStrip insights={insights} />}
         legend={
           <LegendChips
@@ -158,87 +153,105 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
         isLoading={data.isLoading || planLoading}
         isEmpty={isEmpty}
         emptyText={t`No assignments in this period — assign money on the Planning page first.`}
-        panel={
-          <>
-            <div className="grid grid-cols-2 gap-2">
-              <StatTile label={t`Assigned`} value={money.tile(plan.totalAssigned)} />
-              <StatTile
-                label={t`Spent`}
-                value={money.tile(plan.totalSpent)}
-                detail={
+        figures={
+          <KeyFigures
+            items={[
+              { label: t`Assigned`, value: money.tile(plan.totalAssigned) },
+              {
+                label: t`Spent`,
+                value: money.tile(plan.totalSpent),
+                detail:
                   plan.totalAssigned > 0
-                    ? `${Math.round((plan.totalSpent / plan.totalAssigned) * 100)}% of plan`
-                    : undefined
-                }
-              />
-              <StatTile
-                label={t`Months on plan`}
-                value={`${Math.round(plan.monthsOnPlan * 100)}%`}
-                valueClassName={
-                  plan.monthsOnPlan >= 0.5 ? 'text-green-600' : 'text-red-600 dark:text-red-300'
-                }
-              />
-              <StatTile
-                label={slack >= 0 ? t`Left in plan` : t`Over plan`}
-                value={money.tile(Math.abs(slack))}
-                valueClassName={trendTextClass(slack)}
-              />
-            </div>
-
-            {overspenders.length > 0 ? (
-              <>
-                <PanelSectionTitle>
-                  <Trans>Where the plan leaks</Trans>
-                </PanelSectionTitle>
-                <div className="divide-y divide-border/50">
-                  {overspenders.map((row) => (
-                    <div
-                      key={row.categoryId}
-                      className="flex items-baseline justify-between gap-3 py-1.5"
-                    >
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="truncate text-sm font-medium">{row.name}</span>
-                          {row.chronic ? (
-                            <span className="shrink-0 rounded-full border border-red-300 px-1.5 text-[10px] font-medium uppercase tracking-wide text-red-600 dark:border-red-800 dark:text-red-300">
-                              <Trans>chronic</Trans>
-                            </span>
-                          ) : null}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          <Trans>
-                            {money.amount(row.spent)} of {money.amount(row.assigned)} assigned
-                            {row.monthsWithPlan > 0
-                              ? t` · over in ${row.monthsOver}/${row.monthsWithPlan} mo`
-                              : ''}
-                          </Trans>
-                        </div>
-                      </div>
-                      <span className="whitespace-nowrap text-sm font-semibold text-red-600 tabular-nums dark:text-red-300">
-                        {Math.round((row.usage ?? 0) * 100)}%
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : null}
-
-            {targetReport.groups.some((group) => group.target) ? (
-              <>
-                <PanelSectionTitle>
-                  <Trans>Goal funding (this period)</Trans>
-                </PanelSectionTitle>
-                <GoalFundingList
-                  groups={targetReport.groups}
-                  money={money.amount}
-                  positiveColor={palette.flow.positive}
-                  progressColor={palette.series[0]}
-                />
-              </>
-            ) : null}
-          </>
+                    ? t`${Math.round((plan.totalSpent / plan.totalAssigned) * 100)}% of plan`
+                    : undefined,
+              },
+              {
+                label: slack >= 0 ? t`Left in plan` : t`Over plan`,
+                value: money.tile(Math.abs(slack)),
+                valueClassName: trendTextClass(slack),
+              },
+              {
+                label: t`Months on plan`,
+                value: `${Math.round(plan.monthsOnPlan * 100)}%`,
+                valueClassName:
+                  plan.monthsOnPlan >= 0.5 ? 'text-green-600' : 'text-red-600 dark:text-red-300',
+              },
+            ]}
+          />
         }
-      />
+      >
+        {overspenders.length > 0 || hasGoals ? (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {overspenders.length > 0 ? (
+              <LedgerTable
+                title={<Trans>Where the plan leaks</Trans>}
+                rows={overspenders}
+                rowKey={(row) => String(row.categoryId)}
+                columns={[
+                  {
+                    key: 'name',
+                    header: t`Category`,
+                    render: (row) => (
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <span className="truncate">{row.name}</span>
+                        {row.chronic ? (
+                          <span className="shrink-0 rounded-full border border-red-300 px-1.5 text-[10px] font-medium uppercase tracking-wide text-red-600 dark:border-red-800 dark:text-red-300">
+                            <Trans>chronic</Trans>
+                          </span>
+                        ) : null}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: 'spent',
+                    header: t`Spent`,
+                    align: 'right',
+                    render: (row) => money.amount(row.spent),
+                  },
+                  {
+                    key: 'assigned',
+                    header: t`Assigned`,
+                    align: 'right',
+                    hideOnMobile: true,
+                    render: (row) => money.amount(row.assigned),
+                  },
+                  {
+                    key: 'months',
+                    header: t`Months over`,
+                    align: 'right',
+                    hideOnMobile: true,
+                    render: (row) =>
+                      row.monthsWithPlan > 0 ? `${row.monthsOver}/${row.monthsWithPlan}` : '—',
+                    cellClassName: () => 'text-muted-foreground',
+                  },
+                  {
+                    key: 'usage',
+                    header: t`Used`,
+                    align: 'right',
+                    render: (row) => `${Math.round((row.usage ?? 0) * 100)}%`,
+                    cellClassName: () => 'font-semibold text-red-600 dark:text-red-300',
+                  },
+                ]}
+              />
+            ) : null}
+            {hasGoals ? (
+              <div className="overflow-hidden rounded-lg border border-border bg-card">
+                <h3 className="border-b border-border px-4 py-2.5 text-sm font-semibold">
+                  <Trans>Goal funding (this period)</Trans>
+                </h3>
+                <div className="px-4 py-2">
+                  <GoalFundingList
+                    groups={targetReport.groups}
+                    money={money.amount}
+                    positiveColor={palette.flow.positive}
+                    progressColor={palette.series[0]}
+                  />
+                </div>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+      </ReportLayout>
       <TargetTable
         report={targetReport}
         money={money.amount}
