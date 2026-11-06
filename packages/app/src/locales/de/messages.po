@@ -11803,6 +11803,10 @@ msgstr "Keine Kategorien zum Anwenden"
 msgid "No categories to reset"
 msgstr "Keine Kategorien zum Zurücksetzen"
 
+#: src/features/transactions/ui/form/SplitEditor.tsx
+msgid "No category (transfer)"
+msgstr "Keine Kategorie (Umbuchung)"
+
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "No category activity for the selected period."
 msgstr "Keine Kategorie-Aktivität für den ausgewählten Zeitraum."
@@ -18381,11 +18385,12 @@ msgid "Transfer to {0}"
 msgstr "Umbuchung an {0}"
 
 #. placeholder {0}: account.Name
+#. placeholder {0}: accountById(String(line.transferAccountId))?.Name ?? ''
 #. placeholder {0}: selectedTransfer.Name
-#. placeholder {0}: transferAccountRecord.Name
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/cells/TransactionPayeeCell.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/form/SplitEditor.tsx
 msgid "Transfer: {0}"
 msgstr "Umbuchung: {0}"
 

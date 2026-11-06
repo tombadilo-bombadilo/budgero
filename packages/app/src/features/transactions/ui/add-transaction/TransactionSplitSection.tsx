@@ -20,6 +20,7 @@ interface TransactionSplitSectionProps {
   remaining: number;
   parentAmount: number;
   formatter: Intl.NumberFormat;
+  transferAccounts?: { ID: number; Name: string; OnBudget?: boolean | number }[];
 }
 
 export const TransactionSplitSection = React.memo(function TransactionSplitSection({
@@ -32,6 +33,7 @@ export const TransactionSplitSection = React.memo(function TransactionSplitSecti
   remaining,
   parentAmount,
   formatter,
+  transferAccounts,
 }: TransactionSplitSectionProps) {
   if (isTransfer) {
     return null;
@@ -47,6 +49,7 @@ export const TransactionSplitSection = React.memo(function TransactionSplitSecti
       remaining={remaining}
       parentAmount={parentAmount}
       formatter={formatter}
+      transferAccounts={transferAccounts}
     />
   );
 });

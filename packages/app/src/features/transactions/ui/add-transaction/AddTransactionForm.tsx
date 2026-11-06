@@ -453,6 +453,9 @@ function BudgetTransactionForm({
           remaining={remaining}
           parentAmount={parentSigned}
           formatter={splitLocalizer}
+          transferAccounts={accounts.filter(
+            (account) => String(account.ID) !== form.selectedFromAccount && !account.Archived
+          )}
         />
       )}
 

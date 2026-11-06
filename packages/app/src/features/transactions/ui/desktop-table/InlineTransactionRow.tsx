@@ -31,6 +31,7 @@ import {
 } from '@features/transactions/ui/form';
 import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell';
 import { resolveCategoryId } from '@features/transactions/lib/category-selection';
+import { splitPayeeUpdate, splitTransferUpdate } from '@features/transactions/lib/split-transfer';
 import type { TransactionEditorDirectories } from './transaction-editor-types';
 
 interface InlineTransactionRowProps {
@@ -602,7 +603,17 @@ export function InlineTransactionRow({
                 budgetId={budgetId}
                 value={line.payee ?? ''}
                 payees={editorDirectories.payees}
-                onCommit={(payee) => updateSplitLine(line.id, { payee })}
+                onCommit={(payee) =>
+                  updateSplitLine(line.id, splitPayeeUpdate(payee, transferTargets))
+                }
+                transferAccounts={transferTargets}
+                onSelectTransfer={(id) => updateSplitLine(line.id, splitTransferUpdate(id))}
+                selectedTransferAccountId={line.transferAccountId ?? null}
+                displayValue={
+                  line.transferAccountId
+                    ? t`Transfer: ${accountById(String(line.transferAccountId))?.Name ?? ''}`
+                    : undefined
+                }
                 triggerClassName={cellTrigger}
               />
             </TableCell>

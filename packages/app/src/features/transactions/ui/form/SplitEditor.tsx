@@ -13,6 +13,7 @@ import { SearchableCategorySelect } from '@features/category-management/ui/Searc
 import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell';
 import { asMilli, formatMilli, ZERO_MILLI, type MilliUnits } from '@shared/lib/currency/milli';
 import { assignRemainingToSplit, newSplitLine } from './split-lines';
+import { splitPayeeUpdate, splitTransferUpdate } from '../../lib/split-transfer';
 
 export interface SplitLine {
   id: string;
@@ -36,6 +37,8 @@ interface SplitEditorProps {
   /** Milliunits. */
   parentAmount: number;
   formatter: Intl.NumberFormat;
+  /** Accounts a line can transfer to (the parent's own account excluded). */
+  transferAccounts?: { ID: number; Name: string; OnBudget?: boolean | number }[];
 }
 
 export function SplitEditor({
@@ -47,8 +50,10 @@ export function SplitEditor({
   remaining,
   parentAmount,
   formatter,
+  transferAccounts = [],
 }: SplitEditorProps) {
   const { t } = useLingui();
+  const transferName = (id?: number | null) => transferAccounts.find((a) => a.ID === id)?.Name;
 
   const updateLine = (id: string, updates: Partial<SplitLine>) => {
     onSplitLinesChange(splitLines.map((l) => (l.id === id ? { ...l, ...updates } : l)));
@@ -99,7 +104,7 @@ export function SplitEditor({
                   onCategorySelect={(categoryId) => {
                     updateLine(line.id, { categoryId, transferAccountId: undefined });
                   }}
-                  placeholder={t`Category`}
+                  placeholder={line.transferAccountId ? t`No category (transfer)` : t`Category`}
                   triggerClassName="w-full h-8 sm:h-9"
                   popoverContentClassName="w-[320px] max-w-[90vw]"
                 />
@@ -108,7 +113,17 @@ export function SplitEditor({
                 <PayeeSelectCell
                   budgetId={budgetId}
                   value={line.payee || ''}
-                  onCommit={(payee) => updateLine(line.id, { payee })}
+                  onCommit={(payee) =>
+                    updateLine(line.id, splitPayeeUpdate(payee, transferAccounts))
+                  }
+                  transferAccounts={transferAccounts}
+                  onSelectTransfer={(id) => updateLine(line.id, splitTransferUpdate(id))}
+                  selectedTransferAccountId={line.transferAccountId ?? null}
+                  displayValue={
+                    line.transferAccountId
+                      ? t`Transfer: ${transferName(line.transferAccountId) ?? ''}`
+                      : undefined
+                  }
                   triggerClassName="w-full h-8 sm:h-9"
                 />
               </div>

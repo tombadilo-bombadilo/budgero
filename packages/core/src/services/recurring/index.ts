@@ -1049,7 +1049,8 @@ export class RecurringTransactionService {
         transactionDate,
         memo,
         '',
-        undefined,
+        // The template's name is the payee the projected row shows (#127).
+        template.name,
         undefined,
         undefined,
         false,

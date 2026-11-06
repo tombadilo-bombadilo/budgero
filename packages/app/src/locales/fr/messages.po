@@ -11803,6 +11803,10 @@ msgstr "Aucune catégorie à appliquer"
 msgid "No categories to reset"
 msgstr "Aucune catégorie à réinitialiser"
 
+#: src/features/transactions/ui/form/SplitEditor.tsx
+msgid "No category (transfer)"
+msgstr "Aucune catégorie (virement)"
+
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "No category activity for the selected period."
 msgstr "Aucune activité de catégorie pour la période sélectionnée."
@@ -18381,11 +18385,12 @@ msgid "Transfer to {0}"
 msgstr "Virement vers {0}"
 
 #. placeholder {0}: account.Name
+#. placeholder {0}: accountById(String(line.transferAccountId))?.Name ?? ''
 #. placeholder {0}: selectedTransfer.Name
-#. placeholder {0}: transferAccountRecord.Name
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/cells/TransactionPayeeCell.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/form/SplitEditor.tsx
 msgid "Transfer: {0}"
 msgstr "Virement : {0}"
 
