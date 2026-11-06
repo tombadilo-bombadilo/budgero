@@ -17,12 +17,13 @@ import { linearForecast } from '../forecast';
 import { wealthInsights } from '../insights';
 import type { AnalyticsData } from '../useAnalyticsData';
 import {
-  BASE_GRID,
   BAR_MAX_WIDTH,
   BAR_RADIUS_BOTTOM,
   BAR_RADIUS_TOP,
-  monthAxis,
+  BASE_GRID,
+  longMonthLabel,
   moneyAxis,
+  monthAxis,
   shortMonthLabel,
   tooltipBase,
   tooltipHtml,
@@ -110,7 +111,7 @@ export function WealthReport({ data, months, accountIds }: WealthReportProps) {
   // Resolve copy on every locale render; the three summaries are inexpensive.
   const insights = wealthInsights(points, forecast, {
     money: (milli) => money.amount(milli),
-    monthLabel: shortMonthLabel,
+    monthLabel: longMonthLabel,
   });
 
   const option = useMemo<EChartsCoreOption>(() => {
@@ -331,7 +332,7 @@ export function WealthReport({ data, months, accountIds }: WealthReportProps) {
       ? shortMonthLabel(runway.projection[runway.projection.length - 1].monthKey)
       : null;
 
-  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: shortMonthLabel };
+  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: longMonthLabel };
 
   return (
     <ReportLayout

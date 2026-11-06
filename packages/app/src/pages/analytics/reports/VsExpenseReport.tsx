@@ -10,7 +10,7 @@ import { useUiStore } from '@shared/store/useUiStore';
 import { buildCategoryPivot } from '../analytics-model';
 import { lastDayOfMonth } from '../analytics-state';
 import type { AnalyticsData } from '../useAnalyticsData';
-import { shortMonthLabel, useMoneyFormatters } from '../components/chart-utils';
+import { longMonthLabel, shortMonthLabel, useMoneyFormatters } from '../components/chart-utils';
 import { CategoryTransactionCell } from '../components/CategoryTransactionCell';
 import { reportMeta } from '../report-questions';
 import { ledgerAnswer } from '../report-answers';
@@ -94,7 +94,7 @@ export function VsExpenseReport({
           <p className="text-base leading-relaxed text-foreground/85" data-testid="report-answer">
             {ledgerAnswer(
               { net: pivot.grandTotal, hasActivity: !isEmpty },
-              { money: (milli) => money.amount(milli), monthLabel: shortMonthLabel }
+              { money: (milli) => money.amount(milli), monthLabel: longMonthLabel }
             )}
           </p>
         )}

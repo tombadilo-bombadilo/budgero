@@ -40,6 +40,7 @@ vi.mock('../components/chart-utils', () => ({
   monthAxis: () => ({}),
   moneyAxis: () => ({}),
   shortMonthLabel: (month: string) => month,
+  longMonthLabel: (month: string) => month,
   tooltipBase: () => ({}),
   tooltipHtml: () => '',
   useMoneyFormatters: () => ({

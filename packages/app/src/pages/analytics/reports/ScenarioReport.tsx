@@ -29,10 +29,11 @@ import {
 } from '../forecast';
 import type { AnalyticsData } from '../useAnalyticsData';
 import {
-  BASE_GRID,
   BAR_MAX_WIDTH,
-  monthAxis,
+  BASE_GRID,
+  longMonthLabel,
   moneyAxis,
+  monthAxis,
   shortMonthLabel,
   tooltipBase,
   tooltipHtml,
@@ -473,7 +474,7 @@ export function ScenarioReport({ data, months, accountIds }: ScenarioReportProps
     setLoadedId(record.ID);
   };
 
-  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: shortMonthLabel };
+  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: longMonthLabel };
 
   return (
     <ReportLayout

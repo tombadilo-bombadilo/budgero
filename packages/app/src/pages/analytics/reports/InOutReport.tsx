@@ -10,12 +10,13 @@ import { buildMonthlyFlow } from '../analytics-model';
 import { inOutInsights } from '../insights';
 import type { AnalyticsData } from '../useAnalyticsData';
 import {
-  BASE_GRID,
   BAR_MAX_WIDTH,
   BAR_RADIUS_BOTTOM,
   BAR_RADIUS_TOP,
-  monthAxis,
+  BASE_GRID,
+  longMonthLabel,
   moneyAxis,
+  monthAxis,
   shortMonthLabel,
   tooltipBase,
   tooltipHtml,
@@ -85,7 +86,7 @@ export function InOutReport({ data, months }: InOutReportProps) {
     () =>
       inOutInsights(points, target, {
         money: (milli) => money.amount(milli),
-        monthLabel: shortMonthLabel,
+        monthLabel: longMonthLabel,
       }),
     [points, target, money]
   );
@@ -232,7 +233,7 @@ export function InOutReport({ data, months }: InOutReportProps) {
 
   const monthlyRows = useMemo(() => [...points].reverse().slice(0, 12), [points]);
 
-  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: shortMonthLabel };
+  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: longMonthLabel };
 
   return (
     <ReportLayout

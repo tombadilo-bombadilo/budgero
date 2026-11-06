@@ -12,11 +12,12 @@ import { buildTargetReport } from '../target-report';
 import { TargetTable } from '../components/TargetTable';
 import type { AnalyticsData } from '../useAnalyticsData';
 import {
-  BASE_GRID,
   BAR_MAX_WIDTH,
   BAR_RADIUS_TOP,
-  monthAxis,
+  BASE_GRID,
+  longMonthLabel,
   moneyAxis,
+  monthAxis,
   shortMonthLabel,
   tooltipBase,
   tooltipHtml,
@@ -59,7 +60,7 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
     () =>
       planInsights(plan, {
         money: (milli) => money.amount(milli),
-        monthLabel: shortMonthLabel,
+        monthLabel: longMonthLabel,
       }),
     [plan, money]
   );
@@ -131,7 +132,7 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
     [plan.categories]
   );
 
-  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: shortMonthLabel };
+  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: longMonthLabel };
   const hasGoals = targetReport.groups.some((group) => group.target);
 
   return (

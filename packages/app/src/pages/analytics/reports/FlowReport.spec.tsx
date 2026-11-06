@@ -41,6 +41,7 @@ vi.mock('@shared/ui/animated-number', () => ({
 vi.mock('../components/chart-utils', () => ({
   inkOnFill: () => '#ffffff',
   shortMonthLabel: (month: string) => month,
+  longMonthLabel: (month: string) => month,
   tooltipBase: () => ({}),
   tooltipHtml: () => '',
   useMoneyFormatters: () => ({
