@@ -125,6 +125,11 @@
       "file": "src/shared/lib/analytics/error-capture.ts",
       "text": "Error",
       "reason": "JavaScript error type name sent to PostHog error tracking; never shown to users."
+    },
+    {
+      "file": "src/features/reports/lib/report-builder.ts",
+      "text": "*",
+      "reason": "Report builder SQL compiler: SQL fragments, not user-visible copy (display labels are passed in translated)."
     }
   ]
 }

@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import {
@@ -64,7 +65,7 @@ export function useReportBuilderQuery({
         compileError: null,
       };
     } catch (err) {
-      return { compiled: null, compileError: getErrorMessage(err, 'Invalid report') };
+      return { compiled: null, compileError: getErrorMessage(err, t`Invalid report`) };
     }
   }, [spec, budgetId, chartId, chartTitle]);
 
@@ -86,7 +87,7 @@ export function useReportBuilderQuery({
           setCompleted((prev) => ({
             key: runKey,
             result: prev.result,
-            error: getErrorMessage(err, 'Query failed'),
+            error: getErrorMessage(err, t`Query failed`),
           }));
         });
     }, DEBOUNCE_MS);
