@@ -372,9 +372,6 @@ function normalizeSplits(
   if (template.toAccountId != null) {
     throw new ValidationError('Recurring transfers cannot be split', 'splits');
   }
-  if (splits.length < 2) {
-    throw new ValidationError('A split needs at least two lines', 'splits');
-  }
   const lines = splits.map((line) => {
     const categoryId = line?.categoryId ?? null;
     const transferAccountId = line?.transferAccountId ?? null;

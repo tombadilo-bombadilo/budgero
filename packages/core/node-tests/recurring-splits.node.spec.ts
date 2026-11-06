@@ -101,7 +101,8 @@ describe('recurring transactions with split lines', () => {
       await expect(
         create([line(60_000, { categoryId: rent }), line(30_000, { categoryId: groceries })])
       ).rejects.toThrow(/sum/);
-      await expect(create([line(100_000, { categoryId: rent })])).rejects.toThrow(/two lines/);
+      // One line is allowed, as in the add form (e.g. a copied one-line split).
+      await expect(create([line(100_000, { categoryId: rent })])).resolves.toBeTruthy();
       await expect(
         create([
           line(60_000, { categoryId: rent, transferAccountId: savings }),
