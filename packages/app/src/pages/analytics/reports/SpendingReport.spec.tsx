@@ -1,5 +1,5 @@
 import { i18n } from '@lingui/core';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { messages as germanMessages } from '../../../locales/de/messages.mjs';
@@ -40,6 +40,7 @@ vi.mock('../components/chart-utils', () => ({
   monthAxis: () => ({}),
   moneyAxis: () => ({}),
   shortMonthLabel: (month: string) => month,
+  longMonthLabel: (month: string) => month,
   tooltipBase: () => ({}),
   tooltipHtml: () => '',
   useMoneyFormatters: () => ({
@@ -134,5 +135,42 @@ describe('SpendingReport', () => {
         name: locale === 'de' ? '← Sonstige einklappen' : '← Collapse Other',
       })
     ).toBeInTheDocument();
+  });
+
+  it('answers the question and expands Other from the breakdown table', () => {
+    const data: AnalyticsData = {
+      budgetId: 1,
+      isLoading: false,
+      allTxns: [],
+      txns: Array.from({ length: 10 }, (_, index) => transaction(index + 1)),
+      accounts: [],
+      onBudgetAccountIds: new Set([1]),
+      categories: [],
+      categoryGroups: [],
+      labels: [],
+      payees: [],
+    };
+
+    render(<SpendingReport data={data} months={['2026-07', '2026-08']} />);
+
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Where does my money go?');
+    expect(screen.getByTestId('report-answer')).toHaveTextContent(
+      'You spent 550000 since 2026-07 — Category 1 took the most (18%).'
+    );
+    const table = screen.getByRole('table');
+    // 8 named rows + Other; header row on top.
+    expect(within(table).getAllByRole('row')).toHaveLength(10);
+    expect(within(table).getAllByTestId('sparkline')).toHaveLength(9);
+
+    const other = within(table).getByRole('button', { name: 'Other (2 more)' });
+    expect(other).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(other);
+
+    expect(within(table).getAllByRole('row')).toHaveLength(11);
+    expect(within(table).getByText('Category 10')).toBeInTheDocument();
+    expect(chartSeries()).toHaveLength(10);
+
+    fireEvent.click(screen.getByRole('button', { name: '← Collapse Other' }));
+    expect(within(screen.getByRole('table')).queryByText('Category 10')).not.toBeInTheDocument();
   });
 });
