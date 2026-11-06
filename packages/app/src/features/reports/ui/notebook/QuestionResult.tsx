@@ -13,8 +13,11 @@ import {
 import {
   allowedVisualizations,
   autoVisualization,
+  canStack,
+  resolveStacking,
   type QuestionSpec,
   type ResolvedVisualization,
+  type Stacking,
   type Visualization,
 } from '@features/reports/lib/question';
 import { Button } from '@shared/ui/button';
@@ -39,6 +42,7 @@ interface QuestionResultProps {
   query: QuestionQueryState;
   /** 'table' shows the table; anything else charts (the Table toggle saves as 'table'). */
   onVisualizationChange: (visualization: Visualization) => void;
+  onStackingChange: (stacking: Stacking) => void;
   onRefresh: () => void;
 }
 
@@ -47,6 +51,7 @@ export function QuestionResult({
   spec,
   query,
   onVisualizationChange,
+  onStackingChange,
   onRefresh,
 }: QuestionResultProps) {
   const { t } = useLingui();
@@ -60,6 +65,8 @@ export function QuestionResult({
       ? spec.visualization
       : auto;
   const showTable = spec.visualization === 'table' || !chartable;
+  const stackable = !showTable && canStack(spec, current);
+  const stacking = resolveStacking(spec, current);
   const rowCount = result?.rows.length ?? 0;
   const rowCountText = rowCount.toLocaleString();
   const totalText = (result?.rowCount ?? 0).toLocaleString();
@@ -120,6 +127,29 @@ export function QuestionResult({
                 );
               })}
           </div>
+        )}
+
+        {stackable && (
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={stacking}
+            onValueChange={(value) => {
+              if (value) onStackingChange(value as Stacking);
+            }}
+            aria-label={t`Series`}
+          >
+            <ToggleGroupItem value="none" className="px-2.5">
+              <Trans>Side by side</Trans>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="stacked" className="px-2.5">
+              <Trans>Stacked</Trans>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="percent" className="px-2.5">
+              100%
+            </ToggleGroupItem>
+          </ToggleGroup>
         )}
 
         <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
@@ -198,6 +228,12 @@ export function QuestionResult({
                     ? current
                     : resultCompiled.visualization
                 }
+                stacking={resolveStacking(
+                  { ...resultCompiled.spec, stacking: spec.stacking },
+                  allowedVisualizations(resultCompiled.spec).includes(current)
+                    ? current
+                    : resultCompiled.visualization
+                )}
               />
             )}
           </div>

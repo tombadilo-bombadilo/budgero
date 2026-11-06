@@ -192,6 +192,7 @@ export function NotebookQuestionView({
           spec={spec}
           query={query}
           onVisualizationChange={(visualization) => setSpec({ ...spec, visualization })}
+          onStackingChange={(stacking) => setSpec({ ...spec, stacking })}
           onRefresh={() => setRefreshKey((key) => key + 1)}
         />
       </div>

@@ -16819,6 +16819,10 @@ msgstr "Envoyé depuis {0}"
 msgid "Sent from {0} ({1})"
 msgstr "Envoyé depuis {0} ({1})"
 
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Series"
+msgstr "Séries"
+
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Server"
 msgstr "Serveur"
@@ -17233,6 +17237,10 @@ msgstr "Affichage des non pointées"
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Showing what would be affected. No changes were made."
 msgstr "Affichage des éléments qui seraient affectés. Aucune modification n'a été effectuée."
+
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Side by side"
+msgstr "Côte à côte"
 
 #: src/shared/ui/sidebar.tsx
 msgid "Sidebar"
@@ -17650,6 +17658,10 @@ msgstr "Requête SQL"
 #: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "SQL Query"
 msgstr "Requête SQL"
+
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Stacked"
+msgstr "Empilé"
 
 #: src/shared/ui/date-range-picker.tsx
 msgid "Start"

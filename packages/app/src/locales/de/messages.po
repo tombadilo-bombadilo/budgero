@@ -16819,6 +16819,10 @@ msgstr "Gesendet von {0}"
 msgid "Sent from {0} ({1})"
 msgstr "Gesendet von {0} ({1})"
 
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Series"
+msgstr "Reihen"
+
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Server"
 msgstr "Server"
@@ -17233,6 +17237,10 @@ msgstr "Nicht gebuchte werden angezeigt"
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Showing what would be affected. No changes were made."
 msgstr "Zeigt, was betroffen wäre. Es wurden keine Änderungen vorgenommen."
+
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Side by side"
+msgstr "Nebeneinander"
 
 #: src/shared/ui/sidebar.tsx
 msgid "Sidebar"
@@ -17650,6 +17658,10 @@ msgstr "SQL-Abfrage"
 #: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "SQL Query"
 msgstr "SQL-Abfrage"
+
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Stacked"
+msgstr "Gestapelt"
 
 #: src/shared/ui/date-range-picker.tsx
 msgid "Start"

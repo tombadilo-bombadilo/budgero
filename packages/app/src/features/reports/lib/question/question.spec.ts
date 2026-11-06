@@ -17,6 +17,7 @@ import {
   normalizeQuestion,
   operatorsFor,
   questionColumnKeys,
+  resolveStacking,
   resolveVisualization,
   type QuestionSpec,
 } from './spec';
@@ -393,6 +394,7 @@ describe('saved question header', () => {
       limit: null,
       columns: null,
       visualization: 'line',
+      stacking: 'auto',
     });
     expect(stripQuestionHeader(saved)).toBe('WITH lines AS (SELECT 1) SELECT 1');
   });
@@ -422,5 +424,49 @@ describe('saved question header', () => {
     expect(upgrade({ measure: 'spending', dateRange: { preset: 'thisMonth' } }).filters[0]).toEqual(
       { field: 'date', op: 'current', values: [], unit: 'month' }
     );
+  });
+});
+
+describe('stacking', () => {
+  const byMonthAndGroup = (stacking?: QuestionSpec['stacking']) =>
+    normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'date', bucket: 'month' }, { field: 'category_group' }],
+      ...(stacking ? { stacking } : {}),
+    });
+
+  it('stacks a second grouping by default on bar and area charts', () => {
+    expect(resolveStacking(byMonthAndGroup(), 'bar')).toBe('stacked');
+    expect(resolveStacking(byMonthAndGroup(), 'area')).toBe('stacked');
+    expect(resolveStacking(byMonthAndGroup(), 'line')).toBe('none');
+  });
+
+  it('keeps several metrics side by side unless asked', () => {
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'income' }, { op: 'spending' }],
+      breakouts: [{ field: 'date', bucket: 'month' }],
+    });
+    expect(resolveStacking(spec, 'bar')).toBe('none');
+    expect(resolveStacking({ ...spec, stacking: 'stacked' }, 'bar')).toBe('stacked');
+  });
+
+  it('honours an explicit choice and survives normalizing', () => {
+    expect(resolveStacking(byMonthAndGroup('percent'), 'bar')).toBe('percent');
+    expect(resolveStacking(byMonthAndGroup('none'), 'bar')).toBe('none');
+    expect(normalizeQuestion({ source: 'transactions', stacking: 'bogus' as never }).stacking).toBe(
+      'auto'
+    );
+  });
+
+  it('never stacks a single series', () => {
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'date', bucket: 'month' }],
+      stacking: 'stacked',
+    });
+    expect(resolveStacking(spec, 'bar')).toBe('none');
   });
 });
