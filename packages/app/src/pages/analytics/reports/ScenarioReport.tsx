@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { Fragment, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { Plus, Save, Trash2 } from 'lucide-react';
 import { EChart } from '@shared/ui/echart';
@@ -9,6 +9,7 @@ import { Slider } from '@shared/ui/slider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import MonthPickerPopover from '@shared/ui/MonthPickerPopover';
 import { trendTextClass } from '@shared/lib/amount-color';
+import { cn } from '@shared/lib/utils';
 import { getTodayISO } from '@shared/lib/date-utils';
 import { CalculatorCell } from '@shared/ui/calculator-cell';
 import { asMilli } from '@shared/lib/currency/milli';
@@ -38,8 +39,11 @@ import {
   useMoneyFormatters,
   usePalette,
 } from '../components/chart-utils';
-import { ModeToggle, ReportShell } from '../components/ReportShell';
-import { LegendChips, PanelSectionTitle, StatTile } from '../components/panels';
+import { KeyFigures, ReportLayout, ToolbarField, ViewSwitch } from '../components/ReportLayout';
+import { LedgerTable } from '../components/LedgerTable';
+import { LegendChips } from '../components/panels';
+import { reportMeta } from '../report-questions';
+import { scenarioAnswer } from '../report-answers';
 import {
   DEFAULT_SCENARIO_PAYLOAD,
   parseScenarioPayload,
@@ -469,67 +473,79 @@ export function ScenarioReport({ data, months, accountIds }: ScenarioReportProps
     setLoadedId(record.ID);
   };
 
+  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: shortMonthLabel };
+
   return (
-    <ReportShell
-      title={t`Scenario Planner`}
-      hero={money.amount(chartedEnd)}
-      heroClassName={trendTextClass(chartedEnd)}
-      subtitle={
-        scenario.breakMonthKey
-          ? t`This scenario breaks in ${shortMonthLabel(scenario.breakMonthKey)}${breakBeyondChart ? t` (beyond the charted window)` : ''}`
-          : t`Balance after ${payload.horizon} months under this scenario`
-      }
-      controls={
+    <ReportLayout
+      question={reportMeta('scenario').question}
+      answer={scenarioAnswer(
+        {
+          endBalance: chartedEnd,
+          horizon: payload.horizon,
+          breakMonthKey: scenario.breakMonthKey,
+          breakBeyondChart,
+        },
+        fmt
+      )}
+      toolbar={
         <>
-          <ModeToggle
+          <ViewSwitch
+            label={t`Show`}
             value={view}
             onChange={setView}
-            ariaLabel="Scenario chart view"
             options={[
               { value: 'balance', label: t`Balance` },
               { value: 'flow', label: t`Composition` },
             ]}
           />
-          <Select
-            value={payload.model}
-            onValueChange={(value) => patch({ model: value as ScenarioPayload['model'] })}
-          >
-            <SelectTrigger className="h-9 w-[220px]" size="sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="average">
-                <Trans>Flat average</Trans>
-              </SelectItem>
-              <SelectItem value="linear">
-                <Trans>Linear trend (OLS)</Trans>
-              </SelectItem>
-              <SelectItem value="robust">
-                <Trans>Robust trend (Theil–Sen)</Trans>
-              </SelectItem>
-              <SelectItem value="holt">
-                <Trans>Damped trend (Holt)</Trans>
-              </SelectItem>
-              <SelectItem value="seasonal" disabled={!seasonalReady}>
-                <Trans>Seasonal average{seasonalReady ? '' : t` (needs 12+ mo)`}</Trans>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Select
-            value={String(payload.horizon)}
-            onValueChange={(value) => patch({ horizon: Number(value) })}
-          >
-            <SelectTrigger className="h-9 w-[135px]" size="sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {[12, 24, 36, 60].map((horizon) => (
-                <SelectItem key={horizon} value={String(horizon)}>
-                  <Trans>{horizon} months</Trans>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ToolbarField label={t`Projection model`}>
+            {(labelId) => (
+              <Select
+                value={payload.model}
+                onValueChange={(value) => patch({ model: value as ScenarioPayload['model'] })}
+              >
+                <SelectTrigger className="h-8 w-[220px]" size="sm" aria-labelledby={labelId}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="average">
+                    <Trans>Flat average</Trans>
+                  </SelectItem>
+                  <SelectItem value="linear">
+                    <Trans>Linear trend (OLS)</Trans>
+                  </SelectItem>
+                  <SelectItem value="robust">
+                    <Trans>Robust trend (Theil–Sen)</Trans>
+                  </SelectItem>
+                  <SelectItem value="holt">
+                    <Trans>Damped trend (Holt)</Trans>
+                  </SelectItem>
+                  <SelectItem value="seasonal" disabled={!seasonalReady}>
+                    <Trans>Seasonal average{seasonalReady ? '' : t` (needs 12+ mo)`}</Trans>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            )}
+          </ToolbarField>
+          <ToolbarField label={t`Horizon`}>
+            {(labelId) => (
+              <Select
+                value={String(payload.horizon)}
+                onValueChange={(value) => patch({ horizon: Number(value) })}
+              >
+                <SelectTrigger className="h-8 w-[135px]" size="sm" aria-labelledby={labelId}>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[12, 24, 36, 60].map((horizon) => (
+                    <SelectItem key={horizon} value={String(horizon)}>
+                      <Trans>{horizon} months</Trans>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </ToolbarField>
         </>
       }
       legend={
@@ -549,277 +565,286 @@ export function ScenarioReport({ data, months, accountIds }: ScenarioReportProps
           />
         ) : null
       }
-      chart={
-        <>
-          <EChart option={option} ariaLabel="Scenario balance projection" />
-
-          <div className="mt-4 grid gap-4 border-t border-dashed border-border/60 pt-4 md:grid-cols-2">
-            <div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  <Trans>Monthly income</Trans>
-                </span>
-                <span className="text-sm font-semibold tabular-nums">
-                  {payload.incomePct}% ·{' '}
-                  {money.amount(Math.round((baseline.income[0] ?? 0) * (payload.incomePct / 100)))}
-                </span>
-              </div>
-              <Slider
-                value={[payload.incomePct]}
-                min={0}
-                max={200}
-                step={5}
-                onValueChange={([value]) => patch({ incomePct: value })}
-                className="mt-2"
-              />
-            </div>
-            <div>
-              <div className="flex items-baseline justify-between">
-                <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  <Trans>Monthly spending</Trans>
-                </span>
-                <span className="text-sm font-semibold tabular-nums">
-                  {payload.spendingPct}% ·{' '}
-                  {money.amount(
-                    Math.round((baseline.spending[0] ?? 0) * (payload.spendingPct / 100))
-                  )}
-                </span>
-              </div>
-              <Slider
-                value={[payload.spendingPct]}
-                min={0}
-                max={200}
-                step={5}
-                onValueChange={([value]) => patch({ spendingPct: value })}
-                className="mt-2"
-              />
-            </div>
-          </div>
-
-          <div className="mt-4 border-t border-dashed border-border/60 pt-4">
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <Trans>One-off inflows / outflows</Trans>
-              </span>
-              <Button variant="outline" size="sm" onClick={addOneOff}>
-                <Trans>
-                  <Plus className="mr-1 h-3.5 w-3.5" />
-                  Add
-                </Trans>
-              </Button>
-            </div>
-            {payload.oneOffs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                <Trans>
-                  Nothing yet — add a car repair, a bonus, a tax bill… and watch the line react.
-                </Trans>
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {payload.oneOffs.map((row) => (
-                  <div key={row.id} className="flex flex-wrap items-center gap-2">
-                    <MonthPickerPopover
-                      value={row.monthKey || defaultOneOffMonth}
-                      onChange={(monthKey) => {
-                        // Clamp into the charted window so the one-off lands.
-                        const first = chartedMonths[0];
-                        const last = chartedMonths.at(-1) ?? monthKey;
-                        const clamped =
-                          monthKey < first ? first : monthKey > last ? last : monthKey;
-                        updateOneOff(row.id, { monthKey: clamped });
-                      }}
-                    />
-                    <Select
-                      value={row.kind}
-                      onValueChange={(value) =>
-                        updateOneOff(row.id, { kind: value as ScenarioOneOff['kind'] })
-                      }
-                    >
-                      <SelectTrigger className="h-8 w-[110px]" size="sm">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="outflow">
-                          <Trans>Outflow</Trans>
-                        </SelectItem>
-                        <SelectItem value="inflow">
-                          <Trans>Inflow</Trans>
-                        </SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <CalculatorCell
-                      value={asMilli(row.amount)}
-                      onCommit={(value) =>
-                        updateOneOff(row.id, { amount: Math.max(0, Math.round(Number(value))) })
-                      }
-                      localizer={globalLocalizer}
-                      formatter={(value) => globalLocalizer.format(value)}
-                      placeholder={t`Amount`}
-                      inputAlign="right"
-                      zeroAsEmpty
-                      className="w-[170px] shrink-0 overflow-hidden"
-                      displayClassName="truncate"
-                    />
-                    <Input
-                      value={row.label}
-                      placeholder={t`Label (optional)`}
-                      onChange={(event) => updateOneOff(row.id, { label: event.target.value })}
-                      className="h-8 min-w-[120px] flex-1"
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground"
-                      onClick={() => removeOneOff(row.id)}
-                      aria-label={t`Remove one-off`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      }
+      chart={<EChart option={option} ariaLabel="Scenario balance projection" />}
       isLoading={data.isLoading}
       isEmpty={isEmpty}
       emptyText={t`Pick a period with some history to project from.`}
-      panel={
+      figures={
+        <KeyFigures
+          items={[
+            { label: t`Starting funds`, value: money.tile(startBalance) },
+            {
+              label: t`End balance`,
+              value: money.tile(chartedEnd),
+              valueClassName: trendTextClass(chartedEnd),
+            },
+            {
+              label: t`Lowest point`,
+              value: money.tile(chartedMin.balance),
+              valueClassName: trendTextClass(chartedMin.balance),
+              detail: chartedMin.monthKey ? shortMonthLabel(chartedMin.monthKey) : undefined,
+            },
+            {
+              label: t`Funds run out`,
+              value: scenario.breakMonthKey ? shortMonthLabel(scenario.breakMonthKey) : t`Never`,
+              valueClassName: scenario.breakMonthKey
+                ? 'text-red-600 dark:text-red-300'
+                : 'text-green-600',
+              detail: breakBeyondChart
+                ? t`beyond charted window`
+                : scenario.breakMonthKey
+                  ? undefined
+                  : t`net stays positive for 50 years`,
+            },
+          ]}
+        />
+      }
+    >
+      {isEmpty ? null : (
         <>
-          <div className="grid grid-cols-2 gap-2">
-            <StatTile
-              label={t`End balance`}
-              value={money.tile(chartedEnd)}
-              valueClassName={trendTextClass(chartedEnd)}
-            />
-            <StatTile
-              label={t`Lowest point`}
-              value={money.tile(chartedMin.balance)}
-              valueClassName={trendTextClass(chartedMin.balance)}
-              detail={chartedMin.monthKey ? shortMonthLabel(chartedMin.monthKey) : undefined}
-            />
-            <StatTile
-              label={t`Funds run out`}
-              value={scenario.breakMonthKey ? shortMonthLabel(scenario.breakMonthKey) : t`Never`}
-              valueClassName={
-                scenario.breakMonthKey ? 'text-red-600 dark:text-red-300' : 'text-green-600'
-              }
-              detail={
-                breakBeyondChart
-                  ? t`beyond charted window`
-                  : scenario.breakMonthKey
-                    ? undefined
-                    : t`net stays positive for 50 years`
-              }
-            />
-            <StatTile label={t`Starting funds`} value={money.tile(startBalance)} />
-          </div>
-
-          <PanelSectionTitle>
-            <Trans>Save scenario</Trans>
-          </PanelSectionTitle>
-          <div className="flex gap-2">
-            <Input
-              value={scenarioName}
-              onChange={(event) => setScenarioName(event.target.value)}
-              placeholder={t`Scenario name`}
-              className="h-8"
-            />
-            <Button
-              size="sm"
-              className="h-8"
-              onClick={() => void handleSave()}
-              disabled={!scenarioName.trim() || saveMutation.isPending}
-            >
-              <Save className="mr-1 h-3.5 w-3.5" />
-              {loadedId ? t`Update` : t`Save`}
-            </Button>
-          </div>
-          {saveMutation.isError ? (
-            <p className="mt-1 text-xs text-red-600 dark:text-red-300">
-              {saveMutation.error.message}
-            </p>
-          ) : null}
-
-          {saved.length > 0 ? (
-            <>
-              <PanelSectionTitle>
-                <Trans>Saved scenarios</Trans>
-              </PanelSectionTitle>
-              <div className="divide-y divide-border/50">
-                {saved.map((record) => (
-                  <div key={record.ID} className="flex items-center gap-1 py-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-8 flex-1 justify-start ${record.ID === loadedId ? 'font-semibold' : ''}`}
-                      onClick={() => handleLoad(record.ID)}
-                    >
-                      {record.Name}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground"
-                      onClick={() => {
-                        deleteMutation.mutate({ id: record.ID });
-                        if (record.ID === loadedId) setLoadedId(null);
-                      }}
-                      aria-label={t`Delete scenario ${record.Name}`}
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </Button>
+          <div className="rounded-lg border border-border bg-card">
+            <h3 className="border-b border-border px-4 py-2.5 text-sm font-semibold">
+              <Trans>Adjust the scenario</Trans>
+            </h3>
+            <div className="p-4">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <Trans>Monthly income</Trans>
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">
+                      {payload.incomePct}% ·{' '}
+                      {money.amount(
+                        Math.round((baseline.income[0] ?? 0) * (payload.incomePct / 100))
+                      )}
+                    </span>
                   </div>
-                ))}
+                  <Slider
+                    value={[payload.incomePct]}
+                    min={0}
+                    max={200}
+                    step={5}
+                    onValueChange={([value]) => patch({ incomePct: value })}
+                    className="mt-2"
+                  />
+                </div>
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      <Trans>Monthly spending</Trans>
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums">
+                      {payload.spendingPct}% ·{' '}
+                      {money.amount(
+                        Math.round((baseline.spending[0] ?? 0) * (payload.spendingPct / 100))
+                      )}
+                    </span>
+                  </div>
+                  <Slider
+                    value={[payload.spendingPct]}
+                    min={0}
+                    max={200}
+                    step={5}
+                    onValueChange={([value]) => patch({ spendingPct: value })}
+                    className="mt-2"
+                  />
+                </div>
               </div>
-            </>
-          ) : null}
 
-          <PanelSectionTitle>
-            <Trans>Projection</Trans>
-          </PanelSectionTitle>
-          <div className="max-h-[360px] overflow-y-auto pr-1">
-            <div className="grid grid-cols-[auto_1fr_1fr_1.2fr] gap-x-3 text-[11px]">
-              <span className="sticky top-0 z-10 bg-card pb-1 font-medium uppercase tracking-wide text-muted-foreground">
-                <Trans>Month</Trans>
-              </span>
-              <span className="sticky top-0 z-10 bg-card pb-1 text-right font-medium uppercase tracking-wide text-muted-foreground">
-                <Trans>In</Trans>
-              </span>
-              <span className="sticky top-0 z-10 bg-card pb-1 text-right font-medium uppercase tracking-wide text-muted-foreground">
-                <Trans>Out</Trans>
-              </span>
-              <span className="sticky top-0 z-10 bg-card pb-1 text-right font-medium uppercase tracking-wide text-muted-foreground">
-                <Trans>Balance</Trans>
-              </span>
-              {chartedPoints.map((point) => {
-                const gross = oneOffGrossByMonth.get(point.monthKey);
-                const inflow = point.income + (gross?.inflow ?? 0);
-                const outflow = point.spending + (gross?.outflow ?? 0);
-                return (
-                  <Fragment key={point.monthKey}>
-                    <span className="whitespace-nowrap border-t border-border/40 py-1 text-muted-foreground">
-                      {shortMonthLabel(point.monthKey)}
-                    </span>
-                    <span className="whitespace-nowrap border-t border-border/40 py-1 text-right tabular-nums">
-                      {money.amount(inflow)}
-                    </span>
-                    <span className="whitespace-nowrap border-t border-border/40 py-1 text-right tabular-nums text-red-600 dark:text-red-300">
-                      {money.amount(outflow)}
-                    </span>
-                    <span
-                      className={`whitespace-nowrap border-t border-border/40 py-1 text-right font-medium tabular-nums ${trendTextClass(point.balance)}`}
-                    >
-                      {money.amount(point.balance)}
-                    </span>
-                  </Fragment>
-                );
-              })}
+              <div className="mt-4 border-t border-border pt-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <Trans>One-off inflows / outflows</Trans>
+                  </span>
+                  <Button variant="outline" size="sm" onClick={addOneOff}>
+                    <Trans>
+                      <Plus className="mr-1 h-3.5 w-3.5" />
+                      Add
+                    </Trans>
+                  </Button>
+                </div>
+                {payload.oneOffs.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    <Trans>
+                      Nothing yet — add a car repair, a bonus, a tax bill… and watch the line react.
+                    </Trans>
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {payload.oneOffs.map((row) => (
+                      <div key={row.id} className="flex flex-wrap items-center gap-2">
+                        <MonthPickerPopover
+                          value={row.monthKey || defaultOneOffMonth}
+                          onChange={(monthKey) => {
+                            // Clamp into the charted window so the one-off lands.
+                            const first = chartedMonths[0];
+                            const last = chartedMonths.at(-1) ?? monthKey;
+                            const clamped =
+                              monthKey < first ? first : monthKey > last ? last : monthKey;
+                            updateOneOff(row.id, { monthKey: clamped });
+                          }}
+                        />
+                        <Select
+                          value={row.kind}
+                          onValueChange={(value) =>
+                            updateOneOff(row.id, { kind: value as ScenarioOneOff['kind'] })
+                          }
+                        >
+                          <SelectTrigger className="h-8 w-[110px]" size="sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="outflow">
+                              <Trans>Outflow</Trans>
+                            </SelectItem>
+                            <SelectItem value="inflow">
+                              <Trans>Inflow</Trans>
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <CalculatorCell
+                          value={asMilli(row.amount)}
+                          onCommit={(value) =>
+                            updateOneOff(row.id, { amount: Math.max(0, Math.round(Number(value))) })
+                          }
+                          localizer={globalLocalizer}
+                          formatter={(value) => globalLocalizer.format(value)}
+                          placeholder={t`Amount`}
+                          inputAlign="right"
+                          zeroAsEmpty
+                          className="w-[170px] shrink-0 overflow-hidden"
+                          displayClassName="truncate"
+                        />
+                        <Input
+                          value={row.label}
+                          placeholder={t`Label (optional)`}
+                          onChange={(event) => updateOneOff(row.id, { label: event.target.value })}
+                          className="h-8 min-w-[120px] flex-1"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground"
+                          onClick={() => removeOneOff(row.id)}
+                          aria-label={t`Remove one-off`}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+            <LedgerTable
+              title={<Trans>Projection</Trans>}
+              rows={chartedPoints}
+              rowKey={(point) => point.monthKey}
+              maxHeightClassName="max-h-[420px]"
+              columns={[
+                {
+                  key: 'month',
+                  header: t`Month`,
+                  render: (point) => shortMonthLabel(point.monthKey),
+                },
+                {
+                  key: 'in',
+                  header: t`In`,
+                  align: 'right',
+                  render: (point) =>
+                    money.amount(
+                      point.income + (oneOffGrossByMonth.get(point.monthKey)?.inflow ?? 0)
+                    ),
+                },
+                {
+                  key: 'out',
+                  header: t`Out`,
+                  align: 'right',
+                  render: (point) =>
+                    money.amount(
+                      point.spending + (oneOffGrossByMonth.get(point.monthKey)?.outflow ?? 0)
+                    ),
+                  cellClassName: () => 'text-red-600 dark:text-red-300',
+                },
+                {
+                  key: 'balance',
+                  header: t`Balance`,
+                  align: 'right',
+                  render: (point) => money.amount(point.balance),
+                  cellClassName: (point) => cn('font-medium', trendTextClass(point.balance)),
+                },
+              ]}
+            />
+            <div className="h-fit rounded-lg border border-border bg-card">
+              <h3 className="border-b border-border px-4 py-2.5 text-sm font-semibold">
+                <Trans>Save scenario</Trans>
+              </h3>
+              <div className="p-4">
+                <div className="flex gap-2">
+                  <Input
+                    value={scenarioName}
+                    onChange={(event) => setScenarioName(event.target.value)}
+                    placeholder={t`Scenario name`}
+                    className="h-8"
+                  />
+                  <Button
+                    size="sm"
+                    className="h-8"
+                    onClick={() => void handleSave()}
+                    disabled={!scenarioName.trim() || saveMutation.isPending}
+                  >
+                    <Save className="mr-1 h-3.5 w-3.5" />
+                    {loadedId ? t`Update` : t`Save`}
+                  </Button>
+                </div>
+                {saveMutation.isError ? (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-300">
+                    {saveMutation.error.message}
+                  </p>
+                ) : null}
+
+                {saved.length > 0 ? (
+                  <>
+                    <h4 className="mb-1 mt-4 text-xs font-medium text-muted-foreground">
+                      <Trans>Saved scenarios</Trans>
+                    </h4>
+                    <div className="divide-y divide-border/50">
+                      {saved.map((record) => (
+                        <div key={record.ID} className="flex items-center gap-1 py-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className={`h-8 flex-1 justify-start ${record.ID === loadedId ? 'font-semibold' : ''}`}
+                            onClick={() => handleLoad(record.ID)}
+                          >
+                            {record.Name}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground"
+                            onClick={() => {
+                              deleteMutation.mutate({ id: record.ID });
+                              if (record.ID === loadedId) setLoadedId(null);
+                            }}
+                            aria-label={t`Delete scenario ${record.Name}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                ) : null}
+              </div>
             </div>
           </div>
         </>
-      }
-    />
+      )}
+    </ReportLayout>
   );
 }

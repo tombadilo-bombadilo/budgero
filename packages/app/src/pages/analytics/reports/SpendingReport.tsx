@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { CalendarRange, ChartPie, BarChartHorizontal, LayoutGrid } from 'lucide-react';
 import { EChart } from '@shared/ui/echart';
-import { AnimatedNumber } from '@shared/ui/animated-number';
 import {
   buildDimensionTotals,
   buildTrendSeries,
@@ -24,8 +23,11 @@ import {
   useMoneyFormatters,
   usePalette,
 } from '../components/chart-utils';
-import { ModeToggle, ReportShell } from '../components/ReportShell';
-import { InsightStrip, PanelSectionTitle, ProportionRow, StatTile } from '../components/panels';
+import { KeyFigures, ReportLayout, ViewSwitch } from '../components/ReportLayout';
+import { BreakdownTable } from '../components/LedgerTable';
+import { InsightStrip } from '../components/panels';
+import { reportMeta } from '../report-questions';
+import { spendingAnswer } from '../report-answers';
 
 type SpendingView = 'time' | 'share';
 type ShareStyle = 'donut' | 'columns' | 'treemap';
@@ -112,33 +114,47 @@ export function SpendingReport({ data, months }: SpendingReportProps) {
     }));
   }, [folded, totals, palette, showingOther, t]);
 
-  const expandedPanelRows = useMemo(
-    () =>
-      totals.map((row, index) => ({
-        ...row,
-        color: row.ownColor ?? palette.series[index % palette.series.length],
-      })),
-    [totals, palette]
-  );
-  const collapsedPanelRows = useMemo(() => {
-    const rows = folded.other ? [...folded.top, folded.other] : folded.top;
+  // Per-entry monthly values for the table's trend column; Other sums the
+  // folded tail so its sparkline matches its amount.
+  const trendByKey = useMemo(() => {
+    const all = buildTrendSeries(
+      data.txns,
+      months,
+      dim,
+      data.onBudgetAccountIds,
+      Math.max(totals.length, 1)
+    );
+    const map = new Map(all.map((series) => [series.key, series.values]));
+    const topKeys = new Set(folded.top.map((row) => row.key));
+    const otherValues = months.map((_, index) =>
+      all.reduce((sum, series) => (topKeys.has(series.key) ? sum : sum + series.values[index]), 0)
+    );
+    map.set('other', otherValues);
+    return map;
+  }, [data.txns, months, dim, data.onBudgetAccountIds, totals.length, folded.top]);
+
+  const tableRows = useMemo(() => {
+    const rows = showingOther ? totals : folded.other ? [...folded.top, folded.other] : folded.top;
     const foldedCount = totals.length - folded.top.length;
-    return rows.map((row, index) => ({
-      ...row,
-      name: row.key === 'other' ? t`Other (${foldedCount} more) — inspect` : row.name,
-      color:
-        row.key === 'other'
+    return rows.map((row, index) => {
+      const isOther = row.key === 'other';
+      return {
+        key: row.key,
+        name: isOther ? t`Other (${foldedCount} more)` : row.name,
+        amount: row.total,
+        color: isOther
           ? palette.chrome.other
           : (row.ownColor ?? palette.series[index % palette.series.length]),
-    }));
-  }, [folded, totals.length, palette, t]);
+        trend: trendByKey.get(row.key),
+        onSelect: isOther ? () => setOtherOpen(true) : undefined,
+      };
+    });
+  }, [folded, totals, showingOther, palette, trendByKey, t]);
 
   const total = folded.grandTotal;
   const monthCount = Math.max(1, months.length);
   const isEmpty = total <= 0;
-  const top = expandedPanelRows[0];
-  const visiblePanelRows = showingOther ? expandedPanelRows : collapsedPanelRows;
-  const visiblePanelTop = visiblePanelRows[0];
+  const top = totals[0];
 
   const insights = useMemo(
     () =>
@@ -286,26 +302,37 @@ export function SpendingReport({ data, months }: SpendingReportProps) {
     };
   }, [view, shareStyle, dim, months, coloredTrend, slices, total, palette, money, DIM_LABELS]);
 
+  const answer = spendingAnswer(
+    {
+      total,
+      firstMonth: months[0] ?? null,
+      top: top && total > 0 ? { name: top.name, share: top.total / total } : null,
+    },
+    { money: (milli) => money.amount(milli), monthLabel: shortMonthLabel }
+  );
+
   return (
-    <ReportShell
-      title={t`Spending`}
-      hero={
-        <AnimatedNumber
-          value={total}
-          formatter={(value) => money.amount(value)}
-          rounding="integer"
-        />
-      }
-      subtitle={t`Where the money goes`}
-      controls={
+    <ReportLayout
+      question={reportMeta('spending').question}
+      answer={answer}
+      toolbar={
         <>
-          <ModeToggle
+          <ViewSwitch
+            label={t`Show`}
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'time', label: t`Over time`, icon: CalendarRange },
+              { value: 'share', label: t`Spending share`, icon: ChartPie },
+            ]}
+          />
+          <ViewSwitch
+            label={t`By`}
             value={dim}
             onChange={(nextDim) => {
               setDim(nextDim);
               setOtherOpen(false);
             }}
-            ariaLabel="Spending dimension"
             options={[
               { value: 'category', label: t`Categories` },
               { value: 'group', label: t`Groups` },
@@ -313,20 +340,11 @@ export function SpendingReport({ data, months }: SpendingReportProps) {
               { value: 'label', label: t`Labels` },
             ]}
           />
-          <ModeToggle
-            value={view}
-            onChange={setView}
-            ariaLabel="Spending view"
-            options={[
-              { value: 'time', label: t`Over time`, icon: CalendarRange },
-              { value: 'share', label: t`Spending share`, icon: ChartPie },
-            ]}
-          />
           {view === 'share' ? (
-            <ModeToggle
+            <ViewSwitch
+              label={t`Chart`}
               value={shareStyle}
               onChange={setShareStyle}
-              ariaLabel="Share chart style"
               options={[
                 { value: 'donut', label: t`Donut`, icon: ChartPie },
                 { value: 'columns', label: t`Columns`, icon: BarChartHorizontal },
@@ -360,73 +378,52 @@ export function SpendingReport({ data, months }: SpendingReportProps) {
       emptyText={
         dim === 'label' ? t`No labeled spending in this period.` : t`No spending in this period.`
       }
-      panel={
-        <>
-          <div className="grid grid-cols-2 gap-2">
-            <StatTile label={t`Total`} value={money.tile(total)} />
-            <StatTile label={t`Avg / month`} value={money.tile(Math.round(total / monthCount))} />
-            <StatTile
-              label={topLabels[dim]}
-              value={top?.name ?? '—'}
-              detail={
+      figures={
+        <KeyFigures
+          items={[
+            { label: t`Total`, value: money.tile(total) },
+            { label: t`Avg / month`, value: money.tile(Math.round(total / monthCount)) },
+            {
+              label: topLabels[dim],
+              value: top?.name ?? '—',
+              detail:
                 top && total > 0
                   ? t`${((top.total / total) * 100).toFixed(0)}% of spending`
-                  : undefined
-              }
-            />
-            <StatTile
-              label={DIM_LABELS[dim]}
-              value={String(totals.length)}
-              detail={
-                folded.other
-                  ? showingOther
-                    ? t`all charted`
-                    : t`top ${MAX_SLICES} + Other`
-                  : undefined
-              }
-            />
-          </div>
-          {dim === 'label' ? (
-            <p className="mt-3 text-xs text-muted-foreground">
+                  : undefined,
+            },
+            { label: DIM_LABELS[dim], value: String(totals.length) },
+          ]}
+        />
+      }
+    >
+      {isEmpty ? null : (
+        <BreakdownTable
+          title={showingOther ? t`${DIM_LABELS[dim]} · Other expanded` : DIM_LABELS[dim]}
+          nameHeader={t`Name`}
+          rows={tableRows}
+          total={total}
+          money={money.amount}
+          maxHeightClassName="max-h-[520px]"
+          actions={
+            showingOther ? (
+              <button
+                type="button"
+                onClick={() => setOtherOpen(false)}
+                className="text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <Trans>← Collapse Other</Trans>
+              </button>
+            ) : null
+          }
+          footnote={
+            dim === 'label' ? (
               <Trans>
                 A transaction with several labels counts in full under each, so labels can overlap.
               </Trans>
-            </p>
-          ) : null}
-          {showingOther ? (
-            <button
-              type="button"
-              onClick={() => setOtherOpen(false)}
-              className="mt-4 text-sm font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            >
-              <Trans>← Collapse Other</Trans>
-            </button>
-          ) : null}
-          <PanelSectionTitle>
-            {showingOther ? t`${DIM_LABELS[dim]} · Other expanded` : DIM_LABELS[dim]}
-          </PanelSectionTitle>
-          <div className="max-h-[420px] overflow-y-auto pr-1">
-            {visiblePanelRows.map((row) => {
-              const isOther = row.key === 'other';
-              return (
-                <ProportionRow
-                  key={row.key}
-                  color={row.color}
-                  name={row.name}
-                  value={money.amount(row.total)}
-                  fraction={
-                    visiblePanelTop && visiblePanelTop.total > 0
-                      ? row.total / visiblePanelTop.total
-                      : 0
-                  }
-                  onClick={isOther ? () => setOtherOpen(true) : undefined}
-                  expanded={isOther ? false : undefined}
-                />
-              );
-            })}
-          </div>
-        </>
-      }
-    />
+            ) : undefined
+          }
+        />
+      )}
+    </ReportLayout>
   );
 }

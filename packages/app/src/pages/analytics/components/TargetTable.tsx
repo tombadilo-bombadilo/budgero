@@ -41,12 +41,12 @@ export function TargetTable({ report, money, monthCount, isLoading }: TargetTabl
     row.monthsWithTarget > 0 ? `${row.monthsMet}/${row.monthsWithTarget}` : '';
 
   return (
-    <Card className="overflow-hidden border-dashed p-0" data-testid="target-table">
+    <Card className="overflow-hidden rounded-lg p-0 shadow-none" data-testid="target-table">
       <div className="p-5 pb-3 sm:px-6">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="text-base font-semibold text-muted-foreground">
+          <h3 className="text-sm font-semibold">
             <Trans>Targets</Trans>
-          </h2>
+          </h3>
           {report.groups.length > 0 ? (
             <Button
               variant="outline"

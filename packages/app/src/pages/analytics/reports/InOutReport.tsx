@@ -3,9 +3,9 @@ import { useMemo, useState } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { Layers, Percent } from 'lucide-react';
 import { EChart } from '@shared/ui/echart';
-import { AnimatedNumber } from '@shared/ui/animated-number';
 import { Input } from '@shared/ui/input';
 import { trendTextClass } from '@shared/lib/amount-color';
+import { cn } from '@shared/lib/utils';
 import { buildMonthlyFlow } from '../analytics-model';
 import { inOutInsights } from '../insights';
 import type { AnalyticsData } from '../useAnalyticsData';
@@ -22,14 +22,11 @@ import {
   useMoneyFormatters,
   usePalette,
 } from '../components/chart-utils';
-import { ModeToggle, ReportShell } from '../components/ReportShell';
-import {
-  InsightStrip,
-  LegendChips,
-  MonthRow,
-  PanelSectionTitle,
-  StatTile,
-} from '../components/panels';
+import { KeyFigures, ReportLayout, ToolbarField, ViewSwitch } from '../components/ReportLayout';
+import { LedgerTable } from '../components/LedgerTable';
+import { InsightStrip, LegendChips } from '../components/panels';
+import { reportMeta } from '../report-questions';
+import { inOutAnswer } from '../report-answers';
 
 type InOutMode = 'flow' | 'rate';
 
@@ -235,52 +232,42 @@ export function InOutReport({ data, months }: InOutReportProps) {
 
   const monthlyRows = useMemo(() => [...points].reverse().slice(0, 12), [points]);
 
+  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: shortMonthLabel };
+
   return (
-    <ReportShell
-      title={t`In vs Out`}
-      hero={
-        <AnimatedNumber
-          value={totalNet}
-          formatter={(value) => `${value >= 0 ? '+' : ''}${money.amount(value)}`}
-          rounding="integer"
-        />
-      }
-      heroClassName={trendTextClass(totalNet)}
-      subtitle={
-        savingsRate === null
-          ? t`Do we live within our means?`
-          : savingsRate >= 0
-            ? t`Keeping ${savingsRate.toFixed(0)}% of income${target !== null ? ` (target ${target}%)` : ''}`
-            : t`Spending ${Math.abs(savingsRate).toFixed(0)}% more than income`
-      }
-      controls={
+    <ReportLayout
+      question={reportMeta('in-out').question}
+      answer={inOutAnswer({ income: totalIncome, spending: totalSpending }, fmt)}
+      toolbar={
         <>
-          {mode === 'rate' ? (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Trans>
-                Target
-                <Input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={target ?? ''}
-                  placeholder="—"
-                  onChange={(event) => updateTarget(event.target.value)}
-                  className="h-8 w-16 text-right"
-                />
-                %
-              </Trans>
-            </div>
-          ) : null}
-          <ModeToggle
+          <ViewSwitch
+            label={t`Show`}
             value={mode}
             onChange={setMode}
-            ariaLabel="In vs Out chart mode"
             options={[
               { value: 'flow', label: t`Inflow vs Outflow`, icon: Layers },
               { value: 'rate', label: t`Savings rate`, icon: Percent },
             ]}
           />
+          {mode === 'rate' ? (
+            <ToolbarField label={t`Target savings rate`}>
+              {(labelId) => (
+                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={target ?? ''}
+                    placeholder="—"
+                    aria-labelledby={labelId}
+                    onChange={(event) => updateTarget(event.target.value)}
+                    className="h-8 w-16 text-right"
+                  />
+                  %
+                </span>
+              )}
+            </ToolbarField>
+          ) : null}
         </>
       }
       insights={<InsightStrip insights={insights} />}
@@ -299,44 +286,73 @@ export function InOutReport({ data, months }: InOutReportProps) {
       isLoading={data.isLoading}
       isEmpty={isEmpty}
       emptyText={t`No income or spending in this period.`}
-      panel={
-        <>
-          <div className="grid grid-cols-2 gap-2">
-            <StatTile
-              label={t`Net`}
-              value={`${totalNet >= 0 ? '+' : ''}${money.tile(totalNet)}`}
-              valueClassName={trendTextClass(totalNet)}
-            />
-            <StatTile
-              label={t`Savings rate`}
-              value={savingsRate === null ? '—' : `${savingsRate.toFixed(0)}%`}
-              valueClassName={savingsRate !== null ? trendTextClass(savingsRate) : undefined}
-              detail={target !== null ? `target ${target}%` : undefined}
-            />
-            <StatTile label={t`Money in`} value={money.tile(totalIncome)} />
-            <StatTile
-              label={t`Money out`}
-              value={money.tile(totalSpending)}
-              valueClassName={totalSpending > 0 ? 'text-red-600 dark:text-red-300' : undefined}
-              detail={`avg ${money.tile(Math.round(totalSpending / monthCount))}/mo`}
-            />
-          </div>
-          <PanelSectionTitle>
-            <Trans>Monthly</Trans>
-          </PanelSectionTitle>
-          <div className="divide-y divide-border/50">
-            {monthlyRows.map((point) => (
-              <MonthRow
-                key={point.monthKey}
-                label={shortMonthLabel(point.monthKey)}
-                primary={`${point.net >= 0 ? '+' : ''}${money.amount(point.net)}`}
-                primaryClassName={trendTextClass(point.net)}
-                secondary={`In ${money.amount(point.income)} / Out ${money.amount(point.spending)}`}
-              />
-            ))}
-          </div>
-        </>
+      figures={
+        <KeyFigures
+          items={[
+            { label: t`Money in`, value: money.tile(totalIncome) },
+            {
+              label: t`Money out`,
+              value: money.tile(totalSpending),
+              valueClassName: totalSpending > 0 ? 'text-red-600 dark:text-red-300' : undefined,
+              detail: t`avg ${money.tile(Math.round(totalSpending / monthCount))}/mo`,
+            },
+            {
+              label: t`Net`,
+              value: `${totalNet >= 0 ? '+' : ''}${money.tile(totalNet)}`,
+              valueClassName: trendTextClass(totalNet),
+            },
+            {
+              label: t`Savings rate`,
+              value: savingsRate === null ? '—' : `${savingsRate.toFixed(0)}%`,
+              valueClassName: savingsRate !== null ? trendTextClass(savingsRate) : undefined,
+              detail: target !== null ? t`target ${target}%` : undefined,
+            },
+          ]}
+        />
       }
-    />
+    >
+      {isEmpty ? null : (
+        <LedgerTable
+          title={<Trans>Month by month</Trans>}
+          rows={monthlyRows}
+          rowKey={(point) => point.monthKey}
+          columns={[
+            {
+              key: 'month',
+              header: t`Month`,
+              render: (point) => shortMonthLabel(point.monthKey),
+            },
+            {
+              key: 'in',
+              header: t`Money in`,
+              align: 'right',
+              render: (point) => money.amount(point.income),
+            },
+            {
+              key: 'out',
+              header: t`Money out`,
+              align: 'right',
+              render: (point) => money.amount(point.spending),
+            },
+            {
+              key: 'net',
+              header: t`Net`,
+              align: 'right',
+              render: (point) => `${point.net >= 0 ? '+' : ''}${money.amount(point.net)}`,
+              cellClassName: (point) => cn('font-medium', trendTextClass(point.net)),
+            },
+            {
+              key: 'rate',
+              header: t`Savings rate`,
+              align: 'right',
+              hideOnMobile: true,
+              render: (point) =>
+                point.income > 0 ? `${Math.round((point.net / point.income) * 100)}%` : '—',
+              cellClassName: () => 'text-muted-foreground',
+            },
+          ]}
+        />
+      )}
+    </ReportLayout>
   );
 }
