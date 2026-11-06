@@ -14,10 +14,7 @@ let opfsState: 'unknown' | 'available' | 'refused' = 'unknown';
 export async function getOpfsRoot(): Promise<FileSystemDirectoryHandle | null> {
   if (opfsState === 'refused') return null;
   const storage = globalThis.navigator?.storage;
-  if (!storage?.getDirectory) {
-    opfsState = 'refused';
-    return null;
-  }
+  if (!storage?.getDirectory) return null;
   try {
     const root = await storage.getDirectory();
     opfsState = 'available';
