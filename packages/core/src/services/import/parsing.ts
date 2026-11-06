@@ -499,7 +499,36 @@ export function detectColumnMapping(headers: string[]): Partial<ColumnMapping> {
     }
   }
 
+  // Exact header names only: "Category Group" or "Account Number" must not be
+  // mistaken for the category or the account (YNAB's register has both).
+  const categoryHeaders = [
+    'category',
+    'category name',
+    'kategorie',
+    'catégorie',
+    'categoría',
+    'categorie',
+  ];
+  const categoryIndex = lowerHeaders.findIndex((h) => categoryHeaders.includes(h.trim()));
+  if (categoryIndex !== -1) mapping.category = headers[categoryIndex];
+
+  const accountHeaders = ['account', 'account name', 'konto', 'compte', 'cuenta', 'rekening'];
+  const accountIndex = lowerHeaders.findIndex((h) => accountHeaders.includes(h.trim()));
+  if (accountIndex !== -1) mapping.account = headers[accountIndex];
+
   return mapping;
+}
+
+/**
+ * Whether these headers are a YNAB register export (Register.csv). Imported
+ * as a plain CSV it loses its category groups and budget history, so the
+ * import dialog points to the YNAB import instead.
+ */
+export function looksLikeYnabRegister(headers: string[]): boolean {
+  const lower = new Set(headers.map((h) => h.trim().toLowerCase()));
+  return ['account', 'payee', 'category group/category', 'outflow', 'inflow', 'cleared'].every(
+    (h) => lower.has(h)
+  );
 }
 
 /**

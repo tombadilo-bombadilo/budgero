@@ -39,6 +39,12 @@ import {
   createImportNameMaps,
   resolveImportCategoryId,
 } from '@budgero/core/browser';
+import {
+  isNewAccountPlaceholder,
+  placeholderIdFor,
+  rememberRoutes,
+  sourceAccountsOf,
+} from '@features/import/lib/account-routes';
 import { buildFileImportPreview, importTolerance } from '@features/import/lib/plan-file-import';
 import { trackImportedCsvPdf } from '@shared/lib/analytics/analytics';
 import { startImportRun } from '@shared/lib/analytics/import-tracking';
@@ -67,6 +73,8 @@ export function inDateOrder<T extends { input: { date: string; index: number } }
 export const STEPS: ImportStep[] = ['upload', 'configure', 'preview', 'import', 'complete'];
 
 export interface ImportDialogState {
+  /** The budget the file is imported into (0 when none is selected). */
+  budgetId: number;
   currentStep: ImportStep;
   setCurrentStep: (step: ImportStep) => void;
 
@@ -676,26 +684,58 @@ export function useImportDialogState(): ImportDialogState {
         isComplete: false,
       });
 
-      let defaultAccountId: number;
-      if (!selectedRows.some((row) => row.input.accountId === -1)) {
-        defaultAccountId = selectedRows[0].input.accountId;
-        const selectedAccount = accounts?.find(
-          (account) => account.ID === importConfig.defaultAccountId
-        );
-        destinationAccountName = selectedAccount?.Name || 'Existing account';
-      } else {
-        const defaultAccount = await addAccountMutation.mutateAsync({
-          name: t`Import Account`,
+      // Rows headed for a new account carry a placeholder id: -1 for the one
+      // "Import Account", or one per source account the user chose to create.
+      // Create each once, then send its rows there.
+      const sources = sourceAccountsOf(parsedData.rows, columnMapping.account);
+      const createdFor = new Map<number, number>();
+      const pendingIds = [
+        ...new Set(
+          selectedRows
+            .map((row) => row.input.accountId)
+            .filter((id) => id === -1 || isNewAccountPlaceholder(id))
+        ),
+      ];
+      for (const placeholder of pendingIds) {
+        const source = sources.find((s) => placeholderIdFor(s.source, sources) === placeholder);
+        const route = source ? importConfig.accountRoutes?.[source.source] : undefined;
+        const name =
+          route?.kind === 'new' ? route.name.trim() || source!.source : t`Import Account`;
+        const created = await addAccountMutation.mutateAsync({
+          name,
           budget_id: budgetId,
           type: 'Checking',
-          currency: importConfig.accountCurrency,
+          currency:
+            selectedRows.find((row) => row.input.accountId === placeholder)?.input.currency ??
+            importConfig.accountCurrency,
           balance: 0,
           on_budget: true,
         });
-        defaultAccountId = defaultAccount.ID;
-        destinationAccountName = defaultAccount.Name || 'Import Account';
-        createdAccountIds.push(defaultAccount.ID);
+        createdFor.set(placeholder, created.ID);
+        createdAccountIds.push(created.ID);
       }
+      const realAccountId = (id: number) => createdFor.get(id) ?? id;
+      const destinationIds = [
+        ...new Set(selectedRows.map((row) => realAccountId(row.input.accountId))),
+      ];
+      const nameOf = (id: number) =>
+        accounts?.find((account) => account.ID === id)?.Name ??
+        (createdFor.size > 0 ? t`New account` : t`Existing account`);
+      destinationAccountName =
+        destinationIds.length === 1
+          ? nameOf(destinationIds[0])
+          : t`${destinationIds.length} accounts`;
+      // Next import of a file with these accounts starts from the same choices.
+      const chosen: Record<string, number> = {};
+      for (const source of sources) {
+        const route = importConfig.accountRoutes?.[source.source];
+        if (route?.kind === 'existing') chosen[source.source] = route.accountId;
+        if (route?.kind === 'new') {
+          const id = createdFor.get(placeholderIdFor(source.source, sources));
+          if (id) chosen[source.source] = id;
+        }
+      }
+      rememberRoutes(budgetId, chosen);
 
       // Process transactions (excluding any rows the user marked as skipped
       // in the configure step). The planner decides — using the exact same
@@ -781,11 +821,7 @@ export function useImportDialogState(): ImportDialogState {
 
           const matchId = matchCandidate(reviewed);
           if (matchId !== undefined) {
-            await applyMatch(
-              reviewed,
-              plan.accountId === -1 ? defaultAccountId : plan.accountId,
-              matchId
-            );
+            await applyMatch(reviewed, realAccountId(plan.accountId), matchId);
             matchedIds.set(plan.index, matchId);
             processedCount++;
             continue;
@@ -803,7 +839,7 @@ export function useImportDialogState(): ImportDialogState {
                 op: 'importHistory.match',
                 payload: {
                   budgetId,
-                  accountId: plan.accountId === -1 ? defaultAccountId : plan.accountId,
+                  accountId: realAccountId(plan.accountId),
                   transactionId: candidate,
                   identity: plan,
                 },
@@ -834,7 +870,7 @@ export function useImportDialogState(): ImportDialogState {
             payload: {
               inflow: plan.inflow,
               outflow: plan.outflow,
-              accountId: plan.accountId === -1 ? defaultAccountId : plan.accountId,
+              accountId: realAccountId(plan.accountId),
               categoryId,
               budgetId,
               date: plan.date,
@@ -959,6 +995,7 @@ export function useImportDialogState(): ImportDialogState {
   ]);
 
   return {
+    budgetId: selectedBudget?.ID ?? 0,
     currentStep,
     setCurrentStep,
 

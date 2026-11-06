@@ -226,6 +226,7 @@ export {
 export {
   parseDelimitedText,
   detectColumnMapping,
+  looksLikeYnabRegister,
   getSeparatorsFromFormat,
   parseAmount,
   parseDate,

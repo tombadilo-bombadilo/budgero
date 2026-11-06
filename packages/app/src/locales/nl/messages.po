@@ -20590,3 +20590,101 @@ msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-
 #: src/app/startup/StartupLayout.tsx
 msgid "Zero-based budgeting. Zero-knowledge privacy."
 msgstr "Zero-based budgetteren. Zero-knowledge privacy."
+
+#. placeholder {0}: state.invites.length
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "{0, plural, one {# person} other {# people}}"
+msgstr "{0, plural, one {# persoon} other {# personen}}"
+
+#. placeholder {0}: sources.length
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "{0, plural, one {The \"{column}\" column names one account. Choose where its transactions go.} other {The \"{column}\" column names # accounts. Choose where each one’s transactions go.}}"
+msgstr "{0, plural, one {De kolom ‘{column}’ noemt één rekening. Kies waar de transacties heen gaan.} other {De kolom ‘{column}’ noemt # rekeningen. Kies per rekening waar de transacties heen gaan.}}"
+
+#. placeholder {0}: newNameOf(parsedData.rows[index])
+#: src/features/import/lib/plan-file-import.ts
+msgid "{0} (new)"
+msgstr "{0} (nieuw)"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "{count, plural, one {# transaction} other {# transactions}}"
+msgstr "{count, plural, one {# transactie} other {# transacties}}"
+
+#. placeholder {0}: columnMapping.account
+#. placeholder {1}: columnMapping.account
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "{rowsWithoutAccount, plural, one {One row has an empty \"{0}\" value. It goes into this account:} other {# rows have an empty \"{1}\" value. They go into this account:}}"
+msgstr "{rowsWithoutAccount, plural, one {Eén rij heeft geen waarde in ‘{0}’. Die gaat naar deze rekening:} other {# rijen hebben geen waarde in ‘{1}’. Die gaan naar deze rekening:}}"
+
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "<0>This looks like a YNAB register.</0> Imported here, your transactions and categories come in, but not your category groups or what you assigned each month. To bring your whole YNAB budget, import the YNAB export ZIP instead: open the budget switcher, choose Create New Budget, then the YNAB tab."
+msgstr "<0>Dit lijkt op een YNAB-register.</0> Hier geïmporteerd komen je transacties en categorieën mee, maar niet je categoriegroepen of wat je elke maand hebt toegewezen. Importeer voor je hele YNAB-budget liever de YNAB-export-ZIP: open de budgetkiezer, kies ‘Nieuw budget aanmaken’ en dan het tabblad ‘YNAB’."
+
+#: src/features/import/ui/steps/ConfigureStep.tsx
+#~ msgid "Account Column Mapped"
+#~ msgstr "Rekeningkolom gekoppeld"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Account for {source}"
+msgstr "Rekening voor {source}"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Account name"
+msgstr "Rekeningnaam"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Accounts in this file"
+msgstr "Rekeningen in dit bestand"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Budgero works either way. Pick the path that fits."
+msgstr "Budgero werkt beide kanten op. Kies wat bij je past."
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Create a new account"
+msgstr "Nieuwe rekening aanmaken"
+
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "Create Import Account"
+msgstr "Importrekening aanmaken"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Don’t import"
+msgstr "Niet importeren"
+
+#: src/pages/onboarding/onboarding-data.ts
+msgid "Every coin now has a place to land."
+msgstr "Elke munt heeft nu een bestemming."
+
+#: src/features/import/ui/steps/ConfigureStep.tsx
+#~ msgid "Fallback Account (for unmatched account names)"
+#~ msgstr "Terugvalrekening (voor niet-overeenkomende rekeningnamen)"
+
+#: src/features/import/lib/plan-file-import.ts
+msgid "Import Account (new)"
+msgstr "Importrekening (nieuw)"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Learn ZBB with a short walkthrough"
+msgstr "Leer zero-based budgetteren met een korte rondleiding"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "New account name for {source}"
+msgstr "Naam van de nieuwe rekening voor {source}"
+
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "Rows without an account"
+msgstr "Rijen zonder rekening"
+
+#: src/features/import/ui/steps/ConfigureStep.tsx
+#~ msgid "Select fallback account"
+#~ msgstr "Selecteer fallback-rekening"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Set up accounts & envelopes by hand"
+msgstr "Rekeningen en enveloppen handmatig instellen"
+
+#. placeholder {0}: columnMapping.account
+#: src/features/import/ui/steps/ConfigureStep.tsx
+#~ msgid "Transactions will use accounts from the \"{0}\" column. If an account name doesn't match any existing account, you'll need to select a default account below:"
+#~ msgstr "Transacties gebruiken rekeningen uit de kolom \"{0}\". Als een rekeningnaam niet overeenkomt met een bestaande rekening, moet je hieronder een standaardrekening selecteren:"
