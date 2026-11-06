@@ -3,6 +3,9 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLogout } from '@entities/user/api/useAuth';
 import { useCustomDashboards } from '@features/custom-dashboards/api/useCustomDashboards';
+import { useReports } from '@entities/report/api/useReports';
+import type { ReportKey } from '@pages/analytics/analytics-state';
+import { REPORT_ORDER, reportMeta } from '@pages/analytics/report-questions';
 
 import { useUiStore } from '@shared/store/useUiStore';
 import { generateBreadcrumbs } from './desktop-shell.utils';
@@ -25,24 +28,32 @@ export function useDesktopShellState(): UseDesktopShellStateReturn {
   const { data: dashboards = [] } = useCustomDashboards(
     isCustomDashboardDetailRoute ? budgetId : 0
   );
+  const { data: reports = [] } = useReports();
 
   const breadcrumbs = useMemo(() => {
+    const labelOverridesByHref: Record<string, string> = {};
+
     const dashboardMatch = location.pathname.match(/^\/reports\/dashboards\/([^/]+)$/);
-    if (!dashboardMatch) {
-      return generateBreadcrumbs(location.pathname);
+    if (dashboardMatch) {
+      const dashboardId = decodeURIComponent(dashboardMatch[1]);
+      labelOverridesByHref[`/reports/dashboards/${dashboardId}`] =
+        dashboards.find((dashboard) => dashboard.id === dashboardId)?.name ?? t`Dashboard`;
     }
 
-    const dashboardId = decodeURIComponent(dashboardMatch[1]);
-    const dashboardName =
-      dashboards.find((dashboard) => dashboard.id === dashboardId)?.name ?? t`Dashboard`;
-    const dashboardPath = `/reports/dashboards/${dashboardId}`;
+    const prebuiltMatch = location.pathname.match(/^\/reports\/prebuilt\/([^/]+)$/);
+    if (prebuiltMatch && REPORT_ORDER.includes(prebuiltMatch[1] as ReportKey)) {
+      labelOverridesByHref[location.pathname] = reportMeta(prebuiltMatch[1] as ReportKey).label;
+    }
 
-    return generateBreadcrumbs(location.pathname, {
-      labelOverridesByHref: {
-        [dashboardPath]: dashboardName,
-      },
-    });
-  }, [location.pathname, dashboards, t]);
+    const questionMatch = location.pathname.match(/^\/reports\/question\/([^/]+)$/);
+    if (questionMatch && questionMatch[1] !== 'new') {
+      const reportId = decodeURIComponent(questionMatch[1]);
+      labelOverridesByHref[location.pathname] =
+        reports.find((report) => report.id === reportId)?.name ?? t`Question`;
+    }
+
+    return generateBreadcrumbs(location.pathname, { labelOverridesByHref });
+  }, [location.pathname, dashboards, reports, t]);
 
   return {
     breadcrumbs,

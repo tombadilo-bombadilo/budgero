@@ -10,8 +10,10 @@ import AdminLayout from '@/app/layout/AdminLayout';
 import AccountPage from '@pages/accounts/AccountPage';
 import AccountsPage from '@pages/accounts/AccountsPage';
 import AllTransactionsPage from '@pages/accounts/AllTransactionsPage';
-import AnalyticsPage from '@pages/analytics/AnalyticsPage';
-import ExplorerPage from '@pages/explorer-page/ExplorerPage';
+import PrebuiltReportPage from '@pages/analytics/PrebuiltReportPage';
+import ReportsHomePage from '@pages/reports/ReportsHomePage';
+import QuestionPage from '@pages/reports/question/QuestionPage';
+import LegacyExplorerRedirect from '@pages/reports/LegacyExplorerRedirect';
 import CustomDashboardsPage from '@pages/custom-dashboards/CustomDashboardsPage';
 import AppearancePage from '@pages/settings/AppearancePage';
 import AccountSettingsPage from '@pages/settings/AccountSettingsPage';
@@ -85,7 +87,7 @@ function AppRouter() {
       : homePage === 'accounts'
         ? '/accounts'
         : homePage === 'analytics'
-          ? '/reports/prebuilt'
+          ? '/reports'
           : '/dashboard';
   return (
     <BrowserRouter>
@@ -112,8 +114,13 @@ function AppRouter() {
             <Route path="/accounts/all" element={<AllTransactionsPage />} />
             <Route path="/accounts/:accountId" element={<AccountPage />} />
             <Route path="/warranties" element={<WarrantiesPage />} />
-            <Route path="/reports/prebuilt" element={<AnalyticsPage />} />
-            <Route path="/reports/explorer" element={<ExplorerPage />} />
+            <Route path="/reports" element={<ReportsHomePage />} />
+            <Route path="/reports/prebuilt" element={<Navigate to="/reports" replace />} />
+            <Route path="/reports/prebuilt/:reportKey" element={<PrebuiltReportPage />} />
+            <Route path="/reports/question" element={<Navigate to="/reports" replace />} />
+            <Route path="/reports/question/new" element={<QuestionPage />} />
+            <Route path="/reports/question/:reportId" element={<QuestionPage />} />
+            <Route path="/reports/explorer" element={<LegacyExplorerRedirect />} />
             <Route path="/reports/dashboards" element={<CustomDashboardsPage />} />
             <Route path="/reports/dashboards/:dashboardId" element={<CustomDashboardsPage />} />
             <Route path="/settings" element={<Navigate to="/settings/appearance" replace />} />

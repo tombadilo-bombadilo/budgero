@@ -191,7 +191,7 @@ export function CommandPalette() {
         return true;
       }
       if (intent === 'open-reports') {
-        handleNavigation('/reports/prebuilt');
+        handleNavigation('/reports');
         return true;
       }
       return true;
@@ -503,16 +503,16 @@ export function CommandPalette() {
                 <Trans>Accounts</Trans>
               </span>
             </CommandItem>
-            <CommandItem onSelect={() => handleNavigation('/reports/prebuilt')}>
+            <CommandItem onSelect={() => handleNavigation('/reports')}>
               <PieChart className="mr-2 h-4 w-4" />
               <span>
                 <Trans>Reports</Trans>
               </span>
             </CommandItem>
-            <CommandItem onSelect={() => handleNavigation('/reports/explorer')}>
+            <CommandItem onSelect={() => handleNavigation('/reports/question/new')}>
               <TrendingUp className="mr-2 h-4 w-4" />
               <span>
-                <Trans>Explorer</Trans>
+                <Trans>New question</Trans>
               </span>
             </CommandItem>
             <CommandItem onSelect={() => handleNavigation('/reports/dashboards')}>

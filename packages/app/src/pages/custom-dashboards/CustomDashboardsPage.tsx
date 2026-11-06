@@ -21,6 +21,7 @@ import {
 } from '@features/custom-dashboards/api/useCustomDashboards';
 import type { QueryResult } from '@shared/lib/sql/report-query-executor';
 import type { ChartConfiguration, CustomDashboardWidget } from '@budgero/core/browser';
+import { BackToReports } from '@pages/reports/BackToReports';
 import { DashboardSwitcher } from './components/DashboardSwitcher';
 import { DashboardGrid } from './components/DashboardGrid';
 import { AddWidgetDialog } from './components/AddWidgetDialog';
@@ -258,9 +259,7 @@ export default function CustomDashboardsPage() {
   };
 
   const handleOpenReportInExplorer = (reportId: string) => {
-    void navigate('/reports/explorer', {
-      state: { editReportId: reportId, openSaveDialog: true },
-    });
+    void navigate(`/reports/question/${encodeURIComponent(reportId)}`);
   };
 
   if (!budgetId) {
@@ -276,13 +275,14 @@ export default function CustomDashboardsPage() {
   return (
     <div className="space-y-4 px-4 py-6 pb-[calc(var(--mobile-bottom-nav-height,96px)+1.5rem)] sm:pb-8 md:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+        <div className="space-y-1">
+          <BackToReports />
           <h1 className="text-2xl font-semibold">
             <Trans>Custom Dashboards</Trans>
           </h1>
           <p className="text-sm text-muted-foreground">
             <Trans>
-              Build dashboard layouts from Explorer charts. Drag to reorder, resize on desktop, and
+              Build dashboard layouts from saved questions. Drag to reorder, resize on desktop, and
               use size presets on mobile.
             </Trans>
           </p>
