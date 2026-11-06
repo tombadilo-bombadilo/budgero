@@ -2,7 +2,11 @@ import { t } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import type { GetTransactionsByAccountRow, Transaction } from '@budgero/core/browser';
+import type {
+  GetTransactionsByAccountRow,
+  Transaction,
+  TransactionSplit,
+} from '@budgero/core/browser';
 import type {
   RecurringTransactionEditorProps,
   RecurringTransactionEditorSubmit,
@@ -34,12 +38,13 @@ function scheduleFrom(date: string) {
 export function recurringInitialValuesFromTransaction(
   transaction: GetTransactionsByAccountRow,
   fallbackAccountId?: number,
-  transferLegs?: Transaction[]
+  transferLegs?: Transaction[],
+  splitLines?: TransactionSplit[]
 ): RecurringEditorInitialValues | null {
   if (transaction.TransferID) {
     // A standard transfer must have exactly one source and one destination.
-    // Split-transfer groups can contain more legs and recurring splits are not
-    // represented by the current template model, so do not flatten them.
+    // A split line's mirror row has a different shape: copy its split parent
+    // instead.
     if (transferLegs?.length !== 2) return null;
 
     const source = transferLegs.find((leg) => nativeOutflow(leg) > 0);
@@ -63,6 +68,17 @@ export function recurringInitialValuesFromTransaction(
   const outflow = nativeOutflow(transaction);
   const inflow = nativeInflow(transaction);
   const direction = outflow > 0 ? 'outflow' : 'inflow';
+  // Lines in account currency, like the template amount.
+  const splits = splitLines?.length
+    ? splitLines.map((line) => ({
+        categoryId: line.TransferAccountID ? null : (line.CategoryID ?? null),
+        transferAccountId: line.TransferAccountID ?? null,
+        memo: line.Memo ?? '',
+        payee: line.Payee ?? '',
+        inflow: asMilli(line.InflowNative ?? line.InflowConverted),
+        outflow: asMilli(line.OutflowNative ?? line.OutflowConverted),
+      }))
+    : null;
 
   return {
     name: transaction.Payee || transaction.Memo || t`Recurring transaction`,
@@ -70,7 +86,8 @@ export function recurringInitialValuesFromTransaction(
     amount: asMilli(Math.abs(direction === 'outflow' ? outflow : inflow)),
     direction,
     accountId: fallbackAccountId ?? transaction.AccountID ?? null,
-    categoryId: transaction.CategoryID ?? null,
+    categoryId: splits ? null : (transaction.CategoryID ?? null),
+    splits,
     schedule: scheduleFrom(transaction.Date),
     notifyDaysBefore: 0,
     active: true,
@@ -105,11 +122,19 @@ export function useRecurringEditorFromTransaction({
       const transferLegs = transaction.TransferID
         ? await runtime.services().transactions.getTransactionsByTransferID(transaction.TransferID)
         : undefined;
-      const values = recurringInitialValuesFromTransaction(transaction, accountId, transferLegs);
+      const splitLines = transaction.TransferID
+        ? undefined
+        : runtime.services().splits.getSplits(transaction.ID);
+      const values = recurringInitialValuesFromTransaction(
+        transaction,
+        accountId,
+        transferLegs,
+        splitLines
+      );
 
       if (!values) {
         toast.error(t`Unable to create recurring transfer`, {
-          description: t`The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet.`,
+          description: t`The selected transfer does not have one source and one destination. To repeat a split with a transfer line, make its split transaction recurring instead.`,
         });
         return;
       }
@@ -137,7 +162,7 @@ export function useRecurringEditorFromTransaction({
         toast.error(t`Pick two different accounts for a transfer`);
         return;
       }
-    } else if (!values.categoryId) {
+    } else if (!values.categoryId && !values.splits?.length) {
       toast.error(t`Select a category`);
       return;
     }
@@ -152,6 +177,7 @@ export function useRecurringEditorFromTransaction({
         accountId: values.accountId,
         toAccountId: values.toAccountId,
         categoryId: values.categoryId,
+        splits: values.splits,
         name: values.name,
         memo: values.memo,
         amount: values.amount,

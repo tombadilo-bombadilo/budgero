@@ -346,7 +346,9 @@ export const TransactionRow = React.memo(function TransactionRow({
           </TableCell>
         )}
         <TableCell className="max-w-[240px]">
-          <span className="px-2 text-xs xl:text-sm">{transaction.Category}</span>
+          <span className="px-2 text-xs xl:text-sm">
+            {isSplitCategory ? <Trans>Split</Trans> : transaction.Category}
+          </span>
         </TableCell>
         <TableCell className="text-right font-mono text-xs">
           {inflowValue !== 0 && (

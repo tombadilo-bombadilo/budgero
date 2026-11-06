@@ -16659,7 +16659,9 @@ msgstr "Dépensé (dans le plan)"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/mobile-transaction-card/MobileTransactionCard.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 msgid "Split"
 msgstr "Ventiler"
 
@@ -17511,8 +17513,12 @@ msgstr "La colonne de date sélectionnée n'a pas d'année (par ex. « 25 oct. �
 #~ msgstr "Les transactions sélectionnées ont été définitivement supprimées."
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
-msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
-msgstr "Le virement sélectionné ne comporte pas une source et une destination uniques. Les virements récurrents ventilés ne sont pas encore pris en charge."
+#~ msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
+#~ msgstr "Le virement sélectionné ne comporte pas une source et une destination uniques. Les virements récurrents ventilés ne sont pas encore pris en charge."
+
+#: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
+msgid "The selected transfer does not have one source and one destination. To repeat a split with a transfer line, make its split transaction recurring instead."
+msgstr "Le virement sélectionné ne comporte pas une source et une destination uniques. Pour répéter une ventilation contenant une ligne de virement, rendez plutôt la transaction ventilée récurrente."
 
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "The sent amount stays fixed. Saving recalculates the received amount and both budget valuations atomically."

@@ -37,6 +37,7 @@ import {
   buildRecurringSchedule,
   createRecurringFormSettings,
   isRecurringEndConditionValid,
+  recurringInitialSplitLines,
   recurringInitialToTransactionValues,
   type RecurringFormSettings,
   type RecurringTransactionFormInitialValues,
@@ -90,12 +91,17 @@ function BudgetTransactionForm({
     () => recurringInitialToTransactionValues(recurring?.initialValues),
     [recurring?.initialValues]
   );
+  // Read once: the split editor owns the lines after the first render.
+  const [recurringInitialSplits] = React.useState(() =>
+    recurringInitialSplitLines(recurring?.initialValues)
+  );
   const {
     form,
     isSplit,
     splitLines,
     setSplitLines,
     toggleSplit,
+    prepareSplitLines,
     categories,
     categoriesLoading,
     accounts,
@@ -127,6 +133,7 @@ function BudgetTransactionForm({
     onAddTransfer,
     onCancel,
     initialValues: recurringInitialValues,
+    initialSplitLines: recurringInitialSplits,
     disableLastUsed: recurringLocked,
     disableAutofill: recurringLocked,
     disableCurrencyConversion: recurringEnabled,
@@ -145,7 +152,8 @@ function BudgetTransactionForm({
       });
       return;
     }
-    if (!form.isTransfer && !form.selectedCategory) {
+    const split = isSplit && !form.isTransfer;
+    if (!form.isTransfer && !split && !form.selectedCategory) {
       toast.error(t`Missing category`, { description: t`Please select a category.` });
       return;
     }
@@ -165,6 +173,9 @@ function BudgetTransactionForm({
       });
       return;
     }
+    // The lines carry the categories of a split template.
+    const splits = split ? prepareSplitLines() : null;
+    if (split && !splits) return;
 
     const categoryId = resolveCategoryId(
       categories,
@@ -179,7 +190,8 @@ function BudgetTransactionForm({
       direction: form.isInflow ? 'inflow' : 'outflow',
       accountId: Number(form.selectedFromAccount),
       toAccountId: form.isTransfer ? Number(form.selectedToAccount) : null,
-      categoryId: form.isTransfer && !transferInvolvesOffBudget ? null : categoryId,
+      categoryId: (form.isTransfer && !transferInvolvesOffBudget) || splits ? null : categoryId,
+      splits,
       schedule: buildRecurringSchedule(form.transactionDate, recurringSettings),
       notifyDaysBefore: Math.max(0, Math.trunc(Number(recurringSettings.notifyDaysBefore) || 0)),
       active: recurringSettings.active,
@@ -195,6 +207,7 @@ function BudgetTransactionForm({
       accountId: values.accountId!,
       toAccountId: values.toAccountId,
       categoryId: values.categoryId,
+      splits: values.splits,
       name: values.name,
       memo: values.memo,
       amount: values.amount,
@@ -209,6 +222,8 @@ function BudgetTransactionForm({
     onCancel();
   }, [
     form,
+    isSplit,
+    prepareSplitLines,
     recurringSettings,
     categories,
     payeeCategorySource,
@@ -375,7 +390,7 @@ function BudgetTransactionForm({
         showRememberLast={!recurringLocked}
         recurringEnabled={recurringEnabled}
         onRecurringEnabledChange={setRecurringEnabled}
-        recurringLocked={recurringLocked || isSplit}
+        recurringLocked={recurringLocked}
       />
 
       <TransactionDetailsSection
@@ -442,22 +457,20 @@ function BudgetTransactionForm({
         enabled={!recurringEnabled && !form.isTransfer}
       />
 
-      {!recurringEnabled && (
-        <TransactionSplitSection
-          budgetId={budgetId}
-          isTransfer={form.isTransfer}
-          isSplit={isSplit}
-          onToggleSplit={toggleSplit}
-          splitLines={splitLines}
-          onSplitLinesChange={setSplitLines}
-          remaining={remaining}
-          parentAmount={parentSigned}
-          formatter={splitLocalizer}
-          transferAccounts={accounts.filter(
-            (account) => String(account.ID) !== form.selectedFromAccount && !account.Archived
-          )}
-        />
-      )}
+      <TransactionSplitSection
+        budgetId={budgetId}
+        isTransfer={form.isTransfer}
+        isSplit={isSplit}
+        onToggleSplit={toggleSplit}
+        splitLines={splitLines}
+        onSplitLinesChange={setSplitLines}
+        remaining={remaining}
+        parentAmount={parentSigned}
+        formatter={splitLocalizer}
+        transferAccounts={accounts.filter(
+          (account) => String(account.ID) !== form.selectedFromAccount && !account.Archived
+        )}
+      />
 
       {recurringEnabled && (
         <RecurringOptionsSection

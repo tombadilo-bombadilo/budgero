@@ -16659,7 +16659,9 @@ msgstr "Ausgegeben (im Plan)"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/mobile-transaction-card/MobileTransactionCard.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 msgid "Split"
 msgstr "Aufteilen"
 
@@ -17511,8 +17513,12 @@ msgstr "Die ausgewählte Datumsspalte enthält kein Jahr (z. B. \"25. Okt.\"). A
 #~ msgstr "Die ausgewählten Transaktionen wurden dauerhaft entfernt."
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
-msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
-msgstr "Die ausgewählte Umbuchung hat nicht genau ein Quell- und ein Zielkonto. Wiederkehrende geteilte Umbuchungen werden noch nicht unterstützt."
+#~ msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
+#~ msgstr "Die ausgewählte Umbuchung hat nicht genau ein Quell- und ein Zielkonto. Wiederkehrende geteilte Umbuchungen werden noch nicht unterstützt."
+
+#: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
+msgid "The selected transfer does not have one source and one destination. To repeat a split with a transfer line, make its split transaction recurring instead."
+msgstr "Die ausgewählte Umbuchung hat nicht genau ein Quell- und ein Zielkonto. Um eine Aufteilung mit einer Umbuchungs-Teilbuchung zu wiederholen, mach stattdessen die geteilte Transaktion wiederkehrend."
 
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "The sent amount stays fixed. Saving recalculates the received amount and both budget valuations atomically."

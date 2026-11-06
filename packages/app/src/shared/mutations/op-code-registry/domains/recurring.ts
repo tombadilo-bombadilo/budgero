@@ -25,6 +25,7 @@ import {
   TRANSACTION_INVALIDATION_KEYS,
   type OpCodeEntry,
 } from '../shared';
+import { missingPayees, removeAddedPayees, type MissingPayees } from './transactions';
 
 // Analytics/projection queries union scheduled occurrences in as projections when
 // their range extends past today, so changing recurring rules must refresh them.
@@ -168,6 +169,8 @@ export const recurringOps = {
           accountId: template.accountId,
           toAccountId: template.toAccountId,
           categoryId: template.categoryId,
+          // Older captures have no splits field: no lines.
+          splits: template.splits ?? null,
           name: template.name,
           memo: template.memo,
           amount: template.amount,
@@ -259,7 +262,16 @@ export const recurringOps = {
           const occurrence = await recurring.getOccurrenceWithTemplate(
             recurring.resolveOccurrenceId(options)
           );
-          return { occurrence, categoryMark: captureCategoryMark() };
+          // Posting adds the template name (and split line payees) to the
+          // payee list when missing; undo drops the entries nothing uses.
+          const template = occurrence?.template;
+          const payees = template
+            ? missingPayees(template.budgetId, [
+                template.name,
+                ...(template.splits ?? []).map((line) => line.payee),
+              ])
+            : undefined;
+          return { occurrence, categoryMark: captureCategoryMark(), payees };
         } catch (error) {
           console.warn(
             '[OpCodeRegistry] Unable to capture occurrence before markReady undo',
@@ -279,6 +291,7 @@ export const recurringOps = {
         const ops: { op: string; args: Record<string, unknown> }[] = [];
         ops.push({ op: 'transactions.delete', args: { id: transactionId } });
         ops.push({ op: 'recurring.resetOccurrence', args: reset });
+        ops.push(...removeAddedPayees((before as { payees?: MissingPayees } | null)?.payees));
         // Posting a transfer re-creates the Transfers category if it was deleted.
         ops.push(
           ...createdCategoriesUndo(
