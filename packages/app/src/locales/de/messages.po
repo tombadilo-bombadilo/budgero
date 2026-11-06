@@ -20893,3 +20893,455 @@ msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-
 #: src/app/startup/StartupLayout.tsx
 msgid "Zero-based budgeting. Zero-knowledge privacy."
 msgstr "Zero-Based-Budgeting. Zero-Knowledge-Datenschutz."
+
+#. placeholder {0}: row.monthsOver
+#. placeholder {1}: row.monthsWithPlan
+#: src/pages/analytics/reports/PlanRealityReport.tsx
+msgid " · over in {0}/{1} mo"
+msgstr " · überzogen in {0}/{1} Mon."
+
+#: src/pages/analytics/reports/ScenarioReport.tsx
+msgid " (beyond the charted window)"
+msgstr " (außerhalb des angezeigten Zeitraums)"
+
+#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+msgid "(selected)"
+msgstr "(ausgewählt)"
+
+#. placeholder {0}: state.invites.length
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "{0, plural, one {# person} other {# people}}"
+msgstr "{0, plural, one {# Person} other {# Personen}}"
+
+#. placeholder {0}: row.name
+#: src/pages/analytics/reports/FlowReport.tsx
+msgid "{0} — inspect"
+msgstr "{0} — Details"
+
+#. placeholder {0}: money.amount(row.spent)
+#. placeholder {1}: money.amount(row.assigned)
+#. placeholder {2}: row.monthsWithPlan > 0 ? t` · over in ${row.monthsOver}/${row.monthsWithPlan} mo` : ''
+#: src/pages/analytics/reports/PlanRealityReport.tsx
+msgid "{0} of {1} assigned{2}"
+msgstr "{0}von {1}zugewiesen{2}"
+
+#. placeholder {0}: selected.length
+#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+msgid "{0} selected"
+msgstr "{0} ausgewählt"
+
+#. placeholder {0}: delta >= 0 ? '+' : ''
+#. placeholder {1}: money.amount(delta)
+#: src/pages/analytics/reports/WealthReport.tsx
+msgid "{0}{1} vs prev"
+msgstr "{0}{1} zum Vormonat"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "{activeFilters} active"
+msgstr "{activeFilters} aktiv"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "{measure} by {dimension}"
+msgstr "{measure} nach {dimension}"
+
+#: src/pages/explorer-page/ExplorerPage.tsx
+#~ msgid "<0/>SQL Query Editor"
+#~ msgstr "<0/>SQL-Abfrage-Editor"
+
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "Account Column Mapped"
+msgstr "Konto-Spalte zugeordnet"
+
+#: src/pages/analytics/reports/SpendingReport.tsx
+msgid "all charted"
+msgstr "alle angezeigt"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Alphabetical"
+msgstr "Alphabetisch"
+
+#: src/pages/analytics/AnalyticsPage.tsx
+msgid "Am I growing?"
+msgstr "Wachse ich?"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Any date"
+msgstr "Beliebiges Datum"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Area"
+msgstr "Fläche"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Average transaction (spending)"
+msgstr "Durchschnittliche Transaktion (Ausgaben)"
+
+#. placeholder {0}: payload.horizon
+#: src/pages/analytics/reports/ScenarioReport.tsx
+msgid "Balance after {0} months under this scenario"
+msgstr "Saldo nach {0} Monaten in diesem Szenario"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Bar"
+msgstr "Balken"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Budgero works either way. Pick the path that fits."
+msgstr "Budgero funktioniert auf beide Arten. Wähle den Weg, der zu dir passt."
+
+#: src/pages/explorer-page/components/ReportsPanel.tsx
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "Builder"
+msgstr "Baukasten"
+
+#. placeholder {0}: money.amount(runway.avgMonthlySpend)
+#: src/pages/analytics/reports/WealthReport.tsx
+msgid "burn <0>{0}</0>/month"
+msgstr "Verbrauch <0>{0}</0>/Monat"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Category groups"
+msgstr "Kategoriengruppen"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Category groups over time"
+msgstr "Kategoriengruppen im Zeitverlauf"
+
+#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+msgid "Clear {label} filter"
+msgstr "Filter „{label}“ zurücksetzen"
+
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "Custom reports"
+msgstr "Eigene Berichte"
+
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "Database Schema"
+msgstr "Datenbankschema"
+
+#: src/pages/analytics/AnalyticsPage.tsx
+msgid "Did the budget hold?"
+msgstr "Hält das Budget?"
+
+#: src/pages/analytics/reports/InOutReport.tsx
+msgid "Do we live within our means?"
+msgstr "Leben wir im Rahmen unserer Mittel?"
+
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Edit as SQL"
+msgstr "Als SQL bearbeiten"
+
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Editing saved report"
+msgstr "Gespeicherter Bericht wird bearbeitet"
+
+#: src/pages/analytics/AnalyticsPage.tsx
+msgid "Every category, every month"
+msgstr "Jede Kategorie, jeden Monat"
+
+#: src/pages/onboarding/onboarding-data.ts
+msgid "Every coin now has a place to land."
+msgstr "Jede Münze hat jetzt ihren Platz."
+
+#: src/pages/analytics/reports/FlowReport.tsx
+msgid "Every stream from income to {dimensionLabel}"
+msgstr "Alle Geldströme von Einnahmen zu {dimensionLabel}"
+
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+msgid "Failed to save report"
+msgstr "Bericht konnte nicht gespeichert werden"
+
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "Fallback Account (for unmatched account names)"
+msgstr "Fallback-Konto (für nicht übereinstimmende Kontonamen)"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Filters"
+msgstr "Filter"
+
+#: src/pages/analytics/reports/WealthReport.tsx
+msgid "funds last until <0>{runsOut}</0>if income stopped"
+msgstr "die Mittel reichen bis <0>{runsOut}</0>, falls die Einnahmen ausbleiben"
+
+#: src/pages/analytics/AnalyticsPage.tsx
+msgid "How does it move?"
+msgstr "Wie entwickelt es sich?"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Include off-budget accounts"
+msgstr "Konten außerhalb des Budgets einbeziehen"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Include transfers"
+msgstr "Umbuchungen einbeziehen"
+
+#. placeholder {0}: savingsRate.toFixed(0)
+#: src/pages/analytics/reports/FlowReport.tsx
+msgid "Income → {dimensionLabel}; {0}% saved"
+msgstr "Einnahmen → {dimensionLabel}; {0} % gespart"
+
+#. placeholder {0}: money.amount(-net)
+#: src/pages/analytics/reports/FlowReport.tsx
+msgid "Income → {dimensionLabel}; overspent by {0}"
+msgstr "Einnahmen → {dimensionLabel}; um {0} überzogen"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Income vs spending"
+msgstr "Einkommen vs. Ausgaben"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Income vs spending by month"
+msgstr "Einkommen vs. Ausgaben pro Monat"
+
+#: src/features/reports/ui/report-builder/useReportBuilderQuery.ts
+msgid "Invalid report"
+msgstr "Ungültiger Bericht"
+
+#. placeholder {0}: savingsRate.toFixed(0)
+#. placeholder {1}: target !== null ? ` (target ${target}%)` : ''
+#: src/pages/analytics/reports/InOutReport.tsx
+msgid "Keeping {0}% of income{1}"
+msgstr "{0}% des Einkommens behalten{1}"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Largest first"
+msgstr "Größte zuerst"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Learn ZBB with a short walkthrough"
+msgstr "Lerne ZBB mit einer kurzen Einführung"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Line"
+msgstr "Linie"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Measure"
+msgstr "Kennzahl"
+
+#: src/pages/analytics/reports/FlowReport.tsx
+msgid "Money Map spending detail"
+msgstr "Ausgabendetails der Geldkarte"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Net (income − spending)"
+msgstr "Netto (Einkommen − Ausgaben)"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Net cash flow by month"
+msgstr "Netto-Cashflow pro Monat"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Net per category across months — click any amount to see its transactions"
+msgstr "Netto pro Kategorie über mehrere Monate — klicke auf einen Betrag, um die Transaktionen zu sehen"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "No account"
+msgstr "Kein Konto"
+
+#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+msgid "No matches."
+msgstr "Keine Treffer."
+
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "No transactions match this report"
+msgstr "Keine Transaktionen passen zu diesem Bericht"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Number of transactions"
+msgstr "Anzahl der Transaktionen"
+
+#: src/pages/explorer-page/hooks/useExplorerState.ts
+msgid "Only read-only queries can run here (SELECT, WITH, EXPLAIN, DESCRIBE, SHOW, PRAGMA)."
+msgstr "Hier laufen nur lesende Abfragen (SELECT, WITH, EXPLAIN, DESCRIBE, SHOW, PRAGMA)."
+
+#: src/pages/analytics/reports/SpendingReport.tsx
+msgid "Other ({foldedCount} more) — inspect"
+msgstr "Sonstige ({foldedCount} weitere) — ansehen"
+
+#. placeholder {0}: collapsedGraph.foldedDestinations.length
+#: src/pages/analytics/reports/FlowReport.tsx
+msgid "Other spending ({0} {dimensionLabel}) — inspect"
+msgstr "Sonstige Ausgaben ({0} {dimensionLabel}) — Details"
+
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "Pick what to measure, how to group it and which transactions to include."
+msgstr "Wähle, was gemessen wird, wie es gruppiert wird und welche Transaktionen dazugehören."
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Pie"
+msgstr "Torte"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Quarter"
+msgstr "Quartal"
+
+#: src/pages/explorer-page/hooks/useExplorerState.ts
+#~ msgid "Query executed successfully"
+#~ msgstr "Abfrage erfolgreich ausgeführt"
+
+#: src/features/reports/ui/report-builder/useReportBuilderQuery.ts
+msgid "Query failed"
+msgstr "Abfrage fehlgeschlagen"
+
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "Report editor"
+msgstr "Berichtseditor"
+
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+msgid "Report saved"
+msgstr "Bericht gespeichert"
+
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+msgid "Report updated"
+msgstr "Bericht aktualisiert"
+
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Running report…"
+msgstr "Bericht wird ausgeführt…"
+
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+msgid "Save and pin"
+msgstr "Speichern und anheften"
+
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Save report"
+msgstr "Bericht speichern"
+
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+msgid "Saved reports appear under Reports and can be pinned to a dashboard. You can reopen them in the builder at any time."
+msgstr "Gespeicherte Berichte erscheinen unter Berichte und lassen sich an ein Dashboard anheften. Du kannst sie jederzeit wieder im Baukasten öffnen."
+
+#: src/pages/analytics/reports/ScenarioReport.tsx
+msgid "Scenario Planner"
+msgstr "Szenario-Planer"
+
+#: src/features/reports/ui/report-builder/BuilderMultiSelect.tsx
+msgid "Search…"
+msgstr "Suchen…"
+
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "Select fallback account"
+msgstr "Ersatzkonto auswählen"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Set up accounts & envelopes by hand"
+msgstr "Konten & Umschläge manuell einrichten"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Show top"
+msgstr "Top anzeigen"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Single number"
+msgstr "Einzelwert"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Smallest first"
+msgstr "Kleinste zuerst"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Sort"
+msgstr "Sortierung"
+
+#. placeholder {0}: Math.abs(savingsRate).toFixed(0)
+#: src/pages/analytics/reports/InOutReport.tsx
+msgid "Spending {0}% more than income"
+msgstr "Ausgaben {0}% über dem Einkommen"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Spending by category (last 12 months)"
+msgstr "Ausgaben nach Kategorie (letzte 12 Monate)"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Spending by label"
+msgstr "Ausgaben nach Label"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "Split by"
+msgstr "Aufteilen nach"
+
+#: src/pages/explorer-page/ExplorerPage.tsx
+msgid "SQL (advanced)"
+msgstr "SQL (erweitert)"
+
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Start from a template"
+msgstr "Mit einer Vorlage starten"
+
+#: src/pages/analytics/reports/InOutReport.tsx
+msgid "Target<0/>%"
+msgstr "Ziel<0/>%"
+
+#: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
+msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
+msgstr "Die ausgewählte Umbuchung hat nicht genau ein Quell- und ein Zielkonto. Wiederkehrende geteilte Umbuchungen werden noch nicht unterstützt."
+
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "This report could not be run"
+msgstr "Dieser Bericht konnte nicht ausgeführt werden"
+
+#. placeholder {0}: shortMonthLabel(scenario.breakMonthKey)
+#. placeholder {1}: breakBeyondChart ? t` (beyond the charted window)` : ''
+#: src/pages/analytics/reports/ScenarioReport.tsx
+msgid "This scenario breaks in {0}{1}"
+msgstr "Dieses Szenario scheitert in {0}{1}"
+
+#: src/pages/analytics/reports/SpendingReport.tsx
+msgid "top {MAX_SLICES} + Other"
+msgstr "Top {MAX_SLICES} + Sonstige"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Top payees"
+msgstr "Top-Empfänger"
+
+#. placeholder {0}: columnMapping.account
+#: src/features/import/ui/steps/ConfigureStep.tsx
+msgid "Transactions will use accounts from the \"{0}\" column. If an account name doesn't match any existing account, you'll need to select a default account below:"
+msgstr "Transaktionen verwenden Konten aus der Spalte „{0}“. Wenn ein Kontoname auf kein bestehendes Konto passt, musst du unten ein Standardkonto auswählen:"
+
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Try a longer date range or remove some filters."
+msgstr "Versuche einen längeren Zeitraum oder entferne einige Filter."
+
+#: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
+#: src/pages/explorer-page/components/ReportBuilderPanel.tsx
+msgid "Update report"
+msgstr "Bericht aktualisieren"
+
+#: src/pages/analytics/reports/WealthReport.tsx
+msgid "Wealth chart mode"
+msgstr "Ansicht des Vermögensdiagramms"
+
+#: src/pages/analytics/AnalyticsPage.tsx
+msgid "What if?"
+msgstr "Was wäre wenn?"
+
+#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
+msgid "What to show"
+msgstr "Was angezeigt wird"
+
+#: src/pages/analytics/reports/PlanRealityReport.tsx
+msgid "What you assigned vs what actually happened — only possible because you budget"
+msgstr "Was du zugewiesen hast vs. was tatsächlich passiert ist – nur möglich, weil du budgetierst"
+
+#: src/pages/analytics/reports/WealthReport.tsx
+msgid "What you own, what you owe, and where it's heading"
+msgstr "Was du besitzt, was du schuldest und wohin es steuert"
+
+#: src/pages/analytics/AnalyticsPage.tsx
+msgid "Where does it go?"
+msgstr "Wohin fließt es?"
+
+#: src/pages/analytics/reports/SpendingReport.tsx
+msgid "Where the money goes"
+msgstr "Wohin das Geld fließt"
+
+#: src/pages/analytics/AnalyticsPage.tsx
+msgid "Within our means?"
+msgstr "Im Rahmen?"
+
+#: src/features/reports/ui/report-builder/builder-labels.ts
+msgid "Year"
+msgstr "Jahr"

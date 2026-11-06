@@ -1,5 +1,5 @@
 import { DEFAULT_MAX_ROWS, executeDuckDbReportQuery } from './duckdb-reporting-engine';
-import { isReadOnlyQuery } from './read-only';
+import { isReadOnlyQuery, stripLeadingSqlComments } from './read-only';
 
 export interface QueryResult {
   columns: string[];
@@ -72,7 +72,9 @@ export async function executeReportQuery(
   await acquireExecutionSlot();
 
   try {
-    const trimmedQuery = query.trim();
+    // Leading comments (e.g. the report builder's `-- budgero-builder:` header)
+    // are dropped so the read-only check and automatic LIMIT see the statement.
+    const trimmedQuery = stripLeadingSqlComments(query).trim();
     if (!trimmedQuery) {
       throw new ReportQueryExecutionError('EMPTY_QUERY', 'Query is empty');
     }

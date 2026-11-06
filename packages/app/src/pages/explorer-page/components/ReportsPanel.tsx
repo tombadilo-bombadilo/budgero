@@ -13,6 +13,7 @@ import {
 import { ScrollArea } from '@shared/ui/scroll-area';
 import { Edit, Pin } from 'lucide-react';
 import type { UnifiedReport } from '@budgero/core/browser';
+import { isBuilderQuery } from '@features/reports/lib/report-builder';
 
 export interface ReportsPanelProps {
   open: boolean;
@@ -66,6 +67,11 @@ export const ReportsPanel = memo(
                         <span>
                           <Trans>Updated: {new Date(report.updatedAt).toLocaleDateString()}</Trans>
                         </span>
+                        {isBuilderQuery(report.query) && (
+                          <Badge variant="outline" className="text-xs">
+                            <Trans>Builder</Trans>
+                          </Badge>
+                        )}
                         {report.isFavorite && (
                           <Badge variant="secondary" className="text-xs">
                             <Trans>Favorite</Trans>
