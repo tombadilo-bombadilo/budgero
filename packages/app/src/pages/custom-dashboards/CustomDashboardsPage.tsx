@@ -259,9 +259,7 @@ export default function CustomDashboardsPage() {
   };
 
   const handleOpenReportInExplorer = (reportId: string) => {
-    void navigate(`/reports/question/${encodeURIComponent(reportId)}`, {
-      state: { openSaveDialog: true },
-    });
+    void navigate(`/reports/question/${encodeURIComponent(reportId)}`);
   };
 
   if (!budgetId) {

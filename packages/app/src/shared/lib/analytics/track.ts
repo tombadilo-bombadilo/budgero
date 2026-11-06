@@ -398,6 +398,7 @@ const PAGEVIEW_NORMALIZERS: readonly (readonly [RegExp, string])[] = [
   [/^\/invite\/.+/, '/invite/:code'],
   [/^\/accounts\/(?!all(?:$|\/))[^/]+(\/.*)?$/, '/accounts/:accountId$1'],
   [/^\/reports\/dashboards\/[^/]+(\/.*)?$/, '/reports/dashboards/:dashboardId$1'],
+  [/^\/reports\/question\/(?!new(?:$|\/))[^/]+(\/.*)?$/, '/reports/question/:questionId$1'],
 ];
 
 export function normalizePagePath(pathname: string): string {
