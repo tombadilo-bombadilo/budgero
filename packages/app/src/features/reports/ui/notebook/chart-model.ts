@@ -15,6 +15,8 @@ export interface ChartSeries {
   metric: QuestionColumn;
   /** Raw second-grouping value; null when series are metrics. */
   groupValue: unknown;
+  /** Hidden id / raw key of the second-grouping value (drill-through), if the result has one. */
+  groupKey?: unknown;
   values: number[];
 }
 
@@ -22,6 +24,8 @@ export interface ChartModel {
   x: QuestionColumn | null;
   /** Raw x values in result order. */
   xValues: unknown[];
+  /** Hidden ids / raw keys of the x values (`<key>__key` columns), undefined when absent. */
+  xKeys: unknown[];
   /** Second grouping column, when series are its values. */
   seriesColumn: QuestionColumn | null;
   series: ChartSeries[];
@@ -36,22 +40,44 @@ function toNumber(value: unknown): number {
 
 export const OTHER_SERIES_ID = '__other__';
 
+/**
+ * Identity of a grouping value in a row: its hidden id / raw key when the
+ * result has one (so same-name categories stay apart), else its value.
+ */
+function identity(row: unknown[], valueIndex: number, keyIndex: number | undefined): string {
+  const value = String(row[valueIndex] ?? '');
+  return keyIndex === undefined ? value : `${String(row[keyIndex] ?? '')}\u0000${value}`;
+}
+
 export function buildChartModel(result: QueryResult, columns: QuestionColumn[]): ChartModel {
   const index = new Map(result.columns.map((name, position) => [name, position]));
   const breakouts = columns.filter((column) => column.kind === 'breakout');
-  const metrics = columns.filter((column) => column.kind === 'aggregation');
+  // "% change" columns are on another scale than the metric; tables show them.
+  const metrics = columns.filter(
+    (column) => column.kind === 'aggregation' && column.derived !== 'change'
+  );
   const x = breakouts[0] ?? null;
-  const empty: ChartModel = { x, xValues: [], seriesColumn: null, series: [], otherCount: 0 };
+  const empty: ChartModel = {
+    x,
+    xValues: [],
+    xKeys: [],
+    seriesColumn: null,
+    series: [],
+    otherCount: 0,
+  };
   if (!x || metrics.length === 0) return empty;
   const xIndex = index.get(x.key);
   if (xIndex === undefined) return empty;
+  const xKeyIndex = index.get(`${x.key}__key`);
 
   let xKeys: string[] = [];
   const firstValue = new Map<string, unknown>();
+  const firstKey = new Map<string, unknown>();
   for (const row of result.rows) {
-    const key = String(row[xIndex] ?? '');
+    const key = identity(row, xIndex, xKeyIndex);
     if (!firstValue.has(key)) {
       firstValue.set(key, row[xIndex]);
+      if (xKeyIndex !== undefined) firstKey.set(key, row[xKeyIndex]);
       xKeys.push(key);
     }
   }
@@ -59,6 +85,7 @@ export function buildChartModel(result: QueryResult, columns: QuestionColumn[]):
   // Bucket labels (YYYY, YYYY-MM, YYYY-Qn, YYYY-MM-DD) sort as text.
   if (x.kind === 'breakout' && x.breakout.bucket) xKeys = [...xKeys].sort();
   const xValues = xKeys.map((key) => firstValue.get(key));
+  const xHidden = xKeys.map((key) => (xKeyIndex === undefined ? undefined : firstKey.get(key)));
   const xPosition = new Map(xKeys.map((key, position) => [key, position]));
 
   const seriesColumn = breakouts[1] ?? null;
@@ -68,33 +95,35 @@ export function buildChartModel(result: QueryResult, columns: QuestionColumn[]):
       if (metricIndex === undefined) return [];
       const values = new Array<number>(xKeys.length).fill(0);
       for (const row of result.rows) {
-        const position = xPosition.get(String(row[xIndex] ?? ''));
+        const position = xPosition.get(identity(row, xIndex, xKeyIndex));
         if (position !== undefined) values[position] += toNumber(row[metricIndex]);
       }
       return [{ id: metric.key, metric, groupValue: null, values }];
     });
-    return { x, xValues, seriesColumn: null, series, otherCount: 0 };
+    return { x, xValues, xKeys: xHidden, seriesColumn: null, series, otherCount: 0 };
   }
 
   const metric = metrics[0];
   const seriesIndex = index.get(seriesColumn.key);
+  const seriesKeyIndex = index.get(`${seriesColumn.key}__key`);
   const metricIndex = index.get(metric.key);
   if (seriesIndex === undefined || metricIndex === undefined) return empty;
 
   const byGroup = new Map<string, ChartSeries>();
   for (const row of result.rows) {
-    const groupKey = String(row[seriesIndex] ?? '');
+    const groupKey = identity(row, seriesIndex, seriesKeyIndex);
     let entry = byGroup.get(groupKey);
     if (!entry) {
       entry = {
         id: groupKey,
         metric,
         groupValue: row[seriesIndex],
+        ...(seriesKeyIndex !== undefined ? { groupKey: row[seriesKeyIndex] } : {}),
         values: new Array<number>(xKeys.length).fill(0),
       };
       byGroup.set(groupKey, entry);
     }
-    const position = xPosition.get(String(row[xIndex] ?? ''));
+    const position = xPosition.get(identity(row, xIndex, xKeyIndex));
     if (position !== undefined) entry.values[position] += toNumber(row[metricIndex]);
   }
 
@@ -116,5 +145,5 @@ export function buildChartModel(result: QueryResult, columns: QuestionColumn[]):
     };
     series = [...series.filter((entry) => kept.has(entry)), other];
   }
-  return { x, xValues, seriesColumn, series, otherCount };
+  return { x, xValues, xKeys: xHidden, seriesColumn, series, otherCount };
 }

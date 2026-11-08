@@ -130,6 +130,16 @@
       "file": "src/features/reports/lib/question/compile.ts",
       "text": "*",
       "reason": "Question spec to SQL compiler: SQL fragments, not user-visible copy (display labels are passed in translated)."
+    },
+    {
+      "file": "src/features/reports/lib/question/expression.ts",
+      "text": "*",
+      "reason": "Expression parser and SQL compiler: SQL fragments and developer error text; the UI shows translated messages per error code (expressionErrorMessage)."
+    },
+    {
+      "file": "src/features/reports/ui/notebook/ExpressionEditor.tsx",
+      "text": "Sum([…]) / Count",
+      "reason": "Formula syntax placeholder; function names are the same in every language."
     }
   ]
 }

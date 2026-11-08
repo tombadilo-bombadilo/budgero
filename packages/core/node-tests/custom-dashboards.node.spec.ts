@@ -99,4 +99,54 @@ describe('CustomDashboardService', () => {
     widgetCountStmt.finalize();
     expect(widgetCount.count).toBe(0);
   });
+
+  it('stores, clears and rejects dashboard filters', async () => {
+    const adapter = await NodeSqlJsAdapter.create();
+    const sm = new ServiceManager();
+    await sm.initialize(adapter as DatabaseAdapter);
+    const services = sm.getServices();
+    const budgetId = await services.budgets.createBudget({
+      name: 'Filters Budget',
+      display_currency: 'USD',
+      badge_icon: 'wallet',
+      number_format: 'en-US',
+      create_default_categories: false,
+    });
+    const dashboard = await services.customDashboards.createDashboard({ budgetId, name: 'F' });
+    expect(dashboard.filters).toBeNull();
+
+    const filters = { date: { preset: 'lastYear' }, accounts: [3, 4] };
+    const updated = await services.customDashboards.updateDashboard({ id: dashboard.id, filters });
+    expect(updated.filters).toEqual(filters);
+    // Renaming leaves the filters alone.
+    const renamed = await services.customDashboards.updateDashboard({
+      id: dashboard.id,
+      name: 'Renamed',
+    });
+    expect(renamed.filters).toEqual(filters);
+    expect(services.customDashboards.getDashboards(budgetId)[0].filters).toEqual(filters);
+
+    const cleared = await services.customDashboards.updateDashboard({
+      id: dashboard.id,
+      filters: null,
+    });
+    expect(cleared.filters).toBeNull();
+    // An empty object stores as "no filters".
+    expect(
+      (await services.customDashboards.updateDashboard({ id: dashboard.id, filters: {} })).filters
+    ).toBeNull();
+
+    expect(() =>
+      services.customDashboards.updateDashboard({
+        id: dashboard.id,
+        filters: [] as unknown as Record<string, unknown>,
+      })
+    ).toThrow(/object/);
+    expect(() =>
+      services.customDashboards.updateDashboard({
+        id: dashboard.id,
+        filters: { big: 'x'.repeat(20_000) },
+      })
+    ).toThrow(/too large/);
+  });
 });

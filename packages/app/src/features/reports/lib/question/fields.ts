@@ -80,6 +80,7 @@ export const SOURCE_FIELDS: Record<QuestionSource, readonly FieldDef[]> = {
     bool('is_transfer'),
     bool('on_budget'),
     bool('cleared'),
+    bool('is_income'),
   ],
   budget: [
     date('month', ['month', 'quarter', 'year'], 'month'),

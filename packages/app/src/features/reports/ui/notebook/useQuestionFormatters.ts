@@ -49,6 +49,7 @@ export function useQuestionFormatters(source: QuestionSource): QuestionFormatter
       if (format !== 'text') {
         const numeric = toNumber(value);
         if (numeric === null) return '—';
+        if (format === 'percent') return mask(`${plain.format(numeric)}%`);
         return format === 'money'
           ? formatMaskedMilli(localizer, Math.round(numeric * 1000), masked)
           : mask(plain.format(numeric));
@@ -61,6 +62,7 @@ export function useQuestionFormatters(source: QuestionSource): QuestionFormatter
       cell,
       compact: (column, value) => {
         if (masked) return '•••';
+        if (columnFormat(column) === 'percent') return `${compactPlain.format(value)}%`;
         return columnFormat(column) === 'money'
           ? compactMoney.format(value)
           : compactPlain.format(value);

@@ -1,20 +1,13 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import {
-  AreaChart,
-  BarChart3,
-  Hash,
-  LineChart,
-  Loader2,
-  PieChart,
-  RefreshCw,
-  Table2,
-  type LucideIcon,
-} from 'lucide-react';
+import { useRef, useState } from 'react';
+import { ArrowLeft, BarChart3, Loader2, RefreshCw, Table2 } from 'lucide-react';
 import {
   allowedVisualizations,
   autoVisualization,
   canStack,
+  getField,
   resolveStacking,
+  type QuestionDisplay,
   type QuestionSpec,
   type ResolvedVisualization,
   type Stacking,
@@ -25,17 +18,12 @@ import { ToggleGroup, ToggleGroupItem } from '@shared/ui/toggle-group';
 import { cn } from '@shared/lib/utils';
 import { QuestionVisualization } from './QuestionVisualization';
 import { QuestionTable } from './QuestionTable';
-import { visualizationLabel } from './question-labels';
+import { DrillMenu, type DrillRequest } from './DrillMenu';
 import type { QuestionQueryState } from './useQuestionQuery';
-
-const VIZ_ICONS: Record<ResolvedVisualization, LucideIcon> = {
-  number: Hash,
-  line: LineChart,
-  bar: BarChart3,
-  area: AreaChart,
-  pie: PieChart,
-  table: Table2,
-};
+import { ChartSettings } from './viz/ChartSettings';
+import { ChartTypePicker } from './viz/ChartTypePicker';
+import { ExportMenu } from './viz/ExportMenu';
+import { refineAutoVisualization } from './viz/transforms';
 
 interface QuestionResultProps {
   spec: QuestionSpec;
@@ -43,7 +31,15 @@ interface QuestionResultProps {
   /** 'table' shows the table; anything else charts (the Table toggle saves as 'table'). */
   onVisualizationChange: (visualization: Visualization) => void;
   onStackingChange: (stacking: Stacking) => void;
+  /** Chart settings (values, goal, sort, top N, axes); omit to hide the Settings button. */
+  onDisplayChange?: (display: QuestionDisplay | undefined) => void;
   onRefresh: () => void;
+  /** Drill-through: replaces the question with the explored one. */
+  onDrill?: (spec: QuestionSpec) => void;
+  /** Back to the question before the last drill; omit when there is none. */
+  onBack?: () => void;
+  /** Download file name / PNG heading. */
+  title?: string;
 }
 
 /** Result area: Table ⇄ Visualization toggle, chart picker, states. */
@@ -52,21 +48,42 @@ export function QuestionResult({
   query,
   onVisualizationChange,
   onStackingChange,
+  onDisplayChange,
   onRefresh,
+  onDrill,
+  onBack,
+  title,
 }: QuestionResultProps) {
   const { t } = useLingui();
+  const [drillRequest, setDrillRequest] = useState<DrillRequest | null>(null);
+  const handleDrill = onDrill ? setDrillRequest : undefined;
+  const chartRef = useRef<HTMLDivElement | null>(null);
   const { result, resultCompiled, compileError, error, isRunning } = query;
   const shownError = compileError ?? error;
   const allowed = allowedVisualizations(spec);
   const chartable = allowed.some((item) => item !== 'table');
   const auto = autoVisualization(spec);
-  const current: ResolvedVisualization =
+  const picked: ResolvedVisualization =
     spec.visualization !== 'auto' && allowed.includes(spec.visualization)
       ? spec.visualization
       : auto;
+  // Auto bars turn into a row chart once the rows show many / long categories.
+  const current =
+    result && resultCompiled
+      ? refineAutoVisualization(spec, picked, result, resultCompiled.columns)
+      : picked;
   const showTable = spec.visualization === 'table' || !chartable;
-  const stackable = !showTable && canStack(spec, current);
-  const stacking = resolveStacking(spec, current);
+  // Row charts stack like bars.
+  const stackAs = current === 'row' ? 'bar' : current;
+  const stackable = !showTable && canStack(spec, stackAs);
+  const stacking = resolveStacking(spec, stackAs);
+  const firstGrouping = spec.breakouts[0];
+  const categoryAxis =
+    !!firstGrouping && getField(spec.source, firstGrouping.field)?.type !== 'date';
+  const shownVisualization =
+    resultCompiled && allowedVisualizations(resultCompiled.spec).includes(current)
+      ? current
+      : (resultCompiled?.visualization ?? current);
   const rowCount = result?.rows.length ?? 0;
   const rowCountText = rowCount.toLocaleString();
   const totalText = (result?.rowCount ?? 0).toLocaleString();
@@ -78,6 +95,18 @@ export function QuestionResult({
       className="flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-3 text-card-foreground sm:p-4"
     >
       <div className="flex flex-wrap items-center gap-2">
+        {onBack && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2"
+            onClick={onBack}
+            title={t`Back to the previous question`}
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            <Trans>Back</Trans>
+          </Button>
+        )}
         {chartable && (
           <ToggleGroup
             type="single"
@@ -102,31 +131,21 @@ export function QuestionResult({
         )}
 
         {chartable && !showTable && (
-          <div className="flex flex-wrap gap-1" role="radiogroup" aria-label={t`Chart type`}>
-            {allowed
-              .filter((item) => item !== 'table')
-              .map((item) => {
-                const Icon = VIZ_ICONS[item];
-                const selected = current === item;
-                const label = visualizationLabel(item);
-                return (
-                  <Button
-                    key={item}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    variant={selected ? 'secondary' : 'ghost'}
-                    size="sm"
-                    className={cn('h-8 px-2', selected && 'ring-1 ring-border')}
-                    onClick={() => onVisualizationChange(item === auto ? 'auto' : item)}
-                    title={label}
-                  >
-                    <Icon className="h-4 w-4" aria-hidden />
-                    <span className="hidden sm:inline">{label}</span>
-                  </Button>
-                );
-              })}
-          </div>
+          <ChartTypePicker
+            spec={spec}
+            current={current}
+            onPick={(item) => onVisualizationChange(item === auto ? 'auto' : item)}
+          />
+        )}
+
+        {chartable && !showTable && onDisplayChange && (
+          <ChartSettings
+            key={current}
+            visualization={current}
+            categoryAxis={categoryAxis}
+            display={spec.display}
+            onChange={onDisplayChange}
+          />
         )}
 
         {stackable && (
@@ -178,6 +197,13 @@ export function QuestionResult({
               )}
             </span>
           )}
+          <ExportMenu
+            name={title ?? ''}
+            result={result && !shownError ? result : null}
+            columns={resultCompiled?.columns}
+            source={resultCompiled?.spec.source}
+            chartRef={chartRef}
+          />
           <Button
             variant="ghost"
             size="icon"
@@ -213,7 +239,7 @@ export function QuestionResult({
         )}
 
         {result && resultCompiled && !shownError && (
-          <div className={cn('transition-opacity', isRunning && 'opacity-60')}>
+          <div ref={chartRef} className={cn('transition-opacity', isRunning && 'opacity-60')}>
             {result.rows.length === 0 ? (
               <div className="flex h-48 flex-col items-center justify-center gap-1 text-center text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">
@@ -228,28 +254,35 @@ export function QuestionResult({
                 result={result}
                 columns={resultCompiled.columns}
                 source={resultCompiled.spec.source}
+                onDrill={handleDrill}
               />
             ) : (
               <QuestionVisualization
                 result={result}
                 columns={resultCompiled.columns}
                 source={resultCompiled.spec.source}
-                visualization={
-                  allowedVisualizations(resultCompiled.spec).includes(current)
-                    ? current
-                    : resultCompiled.visualization
-                }
+                visualization={shownVisualization}
                 stacking={resolveStacking(
                   { ...resultCompiled.spec, stacking: spec.stacking },
-                  allowedVisualizations(resultCompiled.spec).includes(current)
-                    ? current
-                    : resultCompiled.visualization
+                  shownVisualization === 'row' ? 'bar' : shownVisualization
                 )}
+                onDrill={handleDrill}
+                display={spec.display}
+                spec={resultCompiled.spec}
+                exportName={title}
               />
             )}
           </div>
         )}
       </div>
+      {resultCompiled && onDrill && (
+        <DrillMenu
+          spec={resultCompiled.spec}
+          request={drillRequest}
+          onClose={() => setDrillRequest(null)}
+          onDrill={onDrill}
+        />
+      )}
     </section>
   );
 }

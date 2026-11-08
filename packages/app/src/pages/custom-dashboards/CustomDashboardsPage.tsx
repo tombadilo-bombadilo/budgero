@@ -2,6 +2,8 @@ import { msg } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { Download } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { getErrorMessage } from '@shared/lib/errors';
 import { toast } from 'sonner';
@@ -19,7 +21,14 @@ import {
   useUpdateCustomDashboard,
   useUpdateDashboardWidget,
 } from '@features/custom-dashboards/api/useCustomDashboards';
-import type { QueryResult } from '@shared/lib/sql/report-query-executor';
+import type { QueryResult, SqlDatabase } from '@shared/lib/sql/report-query-executor';
+import { useRuntime } from '@shared/runtime/runtime-provider';
+import {
+  hasDashboardFilters,
+  normalizeDashboardFilters,
+  type DashboardFilters,
+} from '@features/reports/lib/question';
+import { downloadCsv, questionResultCsv } from '@features/reports/ui/notebook/viz/export';
 import type { ChartConfiguration, CustomDashboardWidget } from '@budgero/core/browser';
 import { BackToReports } from '@pages/reports/BackToReports';
 import { DashboardSwitcher } from './components/DashboardSwitcher';
@@ -27,6 +36,8 @@ import { DashboardGrid } from './components/DashboardGrid';
 import { AddWidgetDialog } from './components/AddWidgetDialog';
 import { PinChartDialog } from './components/PinChartDialog';
 import { EditWidgetChartDialog } from './components/EditWidgetChartDialog';
+import { DashboardFilterBar } from './components/DashboardFilterBar';
+import { runWidgetQuery, widgetQueryKey, widgetQuestion } from './components/widget-query';
 
 const DEFAULT_DASHBOARD_NAME = msg`My Dashboard`;
 
@@ -76,6 +87,22 @@ export default function CustomDashboardsPage() {
 
   const activeDashboardQuery = useCustomDashboard(activeDashboardId);
   const activeDashboard = activeDashboardQuery.data;
+  const runtime = useRuntime();
+  const queryClient = useQueryClient();
+
+  // Filters show the pending change right away; the saved copy takes over once stored.
+  const [pendingFilters, setPendingFilters] = useState<{
+    id: string;
+    filters: DashboardFilters;
+  } | null>(null);
+  const savedFilters = useMemo(
+    () => normalizeDashboardFilters(activeDashboard?.filters),
+    [activeDashboard?.filters]
+  );
+  const filters =
+    pendingFilters && pendingFilters.id === activeDashboard?.id
+      ? pendingFilters.filters
+      : savedFilters;
 
   const defaultCreatedRef = useRef(false);
 
@@ -258,6 +285,50 @@ export default function CustomDashboardsPage() {
     );
   };
 
+  const handleFiltersChange = async (next: DashboardFilters) => {
+    if (!activeDashboard) return;
+    const { id } = activeDashboard;
+    setPendingFilters({ id, filters: next });
+    try {
+      await updateDashboardMutation.mutateAsync({
+        id,
+        budgetId,
+        filters: hasDashboardFilters(next) ? { ...next } : null,
+      });
+    } catch (error) {
+      toast.error(getErrorMessage(error, t`Could not save the dashboard filters`));
+    } finally {
+      setPendingFilters((current) => (current?.filters === next ? null : current));
+    }
+  };
+
+  const handleExportAll = async () => {
+    if (!activeDashboard) return;
+    let exported = 0;
+    for (const widget of activeDashboard.widgets) {
+      const report = reportsById.get(widget.reportId) ?? null;
+      const chart = report?.charts.find((item) => item.id === widget.chartId) ?? null;
+      if (!report || !chart) continue;
+      try {
+        const question = widgetQuestion(report, chart, filters, budgetId);
+        const result = await queryClient.fetchQuery({
+          queryKey: widgetQueryKey(widget, report, question),
+          queryFn: async () =>
+            await runWidgetQuery(report, question, runtime.getDatabase() as SqlDatabase | null),
+          staleTime: 30 * 1000,
+        });
+        const csv = question
+          ? questionResultCsv(result, question.columns, question.spec.source)
+          : questionResultCsv(result, [], 'transactions');
+        downloadCsv(csv, widget.titleOverride || chart.title || report.name);
+        exported += 1;
+      } catch (error) {
+        toast.error(getErrorMessage(error, t`Could not export a widget`));
+      }
+    }
+    if (exported > 0) toast.success(t`Downloaded ${exported} CSV files`);
+  };
+
   const handleOpenReportInExplorer = (reportId: string) => {
     void navigate(`/reports/question/${encodeURIComponent(reportId)}`);
   };
@@ -289,6 +360,17 @@ export default function CustomDashboardsPage() {
         </div>
         <div className="flex items-center gap-2">
           <Button
+            variant="ghost"
+            onClick={() => void handleExportAll()}
+            disabled={!activeDashboard || activeDashboard.widgets.length === 0}
+            title={t`Download one CSV per widget`}
+          >
+            <Download className="h-4 w-4" aria-hidden />
+            <span className="hidden sm:inline">
+              <Trans>Export CSVs</Trans>
+            </span>
+          </Button>
+          <Button
             variant={isEditMode ? 'default' : 'outline'}
             onClick={() => setIsEditMode((prev) => !prev)}
             disabled={!activeDashboard}
@@ -317,7 +399,16 @@ export default function CustomDashboardsPage() {
       )}
 
       {activeDashboard && (
+        <DashboardFilterBar
+          budgetId={budgetId}
+          filters={filters}
+          onChange={(next) => void handleFiltersChange(next)}
+        />
+      )}
+
+      {activeDashboard && (
         <DashboardGrid
+          filters={filters}
           dashboard={activeDashboard}
           reportsById={reportsById}
           isMobile={isMobile}

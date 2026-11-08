@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { createQuestion, type QuestionSpec, type ValueKind } from '@features/reports/lib/question';
@@ -154,5 +154,78 @@ describe('NotebookEditor', () => {
     expect(latest.limit).toBe(25);
     await user.clear(input);
     expect(latest.limit).toBeNull();
+  });
+
+  it('adds a custom column, shows it in raw rows, then removes it', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={createQuestion()} />);
+    await user.click(screen.getByRole('button', { name: 'Custom column' }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Expression' }), {
+      target: { value: 'abs([Amount])' },
+    });
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Size');
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    expect(latest.customColumns).toEqual([
+      { id: 'expr_1', name: 'Size', expression: 'abs([amount])' },
+    ]);
+    expect(latest.columns).toEqual([
+      'date',
+      'account',
+      'payee',
+      'category',
+      'memo',
+      'amount',
+      'expr_1',
+    ]);
+    await user.click(screen.getByRole('button', { name: 'Remove custom column: Size' }));
+    expect(latest.customColumns).toBeUndefined();
+    expect(latest.columns).toEqual(['date', 'account', 'payee', 'category', 'memo', 'amount']);
+  });
+
+  it('writes a custom metric from the metric picker', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={createQuestion()} />);
+    await user.click(screen.getByRole('button', { name: /Summarize/ }));
+    await user.click(await screen.findByRole('option', { name: /Custom metric…/ }));
+    fireEvent.change(screen.getByRole('combobox', { name: 'Expression' }), {
+      target: { value: '(Income - Spending) / Income * 100' },
+    });
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Savings rate');
+    await user.click(screen.getByRole('button', { name: 'Done' }));
+    expect(latest.aggregations).toEqual([
+      { op: 'custom', name: 'Savings rate', expression: '(Income - Spending) / Income * 100' },
+    ]);
+    expect(screen.getByRole('button', { name: 'Change metric: Savings rate' })).toBeInTheDocument();
+  });
+
+  it('metric options: compare and running total need a date grouping', async () => {
+    const user = userEvent.setup();
+    render(
+      <Harness
+        initial={createQuestion('transactions', {
+          aggregations: [{ op: 'spending' }],
+          breakouts: [{ field: 'date', bucket: 'month' }],
+        })}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: 'Options for Spending' }));
+    await user.click(
+      await screen.findByRole('menuitemcheckbox', { name: 'Compare to previous period' })
+    );
+    expect(latest.aggregations).toEqual([{ op: 'spending', compare: true }]);
+    await user.click(
+      screen.getByRole('button', { name: 'Options for Spending vs previous period' })
+    );
+    await user.click(await screen.findByRole('menuitemradio', { name: 'Running total' }));
+    expect(latest.aggregations).toEqual([{ op: 'spending', compare: true, modifier: 'running' }]);
+    expect(
+      screen.getByRole('button', {
+        name: 'Change metric: Spending (running total) vs previous period',
+      })
+    ).toBeInTheDocument();
+
+    // Without a date grouping, the time-series options are off.
+    await user.click(screen.getByRole('button', { name: 'Remove grouping: Date' }));
+    expect(latest.aggregations).toEqual([{ op: 'spending' }]);
   });
 });

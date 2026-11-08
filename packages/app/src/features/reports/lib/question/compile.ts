@@ -12,11 +12,17 @@
  */
 import type { ChartConfiguration } from '@budgero/core/browser';
 import { getField, type DateBucket, type FieldDef, type QuestionSource } from './fields';
+import { expressionToSql, type ExprMetricName, type ExprSqlEnv } from './expression';
 import {
+  customFields,
+  expressionFields,
   isValidIsoDate,
+  lookupField,
   normalizeQuestion,
+  parseCustomMetric,
   questionColumns,
   resolveVisualization,
+  type CustomFields,
   type QuestionAggregation,
   type QuestionColumn,
   type QuestionFilter,
@@ -315,9 +321,10 @@ function dateCondition(column: string, filter: QuestionFilter, today: string): s
 function filterCondition(
   source: QuestionSource,
   filter: QuestionFilter,
-  today: string
+  today: string,
+  custom?: CustomFields
 ): string | null {
-  const field = getField(source, filter.field);
+  const field = lookupField(source, filter.field, custom);
   if (!field) return null;
   if (filter.op === 'isEmpty') return emptyCondition(field);
   if (filter.op === 'notEmpty') return `NOT (${emptyCondition(field)})`;
@@ -374,9 +381,15 @@ function filterCondition(
 const SPENDING_LINE = 'NOT is_income';
 const INCOME_LINE = 'is_income';
 
-function aggregationExpression(source: QuestionSource, aggregation: QuestionAggregation): string {
+function aggregationExpression(
+  source: QuestionSource,
+  aggregation: QuestionAggregation,
+  custom?: CustomFields
+): string {
   const toDouble = (expr: string) => `CAST(COALESCE(${expr}, 0) AS DOUBLE)`;
   switch (aggregation.op) {
+    case 'custom':
+      return customMetricSql(source, aggregation.expression ?? '', custom);
     case 'count':
       return source === 'transactions' ? `COUNT(DISTINCT transaction_id)` : `COUNT(*)`;
     case 'sum':
@@ -388,7 +401,7 @@ function aggregationExpression(source: QuestionSource, aggregation: QuestionAggr
     case 'max':
       return `CAST(MAX(${aggregation.field}) AS DOUBLE)`;
     case 'distinct': {
-      const field = getField(source, aggregation.field ?? '');
+      const field = lookupField(source, aggregation.field ?? '', custom);
       const column =
         field?.type === 'entity' && field.idKeyed ? `${field.id}_id` : aggregation.field;
       return `COUNT(DISTINCT ${column})`;
@@ -436,8 +449,9 @@ export function compileQuestion(
 
   const today =
     options.today && isValidIsoDate(options.today) ? sqlDate(options.today) : 'CURRENT_DATE';
+  const custom = customFields(spec.source, spec.customColumns);
   const conditions = spec.filters
-    .map((filter) => filterCondition(spec.source, filter, today))
+    .map((filter) => filterCondition(spec.source, filter, today, custom))
     .filter((condition): condition is string => Boolean(condition));
   // A question that only measures spending (or only income) leaves the other
   // side's rows out, so "Spending by category" lists no income categories.
@@ -449,13 +463,20 @@ export function compileQuestion(
   }
   const where = conditions.length > 0 ? `\nWHERE ${conditions.join('\n  AND ')}` : '';
   const ctes = sourceCtes(spec.source, budgetId, labels);
+  // Custom columns become real columns of `src_custom`, so every later step
+  // (filters, groupings, metrics, raw output) reads them like source fields.
+  let base = 'src';
+  if (custom.size > 0) {
+    ctes.push(customColumnsCte(spec.source, custom));
+    base = 'src_custom';
+  }
   const { limit } = spec;
   let body: string;
 
   if (spec.aggregations.length === 0) {
     const select = columns
       .map((column) => {
-        const field = getField(spec.source, column.kind === 'field' ? column.field : '');
+        const field = lookupField(spec.source, column.kind === 'field' ? column.field : '', custom);
         return field ? `${rawFieldExpression(field, spec.source)} AS ${column.key}` : null;
       })
       .filter(Boolean)
@@ -463,7 +484,7 @@ export function compileQuestion(
     // Sorts name output columns, so they apply over the projected rows; the
     // source's natural order breaks ties.
     ctes.push(
-      `result AS (\nSELECT\n  ${select},\n  ROW_NUMBER() OVER (ORDER BY ${defaultRawOrder(spec.source)}) AS row_order\nFROM src${where}\n)`
+      `result AS (\nSELECT\n  ${select},\n  ROW_NUMBER() OVER (ORDER BY ${defaultRawOrder(spec.source)}) AS row_order\nFROM ${base}${where}\n)`
     );
     const order = [
       ...spec.sort.map((entry) => `${entry.column} ${entry.direction.toUpperCase()} NULLS LAST`),
@@ -473,85 +494,7 @@ export function compileQuestion(
       limit ? `\nLIMIT ${limit}` : ''
     }`;
   } else {
-    const breakoutColumns = columns.filter((column) => column.kind === 'breakout');
-    const aggregationColumns = columns.filter((column) => column.kind === 'aggregation');
-
-    const breakoutSelect = breakoutColumns.map((column) => {
-      const { breakout } = column;
-      const expr = breakout.bucket
-        ? bucketExpression(breakout.field, breakout.bucket)
-        : breakout.field;
-      return `${expr} AS ${column.key}`;
-    });
-    const aggregationSelect = aggregationColumns.map(
-      (column) => `${aggregationExpression(spec.source, column.aggregation)} AS ${column.key}`
-    );
-    const groupBy =
-      breakoutColumns.length > 0
-        ? `\nGROUP BY ${breakoutColumns.map((_, index) => index + 1).join(', ')}`
-        : '';
-    ctes.push(
-      `agg AS (\nSELECT\n  ${[...breakoutSelect, ...aggregationSelect].join(',\n  ')}\nFROM src${where}${groupBy}\n)`
-    );
-
-    const breakoutKeys = breakoutColumns.map((column) => column.key);
-    const isDateBreakout = (key: string) =>
-      breakoutColumns.find((column) => column.key === key)?.breakout.bucket !== undefined;
-    const firstMetric = aggregationColumns[0].key;
-
-    let order: string[];
-    if (spec.sort.length > 0) {
-      order = spec.sort.map((entry) => `${entry.column} ${entry.direction.toUpperCase()}`);
-    } else if (breakoutKeys.length > 0 && isDateBreakout(breakoutKeys[0])) {
-      order = [];
-    } else if (breakoutKeys.length > 0) {
-      order = [`${firstMetric} DESC`];
-    } else {
-      order = [];
-    }
-    const tieBreak = breakoutKeys.filter((key) => !spec.sort.some((entry) => entry.column === key));
-    const orderBy = [...order, ...tieBreak.map((key) => `${key} ASC`)]
-      .map((part) => `${part} NULLS LAST`)
-      .join(', ');
-
-    let from = 'agg';
-    let limitClause = limit ? `\nLIMIT ${limit}` : '';
-    if (limit && breakoutKeys.length > 1) {
-      // Two+ groupings: Limit keeps the top N values of one grouping (the
-      // first non-date one), ranked by the sorted (or first) metric, so a
-      // chart shows N whole series/bars rather than N arbitrary cells.
-      const ranked = breakoutKeys.find((key) => !isDateBreakout(key)) ?? breakoutKeys[0];
-      const metricSort = spec.sort.find((entry) =>
-        aggregationColumns.some((column) => column.key === entry.column)
-      );
-      const metric = metricSort?.column ?? firstMetric;
-      const direction = metricSort?.direction === 'asc' ? 'ASC' : 'DESC';
-      ctes.push(
-        `top_values AS (\nSELECT ${ranked}\nFROM agg\nGROUP BY ${ranked}\nORDER BY SUM(${metric}) ${direction} NULLS LAST, ${ranked}\nLIMIT ${limit}\n)`
-      );
-      from = `agg\nWHERE ${ranked} IN (SELECT ${ranked} FROM top_values)`;
-      limitClause = '';
-    }
-    let finalOrder = orderBy;
-    const metricKeys = aggregationColumns.map((column) => column.key);
-    const leadSort = spec.sort[0];
-    if (
-      breakoutKeys.length > 1 &&
-      !isDateBreakout(breakoutKeys[0]) &&
-      (!leadSort || metricKeys.includes(leadSort.column))
-    ) {
-      // Keep each first-grouping value's rows together, ordered by its total.
-      const metric = leadSort?.column ?? firstMetric;
-      const direction = leadSort?.direction === 'asc' ? 'ASC' : 'DESC';
-      from = `(\nSELECT *, SUM(${metric}) OVER (PARTITION BY ${breakoutKeys[0]}) AS group_total\nFROM ${from}\n) grouped`;
-      finalOrder = [
-        `group_total ${direction} NULLS LAST`,
-        ...breakoutKeys.map((key) => `${key} ASC NULLS LAST`),
-      ].join(', ');
-    }
-    body = `SELECT ${columns.map((column) => column.key).join(', ')}\nFROM ${from}${
-      finalOrder ? `\nORDER BY ${finalOrder}` : ''
-    }${limitClause}`;
+    body = compileSummarized({ spec, columns, ctes, base, where, custom, today });
   }
 
   const sql = `WITH ${ctes.join(',\n')}\n${body}`
@@ -568,13 +511,22 @@ export function compileQuestion(
   };
 }
 
-const CHART_TYPE: Record<ResolvedVisualization, ChartConfiguration['chartType']> = {
+/** Stored chart type per visualization (dashboards read it back, see `chartTypeFor`). */
+export const CHART_TYPE: Record<ResolvedVisualization, ChartConfiguration['chartType']> = {
   number: 'stat',
   line: 'line',
   bar: 'bar',
   area: 'area',
   pie: 'pie',
   table: 'table',
+  trend: 'stat',
+  combo: 'bar',
+  pivot: 'table',
+  calendar: 'table',
+  waterfall: 'bar',
+  sankey: 'table',
+  scatter: 'scatter',
+  row: 'bar',
 };
 
 /** Chart config stored with the saved question (dashboards key widgets by its id). */
@@ -603,4 +555,443 @@ function randomId(): string {
     return crypto.randomUUID();
   }
   return `chart-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Custom expressions
+// ---------------------------------------------------------------------------
+
+/** SQL reading a field inside an expression (a known column; never user text). */
+function expressionFieldSql(
+  source: QuestionSource,
+  custom: CustomFields | undefined,
+  inline?: ReadonlyMap<string, string>
+) {
+  return (id: string): string => {
+    const inlined = inline?.get(id);
+    if (inlined) return `(${inlined})`;
+    if (custom?.has(id)) return id;
+    const field = getField(source, id);
+    if (!field) throw new Error('Unknown field in expression');
+    switch (field.type) {
+      case 'number':
+        return `CAST(${field.id} AS DOUBLE)`;
+      case 'boolean':
+        return `COALESCE(${field.id}, FALSE)`;
+      case 'date':
+        return field.id;
+      default:
+        return `COALESCE(${field.id}, '')`;
+    }
+  };
+}
+
+function expressionSqlEnv(
+  source: QuestionSource,
+  custom: CustomFields | undefined,
+  inline?: ReadonlyMap<string, string>
+): ExprSqlEnv {
+  return {
+    field: expressionFieldSql(source, custom, inline),
+    metric: (name: ExprMetricName) =>
+      aggregationExpression(source, { op: name === 'count' ? 'count' : name }),
+    countIf: (condition: string) =>
+      source === 'transactions'
+        ? `COUNT(DISTINCT CASE WHEN ${condition} THEN transaction_id END)`
+        : `COUNT(CASE WHEN ${condition} THEN 1 END)`,
+    string: sqlString,
+  };
+}
+
+function fieldTypes(source: QuestionSource, custom: CustomFields | undefined) {
+  return new Map(expressionFields(source, custom).map((field) => [field.id, field.type]));
+}
+
+/** `src_custom`: the source plus one column per custom column (earlier ones inlined). */
+function customColumnsCte(source: QuestionSource, custom: CustomFields): string {
+  const types = fieldTypes(source, custom);
+  const inline = new Map<string, string>();
+  const selects: string[] = [];
+  for (const [id, entry] of custom) {
+    const sql = expressionToSql(entry.ast, expressionSqlEnv(source, undefined, inline), types);
+    inline.set(id, sql);
+    const typed = entry.info.type === 'number' ? `CAST(${sql} AS DOUBLE)` : sql;
+    selects.push(`${typed} AS ${id}`);
+  }
+  return `src_custom AS (\nSELECT\n  *,\n  ${selects.join(',\n  ')}\nFROM src\n)`;
+}
+
+function customMetricSql(
+  source: QuestionSource,
+  expression: string,
+  custom: CustomFields | undefined
+): string {
+  const parsed = parseCustomMetric(source, expression, custom);
+  if (!parsed.ok) throw new Error(parsed.error.message);
+  const sql = expressionToSql(
+    parsed.value.ast,
+    expressionSqlEnv(source, custom),
+    fieldTypes(source, custom)
+  );
+  return `CAST(${sql} AS DOUBLE)`;
+}
+
+// ---------------------------------------------------------------------------
+// Summarized questions: groupings, gap filling, metric modifiers
+// ---------------------------------------------------------------------------
+
+interface Dimension {
+  key: string;
+  /** Hidden id / raw value column (`<key>__key`) for entities and text. */
+  hidden: string | null;
+  /** Holds a parent name for same-name disambiguation (categories). */
+  parent: string | null;
+  bucket: DateBucket | null;
+  fieldId: string;
+  select: string[];
+  group: string[];
+}
+
+const SERIES_STEP: Record<DateBucket, string> = {
+  day: 'INTERVAL 1 DAY',
+  week: 'INTERVAL 7 DAY',
+  month: 'INTERVAL 1 MONTH',
+  quarter: 'INTERVAL 3 MONTH',
+  year: 'INTERVAL 1 YEAR',
+};
+
+function dimensionFor(
+  source: QuestionSource,
+  column: Extract<QuestionColumn, { kind: 'breakout' }>,
+  custom: CustomFields
+): Dimension {
+  const { key, breakout } = column;
+  const field = lookupField(source, breakout.field, custom);
+  const id = field?.id ?? breakout.field;
+  const dimension: Dimension = {
+    key,
+    hidden: null,
+    parent: null,
+    bucket: breakout.bucket ?? null,
+    fieldId: id,
+    select: [],
+    group: [],
+  };
+  if (breakout.bucket) {
+    const expr = bucketExpression(id, breakout.bucket);
+    dimension.select.push(`${expr} AS ${key}`);
+    dimension.group.push(expr);
+    return dimension;
+  }
+  dimension.select.push(`${id} AS ${key}`);
+  dimension.group.push(id);
+  if (field && !custom.has(id) && (field.type === 'entity' || field.type === 'text')) {
+    dimension.hidden = `${key}__key`;
+    if (field.idKeyed) {
+      // Group by id too: same-name categories in different groups stay apart.
+      dimension.select.push(`${id}_id AS ${dimension.hidden}`);
+      dimension.group.unshift(`${id}_id`);
+      if (id === 'category' && source !== 'accounts') {
+        dimension.parent = `${key}__parent`;
+        dimension.select.push(`MIN(category_group) AS ${dimension.parent}`);
+      }
+    } else {
+      const raw = id === 'payee' ? 'payee_name' : id;
+      dimension.select.push(`MIN(NULLIF(TRIM(${raw}), '')) AS ${dimension.hidden}`);
+    }
+  }
+  return dimension;
+}
+
+/** Columns a dimension carries through every step. */
+function dimensionColumns(dimension: Dimension): string[] {
+  return dimension.hidden ? [dimension.key, dimension.hidden] : [dimension.key];
+}
+
+/** Partition / ranking key: the id or raw value when there is one, else the label. */
+function dimensionKey(dimension: Dimension): string {
+  return dimension.hidden
+    ? `COALESCE(CAST(${dimension.hidden} AS VARCHAR), ${dimension.key})`
+    : dimension.key;
+}
+
+/** Inclusive [from, to] date bounds the filters put on a date field (SQL DATE expressions). */
+function dateFilterBounds(
+  filters: readonly QuestionFilter[],
+  fieldId: string,
+  today: string
+): { from: string | null; to: string | null } {
+  const froms: string[] = [];
+  const tos: string[] = [];
+  for (const filter of filters) {
+    if (filter.field !== fieldId) continue;
+    const [first, second] = filter.values as string[];
+    switch (filter.op) {
+      case 'previous':
+      case 'current': {
+        const unit = filter.unit ?? 'month';
+        const start = `CAST(DATE_TRUNC('${unit}', ${today}) AS DATE)`;
+        const amount = filter.op === 'current' ? 1 : (filter.amount ?? 1);
+        const includeCurrent = filter.op === 'current' || filter.includeCurrent !== false;
+        froms.push(
+          includeCurrent
+            ? amount > 1
+              ? `CAST(${start} - ${unitInterval(unit, amount - 1)} AS DATE)`
+              : start
+            : `CAST(${start} - ${unitInterval(unit, amount)} AS DATE)`
+        );
+        const end = includeCurrent ? `${start} + ${unitInterval(unit, 1)}` : start;
+        tos.push(`CAST(${end} - INTERVAL 1 DAY AS DATE)`);
+        break;
+      }
+      case 'between':
+        froms.push(sqlDate(first));
+        tos.push(sqlDate(second));
+        break;
+      case 'before':
+        tos.push(`CAST(${sqlDate(first)} - INTERVAL 1 DAY AS DATE)`);
+        break;
+      case 'after':
+        froms.push(`CAST(${sqlDate(first)} + INTERVAL 1 DAY AS DATE)`);
+        break;
+      case 'is':
+        froms.push(sqlDate(first));
+        tos.push(sqlDate(first));
+        break;
+      default:
+        break;
+    }
+  }
+  const combine = (fn: string, parts: string[]) =>
+    parts.length === 0 ? null : parts.length === 1 ? parts[0] : `${fn}(${parts.join(', ')})`;
+  return { from: combine('GREATEST', froms), to: combine('LEAST', tos) };
+}
+
+interface SummarizeContext {
+  spec: QuestionSpec;
+  columns: QuestionColumn[];
+  ctes: string[];
+  base: string;
+  where: string;
+  custom: CustomFields;
+  today: string;
+}
+
+/**
+ * agg (GROUP BY, ids kept) → labeled (same-name categories get their group)
+ * → filled (one row per date bucket, empty buckets get the empty-group value)
+ * → shaped (running total / moving average / % of total) → compared (previous
+ * period, % change) → ordered / limited output.
+ */
+function compileSummarized({
+  spec,
+  columns,
+  ctes,
+  base,
+  where,
+  custom,
+  today,
+}: SummarizeContext): string {
+  const { limit } = spec;
+  const breakoutColumns = columns.filter(
+    (column): column is Extract<QuestionColumn, { kind: 'breakout' }> => column.kind === 'breakout'
+  );
+  const metricColumns = columns.filter(
+    (column): column is Extract<QuestionColumn, { kind: 'aggregation' }> =>
+      column.kind === 'aggregation' && !column.derived
+  );
+  const dimensions = breakoutColumns.map((column) => dimensionFor(spec.source, column, custom));
+  const dateDimension = dimensions.find((dimension) => dimension.bucket !== null) ?? null;
+  const otherDimensions = dimensions.filter((dimension) => dimension !== dateDimension);
+  const modified = (column: (typeof metricColumns)[number]) => Boolean(column.aggregation.modifier);
+  const valueAlias = (column: (typeof metricColumns)[number]) =>
+    modified(column) ? `${column.key}__raw` : column.key;
+  const timeSeries = metricColumns.some(
+    (column) =>
+      column.aggregation.compare ||
+      column.aggregation.modifier === 'running' ||
+      column.aggregation.modifier === 'moving'
+  );
+  const fill = dateDimension !== null && (dimensions.length === 1 || timeSeries);
+
+  const metricSelects = metricColumns.map(
+    (column) =>
+      `${aggregationExpression(spec.source, column.aggregation, custom)} AS ${valueAlias(column)}`
+  );
+  const groupBy =
+    dimensions.length > 0
+      ? `\nGROUP BY ${dimensions.flatMap((dimension) => dimension.group).join(', ')}`
+      : '';
+  ctes.push(
+    `agg AS (\nSELECT\n  ${[
+      ...dimensions.flatMap((dimension) => dimension.select),
+      ...metricSelects,
+      ...(fill ? ['1 AS __present'] : []),
+    ].join(',\n  ')}\nFROM ${base}${where}${groupBy}\n)`
+  );
+  let current = 'agg';
+
+  const parented = dimensions.filter((dimension) => dimension.parent);
+  if (parented.length > 0) {
+    const replace = parented.map((dimension) => {
+      const { key, hidden, parent } = dimension;
+      const window = `OVER (PARTITION BY ${key})`;
+      return `CASE WHEN MIN(COALESCE(${hidden}, -1)) ${window} <> MAX(COALESCE(${hidden}, -1)) ${window} AND ${parent} IS NOT NULL THEN ${key} || ' (' || ${parent} || ')' ELSE ${key} END AS ${key}`;
+    });
+    ctes.push(
+      `labeled AS (\nSELECT * EXCLUDE (${parented.map((dimension) => dimension.parent).join(', ')}) REPLACE (\n  ${replace.join(',\n  ')}\n)\nFROM ${current}\n)`
+    );
+    current = 'labeled';
+  }
+
+  if (fill && dateDimension?.bucket) {
+    const { bucket, fieldId, key: dateKey } = dateDimension;
+    const bounds = dateFilterBounds(spec.filters, fieldId, today);
+    const from = bounds.from ?? 'lo';
+    const to = bounds.to ? `LEAST(${bounds.to}, GREATEST(hi, ${today}))` : 'hi';
+    ctes.push(
+      `fill_bounds AS (\nSELECT MIN(${fieldId}) AS lo, MAX(${fieldId}) AS hi\nFROM ${base}${where}\n)`,
+      `fill_buckets AS (\nSELECT DISTINCT ${bucketExpression('d', bucket)} AS ${dateKey}\nFROM (\n  SELECT UNNEST(generate_series(CAST(DATE_TRUNC('${bucket}', ${from}) AS TIMESTAMP), CAST(${to} AS TIMESTAMP), ${SERIES_STEP[bucket]})) AS d\n  FROM fill_bounds\n) series\n)`,
+      `fill_empty AS (\nSELECT\n  ${metricSelects.join(',\n  ')}\nFROM ${base}\nWHERE FALSE\n)`
+    );
+    const others = otherDimensions.flatMap(dimensionColumns);
+    if (others.length > 0) {
+      ctes.push(`fill_others AS (\nSELECT DISTINCT ${others.join(', ')}\nFROM ${current}\n)`);
+    }
+    const dimensionOutputs = dimensions.flatMap((dimension) =>
+      dimensionColumns(dimension).map((name) =>
+        dimension === dateDimension ? `b.${name}` : `o.${name}`
+      )
+    );
+    const values = metricColumns.map(valueAlias);
+    const join = [
+      `a.${dateKey} = b.${dateKey}`,
+      ...others.map((name) => `a.${name} IS NOT DISTINCT FROM o.${name}`),
+    ].join(' AND ');
+    ctes.push(
+      `filled AS (\nSELECT\n  ${[
+        ...dimensionOutputs,
+        ...values.map(
+          (value) => `CASE WHEN a.__present IS NULL THEN e.${value} ELSE a.${value} END AS ${value}`
+        ),
+      ].join(
+        ',\n  '
+      )}\nFROM fill_buckets b${others.length > 0 ? '\nCROSS JOIN fill_others o' : ''}\nCROSS JOIN fill_empty e\nLEFT JOIN ${current} a ON ${join}\nWHERE EXISTS (SELECT 1 FROM ${current})\nUNION ALL\nSELECT ${[...dimensions.flatMap(dimensionColumns), ...values].join(', ')}\nFROM ${current}\nWHERE ${dateKey} IS NULL\n)`
+    );
+    current = 'filled';
+  }
+
+  const partition = otherDimensions.map(dimensionKey);
+  const series = (frame: string) =>
+    `OVER (${partition.length > 0 ? `PARTITION BY ${partition.join(', ')} ` : ''}ORDER BY ${dateDimension?.key ?? '1'}${frame})`;
+
+  if (metricColumns.some(modified)) {
+    const sharePartition =
+      dateDimension && dimensions.length > 1 ? `PARTITION BY ${dateDimension.key}` : '';
+    const shaped = metricColumns.map((column) => {
+      const raw = valueAlias(column);
+      switch (column.aggregation.modifier) {
+        case 'running':
+          return `SUM(${raw}) ${series(' ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW')} AS ${column.key}`;
+        case 'moving': {
+          const window = Math.max(2, Math.floor(column.aggregation.window ?? 3));
+          return `AVG(${raw}) ${series(` ROWS BETWEEN ${window - 1} PRECEDING AND CURRENT ROW`)} AS ${column.key}`;
+        }
+        case 'share':
+          return `CAST(${raw} AS DOUBLE) * 100 / NULLIF(SUM(${raw}) OVER (${sharePartition}), 0) AS ${column.key}`;
+        default:
+          return column.key;
+      }
+    });
+    ctes.push(
+      `shaped AS (\nSELECT\n  ${[...dimensions.flatMap(dimensionColumns), ...shaped].join(',\n  ')}\nFROM ${current}\n)`
+    );
+    current = 'shaped';
+  }
+
+  const compared: string[] = [];
+  let lastMetric: string | null = null;
+  for (const column of columns) {
+    if (column.kind !== 'aggregation') continue;
+    if (!column.derived) {
+      lastMetric = column.key;
+      continue;
+    }
+    if (!lastMetric) continue;
+    const previous = `LAG(${lastMetric}) ${series('')}`;
+    compared.push(
+      column.derived === 'previous'
+        ? `${previous} AS ${column.key}`
+        : `(${lastMetric} - ${previous}) * 100 / NULLIF(ABS(${previous}), 0) AS ${column.key}`
+    );
+  }
+  if (compared.length > 0) {
+    ctes.push(`compared AS (\nSELECT\n  *,\n  ${compared.join(',\n  ')}\nFROM ${current}\n)`);
+    current = 'compared';
+  }
+
+  // Ordering and limits.
+  const breakoutKeys = breakoutColumns.map((column) => column.key);
+  const isDateBreakout = (key: string) =>
+    breakoutColumns.find((column) => column.key === key)?.breakout.bucket !== undefined;
+  const rankKey = (key: string) => {
+    const dimension = dimensions.find((item) => item.key === key);
+    return dimension ? dimensionKey(dimension) : key;
+  };
+  const firstMetric = metricColumns[0].key;
+  const metricKeys = columns.filter((column) => column.kind === 'aggregation').map((c) => c.key);
+
+  let order: string[];
+  if (spec.sort.length > 0) {
+    order = spec.sort.map((entry) => `${entry.column} ${entry.direction.toUpperCase()}`);
+  } else if (breakoutKeys.length > 0 && isDateBreakout(breakoutKeys[0])) {
+    order = [];
+  } else if (breakoutKeys.length > 0) {
+    order = [`${firstMetric} DESC`];
+  } else {
+    order = [];
+  }
+  const tieBreak = breakoutKeys.filter((key) => !spec.sort.some((entry) => entry.column === key));
+  const orderBy = [...order, ...tieBreak.map((key) => `${key} ASC`)]
+    .map((part) => `${part} NULLS LAST`)
+    .join(', ');
+
+  let from = current;
+  let limitClause = limit ? `\nLIMIT ${limit}` : '';
+  if (limit && breakoutKeys.length > 1) {
+    // Two+ groupings: Limit keeps the top N values of one grouping (the
+    // first non-date one), ranked by the sorted (or first) metric, so a
+    // chart shows N whole series/bars rather than N arbitrary cells.
+    const rankedKey = breakoutKeys.find((key) => !isDateBreakout(key)) ?? breakoutKeys[0];
+    const ranked = rankKey(rankedKey);
+    const metricSort = spec.sort.find((entry) => metricKeys.includes(entry.column));
+    const metric = metricSort?.column ?? firstMetric;
+    const direction = metricSort?.direction === 'asc' ? 'ASC' : 'DESC';
+    ctes.push(
+      `top_values AS (\nSELECT ${ranked} AS ranked_value\nFROM ${current}\nGROUP BY 1\nORDER BY SUM(${metric}) ${direction} NULLS LAST, 1\nLIMIT ${limit}\n)`
+    );
+    from = `${current}\nWHERE ${ranked} IN (SELECT ranked_value FROM top_values)`;
+    limitClause = '';
+  }
+  let finalOrder = orderBy;
+  const leadSort = spec.sort[0];
+  if (
+    breakoutKeys.length > 1 &&
+    !isDateBreakout(breakoutKeys[0]) &&
+    (!leadSort || metricKeys.includes(leadSort.column))
+  ) {
+    // Keep each first-grouping value's rows together, ordered by its total.
+    const metric = leadSort?.column ?? firstMetric;
+    const direction = leadSort?.direction === 'asc' ? 'ASC' : 'DESC';
+    from = `(\nSELECT *, SUM(${metric}) OVER (PARTITION BY ${rankKey(breakoutKeys[0])}) AS group_total\nFROM ${from}\n) grouped`;
+    finalOrder = [
+      `group_total ${direction} NULLS LAST`,
+      ...breakoutKeys.map((key) => `${key} ASC NULLS LAST`),
+    ].join(', ');
+  }
+  const outputs = [
+    ...columns.map((column) => column.key),
+    ...dimensions.flatMap((dimension) => (dimension.hidden ? [dimension.hidden] : [])),
+  ];
+  return `SELECT ${outputs.join(', ')}\nFROM ${from}${finalOrder ? `\nORDER BY ${finalOrder}` : ''}${limitClause}`;
 }

@@ -7,12 +7,16 @@ import {
   ScatterChart,
   TreemapChart,
   SankeyChart,
+  HeatmapChart,
+  CustomChart,
 } from 'echarts/charts';
 import {
   GridComponent,
   TooltipComponent,
   MarkLineComponent,
   MarkPointComponent,
+  CalendarComponent,
+  VisualMapComponent,
 } from 'echarts/components';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -26,10 +30,14 @@ echarts.use([
   ScatterChart,
   TreemapChart,
   SankeyChart,
+  HeatmapChart,
+  CustomChart,
   GridComponent,
   TooltipComponent,
   MarkLineComponent,
   MarkPointComponent,
+  CalendarComponent,
+  VisualMapComponent,
   LabelLayout,
   CanvasRenderer,
 ]);
@@ -39,6 +47,9 @@ export interface EChartClickParams {
   name?: string;
   dataIndex: number;
   value: unknown;
+  /** Viewport position of the click (to place a menu), when known. */
+  clientX?: number;
+  clientY?: number;
 }
 
 interface EChartProps {
@@ -69,7 +80,16 @@ export function EChart({ option, className, ariaLabel, onMarkClick }: EChartProp
     chartRef.current = chart;
     chart.on('click', (params) => {
       const { seriesName, name, dataIndex, value } = params as unknown as EChartClickParams;
-      clickHandlerRef.current?.({ seriesName, name, dataIndex, value });
+      const native = (params as { event?: { event?: { clientX?: number; clientY?: number } } })
+        .event?.event;
+      clickHandlerRef.current?.({
+        seriesName,
+        name,
+        dataIndex,
+        value,
+        clientX: native?.clientX,
+        clientY: native?.clientY,
+      });
     });
     const observer = new ResizeObserver(() => chart.resize());
     observer.observe(container);

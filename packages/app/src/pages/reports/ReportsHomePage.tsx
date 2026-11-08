@@ -2,14 +2,10 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useId, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AreaChart,
   ArrowLeftRight,
-  BarChart3,
   Code2,
   FlaskConical,
-  Hash,
   LayoutGrid,
-  LineChart,
   Network,
   PieChart,
   Plus,
@@ -22,12 +18,9 @@ import {
 } from 'lucide-react';
 import type { UnifiedReport } from '@budgero/core/browser';
 import { useReports } from '@entities/report/api/useReports';
-import {
-  parseQuestionHeader,
-  resolveVisualization,
-  type ResolvedVisualization,
-} from '@features/reports/lib/question';
+import { parseQuestionHeader, resolveVisualization } from '@features/reports/lib/question';
 import { describeQuestion } from '@features/reports/ui/notebook/question-labels';
+import { VIZ_ICONS } from '@features/reports/ui/notebook/viz/viz-meta';
 import { REPORT_ORDER, reportMeta } from '@pages/analytics/report-questions';
 import type { ReportKey } from '@pages/analytics/analytics-state';
 import { Button } from '@shared/ui/button';
@@ -44,15 +37,6 @@ const REPORT_ICONS: Record<ReportKey, LucideIcon> = {
   'money-map': Network,
   scenario: FlaskConical,
   ledger: Table2,
-};
-
-const VIZ_ICONS: Record<ResolvedVisualization, LucideIcon> = {
-  number: Hash,
-  line: LineChart,
-  bar: BarChart3,
-  area: AreaChart,
-  pie: PieChart,
-  table: Table2,
 };
 
 const MY_QUESTIONS = '__mine__';

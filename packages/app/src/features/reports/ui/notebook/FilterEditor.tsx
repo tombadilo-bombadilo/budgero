@@ -74,13 +74,17 @@ export function FieldList({
   onPick,
   fields,
   placeholder,
+  labelOf,
 }: {
   source: QuestionSource;
   onPick: (fieldId: string) => void;
   fields?: readonly FieldDef[];
   placeholder?: string;
+  /** Label for a field id (custom columns); defaults to the source field label. */
+  labelOf?: (fieldId: string) => string;
 }) {
   const { t } = useLingui();
+  const label = labelOf ?? ((fieldId: string) => fieldLabel(source, fieldId));
   return (
     <Command>
       <CommandInput placeholder={placeholder ?? t`Filter by…`} aria-label={t`Find a field`} />
@@ -92,12 +96,12 @@ export function FieldList({
           {(fields ?? SOURCE_FIELDS[source]).map((item) => (
             <CommandItem
               key={item.id}
-              value={`${fieldLabel(source, item.id)} ${item.id}`}
+              value={`${label(item.id)} ${item.id}`}
               onSelect={() => onPick(item.id)}
               className="cursor-pointer"
             >
               <FieldIcon type={item.type} />
-              {fieldLabel(source, item.id)}
+              {label(item.id)}
             </CommandItem>
           ))}
         </CommandGroup>

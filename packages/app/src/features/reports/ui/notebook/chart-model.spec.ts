@@ -79,4 +79,46 @@ describe('buildChartModel', () => {
     const model = buildChartModel(result(['account'], [['Checking']]), questionColumns(spec));
     expect(model.series).toEqual([]);
   });
+
+  it('keeps same-label values apart by their hidden ids and exposes the ids', () => {
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'category' }],
+    });
+    const model = buildChartModel(
+      result(
+        ['category', 'spending', 'category__key'],
+        [
+          ['Misc', 20, 420],
+          ['Misc', 15, 410],
+          ['Uncategorized', 5, null],
+        ]
+      ),
+      questionColumns(spec)
+    );
+    expect(model.xValues).toEqual(['Misc', 'Misc', 'Uncategorized']);
+    expect(model.xKeys).toEqual([420, 410, null]);
+    expect(model.series[0].values).toEqual([20, 15, 5]);
+  });
+
+  it('charts the previous-period series but not the % change', () => {
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'spending', compare: true }],
+      breakouts: [{ field: 'date', bucket: 'month' }],
+    });
+    const model = buildChartModel(
+      result(
+        ['month', 'spending', 'spending_previous', 'spending_change'],
+        [
+          ['2026-01', 30, null, null],
+          ['2026-02', 60, 30, 100],
+        ]
+      ),
+      questionColumns(spec)
+    );
+    expect(model.series.map((series) => series.id)).toEqual(['spending', 'spending_previous']);
+    expect(model.xKeys).toEqual([undefined, undefined]);
+  });
 });

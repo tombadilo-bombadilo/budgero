@@ -107,6 +107,7 @@ export type {
 export type { ScenarioRecord, SaveScenarioInput } from './services/scenarios/index.js';
 export type {
   CustomDashboard,
+  CustomDashboardFilters,
   CustomDashboardWidget,
   DesktopWidgetLayout,
   MobileWidgetLayout,
