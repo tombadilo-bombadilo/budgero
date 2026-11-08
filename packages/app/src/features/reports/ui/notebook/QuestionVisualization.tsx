@@ -178,7 +178,8 @@ function ChartView({
   );
 
   const isPie = visualization === 'pie';
-  const otherX = t`Other (${model.otherXCount})`;
+  const { otherXCount } = model;
+  const otherX = t`Other (${otherXCount})`;
   const xLabel = useCallback(
     (value: unknown, style?: 'long') =>
       isOther(value) ? otherX : model.x ? format.cell(model.x, value, style) : '',
