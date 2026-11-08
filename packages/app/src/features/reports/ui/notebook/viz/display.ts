@@ -33,7 +33,7 @@ export function goalMarkLine(goal: number, chrome: ChartChrome, label: string, h
     lineStyle: { type: 'dashed' as const, color: chrome.inkSecondary, width: 1.5 },
     label: {
       formatter: label,
-      position: 'insideEndTop' as const,
+      position: horizontal ? ('end' as const) : ('insideEndTop' as const),
       color: chrome.inkSecondary,
       fontSize: 11,
     },

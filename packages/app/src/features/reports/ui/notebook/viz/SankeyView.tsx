@@ -87,7 +87,7 @@ export function SankeyView({
         {
           type: 'sankey' as const,
           left: 8,
-          right: 140,
+          right: 190,
           top: 8,
           bottom: 8,
           nodeWidth: 12,
@@ -103,7 +103,7 @@ export function SankeyView({
           label: {
             color: chrome.inkPrimary,
             fontSize: 11,
-            width: 130,
+            width: 180,
             overflow: 'truncate' as const,
             formatter: (params: { name: string }) => {
               const node = byId.get(params.name);
@@ -132,7 +132,7 @@ export function SankeyView({
     <div className={cn('flex min-h-0 flex-col gap-1', fitHeight && 'h-full', className)}>
       <div className="flex justify-between px-2 text-xs text-muted-foreground">
         <span>{from}</span>
-        <span className="pr-36">{to}</span>
+        <span className="pr-44">{to}</span>
       </div>
       <div
         className={cn('min-h-0 w-full', fitHeight && 'min-h-[200px] flex-1')}

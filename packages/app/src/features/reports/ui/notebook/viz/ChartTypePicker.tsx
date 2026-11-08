@@ -42,7 +42,18 @@ export function ChartTypePicker({ spec, current, onPick }: ChartTypePickerProps)
           <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-[22rem] space-y-3 p-3">
+      <PopoverContent
+        align="start"
+        className="w-[22rem] space-y-3 p-3"
+        onOpenAutoFocus={(event) => {
+          // Focus the current type, not the first tile (which may be disabled and
+          // would pop its "why not" tooltip on open).
+          event.preventDefault();
+          (event.currentTarget as HTMLElement | null)
+            ?.querySelector<HTMLElement>('[aria-checked="true"]')
+            ?.focus();
+        }}
+      >
         {VIZ_GROUPS.map((group) => (
           <section key={group.id} aria-label={i18n._(group.label)}>
             <h3 className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">

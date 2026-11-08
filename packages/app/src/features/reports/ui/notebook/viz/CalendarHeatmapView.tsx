@@ -17,6 +17,12 @@ interface CalendarHeatmapViewProps extends VizViewProps {
   onDayClick?: (day: string) => void;
 }
 
+function percentile(values: number[], share: number): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.min(sorted.length - 1, Math.floor(share * (sorted.length - 1)))];
+}
+
 function monthNames(locale: string): string[] {
   const format = new Intl.DateTimeFormat(locale, { month: 'short' });
   return Array.from({ length: 12 }, (_, month) => format.format(new Date(2024, month, 1)));
@@ -53,7 +59,14 @@ export function CalendarHeatmapView({
     const { chrome } = palette;
     const locale = getLocaleTag();
     const diverging = year.min < 0 && year.max > 0;
-    const bound = Math.max(Math.abs(year.min), Math.abs(year.max)) || 1;
+    // Scale to the 95th percentile so a few big days (rent) don't wash out the rest.
+    const top = percentile(
+      year.days.map(([, value]) => Math.abs(value)),
+      0.95
+    );
+    const bound = top || Math.max(Math.abs(year.min), Math.abs(year.max)) || 1;
+    const low = diverging ? -bound : Math.min(0, year.min);
+    const high = diverging ? bound : Math.min(year.max, bound) || 1;
     const polarity = metricPolarity(metric);
     const good = palette.flow.positive;
     const bad = palette.flow.negative;
@@ -77,9 +90,11 @@ export function CalendarHeatmapView({
       },
       visualMap: {
         type: 'continuous' as const,
-        min: diverging ? -bound : Math.min(0, year.min),
-        max: diverging ? bound : year.max || 1,
+        min: low,
+        max: high,
         calculable: false,
+        text: [`${format.compact(metric, high)}+`, format.compact(metric, low)],
+        textGap: 6,
         orient: 'horizontal' as const,
         left: 'center',
         bottom: 0,
@@ -87,7 +102,6 @@ export function CalendarHeatmapView({
         itemWidth: 10,
         inRange: { color: inRange },
         textStyle: { color: chrome.axisText, fontSize: 10 },
-        formatter: (value: number) => format.compact(metric, value),
       },
       calendar: {
         range: String(year.year),
@@ -98,7 +112,11 @@ export function CalendarHeatmapView({
         cellSize: ['auto', 'auto'],
         orient: 'horizontal' as const,
         splitLine: { show: false },
-        itemStyle: { color: chrome.surface, borderColor: chrome.grid, borderWidth: 2 },
+        itemStyle: {
+          color: withAlpha(palette.series[0], 0.05),
+          borderColor: chrome.surface,
+          borderWidth: 3,
+        },
         yearLabel: { show: false },
         dayLabel: {
           firstDay: 1,

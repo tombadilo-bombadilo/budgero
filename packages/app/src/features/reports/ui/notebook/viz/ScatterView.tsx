@@ -39,7 +39,7 @@ export function ScatterView({ result, columns, source, fitHeight, className }: V
       axisLine: { lineStyle: { color: chrome.axisLine } },
     });
     return {
-      grid: { left: 24, right: 24, top: 16, bottom: 28, containLabel: true },
+      grid: { left: 64, right: 24, top: 16, bottom: 44, containLabel: false },
       xAxis: axis(data.xMetric, columnLabel(source, data.xMetric), true),
       yAxis: axis(data.yMetric, columnLabel(source, data.yMetric), false),
       tooltip: {

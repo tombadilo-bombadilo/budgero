@@ -153,7 +153,7 @@ function TrendTile({
   const ArrowIcon = direction > 0 ? ArrowUpRight : direction < 0 ? ArrowDownRight : ArrowRight;
   const percent =
     change?.ratio !== null && change?.ratio !== undefined
-      ? `${change.ratio > 0 ? '+' : ''}${(change.ratio * 100).toFixed(1)}%`
+      ? `${change.ratio > 0 ? '+' : change.ratio < 0 ? '−' : ''}${Math.abs(change.ratio * 100).toFixed(1)}%`
       : null;
   const deltaText = change
     ? `${change.delta > 0 ? '+' : change.delta < 0 ? '−' : ''}${format.cell(metric, Math.abs(change.delta))}`
