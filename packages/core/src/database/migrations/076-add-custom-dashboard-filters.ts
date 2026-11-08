@@ -3,8 +3,8 @@ import { createLogger } from '../../logger.js';
 
 const debugLog = createLogger('database:migrations');
 
-export const migration075: Migration = {
-  version: 75,
+export const migration076: Migration = {
+  version: 76,
   description: 'Add dashboard-level filters to custom dashboards',
   up: (db: MigrationDatabase) => {
     try {
