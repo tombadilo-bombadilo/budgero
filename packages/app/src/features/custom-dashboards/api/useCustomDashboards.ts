@@ -54,7 +54,13 @@ export function useUpdateCustomDashboard() {
   return useMutation<
     CustomDashboard,
     Error,
-    { id: string; budgetId: number; name?: string; sortOrder?: number }
+    {
+      id: string;
+      budgetId: number;
+      name?: string;
+      sortOrder?: number;
+      filters?: CustomDashboard['filters'];
+    }
   >({
     mutationFn: async (data) => {
       const { result } = await runtime.mutationsRouter().execute<CustomDashboard>({
@@ -63,6 +69,7 @@ export function useUpdateCustomDashboard() {
           id: data.id,
           name: data.name,
           sortOrder: data.sortOrder,
+          ...(data.filters !== undefined ? { filters: data.filters } : {}),
         },
         meta: { label: 'useUpdateCustomDashboard' },
       });

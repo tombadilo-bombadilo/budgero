@@ -5,3 +5,5 @@ export * from './header';
 export { upgradeLegacySpec } from './legacy-v1';
 export * from './expression';
 export * from './drill';
+export * from './periods';
+export * from './dashboard-filters';

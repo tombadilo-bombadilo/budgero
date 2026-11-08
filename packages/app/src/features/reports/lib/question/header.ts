@@ -32,6 +32,7 @@ function compactQuestion(spec: QuestionSpec): Record<string, unknown> {
     visualization: spec.visualization,
     ...(spec.stacking !== 'auto' ? { stacking: spec.stacking } : {}),
     ...(spec.customColumns?.length ? { customColumns: spec.customColumns } : {}),
+    ...(spec.display ? { display: spec.display } : {}),
   };
 }
 

@@ -1096,6 +1096,10 @@ msgstr "{funded} sur {target} · atteint {monthsMet}/{monthsWithTarget} mois"
 msgid "{funded}% funded"
 msgstr "{funded} % financé"
 
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "{goalShare}% of the {goalText} goal"
+msgstr "{goalShare} % de l’objectif de {goalText}"
+
 #: src/pages/analytics/components/GoalFundingList.tsx
 msgid "{groupFunded} of {groupTarget}"
 msgstr "{groupFunded} sur {groupTarget}"
@@ -1145,6 +1149,10 @@ msgstr "Granularité de {label}"
 #: src/pages/settings/push-api/usePushApiState.ts
 msgid "{label} ID copied: {id}"
 msgstr "ID {label} copié : {id}"
+
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "{label}: {count} selected"
+msgstr "{label} : {count} sélectionnés"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "{label}: ascending. Switch to descending"
@@ -1355,6 +1363,10 @@ msgstr "{restoredCount, plural, one {# transaction restaurée.} other {# transac
 msgid "{revalued, plural, one {Today's cache refetched; # account revalued.} other {Today's cache refetched; # accounts revalued.}}"
 msgstr "{revalued, plural, one {Cache du jour rechargé ; # compte réévalué.} other {Cache du jour rechargé ; # comptes réévalués.}}"
 
+#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
+msgid "{rowCount} rows × {colCount} columns"
+msgstr "{rowCount} lignes × {colCount} colonnes"
+
 #: src/features/reports/ui/notebook/QuestionResult.tsx
 msgid "{rowCountText} rows"
 msgstr "{rowCountText} lignes"
@@ -1415,6 +1427,10 @@ msgstr "{upcomingCount} à venir"
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
 msgid "{visibleCount}/{0} series visible"
 msgstr "{visibleCount}/{0} séries visibles"
+
+#: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
+msgid "{yearText}: {total} over {activeDays} days"
+msgstr "{yearText} : {total} sur {activeDays} jours"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "% of total"
@@ -2951,6 +2967,10 @@ msgstr "Une métrique a besoin d’une agrégation, comme Sum([Montant]) ou Coun
 msgid "A new Budgero build is ready to install. Refresh now to load the latest features and fixes."
 msgstr "Une nouvelle version de Budgero est prête à être installée. Actualisez maintenant pour profiter des dernières fonctionnalités et corrections."
 
+#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
+msgid "A pivot table needs two groupings and a metric."
+msgstr "Un tableau croisé nécessite deux regroupements et une métrique."
+
 #: src/pages/settings/AboutPage.tsx
 msgid "A quick overview of this Budgero installation, including version and useful links."
 msgstr "Un aperçu rapide de cette installation de Budgero, incluant la version et des liens utiles."
@@ -3150,6 +3170,7 @@ msgstr "Compte<0/>"
 #: src/features/transactions/ui/form/AccountSelect.tsx
 #: src/pages/accounts/AccountsPage.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
 #: src/widgets/navigation/MobileBottomNav.tsx
@@ -3289,6 +3310,10 @@ msgstr "Ajoutez un taux personnalisé pour remplacer les taux de change récupé
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
 msgid "Add a description..."
 msgstr "Ajouter une description..."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Add a metric in Summarize first."
+msgstr "Ajoutez d’abord une métrique dans Résumer."
 
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Add a new user to this deployment. Share the password securely."
@@ -3573,6 +3598,7 @@ msgstr "Algorithme"
 
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 #: src/features/import/ui/steps/PreviewStep.tsx
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 #: src/pages/reports/ReportsHomePage.tsx
 msgid "All"
 msgstr "Tout"
@@ -3587,6 +3613,7 @@ msgid "ALL 5 SEATS FILLED"
 msgstr "LES 5 PLACES SONT PRISES"
 
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "All accounts"
 msgstr "Tous les comptes"
 
@@ -3618,6 +3645,10 @@ msgstr "Toutes les catégories déjà à zéro"
 #: src/features/budget-planning/ui/assign-dropdown/useAssignDropdownState.tsx
 msgid "All categories already have available amounts at zero!"
 msgstr "Toutes les catégories ont déjà un montant disponible à zéro !"
+
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "All category groups"
+msgstr "Tous les groupes de catégories"
 
 #: src/pages/admin/AdminDashboard.tsx
 #: src/widgets/dashboard/UncategorizedTransactionsCard.tsx
@@ -3674,6 +3705,7 @@ msgstr "Tout l'historique"
 
 #: src/pages/accounts/components/ValueChangeStat.tsx
 #: src/pages/analytics/analytics-state.ts
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "All time"
 msgstr "Depuis le début"
 
@@ -3999,6 +4031,7 @@ msgstr "Appliqué uniquement le premier mois de l'échéancier."
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/import/ui/steps/configure/TemplatesTab.tsx
 #: src/pages/admin/SignupsSection.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Apply"
 msgstr "Appliquer"
 
@@ -4291,6 +4324,10 @@ msgstr "Remplissage automatique"
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Automatic"
 msgstr "Automatique"
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Automatic (own axis when units differ)"
+msgstr "Automatique (axe propre si les unités diffèrent)"
 
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "Automatically categorize uncategorized transactions using AI analysis of payee names and memos."
@@ -5098,6 +5135,11 @@ msgstr "Cadence"
 msgid "Calculating…"
 msgstr "Calcul en cours…"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+#: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
+msgid "Calendar heatmap"
+msgstr "Calendrier thermique"
+
 #: src/features/ai/ui/receipt-scanner/useReceiptCamera.ts
 msgid "Camera access denied"
 msgstr "Accès à la caméra refusé"
@@ -5152,6 +5194,7 @@ msgstr "Dollar canadien"
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/pages/custom-dashboards/components/PinChartDialog.tsx
@@ -5322,6 +5365,10 @@ msgstr "Catégorie supprimée"
 msgid "Category group"
 msgstr "Groupe de catégories"
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "Category groups"
+msgstr "Groupes de catégories"
+
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
 msgid "Category is set automatically for on-budget transfers"
@@ -5474,12 +5521,16 @@ msgstr "Données du graphique exportées en CSV"
 msgid "Chart removed from report"
 msgstr "Graphique supprimé du rapport"
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Chart settings"
+msgstr "Paramètres du graphique"
+
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Chart title..."
 msgstr "Titre du graphique..."
 
-#: src/features/reports/ui/notebook/QuestionResult.tsx
+#: src/features/reports/ui/notebook/viz/ChartTypePicker.tsx
 msgid "Chart type"
 msgstr "Type de graphique"
 
@@ -5746,6 +5797,10 @@ msgstr "Effacer le budget par défaut"
 msgid "Clear default workspace"
 msgstr "Effacer l'espace de travail par défaut"
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "Clear filters"
+msgstr "Effacer les filtres"
+
 #: src/features/labels/ui/LabelCombobox.tsx
 msgid "Clear label"
 msgstr "Effacer l'étiquette"
@@ -5756,6 +5811,7 @@ msgstr "Effacer le bénéficiaire"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Clear selection"
 msgstr "Effacer la sélection"
 
@@ -6013,6 +6069,14 @@ msgstr "Colonnes ({columnCount})"
 msgid "Columns to show"
 msgstr "Colonnes à afficher"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Combo"
+msgstr "Combiné"
+
+#: src/features/reports/ui/notebook/viz/ComboView.tsx
+msgid "Combo chart"
+msgstr "Graphique combiné"
+
 #: src/pages/settings/AppearancePage.tsx
 msgid "Comfortable"
 msgstr "Confortable"
@@ -6045,6 +6109,10 @@ msgstr "Les lignes compactes affichent plus de catégories à l’écran (vue ta
 msgid "Compact rows fit more transactions on screen (desktop register)."
 msgstr "Les lignes compactes affichent plus de transactions à l’écran (registre sur ordinateur)."
 
+#: src/features/reports/ui/notebook/viz/viz-meta.ts
+msgid "Compare"
+msgstr "Comparer"
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Compare to previous period"
 msgstr "Comparer à la période précédente"
@@ -6057,6 +6125,10 @@ msgstr "Comparer avec la ligne {0} de ce fichier."
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Compare, running total, moving average, % of total"
 msgstr "Comparaison, cumul, moyenne mobile, % du total"
+
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "Comparing with the period before…"
+msgstr "Comparaison avec la période précédente…"
 
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "Complete contiguous Split (1/n)…Split (n/n) sequences will be imported as split transactions automatically."
@@ -6423,6 +6495,10 @@ msgstr "Impossible de supprimer la requête."
 msgid "Could not duplicate transactions"
 msgstr "Impossible de dupliquer les transactions"
 
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Could not export a widget"
+msgstr "Impossible d’exporter un widget"
+
 #: src/features/ai/ui/receipt-scanner/useReceiptScannerState.ts
 msgid "Could not extract any transactions from this image."
 msgstr "Impossible d'extraire des transactions de cette image."
@@ -6486,6 +6562,14 @@ msgstr "Impossible d’enregistrer les paramètres des transactions en double"
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 msgid "Could not save the accepted import. You can cancel it safely."
 msgstr "Impossible d'enregistrer l'import accepté. Vous pouvez l'annuler sans risque."
+
+#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
+msgid "Could not save the chart image"
+msgstr "Impossible d’enregistrer l’image du graphique"
+
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Could not save the dashboard filters"
+msgstr "Impossible d’enregistrer les filtres du tableau de bord"
 
 #: src/pages/settings/components/CalendarSettingsCard.tsx
 msgid "Could not save the first day of the week"
@@ -7034,8 +7118,13 @@ msgid "Custom metric…"
 msgstr "Métrique personnalisée…"
 
 #: src/pages/analytics/analytics-state.ts
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Custom range"
 msgstr "Période personnalisée"
+
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "Custom range…"
+msgstr "Période personnalisée…"
 
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
 msgid "Custom widget title (optional)"
@@ -7116,6 +7205,14 @@ msgstr "Sombre avec une chaleur cuivrée."
 #: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Dashboard"
 msgstr "Tableau de bord"
+
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "Dashboard filters"
+msgstr "Filtres du tableau de bord"
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "Dashboard filters applied"
+msgstr "Filtres du tableau de bord appliqués"
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "Dashboard name"
@@ -7213,6 +7310,7 @@ msgstr "Format de date"
 msgid "DATE FORMAT"
 msgstr "FORMAT DE DATE"
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/settings/components/DuplicateHintSettingsCard.tsx
 msgid "Date range"
 msgstr "Plage de dates"
@@ -7317,6 +7415,10 @@ msgstr "Séparateur décimal"
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Decision"
 msgstr "Décision"
+
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
+msgid "Decrease"
+msgstr "Baisse"
 
 #: src/pages/onboarding/steps/DoneStep.tsx
 msgid "Decrypting shared workspace key and joining…"
@@ -7723,9 +7825,17 @@ msgstr "Point (.)"
 msgid "Double amount"
 msgstr "Doubler le montant"
 
+#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
+msgid "Download"
+msgstr "Télécharger"
+
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Download a backup first if you are unsure."
 msgstr "Téléchargez d'abord une sauvegarde en cas de doute."
+
+#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
+msgid "Download CSV"
+msgstr "Télécharger le CSV"
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Download CSV Files"
@@ -7738,6 +7848,14 @@ msgstr "Échec du téléchargement"
 #: src/pages/settings/subscription/PlanSelection.tsx
 msgid "Download invoices and payment history"
 msgstr "Télécharger les factures et l'historique de paiement"
+
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Download one CSV per widget"
+msgstr "Télécharger un CSV par widget"
+
+#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
+msgid "Download PNG"
+msgstr "Télécharger le PNG"
 
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Download SQLite"
@@ -7754,6 +7872,10 @@ msgstr "Téléchargez les données de votre budget avant la fin de votre abonnem
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Download your data for backup or analysis"
 msgstr "Téléchargez vos données pour sauvegarde ou analyse"
+
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Downloaded {exported} CSV files"
+msgstr "{exported} fichiers CSV téléchargés"
 
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "Downloaded the server copy"
@@ -8645,6 +8767,10 @@ msgstr "Exportez des sauvegardes, restaurez des instantanés et gérez les donn�
 msgid "Export CSV"
 msgstr "Export CSV"
 
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Export CSVs"
+msgstr "Exporter les CSV"
+
 #: src/features/subscription/ui/ExportDataCard.tsx
 msgid "Export failed. Please try again."
 msgstr "Échec de l'export. Réessayez."
@@ -9290,6 +9416,14 @@ msgstr "Moyenne simple"
 msgid "Flow"
 msgstr "Flux"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Flow (Sankey)"
+msgstr "Flux (Sankey)"
+
+#: src/features/reports/ui/notebook/viz/SankeyView.tsx
+msgid "Flow chart"
+msgstr "Diagramme de flux"
+
 #: src/features/bank-sync/ui/EnableBankingSetupCard.tsx
 msgid "For a Production app, use \"Activate by linking accounts\" and link every account you want to sync. Accounts you don't link there come back empty."
 msgstr "Pour une application Production, utilisez « Activate by linking accounts » et liez chaque compte à synchroniser. Les comptes non liés reviennent vides."
@@ -9411,6 +9545,7 @@ msgstr "Ami ou collègue"
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "From"
 msgstr "De"
@@ -9618,6 +9753,10 @@ msgstr "Financement des objectifs"
 msgid "Goal funding (this period)"
 msgstr "Financement de l'objectif (cette période)"
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Goal line"
+msgstr "Ligne d’objectif"
+
 #: src/pages/onboarding/steps/GoalStep.tsx
 msgid "GOAL NAME"
 msgstr "NOM DE L'OBJECTIF"
@@ -9629,6 +9768,10 @@ msgstr "Type d'objectif"
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "Goal updated"
 msgstr "Objectif mis à jour"
+
+#: src/features/reports/ui/notebook/viz/display.ts
+msgid "Goal: {value}"
+msgstr "Objectif : {value}"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Goal: have this amount available, with no date and no repeat"
@@ -10372,6 +10515,10 @@ msgstr "Entrant : {0}"
 msgid "Incomplete end condition"
 msgstr "Condition de fin incomplète"
 
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
+msgid "Increase"
+msgstr "Hausse"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Increase savings to reach your {target} monthly goal"
 msgstr "Augmentez votre épargne pour atteindre votre objectif mensuel de {target}"
@@ -10658,6 +10805,10 @@ msgstr "Son objectif est supprimé."
 msgid "Its history was moved to the selected income category."
 msgstr "Son historique a été transféré dans la catégorie de revenus sélectionnée."
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Its own axis"
+msgstr "Son propre axe"
+
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Japanese Yen"
 msgstr "Yen japonais"
@@ -10849,7 +11000,12 @@ msgstr "Étiquettes ({count})"
 msgid "Labels will be removed from the selected transactions."
 msgstr "Les étiquettes seront retirées des transactions sélectionnées."
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Largest first"
+msgstr "Les plus grands d’abord"
+
 #: src/pages/analytics/analytics-state.ts
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Last 12 months"
 msgstr "12 derniers mois"
 
@@ -10858,6 +11014,7 @@ msgid "Last 24 months"
 msgstr "24 derniers mois"
 
 #: src/pages/analytics/analytics-state.ts
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Last 3 months"
 msgstr "3 derniers mois"
 
@@ -10866,6 +11023,7 @@ msgid "Last 30 days"
 msgstr "30 derniers jours"
 
 #: src/pages/analytics/analytics-state.ts
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Last 6 months"
 msgstr "6 derniers mois"
 
@@ -10897,6 +11055,7 @@ msgstr "Dernière connexion"
 msgid "Last Login"
 msgstr "Dernière connexion"
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Last month"
 msgstr "Mois dernier"
@@ -10952,6 +11111,7 @@ msgstr "Dernière utilisation pour « {name} » le {0}"
 msgid "Last week"
 msgstr "Semaine dernière"
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Last year"
 msgstr "Année dernière"
@@ -11047,6 +11207,7 @@ msgid "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (de
 msgstr "Les anciennes charges utiles sans le champ <0>\"v\"</0> sont traitées comme le format 1 (montants décimaux, ex. <1>25.50</1>) et mises à niveau lors de l'import. Les nouvelles intégrations devraient envoyer le format 2."
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Legend"
 msgstr "Légende"
 
@@ -12204,13 +12365,49 @@ msgstr "Nécessaire pour chiffrer la clé de l'espace partagé sur cet appareil.
 msgid "NEEDS"
 msgstr "BESOINS"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs a grouping (Summarize by)."
+msgstr "Nécessite un regroupement (Résumer par)."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs a grouping and two metrics."
+msgstr "Nécessite un regroupement et deux métriques."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs a grouping that isn’t a date, like Category."
+msgstr "Nécessite un regroupement qui n’est pas une date, comme Catégorie."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs exactly one grouping."
+msgstr "Nécessite exactement un regroupement."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs exactly two groupings."
+msgstr "Nécessite exactement deux regroupements."
+
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Needs onboarding"
 msgstr "Onboarding nécessaire"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs one grouping by date, by day."
+msgstr "Nécessite un regroupement par date, par jour."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs one grouping by date, or no grouping and a date filter with a range."
+msgstr "Nécessite un regroupement par date, ou aucun regroupement et un filtre de date avec une période."
+
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Needs review"
 msgstr "À vérifier"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs two groupings that aren’t dates, like Category group and Category."
+msgstr "Nécessite deux regroupements qui ne sont pas des dates, comme Groupe de catégories et Catégorie."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs two metrics and one grouping."
+msgstr "Nécessite deux métriques et un regroupement."
 
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
@@ -12732,6 +12929,10 @@ msgstr "Aucune date trouvée — date du jour utilisée"
 msgid "No description"
 msgstr "Aucune description"
 
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "No earlier period to compare with."
+msgstr "Aucune période antérieure à comparer."
+
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "No earlier versions yet. One is kept each time this workspace syncs."
 msgstr "Aucune version précédente pour l’instant. Une copie est conservée à chaque synchronisation de cet espace de travail."
@@ -12830,6 +13031,7 @@ msgid "No labels yet."
 msgstr "Aucune étiquette pour le moment."
 
 #: src/features/reports/ui/notebook/FilterEditor.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "No matches."
 msgstr "Aucun résultat."
 
@@ -13170,6 +13372,7 @@ msgstr "Aucun espace de travail pour le moment. Utilisez le bouton ci-dessus pou
 #: src/features/import/ui/steps/CompleteStep.tsx
 #: src/features/import/ui/steps/configure/FormattingTab.tsx
 #: src/features/import/ui/steps/configure/MappingTab.tsx
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -13204,6 +13407,10 @@ msgstr "Non supprimés"
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Not empty"
 msgstr "Non vide"
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "Not filtered"
+msgstr "Non filtré"
 
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Not in Clerk"
@@ -13258,6 +13465,12 @@ msgid "Nothing to apply — no assignments last month."
 msgstr "Rien à appliquer — aucune affectation le mois dernier."
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
+#: src/features/reports/ui/notebook/viz/ComboView.tsx
+#: src/features/reports/ui/notebook/viz/RowChartView.tsx
+#: src/features/reports/ui/notebook/viz/SankeyView.tsx
+#: src/features/reports/ui/notebook/viz/ScatterView.tsx
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 msgid "Nothing to chart for these rows."
 msgstr "Rien à représenter pour ces lignes."
 
@@ -13342,6 +13555,10 @@ msgstr "Nombre de transactions"
 #: src/features/account-management/ui/DevSeedTransactionsButton.tsx
 msgid "Number of transactions to seed"
 msgstr "Nombre de transactions à générer"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Number with trend"
+msgstr "Nombre avec tendance"
 
 #: src/pages/onboarding/onboarding-data.ts
 #: src/shared/lib/theme/presets.ts
@@ -13738,6 +13955,10 @@ msgstr "Durée initiale (années)"
 msgid "Other"
 msgstr "Autre"
 
+#: src/features/reports/ui/notebook/viz/SankeyView.tsx
+msgid "Other ({count})"
+msgstr "Autres ({count})"
+
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Other ({foldedCount} more)"
 msgstr "Autre ({foldedCount} de plus)"
@@ -13747,8 +13968,15 @@ msgstr "Autre ({foldedCount} de plus)"
 #~ msgstr "Autres ({foldedCount} de plus) — examiner"
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/RowChartView.tsx
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 msgid "Other ({otherCount})"
 msgstr "Autres ({otherCount})"
+
+#: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/RowChartView.tsx
+msgid "Other ({otherXCount})"
+msgstr "Autres ({otherXCount})"
 
 #: src/entities/account/model/accountTypes.ts
 msgid "Other Asset"
@@ -13838,6 +14066,7 @@ msgstr "Au-dessus du rythme"
 msgid "Over plan"
 msgstr "Au-dessus du plan"
 
+#: src/features/reports/ui/notebook/viz/viz-meta.ts
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Over time"
 msgstr "Au fil du temps"
@@ -13961,6 +14190,10 @@ msgstr "Une partie de l'application a cessé de fonctionner"
 #: src/widgets/sync-status/ConnectivityStatus.tsx
 msgid "Partial"
 msgstr "Partiel"
+
+#: src/features/reports/ui/notebook/viz/viz-meta.ts
+msgid "Parts and flows"
+msgstr "Parts et flux"
 
 #: src/pages/admin/SelfHostAdminUsers.tsx
 #: src/pages/auth/AuthPage.tsx
@@ -14317,6 +14550,18 @@ msgstr "Graphique circulaire"
 #: src/pages/admin/SelfHostInstallsSection.tsx
 msgid "Pings by version, last {0} days"
 msgstr "Pings par version, {0} derniers jours"
+
+#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
+msgid "pivot"
+msgstr "tableau-croise"
+
+#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
+msgid "Pivot CSV"
+msgstr "CSV croisé"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Pivot table"
+msgstr "Tableau croisé"
 
 #: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
@@ -15000,6 +15245,10 @@ msgstr "Question"
 msgid "Question deleted"
 msgstr "Question supprimée"
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Question order"
+msgstr "Ordre de la question"
+
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 msgid "Question saved"
 msgstr "Question enregistrée"
@@ -15480,6 +15729,10 @@ msgstr "Expression régulière"
 #~ msgid "Reject all"
 #~ msgstr "Tout refuser"
 
+#: src/features/reports/ui/notebook/viz/viz-meta.ts
+msgid "Relationships"
+msgstr "Relations"
+
 #: src/app/system/AppErrorBoundary.tsx
 msgid "Reload"
 msgstr "Recharger"
@@ -15812,6 +16065,10 @@ msgstr "Échec de la réinitialisation"
 msgid "Reset password"
 msgstr "Réinitialiser le mot de passe"
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Reset settings"
+msgstr "Réinitialiser les paramètres"
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Reset to default columns"
 msgstr "Revenir aux colonnes par défaut"
@@ -16091,6 +16348,10 @@ msgstr "Rôle : {0}{1}"
 msgid "round() takes a whole number of digits from −10 to 10."
 msgstr "round() attend un nombre entier de décimales entre −10 et 10."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Row"
+msgstr "Lignes horizontales"
+
 #. placeholder {0}: plan.index + 1
 #. placeholder {1}: row.Currency
 #: src/features/import/lib/plan-file-import.ts
@@ -16111,6 +16372,10 @@ msgstr "Ligne {0} : {1}"
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Row / account"
 msgstr "Ligne / compte"
+
+#: src/features/reports/ui/notebook/viz/RowChartView.tsx
+msgid "Row chart"
+msgstr "Graphique à barres horizontales"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Row density"
@@ -16239,6 +16504,7 @@ msgid "Running question…"
 msgstr "Exécution de la question…"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 msgid "Running total"
 msgstr "Cumul"
 
@@ -16474,6 +16740,14 @@ msgstr "L'objectif d'épargne de {savingsTargetPct}% a été atteint dans {hit} 
 msgid "Scanning failed"
 msgstr "Échec de l'analyse"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Scatter"
+msgstr "Nuage de points"
+
+#: src/features/reports/ui/notebook/viz/ScatterView.tsx
+msgid "Scatter chart"
+msgstr "Nuage de points"
+
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/shared/lib/analytics/visualization-labels.ts
@@ -16651,6 +16925,7 @@ msgid "Search: groceries, last 30 days, outflows..."
 msgstr "Rechercher : courses, 30 derniers jours, sorties..."
 
 #: src/features/reports/ui/notebook/FilterEditor.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Search…"
 msgstr "Rechercher…"
 
@@ -16667,6 +16942,10 @@ msgstr "Moyenne saisonnière{0}"
 #: src/pages/onboarding/steps/ShareStep.tsx
 msgid "SEATS USED"
 msgstr "PLACES UTILISÉES"
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Second metric’s axis"
+msgstr "Axe de la deuxième métrique"
 
 #: src/app/startup/StartupStepper.tsx
 msgid "Security"
@@ -17226,6 +17505,7 @@ msgstr "Configurez des transactions récurrentes pour créer automatiquement des
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/layout/desktop-shell/SidebarNav.tsx
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
 #: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Settings"
@@ -17271,6 +17551,10 @@ msgstr "Les collaborateurs invités peuvent consulter les espaces de travail aux
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Shared collaborators can’t export workspace data. Ask the workspace owner to download it for you."
 msgstr "Les collaborateurs invités ne peuvent pas exporter les données de l'espace de travail. Demandez au propriétaire de l'espace de travail de les télécharger pour vous."
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Shared with the bars"
+msgstr "Partagé avec les barres"
 
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "Shared Workspace Unavailable"
@@ -17411,6 +17695,10 @@ msgstr "Afficher la colonne objectif"
 msgid "Show the next 30 days"
 msgstr "Afficher les 30 prochains jours"
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Show the top"
+msgstr "Afficher les premiers"
+
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show uncategorized only"
 msgstr "Afficher uniquement les non catégorisées"
@@ -17422,6 +17710,10 @@ msgstr "Afficher uniquement les non pointées"
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 msgid "Show upcoming"
 msgstr "Afficher les échéances"
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Show values"
+msgstr "Afficher les valeurs"
 
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
 #~ msgid "Show where this credit-card debt came from"
@@ -17488,6 +17780,10 @@ msgstr "Affichage des non pointées"
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Showing what would be affected. No changes were made."
 msgstr "Affichage des éléments qui seraient affectés. Aucune modification n'a été effectuée."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Shows a single value: remove the groupings."
+msgstr "Affiche une seule valeur : supprimez les regroupements."
 
 #: src/features/reports/ui/notebook/QuestionResult.tsx
 msgid "Side by side"
@@ -17643,6 +17939,10 @@ msgstr "Petit"
 msgid "Smaller cards, Activity hidden."
 msgstr "Cartes plus petites, Activité masquée."
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Smallest first"
+msgstr "Les plus petits d’abord"
+
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Snapshot updated"
 msgstr "Instantané mis à jour"
@@ -17688,6 +17988,10 @@ msgstr "Désolé, j'ai rencontré une erreur lors de la génération d'une répo
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Sort"
 msgstr "Tri"
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Sort bars"
+msgstr "Trier les barres"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/pages/settings/ImportsPage.tsx
@@ -17909,6 +18213,10 @@ msgstr "Requête SQL"
 #: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "SQL Query"
 msgstr "Requête SQL"
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "SQL reports run as written; dashboard filters only apply to questions built in the notebook."
+msgstr "Les rapports SQL s’exécutent tels quels ; les filtres du tableau de bord ne s’appliquent qu’aux questions créées dans le notebook."
 
 #: src/features/reports/ui/notebook/QuestionResult.tsx
 msgid "Stacked"
@@ -18732,6 +19040,10 @@ msgstr "Le rappel peut réapparaître tant que cela ne fonctionne pas."
 msgid "The report has been deleted successfully."
 msgstr "Le rapport a été supprimé avec succès."
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "The rest are added up as “Other”."
+msgstr "Le reste est regroupé dans « Autres »."
+
 #: src/features/import/ui/steps/configure/MappingTab.tsx
 msgid "The selected date column has no year (e.g. \"Oct 25\"). All transactions will be imported using this year. Change it if the statement covers a different year."
 msgstr "La colonne de date sélectionnée n'a pas d'année (par ex. « 25 oct. »). Toutes les transactions seront importées en utilisant cette année. Modifiez-la si le relevé couvre une année différente."
@@ -18837,6 +19149,10 @@ msgstr "Puis {monthly}/mois ou {yearly}/an, taxes comprises."
 #: src/pages/analytics/report-answers.ts
 msgid "There are no account balances in this period yet."
 msgstr "Aucun solde de compte sur cette période pour l'instant."
+
+#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
+msgid "There is no chart to save as an image."
+msgstr "Il n’y a pas de graphique à enregistrer en image."
 
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "There is no server copy to download yet."
@@ -19028,6 +19344,7 @@ msgstr "Cette dette a un solde positif."
 msgid "This liability now has a positive balance. There's nothing to pay off right now."
 msgstr "Cette dette a désormais un solde positif. Il n'y a rien à rembourser pour le moment."
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "This month"
 msgstr "Ce mois-ci"
@@ -19075,6 +19392,10 @@ msgstr "Cette question n’a pas pu être exécutée"
 #: src/pages/reports/question/QuestionPage.tsx
 msgid "This question doesn’t exist"
 msgstr "Cette question n’existe pas"
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "This question’s data has no field the dashboard filters use."
+msgstr "Les données de cette question n’ont aucun champ utilisé par les filtres du tableau de bord."
 
 #: src/features/transactions/ui/cells/ExchangeRateCell.tsx
 msgid "This rate is over 1,000× different. Check the decimal point or confirm it."
@@ -19234,6 +19555,7 @@ msgstr "Cet espace de travail est verrouillé car votre abonnement est inactif. 
 msgid "This XML file is not a CAMT.053 bank statement. Budgero only imports CAMT.053; other ISO 20022 messages (pain.*, camt.052, camt.054) are not supported."
 msgstr "Ce fichier XML n’est pas un relevé CAMT.053. Budgero importe uniquement CAMT.053 ; les autres messages ISO 20022 (pain.*, camt.052, camt.054) ne sont pas pris en charge."
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "This year"
 msgstr "Cette année"
@@ -19301,6 +19623,7 @@ msgstr "Titre (facultatif)"
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "To"
 msgstr "À"
@@ -19394,6 +19717,8 @@ msgstr "Bénéficiaire principal"
 msgid "Top payees by spending (30d)"
 msgstr "Top bénéficiaires par dépenses (30 j)"
 
+#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 #: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
@@ -19711,6 +20036,10 @@ msgstr "Considérez les montants actuels comme étant en {oldCurrency}. Par exem
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Treemap"
 msgstr "Treemap"
+
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "Trend"
+msgstr "Tendance"
 
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "Trial ended:"
@@ -20293,6 +20622,10 @@ msgstr "Mettre à jour vos configurations de rapport et de graphique."
 msgid "Updated {updated}"
 msgstr "Mis à jour le {updated}"
 
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "Updated {updatedAt}"
+msgstr "Mis à jour à {updatedAt}"
+
 #: src/shared/pwa/ServiceWorkerUpdateProvider.tsx
 msgid "Updates are unavailable in this environment."
 msgstr "Les mises à jour ne sont pas disponibles dans cet environnement."
@@ -20526,6 +20859,7 @@ msgstr "Date de valeur (quand l'argent a bougé)"
 msgid "values"
 msgstr "valeurs"
 
+#: src/features/reports/ui/notebook/viz/viz-meta.ts
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Values"
 msgstr "Valeurs"
@@ -20635,6 +20969,14 @@ msgstr "La saisie vocale n'est pas prise en charge par ce navigateur"
 msgid "vs {0}"
 msgstr "par rapport à {0}"
 
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "vs {previousPeriod}"
+msgstr "vs {previousPeriod}"
+
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "vs the period before"
+msgstr "vs la période précédente"
+
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Waiting"
 msgstr "En attente"
@@ -20718,6 +21060,14 @@ msgstr "Garantie mise à jour"
 #: src/features/budget-management/model/icon-options.ts
 msgid "Water"
 msgstr "Eau"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Waterfall"
+msgstr "Cascade"
+
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
+msgid "Waterfall chart"
+msgstr "Graphique en cascade"
 
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 #~ msgid "We are loading your upcoming recurring occurrences."
@@ -21183,6 +21533,7 @@ msgid "year"
 msgstr "année"
 
 #: src/features/reports/ui/notebook/question-labels.ts
+#: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
 msgid "Year"
 msgstr "Année"
 
