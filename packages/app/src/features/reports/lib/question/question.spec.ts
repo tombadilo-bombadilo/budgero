@@ -17,6 +17,7 @@ import {
   normalizeQuestion,
   operatorsFor,
   questionColumnKeys,
+  questionColumns,
   resolveStacking,
   resolveVisualization,
   type QuestionSpec,
@@ -468,5 +469,158 @@ describe('stacking', () => {
       stacking: 'stacked',
     });
     expect(resolveStacking(spec, 'bar')).toBe('none');
+  });
+});
+
+describe('custom columns, custom metrics and metric options', () => {
+  it('keeps valid custom columns in canonical form and drops broken ones', () => {
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      customColumns: [
+        { id: 'expr_1', name: '  Abs   amount ', expression: 'ABS([Amount])' },
+        { id: 'expr_2', name: 'Bad', expression: 'abs([Nope])' },
+        { id: 'expr_3', name: 'Uses later', expression: '[expr_4] + 1' },
+        { id: 'expr_4', name: 'abs amount', expression: '1' }, // duplicate name
+        { id: 'oops', name: 'Bad id', expression: '1' },
+        { id: 'expr_5', name: 'Has [bracket]', expression: '1' },
+        { id: 'expr_6', name: 'Agg', expression: 'Sum([amount])' },
+        { id: 'expr_7', name: 'Twice', expression: '[expr_1] * 2' },
+        { id: 'expr_7', name: 'Dupe id', expression: '1' },
+        'junk',
+      ],
+    });
+    expect(spec.customColumns).toEqual([
+      { id: 'expr_1', name: 'Abs amount', expression: 'abs([amount])' },
+      { id: 'expr_7', name: 'Twice', expression: '[expr_1] * 2' },
+    ]);
+    // Absent when empty, so older questions normalize unchanged.
+    expect('customColumns' in normalizeQuestion({ customColumns: [] })).toBe(false);
+  });
+
+  it('custom columns can be groupings, metric inputs, filters and raw columns', () => {
+    const customColumns = [{ id: 'expr_1', name: 'Size', expression: 'abs([amount])' }];
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      customColumns,
+      filters: [{ field: 'expr_1', op: 'gt', values: [10] }],
+      aggregations: [{ op: 'sum', field: 'expr_1' }],
+      breakouts: [{ field: 'expr_1' }],
+    });
+    expect(spec.filters).toHaveLength(1);
+    expect(questionColumns(spec)).toMatchObject([
+      { key: 'expr_1', kind: 'breakout', name: 'Size', format: 'money' },
+      { key: 'sum_expr_1', kind: 'aggregation', fieldName: 'Size', format: 'money' },
+    ]);
+    // Removing the column drops everything that used it.
+    const without = normalizeQuestion({ ...spec, customColumns: [] });
+    expect(without.filters).toEqual([]);
+    expect(without.breakouts).toEqual([]);
+    expect(without.aggregations).toEqual([]);
+  });
+
+  it('custom metrics: canonical expression, name, key and format', () => {
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [
+        { op: 'custom', name: 'Savings rate', expression: '(income - spending) / income * 100' },
+        { op: 'custom', name: 'Ünïcode €', expression: 'sum([Amount])' },
+        { op: 'custom', expression: 'abs([amount])' }, // not aggregated
+        { op: 'custom', name: 'X' }, // no expression
+      ],
+    });
+    expect(spec.aggregations).toEqual([
+      { op: 'custom', name: 'Savings rate', expression: '(Income - Spending) / Income * 100' },
+      { op: 'custom', name: 'Ünïcode €', expression: 'Sum([amount])' },
+    ]);
+    expect(questionColumns(spec)).toMatchObject([
+      { key: 'custom_savings_rate', format: 'number', name: 'Savings rate' },
+      { key: 'custom_unicode', format: 'money' },
+    ]);
+    // Budget metrics only exist on Transactions.
+    expect(
+      normalizeQuestion({
+        source: 'budget',
+        aggregations: [{ op: 'custom', expression: 'Spending' }],
+      }).aggregations
+    ).toEqual([]);
+  });
+
+  it('modifiers: kept with a date grouping, dropped without, window clamped', () => {
+    const dated = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [
+        { op: 'spending', modifier: 'moving', window: 500, compare: true },
+        { op: 'income', modifier: 'running', window: 4 },
+        { op: 'net', modifier: 'share' },
+        { op: 'count', modifier: 'bogus', compare: 'yes' },
+      ],
+      breakouts: [{ field: 'date', bucket: 'month' }],
+    });
+    expect(dated.aggregations).toEqual([
+      { op: 'spending', modifier: 'moving', window: 60, compare: true },
+      { op: 'income', modifier: 'running' },
+      { op: 'net', modifier: 'share' },
+      { op: 'count' },
+    ]);
+    expect(questionColumnKeys(dated)).toEqual([
+      'month',
+      'spending_moving_avg',
+      'spending_moving_avg_previous',
+      'spending_moving_avg_change',
+      'income_running_total',
+      'net_share',
+      'count',
+    ]);
+    const byCategory = normalizeQuestion({ ...dated, breakouts: [{ field: 'category' }] });
+    expect(byCategory.aggregations).toEqual([
+      { op: 'spending' },
+      { op: 'income' },
+      { op: 'net', modifier: 'share' },
+      { op: 'count' },
+    ]);
+    const single = normalizeQuestion({ ...dated, breakouts: [] });
+    expect(single.aggregations.every((aggregation) => !aggregation.modifier)).toBe(true);
+  });
+
+  it('saves custom parts in the header and reopens older questions unchanged', () => {
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      customColumns: [{ id: 'expr_1', name: 'Abs', expression: 'abs([amount])' }],
+      aggregations: [
+        { op: 'custom', name: 'Rate', expression: 'Spending / Income' },
+        { op: 'sum', field: 'expr_1', compare: true },
+      ],
+      breakouts: [{ field: 'date', bucket: 'month' }],
+      stacking: 'percent',
+    });
+    const saved = buildSavedQuestionQuery(spec, compileQuestion(spec, { budgetId: 1 }).sql);
+    expect(parseQuestionHeader(saved)).toEqual(spec);
+    const old = `${QUESTION_HEADER_PREFIX} {"source":"transactions","aggregations":[{"op":"spending"}],"breakouts":[{"field":"category"}],"visualization":"bar"}\nSELECT 1`;
+    expect(parseQuestionHeader(old)).toEqual(
+      normalizeQuestion({
+        source: 'transactions',
+        aggregations: [{ op: 'spending' }],
+        breakouts: [{ field: 'category' }],
+        visualization: 'bar',
+      })
+    );
+  });
+
+  it('compiles custom expressions without user text outside string literals', () => {
+    const { sql } = compile({
+      customColumns: [
+        { id: 'expr_1', name: "x'); DROP TABLE t; --", expression: `"a'; DROP TABLE t; --"` },
+      ],
+      aggregations: [
+        { op: 'custom', name: 'n', expression: `CountIf([payee] = "'; DELETE FROM t; --")` },
+      ],
+      breakouts: [{ field: 'expr_1' }],
+    });
+    expect(isReadOnlyQuery(stripLeadingSqlComments(sql))).toBe(true);
+    const withoutLiterals = sql.replace(/'(?:[^']|'')*'/g, "''");
+    expect(withoutLiterals).not.toMatch(/DROP|DELETE|--/);
+    // The column name is display-only: it never reaches the SQL.
+    expect(sql).not.toContain('DROP TABLE t; --"');
+    expect(sql).toContain(`'a''; DROP TABLE t; --' AS expr_1`);
   });
 });

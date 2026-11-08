@@ -10,9 +10,11 @@ import type * as DuckDbBlocking from '@duckdb/duckdb-wasm/blocking';
 import { TRANSACTIONS_ANALYTICS_VIEW_SQL } from '@shared/lib/sql/analytics-views';
 import { isReadOnlyQuery, stripLeadingSqlComments } from '@shared/lib/sql/read-only';
 import { compileQuestion } from './compile';
+import { applyDrill, rowDrillValues, type DrillAction } from './drill';
 import { buildSavedQuestionQuery, parseQuestionHeader } from './header';
 import {
   normalizeQuestion,
+  questionColumns,
   type QuestionFilter,
   type QuestionSpec,
   type RelativeUnit,
@@ -111,7 +113,14 @@ const ON_BUDGET: QuestionFilter = { field: 'on_budget', op: 'is', values: [true]
 /** "Today" for relative date filters (the node DuckDB build has no clock). */
 const TODAY = '2026-11-06';
 
+/** Rows of a question; hidden `<key>__key` columns (ids for drill-through) are left out. */
 function query(spec: Partial<QuestionSpec>, budgetId = 1): Record<string, unknown>[] {
+  return queryWithKeys(spec, budgetId).map((row) =>
+    Object.fromEntries(Object.entries(row).filter(([key]) => !key.endsWith('__key')))
+  );
+}
+
+function queryWithKeys(spec: Partial<QuestionSpec>, budgetId = 1): Record<string, unknown>[] {
   const full = normalizeQuestion({ source: 'transactions', ...spec });
   const { sql } = compileQuestion(full, { budgetId, today: TODAY });
   // Same path as a saved question: header line, then the executor strips it.
@@ -268,10 +277,13 @@ describe('Transactions source', () => {
     expect(months({ field: 'date', op: 'between', values: ['2026-02-01', '2026-02-28'] })).toEqual([
       { month: '2026-02', spending: 110 },
     ]);
+    // Feb 1–2 are in range but empty: the month still shows, with 0.
     expect(months({ field: 'date', op: 'before', values: ['2026-02-03'] })).toEqual([
       { month: '2026-01', spending: 50 },
+      { month: '2026-02', spending: 0 },
     ]);
     expect(months({ field: 'date', op: 'after', values: ['2026-02-21'] })).toEqual([
+      { month: '2026-02', spending: 0 },
       { month: '2026-03', spending: 60 },
     ]);
     expect(months({ field: 'date', op: 'is', values: ['2026-03-01'] })).toEqual([
@@ -305,8 +317,21 @@ describe('Transactions source', () => {
       );
     expect(by('quarter')).toEqual(['2026-Q1']);
     expect(by('year')).toEqual(['2026']);
-    expect(by('week')).toEqual(['2026-01-05', '2026-02-02', '2026-02-16', '2026-02-23']);
-    expect(by('day')).toEqual(['2026-01-05', '2026-02-03', '2026-02-21', '2026-03-01']);
+    // Empty buckets between the first and last row are filled in.
+    expect(by('week')).toEqual([
+      '2026-01-05',
+      '2026-01-12',
+      '2026-01-19',
+      '2026-01-26',
+      '2026-02-02',
+      '2026-02-09',
+      '2026-02-16',
+      '2026-02-23',
+    ]);
+    const days = by('day');
+    expect(days).toHaveLength(56); // 2026-01-05 … 2026-03-01
+    expect(days.slice(0, 2)).toEqual(['2026-01-05', '2026-01-06']);
+    expect(days.at(-1)).toBe('2026-03-01');
   });
 
   it('multiple groupings; limit keeps the top N of the non-date grouping', () => {
@@ -534,5 +559,366 @@ describe('legacy v1 builder headers', () => {
         dateRange: { preset: 'custom', from: '2026-02-01', to: '2026-02-28' },
       })
     ).toEqual([{ month: '2026-02', spending: 110 }]);
+  });
+});
+
+describe('power features', () => {
+  // Budget 4: two "Misc" categories in different groups, and no rows in February.
+  beforeAll(() => {
+    for (const statement of [
+      `INSERT INTO budgets VALUES (4, 'Power', 'EUR')`,
+      `INSERT INTO accounts VALUES (400, 'Main', 'Checking', 'EUR', 1, NULL, 4, 0, 0)`,
+      `INSERT INTO category_groups VALUES (41, 'Home', '', 0, 4), (42, 'Travel', '', 1, 4), (43, 'Income', '', 2, 4)`,
+      `INSERT INTO categories VALUES (410, 'Misc', '', 41, 0, 4), (420, 'Misc', '', 42, 0, 4), (421, 'Flights', '', 42, 1, 4), (430, 'Salary', '', 43, 0, 4)`,
+      `INSERT INTO transactions VALUES
+        (1001, 410, 400, NULL, 4, NULL, 'Shop', '2026-01-10', '', 0, 1, 0, 10000, 0, 10000, 0, 0, 1, 0, 0),
+        (1002, 420, 400, NULL, 4, NULL, 'Kiosk', '2026-01-20', '', 0, 1, 0, 20000, 0, 20000, 0, 0, 1, 0, 0),
+        (1003, 421, 400, NULL, 4, NULL, 'O''Air', '2026-03-05', '', 0, 0, 0, 300000, 0, 300000, 0, 0, 1, 0, 0),
+        (1004, 430, 400, NULL, 4, NULL, 'Employer', '2026-01-01', '', 0, 1, 1000000, 0, 1000000, 0, 0, 0, 1, 0, 0),
+        (1005, 430, 400, NULL, 4, NULL, 'Employer', '2026-03-01', '', 0, 1, 1000000, 0, 1000000, 0, 0, 0, 1, 0, 0),
+        (1006, 410, 400, NULL, 4, NULL, NULL, '2026-04-02', '', 0, 0, 0, 5000, 0, 5000, 0, 0, 1, 0, 0)`,
+    ]) {
+      conn.query(statement);
+    }
+  });
+
+  const power = (spec: Partial<QuestionSpec>) => tx(spec, 4);
+  const byMonth = { breakouts: [{ field: 'date', bucket: 'month' as const }] };
+
+  it('keeps same-name categories in different groups apart, labeled with their group', () => {
+    const rows = queryWithKeys(
+      {
+        filters: [NO_TRANSFERS],
+        aggregations: [{ op: 'spending' }],
+        breakouts: [{ field: 'category' }],
+      },
+      4
+    );
+    expect(rows).toEqual([
+      { category: 'Flights', spending: 300, category__key: 421 },
+      { category: 'Misc (Travel)', spending: 20, category__key: 420 },
+      { category: 'Misc (Home)', spending: 15, category__key: 410 },
+    ]);
+    // Only ambiguous names get the group.
+    expect(
+      power({
+        filters: [{ field: 'category', op: 'is', values: [410, 421] }],
+        aggregations: [{ op: 'spending' }],
+        breakouts: [{ field: 'category' }],
+      })
+    ).toEqual([
+      { category: 'Flights', spending: 300 },
+      { category: 'Misc', spending: 15 },
+    ]);
+  });
+
+  it('fills empty months with the empty-group value (0 for sums, null for averages)', () => {
+    expect(
+      power({ aggregations: [{ op: 'spending' }, { op: 'avg', field: 'outflow' }], ...byMonth })
+    ).toEqual([
+      { month: '2026-01', spending: 30, avg_outflow: 10 }, // salary line has outflow 0
+      { month: '2026-02', spending: 0, avg_outflow: null },
+      { month: '2026-03', spending: 300, avg_outflow: 150 },
+      { month: '2026-04', spending: 5, avg_outflow: 5 },
+    ]);
+    // A date filter widens the range to its bounds (capped at today).
+    const rows = power({
+      filters: [{ field: 'date', op: 'between', values: ['2025-12-01', '2026-05-31'] }],
+      aggregations: [{ op: 'count' }],
+      ...byMonth,
+    });
+    expect(rows.map((row) => row.month)).toEqual([
+      '2025-12',
+      '2026-01',
+      '2026-02',
+      '2026-03',
+      '2026-04',
+      '2026-05',
+    ]);
+    expect(rows[0].count).toBe(0);
+    // No matching rows at all: no zero-filled months.
+    expect(
+      power({
+        filters: [{ field: 'date', op: 'between', values: ['2020-01-01', '2020-12-31'] }],
+        aggregations: [{ op: 'spending' }],
+        ...byMonth,
+      })
+    ).toEqual([]);
+  });
+
+  it('running total and moving average carry across empty months', () => {
+    expect(
+      power({
+        aggregations: [
+          { op: 'spending', modifier: 'running' },
+          { op: 'spending', modifier: 'moving', window: 2 },
+        ],
+        ...byMonth,
+      })
+    ).toEqual([
+      { month: '2026-01', spending_running_total: 30, spending_moving_avg: 30 },
+      { month: '2026-02', spending_running_total: 30, spending_moving_avg: 15 },
+      { month: '2026-03', spending_running_total: 330, spending_moving_avg: 150 },
+      { month: '2026-04', spending_running_total: 335, spending_moving_avg: 152.5 },
+    ]);
+  });
+
+  it('running totals per series with two groupings', () => {
+    const rows = power({
+      aggregations: [{ op: 'spending', modifier: 'running' }],
+      breakouts: [{ field: 'date', bucket: 'month' }, { field: 'category_group' }],
+    });
+    const travel = rows.filter((row) => row.category_group === 'Travel');
+    expect(travel.map((row) => [row.month, row.spending_running_total])).toEqual([
+      ['2026-01', 20],
+      ['2026-02', 20],
+      ['2026-03', 320],
+      ['2026-04', 320],
+    ]);
+    expect(rows).toHaveLength(8); // 4 months × 2 groups
+  });
+
+  it('compares to the previous period with % change', () => {
+    const spec = { aggregations: [{ op: 'spending' as const, compare: true }], ...byMonth };
+    expect(questionColumns(normalizeQuestion(spec)).map((column) => column.key)).toEqual([
+      'month',
+      'spending',
+      'spending_previous',
+      'spending_change',
+    ]);
+    const rows = power(spec);
+    expect(rows.map((row) => [row.month, row.spending, row.spending_previous])).toEqual([
+      ['2026-01', 30, null],
+      ['2026-02', 0, 30],
+      ['2026-03', 300, 0],
+      ['2026-04', 5, 300],
+    ]);
+    expect(rows.map((row) => row.spending_change)).toEqual([
+      null,
+      -100,
+      null,
+      expect.closeTo(-98.333, 2),
+    ]);
+  });
+
+  it('% of total: of the column, or per date with two groupings', () => {
+    const shares = power({
+      aggregations: [{ op: 'spending', modifier: 'share' }],
+      breakouts: [{ field: 'category_group' }],
+    });
+    expect(
+      shares.map((row) => [row.category_group, Number(row.spending_share).toFixed(2)])
+    ).toEqual([
+      ['Travel', '95.52'],
+      ['Home', '4.48'],
+    ]);
+    const perMonth = power({
+      aggregations: [{ op: 'spending', modifier: 'share' }],
+      breakouts: [{ field: 'date', bucket: 'month' }, { field: 'category_group' }],
+    });
+    const january = perMonth.filter((row) => row.month === '2026-01');
+    expect(
+      january.map((row) => [row.category_group, Number(row.spending_share).toFixed(1)])
+    ).toEqual([
+      ['Home', '33.3'],
+      ['Travel', '66.7'],
+    ]);
+  });
+
+  it('custom columns: raw output, grouping and metric input', () => {
+    const customColumns = [
+      { id: 'expr_1', name: 'Size', expression: 'case(abs([amount]) >= 100, "Big", "Small")' },
+      { id: 'expr_2', name: 'Abs', expression: 'abs([amount])' },
+      { id: 'expr_3', name: 'Abs x2', expression: '[expr_2] * 2' },
+    ];
+    expect(
+      power({
+        customColumns,
+        columns: ['payee', 'expr_1', 'expr_3'],
+        sort: [{ column: 'expr_3', direction: 'desc' }],
+        limit: 3,
+      })
+    ).toEqual([
+      { payee: 'Employer', expr_1: 'Big', expr_3: 2000 },
+      { payee: 'Employer', expr_1: 'Big', expr_3: 2000 },
+      { payee: "O'Air", expr_1: 'Big', expr_3: 600 },
+    ]);
+    expect(
+      power({
+        customColumns,
+        filters: [{ field: 'is_income', op: 'is', values: [false] }],
+        aggregations: [{ op: 'sum', field: 'expr_2' }, { op: 'count' }],
+        breakouts: [{ field: 'expr_1' }],
+        sort: [{ column: 'expr_1', direction: 'asc' }],
+      })
+    ).toEqual([
+      { expr_1: 'Big', sum_expr_2: 300, count: 1 },
+      { expr_1: 'Small', sum_expr_2: 35, count: 3 },
+    ]);
+    // Filters on custom columns (used by drill-through).
+    expect(
+      power({
+        customColumns,
+        filters: [{ field: 'expr_1', op: 'is', values: ['small'] }],
+        aggregations: [{ op: 'count' }],
+      })
+    ).toEqual([{ count: 3 }]);
+  });
+
+  it('custom metrics: conditional sums, budget metric ratios, counts', () => {
+    expect(
+      power({
+        aggregations: [
+          {
+            op: 'custom',
+            name: 'Flights share',
+            expression: 'SumIf([outflow], [category] = "flights") / Sum([outflow]) * 100',
+          },
+          { op: 'custom', name: 'Savings rate', expression: '(Income - Spending) / Income * 100' },
+          { op: 'custom', name: 'Cleared', expression: 'CountIf([cleared]) / Count' },
+        ],
+      })
+    ).toEqual([
+      {
+        custom_flights_share: expect.closeTo(89.552, 2),
+        custom_savings_rate: 83.25,
+        custom_cleared: expect.closeTo(0.667, 2), // 4 of 6 cleared
+      },
+    ]);
+    // Per month, a month with no income divides by zero → null, not an error.
+    const rows = power({
+      aggregations: [{ op: 'custom', name: 'Rate', expression: 'Spending / Income * 100' }],
+      ...byMonth,
+    });
+    expect(rows.map((row) => row.custom_rate)).toEqual([3, null, 30, null]);
+  });
+
+  it('runs custom expressions with quotes and SQL-looking text safely', () => {
+    expect(
+      power({
+        aggregations: [
+          { op: 'custom', name: 'Air', expression: `CountIf([payee] = "O'Air")` },
+          {
+            op: 'custom',
+            name: 'Odd',
+            expression: `CountIf([payee] = "x'); DROP TABLE transactions; --")`,
+          },
+        ],
+      })
+    ).toEqual([{ custom_air: 1, custom_odd: 0 }]);
+    expect(power({ aggregations: [{ op: 'count' }] })).toEqual([{ count: 6 }]);
+  });
+
+  it('budget source: custom metric over assigned and activity', () => {
+    expect(
+      query({
+        source: 'budget',
+        aggregations: [
+          { op: 'custom', name: 'Left', expression: 'Sum([assigned]) + Sum([activity])' },
+        ],
+      })
+    ).toEqual([{ custom_left: 480 }]); // 700 assigned − 220 activity
+  });
+
+  describe('drill-through specs run', () => {
+    const drill = (
+      spec: Partial<QuestionSpec>,
+      rowIndex: number,
+      action: DrillAction,
+      only?: string
+    ) => {
+      const full = normalizeQuestion({
+        source: 'transactions',
+        ...spec,
+        filters: [NO_TRANSFERS, ...(spec.filters ?? [])],
+      });
+      const rows = queryWithKeys(full, 4);
+      const resultColumns = Object.keys(rows[0]);
+      const row = resultColumns.map((key) => rows[rowIndex][key]);
+      const values = rowDrillValues(questionColumns(full), resultColumns, row, only);
+      return applyDrill({ spec: full, values }, action);
+    };
+
+    it('see these transactions: a month bucket of a spending chart', () => {
+      const next = drill({ aggregations: [{ op: 'spending' }], ...byMonth }, 0, {
+        kind: 'records',
+      });
+      expect(next.filters).toContainEqual({
+        field: 'date',
+        op: 'between',
+        values: ['2026-01-01', '2026-01-31'],
+      });
+      // Spending leaves income lines out, so the salary isn't listed.
+      expect(query(next, 4).map((row) => row.payee)).toEqual(['Kiosk', 'Shop']);
+    });
+
+    it('see these transactions: one of two same-name categories', () => {
+      const spec = {
+        aggregations: [{ op: 'spending' as const }],
+        breakouts: [{ field: 'category' }],
+      };
+      const next = drill(spec, 1, { kind: 'records' }); // Misc (Travel)
+      expect(next.filters).toContainEqual({ field: 'category', op: 'is', values: [420] });
+      expect(query(next, 4).map((row) => row.payee)).toEqual(['Kiosk']);
+    });
+
+    it('zoom: a quarter into months', () => {
+      const next = drill(
+        { aggregations: [{ op: 'spending' }], breakouts: [{ field: 'date', bucket: 'quarter' }] },
+        0,
+        { kind: 'zoom', key: 'quarter' }
+      );
+      expect(next.breakouts).toEqual([{ field: 'date', bucket: 'month' }]);
+      expect(query(next, 4)).toEqual([
+        { month: '2026-01', spending: 30 },
+        { month: '2026-02', spending: 0 },
+        { month: '2026-03', spending: 300 },
+      ]);
+    });
+
+    it('break out a month by category; filter to / exclude a category', () => {
+      const monthly = { aggregations: [{ op: 'spending' as const }], ...byMonth };
+      const byCategory = drill(monthly, 0, { kind: 'breakout', field: 'category' });
+      expect(query(byCategory, 4)).toEqual([
+        { category: 'Misc (Travel)', spending: 20 },
+        { category: 'Misc (Home)', spending: 10 },
+      ]);
+      const categories = {
+        aggregations: [{ op: 'spending' as const }],
+        breakouts: [{ field: 'category' }],
+      };
+      const only = drill(categories, 2, { kind: 'filter', key: 'category' }); // Misc (Home)
+      expect(query(only, 4)).toEqual([{ category: 'Misc', spending: 15 }]);
+      const without = drill(categories, 0, { kind: 'filter', key: 'category', exclude: true });
+      expect(query(without, 4).map((row) => row.category)).toEqual([
+        'Misc (Travel)',
+        'Misc (Home)',
+      ]);
+    });
+
+    it('payees without a name drill to "is empty"', () => {
+      const spec = { aggregations: [{ op: 'count' as const }], breakouts: [{ field: 'payee' }] };
+      const rows = queryWithKeys(normalizeQuestion({ ...spec, filters: [NO_TRANSFERS] }), 4);
+      const index = rows.findIndex((row) => row.payee__key === null);
+      expect(rows[index].payee).toBe('No payee');
+      const next = drill(spec, index, { kind: 'records' });
+      expect(next.filters).toContainEqual({ field: 'payee', op: 'isEmpty', values: [] });
+      expect(query(next, 4)).toHaveLength(1);
+    });
+
+    it('custom column groupings drill too', () => {
+      const spec = {
+        customColumns: [
+          { id: 'expr_1', name: 'Size', expression: 'case(abs([amount]) >= 100, "Big", "Small")' },
+        ],
+        aggregations: [{ op: 'count' as const }],
+        breakouts: [{ field: 'expr_1' }],
+        sort: [{ column: 'expr_1', direction: 'asc' as const }],
+      };
+      const next = drill(spec, 1, { kind: 'records' }); // Small
+      expect(next.filters).toContainEqual({ field: 'expr_1', op: 'is', values: ['Small'] });
+      expect(next.columns).toContain('expr_1');
+      expect(query(next, 4)).toHaveLength(3);
+    });
   });
 });

@@ -9,11 +9,21 @@ import {
   DEFAULT_RAW_COLUMNS,
   PRIMARY_DATE_FIELD,
   QUESTION_SOURCES,
+  SOURCE_FIELDS,
   getField,
   type DateBucket,
   type FieldDef,
   type QuestionSource,
 } from './fields';
+import {
+  parseExpression,
+  printExpression,
+  type ExprField,
+  type ExprInfo,
+  type ExprNode,
+  type ExprValueType,
+  type ParseResult,
+} from './expression';
 
 export const FILTER_OPS = [
   'is',
@@ -60,6 +70,7 @@ export const AGGREGATION_OPS = [
   'income',
   'net',
   'averageSpending',
+  'custom',
 ] as const;
 export type AggregationOp = (typeof AGGREGATION_OPS)[number];
 
@@ -71,6 +82,16 @@ export const NUMERIC_AGGREGATIONS = ['sum', 'avg', 'min', 'max'] as const;
 export interface QuestionAggregation {
   op: AggregationOp;
   field?: string;
+  /** `custom` metrics: display name. */
+  name?: string;
+  /** `custom` metrics: canonical expression text (see expression.ts). */
+  expression?: string;
+  /** Running total / moving average / % of total instead of the plain value. */
+  modifier?: MetricModifier;
+  /** Moving average window in buckets. */
+  window?: number;
+  /** Adds "previous period" and "% change" columns (needs a date grouping). */
+  compare?: boolean;
 }
 
 export interface QuestionBreakout {
@@ -106,6 +127,8 @@ export interface QuestionSpec {
   visualization: Visualization;
   /** Bar/area only; 'auto' stacks a second grouping and keeps several metrics side by side. */
   stacking: Stacking;
+  /** Custom columns (row-level expressions); absent when there are none. */
+  customColumns?: QuestionCustomColumn[];
 }
 
 export const MAX_QUESTION_LIMIT = 10_000;
@@ -214,10 +237,14 @@ function oneOf<T extends string>(options: readonly T[], value: unknown): T | nul
 }
 
 /** Valid filter or null (dropped). */
-export function normalizeFilter(source: QuestionSource, input: unknown): QuestionFilter | null {
+export function normalizeFilter(
+  source: QuestionSource,
+  input: unknown,
+  custom?: CustomFields
+): QuestionFilter | null {
   const raw = asRecord(input);
   if (!raw) return null;
-  const field = typeof raw.field === 'string' ? getField(source, raw.field) : undefined;
+  const field = typeof raw.field === 'string' ? lookupField(source, raw.field, custom) : undefined;
   const op = oneOf(FILTER_OPS, raw.op);
   if (!field || !op || !operatorsFor(field).includes(op)) return null;
 
@@ -290,24 +317,34 @@ export function normalizeFilter(source: QuestionSource, input: unknown): Questio
 
 export function normalizeAggregation(
   source: QuestionSource,
-  input: unknown
+  input: unknown,
+  custom?: CustomFields
 ): QuestionAggregation | null {
   const raw = asRecord(input);
   if (!raw) return null;
   const op = oneOf(AGGREGATION_OPS, raw.op);
   if (!op) return null;
-  if (isFriendlyAggregation(op)) return source === 'transactions' ? { op } : null;
-  if (op === 'count') return { op };
-  const field = typeof raw.field === 'string' ? getField(source, raw.field) : undefined;
+  const extras = normalizeMetricOptions(raw);
+  if (op === 'custom') {
+    const metric = normalizeCustomMetric(source, raw, custom);
+    return metric ? { ...metric, ...extras } : null;
+  }
+  if (isFriendlyAggregation(op)) return source === 'transactions' ? { op, ...extras } : null;
+  if (op === 'count') return { op, ...extras };
+  const field = typeof raw.field === 'string' ? lookupField(source, raw.field, custom) : undefined;
   if (!field) return null;
-  if (op === 'distinct') return { op, field: field.id };
-  return field.type === 'number' ? { op, field: field.id } : null;
+  if (op === 'distinct') return { op, field: field.id, ...extras };
+  return field.type === 'number' ? { op, field: field.id, ...extras } : null;
 }
 
-export function normalizeBreakout(source: QuestionSource, input: unknown): QuestionBreakout | null {
+export function normalizeBreakout(
+  source: QuestionSource,
+  input: unknown,
+  custom?: CustomFields
+): QuestionBreakout | null {
   const raw = asRecord(input);
   if (!raw || typeof raw.field !== 'string') return null;
-  const field = getField(source, raw.field);
+  const field = lookupField(source, raw.field, custom);
   if (!field || !field.groupable) return null;
   if (field.type !== 'date') return { field: field.id };
   const bucket = oneOf(DATE_BUCKETS, raw.bucket);
@@ -320,20 +357,22 @@ export function normalizeBreakout(source: QuestionSource, input: unknown): Quest
 export function normalizeQuestion(input: unknown): QuestionSpec {
   const raw = asRecord(input) ?? {};
   const source = oneOf(QUESTION_SOURCES, raw.source) ?? 'transactions';
+  const customColumns = normalizeCustomColumns(source, raw.customColumns);
+  const custom = customFields(source, customColumns);
 
   const filters = asArray(raw.filters)
     .slice(0, MAX_FILTERS)
-    .map((filter) => normalizeFilter(source, filter))
+    .map((filter) => normalizeFilter(source, filter, custom))
     .filter((filter): filter is QuestionFilter => filter !== null);
 
   const aggregations = asArray(raw.aggregations)
     .slice(0, MAX_AGGREGATIONS)
-    .map((aggregation) => normalizeAggregation(source, aggregation))
+    .map((aggregation) => normalizeAggregation(source, aggregation, custom))
     .filter((aggregation): aggregation is QuestionAggregation => aggregation !== null);
 
   const breakouts: QuestionBreakout[] = [];
   for (const candidate of asArray(raw.breakouts)) {
-    const breakout = normalizeBreakout(source, candidate);
+    const breakout = normalizeBreakout(source, candidate, custom);
     if (!breakout) continue;
     if (breakouts.some((b) => b.field === breakout.field && b.bucket === breakout.bucket)) continue;
     breakouts.push(breakout);
@@ -341,6 +380,7 @@ export function normalizeQuestion(input: unknown): QuestionSpec {
   }
   // Groupings without a metric count rows, like Metabase.
   if (breakouts.length > 0 && aggregations.length === 0) aggregations.push({ op: 'count' });
+  dropUnusableModifiers(aggregations, breakouts);
 
   const sort: QuestionSort[] = [];
   for (const candidate of asArray(raw.sort)) {
@@ -361,7 +401,8 @@ export function normalizeQuestion(input: unknown): QuestionSpec {
   if (Array.isArray(raw.columns)) {
     const valid = unique(
       raw.columns.filter(
-        (column): column is string => typeof column === 'string' && !!getField(source, column)
+        (column): column is string =>
+          typeof column === 'string' && !!lookupField(source, column, custom)
       )
     );
     columns = valid.length > 0 ? valid : null;
@@ -378,6 +419,7 @@ export function normalizeQuestion(input: unknown): QuestionSpec {
     columns: aggregations.length > 0 ? null : columns,
     visualization: oneOf(VISUALIZATIONS, raw.visualization) ?? 'auto',
     stacking: oneOf(STACKINGS, raw.stacking) ?? 'auto',
+    ...(customColumns.length > 0 ? { customColumns } : {}),
   };
   // Drop sorts on columns this question doesn't output.
   const keys = new Set(questionColumnKeys(spec));
@@ -389,10 +431,12 @@ export function normalizeQuestion(input: unknown): QuestionSpec {
 // Output columns
 // ---------------------------------------------------------------------------
 
-export type QuestionColumn =
+export type QuestionColumn = (
   | { key: string; kind: 'breakout'; breakout: QuestionBreakout }
   | { key: string; kind: 'aggregation'; aggregation: QuestionAggregation }
-  | { key: string; kind: 'field'; field: string };
+  | { key: string; kind: 'field'; field: string }
+) &
+  QuestionColumnExtras;
 
 function breakoutBaseKey(source: QuestionSource, breakout: QuestionBreakout): string {
   if (!breakout.bucket) return breakout.field;
@@ -401,6 +445,21 @@ function breakoutBaseKey(source: QuestionSource, breakout: QuestionBreakout): st
 }
 
 function aggregationBaseKey(aggregation: QuestionAggregation): string {
+  const plain = plainAggregationKey(aggregation);
+  switch (aggregation.modifier) {
+    case 'running':
+      return `${plain}_running_total`;
+    case 'moving':
+      return `${plain}_moving_avg`;
+    case 'share':
+      return `${plain}_share`;
+    default:
+      return plain;
+  }
+}
+
+function plainAggregationKey(aggregation: QuestionAggregation): string {
+  if (aggregation.op === 'custom') return customMetricKey(aggregation.name);
   if (aggregation.op === 'count') return 'count';
   if (isFriendlyAggregation(aggregation.op)) {
     return aggregation.op === 'averageSpending' ? 'average_spending' : aggregation.op;
@@ -418,21 +477,43 @@ export function questionColumns(spec: QuestionSpec): QuestionColumn[] {
     return key;
   };
 
+  const extras = columnExtras(spec);
   if (spec.aggregations.length === 0) {
     const columns = spec.columns ?? DEFAULT_RAW_COLUMNS[spec.source];
-    return columns.map((field) => ({ key: claim(field), kind: 'field' as const, field }));
+    return columns.map((field) => ({
+      key: claim(field),
+      kind: 'field' as const,
+      field,
+      ...extras.forField(field),
+    }));
   }
   return [
     ...spec.breakouts.map((breakout) => ({
       key: claim(breakoutBaseKey(spec.source, breakout)),
       kind: 'breakout' as const,
       breakout,
+      ...extras.forField(breakout.field),
     })),
-    ...spec.aggregations.map((aggregation) => ({
-      key: claim(aggregationBaseKey(aggregation)),
-      kind: 'aggregation' as const,
-      aggregation,
-    })),
+    ...spec.aggregations.flatMap((aggregation) => {
+      const key = claim(aggregationBaseKey(aggregation));
+      const metric = {
+        key,
+        kind: 'aggregation' as const,
+        aggregation,
+        ...extras.forAggregation(aggregation),
+      };
+      if (!aggregation.compare) return [metric];
+      return [
+        metric,
+        { ...metric, key: claim(`${key}_previous`), derived: 'previous' as const },
+        {
+          ...metric,
+          key: claim(`${key}_change`),
+          derived: 'change' as const,
+          format: 'percent' as const,
+        },
+      ];
+    }),
   ];
 }
 
@@ -487,4 +568,292 @@ export function resolveVisualization(spec: QuestionSpec): ResolvedVisualization 
     return spec.visualization;
   }
   return autoVisualization(spec);
+}
+
+// ---------------------------------------------------------------------------
+// Custom columns, custom metrics and metric modifiers
+// ---------------------------------------------------------------------------
+
+/** A row-level expression column, referenced by its id (`expr_1`) like a field. */
+export interface QuestionCustomColumn {
+  id: string;
+  name: string;
+  /** Canonical expression text (field ids in brackets). */
+  expression: string;
+}
+
+export const METRIC_MODIFIERS = ['running', 'moving', 'share'] as const;
+export type MetricModifier = (typeof METRIC_MODIFIERS)[number];
+
+export const MAX_CUSTOM_COLUMNS = 10;
+export const MAX_NAME_LENGTH = 60;
+export const DEFAULT_MOVING_WINDOW = 3;
+export const MAX_MOVING_WINDOW = 60;
+const CUSTOM_COLUMN_ID = /^expr_\d{1,3}$/;
+
+export type ColumnFormat = 'money' | 'number' | 'text' | 'percent';
+
+/** Output-column hints the labels / formatters use for custom and derived columns. */
+export interface QuestionColumnExtras {
+  /** Display name of a custom column or custom metric. */
+  name?: string;
+  /** Display name of the custom column a metric aggregates (e.g. Sum of <name>). */
+  fieldName?: string;
+  format?: ColumnFormat;
+  /** Compare-to-previous-period columns. */
+  derived?: 'previous' | 'change';
+}
+
+/** Money-valued source fields. */
+export const MONEY_FIELD_IDS: ReadonlySet<string> = new Set([
+  'amount',
+  'inflow',
+  'outflow',
+  'assigned',
+  'activity',
+  'balance',
+]);
+
+interface CustomFieldEntry {
+  column: QuestionCustomColumn;
+  field: FieldDef;
+  info: ExprInfo;
+  ast: ExprNode;
+}
+
+/** Parsed custom columns of a question, by id, in definition order. */
+export type CustomFields = ReadonlyMap<string, CustomFieldEntry>;
+
+function exprTypeOf(field: FieldDef): ExprValueType {
+  switch (field.type) {
+    case 'number':
+      return 'number';
+    case 'boolean':
+      return 'boolean';
+    case 'date':
+      return 'date';
+    default:
+      return 'string';
+  }
+}
+
+/** A source field or custom column. */
+export function lookupField(
+  source: QuestionSource,
+  fieldId: string,
+  custom?: CustomFields
+): FieldDef | undefined {
+  return getField(source, fieldId) ?? custom?.get(fieldId)?.field;
+}
+
+/** Fields an expression can reference: the source's, then the custom columns given. */
+export function expressionFields(
+  source: QuestionSource,
+  custom?: CustomFields,
+  names?: (fieldId: string) => readonly string[]
+): ExprField[] {
+  const fields: ExprField[] = SOURCE_FIELDS[source].map((field) => ({
+    id: field.id,
+    type: exprTypeOf(field),
+    money: MONEY_FIELD_IDS.has(field.id),
+    names: names?.(field.id) ?? [],
+  }));
+  for (const entry of custom?.values() ?? []) {
+    fields.push({
+      id: entry.column.id,
+      type: entry.info.type,
+      money: entry.info.money,
+      names: [entry.column.name],
+    });
+  }
+  return fields;
+}
+
+function cleanName(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const name = value.trim().replace(/\s+/g, ' ');
+  if (!name || name.length > MAX_NAME_LENGTH || /[[\]]/.test(name)) return null;
+  return name;
+}
+
+function customField(id: string, info: ExprInfo): FieldDef {
+  const type = info.type === 'number' ? 'number' : info.type === 'boolean' ? 'boolean' : 'text';
+  return { id, type, groupable: true };
+}
+
+/** Valid custom columns: unique ids and names, expressions that parse (earlier columns only). */
+export function normalizeCustomColumns(
+  source: QuestionSource,
+  input: unknown
+): QuestionCustomColumn[] {
+  const columns: QuestionCustomColumn[] = [];
+  const parsed = new Map<string, CustomFieldEntry>();
+  for (const candidate of asArray(input).slice(0, MAX_CUSTOM_COLUMNS * 2)) {
+    const raw = asRecord(candidate);
+    if (!raw || typeof raw.id !== 'string' || !CUSTOM_COLUMN_ID.test(raw.id)) continue;
+    const name = cleanName(raw.name);
+    if (!name || typeof raw.expression !== 'string') continue;
+    if (parsed.has(raw.id)) continue;
+    if (columns.some((column) => column.name.toLowerCase() === name.toLowerCase())) continue;
+    const result = parseExpression(raw.expression, {
+      fields: expressionFields(source, parsed),
+      level: 'row',
+    });
+    if (!result.ok) continue;
+    const column = { id: raw.id, name, expression: printExpression(result.value.ast) };
+    columns.push(column);
+    parsed.set(column.id, {
+      column,
+      field: customField(column.id, result.value.info),
+      info: result.value.info,
+      ast: result.value.ast,
+    });
+    if (columns.length >= MAX_CUSTOM_COLUMNS) break;
+  }
+  return columns;
+}
+
+/** Parsed custom columns (assumes they're normalized). */
+export function customFields(
+  source: QuestionSource,
+  columns: readonly QuestionCustomColumn[] | undefined
+): CustomFields {
+  const parsed = new Map<string, CustomFieldEntry>();
+  for (const column of columns ?? []) {
+    const result = parseExpression(column.expression, {
+      fields: expressionFields(source, parsed),
+      level: 'row',
+    });
+    if (!result.ok) continue;
+    parsed.set(column.id, {
+      column,
+      field: customField(column.id, result.value.info),
+      info: result.value.info,
+      ast: result.value.ast,
+    });
+  }
+  return parsed;
+}
+
+/** Parses a custom metric's expression for a source (ids only, as stored). */
+export function parseCustomMetric(
+  source: QuestionSource,
+  expression: string,
+  custom?: CustomFields
+): ParseResult {
+  return parseExpression(expression, {
+    fields: expressionFields(source, custom),
+    level: 'metric',
+    budgetMetrics: source === 'transactions',
+  });
+}
+
+function normalizeCustomMetric(
+  source: QuestionSource,
+  raw: Record<string, unknown>,
+  custom?: CustomFields
+): QuestionAggregation | null {
+  if (typeof raw.expression !== 'string') return null;
+  const result = parseCustomMetric(source, raw.expression, custom);
+  if (!result.ok) return null;
+  const name = cleanName(raw.name);
+  return {
+    op: 'custom',
+    expression: printExpression(result.value.ast),
+    ...(name ? { name } : {}),
+  };
+}
+
+function normalizeMetricOptions(
+  raw: Record<string, unknown>
+): Pick<QuestionAggregation, 'modifier' | 'window' | 'compare'> {
+  const modifier = oneOf(METRIC_MODIFIERS, raw.modifier);
+  const options: Pick<QuestionAggregation, 'modifier' | 'window' | 'compare'> = {};
+  if (modifier) options.modifier = modifier;
+  if (modifier === 'moving') {
+    const window = toFiniteNumber(raw.window);
+    options.window =
+      window === null
+        ? DEFAULT_MOVING_WINDOW
+        : Math.min(Math.max(Math.floor(window), 2), MAX_MOVING_WINDOW);
+  }
+  if (raw.compare === true) options.compare = true;
+  return options;
+}
+
+/** Whether a question has a bucketed date grouping (needed by time-series modifiers). */
+export function hasDateBreakout(breakouts: readonly QuestionBreakout[]): boolean {
+  return breakouts.some((breakout) => breakout.bucket !== undefined);
+}
+
+/** Running total, moving average and compare need a date grouping; % of total a grouping. */
+function dropUnusableModifiers(
+  aggregations: QuestionAggregation[],
+  breakouts: readonly QuestionBreakout[]
+) {
+  const dated = hasDateBreakout(breakouts);
+  aggregations.forEach((aggregation, index) => {
+    const next = { ...aggregation };
+    if ((next.modifier === 'running' || next.modifier === 'moving') && !dated) {
+      delete next.modifier;
+      delete next.window;
+    }
+    if (next.modifier === 'share' && breakouts.length === 0) delete next.modifier;
+    if (next.compare && !dated) delete next.compare;
+    aggregations[index] = next;
+  });
+}
+
+function customMetricKey(name: string | undefined): string {
+  const slug = (name ?? '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40);
+  return slug ? `custom_${slug}` : 'custom';
+}
+
+function columnExtras(spec: QuestionSpec) {
+  const custom = customFields(spec.source, spec.customColumns);
+  const fieldFormat = (fieldId: string): ColumnFormat | undefined => {
+    const entry = custom.get(fieldId);
+    if (!entry) return undefined;
+    if (entry.info.type !== 'number') return 'text';
+    return entry.info.money ? 'money' : 'number';
+  };
+  return {
+    forField(fieldId: string): QuestionColumnExtras {
+      const entry = custom.get(fieldId);
+      return entry ? { name: entry.column.name, format: fieldFormat(fieldId) } : {};
+    },
+    forAggregation(aggregation: QuestionAggregation): QuestionColumnExtras {
+      const extras: QuestionColumnExtras = {};
+      if (aggregation.op === 'custom') {
+        if (aggregation.name) extras.name = aggregation.name;
+        const result = parseCustomMetric(spec.source, aggregation.expression ?? '', custom);
+        extras.format = result.ok && result.value.info.money ? 'money' : 'number';
+      } else if (aggregation.field && custom.has(aggregation.field)) {
+        extras.fieldName = custom.get(aggregation.field)!.column.name;
+        const format = fieldFormat(aggregation.field);
+        if (aggregation.op !== 'distinct' && format) extras.format = format;
+      }
+      if (aggregation.modifier === 'share') extras.format = 'percent';
+      return extras;
+    },
+  };
+}
+
+/** Next free custom column id (`expr_1`, `expr_2`, …). */
+export function nextCustomColumnId(spec: QuestionSpec): string {
+  const used = new Set((spec.customColumns ?? []).map((column) => column.id));
+  for (let n = 1; ; n += 1) {
+    if (!used.has(`expr_${n}`)) return `expr_${n}`;
+  }
+}
+
+/** A field of the question: source field or custom column. */
+export function questionField(spec: QuestionSpec, fieldId: string): FieldDef | undefined {
+  return lookupField(spec.source, fieldId, customFields(spec.source, spec.customColumns));
 }

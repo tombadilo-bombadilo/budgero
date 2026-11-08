@@ -182,6 +182,8 @@ export function aggregationLabel(source: QuestionSource, aggregation: QuestionAg
       return t`Net (income − spending)`;
     case 'averageSpending':
       return t`Average spending per transaction`;
+    case 'custom':
+      return aggregation.name ?? t`Custom metric`;
   }
 }
 
