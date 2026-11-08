@@ -8,13 +8,11 @@ import {
   normalizeQuestion,
   resolveVisualization,
   visualizationBlocker,
-  type QuestionSpec,
 } from './spec';
 
-const q = (spec: Partial<QuestionSpec> & Record<string, unknown>) =>
-  normalizeQuestion({ source: 'transactions', ...spec });
+const q = (spec: Record<string, unknown>) => normalizeQuestion({ source: 'transactions', ...spec });
 
-const spending = [{ op: 'spending' }];
+const spending = [{ op: 'spending' as const }];
 
 describe('allowedVisualizations', () => {
   it('offers trend only with a date grouping or a date range filter', () => {
