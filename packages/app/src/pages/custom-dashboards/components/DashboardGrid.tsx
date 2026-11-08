@@ -21,6 +21,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import type { CustomDashboardWithWidgets, UnifiedReport } from '@budgero/core/browser';
 import type { QueryResult } from '@shared/lib/sql/report-query-executor';
+import type { DashboardFilters } from '@features/reports/lib/question';
 import { WidgetCard } from './WidgetCard';
 
 interface DashboardGridProps {
@@ -43,6 +44,7 @@ interface DashboardGridProps {
     queryResult: QueryResult;
   }) => void;
   onOpenReportInExplorer: (reportId: string) => void;
+  filters?: DashboardFilters;
 }
 
 function getDesktopGridStyle(layout: { colSpan: number; rowSpan: number }): CSSProperties {
@@ -67,6 +69,7 @@ function SortableWidget({
   onSelectNewChart,
   onEditChart,
   onOpenReportInExplorer,
+  filters,
 }: SortableWidgetProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: widget.id,
@@ -105,6 +108,7 @@ function SortableWidget({
         onUpdateMobileSize={onUpdateMobileSize}
         onEditChart={onEditChart}
         onOpenReportInExplorer={onOpenReportInExplorer}
+        filters={filters}
       />
     </div>
   );
@@ -122,6 +126,7 @@ export function DashboardGrid({
   onSelectNewChart,
   onEditChart,
   onOpenReportInExplorer,
+  filters,
 }: DashboardGridProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -174,6 +179,7 @@ export function DashboardGrid({
                 onUpdateMobileSize={onUpdateMobileSize}
                 onEditChart={onEditChart}
                 onOpenReportInExplorer={onOpenReportInExplorer}
+                filters={filters}
               />
             </div>
           );
@@ -192,6 +198,7 @@ export function DashboardGrid({
             onSelectNewChart={onSelectNewChart}
             onEditChart={onEditChart}
             onOpenReportInExplorer={onOpenReportInExplorer}
+            filters={filters}
           />
         );
       })}

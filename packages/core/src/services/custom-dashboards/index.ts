@@ -11,11 +11,19 @@ export interface MobileWidgetLayout {
   size: 's' | 'm' | 'l';
 }
 
+/**
+ * Dashboard-level filters as stored: a plain JSON object the app owns
+ * (date range, accounts, category groups). Core only checks shape and size.
+ */
+export type CustomDashboardFilters = Record<string, unknown>;
+
 export interface CustomDashboard {
   id: string;
   budgetId: number;
   name: string;
   sortOrder: number;
+  /** Null when the dashboard has no filters set. */
+  filters: CustomDashboardFilters | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -48,6 +56,8 @@ export interface UpdateCustomDashboardInput {
   id: string;
   name?: string;
   sortOrder?: number;
+  /** Null clears the filters. */
+  filters?: CustomDashboardFilters | null;
 }
 
 export interface AddCustomDashboardWidgetInput {
@@ -100,6 +110,7 @@ interface DashboardRow {
   BudgetID: number | bigint;
   Name: string;
   SortOrder: number;
+  Filters?: string | null;
   CreatedAt: string;
   UpdatedAt: string;
 }
@@ -176,6 +187,32 @@ function parseMobileLayout(raw: string | null | undefined): MobileWidgetLayout {
     return clampMobileLayout({ size: parsed.size as MobileWidgetLayout['size'] });
   } catch {
     return DEFAULT_MOBILE_LAYOUT;
+  }
+}
+
+const MAX_FILTERS_JSON = 16 * 1024;
+
+/** Filters as stored JSON; null for empty / missing. Throws on non-objects or oversize. */
+function serializeFilters(filters: CustomDashboardFilters | null): string | null {
+  if (filters === null) return null;
+  if (typeof filters !== 'object' || Array.isArray(filters)) {
+    throw new Error('Dashboard filters must be an object');
+  }
+  if (Object.keys(filters).length === 0) return null;
+  const json = JSON.stringify(filters);
+  if (json.length > MAX_FILTERS_JSON) throw new Error('Dashboard filters are too large');
+  return json;
+}
+
+function parseFilters(raw: string | null | undefined): CustomDashboardFilters | null {
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? (parsed as CustomDashboardFilters)
+      : null;
+  } catch {
+    return null;
   }
 }
 
@@ -268,7 +305,7 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
 
   updateDashboard(input: UpdateCustomDashboardInput): CustomDashboard {
     const updateFields: string[] = [];
-    const values: (string | number)[] = [];
+    const values: (string | number | null)[] = [];
 
     if (input.name !== undefined) {
       const name = input.name.trim();
@@ -282,6 +319,11 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
     if (input.sortOrder !== undefined) {
       updateFields.push('SortOrder = ?');
       values.push(Math.max(0, Math.trunc(input.sortOrder)));
+    }
+
+    if (input.filters !== undefined) {
+      updateFields.push('Filters = ?');
+      values.push(serializeFilters(input.filters));
     }
 
     if (updateFields.length === 0) {
@@ -504,6 +546,7 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
       budgetId: Number(row.BudgetID),
       name: row.Name,
       sortOrder: row.SortOrder,
+      filters: parseFilters(row.Filters),
       createdAt: row.CreatedAt,
       updatedAt: row.UpdatedAt,
     };

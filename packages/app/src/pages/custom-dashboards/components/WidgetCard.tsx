@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   ChartConfiguration,
@@ -8,25 +8,28 @@ import type {
 } from '@budgero/core/browser';
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import {
-  executeReportQuery,
   getNormalizedReportQueryError,
   type QueryResult,
   type SqlDatabase,
 } from '@shared/lib/sql/report-query-executor';
 import { ChartViewer } from '@features/analytics/ui/chart-viewer';
 import {
-  allowedVisualizations,
-  parseQuestionHeader,
-  questionColumns,
+  hasDashboardFilters,
   resolveStacking,
-  resolveVisualization,
-  type ResolvedVisualization,
+  type DashboardFilters,
 } from '@features/reports/lib/question';
 import { QuestionVisualization } from '@features/reports/ui/notebook/QuestionVisualization';
+import { ExportMenu } from '@features/reports/ui/notebook/viz/ExportMenu';
+import { refineAutoVisualization } from '@features/reports/ui/notebook/viz/transforms';
+import { getLocaleTag } from '@shared/i18n';
+import { useUiStore } from '@shared/store/useUiStore';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shared/ui/tooltip';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { Badge } from '@shared/ui/badge';
 import {
+  Filter,
+  FilterX,
   RefreshCcw,
   Trash2,
   ArrowUpWideNarrow,
@@ -35,6 +38,7 @@ import {
   PenSquare,
   SquareArrowOutUpRight,
 } from 'lucide-react';
+import { runWidgetQuery, widgetQueryKey, widgetQuestion } from './widget-query';
 
 interface WidgetCardProps {
   widget: CustomDashboardWidget;
@@ -56,7 +60,11 @@ interface WidgetCardProps {
     queryResult: QueryResult;
   }) => void;
   onOpenReportInExplorer: (reportId: string) => void;
+  /** Dashboard-level filters applied to notebook questions. */
+  filters?: DashboardFilters;
 }
+
+const NO_FILTERS: DashboardFilters = {};
 
 const MOBILE_HEIGHTS: Record<'s' | 'm' | 'l', string> = {
   s: 'h-[320px]',
@@ -191,55 +199,53 @@ export function WidgetCard({
   onUpdateMobileSize,
   onEditChart,
   onOpenReportInExplorer,
+  filters = NO_FILTERS,
 }: WidgetCardProps) {
   const { t } = useLingui();
 
   const runtime = useRuntime();
   const queryClient = useQueryClient();
-  const reportUpdatedAt = report?.updatedAt ?? 'missing';
+  const budgetId = useUiStore((state) => state.selectedBudget?.ID ?? 0);
+  const chartRef = useRef<HTMLDivElement | null>(null);
+
+  // Saved questions render with the notebook's visualization (legend, human
+  // labels, money formatting) and take the dashboard's filters; other reports
+  // use the generic chart viewer and run unchanged.
+  const question = useMemo(
+    () => widgetQuestion(report, chart, filters, budgetId),
+    [report, chart, filters, budgetId]
+  );
+  const queryKey = widgetQueryKey(widget, report, question);
 
   const dataQuery = useQuery({
-    queryKey: ['dashboardWidgetData', widget.reportId, reportUpdatedAt],
-    queryFn: async () => {
-      return await executeReportQuery(
-        report?.query ?? '',
-        runtime.getDatabase() as SqlDatabase | null
-      );
-    },
+    queryKey,
+    queryFn: async () =>
+      await runWidgetQuery(report, question, runtime.getDatabase() as SqlDatabase | null),
     enabled: Boolean(report && chart),
     staleTime: 30 * 1000,
   });
 
-  // Saved questions render with the notebook's visualization (legend, human
-  // labels, money formatting); other reports use the generic chart viewer.
-  const question = useMemo(() => {
-    const spec = parseQuestionHeader(report?.query);
-    if (!spec || !chart || chart.id !== report?.charts?.[0]?.id) return null;
-    const fromChart: Partial<Record<ChartConfiguration['chartType'], ResolvedVisualization>> = {
-      stat: 'number',
-      line: 'line',
-      bar: 'bar',
-      area: 'area',
-      pie: 'pie',
-      table: 'table',
-    };
-    const wanted = fromChart[chart.chartType];
-    return {
-      spec,
-      columns: questionColumns(spec),
-      visualization:
-        wanted && allowedVisualizations(spec).includes(wanted)
-          ? wanted
-          : resolveVisualization(spec),
-    };
-  }, [report, chart]);
-
   const title = widget.titleOverride || chart?.title || report?.name || t`Widget`;
+  const subtitle = report?.description?.trim() || null;
+  const filtersActive = hasDashboardFilters(filters);
+  const visualization =
+    question && dataQuery.data
+      ? refineAutoVisualization(
+          question.spec,
+          question.visualization,
+          dataQuery.data,
+          question.columns
+        )
+      : question?.visualization;
+  const updatedAt = dataQuery.dataUpdatedAt
+    ? new Date(dataQuery.dataUpdatedAt).toLocaleTimeString(getLocaleTag(), {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
 
   const refreshWidgetData = async () => {
-    await queryClient.invalidateQueries({
-      queryKey: ['dashboardWidgetData', widget.reportId, reportUpdatedAt],
-    });
+    await queryClient.invalidateQueries({ queryKey: queryKey.slice(0, 3) });
   };
 
   const queryError = dataQuery.error ? getNormalizedReportQueryError(dataQuery.error) : null;
@@ -294,10 +300,48 @@ export function WidgetCard({
     >
       <CardHeader className="pb-1 gap-1">
         <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <CardTitle className="text-base truncate">{title}</CardTitle>
+          <div className="min-w-0 space-y-0.5">
+            <CardTitle className="text-base truncate" title={title}>
+              {title}
+            </CardTitle>
+            {subtitle && (
+              <CardDescription className="truncate text-xs" title={subtitle}>
+                {subtitle}
+              </CardDescription>
+            )}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+              {updatedAt && (
+                <span>
+                  <Trans>Updated {updatedAt}</Trans>
+                </span>
+              )}
+              {filtersActive && question && question.applied.length > 0 && (
+                <span className="inline-flex items-center gap-1 text-foreground/80">
+                  <Filter className="h-3 w-3" aria-hidden />
+                  <Trans>Dashboard filters applied</Trans>
+                </span>
+              )}
+              {filtersActive && (!question || question.applied.length === 0) && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex cursor-help items-center gap-1 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <FilterX className="h-3 w-3" aria-hidden />
+                      <Trans>Not filtered</Trans>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="max-w-60">
+                    {question
+                      ? t`This question’s data has no field the dashboard filters use.`
+                      : t`SQL reports run as written; dashboard filters only apply to questions built in the notebook.`}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1">
             <Button
               variant="ghost"
               size="icon"
@@ -308,6 +352,14 @@ export function WidgetCard({
             >
               <RefreshCcw className={`h-4 w-4 ${dataQuery.isFetching ? 'animate-spin' : ''}`} />
             </Button>
+            <ExportMenu
+              name={title}
+              result={dataQuery.data ?? null}
+              columns={question?.columns}
+              source={question?.spec.source}
+              chartRef={chartRef}
+              className="h-9 w-9"
+            />
             {report && (
               <Button
                 variant="ghost"
@@ -364,20 +416,26 @@ export function WidgetCard({
             <Trans>Loading chart...</Trans>
           </div>
         )}
-        {!dataQuery.isPending && dataQuery.data && question && (
-          <div className="h-full overflow-auto">
+        {!dataQuery.isPending && dataQuery.data && question && visualization && (
+          <div ref={chartRef} className="h-full overflow-auto">
             <QuestionVisualization
               result={dataQuery.data}
               columns={question.columns}
               source={question.spec.source}
-              visualization={question.visualization}
-              stacking={resolveStacking(question.spec, question.visualization)}
+              visualization={visualization}
+              stacking={resolveStacking(
+                question.spec,
+                visualization === 'row' ? 'bar' : visualization
+              )}
+              display={question.spec.display}
+              spec={question.spec}
+              exportName={title}
               fitHeight
             />
           </div>
         )}
         {!dataQuery.isPending && dataQuery.data && !question && (
-          <div className="h-full overflow-hidden">
+          <div ref={chartRef} className="h-full overflow-hidden">
             <ChartViewer
               queryResult={dataQuery.data}
               chartConfig={chart}

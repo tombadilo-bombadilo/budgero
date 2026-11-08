@@ -105,6 +105,28 @@ describe('report and dashboard undo', () => {
     ]);
   });
 
+  it('dashboards: filter changes undo to the previous filters; renames leave them', async () => {
+    const filters = { date: { preset: 'lastYear' } };
+    mocks.customDashboards.getDashboard.mockReturnValue({
+      id: 'd1',
+      budgetId: 1,
+      name: 'Main',
+      sortOrder: 3,
+      filters,
+      widgets: [],
+    });
+    expect(await undoFor('customDashboards.update', { id: 'd1', filters: null })).toEqual([
+      { op: 'customDashboards.update', args: { id: 'd1', name: 'Main', sortOrder: 3, filters } },
+    ]);
+    expect(await undoFor('customDashboards.update', { id: 'd1', name: 'New' })).toEqual([
+      { op: 'customDashboards.update', args: { id: 'd1', name: 'Main', sortOrder: 3 } },
+    ]);
+    expect(await undoFor('customDashboards.delete', { id: 'd1' })).toEqual([
+      { op: 'customDashboards.create', args: { id: 'd1', budgetId: 1, name: 'Main' } },
+      { op: 'customDashboards.update', args: { id: 'd1', sortOrder: 3, filters } },
+    ]);
+  });
+
   it('widgets: add removes the new widget, delete restores it in place', async () => {
     mocks.customDashboards.getDashboard.mockReturnValue({ widgets: [{ id: 'w0' }] });
     expect(

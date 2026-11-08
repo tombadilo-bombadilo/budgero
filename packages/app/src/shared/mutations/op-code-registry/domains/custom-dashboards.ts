@@ -67,6 +67,7 @@ export const customDashboardOps = {
         id: args.id as string,
         name: args.name as string | undefined,
         sortOrder: args.sortOrder as number | undefined,
+        filters: args.filters as CustomDashboard['filters'] | undefined,
       });
     },
     invalidates: [
@@ -82,7 +83,14 @@ export const customDashboardOps = {
           ? [
               {
                 op: 'customDashboards.update',
-                args: { id: args.id, name: dashboard.name, sortOrder: dashboard.sortOrder },
+                args: {
+                  id: args.id,
+                  name: dashboard.name,
+                  sortOrder: dashboard.sortOrder,
+                  // Only a filters change restores filters, so undoing a rename
+                  // never rolls back filters set since.
+                  ...(args.filters !== undefined ? { filters: dashboard.filters ?? null } : {}),
+                },
               },
             ]
           : [];
@@ -112,7 +120,11 @@ export const customDashboardOps = {
           },
           {
             op: 'customDashboards.update',
-            args: { id: dashboard.id, sortOrder: dashboard.sortOrder },
+            args: {
+              id: dashboard.id,
+              sortOrder: dashboard.sortOrder,
+              ...(dashboard.filters ? { filters: dashboard.filters } : {}),
+            },
           },
           ...dashboard.widgets.map(addWidgetOp),
         ];
