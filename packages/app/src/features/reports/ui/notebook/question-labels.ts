@@ -7,7 +7,11 @@ import { t } from '@lingui/core/macro';
 import { getLocaleTag } from '@shared/i18n';
 import {
   getField,
+  type ColumnFormat,
   type DateBucket,
+  type ExpressionError,
+  type FieldDef,
+  type MetricModifier,
   type QuestionAggregation,
   type QuestionColumn,
   type QuestionFilter,
@@ -71,6 +75,8 @@ export function fieldLabel(source: QuestionSource, fieldId: string): string {
       return source === 'accounts' ? t`On budget` : t`On-budget account`;
     case 'cleared':
       return t`Cleared`;
+    case 'is_income':
+      return t`Income category`;
     case 'assigned':
       return t`Assigned`;
     case 'activity':
@@ -155,8 +161,13 @@ export function operatorLabel(op: FilterOp, fieldType?: string): string {
   }
 }
 
-export function aggregationLabel(source: QuestionSource, aggregation: QuestionAggregation): string {
-  const field = aggregation.field ? fieldLabel(source, aggregation.field) : '';
+export function aggregationLabel(
+  source: QuestionSource,
+  aggregation: QuestionAggregation,
+  /** Name of the custom column the metric aggregates, if any. */
+  fieldName?: string
+): string {
+  const field = fieldName ?? (aggregation.field ? fieldLabel(source, aggregation.field) : '');
   switch (aggregation.op) {
     case 'count':
       return source === 'transactions'
@@ -207,12 +218,17 @@ export function aggregationHint(op: QuestionAggregation['op']): string | null {
 export function columnLabel(source: QuestionSource, column: QuestionColumn): string {
   switch (column.kind) {
     case 'field':
-      return fieldLabel(source, column.field);
-    case 'aggregation':
-      return aggregationLabel(source, column.aggregation);
+      return column.name ?? fieldLabel(source, column.field);
+    case 'aggregation': {
+      const base = aggregationLabel(source, column.aggregation, column.fieldName);
+      const metric = withModifierLabel(base, column.aggregation);
+      if (column.derived === 'previous') return t`${metric} (previous period)`;
+      if (column.derived === 'change') return t`${metric}: % change`;
+      return metric;
+    }
     case 'breakout': {
       const { breakout } = column;
-      if (!breakout.bucket) return fieldLabel(source, breakout.field);
+      if (!breakout.bucket) return column.name ?? fieldLabel(source, breakout.field);
       const primary = breakout.field === 'date' || breakout.field === 'month';
       if (primary) return bucketLabel(breakout.bucket);
       const field = fieldLabel(source, breakout.field);
@@ -224,8 +240,36 @@ export function columnLabel(source: QuestionSource, column: QuestionColumn): str
 
 const MONEY_FIELDS = new Set(['amount', 'inflow', 'outflow', 'assigned', 'activity', 'balance']);
 
+/** "Spending" → "Spending (running total)" etc. */
+export function withModifierLabel(label: string, aggregation: QuestionAggregation): string {
+  switch (aggregation.modifier) {
+    case 'running':
+      return t`${label} (running total)`;
+    case 'moving': {
+      const window = aggregation.window ?? 3;
+      return t`${label} (moving average of ${window})`;
+    }
+    case 'share':
+      return t`${label} (% of total)`;
+    default:
+      return label;
+  }
+}
+
+export function modifierLabel(modifier: MetricModifier): string {
+  switch (modifier) {
+    case 'running':
+      return t`Running total`;
+    case 'moving':
+      return t`Moving average`;
+    case 'share':
+      return t`% of total`;
+  }
+}
+
 /** How a numeric column should be formatted. */
-export function columnFormat(column: QuestionColumn): 'money' | 'number' | 'text' {
+export function columnFormat(column: QuestionColumn): ColumnFormat {
+  if (column.format) return column.format;
   if (column.kind === 'aggregation') {
     const { op, field } = column.aggregation;
     if (op === 'count' || op === 'distinct') return 'number';
@@ -344,10 +388,12 @@ function formatIsoDate(value: unknown): string {
 export function filterSummary(
   source: QuestionSource,
   filter: QuestionFilter,
-  valueName: (value: string | number | boolean) => string = String
+  valueName: (value: string | number | boolean) => string = String,
+  /** A custom column the filter is on: its field definition and name. */
+  customField?: { field: FieldDef; name: string }
 ): string {
-  const field = getField(source, filter.field);
-  const name = fieldLabel(source, filter.field);
+  const field = customField?.field ?? getField(source, filter.field);
+  const name = customField?.name ?? fieldLabel(source, filter.field);
   if (!field) return name;
   const values = filter.values.map(valueName);
   const [first = '', second = ''] = values;
@@ -412,17 +458,100 @@ export function filterSummary(
 export function describeQuestion(spec: QuestionSpec): string {
   const source = sourceLabel(spec.source);
   if (spec.aggregations.length === 0) return source;
-  const metric = aggregationLabel(spec.source, spec.aggregations[0]);
-  const secondMetric =
-    spec.aggregations.length === 2 ? aggregationLabel(spec.source, spec.aggregations[1]) : '';
+  const label = (aggregation: QuestionAggregation) =>
+    aggregationLabel(spec.source, aggregation, customColumnName(spec, aggregation.field));
+  const metric = label(spec.aggregations[0]);
+  const secondMetric = spec.aggregations.length === 2 ? label(spec.aggregations[1]) : '';
   const metrics = secondMetric ? t`${metric} and ${secondMetric}` : metric;
   if (spec.breakouts.length === 0) return metrics;
   const groups = spec.breakouts.map((breakout) =>
     breakout.bucket && (breakout.field === 'date' || breakout.field === 'month')
       ? bucketLabel(breakout.bucket)
-      : fieldLabel(spec.source, breakout.field)
+      : specFieldLabel(spec, breakout.field)
   );
   const [firstGroup, secondGroup] = groups;
   const by = secondGroup ? t`${firstGroup} and ${secondGroup}` : firstGroup;
   return t`${metrics} by ${by}`;
+}
+
+function customColumnName(spec: QuestionSpec, fieldId: string | undefined): string | undefined {
+  if (!fieldId) return undefined;
+  return spec.customColumns?.find((column) => column.id === fieldId)?.name;
+}
+
+/** Label of a source field or custom column of a question. */
+export function specFieldLabel(spec: QuestionSpec, fieldId: string): string {
+  return customColumnName(spec, fieldId) ?? fieldLabel(spec.source, fieldId);
+}
+
+/** Localized names a field can be written as in an expression (besides its id). */
+export function expressionFieldNames(source: QuestionSource, fieldId: string): string[] {
+  return [fieldLabel(source, fieldId)];
+}
+
+/** Localized names for Spending / Income / Net / Count in custom metrics. */
+export function expressionMetricNames(): Record<string, 'spending' | 'income' | 'net' | 'count'> {
+  return { [t`Spending`]: 'spending', [t`Income`]: 'income', [t`Net`]: 'net', [t`Count`]: 'count' };
+}
+
+/** User-facing message for an expression error. */
+export function expressionErrorMessage(error: ExpressionError): string {
+  const { detail } = error;
+  switch (error.code) {
+    case 'empty':
+      return t`Enter an expression.`;
+    case 'tooLong':
+      return t`This expression is too long.`;
+    case 'tooComplex':
+      return t`This expression is nested too deeply.`;
+    case 'unexpectedCharacter':
+      return t`“${detail}” isn’t allowed here.`;
+    case 'unterminatedString':
+      return t`Text is missing its closing quote.`;
+    case 'unterminatedField':
+      return t`A field name is missing its closing ].`;
+    case 'emptyField':
+      return t`Put a field name between the brackets, like [Amount].`;
+    case 'unknownField':
+      return t`There’s no field called [${detail}].`;
+    case 'unknownName':
+      return t`Unknown name “${detail}”. Put field names in brackets, like [Amount].`;
+    case 'unknownFunction':
+      return t`There’s no function called ${detail}.`;
+    case 'unexpectedToken':
+      return t`Unexpected ${detail}.`;
+    case 'unexpectedEnd':
+      return t`The expression ends too early.`;
+    case 'missingParen':
+      return t`A closing parenthesis ) is missing.`;
+    case 'argumentCount':
+      return t`${detail}() has the wrong number of values.`;
+    case 'expectedNumber':
+      return t`This needs to be a number.`;
+    case 'expectedBoolean':
+      return t`This needs to be a condition, like [Amount] > 0.`;
+    case 'expectedText':
+      return t`This needs to be text.`;
+    case 'typeMismatch':
+      return t`These values have different types.`;
+    case 'invalidDate':
+      return t`Write dates as "YYYY-MM-DD".`;
+    case 'aggregateInColumn':
+    case 'metricInColumn':
+      return t`${detail} only works in a custom metric.`;
+    case 'nestedAggregate':
+      return t`${detail} can’t be used inside another aggregation.`;
+    case 'fieldOutsideAggregate':
+      return t`In a metric, fields go inside an aggregation, like Sum([Amount]).`;
+    case 'needsAggregate':
+      return t`A metric needs an aggregation, like Sum([Amount]) or Count.`;
+    case 'metricUnavailable':
+      return t`${detail} is only available for transactions.`;
+    case 'metricResultNotNumber':
+      return t`A metric has to be a number.`;
+    case 'columnResultDate':
+      return t`A custom column can be a number, text or a condition.`;
+    case 'roundDigits':
+      return t`round() takes a whole number of digits from −10 to 10.`;
+  }
 }

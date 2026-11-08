@@ -1,6 +1,8 @@
 import { Trans, useLingui } from '@lingui/react/macro';
+import { useState } from 'react';
 import {
   AreaChart,
+  ArrowLeft,
   BarChart3,
   Hash,
   LineChart,
@@ -26,6 +28,7 @@ import { cn } from '@shared/lib/utils';
 import { QuestionVisualization } from './QuestionVisualization';
 import { QuestionTable } from './QuestionTable';
 import { visualizationLabel } from './question-labels';
+import { DrillMenu, type DrillRequest } from './DrillMenu';
 import type { QuestionQueryState } from './useQuestionQuery';
 
 const VIZ_ICONS: Record<ResolvedVisualization, LucideIcon> = {
@@ -44,6 +47,10 @@ interface QuestionResultProps {
   onVisualizationChange: (visualization: Visualization) => void;
   onStackingChange: (stacking: Stacking) => void;
   onRefresh: () => void;
+  /** Drill-through: replaces the question with the explored one. */
+  onDrill?: (spec: QuestionSpec) => void;
+  /** Back to the question before the last drill; omit when there is none. */
+  onBack?: () => void;
 }
 
 /** Result area: Table ⇄ Visualization toggle, chart picker, states. */
@@ -53,8 +60,12 @@ export function QuestionResult({
   onVisualizationChange,
   onStackingChange,
   onRefresh,
+  onDrill,
+  onBack,
 }: QuestionResultProps) {
   const { t } = useLingui();
+  const [drillRequest, setDrillRequest] = useState<DrillRequest | null>(null);
+  const handleDrill = onDrill ? setDrillRequest : undefined;
   const { result, resultCompiled, compileError, error, isRunning } = query;
   const shownError = compileError ?? error;
   const allowed = allowedVisualizations(spec);
@@ -78,6 +89,18 @@ export function QuestionResult({
       className="flex min-w-0 flex-col gap-3 rounded-lg border bg-card p-3 text-card-foreground sm:p-4"
     >
       <div className="flex flex-wrap items-center gap-2">
+        {onBack && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 px-2"
+            onClick={onBack}
+            title={t`Back to the previous question`}
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden />
+            <Trans>Back</Trans>
+          </Button>
+        )}
         {chartable && (
           <ToggleGroup
             type="single"
@@ -228,6 +251,7 @@ export function QuestionResult({
                 result={result}
                 columns={resultCompiled.columns}
                 source={resultCompiled.spec.source}
+                onDrill={handleDrill}
               />
             ) : (
               <QuestionVisualization
@@ -245,11 +269,20 @@ export function QuestionResult({
                     ? current
                     : resultCompiled.visualization
                 )}
+                onDrill={handleDrill}
               />
             )}
           </div>
         )}
       </div>
+      {resultCompiled && onDrill && (
+        <DrillMenu
+          spec={resultCompiled.spec}
+          request={drillRequest}
+          onClose={() => setDrillRequest(null)}
+          onDrill={onDrill}
+        />
+      )}
     </section>
   );
 }

@@ -6,7 +6,9 @@ import {
   Columns3,
   Database,
   Filter,
+  FunctionSquare,
   ListOrdered,
+  MoreHorizontal,
   Plus,
   Sigma,
   SortAsc,
@@ -18,25 +20,42 @@ import {
   FRIENDLY_AGGREGATIONS,
   MAX_AGGREGATIONS,
   MAX_BREAKOUTS,
+  MAX_CUSTOM_COLUMNS,
   MAX_QUESTION_LIMIT,
   NUMERIC_AGGREGATIONS,
   QUESTION_SOURCES,
   SOURCE_FIELDS,
   createQuestion,
+  customFields,
   getField,
   groupableFields,
+  hasDateBreakout,
+  nextCustomColumnId,
   normalizeQuestion,
   numericFields,
   questionColumns,
+  questionField,
   type DateBucket,
+  type FieldDef,
   type QuestionAggregation,
   type QuestionBreakout,
+  type QuestionCustomColumn,
   type QuestionFilter,
   type QuestionSource,
   type QuestionSpec,
 } from '@features/reports/lib/question';
 import { Button } from '@shared/ui/button';
 import { Checkbox } from '@shared/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@shared/ui/dropdown-menu';
 import {
   Command,
   CommandEmpty,
@@ -51,16 +70,18 @@ import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@shared/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { cn } from '@shared/lib/utils';
 import { FieldList, FilterEditor } from './FilterEditor';
+import { ExpressionEditor } from './ExpressionEditor';
 import {
   aggregationHint,
   aggregationLabel,
   bucketLabel,
   booleanLabel,
   columnLabel,
-  fieldLabel,
   filterSummary,
   sourceDescription,
   sourceLabel,
+  specFieldLabel,
+  withModifierLabel,
 } from './question-labels';
 import type { FieldValueOptions } from './useFieldValueOptions';
 
@@ -118,6 +139,7 @@ export function NotebookEditor({ spec, onChange, valueOptions }: NotebookEditorP
               onChange(createQuestion(source));
             }}
             onColumnsChange={(columns) => update({ columns })}
+            onChange={update}
           />
         </NotebookStep>
 
@@ -308,20 +330,25 @@ function DataStep({
   spec,
   onSourceChange,
   onColumnsChange,
+  onChange,
 }: {
   spec: QuestionSpec;
   onSourceChange: (source: QuestionSource) => void;
   onColumnsChange: (columns: string[] | null) => void;
+  onChange: (patch: Partial<QuestionSpec>) => void;
 }) {
   const { t } = useLingui();
   const raw = spec.aggregations.length === 0;
   const columns = spec.columns ?? [...DEFAULT_RAW_COLUMNS[spec.source]];
   const columnCount = columns.length;
+  const customColumns = spec.customColumns ?? [];
+  const pickable = [
+    ...SOURCE_FIELDS[spec.source].map((field) => field.id),
+    ...customColumns.map((column) => column.id),
+  ];
   const toggleColumn = (fieldId: string, checked: boolean) => {
     const next = checked
-      ? SOURCE_FIELDS[spec.source]
-          .map((field) => field.id)
-          .filter((id) => id === fieldId || columns.includes(id))
+      ? pickable.filter((id) => id === fieldId || columns.includes(id))
       : columns.filter((id) => id !== fieldId);
     if (next.length > 0) onColumnsChange(next);
   };
@@ -357,19 +384,19 @@ function DataStep({
                 <legend className="px-1 pb-1 text-xs font-semibold text-muted-foreground">
                   <Trans>Columns to show</Trans>
                 </legend>
-                {SOURCE_FIELDS[spec.source].map((field) => {
-                  const id = `column-${field.id}`;
-                  const checked = columns.includes(field.id);
+                {pickable.map((fieldId) => {
+                  const id = `column-${fieldId}`;
+                  const checked = columns.includes(fieldId);
                   return (
-                    <div key={field.id} className="flex items-center gap-2 rounded px-1 py-1">
+                    <div key={fieldId} className="flex items-center gap-2 rounded px-1 py-1">
                       <Checkbox
                         id={id}
                         checked={checked}
                         disabled={checked && columns.length === 1}
-                        onCheckedChange={(value) => toggleColumn(field.id, value === true)}
+                        onCheckedChange={(value) => toggleColumn(fieldId, value === true)}
                       />
                       <Label htmlFor={id} className="font-normal">
-                        {fieldLabel(spec.source, field.id)}
+                        {specFieldLabel(spec, fieldId)}
                       </Label>
                     </div>
                   );
@@ -389,6 +416,7 @@ function DataStep({
           </Popover>
         )}
       </div>
+      <CustomColumns spec={spec} onChange={onChange} />
       <p className="text-xs text-muted-foreground">{sourceDescription(spec.source)}</p>
       {spec.source === 'budget' && (
         <p className="text-xs text-muted-foreground">
@@ -425,8 +453,15 @@ function FilterStep({
     const field = getField(spec.source, filter.field);
     const options = field?.valueKind ? valueOptions(field.valueKind) : [];
     const names = new Map(options.map((option) => [String(option.value), option.label]));
-    return filterSummary(spec.source, filter, (value) =>
-      typeof value === 'boolean' ? booleanLabel(value) : (names.get(String(value)) ?? String(value))
+    const custom = field ? undefined : questionField(spec, filter.field);
+    return filterSummary(
+      spec.source,
+      filter,
+      (value) =>
+        typeof value === 'boolean'
+          ? booleanLabel(value)
+          : (names.get(String(value)) ?? String(value)),
+      custom ? { field: custom, name: specFieldLabel(spec, filter.field) } : undefined
     );
   };
 
@@ -467,7 +502,8 @@ function FilterStep({
                 <Chip
                   label={label}
                   editLabel={t`Edit filter: ${label}`}
-                  onEdit={() => setEditing(index)}
+                  // Filters on custom columns come from drill-through; they can be removed.
+                  onEdit={getField(spec.source, filter.field) ? () => setEditing(index) : undefined}
                   onRemove={() => {
                     setEditing(null);
                     onChange(spec.filters.filter((_, i) => i !== index));
@@ -495,17 +531,31 @@ function FilterStep({
 // ---------------------------------------------------------------------------
 
 function MetricPicker({
-  source,
+  spec,
   onPick,
+  onCustom,
 }: {
-  source: QuestionSource;
+  spec: QuestionSpec;
   onPick: (aggregation: QuestionAggregation) => void;
+  onCustom: () => void;
 }) {
   const { t } = useLingui();
-  const numbers = numericFields(source);
-  const distinctFields = SOURCE_FIELDS[source].filter((field) => field.type !== 'number');
-  const item = (aggregation: QuestionAggregation, hint?: string | null) => {
-    const label = aggregationLabel(source, aggregation);
+  const { source } = spec;
+  const custom = Array.from(customFields(source, spec.customColumns).values());
+  const numbers: { field: FieldDef; name?: string }[] = [
+    ...numericFields(source).map((field) => ({ field })),
+    ...custom
+      .filter((entry) => entry.field.type === 'number')
+      .map((entry) => ({ field: entry.field, name: entry.column.name })),
+  ];
+  const distinctFields: { field: FieldDef; name?: string }[] = [
+    ...SOURCE_FIELDS[source].filter((field) => field.type !== 'number').map((field) => ({ field })),
+    ...custom
+      .filter((entry) => entry.field.type !== 'number')
+      .map((entry) => ({ field: entry.field, name: entry.column.name })),
+  ];
+  const item = (aggregation: QuestionAggregation, hint?: string | null, fieldName?: string) => {
+    const label = aggregationLabel(source, aggregation, fieldName);
     return (
       <CommandItem
         key={`${aggregation.op}-${aggregation.field ?? ''}`}
@@ -533,14 +583,202 @@ function MetricPicker({
         <CommandGroup heading={t`Basic metrics`}>
           {item({ op: 'count' })}
           {NUMERIC_AGGREGATIONS.flatMap((op) =>
-            numbers.map((field) => item({ op, field: field.id }))
+            numbers.map(({ field, name }) => item({ op, field: field.id }, null, name))
           )}
         </CommandGroup>
         <CommandGroup heading={t`Distinct values`}>
-          {distinctFields.map((field) => item({ op: 'distinct', field: field.id }))}
+          {distinctFields.map(({ field, name }) =>
+            item({ op: 'distinct', field: field.id }, null, name)
+          )}
+        </CommandGroup>
+        <CommandGroup heading={t`Custom`}>
+          <CommandItem
+            value={`${t`Custom metric`} custom expression formula`}
+            onSelect={onCustom}
+            className="cursor-pointer flex-col items-start gap-0"
+          >
+            <span className="flex items-center gap-1.5">
+              <FunctionSquare className="h-4 w-4" aria-hidden />
+              <Trans>Custom metric…</Trans>
+            </span>
+            <span className="text-xs text-muted-foreground">
+              <Trans>Write a formula, e.g. Spending / Income * 100</Trans>
+            </span>
+          </CommandItem>
         </CommandGroup>
       </CommandList>
     </Command>
+  );
+}
+
+const MOVING_WINDOWS = [3, 6, 12] as const;
+
+/** "…" menu on a metric chip: compare to the previous period, running total, moving average, % of total. */
+function MetricOptions({
+  spec,
+  aggregation,
+  label,
+  onChange,
+}: {
+  spec: QuestionSpec;
+  aggregation: QuestionAggregation;
+  label: string;
+  onChange: (aggregation: QuestionAggregation) => void;
+}) {
+  const { t } = useLingui();
+  const dated = hasDateBreakout(spec.breakouts);
+  const grouped = spec.breakouts.length > 0;
+  const value =
+    aggregation.modifier === 'moving'
+      ? `moving:${aggregation.window ?? 3}`
+      : (aggregation.modifier ?? 'none');
+  const setModifier = (next: string) => {
+    const { modifier: _modifier, window: _window, ...rest } = aggregation;
+    if (next === 'none') onChange(rest);
+    else if (next.startsWith('moving:')) {
+      onChange({ ...rest, modifier: 'moving', window: Number(next.slice(7)) });
+    } else onChange({ ...rest, modifier: next as QuestionAggregation['modifier'] });
+  };
+  const active = Boolean(aggregation.modifier || aggregation.compare);
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={t`Options for ${label}`}
+          title={t`Compare, running total, moving average, % of total`}
+          className={cn(
+            'ml-0.5 rounded-full p-1 text-muted-foreground hover:bg-background hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+            active && 'text-primary'
+          )}
+        >
+          <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-64">
+        <DropdownMenuCheckboxItem
+          checked={Boolean(aggregation.compare)}
+          disabled={!dated}
+          onCheckedChange={(checked) => {
+            const { compare: _compare, ...rest } = aggregation;
+            onChange(checked ? { ...rest, compare: true } : rest);
+          }}
+        >
+          <Trans>Compare to previous period</Trans>
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
+          <Trans>Show as</Trans>
+        </DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={value} onValueChange={setModifier}>
+          <DropdownMenuRadioItem value="none">
+            <Trans>Value</Trans>
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem value="running" disabled={!dated}>
+            <Trans>Running total</Trans>
+          </DropdownMenuRadioItem>
+          {MOVING_WINDOWS.map((window) => (
+            <DropdownMenuRadioItem key={window} value={`moving:${window}`} disabled={!dated}>
+              <Trans>Moving average ({window} periods)</Trans>
+            </DropdownMenuRadioItem>
+          ))}
+          <DropdownMenuRadioItem value="share" disabled={!grouped}>
+            <Trans>% of total</Trans>
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+        {!dated && (
+          <p className="px-2 py-1.5 text-xs text-muted-foreground">
+            <Trans>Group by a date to compare periods or add running totals.</Trans>
+          </p>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** Custom column chips (edit / remove) and "+ Custom column" in the Data step. */
+function CustomColumns({
+  spec,
+  onChange,
+}: {
+  spec: QuestionSpec;
+  onChange: (patch: Partial<QuestionSpec>) => void;
+}) {
+  const { t } = useLingui();
+  // A column id, 'new', or null.
+  const [editing, setEditing] = useState<string | null>(null);
+  const customColumns = spec.customColumns ?? [];
+  const raw = spec.aggregations.length === 0;
+
+  const save = (column: QuestionCustomColumn) => {
+    const exists = customColumns.some((item) => item.id === column.id);
+    const next = exists
+      ? customColumns.map((item) => (item.id === column.id ? column : item))
+      : [...customColumns, column];
+    // A new column shows up in raw rows right away.
+    const columns =
+      !exists && raw
+        ? [...(spec.columns ?? DEFAULT_RAW_COLUMNS[spec.source]), column.id]
+        : undefined;
+    onChange({ customColumns: next, ...(columns ? { columns } : {}) });
+    setEditing(null);
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t`Custom columns`}>
+      {customColumns.map((column) => (
+        <Popover
+          key={column.id}
+          open={editing === column.id}
+          onOpenChange={(isOpen) => setEditing(isOpen ? column.id : null)}
+        >
+          <PopoverAnchor asChild>
+            <span className="inline-flex min-w-0 max-w-full">
+              <Chip
+                label={column.name}
+                editLabel={t`Edit custom column: ${column.name}`}
+                onEdit={() => setEditing(column.id)}
+                onRemove={() =>
+                  onChange({
+                    customColumns: customColumns.filter((item) => item.id !== column.id),
+                  })
+                }
+                removeLabel={t`Remove custom column: ${column.name}`}
+              />
+            </span>
+          </PopoverAnchor>
+          <PopoverContent align="start" className="w-[min(24rem,calc(100vw-2rem))] p-0">
+            <ExpressionEditor
+              spec={spec}
+              kind="column"
+              initial={column}
+              onSubmit={({ name, expression }) => save({ id: column.id, name, expression })}
+              onCancel={() => setEditing(null)}
+            />
+          </PopoverContent>
+        </Popover>
+      ))}
+      {customColumns.length < MAX_CUSTOM_COLUMNS && (
+        <Popover
+          open={editing === 'new'}
+          onOpenChange={(isOpen) => setEditing(isOpen ? 'new' : null)}
+        >
+          <PopoverTrigger asChild>
+            <AddButton label={t`Custom column`} />
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-[min(24rem,calc(100vw-2rem))] p-0">
+            <ExpressionEditor
+              spec={spec}
+              kind="column"
+              onSubmit={({ name, expression }) =>
+                save({ id: nextCustomColumnId(spec), name, expression })
+              }
+              onCancel={() => setEditing(null)}
+            />
+          </PopoverContent>
+        </Popover>
+      )}
+    </div>
   );
 }
 
@@ -556,22 +794,48 @@ function SummarizeStep({
   const [metricOpen, setMetricOpen] = useState<number | null>(
     spec.aggregations.length === 0 ? -1 : null
   );
+  // Which form the metric popover shows: the picker or the formula editor.
+  const [metricMode, setMetricMode] = useState<'pick' | 'custom'>('pick');
   const [groupOpen, setGroupOpen] = useState(false);
-  const groupable = groupableFields(spec.source);
+  const custom = customFields(spec.source, spec.customColumns);
+  const groupable = [
+    ...groupableFields(spec.source),
+    ...Array.from(custom.values()).map((entry) => entry.field),
+  ];
+  const labelOf = (fieldId: string) => specFieldLabel(spec, fieldId);
+
+  const openMetric = (index: number | null) => {
+    setMetricOpen(index);
+    const current = index !== null && index >= 0 ? spec.aggregations[index] : undefined;
+    setMetricMode(current?.op === 'custom' ? 'custom' : 'pick');
+  };
 
   const pickMetric = (aggregation: QuestionAggregation) => {
     if (metricOpen === null) return;
+    const previous = metricOpen >= 0 ? spec.aggregations[metricOpen] : undefined;
+    // Swapping the metric keeps its comparison / running-total choice.
+    const next: QuestionAggregation = {
+      ...aggregation,
+      ...(previous?.modifier ? { modifier: previous.modifier } : {}),
+      ...(previous?.window ? { window: previous.window } : {}),
+      ...(previous?.compare ? { compare: true } : {}),
+    };
     onChange({
       aggregations:
         metricOpen === -1
-          ? [...spec.aggregations, aggregation]
-          : spec.aggregations.map((item, index) => (index === metricOpen ? aggregation : item)),
+          ? [...spec.aggregations, next]
+          : spec.aggregations.map((item, index) => (index === metricOpen ? next : item)),
     });
     setMetricOpen(null);
   };
 
+  const setAggregation = (index: number, aggregation: QuestionAggregation) =>
+    onChange({
+      aggregations: spec.aggregations.map((item, i) => (i === index ? aggregation : item)),
+    });
+
   const pickGroup = (fieldId: string) => {
-    const field = getField(spec.source, fieldId);
+    const field = questionField(spec, fieldId);
     if (!field) return;
     const breakout: QuestionBreakout =
       field.type === 'date'
@@ -586,52 +850,92 @@ function SummarizeStep({
       breakouts: spec.breakouts.map((item, i) => (i === index ? { ...item, bucket } : item)),
     });
 
-  const metricPopover = (
-    <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
-      <MetricPicker source={spec.source} onPick={pickMetric} />
-    </PopoverContent>
-  );
+  const metricPopover = (index: number) => {
+    const current = index >= 0 ? spec.aggregations[index] : undefined;
+    return (
+      <PopoverContent
+        align="start"
+        className={cn(
+          'p-0',
+          metricMode === 'custom'
+            ? 'w-[min(24rem,calc(100vw-2rem))]'
+            : 'w-[min(20rem,calc(100vw-2rem))]'
+        )}
+      >
+        {metricMode === 'custom' ? (
+          <ExpressionEditor
+            spec={spec}
+            kind="metric"
+            initial={
+              current?.op === 'custom' && current.expression
+                ? { name: current.name, expression: current.expression }
+                : undefined
+            }
+            onSubmit={({ name, expression }) => pickMetric({ op: 'custom', name, expression })}
+            onCancel={() => setMetricOpen(null)}
+            onBack={() => setMetricMode('pick')}
+          />
+        ) : (
+          <MetricPicker spec={spec} onPick={pickMetric} onCustom={() => setMetricMode('custom')} />
+        )}
+      </PopoverContent>
+    );
+  };
 
   return (
     <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-start">
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t`Metrics`}>
         {spec.aggregations.map((aggregation, index) => {
-          const label = aggregationLabel(spec.source, aggregation);
+          const fieldName = aggregation.field
+            ? custom.get(aggregation.field)?.column.name
+            : undefined;
+          const base = withModifierLabel(
+            aggregationLabel(spec.source, aggregation, fieldName),
+            aggregation
+          );
+          const label = aggregation.compare ? t`${base} vs previous period` : base;
           return (
             <Popover
               key={index}
               open={metricOpen === index}
-              onOpenChange={(isOpen) => setMetricOpen(isOpen ? index : null)}
+              onOpenChange={(isOpen) => openMetric(isOpen ? index : null)}
             >
               <PopoverAnchor asChild>
                 <span className="inline-flex min-w-0 max-w-full">
                   <Chip
                     label={label}
                     editLabel={t`Change metric: ${label}`}
-                    onEdit={() => setMetricOpen(index)}
+                    onEdit={() => openMetric(index)}
                     onRemove={() => {
                       setMetricOpen(null);
                       onChange({ aggregations: spec.aggregations.filter((_, i) => i !== index) });
                     }}
                     removeLabel={t`Remove metric: ${label}`}
-                  />
+                  >
+                    <MetricOptions
+                      spec={spec}
+                      aggregation={aggregation}
+                      label={label}
+                      onChange={(next) => setAggregation(index, next)}
+                    />
+                  </Chip>
                 </span>
               </PopoverAnchor>
-              {metricPopover}
+              {metricPopover(index)}
             </Popover>
           );
         })}
         {spec.aggregations.length < MAX_AGGREGATIONS && (
           <Popover
             open={metricOpen === -1}
-            onOpenChange={(isOpen) => setMetricOpen(isOpen ? -1 : null)}
+            onOpenChange={(isOpen) => openMetric(isOpen ? -1 : null)}
           >
             <PopoverTrigger asChild>
               <AddButton
                 label={spec.aggregations.length === 0 ? t`Pick a metric` : t`Add metric`}
               />
             </PopoverTrigger>
-            {metricPopover}
+            {metricPopover(-1)}
           </Popover>
         )}
       </div>
@@ -642,8 +946,8 @@ function SummarizeStep({
 
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t`Groupings`}>
         {spec.breakouts.map((breakout, index) => {
-          const field = getField(spec.source, breakout.field);
-          const label = fieldLabel(spec.source, breakout.field);
+          const field = questionField(spec, breakout.field);
+          const label = labelOf(breakout.field);
           return (
             <Chip
               key={`${breakout.field}-${breakout.bucket ?? ''}`}
@@ -689,6 +993,7 @@ function SummarizeStep({
                 fields={groupable}
                 onPick={pickGroup}
                 placeholder={t`Group by…`}
+                labelOf={labelOf}
               />
             </PopoverContent>
           </Popover>

@@ -44,6 +44,8 @@ import { collectionOf, listCollections, withCollection } from '../collections';
 import { QuestionHeader } from './QuestionHeader';
 import { usePinToDashboard } from './usePinToDashboard';
 
+const MAX_HISTORY = 20;
+
 interface NotebookQuestionViewProps {
   budgetId: number;
   /** The saved question being edited; null for a new one. */
@@ -64,6 +66,21 @@ export function NotebookQuestionView({
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [spec, setSpec] = useState<QuestionSpec>(() => initialSpec ?? createQuestion());
+  // Questions left by drilling through, newest last; Back pops one.
+  const [history, setHistory] = useState<QuestionSpec[]>([]);
+  const drill = useCallback(
+    (next: QuestionSpec) => {
+      setHistory((previous) => [...previous.slice(-(MAX_HISTORY - 1)), spec]);
+      setSpec(next);
+    },
+    [spec]
+  );
+  const back = useCallback(() => {
+    const previous = history.at(-1);
+    if (!previous) return;
+    setHistory(history.slice(0, -1));
+    setSpec(previous);
+  }, [history]);
   const [refreshKey, setRefreshKey] = useState(0);
   const [saveOpen, setSaveOpen] = useState(openSaveDialog && report !== null);
   const [sqlOpen, setSqlOpen] = useState(false);
@@ -194,6 +211,8 @@ export function NotebookQuestionView({
           onVisualizationChange={(visualization) => setSpec({ ...spec, visualization })}
           onStackingChange={(stacking) => setSpec({ ...spec, stacking })}
           onRefresh={() => setRefreshKey((key) => key + 1)}
+          onDrill={drill}
+          onBack={history.length > 0 ? back : undefined}
         />
       </div>
 
