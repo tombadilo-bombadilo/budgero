@@ -138,6 +138,10 @@ msgstr "\"{0}\" bijgewerkt naar \"{1}\"."
 msgid "\"{0}\" was removed and cleared from transactions."
 msgstr "\"{0}\" is verwijderd en gewist uit transacties."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "“{detail}” isn’t allowed here."
+msgstr "“{detail}” is hier niet toegestaan."
+
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "\"K-MARKET KAMPPI\" becomes \"K-Market Kamppi\". Names with lowercase letters stay as they are."
 msgstr "\"K-MARKET KAMPPI\" wordt \"K-Market Kamppi\". Namen met kleine letters blijven zoals ze zijn."
@@ -146,6 +150,10 @@ msgstr "\"K-MARKET KAMPPI\" wordt \"K-Market Kamppi\". Namen met kleine letters 
 #: src/features/transactions/ui/SecondaryAmount.tsx
 msgid "({0} original)"
 msgstr "({0} oorspronkelijk)"
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "(at character {position})"
+msgstr "(bij teken {position})"
 
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "(clear)"
@@ -952,6 +960,10 @@ msgstr "{0}Wijzigingen ongedaan maken"
 #~ msgid "{activeFilters} active"
 #~ msgstr "{activeFilters} actief"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "{base} vs previous period"
+msgstr "{base} vs. vorige periode"
+
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
 msgid "{ccCategoryName} payments"
 msgstr "{ccCategoryName} betalingen"
@@ -1046,6 +1058,22 @@ msgstr "{daysLeftInBeta} dagen"
 msgid "{daysUntil, plural, one {Due in # day} other {Due in # days}}"
 msgstr "{daysUntil, plural, one {Vervalt over # dag} other {Vervalt over # dagen}}"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{detail} can’t be used inside another aggregation."
+msgstr "{detail} kan niet binnen een andere aggregatie staan."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{detail} is only available for transactions."
+msgstr "{detail} is alleen beschikbaar voor transacties."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{detail} only works in a custom metric."
+msgstr "{detail} werkt alleen in een eigen metriek."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{detail}() has the wrong number of values."
+msgstr "{detail}() heeft het verkeerde aantal waarden."
+
 #: src/features/chat/ui/chat-panel/chat-panel.utils.ts
 #: src/pages/settings/AuditLogPage.tsx
 msgid "{diffDays}d ago"
@@ -1102,6 +1130,10 @@ msgstr "{funded} van {target} · gehaald {monthsMet}/{monthsWithTarget} mnd"
 msgid "{funded}% funded"
 msgstr "{funded}% gefinancierd"
 
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "{goalShare}% of the {goalText} goal"
+msgstr "{goalShare}% van het doel van {goalText}"
+
 #: src/pages/analytics/components/GoalFundingList.tsx
 msgid "{groupFunded} of {groupTarget}"
 msgstr "{groupFunded} van {groupTarget}"
@@ -1132,6 +1164,18 @@ msgstr "Er kwam {incomeText} binnen en {spent} ging eruit — {gap} kwam uit je 
 msgid "{incomeText} came in and {spent} went out — you kept {rate}%."
 msgstr "Er kwam {incomeText} binnen en {spent} ging eruit — je hield {rate}% over."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{label} (% of total)"
+msgstr "{label} (% van totaal)"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{label} (moving average of {window})"
+msgstr "{label} (voortschrijdend gemiddelde over {window})"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{label} (running total)"
+msgstr "{label} (cumulatief)"
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "{label} granularity"
 msgstr "Detailniveau van {label}"
@@ -1139,6 +1183,10 @@ msgstr "Detailniveau van {label}"
 #: src/pages/settings/push-api/usePushApiState.ts
 msgid "{label} ID copied: {id}"
 msgstr "{label}-ID gekopieerd: {id}"
+
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "{label}: {count} selected"
+msgstr "{label}: {count} geselecteerd"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "{label}: ascending. Switch to descending"
@@ -1169,8 +1217,16 @@ msgstr "{matching, plural, one {# transactie matchen} other {# transacties match
 #~ msgstr "{measure} per {dimension}"
 
 #: src/features/reports/ui/notebook/question-labels.ts
+msgid "{metric} (previous period)"
+msgstr "{metric} (vorige periode)"
+
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "{metric} and {secondMetric}"
 msgstr "{metric} en {secondMetric}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{metric}: % change"
+msgstr "{metric}: % verandering"
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
 msgid "{metricName} chart"
@@ -1345,6 +1401,10 @@ msgstr "{restoredCount, plural, one {# transactie hersteld.} other {# transactie
 msgid "{revalued, plural, one {Today's cache refetched; # account revalued.} other {Today's cache refetched; # accounts revalued.}}"
 msgstr "{revalued, plural, one {Cache van vandaag opgehaald; # rekening geherwaardeerd.} other {Cache van vandaag opgehaald; # rekeningen geherwaardeerd.}}"
 
+#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
+msgid "{rowCount} rows × {colCount} columns"
+msgstr "{rowCount} rijen × {colCount} kolommen"
+
 #: src/features/reports/ui/notebook/QuestionResult.tsx
 msgid "{rowCountText} rows"
 msgstr "{rowCountText} rijen"
@@ -1411,6 +1471,14 @@ msgstr "{upcomingCount} gepland"
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
 msgid "{visibleCount}/{0} series visible"
 msgstr "{visibleCount}/{0} reeksen zichtbaar"
+
+#: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
+msgid "{yearText}: {total} over {activeDays} days"
+msgstr "{yearText}: {total} over {activeDays} dagen"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "% of total"
+msgstr "% van totaal"
 
 #. placeholder {0}: importConfig.thousandSeparator === 'none' ? '' : importConfig.thousandSeparator
 #. placeholder {1}: parseAmount( `RSD 123${importConfig.thousandSeparator === 'none' ? '' : importConfig.thousandSeparator}123`, importConfig )
@@ -2919,17 +2987,45 @@ msgstr "Een bank gaf geen rekeningen terug. Koppel die rekeningen in het <0>cont
 msgid "A brief description helps us understand the issue."
 msgstr "Een korte beschrijving helpt ons het probleem te begrijpen."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "A closing parenthesis ) is missing."
+msgstr "Er ontbreekt een sluithaakje )."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "A custom column can be a number, text or a condition."
+msgstr "Een eigen kolom kan een getal, tekst of voorwaarde zijn."
+
 #: src/pages/onboarding/onboarding-data.ts
 msgid "A field guide to zero-based budgeting."
 msgstr "Een gids voor zero-based budgetteren."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "A field name is missing its closing ]."
+msgstr "Een veldnaam mist de sluitende ]."
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "A field with this name already exists."
+msgstr "Er bestaat al een veld met deze naam."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "A household, a side hustle, a trip — whatever you’re planning for."
 msgstr "Een huishouden, een bijbaantje, een reis — waarvoor je ook wilt budgetteren."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "A metric has to be a number."
+msgstr "Een metriek moet een getal zijn."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "A metric needs an aggregation, like Sum([Amount]) or Count."
+msgstr "Een metriek heeft een aggregatie nodig, zoals Sum([Bedrag]) of Count."
+
 #: src/shared/pwa/PWAUpdatePrompt.tsx
 msgid "A new Budgero build is ready to install. Refresh now to load the latest features and fixes."
 msgstr "Er is een nieuwe Budgero-build klaar om te installeren. Ververs nu om de nieuwste functies en oplossingen te laden."
+
+#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
+msgid "A pivot table needs two groupings and a metric."
+msgstr "Een draaitabel heeft twee groeperingen en een metriek nodig."
 
 #: src/pages/settings/AboutPage.tsx
 msgid "A quick overview of this Budgero installation, including version and useful links."
@@ -3138,6 +3234,7 @@ msgstr "Rekening<0/>"
 #: src/features/transactions/ui/form/AccountSelect.tsx
 #: src/pages/accounts/AccountsPage.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
 #: src/widgets/navigation/MobileBottomNav.tsx
@@ -3281,6 +3378,10 @@ msgstr "Voeg een aangepaste koers toe om automatisch opgehaalde wisselkoersen te
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
 msgid "Add a description..."
 msgstr "Voeg een beschrijving toe..."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Add a metric in Summarize first."
+msgstr "Voeg eerst een metriek toe bij Samenvatten."
 
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Add a new user to this deployment. Share the password securely."
@@ -3573,6 +3674,7 @@ msgstr "Algoritme"
 
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 #: src/features/import/ui/steps/PreviewStep.tsx
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 #: src/pages/reports/ReportsHomePage.tsx
 msgid "All"
 msgstr "Alle"
@@ -3587,6 +3689,7 @@ msgid "ALL 5 SEATS FILLED"
 msgstr "ALLE 5 PLAATSEN GEVULD"
 
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "All accounts"
 msgstr "Alle rekeningen"
 
@@ -3618,6 +3721,10 @@ msgstr "Alle categorieën al op nul"
 #: src/features/budget-planning/ui/assign-dropdown/useAssignDropdownState.tsx
 msgid "All categories already have available amounts at zero!"
 msgstr "Alle categorieën hebben al een beschikbaar bedrag van nul!"
+
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "All category groups"
+msgstr "Alle categoriegroepen"
 
 #: src/pages/admin/AdminDashboard.tsx
 #: src/widgets/dashboard/UncategorizedTransactionsCard.tsx
@@ -3674,6 +3781,7 @@ msgstr "altijd"
 
 #: src/pages/accounts/components/ValueChangeStat.tsx
 #: src/pages/analytics/analytics-state.ts
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "All time"
 msgstr "Sinds het begin"
 
@@ -4007,6 +4115,7 @@ msgstr "Alleen toegepast in de eerste maand van het schema."
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/import/ui/steps/configure/TemplatesTab.tsx
 #: src/pages/admin/SignupsSection.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Apply"
 msgstr "Toepassen"
 
@@ -4300,6 +4409,10 @@ msgstr "Automatisch invullen"
 msgid "Automatic"
 msgstr "Automatisch"
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Automatic (own axis when units differ)"
+msgstr "Automatisch (eigen as bij andere eenheden)"
+
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "Automatically categorize uncategorized transactions using AI analysis of payee names and memos."
 msgstr "Categoriseer automatisch niet-gecategoriseerde transacties met behulp van AI-analyse van begunstigdenamen en memo's."
@@ -4428,6 +4541,8 @@ msgstr "Azeret Mono"
 #: src/app/startup/screens.tsx
 #: src/features/ai/ui/receipt-scanner/ScanActions.tsx
 #: src/features/import/ui/steps/ConfigureStep.tsx
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+#: src/features/reports/ui/notebook/QuestionResult.tsx
 msgid "Back"
 msgstr "Terug"
 
@@ -4450,6 +4565,10 @@ msgstr "Terug naar configuratie"
 #: src/pages/onboarding/OnboardingFlow.tsx
 msgid "BACK TO THE DEMO"
 msgstr "TERUG NAAR DE DEMO"
+
+#: src/features/reports/ui/notebook/QuestionResult.tsx
+msgid "Back to the previous question"
+msgstr "Terug naar de vorige vraag"
 
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 msgid "Backup"
@@ -4705,6 +4824,10 @@ msgstr "Beide rekeningen gebruiken dezelfde valuta, dus deze overboeking heeft g
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Brazilian Real"
 msgstr "Braziliaanse real"
+
+#: src/features/reports/ui/notebook/DrillMenu.tsx
+msgid "Break out by…"
+msgstr "Uitsplitsen naar…"
 
 #: src/pages/dashboard/DashboardPage.mobile.tsx
 msgid "Breakdown"
@@ -5121,6 +5244,11 @@ msgstr "Frequentie"
 msgid "Calculating…"
 msgstr "Berekenen…"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+#: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
+msgid "Calendar heatmap"
+msgstr "Kalender-heatmap"
+
 #: src/features/ai/ui/receipt-scanner/useReceiptCamera.ts
 msgid "Camera access denied"
 msgstr "Cameratoegang geweigerd"
@@ -5156,6 +5284,7 @@ msgstr "Canadese dollar"
 #: src/features/category-management/ui/CreateCategoryDialog.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 #: src/features/currencies/ui/ManualRatePrompt.tsx
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
@@ -5174,6 +5303,7 @@ msgstr "Canadese dollar"
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/pages/custom-dashboards/components/PinChartDialog.tsx
@@ -5344,9 +5474,9 @@ msgstr "Categorie verwijderd"
 msgid "Category group"
 msgstr "Categoriegroep"
 
-#: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
-#~ msgid "Category groups"
-#~ msgstr "Categoriegroepen"
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "Category groups"
+msgstr "Categoriegroepen"
 
 #: src/features/reports/ui/report-builder/builder-labels.ts
 #~ msgid "Category groups over time"
@@ -5508,12 +5638,16 @@ msgstr "Grafiekgegevens geëxporteerd naar CSV"
 msgid "Chart removed from report"
 msgstr "Grafiek verwijderd uit rapport"
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Chart settings"
+msgstr "Grafiekinstellingen"
+
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Chart title..."
 msgstr "Grafiektitel..."
 
-#: src/features/reports/ui/notebook/QuestionResult.tsx
+#: src/features/reports/ui/notebook/viz/ChartTypePicker.tsx
 msgid "Chart type"
 msgstr "Grafiektype"
 
@@ -5788,6 +5922,10 @@ msgstr "Standaardbudget wissen"
 msgid "Clear default workspace"
 msgstr "Standaardwerkruimte wissen"
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "Clear filters"
+msgstr "Filters wissen"
+
 #: src/features/labels/ui/LabelCombobox.tsx
 msgid "Clear label"
 msgstr "Label wissen"
@@ -5798,6 +5936,7 @@ msgstr "Begunstigde wissen"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Clear selection"
 msgstr "Selectie wissen"
 
@@ -6067,6 +6206,14 @@ msgstr "Kolommen ({columnCount})"
 msgid "Columns to show"
 msgstr "Zichtbare kolommen"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Combo"
+msgstr "Combinatie"
+
+#: src/features/reports/ui/notebook/viz/ComboView.tsx
+msgid "Combo chart"
+msgstr "Combinatiegrafiek"
+
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "Come back tomorrow"
 msgstr "Kom morgen terug"
@@ -6103,10 +6250,26 @@ msgstr "Compacte rijen tonen meer categorieën tegelijk (tabelweergave)."
 msgid "Compact rows fit more transactions on screen (desktop register)."
 msgstr "Compacte rijen tonen meer transacties tegelijk (register op desktop)."
 
+#: src/features/reports/ui/notebook/viz/viz-meta.ts
+msgid "Compare"
+msgstr "Vergelijken"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Compare to previous period"
+msgstr "Vergelijken met vorige periode"
+
 #. placeholder {0}: row.duplicate.sameFileIndex + 1
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Compare with row {0} in this file."
 msgstr "Vergelijken met rij {0} in dit bestand."
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Compare, running total, moving average, % of total"
+msgstr "Vergelijken, cumulatief, voortschrijdend gemiddelde, % van totaal"
+
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "Comparing with the period before…"
+msgstr "Vergelijken met de periode ervoor…"
 
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "Complete contiguous Split (1/n)…Split (n/n) sequences will be imported as split transactions automatically."
@@ -6473,6 +6636,10 @@ msgstr "Kon de query niet verwijderen."
 msgid "Could not duplicate transactions"
 msgstr "Kan transacties niet dupliceren"
 
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Could not export a widget"
+msgstr "Een widget kon niet worden geëxporteerd"
+
 #: src/features/ai/ui/receipt-scanner/useReceiptScannerState.ts
 msgid "Could not extract any transactions from this image."
 msgstr "Kon geen transacties uit deze afbeelding halen."
@@ -6536,6 +6703,14 @@ msgstr "Instellingen voor dubbele transacties konden niet worden opgeslagen"
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 msgid "Could not save the accepted import. You can cancel it safely."
 msgstr "De geaccepteerde import kon niet worden opgeslagen. Je kunt deze veilig annuleren."
+
+#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
+msgid "Could not save the chart image"
+msgstr "De grafiekafbeelding kon niet worden opgeslagen"
+
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Could not save the dashboard filters"
+msgstr "De dashboardfilters konden niet worden opgeslagen"
 
 #: src/pages/settings/components/CalendarSettingsCard.tsx
 msgid "Could not save the first day of the week"
@@ -6648,6 +6823,7 @@ msgstr "De instellingen konden niet worden opgeslagen"
 msgid "Couldn't verify the app with Enable Banking"
 msgstr "De app kon niet worden geverifieerd bij Enable Banking"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/admin/admin-users/user-details/MutationsTab.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -7059,9 +7235,21 @@ msgstr "Huidige versie"
 msgid "Currently Available"
 msgstr "Momenteel beschikbaar"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Custom"
+msgstr "Eigen"
+
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 msgid "Custom cadence"
 msgstr "Aangepast ritme"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Custom column"
+msgstr "Eigen kolom"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Custom columns"
+msgstr "Eigen kolommen"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
@@ -7070,9 +7258,23 @@ msgstr "Aangepast ritme"
 msgid "Custom Dashboards"
 msgstr "Aangepaste dashboards"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Custom metric"
+msgstr "Eigen metriek"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Custom metric…"
+msgstr "Eigen metriek…"
+
 #: src/pages/analytics/analytics-state.ts
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Custom range"
 msgstr "Aangepast bereik"
+
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "Custom range…"
+msgstr "Aangepast bereik…"
 
 #: src/pages/explorer-page/ExplorerPage.tsx
 #~ msgid "Custom reports"
@@ -7157,6 +7359,14 @@ msgstr "Donker met koperen warmte."
 #: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Dashboard"
 msgstr "Dashboard"
+
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+msgid "Dashboard filters"
+msgstr "Dashboardfilters"
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "Dashboard filters applied"
+msgstr "Dashboardfilters toegepast"
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "Dashboard name"
@@ -7254,6 +7464,7 @@ msgstr "Datumnotatie"
 msgid "DATE FORMAT"
 msgstr "DATUMNOTATIE"
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/settings/components/DuplicateHintSettingsCard.tsx
 msgid "Date range"
 msgstr "Datumbereik"
@@ -7358,6 +7569,10 @@ msgstr "Decimaalteken"
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Decision"
 msgstr "Keuze"
+
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
+msgid "Decrease"
+msgstr "Daling"
 
 #: src/pages/onboarding/steps/DoneStep.tsx
 msgid "Decrypting shared workspace key and joining…"
@@ -7753,6 +7968,7 @@ msgstr "Niet importeren"
 
 #: src/features/ai/ui/AICategorizeDialog.tsx
 #: src/features/ai/ui/receipt-scanner/ScanProgress.tsx
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Done"
 msgstr "Klaar"
@@ -7773,9 +7989,17 @@ msgstr "Punt (.)"
 msgid "Double amount"
 msgstr "Bedrag verdubbelen"
 
+#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
+msgid "Download"
+msgstr "Downloaden"
+
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Download a backup first if you are unsure."
 msgstr "Download eerst een back-up als je twijfelt."
+
+#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
+msgid "Download CSV"
+msgstr "CSV downloaden"
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Download CSV Files"
@@ -7788,6 +8012,14 @@ msgstr "Download mislukt"
 #: src/pages/settings/subscription/PlanSelection.tsx
 msgid "Download invoices and payment history"
 msgstr "Facturen en betalingsgeschiedenis downloaden"
+
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Download one CSV per widget"
+msgstr "Eén CSV per widget downloaden"
+
+#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
+msgid "Download PNG"
+msgstr "PNG downloaden"
 
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Download SQLite"
@@ -7804,6 +8036,10 @@ msgstr "Download je budgetgegevens voordat je abonnement afloopt. Je hebt je hoo
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Download your data for backup or analysis"
 msgstr "Download je gegevens voor back-up of analyse"
+
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Downloaded {exported} CSV files"
+msgstr "{exported} CSV-bestanden gedownload"
 
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "Downloaded the server copy"
@@ -7934,6 +8170,14 @@ msgstr "bijv. Kwartaalbelasting — elke 3 maanden {amount} toewijzen"
 msgid "e.g. Savings — put aside {amount} each month"
 msgstr "bijv. Sparen — zet elke maand {amount} opzij"
 
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "e.g. Savings rate"
+msgstr "bijv. Spaarquote"
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "e.g. Size"
+msgstr "bijv. Grootte"
+
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "e.g. Vacation — allocate {amount} total by {date}"
 msgstr "bijv. Vakantie — in totaal {amount} toewijzen uiterlijk op {date}"
@@ -8041,6 +8285,19 @@ msgstr "Categorie bewerken"
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Edit Chart"
 msgstr "Grafiek bewerken"
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "Edit custom column"
+msgstr "Eigen kolom bewerken"
+
+#. placeholder {0}: column.name
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Edit custom column: {0}"
+msgstr "Eigen kolom bewerken: {0}"
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "Edit custom metric"
+msgstr "Eigen metriek bewerken"
 
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
 msgid "Edit date"
@@ -8342,6 +8599,10 @@ msgstr "Voer een bedrag in om de conversie te zien"
 msgid "Enter an exchange rate greater than zero."
 msgstr "Voer een wisselkoers groter dan nul in."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Enter an expression."
+msgstr "Voer een expressie in."
+
 #: src/features/budget-management/ui/EditBudgetForm.tsx
 msgid "Enter budget name"
 msgstr "Voer budgetnaam in"
@@ -8551,6 +8812,10 @@ msgstr "Exact (±0,01)"
 msgid "Exactly"
 msgstr "Exact"
 
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "Examples"
+msgstr "Voorbeelden"
+
 #: src/features/import/ui/steps/configure/FormattingTab.tsx
 msgid "Examples:"
 msgstr "Voorbeelden:"
@@ -8587,6 +8852,10 @@ msgstr "Wisselkoersen voor de nieuwe valuta zijn niet beschikbaar, dus er is nie
 #: src/pages/accounts/AccountPage.tsx
 msgid "Exchange-rate data needs attention"
 msgstr "De wisselkoersgegevens vereisen aandacht"
+
+#: src/features/reports/ui/notebook/DrillMenu.tsx
+msgid "Exclude {text}"
+msgstr "{text} uitsluiten"
 
 #: src/features/category-management/ui/CategoryEditDialog.tsx
 msgid "Exclude from Budget Pace"
@@ -8672,6 +8941,14 @@ msgstr "Vervaldatum"
 msgid "Expiry Date *"
 msgstr "Vervaldatum *"
 
+#: src/features/reports/ui/notebook/DrillMenu.tsx
+msgid "Explore {heading}"
+msgstr "{heading} verkennen"
+
+#: src/features/reports/ui/notebook/QuestionTable.tsx
+msgid "Explore {text}"
+msgstr "{text} verkennen"
+
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "Explore detailed payoff projections. Adjust APR, monthly payment, and extras to see how they affect timeline and interest."
 msgstr "Bekijk gedetailleerde aflossingsprognoses. Pas APR, maandelijkse betaling en extra's aan om te zien hoe ze de tijdlijn en rente beïnvloeden."
@@ -8689,6 +8966,10 @@ msgstr "Back-ups exporteren, snapshots herstellen en je budgetgegevens beheren"
 #: src/features/analytics/ui/chart-viewer/ChartExportButton.tsx
 msgid "Export CSV"
 msgstr "CSV exporteren"
+
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Export CSVs"
+msgstr "CSV’s exporteren"
 
 #: src/features/subscription/ui/ExportDataCard.tsx
 msgid "Export failed. Please try again."
@@ -8722,6 +9003,10 @@ msgstr "Exporteren..."
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Exports cover only the currently active workspace{0}. Switch workspaces and export again to back up the others."
 msgstr "Exporten dekken alleen de momenteel actieve werkruimte{0}. Schakel tussen werkruimtes en exporteer opnieuw om de andere te back-uppen."
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "Expression"
+msgstr "Expressie"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 msgid "Extend the selection"
@@ -9210,6 +9495,10 @@ msgstr "Feedback-uitzending mislukt"
 msgid "Fetching exchange rate..."
 msgstr "Wisselkoers ophalen..."
 
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "field"
+msgstr "veld"
+
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 msgid "Field"
 msgstr "Veld"
@@ -9343,6 +9632,14 @@ msgstr "Eenvoudig gemiddelde"
 msgid "Flow"
 msgstr "Geldstroom"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Flow (Sankey)"
+msgstr "Stroom (Sankey)"
+
+#: src/features/reports/ui/notebook/viz/SankeyView.tsx
+msgid "Flow chart"
+msgstr "Stroomdiagram"
+
 #: src/features/bank-sync/ui/EnableBankingSetupCard.tsx
 msgid "For a Production app, use \"Activate by linking accounts\" and link every account you want to sync. Accounts you don't link there come back empty."
 msgstr "Gebruik bij een Production-app ‘Activate by linking accounts’ en koppel elke rekening die je wilt synchroniseren. Rekeningen die je daar niet koppelt, blijven leeg."
@@ -9464,6 +9761,7 @@ msgstr "Vriend of collega"
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "From"
 msgstr "Van"
@@ -9517,6 +9815,10 @@ msgstr "volledige importgids"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Fun money"
 msgstr "Vrij besteedbaar"
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "function"
+msgstr "functie"
 
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 msgid "Fund goal"
@@ -9620,6 +9922,10 @@ msgstr "Geef elke munt een taak"
 msgid "Give every coin a job."
 msgstr "Geef elke munt een taak."
 
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "Give it a name."
+msgstr "Geef het een naam."
+
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "Give your rule a name so you can recognise it later."
 msgstr "Geef je regel een naam zodat je deze later kunt herkennen."
@@ -9672,6 +9978,10 @@ msgstr "Doelfinanciering"
 msgid "Goal funding (this period)"
 msgstr "Doelfinanciering (deze periode)"
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Goal line"
+msgstr "Doellijn"
+
 #: src/pages/onboarding/steps/GoalStep.tsx
 msgid "GOAL NAME"
 msgstr "DOELNAAM"
@@ -9683,6 +9993,10 @@ msgstr "Doeltype"
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "Goal updated"
 msgstr "Doel bijgewerkt"
+
+#: src/features/reports/ui/notebook/viz/display.ts
+msgid "Goal: {value}"
+msgstr "Doel: {value}"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Goal: have this amount available, with no date and no repeat"
@@ -9772,6 +10086,10 @@ msgstr "Groeperen op"
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Group By"
 msgstr "Groeperen op"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Group by a date to compare periods or add running totals."
+msgstr "Groepeer op een datum om periodes te vergelijken of cumulatieve totalen toe te voegen."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Group by needs, wants, and savings — or invent your own."
@@ -10270,6 +10588,10 @@ msgstr "In"
 msgid "In a dialog, or in an inline row at the top of the account register (desktop)."
 msgstr "In een dialoogvenster of in een inline rij bovenaan het rekeningregister (desktop)."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "In a metric, fields go inside an aggregation, like Sum([Amount])."
+msgstr "In een metriek staan velden binnen een aggregatie, zoals Sum([Bedrag])."
+
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "In budget ({conversionTargetCurrency}), edit to use your own rate"
 msgstr "In budget ({conversionTargetCurrency}), wijzig voor je eigen koers"
@@ -10377,6 +10699,10 @@ msgstr "Inkomen tegenover uitgaven, maand per maand"
 msgid "Income and assignments accumulate across all time, so this figure is the same in every month."
 msgstr "Inkomsten en toewijzingen hopen zich op over alle tijd, dus dit bedrag is in elke maand hetzelfde."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Income category"
+msgstr "Inkomenscategorie"
+
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "Income category added"
 msgstr "Inkomstencategorie toegevoegd"
@@ -10437,6 +10763,10 @@ msgstr "Inkomend: {0}"
 #: src/features/transactions/ui/add-transaction/AddTransactionForm.tsx
 msgid "Incomplete end condition"
 msgstr "Onvolledige eindvoorwaarde"
+
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
+msgid "Increase"
+msgstr "Stijging"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Increase savings to reach your {target} monthly goal"
@@ -10736,6 +11066,10 @@ msgstr "Het doel wordt verwijderd."
 msgid "Its history was moved to the selected income category."
 msgstr "De geschiedenis is verplaatst naar de geselecteerde inkomstencategorie."
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Its own axis"
+msgstr "Eigen as"
+
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Japanese Yen"
 msgstr "Japanse yen"
@@ -10931,11 +11265,12 @@ msgstr "De labels worden van de geselecteerde transacties verwijderd."
 msgid "Landlord"
 msgstr "Verhuurder"
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
-#~ msgid "Largest first"
-#~ msgstr "Grootste eerst"
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Largest first"
+msgstr "Grootste eerst"
 
 #: src/pages/analytics/analytics-state.ts
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Last 12 months"
 msgstr "Laatste 12 maanden"
 
@@ -10944,6 +11279,7 @@ msgid "Last 24 months"
 msgstr "Laatste 24 maanden"
 
 #: src/pages/analytics/analytics-state.ts
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Last 3 months"
 msgstr "Laatste 3 maanden"
 
@@ -10952,6 +11288,7 @@ msgid "Last 30 days"
 msgstr "Laatste 30 dagen"
 
 #: src/pages/analytics/analytics-state.ts
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Last 6 months"
 msgstr "Laatste 6 maanden"
 
@@ -10983,6 +11320,7 @@ msgstr "Laatste aanmelding"
 msgid "Last Login"
 msgstr "Laatste aanmelding"
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Last month"
 msgstr "Vorige maand"
@@ -11038,6 +11376,7 @@ msgstr "Laatst gebruikt voor \"{name}\" op {0}"
 msgid "Last week"
 msgstr "Vorige week"
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Last year"
 msgstr "Vorig jaar"
@@ -11133,6 +11472,7 @@ msgid "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (de
 msgstr "Verouderde payloads zonder het <0>\"v\"</0>-veld worden behandeld als formaat 1 (decimale bedragen, bijv. <1>25.50</1>) en geüpgraded bij import. Nieuwe integraties moeten formaat 2 verzenden."
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Legend"
 msgstr "Legenda"
 
@@ -11812,6 +12152,10 @@ msgstr "Naam van winkel of tegenpartij"
 msgid "Mesa"
 msgstr "Mesa"
 
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "metric"
+msgstr "metriek"
+
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Metric"
 msgstr "Metriek"
@@ -12151,6 +12495,10 @@ msgstr "Verplaatsen naar rekening"
 msgid "Moved {0} {1}."
 msgstr "{0} {1} verplaatst."
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Moving average ({window} periods)"
+msgstr "Voortschrijdend gemiddelde ({window} periodes)"
+
 #: src/features/account-management/ui/DevSimulateRateMoveButton.tsx
 msgid "Moving rates…"
 msgstr "Koersen worden bijgewerkt…"
@@ -12216,6 +12564,7 @@ msgid "name"
 msgstr "naam"
 
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
@@ -12257,6 +12606,10 @@ msgstr "Geef je nieuwe aangepaste dashboard een naam."
 msgid "Name: {0}"
 msgstr "Naam: {0}"
 
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "Names can’t contain [ or ]."
+msgstr "Namen mogen geen [ of ] bevatten."
+
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Nearly there! Complete this month to maintain your streak"
 msgstr "Bijna zover! Voltooi deze maand om je reeks in stand te houden"
@@ -12289,15 +12642,52 @@ msgstr "Nodig om de sleutel van de gedeelde ruimte op dit apparaat te versleutel
 msgid "NEEDS"
 msgstr "BEHOEFTEN"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs a grouping (Summarize by)."
+msgstr "Heeft een groepering nodig (Samenvatten per)."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs a grouping and two metrics."
+msgstr "Heeft een groepering en twee metrieken nodig."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs a grouping that isn’t a date, like Category."
+msgstr "Heeft een groepering nodig die geen datum is, zoals Categorie."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs exactly one grouping."
+msgstr "Heeft precies één groepering nodig."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs exactly two groupings."
+msgstr "Heeft precies twee groeperingen nodig."
+
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Needs onboarding"
 msgstr "Onboarding nodig"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs one grouping by date, by day."
+msgstr "Heeft één groepering op datum nodig, per dag."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs one grouping by date, or no grouping and a date filter with a range."
+msgstr "Heeft één groepering op datum nodig, of geen groepering en een datumfilter met een bereik."
 
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Needs review"
 msgstr "Controle nodig"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs two groupings that aren’t dates, like Category group and Category."
+msgstr "Heeft twee groeperingen nodig die geen datum zijn, zoals Categoriegroep en Categorie."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs two metrics and one grouping."
+msgstr "Heeft twee metrieken en één groepering nodig."
+
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/analytics/reports/InOutReport.tsx
 #: src/widgets/dashboard/CashflowTrendCard.tsx
 msgid "Net"
@@ -12442,6 +12832,14 @@ msgstr "Nieuwe chat"
 #: src/features/chat/ui/chat-panel/useChatPanelState.ts
 msgid "New Chat"
 msgstr "Nieuwe chat"
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "New custom column"
+msgstr "Nieuwe eigen kolom"
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "New custom metric"
+msgstr "Nieuwe eigen metriek"
 
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "New income category"
@@ -12825,6 +13223,10 @@ msgstr "Geen datum gevonden — vandaag wordt gebruikt"
 msgid "No description"
 msgstr "Geen beschrijving"
 
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "No earlier period to compare with."
+msgstr "Geen eerdere periode om mee te vergelijken."
+
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "No earlier versions yet. One is kept each time this workspace syncs."
 msgstr "Nog geen eerdere versies. Elke keer dat deze werkruimte synchroniseert, wordt er een bewaard."
@@ -12923,6 +13325,7 @@ msgid "No labels yet."
 msgstr "Nog geen labels."
 
 #: src/features/reports/ui/notebook/FilterEditor.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "No matches."
 msgstr "Geen resultaten."
 
@@ -13271,6 +13674,7 @@ msgstr "Nog geen werkruimtes. Gebruik de knop hierboven om je eerste werkruimte 
 #: src/features/import/ui/steps/CompleteStep.tsx
 #: src/features/import/ui/steps/configure/FormattingTab.tsx
 #: src/features/import/ui/steps/configure/MappingTab.tsx
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -13305,6 +13709,10 @@ msgstr "Niet verwijderd"
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Not empty"
 msgstr "Niet leeg"
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "Not filtered"
+msgstr "Niet gefilterd"
 
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Not in Clerk"
@@ -13359,8 +13767,18 @@ msgid "Nothing to apply — no assignments last month."
 msgstr "Niets toe te passen — geen toewijzingen vorige maand."
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
+#: src/features/reports/ui/notebook/viz/ComboView.tsx
+#: src/features/reports/ui/notebook/viz/RowChartView.tsx
+#: src/features/reports/ui/notebook/viz/SankeyView.tsx
+#: src/features/reports/ui/notebook/viz/ScatterView.tsx
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 msgid "Nothing to chart for these rows."
 msgstr "Niets om in een grafiek te tonen voor deze rijen."
+
+#: src/features/reports/ui/notebook/DrillMenu.tsx
+msgid "Nothing to explore for this value."
+msgstr "Niets te verkennen voor deze waarde."
 
 #: src/widgets/dashboard/UpcomingTransactionsCard.tsx
 msgid "Nothing upcoming. Recurring charges and transactions dated in the next {ONE_OFF_LOOKAHEAD_MONTHS} months appear here."
@@ -13439,6 +13857,10 @@ msgstr "Aantal transacties"
 #: src/features/account-management/ui/DevSeedTransactionsButton.tsx
 msgid "Number of transactions to seed"
 msgstr "Aantal te genereren transacties"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Number with trend"
+msgstr "Getal met trend"
 
 #: src/pages/onboarding/onboarding-data.ts
 #: src/shared/lib/theme/presets.ts
@@ -13604,6 +14026,10 @@ msgstr "Online"
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "Only {daysLeftInBeta} days remaining!"
 msgstr "Nog maar {daysLeftInBeta} dagen over!"
+
+#: src/features/reports/ui/notebook/DrillMenu.tsx
+msgid "Only {text}"
+msgstr "Alleen {text}"
 
 #: src/app/startup/screens.tsx
 msgid "Only a workspace owner can create the first budget here."
@@ -13792,6 +14218,10 @@ msgstr "Optionele notities helpen ons team Budgero te verbeteren."
 msgid "Optional: give income sources their own categories, such as Salary, Freelance, or Rental income, to see them separately in analytics. All categories in the Income group count toward Ready to Assign in the same way. You can keep using the default Income category for everything."
 msgstr "Optioneel: geef inkomstenbronnen eigen categorieën, zoals Salaris, Freelance of Huurinkomsten, om ze apart in analyses te zien. Alle categorieën in de groep Inkomsten tellen op dezelfde manier mee voor Te verdelen. Je kunt de standaardcategorie Inkomsten voor alles blijven gebruiken."
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Options for {label}"
+msgstr "Opties voor {label}"
+
 #: src/features/rules/ui/rule-editor/RuleConditionsEditor.tsx
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "OR"
@@ -13840,6 +14270,10 @@ msgstr "Oorspronkelijke looptijd (jaren)"
 msgid "Other"
 msgstr "Overig"
 
+#: src/features/reports/ui/notebook/viz/SankeyView.tsx
+msgid "Other ({count})"
+msgstr "Overig ({count})"
+
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Other ({foldedCount} more)"
 msgstr "Overig ({foldedCount} meer)"
@@ -13849,8 +14283,15 @@ msgstr "Overig ({foldedCount} meer)"
 #~ msgstr "Overige ({foldedCount} meer) — bekijken"
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/RowChartView.tsx
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 msgid "Other ({otherCount})"
 msgstr "Overig ({otherCount})"
+
+#: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/RowChartView.tsx
+msgid "Other ({otherXCount})"
+msgstr "Overig ({otherXCount})"
 
 #: src/entities/account/model/accountTypes.ts
 msgid "Other Asset"
@@ -13940,6 +14381,7 @@ msgstr "Over tempo"
 msgid "Over plan"
 msgstr "Over plan"
 
+#: src/features/reports/ui/notebook/viz/viz-meta.ts
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Over time"
 msgstr "Over tijd"
@@ -14063,6 +14505,10 @@ msgstr "Een deel van de app werkt niet meer"
 #: src/widgets/sync-status/ConnectivityStatus.tsx
 msgid "Partial"
 msgstr "Gedeeltelijk"
+
+#: src/features/reports/ui/notebook/viz/viz-meta.ts
+msgid "Parts and flows"
+msgstr "Delen en stromen"
 
 #: src/pages/admin/SelfHostAdminUsers.tsx
 #: src/pages/auth/AuthPage.tsx
@@ -14431,6 +14877,18 @@ msgstr "Taartdiagram"
 #: src/pages/admin/SelfHostInstallsSection.tsx
 msgid "Pings by version, last {0} days"
 msgstr "Pings per versie, afgelopen {0} dagen"
+
+#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
+msgid "pivot"
+msgstr "draaitabel"
+
+#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
+msgid "Pivot CSV"
+msgstr "Draaitabel-CSV"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Pivot table"
+msgstr "Draaitabel"
 
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Pizza place"
@@ -15029,6 +15487,10 @@ msgid "Push API {0}"
 msgstr "Push API {0}"
 
 #: src/features/reports/ui/notebook/question-labels.ts
+msgid "Put a field name between the brackets, like [Amount]."
+msgstr "Zet een veldnaam tussen de haakjes, zoals [Bedrag]."
+
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Q{quarter} {year}"
 msgstr "K{quarter} {year}"
 
@@ -15117,6 +15579,10 @@ msgstr "Vraag"
 #: src/pages/reports/question/NotebookQuestionView.tsx
 msgid "Question deleted"
 msgstr "Vraag verwijderd"
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Question order"
+msgstr "Volgorde van de vraag"
 
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 msgid "Question saved"
@@ -15602,6 +16068,10 @@ msgstr "Reguliere expressie"
 #~ msgid "Reject all"
 #~ msgstr "Alles weigeren"
 
+#: src/features/reports/ui/notebook/viz/viz-meta.ts
+msgid "Relationships"
+msgstr "Verbanden"
+
 #: src/app/system/AppErrorBoundary.tsx
 msgid "Reload"
 msgstr "Opnieuw laden"
@@ -15695,6 +16165,11 @@ msgstr "Actie verwijderen"
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 msgid "Remove condition"
 msgstr "Voorwaarde verwijderen"
+
+#. placeholder {0}: column.name
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Remove custom column: {0}"
+msgstr "Eigen kolom verwijderen: {0}"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Remove filter: {label}"
@@ -15941,6 +16416,10 @@ msgstr "Resetten mislukt"
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Reset password"
 msgstr "Wachtwoord resetten"
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Reset settings"
+msgstr "Instellingen herstellen"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Reset to default columns"
@@ -16217,6 +16696,14 @@ msgstr "Rol: {0}"
 msgid "Role: {0}{1}"
 msgstr "Rol: {0}{1}"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "round() takes a whole number of digits from −10 to 10."
+msgstr "round() verwacht een geheel aantal decimalen van −10 tot 10."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Row"
+msgstr "Liggende staaf"
+
 #. placeholder {0}: plan.index + 1
 #. placeholder {1}: row.Currency
 #: src/features/import/lib/plan-file-import.ts
@@ -16237,6 +16724,10 @@ msgstr "Rij {0}: {1}"
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Row / account"
 msgstr "Rij / rekening"
+
+#: src/features/reports/ui/notebook/viz/RowChartView.tsx
+msgid "Row chart"
+msgstr "Liggend staafdiagram"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Row density"
@@ -16371,6 +16862,11 @@ msgstr "Vraag wordt uitgevoerd…"
 #: src/pages/explorer-page/components/ReportBuilderPanel.tsx
 #~ msgid "Running report…"
 #~ msgstr "Rapport wordt uitgevoerd…"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
+msgid "Running total"
+msgstr "Cumulatief totaal"
 
 #: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "Running..."
@@ -16631,6 +17127,14 @@ msgstr "Spaardoel van {savingsTargetPct}% is behaald in {hit} van de {0} maanden
 msgid "Scanning failed"
 msgstr "Scannen mislukt"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Scatter"
+msgstr "Spreiding"
+
+#: src/features/reports/ui/notebook/viz/ScatterView.tsx
+msgid "Scatter chart"
+msgstr "Spreidingsdiagram"
+
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/shared/lib/analytics/visualization-labels.ts
@@ -16808,6 +17312,7 @@ msgid "Search: groceries, last 30 days, outflows..."
 msgstr "Zoeken: boodschappen, laatste 30 dagen, uitgaven..."
 
 #: src/features/reports/ui/notebook/FilterEditor.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Search…"
 msgstr "Zoeken…"
 
@@ -16824,6 +17329,10 @@ msgstr "Seizoensgemiddelde{0}"
 #: src/pages/onboarding/steps/ShareStep.tsx
 msgid "SEATS USED"
 msgstr "GEBRUIKTE PLEKKEN"
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Second metric’s axis"
+msgstr "As van de tweede metriek"
 
 #: src/app/startup/StartupStepper.tsx
 msgid "Security"
@@ -16843,6 +17352,18 @@ msgstr "Beveiligingswaarschuwing"
 #: src/pages/onboarding/steps/StartModeStep.tsx
 msgid "See a filled-in budget before you set up your own."
 msgstr "Bekijk een ingevuld budget voordat je je eigen budget instelt."
+
+#: src/features/reports/ui/notebook/DrillMenu.tsx
+msgid "See these accounts"
+msgstr "Deze rekeningen bekijken"
+
+#: src/features/reports/ui/notebook/DrillMenu.tsx
+msgid "See these rows"
+msgstr "Deze rijen bekijken"
+
+#: src/features/reports/ui/notebook/DrillMenu.tsx
+msgid "See these transactions"
+msgstr "Deze transacties bekijken"
 
 #: src/features/app-update/ui/UpdateAvailableBanner.tsx
 msgid "See what's new"
@@ -17379,6 +17900,7 @@ msgstr "Demobudget wordt ingesteld…"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/layout/desktop-shell/SidebarNav.tsx
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
 #: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Settings"
@@ -17424,6 +17946,10 @@ msgstr "Gedeelde medewerkers kunnen de werkruimtes bekijken waarvoor ze zijn uit
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Shared collaborators can’t export workspace data. Ask the workspace owner to download it for you."
 msgstr "Gedeelde medewerkers kunnen geen werkruimtegegevens exporteren. Vraag de eigenaar van de werkruimte om het voor je te downloaden."
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Shared with the bars"
+msgstr "Gedeeld met de staven"
 
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "Shared Workspace Unavailable"
@@ -17482,6 +18008,7 @@ msgstr "Toon een lege cel Inkomsten of Uitgaven in plaats van 0, zodat het relev
 msgid "Show Archived"
 msgstr "Gearchiveerde tonen"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
 #: src/features/reports/ui/notebook/QuestionResult.tsx
 msgid "Show as"
 msgstr "Tonen als"
@@ -17563,6 +18090,10 @@ msgstr "Doelkolom tonen"
 msgid "Show the next 30 days"
 msgstr "Toon de komende 30 dagen"
 
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Show the top"
+msgstr "Toon de grootste"
+
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #~ msgid "Show top"
 #~ msgstr "Toon top"
@@ -17578,6 +18109,10 @@ msgstr "Alleen niet bevestigde tonen"
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 msgid "Show upcoming"
 msgstr "Geplande tonen"
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Show values"
+msgstr "Waarden tonen"
 
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
 #~ msgid "Show where this credit-card debt came from"
@@ -17644,6 +18179,10 @@ msgstr "Niet bevestigde worden getoond"
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Showing what would be affected. No changes were made."
 msgstr "Toont wat er beïnvloed zou worden. Er zijn geen wijzigingen aangebracht."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Shows a single value: remove the groupings."
+msgstr "Toont één waarde: verwijder de groeperingen."
 
 #: src/features/reports/ui/notebook/QuestionResult.tsx
 msgid "Side by side"
@@ -17803,9 +18342,9 @@ msgstr "Klein"
 msgid "Smaller cards, Activity hidden."
 msgstr "Kleinere kaarten, Activiteit verborgen."
 
-#: src/features/reports/ui/report-builder/builder-labels.ts
-#~ msgid "Smallest first"
-#~ msgstr "Kleinste eerst"
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Smallest first"
+msgstr "Kleinste eerst"
 
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Snapshot updated"
@@ -17852,6 +18391,10 @@ msgstr "Sorry, er is een fout opgetreden bij het genereren van een antwoord."
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Sort"
 msgstr "Sortering"
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "Sort bars"
+msgstr "Staven sorteren"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/pages/settings/ImportsPage.tsx
@@ -18091,6 +18634,10 @@ msgstr "SQL-query"
 #: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "SQL Query"
 msgstr "SQL-query"
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "SQL reports run as written; dashboard filters only apply to questions built in the notebook."
+msgstr "SQL-rapporten draaien zoals ze geschreven zijn; dashboardfilters gelden alleen voor vragen uit het notitieboek."
 
 #: src/features/reports/ui/notebook/QuestionResult.tsx
 msgid "Stacked"
@@ -18404,6 +18951,10 @@ msgstr "Voorgesteld minimum: <0>{0}</0>"
 msgid "Suggested models for best performance with budget tasks"
 msgstr "Voorgestelde modellen voor de beste prestaties met budgettaken"
 
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "Suggestions"
+msgstr "Suggesties"
+
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Sum"
@@ -18712,6 +19263,10 @@ msgstr "Sjablonen"
 msgid "Test"
 msgstr "Testen"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Text is missing its closing quote."
+msgstr "De tekst mist het sluitende aanhalingsteken."
+
 #: src/pages/settings/ai/RecommendedModelsPanel.tsx
 msgid "Text Models (for categorization)"
 msgstr "Tekstmodellen (voor categorisatie)"
@@ -18866,6 +19421,10 @@ msgstr "De fout is vastgelegd. Laad de pagina opnieuw als het blijft gebeuren."
 msgid "The error has been recorded. You can try again or open another page."
 msgstr "De fout is vastgelegd. Je kunt het opnieuw proberen of een andere pagina openen."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "The expression ends too early."
+msgstr "De expressie stopt te vroeg."
+
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "The goal has been permanently removed."
 msgstr "Het doel is permanent verwijderd."
@@ -18921,6 +19480,10 @@ msgstr "De herinnering kan opnieuw verschijnen totdat dit werkt."
 #: src/pages/explorer-page/hooks/useReportActions.ts
 msgid "The report has been deleted successfully."
 msgstr "Het rapport is succesvol verwijderd."
+
+#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
+msgid "The rest are added up as “Other”."
+msgstr "De rest wordt opgeteld als ‘Overig’."
 
 #: src/features/import/ui/steps/configure/MappingTab.tsx
 msgid "The selected date column has no year (e.g. \"Oct 25\"). All transactions will be imported using this year. Change it if the statement covers a different year."
@@ -19032,9 +19595,21 @@ msgstr "Daarna {monthly}/maand of {yearly}/jaar, inclusief belasting."
 msgid "There are no account balances in this period yet."
 msgstr "Er zijn nog geen rekeningsaldi in deze periode."
 
+#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
+msgid "There is no chart to save as an image."
+msgstr "Er is geen grafiek om als afbeelding op te slaan."
+
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 msgid "There is no server copy to download yet."
 msgstr "Er is nog geen serverkopie om te downloaden."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "There’s no field called [{detail}]."
+msgstr "Er is geen veld met de naam [{detail}]."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "There’s no function called {detail}."
+msgstr "Er is geen functie met de naam {detail}."
 
 #: src/features/budget-management/ui/create-budget-form/YnabDateOrderChoice.tsx
 msgid "These dates can be read two ways. Select the date format used in YNAB."
@@ -19043,6 +19618,10 @@ msgstr "Deze datums kunnen op twee manieren worden gelezen. Selecteer de datumno
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
 msgid "These incoming transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
 msgstr "Deze binnenkomende transacties lijken op transacties die je al hebt ingevoerd. Match ze om je invoer als bevestigd te markeren, of voeg ze toe als nieuwe transacties."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "These values have different types."
+msgstr "Deze waarden hebben verschillende typen."
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "They arrive uncleared and are updated once your bank books them. Pending transactions your bank drops, like a released card hold, are removed."
@@ -19162,6 +19741,14 @@ msgstr "Dit verwijdert {totalSpaces} budgetten ({0}), hun synchronisatiegeschied
 msgid "This device"
 msgstr "Dit apparaat"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "This expression is nested too deeply."
+msgstr "Deze expressie is te diep genest."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "This expression is too long."
+msgstr "Deze expressie is te lang."
+
 #: src/features/import/lib/import-display-text.ts
 msgid "This file row was already imported"
 msgstr "Deze bestandsrij is al geïmporteerd"
@@ -19202,6 +19789,7 @@ msgstr "Deze schuld heeft een positief saldo."
 msgid "This liability now has a positive balance. There's nothing to pay off right now."
 msgstr "Deze schuld heeft nu een positief saldo. Er hoeft momenteel niets te worden afgelost."
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "This month"
 msgstr "Deze maand"
@@ -19217,6 +19805,18 @@ msgstr "SALARIS DEZE MAAND"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "This month's target met! Continue with {monthlyTarget}/month to stay on track"
 msgstr "Doel van deze maand bereikt! Ga door met {monthlyTarget}/maand om op schema te blijven"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "This needs to be a condition, like [Amount] > 0."
+msgstr "Hier hoort een voorwaarde, zoals [Bedrag] > 0."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "This needs to be a number."
+msgstr "Hier hoort een getal."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "This needs to be text."
+msgstr "Hier hoort tekst."
 
 #: src/app/system/AppErrorBoundary.tsx
 msgid "This page could not be shown"
@@ -19237,6 +19837,10 @@ msgstr "Deze vraag kon niet worden uitgevoerd"
 #: src/pages/reports/question/QuestionPage.tsx
 msgid "This question doesn’t exist"
 msgstr "Deze vraag bestaat niet"
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "This question’s data has no field the dashboard filters use."
+msgstr "De gegevens van deze vraag hebben geen veld dat de dashboardfilters gebruiken."
 
 #: src/features/transactions/ui/cells/ExchangeRateCell.tsx
 msgid "This rate is over 1,000× different. Check the decimal point or confirm it."
@@ -19400,6 +20004,7 @@ msgstr "Deze werkruimte is vergrendeld omdat jouw abonnement inactief is. Abonne
 msgid "This XML file is not a CAMT.053 bank statement. Budgero only imports CAMT.053; other ISO 20022 messages (pain.*, camt.052, camt.054) are not supported."
 msgstr "Dit XML-bestand is geen CAMT.053-bankafschrift. Budgero importeert alleen CAMT.053; andere ISO 20022-berichten (pain.*, camt.052, camt.054) worden niet ondersteund."
 
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "This year"
 msgstr "Dit jaar"
@@ -19467,6 +20072,7 @@ msgstr "Titel (optioneel)"
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
+#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "To"
 msgstr "Naar"
@@ -19564,6 +20170,8 @@ msgstr "Grootste begunstigde"
 msgid "Top payees by spending (30d)"
 msgstr "Top begunstigden naar uitgaven (30d)"
 
+#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 #: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
@@ -19891,6 +20499,10 @@ msgstr "Behandel de huidige bedragen als {oldCurrency}. Zo wordt 10 {oldCurrency
 msgid "Treemap"
 msgstr "Treemap"
 
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "Trend"
+msgstr "Trend"
+
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "Trial ended:"
 msgstr "Proefperiode beëindigd:"
@@ -19979,6 +20591,14 @@ msgstr "tx #{0}"
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
 msgid "Type"
 msgstr "Type"
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "Type [ for fields. Use + − × ÷, comparisons, and abs, round, case, coalesce, contains."
+msgstr "Typ [ voor velden. Gebruik + − × ÷, vergelijkingen en abs, round, case, coalesce, contains."
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "Type [ for fields. Use Sum, Avg, Min, Max, Count, CountIf, SumIf, Distinct, and Spending, Income, Net."
+msgstr "Typ [ voor velden. Gebruik Sum, Avg, Min, Max, Count, CountIf, SumIf, Distinct en Uitgaven, Inkomen, Netto."
 
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Type {CONFIRM_WORD} to confirm"
@@ -20240,6 +20860,10 @@ msgstr "Automatisering ongedaan maken"
 msgid "Undone"
 msgstr "Ongedaan gemaakt"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Unexpected {detail}."
+msgstr "Onverwacht: {detail}."
+
 #: src/features/budget-planning/lib/budget-transforms.ts
 #: src/pages/analytics/analytics-model.ts
 msgid "Ungrouped"
@@ -20278,6 +20902,10 @@ msgstr "onbekende fout"
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Unknown error"
 msgstr "Onbekende fout"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Unknown name “{detail}”. Put field names in brackets, like [Amount]."
+msgstr "Onbekende naam “{detail}”. Zet veldnamen tussen haakjes, zoals [Bedrag]."
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Unknown savings type"
@@ -20360,6 +20988,7 @@ msgstr "Aankomende rekening: {0}"
 #~ msgid "Upcoming transactions"
 #~ msgstr "Aankomende transacties"
 
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -20472,6 +21101,10 @@ msgstr "Werk je rapport- en grafiekconfiguraties bij."
 msgid "Updated {updated}"
 msgstr "Bijgewerkt op {updated}"
 
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "Updated {updatedAt}"
+msgstr "Bijgewerkt om {updatedAt}"
+
 #. placeholder {0}: new Date(report.updatedAt).toLocaleDateString()
 #: src/pages/explorer-page/components/ReportsPanel.tsx
 #~ msgid "Updated: {0}"
@@ -20577,6 +21210,10 @@ msgstr "Toch gebruiken"
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Use at least 8 characters."
 msgstr "Gebruik minstens 8 tekens."
+
+#: src/features/reports/ui/notebook/ExpressionEditor.tsx
+msgid "Use at most {MAX_NAME_LENGTH} characters."
+msgstr "Gebruik maximaal {MAX_NAME_LENGTH} tekens."
 
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 msgid "Use positive/negative percentages to scale the amount."
@@ -20684,6 +21321,7 @@ msgid "Vacation"
 msgstr "Vakantie"
 
 #: src/features/reports/ui/notebook/FilterEditor.tsx
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Value"
 msgstr "Waarde"
 
@@ -20707,6 +21345,7 @@ msgstr "Valutadatum (wanneer het geld werd verplaatst)"
 msgid "values"
 msgstr "waarden"
 
+#: src/features/reports/ui/notebook/viz/viz-meta.ts
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Values"
 msgstr "Waarden"
@@ -20816,6 +21455,14 @@ msgstr "Spraakinvoer wordt niet ondersteund in deze browser"
 msgid "vs {0}"
 msgstr "vergeleken met {0}"
 
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "vs {previousPeriod}"
+msgstr "vs. {previousPeriod}"
+
+#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
+msgid "vs the period before"
+msgstr "vs. de periode ervoor"
+
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Waiting"
 msgstr "Wachtend"
@@ -20903,6 +21550,14 @@ msgstr "Water"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Water company"
 msgstr "Waterbedrijf"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Waterfall"
+msgstr "Waterval"
+
+#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
+msgid "Waterfall chart"
+msgstr "Watervaldiagram"
 
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 #~ msgid "We are loading your upcoming recurring occurrences."
@@ -21348,9 +22003,17 @@ msgstr "Werkruimtes"
 msgid "Workspaces & Sharing"
 msgstr "Werkruimtes & Delen"
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Write a formula, e.g. Spending / Income * 100"
+msgstr "Schrijf een formule, bijv. Uitgaven / Inkomen * 100"
+
 #: src/pages/admin/admin-users/user-details/OverviewTab.tsx
 msgid "Write activity from the mutation log."
 msgstr "Activiteit schrijven vanuit het mutatielogboek."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Write dates as \"YYYY-MM-DD\"."
+msgstr "Schrijf datums als \"JJJJ-MM-DD\"."
 
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "writes data"
@@ -21373,6 +22036,7 @@ msgid "year"
 msgstr "jaar"
 
 #: src/features/reports/ui/notebook/question-labels.ts
+#: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
 msgid "Year"
 msgstr "Jaar"
 
@@ -22029,678 +22693,6 @@ msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-
 #: src/app/startup/StartupLayout.tsx
 msgid "Zero-based budgeting. Zero-knowledge privacy."
 msgstr "Zero-based budgetteren. Zero-knowledge privacy."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "“{detail}” isn’t allowed here."
-msgstr "“{detail}” is hier niet toegestaan."
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "(at character {position})"
-msgstr "(bij teken {position})"
-
-#. placeholder {0}: state.invites.length
-#: src/pages/onboarding/steps/DoneStep.tsx
-msgid "{0, plural, one {# person} other {# people}}"
-msgstr "{0, plural, one {# persoon} other {# personen}}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "{base} vs previous period"
-msgstr "{base} vs. vorige periode"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{detail} can’t be used inside another aggregation."
-msgstr "{detail} kan niet binnen een andere aggregatie staan."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{detail} is only available for transactions."
-msgstr "{detail} is alleen beschikbaar voor transacties."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{detail} only works in a custom metric."
-msgstr "{detail} werkt alleen in een eigen metriek."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{detail}() has the wrong number of values."
-msgstr "{detail}() heeft het verkeerde aantal waarden."
-
-#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
-msgid "{goalShare}% of the {goalText} goal"
-msgstr "{goalShare}% van het doel van {goalText}"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{label} (% of total)"
-msgstr "{label} (% van totaal)"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{label} (moving average of {window})"
-msgstr "{label} (voortschrijdend gemiddelde over {window})"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{label} (running total)"
-msgstr "{label} (cumulatief)"
-
-#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
-msgid "{label}: {count} selected"
-msgstr "{label}: {count} geselecteerd"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{metric} (previous period)"
-msgstr "{metric} (vorige periode)"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "{metric}: % change"
-msgstr "{metric}: % verandering"
-
-#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
-msgid "{rowCount} rows × {colCount} columns"
-msgstr "{rowCount} rijen × {colCount} kolommen"
-
-#: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
-msgid "{yearText}: {total} over {activeDays} days"
-msgstr "{yearText}: {total} over {activeDays} dagen"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "% of total"
-msgstr "% van totaal"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "A closing parenthesis ) is missing."
-msgstr "Er ontbreekt een sluithaakje )."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "A custom column can be a number, text or a condition."
-msgstr "Een eigen kolom kan een getal, tekst of voorwaarde zijn."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "A field name is missing its closing ]."
-msgstr "Een veldnaam mist de sluitende ]."
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "A field with this name already exists."
-msgstr "Er bestaat al een veld met deze naam."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "A metric has to be a number."
-msgstr "Een metriek moet een getal zijn."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "A metric needs an aggregation, like Sum([Amount]) or Count."
-msgstr "Een metriek heeft een aggregatie nodig, zoals Sum([Bedrag]) of Count."
-
-#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
-msgid "A pivot table needs two groupings and a metric."
-msgstr "Een draaitabel heeft twee groeperingen en een metriek nodig."
-
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Account Column Mapped"
-msgstr "Rekeningkolom gekoppeld"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Add a metric in Summarize first."
-msgstr "Voeg eerst een metriek toe bij Samenvatten."
-
-#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
-msgid "All category groups"
-msgstr "Alle categoriegroepen"
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Automatic (own axis when units differ)"
-msgstr "Automatisch (eigen as bij andere eenheden)"
-
-#: src/features/reports/ui/notebook/QuestionResult.tsx
-msgid "Back to the previous question"
-msgstr "Terug naar de vorige vraag"
-
-#: src/features/reports/ui/notebook/DrillMenu.tsx
-msgid "Break out by…"
-msgstr "Uitsplitsen naar…"
-
-#: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Budgero works either way. Pick the path that fits."
-msgstr "Budgero werkt beide kanten op. Kies wat bij je past."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-#: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
-msgid "Calendar heatmap"
-msgstr "Kalender-heatmap"
-
-#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
-msgid "Category groups"
-msgstr "Categoriegroepen"
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Chart settings"
-msgstr "Grafiekinstellingen"
-
-#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
-msgid "Clear filters"
-msgstr "Filters wissen"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Combo"
-msgstr "Combinatie"
-
-#: src/features/reports/ui/notebook/viz/ComboView.tsx
-msgid "Combo chart"
-msgstr "Combinatiegrafiek"
-
-#: src/features/reports/ui/notebook/viz/viz-meta.ts
-msgid "Compare"
-msgstr "Vergelijken"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Compare to previous period"
-msgstr "Vergelijken met vorige periode"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Compare, running total, moving average, % of total"
-msgstr "Vergelijken, cumulatief, voortschrijdend gemiddelde, % van totaal"
-
-#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
-msgid "Comparing with the period before…"
-msgstr "Vergelijken met de periode ervoor…"
-
-#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Could not export a widget"
-msgstr "Een widget kon niet worden geëxporteerd"
-
-#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
-msgid "Could not save the chart image"
-msgstr "De grafiekafbeelding kon niet worden opgeslagen"
-
-#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Could not save the dashboard filters"
-msgstr "De dashboardfilters konden niet worden opgeslagen"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Custom"
-msgstr "Eigen"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Custom column"
-msgstr "Eigen kolom"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Custom columns"
-msgstr "Eigen kolommen"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Custom metric"
-msgstr "Eigen metriek"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Custom metric…"
-msgstr "Eigen metriek…"
-
-#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
-msgid "Custom range…"
-msgstr "Aangepast bereik…"
-
-#: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
-msgid "Dashboard filters"
-msgstr "Dashboardfilters"
-
-#: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Dashboard filters applied"
-msgstr "Dashboardfilters toegepast"
-
-#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
-msgid "Decrease"
-msgstr "Daling"
-
-#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
-msgid "Download"
-msgstr "Downloaden"
-
-#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
-msgid "Download CSV"
-msgstr "CSV downloaden"
-
-#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Download one CSV per widget"
-msgstr "Eén CSV per widget downloaden"
-
-#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
-msgid "Download PNG"
-msgstr "PNG downloaden"
-
-#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Downloaded {exported} CSV files"
-msgstr "{exported} CSV-bestanden gedownload"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "e.g. Savings rate"
-msgstr "bijv. Spaarquote"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "e.g. Size"
-msgstr "bijv. Grootte"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "Edit custom column"
-msgstr "Eigen kolom bewerken"
-
-#. placeholder {0}: column.name
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Edit custom column: {0}"
-msgstr "Eigen kolom bewerken: {0}"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "Edit custom metric"
-msgstr "Eigen metriek bewerken"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Enter an expression."
-msgstr "Voer een expressie in."
-
-#: src/pages/onboarding/onboarding-data.ts
-msgid "Every coin now has a place to land."
-msgstr "Elke munt heeft nu een bestemming."
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "Examples"
-msgstr "Voorbeelden"
-
-#: src/features/reports/ui/notebook/DrillMenu.tsx
-msgid "Exclude {text}"
-msgstr "{text} uitsluiten"
-
-#: src/features/reports/ui/notebook/DrillMenu.tsx
-msgid "Explore {heading}"
-msgstr "{heading} verkennen"
-
-#: src/features/reports/ui/notebook/QuestionTable.tsx
-msgid "Explore {text}"
-msgstr "{text} verkennen"
-
-#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Export CSVs"
-msgstr "CSV’s exporteren"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "Expression"
-msgstr "Expressie"
-
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Fallback Account (for unmatched account names)"
-msgstr "Terugvalrekening (voor niet-overeenkomende rekeningnamen)"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "field"
-msgstr "veld"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Flow (Sankey)"
-msgstr "Stroom (Sankey)"
-
-#: src/features/reports/ui/notebook/viz/SankeyView.tsx
-msgid "Flow chart"
-msgstr "Stroomdiagram"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "function"
-msgstr "functie"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "Give it a name."
-msgstr "Geef het een naam."
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Goal line"
-msgstr "Doellijn"
-
-#: src/features/reports/ui/notebook/viz/display.ts
-msgid "Goal: {value}"
-msgstr "Doel: {value}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Group by a date to compare periods or add running totals."
-msgstr "Groepeer op een datum om periodes te vergelijken of cumulatieve totalen toe te voegen."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "In a metric, fields go inside an aggregation, like Sum([Amount])."
-msgstr "In een metriek staan velden binnen een aggregatie, zoals Sum([Bedrag])."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Income category"
-msgstr "Inkomenscategorie"
-
-#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
-msgid "Increase"
-msgstr "Stijging"
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Its own axis"
-msgstr "Eigen as"
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Largest first"
-msgstr "Grootste eerst"
-
-#: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Learn ZBB with a short walkthrough"
-msgstr "Leer zero-based budgetteren met een korte rondleiding"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "metric"
-msgstr "metriek"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Moving average ({window} periods)"
-msgstr "Voortschrijdend gemiddelde ({window} periodes)"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "Names can’t contain [ or ]."
-msgstr "Namen mogen geen [ of ] bevatten."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Needs a grouping (Summarize by)."
-msgstr "Heeft een groepering nodig (Samenvatten per)."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Needs a grouping and two metrics."
-msgstr "Heeft een groepering en twee metrieken nodig."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Needs a grouping that isn’t a date, like Category."
-msgstr "Heeft een groepering nodig die geen datum is, zoals Categorie."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Needs exactly one grouping."
-msgstr "Heeft precies één groepering nodig."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Needs exactly two groupings."
-msgstr "Heeft precies twee groeperingen nodig."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Needs one grouping by date, by day."
-msgstr "Heeft één groepering op datum nodig, per dag."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Needs one grouping by date, or no grouping and a date filter with a range."
-msgstr "Heeft één groepering op datum nodig, of geen groepering en een datumfilter met een bereik."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Needs two groupings that aren’t dates, like Category group and Category."
-msgstr "Heeft twee groeperingen nodig die geen datum zijn, zoals Categoriegroep en Categorie."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Needs two metrics and one grouping."
-msgstr "Heeft twee metrieken en één groepering nodig."
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "New custom column"
-msgstr "Nieuwe eigen kolom"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "New custom metric"
-msgstr "Nieuwe eigen metriek"
-
-#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
-msgid "No earlier period to compare with."
-msgstr "Geen eerdere periode om mee te vergelijken."
-
-#: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Not filtered"
-msgstr "Niet gefilterd"
-
-#: src/features/reports/ui/notebook/DrillMenu.tsx
-msgid "Nothing to explore for this value."
-msgstr "Niets te verkennen voor deze waarde."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Number with trend"
-msgstr "Getal met trend"
-
-#: src/features/reports/ui/notebook/DrillMenu.tsx
-msgid "Only {text}"
-msgstr "Alleen {text}"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Options for {label}"
-msgstr "Opties voor {label}"
-
-#: src/features/reports/ui/notebook/viz/SankeyView.tsx
-msgid "Other ({count})"
-msgstr "Overig ({count})"
-
-#: src/features/reports/ui/notebook/QuestionVisualization.tsx
-#: src/features/reports/ui/notebook/viz/RowChartView.tsx
-msgid "Other ({otherXCount})"
-msgstr "Overig ({otherXCount})"
-
-#: src/features/reports/ui/notebook/viz/viz-meta.ts
-msgid "Parts and flows"
-msgstr "Delen en stromen"
-
-#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
-msgid "pivot"
-msgstr "draaitabel"
-
-#: src/features/reports/ui/notebook/viz/PivotTableView.tsx
-msgid "Pivot CSV"
-msgstr "Draaitabel-CSV"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Pivot table"
-msgstr "Draaitabel"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Put a field name between the brackets, like [Amount]."
-msgstr "Zet een veldnaam tussen de haakjes, zoals [Bedrag]."
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Question order"
-msgstr "Volgorde van de vraag"
-
-#: src/features/reports/ui/notebook/viz/viz-meta.ts
-msgid "Relationships"
-msgstr "Verbanden"
-
-#. placeholder {0}: column.name
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Remove custom column: {0}"
-msgstr "Eigen kolom verwijderen: {0}"
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Reset settings"
-msgstr "Instellingen herstellen"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "round() takes a whole number of digits from −10 to 10."
-msgstr "round() verwacht een geheel aantal decimalen van −10 tot 10."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Row"
-msgstr "Liggende staaf"
-
-#: src/features/reports/ui/notebook/viz/RowChartView.tsx
-msgid "Row chart"
-msgstr "Liggend staafdiagram"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
-msgid "Running total"
-msgstr "Cumulatief totaal"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Scatter"
-msgstr "Spreiding"
-
-#: src/features/reports/ui/notebook/viz/ScatterView.tsx
-msgid "Scatter chart"
-msgstr "Spreidingsdiagram"
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Second metric’s axis"
-msgstr "As van de tweede metriek"
-
-#: src/features/reports/ui/notebook/DrillMenu.tsx
-msgid "See these accounts"
-msgstr "Deze rekeningen bekijken"
-
-#: src/features/reports/ui/notebook/DrillMenu.tsx
-msgid "See these rows"
-msgstr "Deze rijen bekijken"
-
-#: src/features/reports/ui/notebook/DrillMenu.tsx
-msgid "See these transactions"
-msgstr "Deze transacties bekijken"
-
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Select fallback account"
-msgstr "Selecteer fallback-rekening"
-
-#: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Set up accounts & envelopes by hand"
-msgstr "Rekeningen en enveloppen handmatig instellen"
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Shared with the bars"
-msgstr "Gedeeld met de staven"
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Show the top"
-msgstr "Toon de grootste"
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Show values"
-msgstr "Waarden tonen"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Shows a single value: remove the groupings."
-msgstr "Toont één waarde: verwijder de groeperingen."
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Smallest first"
-msgstr "Kleinste eerst"
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "Sort bars"
-msgstr "Staven sorteren"
-
-#: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "SQL reports run as written; dashboard filters only apply to questions built in the notebook."
-msgstr "SQL-rapporten draaien zoals ze geschreven zijn; dashboardfilters gelden alleen voor vragen uit het notitieboek."
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "Suggestions"
-msgstr "Suggesties"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Text is missing its closing quote."
-msgstr "De tekst mist het sluitende aanhalingsteken."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "The expression ends too early."
-msgstr "De expressie stopt te vroeg."
-
-#: src/features/reports/ui/notebook/viz/ChartSettings.tsx
-msgid "The rest are added up as “Other”."
-msgstr "De rest wordt opgeteld als ‘Overig’."
-
-#: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
-msgid "The selected transfer does not have one source and one destination. Recurring split transfers are not supported yet."
-msgstr "De geselecteerde overboeking heeft niet precies één bron en één bestemming. Terugkerende gesplitste overboekingen worden nog niet ondersteund."
-
-#: src/features/reports/ui/notebook/viz/ExportMenu.tsx
-msgid "There is no chart to save as an image."
-msgstr "Er is geen grafiek om als afbeelding op te slaan."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "There’s no field called [{detail}]."
-msgstr "Er is geen veld met de naam [{detail}]."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "There’s no function called {detail}."
-msgstr "Er is geen functie met de naam {detail}."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "These values have different types."
-msgstr "Deze waarden hebben verschillende typen."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "This expression is nested too deeply."
-msgstr "Deze expressie is te diep genest."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "This expression is too long."
-msgstr "Deze expressie is te lang."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "This needs to be a condition, like [Amount] > 0."
-msgstr "Hier hoort een voorwaarde, zoals [Bedrag] > 0."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "This needs to be a number."
-msgstr "Hier hoort een getal."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "This needs to be text."
-msgstr "Hier hoort tekst."
-
-#: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "This question’s data has no field the dashboard filters use."
-msgstr "De gegevens van deze vraag hebben geen veld dat de dashboardfilters gebruiken."
-
-#. placeholder {0}: columnMapping.account
-#: src/features/import/ui/steps/ConfigureStep.tsx
-msgid "Transactions will use accounts from the \"{0}\" column. If an account name doesn't match any existing account, you'll need to select a default account below:"
-msgstr "Transacties gebruiken rekeningen uit de kolom \"{0}\". Als een rekeningnaam niet overeenkomt met een bestaande rekening, moet je hieronder een standaardrekening selecteren:"
-
-#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
-msgid "Trend"
-msgstr "Trend"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "Type [ for fields. Use + − × ÷, comparisons, and abs, round, case, coalesce, contains."
-msgstr "Typ [ voor velden. Gebruik + − × ÷, vergelijkingen en abs, round, case, coalesce, contains."
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "Type [ for fields. Use Sum, Avg, Min, Max, Count, CountIf, SumIf, Distinct, and Spending, Income, Net."
-msgstr "Typ [ voor velden. Gebruik Sum, Avg, Min, Max, Count, CountIf, SumIf, Distinct en Uitgaven, Inkomen, Netto."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Unexpected {detail}."
-msgstr "Onverwacht: {detail}."
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Unknown name “{detail}”. Put field names in brackets, like [Amount]."
-msgstr "Onbekende naam “{detail}”. Zet veldnamen tussen haakjes, zoals [Bedrag]."
-
-#: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Updated {updatedAt}"
-msgstr "Bijgewerkt om {updatedAt}"
-
-#: src/features/reports/ui/notebook/ExpressionEditor.tsx
-msgid "Use at most {MAX_NAME_LENGTH} characters."
-msgstr "Gebruik maximaal {MAX_NAME_LENGTH} tekens."
-
-#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
-msgid "vs {previousPeriod}"
-msgstr "vs. {previousPeriod}"
-
-#: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
-msgid "vs the period before"
-msgstr "vs. de periode ervoor"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Waterfall"
-msgstr "Waterval"
-
-#: src/features/reports/ui/notebook/viz/WaterfallView.tsx
-msgid "Waterfall chart"
-msgstr "Watervaldiagram"
-
-#: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Write a formula, e.g. Spending / Income * 100"
-msgstr "Schrijf een formule, bijv. Uitgaven / Inkomen * 100"
-
-#: src/features/reports/ui/notebook/question-labels.ts
-msgid "Write dates as \"YYYY-MM-DD\"."
-msgstr "Schrijf datums als \"JJJJ-MM-DD\"."
 
 #: src/features/reports/ui/notebook/DrillMenu.tsx
 msgid "Zoom in: by day"
