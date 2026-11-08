@@ -192,11 +192,7 @@ export function sortPivotRows(
   const sign = sort.direction === 'asc' ? 1 : -1;
   const { by } = sort;
   const valueOf = (row: PivotHeader): number =>
-    by === 'total'
-      ? row.total
-      : by === 'label'
-        ? 0
-        : (pivot.cells[row.key]?.[by.column] ?? Number.NEGATIVE_INFINITY);
+    by === 'total' ? row.total : by === 'label' ? 0 : (pivot.cells[row.key]?.[by.column] ?? 0);
   return [...pivot.rows].sort((a, b) => {
     if (by === 'label') {
       // Date buckets sort by their ISO key, everything else by its shown label.
