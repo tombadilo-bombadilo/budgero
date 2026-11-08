@@ -30,6 +30,8 @@ function compactQuestion(spec: QuestionSpec): Record<string, unknown> {
     ...(spec.limit !== null ? { limit: spec.limit } : {}),
     ...(spec.columns ? { columns: spec.columns } : {}),
     visualization: spec.visualization,
+    ...(spec.stacking !== 'auto' ? { stacking: spec.stacking } : {}),
+    ...(spec.display ? { display: spec.display } : {}),
   };
 }
 

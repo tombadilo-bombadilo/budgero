@@ -84,7 +84,23 @@ export interface QuestionSort {
   direction: 'asc' | 'desc';
 }
 
-export const VISUALIZATIONS = ['auto', 'number', 'line', 'bar', 'area', 'pie', 'table'] as const;
+export const VISUALIZATIONS = [
+  'auto',
+  'number',
+  'line',
+  'bar',
+  'area',
+  'pie',
+  'table',
+  'trend',
+  'combo',
+  'pivot',
+  'calendar',
+  'waterfall',
+  'sankey',
+  'scatter',
+  'row',
+] as const;
 export type Visualization = (typeof VISUALIZATIONS)[number];
 export type ResolvedVisualization = Exclude<Visualization, 'auto'>;
 
@@ -106,6 +122,8 @@ export interface QuestionSpec {
   visualization: Visualization;
   /** Bar/area only; 'auto' stacks a second grouping and keeps several metrics side by side. */
   stacking: Stacking;
+  /** Chart settings (values on bars, goal line, ...); omitted when all default. */
+  display?: QuestionDisplay;
 }
 
 export const MAX_QUESTION_LIMIT = 10_000;
@@ -379,6 +397,8 @@ export function normalizeQuestion(input: unknown): QuestionSpec {
     visualization: oneOf(VISUALIZATIONS, raw.visualization) ?? 'auto',
     stacking: oneOf(STACKINGS, raw.stacking) ?? 'auto',
   };
+  const display = normalizeDisplay(raw.display);
+  if (display) spec.display = display;
   // Drop sorts on columns this question doesn't output.
   const keys = new Set(questionColumnKeys(spec));
   spec.sort = spec.sort.filter((entry) => keys.has(entry.column));
@@ -446,18 +466,24 @@ export function questionColumnKeys(spec: QuestionSpec): string[] {
 
 /** Which visualizations make sense for this question's shape. */
 export function allowedVisualizations(spec: QuestionSpec): ResolvedVisualization[] {
-  if (spec.aggregations.length === 0) return ['table'];
-  if (spec.breakouts.length === 0) return ['number', 'table'];
-  const options: ResolvedVisualization[] = ['bar', 'line', 'area'];
-  if (spec.breakouts.length === 1) options.push('pie');
-  options.push('table');
-  return options;
+  return VISUALIZATION_ORDER.filter((visualization) => !visualizationBlocker(spec, visualization));
 }
 
-/** Auto choice: date grouping → line, one category grouping → bar, single value → number. */
+/**
+ * Auto choice: single value → number, two metrics in different units (money
+ * vs count) → combo, date grouping → line, category grouping → bar. The row
+ * chart is picked later from the result (long labels / many bars).
+ */
 export function autoVisualization(spec: QuestionSpec): ResolvedVisualization {
   if (spec.aggregations.length === 0) return 'table';
   if (spec.breakouts.length === 0) return 'number';
+  if (
+    spec.breakouts.length === 1 &&
+    spec.aggregations.length >= 2 &&
+    aggregationUnit(spec.aggregations[0]) !== aggregationUnit(spec.aggregations[1])
+  ) {
+    return 'combo';
+  }
   const first = getField(spec.source, spec.breakouts[0].field);
   if (first?.type === 'date') return 'line';
   return 'bar';
@@ -487,4 +513,141 @@ export function resolveVisualization(spec: QuestionSpec): ResolvedVisualization 
     return spec.visualization;
   }
   return autoVisualization(spec);
+}
+
+/** Picker / allowed order of the chart types (table last). */
+export const VISUALIZATION_ORDER: readonly ResolvedVisualization[] = [
+  'number',
+  'trend',
+  'bar',
+  'row',
+  'line',
+  'area',
+  'combo',
+  'pie',
+  'waterfall',
+  'calendar',
+  'sankey',
+  'scatter',
+  'pivot',
+  'table',
+];
+
+/** Why a chart type can't show this question (null = it can). */
+export type VisualizationBlocker =
+  | 'needsSummary'
+  | 'needsNoGrouping'
+  | 'needsGrouping'
+  | 'needsOneGrouping'
+  | 'needsCategoryGrouping'
+  | 'needsDateTrend'
+  | 'needsTwoMetrics'
+  | 'needsTwoMetricsOneGrouping'
+  | 'needsDayGrouping'
+  | 'needsTwoGroupings'
+  | 'needsTwoCategoryGroupings';
+
+function isDateBreakout(spec: QuestionSpec, breakout: QuestionBreakout | undefined): boolean {
+  return !!breakout && getField(spec.source, breakout.field)?.type === 'date';
+}
+
+/** The date filter a number-with-trend compares against the period before it. */
+export function trendDateFilter(spec: QuestionSpec): QuestionFilter | null {
+  const dateField = PRIMARY_DATE_FIELD[spec.source];
+  return (
+    spec.filters.find(
+      (filter) =>
+        filter.field === dateField &&
+        (filter.op === 'previous' || filter.op === 'current' || filter.op === 'between')
+    ) ?? null
+  );
+}
+
+export function visualizationBlocker(
+  spec: QuestionSpec,
+  visualization: ResolvedVisualization
+): VisualizationBlocker | null {
+  if (visualization === 'table') return null;
+  if (spec.aggregations.length === 0) return 'needsSummary';
+  const groupings = spec.breakouts.length;
+  const metrics = spec.aggregations.length;
+  const [first, second] = spec.breakouts;
+  switch (visualization) {
+    case 'number':
+      return groupings === 0 ? null : 'needsNoGrouping';
+    case 'trend':
+      if (groupings === 0) return trendDateFilter(spec) ? null : 'needsDateTrend';
+      return groupings === 1 && isDateBreakout(spec, first) ? null : 'needsDateTrend';
+    case 'bar':
+    case 'line':
+    case 'area':
+      return groupings > 0 ? null : 'needsGrouping';
+    case 'row':
+      return groupings > 0 && !isDateBreakout(spec, first) ? null : 'needsCategoryGrouping';
+    case 'pie':
+    case 'waterfall':
+      return groupings === 1 ? null : 'needsOneGrouping';
+    case 'combo':
+      return groupings === 1 && metrics >= 2 ? null : 'needsTwoMetricsOneGrouping';
+    case 'calendar':
+      return groupings === 1 && isDateBreakout(spec, first) && first.bucket === 'day'
+        ? null
+        : 'needsDayGrouping';
+    case 'sankey':
+      return groupings === 2 && !isDateBreakout(spec, first) && !isDateBreakout(spec, second)
+        ? null
+        : 'needsTwoCategoryGroupings';
+    case 'scatter':
+      return groupings > 0 && metrics >= 2 ? null : 'needsTwoMetrics';
+    case 'pivot':
+      return groupings === 2 ? null : 'needsTwoGroupings';
+  }
+}
+
+const MONEY_FIELDS = new Set(['amount', 'inflow', 'outflow', 'assigned', 'activity', 'balance']);
+
+/** What a metric measures, so charts can tell when two metrics need two axes. */
+export function aggregationUnit(aggregation: QuestionAggregation): 'money' | 'number' {
+  if (aggregation.op === 'count' || aggregation.op === 'distinct') return 'number';
+  if (isFriendlyAggregation(aggregation.op)) return 'money';
+  return aggregation.field && MONEY_FIELDS.has(aggregation.field) ? 'money' : 'number';
+}
+
+// ---------------------------------------------------------------------------
+// Display settings
+// ---------------------------------------------------------------------------
+
+export const DISPLAY_SORTS = ['asc', 'desc'] as const;
+export type DisplaySort = (typeof DISPLAY_SORTS)[number];
+export const MAX_TOP_N = 50;
+const MAX_GOAL = 1e12;
+
+/** Per-chart settings; every field optional, absent = the chart's default. */
+export interface QuestionDisplay {
+  /** Print values on bars / points. */
+  showValues?: boolean;
+  /** Goal line (in the metric's unit, e.g. budget currency). */
+  goal?: number;
+  /** Combo: second metric on its own axis; absent = when units differ. */
+  dualAxis?: boolean;
+  /** Keep the N largest categories, fold the rest into "Other". */
+  topN?: number;
+  /** Bar / row: sort categories by value. */
+  sort?: DisplaySort;
+}
+
+/** Valid display settings, or undefined when nothing is set. */
+export function normalizeDisplay(input: unknown): QuestionDisplay | undefined {
+  const raw = asRecord(input);
+  if (!raw) return undefined;
+  const display: QuestionDisplay = {};
+  if (typeof raw.showValues === 'boolean') display.showValues = raw.showValues;
+  const goal = toFiniteNumber(raw.goal);
+  if (goal !== null && Math.abs(goal) < MAX_GOAL) display.goal = Math.round(goal * 100) / 100;
+  if (typeof raw.dualAxis === 'boolean') display.dualAxis = raw.dualAxis;
+  const topN = toFiniteNumber(raw.topN);
+  if (topN !== null && topN >= 1) display.topN = Math.min(Math.floor(topN), MAX_TOP_N);
+  const sort = oneOf(DISPLAY_SORTS, raw.sort);
+  if (sort) display.sort = sort;
+  return Object.keys(display).length > 0 ? display : undefined;
 }

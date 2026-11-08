@@ -17,6 +17,7 @@ import {
   type RelativeUnit,
   type FilterOp,
   type ResolvedVisualization,
+  type VisualizationBlocker,
 } from '@features/reports/lib/question';
 
 export function sourceLabel(source: QuestionSource): string {
@@ -314,6 +315,50 @@ export function visualizationLabel(visualization: ResolvedVisualization): string
       return t`Pie`;
     case 'table':
       return t`Table`;
+    case 'trend':
+      return t`Number with trend`;
+    case 'combo':
+      return t`Combo`;
+    case 'pivot':
+      return t`Pivot table`;
+    case 'calendar':
+      return t`Calendar heatmap`;
+    case 'waterfall':
+      return t`Waterfall`;
+    case 'sankey':
+      return t`Flow (Sankey)`;
+    case 'scatter':
+      return t`Scatter`;
+    case 'row':
+      return t`Row`;
+  }
+}
+
+/** Why a chart type is unavailable for the current question. */
+export function visualizationBlockerLabel(blocker: VisualizationBlocker): string {
+  switch (blocker) {
+    case 'needsSummary':
+      return t`Add a metric in Summarize first.`;
+    case 'needsNoGrouping':
+      return t`Shows a single value: remove the groupings.`;
+    case 'needsGrouping':
+      return t`Needs a grouping (Summarize by).`;
+    case 'needsOneGrouping':
+      return t`Needs exactly one grouping.`;
+    case 'needsCategoryGrouping':
+      return t`Needs a grouping that isn’t a date, like Category.`;
+    case 'needsDateTrend':
+      return t`Needs one grouping by date, or no grouping and a date filter with a range.`;
+    case 'needsTwoMetrics':
+      return t`Needs a grouping and two metrics.`;
+    case 'needsTwoMetricsOneGrouping':
+      return t`Needs two metrics and one grouping.`;
+    case 'needsDayGrouping':
+      return t`Needs one grouping by date, by day.`;
+    case 'needsTwoGroupings':
+      return t`Needs exactly two groupings.`;
+    case 'needsTwoCategoryGroupings':
+      return t`Needs two groupings that aren’t dates, like Category group and Category.`;
   }
 }
 

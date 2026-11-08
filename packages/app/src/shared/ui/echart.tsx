@@ -7,12 +7,16 @@ import {
   ScatterChart,
   TreemapChart,
   SankeyChart,
+  HeatmapChart,
+  CustomChart,
 } from 'echarts/charts';
 import {
   GridComponent,
   TooltipComponent,
   MarkLineComponent,
   MarkPointComponent,
+  CalendarComponent,
+  VisualMapComponent,
 } from 'echarts/components';
 import { LabelLayout } from 'echarts/features';
 import { CanvasRenderer } from 'echarts/renderers';
@@ -26,10 +30,14 @@ echarts.use([
   ScatterChart,
   TreemapChart,
   SankeyChart,
+  HeatmapChart,
+  CustomChart,
   GridComponent,
   TooltipComponent,
   MarkLineComponent,
   MarkPointComponent,
+  CalendarComponent,
+  VisualMapComponent,
   LabelLayout,
   CanvasRenderer,
 ]);

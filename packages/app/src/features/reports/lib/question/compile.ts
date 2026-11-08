@@ -568,13 +568,22 @@ export function compileQuestion(
   };
 }
 
-const CHART_TYPE: Record<ResolvedVisualization, ChartConfiguration['chartType']> = {
+/** Stored chart type per visualization (dashboards read it back, see `chartTypeFor`). */
+export const CHART_TYPE: Record<ResolvedVisualization, ChartConfiguration['chartType']> = {
   number: 'stat',
   line: 'line',
   bar: 'bar',
   area: 'area',
   pie: 'pie',
   table: 'table',
+  trend: 'stat',
+  combo: 'bar',
+  pivot: 'table',
+  calendar: 'table',
+  waterfall: 'bar',
+  sankey: 'table',
+  scatter: 'scatter',
+  row: 'bar',
 };
 
 /** Chart config stored with the saved question (dashboards key widgets by its id). */

@@ -3,7 +3,9 @@ import { useCallback, useMemo, useState } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import type {
   QuestionColumn,
+  QuestionDisplay,
   QuestionSource,
+  QuestionSpec,
   ResolvedStacking,
   ResolvedVisualization,
 } from '@features/reports/lib/question';
@@ -22,6 +24,9 @@ import { buildChartModel, OTHER_SERIES_ID, type ChartSeries } from './chart-mode
 import { columnLabel } from './question-labels';
 import { QuestionTable } from './QuestionTable';
 import { useQuestionFormatters } from './useQuestionFormatters';
+import { applyCartesianDisplay, goalText } from './viz/display';
+import { renderExtraVisualization } from './viz';
+import { applyCategoryDisplay, isOther } from './viz/transforms';
 
 interface QuestionVisualizationProps {
   result: QueryResult;
@@ -33,6 +38,12 @@ interface QuestionVisualizationProps {
   /** Fill the parent's height (dashboard widgets). */
   fitHeight?: boolean;
   className?: string;
+  /** Chart settings: values on marks, goal line, sort, top N, dual axis. */
+  display?: QuestionDisplay;
+  /** The question itself (number with trend re-runs it for the period before). */
+  spec?: QuestionSpec;
+  /** Base file name for downloads made inside a view (pivot CSV). */
+  exportName?: string;
 }
 
 /**
@@ -47,6 +58,9 @@ export function QuestionVisualization({
   stacking = 'none',
   fitHeight = false,
   className,
+  display,
+  spec,
+  exportName,
 }: QuestionVisualizationProps) {
   if (result.rows.length === 0) {
     return (
@@ -68,6 +82,18 @@ export function QuestionVisualization({
   if (visualization === 'number') {
     return <NumberView result={result} columns={columns} source={source} className={className} />;
   }
+  const extra = renderExtraVisualization(visualization, {
+    result,
+    columns,
+    source,
+    display,
+    stacking,
+    spec,
+    fitHeight,
+    className,
+    exportName,
+  });
+  if (extra) return extra;
   return (
     <ChartView
       result={result}
@@ -77,6 +103,7 @@ export function QuestionVisualization({
       stacking={stacking}
       fitHeight={fitHeight}
       className={className}
+      display={display}
     />
   );
 }
@@ -86,7 +113,7 @@ function NumberView({
   columns,
   source,
   className,
-}: Omit<QuestionVisualizationProps, 'visualization' | 'stacking'>) {
+}: Pick<QuestionVisualizationProps, 'result' | 'columns' | 'source' | 'className'>) {
   const format = useQuestionFormatters(source);
   const metrics = columns.filter((column) => column.kind === 'aggregation');
   const index = new Map(result.columns.map((name, position) => [name, position]));
@@ -120,11 +147,20 @@ function ChartView({
   stacking = 'none',
   fitHeight,
   className,
+  display,
 }: QuestionVisualizationProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
   const format = useQuestionFormatters(source);
-  const model = useMemo(() => buildChartModel(result, columns), [result, columns]);
+  const model = useMemo(() => {
+    const base = buildChartModel(result, columns);
+    // Bars sort; bars and pie slices fold past the top N into "Other".
+    if (visualization !== 'bar' && visualization !== 'pie') return { ...base, otherXCount: 0 };
+    return applyCategoryDisplay(base, {
+      sort: visualization === 'bar' ? display?.sort : undefined,
+      topN: display?.topN,
+    });
+  }, [result, columns, visualization, display?.sort, display?.topN]);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
 
   const seriesName = useCallback(
@@ -142,13 +178,16 @@ function ChartView({
   );
 
   const isPie = visualization === 'pie';
-  const xLabels = useMemo(
-    () => (model.x ? model.xValues.map((value) => format.cell(model.x!, value)) : []),
-    [model, format]
+  const otherX = t`Other (${model.otherXCount})`;
+  const xLabel = useCallback(
+    (value: unknown, style?: 'long') =>
+      isOther(value) ? otherX : model.x ? format.cell(model.x, value, style) : '',
+    [model, format, otherX]
   );
+  const xLabels = useMemo(() => model.xValues.map((value) => xLabel(value)), [model, xLabel]);
   const xLongLabels = useMemo(
-    () => (model.x ? model.xValues.map((value) => format.cell(model.x!, value, 'long')) : []),
-    [model, format]
+    () => model.xValues.map((value) => xLabel(value, 'long')),
+    [model, xLabel]
   );
 
   const legend = isPie
@@ -237,7 +276,7 @@ function ChartView({
     const share = (value: number, index: number) =>
       totals[index] > 0 ? `${((Math.abs(value) / totals[index]) * 100).toFixed(0)}%` : '0%';
 
-    return {
+    const cartesian = {
       grid: { left: 8, right: 28, top: 16, bottom: 4, containLabel: true },
       xAxis: {
         type: 'category' as const,
@@ -308,6 +347,12 @@ function ChartView({
             }
       ),
     };
+    return applyCartesianDisplay(cartesian, display, {
+      chrome,
+      formatValue: (value) => format.compact(metric, value),
+      goalLabel: goalText(display?.goal, (value) => format.cell(metric, value)),
+      percent,
+    });
   }, [
     model,
     hidden,
@@ -321,6 +366,7 @@ function ChartView({
     source,
     seriesName,
     colorOf,
+    display,
   ]);
 
   const toggle = (id: string) =>
