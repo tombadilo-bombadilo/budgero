@@ -13,6 +13,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuPortal,
   DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
@@ -119,21 +120,24 @@ export function DrillMenu({ spec, request, onClose, onDrill }: DrillMenuProps) {
         )}
         {options.breakoutFields.length > 0 && (
           <DropdownMenuSub>
-            <DropdownMenuSubTrigger>
+            <DropdownMenuSubTrigger className="gap-2 [&_svg:not([class*='text-'])]:text-muted-foreground">
               <ListTree className="h-4 w-4" aria-hidden />
               {t`Break out by…`}
             </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="max-h-80 w-56 overflow-y-auto">
-              {options.breakoutFields.map((field) => (
-                <DropdownMenuItem
-                  key={field.id}
-                  onSelect={() => run({ kind: 'breakout', field: field.id })}
-                >
-                  <FieldIcon type={field.type} />
-                  {specFieldLabel(spec, field.id)}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuSubContent>
+            {/* Portaled: the menu scrolls, which would clip an inline submenu. */}
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent className="max-h-80 w-56 overflow-y-auto">
+                {options.breakoutFields.map((field) => (
+                  <DropdownMenuItem
+                    key={field.id}
+                    onSelect={() => run({ kind: 'breakout', field: field.id })}
+                  >
+                    <FieldIcon type={field.type} />
+                    {specFieldLabel(spec, field.id)}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
           </DropdownMenuSub>
         )}
         {options.categorical.length > 0 && <DropdownMenuSeparator />}

@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useId, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
 import { ArrowLeft, FunctionSquare, Sigma } from 'lucide-react';
 import {
   MAX_NAME_LENGTH,
@@ -90,6 +90,16 @@ export function ExpressionEditor({
   const { t } = useLingui();
   const id = useId();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  // Caret position to restore right after the next render (before more typing lands).
+  const pendingCursor = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const position = pendingCursor.current;
+    const element = textareaRef.current;
+    if (position === null || !element) return;
+    pendingCursor.current = null;
+    element.focus();
+    element.setSelectionRange(position, position);
+  });
   const level = kind === 'column' ? 'row' : 'metric';
 
   // Custom columns may only use the ones defined before them.
@@ -235,12 +245,7 @@ export function ExpressionEditor({
     setCursor(position);
     setActive(0);
     setTouched(true);
-    requestAnimationFrame(() => {
-      const element = textareaRef.current;
-      if (!element) return;
-      element.focus();
-      element.setSelectionRange(position, position);
-    });
+    pendingCursor.current = position;
   };
 
   const canSubmit = parsed.ok && !nameError;
@@ -457,7 +462,7 @@ export function ExpressionEditor({
           value={name}
           maxLength={MAX_NAME_LENGTH}
           placeholder={kind === 'column' ? t`e.g. Size` : t`e.g. Savings rate`}
-          aria-invalid={touched && nameError !== null}
+          aria-invalid={touched && nameError !== null && name.length > 0}
           aria-describedby={touched && nameError ? `${id}-name-error` : undefined}
           onChange={(event) => setName(event.target.value)}
         />

@@ -11,7 +11,6 @@ import {
   type DateBucket,
   type ExpressionError,
   type FieldDef,
-  type MetricModifier,
   type QuestionAggregation,
   type QuestionColumn,
   type QuestionFilter,
@@ -256,17 +255,6 @@ export function withModifierLabel(label: string, aggregation: QuestionAggregatio
   }
 }
 
-export function modifierLabel(modifier: MetricModifier): string {
-  switch (modifier) {
-    case 'running':
-      return t`Running total`;
-    case 'moving':
-      return t`Moving average`;
-    case 'share':
-      return t`% of total`;
-  }
-}
-
 /** How a numeric column should be formatted. */
 export function columnFormat(column: QuestionColumn): ColumnFormat {
   if (column.format) return column.format;
@@ -459,7 +447,10 @@ export function describeQuestion(spec: QuestionSpec): string {
   const source = sourceLabel(spec.source);
   if (spec.aggregations.length === 0) return source;
   const label = (aggregation: QuestionAggregation) =>
-    aggregationLabel(spec.source, aggregation, customColumnName(spec, aggregation.field));
+    withModifierLabel(
+      aggregationLabel(spec.source, aggregation, customColumnName(spec, aggregation.field)),
+      aggregation
+    );
   const metric = label(spec.aggregations[0]);
   const secondMetric = spec.aggregations.length === 2 ? label(spec.aggregations[1]) : '';
   const metrics = secondMetric ? t`${metric} and ${secondMetric}` : metric;
@@ -491,7 +482,20 @@ export function expressionFieldNames(source: QuestionSource, fieldId: string): s
 
 /** Localized names for Spending / Income / Net / Count in custom metrics. */
 export function expressionMetricNames(): Record<string, 'spending' | 'income' | 'net' | 'count'> {
-  return { [t`Spending`]: 'spending', [t`Income`]: 'income', [t`Net`]: 'net', [t`Count`]: 'count' };
+  const names = {
+    [t`Spending`]: 'spending',
+    [t`Income`]: 'income',
+    [t`Net`]: 'net',
+    [t`Count`]: 'count',
+  } as const;
+  // Only single words that aren't keywords can be typed as names.
+  return Object.fromEntries(
+    Object.entries(names).filter(
+      ([name]) =>
+        /^[\p{L}_][\p{L}\p{N}_]*$/u.test(name) &&
+        !['and', 'or', 'not', 'true', 'false'].includes(name.toLowerCase())
+    )
+  );
 }
 
 /** User-facing message for an expression error. */

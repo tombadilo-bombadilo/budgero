@@ -287,12 +287,15 @@ function Chip({
           type="button"
           onClick={onEdit}
           aria-label={editLabel}
+          title={label}
           className="truncate rounded-sm text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           {label}
         </button>
       ) : (
-        <span className="truncate">{label}</span>
+        <span className="truncate" title={label}>
+          {label}
+        </span>
       )}
       {children}
       <button
@@ -452,7 +455,17 @@ function FilterStep({
   const nameOf = (filter: QuestionFilter) => {
     const field = getField(spec.source, filter.field);
     const options = field?.valueKind ? valueOptions(field.valueKind) : [];
-    const names = new Map(options.map((option) => [String(option.value), option.label]));
+    // Same-name values (e.g. two "Misc" categories) show their group.
+    const counts = new Map<string, number>();
+    for (const option of options) counts.set(option.label, (counts.get(option.label) ?? 0) + 1);
+    const names = new Map(
+      options.map((option) => [
+        String(option.value),
+        (counts.get(option.label) ?? 0) > 1 && option.group
+          ? `${option.label} (${option.group})`
+          : option.label,
+      ])
+    );
     const custom = field ? undefined : questionField(spec, filter.field);
     return filterSummary(
       spec.source,
@@ -883,7 +896,7 @@ function SummarizeStep({
   };
 
   return (
-    <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-start">
+    <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-start">
       <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t`Metrics`}>
         {spec.aggregations.map((aggregation, index) => {
           const fieldName = aggregation.field
