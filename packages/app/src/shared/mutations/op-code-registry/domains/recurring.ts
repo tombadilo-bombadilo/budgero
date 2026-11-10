@@ -348,6 +348,9 @@ export const recurringOps = {
                     ? { destinationTransactionId: ready.destinationTransactionId }
                     : {}),
                   ...(ready.transferId ? { transferId: ready.transferId } : {}),
+                  ...(ready.mirrorTransactionIds?.length
+                    ? { mirrorTransactionIds: ready.mirrorTransactionIds }
+                    : {}),
                 },
               },
             },

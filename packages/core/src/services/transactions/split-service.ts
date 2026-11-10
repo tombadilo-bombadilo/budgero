@@ -68,7 +68,10 @@ export class SplitService {
     splits: SplitInput[],
     // With a batch the lines are only queued; batch.commit() writes them
     // together with the batch's other steps (e.g. the new parent row).
-    batch?: TransactionWriteBatch
+    batch?: TransactionWriteBatch,
+    // IDs for the transfer lines' mirror rows, in line order (a redo puts
+    // them back under the IDs they first got); missing ones are new rows.
+    mirrorIds?: readonly number[]
   ): Promise<void> {
     let parent: SplitParent;
     if (isBatchRowRef(transactionId)) {
@@ -205,7 +208,8 @@ export class SplitService {
         TransactionWriteBatch.idOf(results, transactionId),
         parent,
         preparedSplits,
-        preparedMirrors
+        preparedMirrors,
+        mirrorIds
       );
     if (batch) {
       batch.queue(write);
@@ -292,7 +296,8 @@ export class SplitService {
     transactionId: number,
     parent: SplitParent,
     preparedSplits: SplitInput[],
-    preparedMirrors: PreparedMirror[]
+    preparedMirrors: PreparedMirror[],
+    mirrorIds?: readonly number[]
   ): void {
     // 1) Replace existing splits
     this.queries.deleteSplitsForTransaction(transactionId);
@@ -317,7 +322,7 @@ export class SplitService {
     }
 
     // 2) Mirror rows for the transfer lines
-    this.replaceMirrors(transactionId, parent, preparedMirrors);
+    this.replaceMirrors(transactionId, parent, preparedMirrors, mirrorIds);
   }
 
   /**
@@ -328,7 +333,8 @@ export class SplitService {
   private replaceMirrors(
     parentId: number,
     parent: SplitParent,
-    preparedMirrors: PreparedMirror[]
+    preparedMirrors: PreparedMirror[],
+    mirrorIds?: readonly number[]
   ): void {
     // Strategy: use a common TransferID for all mirrors of this parent to tie both sides
     const transferId =
@@ -343,7 +349,7 @@ export class SplitService {
     const affectedAccountIds = new Set(oldMirrors.map((mirror) => mirror.AccountID));
 
     // Create mirror transactions per transfer split
-    for (const pm of preparedMirrors) {
+    for (const [index, pm] of preparedMirrors.entries()) {
       const transfersCategoryId = ensureTransferCategory(this.categoryService, parent.BudgetID);
       const prevBalanceConverted =
         this.queries.getRunningBalanceBefore(pm.targetAccountId, parent.Date) || 0;
@@ -369,7 +375,11 @@ export class SplitService {
         newBalanceOriginal,
         transferId,
         undefined,
-        parent.LabelID ?? null
+        parent.LabelID ?? null,
+        false,
+        false,
+        false,
+        mirrorIds?.[index]
       );
 
       this.queries.bumpFutureBalances(pm.targetAccountId, parent.Date, mirrorId, deltaConverted);
@@ -470,6 +480,14 @@ export class SplitService {
       );
     });
     this.queries.recalculateBalancesForAccounts(mirrors.map((mirror) => mirror.AccountID));
+  }
+
+  /** IDs of a parent's split-transfer mirror rows, in the order they were created. */
+  getSplitMirrorTransactionIds(parentId: number): number[] {
+    return this.queries
+      .getSplitMirrorTransactions(parentId)
+      .map((mirror: Transaction) => mirror.ID)
+      .sort((a: number, b: number) => a - b);
   }
 
   /**

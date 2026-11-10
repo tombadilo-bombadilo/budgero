@@ -258,6 +258,10 @@ describe('format 3 only when the new args are present', () => {
     // A carried payee (#127): v1.20 would post without it.
     expect(stamp({ occurrenceId: 3, transferId: 'tx-1', payee: 'Netflix' })).toBe(5);
     expect(stamp({ occurrenceId: 3, transferId: 'tx-1', payee: '' })).toBe(3);
+    // Redo of a split template's posting carries its mirror IDs (format 5).
+    expect(stamp({ occurrenceId: 3, reuse: { transactionId: 5, mirrorTransactionIds: [6] } })).toBe(
+      5
+    );
   });
 
   it.each(['recurring.skip', 'recurring.markNotified', 'recurring.resetOccurrence'])(

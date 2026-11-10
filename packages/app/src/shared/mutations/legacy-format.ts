@@ -161,6 +161,8 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   'recurring.markReady': (args) => {
     const options = (args.options ?? {}) as Args;
     if (typeof options.payee === 'string' && options.payee.trim()) return NEWER_THAN_V1_20;
+    // Mirror IDs for a split template's redo: only format-5 builds post splits.
+    if (has((options.reuse ?? {}) as Args, 'mirrorTransactionIds')) return NEWER_THAN_V1_20;
     return occurrenceKeyed(options) || has(options, 'transferId', 'reuse');
   },
   'recurring.skip': (args) => occurrenceKeyed(args),

@@ -139,6 +139,8 @@ export interface MarkOccurrenceReadyResult {
   /** Transfer templates: the destination leg and the transfer's TransferID. */
   destinationTransactionId?: number;
   transferId?: string;
+  /** Split templates: the mirror rows of the transfer lines, in line order. */
+  mirrorTransactionIds?: number[];
 }
 
 /**
@@ -170,7 +172,13 @@ export interface MarkOccurrenceReadyOptions extends RecurringOccurrenceRef {
    * Redo re-posts under the IDs (and TransferID) the first run produced, so
    * the undo entry that deletes them stays valid.
    */
-  reuse?: { transactionId: number; destinationTransactionId?: number; transferId?: string };
+  reuse?: {
+    transactionId: number;
+    destinationTransactionId?: number;
+    transferId?: string;
+    /** Split templates: the transfer lines' mirror rows (redo, format 5). */
+    mirrorTransactionIds?: number[];
+  };
 }
 
 export interface ListOccurrencesOptions {

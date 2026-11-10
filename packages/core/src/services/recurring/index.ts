@@ -1239,7 +1239,8 @@ export class RecurringTransactionService {
         await this.splits.upsertSplits(
           { batchIndex: parent },
           this.splitInputs(template.splits),
-          batch
+          batch,
+          reuse?.mirrorTransactionIds
         );
       }
     }
@@ -1272,6 +1273,11 @@ export class RecurringTransactionService {
     const results = batch.commit();
     const transactionId = results[0] as number;
     const destinationTransactionId = transferId ? (results[1] as number) : undefined;
+    // Mirror rows of split transfer lines, in line order (created in it), so
+    // a redo can put them back under the same IDs.
+    const mirrorTransactionIds = template.splits?.some((line) => line.transferAccountId != null)
+      ? this.splits.getSplitMirrorTransactionIds(transactionId)
+      : undefined;
 
     this.ensureOccurrencesForTemplate(
       this.getRecurringTransaction(template.id, { includeInactive: true }),
@@ -1282,6 +1288,7 @@ export class RecurringTransactionService {
       occurrence: this.getOccurrenceWithTemplate(occurrenceId),
       transactionId,
       ...(transferId ? { destinationTransactionId, transferId } : {}),
+      ...(mirrorTransactionIds?.length ? { mirrorTransactionIds } : {}),
     };
   }
 

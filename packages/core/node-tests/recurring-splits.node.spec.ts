@@ -275,6 +275,66 @@ describe('recurring transactions with split lines', () => {
     expect(services.accounts.getAccount(savings)!.BalanceNative).toBe(40_000);
   });
 
+  it('redo puts the transfer mirrors back under their first IDs (S7)', async () => {
+    const template = await create([
+      line(50_000, { transferAccountId: savings }),
+      line(30_000, { categoryId: rent }),
+      line(20_000, { transferAccountId: savings }),
+    ]);
+    const occurrence = firstOccurrence(template.id);
+    const first = await services.recurring.markOccurrenceReady({ occurrenceId: occurrence.id });
+    const mirrorIds = services.transactions
+      .getTransactionsByAccount(savings)
+      .map((tx) => tx.ID)
+      .sort((x, y) => x - y);
+    expect(mirrorIds).toHaveLength(2);
+    expect(first.mirrorTransactionIds).toEqual(mirrorIds);
+    const inflowById = () =>
+      Object.fromEntries(
+        services.transactions
+          .getTransactionsByAccount(savings)
+          .map((tx) => [tx.ID, tx.InflowNative])
+      );
+    const before = inflowById();
+
+    services.transactions.deleteTransaction(first.transactionId);
+    services.recurring.resetOccurrence({ occurrenceId: occurrence.id });
+    // A row created meanwhile would take the next free IDs.
+    await services.transactions.addTransaction(
+      asMilli(0),
+      asMilli(1_000),
+      checking,
+      rent,
+      budgetId,
+      startDate,
+      'meanwhile',
+      ''
+    );
+
+    const again = await services.recurring.markOccurrenceReady({
+      occurrenceId: occurrence.id,
+      reuse: {
+        transactionId: first.transactionId,
+        mirrorTransactionIds: first.mirrorTransactionIds,
+      },
+    });
+    expect(again.transactionId).toBe(first.transactionId);
+    expect(again.mirrorTransactionIds).toEqual(mirrorIds);
+    expect(inflowById()).toEqual(before);
+    expect(services.accounts.getAccount(savings)!.BalanceNative).toBe(70_000);
+  });
+
+  it('templates without transfer lines report no mirrors', async () => {
+    const template = await create([
+      line(60_000, { categoryId: rent }),
+      line(40_000, { categoryId: groceries }),
+    ]);
+    const ready = await services.recurring.markOccurrenceReady({
+      occurrenceId: firstOccurrence(template.id).id,
+    });
+    expect(ready.mirrorTransactionIds).toBeUndefined();
+  });
+
   it('a line whose category is gone fails without posting anything', async () => {
     const template = await create([
       line(60_000, { categoryId: rent }),
