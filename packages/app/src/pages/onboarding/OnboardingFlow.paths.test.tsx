@@ -115,7 +115,7 @@ describe('leaving the demo', () => {
     expect(stepViews()[0]).toEqual({ step: 'currency', path: 'from_demo' });
   });
 
-  it("doesn't call the password 'not set' on the summary", async () => {
+  it("says the demo goes, and doesn't call the password 'not set'", async () => {
     renderFlow('from_demo');
     for (let i = 0; i < 3; i += 1) {
       fireEvent.click(screen.getByRole('button', { name: /Let’s begin|Next/ }));
@@ -124,5 +124,28 @@ describe('leaving the demo', () => {
     expect(screen.queryByText('Security')).toBeNull();
     expect(screen.queryByText(/not set/)).toBeNull();
     expect(screen.getByText('1 added')).toBeInTheDocument();
+    expect(screen.getByText('Deleted when you open yours')).toBeInTheDocument();
+  });
+});
+
+describe('the currency', () => {
+  it("starts on the browser region's currency", () => {
+    const languages = vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['de-DE']);
+    try {
+      renderFlow('from_demo');
+      for (let i = 0; i < 3; i += 1) {
+        fireEvent.click(screen.getByRole('button', { name: /Let’s begin|Next/ }));
+      }
+      expect(screen.getByText('EUR (€)')).toBeInTheDocument();
+    } finally {
+      languages.mockRestore();
+    }
+  });
+});
+
+describe('the step counter', () => {
+  it('is a translated label', async () => {
+    renderFlow();
+    expect(await screen.findByText('STEP 01 / 06')).toBeInTheDocument();
   });
 });

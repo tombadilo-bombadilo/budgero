@@ -30,6 +30,7 @@ import { hasCompleteCreditPaymentMappings } from '@features/budget-management/ui
 import { YnabImportStatus } from '@features/budget-management/ui/create-budget-form/YnabImportStatus';
 import { track, trackOnUnload } from '@shared/lib/analytics/track';
 import { durationBucket, type OnboardingStepId } from '@shared/lib/analytics/events';
+import { guessDemoLocale } from '@features/demo-budget/lib/demo-workspace';
 import {
   INITIAL_STATE,
   ONBOARDING_STEPS,
@@ -89,10 +90,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
   const logout = useLogout();
   const { mutateAsync: updateOnboardingAsync } = useUpdateOnboarding();
 
-  const [state, setState] = useState<OnboardingFormState>(() =>
+  const [state, setState] = useState<OnboardingFormState>(() => {
+    // Preselect the currency the browser's region uses (euro for de-DE, …).
+    const initial = { ...INITIAL_STATE, currency: guessDemoLocale().currency };
     // Leaving the demo is a fresh start without the "how are you starting" step.
-    mode === 'from_demo' ? { ...INITIAL_STATE, startMode: 'fresh' } : INITIAL_STATE
-  );
+    return mode === 'from_demo' ? { ...initial, startMode: 'fresh' } : initial;
+  });
   // Cross-tab invite handoff is encrypted in IndexedDB, so hydration is
   // asynchronous. Nothing is shown (or reported) until it resolves, so an
   // invitee never sees the start-mode screen flash by. Leaving the demo
@@ -425,6 +428,8 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
     waitForYnabContinue,
   ]);
 
+  const stepLabel = String(safeStep + 1).padStart(2, '0');
+  const totalLabel = String(total).padStart(2, '0');
   const isFinal = safeStep === total - 1;
   const isFirst = safeStep === 0;
   const launchesYnabImport = activePath === 'ynab' && curId === 'password';
@@ -546,7 +551,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
               borderRadius: '50%',
             }}
           />
-          STEP {String(safeStep + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
+          {t`STEP ${stepLabel} / ${totalLabel}`}
         </div>
       </div>
 
@@ -665,7 +670,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
               state={state}
               applyState={applyStatus}
               applyError={applyError}
-              passwordAlreadySet={activePath === 'from_demo'}
+              fromDemo={activePath === 'from_demo'}
             />
           ))}
 

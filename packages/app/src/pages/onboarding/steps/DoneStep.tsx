@@ -6,8 +6,11 @@ import { StepHeroImage, Title, getCurrencySym, type StepProps } from './shared';
 interface DoneStepExtraProps {
   applyState: 'idle' | 'running' | 'error';
   applyError?: string | null;
-  /** Leaving the demo: the master password was set when the demo was made. */
-  passwordAlreadySet?: boolean;
+  /**
+   * Leaving the demo: the master password was set when the demo was made,
+   * and the demo is deleted once the real budget exists.
+   */
+  fromDemo?: boolean;
 }
 
 export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = ({
@@ -15,7 +18,7 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
   state,
   applyState,
   applyError,
-  passwordAlreadySet = false,
+  fromDemo = false,
 }) => {
   const { t } = useLingui();
 
@@ -23,9 +26,10 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
   const accountCount = state.accounts.length;
   const categoryCount = state.selectedCats.length;
   const currencyRow: [string, string] = [t`Currency`, `${state.currency} (${sym})`];
-  // Leaving the demo keeps the password set back then; there is nothing to show.
-  const securityRows: [string, string][] = passwordAlreadySet
-    ? []
+  // Leaving the demo keeps the password set back then; what changes is that
+  // the demo goes, which nobody should find out by surprise.
+  const securityRows: [string, string][] = fromDemo
+    ? [[t`Demo budget`, t`Deleted when you open yours`]]
     : [[t`Security`, state.password ? t`✓ Master password set` : t`— not set`]];
   const rows: [string, string][] =
     state.startMode === 'ynab'
