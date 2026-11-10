@@ -1,7 +1,12 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { createQuestion, type QuestionSpec } from '@features/reports/lib/question';
+import {
+  QUESTION_HEADER_PREFIX,
+  createQuestion,
+  type QuestionSpec,
+} from '@features/reports/lib/question';
+import type { UnifiedReport } from '@budgero/core/browser';
 import { NotebookQuestionView } from './NotebookQuestionView';
 import { clearAllQuestionDrafts } from './question-drafts';
 
@@ -94,5 +99,39 @@ describe('NotebookQuestionView', () => {
     const after = new Event('beforeunload', { cancelable: true });
     window.dispatchEvent(after);
     expect(after.defaultPrevented).toBe(true);
+  });
+
+  it('renames the question from its title and says what couldn’t be opened', async () => {
+    const user = userEvent.setup();
+    const report = {
+      id: 'r1',
+      name: 'Old name',
+      query: `${QUESTION_HEADER_PREFIX} ${JSON.stringify({
+        source: 'transactions',
+        customColumns: [{ id: 'expr_1', name: 'Broken', expression: '[Nope] * 2' }],
+        aggregations: [{ op: 'spending' }],
+      })}\nSELECT 1`,
+      charts: [],
+      createdAt: '2026-10-01T00:00:00Z',
+      updatedAt: '2026-10-01T00:00:00Z',
+      tags: [],
+    } as unknown as UnifiedReport;
+    render(
+      <MemoryRouter>
+        <NotebookQuestionView
+          budgetId={1}
+          report={report}
+          initialSpec={createQuestion('transactions', { aggregations: [{ op: 'spending' }] })}
+          onConvertToSql={() => undefined}
+        />
+      </MemoryRouter>
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Custom column “Broken” was left out');
+    await user.click(screen.getByRole('button', { name: /Old name/ }));
+    const input = screen.getByRole('textbox', { name: 'Question name' });
+    await user.clear(input);
+    await user.type(input, 'Groceries watch{Enter}');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Groceries watch');
+    expect(screen.getByText('Unsaved changes')).toBeInTheDocument();
   });
 });
