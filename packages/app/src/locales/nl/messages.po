@@ -1558,6 +1558,10 @@ msgstr "{name}: vandaag"
 msgid "{name}: yes"
 msgstr "{name}: ja"
 
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
+msgid "{negativeCount, plural, one {# negative value has no tile.} other {# negative values have no tile.}}"
+msgstr "{negativeCount, plural, one {# negatieve waarde heeft geen tegel.} other {# negatieve waarden hebben geen tegel.}}"
+
 #. placeholder {0}: parts.join(', ')
 #. placeholder {1}: parts.join(', ')
 #: src/features/budget-planning/ui/assign-dropdown/AssignQuickActions.tsx
@@ -21442,6 +21446,10 @@ msgstr "Niet-ondersteund bestand"
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "until {runsOut} if income stopped"
 msgstr "tot {runsOut} als het inkomen zou stoppen"
+
+#: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
+msgid "Up to {maxAxes}"
+msgstr "Tot {maxAxes}"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Up to 5 seats · free"

@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { ToggleGroup, ToggleGroupItem } from '@shared/ui/toggle-group';
 import { cn } from '@shared/lib/utils';
 import { displayOptionsFor } from './viz-meta';
+import { MAX_RADAR_AXES } from './radar-data';
 import { canCompareLastYear, comparesLastYear, withLastYear } from './last-year';
 
 const TOP_N_CHOICES = [5, 10, 20] as const;
@@ -64,6 +65,7 @@ export function ChartQuickBar({
     sort === 'desc' ? t`Largest first` : sort === 'asc' ? t`Smallest first` : t`Sort`;
   const comparing = comparesLastYear(spec);
   const customTopN = display?.topN ?? 0;
+  const maxAxes = MAX_RADAR_AXES;
 
   return (
     <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t`Chart options`}>
@@ -125,7 +127,8 @@ export function ChartQuickBar({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">
-              <Trans>Show all</Trans>
+              {/* A radar folds past 12 axes into Other on its own. */}
+              {visualization === 'radar' ? t`Up to ${maxAxes}` : <Trans>Show all</Trans>}
             </SelectItem>
             {TOP_N_CHOICES.map((count) => (
               <SelectItem key={count} value={String(count)}>

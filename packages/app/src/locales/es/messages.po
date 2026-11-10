@@ -1558,6 +1558,10 @@ msgstr "{name}: hoy"
 msgid "{name}: yes"
 msgstr "{name}: sí"
 
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
+msgid "{negativeCount, plural, one {# negative value has no tile.} other {# negative values have no tile.}}"
+msgstr "{negativeCount, plural, one {# valor negativo no tiene recuadro.} other {# valores negativos no tienen recuadro.}}"
+
 #. placeholder {0}: parts.join(', ')
 #. placeholder {1}: parts.join(', ')
 #: src/features/budget-planning/ui/assign-dropdown/AssignQuickActions.tsx
@@ -21442,6 +21446,10 @@ msgstr "Archivo no compatible"
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "until {runsOut} if income stopped"
 msgstr "hasta {runsOut} si dejaran de entrar ingresos"
+
+#: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
+msgid "Up to {maxAxes}"
+msgstr "Hasta {maxAxes}"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Up to 5 seats · free"

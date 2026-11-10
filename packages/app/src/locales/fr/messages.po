@@ -1558,6 +1558,10 @@ msgstr "{name} : aujourd’hui"
 msgid "{name}: yes"
 msgstr "{name} : oui"
 
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
+msgid "{negativeCount, plural, one {# negative value has no tile.} other {# negative values have no tile.}}"
+msgstr "{negativeCount, plural, one {# valeur négative n’a pas de tuile.} other {# valeurs négatives n’ont pas de tuile.}}"
+
 #. placeholder {0}: parts.join(', ')
 #. placeholder {1}: parts.join(', ')
 #: src/features/budget-planning/ui/assign-dropdown/AssignQuickActions.tsx
@@ -21442,6 +21446,10 @@ msgstr "Fichier non pris en charge"
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "until {runsOut} if income stopped"
 msgstr "jusqu'en {runsOut} si les revenus s'arrêtaient"
+
+#: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
+msgid "Up to {maxAxes}"
+msgstr "Jusqu’à {maxAxes}"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Up to 5 seats · free"

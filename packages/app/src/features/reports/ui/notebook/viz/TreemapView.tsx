@@ -1,4 +1,4 @@
-import { Trans, useLingui } from '@lingui/react/macro';
+import { Plural, Trans, useLingui } from '@lingui/react/macro';
 import { useMemo, useRef, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import type { EChartsCoreOption } from 'echarts/core';
@@ -180,6 +180,7 @@ export function TreemapView({
 
   const focusName = focus ? format.cell(data.parent, focus.value, 'long') : '';
   const parentName = columnLabel(source, data.parent);
+  const { negativeCount } = data;
   return (
     <div className={cn('flex min-h-0 flex-col gap-2', fitHeight && 'h-full', className)}>
       {focus && (
@@ -190,6 +191,15 @@ export function TreemapView({
           </Button>
           <span className="text-sm font-medium">{focusName}</span>
         </div>
+      )}
+      {data.negativeCount > 0 && (
+        <p className="text-xs text-muted-foreground">
+          <Plural
+            value={negativeCount}
+            one="# negative value has no tile."
+            other="# negative values have no tile."
+          />
+        </p>
       )}
       <div
         ref={hostRef}
