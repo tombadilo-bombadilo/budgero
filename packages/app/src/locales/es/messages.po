@@ -10648,7 +10648,7 @@ msgstr "Importar y vincular"
 
 #: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "Import Account"
-msgstr "Importar cuenta"
+msgstr "Cuenta importada"
 
 #: src/features/import/lib/plan-file-import.ts
 msgid "Import Account (new)"
