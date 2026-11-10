@@ -8,6 +8,10 @@ const posthog = {
 };
 vi.mock('posthog-js', () => ({ default: posthog }));
 vi.mock('@shared/lib/env', () => ({ IS_SELF_HOSTABLE_BUILD: false }));
+const runtime = vi.hoisted(() => ({ activeSpaceId: 'space-real' as string | null }));
+vi.mock('@shared/runtime/global', () => ({
+  getRuntime: () => ({ getActiveSpaceId: () => runtime.activeSpaceId }),
+}));
 
 type Modules = {
   track: typeof import('./track');
@@ -47,7 +51,13 @@ async function signIn(m: Modules, createdAt: Date, optedOut = false) {
 beforeEach(() => {
   for (const fn of Object.values(posthog)) fn.mockReset();
   localStorage.clear();
+  runtime.activeSpaceId = 'space-real';
 });
+
+function setVisibility(state: 'visible' | 'hidden') {
+  Object.defineProperty(document, 'visibilityState', { value: state, configurable: true });
+  document.dispatchEvent(new Event('visibilitychange'));
+}
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -150,6 +160,78 @@ describe('first-month analytics', () => {
       'reports',
       'budget',
     ]);
+  });
+
+  it("ignores Ready to Assign while it is a loading default or last month's figure", async () => {
+    const m = await load();
+    await signIn(m, new Date());
+    m.track.track('Assignment Upserted');
+    m.fm.noteReadyToAssign(0, false);
+    await settle();
+    expect(captured('activation_milestone').map((c) => c.props.milestone)).toEqual([
+      'first_assign',
+    ]);
+  });
+
+  it('counts nothing done in the demo budget', async () => {
+    const m = await load();
+    localStorage.setItem('budgero:demo-space', 'space-demo');
+    runtime.activeSpaceId = 'space-demo';
+    await signIn(m, new Date());
+    m.track.track('Transaction Logged', { entry: 'inline' });
+    m.track.track('Assignment Upserted');
+    m.fm.noteReadyToAssign(0);
+    m.fm.noteEmptyState('reports');
+    await settle();
+    expect(captured('activation_milestone')).toHaveLength(0);
+    expect(captured('empty_state_viewed')).toHaveLength(0);
+    // Their own budget counts again.
+    runtime.activeSpaceId = 'space-real';
+    m.track.track('Assignment Upserted');
+    await settle();
+    expect(captured('activation_milestone').map((c) => c.props.milestone)).toEqual([
+      'first_assign',
+    ]);
+  });
+
+  it('reports no empty screens after the first month', async () => {
+    const m = await load();
+    await signIn(m, new Date(Date.now() - 31 * DAY));
+    m.fm.noteEmptyState('transactions');
+    await settle();
+    expect(captured('empty_state_viewed')).toHaveLength(0);
+  });
+
+  it("doesn't end the visit on a quick tab switch", async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const m = await load();
+    await signIn(m, new Date(Date.now() - DAY));
+    for (let i = 0; i < 3; i += 1) {
+      setVisibility('hidden');
+      vi.setSystemTime(Date.now() + 60_000);
+      setVisibility('visible');
+    }
+    await settle();
+    expect(captured('session_summary')).toHaveLength(0);
+    window.dispatchEvent(new Event('pagehide'));
+    expect(captured('session_summary')).toHaveLength(1);
+  });
+
+  it('ends the visit after a long time hidden, and starts a new one on return', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const m = await load();
+    await signIn(m, new Date(Date.now() - DAY));
+    m.track.track('Assignment Upserted');
+    setVisibility('hidden');
+    vi.setSystemTime(Date.now() + 45 * 60_000);
+    setVisibility('visible');
+    await settle();
+    const summaries = captured('session_summary');
+    expect(summaries).toHaveLength(1);
+    expect(summaries[0].props).toMatchObject({ assignments_bucket: '1-10' });
+    // The new visit starts from zero.
+    window.dispatchEvent(new Event('pagehide'));
+    expect(captured('session_summary')[1]?.props).toMatchObject({ assignments_bucket: '0' });
   });
 
   it('buckets days since signup', async () => {

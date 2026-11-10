@@ -6,12 +6,18 @@
  * - app_opened: once per calendar day per device, with days since signup.
  * - activation_milestone: the first transaction, assignment, import and
  *   Ready to Assign reaching zero, once each per user per device.
- * - session_summary: at pagehide, the visit's length and rough counts.
+ * - session_summary: once per visit, the visit's length and rough counts. A
+ *   visit ends at pagehide or when the tab has been hidden for 30 minutes.
  *
- * Nothing is sent after day 30. The de-duplication keys in localStorage hold
- * only dates and milestone names, never budget data.
+ * Nothing is sent after day 30, and nothing done in the onboarding demo
+ * budget counts. The keys in localStorage hold only dates, milestone names
+ * and count buckets, never budget data; the de-duplication keys are kept
+ * across sign-out (see sign-out-preserved.ts) so signing in again doesn't
+ * repeat a day's app_opened or a milestone.
  */
 import { useEffect } from 'react';
+import { getDemoSpaceId } from '@shared/lib/demo-space';
+import { getRuntime } from '@shared/runtime/global';
 import {
   countBucket,
   durationBucket,
@@ -26,6 +32,10 @@ const DAY_MS = 86_400_000;
 const LAST_DAYS = 30;
 const OPENED_KEY = 'budgero:fm-opened';
 const MILESTONES_KEY = 'budgero:fm-milestones';
+/** The summary of a visit whose tab is hidden, in case it never comes back. */
+const PENDING_SUMMARY_KEY = 'budgero:fm-pending-summary';
+/** A tab hidden this long has ended its visit; coming back starts a new one. */
+const VISIT_GAP_MS = 30 * 60_000;
 
 /** Entries a person typed in, as opposed to imports, bank sync and automation. */
 const MANUAL_ENTRIES = new Set([
@@ -44,6 +54,7 @@ let transactions = 0;
 let assignments = 0;
 let imported = false;
 let summarySent = false;
+let hiddenAt: number | null = null;
 let started = false;
 let stopObserving: (() => void) | null = null;
 const emptyStatesSeen = new Set<EmptyStateScreen>();
@@ -108,7 +119,19 @@ function reachMilestone(milestone: ActivationMilestone): void {
   track('activation_milestone', { milestone, day: signupDayBucket(days) });
 }
 
+/** The open workspace is the onboarding demo: nothing done there is the user's own. */
+function inDemoBudget(): boolean {
+  const demoSpaceId = getDemoSpaceId();
+  if (!demoSpaceId) return false;
+  try {
+    return getRuntime()?.getActiveSpaceId() === demoSpaceId;
+  } catch {
+    return false;
+  }
+}
+
 function onTracked(name: AnalyticsEventName, props: Record<string, string>): void {
+  if (inDemoBudget()) return;
   if (name === 'Transaction Logged') {
     transactions += 1;
     if (MANUAL_ENTRIES.has(props.entry)) reachMilestone('first_transaction');
@@ -124,42 +147,101 @@ function onTracked(name: AnalyticsEventName, props: Record<string, string>): voi
 /**
  * Ready to Assign as shown in the toolbar. Reaching exactly zero right after
  * assigning money in this visit is the "every coin has a job" moment; a zero
- * on an empty budget is not.
+ * on an empty budget is not. `ready` is false while the number is a loading
+ * default or the previous month's placeholder.
  */
-export function noteReadyToAssign(value: number): void {
+export function noteReadyToAssign(value: number, ready = true): void {
+  if (!ready || inDemoBudget()) return;
   if (value === 0 && assignments > 0) reachMilestone('rta_zero');
 }
 
-function sendSummary(): void {
-  if (summarySent) return;
+type SummaryProps = {
+  day: SignupDayBucket;
+  duration_bucket: ReturnType<typeof durationBucket>;
+  transactions_bucket: ReturnType<typeof countBucket>;
+  assignments_bucket: ReturnType<typeof countBucket>;
+  imported: 'yes' | 'no';
+};
+
+function summaryProps(until = Date.now()): SummaryProps | null {
   const days = daysSinceSignup();
-  if (days === null) return;
-  summarySent = true;
-  trackOnUnload('session_summary', {
+  if (days === null) return null;
+  return {
     day: signupDayBucket(days),
-    duration_bucket: durationBucket(Date.now() - sessionStart),
+    duration_bucket: durationBucket(until - sessionStart),
     transactions_bucket: countBucket(transactions),
     assignments_bucket: countBucket(assignments),
     imported: imported ? 'yes' : 'no',
-  });
+  };
+}
+
+function clearPendingSummary(): void {
+  try {
+    localStorage.removeItem(PENDING_SUMMARY_KEY);
+  } catch {
+    /* nothing stored then */
+  }
+}
+
+/** Sends the summary of a visit that ended while its tab was hidden. */
+function flushPendingSummary(): void {
+  const pending = readJson<{ user?: string; props?: SummaryProps } | null>(
+    PENDING_SUMMARY_KEY,
+    null
+  );
+  if (!pending) return;
+  clearPendingSummary();
+  if (pending.user && pending.user === userId && pending.props) {
+    track('session_summary', pending.props);
+  }
+}
+
+function startVisit(): void {
+  sessionStart = Date.now();
+  transactions = 0;
+  assignments = 0;
+  imported = false;
+  summarySent = false;
+  hiddenAt = null;
+  emptyStatesSeen.clear();
 }
 
 function onPageHide(): void {
-  sendSummary();
+  if (summarySent) return;
+  // The visit ended when the tab was hidden, if it was.
+  const props = summaryProps(hiddenAt ?? Date.now());
+  clearPendingSummary();
+  if (!props) return;
+  summarySent = true;
+  trackOnUnload('session_summary', props);
+}
+
+function onPageShow(event: PageTransitionEvent): void {
+  // Back from the back/forward cache: the page lives on as a new visit.
+  if (event.persisted && summarySent) {
+    startVisit();
+    reportAppOpened();
+  }
 }
 
 function onVisibilityChange(): void {
-  // A tab hidden for good never fires pagehide on some mobile browsers; a tab
-  // that comes back starts a new visit.
   if (document.visibilityState === 'hidden') {
-    sendSummary();
-  } else if (summarySent) {
-    summarySent = false;
-    sessionStart = Date.now();
-    transactions = 0;
-    assignments = 0;
-    imported = false;
+    // A hidden tab may never run code again (mobile browsers skip pagehide),
+    // so the visit so far is parked in storage. Coming back soon drops it;
+    // otherwise it is sent when the tab returns or the app is next opened.
+    hiddenAt = Date.now();
+    const props = summarySent ? null : summaryProps(hiddenAt);
+    if (props && userId) writeJson(PENDING_SUMMARY_KEY, { user: userId, props });
+    return;
+  }
+  const away = hiddenAt === null ? 0 : Date.now() - hiddenAt;
+  hiddenAt = null;
+  if (away >= VISIT_GAP_MS) {
+    flushPendingSummary();
+    startVisit();
     reportAppOpened();
+  } else {
+    clearPendingSummary();
   }
 }
 
@@ -173,17 +255,14 @@ export function setFirstMonthUser(id: string | null, createdAt: string | null | 
   userId = id;
   signedUpAt = Number.isFinite(parsed) ? parsed : null;
   if (!id || signedUpAt === null) return;
-  if (changed) {
-    sessionStart = Date.now();
-    transactions = 0;
-    assignments = 0;
-    imported = false;
-    summarySent = false;
-  }
+  if (changed) startVisit();
   if (!started && typeof window !== 'undefined') {
     started = true;
+    // A visit that ended in a hidden tab (closed or killed there).
+    flushPendingSummary();
     stopObserving = observeTrackedEvents(onTracked);
     window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('pageshow', onPageShow);
     document.addEventListener('visibilitychange', onVisibilityChange);
   }
   reportAppOpened();
@@ -195,6 +274,7 @@ export function resetFirstMonthForTests(): void {
   stopObserving = null;
   if (started && typeof window !== 'undefined') {
     window.removeEventListener('pagehide', onPageHide);
+    window.removeEventListener('pageshow', onPageShow);
     document.removeEventListener('visibilitychange', onVisibilityChange);
   }
   started = false;
@@ -205,11 +285,17 @@ export function resetFirstMonthForTests(): void {
   assignments = 0;
   imported = false;
   summarySent = false;
+  hiddenAt = null;
   emptyStatesSeen.clear();
 }
 
-/** An empty screen was shown; counted once per screen per visit. */
+/**
+ * An empty screen was shown; counted once per screen per visit, in the first
+ * month only. Callers report a truly empty screen, not a list that a filter
+ * or search emptied.
+ */
 export function noteEmptyState(screen: EmptyStateScreen): void {
+  if (daysSinceSignup() === null || inDemoBudget()) return;
   if (emptyStatesSeen.has(screen)) return;
   emptyStatesSeen.add(screen);
   track('empty_state_viewed', { screen });
