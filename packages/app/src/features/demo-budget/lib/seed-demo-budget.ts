@@ -1,4 +1,5 @@
 import { t } from '@lingui/core/macro';
+import { AccountTypeEnum } from '@budgero/core/browser';
 import type { AppRuntime } from '@shared/runtime/app-runtime';
 import { DEMO_ACCOUNT_METADATA_KEY } from '@shared/lib/demo-space';
 import type { DemoLocale } from './demo-workspace';
@@ -390,7 +391,7 @@ export async function seedDemoBudget(
 
   // The accounts carry the demo marker: it lives in the workspace's own
   // encrypted data, so it follows the budget to every device.
-  const account = async (name: string, type: string, balance: number) =>
+  const account = async (name: string, type: AccountTypeEnum, balance: number) =>
     (
       await op<{ ID: number }>('accounts.create', {
         name,
@@ -404,9 +405,9 @@ export async function seedDemoBudget(
       })
     ).ID;
   const accounts: Record<AccountKey, number> = {
-    checking: await account(t`Everyday checking`, 'checking', plan.opening.checking),
-    savings: await account(t`Savings`, 'savings', plan.opening.savings),
-    card: await account(t`Credit card`, 'credit', plan.opening.card),
+    checking: await account(t`Everyday checking`, AccountTypeEnum.CHECKING, plan.opening.checking),
+    savings: await account(t`Savings`, AccountTypeEnum.SAVINGS, plan.opening.savings),
+    card: await account(t`Credit card`, AccountTypeEnum.CREDIT, plan.opening.card),
   };
 
   const group = (name: string) => op<number>('categoryGroups.create', { name, budgetId });

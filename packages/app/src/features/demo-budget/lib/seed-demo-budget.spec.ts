@@ -102,8 +102,10 @@ describe('demo budget seed', () => {
       }
     }
 
+    // Canonical type names: the accounts list and Wealth group by them.
+    expect(accounts.map((a) => a.Type).sort()).toEqual(['Checking', 'Credit', 'Savings']);
     // The card: what is owed is fully covered by its payment category (no warning).
-    const card = accounts.find((account) => account.Type === 'credit')!;
+    const card = accounts.find((account) => account.Type === 'Credit')!;
     const balance = (id: number) =>
       rows<{ b: number }>(
         device,
@@ -114,7 +116,7 @@ describe('demo budget seed', () => {
     expect(owed).toBeGreaterThan(0);
     const payment = view.find((row) => row.Category === card.Name)!;
     expect(payment.Available).toBe(owed);
-    for (const account of accounts.filter((a) => a.Type !== 'credit')) {
+    for (const account of accounts.filter((a) => a.Type !== 'Credit')) {
       expect(balance(account.ID), account.Name).toBeGreaterThan(0);
     }
 
