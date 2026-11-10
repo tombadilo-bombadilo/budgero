@@ -13,6 +13,7 @@ const accounts = [
   { ID: 1, Name: 'Checking', Currency: 'USD' },
   { ID: 2, Name: 'Savings', Currency: 'USD' },
   { ID: 3, Name: 'Euro Card', Currency: 'EUR' },
+  { ID: 4, Name: 'Old Card', Currency: 'USD', Archived: true },
 ];
 
 vi.mock('sonner', () => ({ toast: { error: toastError, success: vi.fn() } }));
@@ -221,6 +222,13 @@ describe('InlineTransactionRow', () => {
         amount: 5000,
       })
     );
+  });
+
+  it('offers neither the row account nor archived accounts as transfer targets', () => {
+    renderRow();
+    expect(screen.getByRole('button', { name: 'Transfer: Savings' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Transfer: Checking' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Transfer: Old Card' })).toBeNull();
   });
 
   it('splits into aligned line rows', () => {
