@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { EChart, type EChartClickParams } from '@shared/ui/echart';
 import {
@@ -18,15 +18,11 @@ import { applyCartesianDisplay, goalText } from './display';
 import { layoutSeries, markDrillValues, seriesColor, useHiddenSeries } from './series';
 import { applyCategoryDisplay, isOther } from './transforms';
 import type { VizViewProps } from './types';
+import { labelWidthFor, useElementWidth } from './useElementWidth';
 
 interface RowChartViewProps extends VizViewProps {
   /** Click on a bar (drill-through). */
   onDrill?: (request: DrillRequest) => void;
-}
-
-/** Category labels get about a third of the chart, within readable bounds. */
-function labelWidthFor(containerWidth: number): number {
-  return Math.round(Math.min(200, Math.max(72, containerWidth * 0.32)));
 }
 
 const ROW_HEIGHT = 26;
@@ -64,18 +60,7 @@ export function RowChartView({
   );
   // Narrow containers (phones, small dashboard widgets) give labels less room.
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const [labelWidth, setLabelWidth] = useState(160);
-  useEffect(() => {
-    const element = containerRef.current;
-    if (!element || typeof ResizeObserver === 'undefined') return;
-    const measure = () => {
-      if (element.clientWidth > 0) setLabelWidth(labelWidthFor(element.clientWidth));
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
+  const labelWidth = labelWidthFor(useElementWidth(containerRef, 500));
   const seriesName = useCallback(
     (series: ChartSeries): string => {
       const { otherCount, seriesColumn } = model;
