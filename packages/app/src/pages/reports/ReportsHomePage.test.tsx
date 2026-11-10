@@ -138,10 +138,11 @@ describe('ReportsHomePage', () => {
     renderHome();
     await user.type(screen.getByRole('searchbox', { name: 'Search reports' }), 'money');
     expect(screen.getAllByRole('link', { name: /money/i }).map((link) => link.textContent)).toEqual(
+      // Saved questions come first once there are any.
       [
+        expect.stringContaining('Where the money went'),
         expect.stringContaining('Where does my money go?'),
         expect.stringContaining('How does my money move?'),
-        expect.stringContaining('Where the money went'),
       ]
     );
     await user.clear(screen.getByRole('searchbox', { name: 'Search reports' }));

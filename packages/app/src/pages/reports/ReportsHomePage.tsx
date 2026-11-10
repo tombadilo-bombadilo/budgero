@@ -222,148 +222,321 @@ export default function ReportsHomePage() {
         />
       </div>
 
-      <section aria-labelledby={`${searchId}-prebuilt`} className="space-y-3">
-        <h2 id={`${searchId}-prebuilt`} className="text-lg font-semibold">
-          <Trans>Prebuilt reports</Trans>
-        </h2>
-        {prebuilt.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            <Trans>No prebuilt report matches your search.</Trans>
-          </p>
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {prebuilt.map((item) => {
-              const Icon = REPORT_ICONS[item.key];
-              return (
-                <li key={item.key}>
-                  <Link to={`/reports/prebuilt/${item.key}`} className={CARD_CLASS}>
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                        <Icon className="h-5 w-5" aria-hidden />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="font-medium leading-snug">{item.question}</p>
-                        <p className="text-xs text-muted-foreground">{item.label}</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{item.hint}</p>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      {noSaved && examplesSection}
-
-      <section aria-labelledby={`${searchId}-saved`} className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id={`${searchId}-saved`} className="text-lg font-semibold">
-            <Trans>Saved questions</Trans>
-          </h2>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/reports/question/new?mode=sql">
-              <Code2 className="h-4 w-4" aria-hidden />
-              <Trans>New SQL query</Trans>
-            </Link>
-          </Button>
-        </div>
-
-        {collectionFilters.length > 2 && (
-          <div className="flex flex-wrap gap-2" role="group" aria-label={t`Collections`}>
-            {collectionFilters.map((item) => (
-              <Button
-                key={item.id}
-                variant={collection === item.id ? 'secondary' : 'ghost'}
-                size="sm"
-                aria-pressed={collection === item.id}
-                className={cn('h-8 rounded-full border', collection === item.id && 'border-border')}
-                onClick={() => setCollection(item.id)}
-              >
-                {item.label}
+      {noSaved ? (
+        <>
+          <section aria-labelledby={`${searchId}-prebuilt`} className="space-y-3">
+            <h2 id={`${searchId}-prebuilt`} className="text-lg font-semibold">
+              <Trans>Prebuilt reports</Trans>
+            </h2>
+            {prebuilt.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                <Trans>No prebuilt report matches your search.</Trans>
+              </p>
+            ) : (
+              <ul className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 2xl:grid-cols-4">
+                {prebuilt.map((item) => {
+                  const Icon = REPORT_ICONS[item.key];
+                  return (
+                    <li key={item.key}>
+                      {/* Phones: icon + short name only, two per row. */}
+                      <Link
+                        to={`/reports/prebuilt/${item.key}`}
+                        className={cn(CARD_CLASS, 'p-3 sm:p-4')}
+                        aria-label={`${item.label}: ${item.question}`}
+                      >
+                        <div className="flex items-center gap-2 sm:items-start sm:gap-3">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:h-9 sm:w-9">
+                            <Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="hidden font-medium leading-snug sm:block">
+                              {item.question}
+                            </p>
+                            <p className="truncate text-sm font-medium sm:text-xs sm:font-normal sm:text-muted-foreground">
+                              {item.label}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="hidden text-sm text-muted-foreground sm:block">{item.hint}</p>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+          {examplesSection}
+          <section aria-labelledby={`${searchId}-saved`} className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 id={`${searchId}-saved`} className="text-lg font-semibold">
+                <Trans>Saved questions</Trans>
+              </h2>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/reports/question/new?mode=sql">
+                  <Code2 className="h-4 w-4" aria-hidden />
+                  <Trans>New SQL query</Trans>
+                </Link>
               </Button>
-            ))}
-          </div>
-        )}
+            </div>
 
-        {isLoading ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-          </div>
-        ) : saved.length === 0 ? (
-          <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed p-4 sm:flex-row sm:items-center">
-            <Wallet className="h-6 w-6 shrink-0 text-muted-foreground" aria-hidden />
-            <p className="flex-1 text-sm text-muted-foreground">
-              <Trans>
-                No saved questions yet. Open an example above, or ask your own: pick data, filter
-                it, summarize it and save it to reuse or pin to a dashboard.
-              </Trans>
-            </p>
-            <Button asChild size="sm">
-              <Link to="/reports/question/new">
-                <Plus className="h-4 w-4" aria-hidden />
-                <Trans>New question</Trans>
-              </Link>
-            </Button>
-          </div>
-        ) : visibleSaved.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            <Trans>No saved question matches your search.</Trans>
-          </p>
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {visibleSaved.map(({ report, summary, icon: Icon, collection: name }) => {
-              const updated = formatUpdated(report.updatedAt);
-              return (
-                <li key={report.id} className="relative">
-                  <Link to={`/reports/question/${report.id}`} className={cn(CARD_CLASS, 'pr-12')}>
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                        <Icon className="h-5 w-5" aria-hidden />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate font-medium leading-snug">{report.name}</p>
-                        <p className="line-clamp-2 text-sm text-muted-foreground">{summary}</p>
-                      </div>
-                    </div>
-                    <div className="mt-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span className="rounded-full border px-2 py-0.5">
-                        {name ?? t`My questions`}
-                      </span>
-                      {updated && <span>{t`Updated ${updated}`}</span>}
-                    </div>
+            {collectionFilters.length > 2 && (
+              <div className="flex flex-wrap gap-2" role="group" aria-label={t`Collections`}>
+                {collectionFilters.map((item) => (
+                  <Button
+                    key={item.id}
+                    variant={collection === item.id ? 'secondary' : 'ghost'}
+                    size="sm"
+                    aria-pressed={collection === item.id}
+                    className={cn(
+                      'h-8 rounded-full border',
+                      collection === item.id && 'border-border'
+                    )}
+                    onClick={() => setCollection(item.id)}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            {isLoading ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+              </div>
+            ) : saved.length === 0 ? (
+              <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed p-4 sm:flex-row sm:items-center">
+                <Wallet className="h-6 w-6 shrink-0 text-muted-foreground" aria-hidden />
+                <p className="flex-1 text-sm text-muted-foreground">
+                  <Trans>
+                    No saved questions yet. Open an example above, or ask your own: pick data,
+                    filter it, summarize it and save it to reuse or pin to a dashboard.
+                  </Trans>
+                </p>
+                <Button asChild size="sm">
+                  <Link to="/reports/question/new">
+                    <Plus className="h-4 w-4" aria-hidden />
+                    <Trans>New question</Trans>
                   </Link>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-2 top-2 h-8 w-8"
-                        aria-label={t`More actions for ${report.name}`}
+                </Button>
+              </div>
+            ) : visibleSaved.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                <Trans>No saved question matches your search.</Trans>
+              </p>
+            ) : (
+              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                {visibleSaved.map(({ report, summary, icon: Icon, collection: name }) => {
+                  const updated = formatUpdated(report.updatedAt);
+                  return (
+                    <li key={report.id} className="relative">
+                      <Link
+                        to={`/reports/question/${report.id}`}
+                        className={cn(CARD_CLASS, 'pr-12')}
                       >
-                        <MoreHorizontal className="h-4 w-4" aria-hidden />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem
-                        onSelect={() => deletion.ask(report)}
-                        className="text-destructive focus:text-destructive"
+                        <div className="flex items-start gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                            <Icon className="h-5 w-5" aria-hidden />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium leading-snug">{report.name}</p>
+                            <p className="line-clamp-2 text-sm text-muted-foreground">{summary}</p>
+                          </div>
+                        </div>
+                        <div className="mt-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <span className="rounded-full border px-2 py-0.5">
+                            {name ?? t`My questions`}
+                          </span>
+                          {updated && <span>{t`Updated ${updated}`}</span>}
+                        </div>
+                      </Link>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-2 h-8 w-8"
+                            aria-label={t`More actions for ${report.name}`}
+                          >
+                            <MoreHorizontal className="h-4 w-4" aria-hidden />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onSelect={() => deletion.ask(report)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                            <Trans>Delete question</Trans>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+        </>
+      ) : (
+        <>
+          <section aria-labelledby={`${searchId}-saved`} className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 id={`${searchId}-saved`} className="text-lg font-semibold">
+                <Trans>Saved questions</Trans>
+              </h2>
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/reports/question/new?mode=sql">
+                  <Code2 className="h-4 w-4" aria-hidden />
+                  <Trans>New SQL query</Trans>
+                </Link>
+              </Button>
+            </div>
+
+            {collectionFilters.length > 2 && (
+              <div className="flex flex-wrap gap-2" role="group" aria-label={t`Collections`}>
+                {collectionFilters.map((item) => (
+                  <Button
+                    key={item.id}
+                    variant={collection === item.id ? 'secondary' : 'ghost'}
+                    size="sm"
+                    aria-pressed={collection === item.id}
+                    className={cn(
+                      'h-8 rounded-full border',
+                      collection === item.id && 'border-border'
+                    )}
+                    onClick={() => setCollection(item.id)}
+                  >
+                    {item.label}
+                  </Button>
+                ))}
+              </div>
+            )}
+
+            {isLoading ? (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+                <Skeleton className="h-28" />
+              </div>
+            ) : saved.length === 0 ? (
+              <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed p-4 sm:flex-row sm:items-center">
+                <Wallet className="h-6 w-6 shrink-0 text-muted-foreground" aria-hidden />
+                <p className="flex-1 text-sm text-muted-foreground">
+                  <Trans>
+                    No saved questions yet. Open an example above, or ask your own: pick data,
+                    filter it, summarize it and save it to reuse or pin to a dashboard.
+                  </Trans>
+                </p>
+                <Button asChild size="sm">
+                  <Link to="/reports/question/new">
+                    <Plus className="h-4 w-4" aria-hidden />
+                    <Trans>New question</Trans>
+                  </Link>
+                </Button>
+              </div>
+            ) : visibleSaved.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                <Trans>No saved question matches your search.</Trans>
+              </p>
+            ) : (
+              <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                {visibleSaved.map(({ report, summary, icon: Icon, collection: name }) => {
+                  const updated = formatUpdated(report.updatedAt);
+                  return (
+                    <li key={report.id} className="relative">
+                      <Link
+                        to={`/reports/question/${report.id}`}
+                        className={cn(CARD_CLASS, 'pr-12')}
                       >
-                        <Trash2 className="h-4 w-4" aria-hidden />
-                        <Trans>Delete question</Trans>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-      {!noSaved && examplesSection}
+                        <div className="flex items-start gap-3">
+                          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                            <Icon className="h-5 w-5" aria-hidden />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate font-medium leading-snug">{report.name}</p>
+                            <p className="line-clamp-2 text-sm text-muted-foreground">{summary}</p>
+                          </div>
+                        </div>
+                        <div className="mt-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                          <span className="rounded-full border px-2 py-0.5">
+                            {name ?? t`My questions`}
+                          </span>
+                          {updated && <span>{t`Updated ${updated}`}</span>}
+                        </div>
+                      </Link>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-2 h-8 w-8"
+                            aria-label={t`More actions for ${report.name}`}
+                          >
+                            <MoreHorizontal className="h-4 w-4" aria-hidden />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onSelect={() => deletion.ask(report)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" aria-hidden />
+                            <Trans>Delete question</Trans>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+          <section aria-labelledby={`${searchId}-prebuilt`} className="space-y-3">
+            <h2 id={`${searchId}-prebuilt`} className="text-lg font-semibold">
+              <Trans>Prebuilt reports</Trans>
+            </h2>
+            {prebuilt.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                <Trans>No prebuilt report matches your search.</Trans>
+              </p>
+            ) : (
+              <ul className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 2xl:grid-cols-4">
+                {prebuilt.map((item) => {
+                  const Icon = REPORT_ICONS[item.key];
+                  return (
+                    <li key={item.key}>
+                      {/* Phones: icon + short name only, two per row. */}
+                      <Link
+                        to={`/reports/prebuilt/${item.key}`}
+                        className={cn(CARD_CLASS, 'p-3 sm:p-4')}
+                        aria-label={`${item.label}: ${item.question}`}
+                      >
+                        <div className="flex items-center gap-2 sm:items-start sm:gap-3">
+                          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:h-9 sm:w-9">
+                            <Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
+                          </span>
+                          <div className="min-w-0">
+                            <p className="hidden font-medium leading-snug sm:block">
+                              {item.question}
+                            </p>
+                            <p className="truncate text-sm font-medium sm:text-xs sm:font-normal sm:text-muted-foreground">
+                              {item.label}
+                            </p>
+                          </div>
+                        </div>
+                        <p className="hidden text-sm text-muted-foreground sm:block">{item.hint}</p>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
+          {examplesSection}
+        </>
+      )}
       {deletion.dialog}
     </div>
   );
