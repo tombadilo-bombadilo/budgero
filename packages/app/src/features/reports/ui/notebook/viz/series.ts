@@ -190,6 +190,32 @@ export function layoutSeries(
   };
 }
 
+/**
+ * One bar series for the bar and row charts: plotted values, colour slot, and
+ * either rounded ends (side by side) or hairline separators (stacked).
+ */
+export function barSeries(
+  { series }: SeriesLayout['visible'][number],
+  layout: Pick<SeriesLayout, 'stack' | 'plotted'>,
+  style: {
+    color: string;
+    surface: string;
+    maxWidth: number;
+    radius: [number, number, number, number];
+  }
+) {
+  return {
+    name: series.id,
+    type: 'bar' as const,
+    stack: layout.stack ? 'stack' : undefined,
+    data: layout.plotted(series.values),
+    barMaxWidth: style.maxWidth,
+    itemStyle: layout.stack
+      ? { color: style.color, borderColor: style.surface, borderWidth: 1 }
+      : { color: style.color, borderRadius: style.radius },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Drill-through
 // ---------------------------------------------------------------------------

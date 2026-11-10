@@ -15,7 +15,7 @@ import { useQuestionFormatters } from '../useQuestionFormatters';
 import { ChartLegend } from './ChartLegend';
 import type { DrillRequest } from '../DrillMenu';
 import { applyCartesianDisplay, goalText } from './display';
-import { layoutSeries, markDrillValues, seriesColor, useHiddenSeries } from './series';
+import { barSeries, layoutSeries, markDrillValues, seriesColor, useHiddenSeries } from './series';
 import { applyCategoryDisplay, isOther } from './transforms';
 import type { VizViewProps } from './types';
 import { labelWidthFor, useElementWidth } from './useElementWidth';
@@ -138,16 +138,18 @@ export function RowChartView({
           );
         },
       },
-      series: visible.map(({ series, position }) => ({
-        name: series.id,
-        type: 'bar' as const,
-        stack: stack ? 'stack' : undefined,
-        data: plotted(series.values),
-        barMaxWidth: BAR_MAX_WIDTH,
-        itemStyle: stack
-          ? { color: colorOf(position), borderColor: chrome.surface, borderWidth: 1 }
-          : { color: colorOf(position), borderRadius: BAR_RADIUS_END },
-      })),
+      series: visible.map((entry) =>
+        barSeries(
+          entry,
+          { stack, plotted },
+          {
+            color: colorOf(entry.position),
+            surface: chrome.surface,
+            maxWidth: BAR_MAX_WIDTH,
+            radius: BAR_RADIUS_END,
+          }
+        )
+      ),
     };
     return applyCartesianDisplay(base, display, {
       chrome,

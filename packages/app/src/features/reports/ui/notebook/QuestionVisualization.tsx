@@ -28,7 +28,13 @@ import { useQuestionFormatters } from './useQuestionFormatters';
 import { ChartLegend } from './viz/ChartLegend';
 import { applyCartesianDisplay, goalText } from './viz/display';
 import { renderExtraVisualization } from './viz';
-import { layoutSeries, markDrillValues, seriesColor, useHiddenSeries } from './viz/series';
+import {
+  barSeries,
+  layoutSeries,
+  markDrillValues,
+  seriesColor,
+  useHiddenSeries,
+} from './viz/series';
 import { applyCategoryDisplay, isOther } from './viz/transforms';
 
 interface QuestionVisualizationProps {
@@ -335,16 +341,16 @@ function ChartView({
       },
       series: visible.map(({ series, position }) =>
         visualization === 'bar'
-          ? {
-              name: series.id,
-              type: 'bar' as const,
-              stack: stack ? 'stack' : undefined,
-              data: plotted(series.values),
-              barMaxWidth: BAR_MAX_WIDTH,
-              itemStyle: stack
-                ? { color: colorOf(position), borderColor: chrome.surface, borderWidth: 1 }
-                : { color: colorOf(position), borderRadius: BAR_RADIUS_TOP },
-            }
+          ? barSeries(
+              { series, position },
+              { stack, plotted },
+              {
+                color: colorOf(position),
+                surface: chrome.surface,
+                maxWidth: BAR_MAX_WIDTH,
+                radius: BAR_RADIUS_TOP,
+              }
+            )
           : {
               name: series.id,
               type: 'line' as const,
