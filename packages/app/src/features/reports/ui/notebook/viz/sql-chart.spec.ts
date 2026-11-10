@@ -34,6 +34,11 @@ describe('sqlChartView', () => {
       ['2026-02', 5],
     ]);
     expect(sum.columns.map((column) => column.name)).toEqual(['month', 'SUM(amount)']);
+    // ISO months read as dates; other text stays text.
+    expect(sum.columns[0]).toMatchObject({ breakout: { field: 'date', bucket: 'month' } });
+    expect(sqlChartView(source, chart({ xAxisColumn: 'category' }))!.columns[0]).toMatchObject({
+      breakout: { field: 'memo' },
+    });
     const rows = (aggregateFunction: ChartConfiguration['aggregateFunction']) =>
       sqlChartView(source, chart({ aggregateFunction }))!.result.rows.map((row) => row[1]);
     expect(rows('COUNT')).toEqual([3, 1]);
@@ -108,6 +113,7 @@ describe('sqlRowsView and sqlNumber', () => {
     expect(view.columns.map((column) => column.format)).toEqual(['text', 'text', 'number']);
     expect(sqlNumber('1,234.5')).toBe(1234.5);
     expect(sqlNumber(null)).toBe(0);
+    expect(sqlNumber(BigInt(1250000))).toBe(1250000);
     expect(sqlNumber('abc')).toBe(0);
   });
 });

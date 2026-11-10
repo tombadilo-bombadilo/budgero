@@ -30,6 +30,7 @@ const VALUE = 'value';
 /** A cell as a number, the way the old viewer read it ("1,234.50 €" → 1234.5). */
 export function sqlNumber(value: unknown): number {
   if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+  if (typeof value === 'bigint') return Number(value);
   if (value === null || value === undefined) return 0;
   const parsed = parseFloat(String(value).replace(/[^0-9+\-.]/g, ''));
   return Number.isFinite(parsed) ? parsed : 0;
@@ -57,13 +58,25 @@ function isStrictNumeric(value: unknown): boolean {
   return typeof value === 'string' && /^[-+]?(?:\d+\.?\d*|\.\d+)$/.test(value.trim());
 }
 
-const breakoutColumn = (key: string, name: string): QuestionColumn => ({
+const breakoutColumn = (key: string, name: string, bucket?: 'month' | 'day'): QuestionColumn => ({
   key,
   kind: 'breakout',
-  // A text field: SQL values show as written, never as dates or money.
-  breakout: { field: 'memo' },
+  // Text values show as written; ISO months / days read as dates ("May 2026").
+  breakout: bucket ? { field: 'date', bucket } : { field: 'memo' },
   name,
 });
+
+/** 'month' / 'day' when every x value is an ISO month ("2026-05") / day. */
+function dateBucketOf(values: unknown[]): 'month' | 'day' | undefined {
+  if (values.length === 0) return undefined;
+  if (values.every((value) => typeof value === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(value))) {
+    return 'month';
+  }
+  if (values.every((value) => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value))) {
+    return 'day';
+  }
+  return undefined;
+}
 
 const metricColumn = (key: string, name: string): QuestionColumn => ({
   key,
@@ -134,7 +147,9 @@ export function sqlChartView(source: QueryResult, chart: ChartConfiguration): Sq
     value: aggregateSql(bucket.values, chart.aggregateFunction),
   }));
 
-  const xColumn = breakoutColumn(X, chart.xAxisColumn);
+  const xBucket =
+    chart.chartType === 'pie' ? undefined : dateBucketOf(folded.map((entry) => entry.x));
+  const xColumn = breakoutColumn(X, chart.xAxisColumn, xBucket);
   const groupColumn = grouped ? breakoutColumn(GROUP, chart.groupByColumn ?? '') : null;
 
   if (chart.chartType === 'scatter') {
@@ -182,7 +197,9 @@ export function sqlChartView(source: QueryResult, chart: ChartConfiguration): Sq
 /** The plain rows as a table (an SQL question without a chart). */
 export function sqlRowsView(source: QueryResult): SqlChartView {
   const numeric = source.columns.map((_, index) =>
-    source.rows.slice(0, 50).some((row) => typeof row[index] === 'number')
+    source.rows
+      .slice(0, 50)
+      .some((row) => typeof row[index] === 'number' || typeof row[index] === 'bigint')
   );
   return {
     result: source,

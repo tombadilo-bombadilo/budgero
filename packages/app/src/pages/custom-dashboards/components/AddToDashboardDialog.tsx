@@ -138,7 +138,7 @@ function AddToDashboardForm({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[min(92dvh,44rem)] w-[95vw] flex-col sm:max-w-[520px]">
+      <DialogContent className="flex max-h-[min(92dvh,44rem)] w-[95vw] flex-col bg-background backdrop-blur-none supports-[backdrop-filter]:bg-background sm:max-w-[520px]">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
