@@ -6,12 +6,14 @@ import {
   Code2,
   FlaskConical,
   LayoutGrid,
+  MoreHorizontal,
   Network,
   PieChart,
   Plus,
   Search,
   Table2,
   Target,
+  Trash2,
   TrendingUp,
   Wallet,
   type LucideIcon,
@@ -24,10 +26,17 @@ import { VIZ_ICONS } from '@features/reports/ui/notebook/viz/viz-meta';
 import { REPORT_ORDER, reportMeta } from '@pages/analytics/report-questions';
 import type { ReportKey } from '@pages/analytics/analytics-state';
 import { Button } from '@shared/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@shared/ui/dropdown-menu';
 import { Input } from '@shared/ui/input';
 import { Skeleton } from '@shared/ui/skeleton';
 import { cn } from '@shared/lib/utils';
 import { collectionOf } from './collections';
+import { useDeleteQuestion } from './question/useDeleteQuestion';
 
 const REPORT_ICONS: Record<ReportKey, LucideIcon> = {
   wealth: TrendingUp,
@@ -67,6 +76,7 @@ export default function ReportsHomePage() {
   const [search, setSearch] = useState('');
   const [collection, setCollection] = useState(ALL);
   const { data: reports = [], isLoading } = useReports();
+  const deletion = useDeleteQuestion();
   const query = search.trim().toLowerCase();
 
   const prebuilt = REPORT_ORDER.map((key) => ({ key, ...reportMeta(key) })).filter((item) =>
@@ -258,8 +268,8 @@ export default function ReportsHomePage() {
             {visibleSaved.map(({ report, summary, icon: Icon, collection: name }) => {
               const updated = formatUpdated(report.updatedAt);
               return (
-                <li key={report.id}>
-                  <Link to={`/reports/question/${report.id}`} className={CARD_CLASS}>
+                <li key={report.id} className="relative">
+                  <Link to={`/reports/question/${report.id}`} className={cn(CARD_CLASS, 'pr-12')}>
                     <div className="flex items-start gap-3">
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
                         <Icon className="h-5 w-5" aria-hidden />
@@ -276,12 +286,34 @@ export default function ReportsHomePage() {
                       {updated && <span>{t`Updated ${updated}`}</span>}
                     </div>
                   </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-2 h-8 w-8"
+                        aria-label={t`More actions for ${report.name}`}
+                      >
+                        <MoreHorizontal className="h-4 w-4" aria-hidden />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onSelect={() => deletion.ask(report)}
+                        className="text-destructive focus:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                        <Trans>Delete question</Trans>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </li>
               );
             })}
           </ul>
         )}
       </section>
+      {deletion.dialog}
     </div>
   );
 }

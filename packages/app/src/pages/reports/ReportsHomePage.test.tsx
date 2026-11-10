@@ -31,9 +31,27 @@ const REPORTS: UnifiedReport[] = [
   },
 ];
 
+const deleteReport = vi.fn(async (_id: string) => undefined);
 vi.mock('@entities/report/api/useReports', () => ({
   useReports: () => ({ data: REPORTS, isLoading: false }),
+  useDeleteReport: () => ({ mutateAsync: deleteReport, isPending: false }),
 }));
+vi.mock('@tanstack/react-query', () => ({
+  useQueryClient: () => ({ invalidateQueries: async () => undefined }),
+}));
+
+beforeAll(() => {
+  Element.prototype.scrollIntoView ??= () => undefined;
+  Element.prototype.hasPointerCapture ??= () => false;
+  Element.prototype.releasePointerCapture ??= () => undefined;
+  globalThis.ResizeObserver ??= class {
+    observe() {}
+
+    unobserve() {}
+
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+});
 
 afterEach(cleanup);
 
@@ -103,5 +121,16 @@ describe('ReportsHomePage', () => {
     await user.click(screen.getByRole('button', { name: 'Household' }));
     expect(screen.queryByText('Raw SQL thing')).not.toBeInTheDocument();
     expect(screen.getByText('Where the money went')).toBeInTheDocument();
+  });
+
+  it('deletes a saved SQL question from its card after confirming', async () => {
+    const user = userEvent.setup();
+    renderHome();
+    await user.click(screen.getByRole('button', { name: 'More actions for Raw SQL thing' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Delete question' }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveTextContent('Raw SQL thing');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+    expect(deleteReport).toHaveBeenCalledWith('s1');
   });
 });

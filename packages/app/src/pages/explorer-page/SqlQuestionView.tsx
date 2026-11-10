@@ -1,14 +1,21 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Copy, Database, LayoutGrid, Menu, Play, Save } from 'lucide-react';
+import { Copy, Database, LayoutGrid, Menu, MoreHorizontal, Play, Save, Trash2 } from 'lucide-react';
 import type { UnifiedReport } from '@budgero/core/browser';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent } from '@shared/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@shared/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@shared/ui/sheet';
 import { SaveReportDialog } from '@features/reports/ui/SaveReportDialog';
 import { stripQuestionHeader } from '@features/reports/lib/question';
 import { QuestionHeader } from '@pages/reports/question/QuestionHeader';
+import { useDeleteQuestion } from '@pages/reports/question/useDeleteQuestion';
 import { usePinToDashboard } from '@pages/reports/question/usePinToDashboard';
 import { useExplorerState } from './hooks/useExplorerState';
 import { SQLEditor, SchemaSidebar, ResultsTable, ChartsPanel } from './components';
@@ -36,6 +43,7 @@ export function SqlQuestionView({
   const { t } = useLingui();
   const navigate = useNavigate();
   const pin = usePinToDashboard(budgetId);
+  const deletion = useDeleteQuestion(() => void navigate('/reports'));
   const {
     sqlQuery,
     queryResult,
@@ -158,6 +166,29 @@ export function SqlQuestionView({
             <Save className="h-4 w-4" aria-hidden />
             {editingReport ? t`Save` : t`Save question`}
           </Button>
+          {editingReport && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label={t`More actions`}
+                >
+                  <MoreHorizontal className="h-4 w-4" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => deletion.ask(editingReport)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                  <Trans>Delete question</Trans>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </QuestionHeader>
 
         <div className="flex flex-wrap gap-1 sm:gap-2">
@@ -261,6 +292,7 @@ export function SqlQuestionView({
         mode={editingReport ? 'edit' : 'create'}
       />
       {pin.dialog}
+      {deletion.dialog}
     </div>
   );
 }

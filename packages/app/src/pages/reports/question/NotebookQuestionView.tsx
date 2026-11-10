@@ -3,14 +3,8 @@ import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Code2, LayoutGrid, MoreHorizontal, Save, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 import type { UnifiedReport } from '@budgero/core/browser';
-import {
-  useCreateReport,
-  useDeleteReport,
-  useReports,
-  useUpdateReport,
-} from '@entities/report/api/useReports';
+import { useCreateReport, useReports, useUpdateReport } from '@entities/report/api/useReports';
 import {
   buildSavedQuestionQuery,
   compileQuestion,
@@ -32,16 +26,15 @@ import {
 import { useFieldValueOptions } from '@features/reports/ui/notebook/useFieldValueOptions';
 import { useQuestionQuery } from '@features/reports/ui/notebook/useQuestionQuery';
 import { Button } from '@shared/ui/button';
-import { ConfirmDialog } from '@shared/ui/confirm-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@shared/ui/dropdown-menu';
-import { getErrorMessage } from '@shared/lib/errors';
 import { collectionOf, listCollections, withCollection } from '../collections';
 import { QuestionHeader } from './QuestionHeader';
+import { useDeleteQuestion } from './useDeleteQuestion';
 import { usePinToDashboard } from './usePinToDashboard';
 
 const MAX_HISTORY = 20;
@@ -84,13 +77,12 @@ export function NotebookQuestionView({
   const [refreshKey, setRefreshKey] = useState(0);
   const [saveOpen, setSaveOpen] = useState(openSaveDialog && report !== null);
   const [sqlOpen, setSqlOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
   const valueOptions = useFieldValueOptions(budgetId);
   const pin = usePinToDashboard(budgetId);
   const { data: reports = [] } = useReports();
   const createReport = useCreateReport();
   const updateReport = useUpdateReport();
-  const deleteReport = useDeleteReport();
+  const deletion = useDeleteQuestion(() => void navigate('/reports'));
 
   const title = report?.name ?? describeQuestion(spec);
   const query = useQuestionQuery({
@@ -138,18 +130,6 @@ export function NotebookQuestionView({
     [budgetId, createReport, navigate, queryClient, report, spec, updateReport]
   );
 
-  const remove = async () => {
-    if (!report) return;
-    try {
-      await deleteReport.mutateAsync(report.id);
-      await queryClient.invalidateQueries({ queryKey: ['reports'] });
-      toast.success(t`Question deleted`);
-      void navigate('/reports');
-    } catch (error) {
-      toast.error(getErrorMessage(error, t`Failed to delete the question`));
-    }
-  };
-
   return (
     <div className="w-full space-y-4 p-4 pb-24 sm:p-6 md:pb-6">
       <QuestionHeader
@@ -192,7 +172,7 @@ export function NotebookQuestionView({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem
-                onSelect={() => setDeleteOpen(true)}
+                onSelect={() => deletion.ask(report)}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="h-4 w-4" aria-hidden />
@@ -235,17 +215,7 @@ export function NotebookQuestionView({
         sql={query.compiled?.sql ?? ''}
         onConvert={() => query.compiled && onConvertToSql(query.compiled.sql)}
       />
-      <ConfirmDialog
-        open={deleteOpen}
-        onOpenChange={setDeleteOpen}
-        title={t`Delete this question?`}
-        description={t`Dashboard widgets that show it will stop working. This can’t be undone.`}
-        confirmText={t`Delete`}
-        cancelText={t`Cancel`}
-        variant="destructive"
-        onConfirm={() => void remove()}
-        isLoading={deleteReport.isPending}
-      />
+      {deletion.dialog}
       {pin.dialog}
     </div>
   );
