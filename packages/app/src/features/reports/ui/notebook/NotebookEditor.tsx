@@ -199,6 +199,20 @@ export function NotebookEditor({ spec, onChange, valueOptions }: NotebookEditorP
 // Shared bits
 // ---------------------------------------------------------------------------
 
+/** Room kept free under popovers: the phone's bottom navigation bar. */
+const BOTTOM_BAR_CLEARANCE = 80;
+
+/** Popover that stays clear of the phone's bottom bar and scrolls when it can't fit. */
+function NotebookPopover({ className, ...props }: ComponentProps<typeof PopoverContent>) {
+  return (
+    <PopoverContent
+      collisionPadding={{ top: 8, bottom: BOTTOM_BAR_CLEARANCE, left: 8, right: 8 }}
+      className={cn('max-h-(--radix-popover-content-available-height) overflow-y-auto', className)}
+      {...props}
+    />
+  );
+}
+
 const TONES = {
   data: 'border-l-chart-1',
   filter: 'border-l-chart-2',
@@ -381,7 +395,7 @@ function DataStep({
                 <Trans>Columns ({columnCount})</Trans>
               </Button>
             </PopoverTrigger>
-            <PopoverContent align="start" className="w-64 p-2">
+            <NotebookPopover align="start" className="w-64 p-2">
               <fieldset className="space-y-1">
                 <legend className="px-1 pb-1 text-xs font-semibold text-muted-foreground">
                   <Trans>Columns to show</Trans>
@@ -414,7 +428,7 @@ function DataStep({
                   <Trans>Reset to default columns</Trans>
                 </Button>
               )}
-            </PopoverContent>
+            </NotebookPopover>
           </Popover>
         )}
       </div>
@@ -486,7 +500,7 @@ function FilterStep({
   };
 
   const editor = (index: number) => (
-    <PopoverContent align="start" className="w-[min(22rem,calc(100vw-2rem))] p-0">
+    <NotebookPopover align="start" className="w-[min(22rem,calc(100vw-2rem))] p-0">
       <FilterEditor
         source={spec.source}
         initial={index >= 0 ? spec.filters[index] : undefined}
@@ -494,7 +508,7 @@ function FilterStep({
         onSubmit={submit}
         onCancel={() => setEditing(null)}
       />
-    </PopoverContent>
+    </NotebookPopover>
   );
 
   return (
@@ -677,7 +691,11 @@ function MetricOptions({
           <MoreHorizontal className="h-3.5 w-3.5" aria-hidden />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
+      <DropdownMenuContent
+        align="start"
+        className="w-64"
+        collisionPadding={{ top: 8, bottom: BOTTOM_BAR_CLEARANCE, left: 8, right: 8 }}
+      >
         <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
           <Trans>Compare with</Trans>
         </DropdownMenuLabel>
@@ -785,7 +803,7 @@ function CustomColumns({
               />
             </span>
           </PopoverAnchor>
-          <PopoverContent align="start" className="w-[min(24rem,calc(100vw-2rem))] p-0">
+          <NotebookPopover align="start" className="w-[min(24rem,calc(100vw-2rem))] p-0">
             <ExpressionEditor
               spec={spec}
               kind="column"
@@ -793,7 +811,7 @@ function CustomColumns({
               onSubmit={({ name, expression }) => save({ id: column.id, name, expression })}
               onCancel={() => setEditing(null)}
             />
-          </PopoverContent>
+          </NotebookPopover>
         </Popover>
       ))}
       {customColumns.length < MAX_CUSTOM_COLUMNS && (
@@ -804,7 +822,7 @@ function CustomColumns({
           <PopoverTrigger asChild>
             <AddButton label={t`Custom column`} />
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-[min(24rem,calc(100vw-2rem))] p-0">
+          <NotebookPopover align="start" className="w-[min(24rem,calc(100vw-2rem))] p-0">
             <ExpressionEditor
               spec={spec}
               kind="column"
@@ -813,7 +831,7 @@ function CustomColumns({
               }
               onCancel={() => setEditing(null)}
             />
-          </PopoverContent>
+          </NotebookPopover>
         </Popover>
       )}
     </div>
@@ -913,7 +931,7 @@ function SummarizeStep({
   const metricPopover = (index: number) => {
     const current = index >= 0 ? spec.aggregations[index] : undefined;
     return (
-      <PopoverContent
+      <NotebookPopover
         align="start"
         className={cn(
           'p-0',
@@ -938,29 +956,29 @@ function SummarizeStep({
         ) : (
           <MetricPicker spec={spec} onPick={pickMetric} onCustom={() => setMetricMode('custom')} />
         )}
-      </PopoverContent>
+      </NotebookPopover>
     );
   };
 
   const groupPopover = (index: number) => (
-    <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
+    <NotebookPopover align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
       <GroupingPicker
         spec={spec}
         initial={index >= 0 ? spec.breakouts[index] : undefined}
         onPick={pickGroup}
       />
-    </PopoverContent>
+    </NotebookPopover>
   );
 
   const havingPopover = (index: number) => (
-    <PopoverContent align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
+    <NotebookPopover align="start" className="w-[min(20rem,calc(100vw-2rem))] p-0">
       <HavingEditor
         spec={spec}
         initial={index >= 0 ? having[index] : undefined}
         onSubmit={submitHaving}
         onCancel={() => setHavingOpen(null)}
       />
-    </PopoverContent>
+    </NotebookPopover>
   );
 
   return (
@@ -1227,7 +1245,7 @@ function SortStep({
           <PopoverTrigger asChild>
             <AddButton label={spec.sort.length === 0 ? t`Pick a column to sort by` : t`Add sort`} />
           </PopoverTrigger>
-          <PopoverContent align="start" className="w-64 p-0">
+          <NotebookPopover align="start" className="w-64 p-0">
             <Command>
               <CommandList className="max-h-72">
                 <CommandGroup>
@@ -1250,7 +1268,7 @@ function SortStep({
                 </CommandGroup>
               </CommandList>
             </Command>
-          </PopoverContent>
+          </NotebookPopover>
         </Popover>
       )}
     </div>

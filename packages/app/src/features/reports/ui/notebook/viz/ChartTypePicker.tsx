@@ -109,8 +109,9 @@ export function ChartTypePicker({ spec, current, onPick }: ChartTypePickerProps)
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        collisionPadding={8}
-        className="max-h-[min(34rem,calc(100dvh-6rem))] w-[min(22rem,calc(100vw-1rem))] space-y-3 overflow-y-auto p-3"
+        // Clear of the phone's bottom bar; scrolls when it can't fit.
+        collisionPadding={{ top: 8, bottom: 80, left: 8, right: 8 }}
+        className="max-h-(--radix-popover-content-available-height) w-[min(22rem,calc(100vw-1rem))] space-y-3 overflow-y-auto p-3"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           (event.currentTarget as HTMLElement | null)
