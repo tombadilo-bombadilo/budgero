@@ -208,7 +208,7 @@ describe('output columns and visualization', () => {
     ).toBe('line');
     expect(
       allowedVisualizations(normalizeQuestion({ aggregations: [{ op: 'spending' }] }))
-    ).toEqual(['number', 'table']);
+    ).toEqual(['number', 'progress', 'table']);
   });
 
   it('builds a dashboard chart config from the first grouping and metric', () => {
