@@ -97,6 +97,8 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
               </div>
               <div style={{ fontSize: 12, color: '#393939', lineHeight: 1.45 }}>{m.sub}</div>
               <ul
+                className="bo-mode-bullets"
+                data-active={active || undefined}
                 style={{
                   margin: '6px 0 0',
                   padding: 0,

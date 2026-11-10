@@ -48,6 +48,12 @@
     font-size: 13px !important;
   }
 
+  /* Start step: three stacked cards with their bullets push the button a
+     screen down. Only the picked card keeps its details. */
+  .bo-mode-bullets:not([data-active]) {
+    display: none !important;
+  }
+
   /* Generic stack-on-mobile helper — any 2-col grid that opts in. */
   .bo-stack-mobile {
     grid-template-columns: 1fr !important;
