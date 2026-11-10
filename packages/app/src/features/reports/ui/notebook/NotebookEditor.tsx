@@ -1306,7 +1306,7 @@ function LimitStep({
           value={draft}
           placeholder={t`No limit`}
           aria-label={t`Maximum number of rows`}
-          className="h-9 w-28"
+          className="h-9 w-24 sm:w-28"
           onChange={(event) => {
             setDraft(event.target.value);
             const value = Number(event.target.value);

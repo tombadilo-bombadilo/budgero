@@ -1484,6 +1484,10 @@ msgstr "{name} n’est pas vide"
 msgid "{name} is the largest: {value}, {share} of the total."
 msgstr "{name} est le plus élevé : {value}, soit {share} du total."
 
+#: src/features/reports/ui/notebook/viz/ResultSummaryLine.tsx
+msgid "{name} is the largest: {value}."
+msgstr "{name} est le plus élevé : {value}."
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "{name} starts with “{first}”"
 msgstr "{name} commence par « {first} »"
@@ -1769,6 +1773,10 @@ msgstr "+{0} modifications ensuite"
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "+{0} shared"
 msgstr "+{0} partagés"
+
+#: src/features/reports/ui/notebook/viz/ChartLegend.tsx
+msgid "+{more} more"
+msgstr "+{more} de plus"
 
 #: src/features/transactions/ui/form/DatePickerQuick.tsx
 msgid "+1 day"
@@ -8761,8 +8769,8 @@ msgid "Enter a label name"
 msgstr "Saisir un nom d'étiquette"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Enter a limit"
-msgstr "Saisissez une limite"
+#~ msgid "Enter a limit"
+#~ msgstr "Saisissez une limite"
 
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "Enter a memo value for the memo action."
@@ -13551,6 +13559,10 @@ msgstr "Aucune étiquette trouvée."
 msgid "No labels yet."
 msgstr "Aucune étiquette pour le moment."
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "No limit"
+msgstr "Sans limite"
+
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "No matches."
@@ -17585,6 +17597,10 @@ msgstr "Sécurité et confidentialité"
 msgid "Security Warning"
 msgstr "Avertissement de sécurité"
 
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "See the result"
+msgstr "Voir le résultat"
+
 #: src/features/reports/ui/notebook/DrillMenu.tsx
 msgid "See these accounts"
 msgstr "Voir ces comptes"
@@ -18273,6 +18289,10 @@ msgstr "Afficher les catégories masquées"
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show label column"
 msgstr "Afficher la colonne des étiquettes"
+
+#: src/features/reports/ui/notebook/viz/ChartLegend.tsx
+msgid "Show less"
+msgstr "Afficher moins"
 
 #: src/app/layout/desktop-shell/AccountsList.tsx
 msgid "Show Less"

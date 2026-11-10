@@ -1486,6 +1486,10 @@ msgstr "{name} is not empty"
 msgid "{name} is the largest: {value}, {share} of the total."
 msgstr "{name} is the largest: {value}, {share} of the total."
 
+#: src/features/reports/ui/notebook/viz/ResultSummaryLine.tsx
+msgid "{name} is the largest: {value}."
+msgstr "{name} is the largest: {value}."
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "{name} starts with “{first}”"
 msgstr "{name} starts with “{first}”"
@@ -1771,6 +1775,10 @@ msgstr "+{0} changes after it"
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "+{0} shared"
 msgstr "+{0} shared"
+
+#: src/features/reports/ui/notebook/viz/ChartLegend.tsx
+msgid "+{more} more"
+msgstr "+{more} more"
 
 #: src/features/transactions/ui/form/DatePickerQuick.tsx
 msgid "+1 day"
@@ -8763,8 +8771,8 @@ msgid "Enter a label name"
 msgstr "Enter a label name"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Enter a limit"
-msgstr "Enter a limit"
+#~ msgid "Enter a limit"
+#~ msgstr "Enter a limit"
 
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "Enter a memo value for the memo action."
@@ -13553,6 +13561,10 @@ msgstr "No labels found."
 msgid "No labels yet."
 msgstr "No labels yet."
 
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "No limit"
+msgstr "No limit"
+
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "No matches."
@@ -17587,6 +17599,10 @@ msgstr "Security & Privacy"
 msgid "Security Warning"
 msgstr "Security Warning"
 
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "See the result"
+msgstr "See the result"
+
 #: src/features/reports/ui/notebook/DrillMenu.tsx
 msgid "See these accounts"
 msgstr "See these accounts"
@@ -18275,6 +18291,10 @@ msgstr "Show hidden categories"
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show label column"
 msgstr "Show label column"
+
+#: src/features/reports/ui/notebook/viz/ChartLegend.tsx
+msgid "Show less"
+msgstr "Show less"
 
 #: src/app/layout/desktop-shell/AccountsList.tsx
 msgid "Show Less"
