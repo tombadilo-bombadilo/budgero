@@ -1,6 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useId, useState, type ReactNode } from 'react';
-import { CalendarRange, Check, ChevronDown, X } from 'lucide-react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { CalendarRange, Check, ChevronDown, Pencil, X } from 'lucide-react';
 import {
   DASHBOARD_DATE_PRESETS,
   hasDashboardFilters,
@@ -28,6 +28,7 @@ import { Label } from '@shared/ui/label';
 import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { cn } from '@shared/lib/utils';
+import { pruneDashboardFilters } from './prune-filters';
 
 interface DashboardFilterBarProps {
   budgetId: number;
@@ -67,8 +68,35 @@ export function DashboardFilterBar({ budgetId, filters, onChange }: DashboardFil
         return t`Custom range…`;
     }
   };
+  const accountOptions = options('account');
+  const categoryGroupOptions = options('categoryGroup');
+
+  // Deleted accounts / category groups must not keep filtering the widgets
+  // while the buttons read "All …": drop their ids once the options are known.
+  const pruned = useMemo(
+    () =>
+      pruneDashboardFilters(filters, {
+        accounts: accountOptions.map((option) => option.value as number),
+        categoryGroups: categoryGroupOptions.map((option) => option.value as number),
+      }),
+    [filters, accountOptions, categoryGroupOptions]
+  );
   const update = (patch: Partial<DashboardFilters>) =>
-    onChange(normalizeDashboardFilters({ ...filters, ...patch }));
+    onChange(normalizeDashboardFilters({ ...pruned, ...patch }));
+
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  });
+  // One attempt per stale selection, so a failed save is not retried in a loop.
+  const lastPruned = useRef<string | null>(null);
+  useEffect(() => {
+    if (pruned === filters) return;
+    const key = JSON.stringify(pruned);
+    if (lastPruned.current === key) return;
+    lastPruned.current = key;
+    onChangeRef.current(pruned);
+  }, [pruned, filters]);
 
   const { date } = filters;
   const customText =
@@ -122,24 +150,36 @@ export function DashboardFilterBar({ budgetId, filters, onChange }: DashboardFil
             ))}
           </SelectContent>
         </Select>
+        {date?.preset === 'custom' && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="ml-1 h-8 w-8"
+            aria-label={t`Edit custom range`}
+            title={t`Edit custom range`}
+            onClick={() => setCustomOpen(true)}
+          >
+            <Pencil className="h-4 w-4" aria-hidden />
+          </Button>
+        )}
       </CustomRangePopover>
 
       <MultiSelectFilter
         label={t`Accounts`}
         allLabel={t`All accounts`}
-        options={options('account')}
-        selected={filters.accounts ?? []}
+        options={accountOptions}
+        selected={pruned.accounts ?? []}
         onChange={(accounts) => update({ accounts })}
       />
       <MultiSelectFilter
         label={t`Category groups`}
         allLabel={t`All category groups`}
-        options={options('categoryGroup')}
-        selected={filters.categoryGroups ?? []}
+        options={categoryGroupOptions}
+        selected={pruned.categoryGroups ?? []}
         onChange={(categoryGroups) => update({ categoryGroups })}
       />
 
-      {hasDashboardFilters(filters) && (
+      {hasDashboardFilters(pruned) && (
         <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => onChange({})}>
           <X className="h-4 w-4" aria-hidden />
           <Trans>Clear filters</Trans>
@@ -196,7 +236,9 @@ function CustomRangeForm({
   const id = useId();
   const [from, setFrom] = useState(initialFrom ?? '');
   const [to, setTo] = useState(initialTo ?? '');
-  const valid = isValidIsoDate(from) && isValidIsoDate(to);
+  const complete = isValidIsoDate(from) && isValidIsoDate(to);
+  const reversed = complete && from > to;
+  const valid = complete && !reversed;
   return (
     <>
       <h3 className="text-sm font-medium">
@@ -225,9 +267,17 @@ function CustomRangeForm({
             value={to}
             onChange={(event) => setTo(event.target.value)}
             className="h-8"
+            min={isValidIsoDate(from) ? from : undefined}
+            aria-invalid={reversed || undefined}
+            aria-describedby={reversed ? `${id}-error` : undefined}
           />
         </div>
       </div>
+      {reversed && (
+        <p id={`${id}-error`} role="alert" className="text-xs text-destructive">
+          <Trans>The end date must be on or after the start date.</Trans>
+        </p>
+      )}
       <div className="flex justify-end gap-2">
         <Button variant="ghost" size="sm" onClick={onCancel}>
           <Trans>Cancel</Trans>
@@ -258,8 +308,14 @@ function MultiSelectFilter({
   const names = options
     .filter((option) => chosen.has(option.value as number))
     .map((option) => option.label);
-  const count = names.length;
-  const summary = count === 0 ? allLabel : count === 1 ? names[0] : t`${label}: ${count} selected`;
+  // Until the options load, names are unknown but the selection still applies.
+  const count = options.length === 0 ? selected.length : names.length;
+  const summary =
+    count === 0
+      ? allLabel
+      : count === 1 && names.length === 1
+        ? names[0]
+        : t`${label}: ${count} selected`;
   const toggle = (value: number) => {
     const next = new Set(chosen);
     if (next.has(value)) next.delete(value);
