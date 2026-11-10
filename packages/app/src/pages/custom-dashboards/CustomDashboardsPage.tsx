@@ -3,7 +3,6 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { getErrorMessage } from '@shared/lib/errors';
 import { toast } from 'sonner';
@@ -373,25 +372,11 @@ export default function CustomDashboardsPage() {
           <h1 className="text-2xl font-semibold">
             <Trans>Custom Dashboards</Trans>
           </h1>
-          <p className="text-sm text-muted-foreground">
-            <Trans>
-              Build dashboard layouts from saved questions. Drag to reorder, resize on desktop, and
-              use size presets on mobile.
-            </Trans>
+          <p className="line-clamp-1 text-sm text-muted-foreground">
+            <Trans>Saved questions side by side, filtered together.</Trans>
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            onClick={() => void handleExportAll()}
-            disabled={!activeDashboard || activeDashboard.widgets.length === 0}
-            title={t`Download every widget's CSV in one zip file`}
-          >
-            <Download className="h-4 w-4" aria-hidden />
-            <span className="hidden sm:inline">
-              <Trans>Export CSVs</Trans>
-            </span>
-          </Button>
           <Button
             variant={isEditMode ? 'default' : 'outline'}
             onClick={() => setIsEditMode((prev) => !prev)}
@@ -412,6 +397,8 @@ export default function CustomDashboardsPage() {
         onCreateDashboard={handleCreateDashboard}
         onRenameDashboard={handleRenameDashboard}
         onDeleteDashboard={handleDeleteDashboard}
+        onExportAll={() => void handleExportAll()}
+        exportDisabled={!activeDashboard || activeDashboard.widgets.length === 0}
       />
 
       {!activeDashboard && (dashboardsQuery.isLoading || activeDashboardQuery.isLoading) && (

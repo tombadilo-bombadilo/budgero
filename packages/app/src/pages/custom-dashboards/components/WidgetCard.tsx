@@ -301,9 +301,9 @@ export function WidgetCard({
     <Card
       className={`${isMobile ? mobileHeightClass : 'h-full'} flex flex-col overflow-hidden gap-2 py-4`}
     >
-      <CardHeader className="pb-1 gap-1">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 space-y-0.5">
+      <CardHeader className="min-w-0 gap-1 px-4 pb-1 sm:px-6">
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <div className="min-w-0 flex-1 space-y-0.5">
             <CardTitle className="text-base truncate" title={title}>
               {title}
             </CardTitle>
@@ -344,7 +344,7 @@ export function WidgetCard({
               )}
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="-mr-2 flex shrink-0 items-center sm:mr-0 sm:gap-1">
             <Button
               variant="ghost"
               size="icon"
@@ -413,7 +413,7 @@ export function WidgetCard({
           />
         )}
       </CardHeader>
-      <CardContent className="flex min-h-0 flex-1 flex-col pt-0">
+      <CardContent className="flex min-h-0 flex-1 flex-col px-4 pt-0 sm:px-6">
         {dataQuery.isPending && (
           <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
             <Trans>Loading chart...</Trans>

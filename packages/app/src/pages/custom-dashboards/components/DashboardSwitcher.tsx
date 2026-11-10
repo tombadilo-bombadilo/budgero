@@ -4,10 +4,17 @@ import type { CustomDashboard } from '@budgero/core/browser';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Label } from '@shared/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@shared/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { getErrorMessage } from '@shared/lib/errors';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Download, MoreHorizontal, Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DashboardSwitcherProps {
@@ -17,6 +24,9 @@ interface DashboardSwitcherProps {
   onCreateDashboard: (name: string) => Promise<void>;
   onRenameDashboard: (dashboardId: string, name: string) => Promise<void>;
   onDeleteDashboard: (dashboardId: string) => Promise<void>;
+  /** Download every widget's CSV (in the "…" menu). */
+  onExportAll?: () => void;
+  exportDisabled?: boolean;
 }
 
 export function DashboardSwitcher({
@@ -26,6 +36,8 @@ export function DashboardSwitcher({
   onCreateDashboard,
   onRenameDashboard,
   onDeleteDashboard,
+  onExportAll,
+  exportDisabled = false,
 }: DashboardSwitcherProps) {
   const { t } = useLingui();
 
@@ -101,13 +113,13 @@ export function DashboardSwitcher({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex items-center gap-2">
       <Select
         value={activeDashboardId ?? ''}
         onValueChange={onSelectDashboard}
         disabled={dashboards.length === 0}
       >
-        <SelectTrigger className="w-[240px]">
+        <SelectTrigger className="min-w-0 flex-1 sm:w-[240px] sm:flex-none">
           <SelectValue placeholder={t`Select dashboard`} />
         </SelectTrigger>
         <SelectContent>
@@ -168,66 +180,92 @@ export function DashboardSwitcher({
         </PopoverContent>
       </Popover>
 
-      <Popover open={renameOpen} onOpenChange={setRenameOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" disabled={!activeDashboard || pendingAction !== null}>
-            <Trans>
-              <Pencil className="h-4 w-4 mr-1" />
-              Rename
-            </Trans>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-80 space-y-3">
-          <div className="space-y-1">
-            <p className="text-sm font-medium">
-              <Trans>Rename dashboard</Trans>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <Trans>
-                Update the name for <span className="font-medium">{activeDashboard?.name}</span>.
-              </Trans>
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="rename-dashboard-name">
-              <Trans>Name</Trans>
-            </Label>
-            <Input
-              id="rename-dashboard-name"
-              value={renameName}
-              onChange={(event) => setRenameName(event.target.value)}
-              placeholder={t`Dashboard name`}
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setRenameOpen(false)}
-              disabled={pendingAction === 'rename'}
-            >
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => void handleRename()}
-              disabled={pendingAction === 'rename'}
-            >
-              {pendingAction === 'rename' ? t`Saving...` : t`Save`}
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
-
+      {/* Rename / Delete / Export live in one "…" menu; their forms open next to it. */}
       <Popover open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" disabled={!activeDashboard || pendingAction !== null}>
-            <Trans>
-              <Trash2 className="h-4 w-4 mr-1" />
-              Delete
-            </Trans>
-          </Button>
-        </PopoverTrigger>
+        <PopoverAnchor asChild>
+          <span className="inline-flex">
+            <Popover open={renameOpen} onOpenChange={setRenameOpen}>
+              <PopoverAnchor asChild>
+                <span className="inline-flex">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        aria-label={t`Dashboard actions`}
+                        disabled={!activeDashboard || pendingAction !== null}
+                      >
+                        <MoreHorizontal className="h-4 w-4" aria-hidden />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => setTimeout(() => setRenameOpen(true), 0)}>
+                        <Pencil className="h-4 w-4" aria-hidden />
+                        <Trans>Rename</Trans>
+                      </DropdownMenuItem>
+                      {onExportAll && (
+                        <DropdownMenuItem disabled={exportDisabled} onSelect={onExportAll}>
+                          <Download className="h-4 w-4" aria-hidden />
+                          <Trans>Export CSVs</Trans>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onSelect={() => setTimeout(() => setDeleteOpen(true), 0)}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                        <Trans>Delete</Trans>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </span>
+              </PopoverAnchor>
+              <PopoverContent align="end" className="w-80 space-y-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">
+                    <Trans>Rename dashboard</Trans>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    <Trans>
+                      Update the name for{' '}
+                      <span className="font-medium">{activeDashboard?.name}</span>.
+                    </Trans>
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rename-dashboard-name">
+                    <Trans>Name</Trans>
+                  </Label>
+                  <Input
+                    id="rename-dashboard-name"
+                    value={renameName}
+                    onChange={(event) => setRenameName(event.target.value)}
+                    placeholder={t`Dashboard name`}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRenameOpen(false)}
+                    disabled={pendingAction === 'rename'}
+                  >
+                    <Trans>Cancel</Trans>
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => void handleRename()}
+                    disabled={pendingAction === 'rename'}
+                  >
+                    {pendingAction === 'rename' ? t`Saving...` : t`Save`}
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </span>
+        </PopoverAnchor>
         <PopoverContent align="end" className="w-80 space-y-3">
           <div className="space-y-1">
             <p className="text-sm font-medium">
