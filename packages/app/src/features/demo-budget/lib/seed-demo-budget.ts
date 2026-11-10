@@ -307,13 +307,14 @@ export function planDemoBudget(today: Date): DemoPlan {
     if (index === 5)
       add(7, 'checking', 'car', t`Car repair shop`, 139_000, { memo: t`Annual service` });
 
-    // Money between accounts: savings on the 5th, last month's card bill on the 20th.
+    // Money between accounts: savings on the 5th (most of what's left over,
+    // so checking stays a working balance), last month's card bill on the 20th.
     if (lastDay >= 5)
       transfers.push({
         date: iso(year, month, 5),
         from: 'checking',
         to: 'savings',
-        amount: 300 * M,
+        amount: (index >= 10 ? 650 : 500) * M,
       });
     const bill = cardOwed;
     if (lastDay >= 20 && bill > 0) {

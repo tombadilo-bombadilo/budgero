@@ -201,3 +201,31 @@ describe('demo budget seed', () => {
     setClock(TODAY.getTime());
   }, 120_000);
 });
+
+describe('demo plan balances', () => {
+  it('keeps checking above zero every day and moves the surplus to savings', () => {
+    for (const today of [TODAY, new Date(2027, 0, 1, 12), new Date(2026, 6, 19, 12)]) {
+      const plan = planDemoBudget(today);
+      const moves = [
+        ...plan.transactions.map((tx) => ({
+          date: tx.date,
+          account: tx.account,
+          delta: tx.inflow - tx.outflow,
+        })),
+        ...plan.transfers.flatMap((tr) => [
+          { date: tr.date, account: tr.from, delta: -tr.amount },
+          { date: tr.date, account: tr.to, delta: tr.amount },
+        ]),
+      ].sort((a, b) => a.date.localeCompare(b.date));
+      const balance = { ...plan.opening };
+      let lowest = balance.checking;
+      for (const move of moves) {
+        balance[move.account] += move.delta;
+        if (move.account === 'checking') lowest = Math.min(lowest, balance.checking);
+      }
+      expect(lowest).toBeGreaterThan(0);
+      // A working balance, not a second savings account.
+      expect(balance.checking).toBeLessThan(balance.savings);
+    }
+  });
+});
