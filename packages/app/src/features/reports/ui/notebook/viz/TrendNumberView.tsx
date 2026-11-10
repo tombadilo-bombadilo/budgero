@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react';
 import type { EChartsCoreOption } from 'echarts/core';
 import {
+  createQuestion,
   previousPeriodQuestion,
   todayIso,
   trendDateFilter,
@@ -38,11 +39,14 @@ export function TrendNumberView({
 }: VizViewProps) {
   const format = useQuestionFormatters(source);
   const model = useMemo(() => buildChartModel(result, columns), [result, columns]);
-  const metrics = columns.filter((column) => column.kind === 'aggregation');
+  // "Previous period" / "% change" columns derive from a metric; they get no tile of their own.
+  const metrics = columns.filter((column) => column.kind === 'aggregation' && !column.derived);
   const trends = metrics
     .map((metric) => buildTrend(result, metric, model))
     .filter((trend): trend is TrendData => trend !== null);
   const needsPrevious = !model.x && spec !== undefined && trendDateFilter(spec) !== null;
+  // One background run for the previous period, shared by every metric's tile.
+  const previous = usePreviousPeriod(needsPrevious ? spec : undefined);
 
   return (
     <div
@@ -58,7 +62,7 @@ export function TrendNumberView({
         needsPrevious && spec ? (
           <PreviousPeriodTile
             key={trend.metric.key}
-            spec={spec}
+            previous={previous}
             trend={trend}
             source={source}
             format={format}
@@ -79,33 +83,53 @@ export function TrendNumberView({
   );
 }
 
+interface PreviousPeriod {
+  query: ReturnType<typeof useQuestionQuery>;
+  /** "1 Mar – 31 Mar" of the previous span, or ''. */
+  label: string;
+}
+
+/** The question re-run over the span before its date filter; idle without a spec. */
+function usePreviousPeriod(spec: QuestionSpec | undefined): PreviousPeriod {
+  const budgetId = useUiStore((state) => state.selectedBudget?.ID ?? 0);
+  const today = todayIso();
+  const previousSpec = useMemo(
+    () => (spec ? previousPeriodQuestion(spec, today) : null),
+    [spec, today]
+  );
+  const periods = useMemo(() => {
+    const filter = spec ? trendDateFilter(spec) : null;
+    return filter ? trendPeriods(filter, today) : null;
+  }, [spec, today]);
+  const query = useQuestionQuery({
+    spec: previousSpec ?? EMPTY_SPEC,
+    budgetId,
+    enabled: previousSpec !== null,
+  });
+  const label = periods
+    ? `${formatBucketValue('day', periods.previous.from)} – ${formatBucketValue('day', periods.previous.to)}`
+    : '';
+  return { query, label };
+}
+
+const EMPTY_SPEC = createQuestion();
+
 function PreviousPeriodTile({
-  spec,
+  previous: { query, label },
   trend,
   source,
   format,
   display,
 }: {
-  spec: QuestionSpec;
+  previous: PreviousPeriod;
   trend: TrendData;
   source: QuestionSource;
   format: QuestionFormatters;
   display?: QuestionDisplay;
 }) {
-  const budgetId = useUiStore((state) => state.selectedBudget?.ID ?? 0);
-  const today = todayIso();
-  const previousSpec = useMemo(() => previousPeriodQuestion(spec, today), [spec, today]);
-  const periods = useMemo(() => {
-    const filter = trendDateFilter(spec);
-    return filter ? trendPeriods(filter, today) : null;
-  }, [spec, today]);
-  const query = useQuestionQuery({ spec: previousSpec ?? spec, budgetId });
   const index = query.result?.columns.indexOf(trend.metric.key) ?? -1;
   const raw = index >= 0 ? query.result?.rows[0]?.[index] : undefined;
   const previous = query.result ? (raw === undefined || raw === null ? 0 : Number(raw)) : null;
-  const range = periods
-    ? `${formatBucketValue('day', periods.previous.from)} – ${formatBucketValue('day', periods.previous.to)}`
-    : '';
   return (
     <TrendTile
       trend={{ ...trend, previous: Number.isFinite(previous) ? previous : null }}
@@ -113,8 +137,8 @@ function PreviousPeriodTile({
       format={format}
       display={display}
       bucket={null}
-      previousLabel={range}
-      loading={!query.result && !query.error}
+      previousLabel={label}
+      loading={!query.result && !query.error && query.isRunning}
     />
   );
 }

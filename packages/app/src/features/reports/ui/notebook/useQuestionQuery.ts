@@ -24,6 +24,8 @@ interface UseQuestionQueryArgs {
   chartTitle?: string;
   /** Bumped to force a re-run with an unchanged spec (e.g. "Refresh"). */
   refreshKey?: number;
+  /** False compiles but does not run (nothing to ask yet). */
+  enabled?: boolean;
 }
 
 export interface QuestionQueryState {
@@ -47,6 +49,7 @@ export function useQuestionQuery({
   chartId,
   chartTitle,
   refreshKey = 0,
+  enabled = true,
 }: UseQuestionQueryArgs): QuestionQueryState {
   const runtime = useRuntime();
   const [completed, setCompleted] = useState<{
@@ -73,7 +76,7 @@ export function useQuestionQuery({
     }
   }, [spec, budgetId, chartId, chartTitle]);
 
-  const sql = compiled?.sql ?? null;
+  const sql = enabled ? (compiled?.sql ?? null) : null;
   const runKey = sql ? `${refreshKey}\n${sql}` : '';
   // The run depends on the SQL text only: display tweaks (goal, sort, chart
   // type) recompile the question to the same SQL and must not run it again.

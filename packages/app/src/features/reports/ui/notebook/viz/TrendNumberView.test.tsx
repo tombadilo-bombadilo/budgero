@@ -6,6 +6,21 @@ vi.mock('@shared/ui/echart', () => ({
   EChart: ({ ariaLabel }: { ariaLabel: string }) => <div role="img" aria-label={ariaLabel} />,
 }));
 
+const queryCalls = vi.hoisted(() => [] as { enabled?: boolean; spec: unknown }[]);
+vi.mock('../useQuestionQuery', () => ({
+  useQuestionQuery: (args: { enabled?: boolean; spec: unknown }) => {
+    queryCalls.push(args);
+    return {
+      compiled: null,
+      compileError: null,
+      result: { columns: ['spending', 'count'], rows: [[50, 5]], rowCount: 1, executionTime: 1 },
+      resultCompiled: null,
+      error: null,
+      isRunning: false,
+    };
+  },
+}));
+
 afterEach(cleanup);
 
 const monthly = normalizeQuestion({
@@ -59,5 +74,36 @@ describe('TrendNumberView', () => {
     expect(screen.getByText('$50.00')).toBeInTheDocument();
     expect(screen.getByText('No earlier period to compare with.')).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: 'Trend' })).not.toBeInTheDocument();
+  });
+
+  it('runs the previous period once for all metrics', () => {
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'spending' }, { op: 'count' }],
+      filters: [{ field: 'date', op: 'between', values: ['2026-03-01', '2026-03-31'] }],
+    });
+    queryCalls.length = 0;
+    render(
+      <TrendNumberView
+        result={{ columns: ['spending', 'count'], rows: [[100, 4]], rowCount: 1, executionTime: 1 }}
+        columns={questionColumns(spec)}
+        source="transactions"
+        spec={spec}
+      />
+    );
+    expect(screen.getByText('$100.00')).toBeInTheDocument();
+    // One hook call per render, not one per metric tile.
+    const enabled = queryCalls.filter((call) => call.enabled !== false);
+    expect(enabled.length).toBeGreaterThan(0);
+    expect(new Set(enabled.map((call) => call.spec)).size).toBe(1);
+    expect(queryCalls).toHaveLength(1);
+  });
+
+  it('does not run anything without a date filter to compare', () => {
+    queryCalls.length = 0;
+    render(
+      <TrendNumberView result={rows} columns={questionColumns(monthly)} source="transactions" />
+    );
+    expect(queryCalls.every((call) => call.enabled === false)).toBe(true);
   });
 });
