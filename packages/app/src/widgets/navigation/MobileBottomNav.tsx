@@ -206,7 +206,7 @@ export function MobileBottomNav() {
   const navItems = [
     {
       id: 'budgeting',
-      title: t`Budgeting`,
+      title: t({ message: 'Budget', context: 'mobile nav' }),
       icon: ClipboardList,
       path: dashboardPath,
       isActive: location.pathname === dashboardPath || location.pathname.startsWith(budgetingPath),
@@ -225,7 +225,7 @@ export function MobileBottomNav() {
     },
     {
       id: 'accounts',
-      title: t`Accounts`,
+      title: t({ message: 'Accounts', context: 'mobile nav' }),
       icon: CreditCard,
       path: accountsPath,
       isActive: location.pathname.startsWith(accountsPath),
@@ -233,14 +233,14 @@ export function MobileBottomNav() {
     },
     {
       id: 'add',
-      title: t`Add`,
+      title: t({ message: 'Add', context: 'mobile nav' }),
       icon: Plus,
       path: '#',
       isAction: true,
     },
     {
       id: 'reports',
-      title: t`Reports`,
+      title: t({ message: 'Reports', context: 'mobile nav' }),
       icon: ChartPie,
       path: reportsPath,
       isActive: location.pathname.startsWith(reportsPath),
@@ -248,7 +248,7 @@ export function MobileBottomNav() {
     },
     {
       id: 'settings',
-      title: t`Settings`,
+      title: t({ message: 'Settings', context: 'mobile nav' }),
       icon: Settings2,
       path: settingsPath,
       isActive:
@@ -268,7 +268,7 @@ export function MobileBottomNav() {
 
   const getTriggerLabelClassName = (isActive: boolean) =>
     cn(
-      'max-w-full truncate text-center text-xs font-medium transition-colors',
+      'max-w-full whitespace-nowrap text-center text-[11px] font-medium leading-4 transition-colors',
       isActive ? 'text-foreground' : 'text-muted-foreground'
     );
 
@@ -335,7 +335,7 @@ export function MobileBottomNav() {
       />
       <nav
         ref={navRef}
-        className="pointer-events-auto relative flex items-center justify-between w-full bg-background border-t border-border shadow-[0_-8px_24px_rgba(15,15,16,0.2)] px-4 py-2 sm:px-8 md:px-10"
+        className="pointer-events-auto relative flex items-center justify-between w-full bg-background border-t border-border shadow-[0_-8px_24px_rgba(15,15,16,0.2)] px-2 py-2 min-[400px]:px-4 sm:px-8 md:px-10"
         style={{ paddingBottom: `calc(${safeAreaInsetBottom} + 0.125rem)` }}
       >
         {navItems.map((item) => {
@@ -353,7 +353,7 @@ export function MobileBottomNav() {
                     >
                       <item.icon className="h-6 w-6 text-foreground" />
                     </button>
-                    <span className="max-w-full truncate text-center text-xs text-muted-foreground font-medium">
+                    <span className="max-w-full whitespace-nowrap text-center text-[11px] leading-4 text-muted-foreground font-medium">
                       {item.title}
                     </span>
                   </div>
