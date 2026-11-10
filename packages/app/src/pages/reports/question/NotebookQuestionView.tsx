@@ -2,7 +2,15 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Code2, LayoutGrid, MoreHorizontal, RotateCcw, Save, Trash2 } from 'lucide-react';
+import {
+  ArrowDown,
+  Code2,
+  LayoutGrid,
+  MoreHorizontal,
+  RotateCcw,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import type { UnifiedReport } from '@budgero/core/browser';
 import { useCreateReport, useReports, useUpdateReport } from '@entities/report/api/useReports';
 import {
@@ -106,7 +114,21 @@ export function NotebookQuestionView({
   const pin = usePinToDashboard(budgetId);
   const opener = useOpenSavedQuestion();
   // Opened from a card further down the Reports home: start at the top.
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
+  const [resultVisible, setResultVisible] = useState(true);
   useEffect(() => {
+    const element = resultRef.current;
+    if (!element || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) => setResultVisible(entry.isIntersecting));
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => {
+    // Whichever ancestor scrolls (the window, or the phone layout's container).
+    for (let element = rootRef.current?.parentElement; element; element = element.parentElement) {
+      if (element.scrollTop > 0) element.scrollTop = 0;
+    }
     document.documentElement.scrollTop = 0;
   }, []);
   const pinOnArrival = useRef(openPinDialog);
@@ -186,7 +208,7 @@ export function NotebookQuestionView({
   );
 
   return (
-    <div className="w-full space-y-4 p-4 pb-24 sm:p-6 md:pb-6">
+    <div ref={rootRef} className="w-full space-y-4 p-4 pb-24 sm:p-6 md:pb-6">
       <QuestionHeader
         title={title}
         onRename={setName}
@@ -284,19 +306,33 @@ export function NotebookQuestionView({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(20rem,28rem)_minmax(0,1fr)] lg:items-start">
         <NotebookEditor spec={spec} onChange={setSpec} valueOptions={valueOptions} />
-        <QuestionResult
-          spec={spec}
-          query={query}
-          onVisualizationChange={(visualization) => setSpec({ ...spec, visualization })}
-          onStackingChange={(stacking) => setSpec({ ...spec, stacking })}
-          onDisplayChange={(display) => setSpec({ ...spec, display })}
-          onRefresh={() => setRefreshKey((key) => key + 1)}
-          onSpecChange={(next) => setSpec(normalizeQuestion(next))}
-          onDrill={drill}
-          onBack={history.length > 0 ? back : undefined}
-          title={title}
-        />
+        <div ref={resultRef} className="min-w-0 scroll-mt-20">
+          <QuestionResult
+            spec={spec}
+            query={query}
+            onVisualizationChange={(visualization) => setSpec({ ...spec, visualization })}
+            onStackingChange={(stacking) => setSpec({ ...spec, stacking })}
+            onDisplayChange={(display) => setSpec({ ...spec, display })}
+            onRefresh={() => setRefreshKey((key) => key + 1)}
+            onSpecChange={(next) => setSpec(normalizeQuestion(next))}
+            onDrill={drill}
+            onBack={history.length > 0 ? back : undefined}
+            title={title}
+          />
+        </div>
       </div>
+
+      {!resultVisible && (
+        // Phones: the result sits under the notebook; one tap brings it up.
+        <Button
+          size="sm"
+          className="fixed bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-full shadow-lg lg:hidden"
+          onClick={() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        >
+          <ArrowDown className="h-4 w-4" aria-hidden />
+          <Trans>See the result</Trans>
+        </Button>
+      )}
 
       <SaveQuestionDialog
         open={saveOpen}

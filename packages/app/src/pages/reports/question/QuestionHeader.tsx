@@ -20,11 +20,12 @@ export function QuestionHeader({
     <header className="space-y-2">
       <BackToReports />
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
+        {/* Phones: the title gets its own line, the actions wrap under it. */}
+        <div className="w-full min-w-0 sm:w-auto sm:flex-1">
           {onRename ? (
             <EditableTitle title={title} onRename={onRename} />
           ) : (
-            <h1 className="truncate text-xl font-semibold">{title}</h1>
+            <h1 className="line-clamp-2 text-xl font-semibold sm:truncate">{title}</h1>
           )}
           {subtitle && <p className="truncate text-sm text-muted-foreground">{subtitle}</p>}
         </div>
@@ -83,7 +84,7 @@ function EditableTitle({ title, onRename }: { title: string; onRename: (name: st
         title={t`Rename`}
         className="group -mx-1 flex max-w-full items-center gap-1.5 rounded-md px-1 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
-        <span className="truncate">{title}</span>
+        <span className="line-clamp-2 sm:truncate">{title}</span>
         <Pencil
           className="h-4 w-4 shrink-0 text-muted-foreground opacity-60 group-hover:opacity-100"
           aria-hidden

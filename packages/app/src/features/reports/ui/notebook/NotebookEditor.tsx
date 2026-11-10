@@ -173,6 +173,7 @@ export function NotebookEditor({ spec, onChange, valueOptions }: NotebookEditorP
           title={t`Sort`}
           icon={SortAsc}
           tone="sort"
+          inline={spec.sort.length === 0}
           onRemove={spec.sort.length > 0 ? () => update({ sort: [] }) : undefined}
           removeLabel={t`Remove sorting`}
         >
@@ -183,6 +184,7 @@ export function NotebookEditor({ spec, onChange, valueOptions }: NotebookEditorP
           title={t`Limit`}
           icon={ListOrdered}
           tone="limit"
+          inline={spec.limit === null}
           onRemove={spec.limit !== null ? () => update({ limit: null }) : undefined}
           removeLabel={t`Remove the limit`}
         >
@@ -211,6 +213,7 @@ function NotebookStep({
   tone,
   onRemove,
   removeLabel,
+  inline = false,
   children,
 }: {
   title: string;
@@ -219,16 +222,25 @@ function NotebookStep({
   /** Clears the step; omit when it is empty. */
   onRemove?: () => void;
   removeLabel?: string;
+  /** An empty step: title and its first button on one line, to keep the notebook short. */
+  inline?: boolean;
   children: ReactNode;
 }) {
+  // One tree for both layouts, so typing that fills an empty step keeps focus.
   return (
     <li
       className={cn(
-        'min-w-0 rounded-lg border border-l-4 bg-card p-3 text-card-foreground shadow-xs',
+        'min-w-0 rounded-lg border border-l-4 bg-card text-card-foreground shadow-xs',
+        inline ? 'flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2' : 'p-3',
         TONES[tone]
       )}
     >
-      <div className="mb-2 flex min-h-7 items-center justify-between gap-2">
+      <div
+        className={cn(
+          'flex min-h-7 items-center justify-between gap-2',
+          inline ? 'w-20 shrink-0' : 'mb-2'
+        )}
+      >
         <h3 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           <Icon className="h-3.5 w-3.5" aria-hidden />
           {title}
@@ -246,7 +258,7 @@ function NotebookStep({
           </Button>
         )}
       </div>
-      {children}
+      <div className={inline ? 'min-w-0 flex-1' : undefined}>{children}</div>
     </li>
   );
 }
@@ -1299,13 +1311,15 @@ function LimitStep({
               {preset}
             </Button>
           ))}
-        <span className="text-sm text-muted-foreground">
-          {groupedLimit
-            ? plural(Number(draft) || 0, { one: 'value', other: 'values' })
-            : plural(Number(draft) || 0, { one: 'row', other: 'rows' })}
-        </span>
+        {spec.limit !== null && (
+          <span className="text-sm text-muted-foreground">
+            {groupedLimit
+              ? plural(Number(draft) || 0, { one: 'value', other: 'values' })
+              : plural(Number(draft) || 0, { one: 'row', other: 'rows' })}
+          </span>
+        )}
       </div>
-      {groupedLimit && (
+      {groupedLimit && spec.limit !== null && (
         <p className="text-xs text-muted-foreground">
           <Trans>
             With two groupings, the limit keeps the top values of the first non-date grouping.
