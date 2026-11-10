@@ -6,6 +6,8 @@
 import { plural, t } from '@lingui/core/macro';
 import { getLocaleTag } from '@shared/i18n';
 import {
+  MONEY_FIELD_IDS,
+  PERCENT_FIELD_IDS,
   getField,
   havingColumns,
   type ColumnFormat,
@@ -24,6 +26,7 @@ import {
   type QuestionHaving,
   type QuestionIssue,
   type ResolvedVisualization,
+  type ValueKind,
   type VisualizationBlocker,
 } from '@features/reports/lib/question';
 
@@ -35,6 +38,14 @@ export function sourceLabel(source: QuestionSource): string {
       return t`Budget`;
     case 'accounts':
       return t`Accounts`;
+    case 'balances':
+      return t`Balances over time`;
+    case 'scheduled':
+      return t`Scheduled transactions`;
+    case 'upcoming':
+      return t`Upcoming scheduled`;
+    case 'payees':
+      return t`Payees`;
   }
 }
 
@@ -46,13 +57,21 @@ export function sourceDescription(source: QuestionSource): string {
       return t`Assigned and activity per category per month.`;
     case 'accounts':
       return t`Each account with its balance from transactions.`;
+    case 'balances':
+      return t`Each account's balance at the end of every day, week or month, for net worth over time.`;
+    case 'scheduled':
+      return t`Each recurring transaction with its next date and a monthly equivalent.`;
+    case 'upcoming':
+      return t`Every scheduled occurrence that hasn't been entered yet, by due date.`;
+    case 'payees':
+      return t`One row per payee: how often and how much, transfers left out.`;
   }
 }
 
 export function fieldLabel(source: QuestionSource, fieldId: string): string {
   switch (fieldId) {
     case 'date':
-      return t`Date`;
+      return source === 'payees' ? t`Transaction date` : t`Date`;
     case 'month':
       return t`Month`;
     case 'category':
@@ -76,7 +95,7 @@ export function fieldLabel(source: QuestionSource, fieldId: string): string {
     case 'is_transfer':
       return t`Transfer`;
     case 'on_budget':
-      return source === 'accounts' ? t`On budget` : t`On-budget account`;
+      return source === 'accounts' || source === 'balances' ? t`On budget` : t`On-budget account`;
     case 'cleared':
       return t`Cleared`;
     case 'is_income':
@@ -99,8 +118,202 @@ export function fieldLabel(source: QuestionSource, fieldId: string): string {
       return t`Number of transactions`;
     case 'last_transaction':
       return t`Last transaction`;
+    case 'available':
+      return t`Available`;
+    case 'goal_type':
+      return t`Goal type`;
+    case 'goal_target':
+      return t`Goal target`;
+    case 'goal_monthly_target':
+      return t`Goal: this month's target`;
+    case 'goal_needed':
+      return t`Goal: still needed`;
+    case 'goal_progress':
+      return t`Goal progress`;
+    case 'goal_funded':
+      return t`Goal met`;
+    case 'is_liability':
+      return t`Debt account`;
+    case 'change':
+      return t`Change`;
+    case 'assets':
+      return t`Assets`;
+    case 'debts':
+      return t`Debts`;
+    case 'next_date':
+      return t`Next date`;
+    case 'to_account':
+      return t`To account`;
+    case 'monthly_amount':
+      return t`Monthly amount`;
+    case 'frequency':
+      return t`Frequency`;
+    case 'status':
+      return t`Status`;
+    case 'active':
+      return t`Active`;
+    case 'is_split':
+      return t`Split transaction`;
+    case 'amount_native':
+      return t`Amount (account currency)`;
+    case 'days_until':
+      return source === 'upcoming' ? t`Days until due` : t`Days until next`;
+    case 'start_date':
+      return t`Start date`;
+    case 'end_date':
+      return t`End date`;
+    case 'due_date':
+      return t`Due date`;
+    case 'is_overdue':
+      return t`Overdue`;
+    case 'total':
+      return t`Total`;
+    case 'average_amount':
+      return t`Average amount`;
+    case 'first_seen':
+      return t`First seen`;
+    case 'last_seen':
+      return t`Last seen`;
+    case 'top_category':
+      return t`Most used category`;
     default:
       return fieldId;
+  }
+}
+
+/** One-line explanation of a field for the pickers, or null when the label says it all. */
+export function fieldDescription(source: QuestionSource, fieldId: string): string | null {
+  switch (source) {
+    case 'budget':
+      switch (fieldId) {
+        case 'available':
+          return t`What the budget shows as available, rollover and overspending included.`;
+        case 'goal_type':
+          return t`The category's goal, empty when it has none.`;
+        case 'goal_target':
+          return t`The goal's full target amount.`;
+        case 'goal_monthly_target':
+          return t`What the goal asks for in this month.`;
+        case 'goal_needed':
+          return t`What is still missing to meet the goal.`;
+        case 'goal_progress':
+          return t`How much of the goal is funded, in percent.`;
+        case 'goal_funded':
+          return t`The goal counts as met (or on track) this month.`;
+        default:
+          return null;
+      }
+    case 'balances':
+      switch (fieldId) {
+        case 'date':
+          return t`End of each period (today for the current one).`;
+        case 'balance':
+          return t`Balance at the end of the period, in the budget currency.`;
+        case 'balance_native':
+          return t`Balance in the account's own currency.`;
+        case 'change':
+          return t`How much the balance moved during the period.`;
+        case 'is_liability':
+          return t`Credit cards, loans and mortgages.`;
+        case 'assets':
+          return t`The balance of accounts that aren't debts.`;
+        case 'debts':
+          return t`What debt accounts owe, as a positive amount.`;
+        default:
+          return null;
+      }
+    case 'scheduled':
+    case 'upcoming':
+      switch (fieldId) {
+        case 'next_date':
+          return t`The next occurrence not yet entered (can be overdue).`;
+        case 'amount':
+          return t`In the budget currency: income positive, bills negative.`;
+        case 'monthly_amount':
+          return t`The amount spread per month (weekly × 52 / 12, yearly / 12, …).`;
+        case 'status':
+          return t`Active, paused, or ended (no more occurrences).`;
+        case 'active':
+          return t`Not paused and still has occurrences to come.`;
+        case 'is_split':
+          return t`Split across several categories.`;
+        case 'days_until':
+          return t`Days from today; negative when overdue.`;
+        case 'to_account':
+          return t`The other account of a scheduled transfer.`;
+        default:
+          return null;
+      }
+    case 'payees':
+      switch (fieldId) {
+        case 'date':
+        case 'account':
+        case 'category':
+        case 'category_group':
+        case 'on_budget':
+          return t`Filters the transactions a payee's totals count.`;
+        case 'total':
+          return t`Inflows minus outflows.`;
+        case 'average_amount':
+          return t`Total divided by the number of transactions.`;
+        case 'top_category':
+          return t`The category used most often with this payee.`;
+        default:
+          return null;
+      }
+    default:
+      return null;
+  }
+}
+
+/** Display text of a coded value (goal types, frequencies, schedule states). */
+export function codeLabel(kind: ValueKind | undefined, value: unknown): string | null {
+  if (typeof value !== 'string' || !value) return null;
+  switch (kind) {
+    case 'goalType':
+      switch (value) {
+        case 'monthly':
+          return t`Monthly spending`;
+        case 'yearly':
+          return t`Yearly spending`;
+        case 'target-date':
+          return t`Save by a date`;
+        case 'monthly-savings':
+          return t`Save each month`;
+        case 'target-balance':
+          return t`Target balance`;
+        default:
+          return value;
+      }
+    case 'scheduleStatus':
+      switch (value) {
+        case 'active':
+          return t`Active`;
+        case 'paused':
+          return t`Paused`;
+        case 'ended':
+          return t`Ended`;
+        default:
+          return value;
+      }
+    case 'frequency': {
+      // "month" or "<n>-<unit>", e.g. "2-week".
+      const match = /^(?:(\d+)-)?(day|week|month|year)$/.exec(value);
+      if (!match) return value;
+      const count = Number(match[1] ?? 1);
+      switch (match[2]) {
+        case 'day':
+          return plural(count, { one: 'Daily', other: 'Every # days' });
+        case 'week':
+          return plural(count, { one: 'Weekly', other: 'Every # weeks' });
+        case 'month':
+          return plural(count, { one: 'Monthly', other: 'Every # months' });
+        default:
+          return plural(count, { one: 'Yearly', other: 'Every # years' });
+      }
+    }
+    default:
+      return null;
   }
 }
 
@@ -269,11 +482,20 @@ export function aggregationLabel(
   const field = fieldName ?? (aggregation.field ? fieldLabel(source, aggregation.field) : '');
   switch (aggregation.op) {
     case 'count':
-      return source === 'transactions'
-        ? t`Number of transactions`
-        : source === 'accounts'
-          ? t`Number of accounts`
-          : t`Number of rows`;
+      switch (source) {
+        case 'transactions':
+          return t`Number of transactions`;
+        case 'accounts':
+          return t`Number of accounts`;
+        case 'scheduled':
+          return t`Number of scheduled transactions`;
+        case 'upcoming':
+          return t`Number of occurrences`;
+        case 'payees':
+          return t`Number of payees`;
+        default:
+          return t`Number of rows`;
+      }
     case 'sum':
       return t`Sum of ${field}`;
     case 'avg':
@@ -351,7 +573,7 @@ function isPrimaryDate(fieldId: string): boolean {
   return fieldId === 'date' || fieldId === 'month';
 }
 
-const MONEY_FIELDS = new Set(['amount', 'inflow', 'outflow', 'assigned', 'activity', 'balance']);
+const MONEY_FIELDS = MONEY_FIELD_IDS;
 
 /** "Spending" → "Spending (running total)" etc. */
 export function withModifierLabel(label: string, aggregation: QuestionAggregation): string {
@@ -369,6 +591,14 @@ export function withModifierLabel(label: string, aggregation: QuestionAggregatio
   }
 }
 
+/** Plain-number source fields (not money). */
+const NUMBER_FIELDS = new Set([
+  'balance_native',
+  'transaction_count',
+  'amount_native',
+  'days_until',
+]);
+
 /** How a numeric column should be formatted. */
 export function columnFormat(column: QuestionColumn): ColumnFormat {
   if (column.format) return column.format;
@@ -378,6 +608,7 @@ export function columnFormat(column: QuestionColumn): ColumnFormat {
     if (op === 'spending' || op === 'income' || op === 'net' || op === 'averageSpending') {
       return 'money';
     }
+    if (field && PERCENT_FIELD_IDS.has(field)) return 'percent';
     return field && MONEY_FIELDS.has(field) ? 'money' : 'number';
   }
   if (column.kind === 'breakout' && column.breakout.bin !== undefined) {
@@ -385,7 +616,8 @@ export function columnFormat(column: QuestionColumn): ColumnFormat {
   }
   if (column.kind === 'field') {
     if (MONEY_FIELDS.has(column.field)) return 'money';
-    if (column.field === 'balance_native' || column.field === 'transaction_count') return 'number';
+    if (PERCENT_FIELD_IDS.has(column.field)) return 'percent';
+    if (NUMBER_FIELDS.has(column.field)) return 'number';
   }
   return 'text';
 }
@@ -533,6 +765,7 @@ export function getQuestionSqlLabels(): QuestionSqlLabels {
     noPayee: t`No payee`,
     noLabel: t`No label`,
     noAccount: t`No account`,
+    split: t`Several categories`,
   };
 }
 

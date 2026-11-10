@@ -4,6 +4,7 @@ import { useCategories, useCategoryGroups } from '@entities/category/api/useCate
 import { useLabels } from '@entities/label/api/useLabels';
 import { usePayees } from '@entities/payee/api/usePayees';
 import type { ValueKind } from '@features/reports/lib/question';
+import { codeLabel } from './question-labels';
 
 export interface ValueOption<TValue extends string | number = string | number> {
   value: TValue;
@@ -21,6 +22,10 @@ const distinctSorted = (values: (string | null | undefined)[]) =>
   Array.from(new Set(values.filter((value): value is string => Boolean(value?.trim()))))
     .sort((a, b) => a.localeCompare(b))
     .map((value) => ({ value, label: value }));
+
+/** Fixed codes with their display names. */
+const coded = (kind: ValueKind, values: string[]) =>
+  values.map((value) => ({ value, label: codeLabel(kind, value) ?? value }));
 
 /**
  * The budget's actual values for filter pickers (categories, accounts, payees,
@@ -60,6 +65,23 @@ export function useFieldValueOptions(budgetId: number): FieldValueOptions {
       accountType: distinctSorted(liveAccounts.map((account) => account.Type)),
       currency: distinctSorted(liveAccounts.map((account) => account.Currency)),
       memo: [],
+      goalType: coded('goalType', [
+        'monthly',
+        'yearly',
+        'target-date',
+        'monthly-savings',
+        'target-balance',
+      ]),
+      frequency: coded('frequency', [
+        'day',
+        'week',
+        '2-week',
+        'month',
+        '3-month',
+        '6-month',
+        'year',
+      ]),
+      scheduleStatus: coded('scheduleStatus', ['active', 'paused', 'ended']),
     } satisfies Record<ValueKind, ValueOption[]>;
   }, [accounts, groups, categories, labels, payees]);
 

@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro';
-import { Ban, Filter, ListTree, Rows3, ZoomIn } from 'lucide-react';
+import { Ban, Filter, ListTree, ReceiptText, Rows3, ZoomIn } from 'lucide-react';
 import {
   applyDrill,
   drillOptions,
@@ -93,6 +93,7 @@ export function DrillMenu({ spec, request, onClose, onDrill }: DrillMenuProps) {
         : t`See these rows`;
   const nothing =
     !options.records &&
+    !options.transactions &&
     options.breakoutFields.length === 0 &&
     !options.zoom &&
     options.categorical.length === 0;
@@ -126,6 +127,12 @@ export function DrillMenu({ spec, request, onClose, onDrill }: DrillMenuProps) {
           <DropdownMenuItem onSelect={() => run({ kind: 'records' })}>
             <Rows3 className="h-4 w-4" aria-hidden />
             {recordsLabel}
+          </DropdownMenuItem>
+        )}
+        {options.transactions && (
+          <DropdownMenuItem onSelect={() => run({ kind: 'transactions' })}>
+            <ReceiptText className="h-4 w-4" aria-hidden />
+            {t`See the transactions`}
           </DropdownMenuItem>
         )}
         {options.zoom && (

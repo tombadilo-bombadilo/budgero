@@ -30,7 +30,13 @@ import { Input } from '@shared/ui/input';
 import { Label } from '@shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { cn } from '@shared/lib/utils';
-import { booleanLabel, fieldLabel, operatorLabel, unitLabel } from './question-labels';
+import {
+  booleanLabel,
+  fieldDescription,
+  fieldLabel,
+  operatorLabel,
+  unitLabel,
+} from './question-labels';
 import type { FieldValueOptions } from './useFieldValueOptions';
 import { FieldIcon } from './FieldIcon';
 
@@ -185,6 +191,9 @@ export function FieldList({
 }) {
   const { t } = useLingui();
   const label = labelOf ?? ((fieldId: string) => fieldLabel(source, fieldId));
+  // Custom columns (not source fields) have no description.
+  const hintOf = (fieldId: string) =>
+    getField(source, fieldId) ? fieldDescription(source, fieldId) : null;
   return (
     <Command>
       <CommandInput placeholder={placeholder ?? t`Filter by…`} aria-label={t`Find a field`} />
@@ -201,12 +210,23 @@ export function FieldList({
               className="cursor-pointer"
             >
               <FieldIcon type={item.type} />
-              {label(item.id)}
+              <FieldName label={label(item.id)} hint={hintOf(item.id)} />
             </CommandItem>
           ))}
         </CommandGroup>
       </CommandList>
     </Command>
+  );
+}
+
+/** A field's name with its one-line description under it. */
+function FieldName({ label, hint }: { label: string; hint: string | null }) {
+  if (!hint) return <>{label}</>;
+  return (
+    <span className="flex min-w-0 flex-col">
+      <span>{label}</span>
+      <span className="text-xs text-muted-foreground">{hint}</span>
+    </span>
   );
 }
 

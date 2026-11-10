@@ -47,6 +47,7 @@ export interface DrillContext {
 
 export type DrillAction =
   | { kind: 'records' }
+  | { kind: 'transactions' }
   | { kind: 'breakout'; field: string; bucket?: DateBucket }
   | { kind: 'zoom'; key: string }
   | { kind: 'filter'; key: string; exclude?: boolean };
@@ -243,6 +244,11 @@ function drillFilters(context: DrillContext): QuestionFilter[] {
 export interface DrillOptions {
   /** Whether "See these transactions / rows" applies. */
   records: boolean;
+  /**
+   * Balances / Payees: whether the transactions behind the value can be
+   * listed exactly (a Transactions question).
+   */
+  transactions: boolean;
   /** Fields offered for "Break out by …". */
   breakoutFields: FieldDef[];
   /** Date value that can be zoomed into, with the bucket it zooms to. */
@@ -281,6 +287,7 @@ export function drillOptions(context: DrillContext): DrillOptions {
 
   return {
     records: exact,
+    transactions: exact && transactionsDrillFilters(context) !== null,
     breakoutFields: exact && usable.length > 0 ? breakoutFields : [],
     zoom,
     categorical: usable.filter(
@@ -303,10 +310,67 @@ function impliedMetricFilters(spec: QuestionSpec): QuestionFilter[] {
   return [];
 }
 
+/** Balances fields that are also transaction fields (same meaning, same values). */
+const BALANCE_TO_TRANSACTION_FIELDS = new Set(['account', 'on_budget', 'date']);
+/** Payees' filter-only fields: the transaction lines its totals count. */
+const PAYEE_LINE_FIELDS = new Set(['date', 'account', 'category', 'category_group', 'on_budget']);
+
+/**
+ * Transactions-source filters for the transactions behind a Balances or
+ * Payees value, or null when they can't be expressed exactly:
+ *
+ * - Balances: the period's transactions of the account(s), so a monthly
+ *   cell lists what changed its balance that month (revaluations aren't
+ *   transactions). Filters on account type, currency, ... don't exist on
+ *   transactions, so those questions offer no drill.
+ * - Payees: the payee's transactions (transfers left out), narrowed by the
+ *   question's transaction filters (date, account, category, on-budget).
+ */
+function transactionsDrillFilters(context: DrillContext): QuestionFilter[] | null {
+  const { spec } = context;
+  const clicked = drillFilters(context);
+  if (clicked.length !== context.values.length) return null;
+  if (spec.source === 'balances') {
+    const own = spec.filters;
+    if ([...own, ...clicked].some((filter) => !BALANCE_TO_TRANSACTION_FIELDS.has(filter.field))) {
+      return null;
+    }
+    // A clicked period replaces the question's own date range.
+    const period = clicked.some((filter) => filter.field === 'date');
+    return [...own.filter((filter) => !(period && filter.field === 'date')), ...clicked];
+  }
+  if (spec.source === 'payees') {
+    if (!clicked.some((filter) => filter.field === 'payee')) return null;
+    if (clicked.some((filter) => filter.field !== 'payee')) return null;
+    return [
+      { field: 'is_transfer', op: 'is', values: [false] },
+      ...spec.filters.filter((filter) => PAYEE_LINE_FIELDS.has(filter.field)),
+      ...clicked,
+    ];
+  }
+  return null;
+}
+
 /** The new question for a drill action (normalized). */
 export function applyDrill(context: DrillContext, action: DrillAction): QuestionSpec {
   const { spec } = context;
   switch (action.kind) {
+    case 'transactions': {
+      const filters = transactionsDrillFilters(context);
+      if (!filters) return spec;
+      return normalizeQuestion({
+        v: 2,
+        source: 'transactions',
+        filters,
+        aggregations: [],
+        breakouts: [],
+        sort: [],
+        limit: null,
+        columns: null,
+        visualization: 'auto',
+        stacking: 'auto',
+      });
+    }
     case 'records': {
       const filters = withFilters(spec, [...drillFilters(context), ...impliedMetricFilters(spec)]);
       const custom = (spec.customColumns ?? []).map((column) => column.id);

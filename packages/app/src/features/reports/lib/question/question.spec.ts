@@ -278,7 +278,13 @@ describe('compileQuestion', () => {
   it('escapes the labels baked into the SQL', () => {
     const { sql } = compileQuestion(createQuestion(), {
       budgetId: 1,
-      labels: { uncategorized: "Ohne' Kat", noPayee: 'P', noLabel: 'L', noAccount: 'A' },
+      labels: {
+        uncategorized: "Ohne' Kat",
+        noPayee: 'P',
+        noLabel: 'L',
+        noAccount: 'A',
+        split: 'S',
+      },
     });
     expect(sql).toContain("'Ohne'' Kat'");
   });

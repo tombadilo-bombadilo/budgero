@@ -44,6 +44,10 @@ CREATE TABLE transactions (
   "OutflowNative" BIGINT, "RunningBalanceConverted" BIGINT, "RunningBalanceNative" BIGINT,
   "ExchangeRate" DOUBLE, "ExchangeRateOverride" BIGINT, "ConversionPending" BIGINT
 );
+CREATE TABLE account_revaluations (
+  "ID" BIGINT, "BudgetID" BIGINT, "AccountID" BIGINT, "Date" VARCHAR, "OldRate" DOUBLE,
+  "NewRate" DOUBLE, "BalanceNative" BIGINT, "DeltaConverted" BIGINT, "CreatedAt" VARCHAR
+);
 CREATE TABLE transaction_splits (
   "ID" BIGINT, "TransactionID" BIGINT, "CategoryID" BIGINT, "TransferAccountID" BIGINT,
   "Memo" VARCHAR, "Payee" VARCHAR, "InflowConverted" BIGINT, "OutflowConverted" BIGINT,
