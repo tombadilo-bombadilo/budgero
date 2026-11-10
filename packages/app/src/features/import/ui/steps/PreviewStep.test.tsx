@@ -97,4 +97,15 @@ describe('import review', () => {
     render(<PreviewStep {...props([row])} />);
     expect(screen.getByText(/its account is set to “Don’t import”/)).toBeInTheDocument();
   });
+  it('says which rows are imported as transfers', () => {
+    const paired = makeRow(0);
+    paired.transfer = { counterpartAccountId: 2, counterpartName: 'Savings', partnerIndex: 4 };
+    const incoming = makeRow(1);
+    incoming.input.inflow = 10000;
+    incoming.input.outflow = 0;
+    incoming.transfer = { counterpartAccountId: 3, counterpartName: 'Card' };
+    render(<PreviewStep {...props([paired, incoming])} />);
+    const notes = screen.getAllByTestId('import-transfer').map((n) => n.textContent);
+    expect(notes).toEqual(['Transfer to Savings · with row 5', 'Transfer from Card']);
+  });
 });

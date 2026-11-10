@@ -14,6 +14,7 @@ import {
   planAccountRoutes,
   type RouteProblem,
 } from './account-routes';
+import { planFileTransfers, transferTargetsOf } from './plan-transfers';
 
 const DEFAULT_TOLERANCE: DuplicateTolerance = { toleranceBps: 100, dayWindow: 7 };
 
@@ -32,7 +33,7 @@ interface FilePreviewOptions {
   budgetId: number;
   columnMapping: ColumnMapping;
   importConfig: ImportConfig;
-  accounts: { ID: number; Name: string; Currency: string }[];
+  accounts: { ID: number; Name: string; Currency: string; Archived?: boolean }[];
   skippedRowIndices: Set<number>;
   selectedHeaderIndex: number | null;
   runKey: string;
@@ -90,12 +91,16 @@ export async function buildFileImportPreview({
     remembered: rememberedRoutes,
     chosen: importConfig.accountRoutes,
     newAccountCurrency,
+    fallbackAccountId: importConfig.defaultAccountId,
   });
   const destinationOf = (row: Record<string, string>): Destination => {
     const accountName = columnMapping.account ? (row[columnMapping.account]?.trim() ?? '') : '';
     const target = accountName ? routePlan.targets.get(accountName) : undefined;
     if (target?.kind === 'skip') {
       return { accountName, destinationId: null, currency: newAccountCurrency, skipped: true };
+    }
+    if (target?.kind === 'unset') {
+      return { accountName, destinationId: null, currency: newAccountCurrency, skipped: false };
     }
     if (target?.kind === 'new') {
       return {
@@ -182,11 +187,25 @@ export async function buildFileImportPreview({
     };
   });
   const matches = duplicates.plan(inputs, tolerance ? { tolerance } : {});
+  const transfers = planFileTransfers({
+    // Rows the user skipped still count as a side: their pair stays plain
+    // instead of creating the skipped side anyway.
+    rows: inputs.map((input, index) => ({
+      ...input,
+      accountId: destinations[index].destinationId,
+      ready: plans[index].status === 'ready' && !destinations[index].skipped,
+    })),
+    targets: transferTargetsOf(parsedData.rows, parsedData.headers, columnMapping.payee),
+    routePlan,
+    accounts,
+    remembered: rememberedRoutes,
+  });
   return inputs.map((input, index) => ({
     input,
     ...(destinations[index].skipped && plans[index].status === 'ready'
       ? { accountSkipped: true }
       : {}),
+    ...(transfers.has(index) ? { transfer: transfers.get(index) } : {}),
     duplicate: matches[index],
     decision:
       matches[index].status === 'already-imported'

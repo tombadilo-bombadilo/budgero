@@ -83,7 +83,13 @@ export function AccountsInFilePanel({
           const route = routes[source];
           const target = targets.get(source);
           const problem = problems.get(source);
-          const value = route.kind === 'existing' ? String(route.accountId) : route.kind;
+          // Unset: nothing obvious to default to (see defaultRoutes); the user picks.
+          const value = !route
+            ? ''
+            : route.kind === 'existing'
+              ? String(route.accountId)
+              : route.kind;
+          const pickId = `pick-${source}`;
           const shared =
             target?.kind === 'new'
               ? newAccounts.find((a) => a.placeholderId === target.placeholderId)
@@ -117,8 +123,13 @@ export function AccountsInFilePanel({
                     )
                   }
                 >
-                  <SelectTrigger className="w-full min-w-0" aria-label={t`Account for ${source}`}>
-                    <SelectValue />
+                  <SelectTrigger
+                    className="w-full min-w-0"
+                    aria-label={t`Account for ${source}`}
+                    aria-invalid={problem === 'pick' ? true : undefined}
+                    aria-describedby={problem === 'pick' ? pickId : undefined}
+                  >
+                    <SelectValue placeholder={t`Pick an account`} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={NEW}>
@@ -136,7 +147,12 @@ export function AccountsInFilePanel({
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                {route.kind === 'new' && target?.kind === 'new' && (
+                {problem === 'pick' && (
+                  <p id={pickId} className="text-xs text-destructive" role="alert">
+                    <Trans>Pick the account these transactions go into.</Trans>
+                  </p>
+                )}
+                {route?.kind === 'new' && target?.kind === 'new' && (
                   <NewAccountFields
                     source={source}
                     name={route.name}

@@ -38,6 +38,9 @@ import {
   parseDelimitedText,
   createImportNameMaps,
   resolveImportCategoryId,
+  defaultOnBudgetForType,
+  AccountTypeEnum,
+  type DuplicateInput,
 } from '@budgero/core/browser';
 import {
   IMPORT_ACCOUNT_PLACEHOLDER,
@@ -265,9 +268,8 @@ export function useImportDialogState(): ImportDialogState {
       try {
         const result = await parseImportFile(selectedFile, importConfig.skipRows);
 
-        if (result.configPatch) {
-          setImportConfig((prev) => ({ ...prev, ...result.configPatch }));
-        }
+        // Account choices belong to the file they were made for.
+        setImportConfig((prev) => ({ ...prev, ...result.configPatch, accountRoutes: undefined }));
         if (result.pdfTable) {
           setRawTableData(result.pdfTable.rawTableData);
           setSelectedHeaderIndex(result.pdfTable.suggestedHeaderIndex);
@@ -495,7 +497,9 @@ export function useImportDialogState(): ImportDialogState {
         return;
       }
       const signature = (rows: PreviewRow[]) =>
-        JSON.stringify(rows.map((r) => [r.input.fileRowKey, r.input.accountId, r.duplicate]));
+        JSON.stringify(
+          rows.map((r) => [r.input.fileRowKey, r.input.accountId, r.duplicate, r.transfer])
+        );
       if (signature(fresh) !== signature(previewData)) {
         setPreviewData(fresh);
         setCurrentStep('preview');
@@ -522,6 +526,16 @@ export function useImportDialogState(): ImportDialogState {
     const selectedRows = fresh.filter(
       (r) => r.input.valid && r.decision !== 'skip' && r.decision !== 'match'
     );
+    // A row becomes a transfer when it is imported and its other side is
+    // imported with it (a pair) or not in the file at all. A pair whose other
+    // side is skipped or matched stays a plain transaction.
+    const selectedIndices = new Set(selectedRows.map((r) => r.input.index));
+    const transferOf = (r: PreviewRow) =>
+      r.transfer &&
+      selectedIndices.has(r.input.index) &&
+      (r.transfer.partnerIndex === undefined || selectedIndices.has(r.transfer.partnerIndex))
+        ? r.transfer
+        : undefined;
     const matchCandidate = (r: PreviewRow) =>
       r.input.valid && r.decision === 'match' ? r.duplicate.candidates[0]?.id : undefined;
     const transactionsMatched = fresh.filter((r) => matchCandidate(r) !== undefined).length;
@@ -717,11 +731,14 @@ export function useImportDialogState(): ImportDialogState {
         remembered: readRememberedRoutes(budgetId),
         chosen: importConfig.accountRoutes,
         newAccountCurrency,
+        fallbackAccountId: importConfig.defaultAccountId,
       });
       const createdFor = new Map<number, { ID: number; Name: string }>();
       const pendingIds = [
         ...new Set(
-          selectedRows.map((row) => row.input.accountId).filter((id) => isPlaceholderAccountId(id))
+          selectedRows
+            .flatMap((row) => [row.input.accountId, transferOf(row)?.counterpartAccountId ?? 0])
+            .filter((id) => isPlaceholderAccountId(id))
         ),
       ];
       for (const placeholder of pendingIds) {
@@ -731,16 +748,17 @@ export function useImportDialogState(): ImportDialogState {
             t`Transactions or destinations changed. Please review the updated matches.`
           );
         const name = planned?.name ?? t`Import Account`;
+        const type = planned?.type ?? AccountTypeEnum.CHECKING;
         const created = await addAccountMutation.mutateAsync({
           name,
           budget_id: budgetId,
-          type: 'Checking',
+          type,
           currency:
             selectedRows.find((row) => row.input.accountId === placeholder)?.input.currency ??
             planned?.currency ??
             newAccountCurrency,
           balance: 0,
-          on_budget: true,
+          on_budget: defaultOnBudgetForType(type),
         });
         createdFor.set(placeholder, { ID: created.ID, Name: created.Name || name });
         createdAccountIds.push(created.ID);
@@ -837,9 +855,16 @@ export function useImportDialogState(): ImportDialogState {
       const resolvedIncomeId = incomeId ?? 0;
       const resolvedUncategorizedId = uncategorizedId ?? 0;
 
+      const rowByIndex = new Map(fresh.map((r) => [r.input.index, r]));
+      // Rows created together with their pair's first side.
+      const transferDone = new Set<number>();
       for (const reviewed of inDateOrder(fresh)) {
         const plan = reviewed.input;
         const row = reviewed.original;
+        if (transferDone.has(plan.index)) {
+          processedCount++;
+          continue;
+        }
         try {
           setProgress({
             step: 'Importing transactions...',
@@ -885,6 +910,67 @@ export function useImportDialogState(): ImportDialogState {
             continue;
           }
 
+          const transfer = transferOf(reviewed);
+          if (transfer) {
+            const partner =
+              transfer.partnerIndex !== undefined
+                ? rowByIndex.get(transfer.partnerIndex)
+                : undefined;
+            if (partner) transferDone.add(partner.input.index);
+            const leg = (input: DuplicateInput) => ({
+              inflow: input.inflow,
+              outflow: input.outflow,
+              accountId: realAccountId(input.accountId),
+              categoryId: 0,
+              date: input.date,
+              memo: input.memo.substring(0, 255),
+              payee: input.payee,
+              importIdentities: [withRealAccount(input)],
+              cleared: true,
+            });
+            const own = leg(plan);
+            // Only this side is in the file: the other account gets the mirror leg.
+            const other = partner
+              ? leg(partner.input)
+              : {
+                  inflow: plan.outflow,
+                  outflow: plan.inflow,
+                  accountId: realAccountId(transfer.counterpartAccountId),
+                  categoryId: 0,
+                  date: plan.date,
+                  memo: plan.memo.substring(0, 255),
+                  payee: plan.payee,
+                };
+            const outgoing = plan.outflow > plan.inflow;
+            const { sourceId, destinationId } = await executeSpaceMutation<{
+              sourceId: number;
+              destinationId: number;
+            }>(runtime, {
+              op: 'transactions.addTransfer',
+              payload: {
+                budgetId,
+                transferId: `import_${runKey.current}_${plan.index}`,
+                source: outgoing ? own : other,
+                destination: outgoing ? other : own,
+              },
+              meta: { label: t`Import transaction`, skipInvalidate: true },
+            });
+            const [ownId, otherId] = outgoing
+              ? [sourceId, destinationId]
+              : [destinationId, sourceId];
+            matchedIds.set(plan.index, ownId);
+            importedTransactionIds.push(ownId);
+            successCount++;
+            if (partner) {
+              matchedIds.set(partner.input.index, otherId);
+              importedTransactionIds.push(otherId);
+              successCount++;
+            }
+            processedCount++;
+            await checkpointIfDue();
+            continue;
+          }
+
           const categoryId = await resolveCategoryId(
             row,
             plan.inflow,
@@ -923,10 +1009,11 @@ export function useImportDialogState(): ImportDialogState {
         } catch (rowError) {
           if (reviewed.decision === 'skip' && reviewed.duplicate.status !== 'new')
             duplicatesSkipped--;
-          failures.push({
-            index: plan.index,
-            message: getErrorMessage(rowError, t`Failed to import row`),
-          });
+          const message = getErrorMessage(rowError, t`Failed to import row`);
+          failures.push({ index: plan.index, message });
+          // Its pair's other side was to be created with it: it failed too.
+          const partnerIndex = transferOf(reviewed)?.partnerIndex;
+          if (partnerIndex !== undefined) failures.push({ index: partnerIndex, message });
         }
 
         processedCount++;

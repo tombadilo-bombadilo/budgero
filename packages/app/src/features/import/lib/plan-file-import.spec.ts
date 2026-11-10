@@ -67,15 +67,16 @@ describe('file preview identity and destinations', () => {
     input.importConfig.defaultAccountId = -1;
     expect((await buildFileImportPreview(input))[0].parsed.account).toBe('Import Account (new)');
   });
-  it('sends an unmatched account name to a new account named after it', async () => {
+  it('sends a single unmatched account name to the account chosen in the dialog', async () => {
     const input = options();
     input.columnMapping = {
       ...input.columnMapping,
       account: 'Payee',
     } as typeof input.columnMapping;
     const [row] = await buildFileImportPreview(input);
-    expect(row.input.accountId).toBeLessThanOrEqual(-100);
-    expect(row.parsed.account).toBe('Coffee (new)');
+    expect(row.input.accountId).toBe(1);
+    input.importConfig.defaultAccountId = null as unknown as number;
+    await expect(buildFileImportPreview(input)).rejects.toThrow('Choose a destination account');
   });
   it('reconsiders changed mappings and destination interpretation', async () => {
     const input = options();

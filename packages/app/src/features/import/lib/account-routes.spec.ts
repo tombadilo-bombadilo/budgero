@@ -79,15 +79,68 @@ describe('account routes', () => {
     expect(plan.problems.has('A')).toBe(false);
   });
 
-  it('defaults to a new account when the same name is ambiguous or archived', () => {
-    const plan = planAccountRoutes({
-      rows: [{ Account: 'Visa' }],
+  it('leaves an ambiguous or archived-only name unset for the user to pick', () => {
+    for (const extra of [
+      { ID: 3, Name: 'visa ' },
+      { ID: 3, Name: 'Amex', Archived: true },
+    ]) {
+      const plan = planAccountRoutes({
+        rows: [{ Account: extra.Archived ? 'amex' : 'Visa' }, { Account: 'Other' }],
+        column: 'Account',
+        accounts: [...accounts, extra],
+        newAccountCurrency: 'EUR',
+      });
+      const source = extra.Archived ? 'amex' : 'Visa';
+      expect(plan.routes[source]).toBeUndefined();
+      expect(plan.targets.get(source)).toEqual({ kind: 'unset' });
+      expect(plan.problems.get(source)).toBe('pick');
+      expect(plan.routes.Other).toEqual({ kind: 'new', name: 'Other' });
+    }
+  });
+
+  it('sends the only account in a file to the account chosen in the dialog, else asks', () => {
+    const rows = [{ Account: 'DE89 3704 0044' }, { Account: 'DE89 3704 0044' }];
+    const withChoice = planAccountRoutes({
+      rows,
       column: 'Account',
-      accounts: [...accounts, { ID: 3, Name: 'visa ' }],
+      accounts,
+      newAccountCurrency: 'EUR',
+      fallbackAccountId: 2,
+    });
+    expect(withChoice.routes['DE89 3704 0044']).toEqual({ kind: 'existing', accountId: 2 });
+    expect(withChoice.problems.size).toBe(0);
+    const without = planAccountRoutes({
+      rows,
+      column: 'Account',
+      accounts,
       newAccountCurrency: 'EUR',
     });
-    expect(plan.routes.Visa).toEqual({ kind: 'new', name: 'Visa' });
-    expect(plan.problems.get('Visa')).toBe('name-taken');
+    expect(without.problems.get('DE89 3704 0044')).toBe('pick');
+    // A name match or a remembered choice still wins over the dialog's account.
+    const named = planAccountRoutes({
+      rows: [{ Account: 'visa' }],
+      column: 'Account',
+      accounts,
+      newAccountCurrency: 'EUR',
+      fallbackAccountId: 1,
+    });
+    expect(named.routes.visa).toEqual({ kind: 'existing', accountId: 2 });
+  });
+
+  it('carries the QIF account type into the new account', () => {
+    const plan = planAccountRoutes({
+      rows: [
+        { Account: 'Card', AccountType: 'Credit' },
+        { Account: 'Odd', AccountType: 'Spaceship' },
+      ],
+      column: 'Account',
+      accounts,
+      newAccountCurrency: 'EUR',
+    });
+    expect(plan.newAccounts.map((a) => [a.name, a.type])).toEqual([
+      ['Card', 'Credit'],
+      ['Odd', undefined],
+    ]);
   });
 
   it('ignores a garbage stored value and handles source names like __proto__', () => {

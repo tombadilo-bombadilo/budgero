@@ -150,6 +150,7 @@ export function ConfigureStep({
         remembered,
         chosen: importConfig.accountRoutes,
         newAccountCurrency: newAccountCurrency ?? importConfig.accountCurrency,
+        fallbackAccountId: importConfig.defaultAccountId,
       }),
     [
       rows,
@@ -158,6 +159,7 @@ export function ConfigureStep({
       remembered,
       importConfig.accountRoutes,
       importConfig.accountCurrency,
+      importConfig.defaultAccountId,
       newAccountCurrency,
     ]
   );

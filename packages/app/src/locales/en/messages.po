@@ -13412,9 +13412,17 @@ msgstr "Pick a savings goal"
 msgid "Pick a target amount and deadline. Best for trips, down payments, big purchases."
 msgstr "Pick a target amount and deadline. Best for trips, down payments, big purchases."
 
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Pick an account"
+msgstr "Pick an account"
+
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "Pick range"
 msgstr "Pick range"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Pick the account these transactions go into."
+msgstr "Pick the account these transactions go into."
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
@@ -18471,6 +18479,10 @@ msgstr "Transfer created successfully."
 #~ msgid "Transfer from {fromAccountName} to {toAccountName}{0}"
 #~ msgstr "Transfer from {fromAccountName} to {toAccountName}{0}"
 
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Transfer from {name}"
+msgstr "Transfer from {name}"
+
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "Transfer rate"
 msgstr "Transfer rate"
@@ -18485,6 +18497,10 @@ msgstr "Transfer rate updated"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Transfer to {0}"
 msgstr "Transfer to {0}"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Transfer to {name}"
+msgstr "Transfer to {name}"
 
 #. placeholder {0}: account.Name
 #. placeholder {0}: selectedTransfer.Name
@@ -19772,6 +19788,10 @@ msgstr "Width -"
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Width +"
 msgstr "Width +"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "with row {partnerRow}"
+msgstr "with row {partnerRow}"
 
 #: src/features/import/ui/steps/configure/FormattingTab.tsx
 msgid "With your current settings:"

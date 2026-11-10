@@ -56,4 +56,10 @@ describe('accounts in this file', () => {
       'true'
     );
   });
+
+  it('asks for an account when there is nothing to default to', () => {
+    renderPanel(DEFAULT_IMPORT_CONFIG, [{ Account: 'DE89 3704' }]);
+    expect(screen.getByRole('alert')).toHaveTextContent('Pick the account');
+    expect(screen.getByLabelText('Account for DE89 3704')).toHaveAttribute('aria-invalid', 'true');
+  });
 });

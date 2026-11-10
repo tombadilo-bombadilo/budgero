@@ -13410,9 +13410,17 @@ msgstr "Sparziel auswählen"
 msgid "Pick a target amount and deadline. Best for trips, down payments, big purchases."
 msgstr "Wähle einen Zielbetrag und eine Frist. Ideal für Reisen, Anzahlungen und große Anschaffungen."
 
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Pick an account"
+msgstr "Konto wählen"
+
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "Pick range"
 msgstr "Zeitraum auswählen"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Pick the account these transactions go into."
+msgstr "Wähle das Konto, in das diese Buchungen gehen."
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
@@ -18469,6 +18477,10 @@ msgstr "Umbuchung erfolgreich erstellt."
 #~ msgid "Transfer from {fromAccountName} to {toAccountName}{0}"
 #~ msgstr "Umbuchung von {fromAccountName} nach {toAccountName}{0}"
 
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Transfer from {name}"
+msgstr "Umbuchung von {name}"
+
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "Transfer rate"
 msgstr "Umbuchungskurs"
@@ -18483,6 +18495,10 @@ msgstr "Umbuchungskurs aktualisiert"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Transfer to {0}"
 msgstr "Umbuchung an {0}"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Transfer to {name}"
+msgstr "Umbuchung an {name}"
 
 #. placeholder {0}: account.Name
 #. placeholder {0}: selectedTransfer.Name
@@ -19770,6 +19786,10 @@ msgstr "Breite -"
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Width +"
 msgstr "Breite +"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "with row {partnerRow}"
+msgstr "mit Zeile {partnerRow}"
 
 #: src/features/import/ui/steps/configure/FormattingTab.tsx
 msgid "With your current settings:"

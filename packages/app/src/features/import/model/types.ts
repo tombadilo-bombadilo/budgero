@@ -104,12 +104,23 @@ export interface ImportSummary {
  */
 export type ImportDecision = 'skip' | 'import' | 'match';
 
+/** A row imported as a transfer with another account of the import (lib/plan-transfers.ts). */
+export interface FileTransfer {
+  /** The account the other side goes to (a placeholder id when it is new). */
+  counterpartAccountId: number;
+  /** The other account as the file names it. */
+  counterpartName: string;
+  /** The row holding the other side, when it is in the file. */
+  partnerIndex?: number;
+}
+
 export interface PreviewRow {
   input: DuplicateInput;
   duplicate: DuplicatePlan;
   decision?: ImportDecision;
   /** The row's account is set to "Don't import": skipped by the user, not invalid. */
   accountSkipped?: boolean;
+  transfer?: FileTransfer;
   original: Record<string, string>;
   parsed: {
     date?: string;

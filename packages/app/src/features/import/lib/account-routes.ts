@@ -8,7 +8,7 @@
  * is derived here by planAccountRoutes, which the panel, the preview and the
  * import all call, so they cannot disagree.
  */
-import { isCryptoCurrency } from '@budgero/core/browser';
+import { AccountTypeEnum, isCryptoCurrency } from '@budgero/core/browser';
 import type { AccountRoute } from '../model/types';
 
 export interface SourceAccount {
@@ -17,6 +17,8 @@ export interface SourceAccount {
   rows: number;
   /** Currency the file states for these rows (OFX/CAMT, or a Currency column), if any. */
   currency?: string;
+  /** Budgero account type the file states (QIF `!Type:` sections), if any. */
+  type?: string;
 }
 
 export interface RoutableAccount {
@@ -64,6 +66,8 @@ function fiatCodes(): Set<string> {
   return knownFiat;
 }
 
+const ACCOUNT_TYPES = new Set<string | undefined>(Object.values(AccountTypeEnum));
+
 export function sourceAccountsOf(
   rows: Record<string, string>[],
   column: string | undefined
@@ -77,6 +81,7 @@ export function sourceAccountsOf(
     entry.rows += 1;
     const currency = entry.currency ?? currencyCodeOf(row.Currency);
     if (currency) entry.currency = currency;
+    if (!entry.type && ACCOUNT_TYPES.has(row.AccountType)) entry.type = row.AccountType;
     bySource.set(source, entry);
   }
   return [...bySource.values()];
@@ -120,57 +125,72 @@ const own = <T>(record: Record<string, T>, key: string): T | undefined =>
 
 /**
  * The route for each source: what the user picked (unless that account is
- * gone), else an open account with the same name, else the open account
- * picked for it last time, else a new account named after it.
+ * gone), else the one open account with the same name, else the open account
+ * picked for it last time. Otherwise:
+ * - a name that only matches an archived account, or several accounts: unset
+ *   (the user picks);
+ * - the only account in the file: the account already chosen in the dialog
+ *   (`fallbackAccountId`), else unset. An IBAN or ACCTID is rarely a good name
+ *   for a new account;
+ * - one of several accounts in the file: a new account named after it.
  */
 export function defaultRoutes(
   sources: SourceAccount[],
   accounts: RoutableAccount[],
   remembered: Record<string, number>,
-  chosen: Record<string, AccountRoute> = {}
-): Record<string, AccountRoute> {
+  chosen: Record<string, AccountRoute> = {},
+  fallbackAccountId?: number | null
+): Record<string, AccountRoute | undefined> {
   const open = accounts.filter((a) => !a.Archived);
-  const routes: Record<string, AccountRoute> = Object.create(null) as Record<string, AccountRoute>;
+  const fallback = accounts.find((a) => a.ID === fallbackAccountId);
+  const routes = Object.create(null) as Record<string, AccountRoute | undefined>;
   for (const { source } of sources) {
     const kept = own(chosen, source);
     if (kept && (kept.kind !== 'existing' || accounts.some((a) => a.ID === kept.accountId))) {
       routes[source] = kept;
       continue;
     }
-    const sameName = open.filter((a) => accountNameKey(a.Name) === accountNameKey(source));
-    const named = sameName.length === 1 ? sameName[0] : undefined;
+    const sameName = accounts.filter((a) => accountNameKey(a.Name) === accountNameKey(source));
+    const openSameName = sameName.filter((a) => !a.Archived);
+    const named = openSameName.length === 1 ? openSameName[0] : undefined;
     const known = open.find((a) => a.ID === own(remembered, source));
     const account = named ?? known;
-    routes[source] = account
-      ? { kind: 'existing', accountId: account.ID }
-      : { kind: 'new', name: source };
+    if (account) routes[source] = { kind: 'existing', accountId: account.ID };
+    else if (sameName.length > 0) routes[source] = undefined;
+    else if (sources.length === 1)
+      routes[source] = fallback ? { kind: 'existing', accountId: fallback.ID } : undefined;
+    else routes[source] = { kind: 'new', name: source };
   }
   return routes;
 }
 
 export type RouteTarget =
+  | { kind: 'unset' }
   | { kind: 'skip' }
   | { kind: 'existing'; accountId: number }
-  | { kind: 'new'; placeholderId: number; name: string; currency: string };
+  | { kind: 'new'; placeholderId: number; name: string; currency: string; type?: string };
 
 /**
  * Why a source cannot be imported as routed:
+ * - pick: no account chosen yet;
  * - name-taken: the new account's name is already an account in the budget;
  * - currency: it shares a new account with a source in another currency.
  */
-export type RouteProblem = 'name-taken' | 'currency';
+export type RouteProblem = 'pick' | 'name-taken' | 'currency';
 
 export interface NewAccountPlan {
   placeholderId: number;
   name: string;
   currency: string;
+  /** Account type the file states for it (QIF), else Checking. */
+  type?: string;
   /** The sources that go into it (several when they were given the same name). */
   sources: string[];
 }
 
 export interface AccountRoutePlan {
   sources: SourceAccount[];
-  routes: Record<string, AccountRoute>;
+  routes: Record<string, AccountRoute | undefined>;
   targets: Map<string, RouteTarget>;
   newAccounts: NewAccountPlan[];
   problems: Map<string, RouteProblem>;
@@ -185,6 +205,8 @@ interface PlanOptions {
   chosen?: Record<string, AccountRoute>;
   /** Currency of a new account when the file states none for it. */
   newAccountCurrency: string;
+  /** The account chosen in the dialog (importConfig.defaultAccountId). */
+  fallbackAccountId?: number | null;
 }
 
 export function planAccountRoutes({
@@ -194,16 +216,22 @@ export function planAccountRoutes({
   remembered = {},
   chosen = {},
   newAccountCurrency,
+  fallbackAccountId,
 }: PlanOptions): AccountRoutePlan {
   const sources = sourceAccountsOf(rows, column);
-  const routes = defaultRoutes(sources, accounts, remembered, chosen);
+  const routes = defaultRoutes(sources, accounts, remembered, chosen, fallbackAccountId);
   const takenNames = new Set(accounts.map((a) => accountNameKey(a.Name)));
   const targets = new Map<string, RouteTarget>();
   const problems = new Map<string, RouteProblem>();
   const newByName = new Map<string, NewAccountPlan>();
 
-  sources.forEach(({ source, currency }, index) => {
+  sources.forEach(({ source, currency, type }, index) => {
     const route = routes[source];
+    if (!route) {
+      targets.set(source, { kind: 'unset' });
+      problems.set(source, 'pick');
+      return;
+    }
     if (route.kind !== 'new') {
       targets.set(source, route);
       return;
@@ -216,6 +244,7 @@ export function planAccountRoutes({
         placeholderId: FIRST_PLACEHOLDER - index,
         name,
         currency: currency ?? newAccountCurrency,
+        ...(type ? { type } : {}),
         sources: [],
       };
       newByName.set(key, account);
@@ -228,6 +257,7 @@ export function planAccountRoutes({
       placeholderId: account.placeholderId,
       name: account.name,
       currency: account.currency,
+      ...(account.type ? { type: account.type } : {}),
     });
   });
 

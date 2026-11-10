@@ -13410,9 +13410,17 @@ msgstr "Kies een spaardoel"
 msgid "Pick a target amount and deadline. Best for trips, down payments, big purchases."
 msgstr "Kies een doelbedrag en deadline. Ideaal voor reizen, aanbetalingen en grote aankopen."
 
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Pick an account"
+msgstr "Kies een rekening"
+
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "Pick range"
 msgstr "Kies bereik"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Pick the account these transactions go into."
+msgstr "Kies de rekening waar deze transacties in komen."
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
@@ -18469,6 +18477,10 @@ msgstr "Overboeking succesvol aangemaakt."
 #~ msgid "Transfer from {fromAccountName} to {toAccountName}{0}"
 #~ msgstr "Overboeking van {fromAccountName} naar {toAccountName}{0}"
 
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Transfer from {name}"
+msgstr "Overboeking van {name}"
+
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "Transfer rate"
 msgstr "Overboekingskoers"
@@ -18483,6 +18495,10 @@ msgstr "Overboekingskoers bijgewerkt"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Transfer to {0}"
 msgstr "Overboeking naar {0}"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Transfer to {name}"
+msgstr "Overboeking naar {name}"
 
 #. placeholder {0}: account.Name
 #. placeholder {0}: selectedTransfer.Name
@@ -19770,6 +19786,10 @@ msgstr "Breedte -"
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Width +"
 msgstr "Breedte +"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "with row {partnerRow}"
+msgstr "met rij {partnerRow}"
 
 #: src/features/import/ui/steps/configure/FormattingTab.tsx
 msgid "With your current settings:"
