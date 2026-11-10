@@ -10,15 +10,11 @@ import { useUiStore } from '@shared/store/useUiStore';
 import { useIsMobile } from '@shared/hooks/useIsMobile';
 import { useReports } from '@entities/report/api/useReports';
 import {
-  useAddDashboardWidget,
   useCreateCustomDashboard,
   useCustomDashboard,
   useCustomDashboards,
   useDeleteCustomDashboard,
-  useDeleteDashboardWidget,
-  useReorderDashboardWidgets,
   useUpdateCustomDashboard,
-  useUpdateDashboardWidget,
 } from '@features/custom-dashboards/api/useCustomDashboards';
 import type { SqlDatabase } from '@shared/lib/sql/report-query-executor';
 import { useRuntime } from '@shared/runtime/runtime-provider';
@@ -31,21 +27,41 @@ import { questionResultCsv } from '@features/reports/ui/notebook/viz/export';
 import { downloadBlob } from '@shared/lib/download';
 import type { CustomDashboardWidget } from '@budgero/core/browser';
 import { BackToReports } from '@pages/reports/BackToReports';
+import { PeriodTabs } from '@shared/ui/PeriodTabs';
+import { widgetUsesPeriod } from '@widgets/dashboard/builtin/builtin-cards';
+import { DashboardPeriodProvider } from '@widgets/dashboard/builtin/DashboardPeriod';
+import { useDashboardPeriod } from '@widgets/dashboard/builtin/useDashboardPeriod';
 import { DashboardSwitcher } from './components/DashboardSwitcher';
 import { DashboardGrid } from './components/DashboardGrid';
 import { AddToDashboardDialog } from './components/AddToDashboardDialog';
 import { DashboardFilterBar } from './components/DashboardFilterBar';
 import { buildCsvZip, zipFileName, type WidgetCsv } from './export-dashboard';
 import { runWidgetQuery, widgetQueryKey, widgetQuestion } from './components/widget-query';
+import { useDashboardEditor, useHomeActions } from './useDashboardEditor';
 
 const DEFAULT_DASHBOARD_NAME = msg`My Dashboard`;
 
+/** The period tabs of a dashboard's built-in cards. */
+function DashboardPeriodTabs() {
+  const { dateRange, setDateRange } = useDashboardPeriod();
+  return <PeriodTabs value={dateRange} onChange={setDateRange} />;
+}
+
 export default function CustomDashboardsPage() {
+  const isMobile = useIsMobile();
+  const platform = isMobile ? 'mobile' : 'desktop';
+  return (
+    <DashboardPeriodProvider key={platform} platform={platform}>
+      <CustomDashboardsView isMobile={isMobile} />
+    </DashboardPeriodProvider>
+  );
+}
+
+function CustomDashboardsView({ isMobile }: { isMobile: boolean }) {
   const { t } = useLingui();
 
   const selectedBudget = useUiStore((state) => state.selectedBudget);
   const budgetId = selectedBudget?.ID ?? 0;
-  const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { dashboardId } = useParams<{ dashboardId?: string }>();
 
@@ -59,10 +75,7 @@ export default function CustomDashboardsPage() {
   const createDashboardMutation = useCreateCustomDashboard();
   const updateDashboardMutation = useUpdateCustomDashboard();
   const deleteDashboardMutation = useDeleteCustomDashboard();
-  const addWidgetMutation = useAddDashboardWidget();
-  const updateWidgetMutation = useUpdateDashboardWidget();
-  const deleteWidgetMutation = useDeleteDashboardWidget();
-  const reorderWidgetsMutation = useReorderDashboardWidgets();
+  const homeActions = useHomeActions();
 
   const { data: reports = [] } = useReports();
   const reportsById = useMemo(() => {
@@ -79,6 +92,13 @@ export default function CustomDashboardsPage() {
 
   const activeDashboardQuery = useCustomDashboard(activeDashboardId);
   const activeDashboard = activeDashboardQuery.data;
+  const editor = useDashboardEditor({
+    dashboard: activeDashboard,
+    budgetId,
+    platform: isMobile ? 'mobile' : 'desktop',
+    dashboards,
+  });
+  const showPeriodTabs = Boolean(activeDashboard?.widgets.some(widgetUsesPeriod));
   const runtime = useRuntime();
   const queryClient = useQueryClient();
 
@@ -173,56 +193,6 @@ export default function CustomDashboardsPage() {
     await navigate(`/reports/dashboards/${created.id}`, { replace: true });
   };
 
-  const handleAddWidget = async (input: {
-    reportId: string;
-    chartId: string;
-    titleOverride?: string;
-  }) => {
-    if (!activeDashboardId) throw new Error('No active dashboard selected');
-    await addWidgetMutation.mutateAsync({
-      dashboardId: activeDashboardId,
-      reportId: input.reportId,
-      chartId: input.chartId,
-      titleOverride: input.titleOverride,
-    });
-  };
-
-  const handleReorderWidgets = async (orderedIds: string[]) => {
-    if (!activeDashboardId) return;
-    await reorderWidgetsMutation.mutateAsync({ dashboardId: activeDashboardId, orderedIds });
-  };
-
-  const handleRemoveWidget = async (widgetId: string) => {
-    if (!activeDashboardId) return;
-    await deleteWidgetMutation.mutateAsync({ id: widgetId, dashboardId: activeDashboardId });
-  };
-
-  const handleUpdateDesktopLayout = async (
-    widgetId: string,
-    patch: Partial<{ colSpan: number; rowSpan: number }>
-  ) => {
-    if (!activeDashboardId || !activeDashboard) return;
-    const widget = activeDashboard.widgets.find((item) => item.id === widgetId);
-    if (!widget) return;
-    await updateWidgetMutation.mutateAsync({
-      id: widgetId,
-      dashboardId: activeDashboardId,
-      desktopLayout: {
-        colSpan: patch.colSpan ?? widget.desktopLayout.colSpan,
-        rowSpan: patch.rowSpan ?? widget.desktopLayout.rowSpan,
-      },
-    });
-  };
-
-  const handleUpdateMobileSize = async (widgetId: string, size: 's' | 'm' | 'l') => {
-    if (!activeDashboardId) return;
-    await updateWidgetMutation.mutateAsync({
-      id: widgetId,
-      dashboardId: activeDashboardId,
-      mobileLayout: { size },
-    });
-  };
-
   const handlePinSelectionForWidget = async ({
     reportId,
     chartId,
@@ -230,13 +200,8 @@ export default function CustomDashboardsPage() {
     reportId: string;
     chartId: string;
   }) => {
-    if (!pinWidget || !activeDashboardId) return;
-    await updateWidgetMutation.mutateAsync({
-      id: pinWidget.id,
-      dashboardId: activeDashboardId,
-      reportId,
-      chartId,
-    });
+    if (!pinWidget) return;
+    await editor.replaceQuestion(pinWidget.id, { reportId, chartId });
     setPinWidget(null);
   };
 
@@ -339,7 +304,7 @@ export default function CustomDashboardsPage() {
             {isEditMode ? t`Done Editing` : t`Edit Layout`}
           </Button>
           <Button onClick={() => setAddWidgetDialogOpen(true)} disabled={!activeDashboard}>
-            <Trans>Add a question</Trans>
+            <Trans>Add a card</Trans>
           </Button>
         </div>
       </div>
@@ -353,6 +318,8 @@ export default function CustomDashboardsPage() {
         onDeleteDashboard={handleDeleteDashboard}
         onExportAll={() => void handleExportAll()}
         exportDisabled={!activeDashboard || activeDashboard.widgets.length === 0}
+        onUseAsHome={homeActions.makeHome}
+        onUseDefaultHome={homeActions.unsetHome}
       />
 
       {!activeDashboard && (dashboardsQuery.isLoading || activeDashboardQuery.isLoading) && (
@@ -362,11 +329,16 @@ export default function CustomDashboardsPage() {
       )}
 
       {activeDashboard && (
-        <DashboardFilterBar
-          budgetId={budgetId}
-          filters={filters}
-          onChange={(next) => void handleFiltersChange(next)}
-        />
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <DashboardFilterBar
+              budgetId={budgetId}
+              filters={filters}
+              onChange={(next) => void handleFiltersChange(next)}
+            />
+          </div>
+          {showPeriodTabs && !isMobile && <DashboardPeriodTabs />}
+        </div>
       )}
 
       {activeDashboard && (
@@ -376,10 +348,11 @@ export default function CustomDashboardsPage() {
           reportsById={reportsById}
           isMobile={isMobile}
           isEditMode={isEditMode}
-          onReorderWidgets={handleReorderWidgets}
-          onRemoveWidget={handleRemoveWidget}
-          onUpdateDesktopLayout={handleUpdateDesktopLayout}
-          onUpdateMobileSize={handleUpdateMobileSize}
+          onReorderWidgets={editor.reorder}
+          onRemoveWidget={editor.remove}
+          onUpdateDesktopLayout={editor.updateDesktopLayout}
+          onUpdateMobileSize={editor.updateMobileSize}
+          periodControl={showPeriodTabs ? <DashboardPeriodTabs /> : undefined}
           onSelectNewChart={(widgetId) => {
             const widget = activeDashboard.widgets.find((item) => item.id === widgetId) ?? null;
             setPinWidget(widget);
@@ -394,12 +367,14 @@ export default function CustomDashboardsPage() {
         questions={reports}
         dashboards={activeDashboard ? [activeDashboard] : []}
         dashboardId={activeDashboard?.id}
-        title={t`Add a question`}
-        description={t`Pick a saved question to show on this dashboard.`}
+        title={t`Add a card`}
+        description={t`Pick a saved question or a built-in card to show on this dashboard.`}
         confirmLabel={t`Add to dashboard`}
         onSubmit={({ reportId, chartId, titleOverride }) =>
-          handleAddWidget({ reportId, chartId, titleOverride })
+          editor.addQuestion({ reportId, chartId, titleOverride })
         }
+        builtinCards={editor.builtinChoices()}
+        onSubmitBuiltin={editor.addBuiltin}
       />
 
       <AddToDashboardDialog

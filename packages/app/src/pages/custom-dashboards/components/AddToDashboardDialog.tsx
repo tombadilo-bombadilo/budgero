@@ -26,7 +26,17 @@ import {
 import { Input } from '@shared/ui/input';
 import { Label } from '@shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
+import { Tabs, TabsList, TabsTrigger } from '@shared/ui/tabs';
 import { chartChoiceLabel, questionChoices, rowsTableChart } from './question-choices';
+
+/** A built-in card offered in the "Built-in cards" tab. */
+export interface BuiltinCardChoice {
+  key: string;
+  label: string;
+  description: string;
+  /** Already shown on this dashboard: listed, but can't be added again. */
+  onDashboard: boolean;
+}
 
 export interface DashboardPick {
   dashboardId: string;
@@ -54,6 +64,9 @@ interface AddToDashboardDialogProps {
   confirmLabel: string;
   onCreateDashboard?: () => Promise<void>;
   onSubmit: (pick: DashboardPick) => Promise<void>;
+  /** From a dashboard: also offer the built-in cards, in a second tab. */
+  builtinCards?: BuiltinCardChoice[];
+  onSubmitBuiltin?: (key: string) => Promise<void>;
 }
 
 /**
@@ -82,8 +95,18 @@ function AddToDashboardForm({
   confirmLabel,
   onCreateDashboard,
   onSubmit,
+  builtinCards,
+  onSubmitBuiltin,
 }: AddToDashboardDialogProps) {
   const { t } = useLingui();
+  const withBuiltins = Boolean(builtinCards?.length && onSubmitBuiltin);
+  const [tab, setTab] = useState<'questions' | 'builtin'>('questions');
+  const showBuiltins = withBuiltins && tab === 'builtin';
+  const [builtinChoice, setBuiltinChoice] = useState(
+    () => builtinCards?.find((card) => !card.onDashboard)?.key ?? ''
+  );
+  const pickedBuiltin =
+    builtinCards?.find((card) => card.key === builtinChoice && !card.onDashboard) ?? null;
   const addChart = useAddChartToReport();
   const choices = useMemo(
     () => questionChoices(question ? [question] : questions),
@@ -115,6 +138,11 @@ function AddToDashboardForm({
   const pickDashboard = !dashboardId;
 
   const handleSubmit = async () => {
+    if (showBuiltins) {
+      if (!pickedBuiltin || !onSubmitBuiltin) return;
+      await submit.run(() => onSubmitBuiltin(pickedBuiltin.key));
+      return;
+    }
     if (!choice || !targetDashboardId) return;
     await submit.run(async () => {
       let id = chartId;
@@ -144,7 +172,65 @@ function AddToDashboardForm({
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
-        {noQuestions || noDashboards ? (
+        {withBuiltins && (
+          <Tabs value={tab} onValueChange={(value) => setTab(value as 'questions' | 'builtin')}>
+            <TabsList className="w-full">
+              <TabsTrigger value="questions" className="flex-1">
+                <Trans>Questions</Trans>
+              </TabsTrigger>
+              <TabsTrigger value="builtin" className="flex-1">
+                <Trans>Built-in cards</Trans>
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        )}
+
+        {showBuiltins ? (
+          <div className="min-h-0 space-y-2 overflow-y-auto">
+            <Command className="rounded-md border">
+              <CommandInput placeholder={t`Search cards…`} aria-label={t`Search built-in cards`} />
+              <CommandList className="max-h-[min(22rem,48dvh)]">
+                <CommandEmpty>
+                  <Trans>No card matches.</Trans>
+                </CommandEmpty>
+                <CommandGroup>
+                  {builtinCards?.map((card) => {
+                    const selected = card.key === pickedBuiltin?.key;
+                    return (
+                      <CommandItem
+                        key={card.key}
+                        value={`${card.label} ${card.description} ${card.key}`}
+                        disabled={card.onDashboard}
+                        onSelect={() => setBuiltinChoice(card.key)}
+                        aria-selected={selected}
+                        className={cn(
+                          'cursor-pointer items-start gap-3 py-2',
+                          selected && 'bg-accent'
+                        )}
+                      >
+                        <span className="min-w-0 flex-1">
+                          <span className="block break-words font-medium leading-snug">
+                            {card.label}
+                          </span>
+                          <span className="block text-xs text-muted-foreground">
+                            {card.onDashboard ? t`Already on this dashboard` : card.description}
+                          </span>
+                        </span>
+                        <Check
+                          className={cn(
+                            'mt-1 h-4 w-4 shrink-0',
+                            selected ? 'opacity-100' : 'opacity-0'
+                          )}
+                          aria-hidden
+                        />
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </div>
+        ) : noQuestions || noDashboards ? (
           <div className="space-y-2 rounded-md border bg-muted/30 p-3 text-sm text-muted-foreground">
             {noQuestions && (
               <p>
@@ -299,7 +385,10 @@ function AddToDashboardForm({
           <Button
             onClick={() => void handleSubmit()}
             disabled={
-              submit.isRunning || noQuestions || noDashboards || !choice || !targetDashboardId
+              submit.isRunning ||
+              (showBuiltins
+                ? !pickedBuiltin
+                : noQuestions || noDashboards || !choice || !targetDashboardId)
             }
           >
             {submit.isRunning ? t`Saving...` : confirmLabel}
