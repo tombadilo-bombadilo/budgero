@@ -182,3 +182,38 @@ export function applyDashboardFilters(
     .map((entry) => entry.kind);
   return { spec: merged, applied, ignored };
 }
+
+const KIND_FIELD: Partial<Record<DashboardFilterKind, string>> = {
+  accounts: 'account',
+  categoryGroups: 'category_group',
+};
+
+/**
+ * Dashboard filters that AND with one of the question's own filters on the
+ * same field to nothing (dashboard: accounts A, B; question: account C), so
+ * the widget can say why it's empty.
+ */
+export function dashboardFilterConflicts(
+  spec: QuestionSpec,
+  filters: DashboardFilters
+): DashboardFilterKind[] {
+  const conflicts: DashboardFilterKind[] = [];
+  const picks: [DashboardFilterKind, readonly number[] | undefined][] = [
+    ['accounts', filters.accounts],
+    ['categoryGroups', filters.categoryGroups],
+  ];
+  for (const [kind, values] of picks) {
+    const field = KIND_FIELD[kind];
+    if (!field || !values?.length) continue;
+    const chosen = new Set(values.map(Number));
+    const clash = spec.filters.some((filter) => {
+      if (filter.field !== field) return false;
+      const own = new Set(filter.values.map(Number));
+      if (filter.op === 'is') return ![...chosen].some((value) => own.has(value));
+      if (filter.op === 'isNot') return [...chosen].every((value) => own.has(value));
+      return false;
+    });
+    if (clash) conflicts.push(kind);
+  }
+  return conflicts;
+}

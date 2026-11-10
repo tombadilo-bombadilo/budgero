@@ -413,14 +413,21 @@ export function WidgetCard({
           />
         )}
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 pt-0">
+      <CardContent className="flex min-h-0 flex-1 flex-col pt-0">
         {dataQuery.isPending && (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+          <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
             <Trans>Loading chart...</Trans>
           </div>
         )}
+        {!dataQuery.isPending && question && question.noOverlap.length > 0 && (
+          <p className="mb-2 shrink-0 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs">
+            {question.noOverlap.includes('accounts')
+              ? t`This question has its own account filter, and none of its accounts are in the dashboard’s account filter, so nothing matches.`
+              : t`This question has its own category group filter, and none of its groups are in the dashboard’s filter, so nothing matches.`}
+          </p>
+        )}
         {!dataQuery.isPending && dataQuery.data && question && visualization && (
-          <div ref={chartRef} className="h-full overflow-auto">
+          <div ref={chartRef} className="min-h-0 flex-1 overflow-auto">
             <QuestionVisualization
               result={dataQuery.data}
               columns={question.columns}
@@ -438,7 +445,7 @@ export function WidgetCard({
           </div>
         )}
         {!dataQuery.isPending && dataQuery.data && !question && (
-          <div ref={chartRef} className="h-full overflow-hidden">
+          <div ref={chartRef} className="min-h-0 flex-1 overflow-hidden">
             <ChartViewer
               queryResult={dataQuery.data}
               chartConfig={chart}

@@ -13,6 +13,7 @@ import {
   allowedVisualizations,
   applyDashboardFilters,
   compileQuestion,
+  dashboardFilterConflicts,
   hasDashboardFilters,
   parseQuestionHeader,
   questionColumns,
@@ -33,6 +34,8 @@ export interface WidgetQuestion {
   visualization: ResolvedVisualization;
   /** Dashboard filters the SQL that runs really applies (empty when the stored SQL runs). */
   applied: DashboardFilterKind[];
+  /** Dashboard filters that leave nothing with the question's own filter on the same field. */
+  noOverlap: DashboardFilterKind[];
   /**
    * SQL compiled now from the saved spec, with the dashboard's filters and
    * the user's local "today". Null when it can't be compiled (no budget, a
@@ -92,7 +95,8 @@ export function widgetQuestion(
     CHART_TYPE[own] === chart.chartType || !wanted || !allowedVisualizations(spec).includes(wanted)
       ? own
       : wanted;
-  return { spec, columns: questionColumns(spec), visualization, applied, sql };
+  const noOverlap = applied.length > 0 ? dashboardFilterConflicts(saved, filters) : [];
+  return { spec, columns: questionColumns(spec), visualization, applied, noOverlap, sql };
 }
 
 export function widgetQueryKey(

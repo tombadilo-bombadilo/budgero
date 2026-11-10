@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { compileQuestion } from './compile';
 import {
   applyDashboardFilters,
+  dashboardFilterConflicts,
   hasDashboardFilters,
   normalizeDashboardFilters,
 } from './dashboard-filters';
@@ -156,5 +157,24 @@ describe('applyDashboardFilters', () => {
 
   it('leaves the question untouched without filters', () => {
     expect(applyDashboardFilters(transactions, {}).spec).toEqual(transactions);
+  });
+});
+
+describe('dashboardFilterConflicts', () => {
+  const spec = normalizeQuestion({
+    source: 'transactions',
+    filters: [
+      { field: 'account', op: 'is', values: [1, 2] },
+      { field: 'category_group', op: 'isNot', values: [5] },
+    ],
+    aggregations: [{ op: 'spending' }],
+  });
+
+  it('flags dashboard picks that leave nothing with the question’s own filter', () => {
+    expect(dashboardFilterConflicts(spec, { accounts: [3] })).toEqual(['accounts']);
+    expect(dashboardFilterConflicts(spec, { accounts: [2, 3] })).toEqual([]);
+    expect(dashboardFilterConflicts(spec, { categoryGroups: [5] })).toEqual(['categoryGroups']);
+    expect(dashboardFilterConflicts(spec, { categoryGroups: [5, 6] })).toEqual([]);
+    expect(dashboardFilterConflicts(spec, {})).toEqual([]);
   });
 });
