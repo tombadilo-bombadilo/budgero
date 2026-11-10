@@ -366,6 +366,34 @@ describe('CustomDashboardService', () => {
       'q',
       seededWidgetId(first.id, 'overspent'),
     ]);
+    // Title and position follow too.
+    dashboards.updateWidget({
+      id: seededWidgetId(second.id, 'overspent'),
+      titleOverride: 'Over budget',
+      sortOrder: 7,
+    });
+    expect(dashboards.getWidgetById(seededWidgetId(first.id, 'overspent'))).toMatchObject({
+      titleOverride: 'Over budget',
+      sortOrder: 7,
+    });
+    // A seeded card added back later (undo of its removal) returns on the
+    // first copy too; one added as part of the first seeding does not.
+    dashboards.addWidget({
+      id: seededWidgetId(second.id, 'cash_balance'),
+      dashboardId: second.id,
+      reportId: 'builtin:cash_balance',
+      chartId: 'builtin',
+    });
+    expect(dashboards.getWidgetById(seededWidgetId(first.id, 'cash_balance'))).not.toBeNull();
+    dashboards.deleteWidget(seededWidgetId(second.id, 'cash_balance'));
+    dashboards.addWidget({
+      id: seededWidgetId(second.id, 'cash_balance'),
+      dashboardId: second.id,
+      reportId: 'builtin:cash_balance',
+      chartId: 'builtin',
+      seed: true,
+    });
+    expect(dashboards.getWidgetById(seededWidgetId(first.id, 'cash_balance'))).toBeNull();
     // Home goes to the first; deleting either copy removes both.
     dashboards.updateDashboard({ id: second.id, isHome: true });
     expect(dashboards.getHomeDashboardId(budgetId)).toBe(first.id);

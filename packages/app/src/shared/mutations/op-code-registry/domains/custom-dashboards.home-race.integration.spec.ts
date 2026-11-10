@@ -85,6 +85,7 @@ function homeContent(device: Device, budgetId: number) {
     flagged: device.services.customDashboards.getHomeDashboardId(budgetId) === home.id,
     widgets: stored.widgets.map((w) => ({
       card: builtinKeyOf(w) ?? `${w.reportId}/${w.id}`,
+      title: w.titleOverride ?? null,
       desktop: w.desktopLayout,
       mobile: w.mobileLayout,
     })),
@@ -268,4 +269,95 @@ describe('two devices customise the default home before syncing', () => {
     await receive(old, [...aOps, ...bOps, ...resetOps, ...undoOps], ['origin', 'isHome']);
     expect(old.failures).toEqual([]);
   });
+
+  /** Runs an op locally and then its undo (the way the undo stack replays it). */
+  async function localWithUndo(
+    device: Device,
+    log: Call[],
+    op: string,
+    args: Record<string, unknown>
+  ) {
+    runtime.services = device.services;
+    const spec = registry.getUndoSpec(op)!;
+    const before = spec.capture ? await spec.capture(args) : undefined;
+    const result = await local(device, log, op, args);
+    return async () => {
+      for (const call of spec.build(args, result, before))
+        await local(device, log, call.op, call.args);
+    };
+  }
+
+  for (const order of ['A first', 'B first'] as const) {
+    it(`a card removed and brought back by undo comes back everywhere (${order})`, async () => {
+      const { a, b, aOps, bOps } = await customiseOffline();
+      const first = order === 'A first' ? [...aOps, ...bOps] : [...bOps, ...aOps];
+      await receive(a, bOps);
+      await receive(b, aOps);
+      // B removes its overspent card, then undoes it (add back + its position).
+      const bHomeId = bOps[0].args.id as string;
+      const later: Call[] = [];
+      const undo = await localWithUndo(b, later, 'customDashboardWidgets.delete', {
+        id: `${bHomeId}:overspent`,
+      });
+      await undo();
+      await receive(a, later);
+      const c = await openDevice('C', base);
+      await receive(c, [...first, ...later]);
+      for (const device of [a, b, c]) expect(device.failures).toEqual([]);
+      const expected = homeContent(c, budgetId);
+      expect(homeContent(a, budgetId)).toEqual(expected);
+      expect(homeContent(b, budgetId)).toEqual(expected);
+      const cards = (expected as { widgets: { card: string }[] }).widgets.map((w) => w.card);
+      expect(cards.filter((card) => card === 'overspent')).toHaveLength(1);
+      expect(cards).not.toContain('cash_balance');
+
+      const old = await openDevice('v1.20', base);
+      await receive(old, [...first, ...later], ['origin', 'isHome', 'seed']);
+      expect(old.failures).toEqual([]);
+    });
+
+    it(`a card title changed offline on one device reaches the merged home (${order})`, async () => {
+      const a = await openDevice('A', base);
+      const b = await openDevice('B', base);
+      const aOps: Call[] = [];
+      const bOps: Call[] = [];
+      const aHome = await materializeDefaultHome({
+        exec: (op, payload) => local(a, aOps, op, payload),
+        budgetId,
+        name: 'Home',
+        takenNames: [],
+        labelOf,
+      });
+      // No screen renames a card today; the op allows it, so it must merge too.
+      await local(a, aOps, 'customDashboardWidgets.update', {
+        id: aHome.widgetId(defaultWidgetId('upcoming')),
+        dashboardId: aHome.dashboardId,
+        titleOverride: 'Bills ahead',
+      });
+      const bHome = await materializeDefaultHome({
+        exec: (op, payload) => local(b, bOps, op, payload),
+        budgetId,
+        name: 'Home',
+        takenNames: [],
+        labelOf,
+      });
+      await local(b, bOps, 'customDashboardWidgets.add', {
+        id: 'question-widget',
+        dashboardId: bHome.dashboardId,
+        reportId: 'report-1',
+        chartId: 'chart-1',
+      });
+      await receive(a, bOps);
+      await receive(b, aOps);
+      const c = await openDevice('C', base);
+      await receive(c, order === 'A first' ? [...aOps, ...bOps] : [...bOps, ...aOps]);
+      for (const device of [a, b, c]) expect(device.failures).toEqual([]);
+      const expected = homeContent(c, budgetId);
+      expect(homeContent(a, budgetId)).toEqual(expected);
+      expect(homeContent(b, budgetId)).toEqual(expected);
+      const widgets = (expected as { widgets: { card: string; title: string | null }[] }).widgets;
+      expect(widgets.find((w) => w.card === 'upcoming')?.title).toBe('Bills ahead');
+      expect(widgets.some((w) => w.card === 'report-1/question-widget')).toBe(true);
+    });
+  }
 });

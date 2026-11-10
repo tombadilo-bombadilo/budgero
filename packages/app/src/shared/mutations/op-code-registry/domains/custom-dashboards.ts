@@ -15,10 +15,11 @@ import {
   type OpCodeEntry,
 } from '../shared';
 
-function addWidgetOp(widget: CustomDashboardWidget): OpCall {
+function addWidgetOp(widget: CustomDashboardWidget, extra: Record<string, unknown> = {}): OpCall {
   return {
     op: 'customDashboardWidgets.add',
     args: {
+      ...extra,
       id: widget.id,
       dashboardId: widget.dashboardId,
       reportId: widget.reportId,
@@ -188,7 +189,11 @@ export const customDashboardOps = {
             // cards (`<copy id>:<card>`) only ever belong to this copy.
             dashboard.origin && !widget.id.startsWith(`${dashboard.id}:`)
               ? addWidgetOp({ ...widget, id: newOpRowId() })
-              : addWidgetOp(widget)
+              : dashboard.origin
+                ? // The copy comes back whole: if it returns hidden behind a
+                  // newer copy, its cards stay with it.
+                  addWidgetOp(widget, { seed: true })
+                : addWidgetOp(widget)
           ),
         ];
       },
@@ -230,6 +235,7 @@ export const customDashboardOps = {
         desktopLayout: args.desktopLayout as DesktopWidgetLayoutInput | undefined,
         mobileLayout: args.mobileLayout as MobileWidgetLayoutInput | undefined,
         titleOverride: args.titleOverride as string | undefined,
+        seed: args.seed === true ? true : undefined,
       });
     },
     invalidates: [

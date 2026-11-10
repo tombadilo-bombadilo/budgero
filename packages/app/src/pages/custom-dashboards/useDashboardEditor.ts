@@ -78,6 +78,7 @@ export async function materializeDefaultHome(input: {
       mobileLayout: seed.mobileLayout,
       // The title builds without built-in cards show.
       titleOverride: input.labelOf(seed.key),
+      seed: true,
     });
     widgets.push({
       id,

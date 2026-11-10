@@ -123,6 +123,12 @@ export interface AddCustomDashboardWidgetInput {
   desktopLayout?: DesktopWidgetLayoutInput;
   mobileLayout?: MobileWidgetLayoutInput;
   titleOverride?: string;
+  /**
+   * Part of the first seeding of a copy of the default home. A seeded card
+   * added to a hidden second copy then stays there; added later (an undo of
+   * its removal) it also comes back on the budget's copy.
+   */
+  seed?: boolean;
 }
 
 export interface UpdateCustomDashboardWidgetInput {
@@ -553,10 +559,17 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
 
   addWidget(input: AddCustomDashboardWidgetInput): CustomDashboardWithWidgets {
     const target = this.aliasTarget(input.dashboardId);
-    if (target && !(input.id && seededCardKey(input.id, input.dashboardId))) {
-      // Added to a hidden second copy: it goes on the budget's copy. (Its
-      // seeded cards stay on the hidden copy; ours already has them.)
+    const cardKey = input.id ? seededCardKey(input.id, input.dashboardId) : null;
+    if (target && !cardKey) {
+      // Added to a hidden second copy: it goes on the budget's copy.
       return this.addWidget({ ...input, dashboardId: target.ID });
+    }
+    if (target && cardKey && !input.seed) {
+      // A seeded card coming back (undo of its removal): our paired card too.
+      const paired = seededWidgetId(target.ID, cardKey);
+      if (!this.getWidgetById(paired)) {
+        this.addWidget({ ...input, id: paired, dashboardId: target.ID });
+      }
     }
     const dashboard = this.getDashboard(input.dashboardId);
     if (!dashboard) {
@@ -616,13 +629,7 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
     const paired = widget ? this.pairedWidgetId(widget) : null;
     if (paired) {
       // A card of a hidden second copy: the change applies to our copy's card too.
-      this.writeWidget({
-        id: paired,
-        reportId: input.reportId,
-        chartId: input.chartId,
-        desktopLayout: input.desktopLayout,
-        mobileLayout: input.mobileLayout,
-      });
+      this.writeWidget({ ...input, id: paired });
     }
     return this.writeWidget(input);
   }
