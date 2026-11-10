@@ -626,4 +626,15 @@ describe('migration 075: recurring split lines', () => {
     (m075.up as (d: typeof db) => void)(db);
     expect(m075.verify!(db)).toBe(true);
   });
+
+  it('fails on anything but an existing column', async () => {
+    const SQL = await initSqlJs({
+      locateFile: (file: string) =>
+        path.join(process.cwd(), 'node_modules', 'sql.js', 'dist', file),
+    });
+    // No recurring_transactions table: the ALTER fails for another reason.
+    const db = createMigrationDatabase(new SQL.Database());
+    const m075 = migrations.find((m) => m.version === 75)!;
+    expect(() => (m075.up as (d: typeof db) => void)(db)).toThrow(/no such table/);
+  });
 });

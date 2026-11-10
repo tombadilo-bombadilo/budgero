@@ -11,7 +11,12 @@ export const migration075: Migration = {
     try {
       db.exec(`ALTER TABLE recurring_transactions ADD COLUMN SplitsJSON TEXT DEFAULT NULL`);
     } catch (error) {
-      debugLog('[Migration 75] statement failed (may already exist)', { error });
+      // Only a re-run (the column is there already) is fine; anything else
+      // must stop the migration rather than pass as done.
+      if (!/duplicate column/i.test(error instanceof Error ? error.message : String(error))) {
+        throw error;
+      }
+      debugLog('[Migration 75] SplitsJSON already exists', { error });
     }
   },
   verify: (db: MigrationDatabase) => {
