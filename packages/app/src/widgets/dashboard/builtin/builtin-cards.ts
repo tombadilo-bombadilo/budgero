@@ -368,3 +368,21 @@ export function resolveHomeDashboard<
 >(dashboards: T[]): T | null {
   return pickHomeDashboard(dashboards) ?? pickHomeCopy(dashboards);
 }
+
+const HOME_COPY_TAG = / ·[0-9a-z]{4}$/;
+
+/** Stored name of a new copy of the default home: the name plus a short tag from its ID. */
+export function homeCopyName(name: string, dashboardId: string): string {
+  const tag = dashboardId
+    .replace(/[^0-9a-z]/gi, '')
+    .slice(0, 4)
+    .toLowerCase();
+  return tag.length === 4 ? `${name} ·${tag}` : name;
+}
+
+/** A dashboard's name as shown: a copy of the default home without its tag. */
+export function dashboardDisplayName(dashboard: { name: string; origin: string | null }): string {
+  return dashboard.origin === HOME_COPY_ORIGIN
+    ? dashboard.name.replace(HOME_COPY_TAG, '')
+    : dashboard.name;
+}

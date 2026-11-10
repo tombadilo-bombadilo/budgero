@@ -4,7 +4,11 @@ import path from 'node:path';
 import { DatabaseAdapter, NodeSqlJsAdapter, ServiceManager } from '../src';
 import { migrations } from '../src/database/migrations.js';
 import { createMigrationDatabase } from '../src/database/migration-database-factory.js';
-import { HOME_DEFAULT_ORIGIN } from '../src/services/custom-dashboards';
+import {
+  HOME_ALIAS_ORIGIN,
+  HOME_DEFAULT_ORIGIN,
+  seededWidgetId,
+} from '../src/services/custom-dashboards';
 
 describe('CustomDashboardService', () => {
   it('supports dashboard and widget CRUD + reorder + cascade behavior', async () => {
@@ -302,5 +306,71 @@ describe('CustomDashboardService', () => {
     ]);
     // Already applied: running it again is harmless.
     (m077.up as (d: typeof db) => void)(db);
+  });
+
+  it('a second copy of the default home is hidden and its changes go to the first', async () => {
+    const { services, budget } = await setup();
+    const budgetId = await budget('Alias Budget');
+    const dashboards = services.customDashboards;
+    const first = dashboards.createDashboard({
+      budgetId,
+      name: 'Home ·aaaa',
+      origin: HOME_DEFAULT_ORIGIN,
+    });
+    for (const key of ['cash_balance', 'overspent']) {
+      dashboards.addWidget({
+        id: seededWidgetId(first.id, key),
+        dashboardId: first.id,
+        reportId: `builtin:${key}`,
+        chartId: 'builtin',
+      });
+    }
+    const second = dashboards.createDashboard({
+      budgetId,
+      name: 'Home ·bbbb',
+      origin: HOME_DEFAULT_ORIGIN,
+    });
+    expect(second.origin).toBe(HOME_ALIAS_ORIGIN);
+    expect(dashboards.getDashboards(budgetId).map((d) => d.id)).toEqual([first.id]);
+    for (const key of ['cash_balance', 'overspent']) {
+      dashboards.addWidget({
+        id: seededWidgetId(second.id, key),
+        dashboardId: second.id,
+        reportId: `builtin:${key}`,
+        chartId: 'builtin',
+      });
+    }
+    // Seeded cards stay on the hidden copy; anything else lands on the first.
+    dashboards.addWidget({ id: 'q', dashboardId: second.id, reportId: 'r', chartId: 'c' });
+    expect(dashboards.getDashboard(first.id)?.widgets.map((w) => w.id)).toEqual([
+      seededWidgetId(first.id, 'cash_balance'),
+      seededWidgetId(first.id, 'overspent'),
+      'q',
+    ]);
+    // Edits to the hidden copy's cards apply to the paired cards.
+    dashboards.updateWidget({
+      id: seededWidgetId(second.id, 'overspent'),
+      desktopLayout: { colSpan: 12, rowSpan: 3 },
+    });
+    expect(dashboards.getWidgetById(seededWidgetId(first.id, 'overspent'))?.desktopLayout).toEqual({
+      colSpan: 12,
+      rowSpan: 3,
+    });
+    dashboards.deleteWidget(seededWidgetId(second.id, 'cash_balance'));
+    expect(dashboards.getWidgetById(seededWidgetId(first.id, 'cash_balance'))).toBeNull();
+    dashboards.reorderWidgets({
+      dashboardId: second.id,
+      orderedIds: ['q', seededWidgetId(second.id, 'overspent')],
+    });
+    expect(dashboards.getDashboard(first.id)?.widgets.map((w) => w.id)).toEqual([
+      'q',
+      seededWidgetId(first.id, 'overspent'),
+    ]);
+    // Home goes to the first; deleting either copy removes both.
+    dashboards.updateDashboard({ id: second.id, isHome: true });
+    expect(dashboards.getHomeDashboardId(budgetId)).toBe(first.id);
+    dashboards.deleteDashboard(second.id);
+    expect(dashboards.getDashboard(first.id)).toBeNull();
+    expect(dashboards.getDashboard(second.id)).toBeNull();
   });
 });

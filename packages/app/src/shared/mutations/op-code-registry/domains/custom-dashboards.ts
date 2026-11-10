@@ -8,6 +8,7 @@ import type {
 import {
   S,
   redoWithIds,
+  newOpRowId,
   safeCapture,
   withGeneratedId,
   type OpCall,
@@ -180,7 +181,15 @@ export const customDashboardOps = {
               ...(dashboard.isHome ? { isHome: true } : {}),
             },
           },
-          ...dashboard.widgets.map(addWidgetOp),
+          ...dashboard.widgets.map((widget) =>
+            // A customised home can hold widgets another device added to its
+            // own copy (merged here); builds that keep the copies apart still
+            // have those IDs there, so they come back under new IDs. Seeded
+            // cards (`<copy id>:<card>`) only ever belong to this copy.
+            dashboard.origin && !widget.id.startsWith(`${dashboard.id}:`)
+              ? addWidgetOp({ ...widget, id: newOpRowId() })
+              : addWidgetOp(widget)
+          ),
         ];
       },
     },

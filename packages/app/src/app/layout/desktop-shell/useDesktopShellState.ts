@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useLogout } from '@entities/user/api/useAuth';
 import { useCustomDashboards } from '@features/custom-dashboards/api/useCustomDashboards';
+import { dashboardDisplayName } from '@widgets/dashboard/builtin/builtin-cards';
 import { useReports } from '@entities/report/api/useReports';
 import type { ReportKey } from '@pages/analytics/analytics-state';
 import { REPORT_ORDER, reportMeta } from '@pages/analytics/report-questions';
@@ -36,8 +37,10 @@ export function useDesktopShellState(): UseDesktopShellStateReturn {
     const dashboardMatch = location.pathname.match(/^\/reports\/dashboards\/([^/]+)$/);
     if (dashboardMatch) {
       const dashboardId = decodeURIComponent(dashboardMatch[1]);
-      labelOverridesByHref[`/reports/dashboards/${dashboardId}`] =
-        dashboards.find((dashboard) => dashboard.id === dashboardId)?.name ?? t`Dashboard`;
+      const dashboard = dashboards.find((item) => item.id === dashboardId);
+      labelOverridesByHref[`/reports/dashboards/${dashboardId}`] = dashboard
+        ? dashboardDisplayName(dashboard)
+        : t`Dashboard`;
     }
 
     const prebuiltMatch = location.pathname.match(/^\/reports\/prebuilt\/([^/]+)$/);
