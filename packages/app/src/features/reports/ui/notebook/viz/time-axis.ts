@@ -18,7 +18,7 @@ export function axisLabelIndexes(count: number, slots: number): Set<number> {
   // The last one replaces a neighbour that would crowd it.
   const last = count - 1;
   if (!shown.has(last)) {
-    for (const index of shown) if (last - index < step / 2 && index !== 0) shown.delete(index);
+    for (const index of shown) if (last - index < step && index !== 0) shown.delete(index);
     shown.add(last);
   }
   return shown;

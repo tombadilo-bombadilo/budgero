@@ -116,6 +116,8 @@ export function RowChartView({
           color: chrome.axisText,
           fontSize: 11,
           hideOverlap: true,
+          // The bar ends carry the largest value; an odd max tick would crowd the last one.
+          showMaxLabel: !endLabels,
           formatter: (value: number) =>
             percent ? format.percent(value / 100) : format.compact(metric, value),
         },
@@ -159,6 +161,9 @@ export function RowChartView({
                 position: 'right' as const,
                 color: chrome.inkSecondary,
                 fontSize: 11,
+                // Readable where a grid line runs behind the value.
+                backgroundColor: chrome.surface,
+                padding: [1, 2],
                 formatter: (params: { value: number }) => format.compact(metric, params.value),
               },
             }

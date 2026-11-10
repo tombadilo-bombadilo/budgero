@@ -252,7 +252,7 @@ export default function ReportsHomePage() {
                             <p className="hidden font-medium leading-snug sm:block">
                               {item.question}
                             </p>
-                            <p className="truncate text-sm font-medium sm:text-xs sm:font-normal sm:text-muted-foreground">
+                            <p className="line-clamp-2 text-sm font-medium leading-tight sm:text-xs sm:font-normal sm:text-muted-foreground">
                               {item.label}
                             </p>
                           </div>
@@ -521,7 +521,7 @@ export default function ReportsHomePage() {
                             <p className="hidden font-medium leading-snug sm:block">
                               {item.question}
                             </p>
-                            <p className="truncate text-sm font-medium sm:text-xs sm:font-normal sm:text-muted-foreground">
+                            <p className="line-clamp-2 text-sm font-medium leading-tight sm:text-xs sm:font-normal sm:text-muted-foreground">
                               {item.label}
                             </p>
                           </div>

@@ -52,7 +52,10 @@ export function PickerContent({
       <Drawer open={picker.open} onOpenChange={picker.onOpenChange}>
         <DrawerContent className="max-h-[85dvh] pb-[env(safe-area-inset-bottom)]">
           <DrawerTitle className="sr-only">{title}</DrawerTitle>
-          <div className="min-h-0 overflow-y-auto pb-2">{children}</div>
+          {/* The popover's own padding and layout, at full sheet width. */}
+          <div className={cn('min-h-0 overflow-y-auto pb-2', className, 'w-full max-w-none')}>
+            {children}
+          </div>
         </DrawerContent>
       </Drawer>
     );
