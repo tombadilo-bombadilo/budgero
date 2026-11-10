@@ -2,6 +2,7 @@ import { useLingui } from '@lingui/react/macro';
 import { toast } from 'sonner';
 import {
   HOME_DEFAULT_ORIGIN,
+  seededWidgetId,
   type CustomDashboard,
   type CustomDashboardWidget,
   type CustomDashboardWithWidgets,
@@ -20,6 +21,7 @@ import {
   defaultHomeWidgets,
   defaultWidgetId,
   hasPhoneOrder,
+  homeCopyName,
   isDefaultHomeDashboard,
   isHiddenOn,
   mergeVisibleOrder,
@@ -56,13 +58,16 @@ export async function materializeDefaultHome(input: {
   await input.exec('customDashboards.create', {
     id: dashboardId,
     budgetId: input.budgetId,
-    name: uniqueDashboardName(input.name, input.takenNames),
+    // Dashboard names are unique per budget, also on builds before 1.21: a
+    // short tag from the ID keeps two devices' copies apart (shown without it).
+    name: uniqueDashboardName(homeCopyName(input.name, dashboardId), input.takenNames),
     origin: HOME_DEFAULT_ORIGIN,
   });
   const ids = new Map<string, string>();
   const widgets: CustomDashboardWidget[] = [];
   for (const [index, seed] of defaultHomeWidgets().entries()) {
-    const id = newOpRowId();
+    // Pairs this card with the same card of another device's copy.
+    const id = seededWidgetId(dashboardId, seed.key);
     ids.set(defaultWidgetId(seed.key), id);
     await input.exec('customDashboardWidgets.add', {
       id,
@@ -73,6 +78,7 @@ export async function materializeDefaultHome(input: {
       mobileLayout: seed.mobileLayout,
       // The title builds without built-in cards show.
       titleOverride: input.labelOf(seed.key),
+      seed: true,
     });
     widgets.push({
       id,

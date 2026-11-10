@@ -131,7 +131,7 @@ describe('home dashboard', () => {
       const homeId = device.services.customDashboards.getHomeDashboardId(budgetId);
       expect(homeId).toBe(target.dashboardId);
       const stored = device.services.customDashboards.getDashboard(homeId!)!;
-      expect(stored.name).toBe('Home 2');
+      expect(stored.name).toMatch(/^Home ·[0-9a-z]{4}$/);
       expect(stored.origin).toBe('home_default');
       const expected = defaultHomeDashboard(budgetId, '').widgets;
       expect(

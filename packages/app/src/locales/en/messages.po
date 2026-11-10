@@ -8352,7 +8352,7 @@ msgstr "Delete {0}"
 msgid "Delete <0>{0}</0> permanently. This removes its data, members, invites, and backups. This action cannot be undone."
 msgstr "Delete <0>{0}</0> permanently. This removes its data, members, invites, and backups. This action cannot be undone."
 
-#. placeholder {0}: activeDashboard?.name
+#. placeholder {0}: activeDashboard ? dashboardDisplayName(activeDashboard) : ''
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "Delete <0>{0}</0>? This removes all widgets on it."
 msgstr "Delete <0>{0}</0>? This removes all widgets on it."
@@ -22627,7 +22627,7 @@ msgstr "Update required"
 msgid "Update Service Worker"
 msgstr "Update Service Worker"
 
-#. placeholder {0}: activeDashboard?.name
+#. placeholder {0}: activeDashboard ? dashboardDisplayName(activeDashboard) : ''
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "Update the name for <0>{0}</0>."
 msgstr "Update the name for <0>{0}</0>."

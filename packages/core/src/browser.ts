@@ -63,7 +63,9 @@ export { RecurringTransactionService } from './services/recurring/index.js';
 export { RECURRING_SPLIT_ERROR_CODES } from './services/recurring/index.js';
 export {
   DatabaseCustomDashboardService,
+  HOME_ALIAS_ORIGIN,
   HOME_DEFAULT_ORIGIN,
+  seededWidgetId,
 } from './services/custom-dashboards/index.js';
 
 export { ServiceManager, type Services } from './services/service-manager.js';

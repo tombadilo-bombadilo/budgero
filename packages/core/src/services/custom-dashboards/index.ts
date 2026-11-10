@@ -32,8 +32,31 @@ export type MobileWidgetLayoutInput = Omit<MobileWidgetLayout, 'order' | 'hidden
   hidden?: boolean | null;
 };
 
-/** Origin of a dashboard made from the default home page on its first edit. */
+/** Origin of a dashboard made from the default home on its first edit. */
 export const HOME_DEFAULT_ORIGIN = 'home_default';
+
+/**
+ * Origin of a second copy of the default home that reached this database
+ * while the budget already had one: two devices customised the home before
+ * syncing. Older builds store it as a normal dashboard; this build hides it
+ * and applies what is done to it to the budget's copy, so every device ends
+ * with one home holding both devices' edits, whatever order they arrive in.
+ */
+export const HOME_ALIAS_ORIGIN = 'home_alias';
+
+/**
+ * Card widgets seeded into a copy of the default home have the ID
+ * `<dashboard id>:<card key>`, which pairs a copy's card with the same card
+ * of another copy.
+ */
+export function seededWidgetId(dashboardId: string, cardKey: string): string {
+  return `${dashboardId}:${cardKey}`;
+}
+
+function seededCardKey(widgetId: string, dashboardId: string): string | null {
+  const prefix = `${dashboardId}:`;
+  return widgetId.startsWith(prefix) ? widgetId.slice(prefix.length) : null;
+}
 
 /**
  * Dashboard-level filters as stored: a plain JSON object the app owns
@@ -100,6 +123,12 @@ export interface AddCustomDashboardWidgetInput {
   desktopLayout?: DesktopWidgetLayoutInput;
   mobileLayout?: MobileWidgetLayoutInput;
   titleOverride?: string;
+  /**
+   * Part of the first seeding of a copy of the default home. A seeded card
+   * added to a hidden second copy then stays there; added later (an undo of
+   * its removal) it also comes back on the budget's copy.
+   */
+  seed?: boolean;
 }
 
 export interface UpdateCustomDashboardWidgetInput {
@@ -296,12 +325,48 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
       this.db,
       `
       SELECT * FROM custom_dashboards
-      WHERE BudgetID = ?
+      WHERE BudgetID = ? AND (Origin IS NULL OR Origin != '${HOME_ALIAS_ORIGIN}')
       ORDER BY SortOrder ASC, CreatedAt ASC
     `,
       budgetId
     );
     return rows.map((row) => this.mapDashboardRow(row));
+  }
+
+  /** The budget's copy of the default home (the oldest if an older build made two). */
+  private homeCopyRow(budgetId: number | bigint, exceptId?: string): DashboardRow | null {
+    return (
+      getRow<DashboardRow>(
+        this.db,
+        `SELECT * FROM custom_dashboards
+         WHERE BudgetID = ? AND Origin = '${HOME_DEFAULT_ORIGIN}' AND ID != ?
+         ORDER BY CreatedAt ASC, ID ASC LIMIT 1`,
+        budgetId,
+        exceptId ?? ''
+      ) ?? null
+    );
+  }
+
+  private dashboardRow(id: string): DashboardRow | null {
+    return (
+      getRow<DashboardRow>(this.db, `SELECT * FROM custom_dashboards WHERE ID = ?`, id) ?? null
+    );
+  }
+
+  /** For a hidden second copy: the budget's copy its changes go to. */
+  private aliasTarget(dashboardId: string): DashboardRow | null {
+    const row = this.dashboardRow(dashboardId);
+    if (!row || row.Origin !== HOME_ALIAS_ORIGIN) return null;
+    return this.homeCopyRow(row.BudgetID);
+  }
+
+  /** The widget of the budget's copy paired with a seeded card of a hidden second copy. */
+  private pairedWidgetId(widget: CustomDashboardWidget): string | null {
+    const target = this.aliasTarget(widget.dashboardId);
+    const key = target ? seededCardKey(widget.id, widget.dashboardId) : null;
+    if (!target || !key) return null;
+    const paired = seededWidgetId(target.ID, key);
+    return this.getWidgetById(paired) ? paired : null;
   }
 
   getHomeDashboardId(budgetId: number): string | null {
@@ -356,7 +421,11 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
 
     const id = input.id ?? createId();
     const now = clock.date().toISOString();
-    const origin = input.origin?.trim() || null;
+    let origin = input.origin?.trim() || null;
+    if (origin === HOME_DEFAULT_ORIGIN && this.homeCopyRow(input.budgetId, id)) {
+      // Another device's copy of the default home: hidden, edits go to ours.
+      origin = HOME_ALIAS_ORIGIN;
+    }
 
     try {
       run(
@@ -386,6 +455,17 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
   }
 
   updateDashboard(input: UpdateCustomDashboardInput): CustomDashboard {
+    const target = this.aliasTarget(input.id);
+    if (target) {
+      // Home, filters and position belong to the budget's copy; a hidden
+      // copy keeps its own name.
+      return this.updateDashboard({
+        id: target.ID,
+        sortOrder: input.sortOrder,
+        filters: input.filters,
+        isHome: input.isHome,
+      });
+    }
     const updateFields: string[] = [];
     const values: (string | number | null)[] = [];
 
@@ -462,10 +542,35 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
   }
 
   deleteDashboard(id: string): void {
+    const row = this.dashboardRow(id);
+    if (row && (row.Origin === HOME_DEFAULT_ORIGIN || row.Origin === HOME_ALIAS_ORIGIN)) {
+      // Removing the customised home (its copy or a hidden second one)
+      // removes all of them, so every device ends with the default home.
+      run(
+        this.db,
+        `DELETE FROM custom_dashboards
+         WHERE BudgetID = ? AND Origin IN ('${HOME_DEFAULT_ORIGIN}', '${HOME_ALIAS_ORIGIN}')`,
+        row.BudgetID
+      );
+      return;
+    }
     run(this.db, `DELETE FROM custom_dashboards WHERE ID = ?`, id);
   }
 
   addWidget(input: AddCustomDashboardWidgetInput): CustomDashboardWithWidgets {
+    const target = this.aliasTarget(input.dashboardId);
+    const cardKey = input.id ? seededCardKey(input.id, input.dashboardId) : null;
+    if (target && !cardKey) {
+      // Added to a hidden second copy: it goes on the budget's copy.
+      return this.addWidget({ ...input, dashboardId: target.ID });
+    }
+    if (target && cardKey && !input.seed) {
+      // A seeded card coming back (undo of its removal): our paired card too.
+      const paired = seededWidgetId(target.ID, cardKey);
+      if (!this.getWidgetById(paired)) {
+        this.addWidget({ ...input, id: paired, dashboardId: target.ID });
+      }
+    }
     const dashboard = this.getDashboard(input.dashboardId);
     if (!dashboard) {
       throw new Error('Dashboard not found');
@@ -520,6 +625,16 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
   }
 
   updateWidget(input: UpdateCustomDashboardWidgetInput): CustomDashboardWidget {
+    const widget = this.getWidgetById(input.id);
+    const paired = widget ? this.pairedWidgetId(widget) : null;
+    if (paired) {
+      // A card of a hidden second copy: the change applies to our copy's card too.
+      this.writeWidget({ ...input, id: paired });
+    }
+    return this.writeWidget(input);
+  }
+
+  private writeWidget(input: UpdateCustomDashboardWidgetInput): CustomDashboardWidget {
     const fields: string[] = [];
     const values: (string | number | null)[] = [];
 
@@ -586,6 +701,9 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
   }
 
   deleteWidget(id: string): void {
+    const widget = this.getWidgetById(id);
+    const paired = widget ? this.pairedWidgetId(widget) : null;
+    if (paired) run(this.db, `DELETE FROM custom_dashboard_widgets WHERE ID = ?`, paired);
     run(this.db, `DELETE FROM custom_dashboard_widgets WHERE ID = ?`, id);
   }
 
@@ -618,6 +736,23 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
   }
 
   reorderWidgets(input: ReorderCustomDashboardWidgetsInput): void {
+    const target = this.aliasTarget(input.dashboardId);
+    if (target) {
+      // A hidden second copy's order applies to our copy: its seeded cards
+      // map to ours, the rest keep their IDs; cards only we have follow.
+      const current = this.getDashboard(target.ID)?.widgets.map((w) => w.id) ?? [];
+      const present = new Set(current);
+      const mapped = input.orderedIds
+        .map((id) => {
+          const key = seededCardKey(id, input.dashboardId);
+          return key ? seededWidgetId(target.ID, key) : id;
+        })
+        .filter((id, index, all) => present.has(id) && all.indexOf(id) === index);
+      const listed = new Set(mapped);
+      const orderedIds = [...mapped, ...current.filter((id) => !listed.has(id))];
+      if (orderedIds.length > 0) this.reorderWidgets({ dashboardId: target.ID, orderedIds });
+      return;
+    }
     const dashboard = this.getDashboard(input.dashboardId);
     if (!dashboard) {
       throw new Error('Dashboard not found');

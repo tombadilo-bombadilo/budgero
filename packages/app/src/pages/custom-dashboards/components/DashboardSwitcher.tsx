@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { getErrorMessage } from '@shared/lib/errors';
 import { Download, Home, HousePlus, MoreHorizontal, Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { dashboardDisplayName } from '@widgets/dashboard/builtin/builtin-cards';
 
 interface DashboardSwitcherProps {
   dashboards: CustomDashboard[];
@@ -58,7 +59,7 @@ export function DashboardSwitcher({
 
   useEffect(() => {
     if (!renameOpen) return;
-    setRenameName(activeDashboard?.name ?? '');
+    setRenameName(activeDashboard ? dashboardDisplayName(activeDashboard) : '');
   }, [renameOpen, activeDashboard]);
 
   useEffect(() => {
@@ -90,7 +91,7 @@ export function DashboardSwitcher({
       toast.error(t`Dashboard name cannot be empty`);
       return;
     }
-    if (nextName === activeDashboard.name) {
+    if (nextName === dashboardDisplayName(activeDashboard)) {
       setRenameOpen(false);
       return;
     }
@@ -147,7 +148,7 @@ export function DashboardSwitcher({
           {dashboards.map((dashboard) => (
             <SelectItem key={dashboard.id} value={dashboard.id}>
               <span className="inline-flex min-w-0 items-center gap-1.5">
-                <span className="truncate">{dashboard.name}</span>
+                <span className="truncate">{dashboardDisplayName(dashboard)}</span>
                 {dashboard.isHome && (
                   <>
                     <Home className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
@@ -277,7 +278,10 @@ export function DashboardSwitcher({
                   <p className="text-xs text-muted-foreground">
                     <Trans>
                       Update the name for{' '}
-                      <span className="font-medium">{activeDashboard?.name}</span>.
+                      <span className="font-medium">
+                        {activeDashboard ? dashboardDisplayName(activeDashboard) : ''}
+                      </span>
+                      .
                     </Trans>
                   </p>
                 </div>
@@ -320,8 +324,11 @@ export function DashboardSwitcher({
             </p>
             <p className="text-xs text-muted-foreground">
               <Trans>
-                Delete <span className="font-medium">{activeDashboard?.name}</span>? This removes
-                all widgets on it.
+                Delete{' '}
+                <span className="font-medium">
+                  {activeDashboard ? dashboardDisplayName(activeDashboard) : ''}
+                </span>
+                ? This removes all widgets on it.
               </Trans>
             </p>
           </div>
