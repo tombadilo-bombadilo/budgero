@@ -14,7 +14,7 @@ import {
 } from '@shared/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { getErrorMessage } from '@shared/lib/errors';
-import { Download, MoreHorizontal, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Download, Home, HousePlus, MoreHorizontal, Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface DashboardSwitcherProps {
@@ -27,6 +27,10 @@ interface DashboardSwitcherProps {
   /** Download every widget's CSV (in the "…" menu). */
   onExportAll?: () => void;
   exportDisabled?: boolean;
+  /** Show this dashboard on the home page. */
+  onUseAsHome?: (dashboardId: string) => Promise<void>;
+  /** Stop showing it on the home page (the home goes back to what it was). */
+  onStopUsingAsHome?: (dashboardId: string) => Promise<void>;
 }
 
 export function DashboardSwitcher({
@@ -38,6 +42,8 @@ export function DashboardSwitcher({
   onDeleteDashboard,
   onExportAll,
   exportDisabled = false,
+  onUseAsHome,
+  onStopUsingAsHome,
 }: DashboardSwitcherProps) {
   const { t } = useLingui();
 
@@ -99,6 +105,21 @@ export function DashboardSwitcher({
     }
   };
 
+  const handleHome = async (dashboardId: string, makeHome: boolean) => {
+    const action = makeHome ? onUseAsHome : onStopUsingAsHome;
+    if (!action) return;
+    try {
+      await action(dashboardId);
+      toast.success(
+        makeHome
+          ? t`The home page now shows this dashboard`
+          : t`The home page no longer shows this dashboard`
+      );
+    } catch {
+      // The action already reported it.
+    }
+  };
+
   const handleDelete = async () => {
     if (!activeDashboard) return;
     setPendingAction('delete');
@@ -125,7 +146,17 @@ export function DashboardSwitcher({
         <SelectContent>
           {dashboards.map((dashboard) => (
             <SelectItem key={dashboard.id} value={dashboard.id}>
-              {dashboard.name}
+              <span className="inline-flex min-w-0 items-center gap-1.5">
+                <span className="truncate">{dashboard.name}</span>
+                {dashboard.isHome && (
+                  <>
+                    <Home className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                    <span className="sr-only">
+                      <Trans>(home page)</Trans>
+                    </span>
+                  </>
+                )}
+              </span>
             </SelectItem>
           ))}
         </SelectContent>
@@ -204,6 +235,22 @@ export function DashboardSwitcher({
                         <Pencil className="h-4 w-4" aria-hidden />
                         <Trans>Rename</Trans>
                       </DropdownMenuItem>
+                      {activeDashboard && !activeDashboard.isHome && onUseAsHome && (
+                        <DropdownMenuItem
+                          onSelect={() => void handleHome(activeDashboard.id, true)}
+                        >
+                          <HousePlus className="h-4 w-4" aria-hidden />
+                          <Trans>Use as home page</Trans>
+                        </DropdownMenuItem>
+                      )}
+                      {activeDashboard?.isHome && onStopUsingAsHome && (
+                        <DropdownMenuItem
+                          onSelect={() => void handleHome(activeDashboard.id, false)}
+                        >
+                          <Home className="h-4 w-4" aria-hidden />
+                          <Trans>Stop using as home page</Trans>
+                        </DropdownMenuItem>
+                      )}
                       {onExportAll && (
                         <DropdownMenuItem disabled={exportDisabled} onSelect={onExportAll}>
                           <Download className="h-4 w-4" aria-hidden />

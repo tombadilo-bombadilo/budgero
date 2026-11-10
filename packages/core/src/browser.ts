@@ -61,7 +61,10 @@ export { AnalyticsService } from './services/analytics/index.js';
 export { RulesService } from './services/rules/index.js';
 export { RecurringTransactionService } from './services/recurring/index.js';
 export { RECURRING_SPLIT_ERROR_CODES } from './services/recurring/index.js';
-export { DatabaseCustomDashboardService } from './services/custom-dashboards/index.js';
+export {
+  DatabaseCustomDashboardService,
+  HOME_DEFAULT_ORIGIN,
+} from './services/custom-dashboards/index.js';
 
 export { ServiceManager, type Services } from './services/service-manager.js';
 export { LegacyReplayService } from './services/legacy-replay/index.js';
@@ -112,7 +115,9 @@ export type {
   CustomDashboardFilters,
   CustomDashboardWidget,
   DesktopWidgetLayout,
+  DesktopWidgetLayoutInput,
   MobileWidgetLayout,
+  MobileWidgetLayoutInput,
   CustomDashboardWithWidgets,
   CustomDashboardService,
 } from './services/custom-dashboards/index.js';
