@@ -141,7 +141,7 @@ export function DashboardGrid({
   if (dashboard.widgets.length === 0) {
     return (
       <div className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-        <Trans>No widgets yet. Add your first chart widget.</Trans>
+        <Trans>No questions on this dashboard yet. Add one with “Add a question”.</Trans>
       </div>
     );
   }
