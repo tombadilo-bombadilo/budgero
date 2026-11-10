@@ -163,7 +163,7 @@ describe('SpendingReport', () => {
     expect(within(table).getAllByTestId('sparkline')).toHaveLength(9);
 
     const other = within(table).getByRole('button', { name: 'Other (2 more)' });
-    expect(other).toHaveAttribute('aria-expanded', 'false');
+    expect(other).not.toHaveAttribute('aria-expanded');
     fireEvent.click(other);
 
     expect(within(table).getAllByRole('row')).toHaveLength(11);

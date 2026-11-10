@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { asMilli, type Account } from '@budgero/core/browser';
 
-import { buildMonthlyFlow, type AnalyticsTxn } from './analytics-model';
+import { buildMonthlyFlow, buildNetWorthSeries, type AnalyticsTxn } from './analytics-model';
 import { adaptAnalyticsAccounts } from './useAnalyticsData';
 
 function account(overrides: Partial<Account>): Account {
@@ -54,6 +54,20 @@ describe('adaptAnalyticsAccounts', () => {
     expect(buildMonthlyFlow([archivedIncome], ['2026-08'], onBudgetAccountIds)[0]).toMatchObject({
       income: 500_000,
       net: 500_000,
+    });
+  });
+
+  it('counts a lower-case credit card as debt in net worth', () => {
+    const accounts = adaptAnalyticsAccounts([
+      account({ ID: 1, Name: 'Checking', BalanceNative: asMilli(1_000_000) }),
+      account({ ID: 2, Name: 'Card', Type: 'credit', BalanceNative: asMilli(-250_000) }),
+    ]);
+    expect(accounts[1].isLiability).toBe(true);
+    expect(buildNetWorthSeries(accounts, [], ['2026-10'])[0]).toEqual({
+      monthKey: '2026-10',
+      assets: 1_000_000,
+      debt: 250_000,
+      netWorth: 750_000,
     });
   });
 });

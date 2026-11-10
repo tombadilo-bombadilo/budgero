@@ -1,9 +1,12 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { createQuestion, type QuestionSpec, type ValueKind } from '@features/reports/lib/question';
 import { NotebookEditor } from './NotebookEditor';
 import type { ValueOption } from './useFieldValueOptions';
+
+const toastMock = vi.hoisted(() => vi.fn());
+vi.mock('sonner', () => ({ toast: toastMock }));
 
 const OPTIONS: Partial<Record<ValueKind, ValueOption[]>> = {
   category: [
@@ -47,19 +50,18 @@ beforeAll(() => {
 afterEach(cleanup);
 
 describe('NotebookEditor', () => {
-  it('starts with the Data step, the default filter chips and add-step buttons', () => {
+  it('starts with every step shown and the default filter chips', () => {
     render(<Harness initial={createQuestion()} />);
     expect(screen.getByRole('combobox', { name: 'Data source' })).toHaveTextContent('Transactions');
     expect(screen.getByRole('button', { name: 'Edit filter: Transfer: no' })).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Edit filter: On-budget account: yes' })
     ).toBeInTheDocument();
-    const addStep = screen.getByRole('group', { name: 'Add a step' });
     expect(
-      within(addStep)
-        .getAllByRole('button')
-        .map((button) => button.textContent)
-    ).toEqual(['Summarize', 'Sort', 'Limit']);
+      screen.getAllByRole('heading', { level: 3 }).map((heading) => heading.textContent)
+    ).toEqual(['Data', 'Filter', 'Summarize', 'Sort', 'Limit']);
+    expect(screen.getByRole('button', { name: 'Pick a metric' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Pick a column to sort by' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Columns \(6\)/ })).toBeInTheDocument();
   });
 
@@ -88,7 +90,7 @@ describe('NotebookEditor', () => {
   it('adds a relative date filter', async () => {
     const user = userEvent.setup();
     render(<Harness initial={createQuestion('budget')} />);
-    await user.click(screen.getByRole('button', { name: /Filter/ }));
+    await user.click(screen.getByRole('button', { name: 'Add filter' }));
     await user.click(await screen.findByRole('option', { name: /Month$/ }));
     const amount = screen.getByRole('spinbutton', { name: 'How many' });
     await user.clear(amount);
@@ -108,20 +110,44 @@ describe('NotebookEditor', () => {
     ]);
   });
 
+  it('adds a date range in one tap and applies a filter with Enter', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={createQuestion()} />);
+    await user.click(screen.getByRole('button', { name: 'Add filter' }));
+    await user.click(await screen.findByRole('button', { name: 'Last 3 months' }));
+    expect(latest.filters.at(-1)).toEqual({
+      field: 'date',
+      op: 'previous',
+      values: [],
+      amount: 3,
+      unit: 'month',
+      includeCurrent: true,
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Add filter' }));
+    await user.click(await screen.findByRole('option', { name: /^Amount$/ }));
+    await user.type(await screen.findByRole('spinbutton', { name: 'Value' }), '42{Enter}');
+    expect(latest.filters.at(-1)).toEqual({ field: 'amount', op: 'is', values: [42] });
+  });
+
   it('summarizes: metric picker, grouping with a date bucket, then removes the step', async () => {
     const user = userEvent.setup();
     render(<Harness initial={createQuestion()} />);
-    await user.click(screen.getByRole('button', { name: /Summarize/ }));
-    // The metric picker opens on its own for an empty Summarize step.
+    await user.click(screen.getByRole('button', { name: 'Pick a metric' }));
     await user.click(await screen.findByRole('option', { name: /^Spending/ }));
     expect(latest.aggregations).toEqual([{ op: 'spending' }]);
 
     await user.click(screen.getByRole('button', { name: 'Pick a grouping' }));
     await user.click(await screen.findByRole('option', { name: /^Date$/ }));
-    expect(latest.breakouts).toEqual([{ field: 'date', bucket: 'month' }]);
-    expect(screen.getByRole('combobox', { name: 'Date granularity' })).toHaveTextContent('Month');
+    await user.click(await screen.findByRole('button', { name: 'Week' }));
+    expect(latest.breakouts).toEqual([{ field: 'date', bucket: 'week' }]);
 
-    await user.click(screen.getByRole('button', { name: 'Remove Summarize step' }));
+    // The pill opens the same picker in place, on the date's options.
+    await user.click(screen.getByRole('button', { name: 'Change grouping: Week' }));
+    await user.click(await screen.findByRole('button', { name: 'Day of week' }));
+    expect(latest.breakouts).toEqual([{ field: 'date', part: 'dayOfWeek' }]);
+
+    await user.click(screen.getByRole('button', { name: 'Remove the summary' }));
     expect(latest.aggregations).toEqual([]);
     expect(latest.breakouts).toEqual([]);
   });
@@ -136,7 +162,7 @@ describe('NotebookEditor', () => {
         })}
       />
     );
-    await user.click(screen.getByRole('button', { name: /Sort/ }));
+    await user.click(screen.getByRole('button', { name: 'Pick a column to sort by' }));
     await user.click(await screen.findByRole('option', { name: 'Spending' }));
     expect(latest.sort).toEqual([{ column: 'spending', direction: 'desc' }]);
     await user.click(
@@ -148,8 +174,10 @@ describe('NotebookEditor', () => {
   it('sets and clears a limit', async () => {
     const user = userEvent.setup();
     render(<Harness initial={createQuestion()} />);
-    await user.click(screen.getByRole('button', { name: /Limit/ }));
+    await user.click(screen.getByRole('button', { name: '100' }));
+    expect(latest.limit).toBe(100);
     const input = screen.getByRole('spinbutton', { name: 'Maximum number of rows' });
+    await user.clear(input);
     await user.type(input, '25');
     expect(latest.limit).toBe(25);
     await user.clear(input);
@@ -185,7 +213,7 @@ describe('NotebookEditor', () => {
   it('writes a custom metric from the metric picker', async () => {
     const user = userEvent.setup();
     render(<Harness initial={createQuestion()} />);
-    await user.click(screen.getByRole('button', { name: /Summarize/ }));
+    await user.click(screen.getByRole('button', { name: 'Pick a metric' }));
     await user.click(await screen.findByRole('option', { name: /Custom metric…/ }));
     fireEvent.change(screen.getByRole('combobox', { name: 'Expression' }), {
       target: { value: '(Income - Spending) / Income * 100' },
@@ -209,9 +237,10 @@ describe('NotebookEditor', () => {
       />
     );
     await user.click(screen.getByRole('button', { name: 'Options for Spending' }));
-    await user.click(
-      await screen.findByRole('menuitemcheckbox', { name: 'Compare to previous period' })
-    );
+    await user.click(await screen.findByRole('menuitemradio', { name: 'Same period last year' }));
+    expect(latest.aggregations).toEqual([{ op: 'spending', compare: true, compareTo: 'lastYear' }]);
+    await user.click(screen.getByRole('button', { name: 'Options for Spending vs last year' }));
+    await user.click(await screen.findByRole('menuitemradio', { name: 'Previous period' }));
     expect(latest.aggregations).toEqual([{ op: 'spending', compare: true }]);
     await user.click(
       screen.getByRole('button', { name: 'Options for Spending vs previous period' })
@@ -225,7 +254,69 @@ describe('NotebookEditor', () => {
     ).toBeInTheDocument();
 
     // Without a date grouping, the time-series options are off.
-    await user.click(screen.getByRole('button', { name: 'Remove grouping: Date' }));
+    await user.click(screen.getByRole('button', { name: 'Remove grouping: Month' }));
     expect(latest.aggregations).toEqual([{ op: 'spending' }]);
+  });
+
+  it('groups a number into ranges and swaps two groupings', async () => {
+    const user = userEvent.setup();
+    render(
+      <Harness
+        initial={createQuestion('transactions', {
+          aggregations: [{ op: 'count' }],
+          breakouts: [{ field: 'category' }],
+        })}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: 'Add grouping' }));
+    await user.click(await screen.findByRole('option', { name: /^Outflow$/ }));
+    await user.click(await screen.findByRole('button', { name: 'Auto' }));
+    expect(latest.breakouts).toEqual([{ field: 'category' }, { field: 'outflow', bin: 'auto' }]);
+    await user.click(screen.getByRole('button', { name: 'Swap the groupings' }));
+    expect(latest.breakouts).toEqual([{ field: 'outflow', bin: 'auto' }, { field: 'category' }]);
+  });
+
+  it('filters the summarized results (having)', async () => {
+    const user = userEvent.setup();
+    render(
+      <Harness
+        initial={createQuestion('transactions', {
+          aggregations: [{ op: 'spending' }],
+          breakouts: [{ field: 'category' }],
+        })}
+      />
+    );
+    await user.click(screen.getByRole('button', { name: 'Filter results' }));
+    await user.type(await screen.findByRole('spinbutton', { name: 'Value' }), '500');
+    await user.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Add' }));
+    expect(latest.having).toEqual([{ column: 'spending', op: 'gt', values: [500] }]);
+    expect(
+      screen.getByRole('button', { name: 'Edit result filter: Spending > 500' })
+    ).toBeVisible();
+  });
+
+  it('sorts raw rows by a field that isn’t shown', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={createQuestion()} />);
+    await user.click(screen.getByRole('button', { name: 'Pick a column to sort by' }));
+    await user.click(await screen.findByRole('option', { name: 'Outflow' }));
+    expect(latest.sort).toEqual([{ column: 'outflow', direction: 'asc' }]);
+  });
+
+  it('offers to undo a data source change that reset the question', async () => {
+    const user = userEvent.setup();
+    toastMock.mockClear();
+    const initial = createQuestion('transactions', {
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'category' }],
+    });
+    render(<Harness initial={initial} />);
+    await user.click(screen.getByRole('combobox', { name: 'Data source' }));
+    await user.click(await screen.findByRole('option', { name: /Accounts/ }));
+    expect(latest.source).toBe('accounts');
+    expect(toastMock).toHaveBeenCalledOnce();
+    const [, options] = toastMock.mock.calls[0] as [string, { action: { onClick: () => void } }];
+    act(() => options.action.onClick());
+    expect(latest).toEqual(initial);
   });
 });

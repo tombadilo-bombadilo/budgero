@@ -100,7 +100,9 @@ describe('PivotTableView', () => {
     expect(download.calls).toHaveLength(1);
     const [csv, filename] = download.calls[0];
     expect(filename).toBe('Counts.csv');
-    expect(csv.split('\n')).toEqual([
+    // UTF-8 BOM first, so Excel reads non-ASCII names right.
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    expect(csv.slice(1).split('\n')).toEqual([
       'Category group \\ Account,Card,Checking,Total',
       'Bills,1,4,5',
       'Fun,7,,7',

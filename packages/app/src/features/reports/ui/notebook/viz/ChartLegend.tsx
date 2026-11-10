@@ -1,5 +1,9 @@
 import { useLingui } from '@lingui/react/macro';
+import { useState } from 'react';
 import { cn } from '@shared/lib/utils';
+
+/** Items shown before "+N more" (the legend never pushes the chart off a phone screen). */
+const COLLAPSED_ITEMS = 8;
 
 export interface LegendItem {
   id: string;
@@ -17,12 +21,13 @@ interface ChartLegendProps {
 /** Wrapping legend above a chart; items toggle their series when `onToggle` is set. */
 export function ChartLegend({ items, hidden, onToggle }: ChartLegendProps) {
   const { t } = useLingui();
+  const [expanded, setExpanded] = useState(false);
+  const collapsible = items.length > COLLAPSED_ITEMS + 1;
+  const collapsed = collapsible && !expanded;
+  const more = items.length - COLLAPSED_ITEMS;
   return (
-    <ul
-      className="flex max-h-20 flex-wrap gap-x-3 gap-y-1 overflow-y-auto text-xs"
-      aria-label={t`Legend`}
-    >
-      {items.map((item) => {
+    <ul data-chart-legend className="flex flex-wrap gap-x-3 gap-y-1 text-xs" aria-label={t`Legend`}>
+      {items.map((item, index) => {
         const off = hidden?.has(item.id) ?? false;
         const swatch = (
           <>
@@ -35,7 +40,15 @@ export function ChartLegend({ items, hidden, onToggle }: ChartLegendProps) {
           </>
         );
         return (
-          <li key={item.id}>
+          // data-legend-*: the PNG export redraws the legend from these.
+          // Folded items stay in the DOM (hidden) so the PNG export still lists them.
+          <li
+            key={item.id}
+            hidden={collapsed && index >= COLLAPSED_ITEMS}
+            data-legend-color={item.color}
+            data-legend-label={item.label}
+            data-legend-off={off || undefined}
+          >
             {onToggle ? (
               <button
                 type="button"
@@ -54,6 +67,18 @@ export function ChartLegend({ items, hidden, onToggle }: ChartLegendProps) {
           </li>
         );
       })}
+      {collapsible && (
+        <li data-no-export>
+          <button
+            type="button"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((value) => !value)}
+            className="rounded px-1 py-0.5 text-muted-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {expanded ? t`Show less` : t`+${more} more`}
+          </button>
+        </li>
+      )}
     </ul>
   );
 }

@@ -3,7 +3,7 @@ import { useId, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent }
 import { ArrowLeft, FunctionSquare, Sigma } from 'lucide-react';
 import {
   MAX_NAME_LENGTH,
-  SOURCE_FIELDS,
+  customColumnNameIssue,
   customFields,
   expressionFields,
   expressionFunctionNames,
@@ -160,21 +160,30 @@ export function ExpressionEditor({
 
   const nameError = useMemo(() => {
     const trimmed = name.trim();
+    if (kind === 'column') {
+      const issue = customColumnNameIssue(
+        spec.source,
+        spec.customColumns,
+        trimmed,
+        initial?.id,
+        (fieldId) => expressionFieldNames(spec.source, fieldId)
+      );
+      switch (issue) {
+        case 'empty':
+          return t`Give it a name.`;
+        case 'tooLong':
+          return t`Use at most ${MAX_NAME_LENGTH} characters.`;
+        case 'brackets':
+          return t`Names can’t contain [ or ].`;
+        case 'taken':
+          return t`A field with this name already exists.`;
+        default:
+          return null;
+      }
+    }
     if (!trimmed) return t`Give it a name.`;
     if (trimmed.length > MAX_NAME_LENGTH) return t`Use at most ${MAX_NAME_LENGTH} characters.`;
     if (/[[\]]/.test(trimmed)) return t`Names can’t contain [ or ].`;
-    if (kind === 'column') {
-      const lower = trimmed.toLocaleLowerCase();
-      const taken =
-        (spec.customColumns ?? []).some(
-          (column) => column.id !== initial?.id && column.name.toLocaleLowerCase() === lower
-        ) ||
-        SOURCE_FIELDS[spec.source].some(
-          (field) =>
-            field.id === lower || fieldLabel(spec.source, field.id).toLocaleLowerCase() === lower
-        );
-      if (taken) return t`A field with this name already exists.`;
-    }
     return null;
   }, [name, kind, spec.customColumns, spec.source, initial?.id, t]);
 

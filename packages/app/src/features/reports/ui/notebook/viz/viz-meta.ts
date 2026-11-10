@@ -1,5 +1,3 @@
-import { msg } from '@lingui/core/macro';
-import type { MessageDescriptor } from '@lingui/core';
 import {
   AreaChart,
   BarChart3,
@@ -17,7 +15,14 @@ import {
   Waypoints,
   type LucideIcon,
 } from 'lucide-react';
-import type { ResolvedVisualization } from '@features/reports/lib/question';
+import {
+  aggregationUnit,
+  allowedVisualizations,
+  getField,
+  type QuestionBreakout,
+  type QuestionSpec,
+  type ResolvedVisualization,
+} from '@features/reports/lib/question';
 
 export const VIZ_ICONS: Record<ResolvedVisualization, LucideIcon> = {
   number: Hash,
@@ -35,19 +40,6 @@ export const VIZ_ICONS: Record<ResolvedVisualization, LucideIcon> = {
   pivot: Grid3x3,
   table: Table2,
 };
-
-/** Chart-type picker sections, in order. */
-export const VIZ_GROUPS: {
-  id: string;
-  label: MessageDescriptor;
-  items: ResolvedVisualization[];
-}[] = [
-  { id: 'values', label: msg`Values`, items: ['number', 'trend'] },
-  { id: 'compare', label: msg`Compare`, items: ['bar', 'row', 'combo', 'waterfall'] },
-  { id: 'time', label: msg`Over time`, items: ['line', 'area', 'calendar'] },
-  { id: 'parts', label: msg`Parts and flows`, items: ['pie', 'sankey'] },
-  { id: 'relations', label: msg`Relationships`, items: ['scatter', 'pivot'] },
-];
 
 /** Visualizations drawn with ECharts (PNG export). */
 export const CANVAS_VISUALIZATIONS = new Set<ResolvedVisualization>([
@@ -92,4 +84,46 @@ export function displayOptionsFor(
 
 export function hasDisplayOptions(options: DisplayOptions): boolean {
   return Object.values(options).some(Boolean);
+}
+
+function isTimeLine(spec: QuestionSpec, breakout: QuestionBreakout | undefined): boolean {
+  return !!breakout && !breakout.part && getField(spec.source, breakout.field)?.type === 'date';
+}
+
+/**
+ * The chart types that suit this question best, best first (at most four),
+ * all of them allowed. The picker shows these before the rest.
+ */
+export function recommendedVisualizations(spec: QuestionSpec): ResolvedVisualization[] {
+  const allowed = new Set(allowedVisualizations(spec));
+  const [first, second] = spec.breakouts;
+  const metrics = spec.aggregations;
+  let ranked: ResolvedVisualization[];
+  if (metrics.length === 0) ranked = ['table'];
+  else if (!first) ranked = ['number', 'trend', 'table'];
+  else if (
+    !second &&
+    metrics.length >= 2 &&
+    aggregationUnit(metrics[0]) !== aggregationUnit(metrics[1])
+  ) {
+    ranked = ['combo', 'bar', 'line', 'scatter'];
+  } else if (second) {
+    const timeFirst = isTimeLine(spec, first);
+    const timeSecond = isTimeLine(spec, second);
+    ranked =
+      timeFirst || timeSecond
+        ? ['bar', 'area', 'line', 'pivot']
+        : ['bar', 'row', 'sankey', 'pivot'];
+  } else if (isTimeLine(spec, first)) {
+    ranked =
+      first.bucket === 'day'
+        ? ['line', 'calendar', 'bar', 'area']
+        : metrics.length >= 2
+          ? ['bar', 'line', 'area', 'combo']
+          : ['line', 'bar', 'area', 'trend'];
+  } else {
+    ranked =
+      metrics.length >= 2 ? ['bar', 'row', 'scatter', 'combo'] : ['bar', 'row', 'pie', 'waterfall'];
+  }
+  return ranked.filter((item) => allowed.has(item)).slice(0, 4);
 }

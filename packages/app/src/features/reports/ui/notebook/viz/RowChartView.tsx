@@ -1,7 +1,7 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
-import { EChart } from '@shared/ui/echart';
+import { EChart, type EChartClickParams } from '@shared/ui/echart';
 import {
   BAR_MAX_WIDTH,
   tooltipBase,
@@ -13,9 +13,17 @@ import { buildChartModel, OTHER_SERIES_ID, type ChartSeries } from '../chart-mod
 import { columnLabel } from '../question-labels';
 import { useQuestionFormatters } from '../useQuestionFormatters';
 import { ChartLegend } from './ChartLegend';
-import { applyCartesianDisplay, goalText, toggleHidden } from './display';
+import type { DrillRequest } from '../DrillMenu';
+import { applyCartesianDisplay, goalText } from './display';
+import { barSeries, layoutSeries, markDrillValues, seriesColor, useHiddenSeries } from './series';
 import { applyCategoryDisplay, isOther } from './transforms';
 import type { VizViewProps } from './types';
+import { labelWidthFor, useElementWidth } from './useElementWidth';
+
+interface RowChartViewProps extends VizViewProps {
+  /** Click on a bar (drill-through). */
+  onDrill?: (request: DrillRequest) => void;
+}
 
 const ROW_HEIGHT = 26;
 const BAR_RADIUS_END: [number, number, number, number] = [0, 4, 4, 0];
@@ -32,10 +40,11 @@ export function RowChartView({
   stacking = 'none',
   fitHeight,
   className,
-}: VizViewProps) {
+  onDrill,
+}: RowChartViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const model = useMemo(
     () =>
       applyCategoryDisplay(buildChartModel(result, columns), {
@@ -44,11 +53,14 @@ export function RowChartView({
       }),
     [result, columns, display?.sort, display?.topN]
   );
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const { hidden, toggle } = useHiddenSeries(model.series.map((series) => series.id));
   const colorOf = useCallback(
-    (position: number) => palette.series[position % palette.series.length],
+    (position: number) => seriesColor(palette.series, position),
     [palette]
   );
+  // Narrow containers (phones, small dashboard widgets) give labels less room.
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const labelWidth = labelWidthFor(useElementWidth(containerRef, 500));
   const seriesName = useCallback(
     (series: ChartSeries): string => {
       const { otherCount, seriesColumn } = model;
@@ -75,25 +87,15 @@ export function RowChartView({
     const longLabels = model.xValues.map((value) =>
       isOther(value) ? t`Other (${otherXCount})` : format.cell(x, value, 'long')
     );
-    const visible = model.series
-      .map((series, position) => ({ series, position }))
-      .filter(({ series }) => !hidden.has(series.id));
+    const { visible, stack, percent, plotted, share } = layoutSeries(model, hidden, stacking);
     if (visible.length === 0) return null;
-    const stack = stacking !== 'none' && visible.length > 1;
-    const percent = stack && stacking === 'percent';
-    const totals = model.xValues.map((_, index) =>
-      visible.reduce((sum, { series }) => sum + Math.abs(series.values[index] ?? 0), 0)
-    );
-    const plotted = (values: number[]) =>
-      percent
-        ? values.map((value, index) =>
-            totals[index] > 0 ? (Math.abs(value) / totals[index]) * 100 : 0
-          )
-        : values;
     const [{ metric }] = model.series;
 
+    // Single-series rows carry their value at the bar's end; the axis then
+    // stops at the largest bar instead of the next round tick.
+    const endLabels = !stack && !percent && display?.showValues !== false;
     const base = {
-      grid: { left: 8, right: 40, top: 8, bottom: 4, containLabel: true },
+      grid: { left: 8, right: endLabels ? 64 : 40, top: 8, bottom: 4, containLabel: true },
       yAxis: {
         type: 'category' as const,
         data: labels,
@@ -103,18 +105,21 @@ export function RowChartView({
         axisLabel: {
           color: chrome.axisText,
           fontSize: 11,
-          width: 160,
+          width: labelWidth,
           overflow: 'truncate' as const,
         },
       },
       xAxis: {
         type: 'value' as const,
-        ...(percent ? { max: 100 } : {}),
+        ...(percent ? { max: 100 } : endLabels ? { max: 'dataMax' as const } : {}),
         axisLabel: {
           color: chrome.axisText,
           fontSize: 11,
           hideOverlap: true,
-          formatter: (value: number) => (percent ? `${value}%` : format.compact(metric, value)),
+          // The bar ends carry the largest value; an odd max tick would crowd the last one.
+          showMaxLabel: !endLabels,
+          formatter: (value: number) =>
+            percent ? format.percent(value / 100) : format.compact(metric, value),
         },
         splitLine: { lineStyle: { color: chrome.grid, width: 1 } },
       },
@@ -131,20 +136,38 @@ export function RowChartView({
             visible.map(({ series, position }) => ({
               color: colorOf(position),
               name: seriesName(series),
-              value: format.cell(series.metric, series.values[dataIndex]),
+              value: stack
+                ? `${format.cell(series.metric, series.values[dataIndex])} · ${format.percent(share(series.values[dataIndex] ?? 0, dataIndex))}`
+                : format.cell(series.metric, series.values[dataIndex]),
             }))
           );
         },
       },
-      series: visible.map(({ series, position }) => ({
-        name: series.id,
-        type: 'bar' as const,
-        stack: stack ? 'stack' : undefined,
-        data: plotted(series.values),
-        barMaxWidth: BAR_MAX_WIDTH,
-        itemStyle: stack
-          ? { color: colorOf(position), borderColor: chrome.surface, borderWidth: 1 }
-          : { color: colorOf(position), borderRadius: BAR_RADIUS_END },
+      series: visible.map((entry) => ({
+        ...barSeries(
+          entry,
+          { stack, plotted },
+          {
+            color: colorOf(entry.position),
+            surface: chrome.surface,
+            maxWidth: BAR_MAX_WIDTH,
+            radius: BAR_RADIUS_END,
+          }
+        ),
+        ...(endLabels
+          ? {
+              label: {
+                show: true,
+                position: 'right' as const,
+                color: chrome.inkSecondary,
+                fontSize: 11,
+                // Readable where a grid line runs behind the value.
+                backgroundColor: chrome.surface,
+                padding: [1, 2],
+                formatter: (params: { value: number }) => format.compact(metric, params.value),
+              },
+            }
+          : {}),
       })),
     };
     return applyCartesianDisplay(base, display, {
@@ -153,25 +176,45 @@ export function RowChartView({
       goalLabel: goalText(display?.goal, (value) => format.cell(metric, value)),
       horizontal: true,
       percent,
+      formatShare: (ratio) => format.percent(ratio),
     });
-  }, [model, hidden, palette, format, stacking, display, t, seriesName, colorOf]);
+  }, [model, hidden, palette, format, stacking, display, t, seriesName, colorOf, labelWidth]);
+
+  const handleMarkClick = useCallback(
+    (params: EChartClickParams) => {
+      if (!onDrill) return;
+      const values = markDrillValues(model, params.dataIndex, params.seriesName);
+      if (!values) return;
+      const box = containerRef.current?.getBoundingClientRect();
+      onDrill({
+        values,
+        anchor: {
+          x: params.clientX ?? (box ? box.left + box.width / 2 : 0),
+          y: params.clientY ?? (box ? box.top + box.height / 2 : 0),
+        },
+      });
+    },
+    [onDrill, model]
+  );
 
   const height = Math.max(240, model.xValues.length * ROW_HEIGHT + 48);
   return (
     <div className={cn('flex min-h-0 flex-col gap-2', fitHeight && 'h-full', className)}>
-      {model.series.length > 1 && (
-        <ChartLegend
-          items={legend}
-          hidden={hidden}
-          onToggle={(id) => setHidden((previous) => toggleHidden(previous, id, legend.length))}
-        />
-      )}
-      <div className={cn('min-h-0 w-full', fitHeight && 'min-h-[200px] flex-1 overflow-y-auto')}>
+      {model.series.length > 1 && <ChartLegend items={legend} hidden={hidden} onToggle={toggle} />}
+      <div
+        ref={containerRef}
+        className={cn('min-h-0 w-full', fitHeight && 'min-h-[200px] flex-1 overflow-y-auto')}
+      >
         {option ? (
           <div
             style={{ height: Math.min(height, 2400), minHeight: fitHeight ? '100%' : undefined }}
           >
-            <EChart option={option} ariaLabel={t`Row chart`} className="h-full w-full" />
+            <EChart
+              option={option}
+              ariaLabel={t`Row chart`}
+              className="h-full w-full"
+              onMarkClick={onDrill ? handleMarkClick : undefined}
+            />
           </div>
         ) : (
           <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">

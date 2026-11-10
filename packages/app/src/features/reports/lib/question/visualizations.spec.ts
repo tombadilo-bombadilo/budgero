@@ -6,6 +6,7 @@ import {
   autoVisualization,
   normalizeDisplay,
   normalizeQuestion,
+  resolveStacking,
   resolveVisualization,
   visualizationBlocker,
 } from './spec';
@@ -86,6 +87,35 @@ describe('allowedVisualizations', () => {
     expect(
       autoVisualization(q({ aggregations: spending, breakouts: [{ field: 'category' }] }))
     ).toBe('bar');
+  });
+
+  it('auto stacks bars for a date and a category grouping', () => {
+    const spec = q({
+      aggregations: spending,
+      breakouts: [{ field: 'date', bucket: 'month' }, { field: 'category' }],
+    });
+    expect(autoVisualization(spec)).toBe('bar');
+    expect(resolveStacking(spec, 'bar')).toBe('stacked');
+    // Weekday is a category, not a time line.
+    expect(
+      autoVisualization(
+        q({
+          aggregations: spending,
+          breakouts: [{ field: 'date' }, { field: 'date', part: 'dayOfWeek' }],
+        })
+      )
+    ).toBe('bar');
+    expect(
+      autoVisualization(
+        q({
+          aggregations: spending,
+          breakouts: [
+            { field: 'date', bucket: 'month' },
+            { field: 'date', bucket: 'year' },
+          ],
+        })
+      )
+    ).toBe('line');
   });
 
   it('resolveVisualization keeps a valid pick and falls back otherwise', () => {

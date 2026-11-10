@@ -13,10 +13,12 @@ import {
   allowedVisualizations,
   applyDashboardFilters,
   compileQuestion,
+  dashboardFilterConflicts,
   hasDashboardFilters,
   parseQuestionHeader,
   questionColumns,
   resolveVisualization,
+  todayIso,
   type DashboardFilterKind,
   type DashboardFilters,
   type QuestionColumn,
@@ -30,9 +32,15 @@ export interface WidgetQuestion {
   spec: QuestionSpec;
   columns: QuestionColumn[];
   visualization: ResolvedVisualization;
-  /** Dashboard filters that narrowed this question. */
+  /** Dashboard filters the SQL that runs really applies (empty when the stored SQL runs). */
   applied: DashboardFilterKind[];
-  /** Compiled SQL with the dashboard filters (null when none applied). */
+  /** Dashboard filters that leave nothing with the question's own filter on the same field. */
+  noOverlap: DashboardFilterKind[];
+  /**
+   * SQL compiled now from the saved spec, with the dashboard's filters and
+   * the user's local "today". Null when it can't be compiled (no budget, a
+   * spec this build can't compile): the stored SQL runs instead, unfiltered.
+   */
   sql: string | null;
 }
 
@@ -59,20 +67,36 @@ export function widgetQuestion(
 ): WidgetQuestion | null {
   const saved = parseQuestionHeader(report?.query);
   if (!saved || !chart || chart.id !== report?.charts?.[0]?.id) return null;
-  const { spec, applied } = hasDashboardFilters(filters)
+  const merged = hasDashboardFilters(filters)
     ? applyDashboardFilters(saved, filters)
     : { spec: saved, applied: [] as DashboardFilterKind[] };
+  // Always compile from the spec: relative dates follow the user's local day
+  // (the stored SQL uses the engine's UTC CURRENT_DATE) and old saved SQL
+  // picks up compiler fixes.
+  let sql: string | null = null;
+  if (Number.isSafeInteger(budgetId) && budgetId > 0) {
+    try {
+      sql = compileQuestion(merged.spec, {
+        budgetId,
+        labels: getQuestionSqlLabels(),
+        today: todayIso(),
+      }).sql;
+    } catch {
+      sql = null;
+    }
+  }
+  // Without compiled SQL the stored query runs as saved: show the saved
+  // question and claim no dashboard filter.
+  const spec = sql === null ? saved : merged.spec;
+  const applied = sql === null ? [] : merged.applied;
   const own = resolveVisualization(spec);
   const wanted = FROM_CHART[chart.chartType];
   const visualization =
     CHART_TYPE[own] === chart.chartType || !wanted || !allowedVisualizations(spec).includes(wanted)
       ? own
       : wanted;
-  let sql: string | null = null;
-  if (applied.length > 0 && budgetId > 0) {
-    sql = compileQuestion(spec, { budgetId, labels: getQuestionSqlLabels() }).sql;
-  }
-  return { spec, columns: questionColumns(spec), visualization, applied, sql };
+  const noOverlap = applied.length > 0 ? dashboardFilterConflicts(saved, filters) : [];
+  return { spec, columns: questionColumns(spec), visualization, applied, noOverlap, sql };
 }
 
 export function widgetQueryKey(

@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { EChart } from '@shared/ui/echart';
 import {
@@ -14,7 +14,8 @@ import { buildChartModel } from '../chart-model';
 import { columnFormat, columnLabel } from '../question-labels';
 import { useQuestionFormatters } from '../useQuestionFormatters';
 import { ChartLegend } from './ChartLegend';
-import { applyCartesianDisplay, goalText, toggleHidden } from './display';
+import { applyCartesianDisplay, goalText } from './display';
+import { seriesColor, useHiddenSeries } from './series';
 import type { VizViewProps } from './types';
 
 /**
@@ -32,9 +33,9 @@ export function ComboView({
 }: VizViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const model = useMemo(() => buildChartModel(result, columns), [result, columns]);
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
+  const { hidden, toggle } = useHiddenSeries(model.series.map((series) => series.id));
   const [firstSeries, secondSeries] = model.series;
   const dualAxis =
     display?.dualAxis ??
@@ -43,7 +44,7 @@ export function ComboView({
       : false);
 
   const colorOf = useCallback(
-    (position: number) => palette.series[position % palette.series.length],
+    (position: number) => seriesColor(palette.series, position),
     [palette]
   );
   const legend = model.series.map((series, position) => ({
@@ -144,11 +145,7 @@ export function ComboView({
   }
   return (
     <div className={cn('flex min-h-0 flex-col gap-2', fitHeight && 'h-full', className)}>
-      <ChartLegend
-        items={legend}
-        hidden={hidden}
-        onToggle={(id) => setHidden((previous) => toggleHidden(previous, id, legend.length))}
-      />
+      <ChartLegend items={legend} hidden={hidden} onToggle={toggle} />
       <div className={cn('min-h-0 w-full', fitHeight ? 'min-h-[200px] flex-1' : 'h-72 sm:h-96')}>
         <EChart option={option} ariaLabel={t`Combo chart`} className="h-full w-full" />
       </div>

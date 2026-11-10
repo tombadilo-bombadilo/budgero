@@ -3,16 +3,17 @@ import { useMemo, useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useReports } from '@entities/report/api/useReports';
-import { parseQuestionHeader } from '@features/reports/lib/question';
+import {
+  normalizeQuestion,
+  parseQuestionHeader,
+  type QuestionSpec,
+} from '@features/reports/lib/question';
 import { SqlQuestionView } from '@pages/explorer-page/SqlQuestionView';
 import { useUiStore } from '@shared/store/useUiStore';
 import { Button } from '@shared/ui/button';
 import { BackToReports } from '../BackToReports';
 import { NotebookQuestionView } from './NotebookQuestionView';
-
-interface QuestionRouteState {
-  openSaveDialog?: boolean;
-}
+import type { QuestionRouteState } from './useOpenSavedQuestion';
 
 /**
  * /reports/question/new and /reports/question/:reportId. Notebook questions
@@ -27,8 +28,24 @@ export default function QuestionPage() {
   const { data: reports, isLoading, isFetching } = useReports();
   const routeState = (location.state as QuestionRouteState | null) ?? {};
   // A "Convert to SQL" for this visit; a new navigation (save → replace) resets it.
-  const [converted, setConverted] = useState<{ key: string; sql: string } | null>(null);
-  const convertedSql = converted?.key === location.key ? converted.sql : null;
+  // The notebook spec it came from is kept so "Back to the notebook" loses nothing.
+  const [converted, setConverted] = useState<{
+    key: string;
+    sql: string;
+    spec: QuestionSpec;
+    back?: boolean;
+  } | null>(null);
+  const current = converted?.key === location.key ? converted : null;
+  const convertedSql = current && !current.back ? current.sql : null;
+  const resumeSpec = current?.back ? current.spec : null;
+  // "Start from an example" on the Reports home: a prefilled, unsaved question.
+  const exampleSpec = useMemo(
+    () =>
+      !reportId && routeState.startSpec && typeof routeState.startSpec === 'object'
+        ? normalizeQuestion(routeState.startSpec)
+        : null,
+    [reportId, routeState.startSpec]
+  );
 
   const report = useMemo(
     () => (reportId ? (reports?.find((item) => item.id === reportId) ?? null) : null),
@@ -89,7 +106,11 @@ export default function QuestionPage() {
         budgetId={budgetId}
         report={report}
         initialSql={convertedSql ?? undefined}
+        onBackToNotebook={
+          convertedSql !== null ? () => setConverted({ ...current!, back: true }) : undefined
+        }
         openSaveDialog={Boolean(routeState.openSaveDialog)}
+        openPinDialog={Boolean(routeState.openPinDialog)}
       />
     );
   }
@@ -100,8 +121,15 @@ export default function QuestionPage() {
       budgetId={budgetId}
       report={report}
       initialSpec={spec}
+      resumeSpec={resumeSpec ?? exampleSpec}
+      initialName={
+        exampleSpec && typeof routeState.startName === 'string'
+          ? routeState.startName.slice(0, 120)
+          : undefined
+      }
       openSaveDialog={Boolean(routeState.openSaveDialog)}
-      onConvertToSql={(sql) => setConverted({ key: location.key, sql })}
+      openPinDialog={Boolean(routeState.openPinDialog)}
+      onConvertToSql={(sql, from) => setConverted({ key: location.key, sql, spec: from })}
     />
   );
 }

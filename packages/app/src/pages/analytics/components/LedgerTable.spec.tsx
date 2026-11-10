@@ -42,7 +42,7 @@ describe('BreakdownTable', () => {
     );
     expect(screen.queryByRole('columnheader', { name: 'Monthly trend' })).not.toBeInTheDocument();
     const control = screen.getByRole('button', { name: /Other spending/ });
-    expect(control).toHaveAttribute('aria-expanded', 'false');
+    expect(control).not.toHaveAttribute('aria-expanded');
     fireEvent.click(control);
     expect(onSelect).toHaveBeenCalledOnce();
   });

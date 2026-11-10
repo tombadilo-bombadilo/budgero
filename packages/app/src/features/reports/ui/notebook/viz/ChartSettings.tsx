@@ -13,7 +13,9 @@ import { Label } from '@shared/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { Switch } from '@shared/ui/switch';
+import { cn } from '@shared/lib/utils';
 import { displayOptionsFor, hasDisplayOptions } from './viz-meta';
+import { SOLID_OVERLAY } from '../ResponsivePicker';
 
 interface ChartSettingsProps {
   visualization: ResolvedVisualization;
@@ -73,7 +75,7 @@ export function ChartSettings({
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 space-y-4 p-4">
+      <PopoverContent align="start" className={cn('w-72 space-y-4 p-4', SOLID_OVERLAY)}>
         <h3 className="text-sm font-medium">
           <Trans>Chart settings</Trans>
         </h3>

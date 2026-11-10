@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useEffect, useId, useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import type { UnifiedReport } from '@budgero/core/browser';
 import {
@@ -14,7 +14,16 @@ import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Textarea } from '@shared/ui/textarea';
 import { Field } from '@shared/ui/field';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { getErrorMessage } from '@shared/lib/errors';
+
+const MY_QUESTIONS = '__mine__';
+const NEW_COLLECTION = '__new__';
+
+function choiceFor(collection: string | undefined, collections: string[]): string {
+  if (!collection) return MY_QUESTIONS;
+  return collections.includes(collection) ? collection : NEW_COLLECTION;
+}
 
 export interface SaveQuestionInput {
   name: string;
@@ -53,15 +62,22 @@ export function SaveQuestionDialog({
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription ?? '');
   const [collection, setCollection] = useState(initialCollection ?? '');
+  const [collectionChoice, setCollectionChoice] = useState(
+    choiceFor(initialCollection, collections)
+  );
   const [isSaving, setIsSaving] = useState(false);
 
-  useEffect(() => {
+  // Fresh fields each time the dialog opens.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
     if (open) {
       setName(initialName);
       setDescription(initialDescription ?? '');
       setCollection(initialCollection ?? '');
+      setCollectionChoice(choiceFor(initialCollection, collections));
     }
-  }, [open, initialName, initialDescription, initialCollection]);
+  }
 
   const save = async (pin: boolean) => {
     const trimmed = name.trim();
@@ -125,27 +141,42 @@ export function SaveQuestionDialog({
               disabled={isSaving}
             />
           </Field>
-          <Field
-            label={t`Collection`}
-            htmlFor={`${id}-collection`}
-            hint={t`Leave empty to keep it in My questions.`}
-          >
-            <Input
-              id={`${id}-collection`}
-              value={collection}
-              list={`${id}-collections`}
-              onChange={(event) => setCollection(event.target.value)}
-              placeholder={t`My questions`}
+          <Field label={t`Collection`} htmlFor={`${id}-collection`}>
+            <Select
+              value={collectionChoice}
+              onValueChange={(value) => {
+                setCollectionChoice(value);
+                if (value === MY_QUESTIONS) setCollection('');
+                else if (value !== NEW_COLLECTION) setCollection(value);
+                else setCollection('');
+              }}
               disabled={isSaving}
-              maxLength={60}
-            />
-            <datalist id={`${id}-collections`}>
-              {collections.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </datalist>
+            >
+              <SelectTrigger id={`${id}-collection`} className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={MY_QUESTIONS}>{t`My questions`}</SelectItem>
+                {collections.map((item) => (
+                  <SelectItem key={item} value={item}>
+                    {item}
+                  </SelectItem>
+                ))}
+                <SelectItem value={NEW_COLLECTION}>{t`New collection…`}</SelectItem>
+              </SelectContent>
+            </Select>
+            {collectionChoice === NEW_COLLECTION && (
+              <Input
+                aria-label={t`New collection name`}
+                value={collection}
+                onChange={(event) => setCollection(event.target.value)}
+                placeholder={t`e.g. Monthly review`}
+                disabled={isSaving}
+                maxLength={60}
+                className="mt-2"
+                autoFocus
+              />
+            )}
           </Field>
 
           <DialogFooter className="gap-2">

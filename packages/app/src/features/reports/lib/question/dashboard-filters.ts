@@ -10,7 +10,13 @@
  * so). Accounts / category groups narrow the question (AND).
  */
 import { PRIMARY_DATE_FIELD, getField, type QuestionSource } from './fields';
-import { isValidIsoDate, normalizeQuestion, type QuestionFilter, type QuestionSpec } from './spec';
+import {
+  isValidIsoDate,
+  normalizeFilter,
+  normalizeQuestion,
+  type QuestionFilter,
+  type QuestionSpec,
+} from './spec';
 
 export const DASHBOARD_DATE_PRESETS = [
   'thisMonth',
@@ -119,42 +125,95 @@ function hasField(source: QuestionSource, field: string): boolean {
   return Boolean(getField(source, field));
 }
 
-/** The question with the dashboard's filters merged in (see module doc). */
+/**
+ * The question with the dashboard's filters merged in (see module doc).
+ * Dashboard filters go first, so a question at the editor's filter limit
+ * still takes them; `applied` lists only those the merged question really has.
+ */
 export function applyDashboardFilters(
   input: QuestionSpec,
   filters: DashboardFilters
 ): AppliedDashboardFilters {
   const spec = normalizeQuestion(input);
-  const applied: DashboardFilterKind[] = [];
   const ignored: DashboardFilterKind[] = [];
-  let next = [...spec.filters];
+  const added: { kind: DashboardFilterKind; filter: QuestionFilter }[] = [];
+  let own = [...spec.filters];
 
   if (filters.date) {
     const field = PRIMARY_DATE_FIELD[spec.source];
     const filter = field ? dateFilterFor(field, filters.date) : null;
     if (field && filter) {
-      next = [...next.filter((entry) => entry.field !== field), filter];
-      applied.push('date');
+      // Replaces the question's own date range (date-part filters such as
+      // "weekends only" stay).
+      own = own.filter((entry) => entry.field !== field || entry.part !== undefined);
+      added.push({ kind: 'date', filter });
     } else {
       ignored.push('date');
     }
   }
   if (filters.accounts?.length) {
     if (hasField(spec.source, 'account')) {
-      next.push({ field: 'account', op: 'is', values: filters.accounts });
-      applied.push('accounts');
+      added.push({
+        kind: 'accounts',
+        filter: { field: 'account', op: 'is', values: filters.accounts },
+      });
     } else {
       ignored.push('accounts');
     }
   }
   if (filters.categoryGroups?.length) {
     if (hasField(spec.source, 'category_group')) {
-      next.push({ field: 'category_group', op: 'is', values: filters.categoryGroups });
-      applied.push('categoryGroups');
+      added.push({
+        kind: 'categoryGroups',
+        filter: { field: 'category_group', op: 'is', values: filters.categoryGroups },
+      });
     } else {
       ignored.push('categoryGroups');
     }
   }
-  if (applied.length === 0) return { spec, applied, ignored };
-  return { spec: normalizeQuestion({ ...spec, filters: next }), applied, ignored };
+  if (added.length === 0) return { spec, applied: [], ignored };
+  const merged = normalizeQuestion({
+    ...spec,
+    filters: [...added.map((entry) => entry.filter), ...own],
+  });
+  const kept = new Set(merged.filters.map((filter) => JSON.stringify(filter)));
+  const applied = added
+    .filter((entry) => kept.has(JSON.stringify(normalizeFilter(merged.source, entry.filter))))
+    .map((entry) => entry.kind);
+  return { spec: merged, applied, ignored };
+}
+
+const KIND_FIELD: Partial<Record<DashboardFilterKind, string>> = {
+  accounts: 'account',
+  categoryGroups: 'category_group',
+};
+
+/**
+ * Dashboard filters that AND with one of the question's own filters on the
+ * same field to nothing (dashboard: accounts A, B; question: account C), so
+ * the widget can say why it's empty.
+ */
+export function dashboardFilterConflicts(
+  spec: QuestionSpec,
+  filters: DashboardFilters
+): DashboardFilterKind[] {
+  const conflicts: DashboardFilterKind[] = [];
+  const picks: [DashboardFilterKind, readonly number[] | undefined][] = [
+    ['accounts', filters.accounts],
+    ['categoryGroups', filters.categoryGroups],
+  ];
+  for (const [kind, values] of picks) {
+    const field = KIND_FIELD[kind];
+    if (!field || !values?.length) continue;
+    const chosen = new Set(values.map(Number));
+    const clash = spec.filters.some((filter) => {
+      if (filter.field !== field) return false;
+      const own = new Set(filter.values.map(Number));
+      if (filter.op === 'is') return ![...chosen].some((value) => own.has(value));
+      if (filter.op === 'isNot') return [...chosen].every((value) => own.has(value));
+      return false;
+    });
+    if (clash) conflicts.push(kind);
+  }
+  return conflicts;
 }

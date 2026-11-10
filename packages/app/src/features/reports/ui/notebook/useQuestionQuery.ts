@@ -9,6 +9,7 @@ import {
 import { getErrorMessage } from '@shared/lib/errors';
 import {
   compileQuestion,
+  todayIso,
   type CompiledQuestion,
   type QuestionSpec,
 } from '@features/reports/lib/question';
@@ -24,6 +25,8 @@ interface UseQuestionQueryArgs {
   chartTitle?: string;
   /** Bumped to force a re-run with an unchanged spec (e.g. "Refresh"). */
   refreshKey?: number;
+  /** False compiles but does not run (nothing to ask yet). */
+  enabled?: boolean;
 }
 
 export interface QuestionQueryState {
@@ -47,6 +50,7 @@ export function useQuestionQuery({
   chartId,
   chartTitle,
   refreshKey = 0,
+  enabled = true,
 }: UseQuestionQueryArgs): QuestionQueryState {
   const runtime = useRuntime();
   const [completed, setCompleted] = useState<{
@@ -65,6 +69,7 @@ export function useQuestionQuery({
           chartId: chartId ?? 'question-preview',
           chartTitle,
           labels: getQuestionSqlLabels(),
+          today: todayIso(),
         }),
         compileError: null,
       };
@@ -73,18 +78,25 @@ export function useQuestionQuery({
     }
   }, [spec, budgetId, chartId, chartTitle]);
 
-  const sql = compiled?.sql ?? null;
+  const sql = enabled ? (compiled?.sql ?? null) : null;
   const runKey = sql ? `${refreshKey}\n${sql}` : '';
+  // The run depends on the SQL text only: display tweaks (goal, sort, chart
+  // type) recompile the question to the same SQL and must not run it again.
+  const compiledRef = useRef(compiled);
+  useEffect(() => {
+    compiledRef.current = compiled;
+  });
 
   useEffect(() => {
-    if (!sql || !compiled) return;
+    if (!sql) return;
     latestKeyRef.current = runKey;
     const timer = window.setTimeout(() => {
+      const ranWith = compiledRef.current;
       const db = runtime.getDatabase() as SqlDatabase | null;
       executeReportQuery(sql, db, { maxRows: MAX_QUESTION_ROWS })
         .then((result) => {
           if (latestKeyRef.current !== runKey) return;
-          setCompleted({ key: runKey, result, compiled, error: null });
+          setCompleted({ key: runKey, result, compiled: ranWith, error: null });
         })
         .catch((err: unknown) => {
           if (latestKeyRef.current !== runKey) return;
@@ -96,16 +108,18 @@ export function useQuestionQuery({
         });
     }, DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [sql, runKey, runtime, compiled]);
+  }, [sql, runKey, runtime]);
 
-  const isRunning = Boolean(sql) && completed.key !== runKey;
-  const error = completed.key === runKey ? completed.error : null;
+  const current = completed.key === runKey;
+  const isRunning = Boolean(sql) && !current;
+  const error = current ? completed.error : null;
 
   return {
     compiled,
     compileError,
     result: completed.result,
-    resultCompiled: completed.compiled,
+    // Same SQL as the shown result: the latest compile carries the latest display.
+    resultCompiled: current && compiled ? compiled : completed.compiled,
     error,
     isRunning,
   };

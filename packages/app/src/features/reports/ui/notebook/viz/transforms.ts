@@ -11,6 +11,7 @@ import {
   type QuestionSpec,
   type ResolvedVisualization,
 } from '@features/reports/lib/question';
+import { resultsToCsv } from '@shared/lib/sql/csv';
 import type { QueryResult } from '@shared/lib/sql/report-query-executor';
 import { OTHER_SERIES_ID, type ChartModel } from '../chart-model';
 
@@ -34,7 +35,37 @@ function isDateColumn(column: QuestionColumn | undefined | null): boolean {
   return column?.kind === 'breakout' && column.breakout.bucket !== undefined;
 }
 
+/** Date parts and numeric bins: categories with a natural numeric order. */
+function isNumberOrderedColumn(column: QuestionColumn | undefined | null): boolean {
+  return (
+    column?.kind === 'breakout' &&
+    (column.breakout.part !== undefined || column.breakout.bin !== undefined)
+  );
+}
+
 const keyOf = (value: unknown) => String(value ?? '');
+
+/**
+ * The metrics a chart plots: "previous period" / "% change" columns derive
+ * from a metric and never stand in for one.
+ */
+function baseMetrics(columns: QuestionColumn[]): QuestionColumn[] {
+  return columns.filter((column) => column.kind === 'aggregation' && !column.derived);
+}
+
+/** Position of a grouping's hidden id column (`<key>__key`); undefined for dates or when absent. */
+function hiddenKeyIndex(index: Map<string, number>, column: QuestionColumn): number | undefined {
+  return isDateColumn(column) ? undefined : index.get(`${column.key}__key`);
+}
+
+/**
+ * Identity of a grouping value in a row: hidden id plus label when the result
+ * has ids (two same-named categories stay apart), else the label.
+ */
+function identityOf(row: unknown[], valueIndex: number, keyIndex: number | undefined): string {
+  const value = keyOf(row[valueIndex]);
+  return keyIndex === undefined ? value : `${keyOf(row[keyIndex])}\u0000${value}`;
+}
 
 // ---------------------------------------------------------------------------
 // Bar / row: sort categories, keep the top N
@@ -75,7 +106,12 @@ export function applyCategoryDisplay(
     otherXCount = folded.length;
   }
   const xValues = order.map((index) => model.xValues[index]);
-  if (otherXCount > 0) xValues.push(OTHER_VALUE);
+  // Keys move with their values, or a click would drill into another category.
+  const xKeys = order.map((index) => model.xKeys[index]);
+  if (otherXCount > 0) {
+    xValues.push(OTHER_VALUE);
+    xKeys.push(undefined);
+  }
   const series = model.series.map((entry) => {
     const values = order.map((index) => entry.values[index] ?? 0);
     if (otherXCount > 0) {
@@ -83,7 +119,7 @@ export function applyCategoryDisplay(
     }
     return { ...entry, values };
   });
-  return { ...model, xValues, series, otherXCount };
+  return { ...model, xValues, xKeys, series, otherXCount };
 }
 
 /** Horizontal bars read better for many or long category names. */
@@ -116,8 +152,11 @@ export function refineAutoVisualization(
 // ---------------------------------------------------------------------------
 
 export interface PivotHeader {
+  /** Identity of the value (hidden id + label when the result has ids). */
   key: string;
   value: unknown;
+  /** Hidden id / raw key of the value (drill-through); undefined when the result has none. */
+  id?: unknown;
   total: number;
 }
 
@@ -135,7 +174,7 @@ export interface Pivot {
 /** Rows = first grouping, columns = second grouping, cells = first metric. */
 export function buildPivot(result: QueryResult, columns: QuestionColumn[]): Pivot | null {
   const breakouts = columns.filter((column) => column.kind === 'breakout');
-  const metric = columns.find((column) => column.kind === 'aggregation');
+  const [metric] = baseMetrics(columns);
   const [rowColumn, colColumn] = breakouts;
   if (!rowColumn || !colColumn || !metric) return null;
   const index = columnIndex(result);
@@ -143,17 +182,30 @@ export function buildPivot(result: QueryResult, columns: QuestionColumn[]): Pivo
   const colIndex = index.get(colColumn.key);
   const metricIndex = index.get(metric.key);
   if (rowIndex === undefined || colIndex === undefined || metricIndex === undefined) return null;
+  const rowIdIndex = hiddenKeyIndex(index, rowColumn);
+  const colIdIndex = hiddenKeyIndex(index, colColumn);
+  const header = (
+    row: unknown[],
+    valueIndex: number,
+    idIndex: number | undefined,
+    key: string
+  ) => ({
+    key,
+    value: row[valueIndex],
+    ...(idIndex !== undefined ? { id: row[idIndex] } : {}),
+    total: 0,
+  });
 
   const rows = new Map<string, PivotHeader>();
   const cols = new Map<string, PivotHeader>();
   const cells: Pivot['cells'] = {};
   let grandTotal = 0;
   for (const row of result.rows) {
-    const rowKey = keyOf(row[rowIndex]);
-    const colKey = keyOf(row[colIndex]);
+    const rowKey = identityOf(row, rowIndex, rowIdIndex);
+    const colKey = identityOf(row, colIndex, colIdIndex);
     const value = toNumber(row[metricIndex]);
-    if (!rows.has(rowKey)) rows.set(rowKey, { key: rowKey, value: row[rowIndex], total: 0 });
-    if (!cols.has(colKey)) cols.set(colKey, { key: colKey, value: row[colIndex], total: 0 });
+    if (!rows.has(rowKey)) rows.set(rowKey, header(row, rowIndex, rowIdIndex, rowKey));
+    if (!cols.has(colKey)) cols.set(colKey, header(row, colIndex, colIdIndex, colKey));
     rows.get(rowKey)!.total += value;
     cols.get(colKey)!.total += value;
     cells[rowKey] ??= {};
@@ -162,6 +214,9 @@ export function buildPivot(result: QueryResult, columns: QuestionColumn[]): Pivo
   }
   const byKey = (a: PivotHeader, b: PivotHeader) => a.key.localeCompare(b.key);
   const byTotal = (a: PivotHeader, b: PivotHeader) => b.total - a.total;
+  const byNumber = (a: PivotHeader, b: PivotHeader) => toNumber(a.value) - toNumber(b.value);
+  const orderOf = (column: QuestionColumn) =>
+    isDateColumn(column) ? byKey : isNumberOrderedColumn(column) ? byNumber : null;
   const rowList = Array.from(rows.values());
   const colList = Array.from(cols.values());
   return {
@@ -169,8 +224,8 @@ export function buildPivot(result: QueryResult, columns: QuestionColumn[]): Pivo
     colColumn,
     metric,
     // Date groupings read in time order; categories by size.
-    rows: isDateColumn(rowColumn) ? rowList.sort(byKey) : rowList,
-    cols: isDateColumn(colColumn) ? colList.sort(byKey) : colList.sort(byTotal),
+    rows: rowList.sort(orderOf(rowColumn) ?? (() => 0)),
+    cols: colList.sort(orderOf(colColumn) ?? byTotal),
     cells,
     grandTotal,
   };
@@ -204,12 +259,11 @@ export function sortPivotRows(
   });
 }
 
-function csvCell(value: string): string {
-  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
-}
-
-/** The pivot as CSV: header row, one line per row with its total, a totals line. */
-export function pivotToCsv(
+/**
+ * The pivot as a table for the CSV writer: header row, one line per row with
+ * its total, a totals line. Numbers stay raw; labels come from `labels`.
+ */
+export function pivotToTable(
   pivot: Pivot,
   rows: PivotHeader[],
   labels: {
@@ -218,24 +272,31 @@ export function pivotToCsv(
     row: (value: unknown) => string;
     col: (value: unknown) => string;
   }
-): string {
-  const lines = [
-    [labels.corner, ...pivot.cols.map((col) => labels.col(col.value)), labels.total],
-    ...rows.map((row) => [
-      labels.row(row.value),
-      ...pivot.cols.map((col) => {
-        const value = pivot.cells[row.key]?.[col.key];
-        return value === undefined ? '' : String(round(value));
-      }),
-      String(round(row.total)),
-    ]),
-    [
-      labels.total,
-      ...pivot.cols.map((col) => String(round(col.total))),
-      String(round(pivot.grandTotal)),
+): { columns: string[]; rows: unknown[][] } {
+  return {
+    columns: [labels.corner, ...pivot.cols.map((col) => labels.col(col.value)), labels.total],
+    rows: [
+      ...rows.map((row) => [
+        labels.row(row.value),
+        ...pivot.cols.map((col) => {
+          const value = pivot.cells[row.key]?.[col.key];
+          return value === undefined ? null : round(value);
+        }),
+        round(row.total),
+      ]),
+      [labels.total, ...pivot.cols.map((col) => round(col.total)), round(pivot.grandTotal)],
     ],
-  ];
-  return lines.map((line) => line.map(csvCell).join(',')).join('\n');
+  };
+}
+
+/** The pivot as CSV (see pivotToTable). */
+export function pivotToCsv(
+  pivot: Pivot,
+  rows: PivotHeader[],
+  labels: Parameters<typeof pivotToTable>[2]
+): string {
+  const table = pivotToTable(pivot, rows, labels);
+  return resultsToCsv(table.columns, table.rows);
 }
 
 function round(value: number): number {
@@ -282,7 +343,7 @@ export function buildWaterfall(model: ChartModel, topN?: number): Waterfall {
     otherAmount = folded.reduce((sum, entry) => sum + entry.amount, 0);
     entries = entries.filter((entry) => keep.has(entry));
   }
-  if (!isDateColumn(model.x)) {
+  if (!isDateColumn(model.x) && !isNumberOrderedColumn(model.x)) {
     entries = [
       ...entries.filter((entry) => entry.amount > 0).sort((a, b) => b.amount - a.amount),
       ...entries.filter((entry) => entry.amount < 0).sort((a, b) => a.amount - b.amount),
@@ -308,6 +369,8 @@ export interface SankeyNode {
   level: 0 | 1;
   /** Raw grouping value, or OTHER_VALUE. */
   value: unknown;
+  /** Hidden id / raw key of the value; undefined when the result has none. */
+  key?: unknown;
   total: number;
 }
 
@@ -339,7 +402,7 @@ export function buildSankey(
   topN = DEFAULT_SANKEY_TOP_N
 ): SankeyData | null {
   const breakouts = columns.filter((column) => column.kind === 'breakout');
-  const metric = columns.find((column) => column.kind === 'aggregation');
+  const [metric] = baseMetrics(columns);
   const [from, to] = breakouts;
   if (!from || !to || !metric) return null;
   const index = columnIndex(result);
@@ -347,19 +410,31 @@ export function buildSankey(
   const toIndex = index.get(to.key);
   const metricIndex = index.get(metric.key);
   if (fromIndex === undefined || toIndex === undefined || metricIndex === undefined) return null;
+  const fromIdIndex = hiddenKeyIndex(index, from);
+  const toIdIndex = hiddenKeyIndex(index, to);
 
+  interface End {
+    value: unknown;
+    identity: string;
+    key?: unknown;
+  }
+  const end = (row: unknown[], valueIndex: number, idIndex: number | undefined): End => ({
+    value: row[valueIndex],
+    identity: identityOf(row, valueIndex, idIndex),
+    ...(idIndex !== undefined ? { key: row[idIndex] } : {}),
+  });
   const raw = result.rows
     .map((row) => ({
-      from: row[fromIndex],
-      to: row[toIndex],
+      from: end(row, fromIndex, fromIdIndex),
+      to: end(row, toIndex, toIdIndex),
       value: Math.abs(toNumber(row[metricIndex])),
     }))
     .filter((entry) => entry.value > 0);
 
-  const keepTop = (pick: (entry: (typeof raw)[number]) => unknown) => {
+  const keepTop = (pick: (entry: (typeof raw)[number]) => End) => {
     const totals = new Map<string, number>();
     for (const entry of raw) {
-      const key = keyOf(pick(entry));
+      const key = pick(entry).identity;
       totals.set(key, (totals.get(key) ?? 0) + entry.value);
     }
     const ranked = Array.from(totals.entries()).sort((a, b) => b[1] - a[1]);
@@ -373,12 +448,21 @@ export function buildSankey(
 
   const nodes = new Map<string, SankeyNode>();
   const links = new Map<string, SankeyLink>();
-  const node = (level: 0 | 1, value: unknown, kept: Set<string>, amount: number) => {
-    const folded = !kept.has(keyOf(value));
-    const id = `${level}:${folded ? OTHER_VALUE : keyOf(value)}`;
+  const node = (level: 0 | 1, side: End, kept: Set<string>, amount: number) => {
+    const folded = !kept.has(side.identity);
+    const id = `${level}:${folded ? OTHER_VALUE : side.identity}`;
     const existing = nodes.get(id);
     if (existing) existing.total += amount;
-    else nodes.set(id, { id, level, value: folded ? OTHER_VALUE : value, total: amount });
+    else if (folded) nodes.set(id, { id, level, value: OTHER_VALUE, total: amount });
+    else {
+      nodes.set(id, {
+        id,
+        level,
+        value: side.value,
+        ...(side.key !== undefined ? { key: side.key } : {}),
+        total: amount,
+      });
+    }
     return id;
   };
   for (const entry of raw) {
@@ -419,7 +503,7 @@ export interface CalendarYear {
 /** Daily values (first metric) per calendar year, newest year first. */
 export function buildCalendar(result: QueryResult, columns: QuestionColumn[]): CalendarYear[] {
   const day = columns.find((column) => column.kind === 'breakout');
-  const metric = columns.find((column) => column.kind === 'aggregation');
+  const [metric] = baseMetrics(columns);
   if (!day || !metric) return [];
   const index = columnIndex(result);
   const dayIndex = index.get(day.key);
@@ -533,7 +617,7 @@ export interface ScatterData {
 /** One point per result row: first metric across, second metric up. */
 export function buildScatter(result: QueryResult, columns: QuestionColumn[]): ScatterData | null {
   const groupings = columns.filter((column) => column.kind === 'breakout');
-  const [xMetric, yMetric] = columns.filter((column) => column.kind === 'aggregation');
+  const [xMetric, yMetric] = baseMetrics(columns);
   if (!xMetric || !yMetric) return null;
   const index = columnIndex(result);
   const xIndex = index.get(xMetric.key);

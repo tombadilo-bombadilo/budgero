@@ -1,5 +1,6 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   rowDrillValues,
   type QuestionColumn,
@@ -27,13 +28,14 @@ interface QuestionTableProps {
 /** Result rows with friendly headers ("Month", "Spending") and formatted cells. */
 export function QuestionTable({ result, columns, source, className, onDrill }: QuestionTableProps) {
   const { t } = useLingui();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const [visible, setVisible] = useState(PAGE_SIZE);
+  // A new result starts from the first page again.
+  useEffect(() => setVisible(PAGE_SIZE), [result]);
   const index = new Map(result.columns.map((name, position) => [name, position]));
   const shown = columns.filter((column) => index.has(column.key));
   const rows = result.rows.slice(0, visible);
   const shownCount = rows.length.toLocaleString();
-  const totalCount = result.rows.length.toLocaleString();
   const drillable = Boolean(onDrill) && columns.some((column) => column.kind === 'breakout');
   const drill = (row: unknown[], column: QuestionColumn, target: HTMLElement) => {
     // A grouping cell explores that value; a metric cell the whole row.
@@ -102,7 +104,10 @@ export function QuestionTable({ result, columns, source, className, onDrill }: Q
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
         <span>
-          {result.rows.length === 1 ? t`1 row` : t`Showing ${shownCount} of ${totalCount} rows`}
+          {plural(result.rows.length, {
+            one: '# row',
+            other: `Showing ${shownCount} of # rows`,
+          })}
         </span>
         {visible < result.rows.length && (
           <Button variant="outline" size="sm" onClick={() => setVisible((n) => n + PAGE_SIZE * 5)}>

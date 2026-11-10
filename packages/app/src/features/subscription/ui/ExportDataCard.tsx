@@ -117,7 +117,11 @@ export default function ExportDataCard({ spaceId, embedded = false }: ExportData
             try {
               const result = db.exec(`SELECT * FROM ${table} ORDER BY id`);
               if (result.length > 0 && result[0].values.length > 0) {
-                csvFiles[`${table}.csv`] = resultsToCsv(result[0].columns, result[0].values);
+                // A raw dump: cells exactly as stored, no spreadsheet guards.
+                csvFiles[`${table}.csv`] = resultsToCsv(result[0].columns, result[0].values, {
+                  emptyValue: (cell) => String(cell ?? ''),
+                  defuseFormulas: false,
+                });
               }
             } catch {
               // Table might not exist, skip

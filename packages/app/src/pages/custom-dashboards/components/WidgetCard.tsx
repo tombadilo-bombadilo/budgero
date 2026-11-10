@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   ChartConfiguration,
@@ -19,6 +19,7 @@ import {
   type DashboardFilters,
 } from '@features/reports/lib/question';
 import { QuestionVisualization } from '@features/reports/ui/notebook/QuestionVisualization';
+import { QueryErrorMessage } from '@features/reports/ui/notebook/QueryErrorMessage';
 import { ExportMenu } from '@features/reports/ui/notebook/viz/ExportMenu';
 import { refineAutoVisualization } from '@features/reports/ui/notebook/viz/transforms';
 import { getLocaleTag } from '@shared/i18n';
@@ -165,7 +166,7 @@ function WidgetErrorCard({
   onRemove,
 }: {
   title: string;
-  description: string;
+  description: ReactNode;
   onSelectNewChart: () => void;
   onRemove: () => Promise<void>;
 }) {
@@ -284,9 +285,11 @@ export function WidgetCard({
       <WidgetErrorCard
         title={title}
         description={
-          isNonReadOnlyError
-            ? t`This report query is not read-only and cannot run in dashboard widgets.`
-            : queryError.message
+          isNonReadOnlyError ? (
+            t`This report query is not read-only and cannot run in dashboard widgets.`
+          ) : (
+            <QueryErrorMessage error={queryError.message} />
+          )
         }
         onSelectNewChart={() => onSelectNewChart(widget.id)}
         onRemove={() => onRemove(widget.id)}
@@ -298,9 +301,9 @@ export function WidgetCard({
     <Card
       className={`${isMobile ? mobileHeightClass : 'h-full'} flex flex-col overflow-hidden gap-2 py-4`}
     >
-      <CardHeader className="pb-1 gap-1">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 space-y-0.5">
+      <CardHeader className="min-w-0 gap-1 px-4 pb-1 sm:px-6">
+        <div className="flex min-w-0 items-start justify-between gap-2">
+          <div className="min-w-0 flex-1 space-y-0.5">
             <CardTitle className="text-base truncate" title={title}>
               {title}
             </CardTitle>
@@ -341,7 +344,7 @@ export function WidgetCard({
               )}
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="-mr-2 flex shrink-0 items-center sm:mr-0 sm:gap-1">
             <Button
               variant="ghost"
               size="icon"
@@ -410,14 +413,21 @@ export function WidgetCard({
           />
         )}
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 pt-0">
+      <CardContent className="flex min-h-0 flex-1 flex-col px-4 pt-0 sm:px-6">
         {dataQuery.isPending && (
-          <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+          <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
             <Trans>Loading chart...</Trans>
           </div>
         )}
+        {!dataQuery.isPending && question && question.noOverlap.length > 0 && (
+          <p className="mb-2 shrink-0 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-xs">
+            {question.noOverlap.includes('accounts')
+              ? t`This question has its own account filter, and none of its accounts are in the dashboard’s account filter, so nothing matches.`
+              : t`This question has its own category group filter, and none of its groups are in the dashboard’s filter, so nothing matches.`}
+          </p>
+        )}
         {!dataQuery.isPending && dataQuery.data && question && visualization && (
-          <div ref={chartRef} className="h-full overflow-auto">
+          <div ref={chartRef} className="min-h-0 flex-1 overflow-auto">
             <QuestionVisualization
               result={dataQuery.data}
               columns={question.columns}
@@ -435,7 +445,7 @@ export function WidgetCard({
           </div>
         )}
         {!dataQuery.isPending && dataQuery.data && !question && (
-          <div ref={chartRef} className="h-full overflow-hidden">
+          <div ref={chartRef} className="min-h-0 flex-1 overflow-hidden">
             <ChartViewer
               queryResult={dataQuery.data}
               chartConfig={chart}

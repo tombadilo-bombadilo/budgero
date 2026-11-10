@@ -14,7 +14,7 @@ import type { VizViewProps } from './types';
 export function ScatterView({ result, columns, source, fitHeight, className }: VizViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const data = useMemo(() => buildScatter(result, columns), [result, columns]);
 
   const option = useMemo<EChartsCoreOption | null>(() => {

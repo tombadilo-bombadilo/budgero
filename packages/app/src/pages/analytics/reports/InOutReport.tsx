@@ -28,6 +28,7 @@ import { LedgerTable } from '../components/LedgerTable';
 import { InsightStrip, LegendChips } from '../components/panels';
 import { reportMeta } from '../report-questions';
 import { inOutAnswer } from '../report-answers';
+import { formatPercent } from '../format-percent';
 
 type InOutMode = 'flow' | 'rate';
 
@@ -166,7 +167,7 @@ export function InOutReport({ data, months }: InOutReportProps) {
         axisLabel: {
           color: chrome.axisText,
           fontSize: 11,
-          formatter: (value: number) => `${value}%`,
+          formatter: (value: number) => formatPercent(value),
         },
         splitLine: { lineStyle: { color: chrome.grid, width: 1 } },
         axisLine: { show: false },
@@ -183,7 +184,7 @@ export function InOutReport({ data, months }: InOutReportProps) {
             {
               color: rate !== null && rate >= 0 ? palette.flow.positive : palette.flow.negative,
               name: t`Savings rate`,
-              value: rate === null ? 'no income' : `${rate.toFixed(1)}%`,
+              value: rate === null ? 'no income' : formatPercent(rate, 1),
             },
           ]);
         },
@@ -304,7 +305,7 @@ export function InOutReport({ data, months }: InOutReportProps) {
             },
             {
               label: t`Savings rate`,
-              value: savingsRate === null ? '—' : `${savingsRate.toFixed(0)}%`,
+              value: savingsRate === null ? '—' : formatPercent(savingsRate),
               valueClassName: savingsRate !== null ? trendTextClass(savingsRate) : undefined,
               detail: target !== null ? t`target ${target}%` : undefined,
             },
@@ -348,7 +349,7 @@ export function InOutReport({ data, months }: InOutReportProps) {
               align: 'right',
               hideOnMobile: true,
               render: (point) =>
-                point.income > 0 ? `${Math.round((point.net / point.income) * 100)}%` : '—',
+                point.income > 0 ? formatPercent((point.net / point.income) * 100) : '—',
               cellClassName: () => 'text-muted-foreground',
             },
           ]}

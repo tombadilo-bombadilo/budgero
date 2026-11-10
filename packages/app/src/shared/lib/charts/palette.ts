@@ -1,13 +1,13 @@
 /**
- * Analytics chart palette — validated with the dataviz six-checks validator
- * against our real surfaces (light card #ffffff, dark card #18181b):
- * adjacent-pair CVD ΔE ≥ 8.4 and normal-vision ΔE ≥ 19.3 in both modes.
- * The slot ORDER is the colorblind-safety mechanism — never reorder or cycle;
- * a 9th series folds into "Other" (see seriesSlots).
- *
- * Three light slots (magenta/yellow/aqua) sit below 3:1 contrast on white —
- * the relief rule applies: every chart ships with the summary panel that
- * lists exact values, and marks carry 2px surface gaps.
+ * Categorical chart palette: 12 slots in the Tableau-10 family (plus light
+ * blue, olive and indigo), ordered so neighbours differ in both hue and
+ * lightness: blue, orange, green, red, purple, mustard, teal, brown, pink,
+ * light blue, olive, indigo. No two greens or blues sit side by side, the
+ * blue / orange / red / green opening stays apart for red-green colour
+ * blindness, and there is no neon. The dark set is the same hues, lifted
+ * for the dark surface. Slot order is part of the design: series keep
+ * their slot (position), never their rank, so a series has one colour in
+ * grouped, stacked and 100% charts and in the legend.
  */
 
 export interface ChartChrome {
@@ -21,25 +21,33 @@ export interface ChartChrome {
 }
 
 export const CATEGORICAL_LIGHT = [
-  '#2a78d6', // blue
-  '#008300', // green
-  '#e87ba4', // magenta
-  '#eda100', // yellow
-  '#1baf7a', // aqua
-  '#eb6834', // orange
-  '#4a3aa7', // violet
-  '#e34948', // red
+  '#4e79a7', // blue
+  '#f28e2b', // orange
+  '#59a14f', // green
+  '#e15759', // red
+  '#b07aa1', // purple
+  '#d4a72c', // mustard
+  '#5fa9a3', // teal
+  '#9c755f', // brown
+  '#f08ca0', // pink
+  '#8fbbe0', // light blue
+  '#a5a51f', // olive
+  '#6b6ecf', // indigo
 ] as const;
 
 export const CATEGORICAL_DARK = [
-  '#3987e5',
-  '#008300',
-  '#d55181',
-  '#c98500',
-  '#199e70',
-  '#d95926',
-  '#9085e9',
-  '#e66767',
+  '#6a96c9', // blue
+  '#f5a04a', // orange
+  '#6cbf5f', // green
+  '#f06d6f', // red
+  '#c48fb6', // purple
+  '#e3bb45', // mustard
+  '#76c3bc', // teal
+  '#b88d72', // brown
+  '#ffa6b6', // pink
+  '#a6cdee', // light blue
+  '#c2c23a', // olive
+  '#8b8ee6', // indigo
 ] as const;
 
 /** Money polarity — status colors, never reused as series slots. */

@@ -269,6 +269,22 @@ describe('buildNetWorthSeries', () => {
   });
 });
 
+describe('buildNetWorthSeries with overdrafts', () => {
+  it('counts an overdrawn checking account as debt, never as negative assets', () => {
+    const accounts = [
+      account({ id: 1, currentBalance: -7_000 }),
+      account({ id: 2, currentBalance: 8_000 }),
+      account({ id: 3, type: 'Credit', isLiability: true, currentBalance: -500 }),
+    ];
+    expect(buildNetWorthSeries(accounts, [], ['2026-06'])[0]).toEqual({
+      monthKey: '2026-06',
+      assets: 8_000,
+      debt: 7_500,
+      netWorth: 500,
+    });
+  });
+});
+
 describe('buildFlowGraph', () => {
   it('routes income through the hub to groups and the surplus to Saved', () => {
     const txns = [

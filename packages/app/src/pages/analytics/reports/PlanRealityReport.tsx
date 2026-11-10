@@ -29,6 +29,7 @@ import { LedgerTable } from '../components/LedgerTable';
 import { InsightStrip, LegendChips } from '../components/panels';
 import { reportMeta } from '../report-questions';
 import { planAnswer } from '../report-answers';
+import { formatPercent } from '../format-percent';
 
 interface PlanRealityReportProps {
   data: AnalyticsData;
@@ -163,7 +164,7 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
                 value: money.tile(plan.totalSpent),
                 detail:
                   plan.totalAssigned > 0
-                    ? t`${Math.round((plan.totalSpent / plan.totalAssigned) * 100)}% of plan`
+                    ? t`${formatPercent((plan.totalSpent / plan.totalAssigned) * 100)} of plan`
                     : undefined,
               },
               {
@@ -173,7 +174,7 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
               },
               {
                 label: t`Months on plan`,
-                value: `${Math.round(plan.monthsOnPlan * 100)}%`,
+                value: formatPercent(plan.monthsOnPlan * 100),
                 valueClassName:
                   plan.monthsOnPlan >= 0.5 ? 'text-green-600' : 'text-red-600 dark:text-red-300',
               },
@@ -229,7 +230,7 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
                     key: 'usage',
                     header: t`Used`,
                     align: 'right',
-                    render: (row) => `${Math.round((row.usage ?? 0) * 100)}%`,
+                    render: (row) => formatPercent((row.usage ?? 0) * 100),
                     cellClassName: () => 'font-semibold text-red-600 dark:text-red-300',
                   },
                 ]}

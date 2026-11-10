@@ -1,3 +1,4 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useState, type RefObject } from 'react';
 import { Download, FileSpreadsheet, ImageDown } from 'lucide-react';
@@ -39,6 +40,8 @@ export function ExportMenu({
   const { t } = useLingui();
   const palette = useChartPalette();
   const [canPng, setCanPng] = useState(false);
+  const truncated = result !== null && result.rowCount > result.rows.length;
+  const shownRows = (result?.rows.length ?? 0).toLocaleString();
 
   const exportCsv = () => {
     if (!result) return;
@@ -47,6 +50,16 @@ export function ExportMenu({
         ? questionResultCsv(result, columns, source)
         : questionResultCsv(result, [], 'transactions');
     downloadCsv(csv, name);
+    if (truncated) {
+      // The result holds only the first rows; say so instead of a silently short file.
+      const shown = result.rows.length.toLocaleString();
+      toast.warning(
+        plural(result.rowCount, {
+          one: `The CSV has the first ${shown} of # row. Filter or summarize the question to export everything.`,
+          other: `The CSV has the first ${shown} of # rows. Filter or summarize the question to export everything.`,
+        })
+      );
+    }
   };
   const exportPng = async () => {
     try {
@@ -77,7 +90,16 @@ export function ExportMenu({
       <DropdownMenuContent align="end">
         <DropdownMenuItem onSelect={exportCsv}>
           <FileSpreadsheet className="h-4 w-4" aria-hidden />
-          <Trans>Download CSV</Trans>
+          {truncated ? (
+            <span className="flex flex-col">
+              <Trans>Download CSV</Trans>
+              <span className="text-xs text-muted-foreground">
+                <Trans>First {shownRows} rows only</Trans>
+              </span>
+            </span>
+          ) : (
+            <Trans>Download CSV</Trans>
+          )}
         </DropdownMenuItem>
         <DropdownMenuItem disabled={!canPng} onSelect={() => void exportPng()}>
           <ImageDown className="h-4 w-4" aria-hidden />

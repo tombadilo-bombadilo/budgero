@@ -1,17 +1,19 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useId, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftRight,
   Code2,
   FlaskConical,
   LayoutGrid,
+  MoreHorizontal,
   Network,
   PieChart,
   Plus,
   Search,
   Table2,
   Target,
+  Trash2,
   TrendingUp,
   Wallet,
   type LucideIcon,
@@ -24,10 +26,19 @@ import { VIZ_ICONS } from '@features/reports/ui/notebook/viz/viz-meta';
 import { REPORT_ORDER, reportMeta } from '@pages/analytics/report-questions';
 import type { ReportKey } from '@pages/analytics/analytics-state';
 import { Button } from '@shared/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@shared/ui/dropdown-menu';
 import { Input } from '@shared/ui/input';
 import { Skeleton } from '@shared/ui/skeleton';
 import { cn } from '@shared/lib/utils';
 import { collectionOf } from './collections';
+import { questionExamples } from './question-examples';
+import type { QuestionRouteState } from './question/useOpenSavedQuestion';
+import { useDeleteQuestion } from './question/useDeleteQuestion';
 
 const REPORT_ICONS: Record<ReportKey, LucideIcon> = {
   wealth: TrendingUp,
@@ -67,7 +78,16 @@ export default function ReportsHomePage() {
   const [search, setSearch] = useState('');
   const [collection, setCollection] = useState(ALL);
   const { data: reports = [], isLoading } = useReports();
+  const deletion = useDeleteQuestion();
   const query = search.trim().toLowerCase();
+  const navigate = useNavigate();
+  const examples = questionExamples().filter((example) =>
+    matches(query, example.name, example.hint)
+  );
+  const openExample = (example: (typeof examples)[number]) => {
+    const state: QuestionRouteState = { startSpec: example.spec, startName: example.name };
+    void navigate('/reports/question/new', { state });
+  };
 
   const prebuilt = REPORT_ORDER.map((key) => ({ key, ...reportMeta(key) })).filter((item) =>
     matches(query, item.label, item.question, item.hint)
@@ -116,6 +136,202 @@ export default function ReportsHomePage() {
     ...collections.map((name) => ({ id: name, label: name })),
   ];
 
+  const examplesSection = (
+    <section aria-labelledby={`${searchId}-examples`} className="space-y-3">
+      <div>
+        <h2 id={`${searchId}-examples`} className="text-lg font-semibold">
+          <Trans>Start from an example</Trans>
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          <Trans>Opens in the editor, ready to change and save.</Trans>
+        </p>
+      </div>
+      {examples.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          <Trans>No example matches your search.</Trans>
+        </p>
+      ) : (
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          {examples.map((example) => {
+            const Icon = VIZ_ICONS[resolveVisualization(example.spec)];
+            return (
+              <li key={example.id}>
+                <button
+                  type="button"
+                  onClick={() => openExample(example)}
+                  className={cn(CARD_CLASS, 'w-full flex-row items-start gap-3 p-3 text-left')}
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-chart-2/15 text-chart-2">
+                    <Icon className="h-4 w-4" aria-hidden />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium leading-snug">{example.name}</span>
+                    <span className="block text-xs text-muted-foreground">{example.hint}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+
+  const noSaved = !isLoading && saved.length === 0;
+
+  const prebuiltSection = (
+    <section aria-labelledby={`${searchId}-prebuilt`} className="space-y-3">
+      <h2 id={`${searchId}-prebuilt`} className="text-lg font-semibold">
+        <Trans>Prebuilt reports</Trans>
+      </h2>
+      {prebuilt.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          <Trans>No prebuilt report matches your search.</Trans>
+        </p>
+      ) : (
+        <ul className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 2xl:grid-cols-4">
+          {prebuilt.map((item) => {
+            const Icon = REPORT_ICONS[item.key];
+            return (
+              <li key={item.key} className="min-w-0">
+                {/* Phones: icon + short name only, two per row. */}
+                <Link
+                  to={`/reports/prebuilt/${item.key}`}
+                  className={cn(CARD_CLASS, 'p-3 sm:p-4')}
+                  aria-label={`${item.label}: ${item.question}`}
+                >
+                  <div className="flex items-center gap-2 sm:items-start sm:gap-3">
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary sm:h-9 sm:w-9">
+                      <Icon className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="hidden font-medium leading-snug sm:block">{item.question}</p>
+                      <p className="line-clamp-2 text-sm font-medium leading-tight sm:text-xs sm:font-normal sm:text-muted-foreground">
+                        {item.label}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="hidden text-sm text-muted-foreground sm:block">{item.hint}</p>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+
+  const savedSection = (
+    <section aria-labelledby={`${searchId}-saved`} className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 id={`${searchId}-saved`} className="text-lg font-semibold">
+          <Trans>Saved questions</Trans>
+        </h2>
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/reports/question/new?mode=sql">
+            <Code2 className="h-4 w-4" aria-hidden />
+            <Trans>New SQL query</Trans>
+          </Link>
+        </Button>
+      </div>
+
+      {collectionFilters.length > 2 && (
+        <div className="flex flex-wrap gap-2" role="group" aria-label={t`Collections`}>
+          {collectionFilters.map((item) => (
+            <Button
+              key={item.id}
+              variant={collection === item.id ? 'secondary' : 'ghost'}
+              size="sm"
+              aria-pressed={collection === item.id}
+              className={cn('h-8 rounded-full border', collection === item.id && 'border-border')}
+              onClick={() => setCollection(item.id)}
+            >
+              {item.label}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {isLoading ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+          <Skeleton className="h-28" />
+        </div>
+      ) : saved.length === 0 ? (
+        <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed p-4 sm:flex-row sm:items-center">
+          <Wallet className="h-6 w-6 shrink-0 text-muted-foreground" aria-hidden />
+          <p className="flex-1 text-sm text-muted-foreground">
+            <Trans>
+              No saved questions yet. Open an example above, or ask your own: pick data, filter it,
+              summarize it and save it to reuse or pin to a dashboard.
+            </Trans>
+          </p>
+          <Button asChild size="sm">
+            <Link to="/reports/question/new">
+              <Plus className="h-4 w-4" aria-hidden />
+              <Trans>New question</Trans>
+            </Link>
+          </Button>
+        </div>
+      ) : visibleSaved.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          <Trans>No saved question matches your search.</Trans>
+        </p>
+      ) : (
+        <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          {visibleSaved.map(({ report, summary, icon: Icon, collection: name }) => {
+            const updated = formatUpdated(report.updatedAt);
+            return (
+              <li key={report.id} className="relative min-w-0">
+                <Link to={`/reports/question/${report.id}`} className={cn(CARD_CLASS, 'pr-12')}>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+                      <Icon className="h-5 w-5" aria-hidden />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="line-clamp-2 break-words font-medium leading-snug">
+                        {report.name}
+                      </p>
+                      <p className="line-clamp-2 text-sm text-muted-foreground">{summary}</p>
+                    </div>
+                  </div>
+                  <div className="mt-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="rounded-full border px-2 py-0.5">
+                      {name ?? t`My questions`}
+                    </span>
+                    {updated && <span>{t`Updated ${updated}`}</span>}
+                  </div>
+                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-2 h-8 w-8"
+                      aria-label={t`More actions for ${report.name}`}
+                    >
+                      <MoreHorizontal className="h-4 w-4" aria-hidden />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem
+                      onSelect={() => deletion.ask(report)}
+                      className="text-destructive focus:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden />
+                      <Trans>Delete question</Trans>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+
   return (
     <div className="w-full space-y-8 p-4 pb-24 sm:p-6 md:pb-6">
       <header className="flex flex-wrap items-end justify-between gap-3">
@@ -159,129 +375,20 @@ export default function ReportsHomePage() {
         />
       </div>
 
-      <section aria-labelledby={`${searchId}-prebuilt`} className="space-y-3">
-        <h2 id={`${searchId}-prebuilt`} className="text-lg font-semibold">
-          <Trans>Prebuilt reports</Trans>
-        </h2>
-        {prebuilt.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            <Trans>No prebuilt report matches your search.</Trans>
-          </p>
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {prebuilt.map((item) => {
-              const Icon = REPORT_ICONS[item.key];
-              return (
-                <li key={item.key}>
-                  <Link to={`/reports/prebuilt/${item.key}`} className={CARD_CLASS}>
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-                        <Icon className="h-5 w-5" aria-hidden />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="font-medium leading-snug">{item.question}</p>
-                        <p className="text-xs text-muted-foreground">{item.label}</p>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground">{item.hint}</p>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      <section aria-labelledby={`${searchId}-saved`} className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 id={`${searchId}-saved`} className="text-lg font-semibold">
-            <Trans>Saved questions</Trans>
-          </h2>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/reports/question/new?mode=sql">
-              <Code2 className="h-4 w-4" aria-hidden />
-              <Trans>New SQL query</Trans>
-            </Link>
-          </Button>
-        </div>
-
-        {collectionFilters.length > 2 && (
-          <div className="flex flex-wrap gap-2" role="group" aria-label={t`Collections`}>
-            {collectionFilters.map((item) => (
-              <Button
-                key={item.id}
-                variant={collection === item.id ? 'secondary' : 'ghost'}
-                size="sm"
-                aria-pressed={collection === item.id}
-                className={cn('h-8 rounded-full border', collection === item.id && 'border-border')}
-                onClick={() => setCollection(item.id)}
-              >
-                {item.label}
-              </Button>
-            ))}
-          </div>
-        )}
-
-        {isLoading ? (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-            <Skeleton className="h-28" />
-          </div>
-        ) : saved.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center">
-            <Wallet className="h-8 w-8 text-muted-foreground" aria-hidden />
-            <div>
-              <p className="font-medium">
-                <Trans>No saved questions yet</Trans>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                <Trans>
-                  Ask your own: pick data, filter it, summarize it and save it to reuse or pin to a
-                  dashboard.
-                </Trans>
-              </p>
-            </div>
-            <Button asChild>
-              <Link to="/reports/question/new">
-                <Plus className="h-4 w-4" aria-hidden />
-                <Trans>New question</Trans>
-              </Link>
-            </Button>
-          </div>
-        ) : visibleSaved.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            <Trans>No saved question matches your search.</Trans>
-          </p>
-        ) : (
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {visibleSaved.map(({ report, summary, icon: Icon, collection: name }) => {
-              const updated = formatUpdated(report.updatedAt);
-              return (
-                <li key={report.id}>
-                  <Link to={`/reports/question/${report.id}`} className={CARD_CLASS}>
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
-                        <Icon className="h-5 w-5" aria-hidden />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="truncate font-medium leading-snug">{report.name}</p>
-                        <p className="line-clamp-2 text-sm text-muted-foreground">{summary}</p>
-                      </div>
-                    </div>
-                    <div className="mt-auto flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span className="rounded-full border px-2 py-0.5">
-                        {name ?? t`My questions`}
-                      </span>
-                      {updated && <span>{t`Updated ${updated}`}</span>}
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      {noSaved ? (
+        <>
+          {prebuiltSection}
+          {examplesSection}
+          {savedSection}
+        </>
+      ) : (
+        <>
+          {savedSection}
+          {prebuiltSection}
+          {examplesSection}
+        </>
+      )}
+      {deletion.dialog}
     </div>
   );
 }

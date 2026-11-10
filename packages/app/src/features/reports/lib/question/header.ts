@@ -10,7 +10,8 @@
  * still read and upgraded to v2.
  */
 import { upgradeLegacySpec } from './legacy-v1';
-import { normalizeQuestion, type QuestionSpec } from './spec';
+import { QUESTION_SOURCES } from './fields';
+import { normalizeQuestion, questionIssues, type QuestionIssue, type QuestionSpec } from './spec';
 
 export const QUESTION_HEADER_PREFIX = '-- budgero-question:v2';
 export const LEGACY_HEADER_PREFIX = '-- budgero-builder:';
@@ -33,6 +34,7 @@ function compactQuestion(spec: QuestionSpec): Record<string, unknown> {
     ...(spec.stacking !== 'auto' ? { stacking: spec.stacking } : {}),
     ...(spec.customColumns?.length ? { customColumns: spec.customColumns } : {}),
     ...(spec.display ? { display: spec.display } : {}),
+    ...(spec.having?.length ? { having: spec.having } : {}),
   };
 }
 
@@ -66,13 +68,30 @@ export function parseQuestionHeader(query: string | null | undefined): QuestionS
   const line = firstLine(query);
   if (line.startsWith(QUESTION_HEADER_PREFIX)) {
     const json = parseJsonObject(line.slice(QUESTION_HEADER_PREFIX.length).trim());
-    return json ? normalizeQuestion({ ...json, v: 2 }) : null;
+    // A source this version doesn't know (e.g. written by a newer app) can't
+    // be rebuilt here: treat the report as plain SQL so its stored query runs.
+    if (!json || !(QUESTION_SOURCES as readonly unknown[]).includes(json.source)) return null;
+    return normalizeQuestion({ ...json, v: 2 });
   }
   if (line.startsWith(LEGACY_HEADER_PREFIX)) {
     const json = parseJsonObject(line.slice(LEGACY_HEADER_PREFIX.length).trim());
     return json ? upgradeLegacySpec(json) : null;
   }
   return null;
+}
+
+/**
+ * What opening a saved v2 question drops or changes (custom columns that no
+ * longer parse, invalid filters, ...), so the editor can say so instead of
+ * silently losing a part. Empty for anything else.
+ */
+export function questionHeaderIssues(query: string | null | undefined): QuestionIssue[] {
+  if (!query) return [];
+  const line = firstLine(query);
+  if (!line.startsWith(QUESTION_HEADER_PREFIX)) return [];
+  const json = parseJsonObject(line.slice(QUESTION_HEADER_PREFIX.length).trim());
+  if (!json || !(QUESTION_SOURCES as readonly unknown[]).includes(json.source)) return [];
+  return questionIssues({ ...json, v: 2 });
 }
 
 /** True when a saved query was produced by the notebook (or the v1 builder). */

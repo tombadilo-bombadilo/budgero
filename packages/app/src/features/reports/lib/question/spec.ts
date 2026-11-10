@@ -6,16 +6,20 @@
  */
 import {
   DATE_BUCKETS,
+  DATE_PART_RANGE,
   DEFAULT_RAW_COLUMNS,
   PRIMARY_DATE_FIELD,
   QUESTION_SOURCES,
   SOURCE_FIELDS,
+  datePartsFor,
   getField,
   type DateBucket,
+  type DatePart,
   type FieldDef,
   type QuestionSource,
 } from './fields';
 import {
+  ExpressionError,
   parseExpression,
   printExpression,
   type ExprField,
@@ -57,6 +61,17 @@ export interface QuestionFilter {
   unit?: RelativeUnit;
   /** `previous` filters: count the current (partial) unit as one of them. */
   includeCurrent?: boolean;
+  /**
+   * Date fields, `is` / `isNot`: compare one part of the date (values are
+   * part numbers, e.g. day of week 6 and 7 = weekends). Drill-through on a
+   * date-part grouping writes these.
+   */
+  part?: DatePart;
+  /**
+   * Number fields, `between`: the numeric bin [values[0], values[1]) of this
+   * width, matched exactly like the binned grouping (drill-through on a bin).
+   */
+  binWidth?: number;
 }
 
 export const AGGREGATION_OPS = [
@@ -92,11 +107,47 @@ export interface QuestionAggregation {
   window?: number;
   /** Adds "previous period" and "% change" columns (needs a date grouping). */
   compare?: boolean;
+  /** What `compare` compares with; absent = the previous bucket. */
+  compareTo?: CompareOffset;
 }
+
+/**
+ * Compare a date-grouped metric with the bucket before it ('previous') or
+ * with the same bucket a year earlier ('lastYear', e.g. March vs last March).
+ */
+export const COMPARE_OFFSETS = ['previous', 'lastYear'] as const;
+export type CompareOffset = (typeof COMPARE_OFFSETS)[number];
+
+/** Numeric binning of a number grouping: a fixed bin width, or 'auto' (about 10 nice bins). */
+export type NumericBin = 'auto' | number;
+/** Bin widths the UI offers next to 'auto'. */
+export const NUMERIC_BIN_WIDTHS = [1, 5, 10, 25, 50, 100, 250, 500, 1000, 5000] as const;
+/** Bins 'auto' aims for. */
+export const AUTO_BIN_COUNT = 10;
+const MAX_BIN_WIDTH = 1e12;
+const MIN_BIN_WIDTH = 1e-6;
 
 export interface QuestionBreakout {
   field: string;
+  /** Date fields: bucket the dates (month, week, ...). */
   bucket?: DateBucket;
+  /** Date fields, instead of a bucket: group by one part of the date (e.g. day of week). */
+  part?: DatePart;
+  /** Number fields: group into ranges. */
+  bin?: NumericBin;
+}
+
+/** Operators of a filter on a metric after aggregation ("having"). */
+export const HAVING_OPS = ['gt', 'lt', 'between', 'is', 'isNot', 'isEmpty', 'notEmpty'] as const;
+export type HavingOp = (typeof HAVING_OPS)[number];
+export const MAX_HAVING = 10;
+
+/** A filter on a summarized result's metric column, e.g. categories with spending > 500. */
+export interface QuestionHaving {
+  /** Output column key of a metric (see `questionColumns`). */
+  column: string;
+  op: HavingOp;
+  values: number[];
 }
 
 export interface QuestionSort {
@@ -147,14 +198,24 @@ export interface QuestionSpec {
   customColumns?: QuestionCustomColumn[];
   /** Chart settings (values on bars, goal line, ...); omitted when all default. */
   display?: QuestionDisplay;
+  /** Filters on metrics after aggregation; absent when there are none. */
+  having?: QuestionHaving[];
 }
 
 export const MAX_QUESTION_LIMIT = 10_000;
+/** Filters the editor lets a question have. */
 export const MAX_FILTERS = 30;
+/**
+ * Room above MAX_FILTERS for the dashboard's own filters (date, accounts,
+ * category groups), so a widget at the editor's limit still takes them.
+ */
+const DASHBOARD_FILTER_SLOTS = 3;
+const MAX_STORED_FILTERS = MAX_FILTERS + DASHBOARD_FILTER_SLOTS;
 export const MAX_AGGREGATIONS = 6;
 export const MAX_BREAKOUTS = 3;
 const MAX_VALUES = 500;
-const MAX_TEXT = 500;
+/** Longest text value a filter keeps (long memos still match exactly). */
+export const MAX_FILTER_TEXT = 10_000;
 
 /** Filters a fresh Transactions question starts with (removable chips). */
 export function defaultSourceFilters(source: QuestionSource): QuestionFilter[] {
@@ -231,7 +292,31 @@ function toFiniteNumber(value: unknown): number | null {
 function cleanText(value: unknown): string | null {
   if (typeof value !== 'string' && typeof value !== 'number') return null;
   const trimmed = String(value).trim();
-  return trimmed.length > 0 && trimmed.length <= MAX_TEXT ? trimmed : null;
+  return trimmed.length > 0 && trimmed.length <= MAX_FILTER_TEXT ? trimmed : null;
+}
+
+/** Whether a text value is too long to filter by (filters drop it). */
+export function isFilterTextTooLong(value: unknown): boolean {
+  return typeof value === 'string' && value.trim().length > MAX_FILTER_TEXT;
+}
+
+function normalizeBin(value: unknown): NumericBin | null {
+  if (value === 'auto') return 'auto';
+  const width = toFiniteNumber(value);
+  return width !== null && width >= MIN_BIN_WIDTH && width <= MAX_BIN_WIDTH ? width : null;
+}
+
+/** Whole numbers in a date part's range, unique. */
+function partValues(part: DatePart, values: unknown[]): number[] {
+  const [low, high] = DATE_PART_RANGE[part];
+  return unique(
+    values
+      .map(toFiniteNumber)
+      .filter(
+        (value): value is number =>
+          value !== null && Number.isInteger(value) && value >= low && value <= high
+      )
+  );
 }
 
 function unique<T>(values: T[]): T[] {
@@ -264,10 +349,28 @@ export function normalizeFilter(
   if (!raw) return null;
   const field = typeof raw.field === 'string' ? lookupField(source, raw.field, custom) : undefined;
   const op = oneOf(FILTER_OPS, raw.op);
-  if (!field || !op || !operatorsFor(field).includes(op)) return null;
+  if (!field || !op) return null;
+  const rawValues = asArray(raw.values).slice(0, MAX_VALUES);
+
+  // Date part: "day of week is 6, 7".
+  const part = oneOf(datePartsFor(field), raw.part);
+  if (part) {
+    if (op !== 'is' && op !== 'isNot') return null;
+    const values = partValues(part, rawValues);
+    return values.length > 0 ? { field: field.id, op, values, part } : null;
+  }
+  // Numeric bin: [low, high) of a bin width, from drill-through.
+  if (field.type === 'number' && op === 'between' && raw.binWidth !== undefined) {
+    const width = normalizeBin(raw.binWidth);
+    const low = toFiniteNumber(asArray(raw.values)[0]);
+    if (typeof width !== 'number' || low === null) return null;
+    const index = Math.round(low / width);
+    if (!Number.isSafeInteger(index)) return null;
+    return { field: field.id, op, values: [index * width, (index + 1) * width], binWidth: width };
+  }
+  if (!operatorsFor(field).includes(op)) return null;
 
   const base = { field: field.id, op };
-  const rawValues = asArray(raw.values).slice(0, MAX_VALUES);
 
   if (op === 'isEmpty' || op === 'notEmpty') return { ...base, values: [] };
 
@@ -363,8 +466,15 @@ export function normalizeBreakout(
   const raw = asRecord(input);
   if (!raw || typeof raw.field !== 'string') return null;
   const field = lookupField(source, raw.field, custom);
-  if (!field || !field.groupable) return null;
+  if (!field) return null;
+  if (field.type === 'number') {
+    const bin = normalizeBin(raw.bin);
+    if (bin !== null) return { field: field.id, bin };
+  }
+  if (!field.groupable) return null;
   if (field.type !== 'date') return { field: field.id };
+  const part = oneOf(datePartsFor(field), raw.part);
+  if (part) return { field: field.id, part };
   const bucket = oneOf(DATE_BUCKETS, raw.bucket);
   return {
     field: field.id,
@@ -379,7 +489,7 @@ export function normalizeQuestion(input: unknown): QuestionSpec {
   const custom = customFields(source, customColumns);
 
   const filters = asArray(raw.filters)
-    .slice(0, MAX_FILTERS)
+    .slice(0, MAX_STORED_FILTERS)
     .map((filter) => normalizeFilter(source, filter, custom))
     .filter((filter): filter is QuestionFilter => filter !== null);
 
@@ -392,7 +502,7 @@ export function normalizeQuestion(input: unknown): QuestionSpec {
   for (const candidate of asArray(raw.breakouts)) {
     const breakout = normalizeBreakout(source, candidate, custom);
     if (!breakout) continue;
-    if (breakouts.some((b) => b.field === breakout.field && b.bucket === breakout.bucket)) continue;
+    if (breakouts.some((b) => sameBreakout(b, breakout))) continue;
     breakouts.push(breakout);
     if (breakouts.length >= MAX_BREAKOUTS) break;
   }
@@ -441,10 +551,64 @@ export function normalizeQuestion(input: unknown): QuestionSpec {
   };
   const display = normalizeDisplay(raw.display);
   if (display) spec.display = display;
-  // Drop sorts on columns this question doesn't output.
-  const keys = new Set(questionColumnKeys(spec));
-  spec.sort = spec.sort.filter((entry) => keys.has(entry.column));
+  const outputs = questionColumns(spec);
+  const keys = new Set(outputs.map((column) => column.key));
+  // Drop sorts on columns this question doesn't output; raw rows can also
+  // sort by any field of the source (shown or not).
+  spec.sort = spec.sort.filter(
+    (entry) =>
+      keys.has(entry.column) ||
+      (aggregations.length === 0 && Boolean(lookupField(source, entry.column, custom)))
+  );
+  const having = normalizeHaving(raw.having, outputs);
+  if (having.length > 0) spec.having = having;
   return spec;
+}
+
+function sameBreakout(a: QuestionBreakout, b: QuestionBreakout): boolean {
+  return a.field === b.field && a.bucket === b.bucket && a.part === b.part && a.bin === b.bin;
+}
+
+/** Metric columns a "having" filter can test. */
+export function havingColumns(spec: QuestionSpec): QuestionColumn[] {
+  return questionColumns(spec).filter((column) => column.kind === 'aggregation');
+}
+
+function normalizeHaving(input: unknown, columns: readonly QuestionColumn[]): QuestionHaving[] {
+  const metricKeys = new Set(
+    columns.filter((column) => column.kind === 'aggregation').map((column) => column.key)
+  );
+  const result: QuestionHaving[] = [];
+  for (const candidate of asArray(input).slice(0, MAX_HAVING)) {
+    const entry = normalizeHavingEntry(candidate, metricKeys);
+    if (entry) result.push(entry);
+  }
+  return result;
+}
+
+function normalizeHavingEntry(
+  input: unknown,
+  metricKeys: ReadonlySet<string>
+): QuestionHaving | null {
+  const raw = asRecord(input);
+  if (!raw || typeof raw.column !== 'string' || !metricKeys.has(raw.column)) return null;
+  const op = oneOf(HAVING_OPS, raw.op);
+  if (!op) return null;
+  const base = { column: raw.column, op };
+  if (op === 'isEmpty' || op === 'notEmpty') return { ...base, values: [] };
+  const numbers = asArray(raw.values)
+    .slice(0, MAX_VALUES)
+    .map(toFiniteNumber)
+    .filter((value): value is number => value !== null);
+  if (op === 'between') {
+    if (numbers.length < 2) return null;
+    const [low, high] = numbers[0] <= numbers[1] ? numbers : [numbers[1], numbers[0]];
+    return { ...base, values: [low, high] };
+  }
+  if (op === 'gt' || op === 'lt')
+    return numbers.length > 0 ? { ...base, values: [numbers[0]] } : null;
+  const values = unique(numbers);
+  return values.length > 0 ? { ...base, values } : null;
 }
 
 // ---------------------------------------------------------------------------
@@ -458,7 +622,17 @@ export type QuestionColumn = (
 ) &
   QuestionColumnExtras;
 
+const DATE_PART_KEYS: Record<DatePart, string> = {
+  year: 'year',
+  quarterOfYear: 'quarter_of_year',
+  monthOfYear: 'month_of_year',
+  dayOfMonth: 'day_of_month',
+  dayOfWeek: 'day_of_week',
+};
+
 function breakoutBaseKey(source: QuestionSource, breakout: QuestionBreakout): string {
+  if (breakout.part) return `${breakout.field}_${DATE_PART_KEYS[breakout.part]}`;
+  if (breakout.bin !== undefined) return `${breakout.field}_bin`;
   if (!breakout.bucket) return breakout.field;
   if (breakout.field === PRIMARY_DATE_FIELD[source]) return breakout.bucket;
   return `${breakout.field}_${breakout.bucket}`;
@@ -523,14 +697,22 @@ export function questionColumns(spec: QuestionSpec): QuestionColumn[] {
         ...extras.forAggregation(aggregation),
       };
       if (!aggregation.compare) return [metric];
+      const lastYear = aggregation.compareTo === 'lastYear';
+      const compareTo = lastYear ? { compareTo: 'lastYear' as const } : {};
       return [
         metric,
-        { ...metric, key: claim(`${key}_previous`), derived: 'previous' as const },
         {
           ...metric,
-          key: claim(`${key}_change`),
+          key: claim(lastYear ? `${key}_last_year` : `${key}_previous`),
+          derived: 'previous' as const,
+          ...compareTo,
+        },
+        {
+          ...metric,
+          key: claim(lastYear ? `${key}_yoy_change` : `${key}_change`),
           derived: 'change' as const,
           format: 'percent' as const,
+          ...compareTo,
         },
       ];
     }),
@@ -552,7 +734,8 @@ export function allowedVisualizations(spec: QuestionSpec): ResolvedVisualization
 
 /**
  * Auto choice: single value → number, two metrics in different units (money
- * vs count) → combo, date grouping → line, category grouping → bar. The row
+ * vs count) → combo, a date and a category grouping → (stacked) bar, date
+ * grouping → line, category grouping → bar. The row
  * chart is picked later from the result (long labels / many bars).
  */
 export function autoVisualization(spec: QuestionSpec): ResolvedVisualization {
@@ -565,8 +748,9 @@ export function autoVisualization(spec: QuestionSpec): ResolvedVisualization {
   ) {
     return 'combo';
   }
-  const first = getField(spec.source, spec.breakouts[0].field);
-  if (first?.type === 'date') return 'line';
+  // A date and a category grouping: parts of each period's total, stacked.
+  if (spec.breakouts.length === 2 && !isDateBreakout(spec, spec.breakouts[1])) return 'bar';
+  if (isDateBreakout(spec, spec.breakouts[0])) return 'line';
   return 'bar';
 }
 
@@ -628,6 +812,8 @@ export interface QuestionColumnExtras {
   format?: ColumnFormat;
   /** Compare-to-previous-period columns. */
   derived?: 'previous' | 'change';
+  /** Derived columns: what they compare with (absent = the previous bucket). */
+  compareTo?: CompareOffset;
 }
 
 /** Money-valued source fields. */
@@ -707,25 +893,112 @@ function customField(id: string, info: ExprInfo): FieldDef {
   return { id, type, groupable: true };
 }
 
-/** Valid custom columns: unique ids and names, expressions that parse (earlier columns only). */
-export function normalizeCustomColumns(
+/** Why a custom column name can't be used (null = it can). */
+export type CustomColumnNameIssue = 'empty' | 'tooLong' | 'brackets' | 'taken';
+
+/**
+ * Checks a custom column name: not empty, short, no brackets, and not the
+ * name of another field. Names compare case-insensitively with the source's
+ * field ids, any `labels` given (e.g. the field names in every UI language),
+ * other custom columns' names and custom column ids, since `[Name]` in an
+ * expression must mean exactly one field.
+ */
+export function customColumnNameIssue(
+  source: QuestionSource,
+  columns: readonly QuestionCustomColumn[] | undefined,
+  name: string,
+  ownId?: string,
+  labels?: (fieldId: string) => readonly string[]
+): CustomColumnNameIssue | null {
+  const trimmed = name.trim().replace(/\s+/g, ' ');
+  if (!trimmed) return 'empty';
+  if (trimmed.length > MAX_NAME_LENGTH) return 'tooLong';
+  if (/[[\]]/.test(trimmed)) return 'brackets';
+  const lower = trimmed.toLocaleLowerCase();
+  if (isReservedName(source, lower)) return 'taken';
+  const sourceLabels = SOURCE_FIELDS[source].flatMap((field) => labels?.(field.id) ?? []);
+  if (sourceLabels.some((label) => label.trim().toLocaleLowerCase() === lower)) return 'taken';
+  const others = (columns ?? []).filter((column) => column.id !== ownId);
+  if (others.some((column) => column.name.toLocaleLowerCase() === lower)) return 'taken';
+  return null;
+}
+
+/** Source field ids and custom column ids: names an expression resolves before any label. */
+function isReservedName(source: QuestionSource, lower: string): boolean {
+  return CUSTOM_COLUMN_ID.test(lower) || SOURCE_FIELDS[source].some((field) => field.id === lower);
+}
+
+/** `name`, or `name 2`, `name 3`, ... when taken. */
+function uniqueName(name: string, taken: (lower: string) => boolean): string {
+  if (!taken(name.toLocaleLowerCase())) return name;
+  for (let n = 2; ; n += 1) {
+    const suffix = ` ${n}`;
+    const candidate = `${name.slice(0, MAX_NAME_LENGTH - suffix.length).trimEnd()}${suffix}`;
+    if (!taken(candidate.toLocaleLowerCase())) return candidate;
+  }
+}
+
+/** Something `normalizeQuestion` had to drop or change, for the editor to explain. */
+export interface QuestionIssue {
+  kind: 'customColumn' | 'customMetric' | 'filter' | 'having';
+  /** Position in the input list (custom columns, aggregations, filters or having). */
+  index: number;
+  /**
+   * invalid: malformed entry, dropped; expression: the expression doesn't
+   * parse (see `error`), dropped; nameTaken: custom column renamed to
+   * `name` because its name was taken; textTooLong: a filter value longer
+   * than MAX_FILTER_TEXT, filter dropped; tooMany: over the limit, dropped.
+   */
+  reason: 'invalid' | 'expression' | 'nameTaken' | 'textTooLong' | 'tooMany';
+  error?: ExpressionError;
+  /** Custom column / metric name (the new name for nameTaken). */
+  name?: string;
+}
+
+function analyzeCustomColumns(
   source: QuestionSource,
   input: unknown
-): QuestionCustomColumn[] {
+): { columns: QuestionCustomColumn[]; issues: QuestionIssue[] } {
   const columns: QuestionCustomColumn[] = [];
+  const issues: QuestionIssue[] = [];
   const parsed = new Map<string, CustomFieldEntry>();
-  for (const candidate of asArray(input).slice(0, MAX_CUSTOM_COLUMNS * 2)) {
+  const taken = (lower: string) =>
+    isReservedName(source, lower) ||
+    columns.some((column) => column.name.toLocaleLowerCase() === lower);
+  asArray(input).forEach((candidate, index) => {
+    const issue = (reason: QuestionIssue['reason'], extra: Partial<QuestionIssue> = {}) =>
+      issues.push({ kind: 'customColumn', index, reason, ...extra });
+    if (columns.length >= MAX_CUSTOM_COLUMNS) {
+      issue('tooMany');
+      return;
+    }
     const raw = asRecord(candidate);
-    if (!raw || typeof raw.id !== 'string' || !CUSTOM_COLUMN_ID.test(raw.id)) continue;
-    const name = cleanName(raw.name);
-    if (!name || typeof raw.expression !== 'string') continue;
-    if (parsed.has(raw.id)) continue;
-    if (columns.some((column) => column.name.toLowerCase() === name.toLowerCase())) continue;
+    if (
+      !raw ||
+      typeof raw.id !== 'string' ||
+      !CUSTOM_COLUMN_ID.test(raw.id) ||
+      parsed.has(raw.id)
+    ) {
+      issue('invalid');
+      return;
+    }
+    const cleaned = cleanName(raw.name);
+    if (!cleaned || typeof raw.expression !== 'string') {
+      issue('invalid');
+      return;
+    }
     const result = parseExpression(raw.expression, {
       fields: expressionFields(source, parsed),
       level: 'row',
     });
-    if (!result.ok) continue;
+    if (!result.ok) {
+      issue('expression', { error: result.error, name: cleaned });
+      return;
+    }
+    // A name that equals a field id (or an earlier column's name) would make
+    // `[Name]` mean two things: keep the column under a free name.
+    const name = uniqueName(cleaned, taken);
+    if (name !== cleaned) issue('nameTaken', { name });
     const column = { id: raw.id, name, expression: printExpression(result.value.ast) };
     columns.push(column);
     parsed.set(column.id, {
@@ -734,9 +1007,74 @@ export function normalizeCustomColumns(
       info: result.value.info,
       ast: result.value.ast,
     });
-    if (columns.length >= MAX_CUSTOM_COLUMNS) break;
-  }
-  return columns;
+  });
+  return { columns, issues };
+}
+
+/**
+ * Valid custom columns: unique ids and names (taken names get a number),
+ * expressions that parse (earlier columns only). `questionIssues` lists
+ * what was dropped or renamed.
+ */
+export function normalizeCustomColumns(
+  source: QuestionSource,
+  input: unknown
+): QuestionCustomColumn[] {
+  return analyzeCustomColumns(source, input).columns;
+}
+
+/**
+ * What `normalizeQuestion` would drop or change in an input spec (custom
+ * columns and metrics that don't parse, invalid or too-long filters, ...),
+ * so the editor can show an error instead of silently losing a part.
+ */
+export function questionIssues(input: unknown): QuestionIssue[] {
+  const raw = asRecord(input) ?? {};
+  const source = oneOf(QUESTION_SOURCES, raw.source) ?? 'transactions';
+  const { columns, issues } = analyzeCustomColumns(source, raw.customColumns);
+  const custom = customFields(source, columns);
+  asArray(raw.filters).forEach((filter, index) => {
+    if (index >= MAX_STORED_FILTERS) {
+      issues.push({ kind: 'filter', index, reason: 'tooMany' });
+    } else if (!normalizeFilter(source, filter, custom)) {
+      const values = asArray(asRecord(filter)?.values);
+      issues.push({
+        kind: 'filter',
+        index,
+        reason: values.some(isFilterTextTooLong) ? 'textTooLong' : 'invalid',
+      });
+    }
+  });
+  asArray(raw.aggregations).forEach((aggregation, index) => {
+    if (index >= MAX_AGGREGATIONS) {
+      issues.push({ kind: 'customMetric', index, reason: 'tooMany' });
+      return;
+    }
+    const entry = asRecord(aggregation);
+    if (entry?.op !== 'custom') return;
+    const result =
+      typeof entry.expression === 'string'
+        ? parseCustomMetric(source, entry.expression, custom)
+        : null;
+    if (!result || !result.ok) {
+      issues.push({
+        kind: 'customMetric',
+        index,
+        reason: result ? 'expression' : 'invalid',
+        ...(result && !result.ok ? { error: result.error } : {}),
+        ...(typeof entry.name === 'string' ? { name: entry.name } : {}),
+      });
+    }
+  });
+  const normalized = normalizeQuestion(input);
+  const metricKeys = new Set(havingColumns(normalized).map((column) => column.key));
+  asArray(raw.having).forEach((entry, index) => {
+    if (index >= MAX_HAVING) issues.push({ kind: 'having', index, reason: 'tooMany' });
+    else if (!normalizeHavingEntry(entry, metricKeys)) {
+      issues.push({ kind: 'having', index, reason: 'invalid' });
+    }
+  });
+  return issues;
 }
 
 /** Parsed custom columns (assumes they're normalized). */
@@ -792,9 +1130,9 @@ function normalizeCustomMetric(
 
 function normalizeMetricOptions(
   raw: Record<string, unknown>
-): Pick<QuestionAggregation, 'modifier' | 'window' | 'compare'> {
+): Pick<QuestionAggregation, 'modifier' | 'window' | 'compare' | 'compareTo'> {
   const modifier = oneOf(METRIC_MODIFIERS, raw.modifier);
-  const options: Pick<QuestionAggregation, 'modifier' | 'window' | 'compare'> = {};
+  const options: Pick<QuestionAggregation, 'modifier' | 'window' | 'compare' | 'compareTo'> = {};
   if (modifier) options.modifier = modifier;
   if (modifier === 'moving') {
     const window = toFiniteNumber(raw.window);
@@ -803,7 +1141,11 @@ function normalizeMetricOptions(
         ? DEFAULT_MOVING_WINDOW
         : Math.min(Math.max(Math.floor(window), 2), MAX_MOVING_WINDOW);
   }
-  if (raw.compare === true) options.compare = true;
+  if (raw.compare === true) {
+    options.compare = true;
+    // Last year's value is compared raw, so it skips running / moving / share metrics.
+    if (raw.compareTo === 'lastYear' && !modifier) options.compareTo = 'lastYear';
+  }
   return options;
 }
 
@@ -825,7 +1167,10 @@ function dropUnusableModifiers(
       delete next.window;
     }
     if (next.modifier === 'share' && breakouts.length === 0) delete next.modifier;
-    if (next.compare && !dated) delete next.compare;
+    if (next.compare && !dated) {
+      delete next.compare;
+      delete next.compareTo;
+    }
     aggregations[index] = next;
   });
 }
@@ -916,8 +1261,17 @@ export type VisualizationBlocker =
   | 'needsTwoGroupings'
   | 'needsTwoCategoryGroupings';
 
+/** A date grouping on a time line (bucketed); date parts (weekday, ...) are categories. */
 function isDateBreakout(spec: QuestionSpec, breakout: QuestionBreakout | undefined): boolean {
-  return !!breakout && getField(spec.source, breakout.field)?.type === 'date';
+  return !!breakout && !breakout.part && getField(spec.source, breakout.field)?.type === 'date';
+}
+
+/**
+ * Groupings with a natural order (date buckets, date parts, numeric bins):
+ * shown in that order unless the question sorts otherwise.
+ */
+export function isOrderedBreakout(breakout: QuestionBreakout): boolean {
+  return breakout.bucket !== undefined || breakout.part !== undefined || breakout.bin !== undefined;
 }
 
 /** The date filter a number-with-trend compares against the period before it. */

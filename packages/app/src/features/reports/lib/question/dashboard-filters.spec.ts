@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { compileQuestion } from './compile';
 import {
   applyDashboardFilters,
+  dashboardFilterConflicts,
   hasDashboardFilters,
   normalizeDashboardFilters,
 } from './dashboard-filters';
-import { normalizeQuestion } from './spec';
+import { MAX_FILTERS, normalizeQuestion } from './spec';
 
 describe('normalizeDashboardFilters', () => {
   it('keeps valid presets, ranges and ids; drops junk', () => {
@@ -51,9 +52,8 @@ describe('applyDashboardFilters', () => {
     });
     expect(applied).toEqual(['date', 'accounts', 'categoryGroups']);
     expect(ignored).toEqual([]);
+    // Dashboard filters first, then the question's own (its date range replaced).
     expect(spec.filters).toEqual([
-      { field: 'is_transfer', op: 'is', values: [false] },
-      { field: 'account', op: 'is', values: [9] },
       {
         field: 'date',
         op: 'previous',
@@ -64,6 +64,8 @@ describe('applyDashboardFilters', () => {
       },
       { field: 'account', op: 'is', values: [1, 2] },
       { field: 'category_group', op: 'is', values: [5] },
+      { field: 'is_transfer', op: 'is', values: [false] },
+      { field: 'account', op: 'is', values: [9] },
     ]);
     const { sql } = compileQuestion(spec, { budgetId: 1 });
     expect(sql).toContain('account_id IN (9)');
@@ -103,7 +105,76 @@ describe('applyDashboardFilters', () => {
     expect(forAccounts.ignored).toEqual(['date']);
   });
 
+  it('applies dashboard filters to a question at the filter limit', () => {
+    const full = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'count' }],
+      filters: Array.from({ length: MAX_FILTERS }, (_, index) => ({
+        field: 'amount',
+        op: 'isNot',
+        values: [index + 1000],
+      })),
+    });
+    expect(full.filters).toHaveLength(MAX_FILTERS);
+    const { spec, applied } = applyDashboardFilters(full, {
+      date: { preset: 'thisMonth' },
+      accounts: [101],
+      categoryGroups: [3],
+    });
+    expect(applied).toEqual(['date', 'accounts', 'categoryGroups']);
+    expect(spec.filters).toHaveLength(MAX_FILTERS + 3);
+    // Stable when compiled (compile normalizes again).
+    const { sql } = compileQuestion(spec, { budgetId: 1, today: '2026-11-06' });
+    expect(sql).toContain('account_id IN (101)');
+    expect(sql).toContain('category_group_id IN (3)');
+    expect(sql).toContain('NOT IN (1029)');
+  });
+
+  it('ANDs an account filter with the question own account filter', () => {
+    const { spec } = applyDashboardFilters(transactions, { accounts: [101] });
+    const accounts = spec.filters.filter((filter) => filter.field === 'account');
+    expect(accounts).toEqual([
+      { field: 'account', op: 'is', values: [101] },
+      { field: 'account', op: 'is', values: [9] },
+    ]);
+  });
+
+  it('keeps date-part filters when the dashboard sets the date', () => {
+    const weekends = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'count' }],
+      filters: [
+        { field: 'date', op: 'is', values: [6, 7], part: 'dayOfWeek' },
+        { field: 'date', op: 'current', unit: 'year', values: [] },
+      ],
+    });
+    const { spec } = applyDashboardFilters(weekends, { date: { preset: 'thisMonth' } });
+    expect(spec.filters).toEqual([
+      { field: 'date', op: 'current', values: [], unit: 'month' },
+      { field: 'date', op: 'is', values: [6, 7], part: 'dayOfWeek' },
+    ]);
+  });
+
   it('leaves the question untouched without filters', () => {
     expect(applyDashboardFilters(transactions, {}).spec).toEqual(transactions);
+  });
+});
+
+describe('dashboardFilterConflicts', () => {
+  const spec = normalizeQuestion({
+    source: 'transactions',
+    filters: [
+      { field: 'account', op: 'is', values: [1, 2] },
+      { field: 'category_group', op: 'isNot', values: [5] },
+    ],
+    aggregations: [{ op: 'spending' }],
+  });
+
+  it('flags dashboard picks that leave nothing with the question’s own filter', () => {
+    expect(dashboardFilterConflicts(spec, { accounts: [3] })).toEqual(['accounts']);
+    expect(dashboardFilterConflicts(spec, { accounts: [2, 3] })).toEqual([]);
+    expect(dashboardFilterConflicts(spec, { categoryGroups: [5] })).toEqual(['categoryGroups']);
+    expect(dashboardFilterConflicts(spec, { categoryGroups: [5, 6] })).toEqual([]);
+    expect(dashboardFilterConflicts(spec, {})).toEqual([]);
   });
 });

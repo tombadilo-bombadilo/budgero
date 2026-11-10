@@ -1,19 +1,34 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown, Download } from 'lucide-react';
 import { Button } from '@shared/ui/button';
+import type { BreakoutColumn } from '@features/reports/lib/question';
 import { useChartPalette } from '@shared/lib/charts/echarts-chrome';
-import { downloadBlob } from '@shared/lib/download';
 import { cn } from '@shared/lib/utils';
 import { columnLabel } from '../question-labels';
 import { useQuestionFormatters } from '../useQuestionFormatters';
+import type { DrillRequest } from '../DrillMenu';
 import { withAlpha } from './display';
-import { buildPivot, pivotToCsv, sortPivotRows, type PivotSort } from './transforms';
+import { downloadCsv } from './export';
+import {
+  buildPivot,
+  pivotToCsv,
+  sortPivotRows,
+  type PivotHeader,
+  type PivotSort,
+} from './transforms';
 import type { VizViewProps } from './types';
+
+/** Rows / columns rendered at first; "show more" adds another batch. */
+export const PIVOT_ROW_PAGE = 100;
+export const PIVOT_COLUMN_PAGE = 30;
 
 interface PivotTableViewProps extends VizViewProps {
   /** File name (without extension) for the CSV download. */
   exportName?: string;
+  /** Click on a cell or row header (drill-through). */
+  onDrill?: (request: DrillRequest) => void;
 }
 
 type SortKey = 'label' | 'total' | string;
@@ -38,12 +53,20 @@ export function PivotTableView({
   fitHeight,
   className,
   exportName,
+  onDrill,
 }: PivotTableViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const pivot = useMemo(() => buildPivot(result, columns), [result, columns]);
   const [sort, setSort] = useState<SortState>(null);
+  const [rowLimit, setRowLimit] = useState(PIVOT_ROW_PAGE);
+  const [colLimit, setColLimit] = useState(PIVOT_COLUMN_PAGE);
+  // A new result starts from the first page again.
+  useEffect(() => {
+    setRowLimit(PIVOT_ROW_PAGE);
+    setColLimit(PIVOT_COLUMN_PAGE);
+  }, [result]);
 
   const rowLabel = (value: unknown) => (pivot ? format.cell(pivot.rowColumn, value) : '');
   const colLabel = (value: unknown) => (pivot ? format.cell(pivot.colColumn, value) : '');
@@ -63,12 +86,32 @@ export function PivotTableView({
     );
   }
 
-  const maxCell = Math.max(
-    1,
-    ...rows.flatMap((row) =>
-      Object.values(pivot.cells[row.key] ?? {}).map((value) => Math.abs(value))
-    )
-  );
+  const shownRows = rows.slice(0, rowLimit);
+  const shownCols = pivot.cols.slice(0, colLimit);
+  let maxCell = 1;
+  for (const row of rows) {
+    for (const value of Object.values(pivot.cells[row.key] ?? {})) {
+      if (Math.abs(value) > maxCell) maxCell = Math.abs(value);
+    }
+  }
+
+  const drillValue = (column: typeof pivot.rowColumn, header: PivotHeader) => ({
+    column: column as BreakoutColumn,
+    value: header.value,
+    ...('id' in header ? { key: header.id } : {}),
+  });
+  const drill = (target: HTMLElement, row: PivotHeader, col?: PivotHeader) => {
+    const box = target.getBoundingClientRect();
+    onDrill?.({
+      values: [
+        drillValue(pivot.rowColumn, row),
+        ...(col ? [drillValue(pivot.colColumn, col)] : []),
+      ],
+      anchor: { x: box.left, y: box.bottom },
+    });
+  };
+  const drillButton =
+    '-mx-1 rounded px-1 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
   const shade = palette.series[0];
   const totalLabel = t`Total`;
   const cornerLabel = `${columnLabel(source, pivot.rowColumn)} \\ ${columnLabel(source, pivot.colColumn)}`;
@@ -91,23 +134,24 @@ export function PivotTableView({
       row: (value) => format.cell(pivot.rowColumn, value),
       col: (value) => format.cell(pivot.colColumn, value),
     });
-    downloadBlob(csv, `${exportName || t`pivot`}.csv`, 'text/csv;charset=utf-8;');
+    downloadCsv(csv, exportName || t`pivot`);
   };
 
   const headerButton =
     'inline-flex w-full items-center gap-1 rounded px-1 py-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
-  const rowCount = rows.length.toLocaleString();
-  const colCount = pivot.cols.length.toLocaleString();
+  const rowsText = plural(rows.length, { one: '# row', other: '# rows' });
+  const colsText = plural(pivot.cols.length, { one: '# column', other: '# columns' });
+  const shownRowCount = shownRows.length.toLocaleString();
+  const shownColCount = shownCols.length.toLocaleString();
+  const capped = shownRows.length < rows.length || shownCols.length < pivot.cols.length;
+  const sizeText = capped
+    ? t`${rowsText} × ${colsText}, showing ${shownRowCount} × ${shownColCount}`
+    : t`${rowsText} × ${colsText}`;
 
   return (
     <div className={cn('flex min-h-0 flex-col gap-2', fitHeight && 'h-full', className)}>
       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>
-          {columnLabel(source, pivot.metric)} ·{' '}
-          <Trans>
-            {rowCount} rows × {colCount} columns
-          </Trans>
-        </span>
+        <span>{t`${columnLabel(source, pivot.metric)} · ${sizeText}`}</span>
         <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={exportCsv}>
           <Download className="h-3.5 w-3.5" aria-hidden />
           <Trans>Pivot CSV</Trans>
@@ -128,11 +172,11 @@ export function PivotTableView({
                 className="sticky left-0 top-0 z-30 border-b border-r bg-card px-2 py-1.5 text-left font-medium"
               >
                 <button type="button" className={headerButton} onClick={() => toggleSort('label')}>
-                  <span className="max-w-56 truncate">{cornerLabel}</span>
+                  <span className="max-w-[30vw] truncate sm:max-w-56">{cornerLabel}</span>
                   <SortIcon sort={sort} sortKey="label" />
                 </button>
               </th>
-              {pivot.cols.map((col) => (
+              {shownCols.map((col) => (
                 <th
                   key={col.key}
                   scope="col"
@@ -152,7 +196,7 @@ export function PivotTableView({
               <th
                 scope="col"
                 aria-sort={ariaSort('total')}
-                className="sticky right-0 top-0 z-30 border-b border-l bg-card px-2 py-1.5 text-right font-semibold"
+                className="top-0 z-30 border-b border-l bg-card px-2 py-1.5 text-right font-semibold sticky sm:right-0"
               >
                 <button
                   type="button"
@@ -166,15 +210,26 @@ export function PivotTableView({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {shownRows.map((row) => (
               <tr key={row.key} className="hover:bg-muted/40">
                 <th
                   scope="row"
-                  className="sticky left-0 z-10 max-w-64 truncate border-b border-r bg-card px-3 py-1.5 text-left font-normal"
+                  className="sticky left-0 z-10 max-w-[36vw] truncate border-b border-r bg-card px-3 py-1.5 text-left font-normal sm:max-w-64"
                 >
-                  {rowLabel(row.value)}
+                  {onDrill ? (
+                    <button
+                      type="button"
+                      aria-haspopup="menu"
+                      className={cn(drillButton, 'max-w-full truncate text-primary')}
+                      onClick={(event) => drill(event.currentTarget, row)}
+                    >
+                      {rowLabel(row.value)}
+                    </button>
+                  ) : (
+                    rowLabel(row.value)
+                  )}
                 </th>
-                {pivot.cols.map((col) => {
+                {shownCols.map((col) => {
                   const value = pivot.cells[row.key]?.[col.key];
                   return (
                     <td
@@ -193,13 +248,23 @@ export function PivotTableView({
                     >
                       {value === undefined ? (
                         <span className="text-muted-foreground">—</span>
+                      ) : onDrill ? (
+                        <button
+                          type="button"
+                          aria-haspopup="menu"
+                          aria-label={t`Explore ${rowLabel(row.value)} · ${colLabel(col.value)}`}
+                          className={drillButton}
+                          onClick={(event) => drill(event.currentTarget, row, col)}
+                        >
+                          {format.cell(pivot.metric, value)}
+                        </button>
                       ) : (
                         format.cell(pivot.metric, value)
                       )}
                     </td>
                   );
                 })}
-                <td className="sticky right-0 border-b border-l bg-card px-3 py-1.5 text-right font-mono font-semibold tabular-nums">
+                <td className="border-b border-l bg-card px-3 py-1.5 text-right font-mono font-semibold tabular-nums sm:sticky sm:right-0">
                   {format.cell(pivot.metric, row.total)}
                 </td>
               </tr>
@@ -213,7 +278,7 @@ export function PivotTableView({
               >
                 {totalLabel}
               </th>
-              {pivot.cols.map((col) => (
+              {shownCols.map((col) => (
                 <td
                   key={col.key}
                   className="sticky bottom-0 z-10 border-t bg-card px-3 py-1.5 text-right font-mono font-semibold tabular-nums"
@@ -221,13 +286,35 @@ export function PivotTableView({
                   {format.cell(pivot.metric, col.total)}
                 </td>
               ))}
-              <td className="sticky bottom-0 right-0 z-20 border-l border-t bg-card px-3 py-1.5 text-right font-mono font-semibold tabular-nums">
+              <td className="sticky bottom-0 z-20 border-l border-t bg-card sm:right-0 px-3 py-1.5 text-right font-mono font-semibold tabular-nums">
                 {format.cell(pivot.metric, pivot.grandTotal)}
               </td>
             </tr>
           </tfoot>
         </table>
       </div>
+      {(shownRows.length < rows.length || shownCols.length < pivot.cols.length) && (
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          {shownRows.length < rows.length && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRowLimit((limit) => limit + PIVOT_ROW_PAGE * 5)}
+            >
+              <Trans>Show more rows</Trans>
+            </Button>
+          )}
+          {shownCols.length < pivot.cols.length && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setColLimit((limit) => limit + PIVOT_COLUMN_PAGE)}
+            >
+              <Trans>Show more columns</Trans>
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

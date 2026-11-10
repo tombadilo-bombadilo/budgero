@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { EChart, type EChartClickParams } from '@shared/ui/echart';
 import { tooltipBase, tooltipHtml, useChartPalette } from '@shared/lib/charts/echarts-chrome';
@@ -13,8 +13,8 @@ import { buildCalendar } from './transforms';
 import type { VizViewProps } from './types';
 
 interface CalendarHeatmapViewProps extends VizViewProps {
-  /** Click on a day (ISO date), e.g. to filter the question to it. */
-  onDayClick?: (day: string) => void;
+  /** Click on a day (ISO date) and where it happened, e.g. to open the drill menu there. */
+  onDayClick?: (day: string, anchor: { x: number; y: number }) => void;
 }
 
 function percentile(values: number[], share: number): number {
@@ -48,11 +48,12 @@ export function CalendarHeatmapView({
 }: CalendarHeatmapViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const years = useMemo(() => buildCalendar(result, columns), [result, columns]);
   const [pickedYear, setPickedYear] = useState<number | null>(null);
   const year = years.find((entry) => entry.year === pickedYear) ?? years[0];
-  const metric = columns.find((column) => column.kind === 'aggregation');
+  const metric = columns.find((column) => column.kind === 'aggregation' && !column.derived);
+  const hostRef = useRef<HTMLDivElement | null>(null);
 
   const option = useMemo<EChartsCoreOption | null>(() => {
     if (!year || !metric) return null;
@@ -170,16 +171,28 @@ export function CalendarHeatmapView({
           </div>
         )}
       </div>
-      <div className={cn('min-h-0 w-full', fitHeight ? 'min-h-[180px] flex-1' : 'h-56')}>
+      {/* 53 week columns need room: narrow containers scroll sideways instead of shrinking the days. */}
+      <div
+        ref={hostRef}
+        className={cn(
+          'min-h-0 w-full overflow-x-auto overflow-y-hidden',
+          fitHeight ? 'min-h-[180px] flex-1' : 'h-56'
+        )}
+      >
         <EChart
           option={option}
           ariaLabel={t`Calendar heatmap`}
-          className="h-full w-full"
+          className="h-full w-full min-w-[640px]"
           onMarkClick={
             onDayClick
               ? (params: EChartClickParams) => {
                   const value = params.value as [string, number] | undefined;
-                  if (value?.[0]) onDayClick(value[0]);
+                  if (!value?.[0]) return;
+                  const box = hostRef.current?.getBoundingClientRect();
+                  onDayClick(value[0], {
+                    x: params.clientX ?? (box ? box.left + box.width / 2 : 0),
+                    y: params.clientY ?? (box ? box.top + box.height / 2 : 0),
+                  });
                 }
               : undefined
           }

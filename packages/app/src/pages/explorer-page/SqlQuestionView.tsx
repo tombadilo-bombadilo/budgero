@@ -1,14 +1,33 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Copy, Database, LayoutGrid, Menu, Play, Save } from 'lucide-react';
+import {
+  ArrowLeft,
+  Copy,
+  Database,
+  LayoutGrid,
+  Menu,
+  MoreHorizontal,
+  Play,
+  Save,
+  Trash2,
+} from 'lucide-react';
 import type { UnifiedReport } from '@budgero/core/browser';
+import { useLeaveGuard } from '@shared/hooks/useLeaveGuard';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent } from '@shared/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@shared/ui/dropdown-menu';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@shared/ui/sheet';
 import { SaveReportDialog } from '@features/reports/ui/SaveReportDialog';
 import { stripQuestionHeader } from '@features/reports/lib/question';
 import { QuestionHeader } from '@pages/reports/question/QuestionHeader';
+import { useDeleteQuestion } from '@pages/reports/question/useDeleteQuestion';
+import { useOpenSavedQuestion } from '@pages/reports/question/useOpenSavedQuestion';
 import { usePinToDashboard } from '@pages/reports/question/usePinToDashboard';
 import { useExplorerState } from './hooks/useExplorerState';
 import { SQLEditor, SchemaSidebar, ResultsTable, ChartsPanel } from './components';
@@ -24,6 +43,10 @@ interface SqlQuestionViewProps {
   /** SQL to start from (a converted question); defaults to the report's query. */
   initialSql?: string;
   openSaveDialog?: boolean;
+  /** Open "Add to dashboard" on arrival (the question was just saved with it). */
+  openPinDialog?: boolean;
+  /** Leave a "Convert to SQL" unsaved and go back to the notebook question. */
+  onBackToNotebook?: () => void;
 }
 
 /** SQL (advanced) editor for a question. Runs read-only queries only. */
@@ -32,10 +55,20 @@ export function SqlQuestionView({
   report,
   initialSql,
   openSaveDialog = false,
+  openPinDialog = false,
+  onBackToNotebook,
 }: SqlQuestionViewProps) {
   const { t } = useLingui();
   const navigate = useNavigate();
   const pin = usePinToDashboard(budgetId);
+  const deletion = useDeleteQuestion(() => void navigate('/reports'));
+  const opener = useOpenSavedQuestion();
+  const pinOnArrival = useRef(openPinDialog);
+  useEffect(() => {
+    if (!pinOnArrival.current || !report) return;
+    pinOnArrival.current = false;
+    pin.open(report);
+  }, [pin, report]);
   const {
     sqlQuery,
     queryResult,
@@ -95,6 +128,19 @@ export function SqlQuestionView({
   ]);
 
   const converting = initialSql !== undefined && report !== null;
+  // Unsaved: a conversion not saved yet, or SQL edited away from what was opened.
+  const [startSql, setStartSql] = useState(
+    () => initialSql ?? (report ? stripQuestionHeader(report.query) : sqlQuery)
+  );
+  const dirty = initialSql !== undefined || sqlQuery.trim() !== startSql.trim();
+  // A notebook header this version could not read (e.g. saved by a newer app):
+  // saving with the SQL unchanged keeps it, so the notebook version survives.
+  const unreadHeader =
+    report && !converting && stripQuestionHeader(report.query) !== report.query
+      ? report.query.replace(/^\s+/, '').split('\n', 1)[0]
+      : null;
+  const keepsHeader = unreadHeader !== null && sqlQuery.trim() === startSql.trim();
+  useLeaveGuard(dirty && !showSaveReportDialog);
   const title = editingReport?.name ?? t`New SQL question`;
 
   const schemaSidebar = (onClose?: () => void) => (
@@ -134,9 +180,19 @@ export function SqlQuestionView({
           subtitle={
             converting
               ? t`Converted to SQL. Saving replaces the notebook version.`
-              : t`SQL (advanced) · read-only queries`
+              : unreadHeader !== null
+                ? keepsHeader
+                  ? t`Made with a newer notebook; shown as SQL. Saving keeps the notebook version while the SQL is unchanged.`
+                  : t`Made with a newer notebook. Saving these SQL changes replaces the notebook version.`
+                : t`SQL (advanced) · read-only queries`
           }
         >
+          {onBackToNotebook && (
+            <Button variant="outline" size="sm" onClick={onBackToNotebook}>
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              <Trans>Back to the notebook</Trans>
+            </Button>
+          )}
           <Button
             variant="outline"
             size="sm"
@@ -158,6 +214,29 @@ export function SqlQuestionView({
             <Save className="h-4 w-4" aria-hidden />
             {editingReport ? t`Save` : t`Save question`}
           </Button>
+          {editingReport && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  aria-label={t`More actions`}
+                >
+                  <MoreHorizontal className="h-4 w-4" aria-hidden />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onSelect={() => deletion.ask(editingReport)}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" aria-hidden />
+                  <Trans>Delete question</Trans>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </QuestionHeader>
 
         <div className="flex flex-wrap gap-1 sm:gap-2">
@@ -242,13 +321,17 @@ export function SqlQuestionView({
         sqlQuery={sqlQuery}
         queryResult={queryResult}
         onSave={async (data) => {
-          const saved = await handleSaveReport(data);
-          if (!report || converting) {
-            void navigate(`/reports/question/${saved.id}`, { replace: true });
-          }
+          const saved = await handleSaveReport(
+            keepsHeader && unreadHeader
+              ? { ...data, query: `${unreadHeader}\n${data.query}` }
+              : data
+          );
+          setStartSql(data.query);
+          // A new (or converted) question moves to its own page.
+          if (!report || converting) opener.open(saved);
           return saved;
         }}
-        onSaveAndPin={pin.open}
+        onSaveAndPin={!report || converting ? opener.openAndPin : pin.open}
         initialData={
           editingReport
             ? {
@@ -261,6 +344,7 @@ export function SqlQuestionView({
         mode={editingReport ? 'edit' : 'create'}
       />
       {pin.dialog}
+      {deletion.dialog}
     </div>
   );
 }

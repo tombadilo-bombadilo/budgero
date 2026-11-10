@@ -153,10 +153,7 @@ describe('FlowReport', () => {
       expect.objectContaining({ source: 'Income', target: 'Saved ' })
     );
     // The user's own "Income" group stays a drillable, untranslated table row.
-    expect(screen.getByRole('button', { name: 'Income' })).toHaveAttribute(
-      'aria-expanded',
-      'false'
-    );
+    expect(screen.getByRole('button', { name: 'Income' })).not.toHaveAttribute('aria-expanded');
   });
   it('toggles to categories and expands Other into a focused colored breakdown', () => {
     const income: AnalyticsTxn = {
@@ -271,7 +268,7 @@ describe('FlowReport', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '← Back to Money Map' }));
     fireEvent.click(screen.getByRole('button', { name: 'Group 1' }));
-    expect(screen.getByText('Inside Group 1 · 1 categories')).toBeInTheDocument();
+    expect(screen.getByText('Inside Group 1 · 1 category')).toBeInTheDocument();
   });
 
   it('opens a group as a category treemap and returns to the Money Map', () => {

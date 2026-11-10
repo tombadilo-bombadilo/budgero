@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import type {
   QuestionColumn,
@@ -20,14 +20,25 @@ import {
   type TooltipRow,
 } from '@shared/lib/charts/echarts-chrome';
 import { cn } from '@shared/lib/utils';
+import { getLocaleTag } from '@shared/i18n';
 import { buildChartModel, OTHER_SERIES_ID, type ChartSeries } from './chart-model';
 import type { DrillRequest } from './DrillMenu';
 import { columnLabel } from './question-labels';
 import { QuestionTable } from './QuestionTable';
 import { useQuestionFormatters } from './useQuestionFormatters';
+import { ChartLegend } from './viz/ChartLegend';
 import { applyCartesianDisplay, goalText } from './viz/display';
 import { renderExtraVisualization } from './viz';
+import {
+  barSeries,
+  layoutSeries,
+  markDrillValues,
+  seriesColor,
+  useHiddenSeries,
+} from './viz/series';
 import { applyCategoryDisplay, isOther } from './viz/transforms';
+import { axisLabelIndexes, shortMonthLabel } from './viz/time-axis';
+import { useElementWidth } from './viz/useElementWidth';
 
 interface QuestionVisualizationProps {
   result: QueryResult;
@@ -126,7 +137,7 @@ function NumberView({
   source,
   className,
 }: Pick<QuestionVisualizationProps, 'result' | 'columns' | 'source' | 'className'>) {
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const metrics = columns.filter((column) => column.kind === 'aggregation');
   const index = new Map(result.columns.map((name, position) => [name, position]));
   const row = result.rows[0] ?? [];
@@ -164,7 +175,7 @@ function ChartView({
 }: QuestionVisualizationProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const model = useMemo(() => {
     const base = buildChartModel(result, columns);
     // Bars sort; bars and pie slices fold past the top N into "Other".
@@ -174,7 +185,6 @@ function ChartView({
       topN: display?.topN,
     });
   }, [result, columns, visualization, display?.sort, display?.topN]);
-  const [hidden, setHidden] = useState<Set<string>>(new Set());
 
   const seriesName = useCallback(
     (series: ChartSeries): string => {
@@ -186,10 +196,12 @@ function ChartView({
     [model, format, source, t]
   );
   const colorOf = useCallback(
-    (position: number) => palette.series[position % palette.series.length],
+    (position: number) => seriesColor(palette.series, position),
     [palette]
   );
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const width = useElementWidth(containerRef, 800);
   const isPie = visualization === 'pie';
   const { otherXCount } = model;
   const otherX = t`Other (${otherXCount})`;
@@ -203,15 +215,47 @@ function ChartView({
     () => model.xValues.map((value) => xLabel(value, 'long')),
     [model, xLabel]
   );
+  const timeAxis = model.x?.kind === 'breakout' && model.x.breakout.bucket !== undefined;
+  const monthAxis = timeAxis && model.x?.kind === 'breakout' && model.x.breakout.bucket === 'month';
+  // Narrow charts: "Jun", with the year where it starts or changes ("Jan '26").
+  const shortMonths = monthAxis && width < 640;
+  const axisLabels = useMemo(() => {
+    if (!shortMonths) return null;
+    const locale = getLocaleTag();
+    return model.xValues.map((value, index) => {
+      // The year shows on the first label and on each January.
+      const withYear = index === 0 || String(value ?? '').endsWith('-01');
+      return shortMonthLabel(value, withYear, locale) ?? xLabels[index];
+    });
+  }, [shortMonths, model, xLabels]);
+  // Time axes: every label when they fit, else evenly thinned.
+  const shownLabels = useMemo(
+    () => (timeAxis ? axisLabelIndexes(axisLabels ?? xLabels, Math.max(60, width - 60)) : null),
+    [timeAxis, axisLabels, xLabels, width]
+  );
 
+  // Slices are known by their value (not their position), so a new result
+  // keeps the right ones hidden and forgets the ones that are gone.
+  const sliceIds = useMemo(
+    () =>
+      model.xValues.map(
+        (value, position) => `${String(model.xKeys[position] ?? '')}\u0000${String(value ?? '')}`
+      ),
+    [model]
+  );
   const legend = isPie
-    ? xLabels.map((label, position) => ({ id: `${position}`, label, color: colorOf(position) }))
+    ? xLabels.map((label, position) => ({
+        id: sliceIds[position],
+        label,
+        color: colorOf(position),
+      }))
     : model.series.map((series, position) => ({
         id: series.id,
         label: seriesName(series),
         color: colorOf(position),
       }));
   const showLegend = isPie ? legend.length > 1 : model.series.length > 1;
+  const { hidden, toggle } = useHiddenSeries(legend.map((item) => item.id));
 
   const option = useMemo<EChartsCoreOption | null>(() => {
     const { chrome } = palette;
@@ -222,7 +266,7 @@ function ChartView({
       const [first] = model.series;
       const slices = first.values
         .map((value, position) => ({ value: Math.abs(value), position }))
-        .filter((slice) => slice.value > 0 && !hidden.has(`${slice.position}`));
+        .filter((slice) => slice.value > 0 && !hidden.has(sliceIds[slice.position]));
       if (slices.length === 0) return null;
       const total = slices.reduce((sum, slice) => sum + slice.value, 0);
       return {
@@ -232,11 +276,11 @@ function ChartView({
           formatter: (params: unknown) => {
             const item = params as { dataIndex: number; value: number; color?: string };
             const slice = slices[item.dataIndex];
-            const share = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0';
+            const share = format.percent(total > 0 ? item.value / total : 0, 1);
             return tooltipHtml(xLongLabels[slice.position] ?? '', [
               {
                 color: typeof item.color === 'string' ? item.color : chrome.other,
-                name: `${columnLabel(source, metric)} · ${share}%`,
+                name: `${columnLabel(source, metric)} · ${share}`,
                 value: format.cell(metric, first.values[slice.position]),
               },
             ]);
@@ -263,7 +307,7 @@ function ChartView({
               color: chrome.inkPrimary,
               fontSize: 11,
               formatter: (params: { name: string; percent?: number }) =>
-                `${params.name}\n${params.percent?.toFixed(0)}%`,
+                `${params.name}\n${format.percent((params.percent ?? 0) / 100)}`,
             },
             labelLine: { lineStyle: { color: chrome.axisLine } },
           },
@@ -271,37 +315,25 @@ function ChartView({
       };
     }
 
-    const visible = model.series
-      .map((series, position) => ({ series, position }))
-      .filter(({ series }) => !hidden.has(series.id));
+    const { visible, stack, percent, plotted, share } = layoutSeries(model, hidden, stacking);
     if (visible.length === 0) return null;
-    const stack = stacking !== 'none' && visible.length > 1;
-    const percent = stack && stacking === 'percent';
-    // 100%: each x value's visible series as shares of their total.
-    const totals = model.xValues.map((_, index) =>
-      visible.reduce((sum, { series }) => sum + Math.abs(series.values[index] ?? 0), 0)
-    );
-    const plotted = (values: number[]) =>
-      percent
-        ? values.map((value, index) =>
-            totals[index] > 0 ? (Math.abs(value ?? 0) / totals[index]) * 100 : 0
-          )
-        : values;
-    const share = (value: number, index: number) =>
-      totals[index] > 0 ? `${((Math.abs(value) / totals[index]) * 100).toFixed(0)}%` : '0%';
 
     const cartesian = {
       grid: { left: 8, right: 28, top: 16, bottom: 4, containLabel: true },
       xAxis: {
         type: 'category' as const,
-        data: xLabels,
+        data: axisLabels ?? xLabels,
         axisLine: { lineStyle: { color: chrome.axisLine } },
         axisTick: { show: false },
         axisLabel: {
           color: chrome.axisText,
           fontSize: 11,
-          hideOverlap: true,
-          rotate: xLabels.length > 12 && visualization === 'bar' ? 35 : 0,
+          ...(shownLabels
+            ? { interval: (index: number) => shownLabels.has(index), hideOverlap: false }
+            : {
+                hideOverlap: true,
+                rotate: xLabels.length > 12 && visualization === 'bar' ? 35 : 0,
+              }),
         },
       },
       yAxis: {
@@ -310,7 +342,8 @@ function ChartView({
         axisLabel: {
           color: chrome.axisText,
           fontSize: 11,
-          formatter: (value: number) => (percent ? `${value}%` : format.compact(metric, value)),
+          formatter: (value: number) =>
+            percent ? format.percent(value / 100) : format.compact(metric, value),
         },
         splitLine: { lineStyle: { color: chrome.grid, width: 1 } },
         axisLine: { show: false },
@@ -327,7 +360,7 @@ function ChartView({
             color: colorOf(position),
             name: seriesName(series),
             value: stack
-              ? `${format.cell(series.metric, series.values[dataIndex])} · ${share(series.values[dataIndex] ?? 0, dataIndex)}`
+              ? `${format.cell(series.metric, series.values[dataIndex])} · ${format.percent(share(series.values[dataIndex] ?? 0, dataIndex))}`
               : format.cell(series.metric, series.values[dataIndex]),
           }));
           return tooltipHtml(xLongLabels[dataIndex] ?? '', rows);
@@ -335,16 +368,16 @@ function ChartView({
       },
       series: visible.map(({ series, position }) =>
         visualization === 'bar'
-          ? {
-              name: series.id,
-              type: 'bar' as const,
-              stack: stack ? 'stack' : undefined,
-              data: plotted(series.values),
-              barMaxWidth: BAR_MAX_WIDTH,
-              itemStyle: stack
-                ? { color: colorOf(position), borderColor: chrome.surface, borderWidth: 1 }
-                : { color: colorOf(position), borderRadius: BAR_RADIUS_TOP },
-            }
+          ? barSeries(
+              { series, position },
+              { stack, plotted },
+              {
+                color: colorOf(position),
+                surface: chrome.surface,
+                maxWidth: BAR_MAX_WIDTH,
+                radius: BAR_RADIUS_TOP,
+              }
+            )
           : {
               name: series.id,
               type: 'line' as const,
@@ -366,6 +399,7 @@ function ChartView({
       formatValue: (value) => format.compact(metric, value),
       goalLabel: goalText(display?.goal, (value) => format.cell(metric, value)),
       percent,
+      formatShare: (ratio) => format.percent(ratio),
     });
   }, [
     model,
@@ -373,6 +407,7 @@ function ChartView({
     palette,
     format,
     isPie,
+    sliceIds,
     visualization,
     stacking,
     xLabels,
@@ -381,50 +416,24 @@ function ChartView({
     seriesName,
     colorOf,
     display,
+    axisLabels,
+    shownLabels,
   ]);
 
-  const toggle = (id: string) =>
-    setHidden((previous) => {
-      const next = new Set(previous);
-      if (next.has(id)) next.delete(id);
-      else if (legend.length - next.size > 1) next.add(id);
-      return next;
-    });
-
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const handleMarkClick = useCallback(
     (params: EChartClickParams) => {
-      if (!onDrill || !model.x || model.x.kind !== 'breakout') return;
+      if (!onDrill) return;
       // Pie slices are indexed among the visible slices; bars/points by x position.
       let position = params.dataIndex;
       if (isPie) {
         const [first] = model.series;
         const visibleSlices = first.values
           .map((value, index) => ({ value: Math.abs(value), index }))
-          .filter((slice) => slice.value > 0 && !hidden.has(`${slice.index}`));
+          .filter((slice) => slice.value > 0 && !hidden.has(sliceIds[slice.index]));
         position = visibleSlices[params.dataIndex]?.index ?? -1;
       }
-      if (position < 0 || position >= model.xValues.length) return;
-      const values: DrillRequest['values'] = [
-        {
-          column: model.x,
-          value: model.xValues[position],
-          ...(model.xKeys[position] !== undefined ? { key: model.xKeys[position] } : {}),
-        },
-      ];
-      const series = model.series.find((item) => item.id === params.seriesName);
-      if (
-        !isPie &&
-        model.seriesColumn?.kind === 'breakout' &&
-        series &&
-        series.id !== OTHER_SERIES_ID
-      ) {
-        values.push({
-          column: model.seriesColumn,
-          value: series.groupValue,
-          ...(series.groupKey !== undefined ? { key: series.groupKey } : {}),
-        });
-      }
+      const values = markDrillValues(model, position, isPie ? undefined : params.seriesName);
+      if (!values) return;
       const box = containerRef.current?.getBoundingClientRect();
       onDrill({
         values,
@@ -434,7 +443,7 @@ function ChartView({
         },
       });
     },
-    [onDrill, model, isPie, hidden]
+    [onDrill, model, isPie, hidden, sliceIds]
   );
 
   const metricName = model.series.length > 0 ? columnLabel(source, model.series[0].metric) : '';
@@ -442,36 +451,7 @@ function ChartView({
 
   return (
     <div className={cn('flex min-h-0 flex-col gap-2', fitHeight && 'h-full', className)}>
-      {showLegend && (
-        <ul
-          className="flex max-h-20 flex-wrap gap-x-3 gap-y-1 overflow-y-auto text-xs"
-          aria-label={t`Legend`}
-        >
-          {legend.map((item) => {
-            const off = hidden.has(item.id);
-            return (
-              <li key={item.id}>
-                <button
-                  type="button"
-                  aria-pressed={!off}
-                  onClick={() => toggle(item.id)}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded px-1 py-0.5 text-left hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                    off && 'text-muted-foreground line-through opacity-60'
-                  )}
-                >
-                  <span
-                    aria-hidden
-                    className="h-2.5 w-2.5 shrink-0 rounded-sm"
-                    style={{ backgroundColor: item.color }}
-                  />
-                  <span className="max-w-48 truncate">{item.label}</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+      {showLegend && <ChartLegend items={legend} hidden={hidden} onToggle={toggle} />}
       <div
         ref={containerRef}
         className={cn('min-h-0 w-full', fitHeight ? 'min-h-[200px] flex-1' : 'h-72 sm:h-96')}

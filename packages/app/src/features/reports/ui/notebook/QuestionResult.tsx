@@ -1,3 +1,4 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useRef, useState } from 'react';
 import { ArrowLeft, BarChart3, Loader2, RefreshCw, Table2 } from 'lucide-react';
@@ -18,9 +19,13 @@ import { ToggleGroup, ToggleGroupItem } from '@shared/ui/toggle-group';
 import { cn } from '@shared/lib/utils';
 import { QuestionVisualization } from './QuestionVisualization';
 import { QuestionTable } from './QuestionTable';
+import { QueryErrorMessage } from './QueryErrorMessage';
 import { DrillMenu, type DrillRequest } from './DrillMenu';
+import { withReturnFocus } from './drill-focus';
 import type { QuestionQueryState } from './useQuestionQuery';
+import { ChartQuickBar } from './viz/ChartQuickBar';
 import { ChartSettings } from './viz/ChartSettings';
+import { ResultSummaryLine } from './viz/ResultSummaryLine';
 import { ChartTypePicker } from './viz/ChartTypePicker';
 import { ExportMenu } from './viz/ExportMenu';
 import { refineAutoVisualization } from './viz/transforms';
@@ -34,6 +39,8 @@ interface QuestionResultProps {
   /** Chart settings (values, goal, sort, top N, axes); omit to hide the Settings button. */
   onDisplayChange?: (display: QuestionDisplay | undefined) => void;
   onRefresh: () => void;
+  /** One-tap edits from the chart (compare with last year). */
+  onSpecChange?: (spec: QuestionSpec) => void;
   /** Drill-through: replaces the question with the explored one. */
   onDrill?: (spec: QuestionSpec) => void;
   /** Back to the question before the last drill; omit when there is none. */
@@ -50,13 +57,16 @@ export function QuestionResult({
   onStackingChange,
   onDisplayChange,
   onRefresh,
+  onSpecChange,
   onDrill,
   onBack,
   title,
 }: QuestionResultProps) {
   const { t } = useLingui();
   const [drillRequest, setDrillRequest] = useState<DrillRequest | null>(null);
-  const handleDrill = onDrill ? setDrillRequest : undefined;
+  const handleDrill = onDrill
+    ? (request: DrillRequest) => setDrillRequest(withReturnFocus(request))
+    : undefined;
   const chartRef = useRef<HTMLDivElement | null>(null);
   const { result, resultCompiled, compileError, error, isRunning } = query;
   const shownError = compileError ?? error;
@@ -78,15 +88,17 @@ export function QuestionResult({
   const stackable = !showTable && canStack(spec, stackAs);
   const stacking = resolveStacking(spec, stackAs);
   const firstGrouping = spec.breakouts[0];
+  // Sort / top N suit plain categories, not ranges or date parts with their own order.
   const categoryAxis =
-    !!firstGrouping && getField(spec.source, firstGrouping.field)?.type !== 'date';
+    !!firstGrouping &&
+    getField(spec.source, firstGrouping.field)?.type !== 'date' &&
+    firstGrouping.bin === undefined;
   const shownVisualization =
     resultCompiled && allowedVisualizations(resultCompiled.spec).includes(current)
       ? current
       : (resultCompiled?.visualization ?? current);
   const rowCount = result?.rows.length ?? 0;
   const rowCountText = rowCount.toLocaleString();
-  const totalText = (result?.rowCount ?? 0).toLocaleString();
   const truncated = (result?.rowCount ?? 0) > rowCount;
 
   return (
@@ -119,11 +131,14 @@ export function QuestionResult({
             }}
             aria-label={t`Show as`}
           >
-            <ToggleGroupItem value="table" className="px-3">
+            <ToggleGroupItem value="table" className="w-auto flex-none whitespace-nowrap px-3">
               <Table2 className="h-4 w-4" aria-hidden />
               <Trans>Table</Trans>
             </ToggleGroupItem>
-            <ToggleGroupItem value="visualization" className="px-3">
+            <ToggleGroupItem
+              value="visualization"
+              className="w-auto flex-none whitespace-nowrap px-3"
+            >
               <BarChart3 className="h-4 w-4" aria-hidden />
               <Trans>Visualization</Trans>
             </ToggleGroupItem>
@@ -134,7 +149,10 @@ export function QuestionResult({
           <ChartTypePicker
             spec={spec}
             current={current}
-            onPick={(item) => onVisualizationChange(item === auto ? 'auto' : item)}
+            onPick={(item) =>
+              // Auto may have turned bars into rows: picking Bar then is an explicit choice.
+              onVisualizationChange(item === auto && current === auto ? 'auto' : item)
+            }
           />
         )}
 
@@ -148,53 +166,16 @@ export function QuestionResult({
           />
         )}
 
-        {stackable && (
-          <div className="flex items-center gap-2 border-l pl-3">
-            <span className="text-xs text-muted-foreground" aria-hidden>
-              <Trans>Series</Trans>
-            </span>
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              size="sm"
-              value={stacking}
-              onValueChange={(value) => {
-                if (value) onStackingChange(value as Stacking);
-              }}
-              aria-label={t`Series`}
-            >
-              <ToggleGroupItem value="none" className="w-auto flex-none whitespace-nowrap px-2.5">
-                <Trans>Side by side</Trans>
-              </ToggleGroupItem>
-              <ToggleGroupItem
-                value="stacked"
-                className="w-auto flex-none whitespace-nowrap px-2.5"
-              >
-                <Trans>Stacked</Trans>
-              </ToggleGroupItem>
-              <ToggleGroupItem
-                value="percent"
-                className="w-auto flex-none whitespace-nowrap px-2.5"
-              >
-                100%
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-        )}
-
         <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
           {isRunning && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {result && !shownError && (
             <span aria-live="polite">
-              {truncated ? (
-                <Trans>
-                  First {rowCountText} of {totalText} rows
-                </Trans>
-              ) : rowCount === 1 ? (
-                <Trans>1 row</Trans>
-              ) : (
-                <Trans>{rowCountText} rows</Trans>
-              )}
+              {truncated
+                ? plural(result.rowCount, {
+                    one: `First ${rowCountText} of # row`,
+                    other: `First ${rowCountText} of # rows`,
+                  })
+                : plural(rowCount, { one: '# row', other: '# rows' })}
             </span>
           )}
           <ExportMenu
@@ -227,7 +208,7 @@ export function QuestionResult({
             <p className="font-medium">
               <Trans>This question could not be run</Trans>
             </p>
-            <p className="mt-1 break-words text-xs">{shownError}</p>
+            <QueryErrorMessage error={shownError} className="mt-1 text-xs" />
           </div>
         )}
 
@@ -239,7 +220,33 @@ export function QuestionResult({
         )}
 
         {result && resultCompiled && !shownError && (
-          <div ref={chartRef} className={cn('transition-opacity', isRunning && 'opacity-60')}>
+          <div
+            ref={chartRef}
+            className={cn('space-y-3 transition-opacity', isRunning && 'opacity-60')}
+          >
+            {result.rows.length > 0 && !showTable && (
+              <ChartQuickBar
+                spec={spec}
+                visualization={current}
+                categoryAxis={categoryAxis}
+                stackable={stackable}
+                stacking={stacking}
+                onStackingChange={onStackingChange}
+                onDisplayChange={onDisplayChange}
+                onSpecChange={onSpecChange}
+              />
+            )}
+            {result.rows.length > 0 &&
+              current !== 'number' &&
+              current !== 'trend' &&
+              !(showTable && resultCompiled.spec.aggregations.length === 0) && (
+                <ResultSummaryLine
+                  partial={spec.limit !== null || Boolean(spec.display?.topN)}
+                  result={result}
+                  columns={resultCompiled.columns}
+                  source={resultCompiled.spec.source}
+                />
+              )}
             {result.rows.length === 0 ? (
               <div className="flex h-48 flex-col items-center justify-center gap-1 text-center text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">

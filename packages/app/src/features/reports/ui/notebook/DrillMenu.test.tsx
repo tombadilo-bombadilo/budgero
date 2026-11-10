@@ -6,7 +6,9 @@ import {
   type BreakoutColumn,
   type QuestionSpec,
 } from '@features/reports/lib/question';
+import { useState } from 'react';
 import { DrillMenu, type DrillRequest } from './DrillMenu';
+import { withReturnFocus } from './drill-focus';
 
 beforeAll(() => {
   Element.prototype.scrollIntoView ??= () => undefined;
@@ -97,5 +99,32 @@ describe('DrillMenu', () => {
       <DrillMenu spec={spec} request={null} onDrill={() => undefined} onClose={() => undefined} />
     );
     expect(container).toBeEmptyDOMElement();
+  });
+
+  it('hands focus back to the clicked cell when it closes', async () => {
+    function Harness() {
+      const [request, setRequest] = useState<DrillRequest | null>(null);
+      return (
+        <>
+          <button type="button" onClick={() => setRequest(withReturnFocus(clicked))}>
+            Groceries cell
+          </button>
+          <DrillMenu
+            spec={spec}
+            request={request}
+            onDrill={() => undefined}
+            onClose={() => setRequest(null)}
+          />
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    render(<Harness />);
+    const cell = screen.getByRole('button', { name: 'Groceries cell' });
+    await user.click(cell);
+    await screen.findByRole('menu');
+    await user.keyboard('{Escape}');
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument();
+    expect(cell).toHaveFocus();
   });
 });

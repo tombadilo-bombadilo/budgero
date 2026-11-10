@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { EChart } from '@shared/ui/echart';
 import { tooltipBase, tooltipHtml, useChartPalette } from '@shared/lib/charts/echarts-chrome';
@@ -7,7 +7,9 @@ import { cn } from '@shared/lib/utils';
 import { columnLabel } from '../question-labels';
 import { useQuestionFormatters } from '../useQuestionFormatters';
 import { buildSankey, DEFAULT_SANKEY_TOP_N, isOther, type SankeyNode } from './transforms';
+import { seriesColor } from './series';
 import type { VizViewProps } from './types';
+import { labelWidthFor, useElementWidth } from './useElementWidth';
 
 /**
  * Flows from the first grouping to the second (e.g. category group →
@@ -24,11 +26,17 @@ export function SankeyView({
 }: VizViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const data = useMemo(
     () => buildSankey(result, columns, display?.topN ?? DEFAULT_SANKEY_TOP_N),
     [result, columns, display?.topN]
   );
+  // Labels sit right of the last column: their room shrinks on narrow screens.
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const hostWidth = useElementWidth(hostRef, 600);
+  const labelWidth = labelWidthFor(hostWidth, 180);
+  // Narrow screens: name and value on two lines, so neither gets cut.
+  const stacked = hostWidth < 560;
 
   const option = useMemo<EChartsCoreOption | null>(() => {
     if (!data || data.links.length === 0) return null;
@@ -47,7 +55,7 @@ export function SankeyView({
     for (const node of data.nodes) {
       colorOf.set(
         node.id,
-        isOther(node.value) ? chrome.other : palette.series[colorSlot++ % palette.series.length]
+        isOther(node.value) ? chrome.other : seriesColor(palette.series, colorSlot++)
       );
     }
     const metricLabel = columnLabel(source, data.metric);
@@ -87,11 +95,11 @@ export function SankeyView({
         {
           type: 'sankey' as const,
           left: 8,
-          right: 190,
+          right: labelWidth + 10,
           top: 8,
           bottom: 8,
           nodeWidth: 12,
-          nodeGap: 10,
+          nodeGap: stacked ? 16 : 10,
           nodeAlign: 'justify' as const,
           layoutIterations: 32,
           emphasis: { focus: 'adjacency' as const },
@@ -103,20 +111,24 @@ export function SankeyView({
           label: {
             color: chrome.inkPrimary,
             fontSize: 11,
-            width: 180,
+            width: labelWidth,
             overflow: 'truncate' as const,
+            lineHeight: 13,
             formatter: (params: { name: string }) => {
               const node = byId.get(params.name);
               if (!node) return '';
               const name = nodeName(node);
-              return format.masked ? name : `${name}  ${format.compact(data.metric, node.total)}`;
+              if (format.masked) return name;
+              const value = format.compact(data.metric, node.total);
+              return stacked ? `${name}\n{value|${value}}` : `${name}  ${value}`;
             },
+            rich: { value: { color: chrome.inkSecondary, fontSize: 10, lineHeight: 13 } },
           },
           lineStyle: { color: 'source' as const, opacity: 0.32, curveness: 0.5 },
         },
       ],
     };
-  }, [data, palette, format, source, t]);
+  }, [data, palette, format, source, t, labelWidth, stacked]);
 
   if (!option || !data) {
     return (
@@ -127,12 +139,15 @@ export function SankeyView({
   }
   const from = columnLabel(source, data.from);
   const to = columnLabel(source, data.to);
-  const height = Math.max(320, Math.min(900, data.nodes.length * 26));
+  const height = Math.max(320, Math.min(1000, data.nodes.length * (stacked ? 36 : 26)));
   return (
-    <div className={cn('flex min-h-0 flex-col gap-1', fitHeight && 'h-full', className)}>
+    <div
+      ref={hostRef}
+      className={cn('flex min-h-0 flex-col gap-1', fitHeight && 'h-full', className)}
+    >
       <div className="flex justify-between px-2 text-xs text-muted-foreground">
         <span>{from}</span>
-        <span className="pr-44">{to}</span>
+        <span style={{ paddingRight: Math.max(0, labelWidth - 16) }}>{to}</span>
       </div>
       <div
         className={cn('min-h-0 w-full', fitHeight && 'min-h-[200px] flex-1')}

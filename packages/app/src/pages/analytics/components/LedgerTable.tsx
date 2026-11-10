@@ -155,14 +155,14 @@ export interface BreakdownRow {
   color?: string;
   /** One value per month of the period. */
   trend?: number[];
-  /** Makes the name a disclosure button (drill-down / expand Other). */
+  /** Makes the name a button (drill-down / expand Other). */
   onSelect?: () => void;
 }
 
 /**
  * Ranked breakdown: Name | Amount | Share | trend sparkline. Rows with
- * `onSelect` open a deeper view (aria-expanded=false: the detail replaces
- * the current view rather than unfolding inline).
+ * `onSelect` open a deeper view; the detail replaces the current view rather
+ * than unfolding inline, so the button is not a disclosure (no aria-expanded).
  */
 export function BreakdownTable({
   title,
@@ -211,7 +211,6 @@ export function BreakdownTable({
           <button
             type="button"
             onClick={row.onSelect}
-            aria-expanded={false}
             className="-mx-1 block max-w-full rounded px-1 text-left font-medium text-foreground underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             {content}

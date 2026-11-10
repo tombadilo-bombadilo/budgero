@@ -63,7 +63,12 @@ export type ExprFunction =
   | 'round'
   | 'coalesce'
   | 'case'
-  | 'contains';
+  | 'contains'
+  | 'year'
+  | 'quarter'
+  | 'month'
+  | 'day'
+  | 'weekday';
 
 interface Span {
   start: number;
@@ -102,11 +107,19 @@ const FUNCTIONS: Record<ExprFunction, FunctionDef> = {
   coalesce: { canonical: 'coalesce', aggregate: false, minArgs: 2, maxArgs: 8 },
   case: { canonical: 'case', aggregate: false, minArgs: 2, maxArgs: 41 },
   contains: { canonical: 'contains', aggregate: false, minArgs: 2, maxArgs: 2 },
+  // Date parts (numbers): year(), quarter() 1-4, month() 1-12, day() 1-31,
+  // weekday() 1 = Monday ... 7 = Sunday.
+  year: { canonical: 'year', aggregate: false, minArgs: 1, maxArgs: 1 },
+  quarter: { canonical: 'quarter', aggregate: false, minArgs: 1, maxArgs: 1 },
+  month: { canonical: 'month', aggregate: false, minArgs: 1, maxArgs: 1 },
+  day: { canonical: 'day', aggregate: false, minArgs: 1, maxArgs: 1 },
+  weekday: { canonical: 'weekday', aggregate: false, minArgs: 1, maxArgs: 1 },
 };
 
 const FUNCTION_ALIASES: Record<string, ExprFunction> = {
   average: 'avg',
   if: 'case',
+  dayofweek: 'weekday',
 };
 
 const METRIC_CANONICAL: Record<ExprMetricName, string> = {
@@ -155,7 +168,8 @@ export type ExprErrorCode =
   | 'metricUnavailable'
   | 'metricResultNotNumber'
   | 'columnResultDate'
-  | 'roundDigits';
+  | 'roundDigits'
+  | 'numberTooPrecise';
 
 export class ExpressionError extends Error {
   readonly code: ExprErrorCode;
@@ -236,6 +250,8 @@ function defaultErrorMessage(code: ExprErrorCode, detail: string): string {
       return 'A custom column must be a number, text or a condition';
     case 'roundDigits':
       return 'round() takes a whole number of digits from −10 to 10';
+    case 'numberTooPrecise':
+      return `The number ${detail} is too large or too precise`;
   }
 }
 
@@ -560,8 +576,10 @@ class Parser {
     switch (token.kind) {
       case 'number': {
         const value = Number(token.text);
-        if (!Number.isFinite(value)) {
-          throw new ExpressionError('unexpectedToken', token.start, token.end, token.text);
+        // Only numbers that are stored and read back exactly: whole numbers
+        // up to 2^53 and decimals that print without an exponent.
+        if (!isExactNumber(value)) {
+          throw new ExpressionError('numberTooPrecise', token.start, token.end, token.text);
         }
         return { kind: 'number', value, start: token.start, end: token.end };
       }
@@ -811,6 +829,15 @@ function checkCall(node: Extract<ExprNode, { kind: 'call' }>, state: CheckState)
       expectType(node.args[0], args[0], 'string');
       expectType(node.args[1], args[1], 'string');
       return { type: 'boolean', money: false, aggregated };
+    case 'year':
+    case 'quarter':
+    case 'month':
+    case 'day':
+    case 'weekday':
+      if (args[0].type !== 'date') {
+        throw new ExpressionError('typeMismatch', node.args[0].start, node.args[0].end);
+      }
+      return { type: 'number', money: false, aggregated };
     case 'coalesce': {
       const [first] = args;
       node.args.forEach((arg, index) => {
@@ -940,6 +967,13 @@ function quoteString(value: string): string {
   return `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
+/** Whether a number prints in plain decimals and reads back as the same value. */
+export function isExactNumber(value: number): boolean {
+  if (!Number.isFinite(value)) return false;
+  if (Number.isInteger(value)) return Math.abs(value) <= Number.MAX_SAFE_INTEGER;
+  return Number(printNumber(value)) === value;
+}
+
 function printNumber(value: number): string {
   // Plain decimal notation (no exponent), so the text parses back.
   if (Number.isInteger(value) && Math.abs(value) < 1e21) return value.toFixed(0);
@@ -1017,12 +1051,21 @@ export interface ExprSqlEnv {
   string: (value: string) => string;
 }
 
+/** A number literal as DOUBLE, so literal-only arithmetic can't overflow DuckDB integers. */
 function sqlNumberLiteral(value: number): string {
   if (!Number.isFinite(value)) throw new Error('Invalid number in expression');
   const text = printNumber(value);
   if (!/^-?\d+(\.\d+)?$/.test(text)) throw new Error('Invalid number in expression');
-  return text;
+  return `CAST(${text} AS DOUBLE)`;
 }
+
+const DATE_PART_SQL: Record<string, string> = {
+  year: 'YEAR',
+  quarter: 'QUARTER',
+  month: 'MONTH',
+  day: 'DAY',
+  weekday: 'ISODOW',
+};
 
 /**
  * SQL for a checked expression. `fieldTypes` gives each field's type so text
@@ -1136,6 +1179,12 @@ export function expressionToSql(
             return `COALESCE(${args.map(sql).join(', ')})`;
           case 'contains':
             return `contains(LOWER(COALESCE(${sql(args[0])}, '')), LOWER(${sql(args[1])}))`;
+          case 'year':
+          case 'quarter':
+          case 'month':
+          case 'day':
+          case 'weekday':
+            return `CAST(${DATE_PART_SQL[current.fn]}(${sql(args[0])}) AS DOUBLE)`;
           case 'case': {
             const parts: string[] = [];
             let otherwise = 'NULL';

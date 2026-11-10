@@ -1,7 +1,9 @@
+import { plural, t } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useId, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
 import {
+  PRIMARY_DATE_FIELD,
   RELATIVE_UNITS,
   SOURCE_FIELDS,
   getField,
@@ -53,7 +55,19 @@ export function FilterEditor({
   const field = fieldId ? getField(source, fieldId) : undefined;
 
   if (!field) {
-    return <FieldList source={source} onPick={setFieldId} />;
+    const dateField = PRIMARY_DATE_FIELD[source];
+    return (
+      <div>
+        {dateField && !initial && (
+          <QuickDateRanges
+            field={getField(source, dateField)}
+            label={fieldLabel(source, dateField)}
+            onPick={(range) => onSubmit({ field: dateField, values: [], ...range })}
+          />
+        )}
+        <FieldList source={source} onPick={setFieldId} />
+      </div>
+    );
   }
   return (
     <FilterForm
@@ -66,6 +80,92 @@ export function FilterEditor({
       onSubmit={onSubmit}
       onCancel={onCancel}
     />
+  );
+}
+
+type QuickRange = Pick<QuestionFilter, 'op' | 'amount' | 'unit' | 'includeCurrent'>;
+
+/** One-tap date ranges, as relative filters (they keep rolling). */
+const QUICK_RANGES: { id: string; range: QuickRange }[] = [
+  { id: 'thisMonth', range: { op: 'current', unit: 'month' } },
+  { id: 'lastMonth', range: { op: 'previous', amount: 1, unit: 'month', includeCurrent: false } },
+  { id: 'last30', range: { op: 'previous', amount: 30, unit: 'day', includeCurrent: true } },
+  { id: 'last3m', range: { op: 'previous', amount: 3, unit: 'month', includeCurrent: true } },
+  { id: 'last12m', range: { op: 'previous', amount: 12, unit: 'month', includeCurrent: true } },
+  { id: 'thisYear', range: { op: 'current', unit: 'year' } },
+  { id: 'lastYear', range: { op: 'previous', amount: 1, unit: 'year', includeCurrent: false } },
+];
+
+function quickRangeLabel(id: string): string {
+  switch (id) {
+    case 'thisMonth':
+      return t`This month`;
+    case 'lastMonth':
+      return t`Last month`;
+    case 'last30':
+      return t`Last 30 days`;
+    case 'last3m':
+      return t`Last 3 months`;
+    case 'last12m':
+      return t`Last 12 months`;
+    case 'thisYear':
+      return t`This year`;
+    default:
+      return t`Last year`;
+  }
+}
+
+function sameRange(filter: Partial<QuestionFilter>, range: QuickRange): boolean {
+  return (
+    filter.op === range.op &&
+    filter.unit === range.unit &&
+    (range.op === 'current' ||
+      (filter.amount === range.amount && filter.includeCurrent === range.includeCurrent))
+  );
+}
+
+/** Shortcut chips for the common date ranges. */
+function QuickDateRanges({
+  field,
+  label,
+  current,
+  onPick,
+}: {
+  field: FieldDef | undefined;
+  label?: string;
+  current?: Partial<QuestionFilter>;
+  onPick: (range: QuickRange) => void;
+}) {
+  const { t } = useLingui();
+  // Month-level dates (budget months) have no day ranges.
+  const ranges = QUICK_RANGES.filter(
+    ({ range }) => range.unit !== 'day' || field?.buckets?.includes('day')
+  );
+  return (
+    <div className="border-b p-2" role="group" aria-label={t`Quick date ranges`}>
+      {label && <p className="px-1 pb-1.5 text-xs font-medium text-muted-foreground">{label}</p>}
+      <div className="flex flex-wrap gap-1.5">
+        {ranges.map(({ id, range }) => {
+          const selected = current ? sameRange(current, range) : false;
+          return (
+            <button
+              key={id}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => onPick(range)}
+              className={cn(
+                'min-h-8 rounded-full border px-3 text-xs transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                selected
+                  ? 'border-primary bg-primary/10 font-medium'
+                  : 'border-border hover:bg-muted'
+              )}
+            >
+              {quickRangeLabel(id)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
@@ -167,6 +267,30 @@ function FilterForm({
     event.preventDefault();
     if (draft) onSubmit(draft);
   };
+  // Enter applies from anywhere in the form (lists and selects use it to pick,
+  // so there it takes Ctrl / ⌘ + Enter).
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const latest = useRef({ draft, onSubmit });
+  useEffect(() => {
+    latest.current = { draft, onSubmit };
+  });
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Enter' || event.isComposing) return;
+      const target = event.target as HTMLElement;
+      const picking =
+        target.closest('[cmdk-root], [role="combobox"], [role="listbox"]') !== null ||
+        target.tagName === 'BUTTON';
+      if (picking && !event.metaKey && !event.ctrlKey) return;
+      event.preventDefault();
+      const { draft: current, onSubmit: submitFilter } = latest.current;
+      if (current) submitFilter(current);
+    };
+    form.addEventListener('keydown', onKeyDown);
+    return () => form.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const changeOp = (next: FilterOp) => {
     setOp(next);
@@ -300,7 +424,7 @@ function FilterForm({
   };
 
   return (
-    <form onSubmit={submit} className="w-full space-y-3 p-3">
+    <form ref={formRef} onSubmit={submit} className="w-full space-y-3 p-3">
       <div className="flex items-center gap-2">
         {onBack && (
           <Button
@@ -316,6 +440,15 @@ function FilterForm({
         )}
         <span className="text-sm font-semibold">{fieldLabel(source, field.id)}</span>
       </div>
+      {field.type === 'date' && (
+        <div className="-mx-3 -mt-1">
+          <QuickDateRanges
+            field={field}
+            current={{ op, unit, amount: Number(amount), includeCurrent }}
+            onPick={(range) => onSubmit({ field: field.id, values: [], ...range })}
+          />
+        </div>
+      )}
       {operatorsFor(field).length > 1 && (
         <Select value={op} onValueChange={(next) => changeOp(next as FilterOp)}>
           <SelectTrigger aria-label={t`Condition`} className="w-full">
@@ -407,9 +540,7 @@ function ValueChecklist({
       </Command>
       {selected.length > 0 && (
         <div className="flex items-center justify-between border-t px-2 py-1 text-xs text-muted-foreground">
-          <span>
-            <Trans>{selectedCount} selected</Trans>
-          </span>
+          <span>{plural(selectedCount, { one: '# selected', other: '# selected' })}</span>
           <Button
             type="button"
             variant="ghost"

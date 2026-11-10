@@ -1,9 +1,8 @@
-import { msg } from '@lingui/core/macro';
+import { msg, plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { getErrorMessage } from '@shared/lib/errors';
 import { toast } from 'sonner';
@@ -28,7 +27,8 @@ import {
   normalizeDashboardFilters,
   type DashboardFilters,
 } from '@features/reports/lib/question';
-import { downloadCsv, questionResultCsv } from '@features/reports/ui/notebook/viz/export';
+import { questionResultCsv } from '@features/reports/ui/notebook/viz/export';
+import { downloadBlob } from '@shared/lib/download';
 import type { ChartConfiguration, CustomDashboardWidget } from '@budgero/core/browser';
 import { BackToReports } from '@pages/reports/BackToReports';
 import { DashboardSwitcher } from './components/DashboardSwitcher';
@@ -37,6 +37,7 @@ import { AddWidgetDialog } from './components/AddWidgetDialog';
 import { PinChartDialog } from './components/PinChartDialog';
 import { EditWidgetChartDialog } from './components/EditWidgetChartDialog';
 import { DashboardFilterBar } from './components/DashboardFilterBar';
+import { buildCsvZip, zipFileName, type WidgetCsv } from './export-dashboard';
 import { runWidgetQuery, widgetQueryKey, widgetQuestion } from './components/widget-query';
 
 const DEFAULT_DASHBOARD_NAME = msg`My Dashboard`;
@@ -304,7 +305,8 @@ export default function CustomDashboardsPage() {
 
   const handleExportAll = async () => {
     if (!activeDashboard) return;
-    let exported = 0;
+    const files: WidgetCsv[] = [];
+    let failed = 0;
     for (const widget of activeDashboard.widgets) {
       const report = reportsById.get(widget.reportId) ?? null;
       const chart = report?.charts.find((item) => item.id === widget.chartId) ?? null;
@@ -320,13 +322,32 @@ export default function CustomDashboardsPage() {
         const csv = question
           ? questionResultCsv(result, question.columns, question.spec.source)
           : questionResultCsv(result, [], 'transactions');
-        downloadCsv(csv, widget.titleOverride || chart.title || report.name);
-        exported += 1;
-      } catch (error) {
-        toast.error(getErrorMessage(error, t`Could not export a widget`));
+        files.push({ title: widget.titleOverride || chart.title || report.name, csv });
+      } catch {
+        failed += 1;
       }
     }
-    if (exported > 0) toast.success(t`Downloaded ${exported} CSV files`);
+    if (failed > 0) {
+      toast.error(
+        plural(failed, {
+          one: 'Could not export # widget',
+          other: 'Could not export # widgets',
+        })
+      );
+    }
+    if (files.length === 0) return;
+    try {
+      const zip = await buildCsvZip(files);
+      downloadBlob(zip, zipFileName(activeDashboard.name), 'application/zip');
+      toast.success(
+        plural(files.length, {
+          one: 'Downloaded # CSV file in a zip archive',
+          other: 'Downloaded # CSV files in a zip archive',
+        })
+      );
+    } catch (error) {
+      toast.error(getErrorMessage(error, t`Could not create the zip archive`));
+    }
   };
 
   const handleOpenReportInExplorer = (reportId: string) => {
@@ -352,24 +373,10 @@ export default function CustomDashboardsPage() {
             <Trans>Custom Dashboards</Trans>
           </h1>
           <p className="text-sm text-muted-foreground">
-            <Trans>
-              Build dashboard layouts from saved questions. Drag to reorder, resize on desktop, and
-              use size presets on mobile.
-            </Trans>
+            <Trans>Saved questions side by side, filtered together.</Trans>
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            onClick={() => void handleExportAll()}
-            disabled={!activeDashboard || activeDashboard.widgets.length === 0}
-            title={t`Download one CSV per widget`}
-          >
-            <Download className="h-4 w-4" aria-hidden />
-            <span className="hidden sm:inline">
-              <Trans>Export CSVs</Trans>
-            </span>
-          </Button>
           <Button
             variant={isEditMode ? 'default' : 'outline'}
             onClick={() => setIsEditMode((prev) => !prev)}
@@ -390,6 +397,8 @@ export default function CustomDashboardsPage() {
         onCreateDashboard={handleCreateDashboard}
         onRenameDashboard={handleRenameDashboard}
         onDeleteDashboard={handleDeleteDashboard}
+        onExportAll={() => void handleExportAll()}
+        exportDisabled={!activeDashboard || activeDashboard.widgets.length === 0}
       />
 
       {!activeDashboard && (dashboardsQuery.isLoading || activeDashboardQuery.isLoading) && (
