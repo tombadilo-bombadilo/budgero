@@ -73,4 +73,45 @@ describe('QuestionResult', () => {
     expect(screen.getByText('Details')).toBeInTheDocument();
     expect(screen.getByText(/Binder Error/)).not.toBeVisible();
   });
+
+  it('stacks by default, compares with last year in one tap and says what changed', async () => {
+    const user = userEvent.setup();
+    const monthly = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'date', bucket: 'month' }],
+    });
+    const monthlyCompiled = compileQuestion(monthly, { budgetId: 1, chartId: 'q' });
+    const onSpecChange = vi.fn();
+    render(
+      <QuestionResult
+        spec={monthly}
+        query={{
+          ...query,
+          compiled: monthlyCompiled,
+          resultCompiled: monthlyCompiled,
+          result: {
+            columns: ['month', 'spending'],
+            rows: [
+              ['2020-01', 100],
+              ['2020-02', 150],
+            ],
+            rowCount: 2,
+            executionTime: 1,
+          },
+        }}
+        onVisualizationChange={vi.fn()}
+        onStackingChange={vi.fn()}
+        onSpecChange={onSpecChange}
+        onRefresh={vi.fn()}
+      />
+    );
+    expect(
+      screen.getByText(/Spending in February 2020 was 50% more than in January 2020/)
+    ).toBeVisible();
+    await user.click(screen.getByRole('button', { name: 'vs last year' }));
+    expect(onSpecChange.mock.calls[0][0].aggregations).toEqual([
+      { op: 'spending', compare: true, compareTo: 'lastYear' },
+    ]);
+  });
 });

@@ -23,7 +23,9 @@ import { QueryErrorMessage } from './QueryErrorMessage';
 import { DrillMenu, type DrillRequest } from './DrillMenu';
 import { withReturnFocus } from './drill-focus';
 import type { QuestionQueryState } from './useQuestionQuery';
+import { ChartQuickBar } from './viz/ChartQuickBar';
 import { ChartSettings } from './viz/ChartSettings';
+import { ResultSummaryLine } from './viz/ResultSummaryLine';
 import { ChartTypePicker } from './viz/ChartTypePicker';
 import { ExportMenu } from './viz/ExportMenu';
 import { refineAutoVisualization } from './viz/transforms';
@@ -37,6 +39,8 @@ interface QuestionResultProps {
   /** Chart settings (values, goal, sort, top N, axes); omit to hide the Settings button. */
   onDisplayChange?: (display: QuestionDisplay | undefined) => void;
   onRefresh: () => void;
+  /** One-tap edits from the chart (compare with last year). */
+  onSpecChange?: (spec: QuestionSpec) => void;
   /** Drill-through: replaces the question with the explored one. */
   onDrill?: (spec: QuestionSpec) => void;
   /** Back to the question before the last drill; omit when there is none. */
@@ -53,6 +57,7 @@ export function QuestionResult({
   onStackingChange,
   onDisplayChange,
   onRefresh,
+  onSpecChange,
   onDrill,
   onBack,
   title,
@@ -155,40 +160,6 @@ export function QuestionResult({
           />
         )}
 
-        {stackable && (
-          <div className="flex items-center gap-2 border-l pl-3">
-            <span className="text-xs text-muted-foreground" aria-hidden>
-              <Trans>Series</Trans>
-            </span>
-            <ToggleGroup
-              type="single"
-              variant="outline"
-              size="sm"
-              value={stacking}
-              onValueChange={(value) => {
-                if (value) onStackingChange(value as Stacking);
-              }}
-              aria-label={t`Series`}
-            >
-              <ToggleGroupItem value="none" className="w-auto flex-none whitespace-nowrap px-2.5">
-                <Trans>Side by side</Trans>
-              </ToggleGroupItem>
-              <ToggleGroupItem
-                value="stacked"
-                className="w-auto flex-none whitespace-nowrap px-2.5"
-              >
-                <Trans>Stacked</Trans>
-              </ToggleGroupItem>
-              <ToggleGroupItem
-                value="percent"
-                className="w-auto flex-none whitespace-nowrap px-2.5"
-              >
-                100%
-              </ToggleGroupItem>
-            </ToggleGroup>
-          </div>
-        )}
-
         <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
           {isRunning && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {result && !shownError && (
@@ -243,7 +214,32 @@ export function QuestionResult({
         )}
 
         {result && resultCompiled && !shownError && (
-          <div ref={chartRef} className={cn('transition-opacity', isRunning && 'opacity-60')}>
+          <div
+            ref={chartRef}
+            className={cn('space-y-3 transition-opacity', isRunning && 'opacity-60')}
+          >
+            {result.rows.length > 0 && !showTable && (
+              <ChartQuickBar
+                spec={spec}
+                visualization={current}
+                categoryAxis={categoryAxis}
+                stackable={stackable}
+                stacking={stacking}
+                onStackingChange={onStackingChange}
+                onDisplayChange={onDisplayChange}
+                onSpecChange={onSpecChange}
+              />
+            )}
+            {result.rows.length > 0 &&
+              current !== 'number' &&
+              current !== 'trend' &&
+              !(showTable && resultCompiled.spec.aggregations.length === 0) && (
+                <ResultSummaryLine
+                  result={result}
+                  columns={resultCompiled.columns}
+                  source={resultCompiled.spec.source}
+                />
+              )}
             {result.rows.length === 0 ? (
               <div className="flex h-48 flex-col items-center justify-center gap-1 text-center text-sm text-muted-foreground">
                 <p className="font-medium text-foreground">

@@ -9,6 +9,7 @@ import {
   buildSavedQuestionQuery,
   compileQuestion,
   createQuestion,
+  normalizeQuestion,
   serializeQuestionHeader,
   type QuestionSpec,
 } from '@features/reports/lib/question';
@@ -248,6 +249,7 @@ export function NotebookQuestionView({
           onStackingChange={(stacking) => setSpec({ ...spec, stacking })}
           onDisplayChange={(display) => setSpec({ ...spec, display })}
           onRefresh={() => setRefreshKey((key) => key + 1)}
+          onSpecChange={(next) => setSpec(normalizeQuestion(next))}
           onDrill={drill}
           onBack={history.length > 0 ? back : undefined}
           title={title}
