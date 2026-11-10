@@ -28,7 +28,7 @@ interface QuestionTableProps {
 /** Result rows with friendly headers ("Month", "Spending") and formatted cells. */
 export function QuestionTable({ result, columns, source, className, onDrill }: QuestionTableProps) {
   const { t } = useLingui();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const [visible, setVisible] = useState(PAGE_SIZE);
   // A new result starts from the first page again.
   useEffect(() => setVisible(PAGE_SIZE), [result]);

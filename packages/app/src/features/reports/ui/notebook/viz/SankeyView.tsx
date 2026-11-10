@@ -26,7 +26,7 @@ export function SankeyView({
 }: VizViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const data = useMemo(
     () => buildSankey(result, columns, display?.topN ?? DEFAULT_SANKEY_TOP_N),
     [result, columns, display?.topN]

@@ -33,7 +33,7 @@ export function ComboView({
 }: VizViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const model = useMemo(() => buildChartModel(result, columns), [result, columns]);
   const { hidden, toggle } = useHiddenSeries(model.series.map((series) => series.id));
   const [firstSeries, secondSeries] = model.series;

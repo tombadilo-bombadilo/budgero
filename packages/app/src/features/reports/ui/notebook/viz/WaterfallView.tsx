@@ -33,7 +33,7 @@ export function WaterfallView({
 }: VizViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const model = useMemo(() => buildChartModel(result, columns), [result, columns]);
   const waterfall = useMemo(() => buildWaterfall(model, display?.topN), [model, display?.topN]);
   const metric = model.series[0]?.metric;

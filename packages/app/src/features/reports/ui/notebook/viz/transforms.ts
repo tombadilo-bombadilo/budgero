@@ -35,6 +35,14 @@ function isDateColumn(column: QuestionColumn | undefined | null): boolean {
   return column?.kind === 'breakout' && column.breakout.bucket !== undefined;
 }
 
+/** Date parts and numeric bins: categories with a natural numeric order. */
+function isNumberOrderedColumn(column: QuestionColumn | undefined | null): boolean {
+  return (
+    column?.kind === 'breakout' &&
+    (column.breakout.part !== undefined || column.breakout.bin !== undefined)
+  );
+}
+
 const keyOf = (value: unknown) => String(value ?? '');
 
 /**
@@ -206,6 +214,9 @@ export function buildPivot(result: QueryResult, columns: QuestionColumn[]): Pivo
   }
   const byKey = (a: PivotHeader, b: PivotHeader) => a.key.localeCompare(b.key);
   const byTotal = (a: PivotHeader, b: PivotHeader) => b.total - a.total;
+  const byNumber = (a: PivotHeader, b: PivotHeader) => toNumber(a.value) - toNumber(b.value);
+  const orderOf = (column: QuestionColumn) =>
+    isDateColumn(column) ? byKey : isNumberOrderedColumn(column) ? byNumber : null;
   const rowList = Array.from(rows.values());
   const colList = Array.from(cols.values());
   return {
@@ -213,8 +224,8 @@ export function buildPivot(result: QueryResult, columns: QuestionColumn[]): Pivo
     colColumn,
     metric,
     // Date groupings read in time order; categories by size.
-    rows: isDateColumn(rowColumn) ? rowList.sort(byKey) : rowList,
-    cols: isDateColumn(colColumn) ? colList.sort(byKey) : colList.sort(byTotal),
+    rows: rowList.sort(orderOf(rowColumn) ?? (() => 0)),
+    cols: colList.sort(orderOf(colColumn) ?? byTotal),
     cells,
     grandTotal,
   };
@@ -332,7 +343,7 @@ export function buildWaterfall(model: ChartModel, topN?: number): Waterfall {
     otherAmount = folded.reduce((sum, entry) => sum + entry.amount, 0);
     entries = entries.filter((entry) => keep.has(entry));
   }
-  if (!isDateColumn(model.x)) {
+  if (!isDateColumn(model.x) && !isNumberOrderedColumn(model.x)) {
     entries = [
       ...entries.filter((entry) => entry.amount > 0).sort((a, b) => b.amount - a.amount),
       ...entries.filter((entry) => entry.amount < 0).sort((a, b) => a.amount - b.amount),

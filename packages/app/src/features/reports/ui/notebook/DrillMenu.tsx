@@ -75,7 +75,15 @@ export function DrillMenu({ spec, request, onClose, onDrill }: DrillMenuProps) {
     onDrill(applyDrill(context, action));
     onClose();
   };
-  const valueText = (value: DrillValue) => format.cell(value.column, value.value, 'long');
+  const valueText = (value: DrillValue) => {
+    const { column } = value;
+    // Auto-width bins carry their width in the hidden key.
+    const binColumn =
+      column.breakout.bin === 'auto' && typeof value.key === 'number' && value.key > 0
+        ? { ...column, breakout: { ...column.breakout, bin: value.key } }
+        : column;
+    return format.cell(binColumn, value.value, 'long');
+  };
   const heading = request.values.map(valueText).join(' · ');
   const recordsLabel =
     spec.source === 'transactions'

@@ -11,7 +11,7 @@
  */
 import { upgradeLegacySpec } from './legacy-v1';
 import { QUESTION_SOURCES } from './fields';
-import { normalizeQuestion, type QuestionSpec } from './spec';
+import { normalizeQuestion, questionIssues, type QuestionIssue, type QuestionSpec } from './spec';
 
 export const QUESTION_HEADER_PREFIX = '-- budgero-question:v2';
 export const LEGACY_HEADER_PREFIX = '-- budgero-builder:';
@@ -78,6 +78,20 @@ export function parseQuestionHeader(query: string | null | undefined): QuestionS
     return json ? upgradeLegacySpec(json) : null;
   }
   return null;
+}
+
+/**
+ * What opening a saved v2 question drops or changes (custom columns that no
+ * longer parse, invalid filters, ...), so the editor can say so instead of
+ * silently losing a part. Empty for anything else.
+ */
+export function questionHeaderIssues(query: string | null | undefined): QuestionIssue[] {
+  if (!query) return [];
+  const line = firstLine(query);
+  if (!line.startsWith(QUESTION_HEADER_PREFIX)) return [];
+  const json = parseJsonObject(line.slice(QUESTION_HEADER_PREFIX.length).trim());
+  if (!json || !(QUESTION_SOURCES as readonly unknown[]).includes(json.source)) return [];
+  return questionIssues({ ...json, v: 2 });
 }
 
 /** True when a saved query was produced by the notebook (or the v1 builder). */

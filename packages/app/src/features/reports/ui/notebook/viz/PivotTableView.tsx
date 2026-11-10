@@ -57,7 +57,7 @@ export function PivotTableView({
 }: PivotTableViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const pivot = useMemo(() => buildPivot(result, columns), [result, columns]);
   const [sort, setSort] = useState<SortState>(null);
   const [rowLimit, setRowLimit] = useState(PIVOT_ROW_PAGE);

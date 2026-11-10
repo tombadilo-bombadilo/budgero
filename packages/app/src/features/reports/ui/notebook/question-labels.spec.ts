@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeQuestion, questionColumns } from '@features/reports/lib/question';
-import { columnLabel, describeQuestion, filterSummary, formatBucketValue } from './question-labels';
+import {
+  columnLabel,
+  describeQuestion,
+  filterSummary,
+  formatBucketValue,
+  formatDatePartValue,
+  havingSummary,
+} from './question-labels';
 
 describe('question labels', () => {
   it('formats grouping values for people', () => {
@@ -89,5 +96,64 @@ describe('question labels', () => {
         })
       )
     ).toBe('Income and Spending by Month');
+  });
+
+  it('names date parts, ranges and last-year columns', () => {
+    expect(formatDatePartValue('dayOfWeek', 1)).toBe('Mon');
+    expect(formatDatePartValue('dayOfWeek', 7, 'long')).toBe('Sunday');
+    expect(formatDatePartValue('monthOfYear', 3)).toBe('Mar');
+    expect(formatDatePartValue('quarterOfYear', 2)).toBe('Q2');
+    expect(formatDatePartValue('year', 2026)).toBe('2026');
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'spending', compare: true, compareTo: 'lastYear' }],
+      breakouts: [{ field: 'date', bucket: 'month' }],
+    });
+    expect(questionColumns(spec).map((column) => columnLabel('transactions', column))).toEqual([
+      'Month',
+      'Spending',
+      'Spending (last year)',
+      'Spending: % change vs last year',
+    ]);
+    const parts = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'count' }],
+      breakouts: [
+        { field: 'date', part: 'dayOfWeek' },
+        { field: 'outflow', bin: 50 },
+      ],
+    });
+    expect(questionColumns(parts).map((column) => columnLabel('transactions', column))).toEqual([
+      'Day of week',
+      'Outflow (range)',
+      'Number of transactions',
+    ]);
+    expect(describeQuestion(parts)).toBe('Number of transactions by Day of week and Outflow');
+  });
+
+  it('summarizes part, bin and result filters', () => {
+    expect(
+      filterSummary('transactions', {
+        field: 'date',
+        op: 'is',
+        values: [6, 7],
+        part: 'dayOfWeek',
+      })
+    ).toBe('Date: Day of week is Saturday, Sunday');
+    expect(
+      filterSummary('transactions', {
+        field: 'outflow',
+        op: 'between',
+        values: [100, 150],
+        binWidth: 50,
+      })
+    ).toBe('Outflow: 100 to under 150');
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'category' }],
+      having: [{ column: 'spending', op: 'gt', values: [1500] }],
+    });
+    expect(havingSummary(spec, spec.having![0])).toBe('Spending > 1,500');
   });
 });

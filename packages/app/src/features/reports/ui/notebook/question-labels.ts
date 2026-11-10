@@ -7,8 +7,10 @@ import { plural, t } from '@lingui/core/macro';
 import { getLocaleTag } from '@shared/i18n';
 import {
   getField,
+  havingColumns,
   type ColumnFormat,
   type DateBucket,
+  type DatePart,
   type ExpressionError,
   type FieldDef,
   type QuestionAggregation,
@@ -19,6 +21,8 @@ import {
   type QuestionSqlLabels,
   type RelativeUnit,
   type FilterOp,
+  type QuestionHaving,
+  type QuestionIssue,
   type ResolvedVisualization,
   type VisualizationBlocker,
 } from '@features/reports/lib/question';
@@ -112,6 +116,50 @@ export function bucketLabel(bucket: DateBucket): string {
       return t`Quarter`;
     case 'year':
       return t`Year`;
+  }
+}
+
+export function datePartLabel(part: DatePart): string {
+  switch (part) {
+    case 'year':
+      return t`Year`;
+    case 'quarterOfYear':
+      return t`Quarter of year`;
+    case 'monthOfYear':
+      return t`Month of year`;
+    case 'dayOfMonth':
+      return t`Day of month`;
+    case 'dayOfWeek':
+      return t`Day of week`;
+  }
+}
+
+/** A date-part value as a name: 1 → "Mon" / "Monday", 3 → "Mar", 2 → "Q2". */
+export function formatDatePartValue(
+  part: DatePart,
+  value: unknown,
+  style: 'short' | 'long' = 'short'
+): string {
+  if (value === null || value === undefined || value === '') return '—';
+  const number = Number(value);
+  if (!Number.isInteger(number)) return String(value);
+  const locale = getLocaleTag();
+  switch (part) {
+    case 'dayOfWeek': {
+      if (number < 1 || number > 7) return String(value);
+      // 1 Jan 2024 was a Monday (ISO day 1).
+      const date = new Date(2024, 0, number);
+      return date.toLocaleDateString(locale, { weekday: style === 'long' ? 'long' : 'short' });
+    }
+    case 'monthOfYear': {
+      if (number < 1 || number > 12) return String(value);
+      const date = new Date(2024, number - 1, 1);
+      return date.toLocaleDateString(locale, { month: style === 'long' ? 'long' : 'short' });
+    }
+    case 'quarterOfYear':
+      return t`Q${number}`;
+    default:
+      return String(number);
   }
 }
 
@@ -273,20 +321,34 @@ export function columnLabel(source: QuestionSource, column: QuestionColumn): str
     case 'aggregation': {
       const base = aggregationLabel(source, column.aggregation, column.fieldName);
       const metric = withModifierLabel(base, column.aggregation);
-      if (column.derived === 'previous') return t`${metric} (previous period)`;
-      if (column.derived === 'change') return t`${metric}: % change`;
+      const lastYear = column.compareTo === 'lastYear';
+      if (column.derived === 'previous') {
+        return lastYear ? t`${metric} (last year)` : t`${metric} (previous period)`;
+      }
+      if (column.derived === 'change') {
+        return lastYear ? t`${metric}: % change vs last year` : t`${metric}: % change`;
+      }
       return metric;
     }
     case 'breakout': {
       const { breakout } = column;
-      if (!breakout.bucket) return column.name ?? fieldLabel(source, breakout.field);
-      const primary = breakout.field === 'date' || breakout.field === 'month';
-      if (primary) return bucketLabel(breakout.bucket);
+      const name = column.name ?? fieldLabel(source, breakout.field);
+      if (breakout.part) {
+        const part = datePartLabel(breakout.part);
+        return isPrimaryDate(breakout.field) ? part : t`${name}: ${part}`;
+      }
+      if (breakout.bin !== undefined) return t`${name} (range)`;
+      if (!breakout.bucket) return name;
+      if (isPrimaryDate(breakout.field)) return bucketLabel(breakout.bucket);
       const field = fieldLabel(source, breakout.field);
       const bucket = bucketLabel(breakout.bucket);
       return t`${field}: ${bucket}`;
     }
   }
+}
+
+function isPrimaryDate(fieldId: string): boolean {
+  return fieldId === 'date' || fieldId === 'month';
 }
 
 const MONEY_FIELDS = new Set(['amount', 'inflow', 'outflow', 'assigned', 'activity', 'balance']);
@@ -317,6 +379,9 @@ export function columnFormat(column: QuestionColumn): ColumnFormat {
       return 'money';
     }
     return field && MONEY_FIELDS.has(field) ? 'money' : 'number';
+  }
+  if (column.kind === 'breakout' && column.breakout.bin !== undefined) {
+    return MONEY_FIELDS.has(column.breakout.field) ? 'money' : 'number';
   }
   if (column.kind === 'field') {
     if (MONEY_FIELDS.has(column.field)) return 'money';
@@ -491,6 +556,14 @@ export function filterSummary(
       : values.join(', ');
   const firstDate = formatIsoDate(filter.values[0]);
   const secondDate = formatIsoDate(filter.values[1]);
+  if (filter.part && (filter.op === 'is' || filter.op === 'isNot')) {
+    const part = datePartLabel(filter.part);
+    const names = filter.values.map((value) => formatDatePartValue(filter.part!, value, 'long'));
+    const shown = names.length > 3 ? `${names.slice(0, 3).join(', ')}…` : names.join(', ');
+    return filter.op === 'is'
+      ? t`${name}: ${part} is ${shown}`
+      : t`${name}: ${part} is not ${shown}`;
+  }
   switch (filter.op) {
     case 'isEmpty':
       return t`${name} is empty`;
@@ -519,9 +592,10 @@ export function filterSummary(
       }
     }
     case 'between':
-      return field.type === 'date'
-        ? t`${name}: ${firstDate} – ${secondDate}`
-        : t`${name} between ${first} and ${second}`;
+      if (field.type === 'date') return t`${name}: ${firstDate} – ${secondDate}`;
+      // A numeric bin from drill-through: [from, to).
+      if (filter.binWidth !== undefined) return t`${name}: ${first} to under ${second}`;
+      return t`${name} between ${first} and ${second}`;
     case 'before':
       return t`${name} before ${firstDate}`;
     case 'after':
@@ -558,11 +632,12 @@ export function describeQuestion(spec: QuestionSpec): string {
   const secondMetric = spec.aggregations.length === 2 ? label(spec.aggregations[1]) : '';
   const metrics = secondMetric ? t`${metric} and ${secondMetric}` : metric;
   if (spec.breakouts.length === 0) return metrics;
-  const groups = spec.breakouts.map((breakout) =>
-    breakout.bucket && (breakout.field === 'date' || breakout.field === 'month')
+  const groups = spec.breakouts.map((breakout) => {
+    if (breakout.part && isPrimaryDate(breakout.field)) return datePartLabel(breakout.part);
+    return breakout.bucket && isPrimaryDate(breakout.field)
       ? bucketLabel(breakout.bucket)
-      : specFieldLabel(spec, breakout.field)
-  );
+      : specFieldLabel(spec, breakout.field);
+  });
   const [firstGroup, secondGroup] = groups;
   const by = secondGroup ? t`${firstGroup} and ${secondGroup}` : firstGroup;
   return t`${metrics} by ${by}`;
@@ -662,5 +737,50 @@ export function expressionErrorMessage(error: ExpressionError): string {
       return t`round() takes a whole number of digits from −10 to 10.`;
     case 'numberTooPrecise':
       return t`The number ${detail} is too large or has too many decimals.`;
+  }
+}
+
+/** Chip text of a result filter, e.g. "Spending > 500", "Spending: 100 – 200". */
+export function havingSummary(spec: QuestionSpec, having: QuestionHaving): string {
+  const column = havingColumns(spec).find((item) => item.key === having.column);
+  const name = column ? columnLabel(spec.source, column) : having.column;
+  const number = new Intl.NumberFormat(getLocaleTag(), { maximumFractionDigits: 2 });
+  const [first = 0, second = 0] = having.values.map((value) => number.format(value));
+  const list = having.values.map((value) => number.format(value)).join(', ');
+  switch (having.op) {
+    case 'gt':
+      return t`${name} > ${first}`;
+    case 'lt':
+      return t`${name} < ${first}`;
+    case 'between':
+      return t`${name} between ${first} and ${second}`;
+    case 'is':
+      return t`${name} is ${list}`;
+    case 'isNot':
+      return t`${name} is not ${list}`;
+    case 'isEmpty':
+      return t`${name} is empty`;
+    case 'notEmpty':
+      return t`${name} is not empty`;
+  }
+}
+
+/** Why part of an opened question was dropped or renamed. */
+export function questionIssueMessage(issue: QuestionIssue): string {
+  const name = issue.name ?? '';
+  const reason = issue.error ? expressionErrorMessage(issue.error) : '';
+  switch (issue.kind) {
+    case 'customColumn':
+      if (issue.reason === 'nameTaken') return t`A custom column was renamed to “${name}”.`;
+      if (issue.reason === 'expression') return t`Custom column “${name}” was left out: ${reason}`;
+      return t`A custom column couldn’t be read and was left out.`;
+    case 'customMetric':
+      if (issue.reason === 'expression') return t`Custom metric “${name}” was left out: ${reason}`;
+      return t`A custom metric couldn’t be read and was left out.`;
+    case 'filter':
+      if (issue.reason === 'textTooLong') return t`A filter with a very long value was left out.`;
+      return t`A filter couldn’t be read and was left out.`;
+    case 'having':
+      return t`A result filter couldn’t be read and was left out.`;
   }
 }

@@ -44,7 +44,7 @@ export function RowChartView({
 }: RowChartViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const model = useMemo(
     () =>
       applyCategoryDisplay(buildChartModel(result, columns), {

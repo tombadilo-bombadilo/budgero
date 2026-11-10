@@ -48,7 +48,7 @@ export function CalendarHeatmapView({
 }: CalendarHeatmapViewProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const years = useMemo(() => buildCalendar(result, columns), [result, columns]);
   const [pickedYear, setPickedYear] = useState<number | null>(null);
   const year = years.find((entry) => entry.year === pickedYear) ?? years[0];

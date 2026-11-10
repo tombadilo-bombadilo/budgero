@@ -8,6 +8,7 @@ import {
   buildSavedQuestionQuery,
   isQuestionQuery,
   parseQuestionHeader,
+  questionHeaderIssues,
   serializeQuestionHeader,
   stripQuestionHeader,
 } from './header';
@@ -333,6 +334,21 @@ describe('compileQuestion', () => {
 });
 
 describe('saved question header', () => {
+  it('lists what opening a saved question drops', () => {
+    const header = `${QUESTION_HEADER_PREFIX} ${JSON.stringify({
+      source: 'transactions',
+      customColumns: [{ id: 'expr_1', name: 'Broken', expression: '[Nope] + 1' }],
+      filters: [{ field: 'nope', op: 'is', values: [1] }],
+      aggregations: [{ op: 'spending' }],
+    })}\nSELECT 1`;
+    expect(questionHeaderIssues(header).map((issue) => [issue.kind, issue.reason])).toEqual([
+      ['customColumn', 'expression'],
+      ['filter', 'invalid'],
+    ]);
+    expect(questionHeaderIssues('SELECT 1')).toEqual([]);
+    expect(questionHeaderIssues(null)).toEqual([]);
+  });
+
   const spec = normalizeQuestion({
     source: 'transactions',
     filters: [{ field: 'payee', op: 'is', values: ['Line\nbreak', "O'Brien"] }],

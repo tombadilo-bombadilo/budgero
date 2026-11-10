@@ -134,7 +134,7 @@ function NumberView({
   source,
   className,
 }: Pick<QuestionVisualizationProps, 'result' | 'columns' | 'source' | 'className'>) {
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const metrics = columns.filter((column) => column.kind === 'aggregation');
   const index = new Map(result.columns.map((name, position) => [name, position]));
   const row = result.rows[0] ?? [];
@@ -172,7 +172,7 @@ function ChartView({
 }: QuestionVisualizationProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
-  const format = useQuestionFormatters(source);
+  const format = useQuestionFormatters(source, result);
   const model = useMemo(() => {
     const base = buildChartModel(result, columns);
     // Bars sort; bars and pie slices fold past the top N into "Other".
