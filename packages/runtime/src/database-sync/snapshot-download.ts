@@ -15,8 +15,10 @@ export interface SnapshotVersions {
   /**
    * Mutation-log position the blob contents correspond to (the uploader's
    * cursor at upload time). Seeding the local cursor from this and replaying
-   * the log tail is what makes debounced blob uploads safe. Absent on legacy
-   * blobs — callers fall back to the server's current mutation version.
+   * the log tail is what makes debounced blob uploads safe. 0 is a real
+   * position (a blob published before any change was logged, e.g. an
+   * import): the whole log is the tail. Absent on legacy blobs — callers
+   * fall back to the server's current mutation version.
    */
   mutationVersion?: number;
 }
@@ -29,18 +31,19 @@ export interface DownloadedSnapshot extends SnapshotVersions {
   decrypted: Uint8Array;
 }
 
-function parsePositiveIntHeader(raw: string | null): number | undefined {
-  if (!raw) return undefined;
-  const value = parseInt(raw, 10);
-  return !isNaN(value) && value > 0 ? value : undefined;
+function parseIntHeader(raw: string | null, min: number): number | undefined {
+  if (!raw || !/^\d+$/.test(raw.trim())) return undefined;
+  const value = Number(raw.trim());
+  return Number.isSafeInteger(value) && value >= min ? value : undefined;
 }
 
 /** Parse the snapshot version headers from a blob-download response. */
 export function readSnapshotVersions(headers: Headers): SnapshotVersions {
   return {
-    blobVersion: parsePositiveIntHeader(headers.get('X-Database-Version')),
-    keyVersion: parsePositiveIntHeader(headers.get('X-Encryption-Key-Version')),
-    mutationVersion: parsePositiveIntHeader(headers.get('X-Mutation-Version')),
+    blobVersion: parseIntHeader(headers.get('X-Database-Version'), 1),
+    keyVersion: parseIntHeader(headers.get('X-Encryption-Key-Version'), 1),
+    // Servers send it at 0 only when 0 is the blob's real bound position.
+    mutationVersion: parseIntHeader(headers.get('X-Mutation-Version'), 0),
   };
 }
 

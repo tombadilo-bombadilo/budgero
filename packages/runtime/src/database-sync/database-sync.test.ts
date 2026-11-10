@@ -355,6 +355,25 @@ describe('DatabaseSync', () => {
     await expect(sync.download()).rejects.toThrow('Decryption failed');
   });
 
+  it('passes a blob bound to mutation 0 to the restore hook as 0, not as unbound', async () => {
+    const { db, deps } = createDeps();
+    deps.downloadBlob.mockResolvedValue({
+      data: new Uint8Array([9, 9]),
+      headers: new Headers({ 'X-Database-Version': '12', 'X-Mutation-Version': '0' }),
+    });
+    vi.spyOn(crypto, 'decryptAndDecompressDatabase').mockResolvedValue({
+      decrypted: new Uint8Array([1, 1, 1]),
+    });
+    const sync = new DatabaseSync('s1', deps as never);
+
+    await expect(sync.downloadAndRestore()).resolves.toBe(true);
+
+    expect(db.restore).toHaveBeenCalledWith(new Uint8Array([1, 1, 1]));
+    // undefined would leave the cursor where it was and skip the whole log.
+    expect(deps.onDatabaseRestored).toHaveBeenCalledWith(0);
+    expect(sync.getLastDownloadedMutationVersion()).toBe(0);
+  });
+
   it('downloadAndRestore restores current db and threshold flush is reentrant-safe', async () => {
     const { db, deps } = createDeps();
     const sync = new DatabaseSync('s1', {

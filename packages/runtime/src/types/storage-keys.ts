@@ -14,3 +14,9 @@ export const MASTER_PASSWORD_INDEXEDDB_NAME = 'budgero_secure_cache_v1';
 export const MASTER_PASSWORD_INDEXEDDB_STORE = 'master_password';
 export const MASTER_PASSWORD_INDEXEDDB_RECORD_KEY = 'session_cache';
 export const MASTER_PASSWORD_DEVICE_KEY_RECORD_KEY = 'device_key_v1';
+/**
+ * The offline queue's own device key (same IndexedDB store). Unlike
+ * device_key_v1 it survives unlock in 'memory' mode, so mutations queued
+ * before a reload stay readable; only sign-out / full reset delete it.
+ */
+export const OFFLINE_QUEUE_DEVICE_KEY_RECORD_KEY = 'offline_queue_device_key_v1';
