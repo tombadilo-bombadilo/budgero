@@ -19,6 +19,7 @@ export function ChartLegend({ items, hidden, onToggle }: ChartLegendProps) {
   const { t } = useLingui();
   return (
     <ul
+      data-chart-legend
       className="flex max-h-20 flex-wrap gap-x-3 gap-y-1 overflow-y-auto text-xs"
       aria-label={t`Legend`}
     >
@@ -35,7 +36,13 @@ export function ChartLegend({ items, hidden, onToggle }: ChartLegendProps) {
           </>
         );
         return (
-          <li key={item.id}>
+          // data-legend-*: the PNG export redraws the legend from these.
+          <li
+            key={item.id}
+            data-legend-color={item.color}
+            data-legend-label={item.label}
+            data-legend-off={off || undefined}
+          >
             {onToggle ? (
               <button
                 type="button"
