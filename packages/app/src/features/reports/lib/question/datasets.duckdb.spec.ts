@@ -12,6 +12,7 @@ import type * as DuckDbBlocking from '@duckdb/duckdb-wasm/blocking';
 // The integration test needs the Node database adapter; production uses the browser entry.
 // eslint-disable-next-line no-restricted-imports
 import {
+  GoalCalculations,
   GoalPurpose,
   GoalType,
   NodeSqlJsAdapter,
@@ -286,6 +287,17 @@ beforeAll(async () => {
     GoalPurpose.SAVINGS
   );
 
+  // Cycle goals read the assignment history around each month.
+  services.goals.createGoal(GoalType.YEARLY, ids.rent, m(14400), '2026-01-01', '2026-12-31');
+  services.goals.createGoal(
+    GoalType.TARGET_DATE,
+    ids.fun,
+    m(600),
+    '2026-06-01',
+    '2027-05-31',
+    GoalPurpose.SAVINGS
+  );
+
   const r = services.recurring;
   const template = async (
     name: string,
@@ -519,6 +531,7 @@ describe('Budget source: available and goals', () => {
         filters: [
           { field: 'month', op: 'is', values: ['2026-11-01'] },
           { field: 'goal_type', op: 'notEmpty', values: [] },
+          { field: 'category', op: 'is', values: [ids.groceries, ids.vacation] },
         ],
         columns: [
           'category',
@@ -551,6 +564,44 @@ describe('Budget source: available and goals', () => {
         goal_funded: false,
       },
     ]);
+  });
+
+  it('every goal field equals GoalCalculations over getCategoryFinancials, every month', () => {
+    const result = query({
+      source: 'budget',
+      filters: [{ field: 'goal_type', op: 'notEmpty', values: [] }],
+      columns: [
+        'month',
+        'category',
+        'goal_monthly_target',
+        'goal_needed',
+        'goal_progress',
+        'goal_funded',
+      ],
+    });
+    const goals = new Map(services.goals.getAllGoals().map((goal) => [goal.CategoryID, goal]));
+    let compared = 0;
+    for (const month of ['2026-08', '2026-09', '2026-10', '2026-11', '2026-12']) {
+      for (const row of services.monthlyBudgets.getMonthlyBudget(month, budgetId)) {
+        const goal = goals.get(row.CategoryID);
+        if (!goal) continue;
+        const progress = GoalCalculations.calculateProgress(
+          goal,
+          services.goals.getCategoryFinancials(row.CategoryID, month, row),
+          month
+        );
+        expect(result).toContainEqual({
+          month,
+          category: row.Category,
+          goal_monthly_target: Math.round(progress.monthlyTarget) / 1000,
+          goal_needed: Math.round(progress.amountNeeded) / 1000,
+          goal_progress: Math.round(progress.percentage * 100) / 100,
+          goal_funded: progress.isFunded || progress.isOnTrack,
+        });
+        compared += 1;
+      }
+    }
+    expect(compared).toBe(20);
   });
 
   it('old budget questions keep their SQL; new fields switch to the budget screen numbers', () => {

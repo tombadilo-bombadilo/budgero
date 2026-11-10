@@ -139,6 +139,28 @@ export const BUDGET_MONTHS_COLUMNS: readonly DerivedColumn[] = [
   bool('goal_funded'),
 ];
 
+/**
+ * Goal history for one category, read once: the same rows
+ * GoalService.getCategoryFinancials queries per month (assignments before the
+ * month, at most 240, chronological; assignments after it up to 12 months
+ * ahead), sliced per month. Activity history isn't read by goal progress.
+ */
+function cycleHistory(db: DerivedSqlDatabase, categoryId: number) {
+  const all = queryRows(
+    db,
+    `SELECT Month AS month, Amount AS amount FROM assignments WHERE CategoryID = ${categoryId} ORDER BY Month ASC`
+  ).map((row) => ({ month: String(row.month), amount: Number(row.amount) }));
+  return (month: string) => {
+    const [year, monthNumber] = month.split('-').map(Number);
+    const future = new Date(year, monthNumber + 11, 1);
+    const futureMonth = `${future.getFullYear()}-${String(future.getMonth() + 1).padStart(2, '0')}`;
+    return {
+      historicalAssignments: all.filter((row) => row.month < month).slice(-240),
+      plannedAssignments: all.filter((row) => row.month > month && row.month <= futureMonth),
+    };
+  };
+}
+
 /** One budget's `budget_months` rows (budget screen numbers, milliunits → units). */
 export function buildBudgetMonthRows(
   context: DerivedTableContext,
@@ -148,6 +170,15 @@ export function buildBudgetMonthRows(
   const goals = new Map<number, Goal>(
     services.goals.getAllGoals().map((goal) => [goal.CategoryID, goal])
   );
+  const histories = new Map<number, ReturnType<typeof cycleHistory>>();
+  const history = (categoryId: number) => {
+    let entry = histories.get(categoryId);
+    if (!entry) {
+      entry = cycleHistory(db, categoryId);
+      histories.set(categoryId, entry);
+    }
+    return entry;
+  };
   const rows: Record<string, unknown>[] = [];
   for (const month of budgetMonths(db, budgetId, today)) {
     for (const row of services.monthlyBudgets.getMonthlyBudget(month, budgetId)) {
@@ -157,13 +188,12 @@ export function buildBudgetMonthRows(
       const progress = goal
         ? GoalCalculations.calculateProgress(
             goal,
-            needsCycleHistory(goal)
-              ? services.goals.getCategoryFinancials(row.CategoryID, month, row)
-              : {
-                  available: Number(row.Available) || 0,
-                  assigned: Number(row.Assigned) || 0,
-                  activity: Number(row.Activity) || 0,
-                },
+            {
+              available: Number(row.Available) || 0,
+              assigned: Number(row.Assigned) || 0,
+              activity: Number(row.Activity) || 0,
+              ...(needsCycleHistory(goal) ? history(row.CategoryID)(month) : {}),
+            },
             month
           )
         : null;
@@ -188,6 +218,9 @@ export function buildBudgetMonthRows(
   }
   return rows;
 }
+
+/** Test seam: the per-month goal history as getCategoryFinancials would return it. */
+export const goalCycleHistory = cycleHistory;
 
 // ---------------------------------------------------------------------------
 // Scheduled transactions
