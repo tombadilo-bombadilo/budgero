@@ -1328,6 +1328,10 @@ msgstr "{label} ID copied: {id}"
 #~ msgid "{label}: {count} selected"
 #~ msgstr "{label}: {count} selected"
 
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "{label}: {percentText} of the goal"
+msgstr "{label}: {percentText} of the goal"
+
 #: src/features/reports/ui/notebook/viz/ChartTypePicker.tsx
 #~ msgid "{label}: {reason}"
 #~ msgstr "{label}: {reason}"
@@ -1343,6 +1347,10 @@ msgstr "{label}: descending. Switch to ascending"
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "{laterChanges, plural, one {Discards the # change made after it, imports included.} other {Discards the # changes made after it, imports included.}}"
 msgstr "{laterChanges, plural, one {Discards the # change made after it, imports included.} other {Discards the # changes made after it, imports included.}}"
+
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "{leftText} to go"
+msgstr "{leftText} to go"
 
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "{matchedCount, plural, one {# transaction updated.} other {# transactions updated.}}"
@@ -1574,6 +1582,10 @@ msgstr "{option, plural, one {Inactive # day} other {Inactive # days}}"
 msgid "{org} needs attention in SimpleFIN Bridge. Sign in there and fix the connection, then sync again."
 msgstr "{org} needs attention in SimpleFIN Bridge. Sign in there and fix the connection, then sync again."
 
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "{overText} over the goal"
+msgstr "{overText} over the goal"
+
 #: src/pages/accounts/components/AccountGroupSection.tsx
 #: src/pages/accounts/components/NetWorthCard.tsx
 msgid "{periodLabel} change"
@@ -1645,6 +1657,10 @@ msgstr "{selectedCount} of {0} selected to apply"
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 msgid "{selectedCount} selected"
 msgstr "{selectedCount} selected"
+
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
+msgid "{shown} (drawn at 0)"
+msgstr "{shown} (drawn at 0)"
 
 #: src/pages/analytics/report-answers.ts
 msgid "{spent} went out and no income came in."
@@ -3275,6 +3291,10 @@ msgstr "A quick overview of this Budgero installation, including version and use
 msgid "A quick reminder of how Budgero applies your automation."
 msgstr "A quick reminder of how Budgero applies your automation."
 
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
+msgid "A radar needs at least 3 values to compare"
+msgstr "A radar needs at least 3 values to compare"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "A result filter couldn’t be read and was left out."
 msgstr "A result filter couldn’t be read and was left out."
@@ -3920,6 +3940,10 @@ msgstr "All"
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
 #~ msgid "All {0} series visible"
 #~ msgstr "All {0} series visible"
+
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
+msgid "All {parentName}"
+msgstr "All {parentName}"
 
 #: src/pages/onboarding/steps/ShareStep.tsx
 msgid "ALL 5 SEATS FILLED"
@@ -12925,6 +12949,10 @@ msgid "NEEDS"
 msgstr "NEEDS"
 
 #: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs a first grouping that isn’t a date, like Category."
+msgstr "Needs a first grouping that isn’t a date, like Category."
+
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Needs a grouping (Summarize by)."
 msgstr "Needs a grouping (Summarize by)."
 
@@ -12955,6 +12983,10 @@ msgstr "Needs one grouping by date, by day."
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Needs one grouping by date, or no grouping and a date filter with a range."
 msgstr "Needs one grouping by date, or no grouping and a date filter with a range."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs one or two groupings, like Category group and Category."
+msgstr "Needs one or two groupings, like Category group and Category."
 
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Needs review"
@@ -14069,6 +14101,7 @@ msgstr "Nothing to apply — no assignments last month."
 #: src/features/reports/ui/notebook/viz/RowChartView.tsx
 #: src/features/reports/ui/notebook/viz/SankeyView.tsx
 #: src/features/reports/ui/notebook/viz/ScatterView.tsx
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
 #: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 msgid "Nothing to chart for these rows."
 msgstr "Nothing to chart for these rows."
@@ -14173,6 +14206,10 @@ msgstr "Occurrence skipped"
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "of {0}"
 msgstr "of {0}"
+
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "of {goalText}"
+msgstr "of {goalText}"
 
 #: src/features/account-management/ui/AccountOrderCard.tsx
 #: src/features/payees/ui/PayeeCombobox.tsx
@@ -14576,6 +14613,7 @@ msgid "Other"
 msgstr "Other"
 
 #: src/features/reports/ui/notebook/viz/SankeyView.tsx
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
 msgid "Other ({count})"
 msgstr "Other ({count})"
 
@@ -14588,12 +14626,14 @@ msgstr "Other ({foldedCount} more)"
 #~ msgstr "Other ({foldedCount} more) — inspect"
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
 #: src/features/reports/ui/notebook/viz/RowChartView.tsx
 #: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 msgid "Other ({otherCount})"
 msgstr "Other ({otherCount})"
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
 #: src/features/reports/ui/notebook/viz/RowChartView.tsx
 msgid "Other ({otherXCount})"
 msgstr "Other ({otherXCount})"
@@ -15676,6 +15716,7 @@ msgid "Product Hunt"
 msgstr "Product Hunt"
 
 #: src/features/goal-management/ui/GoalCard.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Progress"
 msgstr "Progress"
 
@@ -15958,6 +15999,14 @@ msgstr "Quick Presets"
 #: src/pages/admin/sql-explorer/QueryCard.tsx
 msgid "Quick Queries"
 msgstr "Quick Queries"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Radar"
+msgstr "Radar"
+
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
+msgid "Radar chart"
+msgstr "Radar chart"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Rate"
@@ -18149,6 +18198,14 @@ msgstr "Set <0>Number Format</0> to <1>123,456.78</1>"
 msgid "Set a custom exchange rate for a specific date range."
 msgstr "Set a custom exchange rate for a specific date range."
 
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "Set a goal above zero in Settings to see progress."
+msgstr "Set a goal above zero in Settings to see progress."
+
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "Set a goal in Settings to see progress."
+msgstr "Set a goal in Settings to see progress."
+
 #. placeholder {0}: resetDialog.user?.email
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Set a new password for {0}. Share it securely with the user."
@@ -20252,6 +20309,10 @@ msgstr "This question could not be run"
 msgid "This question doesn’t exist"
 msgstr "This question doesn’t exist"
 
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
+msgid "This question has {axisCount}. Try a bar chart, or group by something with more values."
+msgstr "This question has {axisCount}. Try a bar chart, or group by something with more values."
+
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "This question has its own account filter, and none of its accounts are in the dashboard’s account filter, so nothing matches."
 msgstr "This question has its own account filter, and none of its accounts are in the dashboard’s account filter, so nothing matches."
@@ -20932,6 +20993,8 @@ msgstr "Travel & Vacation"
 msgid "Treat the current amounts as {oldCurrency}. For example, 10 {oldCurrency} becomes the equivalent amount in {newCurrency}, while its budget value stays approximately the same."
 msgstr "Treat the current amounts as {oldCurrency}. For example, 10 {oldCurrency} becomes the equivalent amount in {newCurrency}, while its budget value stays approximately the same."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Treemap"
 msgstr "Treemap"
