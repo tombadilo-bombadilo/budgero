@@ -16,6 +16,9 @@ import { seriesColor } from './series';
 import { buildTreemap, type TreemapNode } from './treemap-data';
 import { isOther } from './transforms';
 import type { VizViewProps } from './types';
+import { useElementSize } from './useElementWidth';
+
+const LABEL_AREA = 5200;
 
 interface TileMeta {
   node: TreemapNode;
@@ -47,6 +50,10 @@ export function TreemapView({
   const [focusId, setFocusId] = useState<string | null>(null);
   const hostRef = useRef<HTMLDivElement | null>(null);
   const focus = data?.child ? (data.nodes.find((node) => node.id === focusId) ?? null) : null;
+  const size = useElementSize(hostRef, { width: 600, height: 400 });
+  // A label needs room: tiles under ~5,200 px² (about 72 × 72) go without,
+  // and under twice that show just the name.
+  const minShare = Math.min(0.25, Math.max(0.025, LABEL_AREA / (size.width * size.height)));
 
   const { option, metas } = useMemo(() => {
     const metas = new Map<string, TileMeta>();
@@ -64,11 +71,14 @@ export function TreemapView({
     const total = focus ? focus.size : data.total;
     const leaf = (node: TreemapNode, parent: TreemapNode | null, color: string) => {
       metas.set(node.id, { node, parent, color });
+      const share = total > 0 ? node.size / total : 0;
+      const style = treemapTileStyle(color, share, minShare);
       return {
         id: node.id,
         name: name(node, parent),
         value: node.size,
-        ...treemapTileStyle(color, total > 0 ? node.size / total : 0),
+        ...style,
+        label: share < minShare * 2 ? { ...style.label, formatter: '{b}' } : style.label,
       };
     };
     const shade = (color: string, position: number) =>
@@ -136,7 +146,7 @@ export function TreemapView({
       ],
     };
     return { option, metas };
-  }, [data, focus, palette, format, source, t]);
+  }, [data, focus, palette, format, source, t, minShare]);
 
   if (!data || !option) {
     return (

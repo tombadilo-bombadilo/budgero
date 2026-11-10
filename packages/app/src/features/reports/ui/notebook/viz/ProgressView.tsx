@@ -76,7 +76,7 @@ export function ProgressView({
           <div className="truncate text-sm text-muted-foreground">{label}</div>
           <div className="text-3xl font-semibold tabular-nums sm:text-4xl">{valueText}</div>
         </div>
-        <div className="text-right">
+        <div className="ml-auto text-right">
           <div
             className="text-2xl font-semibold tabular-nums"
             style={{ color: progress.over > 0 ? overColor : undefined }}
