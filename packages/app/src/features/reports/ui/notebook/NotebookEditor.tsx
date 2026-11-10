@@ -500,8 +500,15 @@ function FilterStep({
                 <Chip
                   label={label}
                   editLabel={t`Edit filter: ${label}`}
-                  // Filters on custom columns come from drill-through; they can be removed.
-                  onEdit={getField(spec.source, filter.field) ? () => setEditing(index) : undefined}
+                  // Filters on custom columns, date parts and ranges come from
+                  // drill-through; the filter form can't edit them, only remove.
+                  onEdit={
+                    getField(spec.source, filter.field) &&
+                    !filter.part &&
+                    filter.binWidth === undefined
+                      ? () => setEditing(index)
+                      : undefined
+                  }
                   onRemove={() => {
                     setEditing(null);
                     onChange(spec.filters.filter((_, i) => i !== index));

@@ -110,6 +110,26 @@ describe('NotebookEditor', () => {
     ]);
   });
 
+  it('adds a date range in one tap and applies a filter with Enter', async () => {
+    const user = userEvent.setup();
+    render(<Harness initial={createQuestion()} />);
+    await user.click(screen.getByRole('button', { name: 'Add filter' }));
+    await user.click(await screen.findByRole('button', { name: 'Last 3 months' }));
+    expect(latest.filters.at(-1)).toEqual({
+      field: 'date',
+      op: 'previous',
+      values: [],
+      amount: 3,
+      unit: 'month',
+      includeCurrent: true,
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Add filter' }));
+    await user.click(await screen.findByRole('option', { name: /^Amount$/ }));
+    await user.type(await screen.findByRole('spinbutton', { name: 'Value' }), '42{Enter}');
+    expect(latest.filters.at(-1)).toEqual({ field: 'amount', op: 'is', values: [42] });
+  });
+
   it('summarizes: metric picker, grouping with a date bucket, then removes the step', async () => {
     const user = userEvent.setup();
     render(<Harness initial={createQuestion()} />);
