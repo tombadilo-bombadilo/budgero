@@ -1,5 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useState, type ComponentProps, type ReactNode } from 'react';
+import { toast } from 'sonner';
 import {
   ArrowDown,
   ArrowUp,
@@ -98,6 +99,20 @@ interface NotebookEditorProps {
  * steps. Optional steps are added from the buttons under the last block and
  * removed with their ✕; every edit produces a new normalized spec.
  */
+/** True when the question has anything beyond a fresh one for its source. */
+function hasSteps(spec: QuestionSpec): boolean {
+  const fresh = createQuestion(spec.source);
+  return (
+    spec.aggregations.length > 0 ||
+    spec.breakouts.length > 0 ||
+    spec.sort.length > 0 ||
+    spec.limit !== null ||
+    (spec.customColumns?.length ?? 0) > 0 ||
+    spec.columns !== null ||
+    JSON.stringify(spec.filters) !== JSON.stringify(fresh.filters)
+  );
+}
+
 export function NotebookEditor({ spec, onChange, valueOptions }: NotebookEditorProps) {
   const { t } = useLingui();
   const [opened, setOpened] = useState<Set<OptionalStep>>(new Set());
@@ -135,8 +150,24 @@ export function NotebookEditor({ spec, onChange, valueOptions }: NotebookEditorP
           <DataStep
             spec={spec}
             onSourceChange={(source) => {
+              if (source === spec.source) return;
+              const previous = spec;
+              const previousOpened = opened;
               setOpened(new Set());
-              onChange(createQuestion(source));
+              const next = createQuestion(source);
+              onChange(next);
+              // Steps only fit their own data source, so they go; one tap brings them back.
+              if (hasSteps(previous)) {
+                toast(t`Data source changed: the question starts over.`, {
+                  action: {
+                    label: t`Undo`,
+                    onClick: () => {
+                      setOpened(previousOpened);
+                      onChange(previous);
+                    },
+                  },
+                });
+              }
             }}
             onColumnsChange={(columns) => update({ columns })}
             onChange={update}

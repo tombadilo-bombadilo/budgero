@@ -1,9 +1,12 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { createQuestion, type QuestionSpec, type ValueKind } from '@features/reports/lib/question';
 import { NotebookEditor } from './NotebookEditor';
 import type { ValueOption } from './useFieldValueOptions';
+
+const toastMock = vi.hoisted(() => vi.fn());
+vi.mock('sonner', () => ({ toast: toastMock }));
 
 const OPTIONS: Partial<Record<ValueKind, ValueOption[]>> = {
   category: [
@@ -227,5 +230,22 @@ describe('NotebookEditor', () => {
     // Without a date grouping, the time-series options are off.
     await user.click(screen.getByRole('button', { name: 'Remove grouping: Date' }));
     expect(latest.aggregations).toEqual([{ op: 'spending' }]);
+  });
+
+  it('offers to undo a data source change that reset the question', async () => {
+    const user = userEvent.setup();
+    toastMock.mockClear();
+    const initial = createQuestion('transactions', {
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'category' }],
+    });
+    render(<Harness initial={initial} />);
+    await user.click(screen.getByRole('combobox', { name: 'Data source' }));
+    await user.click(await screen.findByRole('option', { name: /Accounts/ }));
+    expect(latest.source).toBe('accounts');
+    expect(toastMock).toHaveBeenCalledOnce();
+    const [, options] = toastMock.mock.calls[0] as [string, { action: { onClick: () => void } }];
+    act(() => options.action.onClick());
+    expect(latest).toEqual(initial);
   });
 });

@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import type { UnifiedReport } from '@budgero/core/browser';
 import { buildSavedQuestionQuery, createQuestion } from '@features/reports/lib/question';
@@ -26,23 +27,48 @@ vi.mock('./NotebookQuestionView', () => ({
   NotebookQuestionView: ({
     report: r,
     initialSpec,
+    resumeSpec,
     openSaveDialog,
     openPinDialog,
+    onConvertToSql,
   }: {
     report: UnifiedReport | null;
     initialSpec: { source: string; aggregations: { op: string }[] } | null;
+    resumeSpec: { source: string } | null;
     openSaveDialog: boolean;
     openPinDialog: boolean;
+    onConvertToSql: (sql: string, spec: unknown) => void;
   }) => (
-    <p>
-      notebook:{r?.id ?? 'new'}:{initialSpec?.source ?? '-'}:
-      {initialSpec?.aggregations.map((a) => a.op).join('+')}:{String(openSaveDialog)}
-      {openPinDialog ? ':pin' : ''}
-    </p>
+    <div>
+      <p>
+        notebook:{r?.id ?? 'new'}:{initialSpec?.source ?? '-'}:
+        {initialSpec?.aggregations.map((a) => a.op).join('+')}:{String(openSaveDialog)}
+        {openPinDialog ? ':pin' : ''}
+      </p>
+      {resumeSpec && <p>resumed:{resumeSpec.source}</p>}
+      <button type="button" onClick={() => onConvertToSql('SELECT 2', { source: 'draft' })}>
+        Convert
+      </button>
+    </div>
   ),
 }));
 vi.mock('@pages/explorer-page/SqlQuestionView', () => ({
-  SqlQuestionView: ({ report: r }: { report: UnifiedReport | null }) => <p>sql:{r?.id ?? 'new'}</p>,
+  SqlQuestionView: ({
+    report: r,
+    onBackToNotebook,
+  }: {
+    report: UnifiedReport | null;
+    onBackToNotebook?: () => void;
+  }) => (
+    <div>
+      <p>sql:{r?.id ?? 'new'}</p>
+      {onBackToNotebook && (
+        <button type="button" onClick={onBackToNotebook}>
+          Back to the notebook
+        </button>
+      )}
+    </div>
+  ),
 }));
 
 afterEach(cleanup);
@@ -96,5 +122,14 @@ describe('QuestionPage', () => {
     expect(
       screen.getByRole('heading', { name: 'This question doesn’t exist' })
     ).toBeInTheDocument();
+  });
+
+  it('goes back from Convert to SQL to the unsaved notebook question', async () => {
+    const user = userEvent.setup();
+    renderAt('/reports/question/notebook');
+    await user.click(screen.getByRole('button', { name: 'Convert' }));
+    expect(screen.getByText('sql:notebook')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Back to the notebook' }));
+    expect(screen.getByText('resumed:draft')).toBeInTheDocument();
   });
 });

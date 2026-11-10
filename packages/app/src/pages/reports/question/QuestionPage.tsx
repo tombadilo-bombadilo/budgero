@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useReports } from '@entities/report/api/useReports';
-import { parseQuestionHeader } from '@features/reports/lib/question';
+import { parseQuestionHeader, type QuestionSpec } from '@features/reports/lib/question';
 import { SqlQuestionView } from '@pages/explorer-page/SqlQuestionView';
 import { useUiStore } from '@shared/store/useUiStore';
 import { Button } from '@shared/ui/button';
@@ -24,8 +24,16 @@ export default function QuestionPage() {
   const { data: reports, isLoading, isFetching } = useReports();
   const routeState = (location.state as QuestionRouteState | null) ?? {};
   // A "Convert to SQL" for this visit; a new navigation (save → replace) resets it.
-  const [converted, setConverted] = useState<{ key: string; sql: string } | null>(null);
-  const convertedSql = converted?.key === location.key ? converted.sql : null;
+  // The notebook spec it came from is kept so "Back to the notebook" loses nothing.
+  const [converted, setConverted] = useState<{
+    key: string;
+    sql: string;
+    spec: QuestionSpec;
+    back?: boolean;
+  } | null>(null);
+  const current = converted?.key === location.key ? converted : null;
+  const convertedSql = current && !current.back ? current.sql : null;
+  const resumeSpec = current?.back ? current.spec : null;
 
   const report = useMemo(
     () => (reportId ? (reports?.find((item) => item.id === reportId) ?? null) : null),
@@ -86,6 +94,9 @@ export default function QuestionPage() {
         budgetId={budgetId}
         report={report}
         initialSql={convertedSql ?? undefined}
+        onBackToNotebook={
+          convertedSql !== null ? () => setConverted({ ...current!, back: true }) : undefined
+        }
         openSaveDialog={Boolean(routeState.openSaveDialog)}
         openPinDialog={Boolean(routeState.openPinDialog)}
       />
@@ -98,9 +109,10 @@ export default function QuestionPage() {
       budgetId={budgetId}
       report={report}
       initialSpec={spec}
+      resumeSpec={resumeSpec}
       openSaveDialog={Boolean(routeState.openSaveDialog)}
       openPinDialog={Boolean(routeState.openPinDialog)}
-      onConvertToSql={(sql) => setConverted({ key: location.key, sql })}
+      onConvertToSql={(sql, from) => setConverted({ key: location.key, sql, spec: from })}
     />
   );
 }

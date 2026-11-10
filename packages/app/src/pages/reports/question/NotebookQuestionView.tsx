@@ -2,7 +2,7 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Code2, LayoutGrid, MoreHorizontal, Save, Trash2 } from 'lucide-react';
+import { Code2, LayoutGrid, MoreHorizontal, RotateCcw, Save, Trash2 } from 'lucide-react';
 import type { UnifiedReport } from '@budgero/core/browser';
 import { useCreateReport, useReports, useUpdateReport } from '@entities/report/api/useReports';
 import {
@@ -25,6 +25,7 @@ import {
 } from '@features/reports/ui/notebook/question-labels';
 import { useFieldValueOptions } from '@features/reports/ui/notebook/useFieldValueOptions';
 import { useQuestionQuery } from '@features/reports/ui/notebook/useQuestionQuery';
+import { useLeaveGuard } from '@shared/hooks/useLeaveGuard';
 import { Button } from '@shared/ui/button';
 import {
   DropdownMenu,
@@ -34,6 +35,7 @@ import {
 } from '@shared/ui/dropdown-menu';
 import { collectionOf, listCollections, withCollection } from '../collections';
 import { QuestionHeader } from './QuestionHeader';
+import { clearQuestionDraft, loadQuestionDraft, saveQuestionDraft } from './question-drafts';
 import { useDeleteQuestion } from './useDeleteQuestion';
 import { useOpenSavedQuestion } from './useOpenSavedQuestion';
 import { usePinToDashboard } from './usePinToDashboard';
@@ -45,16 +47,20 @@ interface NotebookQuestionViewProps {
   /** The saved question being edited; null for a new one. */
   report: UnifiedReport | null;
   initialSpec: QuestionSpec | null;
+  /** Unsaved spec to continue with (back from "Convert to SQL"). */
+  resumeSpec?: QuestionSpec | null;
   openSaveDialog?: boolean;
   /** Open "Add to dashboard" on arrival (the question was just saved with it). */
   openPinDialog?: boolean;
-  onConvertToSql: (sql: string) => void;
+  /** The SQL and the notebook spec it came from (to come back to). */
+  onConvertToSql: (sql: string, spec: QuestionSpec) => void;
 }
 
 export function NotebookQuestionView({
   budgetId,
   report,
   initialSpec,
+  resumeSpec = null,
   openSaveDialog = false,
   openPinDialog = false,
   onConvertToSql,
@@ -62,7 +68,16 @@ export function NotebookQuestionView({
   const { t } = useLingui();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [spec, setSpec] = useState<QuestionSpec>(() => initialSpec ?? createQuestion());
+  const reportId = report?.id ?? null;
+  // Where the question starts: the saved one, or a blank new one.
+  const [startHeader] = useState(() => serializeQuestionHeader(initialSpec ?? createQuestion()));
+  // An unsaved draft left in this tab is picked up again (and can be discarded).
+  const [restoredDraft, setRestoredDraft] = useState(
+    () => !resumeSpec && loadQuestionDraft(budgetId, reportId) !== null
+  );
+  const [spec, setSpec] = useState<QuestionSpec>(
+    () => resumeSpec ?? loadQuestionDraft(budgetId, reportId) ?? initialSpec ?? createQuestion()
+  );
   // Questions left by drilling through, newest last; Back pops one.
   const [history, setHistory] = useState<QuestionSpec[]>([]);
   const drill = useCallback(
@@ -105,10 +120,21 @@ export function NotebookQuestionView({
   });
 
   const savedHeader = useMemo(
-    () => (initialSpec ? serializeQuestionHeader(initialSpec) : null),
-    [initialSpec]
+    () => (initialSpec ? serializeQuestionHeader(initialSpec) : startHeader),
+    [initialSpec, startHeader]
   );
-  const dirty = report !== null && serializeQuestionHeader(spec) !== savedHeader;
+  const dirty = serializeQuestionHeader(spec) !== savedHeader;
+  useLeaveGuard(dirty);
+  useEffect(() => {
+    if (dirty) saveQuestionDraft(budgetId, reportId, spec);
+    else clearQuestionDraft(budgetId, reportId);
+  }, [dirty, budgetId, reportId, spec]);
+  const discardDraft = () => {
+    clearQuestionDraft(budgetId, reportId);
+    setRestoredDraft(false);
+    setHistory([]);
+    setSpec(initialSpec ?? createQuestion());
+  };
 
   const save = useCallback(
     async ({ name, description, collection }: SaveQuestionInput) => {
@@ -134,6 +160,7 @@ export function NotebookQuestionView({
       }
       const { id: _id, ...newChart } = chart;
       const created = await createReport.mutateAsync({ ...payload, charts: [newChart] });
+      clearQuestionDraft(budgetId, null);
       await queryClient.invalidateQueries({ queryKey: ['reports'] });
       opener.open(created);
       return created;
@@ -150,7 +177,9 @@ export function NotebookQuestionView({
             ? dirty
               ? t`Unsaved changes`
               : (report.description ?? (collectionOf(report) || t`My questions`))
-            : t`New question`
+            : dirty
+              ? t`New question · not saved yet`
+              : t`New question`
         }
       >
         <Button
@@ -194,6 +223,21 @@ export function NotebookQuestionView({
         )}
       </QuestionHeader>
 
+      {restoredDraft && dirty && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 px-3 py-2 text-sm"
+        >
+          <span className="mr-auto">
+            <Trans>Picked up your unsaved changes from earlier.</Trans>
+          </span>
+          <Button variant="ghost" size="sm" className="h-7" onClick={discardDraft}>
+            <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+            <Trans>Discard them</Trans>
+          </Button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(20rem,28rem)_minmax(0,1fr)] lg:items-start">
         <NotebookEditor spec={spec} onChange={setSpec} valueOptions={valueOptions} />
         <QuestionResult
@@ -224,7 +268,7 @@ export function NotebookQuestionView({
         open={sqlOpen}
         onOpenChange={setSqlOpen}
         sql={query.compiled?.sql ?? ''}
-        onConvert={() => query.compiled && onConvertToSql(query.compiled.sql)}
+        onConvert={() => query.compiled && onConvertToSql(query.compiled.sql, spec)}
       />
       {deletion.dialog}
       {pin.dialog}
