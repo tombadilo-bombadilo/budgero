@@ -60,6 +60,9 @@ export function ToolConfirmation({
           className={`mt-2 text-xs ${tool.result.success ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
         >
           {tool.result.message}
+          {!tool.result.success && tool.result.error && (
+            <span className="mt-1 block">{tool.result.error}</span>
+          )}
         </p>
       )}
 

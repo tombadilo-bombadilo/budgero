@@ -2,17 +2,18 @@ import { z } from 'zod';
 import { getErrorMessage } from '@shared/lib/errors';
 import { toDecimal } from '@shared/lib/currency/milli';
 import { roundMilli } from '@shared/lib/currency/round-amount';
-import { matchByName } from './match-by-name';
+import { failureText } from './add-transaction';
+import { entityId, isoDate, listNames, resolveEntity } from './resolve-entity';
 import type { ToolContext, ToolExecutionResult } from './types';
 
 // Optional fields are nullish: many models send null for a field they leave out.
 export const editTransactionSchema = z.object({
-  transactionId: z.coerce.number().describe('ID of the existing transaction to edit'),
-  categoryId: z.number().nullish().describe('New category ID'),
+  transactionId: entityId().describe('ID of the existing transaction to edit'),
+  categoryId: entityId().nullish().describe('New category ID'),
   categoryName: z.string().nullish().describe('New category name to match (re-categorize)'),
   payee: z.string().nullish().describe('New payee/merchant name'),
   memo: z.string().nullish().describe('New description/memo'),
-  date: z.string().nullish().describe('New date in YYYY-MM-DD format'),
+  date: isoDate().nullish().describe('New date in YYYY-MM-DD format'),
 });
 
 export type EditTransactionArgs = z.infer<typeof editTransactionSchema>;
@@ -21,23 +22,6 @@ interface ColumnChange {
   columnName: string;
   newValue: string | number | null;
   label: string;
-}
-
-/** Resolve the target category id + display name from args (id wins over name). */
-function resolveCategory(
-  args: EditTransactionArgs,
-  context: ToolContext
-): { categoryId?: number; categoryName?: string } {
-  // An ID the budget doesn't have counts as no ID, so the name is matched instead.
-  const byId = context.categories.find((c) => c.ID === args.categoryId);
-  if (byId) {
-    return { categoryId: byId.ID, categoryName: byId.Name };
-  }
-  if (args.categoryName) {
-    const match = matchByName(context.categories, args.categoryName, (c) => c.Name);
-    return { categoryId: match?.ID, categoryName: match?.Name };
-  }
-  return {};
 }
 
 function collectChanges(
@@ -65,31 +49,73 @@ function collectChanges(
   return changes;
 }
 
+/** What an edit_transaction call will write. The confirm card and the write both come from this. */
+export type EditTransactionPlan =
+  { ok: true; changes: ColumnChange[] } | { ok: false; result: ToolExecutionResult };
+
+export function planEditTransaction(
+  args: EditTransactionArgs,
+  context: ToolContext
+): EditTransactionPlan {
+  const category = resolveEntity(context.categories, args.categoryId, args.categoryName);
+  if (category.kind === 'ambiguous') {
+    return {
+      ok: false,
+      result: {
+        success: false,
+        message: `More than one category matches "${args.categoryName}"`,
+        error: `Which one: ${listNames(category.candidates)}?`,
+      },
+    };
+  }
+  // A category that didn't match should fail loudly, not silently no-op.
+  if (category.kind === 'not_found') {
+    return {
+      ok: false,
+      result: {
+        success: false,
+        message: `Category "${args.categoryName?.trim() || `#${args.categoryId}`}" not found`,
+        error: `Available categories: ${listNames(context.categories)}`,
+      },
+    };
+  }
+
+  const changes = collectChanges(
+    args,
+    category.kind === 'found'
+      ? { categoryId: category.entity.ID, categoryName: category.entity.Name }
+      : {}
+  );
+  if (changes.length === 0) {
+    return {
+      ok: false,
+      result: {
+        success: false,
+        message: 'No changes specified',
+        error: 'Specify at least one field to update (category, payee, memo, or date).',
+      },
+    };
+  }
+  return { ok: true, changes };
+}
+
+/** The arguments with the resolved category pinned by ID (see pinAddTransactionArgs). */
+export function pinEditTransactionArgs(
+  args: EditTransactionArgs,
+  plan: Extract<EditTransactionPlan, { ok: true }>
+): EditTransactionArgs {
+  const category = plan.changes.find((c) => c.columnName === 'CategoryID');
+  return category ? { ...args, categoryId: category.newValue as number } : args;
+}
+
 export async function executeEditTransaction(
   args: EditTransactionArgs,
   context: ToolContext
 ): Promise<ToolExecutionResult> {
   try {
-    const resolved = resolveCategory(args, context);
-
-    // A category name that didn't match should fail loudly, not silently no-op.
-    if (args.categoryName && resolved.categoryId == null) {
-      const list = context.categories.map((c) => c.Name).join(', ');
-      return {
-        success: false,
-        message: `Category "${args.categoryName}" not found`,
-        error: `Available categories: ${list}`,
-      };
-    }
-
-    const changes = collectChanges(args, resolved);
-    if (changes.length === 0) {
-      return {
-        success: false,
-        message: 'No changes specified',
-        error: 'Specify at least one field to update (category, payee, memo, or date).',
-      };
-    }
+    const plan = planEditTransaction(args, context);
+    if (!plan.ok) return plan.result;
+    const { changes } = plan;
 
     if (!context.executeMutation) {
       return {
@@ -157,14 +183,7 @@ export function generateEditTransactionPreview(
     // Fall back to the bare id if the transaction can't be loaded.
   }
 
-  const resolved = resolveCategory(args, context);
-  const parts: string[] = [];
-  if (resolved.categoryId != null || args.categoryName) {
-    parts.push(`Category → ${resolved.categoryName ?? args.categoryName}`);
-  }
-  if (args.payee !== undefined) parts.push(`Payee → "${args.payee}"`);
-  if (args.memo !== undefined) parts.push(`Memo → "${args.memo}"`);
-  if (args.date !== undefined) parts.push(`Date → ${args.date}`);
-
-  return `Edit ${txInfo}: ${parts.join(' • ') || 'no changes'}`;
+  const plan = planEditTransaction(args, context);
+  if (!plan.ok) return `Edit ${txInfo}: ${failureText(plan.result)}`;
+  return `Edit ${txInfo}: ${plan.changes.map((c) => c.label).join(' • ')}`;
 }

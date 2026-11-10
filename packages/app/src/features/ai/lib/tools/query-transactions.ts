@@ -3,50 +3,53 @@ import { capitalize } from '@shared/lib/utils';
 import { getErrorMessage } from '@shared/lib/errors';
 import { fromDecimal, toDecimal } from '@shared/lib/currency/milli';
 import { roundMilli } from '@shared/lib/currency/round-amount';
+import { amountFilter, entityId, isoDate, withoutNulls } from './resolve-entity';
 import type { ToolContext, ToolExecutionResult } from './types';
 
-export const queryTransactionsSchema = z.object({
-  filters: z
-    .object({
-      categoryName: z.string().optional().describe('Filter by category name'),
-      accountName: z.string().optional().describe('Filter by account name'),
-      payee: z.string().optional().describe('Filter by payee (partial match)'),
-      memo: z.string().optional().describe('Filter by memo (partial match)'),
-      dateFrom: z.string().optional().describe('Start date YYYY-MM-DD'),
-      dateTo: z.string().optional().describe('End date YYYY-MM-DD'),
-      minAmount: z.number().optional().describe('Minimum amount (decimal currency units)'),
-      maxAmount: z.number().optional().describe('Maximum amount (decimal currency units)'),
-      type: z.enum(['expense', 'income', 'all']).optional().describe('Transaction type filter'),
-      excludeCategory: z
-        .string()
-        .optional()
-        .describe('Exclude transactions in this category (partial match)'),
-      excludePayee: z
-        .string()
-        .optional()
-        .describe('Exclude transactions with this payee (partial match)'),
-      excludeAccount: z
-        .string()
-        .optional()
-        .describe('Exclude transactions from this account (partial match)'),
-    })
-    .optional(),
+export const queryTransactionsSchema = withoutNulls(
+  z.object({
+    filters: z
+      .object({
+        categoryName: z.string().optional().describe('Filter by category name'),
+        accountName: z.string().optional().describe('Filter by account name'),
+        payee: z.string().optional().describe('Filter by payee (partial match)'),
+        memo: z.string().optional().describe('Filter by memo (partial match)'),
+        dateFrom: isoDate().optional().describe('Start date YYYY-MM-DD'),
+        dateTo: isoDate().optional().describe('End date YYYY-MM-DD'),
+        minAmount: amountFilter().optional().describe('Minimum amount (decimal currency units)'),
+        maxAmount: amountFilter().optional().describe('Maximum amount (decimal currency units)'),
+        type: z.enum(['expense', 'income', 'all']).optional().describe('Transaction type filter'),
+        excludeCategory: z
+          .string()
+          .optional()
+          .describe('Exclude transactions in this category (partial match)'),
+        excludePayee: z
+          .string()
+          .optional()
+          .describe('Exclude transactions with this payee (partial match)'),
+        excludeAccount: z
+          .string()
+          .optional()
+          .describe('Exclude transactions from this account (partial match)'),
+      })
+      .optional(),
 
-  aggregation: z
-    .enum(['list', 'sum', 'count', 'max', 'min', 'average'])
-    .describe('How to aggregate results'),
+    aggregation: z
+      .enum(['list', 'sum', 'count', 'max', 'min', 'average'])
+      .describe('How to aggregate results'),
 
-  groupBy: z
-    .enum(['category', 'month', 'payee', 'account'])
-    .optional()
-    .describe('Group results by field'),
+    groupBy: z
+      .enum(['category', 'month', 'payee', 'account'])
+      .optional()
+      .describe('Group results by field'),
 
-  orderBy: z.enum(['date', 'amount', 'payee']).optional().describe('Order results by field'),
+    orderBy: z.enum(['date', 'amount', 'payee']).optional().describe('Order results by field'),
 
-  orderDirection: z.enum(['asc', 'desc']).optional().describe('Sort direction'),
+    orderDirection: z.enum(['asc', 'desc']).optional().describe('Sort direction'),
 
-  limit: z.number().optional().describe('Max number of results'),
-});
+    limit: entityId().optional().describe('Max number of results'),
+  })
+);
 
 export type QueryTransactionsArgs = z.infer<typeof queryTransactionsSchema>;
 
