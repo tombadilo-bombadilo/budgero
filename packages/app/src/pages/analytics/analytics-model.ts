@@ -350,13 +350,11 @@ export function buildNetWorthSeries(
     // Walk backwards through the window.
     for (let index = months.length - 1; index >= 0; index -= 1) {
       const point = points[index];
-      if (account.isLiability) {
-        point.debt += Math.max(0, -balance);
-        // A positive credit balance (overpayment) counts as an asset.
-        point.assets += Math.max(0, balance);
-      } else {
-        point.assets += balance;
-      }
+      // Money owed is debt whatever the account type: a card or loan balance,
+      // or an overdrawn checking account. A positive balance is an asset (a
+      // card's overpayment too), so assets never go below zero.
+      point.debt += Math.max(0, -balance);
+      point.assets += Math.max(0, balance);
       balance -= monthSums.get(months[index]) ?? 0;
     }
   }

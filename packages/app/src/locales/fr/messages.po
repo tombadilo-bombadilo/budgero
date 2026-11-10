@@ -13793,8 +13793,8 @@ msgstr "Aucune requête SQL à enregistrer"
 
 #. placeholder {0}: formatP(forecast.pValue)
 #: src/pages/analytics/insights.ts
-msgid "No statistically reliable trend yet (p = {0}) — the forecast band is honest about that."
-msgstr "Aucune tendance statistiquement fiable pour le moment (p = {0}) — la bande de prévision est honnête à ce sujet."
+msgid "No statistically reliable trend yet (p {0}) — the forecast band is honest about that."
+msgstr "Aucune tendance statistiquement fiable pour le moment (p {0}) — la bande de prévision est honnête à ce sujet."
 
 #: src/features/import/lib/parse-import-file.ts
 msgid "No table rows detected in PDF."
@@ -19694,8 +19694,8 @@ msgstr "Le taux direct du virement a été remplacé manuellement."
 #. placeholder {1}: forecast.rSquared.toFixed(2)
 #. placeholder {2}: fmt.money(Math.round(Math.abs(forecast.slope)))
 #: src/pages/analytics/insights.ts
-msgid "The downward trend is statistically solid (p = {0}, R² = {1}): {2}/month."
-msgstr "La tendance à la baisse est statistiquement fiable (p = {0}, R² = {1}) : {2}/mois."
+msgid "The downward trend is statistically solid (p {0}, R² = {1}): {2}/month."
+msgstr "La tendance à la baisse est statistiquement fiable (p {0}, R² = {1}) : {2}/mois."
 
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "The end date must be on or after the start date."
@@ -19850,8 +19850,8 @@ msgstr "La transaction a été définitivement supprimée."
 #. placeholder {1}: forecast.rSquared.toFixed(2)
 #. placeholder {2}: fmt.money(Math.round(Math.abs(forecast.slope)))
 #: src/pages/analytics/insights.ts
-msgid "The upward trend is statistically solid (p = {0}, R² = {1}): {2}/month."
-msgstr "La tendance à la hausse est statistiquement fiable (p = {0}, R² = {1}) : {2}/mois."
+msgid "The upward trend is statistically solid (p {0}, R² = {1}): {2}/month."
+msgstr "La tendance à la hausse est statistiquement fiable (p {0}, R² = {1}) : {2}/mois."
 
 #: src/pages/admin/admin-users/ActionDialog.tsx
 msgid "The user will be forced offline immediately and all API requests will be denied until you unblock them."

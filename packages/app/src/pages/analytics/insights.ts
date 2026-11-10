@@ -64,13 +64,13 @@ export function wealthInsights(
         tone: forecast.slope >= 0 ? 'good' : 'warn',
         text:
           forecast.slope >= 0
-            ? t`The upward trend is statistically solid (p = ${formatP(forecast.pValue)}, R² = ${forecast.rSquared.toFixed(2)}): ${fmt.money(Math.round(Math.abs(forecast.slope)))}/month.`
-            : t`The downward trend is statistically solid (p = ${formatP(forecast.pValue)}, R² = ${forecast.rSquared.toFixed(2)}): ${fmt.money(Math.round(Math.abs(forecast.slope)))}/month.`,
+            ? t`The upward trend is statistically solid (p ${formatP(forecast.pValue)}, R² = ${forecast.rSquared.toFixed(2)}): ${fmt.money(Math.round(Math.abs(forecast.slope)))}/month.`
+            : t`The downward trend is statistically solid (p ${formatP(forecast.pValue)}, R² = ${forecast.rSquared.toFixed(2)}): ${fmt.money(Math.round(Math.abs(forecast.slope)))}/month.`,
       });
     } else {
       insights.push({
         tone: 'neutral',
-        text: t`No statistically reliable trend yet (p = ${formatP(forecast.pValue)}) — the forecast band is honest about that.`,
+        text: t`No statistically reliable trend yet (p ${formatP(forecast.pValue)}) — the forecast band is honest about that.`,
       });
     }
   }
@@ -203,7 +203,8 @@ function average(values: number[]): number {
   return values.length === 0 ? 0 : values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
-function formatP(p: number): string {
+/** "< 0.001" or "= 0.012", so "p {0}" never reads "p = < 0.001". */
+export function formatP(p: number): string {
   if (p < 0.001) return '< 0.001';
-  return p.toFixed(3);
+  return `= ${p.toFixed(3)}`;
 }

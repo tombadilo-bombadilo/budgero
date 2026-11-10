@@ -13793,8 +13793,8 @@ msgstr "Keine SQL-Abfrage zum Speichern"
 
 #. placeholder {0}: formatP(forecast.pValue)
 #: src/pages/analytics/insights.ts
-msgid "No statistically reliable trend yet (p = {0}) — the forecast band is honest about that."
-msgstr "Noch kein statistisch zuverlässiger Trend (p = {0}) — das Prognoseband gibt das ehrlich zu."
+msgid "No statistically reliable trend yet (p {0}) — the forecast band is honest about that."
+msgstr "Noch kein statistisch zuverlässiger Trend (p {0}) — das Prognoseband gibt das ehrlich zu."
 
 #: src/features/import/lib/parse-import-file.ts
 msgid "No table rows detected in PDF."
@@ -19694,8 +19694,8 @@ msgstr "Der direkte Umbuchungskurs wurde manuell überschrieben."
 #. placeholder {1}: forecast.rSquared.toFixed(2)
 #. placeholder {2}: fmt.money(Math.round(Math.abs(forecast.slope)))
 #: src/pages/analytics/insights.ts
-msgid "The downward trend is statistically solid (p = {0}, R² = {1}): {2}/month."
-msgstr "Der Abwärtstrend ist statistisch belastbar (p = {0}, R² = {1}): {2}/Monat."
+msgid "The downward trend is statistically solid (p {0}, R² = {1}): {2}/month."
+msgstr "Der Abwärtstrend ist statistisch belastbar (p {0}, R² = {1}): {2}/Monat."
 
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "The end date must be on or after the start date."
@@ -19850,8 +19850,8 @@ msgstr "Die Transaktion wurde dauerhaft entfernt."
 #. placeholder {1}: forecast.rSquared.toFixed(2)
 #. placeholder {2}: fmt.money(Math.round(Math.abs(forecast.slope)))
 #: src/pages/analytics/insights.ts
-msgid "The upward trend is statistically solid (p = {0}, R² = {1}): {2}/month."
-msgstr "Der Aufwärtstrend ist statistisch belastbar (p = {0}, R² = {1}): {2}/Monat."
+msgid "The upward trend is statistically solid (p {0}, R² = {1}): {2}/month."
+msgstr "Der Aufwärtstrend ist statistisch belastbar (p {0}, R² = {1}): {2}/Monat."
 
 #: src/pages/admin/admin-users/ActionDialog.tsx
 msgid "The user will be forced offline immediately and all API requests will be denied until you unblock them."

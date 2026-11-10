@@ -13793,8 +13793,8 @@ msgstr "No hay consulta SQL que guardar"
 
 #. placeholder {0}: formatP(forecast.pValue)
 #: src/pages/analytics/insights.ts
-msgid "No statistically reliable trend yet (p = {0}) — the forecast band is honest about that."
-msgstr "Aún no hay una tendencia estadísticamente fiable (p = {0}); la banda de pronóstico es honesta al respecto."
+msgid "No statistically reliable trend yet (p {0}) — the forecast band is honest about that."
+msgstr "Aún no hay una tendencia estadísticamente fiable (p {0}); la banda de pronóstico es honesta al respecto."
 
 #: src/features/import/lib/parse-import-file.ts
 msgid "No table rows detected in PDF."
@@ -19694,8 +19694,8 @@ msgstr "El tipo de cambio directo de la transferencia se ha modificado manualmen
 #. placeholder {1}: forecast.rSquared.toFixed(2)
 #. placeholder {2}: fmt.money(Math.round(Math.abs(forecast.slope)))
 #: src/pages/analytics/insights.ts
-msgid "The downward trend is statistically solid (p = {0}, R² = {1}): {2}/month."
-msgstr "La tendencia a la baja es estadísticamente sólida (p = {0}, R² = {1}): {2}/mes."
+msgid "The downward trend is statistically solid (p {0}, R² = {1}): {2}/month."
+msgstr "La tendencia a la baja es estadísticamente sólida (p {0}, R² = {1}): {2}/mes."
 
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "The end date must be on or after the start date."
@@ -19850,8 +19850,8 @@ msgstr "La transacción ha sido eliminada permanentemente."
 #. placeholder {1}: forecast.rSquared.toFixed(2)
 #. placeholder {2}: fmt.money(Math.round(Math.abs(forecast.slope)))
 #: src/pages/analytics/insights.ts
-msgid "The upward trend is statistically solid (p = {0}, R² = {1}): {2}/month."
-msgstr "La tendencia al alza es estadísticamente sólida (p = {0}, R² = {1}): {2}/mes."
+msgid "The upward trend is statistically solid (p {0}, R² = {1}): {2}/month."
+msgstr "La tendencia al alza es estadísticamente sólida (p {0}, R² = {1}): {2}/mes."
 
 #: src/pages/admin/admin-users/ActionDialog.tsx
 msgid "The user will be forced offline immediately and all API requests will be denied until you unblock them."
