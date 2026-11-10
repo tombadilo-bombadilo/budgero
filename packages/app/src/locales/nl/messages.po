@@ -2112,7 +2112,6 @@ msgstr "<0/>Standaard startpagina"
 #: src/features/budget-planning/ui/category-row/CategoryRowTableLayout.tsx
 #: src/features/chat/ui/chat-panel/ChatConversationList.tsx
 #: src/features/goal-management/ui/GoalCard.tsx
-#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/settings/ImportsPage.tsx
 msgid "<0/>Delete"
 msgstr "<0/>Verwijderen"
@@ -2468,8 +2467,8 @@ msgid "<0/>Regenerate Token"
 msgstr "<0/>Token opnieuw genereren"
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
-msgid "<0/>Rename"
-msgstr "<0/>Hernoemen"
+#~ msgid "<0/>Rename"
+#~ msgstr "<0/>Hernoemen"
 
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "<0/>Reset data flags"
@@ -5405,8 +5404,8 @@ msgid "Build consistent savings habits"
 msgstr "Bouw consistente spaargewoonten op"
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Build dashboard layouts from saved questions. Drag to reorder, resize on desktop, and use size presets on mobile."
-msgstr "Bouw dashboards met opgeslagen vragen. Sleep om te herschikken, pas de grootte aan op desktop en gebruik vaste formaten op mobiel."
+#~ msgid "Build dashboard layouts from saved questions. Drag to reorder, resize on desktop, and use size presets on mobile."
+#~ msgstr "Bouw dashboards met opgeslagen vragen. Sleep om te herschikken, pas de grootte aan op desktop en gebruik vaste formaten op mobiel."
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Build metadata for support or troubleshooting."
@@ -7584,6 +7583,10 @@ msgstr "Donker met koperen warmte."
 msgid "Dashboard"
 msgstr "Dashboard"
 
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+msgid "Dashboard actions"
+msgstr "Dashboardacties"
+
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Dashboard filters"
 msgstr "Dashboardfilters"
@@ -8239,8 +8242,8 @@ msgid "Download CSV Files"
 msgstr "CSV-bestanden downloaden"
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Download every widget's CSV in one zip file"
-msgstr "De CSV van elk widget in één zip-bestand downloaden"
+#~ msgid "Download every widget's CSV in one zip file"
+#~ msgstr "De CSV van elk widget in één zip-bestand downloaden"
 
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Download failed"
@@ -8616,6 +8619,10 @@ msgstr "Garantie bewerken"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Editing transfer splits is not supported."
 msgstr "Het bewerken van splits voor overboekingen wordt niet ondersteund."
+
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "Editor"
+msgstr "Editor"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Editorial, parchment. The Budgero classic."
@@ -9190,7 +9197,7 @@ msgstr "Back-ups exporteren, snapshots herstellen en je budgetgegevens beheren"
 msgid "Export CSV"
 msgstr "CSV exporteren"
 
-#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "Export CSVs"
 msgstr "CSV’s exporteren"
 
@@ -10318,6 +10325,10 @@ msgstr "Groep: {0}"
 #: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
 msgid "Grouped"
 msgstr "Gegroepeerd"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Grouping"
+msgstr "Groepering"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Groupings"
@@ -12373,6 +12384,7 @@ msgid "metric"
 msgstr "metriek"
 
 #: src/features/reports/ui/notebook/HavingEditor.tsx
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Metric"
 msgstr "Metriek"
@@ -16512,6 +16524,7 @@ msgstr "Widget verwijderen"
 msgid "Removed {0} transactions{1}{2}"
 msgstr "{0} transacties verwijderd{1}{2}"
 
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/reports/question/QuestionHeader.tsx
 msgid "Rename"
 msgstr "Hernoemen"
@@ -16805,6 +16818,7 @@ msgid "Resubscribing restores access to your owned workspaces immediately and le
 msgstr "Opnieuw abonneren herstelt onmiddellijk de toegang tot je eigen werkruimtes en laat je weer nieuwe aanmaken."
 
 #: src/features/reports/ui/notebook/QuestionResult.tsx
+#: src/pages/reports/question/NotebookQuestionView.tsx
 msgid "Result"
 msgstr "Resultaat"
 
@@ -17291,6 +17305,10 @@ msgstr "Opgeslagen vragen"
 msgid "Saved questions appear on the Reports page and can be added to a dashboard. They reopen in the editor."
 msgstr "Opgeslagen vragen staan op de pagina Rapporten en kunnen aan een dashboard worden toegevoegd. Ze openen opnieuw in de editor."
 
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Saved questions side by side, filtered together."
+msgstr "Opgeslagen vragen naast elkaar, samen gefilterd."
+
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Saved scenarios"
 msgstr "Opgeslagen scenario's"
@@ -17596,10 +17614,6 @@ msgstr "Beveiliging & Privacy"
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Security Warning"
 msgstr "Beveiligingswaarschuwing"
-
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "See the result"
-msgstr "Bekijk het resultaat"
 
 #: src/features/reports/ui/notebook/DrillMenu.tsx
 msgid "See these accounts"
@@ -18224,6 +18238,7 @@ msgstr "Sneltoetsen: {half} (halveren), {double} (verdubbelen), {zero} (nul), {t
 #: src/pages/analytics/reports/ScenarioReport.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/analytics/reports/WealthReport.tsx
+#: src/pages/reports/question/NotebookQuestionView.tsx
 msgid "Show"
 msgstr "Toon"
 

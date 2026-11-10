@@ -2114,7 +2114,6 @@ msgstr "<0/>Default Home"
 #: src/features/budget-planning/ui/category-row/CategoryRowTableLayout.tsx
 #: src/features/chat/ui/chat-panel/ChatConversationList.tsx
 #: src/features/goal-management/ui/GoalCard.tsx
-#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/settings/ImportsPage.tsx
 msgid "<0/>Delete"
 msgstr "<0/>Delete"
@@ -2470,8 +2469,8 @@ msgid "<0/>Regenerate Token"
 msgstr "<0/>Regenerate Token"
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
-msgid "<0/>Rename"
-msgstr "<0/>Rename"
+#~ msgid "<0/>Rename"
+#~ msgstr "<0/>Rename"
 
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "<0/>Reset data flags"
@@ -5407,8 +5406,8 @@ msgid "Build consistent savings habits"
 msgstr "Build consistent savings habits"
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Build dashboard layouts from saved questions. Drag to reorder, resize on desktop, and use size presets on mobile."
-msgstr "Build dashboard layouts from saved questions. Drag to reorder, resize on desktop, and use size presets on mobile."
+#~ msgid "Build dashboard layouts from saved questions. Drag to reorder, resize on desktop, and use size presets on mobile."
+#~ msgstr "Build dashboard layouts from saved questions. Drag to reorder, resize on desktop, and use size presets on mobile."
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Build metadata for support or troubleshooting."
@@ -7586,6 +7585,10 @@ msgstr "Dark with copper warmth."
 msgid "Dashboard"
 msgstr "Dashboard"
 
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+msgid "Dashboard actions"
+msgstr "Dashboard actions"
+
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Dashboard filters"
 msgstr "Dashboard filters"
@@ -8241,8 +8244,8 @@ msgid "Download CSV Files"
 msgstr "Download CSV Files"
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Download every widget's CSV in one zip file"
-msgstr "Download every widget's CSV in one zip file"
+#~ msgid "Download every widget's CSV in one zip file"
+#~ msgstr "Download every widget's CSV in one zip file"
 
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Download failed"
@@ -8618,6 +8621,10 @@ msgstr "Edit Warranty"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Editing transfer splits is not supported."
 msgstr "Editing transfer splits is not supported."
+
+#: src/pages/reports/question/NotebookQuestionView.tsx
+msgid "Editor"
+msgstr "Editor"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Editorial, parchment. The Budgero classic."
@@ -9192,7 +9199,7 @@ msgstr "Export backups, restore snapshots, and manage your budget data"
 msgid "Export CSV"
 msgstr "Export CSV"
 
-#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "Export CSVs"
 msgstr "Export CSVs"
 
@@ -10320,6 +10327,10 @@ msgstr "Group: {0}"
 #: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
 msgid "Grouped"
 msgstr "Grouped"
+
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
+msgid "Grouping"
+msgstr "Grouping"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Groupings"
@@ -12375,6 +12386,7 @@ msgid "metric"
 msgstr "metric"
 
 #: src/features/reports/ui/notebook/HavingEditor.tsx
+#: src/features/reports/ui/notebook/NotebookEditor.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Metric"
 msgstr "Metric"
@@ -16514,6 +16526,7 @@ msgstr "Remove widget"
 msgid "Removed {0} transactions{1}{2}"
 msgstr "Removed {0} transactions{1}{2}"
 
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/reports/question/QuestionHeader.tsx
 msgid "Rename"
 msgstr "Rename"
@@ -16807,6 +16820,7 @@ msgid "Resubscribing restores access to your owned workspaces immediately and le
 msgstr "Resubscribing restores access to your owned workspaces immediately and lets you create new ones again."
 
 #: src/features/reports/ui/notebook/QuestionResult.tsx
+#: src/pages/reports/question/NotebookQuestionView.tsx
 msgid "Result"
 msgstr "Result"
 
@@ -17293,6 +17307,10 @@ msgstr "Saved questions"
 msgid "Saved questions appear on the Reports page and can be added to a dashboard. They reopen in the editor."
 msgstr "Saved questions appear on the Reports page and can be added to a dashboard. They reopen in the editor."
 
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Saved questions side by side, filtered together."
+msgstr "Saved questions side by side, filtered together."
+
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Saved scenarios"
 msgstr "Saved scenarios"
@@ -17598,10 +17616,6 @@ msgstr "Security & Privacy"
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Security Warning"
 msgstr "Security Warning"
-
-#: src/pages/reports/question/NotebookQuestionView.tsx
-msgid "See the result"
-msgstr "See the result"
 
 #: src/features/reports/ui/notebook/DrillMenu.tsx
 msgid "See these accounts"
@@ -18226,6 +18240,7 @@ msgstr "Shortcuts: {half} (half), {double} (double), {zero} (zero), {tenPercent}
 #: src/pages/analytics/reports/ScenarioReport.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/analytics/reports/WealthReport.tsx
+#: src/pages/reports/question/NotebookQuestionView.tsx
 msgid "Show"
 msgstr "Show"
 
