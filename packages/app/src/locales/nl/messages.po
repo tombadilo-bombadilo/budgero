@@ -171,6 +171,10 @@ msgstr "(bevestigd)"
 msgid "(goal reached)"
 msgstr "(doel bereikt)"
 
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+msgid "(home page)"
+msgstr "(startpagina)"
+
 #: src/pages/reports/question-examples.ts
 msgid "(Income − spending) ÷ income, month by month"
 msgstr "(Inkomen − uitgaven) ÷ inkomen, maand voor maand"
@@ -734,7 +738,7 @@ msgstr "{0} staat bovenaan met {1} van de uitgaven ({2})."
 #~ msgstr "{0} leidt met {1}% van de uitgaven ({2})."
 
 #. placeholder {0}: formatMilliAmount(budgetRemaining)
-#: src/pages/dashboard/DashboardPage.mobile.tsx
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "{0} left"
 msgstr "{0}over"
 
@@ -3221,6 +3225,10 @@ msgstr "Een eigen kolom is hernoemd naar ‘{name}’."
 msgid "A custom metric couldn’t be read and was left out."
 msgstr "Een eigen metriek kon niet worden gelezen en is weggelaten."
 
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "A divider with a title, to group the cards below it."
+msgstr "Een scheidingslijn met titel om de kaarten eronder te groeperen."
+
 #: src/pages/onboarding/onboarding-data.ts
 msgid "A field guide to zero-based budgeting."
 msgstr "Een gids voor zero-based budgetteren."
@@ -3521,7 +3529,7 @@ msgstr "Actie voltooid."
 msgid "Action failed"
 msgstr "Actie mislukt"
 
-#: src/pages/dashboard/DashboardPage.desktop.tsx
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "Action Items"
 msgstr "Actiepunten"
 
@@ -3606,6 +3614,12 @@ msgstr "Werkelijk saldo"
 msgid "Add"
 msgstr "Toevoegen"
 
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+#: src/pages/custom-dashboards/useDashboardEditor.ts
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Add a card"
+msgstr "Kaart toevoegen"
+
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Add a custom rate to override automatically fetched exchange rates for specific date ranges."
 msgstr "Voeg een aangepaste koers toe om automatisch opgehaalde wisselkoersen te overschrijven voor specifieke periodes."
@@ -3630,7 +3644,7 @@ msgstr "Voeg een notitie toe voor deze overboeking..."
 msgid "Add a note…"
 msgstr "Notitie toevoegen…"
 
-#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+#: src/pages/custom-dashboards/useDashboardEditor.ts
 msgid "Add a question"
 msgstr "Vraag toevoegen"
 
@@ -3746,6 +3760,10 @@ msgstr "Sortering toevoegen"
 #: src/pages/reports/question/usePinToDashboard.tsx
 msgid "Add to dashboard"
 msgstr "Aan dashboard toevoegen"
+
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Add to home page"
+msgstr "Toevoegen aan startpagina"
 
 #: src/app/layout/desktop-shell/HeaderBar.tsx
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
@@ -4121,6 +4139,10 @@ msgstr "Al een account? <0>Log in</0>"
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Already imported"
 msgstr "Al geïmporteerd"
+
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "Already on this dashboard"
+msgstr "Staat al op dit dashboard"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Already scheduled"
@@ -4576,6 +4598,10 @@ msgstr "Assistent-tools"
 #: src/pages/onboarding/steps/GoalStep.tsx
 msgid "At {0}/month, you’ll have {1} saved after a year."
 msgstr "Met {0}/maand heb je na een jaar {1} gespaard."
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "At a glance"
+msgstr "In één oogopslag"
 
 #: src/app/startup/screens.tsx
 msgid "At least 12 characters"
@@ -5062,9 +5088,13 @@ msgstr "Braziliaanse real"
 msgid "Break out by…"
 msgstr "Uitsplitsen naar…"
 
-#: src/pages/dashboard/DashboardPage.mobile.tsx
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "Breakdown"
 msgstr "Uitsplitsing"
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Breakdown and time series in one card, with tabs (the phone’s home card)."
+msgstr "Verdeling en tijdreeks in één kaart met tabbladen (de startkaart op de telefoon)."
 
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Breakdown of user types"
@@ -5418,6 +5448,10 @@ msgstr "Opbouwen tot een beschikbaar bedrag, zonder datum en zonder herhaling"
 msgid "Building habits takes time - keep trying!"
 msgstr "Gewoontes opbouwen kost tijd - blijf proberen!"
 
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "Built-in cards"
+msgstr "Ingebouwde kaarten"
+
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "Bundle ready"
 msgstr "Pakket gereed"
@@ -5534,6 +5568,7 @@ msgstr "Canadese dollar"
 #: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+#: src/pages/dashboard/HomeDashboard.tsx
 #: src/pages/JoinWorkspacePage.tsx
 #: src/pages/reports/question/useDeleteQuestion.tsx
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
@@ -5577,6 +5612,11 @@ msgstr "Niet-lege categoriegroep kan niet worden verwijderd"
 msgid "Cannot log in"
 msgstr "Kan niet inloggen"
 
+#: src/pages/custom-dashboards/components/BuiltinWidget.tsx
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
+msgid "Card"
+msgstr "Kaart"
+
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "Card balance owed:"
 msgstr "Openstaand kaartsaldo:"
@@ -5616,8 +5656,8 @@ msgstr "hoofdlettergevoelig"
 msgid "Cash"
 msgstr "Contant"
 
-#: src/pages/dashboard/DashboardPage.desktop.tsx
-#: src/pages/dashboard/DashboardPage.mobile.tsx
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "Cash Balance"
 msgstr "Contant saldo"
 
@@ -5629,6 +5669,10 @@ msgstr "contante overschrijding in {0}"
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "Cash spending:"
 msgstr "Contante uitgaven:"
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Cashflow trends"
+msgstr "Cashflow-trends"
 
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Catch-up"
@@ -5666,6 +5710,10 @@ msgstr "Categorieën beheerd per splitregel"
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Categories matching \"{0}\""
 msgstr "Categorieën die overeenkomen met \"{0}\""
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Categories that spent more than they have this month."
+msgstr "Categorieën die deze maand meer hebben uitgegeven dan ze hebben."
 
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
@@ -5969,10 +6017,13 @@ msgstr "Je versleutelingssleutel controleren…"
 msgid "Checking your workspaces…"
 msgstr "Je werkruimtes controleren…"
 
-#: src/pages/dashboard/DashboardPage.desktop.tsx
-#: src/pages/dashboard/DashboardPage.mobile.tsx
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "checking, savings & cash"
 msgstr "betaal-, spaar- en contant"
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Checking, savings and cash, with its trend over the period."
+msgstr "Betaal-, spaarrekeningen en contant, met het verloop over de periode."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Checking, savings, credit"
@@ -6040,6 +6091,8 @@ msgstr "Kies een andere inkomstencategorie voor de transacties en toewijzingen v
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+#: src/pages/custom-dashboards/useDashboardEditor.ts
+#: src/pages/dashboard/HomeDashboard.tsx
 msgid "Choose another question"
 msgstr "Andere vraag kiezen"
 
@@ -6419,6 +6472,10 @@ msgstr "Kleurthema"
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Cols {0}"
 msgstr "Kolommen {0}"
+
+#: src/pages/custom-dashboards/components/BuiltinWidget.tsx
+msgid "Cols {colSpan}"
+msgstr "Kolommen {colSpan}"
 
 #. placeholder {0}: i + 1
 #: src/features/import/ui/steps/configure/MappingTab.tsx
@@ -6856,6 +6913,10 @@ msgstr "De vraag kon niet aan het dashboard worden toegevoegd"
 msgid "Could not change funding priority."
 msgstr "De financieringsprioriteit kon niet worden gewijzigd."
 
+#: src/pages/custom-dashboards/useDashboardEditor.ts
+msgid "Could not change the home page"
+msgstr "De startpagina kon niet worden gewijzigd"
+
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Could not change the Ready to Assign calculation"
 msgstr "Kon de berekening van Te verdelen niet wijzigen"
@@ -6960,7 +7021,12 @@ msgstr "De geaccepteerde import kon niet worden opgeslagen. Je kunt deze veilig 
 msgid "Could not save the chart image"
 msgstr "De grafiekafbeelding kon niet worden opgeslagen"
 
+#: src/pages/custom-dashboards/useDashboardEditor.ts
+msgid "Could not save the dashboard"
+msgstr "Het dashboard kon niet worden opgeslagen"
+
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+#: src/pages/dashboard/HomeDashboard.tsx
 msgid "Could not save the dashboard filters"
 msgstr "De dashboardfilters konden niet worden opgeslagen"
 
@@ -7542,6 +7608,10 @@ msgstr "Klant-ID"
 msgid "Customer ID:"
 msgstr "Klant-ID:"
 
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Customize"
+msgstr "Aanpassen"
+
 #: src/pages/settings/AppearancePage.tsx
 msgid "Customize how Budgero looks on your device"
 msgstr "Pas aan hoe Budgero eruitziet op je apparaat"
@@ -7607,7 +7677,7 @@ msgstr "Donker met koperen warmte."
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/app/layout/desktop-shell/useDesktopShellState.ts
 #: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
-#: src/pages/dashboard/DashboardPage.desktop.tsx
+#: src/pages/dashboard/HomeDashboard.tsx
 #: src/pages/settings/AppearancePage.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
 #: src/widgets/navigation/MobileBottomNav.tsx
@@ -8237,6 +8307,7 @@ msgstr "Unieke waarden"
 #: src/features/ai/ui/receipt-scanner/ScanProgress.tsx
 #: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
+#: src/pages/dashboard/HomeDashboard.tsx
 msgid "Done"
 msgstr "Klaar"
 
@@ -10506,6 +10577,7 @@ msgid "Hobbies"
 msgstr "Hobby's"
 
 #: src/app/layout/desktop-shell/HeaderBar.tsx
+#: src/pages/custom-dashboards/useDashboardEditor.ts
 msgid "Home"
 msgstr "Home"
 
@@ -10520,6 +10592,10 @@ msgstr "Aanbetaling huis"
 #: src/entities/account/model/accountTypes.ts
 msgid "Home mortgage and real estate loans"
 msgstr "Hypotheek en vastgoedleningen"
+
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Home page options"
+msgstr "Opties voor de startpagina"
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Horizon"
@@ -10959,6 +11035,10 @@ msgstr "Inkomen"
 #: src/pages/analytics/report-questions.ts
 msgid "Income against spending, month by month"
 msgstr "Inkomen tegenover uitgaven, maand per maand"
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Income against spending, month by month."
+msgstr "Inkomsten tegenover uitgaven, maand per maand."
 
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Income and assignments accumulate across all time, so this figure is the same in every month."
@@ -11710,7 +11790,7 @@ msgstr "Nulbedragen leeg laten"
 msgid "Ledger"
 msgstr "Kasboek"
 
-#: src/pages/dashboard/DashboardPage.desktop.tsx
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "left"
 msgstr "over"
 
@@ -12734,6 +12814,10 @@ msgstr "{0} omlaag verplaatsen"
 msgid "Move {0} up"
 msgstr "{0} omhoog verplaatsen"
 
+#: src/pages/custom-dashboards/useDashboardEditor.ts
+msgid "Move a card"
+msgstr "Kaart verplaatsen"
+
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 msgid "Move between rows"
 msgstr "Tussen rijen bewegen"
@@ -12890,6 +12974,10 @@ msgstr "Naam: {0}"
 msgid "Names can’t contain [ or ]."
 msgstr "Namen mogen geen [ of ] bevatten."
 
+#: src/pages/custom-dashboards/components/BuiltinWidget.tsx
+msgid "Narrower: {name}"
+msgstr "Smaller: {name}"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Nearly there! Complete this month to maintain your streak"
 msgstr "Bijna zover! Voltooi deze maand om je reeks in stand te houden"
@@ -12933,6 +13021,10 @@ msgstr "Heeft een groepering en twee metrieken nodig."
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Needs a grouping that isn’t a date, like Category."
 msgstr "Heeft een groepering nodig die geen datum is, zoals Categorie."
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Needs categorising"
+msgstr "Categorisatie nodig"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Needs exactly one grouping."
@@ -13353,6 +13445,14 @@ msgstr "Nog geen budgetten"
 msgid "No cached rate found. Provide a temporary rate for offline use."
 msgstr "Geen opgeslagen koers gevonden. Geef een tijdelijke koers voor offline gebruik."
 
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "No card matches."
+msgstr "Geen kaart gevonden."
+
+#: src/pages/custom-dashboards/components/DashboardGrid.tsx
+msgid "No cards on this dashboard yet. Add a question or a built-in card."
+msgstr "Nog geen kaarten op dit dashboard. Voeg een vraag of een ingebouwde kaart toe."
+
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #~ msgid "No categories"
 #~ msgstr "Geen categorieën"
@@ -13760,8 +13860,8 @@ msgid "No question matches."
 msgstr "Geen vraag past."
 
 #: src/pages/custom-dashboards/components/DashboardGrid.tsx
-msgid "No questions on this dashboard yet. Add one with “Add a question”."
-msgstr "Nog geen vragen op dit dashboard. Voeg er een toe met ‘Vraag toevoegen’."
+#~ msgid "No questions on this dashboard yet. Add one with “Add a question”."
+#~ msgstr "Nog geen vragen op dit dashboard. Voeg er een toe met ‘Vraag toevoegen’."
 
 #: src/pages/admin/AdminDashboard.tsx
 msgid "No recent activity"
@@ -14408,6 +14508,10 @@ msgstr "Open de ontwikkelaarsinstellingen en zoek ‘Personal Access Tokens’."
 msgid "Open Imports"
 msgstr "Importen openen"
 
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Open in custom dashboards"
+msgstr "Openen in aangepaste dashboards"
+
 #: src/pages/onboarding/OnboardingFlow.tsx
 msgid "Open my budget →"
 msgstr "Open mijn budget →"
@@ -14641,8 +14745,7 @@ msgid "Out"
 msgstr "Uit"
 
 #. placeholder {0}: formatMilliAmount(totalAssignedAmount || 0)
-#: src/pages/dashboard/DashboardPage.desktop.tsx
-#: src/pages/dashboard/DashboardPage.mobile.tsx
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "out of {0} budgeted"
 msgstr "van de {0}begroot"
 
@@ -14733,6 +14836,10 @@ msgstr "Overschreden met {0}in contanten"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Overspent by {overspent}"
 msgstr "Overschreden met {overspent}"
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Overspent categories"
+msgstr "Overschreden categorieën"
 
 #: src/features/budget-planning/ui/category-row/CoverOverspendingPopover.tsx
 msgid "Overspent on credit by "
@@ -15134,8 +15241,16 @@ msgid "Pick a period with some history to project from."
 msgstr "Kies een periode met wat geschiedenis om vanuit te projecteren."
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Pick a saved question to show on this dashboard."
-msgstr "Kies een opgeslagen vraag om op dit dashboard te tonen."
+msgid "Pick a saved question or a built-in card to show on this dashboard."
+msgstr "Kies een opgeslagen vraag of een ingebouwde kaart voor dit dashboard."
+
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Pick a saved question or a built-in card to show on your home page."
+msgstr "Kies een opgeslagen vraag of een ingebouwde kaart voor je startpagina."
+
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+#~ msgid "Pick a saved question to show on this dashboard."
+#~ msgstr "Kies een opgeslagen vraag om op dit dashboard te tonen."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Pick a savings goal"
@@ -15920,6 +16035,7 @@ msgid "Question updated"
 msgstr "Vraag bijgewerkt"
 
 #: src/app/layout/desktop-shell/constants.ts
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 msgid "Questions"
 msgstr "Vragen"
 
@@ -16486,9 +16602,17 @@ msgstr "{0}-filter verwijderen"
 msgid "Remove {0}?"
 msgstr "{0} verwijderen?"
 
+#: src/pages/custom-dashboards/components/BuiltinWidget.tsx
+msgid "Remove {name} from dashboard"
+msgstr "{name} van dashboard verwijderen"
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 #~ msgid "Remove {title} step"
 #~ msgstr "Stap ‘{title}’ verwijderen"
+
+#: src/pages/custom-dashboards/useDashboardEditor.ts
+msgid "Remove a card"
+msgstr "Kaart verwijderen"
 
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 msgid "Remove action"
@@ -16511,6 +16635,7 @@ msgstr "Eigen kolom verwijderen: {0}"
 msgid "Remove filter: {label}"
 msgstr "Filter verwijderen: {label}"
 
+#: src/pages/custom-dashboards/components/BuiltinWidget.tsx
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Remove from dashboard"
 msgstr "Van dashboard verwijderen"
@@ -16717,6 +16842,7 @@ msgstr "Aanvragen..."
 
 #: src/features/budget-management/ui/create-budget-form/RestoreBackupTab.tsx
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
+#: src/pages/dashboard/HomeDashboard.tsx
 msgid "Reset"
 msgstr "Resetten"
 
@@ -16769,6 +16895,14 @@ msgstr "Wachtwoord resetten"
 msgid "Reset settings"
 msgstr "Instellingen herstellen"
 
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Reset the home page?"
+msgstr "Startpagina herstellen?"
+
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Reset to default"
+msgstr "Standaard herstellen"
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Reset to default columns"
 msgstr "Standaardkolommen herstellen"
@@ -16784,6 +16918,10 @@ msgstr "Gebruikersgegevens resetten"
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Resetting..."
 msgstr "Resetten..."
+
+#: src/pages/custom-dashboards/useDashboardEditor.ts
+msgid "Resize a card"
+msgstr "Kaartgrootte wijzigen"
 
 #: src/features/transactions/ui/desktop-table/ResizeHandle.tsx
 msgid "Resize column"
@@ -17409,6 +17547,7 @@ msgstr "Geïmporteerd budget met geaccepteerde waarschuwingen opslaan"
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 #: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+#: src/pages/dashboard/HomeDashboard.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Saving..."
@@ -17562,6 +17701,10 @@ msgstr "Zoeken en opdrachten"
 msgid "Search banks…"
 msgstr "Banken zoeken…"
 
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "Search built-in cards"
+msgstr "Ingebouwde kaarten zoeken"
+
 #: src/pages/admin/admin-users/UserSearchCard.tsx
 msgid "Search by ID, email, or name..."
 msgstr "Zoeken op ID, e-mail of naam..."
@@ -17569,6 +17712,10 @@ msgstr "Zoeken op ID, e-mail of naam..."
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Search by username, name, or ID..."
 msgstr "Zoeken op gebruikersnaam, naam of ID..."
+
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "Search cards…"
+msgstr "Kaarten zoeken…"
 
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
 msgid "Search categories across all months..."
@@ -17675,6 +17822,14 @@ msgstr "GEBRUIKTE PLEKKEN"
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Second metric’s axis"
 msgstr "As van de tweede metriek"
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Section title: Action Items"
+msgstr "Sectietitel: Actiepunten"
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Section title: Spending Analysis"
+msgstr "Sectietitel: Uitgavenanalyse"
 
 #: src/app/startup/StartupStepper.tsx
 msgid "Security"
@@ -18318,6 +18473,7 @@ msgid "Show"
 msgstr "Toon"
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+#: src/pages/dashboard/HomeDashboard.tsx
 msgid "Show a different question in this place on the dashboard."
 msgstr "Toon op deze plek van het dashboard een andere vraag."
 
@@ -18433,6 +18589,10 @@ msgstr "Zijbalk tonen"
 msgid "Show target column"
 msgstr "Doelkolom tonen"
 
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Show the default home page?"
+msgstr "Standaard startpagina tonen?"
+
 #: src/features/transactions/ui/SchedulingGuideDialog.tsx
 msgid "Show the next 30 days"
 msgstr "Toon de komende 30 dagen"
@@ -18442,6 +18602,7 @@ msgid "Show the top"
 msgstr "Toon de grootste"
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+#: src/pages/dashboard/HomeDashboard.tsx
 msgid "Show this question"
 msgstr "Deze vraag tonen"
 
@@ -18837,12 +18998,13 @@ msgstr "Uitgaven"
 msgid "Spending & Assignments History"
 msgstr "Uitgaven- en toewijzingsgeschiedenis"
 
-#: src/pages/dashboard/DashboardPage.desktop.tsx
-#: src/pages/dashboard/DashboardPage.mobile.tsx
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "Spending Analysis"
 msgstr "Uitgavenanalyse"
 
-#: src/pages/dashboard/DashboardPage.desktop.tsx
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "Spending Breakdown"
 msgstr "Uitgavenspecificatie"
 
@@ -18903,7 +19065,8 @@ msgstr "De uitgaven gingen {0} over het plan heen ({1} van het toegewezen bedrag
 #~ msgid "Spending overran the plan by {0} ({1}% of assigned)."
 #~ msgstr "De uitgaven overschreden het plan met {0} ({1}% van Toegewezen)."
 
-#: src/pages/dashboard/DashboardPage.desktop.tsx
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "Spending Overview"
 msgstr "Uitgavenoverzicht"
 
@@ -19820,6 +19983,19 @@ msgstr "De expressie stopt te vroeg."
 msgid "The goal has been permanently removed."
 msgstr "Het doel is permanent verwijderd."
 
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+msgid "The home page now shows this dashboard"
+msgstr "De startpagina toont nu dit dashboard"
+
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+msgid "The home page shows the default cards again"
+msgstr "De startpagina toont weer de standaardkaarten"
+
+#. placeholder {0}: dashboard.name
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "The home page shows the default cards again. “{0}” stays under custom dashboards."
+msgstr "De startpagina toont weer de standaardkaarten. ‘{0}’ blijft bij de aangepaste dashboards."
+
 #: src/features/transactions/ui/form/CurrencyConversionNotice.tsx
 msgid "The implied exchange rate will be saved with this transaction."
 msgstr "De afgeleide wisselkoers wordt bij deze transactie opgeslagen."
@@ -19851,6 +20027,10 @@ msgstr "Het lid heeft geen toegang meer tot deze werkruimte."
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #~ msgid "The memo text to set for matching transactions."
 #~ msgstr "De notitietekst die moet worden ingesteld voor overeenkomende transacties."
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "The next recurring and scheduled transactions."
+msgstr "De volgende terugkerende en geplande transacties."
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "The number {detail} is too large or has too many decimals."
@@ -20122,6 +20302,10 @@ msgstr "De inkomstengroep van dit budget ontbreekt. Herstel deze voordat je inko
 msgid "This cache survives app restarts and is cleared when the timer expires, you log out, or you reset local data."
 msgstr "Deze cache overleeft app-herstarts en wordt gewist wanneer de timer afloopt, je uitlogt of je lokale gegevens reset."
 
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
+msgid "This card comes from a newer version of Budgero. Update the app to see it."
+msgstr "Deze kaart komt uit een nieuwere versie van Budgero. Werk de app bij om hem te zien."
+
 #: src/features/budget-planning/ui/category-row/CCUnderfundedBadge.tsx
 #~ msgid "This card owes more than you've set aside to pay it. Assign money here to cover it."
 #~ msgstr "Deze kaart heeft meer schuld dan je hebt gereserveerd voor aflossing. Wijs hier geld toe om dit te dekken."
@@ -20209,6 +20393,10 @@ msgstr "Deze maand"
 #: src/pages/analytics/components/TargetTable.tsx
 msgid "This month's goal targets against what you assigned and spent."
 msgstr "De doelen van deze maand tegenover wat je hebt toegewezen en uitgegeven."
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "This month’s income, spending and what’s left to assign."
+msgstr "Inkomsten en uitgaven van deze maand en wat er nog toe te wijzen is."
 
 #: src/pages/onboarding/steps/ZbbStep.tsx
 msgid "THIS MONTH'S PAYCHECK"
@@ -20485,7 +20673,7 @@ msgstr "Verlopen tijd"
 msgid "Time left:"
 msgstr "Resterende tijd:"
 
-#: src/pages/dashboard/DashboardPage.mobile.tsx
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "Time Series"
 msgstr "Tijdreeks"
 
@@ -20686,14 +20874,17 @@ msgstr "Totale betalingen"
 msgid "Total Saved"
 msgstr "Totaal gespaard"
 
-#: src/pages/dashboard/DashboardPage.desktop.tsx
-#: src/pages/dashboard/DashboardPage.mobile.tsx
+#: src/widgets/dashboard/builtin/BuiltinCard.tsx
 msgid "total spent"
 msgstr "totaal uitgegeven"
 
 #: src/features/budget-planning/ui/spending-drawer-mobile/CategoryHeader.tsx
 msgid "Total Spent"
 msgstr "Totaal uitgegeven"
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Total spent in the period, by category."
+msgstr "Totaal uitgegeven in de periode, per categorie."
 
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 msgid "Total Spent:"
@@ -20828,6 +21019,10 @@ msgstr "Transacties geïmporteerd!"
 #: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "Transactions or destinations changed. Please review the updated matches."
 msgstr "Transacties of bestemmingen zijn gewijzigd. Controleer de bijgewerkte overeenkomsten."
+
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Transactions that still need a category."
+msgstr "Transacties die nog een categorie nodig hebben."
 
 #: src/pages/settings/AutomationRulesPage.tsx
 msgid "Transactions were restored to their previous values."
@@ -21408,9 +21603,9 @@ msgstr "Aankomende rekening: {0}"
 #~ msgid "Upcoming occurrences"
 #~ msgstr "Aankomende gebeurtenissen"
 
-#: src/pages/settings/recurring/RecurringTransactionsSection.tsx
-#~ msgid "Upcoming transactions"
-#~ msgstr "Aankomende transacties"
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "Upcoming transactions"
+msgstr "Aankomende transacties"
 
 #: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/reports/ui/notebook/HavingEditor.tsx
@@ -21627,6 +21822,10 @@ msgstr "Gebruik AI om automatisch categorieën voor te stellen voor niet-gecateg
 msgid "Use anyway"
 msgstr "Toch gebruiken"
 
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+msgid "Use as home page"
+msgstr "Als startpagina gebruiken"
+
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Use at least 8 characters."
 msgstr "Gebruik minstens 8 tekens."
@@ -21646,6 +21845,15 @@ msgstr "Voorgestelde gebruiken"
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Use the cleared balance as the actual balance"
 msgstr "Het bevestigde saldo als werkelijk saldo gebruiken"
+
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Use the default"
+msgstr "Standaard gebruiken"
+
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Use the default home page"
+msgstr "Standaard startpagina gebruiken"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Use your phone, tablet, or computer"
@@ -22194,6 +22402,10 @@ msgstr "Wat je nog kunt doen"
 #~ msgid "What you own, what you owe, and where it's heading"
 #~ msgstr "Wat je hebt, wat je schuldig bent, en waar het heen gaat"
 
+#: src/widgets/dashboard/builtin/builtin-cards.ts
+msgid "What’s left of the budget, and spending over time."
+msgstr "Wat er over is van het budget, en de uitgaven door de tijd."
+
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "When"
 msgstr "Wanneer"
@@ -22306,14 +22518,20 @@ msgstr "Waarom heb ik een hoofdwachtwoord nodig?"
 msgid "Why is this flagged?"
 msgstr "Waarom wordt dit gemarkeerd?"
 
+#: src/pages/custom-dashboards/components/BuiltinWidget.tsx
+msgid "Wider: {name}"
+msgstr "Breder: {name}"
+
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 #~ msgid "Widget"
 #~ msgstr "Widget"
 
+#: src/pages/custom-dashboards/components/BuiltinWidget.tsx
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Width -"
 msgstr "Breedte -"
 
+#: src/pages/custom-dashboards/components/BuiltinWidget.tsx
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Width +"
 msgstr "Breedte +"
@@ -22940,6 +23158,10 @@ msgstr "JOUW BUDGETOVERZICHT"
 msgid "Your budget was modified by a newer version of Budgero. To keep your data safe, this device has stopped syncing until the app is updated."
 msgstr "Je budget is gewijzigd door een nieuwere versie van Budgero. Om je gegevens veilig te houden, is het synchroniseren op dit apparaat gestopt totdat de app is bijgewerkt."
 
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Your changes to the home page are removed and it shows the default cards again. You can undo this."
+msgstr "Je wijzigingen aan de startpagina worden verwijderd en hij toont weer de standaardkaarten. Je kunt dit ongedaan maken."
+
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "Your current subscription status"
 msgstr "Je huidige abonnementsstatus"
@@ -22972,6 +23194,10 @@ msgstr "Je gratis proefperiode verloopt over {trialTimeLeftLabel}. {0}"
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "Your goal has been updated successfully."
 msgstr "Je doel is succesvol bijgewerkt."
+
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Your home page is empty. Use “Customize” to add cards."
+msgstr "Je startpagina is leeg. Gebruik ‘Aanpassen’ om kaarten toe te voegen."
 
 #: src/pages/onboarding/steps/WelcomeStep.tsx
 msgid "Your journey in six steps: rules, currency, ZBB, name your budget, accounts, password"
