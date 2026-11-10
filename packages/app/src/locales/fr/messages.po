@@ -7151,6 +7151,10 @@ msgstr "« {name} » supprimé"
 msgid "Deleted label"
 msgstr "Étiquette supprimée"
 
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "Deleted when you open yours"
+msgstr "Supprimé dès que vous ouvrez le vôtre"
+
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
@@ -7166,6 +7170,7 @@ msgstr "Suppression…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 #: src/features/demo-budget/ui/DemoBudgetBanner.tsx
 #: src/pages/onboarding/apply-onboarding.ts
+#: src/pages/onboarding/steps/DoneStep.tsx
 msgid "Demo budget"
 msgstr "Budget de démonstration"
 
@@ -9090,7 +9095,7 @@ msgid "Funding priority {priority}"
 msgstr "Priorité de financement {priority}"
 
 #: src/pages/analytics/reports/WealthReport.tsx
-msgid "funds last until <0>{runsOut}</0>if income stopped"
+msgid "funds last until <0>{runsOut}</0> if income stopped"
 msgstr "les fonds durent jusqu'au <0>{runsOut}</0> si les revenus s'arrêtent"
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -17235,6 +17240,10 @@ msgstr "Statut : {0}"
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Stay covered if data ever corrupts or you lose your master password—we'll remind you to keep a fresh backup on hand."
 msgstr "Restez couvert en cas de corruption de données ou de perte de votre mot de passe principal — nous vous rappellerons de conserver une sauvegarde récente à portée de main."
+
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "STEP {stepLabel} / {totalLabel}"
+msgstr "ÉTAPE {stepLabel} / {totalLabel}"
 
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Stickiness over time"

@@ -7153,6 +7153,10 @@ msgstr "Deleted \"{name}\""
 msgid "Deleted label"
 msgstr "Deleted label"
 
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "Deleted when you open yours"
+msgstr "Deleted when you open yours"
+
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
@@ -7168,6 +7172,7 @@ msgstr "Deleting…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 #: src/features/demo-budget/ui/DemoBudgetBanner.tsx
 #: src/pages/onboarding/apply-onboarding.ts
+#: src/pages/onboarding/steps/DoneStep.tsx
 msgid "Demo budget"
 msgstr "Demo budget"
 
@@ -9092,8 +9097,8 @@ msgid "Funding priority {priority}"
 msgstr "Funding priority {priority}"
 
 #: src/pages/analytics/reports/WealthReport.tsx
-msgid "funds last until <0>{runsOut}</0>if income stopped"
-msgstr "funds last until <0>{runsOut}</0>if income stopped"
+msgid "funds last until <0>{runsOut}</0> if income stopped"
+msgstr "funds last until <0>{runsOut}</0> if income stopped"
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Funds run out"
@@ -17237,6 +17242,10 @@ msgstr "Status: {0}"
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Stay covered if data ever corrupts or you lose your master password—we'll remind you to keep a fresh backup on hand."
 msgstr "Stay covered if data ever corrupts or you lose your master password—we'll remind you to keep a fresh backup on hand."
+
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "STEP {stepLabel} / {totalLabel}"
+msgstr "STEP {stepLabel} / {totalLabel}"
 
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Stickiness over time"
