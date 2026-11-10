@@ -8,7 +8,13 @@ import {
   type DuplicateTolerance,
 } from '@budgero/core/browser';
 import type { ParsedData, ColumnMapping, ImportConfig, PreviewRow } from '../model/types';
-import { isNewAccountPlaceholder, placeholderIdFor, sourceAccountsOf } from './account-routes';
+import {
+  IMPORT_ACCOUNT_PLACEHOLDER,
+  isPlaceholderAccountId,
+  planAccountRoutes,
+  type RouteProblem,
+} from './account-routes';
+import { planFileTransfers, transferTargetsOf } from './plan-transfers';
 
 const DEFAULT_TOLERANCE: DuplicateTolerance = { toleranceBps: 100, dayWindow: 7 };
 
@@ -27,13 +33,31 @@ interface FilePreviewOptions {
   budgetId: number;
   columnMapping: ColumnMapping;
   importConfig: ImportConfig;
-  accounts: { ID: number; Name: string; Currency: string }[];
+  accounts: { ID: number; Name: string; Currency: string; Archived?: boolean }[];
   skippedRowIndices: Set<number>;
   selectedHeaderIndex: number | null;
   runKey: string;
   duplicates: Pick<ImportDuplicateService, 'plan'>;
   /** The duplicate-hint settings; rows within it can be matched to hand-entered transactions. */
   tolerance?: DuplicateTolerance;
+  /** Earlier account choices on this device (readRememberedRoutes). */
+  rememberedRoutes?: Record<string, number>;
+  /**
+   * Currency of accounts the import creates when the file states none:
+   * the budget's. Defaults to importConfig.accountCurrency.
+   */
+  newCurrency?: string;
+}
+
+interface Destination {
+  accountName: string;
+  destinationId: number | null;
+  account?: { ID: number; Name: string; Currency: string };
+  currency: string;
+  newAccountName?: string;
+  problem?: RouteProblem;
+  /** The user chose not to import this row's account. */
+  skipped: boolean;
 }
 
 export async function buildFileImportPreview({
@@ -47,6 +71,8 @@ export async function buildFileImportPreview({
   runKey,
   duplicates,
   tolerance,
+  rememberedRoutes,
+  newCurrency,
 }: FilePreviewOptions): Promise<PreviewRow[]> {
   const bytes = await parsedData.source.file.arrayBuffer();
   const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -54,60 +80,75 @@ export async function buildFileImportPreview({
     ''
   );
   // The destination account decides the storage scale amounts are planned at
-  // (milliunits for fiat, sats for BTC). In order: the route chosen for the
-  // row's Account value, an account with that name, the default account, or
-  // a new "Import Account" in importConfig.accountCurrency.
-  const sources = sourceAccountsOf(parsedData.rows, columnMapping.account);
-  const routes = importConfig.accountRoutes ?? {};
-  const destinationOf = (row: Record<string, string>) => {
-    const accountName = columnMapping.account ? row[columnMapping.account]?.trim() : '';
-    const route = accountName ? routes[accountName] : undefined;
-    if (route?.kind === 'skip') {
-      return {
-        accountName,
-        destinationId: null,
-        account: undefined,
-        currency: importConfig.accountCurrency,
-        skipped: true,
-      };
+  // (milliunits for fiat, sats for BTC). A row that names an account follows
+  // that account's route (see account-routes.ts); a row that names none goes
+  // to the default account, or a new "Import Account".
+  const newAccountCurrency = newCurrency ?? importConfig.accountCurrency;
+  const routePlan = planAccountRoutes({
+    rows: parsedData.rows,
+    column: columnMapping.account,
+    accounts,
+    remembered: rememberedRoutes,
+    chosen: importConfig.accountRoutes,
+    newAccountCurrency,
+    fallbackAccountId: importConfig.defaultAccountId,
+  });
+  const destinationOf = (row: Record<string, string>): Destination => {
+    const accountName = columnMapping.account ? (row[columnMapping.account]?.trim() ?? '') : '';
+    const target = accountName ? routePlan.targets.get(accountName) : undefined;
+    if (target?.kind === 'skip') {
+      return { accountName, destinationId: null, currency: newAccountCurrency, skipped: true };
     }
-    if (route?.kind === 'new') {
+    if (target?.kind === 'unset') {
+      return { accountName, destinationId: null, currency: newAccountCurrency, skipped: false };
+    }
+    if (target?.kind === 'new') {
       return {
         accountName,
-        destinationId: placeholderIdFor(accountName, sources),
-        account: undefined,
-        currency: row.Currency || importConfig.accountCurrency,
-        newAccountName: route.name.trim() || accountName,
+        destinationId: target.placeholderId,
+        currency: target.currency,
+        newAccountName: target.name,
+        problem: routePlan.problems.get(accountName),
         skipped: false,
       };
     }
-    const matches =
-      route?.kind === 'existing'
-        ? accounts.filter((a) => a.ID === route.accountId)
-        : accountName
-          ? accounts?.filter((a) => a.Name.toLowerCase() === accountName.toLowerCase())
-          : [];
-    const destinationId = matches?.length === 1 ? matches[0].ID : importConfig.defaultAccountId;
-    const account = accounts?.find((a) => a.ID === destinationId);
+    const destinationId = target ? target.accountId : importConfig.defaultAccountId;
+    const account = accounts.find((a) => a.ID === destinationId);
     return {
       accountName,
       destinationId,
       account,
-      currency: account?.Currency ?? importConfig.accountCurrency,
+      currency: account?.Currency ?? newAccountCurrency,
       skipped: false,
     };
   };
-  const plans = planImportRows(parsedData.rows, columnMapping, importConfig, (row) =>
-    getCurrencyScale(destinationOf(row).currency)
+  const destinations = parsedData.rows.map(destinationOf);
+  const plans = planImportRows(parsedData.rows, columnMapping, importConfig, (_row, index) =>
+    getCurrencyScale(destinations[index].currency)
   );
+  const accountLabel = (accountId: number, destination: Destination) => {
+    const existing = accounts.find((a) => a.ID === accountId)?.Name;
+    if (existing) return existing;
+    if (destination.newAccountName) return t`${destination.newAccountName} (new)`;
+    if (accountId === IMPORT_ACCOUNT_PLACEHOLDER) return t`Import Account (new)`;
+    return destination.accountName;
+  };
   const inputs = plans.map((plan) => {
     const row = parsedData.rows[plan.index];
-    const destination = destinationOf(row);
+    const destination = destinations[plan.index];
     const { accountName, destinationId, account, currency } = destination;
     const valid =
       plan.status === 'ready' && !skippedRowIndices.has(plan.index) && !destination.skipped;
-    const isNew =
-      destinationId === -1 || (destinationId != null && isNewAccountPlaceholder(destinationId));
+    const newName = destination.newAccountName ?? '';
+    if (valid && destination.problem === 'name-taken')
+      throw new Error(
+        t`An account named "${newName}" already exists. In Configuration, choose it for "${accountName}" or give the new account another name.`
+      );
+    if (valid && destination.problem === 'currency')
+      throw new Error(
+        t`"${accountName}" and the new account "${newName}" (${currency}) are in different currencies. Give "${accountName}" its own account in Configuration.`
+      );
+    const isNew = destinationId != null && isPlaceholderAccountId(destinationId);
     if (valid && !account && !isNew)
       throw new Error(
         t`Choose a destination account in Configuration for row ${plan.index + 1}${accountName ? ` (${accountName})` : ''}.`
@@ -146,9 +187,25 @@ export async function buildFileImportPreview({
     };
   });
   const matches = duplicates.plan(inputs, tolerance ? { tolerance } : {});
-  const newNameOf = (row: Record<string, string>) => destinationOf(row).newAccountName ?? '';
+  const transfers = planFileTransfers({
+    // Rows the user skipped still count as a side: their pair stays plain
+    // instead of creating the skipped side anyway.
+    rows: inputs.map((input, index) => ({
+      ...input,
+      accountId: destinations[index].destinationId,
+      ready: plans[index].status === 'ready' && !destinations[index].skipped,
+    })),
+    targets: transferTargetsOf(parsedData.rows, parsedData.headers, columnMapping.payee),
+    routePlan,
+    accounts,
+    remembered: rememberedRoutes,
+  });
   return inputs.map((input, index) => ({
     input,
+    ...(destinations[index].skipped && plans[index].status === 'ready'
+      ? { accountSkipped: true }
+      : {}),
+    ...(transfers.has(index) ? { transfer: transfers.get(index) } : {}),
     duplicate: matches[index],
     decision:
       matches[index].status === 'already-imported'
@@ -163,11 +220,7 @@ export async function buildFileImportPreview({
       amount: scaledToDecimal(input.inflow - input.outflow, input.currency),
       payee: input.payee,
       memo: input.memo,
-      account:
-        accounts?.find((a) => a.ID === input.accountId)?.Name ??
-        (isNewAccountPlaceholder(input.accountId)
-          ? t`${newNameOf(parsedData.rows[index])} (new)`
-          : t`Import Account (new)`),
+      account: accountLabel(input.accountId, destinations[index]),
     },
   }));
 }

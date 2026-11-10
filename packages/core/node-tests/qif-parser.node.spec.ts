@@ -255,11 +255,57 @@ PCafe
     ]);
     const { headers, rows } = qifToImportRows(result);
     expect(headers[0]).toBe('Account');
-    expect(rows.map((r) => [r.Account, r.Payee])).toEqual([
-      ['Checking', 'Grocer'],
-      ['Checking', 'Employer'],
-      ['Visa', 'Cafe'],
+    expect(rows.map((r) => [r.Account, r.AccountType, r.Payee])).toEqual([
+      ['Checking', 'Checking', 'Grocer'],
+      ['Checking', 'Checking', 'Employer'],
+      ['Visa', 'Credit', 'Cafe'],
     ]);
+  });
+
+  it('names accounts even when the export never clears AutoSwitch', () => {
+    const sample = `!Option:AutoSwitch
+!Account
+NChecking
+TBank
+^
+NSavings
+TBank
+^
+!Account
+NSavings
+TBank
+^
+!Type:Bank
+D01/02/2024
+T-40.00
+PTransfer
+^
+!Account
+NChecking
+TBank
+^
+!Type:Bank
+D01/03/2024
+T10.00
+PRefund
+^
+`;
+    expect(parseQif(sample).sections.map((s) => s.account)).toEqual(['Savings', 'Checking']);
+  });
+
+  it('does not take a name from the AutoSwitch list for an unnamed section', () => {
+    const sample = `!Option:AutoSwitch
+!Account
+NChecking
+TBank
+^
+!Clear:AutoSwitch
+!Type:Bank
+D01/02/2024
+T-40.00
+^
+`;
+    expect(parseQif(sample).sections[0].account).toBeUndefined();
   });
 
   it('adds no Account column for a single-account file', () => {

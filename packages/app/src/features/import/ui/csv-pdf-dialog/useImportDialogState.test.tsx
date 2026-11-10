@@ -378,4 +378,222 @@ describe('import wizard execution', () => {
     expect(all).toHaveLength(250);
     expect(calls.at(-1)?.status).toBe('completed');
   });
+
+  it('creates one account per new route, never sends a placeholder id, and remembers routes', async () => {
+    localStorage.clear();
+    const file = { arrayBuffer: async () => new TextEncoder().encode('multi').buffer } as File;
+    mocks.parse.mockResolvedValue({
+      data: {
+        source: { file, fileName: 'multi.csv', type: 'csv' },
+        headers: ['Date', 'Amount', 'Account', 'Currency'],
+        rows: [
+          { Date: '2026-09-01', Amount: '-10', Account: 'Card', Currency: 'EUR' },
+          { Date: '2026-09-02', Amount: '-20', Account: 'checking' },
+          { Date: '2026-09-03', Amount: '-30', Account: 'Old' },
+          { Date: '2026-09-04', Amount: '-40', Account: 'Cash' },
+        ],
+      },
+    });
+    Object.assign(mocks.budget, { DisplayCurrency: 'GBP' });
+    mocks.addAccount.mockImplementation(async ({ name }: { name: string }) => ({
+      ID: name === 'Card' ? 77 : 78,
+      Name: name,
+    }));
+    const hook = renderHook(() => useImportDialogState());
+    await act(async () => {
+      await hook.result.current.handleFileChange({ target: { files: [{}] } } as never);
+    });
+    expect(hook.result.current.columnMapping.account).toBe('Account');
+    act(() => {
+      hook.result.current.setImportConfig({
+        ...hook.result.current.importConfig,
+        accountRoutes: { Old: { kind: 'skip' } },
+      });
+    });
+    await act(async () => {
+      await hook.result.current.generatePreview();
+    });
+    const { result } = hook;
+    expect(result.current.previewData.map((r) => r.parsed.account)).toEqual([
+      'Card (new)',
+      'Checking',
+      'Old',
+      'Cash (new)',
+    ]);
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    Object.assign(mocks.budget, { DisplayCurrency: undefined });
+
+    expect(mocks.addAccount.mock.calls.map(([arg]) => [arg.name, arg.currency])).toEqual([
+      ['Card', 'EUR'],
+      ['Cash', 'GBP'],
+    ]);
+    const imports = mocks.mutate.mock.calls
+      .map(([, spec]) => spec)
+      .filter((spec) => spec.op === 'transactions.import');
+    expect(imports.map((spec) => spec.payload.accountId)).toEqual([77, 10, 78]);
+    expect(imports.map((spec) => spec.payload.importIdentities[0].accountId)).toEqual([77, 10, 78]);
+    expect(result.current.importSummary).toMatchObject({
+      transactionsImported: 3,
+      accountsCreated: 2,
+      userSkipped: 1,
+      invalidRows: 0,
+      destinationAccountName: '3 accounts',
+    });
+    expect(JSON.parse(localStorage.getItem('budgero:import-account-routes:1')!)).toEqual({
+      Card: 77,
+      checking: 10,
+      Cash: 78,
+    });
+  });
+
+  describe('transfers between accounts of one file', () => {
+    async function qifImport(
+      decide?: (result: { current: ReturnType<typeof useImportDialogState> }) => void
+    ) {
+      localStorage.clear();
+      const file = { arrayBuffer: async () => new TextEncoder().encode('qif').buffer } as File;
+      mocks.parse.mockResolvedValue({
+        data: {
+          source: { file, fileName: 'quicken.qif', type: 'qif' },
+          headers: ['Account', 'AccountType', 'Date', 'Amount', 'Payee', 'TransferAccount'],
+          rows: [
+            {
+              Account: 'Checking',
+              AccountType: 'Checking',
+              Date: '2026-09-01',
+              Amount: '-100',
+              Payee: 'To savings',
+              TransferAccount: 'Savings',
+            },
+            {
+              Account: 'Savings',
+              AccountType: 'Savings',
+              Date: '2026-09-01',
+              Amount: '100',
+              Payee: 'From checking',
+              TransferAccount: 'Checking',
+            },
+            {
+              Account: 'Checking',
+              AccountType: 'Checking',
+              Date: '2026-09-02',
+              Amount: '-20',
+              Payee: 'Card payment',
+              TransferAccount: 'Card',
+            },
+            {
+              Account: 'Card',
+              AccountType: 'Credit',
+              Date: '2026-09-03',
+              Amount: '-5',
+              Payee: 'Cafe',
+              TransferAccount: '',
+            },
+          ],
+        },
+      });
+      mocks.addAccount.mockImplementation(async ({ name }: { name: string }) => ({
+        ID: name === 'Savings' ? 20 : 30,
+        Name: name,
+      }));
+      let nextId = 500;
+      mocks.mutate.mockImplementation(async (_runtime, spec) =>
+        spec.op === 'transactions.addTransfer'
+          ? { sourceId: nextId++, destinationId: nextId++ }
+          : { transactionId: nextId++, created: true }
+      );
+      const hook = renderHook(() => useImportDialogState());
+      await act(async () => {
+        await hook.result.current.handleFileChange({ target: { files: [{}] } } as never);
+      });
+      await act(async () => {
+        await hook.result.current.generatePreview();
+      });
+      decide?.(hook.result);
+      await act(async () => {
+        await hook.result.current.handleImport();
+      });
+      return hook.result;
+    }
+    const specs = () => mocks.mutate.mock.calls.map(([, spec]) => spec);
+
+    it('creates a pair once and a one-sided transfer with its mirror leg', async () => {
+      const result = await qifImport();
+      expect(
+        result.current.previewData.map(
+          (r) => r.transfer?.partnerIndex ?? r.transfer?.counterpartName
+        )
+      ).toEqual([1, 0, 'Card', undefined]);
+      expect(
+        mocks.addAccount.mock.calls.map(([arg]) => [arg.name, arg.type, arg.on_budget])
+      ).toEqual([
+        ['Savings', 'Savings', true],
+        ['Card', 'Credit', true],
+      ]);
+      const transfers = specs().filter((spec) => spec.op === 'transactions.addTransfer');
+      expect(transfers).toHaveLength(2);
+      expect(transfers[0].payload.source).toMatchObject({
+        accountId: 10,
+        outflow: 100000,
+        categoryId: 0,
+        cleared: true,
+      });
+      expect(transfers[0].payload.destination).toMatchObject({
+        accountId: 20,
+        inflow: 100000,
+        cleared: true,
+      });
+      expect(transfers[0].payload.source.importIdentities[0]).toMatchObject({
+        index: 0,
+        accountId: 10,
+      });
+      expect(transfers[0].payload.destination.importIdentities[0]).toMatchObject({
+        index: 1,
+        accountId: 20,
+      });
+      // One side only: Card gets the mirror leg, which no file row stands for.
+      expect(transfers[1].payload.source).toMatchObject({ accountId: 10, outflow: 20000 });
+      expect(transfers[1].payload.destination).toEqual(
+        expect.objectContaining({ accountId: 30, inflow: 20000, outflow: 0 })
+      );
+      expect(transfers[1].payload.destination.importIdentities).toBeUndefined();
+      expect(new Set(transfers.map((t) => t.payload.transferId)).size).toBe(2);
+      const plain = specs().filter((spec) => spec.op === 'transactions.import');
+      expect(plain.map((spec) => spec.payload.payee)).toEqual(['Cafe']);
+      expect(result.current.importSummary).toMatchObject({
+        transactionsImported: 4,
+        failedRows: 0,
+      });
+    });
+
+    it('keeps a pair plain when the user skips one side', async () => {
+      await qifImport((result) => act(() => result.current.setRowDecision(1, 'skip')));
+      const ops = specs();
+      expect(ops.filter((spec) => spec.op === 'transactions.addTransfer')).toHaveLength(1);
+      expect(
+        ops.filter((spec) => spec.op === 'transactions.import').map((spec) => spec.payload.payee)
+      ).toEqual(['To savings', 'Cafe']);
+    });
+  });
+
+  it('forgets account choices when another file is loaded', async () => {
+    const hook = renderHook(() => useImportDialogState());
+    await act(async () => {
+      await hook.result.current.handleFileChange({ target: { files: [{}] } } as never);
+    });
+    act(() =>
+      hook.result.current.setImportConfig({
+        ...hook.result.current.importConfig,
+        defaultAccountId: 10,
+        accountRoutes: { A: { kind: 'skip' } },
+      })
+    );
+    await act(async () => {
+      await hook.result.current.handleFileChange({ target: { files: [{}] } } as never);
+    });
+    expect(hook.result.current.importConfig.accountRoutes).toBeUndefined();
+    expect(hook.result.current.importConfig.defaultAccountId).toBe(10);
+  });
 });

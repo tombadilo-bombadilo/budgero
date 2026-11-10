@@ -146,9 +146,17 @@ msgstr "\"{0}\" bijgewerkt naar \"{1}\"."
 msgid "\"{0}\" was removed and cleared from transactions."
 msgstr "\"{0}\" is verwijderd en gewist uit transacties."
 
+#: src/features/import/lib/plan-file-import.ts
+msgid "\"{accountName}\" and the new account \"{newName}\" ({currency}) are in different currencies. Give \"{accountName}\" its own account in Configuration."
+msgstr "\"{accountName}\" en de nieuwe rekening \"{newName}\" ({currency}) hebben verschillende valuta. Geef \"{accountName}\" een eigen rekening in Configuratie."
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "“{detail}” isn’t allowed here."
 msgstr "“{detail}” is hier niet toegestaan."
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "“{newName}” is created in {newCurrency}, but these transactions are in {fileCurrency}. Use another name."
+msgstr "\"{newName}\" wordt aangemaakt in {newCurrency}, maar deze transacties zijn in {fileCurrency}. Gebruik een andere naam."
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "\"K-MARKET KAMPPI\" becomes \"K-Market Kamppi\". Names with lowercase letters stay as they are."
@@ -453,6 +461,11 @@ msgstr "{0, plural, one {De kolom ‘{column}’ noemt één rekening. Kies waar
 msgid "{0, plural, one {This group contains # category. Please move or delete them first.} other {This group contains # categories. Please move or delete them first.}}"
 msgstr "{0, plural, one {Deze groep bevat # categorie. Verplaats of verwijder deze eerst.} other {Deze groep bevat # categorieën. Verplaats of verwijder deze eerst.}}"
 
+#. placeholder {0}: newAccounts.length
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "{0, plural, one {This import creates # new account. If the \"{column}\" column is not the account the transactions are in, set Account to None in Column Mapping.} other {This import creates # new accounts. If the \"{column}\" column is not the account the transactions are in, set Account to None in Column Mapping.}}"
+msgstr "{0, plural, one {Deze import maakt # nieuwe rekening aan. Als de kolom \"{column}\" niet de rekening van de transacties is, zet Rekening op Geen bij Kolomtoewijzing.} other {Deze import maakt # nieuwe rekeningen aan. Als de kolom \"{column}\" niet de rekening van de transacties is, zet Rekening op Geen bij Kolomtoewijzing.}}"
+
 #. placeholder {0}: importResult.summary.accountBalancesVerified
 #. placeholder {0}: result.summary.accountBalancesVerified
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
@@ -500,7 +513,7 @@ msgstr "{0} · Overige uitgeklapt"
 msgid "{0} (header)"
 msgstr "{0}(koptekst)"
 
-#. placeholder {0}: newNameOf(parsedData.rows[index])
+#. placeholder {0}: destination.newAccountName
 #: src/features/import/lib/plan-file-import.ts
 msgid "{0} (new)"
 msgstr "{0} (nieuw)"
@@ -1268,6 +1281,10 @@ msgstr "{monthsRemaining} maanden resterend"
 msgid "{moved, plural, one {{revalued, plural, one {# rate shifted, # account revalued.} other {# rate shifted, # accounts revalued.}}} other {{revalued, plural, one {# rates shifted, # account revalued.} other {# rates shifted, # accounts revalued.}}}}"
 msgstr "{moved, plural, one {{revalued, plural, one {# koers gewijzigd, # rekening geherwaardeerd.} other {# koers gewijzigd, # rekeningen geherwaardeerd.}}} other {{revalued, plural, one {# koersen gewijzigd, # rekening geherwaardeerd.} other {# koersen gewijzigd, # rekeningen geherwaardeerd.}}}}"
 
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "{name} ({currency}, archived)"
+msgstr "{name} ({currency}, gearchiveerd)"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "{name} < {first}"
 msgstr "{name} < {first}"
@@ -1478,6 +1495,10 @@ msgstr "{uncategorizedCount, plural, one {# niet-gecategoriseerde transactie} ot
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
 msgid "{uncategorizedCount} uncategorized"
 msgstr "{uncategorizedCount} ongecategoriseerd"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "{unlisted, plural, one {# more account is not listed. It goes to the account with the same name, or to a new one.} other {# more accounts are not listed. Each goes to the account with the same name, or to a new one.}}"
+msgstr "{unlisted, plural, one {# rekening staat niet in de lijst. Die gaat naar de rekening met dezelfde naam, of naar een nieuwe.} other {# rekeningen staan niet in de lijst. Elk gaat naar de rekening met dezelfde naam, of naar een nieuwe.}}"
 
 #: src/pages/accounts/AccountPage.tsx
 msgid "{unsafeTransactionCount, plural, one {# transaction contains an amount outside Budgero's exact money range. Correct the exchange rate in the highlighted row; the converted amount and account balance will then be recalculated.} other {# transactions contain an amount outside Budgero's exact money range. Correct the exchange rate in the highlighted row; the converted amount and account balance will then be recalculated.}}"
@@ -3205,8 +3226,8 @@ msgid "Account for {source}"
 msgstr "Rekening voor {source}"
 
 #: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
-msgid "Account name"
-msgstr "Rekeningnaam"
+#~ msgid "Account name"
+#~ msgstr "Rekeningnaam"
 
 #: src/features/account-management/ui/AddAccountDialog.tsx
 #: src/features/account-management/ui/EditAccountDialog.tsx
@@ -4034,6 +4055,14 @@ msgstr "Bedrag om de maand mee te beginnen"
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "Amount:"
 msgstr "Bedrag:"
+
+#: src/features/import/lib/plan-file-import.ts
+msgid "An account named \"{newName}\" already exists. In Configuration, choose it for \"{accountName}\" or give the new account another name."
+msgstr "Er bestaat al een rekening met de naam \"{newName}\". Kies die in Configuratie voor \"{accountName}\" of geef de nieuwe rekening een andere naam."
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "An account with this name already exists. Choose it from the list, or use another name."
+msgstr "Er bestaat al een rekening met deze naam. Kies die uit de lijst of gebruik een andere naam."
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "An error occurred while deleting the rate."
@@ -10158,6 +10187,10 @@ msgstr "Doel: begin elke maand met dit bedrag beschikbaar"
 msgid "Goals"
 msgstr "Doelen"
 
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Goes into the same new account as “{sharedWith}”."
+msgstr "Gaat naar dezelfde nieuwe rekening als \"{sharedWith}\"."
+
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "GOOD"
 msgstr "GOED"
@@ -10591,7 +10624,7 @@ msgstr "Importeren en koppelen"
 
 #: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "Import Account"
-msgstr "Rekening importeren"
+msgstr "Importrekening"
 
 #: src/features/import/lib/plan-file-import.ts
 msgid "Import Account (new)"
@@ -12968,9 +13001,12 @@ msgid "New"
 msgstr "Nieuw"
 
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
-#: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "New account"
 msgstr "Nieuwe rekening"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "New account in {newCurrency}"
+msgstr "Nieuwe rekening in {newCurrency}"
 
 #: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
 msgid "New account name for {source}"
@@ -13897,6 +13933,10 @@ msgstr "Niet leeg"
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Not filtered"
 msgstr "Niet gefilterd"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Not imported: its account is set to “Don’t import”."
+msgstr "Niet geïmporteerd: de rekening staat op \"Niet importeren\"."
 
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Not in Clerk"
@@ -15035,9 +15075,17 @@ msgstr "Kies een periode met wat geschiedenis om vanuit te projecteren."
 msgid "Pick a way to start"
 msgstr "Kies hoe je begint"
 
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Pick an account"
+msgstr "Kies een rekening"
+
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "Pick range"
 msgstr "Kies bereik"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Pick the account these transactions go into."
+msgstr "Kies de rekening waar deze transacties in komen."
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
@@ -20658,6 +20706,10 @@ msgstr "Overboeking succesvol aangemaakt."
 #~ msgid "Transfer from {fromAccountName} to {toAccountName}{0}"
 #~ msgstr "Overboeking van {fromAccountName} naar {toAccountName}{0}"
 
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Transfer from {name}"
+msgstr "Overboeking van {name}"
+
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "Transfer rate"
 msgstr "Overboekingskoers"
@@ -20672,6 +20724,10 @@ msgstr "Overboekingskoers bijgewerkt"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Transfer to {0}"
 msgstr "Overboeking naar {0}"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Transfer to {name}"
+msgstr "Overboeking naar {name}"
 
 #. placeholder {0}: account.Name
 #. placeholder {0}: accountById(String(line.transferAccountId))?.Name ?? ''
@@ -22138,6 +22194,10 @@ msgstr "Breedte -"
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Width +"
 msgstr "Breedte +"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "with row {partnerRow}"
+msgstr "met rij {partnerRow}"
 
 #: src/features/demo-budget/ui/DemoBudgetBanner.tsx
 msgid "with sample data. Click around, then make it yours."

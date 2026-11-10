@@ -55,8 +55,9 @@ describe('file preview identity and destinations', () => {
     expect(rows[0].input.valid).toBe(false);
     expect(rows[549].input.index).toBe(549);
   });
-  it('requires an explicit fallback for an unmatched account name', async () => {
+  it('requires an explicit fallback for rows that name no account', async () => {
     const input = options();
+    input.parsedData.rows[0] = { ...input.parsedData.rows[0], Payee: '' };
     input.columnMapping = {
       ...input.columnMapping,
       account: 'Payee',
@@ -65,6 +66,17 @@ describe('file preview identity and destinations', () => {
     await expect(buildFileImportPreview(input)).rejects.toThrow('Choose a destination account');
     input.importConfig.defaultAccountId = -1;
     expect((await buildFileImportPreview(input))[0].parsed.account).toBe('Import Account (new)');
+  });
+  it('sends a single unmatched account name to the account chosen in the dialog', async () => {
+    const input = options();
+    input.columnMapping = {
+      ...input.columnMapping,
+      account: 'Payee',
+    } as typeof input.columnMapping;
+    const [row] = await buildFileImportPreview(input);
+    expect(row.input.accountId).toBe(1);
+    input.importConfig.defaultAccountId = null as unknown as number;
+    await expect(buildFileImportPreview(input)).rejects.toThrow('Choose a destination account');
   });
   it('reconsiders changed mappings and destination interpretation', async () => {
     const input = options();
@@ -202,5 +214,51 @@ describe('accounts in the file', () => {
     input.importConfig.accountRoutes!['OLD-01'] = { kind: 'new', name: 'Old' };
     const rows = await buildFileImportPreview(input);
     expect(new Set([rows[1].input.accountId, rows[2].input.accountId]).size).toBe(2);
+  });
+
+  it('marks rows of a skipped account as skipped by the user, not invalid', async () => {
+    const rows = await buildFileImportPreview(multi());
+    expect(rows[2].accountSkipped).toBe(true);
+    expect(rows[0].accountSkipped).toBeUndefined();
+  });
+
+  it('puts sources given the same new name into one new account', async () => {
+    const input = multi();
+    input.importConfig.accountRoutes!['OLD-01'] = { kind: 'new', name: ' visa  CARD ' };
+    const rows = await buildFileImportPreview(input);
+    expect(rows[2].input.accountId).toBe(rows[1].input.accountId);
+  });
+
+  it('refuses a new account whose name is already taken', async () => {
+    const input = multi();
+    input.importConfig.accountRoutes!['VISA-99'] = { kind: 'new', name: 'checking' };
+    await expect(buildFileImportPreview(input)).rejects.toThrow('already exists');
+  });
+
+  it('creates new accounts in the file currency, else the budget currency', async () => {
+    const input = multi();
+    input.parsedData.rows[1] = {
+      ...input.parsedData.rows[1],
+      Currency: 'EUR',
+    } as (typeof input.parsedData.rows)[number];
+    input.importConfig.accountRoutes!['OLD-01'] = { kind: 'new', name: 'Old' };
+    const rows = await buildFileImportPreview({ ...input, newCurrency: 'GBP' });
+    expect(rows[1].input.currency).toBe('EUR');
+    expect(rows[2].input.currency).toBe('GBP');
+  });
+
+  it('ignores a remembered route to an archived account', async () => {
+    const input = multi();
+    input.importConfig.accountRoutes = {};
+    input.accounts = [
+      { ID: 1, Name: 'Checking', Currency: 'USD' },
+      { ID: 2, Name: 'Card', Currency: 'USD', Archived: true } as (typeof input.accounts)[number],
+    ];
+    const rows = await buildFileImportPreview({
+      ...input,
+      rememberedRoutes: { '12345678': 1, 'VISA-99': 2 },
+    });
+    expect(rows[0].input.accountId).toBe(1);
+    expect(rows[1].input.accountId).toBeLessThanOrEqual(-100);
   });
 });

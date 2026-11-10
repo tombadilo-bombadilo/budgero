@@ -1,3 +1,5 @@
+import { AccountTypeEnum } from '../accounts/types.js';
+
 /**
  * QIF parser.
  *
@@ -32,6 +34,15 @@ export interface ParsedQifTransaction {
 }
 
 export type QifSectionKind = 'bank' | 'ccard' | 'cash' | 'asset' | 'liability';
+
+/** The Budgero account type for a QIF section (`!Type:Bank`, `!Type:CCard`, ...). */
+export const QIF_ACCOUNT_TYPES: Record<QifSectionKind, AccountTypeEnum> = {
+  bank: AccountTypeEnum.CHECKING,
+  ccard: AccountTypeEnum.CREDIT,
+  cash: AccountTypeEnum.CASH,
+  asset: AccountTypeEnum.OTHER_ASSET,
+  liability: AccountTypeEnum.LOAN,
+};
 
 export interface ParsedQifSection {
   kind: QifSectionKind;
@@ -72,9 +83,11 @@ export function parseQif(text: string): ParsedQif {
   let buffer: string[] = [];
   // Quicken exports several accounts as `!Account` (N name, T type, ^) followed
   // by that account's `!Type:` section. Between !Option:AutoSwitch and
-  // !Clear:AutoSwitch the same blocks are only a list of accounts.
+  // !Clear:AutoSwitch the same blocks are only a list of accounts, so a name
+  // only applies to the `!Type:` header that directly follows its block (some
+  // exporters never write !Clear:AutoSwitch).
   let inAccountBlock = false;
-  let inAccountList = false;
+  let pendingAccount: string | undefined;
   let currentAccount: string | undefined;
 
   const flushSection = () => {
@@ -94,7 +107,7 @@ export function parseQif(text: string): ParsedQif {
         .find((l) => l.startsWith('N'))
         ?.slice(1)
         .trim();
-      if (name && !inAccountList) currentAccount = name;
+      if (name) pendingAccount = name;
       buffer = [];
       return;
     }
@@ -121,10 +134,11 @@ export function parseQif(text: string): ParsedQif {
 
       const header = line.slice(1).trim();
       const lower = header.toLowerCase();
-      if (lower === 'option:autoswitch') inAccountList = true;
-      if (lower === 'clear:autoswitch') inAccountList = false;
+      const wasAccountBlock = inAccountBlock;
       inAccountBlock = lower === 'account';
       const match = header.match(/^[Tt]ype\s*:\s*(.+)$/);
+      if (match && wasAccountBlock && pendingAccount) currentAccount = pendingAccount;
+      if (!inAccountBlock) pendingAccount = undefined;
       const kind = match ? SUPPORTED_SECTIONS[match[1].trim().toLowerCase()] : undefined;
       currentKind = kind ?? null;
       continue;
@@ -339,7 +353,9 @@ export function qifToImportRows(parsed: ParsedQif): QifImportRows {
   for (const section of parsed.sections) {
     for (const t of section.transactions) {
       rows.push({
-        ...(named ? { Account: section.account ?? '' } : {}),
+        ...(named
+          ? { Account: section.account ?? '', AccountType: QIF_ACCOUNT_TYPES[section.kind] }
+          : {}),
         Date: t.date,
         Amount: t.amount,
         Payee: t.payee ?? '',
@@ -351,5 +367,5 @@ export function qifToImportRows(parsed: ParsedQif): QifImportRows {
       });
     }
   }
-  return { headers: named ? ['Account', ...QIF_HEADERS] : QIF_HEADERS, rows };
+  return { headers: named ? ['Account', 'AccountType', ...QIF_HEADERS] : QIF_HEADERS, rows };
 }

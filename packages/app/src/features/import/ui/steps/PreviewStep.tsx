@@ -151,6 +151,17 @@ export function PreviewStep({
                     {row.input.index + 1}
                     <br />
                     {row.parsed.account}
+                    {row.transfer && (
+                      <TransferNote
+                        name={row.transfer.counterpartName}
+                        outgoing={row.input.outflow > row.input.inflow}
+                        partnerRow={
+                          row.transfer.partnerIndex !== undefined
+                            ? row.transfer.partnerIndex + 1
+                            : undefined
+                        }
+                      />
+                    )}
                   </td>
                   <td className="p-2">
                     {row.input.date} ·{' '}
@@ -163,7 +174,11 @@ export function PreviewStep({
                   </td>
                   <td className="p-2">
                     <strong>{labels[row.duplicate.status]}</strong>
-                    <p>{translateImportText(row.duplicate.reason)}</p>
+                    <p>
+                      {row.accountSkipped
+                        ? t`Not imported: its account is set to “Don’t import”.`
+                        : translateImportText(row.duplicate.reason)}
+                    </p>
                     {row.duplicate.candidates.map((candidate) => (
                       <p key={candidate.id} className="mt-2">
                         <Trans>
@@ -276,5 +291,28 @@ export function PreviewStep({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/** The row is imported as a transfer with another account of this import. */
+function TransferNote({
+  name,
+  outgoing,
+  partnerRow,
+}: {
+  name: string;
+  outgoing: boolean;
+  partnerRow?: number;
+}) {
+  return (
+    <span className="block text-xs text-muted-foreground" data-testid="import-transfer">
+      {outgoing ? <Trans>Transfer to {name}</Trans> : <Trans>Transfer from {name}</Trans>}
+      {partnerRow !== undefined && (
+        <>
+          {' · '}
+          <Trans>with row {partnerRow}</Trans>
+        </>
+      )}
+    </span>
   );
 }

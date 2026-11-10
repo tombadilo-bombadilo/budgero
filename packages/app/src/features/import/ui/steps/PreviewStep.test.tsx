@@ -89,4 +89,23 @@ describe('import review', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Match 1 transaction' }));
     expect(decided.onStartImport).toHaveBeenCalledOnce();
   });
+  it('says why rows of a skipped account are not imported', () => {
+    const row = makeRow(0);
+    row.input.valid = false;
+    row.accountSkipped = true;
+    row.duplicate = { index: 0, status: 'invalid', candidates: [], reason: 'x' };
+    render(<PreviewStep {...props([row])} />);
+    expect(screen.getByText(/its account is set to “Don’t import”/)).toBeInTheDocument();
+  });
+  it('says which rows are imported as transfers', () => {
+    const paired = makeRow(0);
+    paired.transfer = { counterpartAccountId: 2, counterpartName: 'Savings', partnerIndex: 4 };
+    const incoming = makeRow(1);
+    incoming.input.inflow = 10000;
+    incoming.input.outflow = 0;
+    incoming.transfer = { counterpartAccountId: 3, counterpartName: 'Card' };
+    render(<PreviewStep {...props([paired, incoming])} />);
+    const notes = screen.getAllByTestId('import-transfer').map((n) => n.textContent);
+    expect(notes).toEqual(['Transfer to Savings · with row 5', 'Transfer from Card']);
+  });
 });

@@ -38,12 +38,16 @@ import {
   parseDelimitedText,
   createImportNameMaps,
   resolveImportCategoryId,
+  defaultOnBudgetForType,
+  AccountTypeEnum,
+  type DuplicateInput,
 } from '@budgero/core/browser';
 import {
-  isNewAccountPlaceholder,
-  placeholderIdFor,
+  IMPORT_ACCOUNT_PLACEHOLDER,
+  isPlaceholderAccountId,
+  planAccountRoutes,
+  readRememberedRoutes,
   rememberRoutes,
-  sourceAccountsOf,
 } from '@features/import/lib/account-routes';
 import { buildFileImportPreview, importTolerance } from '@features/import/lib/plan-file-import';
 import { trackImportedCsvPdf } from '@shared/lib/analytics/analytics';
@@ -75,6 +79,8 @@ export const STEPS: ImportStep[] = ['upload', 'configure', 'preview', 'import', 
 export interface ImportDialogState {
   /** The budget the file is imported into (0 when none is selected). */
   budgetId: number;
+  /** Currency of accounts the import creates when the file states none. */
+  newAccountCurrency: string;
   currentStep: ImportStep;
   setCurrentStep: (step: ImportStep) => void;
 
@@ -110,7 +116,7 @@ export interface ImportDialogState {
 
   fileInputRef: React.RefObject<HTMLInputElement | null>;
 
-  accounts: { ID: number; Name: string; Currency: string }[] | undefined;
+  accounts: { ID: number; Name: string; Currency: string; Archived?: boolean }[] | undefined;
   hasBudgetSelected: boolean;
 
   handleFileChange: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;
@@ -186,6 +192,12 @@ export function useImportDialogState(): ImportDialogState {
     useUiStore();
   const { data: budgets } = useBudgets();
   const { data: accounts } = useAccounts(selectedBudget?.ID || 0);
+  // OFX/CAMT state their currency (parse-import-file puts it in accountCurrency);
+  // otherwise accountCurrency is only the 'USD' default, so new accounts take
+  // the budget's currency.
+  const statesCurrency = parsedData?.source.type === 'ofx' || parsedData?.source.type === 'camt';
+  const newAccountCurrency =
+    (!statesCurrency && selectedBudget?.DisplayCurrency) || importConfig.accountCurrency;
   const { data: categories } = useCategories(selectedBudget?.ID || 0);
   const { data: categoryGroups } = useCategoryGroups(selectedBudget?.ID || 0);
   const addCategoryGroupMutation = useAddCategoryGroup();
@@ -256,9 +268,8 @@ export function useImportDialogState(): ImportDialogState {
       try {
         const result = await parseImportFile(selectedFile, importConfig.skipRows);
 
-        if (result.configPatch) {
-          setImportConfig((prev) => ({ ...prev, ...result.configPatch }));
-        }
+        // Account choices belong to the file they were made for.
+        setImportConfig((prev) => ({ ...prev, ...result.configPatch, accountRoutes: undefined }));
         if (result.pdfTable) {
           setRawTableData(result.pdfTable.rawTableData);
           setSelectedHeaderIndex(result.pdfTable.suggestedHeaderIndex);
@@ -396,12 +407,15 @@ export function useImportDialogState(): ImportDialogState {
       runKey: runKey.current,
       duplicates: runtime.services().importHistory.duplicates,
       tolerance: importTolerance(runtime.services()),
+      rememberedRoutes: readRememberedRoutes(selectedBudget.ID),
+      newCurrency: newAccountCurrency,
     });
   }, [
     parsedData,
     selectedBudget,
     columnMapping,
     importConfig,
+    newAccountCurrency,
     skippedRowIndices,
     selectedHeaderIndex,
     runtime,
@@ -483,7 +497,9 @@ export function useImportDialogState(): ImportDialogState {
         return;
       }
       const signature = (rows: PreviewRow[]) =>
-        JSON.stringify(rows.map((r) => [r.input.fileRowKey, r.input.accountId, r.duplicate]));
+        JSON.stringify(
+          rows.map((r) => [r.input.fileRowKey, r.input.accountId, r.duplicate, r.transfer])
+        );
       if (signature(fresh) !== signature(previewData)) {
         setPreviewData(fresh);
         setCurrentStep('preview');
@@ -510,6 +526,16 @@ export function useImportDialogState(): ImportDialogState {
     const selectedRows = fresh.filter(
       (r) => r.input.valid && r.decision !== 'skip' && r.decision !== 'match'
     );
+    // A row becomes a transfer when it is imported and its other side is
+    // imported with it (a pair) or not in the file at all. A pair whose other
+    // side is skipped or matched stays a plain transaction.
+    const selectedIndices = new Set(selectedRows.map((r) => r.input.index));
+    const transferOf = (r: PreviewRow) =>
+      r.transfer &&
+      selectedIndices.has(r.input.index) &&
+      (r.transfer.partnerIndex === undefined || selectedIndices.has(r.transfer.partnerIndex))
+        ? r.transfer
+        : undefined;
     const matchCandidate = (r: PreviewRow) =>
       r.input.valid && r.decision === 'match' ? r.duplicate.candidates[0]?.id : undefined;
     const transactionsMatched = fresh.filter((r) => matchCandidate(r) !== undefined).length;
@@ -518,7 +544,12 @@ export function useImportDialogState(): ImportDialogState {
     const applyMatch = async (r: PreviewRow, accountId: number, transactionId: number) => {
       await executeSpaceMutation(runtime, {
         op: 'importHistory.match',
-        payload: { budgetId: r.input.budgetId, accountId, transactionId, identity: r.input },
+        payload: {
+          budgetId: r.input.budgetId,
+          accountId,
+          transactionId,
+          identity: { ...r.input, accountId },
+        },
       });
       await executeSpaceMutation(runtime, {
         op: 'transactions.setCleared',
@@ -528,12 +559,17 @@ export function useImportDialogState(): ImportDialogState {
     let duplicatesSkipped = fresh.filter(
       (r) => r.input.valid && r.decision === 'skip' && r.duplicate.status !== 'new'
     ).length;
+    // Rows of an account set to "Don't import" were skipped by the user, not invalid.
+    const accountSkipped = fresh.filter(
+      (r) => r.accountSkipped && !skippedRowIndices.has(r.input.index)
+    ).length;
     const userSkipped =
       skippedRowIndices.size +
+      accountSkipped +
       fresh.filter((r) => r.input.valid && r.decision === 'skip' && r.duplicate.status === 'new')
         .length;
     const invalidRows = fresh.filter(
-      (r) => !r.input.valid && !skippedRowIndices.has(r.input.index)
+      (r) => !r.input.valid && !r.accountSkipped && !skippedRowIndices.has(r.input.index)
     ).length;
     const importRun = startImportRun(parsedData.source.type, 'app');
     if (!selectedRows.length) {
@@ -685,54 +721,71 @@ export function useImportDialogState(): ImportDialogState {
       });
 
       // Rows headed for a new account carry a placeholder id: -1 for the one
-      // "Import Account", or one per source account the user chose to create.
-      // Create each once, then send its rows there.
-      const sources = sourceAccountsOf(parsedData.rows, columnMapping.account);
-      const createdFor = new Map<number, number>();
+      // "Import Account", or one per new account chosen in "Accounts in this
+      // file" (planAccountRoutes, the same plan the preview used). Create each
+      // once, then send its rows there. Placeholder ids never reach a mutation.
+      const routePlan = planAccountRoutes({
+        rows: parsedData.rows,
+        column: columnMapping.account,
+        accounts: runtime.services().accounts.listAccounts(budgetId),
+        remembered: readRememberedRoutes(budgetId),
+        chosen: importConfig.accountRoutes,
+        newAccountCurrency,
+        fallbackAccountId: importConfig.defaultAccountId,
+      });
+      const createdFor = new Map<number, { ID: number; Name: string }>();
       const pendingIds = [
         ...new Set(
           selectedRows
-            .map((row) => row.input.accountId)
-            .filter((id) => id === -1 || isNewAccountPlaceholder(id))
+            .flatMap((row) => [row.input.accountId, transferOf(row)?.counterpartAccountId ?? 0])
+            .filter((id) => isPlaceholderAccountId(id))
         ),
       ];
       for (const placeholder of pendingIds) {
-        const source = sources.find((s) => placeholderIdFor(s.source, sources) === placeholder);
-        const route = source ? importConfig.accountRoutes?.[source.source] : undefined;
-        const name =
-          route?.kind === 'new' ? route.name.trim() || source!.source : t`Import Account`;
+        const planned = routePlan.newAccounts.find((a) => a.placeholderId === placeholder);
+        if (!planned && placeholder !== IMPORT_ACCOUNT_PLACEHOLDER)
+          throw new Error(
+            t`Transactions or destinations changed. Please review the updated matches.`
+          );
+        const name = planned?.name ?? t`Import Account`;
+        const type = planned?.type ?? AccountTypeEnum.CHECKING;
         const created = await addAccountMutation.mutateAsync({
           name,
           budget_id: budgetId,
-          type: 'Checking',
+          type,
           currency:
             selectedRows.find((row) => row.input.accountId === placeholder)?.input.currency ??
-            importConfig.accountCurrency,
+            planned?.currency ??
+            newAccountCurrency,
           balance: 0,
-          on_budget: true,
+          on_budget: defaultOnBudgetForType(type),
         });
-        createdFor.set(placeholder, created.ID);
+        createdFor.set(placeholder, { ID: created.ID, Name: created.Name || name });
         createdAccountIds.push(created.ID);
       }
-      const realAccountId = (id: number) => createdFor.get(id) ?? id;
+      const realAccountId = (id: number) => createdFor.get(id)?.ID ?? id;
+      const withRealAccount = <T extends { accountId: number }>(identity: T): T => ({
+        ...identity,
+        accountId: realAccountId(identity.accountId),
+      });
       const destinationIds = [
         ...new Set(selectedRows.map((row) => realAccountId(row.input.accountId))),
       ];
       const nameOf = (id: number) =>
         accounts?.find((account) => account.ID === id)?.Name ??
-        (createdFor.size > 0 ? t`New account` : t`Existing account`);
+        [...createdFor.values()].find((account) => account.ID === id)?.Name ??
+        t`Existing account`;
       destinationAccountName =
         destinationIds.length === 1
           ? nameOf(destinationIds[0])
           : t`${destinationIds.length} accounts`;
       // Next import of a file with these accounts starts from the same choices.
       const chosen: Record<string, number> = {};
-      for (const source of sources) {
-        const route = importConfig.accountRoutes?.[source.source];
-        if (route?.kind === 'existing') chosen[source.source] = route.accountId;
-        if (route?.kind === 'new') {
-          const id = createdFor.get(placeholderIdFor(source.source, sources));
-          if (id) chosen[source.source] = id;
+      for (const [source, target] of routePlan.targets) {
+        if (target.kind === 'existing') chosen[source] = target.accountId;
+        if (target.kind === 'new') {
+          const created = createdFor.get(target.placeholderId);
+          if (created) chosen[source] = created.ID;
         }
       }
       rememberRoutes(budgetId, chosen);
@@ -802,9 +855,16 @@ export function useImportDialogState(): ImportDialogState {
       const resolvedIncomeId = incomeId ?? 0;
       const resolvedUncategorizedId = uncategorizedId ?? 0;
 
+      const rowByIndex = new Map(fresh.map((r) => [r.input.index, r]));
+      // Rows created together with their pair's first side.
+      const transferDone = new Set<number>();
       for (const reviewed of inDateOrder(fresh)) {
         const plan = reviewed.input;
         const row = reviewed.original;
+        if (transferDone.has(plan.index)) {
+          processedCount++;
+          continue;
+        }
         try {
           setProgress({
             step: 'Importing transactions...',
@@ -841,12 +901,73 @@ export function useImportDialogState(): ImportDialogState {
                   budgetId,
                   accountId: realAccountId(plan.accountId),
                   transactionId: candidate,
-                  identity: plan,
+                  identity: withRealAccount(plan),
                 },
               });
             }
             if (candidate !== undefined) matchedIds.set(plan.index, candidate);
             processedCount++;
+            continue;
+          }
+
+          const transfer = transferOf(reviewed);
+          if (transfer) {
+            const partner =
+              transfer.partnerIndex !== undefined
+                ? rowByIndex.get(transfer.partnerIndex)
+                : undefined;
+            if (partner) transferDone.add(partner.input.index);
+            const leg = (input: DuplicateInput) => ({
+              inflow: input.inflow,
+              outflow: input.outflow,
+              accountId: realAccountId(input.accountId),
+              categoryId: 0,
+              date: input.date,
+              memo: input.memo.substring(0, 255),
+              payee: input.payee,
+              importIdentities: [withRealAccount(input)],
+              cleared: true,
+            });
+            const own = leg(plan);
+            // Only this side is in the file: the other account gets the mirror leg.
+            const other = partner
+              ? leg(partner.input)
+              : {
+                  inflow: plan.outflow,
+                  outflow: plan.inflow,
+                  accountId: realAccountId(transfer.counterpartAccountId),
+                  categoryId: 0,
+                  date: plan.date,
+                  memo: plan.memo.substring(0, 255),
+                  payee: plan.payee,
+                };
+            const outgoing = plan.outflow > plan.inflow;
+            const { sourceId, destinationId } = await executeSpaceMutation<{
+              sourceId: number;
+              destinationId: number;
+            }>(runtime, {
+              op: 'transactions.addTransfer',
+              payload: {
+                budgetId,
+                transferId: `import_${runKey.current}_${plan.index}`,
+                source: outgoing ? own : other,
+                destination: outgoing ? other : own,
+              },
+              meta: { label: t`Import transaction`, skipInvalidate: true },
+            });
+            const [ownId, otherId] = outgoing
+              ? [sourceId, destinationId]
+              : [destinationId, sourceId];
+            matchedIds.set(plan.index, ownId);
+            importedTransactionIds.push(ownId);
+            successCount++;
+            if (partner) {
+              matchedIds.set(partner.input.index, otherId);
+              importedTransactionIds.push(otherId);
+              successCount++;
+            }
+            processedCount++;
+            await checkpointIfDue();
             continue;
           }
 
@@ -877,7 +998,7 @@ export function useImportDialogState(): ImportDialogState {
               memo: plan.memo.substring(0, 255),
               payee: plan.payee,
               transferId: '',
-              importIdentities: [plan],
+              importIdentities: [withRealAccount(plan)],
             },
             meta: { label: t`Import transaction`, skipInvalidate: true },
           });
@@ -888,10 +1009,11 @@ export function useImportDialogState(): ImportDialogState {
         } catch (rowError) {
           if (reviewed.decision === 'skip' && reviewed.duplicate.status !== 'new')
             duplicatesSkipped--;
-          failures.push({
-            index: plan.index,
-            message: getErrorMessage(rowError, t`Failed to import row`),
-          });
+          const message = getErrorMessage(rowError, t`Failed to import row`);
+          failures.push({ index: plan.index, message });
+          // Its pair's other side was to be created with it: it failed too.
+          const partnerIndex = transferOf(reviewed)?.partnerIndex;
+          if (partnerIndex !== undefined) failures.push({ index: partnerIndex, message });
         }
 
         processedCount++;
@@ -985,6 +1107,7 @@ export function useImportDialogState(): ImportDialogState {
     addCategoryGroupMutation,
     addCategoryMutation,
     addAccountMutation,
+    newAccountCurrency,
     buildPreview,
     previewData,
     resolveCategoryId,
@@ -996,6 +1119,7 @@ export function useImportDialogState(): ImportDialogState {
 
   return {
     budgetId: selectedBudget?.ID ?? 0,
+    newAccountCurrency,
     currentStep,
     setCurrentStep,
 
