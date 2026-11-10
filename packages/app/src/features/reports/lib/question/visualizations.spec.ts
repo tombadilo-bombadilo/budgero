@@ -17,7 +17,11 @@ const spending = [{ op: 'spending' as const }];
 
 describe('allowedVisualizations', () => {
   it('offers trend only with a date grouping or a date range filter', () => {
-    expect(allowedVisualizations(q({ aggregations: spending }))).toEqual(['number', 'table']);
+    expect(allowedVisualizations(q({ aggregations: spending }))).toEqual([
+      'number',
+      'progress',
+      'table',
+    ]);
     expect(
       allowedVisualizations(
         q({
@@ -25,21 +29,33 @@ describe('allowedVisualizations', () => {
           filters: [{ field: 'date', op: 'previous', amount: 3, unit: 'month', values: [] }],
         })
       )
-    ).toEqual(['number', 'trend', 'table']);
+    ).toEqual(['number', 'trend', 'progress', 'table']);
     expect(
       allowedVisualizations(q({ aggregations: spending, breakouts: [{ field: 'date' }] }))
-    ).toEqual(['trend', 'bar', 'line', 'area', 'pie', 'waterfall', 'table']);
+    ).toEqual(['trend', 'bar', 'line', 'area', 'pie', 'treemap', 'waterfall', 'table']);
   });
 
   it('category groupings get row and waterfall; two metrics add combo and scatter', () => {
     expect(
       allowedVisualizations(q({ aggregations: spending, breakouts: [{ field: 'category' }] }))
-    ).toEqual(['bar', 'row', 'line', 'area', 'pie', 'waterfall', 'table']);
+    ).toEqual(['bar', 'row', 'line', 'area', 'pie', 'treemap', 'waterfall', 'radar', 'table']);
     expect(
       allowedVisualizations(
         q({ aggregations: [{ op: 'spending' }, { op: 'count' }], breakouts: [{ field: 'payee' }] })
       )
-    ).toEqual(['bar', 'row', 'line', 'area', 'combo', 'pie', 'waterfall', 'scatter', 'table']);
+    ).toEqual([
+      'bar',
+      'row',
+      'line',
+      'area',
+      'combo',
+      'pie',
+      'treemap',
+      'waterfall',
+      'scatter',
+      'radar',
+      'table',
+    ]);
   });
 
   it('calendar needs a day grouping; sankey two non-date groupings; pivot two groupings', () => {
@@ -57,7 +73,9 @@ describe('allowedVisualizations', () => {
       'row',
       'line',
       'area',
+      'treemap',
       'sankey',
+      'radar',
       'pivot',
       'table',
     ]);

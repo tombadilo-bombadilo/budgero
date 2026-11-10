@@ -624,6 +624,10 @@ export const CHART_TYPE: Record<ResolvedVisualization, ChartConfiguration['chart
   sankey: 'table',
   scatter: 'scatter',
   row: 'bar',
+  // Stored for dashboards and apps that don't know the newer types (v1.20 draws these).
+  treemap: 'pie',
+  radar: 'bar',
+  progress: 'stat',
 };
 
 /** Chart config stored with the saved question (dashboards key widgets by its id). */
@@ -640,7 +644,10 @@ function buildChartConfig(
     id: options.chartId ?? randomId(),
     chartType: CHART_TYPE[visualization],
     ...(options.chartTitle ? { title: options.chartTitle } : {}),
-    xAxisColumn: visualization === 'number' ? metric : (breakouts[0]?.key ?? first),
+    xAxisColumn:
+      visualization === 'number' || visualization === 'progress'
+        ? metric
+        : (breakouts[0]?.key ?? first),
     yAxisColumn: metric,
     ...(breakouts[1] ? { groupByColumn: breakouts[1].key } : {}),
     aggregateFunction: 'SUM',

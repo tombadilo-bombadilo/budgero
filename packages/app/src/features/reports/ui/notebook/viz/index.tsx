@@ -8,6 +8,9 @@ import { RowChartView } from './RowChartView';
 import { SankeyView } from './SankeyView';
 import { ScatterView } from './ScatterView';
 import { TrendNumberView } from './TrendNumberView';
+import { TreemapView } from './TreemapView';
+import { RadarView } from './RadarView';
+import { ProgressView } from './ProgressView';
 import { WaterfallView } from './WaterfallView';
 import type { VizViewProps } from './types';
 
@@ -60,6 +63,12 @@ export function renderExtraVisualization(
       return <ScatterView {...withoutDrill(props)} />;
     case 'row':
       return <RowChartView {...props} />;
+    case 'treemap':
+      return <TreemapView {...props} />;
+    case 'radar':
+      return <RadarView {...withoutDrill(props)} />;
+    case 'progress':
+      return <ProgressView {...withoutDrill(props)} />;
     default:
       return null;
   }

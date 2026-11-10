@@ -6,10 +6,13 @@ import {
   ChartNoAxesCombined,
   ChartScatter,
   ChartColumnIncreasing,
+  Gauge,
   Grid3x3,
+  LayoutDashboard,
   Hash,
   LineChart,
   PieChart,
+  Radar,
   Table2,
   TrendingUp,
   Waypoints,
@@ -39,6 +42,9 @@ export const VIZ_ICONS: Record<ResolvedVisualization, LucideIcon> = {
   scatter: ChartScatter,
   pivot: Grid3x3,
   table: Table2,
+  treemap: LayoutDashboard,
+  radar: Radar,
+  progress: Gauge,
 };
 
 /** Visualizations drawn with ECharts (PNG export). */
@@ -53,6 +59,8 @@ export const CANVAS_VISUALIZATIONS = new Set<ResolvedVisualization>([
   'calendar',
   'sankey',
   'scatter',
+  'treemap',
+  'radar',
 ]);
 
 export interface DisplayOptions {
@@ -71,13 +79,17 @@ export function displayOptionsFor(
   const bars = visualization === 'bar' || visualization === 'row';
   return {
     showValues: ['bar', 'row', 'line', 'area', 'combo', 'waterfall'].includes(visualization),
-    goal: ['bar', 'row', 'line', 'area', 'combo', 'waterfall', 'trend'].includes(visualization),
+    goal: ['bar', 'row', 'line', 'area', 'combo', 'waterfall', 'trend', 'progress'].includes(
+      visualization
+    ),
     sort: bars && categoryAxis,
     topN:
       (bars && categoryAxis) ||
       visualization === 'pie' ||
       visualization === 'waterfall' ||
-      visualization === 'sankey',
+      visualization === 'sankey' ||
+      visualization === 'treemap' ||
+      visualization === 'radar',
     dualAxis: visualization === 'combo',
   };
 }

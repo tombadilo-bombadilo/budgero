@@ -4,6 +4,7 @@ import {
   BarChart,
   LineChart,
   PieChart,
+  RadarChart,
   ScatterChart,
   TreemapChart,
   SankeyChart,
@@ -12,6 +13,7 @@ import {
 } from 'echarts/charts';
 import {
   GridComponent,
+  RadarComponent,
   TooltipComponent,
   MarkLineComponent,
   MarkPointComponent,
@@ -27,12 +29,14 @@ echarts.use([
   BarChart,
   LineChart,
   PieChart,
+  RadarChart,
   ScatterChart,
   TreemapChart,
   SankeyChart,
   HeatmapChart,
   CustomChart,
   GridComponent,
+  RadarComponent,
   TooltipComponent,
   MarkLineComponent,
   MarkPointComponent,
@@ -47,6 +51,8 @@ export interface EChartClickParams {
   name?: string;
   dataIndex: number;
   value: unknown;
+  /** The clicked item's `id`, when its data item has one (treemap tiles). */
+  dataId?: string;
   /** Viewport position of the click (to place a menu), when known. */
   clientX?: number;
   clientY?: number;
@@ -87,6 +93,7 @@ export function EChart({ option, className, ariaLabel, onMarkClick }: EChartProp
         name,
         dataIndex,
         value,
+        dataId: (params as { data?: { id?: unknown } }).data?.id as string | undefined,
         clientX: native?.clientX,
         clientY: native?.clientY,
       });

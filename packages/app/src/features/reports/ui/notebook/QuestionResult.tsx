@@ -239,6 +239,7 @@ export function QuestionResult({
             {result.rows.length > 0 &&
               current !== 'number' &&
               current !== 'trend' &&
+              current !== 'progress' &&
               !(showTable && resultCompiled.spec.aggregations.length === 0) && (
                 <ResultSummaryLine
                   partial={spec.limit !== null || Boolean(spec.display?.topN)}

@@ -1397,6 +1397,10 @@ msgstr "ID {label} copié : {id}"
 #~ msgid "{label}: {count} selected"
 #~ msgstr "{label} : {count} sélectionnés"
 
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "{label}: {percentText} of the goal"
+msgstr "{label} : {percentText} de l’objectif"
+
 #: src/features/reports/ui/notebook/viz/ChartTypePicker.tsx
 #~ msgid "{label}: {reason}"
 #~ msgstr "{label} : {reason}"
@@ -1412,6 +1416,10 @@ msgstr "{label} : décroissant. Passer en croissant"
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "{laterChanges, plural, one {Discards the # change made after it, imports included.} other {Discards the # changes made after it, imports included.}}"
 msgstr "{laterChanges, plural, one {Supprime la # modification faite après, imports compris.} other {Supprime les # modifications faites après, imports compris.}}"
+
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "{leftText} to go"
+msgstr "encore {leftText}"
 
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "{matchedCount, plural, one {# transaction updated.} other {# transactions updated.}}"
@@ -1629,6 +1637,10 @@ msgstr "{name} : aujourd’hui"
 msgid "{name}: yes"
 msgstr "{name} : oui"
 
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
+msgid "{negativeCount, plural, one {# negative value has no tile.} other {# negative values have no tile.}}"
+msgstr "{negativeCount, plural, one {# valeur négative n’a pas de tuile.} other {# valeurs négatives n’ont pas de tuile.}}"
+
 #. placeholder {0}: parts.join(', ')
 #. placeholder {1}: parts.join(', ')
 #: src/features/budget-planning/ui/assign-dropdown/AssignQuickActions.tsx
@@ -1650,6 +1662,10 @@ msgstr "{option, plural, one {Inactif depuis # jour} other {Inactif depuis # jou
 #: src/features/bank-sync/lib/provider.ts
 msgid "{org} needs attention in SimpleFIN Bridge. Sign in there and fix the connection, then sync again."
 msgstr "{org} nécessite votre attention dans SimpleFIN Bridge. Connectez-vous-y, réparez la connexion, puis relancez la synchro."
+
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "{overText} over the goal"
+msgstr "{overText} au-dessus de l’objectif"
 
 #: src/pages/accounts/components/AccountGroupSection.tsx
 #: src/pages/accounts/components/NetWorthCard.tsx
@@ -1728,6 +1744,10 @@ msgstr "{selectedCount} sur {0} sélectionné(s) à appliquer"
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 msgid "{selectedCount} selected"
 msgstr "{selectedCount} sélectionné(s)"
+
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
+msgid "{shown} (drawn at 0)"
+msgstr "{shown} (tracé à 0)"
 
 #: src/pages/analytics/report-answers.ts
 msgid "{spent} went out and no income came in."
@@ -3389,6 +3409,10 @@ msgstr "Un aperçu rapide de cette installation de Budgero, incluant la version 
 msgid "A quick reminder of how Budgero applies your automation."
 msgstr "Un petit rappel de la façon dont Budgero applique votre automatisation."
 
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
+msgid "A radar needs at least 3 values to compare"
+msgstr "Un radar a besoin d’au moins 3 valeurs à comparer"
+
 #: src/entities/recurring/lib/error-message.ts
 msgid "A recurring transfer can't be split. Remove the split lines first."
 msgstr "Un virement récurrent ne peut pas être ventilé. Supprimez d'abord les lignes de ventilation."
@@ -4099,6 +4123,10 @@ msgstr "Tout"
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
 #~ msgid "All {0} series visible"
 #~ msgstr "Toutes les séries {0} visibles"
+
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
+msgid "All {parentName}"
+msgstr "Tout : {parentName}"
 
 #: src/pages/onboarding/steps/ShareStep.tsx
 #~ msgid "ALL 5 SEATS FILLED"
@@ -13454,6 +13482,10 @@ msgid "NEEDS"
 msgstr "BESOINS"
 
 #: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs a first grouping that isn’t a date, like Category."
+msgstr "Nécessite un premier regroupement qui n’est pas une date, comme Catégorie."
+
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Needs a grouping (Summarize by)."
 msgstr "Nécessite un regroupement (Résumer par)."
 
@@ -13484,6 +13516,10 @@ msgstr "Nécessite un regroupement par date, par jour."
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Needs one grouping by date, or no grouping and a date filter with a range."
 msgstr "Nécessite un regroupement par date, ou aucun regroupement et un filtre de date avec une période."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Needs one or two groupings, like Category group and Category."
+msgstr "Nécessite un ou deux regroupements, comme Groupe de catégories et Catégorie."
 
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Needs review"
@@ -14655,6 +14691,7 @@ msgstr "Rien à affecter pour l’instant. Quand de l’argent arrive (un solde 
 #: src/features/reports/ui/notebook/viz/RowChartView.tsx
 #: src/features/reports/ui/notebook/viz/SankeyView.tsx
 #: src/features/reports/ui/notebook/viz/ScatterView.tsx
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
 #: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 msgid "Nothing to chart for these rows."
 msgstr "Rien à représenter pour ces lignes."
@@ -14762,6 +14799,10 @@ msgstr "Occurrence ignorée"
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "of {0}"
 msgstr "sur {0}"
+
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "of {goalText}"
+msgstr "sur {goalText}"
 
 #: src/features/account-management/ui/AccountOrderCard.tsx
 #: src/features/payees/ui/PayeeCombobox.tsx
@@ -15182,6 +15223,7 @@ msgid "Other"
 msgstr "Autre"
 
 #: src/features/reports/ui/notebook/viz/SankeyView.tsx
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
 msgid "Other ({count})"
 msgstr "Autres ({count})"
 
@@ -15194,12 +15236,14 @@ msgstr "Autre ({foldedCount} de plus)"
 #~ msgstr "Autres ({foldedCount} de plus) — examiner"
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
 #: src/features/reports/ui/notebook/viz/RowChartView.tsx
 #: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 msgid "Other ({otherCount})"
 msgstr "Autres ({otherCount})"
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
 #: src/features/reports/ui/notebook/viz/RowChartView.tsx
 msgid "Other ({otherXCount})"
 msgstr "Autres ({otherXCount})"
@@ -16312,6 +16356,7 @@ msgid "Product Hunt"
 msgstr "Product Hunt"
 
 #: src/features/goal-management/ui/GoalCard.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Progress"
 msgstr "Progression"
 
@@ -16598,6 +16643,14 @@ msgstr "Préréglages rapides"
 #: src/pages/admin/sql-explorer/QueryCard.tsx
 msgid "Quick Queries"
 msgstr "Requêtes rapides"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Radar"
+msgstr "Radar"
+
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
+msgid "Radar chart"
+msgstr "Graphique radar"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Rate"
@@ -18859,6 +18912,14 @@ msgstr "Définir <0>Format des nombres</0> sur <1>123,456.78</1>"
 msgid "Set a custom exchange rate for a specific date range."
 msgstr "Définir un taux de change personnalisé pour une période spécifique."
 
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "Set a goal above zero in Settings to see progress."
+msgstr "Définissez un objectif supérieur à zéro dans les réglages pour voir la progression."
+
+#: src/features/reports/ui/notebook/viz/ProgressView.tsx
+msgid "Set a goal in Settings to see progress."
+msgstr "Définissez un objectif dans les réglages pour voir la progression."
+
 #. placeholder {0}: resetDialog.user?.email
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Set a new password for {0}. Share it securely with the user."
@@ -21057,6 +21118,10 @@ msgstr "Cette question n’a pas pu être exécutée"
 msgid "This question doesn’t exist"
 msgstr "Cette question n’existe pas"
 
+#: src/features/reports/ui/notebook/viz/RadarView.tsx
+msgid "This question has {axisCount}. Try a bar chart, or group by something with more values."
+msgstr "Cette question en a {axisCount}. Essayez un graphique en barres, ou regroupez par quelque chose qui a plus de valeurs."
+
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "This question has its own account filter, and none of its accounts are in the dashboard’s account filter, so nothing matches."
 msgstr "Cette question a son propre filtre de comptes, et aucun de ses comptes n’est dans le filtre de comptes du tableau de bord : rien ne correspond."
@@ -21766,6 +21831,8 @@ msgstr "Voyage et vacances"
 msgid "Treat the current amounts as {oldCurrency}. For example, 10 {oldCurrency} becomes the equivalent amount in {newCurrency}, while its budget value stays approximately the same."
 msgstr "Considérez les montants actuels comme étant en {oldCurrency}. Par exemple, 10 {oldCurrency} deviennent le montant équivalent en {newCurrency}, tandis que leur valeur dans le budget reste approximativement la même."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+#: src/features/reports/ui/notebook/viz/TreemapView.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Treemap"
 msgstr "Treemap"
@@ -22235,6 +22302,10 @@ msgstr "Fichier non pris en charge"
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "until {runsOut} if income stopped"
 msgstr "jusqu'en {runsOut} si les revenus s'arrêtaient"
+
+#: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
+msgid "Up to {maxAxes}"
+msgstr "Jusqu’à {maxAxes}"
 
 #: src/pages/onboarding/onboarding-data.ts
 #~ msgid "Up to 5 seats · free"

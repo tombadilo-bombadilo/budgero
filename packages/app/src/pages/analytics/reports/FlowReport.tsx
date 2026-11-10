@@ -5,6 +5,7 @@ import type { EChartsCoreOption } from 'echarts/core';
 import { Layers3, Tags } from 'lucide-react';
 import { trendTextClass } from '@shared/lib/amount-color';
 import { EChart } from '@shared/ui/echart';
+import { treemapSeriesBase } from '@shared/lib/charts/treemap';
 import {
   buildDimensionTotals,
   buildFlowGraph,
@@ -274,23 +275,9 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
         },
         series: [
           {
-            type: 'treemap',
-            roam: false,
-            nodeClick: false,
-            breadcrumb: { show: false },
-            top: 8,
-            right: 8,
-            bottom: 8,
-            left: 8,
-            itemStyle: {
-              borderColor: chrome.surface,
-              borderWidth: 2,
-              gapWidth: 2,
-            },
+            ...treemapSeriesBase(chrome),
             label: {
-              show: true,
-              fontSize: 12,
-              overflow: 'truncate',
+              ...treemapSeriesBase(chrome).label,
               formatter: (params: { name: string }) => params.name,
             },
             data: drilldownRows.map((row) => ({
