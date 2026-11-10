@@ -30,6 +30,7 @@ import {
 } from '@features/budget-sharing/lib/workspaces/queries';
 import type { BudgetSpaceSummary } from '@shared/model/budget-spaces';
 import { spaceApi } from '@shared/api/api-client';
+import { getDemoSpaceId, setDemoSpaceId } from '@shared/lib/demo-space';
 import {
   getStoredDefaultSpaceId,
   setStoredDefaultSpaceId,
@@ -229,6 +230,7 @@ export default function WorkspaceSettingsPage() {
     try {
       setIsDeletingSpace(true);
       await spaceApi.deleteSpace(spaceId);
+      if (getDemoSpaceId() === spaceId) setDemoSpaceId(null);
 
       if (deletingDefault) {
         setDefaultSpaceId(null);

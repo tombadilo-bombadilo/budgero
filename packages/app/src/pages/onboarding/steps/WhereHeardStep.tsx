@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import React from 'react';
+import React, { useId } from 'react';
 import { HEARD_OPTIONS } from '../onboarding-data';
 import { INK, OnboardingOptionTile, Title, type StepProps } from './shared';
 
@@ -17,6 +17,7 @@ export const WhereHeardStep: React.FC<StepProps> = ({ cur, state, set }) => {
               key={opt.id}
               type="button"
               active={active}
+              aria-pressed={active}
               onClick={() => set({ heardSource: opt.id })}
               borderAlpha={0.45}
               style={{
@@ -78,13 +79,18 @@ export const WhereHeardStep: React.FC<StepProps> = ({ cur, state, set }) => {
  */
 export const WhereHeardPicker: React.FC<Pick<StepProps, 'state' | 'set'>> = ({ state, set }) => {
   const { t } = useLingui();
+  const labelId = useId();
 
   return (
     <div style={{ marginTop: 22 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: INK, marginBottom: 8 }}>
+      <div id={labelId} style={{ fontSize: 12, fontWeight: 700, color: INK, marginBottom: 8 }}>
         <Trans>Where did you hear about Budgero? (optional)</Trans>
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+      <div
+        role="group"
+        aria-labelledby={labelId}
+        style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}
+      >
         {HEARD_OPTIONS.map((opt) => {
           const active = state.heardSource === opt.id;
           return (

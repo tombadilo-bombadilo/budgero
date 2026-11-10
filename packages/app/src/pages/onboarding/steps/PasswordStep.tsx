@@ -3,7 +3,11 @@ import { msg } from '@lingui/core/macro';
 import React from 'react';
 import { FieldLabel, InputRow, StepHeroImage, Title, type StepProps } from './shared';
 
-export const PasswordStep: React.FC<StepProps> = ({ state, set }) => {
+export const PasswordStep: React.FC<StepProps & { forDemo?: boolean }> = ({
+  state,
+  set,
+  forDemo = false,
+}) => {
   const { t } = useLingui();
 
   const pw = state.password;
@@ -29,7 +33,11 @@ export const PasswordStep: React.FC<StepProps> = ({ state, set }) => {
       />
       <Title
         h={msg`Lock your ledger.`}
-        sub={msg`Your budget lives on your device, encrypted with a master password only you know. Pick something memorable — we can’t reset it for you.`}
+        sub={
+          forDemo
+            ? msg`Even the demo is encrypted on your device before anything is saved, so it needs a master password too. It’s the same one your own budget will use later. Pick something memorable — we can’t reset it for you.`
+            : msg`Your budget lives on your device, encrypted with a master password only you know. Pick something memorable — we can’t reset it for you.`
+        }
       />
       <div style={{ display: 'grid', gap: 14, marginTop: 8 }}>
         <div>

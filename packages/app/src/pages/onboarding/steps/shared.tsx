@@ -229,6 +229,8 @@ export const OnboardingOptionTile: React.FC<{
   activeBg?: string;
   type?: 'button';
   style?: React.CSSProperties;
+  /** Tiles that toggle a choice say whether it is picked. */
+  'aria-pressed'?: boolean;
   children: React.ReactNode;
 }> = ({
   active,
@@ -237,10 +239,12 @@ export const OnboardingOptionTile: React.FC<{
   activeBg = PAPER_HIGHLIGHT,
   type,
   style,
+  'aria-pressed': ariaPressed,
   children,
 }) => (
   <button
-    type={type}
+    type={type ?? 'button'}
+    aria-pressed={ariaPressed}
     onClick={onClick}
     style={{
       textAlign: 'left',

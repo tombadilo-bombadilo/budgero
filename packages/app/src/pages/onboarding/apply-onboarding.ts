@@ -5,10 +5,8 @@ import { i18n } from '@lingui/core';
 // it can be unit-tested by mocking `deps` instead of rendering the flow.
 //
 // The pipeline has to run in order: master password → workspace → runtime
-// init → budget (or YNAB import) → accounts/categories/goal → invites →
-// theme → intro acknowledged. Invites come after the workspace + master
-// password because they encrypt the space key for each recipient. The
-// numbered step comments below are load-bearing — they document *why* the
+// init → budget (or YNAB import, or the demo) → accounts/categories → intro
+// acknowledged. The numbered step comments below are load-bearing — they document *why* the
 // ordering can't be reshuffled, not just what each step does.
 import type { QueryClient } from '@tanstack/react-query';
 import type { NavigateFunction } from 'react-router-dom';
@@ -18,7 +16,7 @@ import type {
   YNABImportProgressUpdate,
   YNABImportResult,
 } from '@budgero/core/browser';
-import { YNABImportService, GoalPurpose, GoalType } from '@budgero/core/browser';
+import { YNABImportService } from '@budgero/core/browser';
 import { MasterPasswordManager } from '@shared/lib/crypto';
 import { getErrorMessage } from '@shared/lib/errors';
 import { startImportRun } from '@shared/lib/analytics/import-tracking';
@@ -26,38 +24,31 @@ import { authApi, spaceApi } from '@shared/api/api-client';
 import type { AppRuntime } from '@shared/runtime/app-runtime';
 import {
   decryptSpaceKeyFromInvite,
-  encryptSpaceKeyForInvite,
-  generateInviteSecret,
   hashInviteSecret,
   wrapSpaceKeyWithMaster,
 } from '@budgero/runtime';
 import type { UpdateOnboardingInput } from '@entities/user/api/useAuth';
 import { writeIntroAcknowledged } from '@features/onboarding/lib/onboarding-intro';
-import { isAppThemeId, type AppThemeId } from '@shared/lib/theme/presets';
-import { getTodayISO } from '@shared/lib/date-utils';
 import { fromDecimal } from '@shared/lib/currency/milli';
 import { getBudgetsQueryKey, syncBudgetStateFromRuntime } from '@shared/runtime/budget-gate';
 import { BUDGET_SPACES_QUERY_KEY } from '@features/budget-sharing/lib/workspaces/queries';
 import type { BudgetSpaceSummary } from '@shared/model/budget-spaces';
-import { buildJoinUrl } from '@features/budget-sharing/lib/workspace-invites';
-import {
-  PENDING_ONBOARDING_INVITES_EVENT,
-  PENDING_ONBOARDING_INVITES_KEY,
-} from '@features/budget-sharing/ui/OnboardingInviteShareDialog';
 import { clearPendingSpaceInvite } from '@features/budget-sharing/lib/pending-space-invite';
 import { startFirstSteps } from '@shared/lib/first-steps/first-steps';
 import { getDemoSpaceId, setDemoSpaceId } from '@shared/lib/demo-space';
 import { seedDemoBudget } from '@features/demo-budget/lib/seed-demo-budget';
 import {
+  guessDemoLocale,
+  removeDemoWorkspace,
+  removeLeftoverDemoWorkspace,
+} from '@features/demo-budget/lib/demo-workspace';
+import {
   ACCOUNT_TYPES,
   CATEGORY_PRESETS,
   CATEGORY_TO_GROUP,
   CATEGORY_ITEM_LABELS,
-  GOAL_TEMPLATES,
   resolveHeardValue,
   type ActivePath,
-  type InviteFailure,
-  type InviteResult,
   type OnboardingFormState,
 } from './onboarding-data';
 
@@ -67,7 +58,6 @@ export interface OnboardingApplyDeps {
   queryClient: QueryClient;
   navigate: NavigateFunction;
   profileId: string | undefined;
-  setThemeId: (id: AppThemeId) => void;
   updateOnboardingAsync: (input: UpdateOnboardingInput) => Promise<void>;
   onComplete: () => void;
   setApplyStatus: (status: 'idle' | 'running' | 'error') => void;
@@ -77,19 +67,6 @@ export interface OnboardingApplyDeps {
   reviewYnabImport: (result: YNABImportResult) => Promise<'accept' | 'cancel'>;
   onYnabImportCancelled: () => void;
   waitForYnabContinue: () => Promise<boolean>;
-}
-
-/** The demo's currency: the euro for euro-area languages, else the US dollar. */
-function guessCurrency(): string {
-  const lang = (typeof navigator !== 'undefined' ? navigator.language : 'en-US') || 'en-US';
-  if (/^en-GB/i.test(lang)) return 'GBP';
-  if (
-    /^(de|fr|es|nl|it|pt|fi|el|sk|sl|et|lv|lt|ga|mt)\b/i.test(lang) &&
-    !/-(CH|CA|MX|AR|CO|CL|BR)$/i.test(lang)
-  ) {
-    return 'EUR';
-  }
-  return 'USD';
 }
 
 async function removeIncompleteYnabWorkspace(
@@ -122,7 +99,6 @@ export async function runOnboardingApply(
     queryClient,
     navigate,
     profileId,
-    setThemeId,
     updateOnboardingAsync,
     onComplete,
     setApplyStatus,
@@ -257,18 +233,26 @@ export async function runOnboardingApply(
     const demoSpaceId = fromDemo ? getDemoSpaceId() : null;
     if (!fromDemo) await MasterPasswordManager.store(state.password);
 
+    // A demo left half-filled by an earlier attempt (tab closed mid-seed, or
+    // the seed failed) goes first, so trying again doesn't leave two. Setup
+    // only runs before onboarding is completed, so any demo marked on this
+    // device at this point is such a leftover.
+    if (!fromDemo) await removeLeftoverDemoWorkspace(runtime, queryClient);
+
     // 2. Workspace. createSpace returns a fresh BudgetSpaceSummary; the
     // space row exists server-side from this point on.
     const summary = await spaceApi.createSpace(
-      activePath === 'demo' ? t`Demo budget` : state.budgetName.trim() || 'My budget'
+      activePath === 'demo' ? t`Demo budget` : state.budgetName.trim() || t`My budget`
     );
     const spaceId = summary.space_id;
+    // Marked before it holds anything, so an interrupted seed is recognised.
+    if (activePath === 'demo') setDemoSpaceId(spaceId);
 
     // Record the master password on the server as soon as the workspace
     // exists. Waiting until the end left accounts with a working budget but
     // the flag unset whenever a later step was interrupted (e.g. a reload on
     // the YNAB report), so other devices were sent back into onboarding.
-    // Step 11 repeats this, and StartupController heals it on next launch.
+    // Step 8 repeats this, and StartupController heals it on next launch.
     if (!fromDemo) {
       try {
         await authApi.setMasterPasswordStatus(true);
@@ -289,8 +273,18 @@ export async function runOnboardingApply(
     // DEMO PATH — fill the new workspace with sample data and open it. The
     // banner in the app offers "Start my own budget" (the from_demo path).
     if (activePath === 'demo') {
-      const demoBudgetId = await seedDemoBudget(runtime, spaceId, guessCurrency());
-      setDemoSpaceId(spaceId);
+      let demoBudgetId: number;
+      try {
+        demoBudgetId = await seedDemoBudget(runtime, spaceId, guessDemoLocale());
+      } catch (error) {
+        // Nothing half-filled stays behind; trying again starts clean.
+        try {
+          await removeDemoWorkspace(runtime, queryClient, spaceId);
+        } catch (cleanupError) {
+          console.warn('[Onboarding] Could not remove the incomplete demo', cleanupError);
+        }
+        throw error;
+      }
       syncBudgetStateFromRuntime({
         runtime,
         queryClient,
@@ -328,7 +322,7 @@ export async function runOnboardingApply(
       const importService = new YNABImportService(db as unknown as DatabaseAdapter);
       const importConfig = {
         spaceId,
-        budgetName: state.budgetName.trim() || 'My budget',
+        budgetName: state.budgetName.trim() || t`My budget`,
         currency: state.currency,
         numberFormat: '$1,096.56',
         ...(!state.ynabApiSnapshot
@@ -492,8 +486,8 @@ export async function runOnboardingApply(
     });
     await queryClient.invalidateQueries({ queryKey: getBudgetsQueryKey(spaceId) });
 
-    // 5. Fresh path only — accounts, categories, goals.
-    let goalCategoryId: number | null = null;
+    // 5. Fresh path only — accounts and categories. No goal: a goal is the
+    // user's own decision, made in the budget.
     if (state.startMode === 'fresh') {
       for (const a of state.accounts) {
         const typeDef = ACCOUNT_TYPES.find((t) => t.id === a.type) ?? ACCOUNT_TYPES[0];
@@ -525,16 +519,7 @@ export async function runOnboardingApply(
         }
       }
 
-      // An untouched template leaves state.goal.label empty, so resolve the
-      // label the goal envelope will get before matching selected envelopes.
-      const goalLabel =
-        state.goal.label.trim() ||
-        i18n._(
-          GOAL_TEMPLATES.find((g) => g.id === state.goal.id)?.label ?? GOAL_TEMPLATES[0].label
-        );
-      // Category groups + categories. Track group ids by label so the goal
-      // step below can drop a goal envelope into SAVINGS without creating
-      // a duplicate group.
+      // Category groups + categories.
       const groupBuckets = new Map<string, string[]>();
       for (const cat of state.selectedCats) {
         const groupKey = CATEGORY_TO_GROUP[cat] ?? 'needs';
@@ -543,7 +528,6 @@ export async function runOnboardingApply(
         bucket.push(cat);
         groupBuckets.set(groupName, bucket);
       }
-      const groupIdByLabel = new Map<string, number>();
       for (const [groupLabel, cats] of groupBuckets) {
         try {
           const groupRes = await runtime.mutationsRouter().execute<number>({
@@ -553,10 +537,9 @@ export async function runOnboardingApply(
             meta: { label: 'onboarding.createGroup' },
           });
           const parentId = groupRes.result;
-          groupIdByLabel.set(groupLabel, parentId);
           for (const cat of cats) {
             const name = CATEGORY_ITEM_LABELS[cat] ? i18n._(CATEGORY_ITEM_LABELS[cat]) : cat;
-            const catRes = await runtime.mutationsRouter().execute<number>({
+            await runtime.mutationsRouter().execute<number>({
               op: 'categories.create',
               payload: {
                 name,
@@ -567,81 +550,9 @@ export async function runOnboardingApply(
               spaceId,
               meta: { label: 'onboarding.createCategory' },
             });
-            if (goalCategoryId == null && name.toLowerCase() === goalLabel.toLowerCase()) {
-              goalCategoryId = catRes.result;
-            }
           }
         } catch (err) {
           console.warn('[Onboarding] Group/category create failed', groupLabel, err);
-        }
-      }
-
-      // Materialize the picked goal as a real envelope under SAVINGS when
-      // the user's selected envelopes didn't already include one by that
-      // name. Every goal template the user can pick is savings-oriented, so
-      // SAVINGS is always the right home. Skip the placeholder "Something
-      // else" label — that means the user picked Custom but didn't rename.
-      const goalIsUsable = goalLabel.length > 0 && goalLabel.toLowerCase() !== 'something else';
-      if (state.goal.target > 0 && goalIsUsable && goalCategoryId == null) {
-        const savingsLabel = i18n._(CATEGORY_PRESETS.savings.label);
-        try {
-          let savingsGroupId = groupIdByLabel.get(savingsLabel);
-          if (savingsGroupId == null) {
-            const groupRes = await runtime.mutationsRouter().execute<number>({
-              op: 'categoryGroups.create',
-              payload: { name: savingsLabel, budgetId },
-              spaceId,
-              meta: { label: 'onboarding.createGoalGroup' },
-            });
-            savingsGroupId = groupRes.result;
-            groupIdByLabel.set(savingsLabel, savingsGroupId);
-          }
-          const catRes = await runtime.mutationsRouter().execute<number>({
-            op: 'categories.create',
-            payload: {
-              name: goalLabel,
-              parentId: savingsGroupId,
-              budgetId,
-              note: '',
-            },
-            spaceId,
-            meta: { label: 'onboarding.createGoalCategory' },
-          });
-          goalCategoryId = catRes.result;
-        } catch (err) {
-          console.warn('[Onboarding] Goal category create failed', err);
-        }
-      }
-
-      if (state.goal.target > 0 && goalCategoryId != null) {
-        const today = getTodayISO();
-        // Map the onboarding mode to Budgero's two savings shapes:
-        //   monthly → MONTHLY_SAVINGS  (set aside X each month, no end date)
-        //   target  → TARGET_DATE      (allocate X total by YYYY-MM-DD)
-        // Matches GoalForm.tsx's 'monthly-allocation' and 'yearly-allocation'
-        // presets so goals created here look native in the budget UI.
-        const isMonthly = state.goal.mode === 'monthly';
-        const goalType = isMonthly ? GoalType.MONTHLY_SAVINGS : GoalType.TARGET_DATE;
-        const endDate = isMonthly ? today : state.goal.targetDate;
-        try {
-          await runtime.mutationsRouter().execute({
-            op: 'goals.create',
-            payload: {
-              goalType,
-              purpose: GoalPurpose.SAVINGS,
-              categoryId: goalCategoryId,
-              // User-typed decimal → integer milliunits at the op boundary.
-              target: fromDecimal(state.goal.target),
-              startDate: today,
-              endDate,
-              recurring: false,
-              budgetId,
-            },
-            spaceId,
-            meta: { label: 'onboarding.createGoal' },
-          });
-        } catch (err) {
-          console.warn('[Onboarding] Goal create failed', err);
         }
       }
     }
@@ -659,77 +570,7 @@ export async function runOnboardingApply(
       }
     }
 
-    // 7. Invites. Invite bundle encrypts the space key with the invite
-    // secret, so we need the active space + master password first. The
-    // secret never leaves this client — we hand it to the owner on the
-    // Done screen as a /join#code=... URL, and they route it to the
-    // recipient however they want. Nothing server- or Resend-side sees it.
-    // Failures are tracked alongside successes so the user always sees
-    // *some* outcome rather than a silent drop to the dashboard.
-    const results: InviteResult[] = [];
-    const failures: InviteFailure[] = [];
-    const validInvites = state.invites.filter((inv) => inv.email.trim().length > 0);
-    if (validInvites.length > 0) {
-      try {
-        const spaceKey = await runtime.requireSpaceKey(spaceId);
-        for (const inv of validInvites) {
-          const email = inv.email.trim();
-          try {
-            const secret = generateInviteSecret();
-            const token = await hashInviteSecret(secret);
-            const invite = await spaceApi.createInvite(spaceId, email, token, undefined);
-            const bundle = await encryptSpaceKeyForInvite(spaceKey, secret);
-            await spaceApi.attachInviteBundle(spaceId, invite.id, bundle);
-            results.push({
-              email,
-              secret,
-              url: buildJoinUrl(secret),
-            });
-          } catch (err) {
-            console.warn('[Onboarding apply] Invite create failed for', email, err);
-            failures.push({
-              email,
-              reason: getErrorMessage(err, t`unknown error`),
-            });
-          }
-        }
-      } catch (err) {
-        console.warn('[Onboarding apply] Could not resolve space key for invites', err);
-        for (const inv of validInvites) {
-          failures.push({
-            email: inv.email.trim(),
-            reason:
-              err instanceof Error
-                ? `Encryption setup failed: ${err.message}`
-                : 'Encryption setup failed.',
-          });
-        }
-      }
-    }
-
-    // 8. Theme. Preset is ignored if the id doesn't match what the theme
-    // system knows about; fall back to default silently.
-    if (isAppThemeId(state.theme)) {
-      setThemeId(state.theme);
-    }
-
-    // 9. Persist invite payload to sessionStorage so the dashboard-mounted
-    // OnboardingInviteShareDialog can pick it up and surface the share
-    // links there. Hosting that UI here is fragile because flipping the
-    // server-side "you're done" flags causes StartupController to unmount
-    // the entire onboarding tree mid-render — sessionStorage survives.
-    if (results.length > 0) {
-      try {
-        sessionStorage.setItem(PENDING_ONBOARDING_INVITES_KEY, JSON.stringify(results));
-        // Wake any already-mounted dashboard dialog that pre-rendered
-        // before this write landed.
-        window.dispatchEvent(new Event(PENDING_ONBOARDING_INVITES_EVENT));
-      } catch (err) {
-        console.warn('[Onboarding] Failed to stash invite payload for dialog', err);
-      }
-    }
-
-    // 10. Keep the YNAB verification report inside the onboarding gate until
+    // 7. Keep the YNAB verification report inside the onboarding gate until
     // the user explicitly opens the imported budget. None of the completion
     // flags below may move ahead of this wait: each can make
     // StartupController replace OnboardingFlow with the dashboard.
@@ -754,17 +595,14 @@ export async function runOnboardingApply(
     // The real budget exists now, so the demo can go. If deleting it fails
     // it stays as an ordinary workspace the owner can delete in Settings.
     if (fromDemo && demoSpaceId && demoSpaceId !== spaceId) {
-      setDemoSpaceId(null);
       try {
-        await spaceApi.deleteSpace(demoSpaceId);
-        await runtime.refreshSpaces();
-        await queryClient.invalidateQueries({ queryKey: BUDGET_SPACES_QUERY_KEY });
+        await removeDemoWorkspace(runtime, queryClient, demoSpaceId);
       } catch (err) {
         console.warn('[Onboarding] Could not delete the demo workspace', err);
       }
     }
 
-    // 11. Tell the server master password is set so future sign-ins skip
+    // 8. Tell the server master password is set so future sign-ins skip
     // onboarding. Then mark onboarding completed + intro acknowledged so
     // the StartupController gates pass and we route to the dashboard. For a
     // YNAB import this runs only after "Open imported budget" is clicked.
@@ -784,7 +622,7 @@ export async function runOnboardingApply(
     }
     writeIntroAcknowledged(profileId ?? null);
 
-    // 12. Refresh every cached query so the dashboard lands on real data,
+    // 9. Refresh every cached query so the dashboard lands on real data,
     // then release the intro gate.
     await queryClient.invalidateQueries();
     onComplete();
