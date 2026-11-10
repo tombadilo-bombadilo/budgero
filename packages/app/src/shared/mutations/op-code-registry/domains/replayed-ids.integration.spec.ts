@@ -271,6 +271,91 @@ describe('ops replayed on another device create the same rows', () => {
     });
   });
 
+  describe('split lines that transfer to their own account (S5)', () => {
+    const allTx =
+      'SELECT ID, AccountID, CategoryID, OutflowConverted, InflowConverted FROM transactions ORDER BY ID';
+    const allSplits =
+      'SELECT ID, TransactionID, CategoryID, TransferAccountID, OutflowConverted FROM transaction_splits ORDER BY ID';
+    const category = () =>
+      a.services.categories
+        .getAllCategories(budgetId)
+        .find((c) => !['Income', 'Uncategorized', 'Transfers'].includes(c.Name))!.ID;
+    const addArgs = (transferAccountId: number) => ({
+      budgetId,
+      accountId: checkingId,
+      categoryId: 0,
+      date: '2026-09-02',
+      inflow: 0,
+      outflow: 1_000,
+      memo: '',
+      payee: '',
+      splits: [
+        { categoryId: category(), outflow: 600 },
+        { transferAccountId, outflow: 400 },
+      ],
+    });
+
+    it('a new op is refused before it runs or goes out', async () => {
+      runtime.services = a.services;
+      await expect(
+        registry.prepareMutationArgs('transactions.add', addArgs(checkingId))
+      ).rejects.toThrow(/own account/);
+      const sent = await registry.prepareMutationArgs('transactions.add', addArgs(savingsId));
+      expect(sent.splits).toEqual(addArgs(savingsId).splits);
+    });
+
+    it('a logged op with one replays as before on every device', async () => {
+      const logged = addArgs(checkingId);
+      for (const device of [a, b]) {
+        runtime.services = device.services;
+        await registry.executeMutationOp('transactions.add', JSON.parse(JSON.stringify(logged)), {
+          mutationId: 'old-own-split',
+          isReceiver: true,
+        });
+      }
+      expect(rows(a, allSplits)).toEqual([
+        expect.objectContaining({ TransferAccountID: null }),
+        expect.objectContaining({ TransferAccountID: checkingId }),
+      ]);
+      expect(rows(b, allTx)).toEqual(rows(a, allTx));
+      expect(rows(b, allSplits)).toEqual(rows(a, allSplits));
+    });
+
+    it('editing a parent may keep a line it already has, not add one', async () => {
+      runtime.services = a.services;
+      const parent = (await registry.executeMutationOp('transactions.add', addArgs(checkingId), {
+        mutationId: 'old-own-split',
+        isReceiver: true,
+      })) as number;
+      const lines = (transferAccountId: number) => [
+        { CategoryID: category(), OutflowConverted: 500 },
+        { TransferAccountID: transferAccountId, OutflowConverted: 500 },
+      ];
+      for (const op of ['transactions.upsertSplits', 'transactions.saveSplits']) {
+        await expect(
+          registry.prepareMutationArgs(op, { transactionId: parent, splits: lines(checkingId) })
+        ).resolves.toBeTruthy();
+        await expect(
+          registry.prepareMutationArgs(op, {
+            transactionId: parent,
+            splits: [...lines(checkingId), { TransferAccountID: checkingId, OutflowConverted: 0 }],
+          })
+        ).rejects.toThrow(/own account/);
+      }
+      const clean = (await registry.executeMutationOp(
+        'transactions.add',
+        await registry.prepareMutationArgs('transactions.add', addArgs(savingsId)),
+        { mutationId: 'new-split', isReceiver: false }
+      )) as number;
+      await expect(
+        registry.prepareMutationArgs('transactions.upsertSplits', {
+          transactionId: clean,
+          splits: lines(checkingId),
+        })
+      ).rejects.toThrow(/own account/);
+    });
+  });
+
   it('keeps old ops without IDs replayable', async () => {
     runtime.services = b.services;
     const legacy = (await registry.executeMutationOp(

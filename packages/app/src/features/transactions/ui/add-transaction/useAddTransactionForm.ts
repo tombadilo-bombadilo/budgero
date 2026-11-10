@@ -482,10 +482,27 @@ export function useAddTransactionForm({
       return null;
     }
 
+    // A line is either categorized or a transfer, never both.
+    if (splitLines.some((l) => l.categoryId && l.transferAccountId)) {
+      toast.error(t`Invalid split line`, {
+        description: t`A split line can have a category or a transfer account, not both.`,
+      });
+      return null;
+    }
+    if (
+      form.selectedFromAccount &&
+      splitLines.some(
+        (l) => l.transferAccountId && String(l.transferAccountId) === form.selectedFromAccount
+      )
+    ) {
+      toast.error(t`Invalid split line`, {
+        description: t`A split line can't transfer to the transaction's own account.`,
+      });
+      return null;
+    }
+
     const uncategorizedId = categories.find((c) => c.Name === 'Uncategorized')?.ID ?? null;
-    const missingAssignment = splitLines.some(
-      (l) => (!l.categoryId && !l.transferAccountId) || (l.categoryId && l.transferAccountId)
-    );
+    const missingAssignment = splitLines.some((l) => !l.categoryId && !l.transferAccountId);
     if (missingAssignment && !uncategorizedId) {
       toast.error(t`Split requires category`, {
         description: t`Each split line needs a category. Please assign a category to every split.`,
@@ -501,7 +518,7 @@ export function useAddTransactionForm({
       inflow: l.inflow,
       outflow: l.outflow,
     }));
-  }, [t, remaining, splitLines, categories]);
+  }, [t, remaining, splitLines, categories, form.selectedFromAccount]);
 
   const handleSubmit = React.useCallback(
     async (addAnother = false) => {
