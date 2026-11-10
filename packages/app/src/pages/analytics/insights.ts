@@ -101,7 +101,10 @@ export function inOutInsights(
     ).length;
     insights.push({
       tone: hit >= withIncome.length / 2 ? 'good' : 'warn',
-      text: t`Savings target of ${savingsTargetPct}% was met in ${hit} of ${withIncome.length} months.`,
+      text: plural(withIncome.length, {
+        one: `Savings target of ${formatPercent(savingsTargetPct)} was met in ${hit} of # month.`,
+        other: `Savings target of ${formatPercent(savingsTargetPct)} was met in ${hit} of # months.`,
+      }),
     });
   }
   const negativeMonths = points.filter((point) => point.net < 0);
@@ -177,7 +180,10 @@ export function planInsights(plan: PlanVsReality, fmt: InsightFormat): Insight[]
   if (chronic) {
     insights.push({
       tone: 'warn',
-      text: t`${chronic.name} runs over its assignment almost every month — ${chronic.monthsOver} of ${chronic.monthsWithPlan} planned months. The assignment may be set too low.`,
+      text: plural(chronic.monthsWithPlan, {
+        one: `${chronic.name} runs over its assignment almost every month — ${chronic.monthsOver} of # planned month. The assignment may be set too low.`,
+        other: `${chronic.name} runs over its assignment almost every month — ${chronic.monthsOver} of # planned months. The assignment may be set too low.`,
+      }),
     });
   } else {
     const leak = plan.categories.find(

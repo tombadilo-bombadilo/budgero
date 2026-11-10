@@ -1,3 +1,4 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useState, type ComponentProps, type ReactNode } from 'react';
 import { toast } from 'sonner';
@@ -1176,7 +1177,9 @@ function LimitStep({
           }}
         />
         <span className="text-sm text-muted-foreground">
-          {groupedLimit ? <Trans>values</Trans> : <Trans>rows</Trans>}
+          {groupedLimit
+            ? plural(Number(draft) || 0, { one: 'value', other: 'values' })
+            : plural(Number(draft) || 0, { one: 'row', other: 'rows' })}
         </span>
       </div>
       {groupedLimit && (

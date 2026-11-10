@@ -3,7 +3,7 @@
  * headers and formatted grouping values ("2025-12" → "Dec 2025").
  * Resolved at call time so the active locale applies.
  */
-import { t } from '@lingui/core/macro';
+import { plural, t } from '@lingui/core/macro';
 import { getLocaleTag } from '@shared/i18n';
 import {
   getField,
@@ -115,18 +115,69 @@ export function bucketLabel(bucket: DateBucket): string {
   }
 }
 
+/** The unit word for `amount` of it ("day" / "days"), by the language's plural rules. */
 export function unitLabel(unit: RelativeUnit, amount: number): string {
   switch (unit) {
     case 'day':
-      return amount === 1 ? t`day` : t`days`;
+      return plural(amount, { one: 'day', other: 'days' });
     case 'week':
-      return amount === 1 ? t`week` : t`weeks`;
+      return plural(amount, { one: 'week', other: 'weeks' });
     case 'month':
-      return amount === 1 ? t`month` : t`months`;
+      return plural(amount, { one: 'month', other: 'months' });
     case 'quarter':
-      return amount === 1 ? t`quarter` : t`quarters`;
+      return plural(amount, { one: 'quarter', other: 'quarters' });
     case 'year':
-      return amount === 1 ? t`year` : t`years`;
+      return plural(amount, { one: 'year', other: 'years' });
+  }
+}
+
+/** "Date: last 3 months" / "Date: previous 3 full months", as whole phrases. */
+function relativeRangeLabel(
+  name: string,
+  unit: RelativeUnit,
+  amount: number,
+  fullPeriods: boolean
+): string {
+  if (fullPeriods) {
+    switch (unit) {
+      case 'day':
+        return plural(amount, {
+          one: `${name}: previous # full day`,
+          other: `${name}: previous # full days`,
+        });
+      case 'week':
+        return plural(amount, {
+          one: `${name}: previous # full week`,
+          other: `${name}: previous # full weeks`,
+        });
+      case 'month':
+        return plural(amount, {
+          one: `${name}: previous # full month`,
+          other: `${name}: previous # full months`,
+        });
+      case 'quarter':
+        return plural(amount, {
+          one: `${name}: previous # full quarter`,
+          other: `${name}: previous # full quarters`,
+        });
+      case 'year':
+        return plural(amount, {
+          one: `${name}: previous # full year`,
+          other: `${name}: previous # full years`,
+        });
+    }
+  }
+  switch (unit) {
+    case 'day':
+      return plural(amount, { one: `${name}: last # day`, other: `${name}: last # days` });
+    case 'week':
+      return plural(amount, { one: `${name}: last # week`, other: `${name}: last # weeks` });
+    case 'month':
+      return plural(amount, { one: `${name}: last # month`, other: `${name}: last # months` });
+    case 'quarter':
+      return plural(amount, { one: `${name}: last # quarter`, other: `${name}: last # quarters` });
+    case 'year':
+      return plural(amount, { one: `${name}: last # year`, other: `${name}: last # years` });
   }
 }
 
@@ -431,7 +482,13 @@ export function filterSummary(
   const values = filter.values.map(valueName);
   const [first = '', second = ''] = values;
   const more = values.length - 2;
-  const list = values.length > 2 ? t`${first}, ${second} and ${more} more` : values.join(', ');
+  const list =
+    values.length > 2
+      ? plural(more, {
+          one: `${first}, ${second} and # more`,
+          other: `${first}, ${second} and # more`,
+        })
+      : values.join(', ');
   const firstDate = formatIsoDate(filter.values[0]);
   const secondDate = formatIsoDate(filter.values[1]);
   switch (filter.op) {
@@ -440,11 +497,12 @@ export function filterSummary(
     case 'notEmpty':
       return t`${name} is not empty`;
     case 'previous': {
-      const amount = filter.amount ?? 1;
-      const unit = unitLabel(filter.unit ?? 'month', amount);
-      return filter.includeCurrent === false
-        ? t`${name}: previous ${amount} full ${unit}`
-        : t`${name}: last ${amount} ${unit}`;
+      return relativeRangeLabel(
+        name,
+        filter.unit ?? 'month',
+        filter.amount ?? 1,
+        filter.includeCurrent === false
+      );
     }
     case 'current': {
       switch (filter.unit) {

@@ -1,3 +1,4 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowDown, ArrowUp, ArrowUpDown, Download } from 'lucide-react';
@@ -138,28 +139,19 @@ export function PivotTableView({
 
   const headerButton =
     'inline-flex w-full items-center gap-1 rounded px-1 py-0.5 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
-  const rowCount = rows.length.toLocaleString();
-  const colCount = pivot.cols.length.toLocaleString();
+  const rowsText = plural(rows.length, { one: '# row', other: '# rows' });
+  const colsText = plural(pivot.cols.length, { one: '# column', other: '# columns' });
   const shownRowCount = shownRows.length.toLocaleString();
   const shownColCount = shownCols.length.toLocaleString();
+  const capped = shownRows.length < rows.length || shownCols.length < pivot.cols.length;
+  const sizeText = capped
+    ? t`${rowsText} × ${colsText}, showing ${shownRowCount} × ${shownColCount}`
+    : t`${rowsText} × ${colsText}`;
 
   return (
     <div className={cn('flex min-h-0 flex-col gap-2', fitHeight && 'h-full', className)}>
       <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-        <span>
-          {columnLabel(source, pivot.metric)} ·{' '}
-          <Trans>
-            {rowCount} rows × {colCount} columns
-          </Trans>
-          {(shownRows.length < rows.length || shownCols.length < pivot.cols.length) && (
-            <>
-              {' · '}
-              <Trans>
-                showing {shownRowCount} × {shownColCount}
-              </Trans>
-            </>
-          )}
-        </span>
+        <span>{t`${columnLabel(source, pivot.metric)} · ${sizeText}`}</span>
         <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={exportCsv}>
           <Download className="h-3.5 w-3.5" aria-hidden />
           <Trans>Pivot CSV</Trans>

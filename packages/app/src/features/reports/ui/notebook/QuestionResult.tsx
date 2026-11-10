@@ -1,3 +1,4 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useRef, useState } from 'react';
 import { ArrowLeft, BarChart3, Loader2, RefreshCw, Table2 } from 'lucide-react';
@@ -90,7 +91,6 @@ export function QuestionResult({
       : (resultCompiled?.visualization ?? current);
   const rowCount = result?.rows.length ?? 0;
   const rowCountText = rowCount.toLocaleString();
-  const totalText = (result?.rowCount ?? 0).toLocaleString();
   const truncated = (result?.rowCount ?? 0) > rowCount;
 
   return (
@@ -193,15 +193,12 @@ export function QuestionResult({
           {isRunning && <Loader2 className="h-4 w-4 animate-spin" aria-hidden />}
           {result && !shownError && (
             <span aria-live="polite">
-              {truncated ? (
-                <Trans>
-                  First {rowCountText} of {totalText} rows
-                </Trans>
-              ) : rowCount === 1 ? (
-                <Trans>1 row</Trans>
-              ) : (
-                <Trans>{rowCountText} rows</Trans>
-              )}
+              {truncated
+                ? plural(result.rowCount, {
+                    one: `First ${rowCountText} of # row`,
+                    other: `First ${rowCountText} of # rows`,
+                  })
+                : plural(rowCount, { one: '# row', other: '# rows' })}
             </span>
           )}
           <ExportMenu

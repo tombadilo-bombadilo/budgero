@@ -1,3 +1,4 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useId, useMemo, useState, type FormEvent } from 'react';
 import { ArrowLeft, Check } from 'lucide-react';
@@ -407,9 +408,7 @@ function ValueChecklist({
       </Command>
       {selected.length > 0 && (
         <div className="flex items-center justify-between border-t px-2 py-1 text-xs text-muted-foreground">
-          <span>
-            <Trans>{selectedCount} selected</Trans>
-          </span>
+          <span>{plural(selectedCount, { one: '# selected', other: '# selected' })}</span>
           <Button
             type="button"
             variant="ghost"

@@ -1,3 +1,4 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { CalendarRange, Check, ChevronDown, Pencil, X } from 'lucide-react';
@@ -315,7 +316,7 @@ function MultiSelectFilter({
       ? allLabel
       : count === 1 && names.length === 1
         ? names[0]
-        : t`${label}: ${count} selected`;
+        : plural(count, { one: `${label}: # selected`, other: `${label}: # selected` });
   const toggle = (value: number) => {
     const next = new Set(chosen);
     if (next.has(value)) next.delete(value);

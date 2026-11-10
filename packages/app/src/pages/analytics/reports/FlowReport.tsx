@@ -1,3 +1,4 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
@@ -110,7 +111,11 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
   const net = graph.totalIncome - graph.totalSpending;
   const savingsRate = graph.totalIncome > 0 ? (net / graph.totalIncome) * 100 : null;
   const isEmpty = graph.links.length === 0;
-  const dimensionLabel = dimension === 'group' ? t`groups` : t`categories`;
+  // Whole phrases per kind: word order and plurals differ between languages.
+  const countOf = (kind: 'group' | 'category', count: number) =>
+    kind === 'group'
+      ? plural(count, { one: '# group', other: '# groups' })
+      : plural(count, { one: '# category', other: '# categories' });
 
   // Node colors by role: income sources cycle the cool half of the palette,
   // spending groups the fixed slot order; results use the status pair.
@@ -174,7 +179,8 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
   const drilldownRows = drilldown?.kind === 'group' ? groupCategoryRows : otherRows;
   const showingDrilldown = drilldown !== null && drilldownRows.length > 0;
   const drilldownTitle = drilldown?.kind === 'group' ? drilldown.name : t`Other spending`;
-  const drilldownItemLabel = drilldown?.kind === 'group' ? t`categories` : dimensionLabel;
+  const drilldownItemKind: 'group' | 'category' =
+    drilldown?.kind === 'group' || dimension !== 'group' ? 'category' : 'group';
 
   const drillableGroupNames = useMemo(
     () =>
@@ -257,7 +263,7 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
               data: { itemStyle?: { color?: string } };
             };
             const value = Math.round(item.value * 1000);
-            return tooltipHtml(t`Inside ${drilldownTitle} · ${drilldownItemLabel}`, [
+            return tooltipHtml(t`Inside ${drilldownTitle}`, [
               {
                 color: item.data.itemStyle?.color ?? chrome.other,
                 name: item.name,
@@ -389,7 +395,6 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
   }, [
     dimension,
     drilldown,
-    drilldownItemLabel,
     drilldownRows,
     drilldownTitle,
     graph,
@@ -415,7 +420,7 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
     return {
       key: row.key,
       name: isOther
-        ? t`Other spending (${collapsedGraph.foldedDestinations.length} ${dimensionLabel})`
+        ? t`Other spending (${countOf(dimension === 'group' ? 'group' : 'category', collapsedGraph.foldedDestinations.length)})`
         : 'label' in row
           ? row.label
           : row.name,
@@ -471,7 +476,9 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
             option={option}
             ariaLabel={
               showingDrilldown
-                ? t`${drilldownTitle} ${drilldownItemLabel} breakdown`
+                ? drilldownItemKind === 'group'
+                  ? t`${drilldownTitle}: breakdown by group`
+                  : t`${drilldownTitle}: breakdown by category`
                 : t`Income to spending flow`
             }
             className={showingDrilldown ? 'h-[440px]' : rotateLabels ? 'h-[560px]' : 'h-[500px]'}
@@ -534,7 +541,7 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
         <BreakdownTable
           title={
             showingDrilldown
-              ? t`Inside ${drilldownTitle} · ${drilldownRows.length} ${drilldownItemLabel}`
+              ? t`Inside ${drilldownTitle} · ${countOf(drilldownItemKind, drilldownRows.length)}`
               : dimension === 'group'
                 ? t`Destination groups`
                 : t`Destination categories`

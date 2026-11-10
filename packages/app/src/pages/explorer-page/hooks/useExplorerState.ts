@@ -1,4 +1,4 @@
-import { msg } from '@lingui/core/macro';
+import { msg, plural } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { useTheme } from 'next-themes';
@@ -113,7 +113,10 @@ export function useExplorerState() {
         const rowCount = queryResult.rows.length;
         const columnCount = queryResult.columns.length;
         toast.success(t`CSV Copied!`, {
-          description: t`${rowCount.toLocaleString()} rows x ${columnCount} columns copied to clipboard`,
+          description: plural(rowCount, {
+            one: `# row × ${columnCount} columns copied to the clipboard`,
+            other: `# rows × ${columnCount} columns copied to the clipboard`,
+          }),
         });
       })
       .catch((error) => {

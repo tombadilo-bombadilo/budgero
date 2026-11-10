@@ -268,7 +268,7 @@ describe('FlowReport', () => {
 
     fireEvent.click(screen.getByRole('button', { name: '← Back to Money Map' }));
     fireEvent.click(screen.getByRole('button', { name: 'Group 1' }));
-    expect(screen.getByText('Inside Group 1 · 1 categories')).toBeInTheDocument();
+    expect(screen.getByText('Inside Group 1 · 1 category')).toBeInTheDocument();
   });
 
   it('opens a group as a category treemap and returns to the Money Map', () => {
