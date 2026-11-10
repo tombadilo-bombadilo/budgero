@@ -38,16 +38,20 @@ describe('ChartTypePicker', () => {
     expect(bar).toHaveFocus();
   });
 
-  it('says why a type is unavailable, also on tap', async () => {
+  it('lists the recommended types first and says why others are unavailable', async () => {
     const user = userEvent.setup();
     const onPick = vi.fn();
     render(<ChartTypePicker spec={spec} current="bar" onPick={onPick} />);
     await user.click(screen.getByRole('button', { name: 'Chart type' }));
-    const pivot = screen.getByRole('radio', { name: 'Pivot table' });
-    expect(pivot).toHaveAttribute('aria-disabled', 'true');
-    expect(pivot).toHaveAccessibleDescription(/.+/);
-    await user.click(pivot);
-    expect(onPick).not.toHaveBeenCalled();
-    expect(screen.getByText(/^Pivot table: /)).toBeInTheDocument();
+    const recommended = screen.getByRole('region', { name: 'Recommended' });
+    expect(
+      Array.from(recommended.querySelectorAll('[role="radio"]')).map((radio) =>
+        radio.getAttribute('aria-label')
+      )
+    ).toEqual(['Line', 'Bar', 'Area', 'Number with trend']);
+    expect(screen.queryByRole('radio', { name: 'Pivot table' })).toBeNull();
+    expect(screen.getByText(/Needs exactly two groupings/)).toBeVisible();
+    await user.click(screen.getByRole('radio', { name: 'Area' }));
+    expect(onPick).toHaveBeenCalledWith('area');
   });
 });
