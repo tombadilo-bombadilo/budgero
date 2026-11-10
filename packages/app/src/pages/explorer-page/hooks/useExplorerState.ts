@@ -125,21 +125,14 @@ export function useExplorerState() {
   }, [queryResult, t]);
 
   const {
-    showReportsDialog,
     showSaveReportDialog,
     editingReport,
     selectedChartConfig,
-    savedReports,
-    setShowReportsDialog,
     setShowSaveReportDialog,
     setEditingReport,
     setSelectedChartConfig,
     handleSaveReport,
-    handleLoadReport,
-    handleEditReport,
-    handleDeleteReport,
     handleCreateReport,
-    handleNewReport,
   } = useReportActions({
     sqlQuery,
     setSqlQuery,
@@ -193,18 +186,15 @@ export function useExplorerState() {
     tableSchema,
     expandedTables,
     sidebarOpen,
-    showReportsDialog,
     showSaveReportDialog,
     editingReport,
     selectedChartConfig,
-    savedReports,
     editorTheme,
     editorModules,
     extensions,
 
     setSqlQuery,
     setSidebarOpen,
-    setShowReportsDialog,
     setShowSaveReportDialog,
     setEditingReport,
     setSelectedChartConfig,
@@ -216,10 +206,6 @@ export function useExplorerState() {
     formatSQL,
     copyResultsAsCSV,
     handleSaveReport,
-    handleLoadReport,
-    handleEditReport,
-    handleDeleteReport,
     handleCreateReport,
-    handleNewReport,
   };
 }
