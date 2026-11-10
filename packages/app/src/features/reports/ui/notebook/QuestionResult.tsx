@@ -18,6 +18,7 @@ import { ToggleGroup, ToggleGroupItem } from '@shared/ui/toggle-group';
 import { cn } from '@shared/lib/utils';
 import { QuestionVisualization } from './QuestionVisualization';
 import { QuestionTable } from './QuestionTable';
+import { QueryErrorMessage } from './QueryErrorMessage';
 import { DrillMenu, type DrillRequest } from './DrillMenu';
 import { withReturnFocus } from './drill-focus';
 import type { QuestionQueryState } from './useQuestionQuery';
@@ -233,7 +234,7 @@ export function QuestionResult({
             <p className="font-medium">
               <Trans>This question could not be run</Trans>
             </p>
-            <p className="mt-1 break-words text-xs">{shownError}</p>
+            <QueryErrorMessage error={shownError} className="mt-1 text-xs" />
           </div>
         )}
 

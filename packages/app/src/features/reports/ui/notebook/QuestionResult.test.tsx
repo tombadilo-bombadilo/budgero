@@ -57,4 +57,20 @@ describe('QuestionResult', () => {
     await user.click(screen.getByRole('radio', { name: 'Bar' }));
     expect(onVisualizationChange).toHaveBeenCalledWith('bar');
   });
+
+  it('shows a friendly error with the raw message behind Details', () => {
+    render(
+      <QuestionResult
+        spec={spec}
+        query={{ ...query, result: null, error: 'Binder Error: Referenced column "x" not found' }}
+        onVisualizationChange={vi.fn()}
+        onStackingChange={vi.fn()}
+        onRefresh={vi.fn()}
+      />
+    );
+    const alert = screen.getByRole('alert');
+    expect(alert).toHaveTextContent('column or table that isn’t available');
+    expect(screen.getByText('Details')).toBeInTheDocument();
+    expect(screen.getByText(/Binder Error/)).not.toBeVisible();
+  });
 });

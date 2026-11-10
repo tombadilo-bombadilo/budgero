@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   ChartConfiguration,
@@ -19,6 +19,7 @@ import {
   type DashboardFilters,
 } from '@features/reports/lib/question';
 import { QuestionVisualization } from '@features/reports/ui/notebook/QuestionVisualization';
+import { QueryErrorMessage } from '@features/reports/ui/notebook/QueryErrorMessage';
 import { ExportMenu } from '@features/reports/ui/notebook/viz/ExportMenu';
 import { refineAutoVisualization } from '@features/reports/ui/notebook/viz/transforms';
 import { getLocaleTag } from '@shared/i18n';
@@ -165,7 +166,7 @@ function WidgetErrorCard({
   onRemove,
 }: {
   title: string;
-  description: string;
+  description: ReactNode;
   onSelectNewChart: () => void;
   onRemove: () => Promise<void>;
 }) {
@@ -284,9 +285,11 @@ export function WidgetCard({
       <WidgetErrorCard
         title={title}
         description={
-          isNonReadOnlyError
-            ? t`This report query is not read-only and cannot run in dashboard widgets.`
-            : queryError.message
+          isNonReadOnlyError ? (
+            t`This report query is not read-only and cannot run in dashboard widgets.`
+          ) : (
+            <QueryErrorMessage error={queryError.message} />
+          )
         }
         onSelectNewChart={() => onSelectNewChart(widget.id)}
         onRemove={() => onRemove(widget.id)}
