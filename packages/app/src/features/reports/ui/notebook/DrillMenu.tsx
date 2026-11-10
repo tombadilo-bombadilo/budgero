@@ -47,6 +47,8 @@ export interface DrillRequest {
   values: DrillValue[];
   /** Viewport point the menu opens at. */
   anchor: { x: number; y: number };
+  /** Gets focus back when the menu closes (the clicked button or cell). */
+  returnFocus?: HTMLElement | null;
 }
 
 interface DrillMenuProps {
@@ -100,6 +102,12 @@ export function DrillMenu({ spec, request, onClose, onDrill }: DrillMenuProps) {
         align="start"
         className="w-64 max-w-[calc(100vw-1rem)]"
         aria-label={t`Explore ${heading}`}
+        onCloseAutoFocus={(event) => {
+          // The menu hangs off an invisible anchor: hand focus back to what was clicked.
+          event.preventDefault();
+          const opener = request.returnFocus;
+          if (opener?.isConnected) opener.focus();
+        }}
       >
         {heading && (
           <DropdownMenuLabel className="truncate text-xs font-medium text-muted-foreground">

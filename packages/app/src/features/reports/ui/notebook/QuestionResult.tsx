@@ -19,6 +19,7 @@ import { cn } from '@shared/lib/utils';
 import { QuestionVisualization } from './QuestionVisualization';
 import { QuestionTable } from './QuestionTable';
 import { DrillMenu, type DrillRequest } from './DrillMenu';
+import { withReturnFocus } from './drill-focus';
 import type { QuestionQueryState } from './useQuestionQuery';
 import { ChartSettings } from './viz/ChartSettings';
 import { ChartTypePicker } from './viz/ChartTypePicker';
@@ -56,7 +57,9 @@ export function QuestionResult({
 }: QuestionResultProps) {
   const { t } = useLingui();
   const [drillRequest, setDrillRequest] = useState<DrillRequest | null>(null);
-  const handleDrill = onDrill ? setDrillRequest : undefined;
+  const handleDrill = onDrill
+    ? (request: DrillRequest) => setDrillRequest(withReturnFocus(request))
+    : undefined;
   const chartRef = useRef<HTMLDivElement | null>(null);
   const { result, resultCompiled, compileError, error, isRunning } = query;
   const shownError = compileError ?? error;
