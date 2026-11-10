@@ -60,6 +60,7 @@ export function ChartQuickBar({
   const sortLabel =
     sort === 'desc' ? t`Largest first` : sort === 'asc' ? t`Smallest first` : t`Sort`;
   const comparing = comparesLastYear(spec);
+  const customTopN = display?.topN ?? 0;
 
   return (
     <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t`Chart options`}>
@@ -129,7 +130,7 @@ export function ChartQuickBar({
               </SelectItem>
             ))}
             {display?.topN && !(TOP_N_CHOICES as readonly number[]).includes(display.topN) && (
-              <SelectItem value={String(display.topN)}>{t`Top ${display.topN}`}</SelectItem>
+              <SelectItem value={String(display.topN)}>{t`Top ${customTopN}`}</SelectItem>
             )}
           </SelectContent>
         </Select>

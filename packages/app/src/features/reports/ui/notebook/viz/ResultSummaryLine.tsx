@@ -40,13 +40,14 @@ export function ResultSummaryLine({
       const period = format.cell(summary.x, summary.current.x, 'long');
       const value = money(summary.current.value);
       const ratio = changeRatio(summary.current.value, summary.previous.value);
+      const change = ratio === null ? '' : pct(ratio);
       if (summary.against === 'lastYear') {
         const before = money(summary.previous.value);
         if (ratio === null) text = t`${metricName} in ${period}: ${value}.`;
         else if (ratio > 0.0005)
-          text = t`${metricName} in ${period} was ${pct(ratio)} more than a year earlier (${value} vs ${before}).`;
+          text = t`${metricName} in ${period} was ${change} more than a year earlier (${value} vs ${before}).`;
         else if (ratio < -0.0005)
-          text = t`${metricName} in ${period} was ${pct(ratio)} less than a year earlier (${value} vs ${before}).`;
+          text = t`${metricName} in ${period} was ${change} less than a year earlier (${value} vs ${before}).`;
         else text = t`${metricName} in ${period} was the same as a year earlier (${value}).`;
         break;
       }
@@ -54,9 +55,9 @@ export function ResultSummaryLine({
       const before = money(summary.previous.value);
       if (ratio === null) text = t`${metricName} in ${period}: ${value}.`;
       else if (ratio > 0.0005)
-        text = t`${metricName} in ${period} was ${pct(ratio)} more than in ${previousPeriod} (${value} vs ${before}).`;
+        text = t`${metricName} in ${period} was ${change} more than in ${previousPeriod} (${value} vs ${before}).`;
       else if (ratio < -0.0005)
-        text = t`${metricName} in ${period} was ${pct(ratio)} less than in ${previousPeriod} (${value} vs ${before}).`;
+        text = t`${metricName} in ${period} was ${change} less than in ${previousPeriod} (${value} vs ${before}).`;
       else text = t`${metricName} in ${period} was the same as in ${previousPeriod} (${value}).`;
       break;
     }
@@ -72,12 +73,13 @@ export function ResultSummaryLine({
       const name = format.cell(summary.series, summary.top.group, 'long');
       const value = money(summary.top.value);
       const ratio = summary.before ? changeRatio(summary.top.value, summary.before.value) : null;
+      const change = ratio === null ? '' : pct(ratio);
       if (summary.before && ratio !== null && Math.abs(ratio) > 0.0005) {
         const previousPeriod = format.cell(summary.x, summary.before.period, 'long');
         text =
           ratio > 0
-            ? t`In ${period}, ${name} was the largest at ${value}, ${pct(ratio)} more than in ${previousPeriod}.`
-            : t`In ${period}, ${name} was the largest at ${value}, ${pct(ratio)} less than in ${previousPeriod}.`;
+            ? t`In ${period}, ${name} was the largest at ${value}, ${change} more than in ${previousPeriod}.`
+            : t`In ${period}, ${name} was the largest at ${value}, ${change} less than in ${previousPeriod}.`;
       } else {
         text = t`In ${period}, ${name} was the largest at ${value}.`;
       }

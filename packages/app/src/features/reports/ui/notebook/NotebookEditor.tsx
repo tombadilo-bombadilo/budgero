@@ -680,7 +680,7 @@ function MetricOptions({
           }}
         >
           <DropdownMenuRadioItem value="off">
-            <Trans>Nothing</Trans>
+            <Trans>No comparison</Trans>
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="previous" disabled={!dated}>
             <Trans>Previous period</Trans>
