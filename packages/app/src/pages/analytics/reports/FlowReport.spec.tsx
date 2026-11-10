@@ -153,10 +153,7 @@ describe('FlowReport', () => {
       expect.objectContaining({ source: 'Income', target: 'Saved ' })
     );
     // The user's own "Income" group stays a drillable, untranslated table row.
-    expect(screen.getByRole('button', { name: 'Income' })).toHaveAttribute(
-      'aria-expanded',
-      'false'
-    );
+    expect(screen.getByRole('button', { name: 'Income' })).not.toHaveAttribute('aria-expanded');
   });
   it('toggles to categories and expands Other into a focused colored breakdown', () => {
     const income: AnalyticsTxn = {

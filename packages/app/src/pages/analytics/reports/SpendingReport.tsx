@@ -29,6 +29,7 @@ import { BreakdownTable } from '../components/LedgerTable';
 import { InsightStrip } from '../components/panels';
 import { reportMeta } from '../report-questions';
 import { spendingAnswer } from '../report-answers';
+import { formatPercent } from '../format-percent';
 
 type SpendingView = 'time' | 'share';
 type ShareStyle = 'donut' | 'columns' | 'treemap';
@@ -215,7 +216,7 @@ export function SpendingReport({ data, months }: SpendingReportProps) {
         return tooltipHtml(DIM_LABELS[dim], [
           {
             color: typeof item.color === 'string' ? item.color : chrome.other,
-            name: `${item.name} · ${percent.toFixed(1)}%`,
+            name: `${item.name} · ${formatPercent(percent, 1)}`,
             value: money.amount(Math.round(item.value * 1000)),
           },
         ]);
@@ -239,7 +240,9 @@ export function SpendingReport({ data, months }: SpendingReportProps) {
               color: chrome.inkPrimary,
               fontSize: 12,
               formatter: (params: { name: string; percent?: number }) =>
-                (params.percent ?? 0) > 5 ? `${params.name}\n${params.percent?.toFixed(0)}%` : '',
+                (params.percent ?? 0) > 5
+                  ? `${params.name}\n${formatPercent(params.percent ?? 0)}`
+                  : '',
             },
             labelLine: { lineStyle: { color: chrome.axisLine } },
             emphasis: { scaleSize: 4 },
@@ -389,7 +392,7 @@ export function SpendingReport({ data, months }: SpendingReportProps) {
               value: top?.name ?? '—',
               detail:
                 top && total > 0
-                  ? t`${((top.total / total) * 100).toFixed(0)}% of spending`
+                  ? t`${formatPercent((top.total / total) * 100)} of spending`
                   : undefined,
             },
             { label: DIM_LABELS[dim], value: String(totals.length) },

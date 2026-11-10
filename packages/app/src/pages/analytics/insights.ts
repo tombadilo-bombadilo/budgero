@@ -13,6 +13,7 @@ import type {
   TrendSeries,
 } from './analytics-model';
 import type { LinearForecast } from './forecast';
+import { formatPercent } from './format-percent';
 
 export interface Insight {
   /** 'good' | 'warn' | 'neutral' — drives the marker color only. */
@@ -91,8 +92,8 @@ export function inOutInsights(
     tone: rate >= 0.1 ? 'good' : rate >= 0 ? 'neutral' : 'warn',
     text:
       rate >= 0
-        ? t`You kept ${(rate * 100).toFixed(0)}% of income over this period.`
-        : t`You spent ${Math.abs(rate * 100).toFixed(0)}% more than you earned over this period.`,
+        ? t`You kept ${formatPercent(rate * 100)} of income over this period.`
+        : t`You spent ${formatPercent(Math.abs(rate * 100))} more than you earned over this period.`,
   });
   if (savingsTargetPct !== null && totalIncome > 0) {
     const hit = withIncome.filter(
@@ -126,7 +127,7 @@ export function spendingInsights(series: TrendSeries[], fmt: InsightFormat): Ins
   if (total > 0) {
     insights.push({
       tone: 'neutral',
-      text: t`${top.name} leads at ${((top.total / total) * 100).toFixed(0)}% of spending (${fmt.money(top.total)}).`,
+      text: t`${top.name} leads at ${formatPercent((top.total / total) * 100)} of spending (${fmt.money(top.total)}).`,
     });
   }
   // Momentum: compare each series' last-3-month average to its prior average.
@@ -158,8 +159,8 @@ export function planInsights(plan: PlanVsReality, fmt: InsightFormat): Insight[]
     tone: usage <= 1 ? 'good' : 'warn',
     text:
       usage <= 1
-        ? t`Spending ran at ${(usage * 100).toFixed(0)}% of plan — ${fmt.money(plan.totalAssigned - plan.totalSpent)} of assigned money went unspent.`
-        : t`Spending overran the plan by ${fmt.money(plan.totalSpent - plan.totalAssigned)} (${(usage * 100).toFixed(0)}% of assigned).`,
+        ? t`Spending ran at ${formatPercent(usage * 100)} of plan — ${fmt.money(plan.totalAssigned - plan.totalSpent)} of assigned money went unspent.`
+        : t`Spending overran the plan by ${fmt.money(plan.totalSpent - plan.totalAssigned)} (${formatPercent(usage * 100)} of assigned).`,
   });
   insights.push({
     tone: plan.monthsOnPlan >= 0.5 ? 'good' : 'warn',

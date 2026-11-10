@@ -24,6 +24,7 @@ import { KeyFigures, ReportLayout, ViewSwitch } from '../components/ReportLayout
 import { BreakdownTable } from '../components/LedgerTable';
 import { reportMeta } from '../report-questions';
 import { flowAnswer } from '../report-answers';
+import { formatPercent } from '../format-percent';
 
 const MAX_DESTINATIONS = 8;
 
@@ -260,7 +261,7 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
               {
                 color: item.data.itemStyle?.color ?? chrome.other,
                 name: item.name,
-                value: `${money.amount(value)} · ${drilldownTotal > 0 ? `${((value / drilldownTotal) * 100).toFixed(1)}%` : '0%'}`,
+                value: `${money.amount(value)} · ${formatPercent(drilldownTotal > 0 ? (value / drilldownTotal) * 100 : 0, drilldownTotal > 0 ? 1 : 0)}`,
               },
             ]);
           },
@@ -522,7 +523,7 @@ export function FlowReport({ data, months = NO_MONTHS }: FlowReportProps) {
             },
             {
               label: t`Savings rate`,
-              value: savingsRate === null ? '—' : `${savingsRate.toFixed(0)}%`,
+              value: savingsRate === null ? '—' : formatPercent(savingsRate),
               valueClassName: savingsRate !== null ? trendTextClass(savingsRate) : undefined,
             },
           ]}
