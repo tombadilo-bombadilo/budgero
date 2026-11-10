@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { resetAnalytics } from '@shared/lib/analytics/analytics';
-import { clearIdbFiles } from '@budgero/core/browser';
+import { wipeLocalBudgetCopies } from '@shared/lib/local-copies';
 import {
   PENDING_SPACE_INVITE_DB_NAME,
   PENDING_SPACE_INVITE_KEY,
@@ -100,20 +100,6 @@ declare global {
   }
 }
 
-/** OPFS FileSystemDirectoryHandle with iteration support */
-interface OPFSDirectoryHandle {
-  values(): AsyncIterable<{ name: string; kind: string }>;
-  entries(): AsyncIterable<[string, unknown]>;
-  removeEntry(name: string, options?: { recursive?: boolean }): Promise<void>;
-}
-
-/** Navigator with optional OPFS storage API */
-interface NavigatorWithStorage {
-  storage?: {
-    getDirectory?(): Promise<OPFSDirectoryHandle>;
-  };
-}
-
 // The session-only fallback must survive the initial signed-out cleanup. The
 // normal cross-tab copy is encrypted in the dedicated invite IndexedDB, which
 // is likewise excluded from the database wipe below.
@@ -150,26 +136,9 @@ async function runStorageCleanup() {
     }
   }
 
-  // 2. Clear OPFS
-  const nav = navigator as unknown as NavigatorWithStorage;
-  if (nav.storage?.getDirectory) {
-    try {
-      const root = await nav.storage.getDirectory();
-      if (root && root.values) {
-        for await (const entry of root.values()) {
-          await root.removeEntry(entry.name, { recursive: true });
-        }
-      } else if (root && root.entries) {
-        for await (const [name] of root.entries()) {
-          await root.removeEntry(name, { recursive: true });
-        }
-      }
-    } catch (e) {
-      console.warn('[runStorageCleanup] OPFS clear failed:', e);
-    }
-  }
-  // Copies kept in IndexedDB where OPFS is refused (Firefox private windows).
-  await clearIdbFiles().catch(() => undefined);
+  // 2. Remove the local budget copies (OPFS, or the IndexedDB fallback when
+  // the browser has no OPFS or refuses it).
+  await wipeLocalBudgetCopies('runStorageCleanup');
 
   // 3. Clear IndexedDB
   try {

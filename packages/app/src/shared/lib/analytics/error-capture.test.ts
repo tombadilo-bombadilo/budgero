@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getOpfsRoot } from '@budgero/core/browser';
 import {
   __resetErrorCaptureForTests,
   addBreadcrumb,
@@ -582,6 +583,32 @@ describe('report context and extra capture paths', () => {
     expect(props).not.toHaveProperty('ctx_leaky');
     expectNoSecret(props);
     setErrorContext('test', null);
+  });
+
+  it('reports the store local copies really use, not whether the OPFS API exists', async () => {
+    // A Firefox private window: the API is there, but the browser refuses it.
+    const storage = Object.getOwnPropertyDescriptor(navigator, 'storage');
+    Object.defineProperty(navigator, 'storage', {
+      configurable: true,
+      value: {
+        getDirectory: () => Promise.reject(new DOMException('refused', 'SecurityError')),
+      },
+    });
+    try {
+      expect(
+        buildExceptionProps(new Error('x'), { handled: true, source: 'manual' })
+      ).not.toHaveProperty('ctx_opfs');
+      expect(await getOpfsRoot()).toBeNull();
+      expect(
+        buildExceptionProps(new Error('x'), { handled: true, source: 'manual' })
+      ).toMatchObject({
+        ctx_local_store: 'indexeddb',
+        ctx_opfs: false,
+      });
+    } finally {
+      if (storage) Object.defineProperty(navigator, 'storage', storage);
+      else delete (navigator as { storage?: unknown }).storage;
+    }
   });
 
   it('reports the cause chain with types and frames, and takes the code from the cause', () => {
