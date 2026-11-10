@@ -1042,6 +1042,10 @@ msgstr "il y a {diffMins} min"
 msgid "{doneCount} of {total} done"
 msgstr "{doneCount} sur {total} faites"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "{doneCount} of {total} done · see you tomorrow"
+msgstr "{doneCount} sur {total} faites · à demain"
+
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "{drilldownTitle} {drilldownItemLabel} breakdown"
 msgstr "Répartition : {drilldownTitle} · {drilldownItemLabel}"
@@ -2960,7 +2964,11 @@ msgstr "Compte<0/>"
 #: src/pages/onboarding/steps/DoneStep.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
+msgid "Accounts"
+msgstr "Comptes"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Accounts"
 msgstr "Comptes"
 
@@ -3077,7 +3085,11 @@ msgstr "Solde réel"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
+msgid "Add"
+msgstr "Ajouter"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Add"
 msgstr "Ajouter"
 
@@ -4636,6 +4648,11 @@ msgstr "Montants côté Budgero qui pourraient expliquer ces écarts. Ce sont de
 msgid "Budget"
 msgstr "Budget"
 
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Budget"
+msgstr "Budget"
+
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 msgid "Budget \"{name}\" created successfully!"
 msgstr "Budget « {name} » créé avec succès !"
@@ -4740,7 +4757,6 @@ msgstr "Budgéter à deux ?"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/features/budget-management/model/icon-options.ts
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Budgeting"
 msgstr "Budgétisation"
 
@@ -13620,8 +13636,8 @@ msgid "Pick a master password — your encryption key on this device."
 msgstr "Choisissez un mot de passe principal — votre clé de chiffrement sur cet appareil."
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Pick a path to continue."
-msgstr "Choisissez une option pour continuer."
+#~ msgid "Pick a path to continue."
+#~ msgstr "Choisissez une option pour continuer."
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Pick a period with some history to project from."
@@ -15018,7 +15034,11 @@ msgstr "Nom du rapport *"
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/pages/explorer-page/ExplorerPage.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
+msgid "Reports"
+msgstr "Rapports"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Reports"
 msgstr "Rapports"
 
@@ -16457,9 +16477,13 @@ msgstr "Préparation du budget de démonstration…"
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Settings"
 msgstr "Paramètres"
+
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Settings"
+msgstr "Réglages"
 
 #: src/app/startup/screens.tsx
 msgid "Settings → Workspaces"

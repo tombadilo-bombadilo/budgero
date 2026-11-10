@@ -1042,6 +1042,10 @@ msgstr "{diffMins}m geleden"
 msgid "{doneCount} of {total} done"
 msgstr "{doneCount} van {total} gedaan"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "{doneCount} of {total} done · see you tomorrow"
+msgstr "{doneCount} van {total} gedaan · tot morgen"
+
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "{drilldownTitle} {drilldownItemLabel} breakdown"
 msgstr "Uitsplitsing: {drilldownTitle} · {drilldownItemLabel}"
@@ -2960,7 +2964,11 @@ msgstr "Rekening<0/>"
 #: src/pages/onboarding/steps/DoneStep.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
+msgid "Accounts"
+msgstr "Rekeningen"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Accounts"
 msgstr "Rekeningen"
 
@@ -3077,9 +3085,13 @@ msgstr "Werkelijk saldo"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Add"
 msgstr "Toevoegen"
+
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Add"
+msgstr "Nieuw"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Add a custom rate to override automatically fetched exchange rates for specific date ranges."
@@ -4636,6 +4648,11 @@ msgstr "Bedragen aan de kant van Budgero die deze verschillen kunnen verklaren. 
 msgid "Budget"
 msgstr "Budget"
 
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Budget"
+msgstr "Budget"
+
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 msgid "Budget \"{name}\" created successfully!"
 msgstr "Budget \"{name}\" succesvol aangemaakt!"
@@ -4740,7 +4757,6 @@ msgstr "Samen budgetteren?"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/features/budget-management/model/icon-options.ts
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Budgeting"
 msgstr "Budgetteren"
 
@@ -13620,8 +13636,8 @@ msgid "Pick a master password — your encryption key on this device."
 msgstr "Kies een hoofdwachtwoord — je versleutelingssleutel op dit apparaat."
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Pick a path to continue."
-msgstr "Kies een pad om door te gaan."
+#~ msgid "Pick a path to continue."
+#~ msgstr "Kies een pad om door te gaan."
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Pick a period with some history to project from."
@@ -15018,7 +15034,11 @@ msgstr "Rapportnaam *"
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/pages/explorer-page/ExplorerPage.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
+msgid "Reports"
+msgstr "Rapporten"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Reports"
 msgstr "Rapporten"
 
@@ -16457,9 +16477,13 @@ msgstr "Demobudget wordt ingesteld…"
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Settings"
 msgstr "Instellingen"
+
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Settings"
+msgstr "Opties"
 
 #: src/app/startup/screens.tsx
 msgid "Settings → Workspaces"

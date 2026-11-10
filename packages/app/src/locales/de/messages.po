@@ -1042,6 +1042,10 @@ msgstr "vor {diffMins}m"
 msgid "{doneCount} of {total} done"
 msgstr "{doneCount} von {total} erledigt"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "{doneCount} of {total} done · see you tomorrow"
+msgstr "{doneCount} von {total} erledigt · bis morgen"
+
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "{drilldownTitle} {drilldownItemLabel} breakdown"
 msgstr "Aufschlüsselung: {drilldownTitle} · {drilldownItemLabel}"
@@ -2960,7 +2964,11 @@ msgstr "Konto<0/>"
 #: src/pages/onboarding/steps/DoneStep.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
+msgid "Accounts"
+msgstr "Konten"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Accounts"
 msgstr "Konten"
 
@@ -3077,9 +3085,13 @@ msgstr "Tatsächlicher Kontostand"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Add"
 msgstr "Hinzufügen"
+
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Add"
+msgstr "Neu"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Add a custom rate to override automatically fetched exchange rates for specific date ranges."
@@ -4636,6 +4648,11 @@ msgstr "Beträge auf Budgero-Seite, die diese Differenzen erklären könnten. Si
 msgid "Budget"
 msgstr "Budget"
 
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Budget"
+msgstr "Budget"
+
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 msgid "Budget \"{name}\" created successfully!"
 msgstr "Budget \"{name}\" erfolgreich erstellt!"
@@ -4740,7 +4757,6 @@ msgstr "Gemeinsam budgetieren?"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/features/budget-management/model/icon-options.ts
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Budgeting"
 msgstr "Budgetierung"
 
@@ -13620,8 +13636,8 @@ msgid "Pick a master password — your encryption key on this device."
 msgstr "Wähle ein Master-Passwort — deinen Verschlüsselungsschlüssel auf diesem Gerät."
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Pick a path to continue."
-msgstr "Wähle einen Pfad, um fortzufahren."
+#~ msgid "Pick a path to continue."
+#~ msgstr "Wähle einen Pfad, um fortzufahren."
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Pick a period with some history to project from."
@@ -15018,7 +15034,11 @@ msgstr "Berichtsname *"
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/pages/explorer-page/ExplorerPage.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
+msgid "Reports"
+msgstr "Berichte"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Reports"
 msgstr "Berichte"
 
@@ -16457,9 +16477,13 @@ msgstr "Demo-Budget wird eingerichtet…"
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Settings"
 msgstr "Einstellungen"
+
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Settings"
+msgstr "Optionen"
 
 #: src/app/startup/screens.tsx
 msgid "Settings → Workspaces"
