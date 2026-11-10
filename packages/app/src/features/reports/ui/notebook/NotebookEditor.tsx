@@ -953,7 +953,7 @@ function SummarizeStep({
 
   return (
     <div className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-start">
+      <div className="space-y-2">
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t`Metrics`}>
           {spec.aggregations.map((aggregation, index) => {
             const fieldName = aggregation.field
@@ -1016,11 +1016,10 @@ function SummarizeStep({
           )}
         </div>
 
-        <span className="self-center text-sm text-muted-foreground">
-          <Trans>by</Trans>
-        </span>
-
         <div className="flex flex-wrap items-center gap-2" role="group" aria-label={t`Groupings`}>
+          <span className="pr-1 text-sm text-muted-foreground">
+            <Trans>by</Trans>
+          </span>
           {spec.breakouts.map((breakout, index) => {
             const label = groupingLabel(spec, breakout);
             return (
@@ -1275,7 +1274,7 @@ function LimitStep({
           min={1}
           max={MAX_QUESTION_LIMIT}
           value={draft}
-          placeholder={t`Enter a limit`}
+          placeholder={t`No limit`}
           aria-label={t`Maximum number of rows`}
           className="h-9 w-28"
           onChange={(event) => {

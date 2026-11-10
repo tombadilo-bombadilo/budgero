@@ -88,8 +88,11 @@ export function QuestionResult({
   const stackable = !showTable && canStack(spec, stackAs);
   const stacking = resolveStacking(spec, stackAs);
   const firstGrouping = spec.breakouts[0];
+  // Sort / top N suit plain categories, not ranges or date parts with their own order.
   const categoryAxis =
-    !!firstGrouping && getField(spec.source, firstGrouping.field)?.type !== 'date';
+    !!firstGrouping &&
+    getField(spec.source, firstGrouping.field)?.type !== 'date' &&
+    firstGrouping.bin === undefined;
   const shownVisualization =
     resultCompiled && allowedVisualizations(resultCompiled.spec).includes(current)
       ? current
@@ -128,11 +131,14 @@ export function QuestionResult({
             }}
             aria-label={t`Show as`}
           >
-            <ToggleGroupItem value="table" className="px-3">
+            <ToggleGroupItem value="table" className="w-auto flex-none whitespace-nowrap px-3">
               <Table2 className="h-4 w-4" aria-hidden />
               <Trans>Table</Trans>
             </ToggleGroupItem>
-            <ToggleGroupItem value="visualization" className="px-3">
+            <ToggleGroupItem
+              value="visualization"
+              className="w-auto flex-none whitespace-nowrap px-3"
+            >
               <BarChart3 className="h-4 w-4" aria-hidden />
               <Trans>Visualization</Trans>
             </ToggleGroupItem>
@@ -235,6 +241,7 @@ export function QuestionResult({
               current !== 'trend' &&
               !(showTable && resultCompiled.spec.aggregations.length === 0) && (
                 <ResultSummaryLine
+                  partial={spec.limit !== null || Boolean(spec.display?.topN)}
                   result={result}
                   columns={resultCompiled.columns}
                   source={resultCompiled.spec.source}

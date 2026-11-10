@@ -67,6 +67,13 @@ export function useQuestionFormatters(
       maximumFractionDigits: 1,
     });
     const plain = new Intl.NumberFormat(resolved.locale, { maximumFractionDigits: 2 });
+    // Range bounds like 200 or 1,000 read without cents.
+    const wholeMoney = new Intl.NumberFormat(resolved.locale, {
+      style: 'currency',
+      currency,
+      currencyDisplay: currencyDisplayFor(currency),
+      maximumFractionDigits: 0,
+    });
     const compactPlain = new Intl.NumberFormat(resolved.locale, {
       notation: 'compact',
       maximumFractionDigits: 1,
@@ -99,8 +106,13 @@ export function useQuestionFormatters(
         if (from === null) return '—';
         const { bin } = column.breakout;
         const width = typeof bin === 'number' ? bin : binWidths.get(column.key);
-        if (!width) return `${number(column, from)}+`;
-        return `${number(column, from)} – ${number(column, from + width)}`;
+        const whole = Number.isInteger(from) && (!width || Number.isInteger(width));
+        const bound = (value: number) =>
+          whole && columnFormat(column) === 'money'
+            ? mask(wholeMoney.format(value))
+            : number(column, value);
+        if (!width) return `${bound(from)}+`;
+        return `${bound(from)} – ${bound(from + width)}`;
       }
       const bucket = columnBucket(column, source);
       if (bucket) return formatBucketValue(bucket, value, style);

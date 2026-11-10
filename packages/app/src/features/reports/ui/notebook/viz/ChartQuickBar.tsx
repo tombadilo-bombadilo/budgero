@@ -46,7 +46,10 @@ export function ChartQuickBar({
   const { display } = spec;
   const showSort = Boolean(onDisplayChange) && options.sort;
   const showTopN = Boolean(onDisplayChange) && options.topN;
-  const lastYear = Boolean(onSpecChange) && canCompareLastYear(spec);
+  const lastYear =
+    Boolean(onSpecChange) &&
+    ['bar', 'line', 'area'].includes(visualization) &&
+    canCompareLastYear(spec);
   if (!stackable && !showSort && !showTopN && !lastYear) return null;
 
   const setDisplay = (patch: Partial<QuestionDisplay>) => {

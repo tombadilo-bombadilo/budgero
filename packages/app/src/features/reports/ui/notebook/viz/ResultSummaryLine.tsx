@@ -6,7 +6,7 @@ import type { QueryResult } from '@shared/lib/sql/report-query-executor';
 import { cn } from '@shared/lib/utils';
 import { columnLabel } from '../question-labels';
 import { useQuestionFormatters } from '../useQuestionFormatters';
-import { changeRatio, summarizeResult } from './summary';
+import { changeRatio, changesAsPercent, summarizeResult } from './summary';
 
 /**
  * One plain sentence about the result above the chart ("Spending in October
@@ -17,11 +17,14 @@ export function ResultSummaryLine({
   result,
   columns,
   source,
+  partial = false,
   className,
 }: {
   result: QueryResult;
   columns: QuestionColumn[];
   source: QuestionSource;
+  /** The rows are a top N / limit: no "share of the total". */
+  partial?: boolean;
   className?: string;
 }) {
   const { t } = useLingui();
@@ -32,7 +35,12 @@ export function ResultSummaryLine({
 
   const metricName = columnLabel(source, summary.metric);
   const money = (value: number) => format.cell(summary.metric, value);
-  const pct = (ratio: number) => format.percent(Math.abs(ratio), Math.abs(ratio) < 0.1 ? 1 : 0);
+  const asPercent = changesAsPercent(summary.metric);
+  // Rates change "by 4.3", not "by 13%".
+  const pct = (ratio: number, current: number, previous: number) =>
+    asPercent
+      ? format.percent(Math.abs(ratio), Math.abs(ratio) < 0.1 ? 1 : 0)
+      : money(Math.abs(current - previous));
 
   let text: string;
   switch (summary.kind) {
@@ -40,7 +48,8 @@ export function ResultSummaryLine({
       const period = format.cell(summary.x, summary.current.x, 'long');
       const value = money(summary.current.value);
       const ratio = changeRatio(summary.current.value, summary.previous.value);
-      const change = ratio === null ? '' : pct(ratio);
+      const change =
+        ratio === null ? '' : pct(ratio, summary.current.value, summary.previous.value);
       if (summary.against === 'lastYear') {
         const before = money(summary.previous.value);
         if (ratio === null) text = t`${metricName} in ${period}: ${value}.`;
@@ -65,7 +74,9 @@ export function ResultSummaryLine({
       const name = format.cell(summary.x, summary.top.x, 'long');
       const value = money(summary.top.value);
       const share = format.percent(summary.share);
-      text = t`${name} is the largest: ${value}, ${share} of the total.`;
+      text = partial
+        ? t`${name} is the largest: ${value}.`
+        : t`${name} is the largest: ${value}, ${share} of the total.`;
       break;
     }
     case 'largestInPeriod': {
@@ -73,7 +84,10 @@ export function ResultSummaryLine({
       const name = format.cell(summary.series, summary.top.group, 'long');
       const value = money(summary.top.value);
       const ratio = summary.before ? changeRatio(summary.top.value, summary.before.value) : null;
-      const change = ratio === null ? '' : pct(ratio);
+      const change =
+        ratio === null || !summary.before
+          ? ''
+          : pct(ratio, summary.top.value, summary.before.value);
       if (summary.before && ratio !== null && Math.abs(ratio) > 0.0005) {
         const previousPeriod = format.cell(summary.x, summary.before.period, 'long');
         text =

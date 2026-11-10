@@ -74,6 +74,8 @@ export function summarizeResult(
   const { metric } = model.series[0];
   // Shares and running totals don't read as plain amounts.
   if (metric.kind !== 'aggregation' || metric.aggregation.modifier) return null;
+  // Day against the day before is noise, not a story.
+  if (x.kind === 'breakout' && x.breakout.bucket === 'day') return null;
 
   if (isTimeColumn(x) && !model.seriesColumn) {
     const series = model.series[0];
@@ -156,4 +158,15 @@ export function summarizeResult(
 export function changeRatio(current: number, previous: number): number | null {
   if (previous === 0) return null;
   return (current - previous) / Math.abs(previous);
+}
+
+/**
+ * Whether changes of a metric read as "% more / less" (amounts and counts)
+ * or as a plain difference (rates and other computed numbers, where a % of a
+ * % confuses).
+ */
+export function changesAsPercent(metric: QuestionColumn): boolean {
+  if (metric.kind !== 'aggregation') return false;
+  if (metric.format) return metric.format === 'money';
+  return metric.aggregation.op !== 'custom';
 }

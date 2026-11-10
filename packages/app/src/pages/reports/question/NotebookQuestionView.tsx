@@ -105,6 +105,10 @@ export function NotebookQuestionView({
   const valueOptions = useFieldValueOptions(budgetId);
   const pin = usePinToDashboard(budgetId);
   const opener = useOpenSavedQuestion();
+  // Opened from a card further down the Reports home: start at the top.
+  useEffect(() => {
+    document.documentElement.scrollTop = 0;
+  }, []);
   const pinOnArrival = useRef(openPinDialog);
   useEffect(() => {
     if (!pinOnArrival.current || !report) return;
