@@ -9,6 +9,7 @@ import {
 import { getErrorMessage } from '@shared/lib/errors';
 import {
   compileQuestion,
+  todayIso,
   type CompiledQuestion,
   type QuestionSpec,
 } from '@features/reports/lib/question';
@@ -65,6 +66,7 @@ export function useQuestionQuery({
           chartId: chartId ?? 'question-preview',
           chartTitle,
           labels: getQuestionSqlLabels(),
+          today: todayIso(),
         }),
         compileError: null,
       };

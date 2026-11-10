@@ -111,6 +111,7 @@ export function NotebookQuestionView({
     async ({ name, description, collection }: SaveQuestionInput) => {
       // Keep the first chart's id so dashboard widgets pinned to it keep working.
       const chartId = report?.charts?.[0]?.id ?? crypto.randomUUID();
+      // No `today`: the stored SQL keeps rolling with CURRENT_DATE (live runs pass the local day).
       const { sql, chart } = compileQuestion(spec, {
         budgetId,
         chartId,
