@@ -15,7 +15,14 @@ import { useQuestionFormatters } from '../useQuestionFormatters';
 import { ChartLegend } from './ChartLegend';
 import type { DrillRequest } from '../DrillMenu';
 import { applyCartesianDisplay, goalText } from './display';
-import { barSeries, layoutSeries, markDrillValues, seriesColor, useHiddenSeries } from './series';
+import {
+  barSeries,
+  layoutSeries,
+  markDrillValues,
+  seriesColor,
+  useHiddenSeries,
+  withShare,
+} from './series';
 import { applyCategoryDisplay, isOther } from './transforms';
 import type { VizViewProps } from './types';
 import { labelWidthFor, useElementWidth } from './useElementWidth';
@@ -137,7 +144,11 @@ export function RowChartView({
               color: colorOf(position),
               name: seriesName(series),
               value: stack
-                ? `${format.cell(series.metric, series.values[dataIndex])} · ${format.percent(share(series.values[dataIndex] ?? 0, dataIndex))}`
+                ? withShare(
+                    format.cell(series.metric, series.values[dataIndex]),
+                    share(series.values[dataIndex] ?? 0, dataIndex),
+                    format.percent
+                  )
                 : format.cell(series.metric, series.values[dataIndex]),
             }))
           );

@@ -161,8 +161,31 @@ export interface SeriesLayout {
   /** Stacked to 100%: `plotted` returns shares (0..100). */
   percent: boolean;
   plotted: (values: number[]) => number[];
-  /** A value's share (0..1) of its x value's visible total. */
-  share: (value: number, index: number) => number;
+  /**
+   * A value's share (0..1) of its x value's positive total, or null for a
+   * negative value (it is no part of a whole) or an x value with nothing
+   * positive.
+   */
+  share: (value: number, index: number) => number | null;
+}
+
+/** "RSD 1,200 · 43%" where the value has a share, else the value alone. */
+export function withShare(
+  value: string,
+  share: number | null,
+  formatPercent: (ratio: number) => string
+): string {
+  return share === null ? value : `${value} · ${formatPercent(share)}`;
+}
+
+/**
+ * Slice sizes of a pie: all values of one sign are parts of one whole (an
+ * all-negative metric such as budget activity shows by magnitude); with mixed
+ * signs the negative values are no part of the whole and get no slice.
+ */
+export function pieSliceValues(values: readonly number[]): number[] {
+  const allNonPositive = values.every((value) => value <= 0);
+  return values.map((value) => (allNonPositive ? Math.abs(value) : Math.max(0, value)));
 }
 
 export function layoutSeries(
@@ -175,17 +198,22 @@ export function layoutSeries(
     .filter(({ series }) => !hidden.has(series.id));
   const stack = stacking !== 'none' && visible.length > 1;
   const percent = stack && stacking === 'percent';
+  // Shares are of the positive parts only: a negative value (net inflow) is
+  // no part of a whole, so it gets no share and draws nothing at 100%.
   const totals = model.xValues.map((_, index) =>
-    visible.reduce((sum, { series }) => sum + Math.abs(series.values[index] ?? 0), 0)
+    visible.reduce((sum, { series }) => sum + Math.max(0, series.values[index] ?? 0), 0)
   );
-  const share = (value: number, index: number) =>
-    totals[index] > 0 ? Math.abs(value ?? 0) / totals[index] : 0;
+  const share = (value: number, index: number): number | null => {
+    const part = value ?? 0;
+    if (part < 0 || totals[index] <= 0) return null;
+    return part / totals[index];
+  };
   return {
     visible,
     stack,
     percent,
     plotted: (values) =>
-      percent ? values.map((value, index) => share(value, index) * 100) : values,
+      percent ? values.map((value, index) => (share(value, index) ?? 0) * 100) : values,
     share,
   };
 }

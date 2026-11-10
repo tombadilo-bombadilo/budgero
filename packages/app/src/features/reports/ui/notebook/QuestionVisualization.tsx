@@ -32,6 +32,8 @@ import { renderExtraVisualization } from './viz';
 import {
   barSeries,
   layoutSeries,
+  pieSliceValues,
+  withShare,
   markDrillValues,
   seriesColor,
   useHiddenSeries,
@@ -264,8 +266,8 @@ function ChartView({
 
     if (isPie) {
       const [first] = model.series;
-      const slices = first.values
-        .map((value, position) => ({ value: Math.abs(value), position }))
+      const slices = pieSliceValues(first.values)
+        .map((value, position) => ({ value, position }))
         .filter((slice) => slice.value > 0 && !hidden.has(sliceIds[slice.position]));
       if (slices.length === 0) return null;
       const total = slices.reduce((sum, slice) => sum + slice.value, 0);
@@ -363,7 +365,11 @@ function ChartView({
             color: colorOf(position),
             name: seriesName(series),
             value: stack
-              ? `${format.cell(series.metric, series.values[dataIndex])} · ${format.percent(share(series.values[dataIndex] ?? 0, dataIndex))}`
+              ? withShare(
+                  format.cell(series.metric, series.values[dataIndex]),
+                  share(series.values[dataIndex] ?? 0, dataIndex),
+                  format.percent
+                )
               : format.cell(series.metric, series.values[dataIndex]),
           }));
           return tooltipHtml(xLongLabels[dataIndex] ?? '', rows);
@@ -431,8 +437,8 @@ function ChartView({
       let position = params.dataIndex;
       if (isPie) {
         const [first] = model.series;
-        const visibleSlices = first.values
-          .map((value, index) => ({ value: Math.abs(value), index }))
+        const visibleSlices = pieSliceValues(first.values)
+          .map((value, index) => ({ value, index }))
           .filter((slice) => slice.value > 0 && !hidden.has(sliceIds[slice.index]));
         position = visibleSlices[params.dataIndex]?.index ?? -1;
       }
