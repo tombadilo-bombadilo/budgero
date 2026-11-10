@@ -481,6 +481,12 @@ export function visualizationLabel(visualization: ResolvedVisualization): string
       return t`Scatter`;
     case 'row':
       return t`Row`;
+    case 'treemap':
+      return t`Treemap`;
+    case 'radar':
+      return t`Radar`;
+    case 'progress':
+      return t`Progress`;
   }
 }
 
@@ -509,6 +515,10 @@ export function visualizationBlockerLabel(blocker: VisualizationBlocker): string
       return t`Needs exactly two groupings.`;
     case 'needsTwoCategoryGroupings':
       return t`Needs two groupings that aren’t dates, like Category group and Category.`;
+    case 'needsOneOrTwoGroupings':
+      return t`Needs one or two groupings, like Category group and Category.`;
+    case 'needsCategoryFirst':
+      return t`Needs a first grouping that isn’t a date, like Category.`;
   }
 }
 

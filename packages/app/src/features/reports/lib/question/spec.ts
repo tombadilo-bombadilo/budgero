@@ -172,6 +172,9 @@ export const VISUALIZATIONS = [
   'sankey',
   'scatter',
   'row',
+  'treemap',
+  'radar',
+  'progress',
 ] as const;
 export type Visualization = (typeof VISUALIZATIONS)[number];
 export type ResolvedVisualization = Exclude<Visualization, 'auto'>;
@@ -1233,16 +1236,19 @@ export function questionField(spec: QuestionSpec, fieldId: string): FieldDef | u
 export const VISUALIZATION_ORDER: readonly ResolvedVisualization[] = [
   'number',
   'trend',
+  'progress',
   'bar',
   'row',
   'line',
   'area',
   'combo',
   'pie',
+  'treemap',
   'waterfall',
   'calendar',
   'sankey',
   'scatter',
+  'radar',
   'pivot',
   'table',
 ];
@@ -1259,7 +1265,9 @@ export type VisualizationBlocker =
   | 'needsTwoMetricsOneGrouping'
   | 'needsDayGrouping'
   | 'needsTwoGroupings'
-  | 'needsTwoCategoryGroupings';
+  | 'needsTwoCategoryGroupings'
+  | 'needsOneOrTwoGroupings'
+  | 'needsCategoryFirst';
 
 /** A date grouping on a time line (bucketed); date parts (weekday, ...) are categories. */
 function isDateBreakout(spec: QuestionSpec, breakout: QuestionBreakout | undefined): boolean {
@@ -1324,6 +1332,15 @@ export function visualizationBlocker(
       return groupings > 0 && metrics >= 2 ? null : 'needsTwoMetrics';
     case 'pivot':
       return groupings === 2 ? null : 'needsTwoGroupings';
+    case 'progress':
+      return groupings === 0 ? null : 'needsNoGrouping';
+    case 'treemap':
+      return groupings === 1 || groupings === 2 ? null : 'needsOneOrTwoGroupings';
+    case 'radar':
+      // Axes are the first grouping's values (not a time line); a second grouping makes series.
+      return (groupings === 1 || groupings === 2) && !isDateBreakout(spec, first)
+        ? null
+        : 'needsCategoryFirst';
   }
 }
 
