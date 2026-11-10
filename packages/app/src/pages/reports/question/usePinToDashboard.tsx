@@ -8,7 +8,7 @@ import {
   useCreateCustomDashboard,
   useCustomDashboards,
 } from '@features/custom-dashboards/api/useCustomDashboards';
-import { PinChartDialog } from '@pages/custom-dashboards/components/PinChartDialog';
+import { AddToDashboardDialog } from '@pages/custom-dashboards/components/AddToDashboardDialog';
 
 /** "Add to dashboard" for a saved question: open(report) + the dialog to render. */
 export function usePinToDashboard(budgetId: number) {
@@ -21,21 +21,21 @@ export function usePinToDashboard(budgetId: number) {
   const createDashboard = useCreateCustomDashboard();
 
   const dialog = (
-    <PinChartDialog
+    <AddToDashboardDialog
       open={open}
       onOpenChange={setOpen}
-      reports={
-        report && !reports.some((item) => item.id === report.id) ? [...reports, report] : reports
-      }
+      questions={reports}
+      question={report ? (reports.find((item) => item.id === report.id) ?? report) : null}
       dashboards={dashboardsQuery.data ?? []}
-      defaultReportId={report?.id}
-      defaultChartId={report?.charts?.[0]?.id}
+      title={t`Add to dashboard`}
+      description={t`Pick the dashboard to show this question on.`}
+      confirmLabel={t`Add to dashboard`}
       onCreateDashboard={async () => {
         await createDashboard.mutateAsync({ budgetId, name: t`My Dashboard` });
         await dashboardsQuery.refetch();
       }}
-      onPin={async ({ dashboardId, reportId, chartId }) => {
-        await addWidget.mutateAsync({ dashboardId, reportId, chartId });
+      onSubmit={async ({ dashboardId, reportId, chartId, titleOverride }) => {
+        await addWidget.mutateAsync({ dashboardId, reportId, chartId, titleOverride });
         toast.success(t`Added to dashboard`);
       }}
     />

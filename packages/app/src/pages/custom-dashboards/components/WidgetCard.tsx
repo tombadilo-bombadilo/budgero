@@ -9,16 +9,15 @@ import type {
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import {
   getNormalizedReportQueryError,
-  type QueryResult,
   type SqlDatabase,
 } from '@shared/lib/sql/report-query-executor';
-import { ChartViewer } from '@features/analytics/ui/chart-viewer';
 import {
   hasDashboardFilters,
   resolveStacking,
   type DashboardFilters,
 } from '@features/reports/lib/question';
 import { QuestionVisualization } from '@features/reports/ui/notebook/QuestionVisualization';
+import { SqlChartVisualization } from '@features/reports/ui/notebook/SqlChartVisualization';
 import { QueryErrorMessage } from '@features/reports/ui/notebook/QueryErrorMessage';
 import { ExportMenu } from '@features/reports/ui/notebook/viz/ExportMenu';
 import { refineAutoVisualization } from '@features/reports/ui/notebook/viz/transforms';
@@ -36,7 +35,6 @@ import {
   ArrowUpWideNarrow,
   MoveHorizontal,
   MoveVertical,
-  PenSquare,
   SquareArrowOutUpRight,
 } from 'lucide-react';
 import { runWidgetQuery, widgetQueryKey, widgetQuestion } from './widget-query';
@@ -54,12 +52,6 @@ interface WidgetCardProps {
     patch: Partial<{ colSpan: number; rowSpan: number }>
   ) => Promise<void>;
   onUpdateMobileSize: (widgetId: string, size: 's' | 'm' | 'l') => Promise<void>;
-  onEditChart: (input: {
-    reportId: string;
-    reportName: string;
-    chart: ChartConfiguration;
-    queryResult: QueryResult;
-  }) => void;
   onOpenReportInExplorer: (reportId: string) => void;
   /** Dashboard-level filters applied to notebook questions. */
   filters?: DashboardFilters;
@@ -178,10 +170,10 @@ function WidgetErrorCard({
       </CardHeader>
       <CardContent className="flex flex-wrap gap-2">
         <Button variant="outline" size="sm" onClick={onSelectNewChart}>
-          <Trans>Select new chart</Trans>
+          <Trans>Choose another question</Trans>
         </Button>
         <Button variant="destructive" size="sm" onClick={() => void onRemove()}>
-          <Trans>Remove widget</Trans>
+          <Trans>Remove from dashboard</Trans>
         </Button>
       </CardContent>
     </Card>
@@ -198,7 +190,6 @@ export function WidgetCard({
   onSelectNewChart,
   onUpdateDesktopLayout,
   onUpdateMobileSize,
-  onEditChart,
   onOpenReportInExplorer,
   filters = NO_FILTERS,
 }: WidgetCardProps) {
@@ -209,9 +200,8 @@ export function WidgetCard({
   const budgetId = useUiStore((state) => state.selectedBudget?.ID ?? 0);
   const chartRef = useRef<HTMLDivElement | null>(null);
 
-  // Saved questions render with the notebook's visualization (legend, human
-  // labels, money formatting) and take the dashboard's filters; other reports
-  // use the generic chart viewer and run unchanged.
+  // Notebook questions take the dashboard's filters; SQL questions (and extra
+  // charts of one) run as written. Both draw with the question visualization.
   const question = useMemo(
     () => widgetQuestion(report, chart, filters, budgetId),
     [report, chart, filters, budgetId]
@@ -226,7 +216,7 @@ export function WidgetCard({
     staleTime: 30 * 1000,
   });
 
-  const title = widget.titleOverride || chart?.title || report?.name || t`Widget`;
+  const title = widget.titleOverride || chart?.title || report?.name || t`Question`;
   const subtitle = report?.description?.trim() || null;
   const filtersActive = hasDashboardFilters(filters);
   const visualization =
@@ -262,7 +252,7 @@ export function WidgetCard({
     return (
       <WidgetErrorCard
         title={title}
-        description={t`Source report is missing. Choose another chart or remove this widget.`}
+        description={t`This question was deleted. Choose another question or remove it from the dashboard.`}
         onSelectNewChart={() => onSelectNewChart(widget.id)}
         onRemove={() => onRemove(widget.id)}
       />
@@ -273,7 +263,7 @@ export function WidgetCard({
     return (
       <WidgetErrorCard
         title={title}
-        description={t`Source chart is missing in this report.`}
+        description={t`This question no longer has the chart shown here. Choose another question or remove it from the dashboard.`}
         onSelectNewChart={() => onSelectNewChart(widget.id)}
         onRemove={() => onRemove(widget.id)}
       />
@@ -286,7 +276,7 @@ export function WidgetCard({
         title={title}
         description={
           isNonReadOnlyError ? (
-            t`This report query is not read-only and cannot run in dashboard widgets.`
+            t`This question’s SQL changes data, so it can’t run on a dashboard.`
           ) : (
             <QueryErrorMessage error={queryError.message} />
           )
@@ -338,7 +328,7 @@ export function WidgetCard({
                   <TooltipContent side="bottom" className="max-w-60">
                     {question
                       ? t`This question’s data has no field the dashboard filters use.`
-                      : t`SQL reports run as written; dashboard filters only apply to questions built in the notebook.`}
+                      : t`SQL questions run as written; dashboard filters only apply to questions built in the notebook.`}
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -350,8 +340,8 @@ export function WidgetCard({
               size="icon"
               onClick={() => void refreshWidgetData()}
               disabled={dataQuery.isFetching}
-              aria-label={dataQuery.isFetching ? t`Refreshing widget data` : t`Refresh widget data`}
-              title={dataQuery.isFetching ? t`Refreshing...` : t`Refresh widget data`}
+              aria-label={dataQuery.isFetching ? t`Refreshing…` : t`Refresh`}
+              title={dataQuery.isFetching ? t`Refreshing…` : t`Refresh`}
             >
               <RefreshCcw className={`h-4 w-4 ${dataQuery.isFetching ? 'animate-spin' : ''}`} />
             </Button>
@@ -374,30 +364,24 @@ export function WidgetCard({
                 <SquareArrowOutUpRight className="h-4 w-4" />
               </Button>
             )}
-            {report && dataQuery.data && (
-              <Button
-                variant="ghost"
-                size="icon"
-                title={t`Edit source visualization`}
-                aria-label={t`Edit source visualization`}
-                onClick={() =>
-                  onEditChart({
-                    reportId: report.id,
-                    reportName: report.name,
-                    chart,
-                    queryResult: dataQuery.data,
-                  })
-                }
-              >
-                <PenSquare className="h-4 w-4" />
-              </Button>
-            )}
             {isEditMode && (
               <>
-                <Button variant="ghost" size="icon" onClick={() => onSelectNewChart(widget.id)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onSelectNewChart(widget.id)}
+                  aria-label={t`Choose another question`}
+                  title={t`Choose another question`}
+                >
                   <ArrowUpWideNarrow className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" onClick={() => void onRemove(widget.id)}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => void onRemove(widget.id)}
+                  aria-label={t`Remove from dashboard`}
+                  title={t`Remove from dashboard`}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </>
@@ -416,7 +400,7 @@ export function WidgetCard({
       <CardContent className="flex min-h-0 flex-1 flex-col px-4 pt-0 sm:px-6">
         {dataQuery.isPending && (
           <div className="flex min-h-0 flex-1 items-center justify-center text-sm text-muted-foreground">
-            <Trans>Loading chart...</Trans>
+            <Trans>Loading…</Trans>
           </div>
         )}
         {!dataQuery.isPending && question && question.noOverlap.length > 0 && (
@@ -445,13 +429,12 @@ export function WidgetCard({
           </div>
         )}
         {!dataQuery.isPending && dataQuery.data && !question && (
-          <div ref={chartRef} className="min-h-0 flex-1 overflow-hidden">
-            <ChartViewer
-              queryResult={dataQuery.data}
-              chartConfig={chart}
+          <div ref={chartRef} className="min-h-0 flex-1 overflow-auto">
+            <SqlChartVisualization
+              result={dataQuery.data}
+              chart={chart}
+              exportName={title}
               fitHeight
-              compactToolbar
-              showLegendSummary={false}
             />
           </div>
         )}

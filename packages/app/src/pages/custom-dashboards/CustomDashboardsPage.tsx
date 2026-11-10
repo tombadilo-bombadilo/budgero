@@ -8,7 +8,7 @@ import { getErrorMessage } from '@shared/lib/errors';
 import { toast } from 'sonner';
 import { useUiStore } from '@shared/store/useUiStore';
 import { useIsMobile } from '@shared/hooks/useIsMobile';
-import { useReports, useUpdateChartInReport } from '@entities/report/api/useReports';
+import { useReports } from '@entities/report/api/useReports';
 import {
   useAddDashboardWidget,
   useCreateCustomDashboard,
@@ -20,7 +20,7 @@ import {
   useUpdateCustomDashboard,
   useUpdateDashboardWidget,
 } from '@features/custom-dashboards/api/useCustomDashboards';
-import type { QueryResult, SqlDatabase } from '@shared/lib/sql/report-query-executor';
+import type { SqlDatabase } from '@shared/lib/sql/report-query-executor';
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import {
   hasDashboardFilters,
@@ -29,13 +29,11 @@ import {
 } from '@features/reports/lib/question';
 import { questionResultCsv } from '@features/reports/ui/notebook/viz/export';
 import { downloadBlob } from '@shared/lib/download';
-import type { ChartConfiguration, CustomDashboardWidget } from '@budgero/core/browser';
+import type { CustomDashboardWidget } from '@budgero/core/browser';
 import { BackToReports } from '@pages/reports/BackToReports';
 import { DashboardSwitcher } from './components/DashboardSwitcher';
 import { DashboardGrid } from './components/DashboardGrid';
-import { AddWidgetDialog } from './components/AddWidgetDialog';
-import { PinChartDialog } from './components/PinChartDialog';
-import { EditWidgetChartDialog } from './components/EditWidgetChartDialog';
+import { AddToDashboardDialog } from './components/AddToDashboardDialog';
 import { DashboardFilterBar } from './components/DashboardFilterBar';
 import { buildCsvZip, zipFileName, type WidgetCsv } from './export-dashboard';
 import { runWidgetQuery, widgetQueryKey, widgetQuestion } from './components/widget-query';
@@ -54,12 +52,6 @@ export default function CustomDashboardsPage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [addWidgetDialogOpen, setAddWidgetDialogOpen] = useState(false);
   const [pinWidget, setPinWidget] = useState<CustomDashboardWidget | null>(null);
-  const [editingChartContext, setEditingChartContext] = useState<{
-    reportId: string;
-    reportName: string;
-    chart: ChartConfiguration;
-    queryResult: QueryResult;
-  } | null>(null);
 
   const dashboardsQuery = useCustomDashboards(budgetId);
   const dashboards = useMemo(() => dashboardsQuery.data ?? [], [dashboardsQuery.data]);
@@ -71,7 +63,6 @@ export default function CustomDashboardsPage() {
   const updateWidgetMutation = useUpdateDashboardWidget();
   const deleteWidgetMutation = useDeleteDashboardWidget();
   const reorderWidgetsMutation = useReorderDashboardWidgets();
-  const updateChartMutation = useUpdateChartInReport();
 
   const { data: reports = [] } = useReports();
   const reportsById = useMemo(() => {
@@ -249,43 +240,6 @@ export default function CustomDashboardsPage() {
     setPinWidget(null);
   };
 
-  const handleEditChart = (input: {
-    reportId: string;
-    reportName: string;
-    chart: ChartConfiguration;
-    queryResult: QueryResult;
-  }) => {
-    setEditingChartContext(input);
-  };
-
-  const handleSaveWidgetChart = async (chart: ChartConfiguration) => {
-    if (!editingChartContext) {
-      throw new Error('No chart selected for editing');
-    }
-    const updated = await updateChartMutation.mutateAsync({
-      reportId: editingChartContext.reportId,
-      chartId: editingChartContext.chart.id,
-      updates: {
-        chartType: chart.chartType,
-        title: chart.title,
-        xAxisColumn: chart.xAxisColumn,
-        yAxisColumn: chart.yAxisColumn,
-        groupByColumn: chart.groupByColumn,
-        aggregateFunction: chart.aggregateFunction,
-      },
-    });
-    const updatedChart =
-      updated.charts.find((item) => item.id === editingChartContext.chart.id) ?? chart;
-    setEditingChartContext((prev) =>
-      prev
-        ? {
-            ...prev,
-            chart: updatedChart,
-          }
-        : prev
-    );
-  };
-
   const handleFiltersChange = async (next: DashboardFilters) => {
     if (!activeDashboard) return;
     const { id } = activeDashboard;
@@ -385,7 +339,7 @@ export default function CustomDashboardsPage() {
             {isEditMode ? t`Done Editing` : t`Edit Layout`}
           </Button>
           <Button onClick={() => setAddWidgetDialogOpen(true)} disabled={!activeDashboard}>
-            <Trans>Add Widget</Trans>
+            <Trans>Add a question</Trans>
           </Button>
         </div>
       </div>
@@ -430,43 +384,39 @@ export default function CustomDashboardsPage() {
             const widget = activeDashboard.widgets.find((item) => item.id === widgetId) ?? null;
             setPinWidget(widget);
           }}
-          onEditChart={handleEditChart}
           onOpenReportInExplorer={handleOpenReportInExplorer}
         />
       )}
 
-      <AddWidgetDialog
+      <AddToDashboardDialog
         open={addWidgetDialogOpen}
         onOpenChange={setAddWidgetDialogOpen}
-        reports={reports}
-        onAddWidget={handleAddWidget}
+        questions={reports}
+        dashboards={activeDashboard ? [activeDashboard] : []}
+        dashboardId={activeDashboard?.id}
+        title={t`Add a question`}
+        description={t`Pick a saved question to show on this dashboard.`}
+        confirmLabel={t`Add to dashboard`}
+        onSubmit={({ reportId, chartId, titleOverride }) =>
+          handleAddWidget({ reportId, chartId, titleOverride })
+        }
       />
 
-      <PinChartDialog
+      <AddToDashboardDialog
         open={Boolean(pinWidget)}
         onOpenChange={(open) => {
           if (!open) setPinWidget(null);
         }}
-        reports={reports}
+        questions={reports}
         dashboards={activeDashboard ? [activeDashboard] : []}
-        defaultDashboardId={activeDashboard?.id}
-        defaultReportId={pinWidget?.reportId}
+        dashboardId={activeDashboard?.id}
+        defaultQuestionId={pinWidget?.reportId}
         defaultChartId={pinWidget?.chartId}
-        confirmLabel="Update Widget"
-        title={t`Select New Chart`}
-        description={t`Choose a different source chart for this widget.`}
-        onPin={handlePinSelectionForWidget}
-      />
-
-      <EditWidgetChartDialog
-        open={Boolean(editingChartContext)}
-        onOpenChange={(open) => {
-          if (!open) setEditingChartContext(null);
-        }}
-        queryResult={editingChartContext?.queryResult ?? null}
-        initialChart={editingChartContext?.chart ?? null}
-        reportName={editingChartContext?.reportName}
-        onSave={handleSaveWidgetChart}
+        withTitle={false}
+        title={t`Choose another question`}
+        description={t`Show a different question in this place on the dashboard.`}
+        confirmLabel={t`Show this question`}
+        onSubmit={({ reportId, chartId }) => handlePinSelectionForWidget({ reportId, chartId })}
       />
     </div>
   );

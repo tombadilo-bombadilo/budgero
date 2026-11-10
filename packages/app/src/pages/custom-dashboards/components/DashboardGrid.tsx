@@ -20,7 +20,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import type { CustomDashboardWithWidgets, UnifiedReport } from '@budgero/core/browser';
-import type { QueryResult } from '@shared/lib/sql/report-query-executor';
 import type { DashboardFilters } from '@features/reports/lib/question';
 import { WidgetCard } from './WidgetCard';
 
@@ -37,12 +36,6 @@ interface DashboardGridProps {
   ) => Promise<void>;
   onUpdateMobileSize: (widgetId: string, size: 's' | 'm' | 'l') => Promise<void>;
   onSelectNewChart: (widgetId: string) => void;
-  onEditChart: (input: {
-    reportId: string;
-    reportName: string;
-    chart: UnifiedReport['charts'][number];
-    queryResult: QueryResult;
-  }) => void;
   onOpenReportInExplorer: (reportId: string) => void;
   filters?: DashboardFilters;
 }
@@ -67,7 +60,6 @@ function SortableWidget({
   onUpdateDesktopLayout,
   onUpdateMobileSize,
   onSelectNewChart,
-  onEditChart,
   onOpenReportInExplorer,
   filters,
 }: SortableWidgetProps) {
@@ -106,7 +98,6 @@ function SortableWidget({
         onSelectNewChart={onSelectNewChart}
         onUpdateDesktopLayout={onUpdateDesktopLayout}
         onUpdateMobileSize={onUpdateMobileSize}
-        onEditChart={onEditChart}
         onOpenReportInExplorer={onOpenReportInExplorer}
         filters={filters}
       />
@@ -124,7 +115,6 @@ export function DashboardGrid({
   onUpdateDesktopLayout,
   onUpdateMobileSize,
   onSelectNewChart,
-  onEditChart,
   onOpenReportInExplorer,
   filters,
 }: DashboardGridProps) {
@@ -177,7 +167,6 @@ export function DashboardGrid({
                 onSelectNewChart={onSelectNewChart}
                 onUpdateDesktopLayout={onUpdateDesktopLayout}
                 onUpdateMobileSize={onUpdateMobileSize}
-                onEditChart={onEditChart}
                 onOpenReportInExplorer={onOpenReportInExplorer}
                 filters={filters}
               />
@@ -196,7 +185,6 @@ export function DashboardGrid({
             onUpdateDesktopLayout={onUpdateDesktopLayout}
             onUpdateMobileSize={onUpdateMobileSize}
             onSelectNewChart={onSelectNewChart}
-            onEditChart={onEditChart}
             onOpenReportInExplorer={onOpenReportInExplorer}
             filters={filters}
           />
