@@ -163,7 +163,11 @@ export function PreviewStep({
                   </td>
                   <td className="p-2">
                     <strong>{labels[row.duplicate.status]}</strong>
-                    <p>{translateImportText(row.duplicate.reason)}</p>
+                    <p>
+                      {row.accountSkipped
+                        ? t`Not imported: its account is set to “Don’t import”.`
+                        : translateImportText(row.duplicate.reason)}
+                    </p>
                     {row.duplicate.candidates.map((candidate) => (
                       <p key={candidate.id} className="mt-2">
                         <Trans>

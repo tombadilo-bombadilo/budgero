@@ -140,6 +140,14 @@ msgstr "\"{0}\" updated to \"{1}\"."
 msgid "\"{0}\" was removed and cleared from transactions."
 msgstr "\"{0}\" was removed and cleared from transactions."
 
+#: src/features/import/lib/plan-file-import.ts
+msgid "\"{accountName}\" and the new account \"{newName}\" ({currency}) are in different currencies. Give \"{accountName}\" its own account in Configuration."
+msgstr "\"{accountName}\" and the new account \"{newName}\" ({currency}) are in different currencies. Give \"{accountName}\" its own account in Configuration."
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "“{newName}” is created in {newCurrency}, but these transactions are in {fileCurrency}. Use another name."
+msgstr "“{newName}” is created in {newCurrency}, but these transactions are in {fileCurrency}. Use another name."
+
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "\"K-MARKET KAMPPI\" becomes \"K-Market Kamppi\". Names with lowercase letters stay as they are."
 msgstr "\"K-MARKET KAMPPI\" becomes \"K-Market Kamppi\". Names with lowercase letters stay as they are."
@@ -421,6 +429,11 @@ msgstr "{0, plural, one {The \"{column}\" column names one account. Choose where
 msgid "{0, plural, one {This group contains # category. Please move or delete them first.} other {This group contains # categories. Please move or delete them first.}}"
 msgstr "{0, plural, one {This group contains # category. Please move or delete them first.} other {This group contains # categories. Please move or delete them first.}}"
 
+#. placeholder {0}: newAccounts.length
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "{0, plural, one {This import creates # new account. If the \"{column}\" column is not the account the transactions are in, set Account to None in Column Mapping.} other {This import creates # new accounts. If the \"{column}\" column is not the account the transactions are in, set Account to None in Column Mapping.}}"
+msgstr "{0, plural, one {This import creates # new account. If the \"{column}\" column is not the account the transactions are in, set Account to None in Column Mapping.} other {This import creates # new accounts. If the \"{column}\" column is not the account the transactions are in, set Account to None in Column Mapping.}}"
+
 #. placeholder {0}: importResult.summary.accountBalancesVerified
 #. placeholder {0}: result.summary.accountBalancesVerified
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
@@ -468,7 +481,7 @@ msgstr "{0} · Other expanded"
 msgid "{0} (header)"
 msgstr "{0} (header)"
 
-#. placeholder {0}: newNameOf(parsedData.rows[index])
+#. placeholder {0}: destination.newAccountName
 #: src/features/import/lib/plan-file-import.ts
 msgid "{0} (new)"
 msgstr "{0} (new)"
@@ -1109,6 +1122,10 @@ msgstr "{monthsRemaining} months remaining"
 msgid "{moved, plural, one {{revalued, plural, one {# rate shifted, # account revalued.} other {# rate shifted, # accounts revalued.}}} other {{revalued, plural, one {# rates shifted, # account revalued.} other {# rates shifted, # accounts revalued.}}}}"
 msgstr "{moved, plural, one {{revalued, plural, one {# rate shifted, # account revalued.} other {# rate shifted, # accounts revalued.}}} other {{revalued, plural, one {# rates shifted, # account revalued.} other {# rates shifted, # accounts revalued.}}}}"
 
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "{name} ({currency}, archived)"
+msgstr "{name} ({currency}, archived)"
+
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "{name} has been added successfully."
 msgstr "{name} has been added successfully."
@@ -1214,6 +1231,10 @@ msgstr "{uncategorizedCount, plural, one {# uncategorized transaction} other {# 
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
 msgid "{uncategorizedCount} uncategorized"
 msgstr "{uncategorizedCount} uncategorized"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "{unlisted, plural, one {# more account is not listed. It goes to the account with the same name, or to a new one.} other {# more accounts are not listed. Each goes to the account with the same name, or to a new one.}}"
+msgstr "{unlisted, plural, one {# more account is not listed. It goes to the account with the same name, or to a new one.} other {# more accounts are not listed. Each goes to the account with the same name, or to a new one.}}"
 
 #: src/pages/accounts/AccountPage.tsx
 msgid "{unsafeTransactionCount, plural, one {# transaction contains an amount outside Budgero's exact money range. Correct the exchange rate in the highlighted row; the converted amount and account balance will then be recalculated.} other {# transactions contain an amount outside Budgero's exact money range. Correct the exchange rate in the highlighted row; the converted amount and account balance will then be recalculated.}}"
@@ -2878,8 +2899,8 @@ msgid "Account for {source}"
 msgstr "Account for {source}"
 
 #: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
-msgid "Account name"
-msgstr "Account name"
+#~ msgid "Account name"
+#~ msgstr "Account name"
 
 #: src/features/account-management/ui/AddAccountDialog.tsx
 #: src/features/account-management/ui/EditAccountDialog.tsx
@@ -3615,6 +3636,14 @@ msgstr "Amount to start the month with"
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "Amount:"
 msgstr "Amount:"
+
+#: src/features/import/lib/plan-file-import.ts
+msgid "An account named \"{newName}\" already exists. In Configuration, choose it for \"{accountName}\" or give the new account another name."
+msgstr "An account named \"{newName}\" already exists. In Configuration, choose it for \"{accountName}\" or give the new account another name."
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "An account with this name already exists. Choose it from the list, or use another name."
+msgstr "An account with this name already exists. Choose it from the list, or use another name."
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "An error occurred while deleting the rate."
@@ -9073,6 +9102,10 @@ msgstr "Goal: start each month with this amount available"
 msgid "Goals"
 msgstr "Goals"
 
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "Goes into the same new account as “{sharedWith}”."
+msgstr "Goes into the same new account as “{sharedWith}”."
+
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "GOOD"
 msgstr "GOOD"
@@ -11576,9 +11609,12 @@ msgid "New"
 msgstr "New"
 
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
-#: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "New account"
 msgstr "New account"
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "New account in {newCurrency}"
+msgstr "New account in {newCurrency}"
 
 #: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
 msgid "New account name for {source}"
@@ -12387,6 +12423,10 @@ msgstr "Not available in self-hosted builds."
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Not deleted"
 msgstr "Not deleted"
+
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "Not imported: its account is set to “Don’t import”."
+msgstr "Not imported: its account is set to “Don’t import”."
 
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Not in Clerk"

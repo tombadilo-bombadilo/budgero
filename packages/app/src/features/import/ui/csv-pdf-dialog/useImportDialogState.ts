@@ -40,10 +40,11 @@ import {
   resolveImportCategoryId,
 } from '@budgero/core/browser';
 import {
-  isNewAccountPlaceholder,
-  placeholderIdFor,
+  IMPORT_ACCOUNT_PLACEHOLDER,
+  isPlaceholderAccountId,
+  planAccountRoutes,
+  readRememberedRoutes,
   rememberRoutes,
-  sourceAccountsOf,
 } from '@features/import/lib/account-routes';
 import { buildFileImportPreview, importTolerance } from '@features/import/lib/plan-file-import';
 import { trackImportedCsvPdf } from '@shared/lib/analytics/analytics';
@@ -75,6 +76,8 @@ export const STEPS: ImportStep[] = ['upload', 'configure', 'preview', 'import', 
 export interface ImportDialogState {
   /** The budget the file is imported into (0 when none is selected). */
   budgetId: number;
+  /** Currency of accounts the import creates when the file states none. */
+  newAccountCurrency: string;
   currentStep: ImportStep;
   setCurrentStep: (step: ImportStep) => void;
 
@@ -110,7 +113,7 @@ export interface ImportDialogState {
 
   fileInputRef: React.RefObject<HTMLInputElement | null>;
 
-  accounts: { ID: number; Name: string; Currency: string }[] | undefined;
+  accounts: { ID: number; Name: string; Currency: string; Archived?: boolean }[] | undefined;
   hasBudgetSelected: boolean;
 
   handleFileChange: (e: ChangeEvent<HTMLInputElement>) => Promise<void>;
@@ -186,6 +189,12 @@ export function useImportDialogState(): ImportDialogState {
     useUiStore();
   const { data: budgets } = useBudgets();
   const { data: accounts } = useAccounts(selectedBudget?.ID || 0);
+  // OFX/CAMT state their currency (parse-import-file puts it in accountCurrency);
+  // otherwise accountCurrency is only the 'USD' default, so new accounts take
+  // the budget's currency.
+  const statesCurrency = parsedData?.source.type === 'ofx' || parsedData?.source.type === 'camt';
+  const newAccountCurrency =
+    (!statesCurrency && selectedBudget?.DisplayCurrency) || importConfig.accountCurrency;
   const { data: categories } = useCategories(selectedBudget?.ID || 0);
   const { data: categoryGroups } = useCategoryGroups(selectedBudget?.ID || 0);
   const addCategoryGroupMutation = useAddCategoryGroup();
@@ -396,12 +405,15 @@ export function useImportDialogState(): ImportDialogState {
       runKey: runKey.current,
       duplicates: runtime.services().importHistory.duplicates,
       tolerance: importTolerance(runtime.services()),
+      rememberedRoutes: readRememberedRoutes(selectedBudget.ID),
+      newCurrency: newAccountCurrency,
     });
   }, [
     parsedData,
     selectedBudget,
     columnMapping,
     importConfig,
+    newAccountCurrency,
     skippedRowIndices,
     selectedHeaderIndex,
     runtime,
@@ -518,7 +530,12 @@ export function useImportDialogState(): ImportDialogState {
     const applyMatch = async (r: PreviewRow, accountId: number, transactionId: number) => {
       await executeSpaceMutation(runtime, {
         op: 'importHistory.match',
-        payload: { budgetId: r.input.budgetId, accountId, transactionId, identity: r.input },
+        payload: {
+          budgetId: r.input.budgetId,
+          accountId,
+          transactionId,
+          identity: { ...r.input, accountId },
+        },
       });
       await executeSpaceMutation(runtime, {
         op: 'transactions.setCleared',
@@ -528,12 +545,17 @@ export function useImportDialogState(): ImportDialogState {
     let duplicatesSkipped = fresh.filter(
       (r) => r.input.valid && r.decision === 'skip' && r.duplicate.status !== 'new'
     ).length;
+    // Rows of an account set to "Don't import" were skipped by the user, not invalid.
+    const accountSkipped = fresh.filter(
+      (r) => r.accountSkipped && !skippedRowIndices.has(r.input.index)
+    ).length;
     const userSkipped =
       skippedRowIndices.size +
+      accountSkipped +
       fresh.filter((r) => r.input.valid && r.decision === 'skip' && r.duplicate.status === 'new')
         .length;
     const invalidRows = fresh.filter(
-      (r) => !r.input.valid && !skippedRowIndices.has(r.input.index)
+      (r) => !r.input.valid && !r.accountSkipped && !skippedRowIndices.has(r.input.index)
     ).length;
     const importRun = startImportRun(parsedData.source.type, 'app');
     if (!selectedRows.length) {
@@ -685,54 +707,67 @@ export function useImportDialogState(): ImportDialogState {
       });
 
       // Rows headed for a new account carry a placeholder id: -1 for the one
-      // "Import Account", or one per source account the user chose to create.
-      // Create each once, then send its rows there.
-      const sources = sourceAccountsOf(parsedData.rows, columnMapping.account);
-      const createdFor = new Map<number, number>();
+      // "Import Account", or one per new account chosen in "Accounts in this
+      // file" (planAccountRoutes, the same plan the preview used). Create each
+      // once, then send its rows there. Placeholder ids never reach a mutation.
+      const routePlan = planAccountRoutes({
+        rows: parsedData.rows,
+        column: columnMapping.account,
+        accounts: runtime.services().accounts.listAccounts(budgetId),
+        remembered: readRememberedRoutes(budgetId),
+        chosen: importConfig.accountRoutes,
+        newAccountCurrency,
+      });
+      const createdFor = new Map<number, { ID: number; Name: string }>();
       const pendingIds = [
         ...new Set(
-          selectedRows
-            .map((row) => row.input.accountId)
-            .filter((id) => id === -1 || isNewAccountPlaceholder(id))
+          selectedRows.map((row) => row.input.accountId).filter((id) => isPlaceholderAccountId(id))
         ),
       ];
       for (const placeholder of pendingIds) {
-        const source = sources.find((s) => placeholderIdFor(s.source, sources) === placeholder);
-        const route = source ? importConfig.accountRoutes?.[source.source] : undefined;
-        const name =
-          route?.kind === 'new' ? route.name.trim() || source!.source : t`Import Account`;
+        const planned = routePlan.newAccounts.find((a) => a.placeholderId === placeholder);
+        if (!planned && placeholder !== IMPORT_ACCOUNT_PLACEHOLDER)
+          throw new Error(
+            t`Transactions or destinations changed. Please review the updated matches.`
+          );
+        const name = planned?.name ?? t`Import Account`;
         const created = await addAccountMutation.mutateAsync({
           name,
           budget_id: budgetId,
           type: 'Checking',
           currency:
             selectedRows.find((row) => row.input.accountId === placeholder)?.input.currency ??
-            importConfig.accountCurrency,
+            planned?.currency ??
+            newAccountCurrency,
           balance: 0,
           on_budget: true,
         });
-        createdFor.set(placeholder, created.ID);
+        createdFor.set(placeholder, { ID: created.ID, Name: created.Name || name });
         createdAccountIds.push(created.ID);
       }
-      const realAccountId = (id: number) => createdFor.get(id) ?? id;
+      const realAccountId = (id: number) => createdFor.get(id)?.ID ?? id;
+      const withRealAccount = <T extends { accountId: number }>(identity: T): T => ({
+        ...identity,
+        accountId: realAccountId(identity.accountId),
+      });
       const destinationIds = [
         ...new Set(selectedRows.map((row) => realAccountId(row.input.accountId))),
       ];
       const nameOf = (id: number) =>
         accounts?.find((account) => account.ID === id)?.Name ??
-        (createdFor.size > 0 ? t`New account` : t`Existing account`);
+        [...createdFor.values()].find((account) => account.ID === id)?.Name ??
+        t`Existing account`;
       destinationAccountName =
         destinationIds.length === 1
           ? nameOf(destinationIds[0])
           : t`${destinationIds.length} accounts`;
       // Next import of a file with these accounts starts from the same choices.
       const chosen: Record<string, number> = {};
-      for (const source of sources) {
-        const route = importConfig.accountRoutes?.[source.source];
-        if (route?.kind === 'existing') chosen[source.source] = route.accountId;
-        if (route?.kind === 'new') {
-          const id = createdFor.get(placeholderIdFor(source.source, sources));
-          if (id) chosen[source.source] = id;
+      for (const [source, target] of routePlan.targets) {
+        if (target.kind === 'existing') chosen[source] = target.accountId;
+        if (target.kind === 'new') {
+          const created = createdFor.get(target.placeholderId);
+          if (created) chosen[source] = created.ID;
         }
       }
       rememberRoutes(budgetId, chosen);
@@ -841,7 +876,7 @@ export function useImportDialogState(): ImportDialogState {
                   budgetId,
                   accountId: realAccountId(plan.accountId),
                   transactionId: candidate,
-                  identity: plan,
+                  identity: withRealAccount(plan),
                 },
               });
             }
@@ -877,7 +912,7 @@ export function useImportDialogState(): ImportDialogState {
               memo: plan.memo.substring(0, 255),
               payee: plan.payee,
               transferId: '',
-              importIdentities: [plan],
+              importIdentities: [withRealAccount(plan)],
             },
             meta: { label: t`Import transaction`, skipInvalidate: true },
           });
@@ -985,6 +1020,7 @@ export function useImportDialogState(): ImportDialogState {
     addCategoryGroupMutation,
     addCategoryMutation,
     addAccountMutation,
+    newAccountCurrency,
     buildPreview,
     previewData,
     resolveCategoryId,
@@ -996,6 +1032,7 @@ export function useImportDialogState(): ImportDialogState {
 
   return {
     budgetId: selectedBudget?.ID ?? 0,
+    newAccountCurrency,
     currentStep,
     setCurrentStep,
 

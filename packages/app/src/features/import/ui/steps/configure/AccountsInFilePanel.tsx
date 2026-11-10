@@ -1,26 +1,23 @@
 import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useEffect, useMemo } from 'react';
+import { useId } from 'react';
 import { Input } from '@shared/ui/input';
 import { Label } from '@shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
-import {
-  defaultRoutes,
-  readRememberedRoutes,
-  sourceAccountsOf,
-} from '@features/import/lib/account-routes';
+import type { AccountRoutePlan, RouteProblem } from '@features/import/lib/account-routes';
 import type { AccountRoute, ImportConfig } from '@features/import/model/types';
 
 interface Account {
   ID: number;
   Name: string;
   Currency: string;
+  Archived?: boolean;
 }
 
 interface AccountsInFilePanelProps {
-  rows: Record<string, string>[];
+  /** planAccountRoutes for the mapped Account column. */
+  plan: AccountRoutePlan;
   column: string;
-  budgetId: number;
   accounts: Account[];
   importConfig: ImportConfig;
   onImportConfigChange: (config: ImportConfig) => void;
@@ -28,6 +25,9 @@ interface AccountsInFilePanelProps {
 
 const NEW = 'new';
 const SKIP = 'skip';
+/** A column that is not really the account (a counterparty IBAN) can name hundreds. */
+const MAX_LISTED = 50;
+const MANY_NEW_ACCOUNTS = 10;
 
 /**
  * "Accounts in this file": one row per value of the Account column, each sent
@@ -35,30 +35,27 @@ const SKIP = 'skip';
  * account, else the account chosen for it last time, else a new account.
  */
 export function AccountsInFilePanel({
-  rows,
+  plan,
   column,
-  budgetId,
   accounts,
   importConfig,
   onImportConfigChange,
 }: AccountsInFilePanelProps) {
   const { t } = useLingui();
-  const sources = useMemo(() => sourceAccountsOf(rows, column), [rows, column]);
-  const routes = importConfig.accountRoutes ?? {};
+  const { sources, routes, targets, newAccounts, problems } = plan;
+  const archivedLabel = (name: string, currency: string) => t`${name} (${currency}, archived)`;
 
-  useEffect(() => {
-    const current = importConfig.accountRoutes ?? {};
-    const next = defaultRoutes(sources, accounts, readRememberedRoutes(budgetId), current);
-    const same =
-      Object.keys(next).length === Object.keys(current).length &&
-      Object.entries(next).every(([k, v]) => JSON.stringify(current[k]) === JSON.stringify(v));
-    if (!same) onImportConfigChange({ ...importConfig, accountRoutes: next });
-  }, [sources, accounts, budgetId, importConfig, onImportConfigChange]);
-
+  // Only the user's own picks are stored; the rest stays derived from the plan.
   const setRoute = (source: string, route: AccountRoute) =>
-    onImportConfigChange({ ...importConfig, accountRoutes: { ...routes, [source]: route } });
+    onImportConfigChange({
+      ...importConfig,
+      accountRoutes: { ...importConfig.accountRoutes, [source]: route },
+    });
 
   if (sources.length === 0) return null;
+
+  const listed = sources.slice(0, MAX_LISTED);
+  const unlisted = sources.length - listed.length;
 
   return (
     <div className="space-y-3 rounded-lg border p-4" data-testid="accounts-in-file">
@@ -73,10 +70,25 @@ export function AccountsInFilePanel({
           })}
         </p>
       </div>
+      {newAccounts.length > MANY_NEW_ACCOUNTS && (
+        <p className="text-xs text-destructive" role="alert" data-testid="many-new-accounts">
+          {plural(newAccounts.length, {
+            one: `This import creates # new account. If the "${column}" column is not the account the transactions are in, set Account to None in Column Mapping.`,
+            other: `This import creates # new accounts. If the "${column}" column is not the account the transactions are in, set Account to None in Column Mapping.`,
+          })}
+        </p>
+      )}
       <ul className="space-y-3">
-        {sources.map(({ source, rows: count, currency }) => {
+        {listed.map(({ source, rows: count, currency }) => {
           const route = routes[source];
-          const value = route?.kind === 'existing' ? String(route.accountId) : (route?.kind ?? NEW);
+          const target = targets.get(source);
+          const problem = problems.get(source);
+          const value = route.kind === 'existing' ? String(route.accountId) : route.kind;
+          const shared =
+            target?.kind === 'new'
+              ? newAccounts.find((a) => a.placeholderId === target.placeholderId)
+              : undefined;
+          const sharedWith = shared && shared.sources[0] !== source ? shared.sources[0] : undefined;
           return (
             <li
               key={source}
@@ -114,7 +126,9 @@ export function AccountsInFilePanel({
                     </SelectItem>
                     {accounts.map((account) => (
                       <SelectItem key={account.ID} value={String(account.ID)}>
-                        {account.Name} ({account.Currency})
+                        {account.Archived
+                          ? archivedLabel(account.Name, account.Currency)
+                          : `${account.Name} (${account.Currency})`}
                       </SelectItem>
                     ))}
                     <SelectItem value={SKIP}>
@@ -122,14 +136,16 @@ export function AccountsInFilePanel({
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                {route?.kind === 'new' && (
-                  <Input
-                    value={route.name}
-                    onChange={(event) =>
-                      setRoute(source, { kind: 'new', name: event.target.value })
-                    }
-                    aria-label={t`New account name for ${source}`}
-                    placeholder={t`Account name`}
+                {route.kind === 'new' && target?.kind === 'new' && (
+                  <NewAccountFields
+                    source={source}
+                    name={route.name}
+                    newName={target.name}
+                    newCurrency={target.currency}
+                    fileCurrency={currency}
+                    problem={problem}
+                    sharedWith={sharedWith}
+                    onNameChange={(name) => setRoute(source, { kind: 'new', name })}
                   />
                 )}
               </div>
@@ -137,6 +153,77 @@ export function AccountsInFilePanel({
           );
         })}
       </ul>
+      {unlisted > 0 && (
+        <p className="text-xs text-muted-foreground">
+          {plural(unlisted, {
+            one: '# more account is not listed. It goes to the account with the same name, or to a new one.',
+            other:
+              '# more accounts are not listed. Each goes to the account with the same name, or to a new one.',
+          })}
+        </p>
+      )}
     </div>
+  );
+}
+
+interface NewAccountFieldsProps {
+  source: string;
+  /** What the user typed (may be empty: the source name is used then). */
+  name: string;
+  /** The name the account is created with. */
+  newName: string;
+  newCurrency: string;
+  fileCurrency?: string;
+  problem?: RouteProblem;
+  sharedWith?: string;
+  onNameChange: (name: string) => void;
+}
+
+function NewAccountFields({
+  source,
+  name,
+  newName,
+  newCurrency,
+  fileCurrency,
+  problem,
+  sharedWith,
+  onNameChange,
+}: NewAccountFieldsProps) {
+  const { t } = useLingui();
+  const hintId = useId();
+  return (
+    <>
+      <Input
+        value={name}
+        onChange={(event) => onNameChange(event.target.value)}
+        aria-label={t`New account name for ${source}`}
+        aria-invalid={problem ? true : undefined}
+        aria-describedby={hintId}
+        placeholder={source}
+        maxLength={100}
+      />
+      {problem === 'name-taken' ? (
+        <p id={hintId} className="text-xs text-destructive" role="alert">
+          <Trans>
+            An account with this name already exists. Choose it from the list, or use another name.
+          </Trans>
+        </p>
+      ) : problem === 'currency' ? (
+        <p id={hintId} className="text-xs text-destructive" role="alert">
+          <Trans>
+            “{newName}” is created in {newCurrency}, but these transactions are in {fileCurrency}.
+            Use another name.
+          </Trans>
+        </p>
+      ) : (
+        <p id={hintId} className="text-xs text-muted-foreground">
+          {sharedWith ? (
+            <Trans>Goes into the same new account as “{sharedWith}”.</Trans>
+          ) : (
+            <Trans>New account in {newCurrency}</Trans>
+          )}
+        </p>
+      )}
+    </>
   );
 }

@@ -89,4 +89,12 @@ describe('import review', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Match 1 transaction' }));
     expect(decided.onStartImport).toHaveBeenCalledOnce();
   });
+  it('says why rows of a skipped account are not imported', () => {
+    const row = makeRow(0);
+    row.input.valid = false;
+    row.accountSkipped = true;
+    row.duplicate = { index: 0, status: 'invalid', candidates: [], reason: 'x' };
+    render(<PreviewStep {...props([row])} />);
+    expect(screen.getByText(/its account is set to “Don’t import”/)).toBeInTheDocument();
+  });
 });

@@ -378,4 +378,73 @@ describe('import wizard execution', () => {
     expect(all).toHaveLength(250);
     expect(calls.at(-1)?.status).toBe('completed');
   });
+
+  it('creates one account per new route, never sends a placeholder id, and remembers routes', async () => {
+    localStorage.clear();
+    const file = { arrayBuffer: async () => new TextEncoder().encode('multi').buffer } as File;
+    mocks.parse.mockResolvedValue({
+      data: {
+        source: { file, fileName: 'multi.csv', type: 'csv' },
+        headers: ['Date', 'Amount', 'Account', 'Currency'],
+        rows: [
+          { Date: '2026-09-01', Amount: '-10', Account: 'Card', Currency: 'EUR' },
+          { Date: '2026-09-02', Amount: '-20', Account: 'checking' },
+          { Date: '2026-09-03', Amount: '-30', Account: 'Old' },
+          { Date: '2026-09-04', Amount: '-40', Account: 'Cash' },
+        ],
+      },
+    });
+    Object.assign(mocks.budget, { DisplayCurrency: 'GBP' });
+    mocks.addAccount.mockImplementation(async ({ name }: { name: string }) => ({
+      ID: name === 'Card' ? 77 : 78,
+      Name: name,
+    }));
+    const hook = renderHook(() => useImportDialogState());
+    await act(async () => {
+      await hook.result.current.handleFileChange({ target: { files: [{}] } } as never);
+    });
+    expect(hook.result.current.columnMapping.account).toBe('Account');
+    act(() => {
+      hook.result.current.setImportConfig({
+        ...hook.result.current.importConfig,
+        accountRoutes: { Old: { kind: 'skip' } },
+      });
+    });
+    await act(async () => {
+      await hook.result.current.generatePreview();
+    });
+    const { result } = hook;
+    expect(result.current.previewData.map((r) => r.parsed.account)).toEqual([
+      'Card (new)',
+      'Checking',
+      'Old',
+      'Cash (new)',
+    ]);
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    Object.assign(mocks.budget, { DisplayCurrency: undefined });
+
+    expect(mocks.addAccount.mock.calls.map(([arg]) => [arg.name, arg.currency])).toEqual([
+      ['Card', 'EUR'],
+      ['Cash', 'GBP'],
+    ]);
+    const imports = mocks.mutate.mock.calls
+      .map(([, spec]) => spec)
+      .filter((spec) => spec.op === 'transactions.import');
+    expect(imports.map((spec) => spec.payload.accountId)).toEqual([77, 10, 78]);
+    expect(imports.map((spec) => spec.payload.importIdentities[0].accountId)).toEqual([77, 10, 78]);
+    expect(result.current.importSummary).toMatchObject({
+      transactionsImported: 3,
+      accountsCreated: 2,
+      userSkipped: 1,
+      invalidRows: 0,
+      destinationAccountName: '3 accounts',
+    });
+    expect(JSON.parse(localStorage.getItem('budgero:import-account-routes:1')!)).toEqual({
+      Card: 77,
+      checking: 10,
+      Cash: 78,
+    });
+  });
 });

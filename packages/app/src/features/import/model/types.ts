@@ -49,8 +49,8 @@ export interface ImportConfig {
    */
   defaultYear?: number;
   /**
-   * Where each value of the file's Account column goes (see
-   * lib/account-routes.ts). Values without a route use defaultAccountId.
+   * The user's own choice for values of the file's Account column. Values
+   * without one get a default (see planAccountRoutes in lib/account-routes.ts).
    */
   accountRoutes?: Record<string, AccountRoute>;
 }
@@ -108,6 +108,8 @@ export interface PreviewRow {
   input: DuplicateInput;
   duplicate: DuplicatePlan;
   decision?: ImportDecision;
+  /** The row's account is set to "Don't import": skipped by the user, not invalid. */
+  accountSkipped?: boolean;
   original: Record<string, string>;
   parsed: {
     date?: string;

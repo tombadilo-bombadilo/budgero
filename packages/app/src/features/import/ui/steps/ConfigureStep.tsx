@@ -1,5 +1,6 @@
 import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
+import { useMemo } from 'react';
 /**
  * Configure Step Component
  *
@@ -21,6 +22,7 @@ import {
   type ImportTemplate,
   type RawTableData,
 } from '@features/import/model/types';
+import { planAccountRoutes, readRememberedRoutes } from '@features/import/lib/account-routes';
 import { MappingTab } from './configure/MappingTab';
 import { FormattingTab } from './configure/FormattingTab';
 import { TemplatesTab } from './configure/TemplatesTab';
@@ -30,6 +32,7 @@ interface Account {
   ID: number;
   Name: string;
   Currency: string;
+  Archived?: boolean;
 }
 
 interface DefaultAccountSelectProps {
@@ -87,6 +90,8 @@ interface ConfigureStepProps {
   accounts: Account[] | undefined;
   hasBudgetSelected: boolean;
   budgetId: number;
+  /** Currency of accounts the import creates when the file states none. */
+  newAccountCurrency?: string;
   onColumnMappingChange: (mapping: ColumnMapping) => void;
   onImportConfigChange: (config: ImportConfig) => void;
   onTemplateSelect: (id: string) => void;
@@ -115,6 +120,7 @@ export function ConfigureStep({
   accounts,
   hasBudgetSelected,
   budgetId,
+  newAccountCurrency,
   onColumnMappingChange,
   onImportConfigChange,
   onTemplateSelect,
@@ -133,10 +139,33 @@ export function ConfigureStep({
   const rowsWithoutAccount = columnMapping.account
     ? (parsedData?.rows.filter((row) => !row[columnMapping.account!]?.trim()).length ?? 0)
     : 0;
+  const rows = parsedData?.rows;
+  const remembered = useMemo(() => readRememberedRoutes(budgetId), [budgetId]);
+  const routePlan = useMemo(
+    () =>
+      planAccountRoutes({
+        rows: rows ?? [],
+        column: columnMapping.account,
+        accounts: accounts ?? [],
+        remembered,
+        chosen: importConfig.accountRoutes,
+        newAccountCurrency: newAccountCurrency ?? importConfig.accountCurrency,
+      }),
+    [
+      rows,
+      columnMapping.account,
+      accounts,
+      remembered,
+      importConfig.accountRoutes,
+      importConfig.accountCurrency,
+      newAccountCurrency,
+    ]
+  );
   const canProceed =
     columnMapping.date &&
     (columnMapping.amount || columnMapping.inflow || columnMapping.outflow) &&
     hasBudgetSelected &&
+    routePlan.problems.size === 0 &&
     (columnMapping.account
       ? rowsWithoutAccount === 0 || importConfig.defaultAccountId
       : importConfig.defaultAccountId);
@@ -257,9 +286,8 @@ export function ConfigureStep({
 
         {columnMapping.account && hasBudgetSelected && parsedData && (
           <AccountsInFilePanel
-            rows={parsedData.rows}
+            plan={routePlan}
             column={columnMapping.account}
-            budgetId={budgetId}
             accounts={accounts ?? []}
             importConfig={importConfig}
             onImportConfigChange={onImportConfigChange}
