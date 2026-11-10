@@ -149,7 +149,7 @@ describe('queue storage', () => {
     // Persisted value is an encrypted token, not readable mutation data.
     const persisted = dbStore.get('s1');
     expect(typeof persisted).toBe('string');
-    expect(persisted as string).toMatch(/^enc1:/);
+    expect(persisted as string).toMatch(/^encq1:/);
     expect(persisted as string).not.toContain('budgets.create');
 
     const loaded = await storage.load('s1');
@@ -162,11 +162,11 @@ describe('queue storage', () => {
 
     // Legacy plaintext localStorage entry drains into the encrypted store:
     // readable data comes back, the plaintext copy is deleted, and the
-    // IndexedDB copy is an enc1: token.
+    // IndexedDB copy is an encq1: token.
     localStorageMock.setItem('budgero_offline_mutation_queue_s2', JSON.stringify([sample('s2')]));
     const drained = await storage.load('s2');
     expect(drained).toHaveLength(1);
     expect(localStorageMock.getItem('budgero_offline_mutation_queue_s2')).toBeNull();
-    expect(dbStore.get('s2') as string).toMatch(/^enc1:/);
+    expect(dbStore.get('s2') as string).toMatch(/^encq1:/);
   });
 });

@@ -23,6 +23,8 @@ import { IndexedDBStore } from './indexeddb-store';
 
 /** Prefix marking a device-key-encrypted value in string storage. */
 export const DEVICE_ENCRYPTED_PREFIX = 'enc1:';
+/** Prefix marking a value encrypted under the offline queue's device key. */
+export const QUEUE_ENCRYPTED_PREFIX = 'encq1:';
 
 export interface DeviceEncryptedRecord {
   iv: Uint8Array;
@@ -73,6 +75,20 @@ export async function getOrCreateDeviceKey(
     const winner = await store.get(recordKey).catch(() => null);
     return isCryptoKeyLike(winner) ? winner : null;
   }
+}
+
+/**
+ * Load an existing device key without creating one. Null when there is none;
+ * throws when the store itself cannot be read (so callers can tell a missing
+ * key from a transient IndexedDB failure).
+ */
+export async function loadExistingDeviceKey(
+  store: IndexedDBStore | null,
+  recordKey = MASTER_PASSWORD_DEVICE_KEY_RECORD_KEY
+): Promise<CryptoKey | null> {
+  if (!store) throw new Error('Device key store unavailable');
+  const existing = await store.get(recordKey);
+  return isCryptoKeyLike(existing) ? existing : null;
 }
 
 export async function deleteDeviceKeyRecord(
