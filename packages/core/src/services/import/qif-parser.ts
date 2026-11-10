@@ -1,3 +1,5 @@
+import { AccountTypeEnum } from '../accounts/types.js';
+
 /**
  * QIF parser.
  *
@@ -32,6 +34,15 @@ export interface ParsedQifTransaction {
 }
 
 export type QifSectionKind = 'bank' | 'ccard' | 'cash' | 'asset' | 'liability';
+
+/** The Budgero account type for a QIF section (`!Type:Bank`, `!Type:CCard`, ...). */
+export const QIF_ACCOUNT_TYPES: Record<QifSectionKind, AccountTypeEnum> = {
+  bank: AccountTypeEnum.CHECKING,
+  ccard: AccountTypeEnum.CREDIT,
+  cash: AccountTypeEnum.CASH,
+  asset: AccountTypeEnum.OTHER_ASSET,
+  liability: AccountTypeEnum.LOAN,
+};
 
 export interface ParsedQifSection {
   kind: QifSectionKind;
@@ -342,7 +353,9 @@ export function qifToImportRows(parsed: ParsedQif): QifImportRows {
   for (const section of parsed.sections) {
     for (const t of section.transactions) {
       rows.push({
-        ...(named ? { Account: section.account ?? '' } : {}),
+        ...(named
+          ? { Account: section.account ?? '', AccountType: QIF_ACCOUNT_TYPES[section.kind] }
+          : {}),
         Date: t.date,
         Amount: t.amount,
         Payee: t.payee ?? '',
@@ -354,5 +367,5 @@ export function qifToImportRows(parsed: ParsedQif): QifImportRows {
       });
     }
   }
-  return { headers: named ? ['Account', ...QIF_HEADERS] : QIF_HEADERS, rows };
+  return { headers: named ? ['Account', 'AccountType', ...QIF_HEADERS] : QIF_HEADERS, rows };
 }

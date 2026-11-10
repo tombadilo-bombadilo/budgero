@@ -255,10 +255,10 @@ PCafe
     ]);
     const { headers, rows } = qifToImportRows(result);
     expect(headers[0]).toBe('Account');
-    expect(rows.map((r) => [r.Account, r.Payee])).toEqual([
-      ['Checking', 'Grocer'],
-      ['Checking', 'Employer'],
-      ['Visa', 'Cafe'],
+    expect(rows.map((r) => [r.Account, r.AccountType, r.Payee])).toEqual([
+      ['Checking', 'Checking', 'Grocer'],
+      ['Checking', 'Checking', 'Employer'],
+      ['Visa', 'Credit', 'Cafe'],
     ]);
   });
 
