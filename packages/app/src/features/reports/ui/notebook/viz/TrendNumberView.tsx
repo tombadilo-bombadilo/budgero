@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from 'lucide-react';
 import type { EChartsCoreOption } from 'echarts/core';
 import {
@@ -16,7 +16,8 @@ import { EChart } from '@shared/ui/echart';
 import { useChartPalette } from '@shared/lib/charts/echarts-chrome';
 import { useUiStore } from '@shared/store/useUiStore';
 import { cn } from '@shared/lib/utils';
-import { buildChartModel } from '../chart-model';
+import { buildChartModel, type ChartModel } from '../chart-model';
+import { isCompleteBucket } from './summary';
 import { columnLabel, formatBucketValue } from '../question-labels';
 import { useQuestionFormatters, type QuestionFormatters } from '../useQuestionFormatters';
 import { useQuestionQuery } from '../useQuestionQuery';
@@ -37,8 +38,25 @@ export function TrendNumberView({
   spec,
   className,
 }: VizViewProps) {
-  const format = useQuestionFormatters(source);
-  const model = useMemo(() => buildChartModel(result, columns), [result, columns]);
+  const { t } = useLingui();
+  const format = useQuestionFormatters(source, result);
+  const full = useMemo(() => buildChartModel(result, columns), [result, columns]);
+  const [includeRunning, setIncludeRunning] = useState(false);
+  const today = todayIso();
+  // The running period (this month so far) would compare a part with a whole:
+  // by default the last complete period is the one shown.
+  const running =
+    full.x !== null &&
+    full.xValues.length >= 2 &&
+    !isCompleteBucket(full.x, full.xValues[full.xValues.length - 1], today);
+  const model = useMemo(
+    () => (running && !includeRunning ? withoutLastPoint(full) : full),
+    [full, running, includeRunning]
+  );
+  const runningLabel =
+    running && full.x?.kind === 'breakout' && full.x.breakout.bucket
+      ? formatBucketValue(full.x.breakout.bucket, full.xValues[full.xValues.length - 1], 'long')
+      : '';
   // "Previous period" / "% change" columns derive from a metric; they get no tile of their own.
   const metrics = columns.filter((column) => column.kind === 'aggregation' && !column.derived);
   const trends = metrics
@@ -58,6 +76,20 @@ export function TrendNumberView({
       )}
       data-no-export
     >
+      {running && (
+        <div className="col-span-full -mb-2 flex justify-center">
+          <button
+            type="button"
+            aria-pressed={includeRunning}
+            onClick={() => setIncludeRunning((value) => !value)}
+            className="rounded-full border px-3 py-1 text-xs text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {includeRunning
+              ? t`Showing ${runningLabel} so far · show the last full period`
+              : t`Showing the last full period · include ${runningLabel} so far`}
+          </button>
+        </div>
+      )}
       {trends.map((trend) =>
         needsPrevious && spec ? (
           <PreviousPeriodTile
@@ -81,6 +113,15 @@ export function TrendNumberView({
       )}
     </div>
   );
+}
+
+function withoutLastPoint(model: ChartModel): ChartModel {
+  return {
+    ...model,
+    xValues: model.xValues.slice(0, -1),
+    xKeys: model.xKeys.slice(0, -1),
+    series: model.series.map((series) => ({ ...series, values: series.values.slice(0, -1) })),
+  };
 }
 
 interface PreviousPeriod {

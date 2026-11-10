@@ -1,4 +1,5 @@
 import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { normalizeQuestion, questionColumns } from '@features/reports/lib/question';
 import { TrendNumberView } from './TrendNumberView';
 
@@ -40,6 +41,29 @@ const rows = {
 };
 
 describe('TrendNumberView', () => {
+  it('compares the last full period by default, the running one on request', async () => {
+    vi.useFakeTimers({ now: new Date(2026, 3, 10), shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup();
+      render(
+        <TrendNumberView
+          result={{
+            ...rows,
+            rows: [...rows.rows, ['2026-04', 10]],
+            rowCount: 4,
+          }}
+          columns={questionColumns(monthly)}
+          source="transactions"
+        />
+      );
+      expect(screen.getByText('$120.00')).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: /include April 2026 so far/ }));
+      expect(screen.getByText('$10.00')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('shows the latest month, its change vs the month before and a sparkline', () => {
     render(
       <TrendNumberView result={rows} columns={questionColumns(monthly)} source="transactions" />
