@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { downloadSnapshot } from './snapshot-download';
+import { downloadSnapshot, readSnapshotVersions } from './snapshot-download';
 import * as crypto from '../crypto';
 
 function sha256Hex(data: Uint8Array): string {
@@ -99,5 +99,35 @@ describe('downloadSnapshot integrity check', () => {
     const downloadBlob = vi.fn(async () => null);
 
     await expect(downloadSnapshot({ downloadBlob }, 's1', 'pw')).resolves.toBeNull();
+  });
+});
+
+describe('readSnapshotVersions', () => {
+  it('keeps a mutation version bound to 0', () => {
+    expect(readSnapshotVersions(new Headers({ 'X-Mutation-Version': '0' })).mutationVersion).toBe(
+      0
+    );
+  });
+
+  it('treats a missing or malformed mutation version as unbound', () => {
+    expect(readSnapshotVersions(new Headers()).mutationVersion).toBeUndefined();
+    for (const raw of ['', '-1', 'abc', '1.5', '12abc']) {
+      expect(
+        readSnapshotVersions(new Headers({ 'X-Mutation-Version': raw })).mutationVersion
+      ).toBeUndefined();
+    }
+  });
+
+  it('still requires positive blob and key versions', () => {
+    const v = readSnapshotVersions(
+      new Headers({ 'X-Database-Version': '0', 'X-Encryption-Key-Version': '0' })
+    );
+    expect(v.blobVersion).toBeUndefined();
+    expect(v.keyVersion).toBeUndefined();
+    expect(
+      readSnapshotVersions(
+        new Headers({ 'X-Database-Version': '3', 'X-Encryption-Key-Version': '2' })
+      )
+    ).toEqual({ blobVersion: 3, keyVersion: 2, mutationVersion: undefined });
   });
 });

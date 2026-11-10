@@ -354,6 +354,99 @@ describe('RuntimeContextFactory', () => {
     ctx.sync.destroy();
   });
 
+  it('unsafe catch-up recovery replays from 0 when the restored blob is bound to 0', async () => {
+    vi.stubGlobal('localStorage', createStorageMock() as unknown as Storage);
+    const FakeWS = class {
+      static OPEN = 1;
+
+      static CONNECTING = 0;
+
+      static CLOSED = 3;
+
+      static instances: {
+        emitOpen(): void;
+        emitMessage(payload: unknown): void;
+      }[] = [];
+
+      readyState = 0;
+
+      onopen: (() => void) | null = null;
+
+      onclose: (() => void) | null = null;
+
+      onerror: (() => void) | null = null;
+
+      onmessage: ((event: { data: string }) => void) | null = null;
+
+      constructor(_url: string) {
+        FakeWS.instances.push(this);
+      }
+
+      send(_data: string): void {}
+
+      close(): void {
+        this.readyState = 3;
+        this.onclose?.();
+      }
+
+      emitOpen(): void {
+        this.readyState = 1;
+        this.onopen?.();
+      }
+
+      emitMessage(payload: unknown): void {
+        this.onmessage?.({ data: JSON.stringify(payload) });
+      }
+    };
+    vi.stubGlobal('WebSocket', FakeWS as unknown as typeof WebSocket);
+
+    const deps = createDeps();
+    deps.syncTransportPolicy.getReconnectDelayMs = vi.fn(() => 60_000);
+    deps.getDatabaseState = vi.fn(async () => ({ version: 44, mutation_version: 120 }));
+    const factory = new RuntimeContextFactory(deps as never);
+    const db = createDb();
+
+    const ctx = factory.createOnlineContext({
+      spaceId: 'space_1',
+      generation: 11,
+      db: db as never,
+      encryption: {
+        encryptMutation: vi.fn(async () => 'cipher'),
+        decryptMutation: vi.fn(async () => ({ op: 'remote', args: { a: 1 } })),
+      },
+      passphrase: 'passphrase',
+      hydratedFromServer: false,
+      localPersistenceCipher: {
+        encrypt: vi.fn(async (d: Uint8Array) => d),
+        decrypt: vi.fn(async (d: Uint8Array) => ({ decrypted: d, wasEncrypted: true })),
+      },
+      onRemoteMutation: vi.fn(async () => undefined),
+      onSyncConnectionChange: vi.fn(),
+    });
+
+    const restoreSpy = vi.spyOn(ctx.dbSync, 'downloadAndRestore').mockResolvedValue(true);
+    // The restored blob is an import published before any logged change.
+    vi.spyOn(ctx.dbSync, 'getLastDownloadedMutationVersion').mockReturnValue(0);
+    const migrationSpy = vi
+      .spyOn(ctx.dbLoader, 'runMigrations')
+      .mockImplementation(() => undefined);
+
+    ctx.sync.setLocalVersion(100);
+    await ctx.sync.connect();
+    const ws = FakeWS.instances[0]!;
+    ws.emitOpen();
+
+    ws.emitMessage({ type: 'catch_up_response', mutations: { bad: true } });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(restoreSpy).toHaveBeenCalled();
+    expect(migrationSpy).toHaveBeenCalledWith(db as never);
+    expect(ctx.dbSync.getBlobVersion()).toBe(44);
+    // Not the server's current 120: that would skip mutations 1..120.
+    expect(ctx.sync.getLocalVersion()).toBe(0);
+    ctx.sync.destroy();
+  });
+
   it('preserves offline queue entries across unsafe catch-up recovery', async () => {
     vi.stubGlobal('indexedDB', new FakeIndexedDBFactory() as unknown as IDBFactory);
     vi.stubGlobal('localStorage', createStorageMock() as unknown as Storage);

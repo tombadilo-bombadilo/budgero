@@ -573,6 +573,68 @@ describe('SpaceActivationService', () => {
     expect(localStorageMock.getItem(`${MUTATION_CURSOR_STORAGE_PREFIX}s1`)).toBe('87');
   });
 
+  it('seeds the cursor at 0 when the blob is bound to 0 (import before any logged change)', async () => {
+    const localStorageMock = createStorageMock();
+    vi.stubGlobal('localStorage', localStorageMock as unknown as Storage);
+    localStorageMock.setItem(`${BLOB_VERSION_STORAGE_PREFIX}s1`, '10');
+
+    const plaintext = new Uint8Array([9, 9, 9]);
+    const { encrypted } = await compressAndEncryptDatabase(plaintext, 'passphrase');
+    const db = createDb();
+    const context = createOnlineContext(db);
+    // An import published before any change was logged is bound to 0; the
+    // log has since advanced to 130. Reading 0 as "unbound" would seed 130
+    // and skip every change made after the import.
+    const downloadBlob = vi.fn(async () => ({
+      data: encrypted,
+      headers: new Headers({ 'X-Database-Version': '19', 'X-Mutation-Version': '0' }),
+    }));
+
+    const service = new SpaceActivationService({
+      keyVault: {
+        ensureSpaceKey: vi.fn(async () => crypto.getRandomValues(new Uint8Array(32))),
+        getSpacePassphrase: vi.fn(() => 'passphrase'),
+        setEncryptionKeyVersion: vi.fn(),
+      } as never,
+      contextFactory: {
+        createOnlineContext: vi.fn(() => context),
+      } as never,
+      listAvailableSpaces: () => [
+        {
+          space_id: 's1',
+          display_name: 'One',
+          owner_user_id: 'u1',
+          role: 'owner',
+          invitation_status: 'accepted',
+          encrypted_space_key: 'k',
+          created_at: '2024-01-01',
+        },
+      ],
+      createDatabase: vi.fn(async () => db),
+      downloadBlob,
+      getDatabaseState: vi.fn(async () => ({ version: 19, mutation_version: 130 })),
+      cleanupDatabaseFile: vi.fn(async () => undefined),
+      isE2E: false,
+      opfsSuffix: '_sas',
+    });
+
+    await service.activateSpace({
+      spaceId: 's1',
+      generation: 1,
+      masterPassword: 'master',
+      signal: new AbortController().signal,
+      localPersistenceCipher: {
+        encrypt: vi.fn(async (d: Uint8Array) => d),
+        decrypt: vi.fn(async (d: Uint8Array) => ({ decrypted: d, wasEncrypted: true })),
+      },
+      forceServerDownload: true,
+      onRemoteMutation: vi.fn(async () => undefined),
+      onSyncConnectionChange: vi.fn(),
+    });
+
+    expect(localStorageMock.getItem(`${MUTATION_CURSOR_STORAGE_PREFIX}s1`)).toBeNull();
+  });
+
   it('forces full snapshot when authoritative mutation gap exceeds replay threshold', async () => {
     const localStorageMock = createStorageMock();
     vi.stubGlobal('localStorage', localStorageMock as unknown as Storage);
