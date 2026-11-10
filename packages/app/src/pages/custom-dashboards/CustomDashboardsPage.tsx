@@ -372,7 +372,7 @@ export default function CustomDashboardsPage() {
           <h1 className="text-2xl font-semibold">
             <Trans>Custom Dashboards</Trans>
           </h1>
-          <p className="line-clamp-1 text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             <Trans>Saved questions side by side, filtered together.</Trans>
           </p>
         </div>

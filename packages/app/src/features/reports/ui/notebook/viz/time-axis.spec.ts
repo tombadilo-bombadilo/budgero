@@ -1,16 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { axisLabelIndexes, shortMonthLabel } from './time-axis';
 
+const months = (n: number) => Array.from({ length: n }, () => 'Jun');
+
 describe('axisLabelIndexes', () => {
-  it('always keeps the first and the last label', () => {
-    expect([...axisLabelIndexes(12, 5)].sort((a, b) => a - b)).toEqual([0, 3, 6, 11]);
-    expect([...axisLabelIndexes(12, 4)].sort((a, b) => a - b)).toEqual([0, 4, 11]);
-    const shown = axisLabelIndexes(6, 4);
-    expect(shown.has(0)).toBe(true);
-    expect(shown.has(5)).toBe(true);
-    expect(shown.size).toBeLessThanOrEqual(4);
-    expect([...axisLabelIndexes(3, 8)]).toEqual([0, 1, 2]);
-    expect(axisLabelIndexes(0, 4).size).toBe(0);
+  it('shows every label when they fit', () => {
+    expect([...axisLabelIndexes(["Jun '26", 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'], 300)]).toEqual([
+      0, 1, 2, 3, 4, 5,
+    ]);
+  });
+
+  it('thins evenly when they would collide', () => {
+    // 12 labels, room for 4 → every 3rd.
+    expect([...axisLabelIndexes(months(12), 4 * 33)]).toEqual([0, 3, 6, 9]);
+    expect(axisLabelIndexes([], 100).size).toBe(0);
   });
 });
 

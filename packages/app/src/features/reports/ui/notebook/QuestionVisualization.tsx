@@ -223,22 +223,15 @@ function ChartView({
     if (!shortMonths) return null;
     const locale = getLocaleTag();
     return model.xValues.map((value, index) => {
-      const previous = index > 0 ? String(model.xValues[index - 1] ?? '').slice(0, 4) : null;
-      const year = String(value ?? '').slice(0, 4);
-      const withYear = index === 0 || index === model.xValues.length - 1 || previous !== year;
+      // The year shows on the first label and on each January.
+      const withYear = index === 0 || String(value ?? '').endsWith('-01');
       return shortMonthLabel(value, withYear, locale) ?? xLabels[index];
     });
   }, [shortMonths, model, xLabels]);
-  // Time axes always show their first and last label.
+  // Time axes: every label when they fit, else evenly thinned.
   const shownLabels = useMemo(
-    () =>
-      timeAxis
-        ? axisLabelIndexes(
-            model.xValues.length,
-            Math.max(2, (width - 60) / (shortMonths ? 58 : 90))
-          )
-        : null,
-    [timeAxis, model, width, shortMonths]
+    () => (timeAxis ? axisLabelIndexes(axisLabels ?? xLabels, Math.max(60, width - 60)) : null),
+    [timeAxis, axisLabels, xLabels, width]
   );
 
   // Slices are known by their value (not their position), so a new result
