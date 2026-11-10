@@ -27,7 +27,7 @@ import {
   MAX_QUESTION_LIMIT,
   NUMERIC_AGGREGATIONS,
   QUESTION_SOURCES,
-  SOURCE_FIELDS,
+  rowFields,
   createQuestion,
   customFields,
   getField,
@@ -100,8 +100,8 @@ interface NotebookEditorProps {
 function hasSteps(spec: QuestionSpec): boolean {
   const fresh = createQuestion(spec.source);
   return (
-    spec.aggregations.length > 0 ||
-    spec.breakouts.length > 0 ||
+    JSON.stringify(spec.aggregations) !== JSON.stringify(fresh.aggregations) ||
+    JSON.stringify(spec.breakouts) !== JSON.stringify(fresh.breakouts) ||
     spec.sort.length > 0 ||
     spec.limit !== null ||
     (spec.customColumns?.length ?? 0) > 0 ||
@@ -350,7 +350,7 @@ function DataStep({
   const columnCount = columns.length;
   const customColumns = spec.customColumns ?? [];
   const pickable = [
-    ...SOURCE_FIELDS[spec.source].map((field) => field.id),
+    ...rowFields(spec.source).map((field) => field.id),
     ...customColumns.map((column) => column.id),
   ];
   const toggleColumn = (fieldId: string, checked: boolean) => {
@@ -425,14 +425,6 @@ function DataStep({
       </div>
       <CustomColumns spec={spec} onChange={onChange} />
       <p className="text-xs text-muted-foreground">{sourceDescription(spec.source)}</p>
-      {spec.source === 'budget' && (
-        <p className="text-xs text-muted-foreground">
-          <Trans>
-            Available isn’t offered here: it depends on carry-over and credit card rules that only
-            the Budget page applies.
-          </Trans>
-        </p>
-      )}
     </div>
   );
 }
@@ -571,7 +563,9 @@ function MetricPicker({
       .map((entry) => ({ field: entry.field, name: entry.column.name })),
   ];
   const distinctFields: { field: FieldDef; name?: string }[] = [
-    ...SOURCE_FIELDS[source].filter((field) => field.type !== 'number').map((field) => ({ field })),
+    ...rowFields(source)
+      .filter((field) => field.type !== 'number')
+      .map((field) => ({ field })),
     ...custom
       .filter((entry) => entry.field.type !== 'number')
       .map((entry) => ({ field: entry.field, name: entry.column.name })),
@@ -1186,7 +1180,7 @@ function SortStep({
   // Raw rows can sort by any field, shown or not.
   const choices: { key: string; label: string; metric: boolean }[] = raw
     ? [
-        ...SOURCE_FIELDS[spec.source].map((field) => ({
+        ...rowFields(spec.source).map((field) => ({
           key: field.id,
           label: specFieldLabel(spec, field.id),
           metric: false,

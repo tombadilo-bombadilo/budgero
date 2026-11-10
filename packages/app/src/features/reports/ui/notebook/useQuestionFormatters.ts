@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
-import type { QuestionColumn, QuestionSource } from '@features/reports/lib/question';
+import { getField, type QuestionColumn, type QuestionSource } from '@features/reports/lib/question';
 import type { QueryResult } from '@shared/lib/sql/report-query-executor';
 import { currencyDisplayFor } from '@shared/lib/number-format';
 import { formatMaskedMilli, maskFormattedIfEnabled } from '@shared/lib/privacy/mask-numbers';
 import { useUiStore } from '@shared/store/useUiStore';
 import {
   booleanLabel,
+  codeLabel,
   columnBucket,
   columnFormat,
   formatBucketValue,
@@ -125,7 +126,14 @@ export function useQuestionFormatters(
         return number(column, numeric);
       }
       if (value === null || value === undefined || value === '') return '—';
-      return String(value);
+      const fieldId =
+        column.kind === 'field'
+          ? column.field
+          : column.kind === 'breakout'
+            ? column.breakout.field
+            : null;
+      const coded = fieldId ? codeLabel(getField(source, fieldId)?.valueKind, value) : null;
+      return coded ?? String(value);
     };
 
     return {

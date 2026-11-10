@@ -13,6 +13,7 @@ import {
   SOURCE_FIELDS,
   datePartsFor,
   getField,
+  rowFields,
   type DateBucket,
   type DatePart,
   type FieldDef,
@@ -222,11 +223,42 @@ export const MAX_FILTER_TEXT = 10_000;
 
 /** Filters a fresh Transactions question starts with (removable chips). */
 export function defaultSourceFilters(source: QuestionSource): QuestionFilter[] {
-  if (source !== 'transactions') return [];
-  return [
-    { field: 'is_transfer', op: 'is', values: [false] },
-    { field: 'on_budget', op: 'is', values: [true] },
-  ];
+  switch (source) {
+    case 'transactions':
+      return [
+        { field: 'is_transfer', op: 'is', values: [false] },
+        { field: 'on_budget', op: 'is', values: [true] },
+      ];
+    case 'scheduled':
+      return [
+        { field: 'active', op: 'is', values: [true] },
+        { field: 'is_transfer', op: 'is', values: [false] },
+      ];
+    case 'upcoming':
+      // Due in the next 30 days, overdue ones included.
+      return [
+        { field: 'days_until', op: 'lt', values: [31] },
+        { field: 'is_transfer', op: 'is', values: [false] },
+      ];
+    case 'payees':
+      return [{ field: 'on_budget', op: 'is', values: [true] }];
+    default:
+      return [];
+  }
+}
+
+/** Steps a fresh question on a source starts with (besides its filters). */
+export function defaultSourceSteps(
+  source: QuestionSource
+): Partial<Pick<QuestionSpec, 'aggregations' | 'breakouts'>> {
+  // Balances: net worth by month, a line.
+  if (source === 'balances') {
+    return {
+      aggregations: [{ op: 'sum', field: 'balance' }],
+      breakouts: [{ field: 'date', bucket: 'month' }],
+    };
+  }
+  return {};
 }
 
 export function createQuestion(
@@ -239,6 +271,7 @@ export function createQuestion(
     filters: defaultSourceFilters(source),
     aggregations: [],
     breakouts: [],
+    ...defaultSourceSteps(source),
     sort: [],
     limit: null,
     columns: null,
@@ -455,7 +488,7 @@ export function normalizeAggregation(
   }
   if (isFriendlyAggregation(op)) return source === 'transactions' ? { op, ...extras } : null;
   if (op === 'count') return { op, ...extras };
-  const field = typeof raw.field === 'string' ? lookupField(source, raw.field, custom) : undefined;
+  const field = typeof raw.field === 'string' ? rowField(source, raw.field, custom) : undefined;
   if (!field) return null;
   if (op === 'distinct') return { op, field: field.id, ...extras };
   return field.type === 'number' ? { op, field: field.id, ...extras } : null;
@@ -468,7 +501,7 @@ export function normalizeBreakout(
 ): QuestionBreakout | null {
   const raw = asRecord(input);
   if (!raw || typeof raw.field !== 'string') return null;
-  const field = lookupField(source, raw.field, custom);
+  const field = rowField(source, raw.field, custom);
   if (!field) return null;
   if (field.type === 'number') {
     const bin = normalizeBin(raw.bin);
@@ -533,7 +566,7 @@ export function normalizeQuestion(input: unknown): QuestionSpec {
     const valid = unique(
       raw.columns.filter(
         (column): column is string =>
-          typeof column === 'string' && !!lookupField(source, column, custom)
+          typeof column === 'string' && !!rowField(source, column, custom)
       )
     );
     columns = valid.length > 0 ? valid : null;
@@ -561,7 +594,7 @@ export function normalizeQuestion(input: unknown): QuestionSpec {
   spec.sort = spec.sort.filter(
     (entry) =>
       keys.has(entry.column) ||
-      (aggregations.length === 0 && Boolean(lookupField(source, entry.column, custom)))
+      (aggregations.length === 0 && Boolean(rowField(source, entry.column, custom)))
   );
   const having = normalizeHaving(raw.having, outputs);
   if (having.length > 0) spec.having = having;
@@ -827,7 +860,20 @@ export const MONEY_FIELD_IDS: ReadonlySet<string> = new Set([
   'assigned',
   'activity',
   'balance',
+  'available',
+  'goal_target',
+  'goal_monthly_target',
+  'goal_needed',
+  'change',
+  'assets',
+  'debts',
+  'monthly_amount',
+  'total',
+  'average_amount',
 ]);
+
+/** Source fields that hold a percentage (0-100). */
+export const PERCENT_FIELD_IDS: ReadonlySet<string> = new Set(['goal_progress']);
 
 interface CustomFieldEntry {
   column: QuestionCustomColumn;
@@ -861,13 +907,23 @@ export function lookupField(
   return getField(source, fieldId) ?? custom?.get(fieldId)?.field;
 }
 
+/** A field a row has (source field or custom column): filter-only fields are left out. */
+export function rowField(
+  source: QuestionSource,
+  fieldId: string,
+  custom?: CustomFields
+): FieldDef | undefined {
+  const field = lookupField(source, fieldId, custom);
+  return field?.filterOnly ? undefined : field;
+}
+
 /** Fields an expression can reference: the source's, then the custom columns given. */
 export function expressionFields(
   source: QuestionSource,
   custom?: CustomFields,
   names?: (fieldId: string) => readonly string[]
 ): ExprField[] {
-  const fields: ExprField[] = SOURCE_FIELDS[source].map((field) => ({
+  const fields: ExprField[] = rowFields(source).map((field) => ({
     id: field.id,
     type: exprTypeOf(field),
     money: MONEY_FIELD_IDS.has(field.id),

@@ -49,6 +49,10 @@ const EXAMPLES: Record<ExpressionKind, Record<QuestionSource, string[]>> = {
     ],
     budget: ['[assigned] + [activity]', 'case([activity] < -[assigned], "Over", "OK")'],
     accounts: ['case([balance] < 0, "Owing", "Positive")', 'round([balance], -2)'],
+    balances: ['case([is_liability], "Debt", "Asset")', '[balance] - [change]'],
+    scheduled: ['[monthly_amount] * 12', 'case([amount] < 0, "Bill", "Income")'],
+    upcoming: ['abs([amount])', 'case([days_until] < 8, "This week", "Later")'],
+    payees: ['[outflow] / [transaction_count]', 'case([outflow] > 1000, "Big", "Small")'],
   },
   metric: {
     transactions: [
@@ -58,6 +62,10 @@ const EXAMPLES: Record<ExpressionKind, Record<QuestionSource, string[]>> = {
     ],
     budget: ['Sum([assigned]) + Sum([activity])', 'SumIf([activity], [activity] < 0)'],
     accounts: ['Sum([balance])', 'CountIf([balance] < 0)'],
+    balances: ['Sum([assets]) - Sum([debts])', 'SumIf([balance], [on_budget])'],
+    scheduled: ['Sum([monthly_amount]) * 12', 'SumIf([monthly_amount], [amount] < 0)'],
+    upcoming: ['SumIf([outflow], [days_until] < 8)', 'CountIf([is_overdue])'],
+    payees: ['Sum([outflow]) / Sum([transaction_count])', 'CountIf([transaction_count] > 10)'],
   },
 };
 

@@ -3,8 +3,16 @@ import duckdbWasmMvp from '@duckdb/duckdb-wasm/dist/duckdb-mvp.wasm?url';
 import duckdbWorkerMvp from '@duckdb/duckdb-wasm/dist/duckdb-browser-mvp.worker.js?url';
 import duckdbWasmEh from '@duckdb/duckdb-wasm/dist/duckdb-eh.wasm?url';
 import duckdbWorkerEh from '@duckdb/duckdb-wasm/dist/duckdb-browser-eh.worker.js?url';
+import { getRuntime } from '@shared/runtime/global';
+import { getTodayISO } from '@shared/lib/date-utils';
 import type { QueryResult } from './report-query-executor';
-import { TRANSACTIONS_ANALYTICS_VIEW_SQL } from './analytics-views';
+import { REPORTING_VIEWS_SQL, mapSQLiteTypeToDuckDb } from './analytics-views';
+import {
+  DERIVED_TABLES,
+  derivedTablesIn,
+  type DerivedColumn,
+  type DerivedTable,
+} from './report-derived-tables';
 
 export interface ReportingSqlStatement {
   all(): Record<string, unknown>[];
@@ -86,28 +94,6 @@ function normalizeForJson(value: unknown): unknown {
     return normalized;
   }
   return value;
-}
-
-function mapSQLiteTypeToDuckDb(type: string): string {
-  const normalizedType = String(type ?? '')
-    .trim()
-    .toUpperCase();
-  if (!normalizedType) return 'VARCHAR';
-  if (normalizedType.includes('INT')) return 'BIGINT';
-  if (
-    normalizedType.includes('REAL') ||
-    normalizedType.includes('FLOA') ||
-    normalizedType.includes('DOUB') ||
-    normalizedType.includes('NUM') ||
-    normalizedType.includes('DEC')
-  ) {
-    return 'DOUBLE';
-  }
-  // SQLite stores booleans as 0/1 integers and the analytics views query them
-  // that way (e.g. `account_on_budget = 1`); keep them numeric.
-  if (normalizedType.includes('BOOL')) return 'BIGINT';
-  if (normalizedType.includes('BLOB')) return 'BLOB';
-  return 'VARCHAR';
 }
 
 function stripTrailingSemicolon(query: string): string {
@@ -277,10 +263,134 @@ function getSQLiteTableRows(
 async function registerPrebuiltAnalyticsViews(
   connection: duckdb.AsyncDuckDBConnection
 ): Promise<void> {
-  await connection.query(TRANSACTIONS_ANALYTICS_VIEW_SQL);
+  for (const sql of REPORTING_VIEWS_SQL) {
+    try {
+      await connection.query(sql);
+    } catch (error) {
+      console.warn('[duckdb-reporting-engine] Failed to register an analytics view', { error });
+    }
+  }
+}
+
+/** Inserts JSON rows with an explicit column-type map (no type auto-detection). */
+async function insertJsonRows(
+  tableName: string,
+  columns: readonly { name: string; type: string }[],
+  rows: Record<string, unknown>[]
+): Promise<void> {
+  if (!duckDb || !duckDbConnection || rows.length === 0) return;
+  const tempFileName = `sqlite_snapshot_${snapshotVersion}_${sanitizeTempFileName(tableName)}.json`;
+  await duckDb.registerFileText(tempFileName, JSON.stringify(rows));
+  try {
+    const columnStruct = columns
+      .map((c) => `${quoteJsonKey(c.name)}: ${quoteJsonKey(c.type)}`)
+      .join(', ');
+    await duckDbConnection.query(
+      `INSERT INTO ${quoteIdentifier(tableName)} SELECT * FROM read_json(${quoteJsonKey(
+        tempFileName
+      )}, format='array', columns={${columnStruct}})`
+    );
+  } finally {
+    await duckDb.dropFile(tempFileName).catch(() => undefined);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Derived tables (budget screen numbers, scheduled transactions)
+// ---------------------------------------------------------------------------
+
+/** Serializes snapshot rebuilds and derived-table fills. */
+let snapshotLock: Promise<unknown> = Promise.resolve();
+function withSnapshotLock<T>(task: () => Promise<T>): Promise<T> {
+  const run = snapshotLock.then(task, task);
+  snapshotLock = run.catch(() => undefined);
+  return run;
+}
+
+/** Derived tables filled in the current snapshot. */
+let filledDerivedTables = new Set<string>();
+
+interface DerivedCacheEntry {
+  key: string;
+  rows: Record<string, unknown>[];
+}
+const derivedCache = new WeakMap<object, Map<string, DerivedCacheEntry>>();
+/** Row changes the derived builders made themselves (occurrence materialization). */
+const ownChanges = new WeakMap<object, number>();
+
+function totalChanges(sqliteDb: ReportingSqlDatabase): number | null {
+  try {
+    const statement = sqliteDb.prepare('SELECT total_changes() AS n');
+    const row = statement.get();
+    statement.finalize();
+    const value = Number(row?.n);
+    return Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * A derived table's rows, cached until the database changes (SQLite's
+ * total_changes, minus the builders' own writes) or the day turns.
+ */
+function derivedRows(
+  table: DerivedTable,
+  sqliteDb: ReportingSqlDatabase
+): Record<string, unknown>[] {
+  const services = getRuntime()?.services();
+  if (!services) return [];
+  const today = getTodayISO();
+  const before = totalChanges(sqliteDb);
+  const own = ownChanges.get(sqliteDb) ?? 0;
+  const key = before === null ? null : `${today}:${before - own}`;
+  const cache = derivedCache.get(sqliteDb) ?? new Map<string, DerivedCacheEntry>();
+  derivedCache.set(sqliteDb, cache);
+  const hit = cache.get(table.name);
+  if (key !== null && hit?.key === key) return hit.rows;
+  const rows = table.build({ services, db: sqliteDb, today });
+  const after = totalChanges(sqliteDb);
+  if (before !== null && after !== null) {
+    ownChanges.set(sqliteDb, own + (after - before));
+    if (key !== null) cache.set(table.name, { key, rows });
+  }
+  return rows;
+}
+
+function derivedTableDdl(name: string, columns: readonly DerivedColumn[]): string {
+  return `CREATE TABLE ${quoteIdentifier(name)} (${columns
+    .map((column) => `${quoteIdentifier(column.name)} ${column.type}`)
+    .join(', ')})`;
+}
+
+/** Fills the derived tables a query names (they exist empty in every snapshot). */
+async function fillDerivedTables(query: string, sqliteDb: ReportingSqlDatabase): Promise<void> {
+  const needed = derivedTablesIn(query).filter((table) => !filledDerivedTables.has(table.name));
+  if (needed.length === 0) return;
+  await withSnapshotLock(async () => {
+    for (const table of needed) {
+      if (filledDerivedTables.has(table.name) || !duckDbConnection) continue;
+      let rows: Record<string, unknown>[] = [];
+      try {
+        rows = derivedRows(table, sqliteDb);
+      } catch (error) {
+        console.warn('[duckdb-reporting-engine] Failed to build a derived table', {
+          table: table.name,
+          error,
+        });
+      }
+      await duckDbConnection.query(`DELETE FROM ${quoteIdentifier(table.name)}`);
+      await insertJsonRows(table.name, table.columns, rows);
+      filledDerivedTables.add(table.name);
+    }
+  });
 }
 
 async function rebuildDuckDbSnapshot(sqliteDb: ReportingSqlDatabase): Promise<void> {
+  await withSnapshotLock(() => rebuildDuckDbSnapshotNow(sqliteDb));
+}
+
+async function rebuildDuckDbSnapshotNow(sqliteDb: ReportingSqlDatabase): Promise<void> {
   await ensureInitialized();
   if (!duckDb || !duckDbConnection) {
     throw new Error('DuckDB is not initialized');
@@ -298,6 +408,7 @@ async function rebuildDuckDbSnapshot(sqliteDb: ReportingSqlDatabase): Promise<vo
 
   const sqliteTables = listSQLiteTables(sqliteDb);
   snapshotVersion += 1;
+  filledDerivedTables = new Set();
 
   for (const tableName of sqliteTables) {
     const allColumns = getSQLiteTableColumns(sqliteDb, tableName);
@@ -327,25 +438,24 @@ async function rebuildDuckDbSnapshot(sqliteDb: ReportingSqlDatabase): Promise<vo
       for (const key of droppedKeys) delete normalized[key];
       return normalized;
     });
-    const tempFileName = `sqlite_snapshot_${snapshotVersion}_${sanitizeTempFileName(tableName)}.json`;
-    await duckDb.registerFileText(tempFileName, JSON.stringify(normalizedRows));
-    try {
-      // Insert with an EXPLICIT column-type map so DuckDB never auto-detects.
-      // Auto-detection (read_json_auto, used by insertJSONFromPath) infers an
-      // UNSIGNED integer from a sample of non-negative rows and then fails
-      // ("Expected unsigned int or null, got number") on the first negative
-      // (credit/overdrawn RunningBalanceConverted) or fractional (pre-milliunit) value.
-      const columnStruct = columns
-        .map((c) => `${quoteJsonKey(c.name)}: ${quoteJsonKey(mapSQLiteTypeToDuckDb(c.type))}`)
-        .join(', ');
-      await duckDbConnection.query(
-        `INSERT INTO ${quoteIdentifier(tableName)} SELECT * FROM read_json(${quoteJsonKey(
-          tempFileName
-        )}, format='array', columns={${columnStruct}})`
-      );
-    } finally {
-      await duckDb.dropFile(tempFileName).catch(() => undefined);
-    }
+    // Insert with an EXPLICIT column-type map so DuckDB never auto-detects.
+    // Auto-detection (read_json_auto, used by insertJSONFromPath) infers an
+    // UNSIGNED integer from a sample of non-negative rows and then fails
+    // ("Expected unsigned int or null, got number") on the first negative
+    // (credit/overdrawn RunningBalanceConverted) or fractional (pre-milliunit) value.
+    await insertJsonRows(
+      tableName,
+      columns.map((c) => ({ name: c.name, type: mapSQLiteTypeToDuckDb(c.type) })),
+      normalizedRows
+    );
+  }
+
+  // Empty until a query names them (see fillDerivedTables), so schema
+  // listings show them without computing them.
+  const sqliteNames = new Set(sqliteTables);
+  for (const table of DERIVED_TABLES) {
+    if (sqliteNames.has(table.name)) continue;
+    await duckDbConnection.query(derivedTableDdl(table.name, table.columns));
   }
 
   try {
@@ -382,6 +492,7 @@ export async function executeDuckDbReportQuery(
   const startTime = performance.now();
 
   await ensureFreshSnapshot(sqliteDb);
+  await fillDerivedTables(trimmedQuery, sqliteDb);
   if (!duckDbConnection) {
     throw new Error('DuckDB connection is not available');
   }

@@ -1199,6 +1199,10 @@ msgstr "{count, plural, one {# transaction mise à jour} other {# transactions m
 msgid "{count, plural, one {# transaction} other {# transactions}}"
 msgstr "{count, plural, one {# transaction} other {# transactions}}"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{count, plural, one {Daily} other {Every # days}}"
+msgstr "{count, plural, one {Quotidien} other {Tous les # jours}}"
+
 #: src/pages/settings/PayeesPage.tsx
 msgid "{count, plural, one {Delete # payee} other {Delete # payees}}"
 msgstr "{count, plural, one {Supprimer # bénéficiaire} other {Supprimer # bénéficiaires}}"
@@ -1218,6 +1222,18 @@ msgstr "{count, plural, one {Chaque semaine} other {Toutes les # semaines}}"
 #: src/features/transactions/ui/add-transaction/recurring-form.ts
 msgid "{count, plural, one {Every # year} other {Every # years}}"
 msgstr "{count, plural, one {Chaque année} other {Tous les # ans}}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{count, plural, one {Monthly} other {Every # months}}"
+msgstr "{count, plural, one {Mensuel} other {Tous les # mois}}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{count, plural, one {Weekly} other {Every # weeks}}"
+msgstr "{count, plural, one {Hebdomadaire} other {Toutes les # semaines}}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "{count, plural, one {Yearly} other {Every # years}}"
+msgstr "{count, plural, one {Annuel} other {Tous les # ans}}"
 
 #: src/features/goal-management/lib/goal-cycle-label.ts
 msgid "{cycleMonths, plural, one {every # month} other {every # months}}"
@@ -3746,6 +3762,7 @@ msgstr "Les actions s'exécutent dans l'ordre une fois toutes les conditions rem
 msgid "Activation"
 msgstr "Activation"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 #: src/pages/settings/AuditLogPage.tsx
 #: src/pages/settings/components/WorkspaceRow.tsx
@@ -3771,6 +3788,10 @@ msgstr "Espaces actifs"
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Active Subscribers"
 msgstr "Abonnés actifs"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Active, paused, or ended (no more occurrences)."
+msgstr "Actif, en pause ou terminé (plus d’échéances)."
 
 #: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
 #: src/features/budget-planning/ui/category-row/CategoryRowCardLayout.tsx
@@ -4417,6 +4438,10 @@ msgstr "Montant"
 msgid "Amount ({currencyCode})"
 msgstr "Montant ({currencyCode})"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Amount (account currency)"
+msgstr "Montant (devise du compte)"
+
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Amount already repaid on this debt."
 msgstr "Montant déjà remboursé sur cette dette."
@@ -4717,6 +4742,7 @@ msgstr "Demandez au propriétaire de se réabonner"
 msgid "Asset & Liability History (24 months)"
 msgstr "Historique des actifs et passifs (24 mois)"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/accounts/AccountsPage.tsx
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Assets"
@@ -4770,8 +4796,8 @@ msgid "Assigned amount ({0})"
 msgstr "Montant affecté ({0})"
 
 #: src/features/reports/ui/notebook/question-labels.ts
-msgid "Assigned and activity per category per month."
-msgstr "Affecté et activité par catégorie et par mois."
+#~ msgid "Assigned and activity per category per month."
+#~ msgstr "Affecté et activité par catégorie et par mois."
 
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Assigned in future months"
@@ -4800,6 +4826,10 @@ msgstr "Affecté vs dépensé par catégorie ce mois-ci"
 #: src/pages/analytics/prebuilt-question.ts
 msgid "Assigned vs spent per month"
 msgstr "Affecté vs dépensé par mois"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Assigned, activity, available and goals per category per month, as the budget shows them."
+msgstr "Assigné, activité, disponible et objectifs par catégorie et par mois, comme le budget les affiche."
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "Assigned:"
@@ -4950,6 +4980,7 @@ msgstr "Dispo."
 #: src/features/budget-planning/ui/CategoryGroupRow.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Available"
 msgstr "Disponible"
 
@@ -4970,8 +5001,8 @@ msgid "Available for payment:"
 msgstr "Disponible pour le paiement :"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Available isn’t offered here: it depends on carry-over and credit card rules that only the Budget page applies."
-msgstr "Le disponible n’est pas proposé ici : il dépend des règles de report et de carte de crédit que seule la page Budget applique."
+#~ msgid "Available isn’t offered here: it depends on carry-over and credit card rules that only the Budget page applies."
+#~ msgstr "Le disponible n’est pas proposé ici : il dépend des règles de report et de carte de crédit que seule la page Budget applique."
 
 #. placeholder {0}: formatAmount(Math.max(0, available || 0))
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
@@ -4990,6 +5021,10 @@ msgstr "Disponible : {0}"
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Average"
 msgstr "Moyenne"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Average amount"
+msgstr "Montant moyen"
 
 #. placeholder {0}: formatAmount(averageMonthlySpending)
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
@@ -5104,6 +5139,14 @@ msgstr "Solde (devise du compte)"
 #~ msgid "Balance after {0} months under this scenario"
 #~ msgstr "Solde après {0} mois dans ce scénario"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Balance at the end of the period, in the budget currency."
+msgstr "Solde à la fin de la période, dans la devise du budget."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Balance in the account's own currency."
+msgstr "Solde dans la devise du compte."
+
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Balance owed"
 msgstr "Solde dû"
@@ -5124,6 +5167,10 @@ msgstr "Solde<0/>"
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Balances match - reconciliation will mark transactions as reconciled"
 msgstr "Les soldes correspondent - le rapprochement marquera les transactions comme rapprochées"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Balances over time"
+msgstr "Soldes dans le temps"
 
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
@@ -6102,6 +6149,7 @@ msgstr "Calcul du remboursement de carte de crédit"
 msgid "Chain conditions with AND / OR. AND is checked before OR, so each OR starts a new group."
 msgstr "Enchaînez les conditions avec ET / OU. ET est évalué avant OU, donc chaque OU commence un nouveau groupe."
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Change"
 msgstr "Variation"
@@ -7743,6 +7791,10 @@ msgstr "Cartes de crédit"
 msgid "Credit cards and revolving credit accounts"
 msgstr "Cartes de crédit et comptes de crédit renouvelable"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Credit cards, loans and mortgages."
+msgstr "Cartes de crédit, prêts et hypothèques."
+
 #: src/features/budget-planning/ui/category-row/CoverOverspendingPopover.tsx
 msgid "Credit overspend — cover to avoid debt"
 msgstr "Dépassement de crédit — couvrez-le pour éviter les dettes"
@@ -8210,6 +8262,10 @@ msgstr "Fenêtre de N jours"
 msgid "Days before the due date; use 0 for the same day."
 msgstr "Nombre de jours avant l’échéance ; indiquez 0 pour le jour même."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Days from today; negative when overdue."
+msgstr "Jours à partir d’aujourd’hui ; négatif en cas de retard."
+
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "Days left:"
 msgstr "Jours restants :"
@@ -8221,6 +8277,14 @@ msgstr "Jours d'accès gratuit"
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "Days remaining:"
 msgstr "Jours restants :"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Days until due"
+msgstr "Jours avant l’échéance"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Days until next"
+msgstr "Jours avant le prochain"
 
 #: src/features/import/model/types.ts
 msgid "DD.MM.YYYY (31.01.2024)"
@@ -8235,6 +8299,10 @@ msgstr "DD/MM/YYYY (31/01/2024)"
 msgid "Debt"
 msgstr "Dette"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Debt account"
+msgstr "Compte de dette"
+
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Debt created"
 msgstr "Dette créée"
@@ -8248,6 +8316,10 @@ msgstr "Les dettes ont diminué de {0} sur la période."
 #: src/pages/analytics/insights.ts
 msgid "Debt grew {0} over the period."
 msgstr "Les dettes ont augmenté de {0} sur la période."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Debts"
+msgstr "Dettes"
 
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "Decimal comma (1.234,567)"
@@ -8807,6 +8879,10 @@ msgstr "Simulation"
 msgid "Dry Run Complete"
 msgstr "Simulation terminée"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Due date"
+msgstr "Date d’échéance"
+
 #: src/widgets/dashboard/UpcomingTransactionsCard.tsx
 msgid "Due today"
 msgstr "Dû aujourd'hui"
@@ -8923,6 +8999,10 @@ msgstr "ex. Factures mensuelles"
 msgid "Each account with its balance from transactions."
 msgstr "Chaque compte avec son solde calculé à partir des transactions."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Each account's balance at the end of every day, week or month, for net worth over time."
+msgstr "Le solde de chaque compte à la fin de chaque jour, semaine ou mois, pour suivre le patrimoine dans le temps."
+
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Each category group on the Planning page shows its share of everything assigned in the selected month, next to its allocated total."
 msgstr "Sur la page Planification, chaque groupe de catégories affiche, à côté du total qui lui est affecté, sa part de l'ensemble des affectations du mois sélectionné."
@@ -8938,6 +9018,10 @@ msgstr "Chaque mois vs le même mois l’an dernier"
 #: src/pages/analytics/components/TargetTable.tsx
 msgid "Each month's goal target added up over the period, against what you assigned and spent."
 msgstr "L'objectif de chaque mois additionné sur la période, comparé à ce que vous avez attribué et dépensé."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Each recurring transaction with its next date and a monthly equivalent."
+msgstr "Chaque transaction récurrente avec sa prochaine date et un équivalent mensuel."
 
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Each row is a signup cohort. Cells show the % of that cohort active on day N after signup. Look for cliffs (every cohort drops at the same day) and cross-cohort drift (recent cohorts retaining better or worse than older ones). Daily cohorts are noisy at low signup volume — switch to weekly if rows look jagged."
@@ -9229,6 +9313,10 @@ msgstr "Fin"
 msgid "End balance"
 msgstr "Solde final"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "End date"
+msgstr "Date de fin"
+
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "End Date"
 msgstr "Date de fin"
@@ -9236,6 +9324,14 @@ msgstr "Date de fin"
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "End Date <0>(optional)</0>"
 msgstr "Date de fin <0>(facultatif)</0>"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "End of each period (today for the current one)."
+msgstr "Fin de chaque période (aujourd’hui pour la période en cours)."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Ended"
+msgstr "Terminé"
 
 #: src/pages/settings/push-api/PushApiPage.tsx
 msgid "Endpoint"
@@ -9528,6 +9624,10 @@ msgstr "Chaque centime gagné reçoit un rôle avant d’être dépensé. Commen
 #: src/pages/onboarding/steps/RulesStep.tsx
 #~ msgid "Every dollar gets a job"
 #~ msgstr "Chaque dollar a un rôle"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Every scheduled occurrence that hasn't been entered yet, by due date."
+msgstr "Chaque échéance planifiée pas encore saisie, par date d’échéance."
 
 #: src/pages/analytics/reports/FlowReport.tsx
 #~ msgid "Every stream from income to {dimensionLabel}"
@@ -10315,6 +10415,10 @@ msgstr "Filtrer les résultats"
 #~ msgid "Filters"
 #~ msgstr "Filtres"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Filters the transactions a payee's totals count."
+msgstr "Filtre les transactions comptées dans les totaux d’un bénéficiaire."
+
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Final month! Allocate {stillNeeded} to complete"
 msgstr "Dernier mois ! Affectez {stillNeeded} pour terminer"
@@ -10374,6 +10478,10 @@ msgstr "Seulement les {shownRows} premières lignes"
 #: src/pages/settings/components/CalendarSettingsCard.tsx
 msgid "First day of the week"
 msgstr "Premier jour de la semaine"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "First seen"
+msgstr "Première fois"
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Fitness & Gym"
@@ -10524,6 +10632,10 @@ msgstr "Français (1 234.56)"
 #: src/features/import/model/types.ts
 msgid "French Alt (1 234,56)"
 msgstr "Français Alt (1 234,56)"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Frequency"
+msgstr "Fréquence"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
 #~ msgid "Fresh start"
@@ -10776,9 +10888,25 @@ msgstr "Financement de l'objectif (cette période)"
 msgid "Goal line"
 msgstr "Ligne d’objectif"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Goal met"
+msgstr "Objectif atteint"
+
 #: src/pages/onboarding/steps/GoalStep.tsx
 #~ msgid "GOAL NAME"
 #~ msgstr "NOM DE L'OBJECTIF"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Goal progress"
+msgstr "Progression de l’objectif"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Goal target"
+msgstr "Montant de l’objectif"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Goal type"
+msgstr "Type d’objectif"
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Goal Type"
@@ -10803,6 +10931,14 @@ msgstr "Objectif : épargner {monthlyTarget} chaque mois"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Goal: start each month with this amount available"
 msgstr "Objectif : démarrer chaque mois avec ce montant disponible"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Goal: still needed"
+msgstr "Objectif : reste nécessaire"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Goal: this month's target"
+msgstr "Objectif : cible de ce mois"
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Goals"
@@ -11159,6 +11295,14 @@ msgstr "Combien de paiements tombent dans chaque tranche de montant"
 msgid "How many to show"
 msgstr "Combien afficher"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "How much of the goal is funded, in percent."
+msgstr "Part de l’objectif financée, en pourcentage."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "How much the balance moved during the period."
+msgstr "De combien le solde a varié pendant la période."
+
 #: src/pages/accounts/components/ValueChangeStat.tsx
 msgid "How much this account's worth in {budgetCurrency} moved with exchange rates. Your {accountCurrency} balance itself is unchanged."
 msgstr "Variation de la valeur de ce compte en {budgetCurrency} due aux fluctuations des taux de change. Votre solde en {accountCurrency} reste inchangé."
@@ -11460,6 +11604,10 @@ msgstr "Par tranches de"
 msgid "In the billing portal, you can:"
 msgstr "Dans le portail de facturation, vous pouvez :"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "In the budget currency: income positive, bills negative."
+msgstr "Dans la devise du budget : revenus positifs, factures négatives."
+
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "In the YNAB web app, click your plan name in the top-left corner and choose <0>Export Budget</0>. Drop the .zip here as it is —<1/>nothing leaves your device until you finish."
 msgstr "Dans l'application web YNAB, cliquez sur le nom de votre plan en haut à gauche et choisissez <0>Export Budget</0>. Déposez le .zip ici tel quel —<1/>rien ne quitte votre appareil tant que vous n'avez pas terminé."
@@ -11660,6 +11808,10 @@ msgstr "Entrée vs Sortie"
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 msgid "Inflow<0/>"
 msgstr "Entrée<0/>"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Inflows minus outflows."
+msgstr "Entrées moins sorties."
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Inflows to income categories"
@@ -12227,6 +12379,10 @@ msgstr "Dernière occurrence au plus tard le"
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Last run: sent {0} | failed {1}"
 msgstr "Dernière exécution : envoyés {0} | échoués {1}"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Last seen"
+msgstr "Dernière fois"
 
 #: src/pages/admin/admin-users/user-details/ActivityTab.tsx
 msgid "Last Seen"
@@ -13246,6 +13402,10 @@ msgstr "Mensuel"
 msgid "Monthly Allocation Target"
 msgstr "Cible d'affectation mensuelle"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Monthly amount"
+msgstr "Montant mensuel"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 #: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
@@ -13281,6 +13441,7 @@ msgstr "Paiement mensuel"
 msgid "Monthly Savings Goal"
 msgstr "Objectif d'épargne mensuel"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Monthly spending"
 msgstr "Dépenses mensuelles"
@@ -13352,6 +13513,10 @@ msgstr "Hypothèque"
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 msgid "Most recent LemonSqueezy invoices, capped at ten records."
 msgstr "Factures LemonSqueezy les plus récentes, limitées à dix enregistrements."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Most used category"
+msgstr "Catégorie la plus utilisée"
 
 #: src/features/budget-planning/ui/category-row/MoveMoneyPopover.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetCategoryRow.tsx
@@ -13880,6 +14045,10 @@ msgstr "Prochaine facturation :"
 #: src/widgets/dashboard/UpcomingTransactionsCard.tsx
 msgid "Next charge for each recurring series, plus scheduled transactions in the next {ONE_OFF_LOOKAHEAD_MONTHS} months."
 msgstr "Prochaine échéance pour chaque série récurrente, plus les transactions planifiées dans les {ONE_OFF_LOOKAHEAD_MONTHS} mois à venir."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Next date"
+msgstr "Prochaine date"
 
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
 msgid "Next month"
@@ -14733,6 +14902,10 @@ msgstr "Non importé : son compte est réglé sur « Ne pas importer »."
 msgid "Not in Clerk"
 msgstr "Absent de Clerk"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Not paused and still has occurrences to come."
+msgstr "Pas en pause et avec des échéances à venir."
+
 #: src/pages/analytics/report-answers.ts
 msgid "Not quite — you spent {over} more than the {assignedText} you assigned."
 msgstr "Pas tout à fait — vous avez dépensé {over} de plus que les {assignedText} que vous avez affectés."
@@ -14866,13 +15039,22 @@ msgstr "Nombre de comptes"
 msgid "Number of accounts to seed"
 msgstr "Nombre de comptes à initialiser"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 msgid "Number of occurrences"
 msgstr "Nombre d'occurrences"
 
 #: src/features/reports/ui/notebook/question-labels.ts
+msgid "Number of payees"
+msgstr "Nombre de bénéficiaires"
+
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Number of rows"
 msgstr "Nombre de lignes"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Number of scheduled transactions"
+msgstr "Nombre de transactions planifiées"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Number of transactions"
@@ -15008,6 +15190,10 @@ msgstr "Une lettre minuscule"
 #: src/app/startup/screens.tsx
 msgid "One number"
 msgstr "Un chiffre"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "One row per payee: how often and how much, transfers left out."
+msgstr "Une ligne par bénéficiaire : combien de fois et combien, hors virements."
 
 #: src/app/startup/screens.tsx
 msgid "One special character (!@#$%...)"
@@ -15458,6 +15644,7 @@ msgstr "Sur-affecté de {0}"
 msgid "Over-assigned by {0} — details"
 msgstr "Sur-affecté de {0} — détails"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
 #: src/features/transactions/ui/mobile-transaction-card/MobileTransactionCard.tsx
 msgid "Overdue"
@@ -15634,6 +15821,7 @@ msgstr "Pause"
 msgid "Pause rule"
 msgstr "Suspendre la règle"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 msgid "Paused"
@@ -15687,6 +15875,7 @@ msgid "Payee<0/>"
 msgstr "Bénéficiaire<0/>"
 
 #: src/features/payees/ui/PayeeCombobox.tsx
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
@@ -18157,6 +18346,10 @@ msgstr "Enregistrer et ajouter au tableau de bord"
 #~ msgid "Save and pin"
 #~ msgstr "Enregistrer et épingler"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Save by a date"
+msgstr "Épargner d’ici une date"
+
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 msgid "Save changes"
 msgstr "Enregistrer les modifications"
@@ -18178,6 +18371,7 @@ msgid "Save current settings as template"
 msgstr "Enregistrer les paramètres actuels comme modèle"
 
 #: src/features/goal-management/lib/core-goal-text.ts
+#: src/features/reports/ui/notebook/question-labels.ts
 msgid "Save each month"
 msgstr "Épargner chaque mois"
 
@@ -18395,6 +18589,10 @@ msgstr "Nom du scénario"
 msgid "Scheduled transaction"
 msgstr "Transaction planifiée"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Scheduled transactions"
+msgstr "Transactions planifiées"
+
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 msgid "Scheduled transactions using this category"
 msgstr "Transactions planifiées utilisant cette catégorie"
@@ -18611,6 +18809,10 @@ msgstr "Avertissement de sécurité"
 #: src/pages/onboarding/steps/StartModeStep.tsx
 #~ msgid "See a filled-in budget before you set up your own."
 #~ msgstr "Découvrez un budget rempli avant de configurer le vôtre."
+
+#: src/features/reports/ui/notebook/DrillMenu.tsx
+msgid "See the transactions"
+msgstr "Voir les transactions"
 
 #: src/features/reports/ui/notebook/DrillMenu.tsx
 msgid "See these accounts"
@@ -19196,6 +19398,10 @@ msgstr "Échec de la configuration. Réessayez ou contactez l'assistance."
 #: src/features/bank-sync/ui/ConnectSimpleFINCard.tsx
 msgid "Setup token"
 msgstr "Jeton de configuration"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Several categories"
+msgstr "Plusieurs catégories"
 
 #: src/pages/analytics/components/LedgerTable.tsx
 msgid "Share"
@@ -19928,6 +20134,10 @@ msgstr "Dépensé (dans le plan)"
 msgid "Split"
 msgstr "Ventiler"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Split across several categories."
+msgstr "Réparti sur plusieurs catégories."
+
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #~ msgid "Split by"
 #~ msgstr "Répartir par"
@@ -19953,6 +20163,7 @@ msgstr "La ventilation nécessite une catégorie"
 msgid "Split total mismatch"
 msgstr "Total de ventilation incorrect"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Split transaction"
 msgstr "Transaction ventilée"
@@ -20032,6 +20243,10 @@ msgstr "Démarrer un nouveau budget"
 #: src/features/budget-planning/ui/EmptyStateDisplay.tsx
 msgid "Start Building Your Budget"
 msgstr "Commencez à construire votre budget"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Start date"
+msgstr "Date de début"
 
 #: src/features/account-management/ui/AddAccountDialog.tsx
 #: src/features/account-management/ui/EditAccountDialog.tsx
@@ -20153,6 +20368,7 @@ msgstr "Commence par"
 msgid "Stat"
 msgstr "Statistique"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
@@ -20578,6 +20794,10 @@ msgstr "Le montant cible est disponible et prêt à être utilisé."
 msgid "Target Available"
 msgstr "Montant cible disponible"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Target balance"
+msgstr "Solde cible"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 #: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
@@ -20709,6 +20929,10 @@ msgstr "La clé d'accès est stockée chiffrée dans ce budget et synchronisée 
 msgid "The account you're looking for doesn't exist or has been deleted."
 msgstr "Le compte que vous recherchez n'existe pas ou a été supprimé."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "The amount spread per month (weekly × 52 / 12, yearly / 12, …)."
+msgstr "Le montant ramené au mois (hebdomadaire × 52 / 12, annuel / 12, …)."
+
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The amount you need available by the end of each cycle."
 msgstr "Le montant dont vous devez disposer à la fin de chaque cycle."
@@ -20737,6 +20961,10 @@ msgstr "Le solde disponible que vous souhaitez dans cette catégorie chaque mois
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "The balance is off by a fraction of a cent (rounding from a currency conversion). Reconciling clears it so the account matches your bank exactly."
 msgstr "Le solde diffère d’une fraction de centime (arrondi issu d’une conversion de devise). Le rapprochement le corrige pour que le compte corresponde exactement à votre banque."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "The balance of accounts that aren't debts."
+msgstr "Le solde des comptes qui ne sont pas des dettes."
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "The balance you want to build up in this category. Spending lowers it again."
@@ -20783,6 +21011,14 @@ msgstr "La vue par type couvre toujours tous les comptes — le filtre de compte
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "The card owes {0} but only {1} is set aside to pay it. Assign {2} here to cover it."
 msgstr "La carte doit {0}, mais seulement {1} est mis de côté pour la rembourser. Affectez {2} ici pour la couvrir."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "The category used most often with this payee."
+msgstr "La catégorie la plus souvent utilisée avec ce bénéficiaire."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "The category's goal, empty when it has none."
+msgstr "L’objectif de la catégorie, vide s’il n’y en a pas."
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "The change will also be pushed to the server for this workspace"
@@ -20838,9 +21074,17 @@ msgstr "L'erreur a été enregistrée. Vous pouvez réessayer ou ouvrir une autr
 msgid "The expression ends too early."
 msgstr "L’expression se termine trop tôt."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "The goal counts as met (or on track) this month."
+msgstr "L’objectif est atteint (ou en bonne voie) ce mois-ci."
+
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "The goal has been permanently removed."
 msgstr "L'objectif a été définitivement supprimé."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "The goal's full target amount."
+msgstr "Le montant total de l’objectif."
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "The home page no longer shows this dashboard"
@@ -20891,6 +21135,10 @@ msgstr "Le membre n'a plus accès à cet espace de travail."
 #~ msgid "The memo text to set for matching transactions."
 #~ msgstr "Le texte de note à définir pour les transactions correspondantes."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "The next occurrence not yet entered (can be overdue)."
+msgstr "La prochaine échéance pas encore saisie (peut être en retard)."
+
 #: src/widgets/dashboard/builtin/builtin-cards.ts
 msgid "The next recurring and scheduled transactions."
 msgstr "Les prochaines transactions récurrentes et planifiées."
@@ -20906,6 +21154,10 @@ msgstr "Le nombre {detail} est trop grand ou a trop de décimales."
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
 msgid "The opening balance is set so the account matches your bank today."
 msgstr "Le solde d'ouverture est défini pour que le compte corresponde à votre banque aujourd'hui."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "The other account of a scheduled transfer."
+msgstr "L’autre compte d’un virement planifié."
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
 msgid "The paired transfer transaction could not be loaded."
@@ -21587,6 +21839,10 @@ msgstr "Titre sur le tableau de bord (facultatif)"
 msgid "To"
 msgstr "À"
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "To account"
+msgstr "Compte de destination"
+
 #: src/pages/settings/recurring/components/RecurringOccurrenceCard.tsx
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 #~ msgid "To account:"
@@ -21692,6 +21948,7 @@ msgstr "Bénéficiaire principal"
 msgid "Top payees by spending (30d)"
 msgstr "Top bénéficiaires par dépenses (30 j)"
 
+#: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/reports/ui/notebook/viz/PivotTableView.tsx
 #: src/features/reports/ui/notebook/viz/WaterfallView.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
@@ -21714,6 +21971,10 @@ msgstr "Montant total emprunté à la souscription. Obligatoire."
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Total Assets"
 msgstr "Total des actifs"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Total divided by the number of transactions."
+msgstr "Total divisé par le nombre de transactions."
 
 #. placeholder {0}: formatMilli(globalLocalizer, totalReduced)
 #: src/features/budget-planning/ui/assign-dropdown/useAssignDropdownState.tsx
@@ -21849,6 +22110,10 @@ msgstr "Transaction #{0}"
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Transaction added"
 msgstr "Transaction ajoutée"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Transaction date"
+msgstr "Date de la transaction"
 
 #: src/features/transactions/ui/MobileTransactionList.tsx
 #: src/widgets/dashboard/UncategorizedTransactionsCard.tsx
@@ -22539,6 +22804,10 @@ msgstr "Facture à venir : {0}"
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 #~ msgid "Upcoming occurrences"
 #~ msgstr "Occurrences à venir"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Upcoming scheduled"
+msgstr "Planifiées à venir"
 
 #: src/widgets/dashboard/builtin/builtin-cards.ts
 msgid "Upcoming transactions"
@@ -23308,6 +23577,10 @@ msgstr "Bienvenue sur Budgero !"
 msgid "Welcome to Budgero."
 msgstr "Bienvenue sur Budgero."
 
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "What debt accounts owe, as a positive amount."
+msgstr "Ce que doivent les comptes de dette, en montant positif."
+
 #: src/pages/analytics/report-questions.ts
 msgid "What did each category do, month by month?"
 msgstr "Qu'a fait chaque catégorie, mois par mois ?"
@@ -23335,6 +23608,18 @@ msgstr "Qu'est-ce qu'un espace de travail ?"
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "What is still available right now"
 msgstr "Ce qui est encore disponible maintenant"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "What is still missing to meet the goal."
+msgstr "Ce qui manque encore pour atteindre l’objectif."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "What the budget shows as available, rollover and overspending included."
+msgstr "Ce que le budget affiche comme disponible, report et dépassements compris."
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "What the goal asks for in this month."
+msgstr "Ce que l’objectif demande ce mois-ci."
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "What this means"
@@ -23679,6 +23964,10 @@ msgstr "Objectif d'affectation annuel"
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Yearly Available Target"
 msgstr "Objectif annuel de solde disponible"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Yearly spending"
+msgstr "Dépenses annuelles"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 #~ msgid "years"

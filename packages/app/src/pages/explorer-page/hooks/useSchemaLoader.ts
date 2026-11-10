@@ -50,10 +50,12 @@ export function useSchemaLoader() {
       }
 
       const knownNames = new Set(schema.map((table) => table.name.toLowerCase()));
+      // Analytics views, plus the reporting tables the app computes
+      // (budget_months, scheduled_*), which exist only in DuckDB.
       const viewsResult = await executeReportQuery(
-        `SELECT table_name AS name
+        `SELECT table_name AS name, table_type AS kind
          FROM information_schema.tables
-         WHERE table_schema = 'main' AND table_type = 'VIEW'
+         WHERE table_schema = 'main' AND table_type IN ('VIEW', 'BASE TABLE')
          ORDER BY table_name`,
         db,
         { maxRows: MAX_ROWS }
@@ -97,7 +99,7 @@ export function useSchemaLoader() {
 
         schema.push({
           name: viewName,
-          objectType: 'view',
+          objectType: String(row[1] ?? '') === 'VIEW' ? 'view' : 'table',
           columns: columnsResult.rows
             .map((columnRow) => {
               const name = String(columnRow[0] ?? '').trim();

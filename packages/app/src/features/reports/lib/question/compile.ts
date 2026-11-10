@@ -47,6 +47,8 @@ export interface QuestionSqlLabels {
   noPayee: string;
   noLabel: string;
   noAccount: string;
+  /** Category of a split scheduled transaction (several categories). */
+  split: string;
 }
 
 export const DEFAULT_SQL_LABELS: QuestionSqlLabels = {
@@ -54,6 +56,7 @@ export const DEFAULT_SQL_LABELS: QuestionSqlLabels = {
   noPayee: 'No payee',
   noLabel: 'No label',
   noAccount: 'No account',
+  split: 'Several categories',
 };
 
 export interface CompileQuestionOptions {
@@ -232,18 +235,29 @@ function budgetCtes(budgetId: number, labels: QuestionSqlLabels): string[] {
   ];
 }
 
-function accountsCtes(budgetId: number, labels: QuestionSqlLabels): string[] {
+/**
+ * Account balances as of `today`: every transaction dated up to today plus the
+ * revaluation journal (foreign-currency true-ups), i.e. the stored
+ * BalanceConverted minus future-dated rows, as the Accounts page shows it.
+ */
+function accountsCtes(budgetId: number, labels: QuestionSqlLabels, today: string): string[] {
   return [
     `account_totals AS (
   SELECT
     account_id,
-    SUM(inflow - outflow) AS balance,
-    SUM(COALESCE(inflow_original, inflow) - COALESCE(outflow_original, outflow)) AS balance_native,
+    SUM(CASE WHEN TRY_CAST(date AS DATE) <= ${today} THEN inflow - outflow ELSE 0 END) AS balance,
+    SUM(CASE WHEN TRY_CAST(date AS DATE) <= ${today} THEN COALESCE(inflow_original, inflow) - COALESCE(outflow_original, outflow) ELSE 0 END) AS balance_native,
     COUNT(*) AS transaction_count,
     MAX(TRY_CAST(date AS DATE)) AS last_transaction
   FROM transactions_analytics
   WHERE budget_id = ${budgetId}
   GROUP BY account_id
+)`,
+    `account_revalued AS (
+  SELECT r."AccountID" AS account_id, CAST(SUM(r."DeltaConverted") / 1000.0 AS DECIMAL(18, 3)) AS delta
+  FROM account_revaluations r
+  WHERE r."BudgetID" = ${budgetId} AND TRY_CAST(r."Date" AS DATE) <= ${today}
+  GROUP BY 1
 )`,
     `src AS (
   SELECT
@@ -252,25 +266,340 @@ function accountsCtes(budgetId: number, labels: QuestionSqlLabels): string[] {
     a."Currency" AS currency,
     COALESCE(CAST(a."OnBudget" AS INTEGER), 0) = 1 AS on_budget,
     COALESCE(CAST(a."Archived" AS INTEGER), 0) = 1 AS closed,
-    CAST(COALESCE(x.balance, 0) AS DECIMAL(18, 3)) AS balance,
+    CAST(COALESCE(x.balance, 0) + COALESCE(rv.delta, 0) AS DECIMAL(18, 3)) AS balance,
     CAST(COALESCE(x.balance_native, 0) AS DECIMAL(18, 3)) AS balance_native,
     COALESCE(x.transaction_count, 0) AS transaction_count,
     x.last_transaction
   FROM accounts a
   LEFT JOIN account_totals x ON x.account_id = a."ID"
+  LEFT JOIN account_revalued rv ON rv.account_id = a."ID"
   WHERE a."BudgetID" = ${budgetId}
 )`,
   ];
 }
 
-function sourceCtes(source: QuestionSource, budgetId: number, labels: QuestionSqlLabels) {
+/** Budget fields that come from the app's own budget math (the `budget_months` table). */
+export const BUDGET_SCREEN_FIELDS: ReadonlySet<string> = new Set([
+  'available',
+  'goal_type',
+  'goal_target',
+  'goal_monthly_target',
+  'goal_needed',
+  'goal_progress',
+  'goal_funded',
+]);
+
+/** Field ids a question reads (filters, metrics, groupings, columns, sorts, expressions). */
+function referencedFields(spec: QuestionSpec): Set<string> {
+  const ids = new Set<string>();
+  for (const filter of spec.filters) ids.add(filter.field);
+  for (const aggregation of spec.aggregations) if (aggregation.field) ids.add(aggregation.field);
+  for (const breakout of spec.breakouts) ids.add(breakout.field);
+  for (const column of questionColumns(spec)) if (column.kind === 'field') ids.add(column.field);
+  for (const entry of spec.sort) ids.add(entry.column);
+  const expressions = [
+    ...(spec.customColumns ?? []).map((column) => column.expression),
+    ...spec.aggregations.flatMap((aggregation) => aggregation.expression ?? []),
+  ];
+  for (const expression of expressions) {
+    for (const match of expression.matchAll(/\[([a-z0-9_]+)\]/g)) ids.add(match[1]);
+  }
+  return ids;
+}
+
+/**
+ * Whether a Budget question needs the budget screen's numbers (available,
+ * goals). Questions that don't keep the plain SQL they always had.
+ */
+export function usesBudgetScreenFields(spec: QuestionSpec): boolean {
+  if (spec.source !== 'budget') return false;
+  return [...referencedFields(spec)].some((id) => BUDGET_SCREEN_FIELDS.has(id));
+}
+
+/**
+ * Budget rows as the budget screen computes them (core's MonthlyBudgetService
+ * and goal progress, loaded into DuckDB as `budget_months`): one row per
+ * category per month, every month from the first assignment or transaction.
+ */
+function budgetScreenCtes(budgetId: number, labels: QuestionSqlLabels): string[] {
+  return [
+    `src AS (
+  SELECT
+    TRY_CAST(m.month AS DATE) AS month,
+    m.category_id, ${nameOr('m.category_name', labels.uncategorized)} AS category,
+    m.category_group_id, ${nameOr('m.category_group_name', labels.uncategorized)} AS category_group,
+    m.assigned, m.activity, m.available,
+    NULLIF(m.goal_type, '') AS goal_type,
+    m.goal_target, m.goal_monthly_target, m.goal_needed, m.goal_progress,
+    m.goal_funded
+  FROM budget_months m
+  WHERE m.budget_id = ${budgetId}
+)`,
+  ];
+}
+
+const PERIOD_STEP: Record<DateBucket, string> = {
+  day: 'INTERVAL 1 DAY',
+  week: 'INTERVAL 7 DAY',
+  month: 'INTERVAL 1 MONTH',
+  quarter: 'INTERVAL 3 MONTH',
+  year: 'INTERVAL 1 YEAR',
+};
+
+/** Liability account types (credit cards, loans, mortgages), as the Accounts page groups them. */
+const LIABILITY_TYPES_SQL = `('credit', 'loan', 'mortgage')`;
+
+/**
+ * Period rows of a Balances question: the date grouping's bucket, by day for
+ * a date-part grouping, and null (one "as of" row per account) otherwise.
+ */
+function balancesGranularity(spec: QuestionSpec): DateBucket | null {
+  const breakout = spec.breakouts.find((entry) => entry.field === 'date');
+  if (!breakout) return null;
+  return breakout.bucket ?? 'day';
+}
+
+/**
+ * Balances over time: one row per account per period (day / week / month /
+ * quarter / year) from the account's first transaction to today, empty
+ * periods carrying the balance forward. `balance` is the budget-currency
+ * balance at the end of the period (today for the current one): every
+ * transaction up to then at its own recorded rate plus the revaluation
+ * journal up to then, the same rule as the stored account balance. Without a
+ * date grouping each account gets one row: its balance at the end of the date
+ * filter's range (today without one), `change` over that range.
+ */
+function balancesCtes(
+  budgetId: number,
+  labels: QuestionSqlLabels,
+  today: string,
+  granularity: DateBucket | null,
+  dateConditions: string[]
+): string[] {
+  const bucket = granularity ?? 'day';
+  const step = PERIOD_STEP[bucket];
+  const period = (column: string) => `CAST(DATE_TRUNC('${bucket}', ${column}) AS DATE)`;
+  const ctes = [
+    `bal_moves AS (
+  SELECT account_id, TRY_CAST(date AS DATE) AS day, inflow - outflow AS flow,
+    COALESCE(inflow_original, inflow) - COALESCE(outflow_original, outflow) AS flow_native
+  FROM transactions_analytics
+  WHERE budget_id = ${budgetId}
+  UNION ALL
+  SELECT r."AccountID", TRY_CAST(r."Date" AS DATE), CAST(r."DeltaConverted" / 1000.0 AS DECIMAL(18, 3)), CAST(0 AS DECIMAL(18, 3))
+  FROM account_revaluations r
+  WHERE r."BudgetID" = ${budgetId}
+)`,
+    `bal_flows AS (
+  SELECT account_id, ${period('day')} AS period, SUM(flow) AS flow, SUM(flow_native) AS flow_native
+  FROM bal_moves
+  WHERE day IS NOT NULL AND day <= ${today}
+  GROUP BY 1, 2
+)`,
+    `bal_periods AS (
+  SELECT a."ID" AS account_id,
+    UNNEST(generate_series(
+      CAST(COALESCE(first.period, ${period(today)}) AS TIMESTAMP),
+      CAST(${period(today)} AS TIMESTAMP),
+      ${step}
+    )) AS period_start
+  FROM accounts a
+  LEFT JOIN (SELECT account_id, MIN(period) AS period FROM bal_flows GROUP BY 1) first
+    ON first.account_id = a."ID"
+  WHERE a."BudgetID" = ${budgetId}
+)`,
+    `${granularity ? 'src_periods' : 'src_days'} AS (
+  SELECT
+    LEAST(CAST(p.period_start + ${step} - INTERVAL 1 DAY AS DATE), ${today}) AS date,
+    a."ID" AS account_id, ${nameOr('a."Name"', labels.noAccount)} AS account,
+    a."Type" AS account_type,
+    a."Currency" AS currency,
+    COALESCE(CAST(a."OnBudget" AS INTEGER), 0) = 1 AS on_budget,
+    COALESCE(CAST(a."Archived" AS INTEGER), 0) = 1 AS closed,
+    LOWER(COALESCE(a."Type", '')) IN ${LIABILITY_TYPES_SQL} AS is_liability,
+    CAST(SUM(COALESCE(f.flow, 0)) OVER (PARTITION BY p.account_id ORDER BY p.period_start ROWS UNBOUNDED PRECEDING) AS DECIMAL(18, 3)) AS balance,
+    CAST(SUM(COALESCE(f.flow_native, 0)) OVER (PARTITION BY p.account_id ORDER BY p.period_start ROWS UNBOUNDED PRECEDING) AS DECIMAL(18, 3)) AS balance_native,
+    CAST(COALESCE(f.flow, 0) AS DECIMAL(18, 3)) AS change
+  FROM bal_periods p
+  JOIN accounts a ON a."ID" = p.account_id
+  LEFT JOIN bal_flows f ON f.account_id = p.account_id AND f.period = CAST(p.period_start AS DATE)
+)`,
+  ];
+  const split = (from: string) => `SELECT *,
+    CASE WHEN is_liability THEN CAST(0 AS DECIMAL(18, 3)) ELSE balance END AS assets,
+    CASE WHEN is_liability THEN -balance ELSE CAST(0 AS DECIMAL(18, 3)) END AS debts
+  FROM ${from}`;
+  if (granularity) {
+    ctes.push(`src AS (\n  ${split('src_periods')}\n)`);
+    return ctes;
+  }
+  // "As of": each account's last day inside the date filters, with the change over them.
+  const where = dateConditions.length > 0 ? `\n  WHERE ${dateConditions.join('\n    AND ')}` : '';
+  ctes.push(
+    `src_asof AS (
+  SELECT * REPLACE (SUM(change) OVER (PARTITION BY account_id) AS change)
+  FROM src_days${where}
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY account_id ORDER BY date DESC) = 1
+)`,
+    `src AS (\n  ${split('src_asof')}\n)`
+  );
+  return ctes;
+}
+
+/** Category name of a scheduled transaction (split ones have several). */
+function scheduledCategory(labels: QuestionSqlLabels, alias: string): string {
+  return `CASE WHEN ${alias}.is_split THEN ${sqlString(labels.split)} ELSE ${nameOr(`${alias}.category_name`, labels.uncategorized)} END`;
+}
+
+/** Columns shared by scheduled transactions and their occurrences. */
+function scheduledColumns(labels: QuestionSqlLabels, alias: string): string {
+  return `${alias}.recurring_id,
+    ${alias}.payee AS payee_name, ${nameOr(`${alias}.payee`, labels.noPayee)} AS payee,
+    ${alias}.account_id, ${nameOr(`${alias}.account_name`, labels.noAccount)} AS account,
+    ${alias}.to_account_id, ${alias}.to_account_name AS to_account,
+    CASE WHEN ${alias}.is_split THEN NULL ELSE ${alias}.category_id END AS category_id,
+    ${scheduledCategory(labels, alias)} AS category,
+    CASE WHEN ${alias}.is_split THEN NULL ELSE ${alias}.category_group_id END AS category_group_id,
+    CASE WHEN ${alias}.is_split THEN ${sqlString(labels.split)} ELSE ${nameOr(`${alias}.category_group_name`, labels.uncategorized)} END AS category_group,
+    ${alias}.memo,
+    ${alias}.amount, ${alias}.inflow, ${alias}.outflow,
+    ${alias}.frequency,
+    ${alias}.is_transfer, ${alias}.is_split,
+    ${alias}.currency, ${alias}.amount_native`;
+}
+
+/**
+ * Scheduled transactions: one row per recurring template (`scheduled_transactions`,
+ * built by the app's recurring service: amounts in the budget currency at the
+ * next occurrence's rate, monthly equivalent = amount × occurrences per year / 12).
+ */
+function scheduledCtes(budgetId: number, labels: QuestionSqlLabels, today: string): string[] {
+  return [
+    `src AS (
+  SELECT
+    ${scheduledColumns(labels, 's')},
+    s.monthly_amount,
+    s.status, s.status = 'active' AS active,
+    TRY_CAST(s.next_date AS DATE) AS next_date,
+    TRY_CAST(s.start_date AS DATE) AS start_date,
+    TRY_CAST(s.end_date AS DATE) AS end_date,
+    DATE_DIFF('day', ${today}, TRY_CAST(s.next_date AS DATE)) AS days_until
+  FROM scheduled_transactions s
+  WHERE s.budget_id = ${budgetId}
+)`,
+  ];
+}
+
+/** Upcoming occurrences: every not-yet-posted, not-skipped due date of an unpaused template. */
+function upcomingCtes(budgetId: number, labels: QuestionSqlLabels, today: string): string[] {
+  return [
+    `src AS (
+  SELECT
+    o.occurrence_id,
+    TRY_CAST(o.due_date AS DATE) AS due_date,
+    ${scheduledColumns(labels, 'o')},
+    DATE_DIFF('day', ${today}, TRY_CAST(o.due_date AS DATE)) AS days_until,
+    TRY_CAST(o.due_date AS DATE) < ${today} AS is_overdue
+  FROM scheduled_occurrences o
+  WHERE o.budget_id = ${budgetId} AND o.status = 'scheduled' AND NOT o.paused
+)`,
+  ];
+}
+
+/**
+ * Payees: one row per payee (names compared trimmed and case-insensitively)
+ * over the transaction lines its filter-only fields keep (date, account,
+ * category, on-budget). Transfers and lines without a payee are left out.
+ */
+function payeesCtes(
+  budgetId: number,
+  labels: QuestionSqlLabels,
+  lineConditions: string[]
+): string[] {
+  const where = lineConditions.length > 0 ? `\n  WHERE ${lineConditions.join('\n    AND ')}` : '';
+  return [
+    linesCte(budgetId, false),
+    `payee_lines AS (
+  SELECT
+    transaction_id, TRY_CAST(date AS DATE) AS date,
+    account_id, ${nameOr('account_name', labels.noAccount)} AS account,
+    category_id, ${nameOr('category_name', labels.uncategorized)} AS category,
+    category_group_id, ${nameOr('category_group_name', labels.uncategorized)} AS category_group,
+    COALESCE(CAST(account_on_budget AS INTEGER), 0) = 1 AS on_budget,
+    TRIM(payee_name) AS payee_name, LOWER(TRIM(payee_name)) AS payee_key,
+    inflow, outflow
+  FROM lines
+  WHERE NOT is_transfer AND COALESCE(category_group_name, '') <> 'Transfers'
+    AND NULLIF(TRIM(payee_name), '') IS NOT NULL
+)`,
+    `payee_kept AS (\n  SELECT * FROM payee_lines${where}\n)`,
+    `payee_top AS (
+  SELECT payee_key,
+    arg_max(category_id, uses) AS top_category_id,
+    arg_max(category, uses) AS top_category
+  FROM (
+    SELECT payee_key, category_id, MIN(category) AS category,
+      COUNT(*) * 100000000 + COALESCE(MAX(DATE_DIFF('day', DATE '1970-01-01', date)), 0) AS uses
+    FROM payee_kept
+    GROUP BY 1, 2
+  ) counted
+  GROUP BY 1
+)`,
+    `src AS (
+  SELECT
+    k.payee_key,
+    MIN(k.payee_name) AS payee_name, MIN(k.payee_name) AS payee,
+    COUNT(DISTINCT k.transaction_id) AS transaction_count,
+    SUM(k.inflow - k.outflow) AS total,
+    SUM(k.inflow) AS inflow, SUM(k.outflow) AS outflow,
+    CAST(ROUND(SUM(k.inflow - k.outflow) / COUNT(DISTINCT k.transaction_id), 2) AS DECIMAL(18, 3)) AS average_amount,
+    MIN(k.date) AS first_seen, MAX(k.date) AS last_seen,
+    MIN(t.top_category_id) AS top_category_id, MIN(t.top_category) AS top_category
+  FROM payee_kept k
+  LEFT JOIN payee_top t ON t.payee_key = k.payee_key
+  GROUP BY k.payee_key
+)`,
+  ];
+}
+
+interface SourceContext {
+  spec: QuestionSpec;
+  today: string;
+  /** Payees: SQL conditions of its filter-only fields (over transaction lines). */
+  lineConditions: string[];
+  /** Balances: SQL conditions of the date filters ("as of" rows). */
+  dateConditions: string[];
+}
+
+function sourceCtes(
+  source: QuestionSource,
+  budgetId: number,
+  labels: QuestionSqlLabels,
+  context: SourceContext
+) {
   switch (source) {
     case 'transactions':
       return transactionsCtes(budgetId, labels);
     case 'budget':
-      return budgetCtes(budgetId, labels);
+      return usesBudgetScreenFields(context.spec)
+        ? budgetScreenCtes(budgetId, labels)
+        : budgetCtes(budgetId, labels);
     case 'accounts':
-      return accountsCtes(budgetId, labels);
+      return accountsCtes(budgetId, labels, context.today);
+    case 'balances':
+      return balancesCtes(
+        budgetId,
+        labels,
+        context.today,
+        balancesGranularity(context.spec),
+        context.dateConditions
+      );
+    case 'scheduled':
+      return scheduledCtes(budgetId, labels, context.today);
+    case 'upcoming':
+      return upcomingCtes(budgetId, labels, context.today);
+    case 'payees':
+      return payeesCtes(budgetId, labels, context.lineConditions);
   }
 }
 
@@ -489,6 +818,14 @@ function defaultRawOrder(source: QuestionSource): string {
       return 'month DESC, category_group, category';
     case 'accounts':
       return 'account';
+    case 'balances':
+      return 'account, date';
+    case 'scheduled':
+      return 'next_date NULLS LAST, payee';
+    case 'upcoming':
+      return 'due_date, payee';
+    case 'payees':
+      return 'transaction_count DESC, payee';
   }
 }
 
@@ -523,8 +860,12 @@ export function compileQuestion(
         : null;
   const trendCap = trendCapCondition(spec, visualization, today);
   /** WHERE clause; `dateColumns` shifts date ranges (same period last year). */
+  // Filter-only fields (Payees: the transactions it counts) filter inside the source.
+  const isLineFilter = (filter: QuestionFilter) =>
+    Boolean(getField(spec.source, filter.field)?.filterOnly);
   const whereFor = (dateColumns?: ReadonlyMap<string, string>) => {
     const conditions = spec.filters
+      .filter((filter) => !isLineFilter(filter))
       .map((filter) => filterCondition(spec.source, filter, today, custom, dateColumns))
       .filter((condition): condition is string => Boolean(condition));
     if (sideCondition) conditions.push(sideCondition);
@@ -532,7 +873,19 @@ export function compileQuestion(
     return conditions.length > 0 ? `\nWHERE ${conditions.join('\n  AND ')}` : '';
   };
   const where = whereFor();
-  const ctes = sourceCtes(spec.source, budgetId, labels);
+  const conditionsOf = (filters: QuestionFilter[]) =>
+    filters
+      .map((filter) => filterCondition(spec.source, filter, today, custom))
+      .filter((condition): condition is string => Boolean(condition));
+  const ctes = sourceCtes(spec.source, budgetId, labels, {
+    spec,
+    today,
+    lineConditions: conditionsOf(spec.filters.filter(isLineFilter)),
+    dateConditions:
+      spec.source === 'balances'
+        ? conditionsOf(spec.filters.filter((filter) => filter.field === 'date'))
+        : [],
+  });
   // Custom columns become real columns of `src_custom`, so every later step
   // (filters, groupings, metrics, raw output) reads them like source fields.
   let base = 'src';
