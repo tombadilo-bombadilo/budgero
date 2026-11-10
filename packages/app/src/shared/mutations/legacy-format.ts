@@ -38,7 +38,7 @@ const NEWER_THAN_V1_18 = 3;
 /** Format 4: the first format v1.19 builds reject (labels set by rules and batch edits). */
 const NEWER_THAN_V1_19 = 4;
 
-/** Format 5: the first format v1.20 builds reject (recurring templates with split lines). */
+/** Format 5: the first format v1.20 builds reject (recurring split lines, markReady payee). */
 const NEWER_THAN_V1_20 = 5;
 
 /**
@@ -156,8 +156,11 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   'payees.rename': (args) => args.newPayeeId !== undefined,
 
   // Occurrence key (A1), carried TransferID (A14) and redo IDs (U5).
+  // A carried payee (#127): v1.20 ignores it, posts without one and adds no
+  // payee-list entry, so later payee IDs would differ between devices.
   'recurring.markReady': (args) => {
     const options = (args.options ?? {}) as Args;
+    if (typeof options.payee === 'string' && options.payee.trim()) return NEWER_THAN_V1_20;
     return occurrenceKeyed(options) || has(options, 'transferId', 'reuse');
   },
   'recurring.skip': (args) => occurrenceKeyed(args),

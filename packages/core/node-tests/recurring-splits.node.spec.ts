@@ -204,6 +204,7 @@ describe('recurring transactions with split lines', () => {
       occurrenceId: occurrence.id,
       recurringTransactionId: template.id,
       dueDate: occurrence.dueDate,
+      payee: template.name,
     });
     expect(result.destinationTransactionId).toBeUndefined();
 

@@ -156,6 +156,13 @@ export interface RecurringOccurrenceRef {
 export interface MarkOccurrenceReadyOptions extends RecurringOccurrenceRef {
   transactionDate?: string;
   memoOverride?: string;
+  /**
+   * Payee of the posted row (the app sends the template's name, #127). Ops
+   * carry it so every device writes the same payee and payee-list entry; ops
+   * logged before it existed have none and post without a payee, as they
+   * always did. Not used by transfer templates (their legs name the accounts).
+   */
+  payee?: string;
   /** TransferID for a transfer template's two legs. Ops carry it so every
    * device posts the same one; generated when absent (older ops). */
   transferId?: string;

@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // Two real databases stand in for two devices; production uses the browser entry.
 // eslint-disable-next-line no-restricted-imports
 import { asMilli, NodeSqlJsAdapter, ServiceManager, type Services } from '@budgero/core';
+import { mutationFormatVersion } from '@budgero/runtime';
+import { withLegacyFormat } from '@shared/mutations/legacy-format';
 import * as registry from '@shared/mutations/op-code-registry';
 
 const runtime = vi.hoisted(() => ({ services: undefined as Services | undefined }));
@@ -171,6 +173,102 @@ describe('ops replayed on another device create the same rows', () => {
     expect(rows(b, sql)).toEqual([]);
     const all = 'SELECT ID, AccountID, TransferID FROM transactions ORDER BY ID';
     expect(rows(b, all)).toEqual(rows(a, all));
+  });
+
+  describe('recurring.markReady payee (#127)', () => {
+    const payeeRows = 'SELECT ID, BudgetID, Name FROM payees ORDER BY ID';
+    const posted = 'SELECT ID, AccountID, Payee, OutflowConverted FROM transactions ORDER BY ID';
+
+    async function template() {
+      const categoryId = a.services.categories
+        .getAllCategories(budgetId)
+        .find((c) => !['Income', 'Uncategorized', 'Transfers'].includes(c.Name))!.ID;
+      const created = (await originate(a, b, 'recurring.create', {
+        input: {
+          budgetId,
+          accountId: checkingId,
+          categoryId,
+          name: 'Netflix',
+          amount: 12_000,
+          direction: 'outflow',
+          schedule: { startDate: '2026-09-01', intervalUnit: 'month', intervalCount: 1 },
+        },
+      })) as { id: number };
+      return { recurringTransactionId: created.id, dueDate: '2026-09-01' };
+    }
+
+    it('new ops carry the payee, in a format v1.20 builds reject, and both devices post it', async () => {
+      const key = await template();
+      runtime.services = a.services;
+      const sent = await registry.prepareMutationArgs('recurring.markReady', { options: key });
+      expect((sent.options as { payee?: string }).payee).toBe('Netflix');
+      expect(mutationFormatVersion('recurring.markReady', sent)).toBe(5);
+
+      await originate(a, b, 'recurring.markReady', { options: key });
+      expect(rows(a, posted)).toEqual([expect.objectContaining({ Payee: 'Netflix' })]);
+      expect(rows(b, posted)).toEqual(rows(a, posted));
+      expect(rows(a, payeeRows)).toEqual([expect.objectContaining({ Name: 'Netflix' })]);
+      expect(rows(b, payeeRows)).toEqual(rows(a, payeeRows));
+
+      // The next payee gets the same ID on both, so ops naming it by ID agree.
+      await originate(a, b, 'transactions.add', {
+        budgetId,
+        accountId: checkingId,
+        categoryId: 0,
+        date: '2026-09-02',
+        inflow: 0,
+        outflow: 1_000,
+        memo: '',
+        payee: 'Bakery',
+      });
+      expect(rows(b, payeeRows)).toEqual(rows(a, payeeRows));
+    });
+
+    it('ops logged by v1.20 (no payee) replay as v1.20 applied them: no payee, no payee entry', async () => {
+      const key = await template();
+      // What a v1.20 device sent: keyed, with a TransferID, format 3.
+      const logged = { options: { ...key, transferId: 'legacy-transfer-id' } };
+      expect(
+        mutationFormatVersion(
+          'recurring.markReady',
+          withLegacyFormat('recurring.markReady', logged)
+        )
+      ).toBe(3);
+      for (const device of [a, b]) {
+        runtime.services = device.services;
+        await registry.executeMutationOp(
+          'recurring.markReady',
+          JSON.parse(JSON.stringify(logged)),
+          { mutationId: 'old-ready', isReceiver: true }
+        );
+      }
+      const rowsA = rows(a, posted) as { Payee: string | null }[];
+      expect(rowsA).toHaveLength(1);
+      expect(rowsA[0].Payee ?? '').toBe('');
+      expect(rows(a, payeeRows)).toEqual([]);
+      expect(rows(b, posted)).toEqual(rowsA);
+      expect(rows(b, payeeRows)).toEqual([]);
+    });
+
+    it('transfer templates carry no payee (their legs name the accounts)', async () => {
+      const created = (await originate(a, b, 'recurring.create', {
+        input: {
+          budgetId,
+          accountId: checkingId,
+          toAccountId: savingsId,
+          name: 'Save',
+          amount: 25_000,
+          direction: 'outflow',
+          schedule: { startDate: '2026-09-01', intervalUnit: 'month', intervalCount: 1 },
+        },
+      })) as { id: number };
+      runtime.services = a.services;
+      const sent = await registry.prepareMutationArgs('recurring.markReady', {
+        options: { recurringTransactionId: created.id, dueDate: '2026-09-01' },
+      });
+      expect((sent.options as { payee?: string }).payee).toBeUndefined();
+      expect(mutationFormatVersion('recurring.markReady', sent)).toBe(3);
+    });
   });
 
   it('keeps old ops without IDs replayable', async () => {

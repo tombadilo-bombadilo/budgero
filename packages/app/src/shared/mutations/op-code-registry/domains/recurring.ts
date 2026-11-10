@@ -99,6 +99,23 @@ function occurrenceArgs(
   return args;
 }
 
+/**
+ * The payee a non-transfer template posts with: its name. Undefined for
+ * transfer templates (the legs name the accounts) and when the occurrence
+ * can't be read (the op then fails on its own).
+ */
+function templatePayee(options: MarkOccurrenceReadyOptions): string | undefined {
+  try {
+    const recurring = S().recurring!;
+    const { template } = recurring.getOccurrenceWithTemplate(
+      recurring.resolveOccurrenceId(options)
+    );
+    return template.toAccountId == null ? template.name.trim() || undefined : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export const recurringOps = {
   'recurring.create': {
     execute: async (args) => {
@@ -239,11 +256,20 @@ export const recurringOps = {
   'recurring.markReady': {
     // A transfer template posts two legs sharing a TransferID: mint it here so
     // every device's legs carry the same one (later edits are keyed by it).
+    // The payee to post (the template's name, #127) travels with the op too:
+    // ops logged before that have none and must keep replaying without one.
     prepare: (args) => {
       const options = (args.options ?? {}) as MarkOccurrenceReadyOptions;
-      return options.transferId
-        ? args
-        : { ...args, options: { ...options, transferId: newOpRowId() } };
+      const payee = options.payee === undefined ? templatePayee(options) : undefined;
+      if (options.transferId && !payee) return args;
+      return {
+        ...args,
+        options: {
+          ...options,
+          transferId: options.transferId || newOpRowId(),
+          ...(payee ? { payee } : {}),
+        },
+      };
     },
     execute: async (args) => {
       return await S().recurring!.markOccurrenceReady(args.options as MarkOccurrenceReadyOptions);
@@ -262,12 +288,12 @@ export const recurringOps = {
           const occurrence = await recurring.getOccurrenceWithTemplate(
             recurring.resolveOccurrenceId(options)
           );
-          // Posting adds the template name (and split line payees) to the
+          // Posting adds the carried payee (and split line payees) to the
           // payee list when missing; undo drops the entries nothing uses.
           const template = occurrence?.template;
           const payees = template
             ? missingPayees(template.budgetId, [
-                template.name,
+                template.toAccountId == null ? options.payee : undefined,
                 ...(template.splits ?? []).map((line) => line.payee),
               ])
             : undefined;

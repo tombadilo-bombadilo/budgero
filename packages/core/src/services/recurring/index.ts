@@ -1152,8 +1152,9 @@ export class RecurringTransactionService {
         transactionDate,
         memo,
         '',
-        // The template's name is the payee the projected row shows (#127).
-        template.name,
+        // Only what the op carries: a replay of an older op (no payee) must
+        // not add a payee, or payee IDs drift apart between devices.
+        options.payee?.trim() || undefined,
         undefined,
         undefined,
         false,
