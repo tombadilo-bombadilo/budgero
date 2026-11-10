@@ -10,6 +10,7 @@ import {
   compileQuestion,
   createQuestion,
   normalizeQuestion,
+  questionHeaderIssues,
   serializeQuestionHeader,
   type QuestionSpec,
 } from '@features/reports/lib/question';
@@ -23,6 +24,7 @@ import { ViewSqlDialog } from '@features/reports/ui/notebook/ViewSqlDialog';
 import {
   describeQuestion,
   getQuestionSqlLabels,
+  questionIssueMessage,
 } from '@features/reports/ui/notebook/question-labels';
 import { useFieldValueOptions } from '@features/reports/ui/notebook/useFieldValueOptions';
 import { useQuestionQuery } from '@features/reports/ui/notebook/useQuestionQuery';
@@ -48,8 +50,10 @@ interface NotebookQuestionViewProps {
   /** The saved question being edited; null for a new one. */
   report: UnifiedReport | null;
   initialSpec: QuestionSpec | null;
-  /** Unsaved spec to continue with (back from "Convert to SQL"). */
+  /** Unsaved spec to continue with (back from "Convert to SQL", or an example). */
   resumeSpec?: QuestionSpec | null;
+  /** Name for a new question that starts from an example. */
+  initialName?: string;
   openSaveDialog?: boolean;
   /** Open "Add to dashboard" on arrival (the question was just saved with it). */
   openPinDialog?: boolean;
@@ -62,6 +66,7 @@ export function NotebookQuestionView({
   report,
   initialSpec,
   resumeSpec = null,
+  initialName,
   openSaveDialog = false,
   openPinDialog = false,
   onConvertToSql,
@@ -111,7 +116,12 @@ export function NotebookQuestionView({
   const updateReport = useUpdateReport();
   const deletion = useDeleteQuestion(() => void navigate('/reports'));
 
-  const title = report?.name ?? describeQuestion(spec);
+  // A name typed into the title; saved with the question.
+  const [name, setName] = useState<string | null>(report?.name ?? initialName ?? null);
+  const title = name ?? describeQuestion(spec);
+  const renamed = report !== null && name !== null && name !== report.name;
+  const issues = useMemo(() => questionHeaderIssues(report?.query), [report?.query]);
+  const [issuesDismissed, setIssuesDismissed] = useState(false);
   const query = useQuestionQuery({
     spec,
     budgetId,
@@ -124,7 +134,7 @@ export function NotebookQuestionView({
     () => (initialSpec ? serializeQuestionHeader(initialSpec) : startHeader),
     [initialSpec, startHeader]
   );
-  const dirty = serializeQuestionHeader(spec) !== savedHeader;
+  const dirty = serializeQuestionHeader(spec) !== savedHeader || renamed;
   useLeaveGuard(dirty);
   useEffect(() => {
     if (dirty) saveQuestionDraft(budgetId, reportId, spec);
@@ -138,18 +148,19 @@ export function NotebookQuestionView({
   };
 
   const save = useCallback(
-    async ({ name, description, collection }: SaveQuestionInput) => {
+    async ({ name: savedName, description, collection }: SaveQuestionInput) => {
       // Keep the first chart's id so dashboard widgets pinned to it keep working.
       const chartId = report?.charts?.[0]?.id ?? crypto.randomUUID();
       // No `today`: the stored SQL keeps rolling with CURRENT_DATE (live runs pass the local day).
       const { sql, chart } = compileQuestion(spec, {
         budgetId,
         chartId,
-        chartTitle: name,
+        chartTitle: savedName,
         labels: getQuestionSqlLabels(),
       });
+      setName(savedName);
       const payload = {
-        name,
+        name: savedName,
         description,
         query: buildSavedQuestionQuery(spec, sql),
         tags: withCollection(report?.tags, collection),
@@ -174,6 +185,7 @@ export function NotebookQuestionView({
     <div className="w-full space-y-4 p-4 pb-24 sm:p-6 md:pb-6">
       <QuestionHeader
         title={title}
+        onRename={setName}
         subtitle={
           report
             ? dirty
@@ -225,6 +237,32 @@ export function NotebookQuestionView({
         )}
       </QuestionHeader>
 
+      {issues.length > 0 && !issuesDismissed && (
+        <div
+          role="status"
+          className="flex flex-wrap items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm"
+        >
+          <div className="mr-auto min-w-0 space-y-0.5">
+            <p className="font-medium">
+              <Trans>Part of this question couldn’t be opened</Trans>
+            </p>
+            <ul className="list-disc pl-4 text-xs text-muted-foreground">
+              {issues.map((issue, index) => (
+                <li key={index}>{questionIssueMessage(issue)}</li>
+              ))}
+            </ul>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7"
+            onClick={() => setIssuesDismissed(true)}
+          >
+            <Trans>Got it</Trans>
+          </Button>
+        </div>
+      )}
+
       {restoredDraft && dirty && (
         <div
           role="status"
@@ -260,7 +298,7 @@ export function NotebookQuestionView({
         open={saveOpen}
         onOpenChange={setSaveOpen}
         mode={report ? 'edit' : 'create'}
-        initialName={report?.name ?? describeQuestion(spec)}
+        initialName={title}
         initialDescription={report?.description}
         initialCollection={report ? collectionOf(report) : undefined}
         collections={listCollections(reports)}

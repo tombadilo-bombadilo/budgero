@@ -1,6 +1,6 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useId, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeftRight,
   Code2,
@@ -36,6 +36,8 @@ import { Input } from '@shared/ui/input';
 import { Skeleton } from '@shared/ui/skeleton';
 import { cn } from '@shared/lib/utils';
 import { collectionOf } from './collections';
+import { questionExamples } from './question-examples';
+import type { QuestionRouteState } from './question/useOpenSavedQuestion';
 import { useDeleteQuestion } from './question/useDeleteQuestion';
 
 const REPORT_ICONS: Record<ReportKey, LucideIcon> = {
@@ -78,6 +80,14 @@ export default function ReportsHomePage() {
   const { data: reports = [], isLoading } = useReports();
   const deletion = useDeleteQuestion();
   const query = search.trim().toLowerCase();
+  const navigate = useNavigate();
+  const examples = questionExamples().filter((example) =>
+    matches(query, example.name, example.hint)
+  );
+  const openExample = (example: (typeof examples)[number]) => {
+    const state: QuestionRouteState = { startSpec: example.spec, startName: example.name };
+    void navigate('/reports/question/new', { state });
+  };
 
   const prebuilt = REPORT_ORDER.map((key) => ({ key, ...reportMeta(key) })).filter((item) =>
     matches(query, item.label, item.question, item.hint)
@@ -125,6 +135,49 @@ export default function ReportsHomePage() {
     ...(hasMine ? [{ id: MY_QUESTIONS, label: t`My questions` }] : []),
     ...collections.map((name) => ({ id: name, label: name })),
   ];
+
+  const examplesSection = (
+    <section aria-labelledby={`${searchId}-examples`} className="space-y-3">
+      <div>
+        <h2 id={`${searchId}-examples`} className="text-lg font-semibold">
+          <Trans>Start from an example</Trans>
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          <Trans>Opens in the editor, ready to change and save.</Trans>
+        </p>
+      </div>
+      {examples.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          <Trans>No example matches your search.</Trans>
+        </p>
+      ) : (
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+          {examples.map((example) => {
+            const Icon = VIZ_ICONS[resolveVisualization(example.spec)];
+            return (
+              <li key={example.id}>
+                <button
+                  type="button"
+                  onClick={() => openExample(example)}
+                  className={cn(CARD_CLASS, 'w-full flex-row items-start gap-3 p-3 text-left')}
+                >
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-chart-2/15 text-chart-2">
+                    <Icon className="h-4 w-4" aria-hidden />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-medium leading-snug">{example.name}</span>
+                    <span className="block text-xs text-muted-foreground">{example.hint}</span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+
+  const noSaved = !isLoading && saved.length === 0;
 
   return (
     <div className="w-full space-y-8 p-4 pb-24 sm:p-6 md:pb-6">
@@ -202,6 +255,8 @@ export default function ReportsHomePage() {
         )}
       </section>
 
+      {noSaved && examplesSection}
+
       <section aria-labelledby={`${searchId}-saved`} className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 id={`${searchId}-saved`} className="text-lg font-semibold">
@@ -239,20 +294,15 @@ export default function ReportsHomePage() {
             <Skeleton className="h-28" />
           </div>
         ) : saved.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-lg border border-dashed p-8 text-center">
-            <Wallet className="h-8 w-8 text-muted-foreground" aria-hidden />
-            <div>
-              <p className="font-medium">
-                <Trans>No saved questions yet</Trans>
-              </p>
-              <p className="text-sm text-muted-foreground">
-                <Trans>
-                  Ask your own: pick data, filter it, summarize it and save it to reuse or pin to a
-                  dashboard.
-                </Trans>
-              </p>
-            </div>
-            <Button asChild>
+          <div className="flex flex-col items-start gap-3 rounded-lg border border-dashed p-4 sm:flex-row sm:items-center">
+            <Wallet className="h-6 w-6 shrink-0 text-muted-foreground" aria-hidden />
+            <p className="flex-1 text-sm text-muted-foreground">
+              <Trans>
+                No saved questions yet. Open an example above, or ask your own: pick data, filter
+                it, summarize it and save it to reuse or pin to a dashboard.
+              </Trans>
+            </p>
+            <Button asChild size="sm">
               <Link to="/reports/question/new">
                 <Plus className="h-4 w-4" aria-hidden />
                 <Trans>New question</Trans>
@@ -313,6 +363,7 @@ export default function ReportsHomePage() {
           </ul>
         )}
       </section>
+      {!noSaved && examplesSection}
       {deletion.dialog}
     </div>
   );

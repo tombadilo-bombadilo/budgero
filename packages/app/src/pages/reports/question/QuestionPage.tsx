@@ -3,7 +3,11 @@ import { useMemo, useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useReports } from '@entities/report/api/useReports';
-import { parseQuestionHeader, type QuestionSpec } from '@features/reports/lib/question';
+import {
+  normalizeQuestion,
+  parseQuestionHeader,
+  type QuestionSpec,
+} from '@features/reports/lib/question';
 import { SqlQuestionView } from '@pages/explorer-page/SqlQuestionView';
 import { useUiStore } from '@shared/store/useUiStore';
 import { Button } from '@shared/ui/button';
@@ -34,6 +38,14 @@ export default function QuestionPage() {
   const current = converted?.key === location.key ? converted : null;
   const convertedSql = current && !current.back ? current.sql : null;
   const resumeSpec = current?.back ? current.spec : null;
+  // "Start from an example" on the Reports home: a prefilled, unsaved question.
+  const exampleSpec = useMemo(
+    () =>
+      !reportId && routeState.startSpec && typeof routeState.startSpec === 'object'
+        ? normalizeQuestion(routeState.startSpec)
+        : null,
+    [reportId, routeState.startSpec]
+  );
 
   const report = useMemo(
     () => (reportId ? (reports?.find((item) => item.id === reportId) ?? null) : null),
@@ -109,7 +121,12 @@ export default function QuestionPage() {
       budgetId={budgetId}
       report={report}
       initialSpec={spec}
-      resumeSpec={resumeSpec}
+      resumeSpec={resumeSpec ?? exampleSpec}
+      initialName={
+        exampleSpec && typeof routeState.startName === 'string'
+          ? routeState.startName.slice(0, 120)
+          : undefined
+      }
       openSaveDialog={Boolean(routeState.openSaveDialog)}
       openPinDialog={Boolean(routeState.openPinDialog)}
       onConvertToSql={(sql, from) => setConverted({ key: location.key, sql, spec: from })}

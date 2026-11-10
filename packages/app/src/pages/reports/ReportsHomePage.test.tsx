@@ -1,6 +1,6 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import type { UnifiedReport } from '@budgero/core/browser';
 import { buildSavedQuestionQuery, createQuestion } from '@features/reports/lib/question';
 import ReportsHomePage from './ReportsHomePage';
@@ -63,7 +63,34 @@ function renderHome() {
   );
 }
 
+function QuestionRouteProbe() {
+  const location = useLocation();
+  const state = location.state as { startSpec?: { breakouts: unknown[] }; startName?: string };
+  return (
+    <p>
+      {state.startName}: {JSON.stringify(state.startSpec?.breakouts)}
+    </p>
+  );
+}
+
 describe('ReportsHomePage', () => {
+  it('opens an example as a new, prefilled question', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter initialEntries={['/reports']}>
+        <Routes>
+          <Route path="/reports" element={<ReportsHomePage />} />
+          <Route path="/reports/question/new" element={<QuestionRouteProbe />} />
+        </Routes>
+      </MemoryRouter>
+    );
+    const examples = screen.getByRole('region', { name: 'Start from an example' });
+    await user.click(within(examples).getByRole('button', { name: /Spending by day of the week/ }));
+    expect(
+      screen.getByText('Spending by day of the week: [{"field":"date","part":"dayOfWeek"}]')
+    ).toBeInTheDocument();
+  });
+
   it('lists the 7 prebuilt reports as cards linking to full pages', () => {
     renderHome();
     const prebuilt = screen.getByRole('region', { name: 'Prebuilt reports' });

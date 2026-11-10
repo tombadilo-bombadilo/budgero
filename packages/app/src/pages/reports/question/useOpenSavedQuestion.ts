@@ -7,6 +7,9 @@ export interface QuestionRouteState {
   openSaveDialog?: boolean;
   /** Open "Add to dashboard" once the page is up (after "Save and add to dashboard"). */
   openPinDialog?: boolean;
+  /** A new question that starts from an example (unsaved): its spec and name. */
+  startSpec?: unknown;
+  startName?: string;
 }
 
 /**
