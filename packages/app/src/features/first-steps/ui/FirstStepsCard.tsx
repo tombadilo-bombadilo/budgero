@@ -34,7 +34,7 @@ interface FirstStepsCardProps {
   className?: string;
 }
 
-/** How long the finished bar stays before it goes away on its own. */
+/** How long the finished checklist stays before it goes away on its own. */
 const DONE_BAR_MS = 4000;
 
 interface StepItem {
@@ -85,8 +85,8 @@ export function FirstStepsCard({
     }
   }, [spaceId, steps, assignDone, readyToAssign, assignedAny, settled, t]);
 
-  // On a phone the finished bar shows its tick for a moment, then goes.
-  const autoDismiss = variant === 'bar' && allDone && Boolean(steps && !steps.dismissed);
+  // Once everything is ticked, the finished list shows for a moment, then goes.
+  const autoDismiss = allDone && Boolean(steps && !steps.dismissed);
   useEffect(() => {
     if (!autoDismiss || !spaceId) return;
     const timer = setTimeout(() => dismissFirstSteps(spaceId), DONE_BAR_MS);
@@ -188,21 +188,21 @@ export function FirstStepsCard({
           )}
         >
           <ProgressDots done={doneCount} total={total} />
-          <span className="min-w-0 flex-1 truncate text-sm">
-            {allDone ? (
-              <span className="font-medium">
-                <Trans>You’re set up</Trans>
+          {allDone ? (
+            <span className="min-w-0 flex-1 truncate text-sm font-medium">
+              <Trans>You’re set up</Trans>
+            </span>
+          ) : (
+            // Label above the title, so long titles (German) still fit one row.
+            <span className="flex min-w-0 flex-1 flex-col leading-tight">
+              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                <Trans>Next:</Trans>
               </span>
-            ) : (
-              <>
-                <span className="text-muted-foreground">
-                  <Trans>Next:</Trans>
-                </span>{' '}
-                <span className="font-medium">{next.title}</span>
-              </>
-            )}
-          </span>
-          <span className="shrink-0 text-xs text-muted-foreground">
+              <span className="truncate text-sm font-medium">{next.title}</span>
+            </span>
+          )}
+          {/* The dots show the count; the title gets the room. */}
+          <span className="sr-only">
             {doneCount}/{total}
           </span>
           <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
@@ -222,14 +222,15 @@ export function FirstStepsCard({
               </div>
               <Button
                 variant="ghost"
-                size="sm"
-                className="h-8 shrink-0"
+                size="icon"
+                className="h-8 w-8 shrink-0"
+                aria-label={t`Hide first steps`}
                 onClick={() => {
                   setDrawerOpen(false);
                   dismissFirstSteps(spaceId);
                 }}
               >
-                <Trans>Hide first steps</Trans>
+                <X className="h-4 w-4" />
               </Button>
             </DrawerHeader>
             <div className="max-h-[70dvh] overflow-y-auto px-4 pb-6">{list}</div>

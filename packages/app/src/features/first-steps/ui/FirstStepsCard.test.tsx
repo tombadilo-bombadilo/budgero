@@ -151,3 +151,18 @@ describe('on a phone', () => {
     }
   });
 });
+
+it('the desktop card also goes away on its own once all three are done', () => {
+  vi.useFakeTimers();
+  try {
+    startFirstSteps('space-1');
+    for (const step of ['assign', 'transaction', 'return'] as const) markFirstStep('space-1', step);
+    renderCard(0, [row(100)]);
+    expect(screen.getByTestId('first-steps')).toHaveTextContent('You’re set up');
+    act(() => vi.advanceTimersByTime(5000));
+    expect(getFirstSteps('space-1')?.dismissed).toBe(true);
+    expect(screen.queryByTestId('first-steps')).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});
