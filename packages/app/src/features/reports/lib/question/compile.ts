@@ -11,7 +11,13 @@
  * category / group / payee breakdowns attribute each line to its own category.
  */
 import type { ChartConfiguration } from '@budgero/core/browser';
-import { getField, type DateBucket, type FieldDef, type QuestionSource } from './fields';
+import {
+  getField,
+  type DateBucket,
+  type DatePart,
+  type FieldDef,
+  type QuestionSource,
+} from './fields';
 import { expressionToSql, type ExprMetricName, type ExprSqlEnv } from './expression';
 import {
   customFields,
@@ -22,13 +28,17 @@ import {
   parseCustomMetric,
   questionColumns,
   resolveVisualization,
+  trendDateFilter,
   type CustomFields,
   type QuestionAggregation,
   type QuestionColumn,
   type QuestionFilter,
+  type QuestionHaving,
   type QuestionSpec,
   type RelativeUnit,
   type ResolvedVisualization,
+  AUTO_BIN_COUNT,
+  isOrderedBreakout,
 } from './spec';
 
 /** Display text for rows with no category / payee / label / account. Baked into the SQL. */
@@ -84,6 +94,30 @@ function sqlNumber(value: number): string {
 
 function sqlDate(value: string): string {
   return `CAST(${sqlString(value)} AS DATE)`;
+}
+
+/** A DOUBLE literal that reads back as exactly this JS number (shortest round-trip text). */
+function sqlDouble(value: number): string {
+  if (!Number.isFinite(value)) throw new Error('Invalid number');
+  return `CAST('${String(value)}' AS DOUBLE)`;
+}
+
+const DATE_PART_SQL: Record<DatePart, string> = {
+  year: 'YEAR',
+  quarterOfYear: 'QUARTER',
+  monthOfYear: 'MONTH',
+  dayOfMonth: 'DAY',
+  dayOfWeek: 'ISODOW',
+};
+
+/** Whole-number date part of a date column. */
+function datePartExpression(column: string, part: DatePart): string {
+  return `CAST(${DATE_PART_SQL[part]}(${column}) AS INTEGER)`;
+}
+
+/** Index of the numeric bin a value falls in (same expression for grouping and drill filters). */
+function binIndexExpression(column: string, width: string): string {
+  return `FLOOR(CAST(${column} AS DOUBLE) / ${width})`;
 }
 
 function sqlTextList(values: readonly unknown[]): string {
@@ -270,11 +304,18 @@ function rawFieldExpression(field: FieldDef, source: QuestionSource): string {
   return field.id;
 }
 
-/** Column holding a field's searchable / comparable text (lower-cased). */
+/** Raw text column of a name-keyed field (payees by their raw name, so "No payee" never matches). */
+function rawTextColumn(field: FieldDef): string {
+  return field.id === 'payee' ? 'payee_name' : field.id;
+}
+
+/**
+ * Column holding a field's searchable / comparable text (lower-cased,
+ * trimmed). Groupings on text use the same key, so a drill-through filter
+ * matches exactly the rows behind a cell.
+ */
 function textColumn(field: FieldDef): string {
-  // Payees compare by their raw name, so "No payee" never matches a filter.
-  const column = field.id === 'payee' ? 'payee_name' : field.id;
-  return `LOWER(TRIM(COALESCE(${column}, '')))`;
+  return `LOWER(TRIM(COALESCE(${rawTextColumn(field)}, '')))`;
 }
 
 function emptyCondition(field: FieldDef): string {
@@ -318,11 +359,18 @@ function dateCondition(column: string, filter: QuestionFilter, today: string): s
   }
 }
 
+/** Whether a filter limits a date range (not a date part). */
+function isDateRangeFilter(filter: QuestionFilter): boolean {
+  return filter.part === undefined;
+}
+
 function filterCondition(
   source: QuestionSource,
   filter: QuestionFilter,
   today: string,
-  custom?: CustomFields
+  custom?: CustomFields,
+  /** Replacement SQL for date columns' ranges (period comparisons shift them). */
+  dateColumns?: ReadonlyMap<string, string>
 ): string | null {
   const field = lookupField(source, filter.field, custom);
   if (!field) return null;
@@ -332,11 +380,25 @@ function filterCondition(
   switch (field.type) {
     case 'boolean':
       return `COALESCE(${field.id}, FALSE) = ${filter.values[0] === true ? 'TRUE' : 'FALSE'}`;
-    case 'date':
-      return dateCondition(field.id, filter, today);
+    case 'date': {
+      if (filter.part) {
+        const parts = sqlIdList(filter.values);
+        if (!parts) return null;
+        const expr = datePartExpression(field.id, filter.part);
+        return filter.op === 'isNot'
+          ? `(${field.id} IS NULL OR ${expr} NOT IN (${parts}))`
+          : `${expr} IN (${parts})`;
+      }
+      return dateCondition(dateColumns?.get(field.id) ?? field.id, filter, today);
+    }
     case 'number': {
       const column = `CAST(${field.id} AS DOUBLE)`;
       const numbers = filter.values as number[];
+      if (filter.binWidth !== undefined && filter.op === 'between') {
+        const index = Math.round(numbers[0] / filter.binWidth);
+        if (!Number.isSafeInteger(index)) return null;
+        return `${binIndexExpression(field.id, sqlDouble(filter.binWidth))} = ${index}`;
+      }
       switch (filter.op) {
         case 'gt':
           return `${column} > ${sqlNumber(numbers[0])}`;
@@ -450,18 +512,26 @@ export function compileQuestion(
   const today =
     options.today && isValidIsoDate(options.today) ? sqlDate(options.today) : 'CURRENT_DATE';
   const custom = customFields(spec.source, spec.customColumns);
-  const conditions = spec.filters
-    .map((filter) => filterCondition(spec.source, filter, today, custom))
-    .filter((condition): condition is string => Boolean(condition));
   // A question that only measures spending (or only income) leaves the other
   // side's rows out, so "Spending by category" lists no income categories.
   const ops = spec.aggregations.map((aggregation) => aggregation.op);
-  if (ops.length > 0 && ops.every((op) => op === 'spending' || op === 'averageSpending')) {
-    conditions.push(SPENDING_LINE);
-  } else if (ops.length > 0 && ops.every((op) => op === 'income')) {
-    conditions.push(INCOME_LINE);
-  }
-  const where = conditions.length > 0 ? `\nWHERE ${conditions.join('\n  AND ')}` : '';
+  const sideCondition =
+    ops.length > 0 && ops.every((op) => op === 'spending' || op === 'averageSpending')
+      ? SPENDING_LINE
+      : ops.length > 0 && ops.every((op) => op === 'income')
+        ? INCOME_LINE
+        : null;
+  const trendCap = trendCapCondition(spec, visualization, today);
+  /** WHERE clause; `dateColumns` shifts date ranges (same period last year). */
+  const whereFor = (dateColumns?: ReadonlyMap<string, string>) => {
+    const conditions = spec.filters
+      .map((filter) => filterCondition(spec.source, filter, today, custom, dateColumns))
+      .filter((condition): condition is string => Boolean(condition));
+    if (sideCondition) conditions.push(sideCondition);
+    if (trendCap) conditions.push(trendCap);
+    return conditions.length > 0 ? `\nWHERE ${conditions.join('\n  AND ')}` : '';
+  };
+  const where = whereFor();
   const ctes = sourceCtes(spec.source, budgetId, labels);
   // Custom columns become real columns of `src_custom`, so every later step
   // (filters, groupings, metrics, raw output) reads them like source fields.
@@ -474,27 +544,36 @@ export function compileQuestion(
   let body: string;
 
   if (spec.aggregations.length === 0) {
+    const keys = new Set(columns.map((column) => column.key));
     const select = columns
       .map((column) => {
         const field = lookupField(spec.source, column.kind === 'field' ? column.field : '', custom);
         return field ? `${rawFieldExpression(field, spec.source)} AS ${column.key}` : null;
       })
-      .filter(Boolean)
-      .join(',\n  ');
+      .filter(Boolean);
+    // Sorting by a field that isn't shown: carried as a hidden sort column.
+    const sortColumn = (column: string) => (keys.has(column) ? column : `${column}__sort`);
+    for (const entry of spec.sort) {
+      if (keys.has(entry.column)) continue;
+      const field = lookupField(spec.source, entry.column, custom);
+      if (field) select.push(`${rawFieldExpression(field, spec.source)} AS ${entry.column}__sort`);
+    }
     // Sorts name output columns, so they apply over the projected rows; the
     // source's natural order breaks ties.
     ctes.push(
-      `result AS (\nSELECT\n  ${select},\n  ROW_NUMBER() OVER (ORDER BY ${defaultRawOrder(spec.source)}) AS row_order\nFROM ${base}${where}\n)`
+      `result AS (\nSELECT\n  ${select.join(',\n  ')},\n  ROW_NUMBER() OVER (ORDER BY ${defaultRawOrder(spec.source)}) AS row_order\nFROM ${base}${where}\n)`
     );
     const order = [
-      ...spec.sort.map((entry) => `${entry.column} ${entry.direction.toUpperCase()} NULLS LAST`),
+      ...spec.sort.map(
+        (entry) => `${sortColumn(entry.column)} ${entry.direction.toUpperCase()} NULLS LAST`
+      ),
       'row_order',
     ].join(', ');
     body = `SELECT ${columns.map((column) => column.key).join(', ')}\nFROM result\nORDER BY ${order}${
       limit ? `\nLIMIT ${limit}` : ''
     }`;
   } else {
-    body = compileSummarized({ spec, columns, ctes, base, where, custom, today });
+    body = compileSummarized({ spec, columns, ctes, base, where, whereFor, custom, today });
   }
 
   const sql = `WITH ${ctes.join(',\n')}\n${body}`
@@ -509,6 +588,24 @@ export function compileQuestion(
     visualization,
     spec,
   };
+}
+
+/**
+ * Number with trend: a period that includes today counts up to today, like
+ * the previous period it is compared with (see `trendPeriods`), so
+ * future-dated transactions don't inflate "this month so far".
+ */
+function trendCapCondition(
+  spec: QuestionSpec,
+  visualization: ResolvedVisualization,
+  today: string
+): string | null {
+  if (visualization !== 'trend' || spec.breakouts.length > 0) return null;
+  const filter = trendDateFilter(spec);
+  if (!filter) return null;
+  const includesToday =
+    filter.op === 'current' || (filter.op === 'previous' && filter.includeCurrent !== false);
+  return includesToday ? `${filter.field} <= ${today}` : null;
 }
 
 /** Stored chart type per visualization (dashboards read it back, see `chartTypeFor`). */
@@ -614,8 +711,15 @@ function customColumnsCte(source: QuestionSource, custom: CustomFields): string 
   const selects: string[] = [];
   for (const [id, entry] of custom) {
     const sql = expressionToSql(entry.ast, expressionSqlEnv(source, undefined, inline), types);
-    inline.set(id, sql);
-    const typed = entry.info.type === 'number' ? `CAST(${sql} AS DOUBLE)` : sql;
+    // Conditions that can't be decided (NULL) count as false, like source
+    // booleans and the `is` filter, so groupings and drill-through agree.
+    const typed =
+      entry.info.type === 'number'
+        ? `CAST(${sql} AS DOUBLE)`
+        : entry.info.type === 'boolean'
+          ? `COALESCE(${sql}, FALSE)`
+          : sql;
+    inline.set(id, typed);
     selects.push(`${typed} AS ${id}`);
   }
   return `src_custom AS (\nSELECT\n  *,\n  ${selects.join(',\n  ')}\nFROM src\n)`;
@@ -642,7 +746,10 @@ function customMetricSql(
 
 interface Dimension {
   key: string;
-  /** Hidden id / raw value column (`<key>__key`) for entities and text. */
+  /**
+   * Hidden column (`<key>__key`): the entity id or raw text for entities and
+   * text, the bin width for numeric bins.
+   */
   hidden: string | null;
   /** Holds a parent name for same-name disambiguation (categories). */
   parent: string | null;
@@ -650,6 +757,10 @@ interface Dimension {
   fieldId: string;
   select: string[];
   group: string[];
+  /** SQL over source rows that identifies the group (period comparisons join on it). */
+  matchKey: string;
+  /** The same key read from a result row (`alias.` prefixed columns). */
+  matchResult: (alias: string) => string;
 }
 
 const SERIES_STEP: Record<DateBucket, string> = {
@@ -660,47 +771,98 @@ const SERIES_STEP: Record<DateBucket, string> = {
   year: 'INTERVAL 1 YEAR',
 };
 
+/** Shift that moves a date into the same bucket one year later (weeks keep their weekday). */
+const LAST_YEAR_SHIFT: Record<DateBucket, string> = {
+  day: 'INTERVAL 1 YEAR',
+  week: 'INTERVAL 364 DAY',
+  month: 'INTERVAL 1 YEAR',
+  quarter: 'INTERVAL 1 YEAR',
+  year: 'INTERVAL 1 YEAR',
+};
+
+/** Auto bin width: about AUTO_BIN_COUNT bins of a 1 / 2 / 5 × 10^n width over the filtered rows. */
+function autoBinCte(name: string, column: string, base: string, where: string): string {
+  return `${name} AS (
+SELECT CASE WHEN r IS NULL OR r <= 0 THEN CAST(1 AS DOUBLE)
+  ELSE GREATEST((CASE WHEN r / p <= 1 THEN 1 WHEN r / p <= 2 THEN 2 WHEN r / p <= 5 THEN 5 ELSE 10 END) * p, CAST(0.000001 AS DOUBLE)) END AS w
+FROM (
+  SELECT r, POW(10, FLOOR(LOG10(GREATEST(r, CAST(0.000001 AS DOUBLE))))) AS p
+  FROM (SELECT (MAX(CAST(${column} AS DOUBLE)) - MIN(CAST(${column} AS DOUBLE))) / ${AUTO_BIN_COUNT} AS r FROM ${base}${where}) range
+) scaled
+)`;
+}
+
+interface DimensionOptions {
+  /** SQL replacing the date column (period comparisons shift dates). */
+  dateColumn?: string;
+  /** Bin width SQL for a binned grouping. */
+  binWidth?: string;
+}
+
 function dimensionFor(
   source: QuestionSource,
   column: Extract<QuestionColumn, { kind: 'breakout' }>,
-  custom: CustomFields
+  custom: CustomFields,
+  options: DimensionOptions = {}
 ): Dimension {
   const { key, breakout } = column;
   const field = lookupField(source, breakout.field, custom);
   const id = field?.id ?? breakout.field;
-  const dimension: Dimension = {
+  const plain = (expr: string, hidden: string | null = null): Dimension => ({
     key,
-    hidden: null,
+    hidden,
     parent: null,
     bucket: breakout.bucket ?? null,
     fieldId: id,
-    select: [],
-    group: [],
-  };
+    select: [`${expr} AS ${key}`],
+    group: [expr],
+    matchKey: expr,
+    matchResult: (alias) => `${alias}.${key}`,
+  });
   if (breakout.bucket) {
-    const expr = bucketExpression(id, breakout.bucket);
-    dimension.select.push(`${expr} AS ${key}`);
-    dimension.group.push(expr);
+    return plain(bucketExpression(options.dateColumn ?? id, breakout.bucket));
+  }
+  if (breakout.part) return plain(datePartExpression(options.dateColumn ?? id, breakout.part));
+  if (breakout.bin !== undefined && options.binWidth) {
+    const width = options.binWidth;
+    const index = binIndexExpression(id, width);
+    const dimension = plain(`${index} * ${width}`, `${key}__key`);
+    dimension.select.push(`MIN(${width}) AS ${dimension.hidden}`);
     return dimension;
   }
-  dimension.select.push(`${id} AS ${key}`);
-  dimension.group.push(id);
-  if (field && !custom.has(id) && (field.type === 'entity' || field.type === 'text')) {
-    dimension.hidden = `${key}__key`;
+  if (field && (field.type === 'entity' || field.type === 'text')) {
+    const hidden = `${key}__key`;
     if (field.idKeyed) {
       // Group by id too: same-name categories in different groups stay apart.
-      dimension.select.push(`${id}_id AS ${dimension.hidden}`);
+      const dimension = plain(id, hidden);
+      dimension.select.push(`${id}_id AS ${hidden}`);
       dimension.group.unshift(`${id}_id`);
+      dimension.matchKey = `${id}_id`;
+      dimension.matchResult = (alias) => `${alias}.${hidden}`;
       if (id === 'category' && source !== 'accounts') {
         dimension.parent = `${key}__parent`;
         dimension.select.push(`MIN(category_group) AS ${dimension.parent}`);
       }
-    } else {
-      const raw = id === 'payee' ? 'payee_name' : id;
-      dimension.select.push(`MIN(NULLIF(TRIM(${raw}), '')) AS ${dimension.hidden}`);
+      return dimension;
     }
+    // Name-keyed text (payees, custom text columns, ...): group by the
+    // trimmed, lower-cased text the filters compare, so "Amazon" and
+    // "amazon " are one group and drilling into it finds exactly its rows.
+    const raw = rawTextColumn(field);
+    const normalized = textColumn(field);
+    return {
+      key,
+      hidden,
+      parent: null,
+      bucket: null,
+      fieldId: id,
+      select: [`MIN(${id}) AS ${key}`, `MIN(NULLIF(TRIM(${raw}), '')) AS ${hidden}`],
+      group: [normalized],
+      matchKey: normalized,
+      matchResult: (alias) => `LOWER(TRIM(COALESCE(${alias}.${hidden}, '')))`,
+    };
   }
-  return dimension;
+  return plain(id);
 }
 
 /** Columns a dimension carries through every step. */
@@ -711,7 +873,7 @@ function dimensionColumns(dimension: Dimension): string[] {
 /** Partition / ranking key: the id or raw value when there is one, else the label. */
 function dimensionKey(dimension: Dimension): string {
   return dimension.hidden
-    ? `COALESCE(CAST(${dimension.hidden} AS VARCHAR), ${dimension.key})`
+    ? `COALESCE(CAST(${dimension.hidden} AS VARCHAR), CAST(${dimension.key} AS VARCHAR))`
     : dimension.key;
 }
 
@@ -724,7 +886,7 @@ function dateFilterBounds(
   const froms: string[] = [];
   const tos: string[] = [];
   for (const filter of filters) {
-    if (filter.field !== fieldId) continue;
+    if (filter.field !== fieldId || !isDateRangeFilter(filter)) continue;
     const [first, second] = filter.values as string[];
     switch (filter.op) {
       case 'previous':
@@ -767,21 +929,47 @@ function dateFilterBounds(
   return { from: combine('GREATEST', froms), to: combine('LEAST', tos) };
 }
 
+/** SQL condition of a "having" filter on an output column. */
+function havingCondition(having: QuestionHaving): string | null {
+  const { column, values: numbers } = having;
+  switch (having.op) {
+    case 'isEmpty':
+      return `${column} IS NULL`;
+    case 'notEmpty':
+      return `${column} IS NOT NULL`;
+    case 'gt':
+      return `${column} > ${sqlNumber(numbers[0])}`;
+    case 'lt':
+      return `${column} < ${sqlNumber(numbers[0])}`;
+    case 'between':
+      return `${column} BETWEEN ${sqlNumber(numbers[0])} AND ${sqlNumber(numbers[1])}`;
+    case 'is':
+      return `${column} IN (${numbers.map(sqlNumber).join(', ')})`;
+    case 'isNot':
+      return `(${column} IS NULL OR ${column} NOT IN (${numbers.map(sqlNumber).join(', ')}))`;
+  }
+}
+
 interface SummarizeContext {
   spec: QuestionSpec;
   columns: QuestionColumn[];
   ctes: string[];
   base: string;
   where: string;
+  whereFor: (dateColumns?: ReadonlyMap<string, string>) => string;
   custom: CustomFields;
   today: string;
 }
+
+type BreakoutColumn = Extract<QuestionColumn, { kind: 'breakout' }>;
+type MetricColumn = Extract<QuestionColumn, { kind: 'aggregation' }>;
 
 /**
  * agg (GROUP BY, ids kept) → labeled (same-name categories get their group)
  * → filled (one row per date bucket, empty buckets get the empty-group value)
  * → shaped (running total / moving average / % of total) → compared (previous
- * period, % change) → ordered / limited output.
+ * period or same period last year, % change) → having (filters on metrics)
+ * → ordered / limited output.
  */
 function compileSummarized({
   spec,
@@ -789,22 +977,37 @@ function compileSummarized({
   ctes,
   base,
   where,
+  whereFor,
   custom,
   today,
 }: SummarizeContext): string {
   const { limit } = spec;
   const breakoutColumns = columns.filter(
-    (column): column is Extract<QuestionColumn, { kind: 'breakout' }> => column.kind === 'breakout'
+    (column): column is BreakoutColumn => column.kind === 'breakout'
   );
   const metricColumns = columns.filter(
-    (column): column is Extract<QuestionColumn, { kind: 'aggregation' }> =>
-      column.kind === 'aggregation' && !column.derived
+    (column): column is MetricColumn => column.kind === 'aggregation' && !column.derived
   );
-  const dimensions = breakoutColumns.map((column) => dimensionFor(spec.source, column, custom));
+  // Numeric bins: a fixed width, or one computed from the filtered rows.
+  const binWidths = new Map<string, string>();
+  for (const column of breakoutColumns) {
+    const { bin, field } = column.breakout;
+    if (bin === undefined) continue;
+    if (bin === 'auto') {
+      const name = `bin_${column.key}`;
+      ctes.push(autoBinCte(name, field, base, where));
+      binWidths.set(column.key, `(SELECT w FROM ${name})`);
+    } else {
+      binWidths.set(column.key, sqlDouble(bin));
+    }
+  }
+  const dimensions = breakoutColumns.map((column) =>
+    dimensionFor(spec.source, column, custom, { binWidth: binWidths.get(column.key) })
+  );
   const dateDimension = dimensions.find((dimension) => dimension.bucket !== null) ?? null;
   const otherDimensions = dimensions.filter((dimension) => dimension !== dateDimension);
-  const modified = (column: (typeof metricColumns)[number]) => Boolean(column.aggregation.modifier);
-  const valueAlias = (column: (typeof metricColumns)[number]) =>
+  const modified = (column: MetricColumn) => Boolean(column.aggregation.modifier);
+  const valueAlias = (column: MetricColumn) =>
     modified(column) ? `${column.key}__raw` : column.key;
   const timeSeries = metricColumns.some(
     (column) =>
@@ -897,8 +1100,12 @@ function compileSummarized({
           const window = Math.max(2, Math.floor(column.aggregation.window ?? 3));
           return `AVG(${raw}) ${series(` ROWS BETWEEN ${window - 1} PRECEDING AND CURRENT ROW`)} AS ${column.key}`;
         }
-        case 'share':
-          return `CAST(${raw} AS DOUBLE) * 100 / NULLIF(SUM(${raw}) OVER (${sharePartition}), 0) AS ${column.key}`;
+        case 'share': {
+          // Share of the sum of absolute values: with mixed signs (net) the
+          // parts stay within ±100%; all-negative columns show positive shares.
+          const over = `OVER (${sharePartition})`;
+          return `(CASE WHEN MAX(${raw}) ${over} <= 0 THEN -1 ELSE 1 END) * CAST(${raw} AS DOUBLE) * 100 / NULLIF(SUM(ABS(CAST(${raw} AS DOUBLE))) ${over}, 0) AS ${column.key}`;
+        }
         default:
           return column.key;
       }
@@ -909,42 +1116,104 @@ function compileSummarized({
     current = 'shaped';
   }
 
+  // Same period last year: the metrics re-aggregated over dates moved one
+  // year forward (date filters apply to the moved dates), joined per group.
+  const lastYear = metricColumns.filter((column) => column.aggregation.compareTo === 'lastYear');
+  let lastYearJoin = '';
+  if (lastYear.length > 0 && dateDimension?.bucket) {
+    const shifted = `CAST(${dateDimension.fieldId} + ${LAST_YEAR_SHIFT[dateDimension.bucket]} AS DATE)`;
+    const shiftedDimensions = breakoutColumns.map((column) =>
+      dimensionFor(spec.source, column, custom, {
+        binWidth: binWidths.get(column.key),
+        ...(column.breakout.field === dateDimension.fieldId && column.breakout.bucket
+          ? { dateColumn: shifted }
+          : {}),
+      })
+    );
+    const lastYearSelects = lastYear.map(
+      (column) =>
+        `${aggregationExpression(spec.source, column.aggregation, custom)} AS ly__${column.key}`
+    );
+    ctes.push(
+      `agg_ly AS (\nSELECT\n  ${[
+        ...shiftedDimensions.map((dimension, index) => `${dimension.matchKey} AS ly_k${index}`),
+        ...lastYearSelects,
+        '1 AS ly__present',
+      ].join(
+        ',\n  '
+      )}\nFROM ${base}${whereFor(new Map([[dateDimension.fieldId, shifted]]))}\nGROUP BY ${shiftedDimensions.map((dimension) => dimension.matchKey).join(', ')}\n)`,
+      `ly_empty AS (\nSELECT\n  ${lastYear
+        .map(
+          (column) =>
+            `${aggregationExpression(spec.source, column.aggregation, custom)} AS lye__${column.key}`
+        )
+        .join(',\n  ')}\nFROM ${base}\nWHERE FALSE\n)`
+    );
+    const on = dimensions
+      .map(
+        (dimension, index) => `${dimension.matchResult('c')} IS NOT DISTINCT FROM ly.ly_k${index}`
+      )
+      .join(' AND ');
+    lastYearJoin = ` c\nLEFT JOIN agg_ly ly ON ${on}\nCROSS JOIN ly_empty lye`;
+  }
+
   const compared: string[] = [];
-  let lastMetric: string | null = null;
+  let lastMetric: MetricColumn | null = null;
   for (const column of columns) {
     if (column.kind !== 'aggregation') continue;
     if (!column.derived) {
-      lastMetric = column.key;
+      lastMetric = column;
       continue;
     }
     if (!lastMetric) continue;
-    const previous = `LAG(${lastMetric}) ${series('')}`;
+    const metric = lastMetric.key;
+    const previous =
+      column.compareTo === 'lastYear' && lastYearJoin
+        ? `(CASE WHEN ly.ly__present IS NULL THEN lye.lye__${metric} ELSE ly.ly__${metric} END)`
+        : `LAG(${metric}) ${series('')}`;
     compared.push(
       column.derived === 'previous'
         ? `${previous} AS ${column.key}`
-        : `(${lastMetric} - ${previous}) * 100 / NULLIF(ABS(${previous}), 0) AS ${column.key}`
+        : `(${metric} - ${previous}) * 100 / NULLIF(ABS(${previous}), 0) AS ${column.key}`
     );
   }
   if (compared.length > 0) {
-    ctes.push(`compared AS (\nSELECT\n  *,\n  ${compared.join(',\n  ')}\nFROM ${current}\n)`);
+    ctes.push(
+      `compared AS (\nSELECT\n  ${lastYearJoin ? 'c.*' : '*'},\n  ${compared.join(',\n  ')}\nFROM ${current}${lastYearJoin}\n)`
+    );
     current = 'compared';
+  }
+
+  const having = (spec.having ?? [])
+    .map(havingCondition)
+    .filter((condition): condition is string => Boolean(condition));
+  if (having.length > 0) {
+    ctes.push(`filtered AS (\nSELECT *\nFROM ${current}\nWHERE ${having.join('\n  AND ')}\n)`);
+    current = 'filtered';
   }
 
   // Ordering and limits.
   const breakoutKeys = breakoutColumns.map((column) => column.key);
-  const isDateBreakout = (key: string) =>
-    breakoutColumns.find((column) => column.key === key)?.breakout.bucket !== undefined;
+  const breakoutOf = (key: string) =>
+    breakoutColumns.find((column) => column.key === key)?.breakout;
+  const isDateBucket = (key: string) => breakoutOf(key)?.bucket !== undefined;
+  const isOrdered = (key: string) => {
+    const breakout = breakoutOf(key);
+    return Boolean(breakout && isOrderedBreakout(breakout));
+  };
   const rankKey = (key: string) => {
     const dimension = dimensions.find((item) => item.key === key);
     return dimension ? dimensionKey(dimension) : key;
   };
   const firstMetric = metricColumns[0].key;
   const metricKeys = columns.filter((column) => column.kind === 'aggregation').map((c) => c.key);
+  const userSorts = spec.sort.map((entry) => `${entry.column} ${entry.direction.toUpperCase()}`);
 
   let order: string[];
   if (spec.sort.length > 0) {
-    order = spec.sort.map((entry) => `${entry.column} ${entry.direction.toUpperCase()}`);
-  } else if (breakoutKeys.length > 0 && isDateBreakout(breakoutKeys[0])) {
+    order = userSorts;
+  } else if (breakoutKeys.length > 0 && isOrdered(breakoutKeys[0])) {
+    // Dates, date parts and bins read in their own order.
     order = [];
   } else if (breakoutKeys.length > 0) {
     order = [`${firstMetric} DESC`];
@@ -962,7 +1231,7 @@ function compileSummarized({
     // Two+ groupings: Limit keeps the top N values of one grouping (the
     // first non-date one), ranked by the sorted (or first) metric, so a
     // chart shows N whole series/bars rather than N arbitrary cells.
-    const rankedKey = breakoutKeys.find((key) => !isDateBreakout(key)) ?? breakoutKeys[0];
+    const rankedKey = breakoutKeys.find((key) => !isDateBucket(key)) ?? breakoutKeys[0];
     const ranked = rankKey(rankedKey);
     const metricSort = spec.sort.find((entry) => metricKeys.includes(entry.column));
     const metric = metricSort?.column ?? firstMetric;
@@ -975,19 +1244,39 @@ function compileSummarized({
   }
   let finalOrder = orderBy;
   const leadSort = spec.sort[0];
+  const [firstKey, ...restKeys] = breakoutKeys;
   if (
     breakoutKeys.length > 1 &&
-    !isDateBreakout(breakoutKeys[0]) &&
-    (!leadSort || metricKeys.includes(leadSort.column))
+    !isDateBucket(firstKey) &&
+    (leadSort ? metricKeys.includes(leadSort.column) : !isOrdered(firstKey))
   ) {
-    // Keep each first-grouping value's rows together, ordered by its total.
+    // Keep each first-grouping value's rows together, groups ordered by
+    // their total; inside a group the metric sort (and any further sorts)
+    // order the rows, then the remaining groupings.
     const metric = leadSort?.column ?? firstMetric;
     const direction = leadSort?.direction === 'asc' ? 'ASC' : 'DESC';
-    from = `(\nSELECT *, SUM(${metric}) OVER (PARTITION BY ${rankKey(breakoutKeys[0])}) AS group_total\nFROM ${from}\n) grouped`;
+    const firstRank = rankKey(firstKey);
+    from = `(\nSELECT *, SUM(${metric}) OVER (PARTITION BY ${firstRank}) AS group_total\nFROM ${from}\n) grouped`;
+    // A date series inside a group stays chronological; without a sort, other
+    // ordered groupings (weekday, bins) keep their own order too.
+    const inside = restKeys.some(isDateBucket)
+      ? []
+      : leadSort
+        ? userSorts
+        : restKeys.some(isOrdered)
+          ? []
+          : [`${metric} ${direction}`];
     finalOrder = [
-      `group_total ${direction} NULLS LAST`,
-      ...breakoutKeys.map((key) => `${key} ASC NULLS LAST`),
-    ].join(', ');
+      `group_total ${direction}`,
+      `${firstKey} ASC`,
+      ...(firstRank !== firstKey ? [`${firstRank} ASC`] : []),
+      ...inside,
+      ...restKeys
+        .filter((key) => !spec.sort.some((entry) => entry.column === key))
+        .map((key) => `${key} ASC`),
+    ]
+      .map((part) => `${part} NULLS LAST`)
+      .join(', ');
   }
   const outputs = [
     ...columns.map((column) => column.key),

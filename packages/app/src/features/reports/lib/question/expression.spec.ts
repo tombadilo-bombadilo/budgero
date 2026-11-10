@@ -188,9 +188,9 @@ describe('parser and type checker', () => {
 describe('SQL', () => {
   it('compiles arithmetic with safe division', () => {
     expect(sql('abs([Amount]) / 2')).toBe(
-      '(CAST(ABS(F(amount)) AS DOUBLE) / NULLIF(CAST(2 AS DOUBLE), 0))'
+      '(CAST(ABS(F(amount)) AS DOUBLE) / NULLIF(CAST(CAST(2 AS DOUBLE) AS DOUBLE), 0))'
     );
-    expect(sql('-[Amount] + 1.25')).toBe('((-F(amount)) + 1.25)');
+    expect(sql('-[Amount] + 1.25')).toBe('((-F(amount)) + CAST(1.25 AS DOUBLE))');
   });
 
   it('compiles aggregates, conditional aggregates and metrics', () => {
@@ -198,7 +198,7 @@ describe('SQL', () => {
       "CAST(COALESCE(SUM(CASE WHEN (LOWER(F(category)) = LOWER('Groceries')) THEN F(outflow) ELSE 0 END), 0) AS DOUBLE)"
     );
     expect(sql('CountIf([Cleared]) / Count * 100', metric)).toBe(
-      '((CAST((COUNTIF(F(cleared))) AS DOUBLE) / NULLIF(CAST((M(count)) AS DOUBLE), 0)) * 100)'
+      '((CAST((COUNTIF(F(cleared))) AS DOUBLE) / NULLIF(CAST((M(count)) AS DOUBLE), 0)) * CAST(100 AS DOUBLE))'
     );
     expect(sql('Spending / Income', metric)).toBe(
       '(CAST((M(spending)) AS DOUBLE) / NULLIF(CAST((M(income)) AS DOUBLE), 0))'
@@ -208,9 +208,11 @@ describe('SQL', () => {
 
   it('compiles case, coalesce, contains, round and date comparisons', () => {
     expect(sql('case([Amount] > 0, "in", "out")')).toBe(
-      "(CASE WHEN (F(amount) > 0) THEN 'in' ELSE 'out' END)"
+      "(CASE WHEN (F(amount) > CAST(0 AS DOUBLE)) THEN 'in' ELSE 'out' END)"
     );
-    expect(sql('case([Cleared], 1)')).toBe('(CASE WHEN F(cleared) THEN 1 ELSE NULL END)');
+    expect(sql('case([Cleared], 1)')).toBe(
+      '(CASE WHEN F(cleared) THEN CAST(1 AS DOUBLE) ELSE NULL END)'
+    );
     expect(sql('round([Amount], -2)')).toBe('ROUND(F(amount), -2)');
     expect(sql('[Date] < "2026-01-01"')).toBe("(F(date) < CAST('2026-01-01' AS DATE))");
     expect(sql('contains([Category], "Fo")')).toBe(
