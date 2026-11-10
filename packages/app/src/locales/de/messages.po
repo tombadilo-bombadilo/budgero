@@ -2720,6 +2720,30 @@ msgstr "Eine kurze Übersicht dieser Budgero-Installation, einschließlich Versi
 msgid "A quick reminder of how Budgero applies your automation."
 msgstr "Eine kurze Erinnerung, wie Budgero deine Automatisierung anwendet."
 
+#: src/entities/recurring/lib/error-message.ts
+msgid "A recurring transfer can't be split. Remove the split lines first."
+msgstr "Eine wiederkehrende Umbuchung kann nicht aufgeteilt werden. Entferne zuerst die Teilbuchungen."
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "A split line can have a category or a transfer account, not both."
+msgstr "Eine Teilbuchung kann eine Kategorie oder ein Umbuchungskonto haben, nicht beides."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line can't transfer to the recurring transaction's own account."
+msgstr "Eine Teilbuchung kann nicht auf das eigene Konto der wiederkehrenden Transaktion umbuchen."
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "A split line can't transfer to the transaction's own account."
+msgstr "Eine Teilbuchung kann nicht auf das eigene Konto der Transaktion umbuchen."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line transfers to an account that no longer exists. Edit the recurring transaction and pick another account."
+msgstr "Eine Teilbuchung bucht auf ein Konto um, das nicht mehr existiert. Bearbeite die wiederkehrende Transaktion und wähle ein anderes Konto."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line's category no longer exists. Edit the recurring transaction and pick a category for it."
+msgstr "Die Kategorie einer Teilbuchung existiert nicht mehr. Bearbeite die wiederkehrende Transaktion und wähle eine Kategorie dafür."
+
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "A transaction with several labels counts in full under each, so labels can overlap."
 msgstr "Eine Transaktion mit mehreren Labels wird unter jedem vollständig gezählt, sodass sich Labels überschneiden können."
@@ -9840,6 +9864,10 @@ msgstr "Ungültige oder manuell übersprungene Zeile"
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Invalid split amount"
 msgstr "Ungültiger Teilbetrag"
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "Invalid split line"
+msgstr "Ungültige Teilbuchung"
 
 #: src/shared/ui/calculator-cell/useCalculatorState.ts
 msgid "Invalid value"
@@ -17535,6 +17563,10 @@ msgstr "Der Server hat alle Änderungen dieses Geräts bestätigt."
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 msgstr "Der Server behält die letzten Kopien dieses Arbeitsbereichs und eine pro Tag für die letzte Woche. Du kannst zu einer Kopie zurückgehen und alles verwerfen, was danach geändert wurde, oder sie wiederherstellen und die späteren Änderungen erneut anwenden. Nutze das, wenn ein Arbeitsbereich nach dem Synchronisieren leer oder kaputt aussieht, oder um eine Reihe von Änderungen rückgängig zu machen."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "The split lines no longer add up to the amount. Edit the recurring transaction and update its split lines."
+msgstr "Die Teilbuchungen ergeben nicht mehr den Betrag. Bearbeite die wiederkehrende Transaktion und passe ihre Teilbuchungen an."
 
 #: src/features/category-management/lib/delete-block.ts
 msgid "The system Income category can't be deleted."

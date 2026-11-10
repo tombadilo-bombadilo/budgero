@@ -19,8 +19,14 @@ export function getErrorMessage(error: unknown, fallback = 'Something went wrong
  * Collapses the `toast.error(title, { description: getErrorMessage(error) })`
  * idiom that recurs across the app's catch blocks.
  */
-export function toastError(title: string, error: unknown, fallback?: string): void {
-  toast.error(title, { description: getErrorMessage(error, fallback) });
+export function toastError(
+  title: string,
+  error: unknown,
+  fallback?: string,
+  // A feature's own wording for errors it knows (e.g. recurringErrorMessage).
+  describe: (error: unknown, fallback?: string) => string = getErrorMessage
+): void {
+  toast.error(title, { description: describe(error, fallback) });
   // A failure the user saw is always worth a report (deduplicated with the
   // query/mutation capture of the same error object).
   captureAppError(error, { source: 'toast', handled: true, component: 'toast' });
