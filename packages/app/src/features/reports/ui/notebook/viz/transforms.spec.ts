@@ -5,6 +5,7 @@ import {
   type QuestionSpec,
 } from '@features/reports/lib/question';
 import { buildChartModel } from '../chart-model';
+import { goalAxisBounds } from './display';
 import {
   OTHER_VALUE,
   applyCategoryDisplay,
@@ -321,5 +322,52 @@ describe('buildScatter', () => {
       { labels: ['Shop'], x: 300, y: 12 },
       { labels: ['Cafe'], x: 40, y: 9 },
     ]);
+  });
+});
+
+describe('same-named categories', () => {
+  it('stay apart in a pivot when the result has ids', () => {
+    const columns = columnsOf({
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'category' }, { field: 'date', bucket: 'month' }],
+    });
+    const pivot = buildPivot(
+      result(
+        ['category', 'month', 'spending', 'category__key'],
+        [
+          ['Misc', '2026-01', 10, 1],
+          ['Misc', '2026-01', 20, 2],
+        ]
+      ),
+      columns
+    )!;
+    expect(pivot.rows.map((row) => [row.value, row.id, row.total])).toEqual([
+      ['Misc', 1, 10],
+      ['Misc', 2, 20],
+    ]);
+  });
+});
+
+describe('metrics', () => {
+  it('skips derived columns when picking the plotted metric', () => {
+    const columns = columnsOf({
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'date', bucket: 'day' }],
+    });
+    const derived = { ...columns[1], key: 'spending_prev', derived: 'previous' as const };
+    const years = buildCalendar(
+      result(['day', 'spending_prev', 'spending'], [['2026-01-02', 999, 5]]),
+      [columns[0], derived, columns[1]]
+    );
+    expect(years[0]?.max).toBe(5);
+  });
+});
+
+describe('goalAxisBounds', () => {
+  it('stretches the axis to a goal beyond the data only', () => {
+    const bounds = goalAxisBounds(1800);
+    expect(bounds.max({ max: 1200 })).toBe(2000);
+    expect(bounds.max({ max: 2400 })).toBeNull();
+    expect(goalAxisBounds(-30).min({ min: 0 })).toBe(-50);
   });
 });

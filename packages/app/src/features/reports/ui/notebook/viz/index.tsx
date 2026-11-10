@@ -13,20 +13,15 @@ import type { VizViewProps } from './types';
 
 export interface ExtraVizProps extends VizViewProps {
   exportName?: string;
-  /** Drill-through on a clicked day (calendar). */
+  /** Drill-through on a clicked mark, cell or day. */
   onDrill?: (request: DrillRequest) => void;
 }
 
-/** Where the pointer last went down, so the drill menu opens next to the clicked day. */
-let lastPointer = { x: 0, y: 0 };
-if (typeof window !== 'undefined') {
-  window.addEventListener(
-    'pointerdown',
-    (event) => {
-      lastPointer = { x: event.clientX, y: event.clientY };
-    },
-    { capture: true, passive: true }
-  );
+function withoutDrill({
+  onDrill: _onDrill,
+  ...rest
+}: ExtraVizProps): Omit<ExtraVizProps, 'onDrill'> {
+  return rest;
 }
 
 /** The view for the newer chart types; null for the classic ones (ChartView / table / number). */
@@ -36,9 +31,9 @@ export function renderExtraVisualization(
 ): ReactNode | null {
   switch (visualization) {
     case 'trend':
-      return <TrendNumberView {...props} />;
+      return <TrendNumberView {...withoutDrill(props)} />;
     case 'combo':
-      return <ComboView {...props} />;
+      return <ComboView {...withoutDrill(props)} />;
     case 'pivot':
       return <PivotTableView {...props} />;
     case 'calendar': {
@@ -51,19 +46,18 @@ export function renderExtraVisualization(
           {...rest}
           onDayClick={
             onDrill && dayColumn
-              ? (day) =>
-                  onDrill({ values: [{ column: dayColumn, value: day }], anchor: lastPointer })
+              ? (day, anchor) => onDrill({ values: [{ column: dayColumn, value: day }], anchor })
               : undefined
           }
         />
       );
     }
     case 'waterfall':
-      return <WaterfallView {...props} />;
+      return <WaterfallView {...withoutDrill(props)} />;
     case 'sankey':
-      return <SankeyView {...props} />;
+      return <SankeyView {...withoutDrill(props)} />;
     case 'scatter':
-      return <ScatterView {...props} />;
+      return <ScatterView {...withoutDrill(props)} />;
     case 'row':
       return <RowChartView {...props} />;
     default:

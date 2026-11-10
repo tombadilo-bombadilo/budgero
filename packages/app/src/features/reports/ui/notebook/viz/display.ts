@@ -5,10 +5,12 @@ import { t } from '@lingui/core/macro';
  */
 import type { QuestionColumn, QuestionDisplay } from '@features/reports/lib/question';
 import type { ChartChrome } from '@shared/lib/charts/palette';
+import { readableTextOn } from './series';
 
 interface SeriesLike {
   type?: string;
   stack?: string;
+  itemStyle?: { color?: unknown };
   label?: unknown;
   markLine?: unknown;
   [key: string]: unknown;
@@ -24,6 +26,36 @@ export interface CartesianDisplayOptions {
   horizontal?: boolean;
   /** 100% stacked: no goal line (values are shares). */
   percent?: boolean;
+  /** Formats a share (0..1) for a 100% stacked value label. */
+  formatShare?: (ratio: number) => string;
+}
+
+/** Round `value` away from zero to a tidy axis bound (1 / 2 / 5 steps). */
+function niceBound(value: number): number {
+  const size = Math.abs(value);
+  if (size === 0) return 0;
+  const magnitude = 10 ** Math.floor(Math.log10(size));
+  const step = [1, 2, 2.5, 5, 10].find((candidate) => candidate * magnitude >= size) ?? 10;
+  return Math.sign(value) * step * magnitude;
+}
+
+/**
+ * Value-axis bounds that keep the goal line on the chart: when the goal lies
+ * beyond the data the axis stretches to it, otherwise ECharts picks as usual.
+ */
+export function goalAxisBounds(goal: number) {
+  return {
+    max: (extent: { max: number }) => (goal > extent.max ? niceBound(goal) : null),
+    min: (extent: { min: number }) => (goal < extent.min ? niceBound(goal) : null),
+  };
+}
+
+function withGoalBounds(axis: unknown, goal: number): unknown {
+  const extend = (entry: unknown) =>
+    entry && typeof entry === 'object' ? { ...entry, ...goalAxisBounds(goal) } : entry;
+  return Array.isArray(axis)
+    ? axis.map((entry, index) => (index === 0 ? extend(entry) : entry))
+    : extend(axis);
 }
 
 export function goalMarkLine(goal: number, chrome: ChartChrome, label: string, horizontal = false) {
@@ -41,29 +73,33 @@ export function goalMarkLine(goal: number, chrome: ChartChrome, label: string, h
   };
 }
 
-export function applyCartesianDisplay<T extends { series?: unknown }>(
-  option: T,
-  display: QuestionDisplay | undefined,
-  options: CartesianDisplayOptions
-): T {
+export function applyCartesianDisplay<
+  T extends { series?: unknown; xAxis?: unknown; yAxis?: unknown },
+>(option: T, display: QuestionDisplay | undefined, options: CartesianDisplayOptions): T {
   if (!display || !Array.isArray(option.series)) return option;
   const { chrome, formatValue, horizontal = false, percent = false } = options;
+  const formatShare = options.formatShare ?? ((ratio: number) => `${Math.round(ratio * 100)}%`);
   const series = (option.series as SeriesLike[]).map((entry, index) => {
     let next: SeriesLike = entry;
     if (display.showValues) {
-      const stacked = Boolean(entry.stack);
+      // Stacked bars carry the value inside the segment, in whichever of
+      // white / near-black reads on that segment's colour.
+      const inside = Boolean(entry.stack) && entry.type === 'bar';
+      const fill = entry.itemStyle?.color;
       next = {
         ...next,
         label: {
           show: true,
-          position: stacked ? 'inside' : horizontal ? 'right' : 'top',
-          color: stacked ? '#ffffff' : chrome.inkSecondary,
+          position: inside ? 'inside' : horizontal ? 'right' : 'top',
+          color: inside
+            ? readableTextOn(typeof fill === 'string' ? fill : chrome.inkPrimary)
+            : chrome.inkSecondary,
           fontSize: 10,
           formatter: (params: { value: unknown }) => {
             const value = Array.isArray(params.value) ? params.value[1] : params.value;
             const numeric = typeof value === 'number' ? value : Number(value);
             if (!Number.isFinite(numeric) || numeric === 0) return '';
-            return percent ? `${numeric.toFixed(0)}%` : formatValue(numeric);
+            return percent ? formatShare(numeric / 100) : formatValue(numeric);
           },
         },
         labelLayout: { hideOverlap: true },
@@ -77,7 +113,11 @@ export function applyCartesianDisplay<T extends { series?: unknown }>(
     }
     return next;
   });
-  return { ...option, series };
+  if (display.goal === undefined || percent) return { ...option, series };
+  // A goal beyond the data would fall off the chart: stretch the value axis to it.
+  return horizontal
+    ? { ...option, series, xAxis: withGoalBounds(option.xAxis, display.goal) }
+    : { ...option, series, yAxis: withGoalBounds(option.yAxis, display.goal) };
 }
 
 /** +1 when a higher value is good (income, net), -1 when it is bad (spending). */
@@ -100,12 +140,4 @@ export function goalText(goal: number | undefined, formatValue: (value: number) 
   if (goal === undefined) return '';
   const value = formatValue(goal);
   return t`Goal: ${value}`;
-}
-
-/** Toggle helper: never hides the last visible item. */
-export function toggleHidden(previous: Set<string>, id: string, total: number): Set<string> {
-  const next = new Set(previous);
-  if (next.has(id)) next.delete(id);
-  else if (total - next.size > 1) next.add(id);
-  return next;
 }

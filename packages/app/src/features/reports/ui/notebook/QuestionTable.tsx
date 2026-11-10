@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   rowDrillValues,
   type QuestionColumn,
@@ -29,6 +29,8 @@ export function QuestionTable({ result, columns, source, className, onDrill }: Q
   const { t } = useLingui();
   const format = useQuestionFormatters(source);
   const [visible, setVisible] = useState(PAGE_SIZE);
+  // A new result starts from the first page again.
+  useEffect(() => setVisible(PAGE_SIZE), [result]);
   const index = new Map(result.columns.map((name, position) => [name, position]));
   const shown = columns.filter((column) => index.has(column.key));
   const rows = result.rows.slice(0, visible);
