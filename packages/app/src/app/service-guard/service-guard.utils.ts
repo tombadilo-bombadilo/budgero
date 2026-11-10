@@ -1,21 +1,7 @@
 import { MasterPasswordManager } from '@shared/lib/crypto';
 
 import type { QueryClient } from '@tanstack/react-query';
-import { clearIdbFiles } from '@budgero/core/browser';
-
-/** OPFS FileSystemDirectoryHandle with iteration support */
-interface OPFSDirectoryHandle {
-  values(): AsyncIterable<{ name: string; kind: string }>;
-  entries(): AsyncIterable<[string, unknown]>;
-  removeEntry(name: string, options?: { recursive?: boolean }): Promise<void>;
-}
-
-/** Navigator with optional OPFS storage API */
-interface NavigatorWithStorage {
-  storage?: {
-    getDirectory?(): Promise<OPFSDirectoryHandle>;
-  };
-}
+import { wipeLocalBudgetCopies } from '@shared/lib/local-copies';
 
 /**
  * Clears all cookies from the browser.
@@ -92,30 +78,6 @@ function clearWebStorage(): void {
 }
 
 /**
- * Clears OPFS (Origin Private File System) storage.
- */
-async function clearOpfsStorage(): Promise<void> {
-  try {
-    const nav = navigator as unknown as NavigatorWithStorage;
-    if (!nav.storage?.getDirectory) return;
-    const root = await nav.storage.getDirectory();
-    if (root?.values) {
-      for await (const entry of root.values()) {
-        await root.removeEntry(entry.name, { recursive: true });
-      }
-    } else if (root?.entries) {
-      for await (const [name] of root.entries()) {
-        await root.removeEntry(name, { recursive: true });
-      }
-    }
-  } catch (opfsError) {
-    console.warn('[ServiceGuard] Failed to clear OPFS storage', opfsError);
-  }
-  // Copies kept in IndexedDB where OPFS is refused (Firefox private windows).
-  await clearIdbFiles().catch(() => undefined);
-}
-
-/**
  * Resets all local state including password, storage, and runtime.
  */
 async function resetLocalState(
@@ -127,13 +89,15 @@ async function resetLocalState(
   clearWebStorage();
   clearCookies();
 
-  await clearOpfsStorage();
-
+  // The runtime goes first: it holds the database connections and would save
+  // a budget back after the wipe.
   try {
     runtime.destroy();
   } catch (destroyError) {
     console.warn('[ServiceGuard] Failed to destroy runtime during reset', destroyError);
   }
+
+  await wipeLocalBudgetCopies('ServiceGuard');
 
   try {
     await queryClient.cancelQueries();

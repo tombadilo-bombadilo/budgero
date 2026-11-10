@@ -26,6 +26,7 @@
  * uploaded at release time (chunk_id + $release_id, injected by posthog-cli).
  */
 import { getClientSessionId } from '@budgero/runtime';
+import { localFileBackend } from '@budgero/core/browser';
 import { toErrorCode, type ErrorArea } from './error-codes';
 import type { ErrorCode } from './events';
 import { captureScrubbedException, normalizePagePath } from './track';
@@ -115,7 +116,6 @@ export async function refreshStorageContext(): Promise<void> {
     const estimate = await storage?.estimate?.();
     const persisted = await storage?.persisted?.();
     storageContext = {
-      opfs: typeof storage?.getDirectory === 'function',
       storage_persisted: persisted === undefined ? 'unknown' : persisted ? 'yes' : 'no',
       storage_usage: mbBucket(estimate?.usage),
       storage_quota: mbBucket(estimate?.quota),
@@ -139,7 +139,17 @@ function uptimeBucket(): string {
   return '1h+';
 }
 
-setErrorContext('storage', () => storageContext);
+/**
+ * Where local budget copies live in this tab. Asked live: the store is only
+ * chosen when the first budget opens, and a Firefox private window has the
+ * OPFS API but refuses it.
+ */
+function localStoreContext(): Record<string, ContextValue | null> {
+  const backend = localFileBackend();
+  return { local_store: backend, opfs: backend === 'unknown' ? null : backend === 'opfs' };
+}
+
+setErrorContext('storage', () => ({ ...storageContext, ...localStoreContext() }));
 setErrorContext('page', () => ({
   visible: typeof document === 'undefined' ? null : document.visibilityState === 'visible',
   uptime: uptimeBucket(),

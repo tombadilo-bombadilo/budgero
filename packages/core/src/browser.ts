@@ -12,9 +12,10 @@ export type {
   LocalPersistenceCipher,
 } from './database/interface.js';
 export { DatabaseError } from './database/interface.js';
-export { WebDatabaseAdapter } from './database/web-adapter.js';
+export { WebDatabaseAdapter, whenLocalWritesSettle } from './database/web-adapter.js';
 export {
   clearIdbFiles,
+  clearLocalFiles,
   getOpfsRoot,
   localFileBackend,
   localFileExists,
