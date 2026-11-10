@@ -159,6 +159,34 @@ describe('argument coercion', () => {
     expect(json.properties.amount.type).toBe('number');
   });
 
+  it('checks dates, IDs, limits and amounts of the read-only tools', () => {
+    const budget = (extra: Record<string, unknown>) =>
+      queryBudgetSchema.safeParse({ queryType: 'monthly_summary', ...extra }).success;
+    const tx = (filters: Record<string, unknown>, extra: Record<string, unknown> = {}) =>
+      queryTransactionsSchema.safeParse({ aggregation: 'list', filters, ...extra }).success;
+    expect(budget({ startDate: '2026-11-01', endDate: '2026-11-30', limit: '5' })).toBe(true);
+    expect(tx({ dateFrom: '2026-11-01', minAmount: '0', maxAmount: 20 }, { limit: 3 })).toBe(true);
+    for (const bad of [
+      { startDate: '2026-11' },
+      { endDate: 'last month' },
+      { categoryId: true },
+      { accountId: '' },
+      { limit: 0 },
+    ]) {
+      expect(budget(bad)).toBe(false);
+    }
+    for (const bad of [
+      { dateFrom: '2026-11' },
+      { dateTo: '11/30/2026' },
+      { minAmount: true },
+      { maxAmount: '' },
+      { minAmount: -1 },
+    ]) {
+      expect(tx(bad)).toBe(false);
+    }
+    expect(tx({}, { limit: -2 })).toBe(false);
+  });
+
   it('reads null fields of the read-only tools as absent', () => {
     expect(
       queryBudgetSchema.parse({
@@ -298,22 +326,41 @@ describe('account and category resolution', () => {
     expect(!edit.ok && edit.result.error).toBe('Which one: Eating Out, Eating In?');
   });
 
-  it('says on the card that an unknown category will be left uncategorized', async () => {
+  it('sends an unknown category back to the model instead of writing it uncategorized', async () => {
     const { ctx, executeMutation } = context({ accounts, categories });
-    const prepared = prepareConfirmedTool(
-      'add_transaction',
+    for (const target of [{ categoryName: 'Coffee' }, { categoryId: 99, categoryName: null }]) {
+      const prepared = prepareConfirmedTool(
+        'add_transaction',
+        add({ accountName: 'Cash', ...target }),
+        ctx
+      );
+      expect(prepared.ok).toBe(false);
+      expect(!prepared.ok && failureText(prepared.result)).toBe(
+        `Category "${target.categoryName ?? '#99'}" not found. Available categories: Groceries, Eating Out, Eating In. Use one of these, or leave the category out to record it uncategorized.`
+      );
+    }
+    // Confirming such a call anyway writes nothing.
+    const result = await executeConfirmedAddTransaction(
       add({ accountName: 'Cash', categoryName: 'Coffee' }),
       ctx
     );
+    expect(result.success).toBe(false);
+    expect(executeMutation).not.toHaveBeenCalled();
+  });
+
+  it('shows the memo that gets written', async () => {
+    const { ctx, executeMutation } = context({ accounts, categories });
+    const prepared = prepareConfirmedTool(
+      'add_transaction',
+      add({ accountName: 'Cash', categoryName: 'groceries' }),
+      ctx
+    );
     if (!prepared.ok) throw new Error('expected a confirm card');
-    expect(prepared.preview).toContain('Category: "Coffee" not found — will be uncategorized');
-    // Memo on the card is the memo that gets written.
-    expect(prepared.preview).toContain('Memo: Coffee');
-    const result = await executeConfirmedAddTransaction(prepared.args, ctx);
-    expect(result.message).toContain('category "Coffee" not found');
+    expect(prepared.preview).toContain('Memo: Groceries');
+    await executeConfirmedAddTransaction(prepared.args, ctx);
     expect(executeMutation).toHaveBeenCalledWith(
       expect.objectContaining({
-        payload: expect.objectContaining({ accountId: 3, categoryId: 0, memo: 'Coffee' }),
+        payload: expect.objectContaining({ accountId: 3, categoryId: 10, memo: 'Groceries' }),
       })
     );
   });

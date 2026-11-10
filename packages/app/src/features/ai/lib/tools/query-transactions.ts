@@ -3,7 +3,7 @@ import { capitalize } from '@shared/lib/utils';
 import { getErrorMessage } from '@shared/lib/errors';
 import { fromDecimal, toDecimal } from '@shared/lib/currency/milli';
 import { roundMilli } from '@shared/lib/currency/round-amount';
-import { withoutNulls } from './resolve-entity';
+import { amountFilter, entityId, isoDate, withoutNulls } from './resolve-entity';
 import type { ToolContext, ToolExecutionResult } from './types';
 
 export const queryTransactionsSchema = withoutNulls(
@@ -14,10 +14,10 @@ export const queryTransactionsSchema = withoutNulls(
         accountName: z.string().optional().describe('Filter by account name'),
         payee: z.string().optional().describe('Filter by payee (partial match)'),
         memo: z.string().optional().describe('Filter by memo (partial match)'),
-        dateFrom: z.string().optional().describe('Start date YYYY-MM-DD'),
-        dateTo: z.string().optional().describe('End date YYYY-MM-DD'),
-        minAmount: z.number().optional().describe('Minimum amount (decimal currency units)'),
-        maxAmount: z.number().optional().describe('Maximum amount (decimal currency units)'),
+        dateFrom: isoDate().optional().describe('Start date YYYY-MM-DD'),
+        dateTo: isoDate().optional().describe('End date YYYY-MM-DD'),
+        minAmount: amountFilter().optional().describe('Minimum amount (decimal currency units)'),
+        maxAmount: amountFilter().optional().describe('Maximum amount (decimal currency units)'),
         type: z.enum(['expense', 'income', 'all']).optional().describe('Transaction type filter'),
         excludeCategory: z
           .string()
@@ -47,7 +47,7 @@ export const queryTransactionsSchema = withoutNulls(
 
     orderDirection: z.enum(['asc', 'desc']).optional().describe('Sort direction'),
 
-    limit: z.number().optional().describe('Max number of results'),
+    limit: entityId().optional().describe('Max number of results'),
   })
 );
 

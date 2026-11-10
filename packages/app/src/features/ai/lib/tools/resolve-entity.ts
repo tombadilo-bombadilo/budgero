@@ -77,6 +77,13 @@ export const entityId = () =>
       .positive('must be a positive whole number')
   );
 
+/** A non-negative amount filter: a number or a numeric string. */
+export const amountFilter = () =>
+  z.preprocess(
+    numericStringToNumber,
+    z.number({ error: 'must be a number' }).nonnegative('must not be negative')
+  );
+
 /** A calendar date, YYYY-MM-DD. */
 export const isoDate = () => z.iso.date('must be a date in YYYY-MM-DD format');
 

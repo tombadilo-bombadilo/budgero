@@ -3,7 +3,7 @@ import { formatDateISO, startOfMonth, endOfMonth, getMonthKey } from '@shared/li
 import { getErrorMessage } from '@shared/lib/errors';
 import { toDecimal } from '@shared/lib/currency/milli';
 import { roundMilli } from '@shared/lib/currency/round-amount';
-import { withoutNulls } from './resolve-entity';
+import { entityId, isoDate, withoutNulls } from './resolve-entity';
 import type { ToolContext, ToolExecutionResult } from './types';
 
 /** Service amounts are milliunits; the LLM sees decimal currency values. */
@@ -18,13 +18,13 @@ export const queryBudgetSchema = withoutNulls(
       'recent_transactions',
       'monthly_summary',
     ]),
-    categoryId: z.number().optional(),
+    categoryId: entityId().optional(),
     categoryName: z.string().optional(),
-    accountId: z.number().optional(),
+    accountId: entityId().optional(),
     accountName: z.string().optional(),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
-    limit: z.number().optional(),
+    startDate: isoDate().optional(),
+    endDate: isoDate().optional(),
+    limit: entityId().optional(),
   })
 );
 

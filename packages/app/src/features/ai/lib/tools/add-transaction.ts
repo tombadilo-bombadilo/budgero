@@ -29,8 +29,6 @@ export type AddTransactionPlan =
       account: Account;
       /** Undefined: the transaction is written uncategorized. */
       category?: Category;
-      /** A category the model named that the budget doesn't have. */
-      missingCategory?: string;
       memo: string;
     }
   | { ok: false; result: ToolExecutionResult };
@@ -76,16 +74,25 @@ export function planAddTransaction(
       },
     };
   }
+  // A category the budget doesn't have goes back to the model with the real
+  // ones, so it picks one or asks; it never quietly becomes "uncategorized".
+  if (category.kind === 'not_found') {
+    return {
+      ok: false,
+      result: {
+        success: false,
+        message: `Category "${args.categoryName?.trim() || `#${args.categoryId}`}" not found`,
+        error: `Available categories: ${listNames(context.categories)}. Use one of these, or leave the category out to record it uncategorized.`,
+      },
+    };
+  }
   const found = category.kind === 'found' ? category.entity : undefined;
-  const missingCategory =
-    category.kind === 'not_found' ? args.categoryName?.trim() || `#${args.categoryId}` : undefined;
 
   return {
     ok: true,
     account: account.entity,
     category: found,
-    missingCategory,
-    memo: args.memo || args.payee || found?.Name || args.categoryName?.trim() || 'Transaction',
+    memo: args.memo || args.payee || found?.Name || 'Transaction',
   };
 }
 
@@ -155,11 +162,7 @@ export async function executeAddTransaction(
       );
     }
 
-    const categoryNote = category
-      ? ` in ${category.Name}`
-      : plan.missingCategory
-        ? ` (category "${plan.missingCategory}" not found - left uncategorized)`
-        : ' (uncategorized)';
+    const categoryNote = category ? ` in ${category.Name}` : ' (uncategorized)';
 
     return {
       success: true,
@@ -194,11 +197,7 @@ export function describeAddTransactionPlan(
     `${args.isExpense ? 'Expense' : 'Income'}: ${sym}${args.amount.toFixed(2)}`,
     `Date: ${args.date}`,
     `Account: ${plan.account.Name}`,
-    plan.category
-      ? `Category: ${plan.category.Name}`
-      : plan.missingCategory
-        ? `Category: "${plan.missingCategory}" not found — will be uncategorized`
-        : 'Category: none (uncategorized)',
+    plan.category ? `Category: ${plan.category.Name}` : 'Category: none (uncategorized)',
   ];
   if (args.payee) parts.push(`Payee: ${args.payee}`);
   parts.push(`Memo: ${plan.memo}`);
