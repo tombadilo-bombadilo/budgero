@@ -166,3 +166,16 @@ it('the desktop card also goes away on its own once all three are done', () => {
     vi.useRealTimers();
   }
 });
+
+it('on a phone, waiting only for tomorrow is a quiet state, not a to-do', () => {
+  startFirstSteps('space-1');
+  markFirstStep('space-1', 'assign');
+  markFirstStep('space-1', 'transaction');
+  renderCard(0, [row(100)], { variant: 'bar' });
+  const bar = screen.getByTestId('first-steps');
+  expect(bar).toHaveTextContent('2 of 3 done · see you tomorrow');
+  expect(bar).not.toHaveTextContent('Come back tomorrow');
+  expect(bar.querySelector('svg.lucide-chevron-right')).toBeNull();
+  fireEvent.click(bar);
+  expect(screen.getByText('Come back tomorrow')).toBeInTheDocument();
+});

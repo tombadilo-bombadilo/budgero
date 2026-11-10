@@ -175,6 +175,9 @@ export function FirstStepsCard({
 
   if (variant === 'bar') {
     const next = items.find((item) => item.id === nextId) ?? items.find((i) => i.id === 'assign')!;
+    // Only "come back tomorrow" left: nothing to do today, so no call to action.
+    const waitingForTomorrow =
+      !allDone && FIRST_STEP_IDS.every((id) => steps.done[id] || id === 'return');
     return (
       <>
         <button
@@ -184,6 +187,7 @@ export function FirstStepsCard({
           aria-haspopup="dialog"
           className={cn(
             'flex h-11 w-full items-center gap-3 rounded-lg border bg-card px-3 text-left',
+            waitingForTomorrow && 'border-dashed bg-transparent',
             className
           )}
         >
@@ -191,6 +195,12 @@ export function FirstStepsCard({
           {allDone ? (
             <span className="min-w-0 flex-1 truncate text-sm font-medium">
               <Trans>You’re set up</Trans>
+            </span>
+          ) : waitingForTomorrow ? (
+            <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
+              <Trans>
+                {doneCount} of {total} done · see you tomorrow
+              </Trans>
             </span>
           ) : (
             // Label above the title, so long titles (German) still fit one row.
@@ -202,10 +212,14 @@ export function FirstStepsCard({
             </span>
           )}
           {/* The dots show the count; the title gets the room. */}
-          <span className="sr-only">
-            {doneCount}/{total}
-          </span>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          {!waitingForTomorrow && (
+            <span className="sr-only">
+              {doneCount}/{total}
+            </span>
+          )}
+          {!waitingForTomorrow && (
+            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+          )}
         </button>
         <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DrawerContent>
