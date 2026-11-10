@@ -8,8 +8,9 @@ import {
   type ResolvedVisualization,
 } from '@features/reports/lib/question';
 import { Button } from '@shared/ui/button';
-import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
+import { PopoverTrigger } from '@shared/ui/popover';
 import { cn } from '@shared/lib/utils';
+import { PickerContent, PickerRoot } from '../ResponsivePicker';
 import { visualizationBlockerLabel, visualizationLabel } from '../question-labels';
 import { VIZ_ICONS, recommendedVisualizations } from './viz-meta';
 
@@ -94,7 +95,7 @@ export function ChartTypePicker({ spec, current, onPick }: ChartTypePickerProps)
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <PickerRoot open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -107,11 +108,10 @@ export function ChartTypePicker({ spec, current, onPick }: ChartTypePickerProps)
           <ChevronDown className="h-3.5 w-3.5 opacity-60" aria-hidden />
         </Button>
       </PopoverTrigger>
-      <PopoverContent
+      <PickerContent
+        title={t`Chart type`}
         align="start"
-        // Clear of the phone's bottom bar; scrolls when it can't fit.
-        collisionPadding={{ top: 8, bottom: 80, left: 8, right: 8 }}
-        className="max-h-(--radix-popover-content-available-height) w-[min(22rem,calc(100vw-1rem))] space-y-3 overflow-y-auto p-3"
+        className="w-[min(22rem,calc(100vw-1rem))] space-y-3 p-3"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           (event.currentTarget as HTMLElement | null)
@@ -165,7 +165,7 @@ export function ChartTypePicker({ spec, current, onPick }: ChartTypePickerProps)
             </ul>
           </section>
         )}
-      </PopoverContent>
-    </Popover>
+      </PickerContent>
+    </PickerRoot>
   );
 }

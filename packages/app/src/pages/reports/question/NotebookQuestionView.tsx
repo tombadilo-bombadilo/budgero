@@ -3,12 +3,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowDown,
   Code2,
   LayoutGrid,
   MoreHorizontal,
   RotateCcw,
+  BarChart3,
   Save,
+  SlidersHorizontal,
   Trash2,
 } from 'lucide-react';
 import type { UnifiedReport } from '@budgero/core/browser';
@@ -37,7 +38,9 @@ import {
 import { useFieldValueOptions } from '@features/reports/ui/notebook/useFieldValueOptions';
 import { useQuestionQuery } from '@features/reports/ui/notebook/useQuestionQuery';
 import { useLeaveGuard } from '@shared/hooks/useLeaveGuard';
+import { useIsMobile } from '@shared/hooks/useIsMobile';
 import { Button } from '@shared/ui/button';
+import { ToggleGroup, ToggleGroupItem } from '@shared/ui/toggle-group';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -115,15 +118,12 @@ export function NotebookQuestionView({
   const opener = useOpenSavedQuestion();
   // Opened from a card further down the Reports home: start at the top.
   const rootRef = useRef<HTMLDivElement | null>(null);
-  const resultRef = useRef<HTMLDivElement | null>(null);
-  const [resultVisible, setResultVisible] = useState(true);
-  useEffect(() => {
-    const element = resultRef.current;
-    if (!element || typeof IntersectionObserver === 'undefined') return;
-    const observer = new IntersectionObserver(([entry]) => setResultVisible(entry.isIntersecting));
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
+  const isMobile = useIsMobile();
+  // Phones show one pane at a time: the result first for a question that
+  // already says something (saved, an example), the editor for a blank one.
+  const [pane, setPane] = useState<'editor' | 'result'>(() =>
+    report || resumeSpec || initialSpec ? 'result' : 'editor'
+  );
   useEffect(() => {
     // Whichever ancestor scrolls (the window, or the phone layout's container).
     for (let element = rootRef.current?.parentElement; element; element = element.parentElement) {
@@ -304,9 +304,35 @@ export function NotebookQuestionView({
         </div>
       )}
 
+      {isMobile && (
+        <div className="sticky top-0 z-20 -mx-4 bg-background/95 px-4 py-2 backdrop-blur">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            value={pane}
+            onValueChange={(value) => {
+              if (value === 'editor' || value === 'result') setPane(value);
+            }}
+            aria-label={t`Show`}
+            className="w-full"
+          >
+            <ToggleGroupItem value="editor" className="flex-1">
+              <SlidersHorizontal className="h-4 w-4" aria-hidden />
+              <Trans>Editor</Trans>
+            </ToggleGroupItem>
+            <ToggleGroupItem value="result" className="flex-1">
+              <BarChart3 className="h-4 w-4" aria-hidden />
+              <Trans>Result</Trans>
+            </ToggleGroupItem>
+          </ToggleGroup>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(20rem,28rem)_minmax(0,1fr)] lg:items-start">
-        <NotebookEditor spec={spec} onChange={setSpec} valueOptions={valueOptions} />
-        <div ref={resultRef} className="min-w-0 scroll-mt-20">
+        {(!isMobile || pane === 'editor') && (
+          <NotebookEditor spec={spec} onChange={setSpec} valueOptions={valueOptions} />
+        )}
+        {(!isMobile || pane === 'result') && (
           <QuestionResult
             spec={spec}
             query={query}
@@ -319,20 +345,8 @@ export function NotebookQuestionView({
             onBack={history.length > 0 ? back : undefined}
             title={title}
           />
-        </div>
+        )}
       </div>
-
-      {!resultVisible && (
-        // Phones: the result sits under the notebook; one tap brings it up.
-        <Button
-          size="sm"
-          className="fixed bottom-24 left-1/2 z-30 -translate-x-1/2 rounded-full shadow-lg lg:hidden"
-          onClick={() => resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-        >
-          <ArrowDown className="h-4 w-4" aria-hidden />
-          <Trans>See the result</Trans>
-        </Button>
-      )}
 
       <SaveQuestionDialog
         open={saveOpen}
