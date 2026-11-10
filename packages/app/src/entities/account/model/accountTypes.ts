@@ -128,7 +128,9 @@ export const LIABILITY_ACCOUNT_TYPES: ReadonlySet<string> = new Set(
 );
 
 export function getAccountTypeDefinition(type: string): AccountTypeDefinition | null {
-  const enumValue = Object.values(AccountTypeEnum).find((v) => v === type);
+  // Types are matched like core does: case-insensitively ('credit' is a Credit account).
+  const lower = (type ?? '').toLowerCase();
+  const enumValue = Object.values(AccountTypeEnum).find((v) => v.toLowerCase() === lower);
   return enumValue ? ACCOUNT_TYPES[enumValue] : null;
 }
 
