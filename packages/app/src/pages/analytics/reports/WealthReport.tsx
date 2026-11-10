@@ -412,7 +412,7 @@ export function WealthReport({ data, months, accountIds }: WealthReportProps) {
               {runsOut ? (
                 <span className="text-muted-foreground">
                   <Trans>
-                    funds last until <span className="font-medium text-foreground">{runsOut}</span>
+                    funds last until <span className="font-medium text-foreground">{runsOut}</span>{' '}
                     if income stopped
                   </Trans>
                 </span>
