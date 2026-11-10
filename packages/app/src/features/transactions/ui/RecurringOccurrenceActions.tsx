@@ -8,7 +8,7 @@ import {
   useSkipRecurringOccurrence,
 } from '@entities/recurring/api/useRecurringTransactions';
 import { getTodayISO } from '@shared/lib/date-utils';
-import { getErrorMessage } from '@shared/lib/errors';
+import { recurringErrorMessage } from '@entities/recurring/lib/error-message';
 import { cn } from '@shared/lib/utils';
 import { Button } from '@shared/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shared/ui/tooltip';
@@ -41,7 +41,7 @@ export function RecurringOccurrenceActions({
 
   const onError = (error: unknown) =>
     toast.error(t`Action failed`, {
-      description: getErrorMessage(error, t`Something went wrong.`),
+      description: recurringErrorMessage(error, t`Something went wrong.`),
     });
 
   const post = (transactionDate?: string) =>

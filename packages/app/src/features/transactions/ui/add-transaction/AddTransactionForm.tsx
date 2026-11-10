@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { ManualRatePrompt } from '@features/currencies/ui/ManualRatePrompt';
 import { saveManualRate } from '@entities/currency/lib/currency-utils';
 import { toastError } from '@shared/lib/errors';
+import { recurringErrorMessage } from '@entities/recurring/lib/error-message';
 import { useActiveSpaceId } from '@shared/runtime/runtime-provider';
 import { Card, CardContent } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
@@ -239,7 +240,12 @@ function BudgetTransactionForm({
     (addAnother: boolean) => {
       if (recurringEnabled) {
         void submitRecurring().catch((error) => {
-          toastError(t`Failed to save recurring transaction`, error, t`Please try again.`);
+          toastError(
+            t`Failed to save recurring transaction`,
+            error,
+            t`Please try again.`,
+            recurringErrorMessage
+          );
         });
         return;
       }

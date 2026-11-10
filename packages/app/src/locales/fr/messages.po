@@ -3091,6 +3091,30 @@ msgstr "Un aperçu rapide de cette installation de Budgero, incluant la version 
 msgid "A quick reminder of how Budgero applies your automation."
 msgstr "Un petit rappel de la façon dont Budgero applique votre automatisation."
 
+#: src/entities/recurring/lib/error-message.ts
+msgid "A recurring transfer can't be split. Remove the split lines first."
+msgstr "Un virement récurrent ne peut pas être ventilé. Supprimez d'abord les lignes de ventilation."
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "A split line can have a category or a transfer account, not both."
+msgstr "Une ligne de ventilation peut avoir une catégorie ou un compte de virement, pas les deux."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line can't transfer to the recurring transaction's own account."
+msgstr "Une ligne de ventilation ne peut pas être virée vers le compte de la transaction récurrente."
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "A split line can't transfer to the transaction's own account."
+msgstr "Une ligne de ventilation ne peut pas être virée vers le compte de la transaction."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line transfers to an account that no longer exists. Edit the recurring transaction and pick another account."
+msgstr "Une ligne de ventilation est virée vers un compte qui n'existe plus. Modifiez la transaction récurrente et choisissez un autre compte."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line's category no longer exists. Edit the recurring transaction and pick a category for it."
+msgstr "La catégorie d'une ligne de ventilation n'existe plus. Modifiez la transaction récurrente et choisissez-lui une catégorie."
+
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "A transaction with several labels counts in full under each, so labels can overlap."
 msgstr "Une transaction avec plusieurs étiquettes est comptabilisée intégralement sous chacune, les étiquettes peuvent donc se chevaucher."
@@ -10624,7 +10648,7 @@ msgstr "Importer et associer"
 
 #: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "Import Account"
-msgstr "Compte importé"
+msgstr "Importer un compte"
 
 #: src/features/import/lib/plan-file-import.ts
 msgid "Import Account (new)"
@@ -11128,6 +11152,10 @@ msgstr "Question invalide"
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Invalid split amount"
 msgstr "Montant de ventilation invalide"
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "Invalid split line"
+msgstr "Ligne de ventilation invalide"
 
 #: src/shared/ui/calculator-cell/useCalculatorState.ts
 msgid "Invalid value"
@@ -19790,6 +19818,10 @@ msgstr "Le serveur a confirmé toutes les modifications de cet appareil."
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 msgstr "Le serveur garde les dernières copies de cet espace de travail, et une par jour pendant la dernière semaine. Vous pouvez revenir à une copie et supprimer tout ce qui a été modifié après, ou la restaurer et réappliquer les modifications ultérieures. À utiliser quand un espace de travail semble vide ou cassé après une synchronisation, ou pour annuler une série de modifications."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "The split lines no longer add up to the amount. Edit the recurring transaction and update its split lines."
+msgstr "Les lignes de ventilation ne correspondent plus au montant. Modifiez la transaction récurrente et mettez à jour ses lignes de ventilation."
 
 #: src/features/reports/ui/notebook/ViewSqlDialog.tsx
 msgid "The SQL behind this question"

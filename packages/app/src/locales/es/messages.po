@@ -3091,6 +3091,30 @@ msgstr "Un resumen rápido de esta instalación de Budgero, incluida la versión
 msgid "A quick reminder of how Budgero applies your automation."
 msgstr "Un breve recordatorio de cómo Budgero aplica tu automatización."
 
+#: src/entities/recurring/lib/error-message.ts
+msgid "A recurring transfer can't be split. Remove the split lines first."
+msgstr "Una transferencia recurrente no se puede dividir. Elimina primero las líneas divididas."
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "A split line can have a category or a transfer account, not both."
+msgstr "Una línea dividida puede tener una categoría o una cuenta de transferencia, no ambas."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line can't transfer to the recurring transaction's own account."
+msgstr "Una línea dividida no puede transferir a la propia cuenta de la transacción recurrente."
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "A split line can't transfer to the transaction's own account."
+msgstr "Una línea dividida no puede transferir a la propia cuenta de la transacción."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line transfers to an account that no longer exists. Edit the recurring transaction and pick another account."
+msgstr "Una línea dividida transfiere a una cuenta que ya no existe. Edita la transacción recurrente y elige otra cuenta."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line's category no longer exists. Edit the recurring transaction and pick a category for it."
+msgstr "La categoría de una línea dividida ya no existe. Edita la transacción recurrente y elige una categoría para ella."
+
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "A transaction with several labels counts in full under each, so labels can overlap."
 msgstr "Una transacción con varias etiquetas se contabiliza por completo en cada una, por lo que las etiquetas pueden superponerse."
@@ -10624,7 +10648,7 @@ msgstr "Importar y vincular"
 
 #: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "Import Account"
-msgstr "Cuenta importada"
+msgstr "Importar cuenta"
 
 #: src/features/import/lib/plan-file-import.ts
 msgid "Import Account (new)"
@@ -11128,6 +11152,10 @@ msgstr "Pregunta no válida"
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Invalid split amount"
 msgstr "Importe dividido no válido"
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "Invalid split line"
+msgstr "Línea dividida no válida"
 
 #: src/shared/ui/calculator-cell/useCalculatorState.ts
 msgid "Invalid value"
@@ -19790,6 +19818,10 @@ msgstr "El servidor ha confirmado todos los cambios de este dispositivo."
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 msgstr "El servidor guarda las últimas copias de este espacio de trabajo y una al día durante la última semana. Puedes volver a una copia y descartar todo lo cambiado después, o restaurarla y volver a aplicar los cambios posteriores. Úsalo cuando un espacio de trabajo parezca vacío o roto tras sincronizar, o para deshacer un conjunto de cambios."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "The split lines no longer add up to the amount. Edit the recurring transaction and update its split lines."
+msgstr "Las líneas divididas ya no suman el importe. Edita la transacción recurrente y actualiza sus líneas divididas."
 
 #: src/features/reports/ui/notebook/ViewSqlDialog.tsx
 msgid "The SQL behind this question"

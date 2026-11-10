@@ -113,7 +113,8 @@ describe('recurring templates with split lines', () => {
       options: { recurringTransactionId: template.id, dueDate: '2026-08-01' },
     });
     expect(h.rows('transaction_splits')).toHaveLength(2);
-    expect(h.services.transactions.getTransactionsByAccount(savings)).toHaveLength(1);
+    const mirrors = h.services.transactions.getTransactionsByAccount(savings);
+    expect(mirrors).toHaveLength(1);
     expect(h.services.accounts.getAccount(savings).BalanceNative).toBe(40_000);
 
     await useUndoStore.getState().undo();
@@ -130,9 +131,25 @@ describe('recurring templates with split lines', () => {
       ).status
     ).toBe('scheduled');
 
+    // A row added meanwhile would take the next free IDs.
+    await h.services.transactions.addTransaction(
+      asMilli(0),
+      asMilli(1_000),
+      h.accountId,
+      h.categoryId,
+      h.budgetId,
+      '2026-08-02',
+      'meanwhile',
+      ''
+    );
+
     await useUndoStore.getState().redo();
     expect(h.services.splits.getSplits(ready.transactionId)).toHaveLength(2);
     expect(h.services.accounts.getAccount(savings).BalanceNative).toBe(40_000);
+    // The mirror is back under its first ID, so history naming it stays valid.
+    expect(h.services.transactions.getTransactionsByAccount(savings).map((tx) => tx.ID)).toEqual(
+      mirrors.map((tx) => tx.ID)
+    );
   });
 
   it('calls with lines go out in a format v1.20 builds reject', async () => {

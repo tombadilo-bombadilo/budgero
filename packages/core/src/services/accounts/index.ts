@@ -26,6 +26,7 @@ import {
 } from '../transactions/category-helpers.js';
 import { CurrencyService, type CarriedFxRate } from '../currency/index.js';
 import { CategoryService } from '../categories/index.js';
+import { deleteSplitTemplatesTransferringTo } from '../recurring/split-refs.js';
 
 import { createLogger } from '../../logger.js';
 import { getLocalDateString } from '../../utils/date.js';
@@ -875,6 +876,9 @@ export class AccountService {
     const inTransaction = (fn: () => void) =>
       this.db.inTransaction ? fn() : this.db.transaction(fn);
     inTransaction(() => {
+      // Templates with a split line that transfers here go with the account,
+      // like its own templates and recurring transfers into it (FK cascade).
+      deleteSplitTemplatesTransferringTo(this.db, id);
       // Delete the account (this will cascade delete transactions via foreign key)
       this.queries.deleteAccount(id);
 
@@ -971,6 +975,13 @@ export class AccountService {
            WHERE BudgetID = ? AND Name IN ('Liabilities', 'Credit Card Payments'))`,
         account.BudgetID,
         account.Name,
+        account.BudgetID
+      );
+      // Templates named only inside SplitsJSON (a transfer line to this
+      // account, a line in one of its categories): no foreign key leads there.
+      capture.addWhere(
+        'recurring_transactions',
+        'BudgetID = ? AND SplitsJSON IS NOT NULL',
         account.BudgetID
       );
       this.deleteAccount(id);

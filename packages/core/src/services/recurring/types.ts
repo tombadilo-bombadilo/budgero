@@ -139,6 +139,8 @@ export interface MarkOccurrenceReadyResult {
   /** Transfer templates: the destination leg and the transfer's TransferID. */
   destinationTransactionId?: number;
   transferId?: string;
+  /** Split templates: the mirror rows of the transfer lines, in line order. */
+  mirrorTransactionIds?: number[];
 }
 
 /**
@@ -156,6 +158,13 @@ export interface RecurringOccurrenceRef {
 export interface MarkOccurrenceReadyOptions extends RecurringOccurrenceRef {
   transactionDate?: string;
   memoOverride?: string;
+  /**
+   * Payee of the posted row (the app sends the template's name, #127). Ops
+   * carry it so every device writes the same payee and payee-list entry; ops
+   * logged before it existed have none and post without a payee, as they
+   * always did. Not used by transfer templates (their legs name the accounts).
+   */
+  payee?: string;
   /** TransferID for a transfer template's two legs. Ops carry it so every
    * device posts the same one; generated when absent (older ops). */
   transferId?: string;
@@ -163,7 +172,13 @@ export interface MarkOccurrenceReadyOptions extends RecurringOccurrenceRef {
    * Redo re-posts under the IDs (and TransferID) the first run produced, so
    * the undo entry that deletes them stays valid.
    */
-  reuse?: { transactionId: number; destinationTransactionId?: number; transferId?: string };
+  reuse?: {
+    transactionId: number;
+    destinationTransactionId?: number;
+    transferId?: string;
+    /** Split templates: the transfer lines' mirror rows (redo, format 5). */
+    mirrorTransactionIds?: number[];
+  };
 }
 
 export interface ListOccurrencesOptions {

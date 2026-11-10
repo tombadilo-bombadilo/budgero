@@ -13,9 +13,13 @@ const fixtures = vi.hoisted(() => ({
   budgetId: 4,
   labelsLoaded: true,
   labelDeleted: false,
-  categories: [{ ID: 1, Name: 'Groceries' }],
+  categories: [
+    { ID: 1, Name: 'Groceries' },
+    { ID: 2, Name: 'Uncategorized' },
+  ],
   accounts: [
     { ID: 41, BudgetID: 4, Currency: 'USD', Type: 'checking', OnBudget: true },
+    { ID: 42, BudgetID: 4, Currency: 'USD', Type: 'savings', OnBudget: true },
     { ID: 51, BudgetID: 5, Currency: 'USD', Type: 'checking', OnBudget: true },
   ],
   labels: [{ ID: 8, BudgetID: 4, Name: 'Budget A label', Color: '#22AA44', UsageCount: 0 }],
@@ -246,5 +250,55 @@ describe('add transaction defaults', () => {
     remember(4, { category: 'Groceries', accountId: '41', labelId: 8 });
     const form = openForm(4, 42);
     expect(form.result.current.form.selectedFromAccount).toBe('42');
+  });
+});
+
+describe('split lines the form refuses', () => {
+  const line = (id: string, fields: object) => ({
+    id,
+    inflow: asMilli(0),
+    outflow: asMilli(500),
+    ...fields,
+  });
+
+  async function submitSplit(lines: object[]) {
+    const form = openForm(4, 41);
+    act(() => {
+      form.result.current.form.setAmount(asMilli(1000));
+      form.result.current.setIsSplit(true);
+      form.result.current.setSplitLines(lines as never);
+    });
+    await act(async () => {
+      await form.result.current.handleSubmit();
+    });
+    return form;
+  }
+
+  it('saves a line that transfers to another account', async () => {
+    const form = await submitSplit([
+      line('a', { categoryId: 1 }),
+      line('b', { transferAccountId: 42 }),
+    ]);
+    expect(form.save).toHaveBeenCalledTimes(1);
+    expect(form.save.mock.calls[0][11]).toEqual([
+      expect.objectContaining({ categoryId: 1, transferAccountId: null }),
+      expect.objectContaining({ categoryId: null, transferAccountId: 42 }),
+    ]);
+  });
+
+  it('refuses a line with both a category and a transfer account', async () => {
+    const form = await submitSplit([
+      line('a', { categoryId: 1 }),
+      line('b', { categoryId: 1, transferAccountId: 42 }),
+    ]);
+    expect(form.save).not.toHaveBeenCalled();
+  });
+
+  it("refuses a line that transfers to the transaction's own account", async () => {
+    const form = await submitSplit([
+      line('a', { categoryId: 1 }),
+      line('b', { transferAccountId: 41 }),
+    ]);
+    expect(form.save).not.toHaveBeenCalled();
   });
 });

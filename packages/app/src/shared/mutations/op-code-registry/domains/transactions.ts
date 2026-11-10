@@ -151,6 +151,48 @@ const splitsUndo: NonNullable<OpCodeEntry['undo']> = {
   },
 };
 
+const ownAccountLines = (
+  accountId: number,
+  lines: readonly { TransferAccountID?: number | null }[]
+) =>
+  lines.filter(
+    (line) => line.TransferAccountID != null && Number(line.TransferAccountID) === accountId
+  ).length;
+
+/**
+ * `prepare` guard: a split line can't transfer to the parent's own account
+ * (its mirror row would land next to the parent). Only on the originating
+ * device, so ops already logged replay exactly as before. Lines a parent
+ * already has are kept: editing old data must not fail because of them.
+ */
+function rejectOwnAccountLines(
+  accountId: number,
+  lines: readonly { TransferAccountID?: number | null }[],
+  existing: readonly { TransferAccountID?: number | null }[] = []
+): void {
+  if (ownAccountLines(accountId, lines) > ownAccountLines(accountId, existing)) {
+    throw new Error('A split line cannot transfer to its own account.');
+  }
+}
+
+/** The same guard for an op on an existing parent (`args.transactionId`). */
+function guardExistingParentLines(args: Record<string, unknown>): Record<string, unknown> {
+  const transactionId = Number(args.transactionId);
+  if (!Number.isSafeInteger(transactionId)) return args;
+  let parent: { AccountID: number } | undefined;
+  try {
+    parent = S().transactions!.getTransactionByID(transactionId);
+  } catch {
+    return args; // the op fails on its own
+  }
+  rejectOwnAccountLines(
+    parent.AccountID,
+    normalizeSplitLines(args.splits),
+    S().splits.getSplits(transactionId)
+  );
+  return args;
+}
+
 type ReconcileWithAdjustment = ReconcileResult & { adjustmentId?: number };
 
 function reconcileUndo(accountId: unknown, result: unknown): OpCall[] {
@@ -588,6 +630,17 @@ export const transactionOps = {
     },
   },
   'transactions.add': {
+    prepare: (args) => {
+      if (Array.isArray(args.splits)) {
+        rejectOwnAccountLines(
+          Number(args.accountId),
+          (args.splits as { transferAccountId?: number | null }[]).map((line) => ({
+            TransferAccountID: line?.transferAccountId ?? null,
+          }))
+        );
+      }
+      return args;
+    },
     execute: async (args) => {
       const identity = (args.importIdentities as ImportIdentity[] | undefined)?.[0];
       if (identity) {
@@ -1099,6 +1152,7 @@ export const transactionOps = {
 
   // The split editor's save: parent total and lines in one op and one write.
   'transactions.saveSplits': {
+    prepare: guardExistingParentLines,
     execute: async (args) => {
       const amount = args.amount as
         { inflow?: unknown; outflow?: unknown; currency?: unknown } | undefined;
@@ -1475,6 +1529,7 @@ export const transactionOps = {
 
   // upsert split transaction
   'transactions.upsertSplits': {
+    prepare: guardExistingParentLines,
     execute: async (args) => {
       // Normalize client payload (snake_case) to core service shape (PascalCase).
       const normalized = normalizeSplitLines(args.splits);

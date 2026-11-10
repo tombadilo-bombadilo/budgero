@@ -3091,6 +3091,30 @@ msgstr "Een kort overzicht van deze Budgero-installatie, inclusief versie en nut
 msgid "A quick reminder of how Budgero applies your automation."
 msgstr "Een korte herinnering over hoe Budgero jouw automatisering toepast."
 
+#: src/entities/recurring/lib/error-message.ts
+msgid "A recurring transfer can't be split. Remove the split lines first."
+msgstr "Een terugkerende overboeking kan niet worden gesplitst. Verwijder eerst de splitregels."
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "A split line can have a category or a transfer account, not both."
+msgstr "Een splitregel kan een categorie of een overboekingsrekening hebben, niet allebei."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line can't transfer to the recurring transaction's own account."
+msgstr "Een splitregel kan niet overboeken naar de eigen rekening van de terugkerende transactie."
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "A split line can't transfer to the transaction's own account."
+msgstr "Een splitregel kan niet overboeken naar de eigen rekening van de transactie."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line transfers to an account that no longer exists. Edit the recurring transaction and pick another account."
+msgstr "Een splitregel boekt over naar een rekening die niet meer bestaat. Bewerk de terugkerende transactie en kies een andere rekening."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line's category no longer exists. Edit the recurring transaction and pick a category for it."
+msgstr "De categorie van een splitregel bestaat niet meer. Bewerk de terugkerende transactie en kies er een categorie voor."
+
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "A transaction with several labels counts in full under each, so labels can overlap."
 msgstr "Een transactie met meerdere labels wordt volledig meegeteld onder elk label, dus labels kunnen overlappen."
@@ -10624,7 +10648,7 @@ msgstr "Importeren en koppelen"
 
 #: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "Import Account"
-msgstr "Importrekening"
+msgstr "Rekening importeren"
 
 #: src/features/import/lib/plan-file-import.ts
 msgid "Import Account (new)"
@@ -11128,6 +11152,10 @@ msgstr "Ongeldige vraag"
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Invalid split amount"
 msgstr "Ongeldig gesplitst bedrag"
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "Invalid split line"
+msgstr "Ongeldige splitregel"
 
 #: src/shared/ui/calculator-cell/useCalculatorState.ts
 msgid "Invalid value"
@@ -19790,6 +19818,10 @@ msgstr "De server heeft alle wijzigingen van dit apparaat bevestigd."
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 msgstr "De server bewaart de laatste kopieën van deze werkruimte en één per dag voor de afgelopen week. Je kunt teruggaan naar een kopie en alles verwijderen wat daarna is gewijzigd, of hem herstellen en de latere wijzigingen opnieuw toepassen. Gebruik dit als een werkruimte na het synchroniseren leeg of kapot lijkt, of om een reeks wijzigingen ongedaan te maken."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "The split lines no longer add up to the amount. Edit the recurring transaction and update its split lines."
+msgstr "De splitregels tellen niet meer op tot het bedrag. Bewerk de terugkerende transactie en werk de splitregels bij."
 
 #: src/features/reports/ui/notebook/ViewSqlDialog.tsx
 msgid "The SQL behind this question"

@@ -327,7 +327,10 @@ export function InlineTransactionRow({
       payeeCategorySource?.CategoryID
     ) ?? 0;
   const categoryIsAutomatic = !!transferAccount && !transferInvolvesOffBudget;
-  const transferTargets = accounts.filter((account) => account.ID.toString() !== rowAccount);
+  // Other open accounts only (the form's list is already the active one).
+  const transferTargets = accounts.filter(
+    (account) => account.ID.toString() !== rowAccount && !account.Archived
+  );
 
   const renderAmountCell = (
     kind: 'inflow' | 'outflow' | 'other',

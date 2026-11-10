@@ -8,8 +8,9 @@
  * {@link OP_CODE_FORMAT_VERSIONS}. Format 4 (app v1.20): no new op codes;
  * calls that set labels through rules (label.set) or batch edits ask for it
  * per call (REQUIRES_FORMAT_ARG, see the app's legacy-format rules). Format 5
- * (app v1.21): no new op codes; recurring templates with split lines ask for
- * it per call.
+ * (app v1.21): no new op codes; recurring templates with split lines, and
+ * recurring.markReady calls that carry the payee to post or a split posting's
+ * mirror IDs (redo), ask for it per call.
  *
  * Each outgoing mutation is stamped with the LOWEST format that can express
  * it ({@link mutationFormatVersion}): ops every format-2 build knows stay

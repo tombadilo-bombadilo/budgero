@@ -3093,6 +3093,30 @@ msgstr "A quick overview of this Budgero installation, including version and use
 msgid "A quick reminder of how Budgero applies your automation."
 msgstr "A quick reminder of how Budgero applies your automation."
 
+#: src/entities/recurring/lib/error-message.ts
+msgid "A recurring transfer can't be split. Remove the split lines first."
+msgstr "A recurring transfer can't be split. Remove the split lines first."
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "A split line can have a category or a transfer account, not both."
+msgstr "A split line can have a category or a transfer account, not both."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line can't transfer to the recurring transaction's own account."
+msgstr "A split line can't transfer to the recurring transaction's own account."
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "A split line can't transfer to the transaction's own account."
+msgstr "A split line can't transfer to the transaction's own account."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line transfers to an account that no longer exists. Edit the recurring transaction and pick another account."
+msgstr "A split line transfers to an account that no longer exists. Edit the recurring transaction and pick another account."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "A split line's category no longer exists. Edit the recurring transaction and pick a category for it."
+msgstr "A split line's category no longer exists. Edit the recurring transaction and pick a category for it."
+
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "A transaction with several labels counts in full under each, so labels can overlap."
 msgstr "A transaction with several labels counts in full under each, so labels can overlap."
@@ -11130,6 +11154,10 @@ msgstr "Invalid question"
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Invalid split amount"
 msgstr "Invalid split amount"
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "Invalid split line"
+msgstr "Invalid split line"
 
 #: src/shared/ui/calculator-cell/useCalculatorState.ts
 msgid "Invalid value"
@@ -19792,6 +19820,10 @@ msgstr "The server has confirmed all changes from this device."
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 msgstr "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
+
+#: src/entities/recurring/lib/error-message.ts
+msgid "The split lines no longer add up to the amount. Edit the recurring transaction and update its split lines."
+msgstr "The split lines no longer add up to the amount. Edit the recurring transaction and update its split lines."
 
 #: src/features/reports/ui/notebook/ViewSqlDialog.tsx
 msgid "The SQL behind this question"
