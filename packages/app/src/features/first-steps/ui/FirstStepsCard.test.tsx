@@ -151,3 +151,31 @@ describe('on a phone', () => {
     }
   });
 });
+
+it('the desktop card also goes away on its own once all three are done', () => {
+  vi.useFakeTimers();
+  try {
+    startFirstSteps('space-1');
+    for (const step of ['assign', 'transaction', 'return'] as const) markFirstStep('space-1', step);
+    renderCard(0, [row(100)]);
+    expect(screen.getByTestId('first-steps')).toHaveTextContent('You’re set up');
+    act(() => vi.advanceTimersByTime(5000));
+    expect(getFirstSteps('space-1')?.dismissed).toBe(true);
+    expect(screen.queryByTestId('first-steps')).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it('on a phone, waiting only for tomorrow is a quiet state, not a to-do', () => {
+  startFirstSteps('space-1');
+  markFirstStep('space-1', 'assign');
+  markFirstStep('space-1', 'transaction');
+  renderCard(0, [row(100)], { variant: 'bar' });
+  const bar = screen.getByTestId('first-steps');
+  expect(bar).toHaveTextContent('2 of 3 done · see you tomorrow');
+  expect(bar).not.toHaveTextContent('Come back tomorrow');
+  expect(bar.querySelector('svg.lucide-chevron-right')).toBeNull();
+  fireEvent.click(bar);
+  expect(screen.getByText('Come back tomorrow')).toBeInTheDocument();
+});

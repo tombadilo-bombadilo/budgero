@@ -1127,6 +1127,10 @@ msgstr "{diffMins}m geleden"
 msgid "{doneCount} of {total} done"
 msgstr "{doneCount} van {total} gedaan"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "{doneCount} of {total} done · see you tomorrow"
+msgstr "{doneCount} van {total} gedaan · tot morgen"
+
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "{drilldownTitle} {drilldownItemLabel} breakdown"
 msgstr "Uitsplitsing: {drilldownTitle} · {drilldownItemLabel}"
@@ -3322,7 +3326,11 @@ msgstr "Rekening<0/>"
 #: src/pages/onboarding/steps/DoneStep.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
+msgid "Accounts"
+msgstr "Rekeningen"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Accounts"
 msgstr "Rekeningen"
 
@@ -3452,9 +3460,13 @@ msgstr "Werkelijk saldo"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Add"
 msgstr "Toevoegen"
+
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Add"
+msgstr "Nieuw"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Add a custom rate to override automatically fetched exchange rates for specific date ranges."
@@ -5158,6 +5170,11 @@ msgstr "Bedragen aan de kant van Budgero die deze verschillen kunnen verklaren. 
 msgid "Budget"
 msgstr "Budget"
 
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Budget"
+msgstr "Budget"
+
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 msgid "Budget \"{name}\" created successfully!"
 msgstr "Budget \"{name}\" succesvol aangemaakt!"
@@ -5266,7 +5283,6 @@ msgstr "Samen budgetteren?"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/features/budget-management/model/icon-options.ts
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Budgeting"
 msgstr "Budgetteren"
 
@@ -7920,6 +7936,10 @@ msgstr "\"{name}\" verwijderd"
 msgid "Deleted label"
 msgstr "Verwijderd label"
 
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "Deleted when you open yours"
+msgstr "Wordt verwijderd zodra je het jouwe opent"
+
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
@@ -7935,6 +7955,7 @@ msgstr "Verwijderen…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 #: src/features/demo-budget/ui/DemoBudgetBanner.tsx
 #: src/pages/onboarding/apply-onboarding.ts
+#: src/pages/onboarding/steps/DoneStep.tsx
 msgid "Demo budget"
 msgstr "Demobudget"
 
@@ -10033,6 +10054,10 @@ msgstr "Financieringsprioriteit"
 #: src/features/category-management/ui/FundingPriorityBadge.tsx
 msgid "Funding priority {priority}"
 msgstr "Financieringsprioriteit {priority}"
+
+#: src/pages/analytics/reports/WealthReport.tsx
+#~ msgid "funds last until <0>{runsOut}</0> if income stopped"
+#~ msgstr "geld houdt stand tot <0>{runsOut}</0> als inkomsten stoppen"
 
 #: src/pages/analytics/reports/WealthReport.tsx
 #~ msgid "funds last until <0>{runsOut}</0>if income stopped"
@@ -15084,8 +15109,8 @@ msgid "Pick a metric…"
 msgstr "Kies een metriek…"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Pick a path to continue."
-msgstr "Kies een pad om door te gaan."
+#~ msgid "Pick a path to continue."
+#~ msgstr "Kies een pad om door te gaan."
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Pick a period with some history to project from."
@@ -16626,7 +16651,11 @@ msgstr "Rapportnaam *"
 #: src/pages/reports/BackToReports.tsx
 #: src/pages/reports/ReportsHomePage.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
+msgid "Reports"
+msgstr "Rapporten"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Reports"
 msgstr "Rapporten"
 
@@ -18193,9 +18222,13 @@ msgstr "Demobudget wordt ingesteld…"
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Settings"
 msgstr "Instellingen"
+
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Settings"
+msgstr "Opties"
 
 #: src/app/startup/screens.tsx
 msgid "Settings → Workspaces"
@@ -19095,6 +19128,10 @@ msgstr "Status: {0}"
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Stay covered if data ever corrupts or you lose your master password—we'll remind you to keep a fresh backup on hand."
 msgstr "Blijf gedekt als je gegevens ooit beschadigen of je je hoofdwachtwoord kwijtraakt—we herinneren je eraan om een actuele backup bij de hand te houden."
+
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "STEP {stepLabel} / {totalLabel}"
+msgstr "STAP {stepLabel} / {totalLabel}"
 
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Stickiness over time"

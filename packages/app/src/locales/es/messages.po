@@ -1127,6 +1127,10 @@ msgstr "Hace {diffMins}m"
 msgid "{doneCount} of {total} done"
 msgstr "{doneCount} de {total} hechos"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "{doneCount} of {total} done · see you tomorrow"
+msgstr "{doneCount} de {total} hechos · hasta mañana"
+
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "{drilldownTitle} {drilldownItemLabel} breakdown"
 msgstr "Desglose: {drilldownTitle} · {drilldownItemLabel}"
@@ -3322,7 +3326,11 @@ msgstr "Cuenta<0/>"
 #: src/pages/onboarding/steps/DoneStep.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
+msgid "Accounts"
+msgstr "Cuentas"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Accounts"
 msgstr "Cuentas"
 
@@ -3452,7 +3460,11 @@ msgstr "Saldo real"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
+msgid "Add"
+msgstr "Añadir"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Add"
 msgstr "Añadir"
 
@@ -5158,6 +5170,11 @@ msgstr "Importes del lado de Budgero que podrían explicar estas diferencias. So
 msgid "Budget"
 msgstr "Presupuesto"
 
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
+msgid "Budget"
+msgstr "Plan"
+
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 msgid "Budget \"{name}\" created successfully!"
 msgstr "¡Presupuesto \"{name}\" creado con éxito!"
@@ -5266,7 +5283,6 @@ msgstr "¿Presupuestar con alguien?"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/features/budget-management/model/icon-options.ts
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Budgeting"
 msgstr "Presupuestar"
 
@@ -7920,6 +7936,10 @@ msgstr "Eliminado \"{name}\""
 msgid "Deleted label"
 msgstr "Etiqueta eliminada"
 
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "Deleted when you open yours"
+msgstr "Se elimina al abrir el tuyo"
+
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
@@ -7935,6 +7955,7 @@ msgstr "Eliminando…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 #: src/features/demo-budget/ui/DemoBudgetBanner.tsx
 #: src/pages/onboarding/apply-onboarding.ts
+#: src/pages/onboarding/steps/DoneStep.tsx
 msgid "Demo budget"
 msgstr "Presupuesto de demostración"
 
@@ -10033,6 +10054,10 @@ msgstr "Prioridad de financiación"
 #: src/features/category-management/ui/FundingPriorityBadge.tsx
 msgid "Funding priority {priority}"
 msgstr "Prioridad de financiación {priority}"
+
+#: src/pages/analytics/reports/WealthReport.tsx
+#~ msgid "funds last until <0>{runsOut}</0> if income stopped"
+#~ msgstr "los fondos duran hasta <0>{runsOut}</0> si se detuvieran los ingresos"
 
 #: src/pages/analytics/reports/WealthReport.tsx
 #~ msgid "funds last until <0>{runsOut}</0>if income stopped"
@@ -15084,8 +15109,8 @@ msgid "Pick a metric…"
 msgstr "Elige una métrica…"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Pick a path to continue."
-msgstr "Elige una ruta para continuar."
+#~ msgid "Pick a path to continue."
+#~ msgstr "Elige una ruta para continuar."
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Pick a period with some history to project from."
@@ -16626,7 +16651,11 @@ msgstr "Nombre del informe *"
 #: src/pages/reports/BackToReports.tsx
 #: src/pages/reports/ReportsHomePage.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
+msgid "Reports"
+msgstr "Informes"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Reports"
 msgstr "Informes"
 
@@ -18193,7 +18222,11 @@ msgstr "Preparando el presupuesto de demostración…"
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
+msgid "Settings"
+msgstr "Ajustes"
+
 #: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "mobile nav"
 msgid "Settings"
 msgstr "Ajustes"
 
@@ -19095,6 +19128,10 @@ msgstr "Estado: {0}"
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Stay covered if data ever corrupts or you lose your master password—we'll remind you to keep a fresh backup on hand."
 msgstr "Mantente cubierto si los datos se corrompen alguna vez o pierdes tu contraseña maestra: te recordaremos que tengas una copia de seguridad reciente a mano."
+
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "STEP {stepLabel} / {totalLabel}"
+msgstr "PASO {stepLabel} / {totalLabel}"
 
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "Stickiness over time"
