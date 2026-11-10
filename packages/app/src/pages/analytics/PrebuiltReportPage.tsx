@@ -1,10 +1,15 @@
+import { Trans, useLingui } from '@lingui/react/macro';
 import { useMemo } from 'react';
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
+import { SquarePen } from 'lucide-react';
+import type { QuestionRouteState } from '@pages/reports/question/useOpenSavedQuestion';
+import { Button } from '@shared/ui/button';
 import { BackToReports } from '@pages/reports/BackToReports';
 import { useAnalyticsPageState, type ReportKey } from './analytics-state';
 import { useAnalyticsData } from './useAnalyticsData';
 import { AnalyticsFilterBar } from './components/AnalyticsFilterBar';
 import { REPORT_ORDER, reportMeta } from './report-questions';
+import { prebuiltQuestion } from './prebuilt-question';
 import { WealthReport } from './reports/WealthReport';
 import { SpendingReport } from './reports/SpendingReport';
 import { InOutReport } from './reports/InOutReport';
@@ -34,6 +39,7 @@ export default function PrebuiltReportPage() {
 }
 
 function PrebuiltReport({ report }: { report: ReportKey }) {
+  const { t } = useLingui();
   const state = useAnalyticsPageState();
   const data = useAnalyticsData(state.filters);
 
@@ -46,12 +52,33 @@ function PrebuiltReport({ report }: { report: ReportKey }) {
   }, [data.allTxns]);
 
   const months = useMemo(() => state.monthsFor(earliestMonth), [state, earliestMonth]);
+  const navigate = useNavigate();
+  const asQuestion = prebuiltQuestion(report, state.selections);
 
   return (
     <div className="w-full space-y-4 p-4 pb-24 sm:p-6 md:pb-6">
-      <div className="space-y-1">
-        <BackToReports />
-        <h1 className="text-sm font-medium text-muted-foreground">{reportMeta(report).label}</h1>
+      <div className="flex flex-wrap items-end justify-between gap-2">
+        <div className="space-y-1">
+          <BackToReports />
+          <h1 className="text-sm font-medium text-muted-foreground">{reportMeta(report).label}</h1>
+        </div>
+        {asQuestion && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              const routeState: QuestionRouteState = {
+                startSpec: asQuestion.spec,
+                startName: asQuestion.name,
+              };
+              void navigate('/reports/question/new', { state: routeState });
+            }}
+            title={t`Open this report in the question editor, with its filters, to change it`}
+          >
+            <SquarePen className="h-4 w-4" aria-hidden />
+            <Trans>Open as question</Trans>
+          </Button>
+        )}
       </div>
 
       <AnalyticsFilterBar
