@@ -1,10 +1,8 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 // Post-signup onboarding — collects every setup choice, then fires the whole
 // setup pipeline on the final click. The pipeline has to run in order:
-// master password → workspace → runtime init → budget (or YNAB import) →
-// accounts/categories/goal → invites → theme → intro acknowledged.
-// Invites come after the workspace + master password because they encrypt
-// the space key for each recipient.
+// master password → workspace → runtime init → budget (or YNAB import, or
+// the demo) → accounts/categories → intro acknowledged.
 //
 // We replace the simple IntroRequiredScreen as the first startup gate. Once
 // acknowledgeIntro() fires at the tail of the pipeline, StartupController
@@ -27,8 +25,6 @@ import type {
 import { YNABImportService } from '@budgero/core/browser';
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import { useLogout, useProfile, useUpdateOnboarding } from '@entities/user/api/useAuth';
-import { useThemePreset } from '@shared/contexts/ThemePresetContext';
-import { getTodayISO } from '@shared/lib/date-utils';
 import { readPendingSpaceInvite } from '@features/budget-sharing/lib/pending-space-invite';
 import { hasCompleteCreditPaymentMappings } from '@features/budget-management/ui/create-budget-form/ynab-credit-payment-matching';
 import { YnabImportStatus } from '@features/budget-management/ui/create-budget-form/YnabImportStatus';
@@ -47,18 +43,12 @@ import {
   CategoriesStep,
   CurrencyStep,
   DoneStep,
-  GoalStep,
   PasswordStep,
-  RulesStep,
-  ShareStep,
   StartModeStep,
-  ThemeStep,
   WelcomeStep,
   WhereHeardPicker,
   WhereHeardStep,
-  WorkspaceStep,
   YnabImportStep,
-  ZbbStep,
 } from './steps';
 import { classifyYnabZipError } from './steps/ynab-source-errors';
 import './onboarding.css';
@@ -97,7 +87,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
   const navigate = useNavigate();
   const { data: profile } = useProfile();
   const logout = useLogout();
-  const { setThemeId } = useThemePreset();
   const { mutateAsync: updateOnboardingAsync } = useUpdateOnboarding();
 
   const [state, setState] = useState<OnboardingFormState>(() =>
@@ -105,18 +94,24 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
     mode === 'from_demo' ? { ...INITIAL_STATE, startMode: 'fresh' } : INITIAL_STATE
   );
   // Cross-tab invite handoff is encrypted in IndexedDB, so hydration is
-  // asynchronous. Prime the invitee shortcut as soon as the vault resolves.
+  // asynchronous. Nothing is shown (or reported) until it resolves, so an
+  // invitee never sees the start-mode screen flash by. Leaving the demo
+  // can't be a join, so that path doesn't wait.
+  const [inviteChecked, setInviteChecked] = useState(mode === 'from_demo');
   useEffect(() => {
+    if (mode === 'from_demo') return;
     let active = true;
-    void readPendingSpaceInvite().then((pending) => {
-      if (active && pending) {
-        setState((current) => ({ ...current, joinSecret: pending }));
-      }
-    });
+    void readPendingSpaceInvite()
+      .catch(() => null)
+      .then((pending) => {
+        if (!active) return;
+        if (pending) setState((current) => ({ ...current, joinSecret: pending }));
+        setInviteChecked(true);
+      });
     return () => {
       active = false;
     };
-  }, []);
+  }, [mode]);
   const [stepIndex, setStepIndex] = useState(0);
   const [applyStatus, setApplyStatus] = useState<'idle' | 'running' | 'error'>('idle');
   const [applyError, setApplyError] = useState<string | null>(null);
@@ -172,10 +167,14 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
   const analyticsStep = curId as OnboardingStepId;
   const lastViewedStepRef = useRef<OnboardingStepId | null>(null);
   const stepViewedAtRef = useRef(0);
+  /** onboarding_left was sent for this visit (the page may come back from bfcache). */
   const finishedRef = useRef(false);
+  /** Setup finished: nothing more to report, even if the page comes back. */
+  const completedRef = useRef(false);
   const leftRef = useRef({ step: analyticsStep, path: activePath });
   leftRef.current = { step: analyticsStep, path: activePath };
   useEffect(() => {
+    if (!inviteChecked) return;
     // Once per step: picking a start mode changes the path, not the step.
     startedAtRef.current ??= Date.now();
     const prev = lastViewedStepRef.current;
@@ -187,7 +186,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
       track('onboarding_step_back', { from: prev, to: analyticsStep, path: activePath });
     }
     track('onboarding_step_viewed', { step: analyticsStep, path: activePath });
-  }, [analyticsStep, activePath]);
+  }, [analyticsStep, activePath, inviteChecked]);
   useEffect(() => {
     // Closing the tab mid-setup: where, and after how long.
     const onPageHide = () => {
@@ -198,8 +197,16 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
         duration_bucket: durationBucket(Date.now() - (startedAtRef.current ?? Date.now())),
       });
     };
+    // Back from the back/forward cache: still mid-setup, so leaving again counts.
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted && !completedRef.current) finishedRef.current = false;
+    };
     window.addEventListener('pagehide', onPageHide);
-    return () => window.removeEventListener('pagehide', onPageHide);
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('pageshow', onPageShow);
+    };
   }, []);
   const trackStepCompleted = useCallback(() => {
     track('onboarding_step_completed', {
@@ -210,6 +217,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
   }, [analyticsStep, activePath]);
   const completeOnboarding = useCallback(() => {
     finishedRef.current = true;
+    completedRef.current = true;
     track('onboarding_finished', {
       path: activePath,
       duration_bucket: durationBucket(Date.now() - (startedAtRef.current ?? Date.now())),
@@ -221,38 +229,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
     switch (curId) {
       case 'start_mode':
         return state.startMode !== null;
-      case 'rules':
-        return state.acknowledgedRules;
-      case 'workspace':
-        return state.budgetName.trim().length > 0;
-      case 'share': {
-        // If the user added rows, every row must have a non-empty email
-        // before we let them proceed. Otherwise the apply pipeline would
-        // silently drop empty rows and the post-onboarding share panel
-        // would never appear, leaving the user wondering what happened.
-        // Empty list is fine — share is optional; they can use Skip.
-        return state.invites.every((inv) => inv.email.trim().length > 0);
-      }
-      case 'goal': {
-        // Custom goal needs a non-default name before we'll turn it into a
-        // real envelope during apply.
-        if (state.goal.id === 'custom') {
-          const label = state.goal.label.trim();
-          if (label.length === 0 || label.toLowerCase() === 'something else') {
-            return false;
-          }
-        }
-        // Target-date mode needs a date that's actually in the future so the
-        // monthly amount maths out. Past dates would create goals that are
-        // immediately "overdue" in the budget UI.
-        if (state.goal.mode === 'target') {
-          const today = getTodayISO();
-          if (!state.goal.targetDate || state.goal.targetDate <= today) {
-            return false;
-          }
-        }
-        return true;
-      }
       case 'password': {
         const pw = state.password;
         return pw.length >= 8 && pw === state.passwordConfirm;
@@ -424,7 +400,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
       queryClient,
       navigate,
       profileId: profile?.id,
-      setThemeId,
       updateOnboardingAsync,
       onComplete: completeOnboarding,
       setApplyStatus,
@@ -445,7 +420,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
     runtime,
     reviewYnabImport,
     returnToYnabSource,
-    setThemeId,
     state,
     updateOnboardingAsync,
     waitForYnabContinue,
@@ -459,17 +433,26 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
   // the dashboard.
   const isShowingYnabStatus = curId === 'done' && activePath === 'ynab';
 
-  const primaryLabel = isFirst
-    ? t`Let’s begin →`
-    : launchesYnabImport
-      ? t`Import my budget →`
-      : isFinal
-        ? activePath === 'join'
-          ? t`Join workspace →`
-          : activePath === 'demo'
-            ? t`Open the demo →`
-            : t`Open my budget →`
-        : t`Next →`;
+  const primaryLabel =
+    curId === 'start_mode'
+      ? state.startMode === 'demo'
+        ? t`Try the demo →`
+        : state.startMode === 'ynab'
+          ? t`Import from YNAB →`
+          : state.startMode === 'fresh'
+            ? t`Set up my budget →`
+            : t`Pick a way to start`
+      : isFirst
+        ? t`Let’s begin →`
+        : launchesYnabImport
+          ? t`Import my budget →`
+          : isFinal
+            ? activePath === 'join'
+              ? t`Join workspace →`
+              : activePath === 'demo'
+                ? t`Open the demo →`
+                : t`Open my budget →`
+            : t`Next →`;
   const primaryAction = isFinal
     ? () => {
         if (applyStatus === 'running') return;
@@ -485,18 +468,43 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
         }
       : next;
 
+  const pageStyle: React.CSSProperties = {
+    width: '100%',
+    minHeight: '100vh',
+    background: 'linear-gradient(180deg, #fbf7eb 0%, #f6f1e3 100%)',
+    color: '#141414',
+    padding: '32px 24px 48px',
+    boxSizing: 'border-box',
+  };
+  // An invite link may still be loading: show the page, not a step.
+  if (!inviteChecked) {
+    return <div className="budgero-onboarding-font bo-page" style={pageStyle} aria-busy="true" />;
+  }
+
   return (
-    <div
-      className="budgero-onboarding-font bo-page"
-      style={{
-        width: '100%',
-        minHeight: '100vh',
-        background: 'linear-gradient(180deg, #fbf7eb 0%, #f6f1e3 100%)',
-        color: '#141414',
-        padding: '32px 24px 48px',
-        boxSizing: 'border-box',
-      }}
-    >
+    <div className="budgero-onboarding-font bo-page" style={pageStyle}>
+      {mode === 'from_demo' && applyStatus !== 'running' && (
+        <div style={{ maxWidth: 880, margin: '0 auto 12px' }}>
+          <button
+            type="button"
+            onClick={() => navigate('/budgeting')}
+            data-testid="back-to-demo"
+            style={{
+              background: 'transparent',
+              border: '1px dashed rgba(57,57,57,0.5)',
+              color: '#141414',
+              fontFamily: 'inherit',
+              fontSize: 13,
+              fontWeight: 600,
+              letterSpacing: 0.3,
+              padding: '8px 12px',
+              cursor: 'pointer',
+            }}
+          >
+            <Trans>← Back to the demo</Trans>
+          </button>
+        </div>
+      )}
       {/* Header */}
       <div
         className="bo-header-stack"
@@ -605,11 +613,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
 
         {curId === 'welcome' && <WelcomeStep cur={cur} state={state} set={set} />}
         {curId === 'start_mode' && <StartModeStep cur={cur} state={state} set={set} />}
-        {curId === 'rules' && <RulesStep cur={cur} state={state} set={set} />}
         {curId === 'currency' && <CurrencyStep cur={cur} state={state} set={set} />}
-        {curId === 'zbb' && <ZbbStep cur={cur} state={state} set={set} />}
-        {curId === 'workspace' && <WorkspaceStep cur={cur} state={state} set={set} />}
-        {curId === 'share' && <ShareStep cur={cur} state={state} set={set} />}
         {curId === 'ynab_import' && (
           <YnabImportStep
             cur={cur}
@@ -623,12 +627,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
         )}
         {curId === 'accounts' && <AccountsStep cur={cur} state={state} set={set} />}
         {curId === 'categories' && <CategoriesStep cur={cur} state={state} set={set} />}
-        {curId === 'goal' && <GoalStep cur={cur} state={state} set={set} />}
         {curId === 'where_heard' && <WhereHeardStep cur={cur} state={state} set={set} />}
-        {curId === 'theme' && <ThemeStep cur={cur} state={state} set={set} />}
         {curId === 'password' && (
           <>
-            <PasswordStep cur={cur} state={state} set={set} />
+            <PasswordStep cur={cur} state={state} set={set} forDemo={activePath === 'demo'} />
             {activePath !== 'join' && <WhereHeardPicker state={state} set={set} />}
             {activePath === 'demo' && applyStatus === 'running' && (
               <div role="status" style={{ marginTop: 16, fontSize: 13 }}>
@@ -658,7 +660,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
               onCancelPending={() => resolveYnabReview('cancel')}
             />
           ) : (
-            <DoneStep cur={cur} state={state} applyState={applyStatus} applyError={applyError} />
+            <DoneStep
+              cur={cur}
+              state={state}
+              applyState={applyStatus}
+              applyError={applyError}
+              passwordAlreadySet={activePath === 'from_demo'}
+            />
           ))}
 
         {/* Footer */}
@@ -695,11 +703,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
               )}
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              {/* Skip is only available on the educational ZBB demo, on Sharing
-                  (invites are optional), and on the referral question (purely
+              {/* Skip is only available on the referral question (purely
                   informational). Every other step feeds a real value into the
                   apply pipeline and can't be skipped. */}
-              {(curId === 'zbb' || curId === 'share' || curId === 'where_heard') && (
+              {curId === 'where_heard' && (
                 <button
                   type="button"
                   onClick={next}
@@ -761,22 +768,24 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
         <span>
           <Trans>BUDGERO · ONBOARDING v1</Trans>
         </span>
-        <button
-          type="button"
-          onClick={() => (mode === 'from_demo' ? navigate('/budgeting') : logout.mutate())}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'rgba(57,57,57,0.7)',
-            fontFamily: 'inherit',
-            fontSize: 10,
-            letterSpacing: 0.5,
-            cursor: 'pointer',
-            padding: 0,
-          }}
-        >
-          {mode === 'from_demo' ? <Trans>BACK TO THE DEMO</Trans> : <Trans>SIGN OUT</Trans>}
-        </button>
+        {mode !== 'from_demo' && (
+          <button
+            type="button"
+            onClick={() => logout.mutate()}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: 'rgba(57,57,57,0.7)',
+              fontFamily: 'inherit',
+              fontSize: 10,
+              letterSpacing: 0.5,
+              cursor: 'pointer',
+              padding: 0,
+            }}
+          >
+            <Trans>SIGN OUT</Trans>
+          </button>
+        )}
       </div>
     </div>
   );

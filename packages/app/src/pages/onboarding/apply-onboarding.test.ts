@@ -3,13 +3,16 @@ import type { YNABApiPlanSnapshot, YNABImportResult } from '@budgero/core/browse
 import type { AppRuntime } from '@shared/runtime/app-runtime';
 import type { NavigateFunction } from 'react-router-dom';
 
-import { runOnboardingApply } from './apply-onboarding';
+import { getDemoSpaceId, setDemoSpaceId } from '@shared/lib/demo-space';
+import { runOnboardingApply, type OnboardingApplyDeps } from './apply-onboarding';
 import { INITIAL_STATE, type OnboardingFormState } from './onboarding-data';
 
 const mocks = vi.hoisted(() => ({
   storeMasterPassword: vi.fn(),
   createSpace: vi.fn(),
   deleteSpace: vi.fn(),
+  listSpaces: vi.fn(),
+  seedDemoBudget: vi.fn(),
   setMasterPasswordStatus: vi.fn(),
   writeIntroAcknowledged: vi.fn(),
   importFromApi: vi.fn(),
@@ -28,7 +31,12 @@ vi.mock('@shared/api/api-client', () => ({
   spaceApi: {
     createSpace: mocks.createSpace,
     deleteSpace: mocks.deleteSpace,
+    listSpaces: mocks.listSpaces,
   },
+}));
+
+vi.mock('@features/demo-budget/lib/seed-demo-budget', () => ({
+  seedDemoBudget: mocks.seedDemoBudget,
 }));
 
 vi.mock('@features/onboarding/lib/onboarding-intro', () => ({
@@ -154,7 +162,6 @@ describe('runOnboardingApply YNAB completion gate', () => {
       queryClient,
       navigate: vi.fn() as unknown as NavigateFunction,
       profileId: 'profile-1',
-      setThemeId: vi.fn(),
       updateOnboardingAsync,
       onComplete,
       setApplyStatus: vi.fn(),
@@ -232,7 +239,6 @@ it.each(['', '1.234,567'])(
         } as unknown as QueryClient,
         navigate: vi.fn() as unknown as NavigateFunction,
         profileId: 'profile-1',
-        setThemeId: vi.fn(),
         updateOnboardingAsync: vi.fn().mockResolvedValue(undefined),
         onComplete: vi.fn(),
         setApplyStatus: vi.fn(),
@@ -256,59 +262,169 @@ it.each(['', '1.234,567'])(
   }
 );
 
-it('reuses the selected envelope for the default goal instead of creating a duplicate', async () => {
-  vi.clearAllMocks();
-  mocks.createSpace.mockResolvedValue({ space_id: 'space-1' });
+type Call = { op: string; payload: Record<string, unknown> };
+
+function freshRuntime() {
   let nextId = 1;
-  type Call = { op: string; payload: { name?: string } };
   const execute = vi.fn(async (_call: Call) => ({ result: nextId++ }));
   const runtime = {
     isInitialized: () => true,
     refreshSpaces: vi.fn().mockResolvedValue(undefined),
     switchSpace: vi.fn().mockResolvedValue(undefined),
+    getActiveSpaceId: () => 'space-1',
     getDatabase: () => ({}),
     finalizeOutOfBandMutation: vi.fn().mockResolvedValue(undefined),
     mutationsRouter: () => ({ execute }),
     services: () => ({}),
   } as unknown as AppRuntime;
+  return { runtime, execute };
+}
 
-  await runOnboardingApply(
-    {
-      ...INITIAL_STATE,
-      startMode: 'fresh',
-      budgetName: 'Home',
-      password: 'pw',
-      passwordConfirm: 'pw',
-    },
-    {
-      activePath: 'fresh',
+function deps(path: OnboardingApplyDeps['activePath'], runtime: AppRuntime) {
+  return {
+    activePath: path,
+    runtime,
+    queryClient: {
+      invalidateQueries: vi.fn().mockResolvedValue(undefined),
+      removeQueries: vi.fn(),
+      setQueryData: vi.fn(),
+    } as unknown as QueryClient,
+    navigate: vi.fn() as unknown as NavigateFunction,
+    profileId: 'profile-1',
+    updateOnboardingAsync: vi.fn().mockResolvedValue(undefined),
+    onComplete: vi.fn(),
+    setApplyStatus: vi.fn(),
+    setApplyError: vi.fn(),
+    onYnabProgress: vi.fn(),
+    onYnabResult: vi.fn(),
+    reviewYnabImport: vi.fn(),
+    onYnabImportCancelled: vi.fn(),
+    waitForYnabContinue: async () => true,
+  } satisfies OnboardingApplyDeps;
+}
+
+const freshState: OnboardingFormState = {
+  ...INITIAL_STATE,
+  startMode: 'fresh',
+  budgetName: 'Home',
+  password: 'pw',
+  passwordConfirm: 'pw',
+};
+
+describe('runOnboardingApply fresh, demo and leaving the demo', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    localStorage.clear();
+    mocks.createSpace.mockResolvedValue({ space_id: 'space-1' });
+    mocks.deleteSpace.mockResolvedValue(undefined);
+    mocks.listSpaces.mockResolvedValue([]);
+    mocks.seedDemoBudget.mockResolvedValue(42);
+  });
+
+  it('creates the picked envelopes and no goal', async () => {
+    const { runtime, execute } = freshRuntime();
+    await runOnboardingApply(freshState, deps('fresh', runtime));
+
+    const calls = execute.mock.calls.map(([call]) => call);
+    const emergency = calls.filter(
+      (c) => c.op === 'categories.create' && c.payload.name === 'Emergency fund'
+    );
+    expect(emergency).toHaveLength(1);
+    expect(calls.some((c) => c.op === 'goals.create')).toBe(false);
+    // A blank account name falls back to the type's label as a plain string.
+    const account = calls.find((c) => c.op === 'accounts.create');
+    expect(account?.payload.name).toBe('Checking');
+  });
+
+  it('names an unnamed workspace in the app language', async () => {
+    const { runtime } = freshRuntime();
+    await runOnboardingApply({ ...freshState, budgetName: '  ' }, deps('fresh', runtime));
+    expect(mocks.createSpace).toHaveBeenCalledWith('My budget');
+  });
+
+  it('seeds the demo into a workspace marked before the seed runs', async () => {
+    const { runtime } = freshRuntime();
+    const d = deps('demo', runtime);
+    mocks.seedDemoBudget.mockImplementation(async () => {
+      expect(getDemoSpaceId()).toBe('space-1');
+      return 42;
+    });
+    await runOnboardingApply({ ...freshState, startMode: 'demo' }, d);
+
+    expect(mocks.createSpace).toHaveBeenCalledWith('Demo budget');
+    expect(mocks.seedDemoBudget).toHaveBeenCalledWith(
       runtime,
-      queryClient: {
-        invalidateQueries: vi.fn().mockResolvedValue(undefined),
-        setQueryData: vi.fn(),
-      } as unknown as QueryClient,
-      navigate: vi.fn() as unknown as NavigateFunction,
-      profileId: 'profile-1',
-      setThemeId: vi.fn(),
-      updateOnboardingAsync: vi.fn().mockResolvedValue(undefined),
-      onComplete: vi.fn(),
-      setApplyStatus: vi.fn(),
-      setApplyError: vi.fn(),
-      onYnabProgress: vi.fn(),
-      onYnabResult: vi.fn(),
-      reviewYnabImport: vi.fn(),
-      onYnabImportCancelled: vi.fn(),
-      waitForYnabContinue: async () => true,
-    }
-  );
+      'space-1',
+      expect.objectContaining({ currency: expect.any(String), numberFormat: expect.any(String) })
+    );
+    expect(mocks.syncBudgetState).toHaveBeenCalledWith(
+      expect.objectContaining({ spaceId: 'space-1', preferredBudgetId: 42 })
+    );
+    expect(d.updateOnboardingAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'completed' })
+    );
+    expect(d.onComplete).toHaveBeenCalledOnce();
+    expect(getDemoSpaceId()).toBe('space-1');
+  });
 
-  const calls = execute.mock.calls.map(([call]) => call);
-  const emergency = calls.filter(
-    (c) => c.op === 'categories.create' && c.payload.name === 'Emergency fund'
-  );
-  expect(emergency).toHaveLength(1);
-  expect(calls.some((c) => c.op === 'goals.create')).toBe(true);
-  // A blank account name falls back to the type's label as a plain string.
-  const account = calls.find((c) => c.op === 'accounts.create');
-  expect(account?.payload.name).toBe('Checking');
+  it('removes a demo whose seed failed, so trying again starts clean', async () => {
+    const { runtime } = freshRuntime();
+    const d = deps('demo', runtime);
+    mocks.seedDemoBudget.mockRejectedValueOnce(new Error('offline'));
+    await runOnboardingApply({ ...freshState, startMode: 'demo' }, d);
+
+    expect(mocks.deleteSpace).toHaveBeenCalledWith('space-1');
+    expect(getDemoSpaceId()).toBeNull();
+    expect(d.setApplyStatus).toHaveBeenLastCalledWith('error');
+    expect(d.onComplete).not.toHaveBeenCalled();
+  });
+
+  it('deletes a half-filled demo left by an interrupted attempt before trying again', async () => {
+    setDemoSpaceId('old-demo');
+    mocks.listSpaces.mockResolvedValue([{ space_id: 'old-demo', role: 'owner' }]);
+    mocks.createSpace.mockResolvedValue({ space_id: 'new-demo' });
+    const { runtime } = freshRuntime();
+    await runOnboardingApply({ ...freshState, startMode: 'demo' }, deps('demo', runtime));
+
+    expect(mocks.deleteSpace).toHaveBeenCalledWith('old-demo');
+    expect(mocks.deleteSpace).not.toHaveBeenCalledWith('new-demo');
+    expect(mocks.deleteSpace.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.createSpace.mock.invocationCallOrder[0]!
+    );
+    expect(getDemoSpaceId()).toBe('new-demo');
+  });
+
+  it("leaves a demo id alone that isn't this user's workspace", async () => {
+    setDemoSpaceId('someone-elses');
+    mocks.listSpaces.mockResolvedValue([{ space_id: 'someone-elses', role: 'member' }]);
+    const { runtime } = freshRuntime();
+    await runOnboardingApply(freshState, deps('fresh', runtime));
+    expect(mocks.deleteSpace).not.toHaveBeenCalled();
+    expect(getDemoSpaceId()).toBeNull();
+  });
+
+  it('leaving the demo builds the real budget, keeps password and theme, then deletes the demo', async () => {
+    setDemoSpaceId('demo-space');
+    localStorage.setItem('budgero_default_space_v1', 'demo-space');
+    mocks.createSpace.mockResolvedValue({ space_id: 'space-1' });
+    const { runtime, execute } = freshRuntime();
+    const d = deps('from_demo', runtime);
+    await runOnboardingApply({ ...INITIAL_STATE, startMode: 'fresh', currency: 'EUR' }, d);
+
+    expect(mocks.storeMasterPassword).not.toHaveBeenCalled();
+    const calls = execute.mock.calls.map(([call]) => call);
+    expect(calls.find((c) => c.op === 'budgets.create')?.payload).toEqual(
+      expect.objectContaining({ displayCurrency: 'EUR' })
+    );
+    expect(calls.some((c) => c.op === 'goals.create')).toBe(false);
+    expect(mocks.deleteSpace).toHaveBeenCalledWith('demo-space');
+    expect(mocks.deleteSpace).not.toHaveBeenCalledWith('space-1');
+    expect(getDemoSpaceId()).toBeNull();
+    // Same cleanup as deleting it in Settings → Workspaces.
+    expect(localStorage.getItem('budgero_default_space_v1')).toBeNull();
+    expect(d.queryClient.removeQueries).toHaveBeenCalledWith({
+      queryKey: ['space-members', 'demo-space'],
+    });
+    expect(d.onComplete).toHaveBeenCalledOnce();
+  });
 });

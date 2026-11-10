@@ -1,4 +1,4 @@
-import { msg } from '@lingui/core/macro';
+import { msg, plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import React from 'react';
 import { StepHeroImage, Title, getCurrencySym, type StepProps } from './shared';
@@ -6,6 +6,8 @@ import { StepHeroImage, Title, getCurrencySym, type StepProps } from './shared';
 interface DoneStepExtraProps {
   applyState: 'idle' | 'running' | 'error';
   applyError?: string | null;
+  /** Leaving the demo: the master password was set when the demo was made. */
+  passwordAlreadySet?: boolean;
 }
 
 export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = ({
@@ -13,23 +15,31 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
   state,
   applyState,
   applyError,
+  passwordAlreadySet = false,
 }) => {
   const { t } = useLingui();
 
   const sym = getCurrencySym(state.currency);
-  const rows =
+  const accountCount = state.accounts.length;
+  const categoryCount = state.selectedCats.length;
+  const currencyRow: [string, string] = [t`Currency`, `${state.currency} (${sym})`];
+  // Leaving the demo keeps the password set back then; there is nothing to show.
+  const securityRows: [string, string][] = passwordAlreadySet
+    ? []
+    : [[t`Security`, state.password ? t`✓ Master password set` : t`— not set`]];
+  const rows: [string, string][] =
     state.startMode === 'ynab'
       ? [
-          ['Source', '↓ Imported from YNAB'] as const,
-          ['Budget', state.budgetName || 'My budget'] as const,
-          ['Currency', `${state.currency} (${sym})`] as const,
-          ['Security', state.password ? '✓ Master password set' : '— not set'] as const,
+          [t`Source`, t`↓ Imported from YNAB`],
+          [t`Budget`, state.budgetName || t`My budget`],
+          currencyRow,
+          ...securityRows,
         ]
       : [
-          ['Currency', `${state.currency} (${sym})`] as const,
-          ['Accounts', `${state.accounts.length} added`] as const,
-          ['Envelopes', `${state.selectedCats.length} categories`] as const,
-          ['Security', state.password ? '✓ Master password set' : '— not set'] as const,
+          currencyRow,
+          [t`Accounts`, plural(accountCount, { one: '# added', other: '# added' })],
+          [t`Envelopes`, plural(categoryCount, { one: '# category', other: '# categories' })],
+          ...securityRows,
         ];
 
   // Summary of choices shown on the Done screen (fresh/ynab paths only).
@@ -64,8 +74,8 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
               borderBottom: i < arr.length - 1 ? '1px dotted rgba(57,57,57,0.2)' : 'none',
             }}
           >
-            <span style={{ color: '#393939' }}>{typeof k === 'string' ? k : t(k)}</span>
-            <span style={{ fontWeight: 600 }}>{typeof v === 'string' ? v : t(v)}</span>
+            <span style={{ color: '#393939' }}>{k}</span>
+            <span style={{ fontWeight: 600 }}>{v}</span>
           </div>
         ))}
       </div>

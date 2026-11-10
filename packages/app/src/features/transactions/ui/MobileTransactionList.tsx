@@ -1,5 +1,4 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useEmptyStateViewed } from '@shared/lib/analytics/first-month';
 import React, { useMemo, useState } from 'react';
 import { isFutureDate, groupTransactionsByDateKey, formatShortDate } from '@shared/lib/date-utils';
 import { toast } from 'sonner';
@@ -125,8 +124,6 @@ export const MobileTransactionList = React.memo(function MobileTransactionList({
   const groupedTransactions = useMemo(() => {
     return groupTransactionsByDateKey(paginatedTransactions, (transaction) => transaction.Date);
   }, [paginatedTransactions]);
-
-  useEmptyStateViewed('transactions', paginatedTransactions.length === 0);
 
   if (paginatedTransactions.length === 0) {
     return (

@@ -166,6 +166,11 @@ vi.mock('@features/budget-sharing/lib/pending-space-invite', () => ({
   readPendingSpaceInvite: () => Promise.resolve(null),
 }));
 
+/** The flow shows its first step once the pending-invite check resolves. */
+async function flowReady() {
+  await waitFor(() => expect(document.querySelector('[aria-busy="true"]')).toBeNull());
+}
+
 const warnedResult: YNABImportResult = {
   budgetId: 7,
   summary: {
@@ -256,6 +261,7 @@ describe('OnboardingFlow YNAB import verification', () => {
         </QueryClientProvider>
       </MemoryRouter>
     );
+    await flowReady();
 
     fireEvent.click(screen.getByRole('button', { name: /Let’s begin/ }));
     expect(screen.getByText('Master password')).toBeInTheDocument();
@@ -300,6 +306,7 @@ describe('OnboardingFlow YNAB import verification', () => {
         </QueryClientProvider>
       </MemoryRouter>
     );
+    await flowReady();
 
     fireEvent.click(screen.getByRole('button', { name: /Let’s begin/ }));
     expect(screen.getByText('Master password')).toBeInTheDocument();
@@ -322,6 +329,7 @@ it('requires a date-order choice before advancing an ambiguous ZIP through onboa
       </QueryClientProvider>
     </MemoryRouter>
   );
+  await flowReady();
   fireEvent.click(screen.getByRole('button', { name: 'Load ambiguous ZIP' }));
   expect(screen.getByRole('button', { name: /Let’s begin/ })).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: 'Use month-first dates' }));
@@ -330,7 +338,7 @@ it('requires a date-order choice before advancing an ambiguous ZIP through onboa
   expect(screen.getByText('Master password')).toBeInTheDocument();
 });
 
-it('requires card payment mappings before advancing through onboarding', () => {
+it('requires card payment mappings before advancing through onboarding', async () => {
   render(
     <MemoryRouter>
       <QueryClientProvider client={new QueryClient()}>
@@ -338,6 +346,7 @@ it('requires card payment mappings before advancing through onboarding', () => {
       </QueryClientProvider>
     </MemoryRouter>
   );
+  await flowReady();
   fireEvent.click(screen.getByRole('button', { name: 'Load unmatched cards' }));
   expect(screen.getByRole('button', { name: /Let’s begin/ })).toBeDisabled();
   fireEvent.click(screen.getByRole('button', { name: 'Match cards' }));
@@ -372,6 +381,7 @@ it('ignores late ZIP inspection after the source changes to an API plan with unm
         </QueryClientProvider>
       </MemoryRouter>
     );
+    await flowReady();
     fireEvent.click(screen.getByRole('button', { name: 'Inspect delayed ZIP' }));
     await waitFor(() => expect(inspectZip).toHaveBeenCalled());
     fireEvent.click(screen.getByRole('button', { name: 'Load API snapshot' }));
@@ -394,7 +404,7 @@ it('ignores late ZIP inspection after the source changes to an API plan with unm
   }
 });
 
-it('reports going back a step and leaving onboarding mid-way', () => {
+it('reports going back a step and leaving onboarding mid-way', async () => {
   mockTrack.mockReset();
   mockTrackOnUnload.mockReset();
   render(
@@ -404,6 +414,7 @@ it('reports going back a step and leaving onboarding mid-way', () => {
       </QueryClientProvider>
     </MemoryRouter>
   );
+  await flowReady();
   fireEvent.click(screen.getByRole('button', { name: 'Load ambiguous ZIP' }));
   fireEvent.click(screen.getByRole('button', { name: 'Use month-first dates' }));
   fireEvent.click(screen.getByRole('button', { name: /Let’s begin/ }));

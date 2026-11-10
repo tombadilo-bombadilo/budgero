@@ -9,7 +9,6 @@ import { UpdateAvailableBanner } from '@features/app-update/ui/UpdateAvailableBa
 import { DemoBudgetBanner } from '@features/demo-budget/ui/DemoBudgetBanner';
 import { cn } from '@shared/lib/utils';
 import { CommandPalette } from '@widgets/command-palette/CommandPalette';
-import OnboardingInviteShareDialog from '@features/budget-sharing/ui/OnboardingInviteShareDialog';
 import { BankAutoSync } from '@features/bank-sync';
 import { SchedulingGuideDialog } from '@features/transactions/ui/SchedulingGuideDialog';
 
@@ -40,10 +39,6 @@ export default function DashboardLayout() {
         <CommandPalette />
       </AppErrorBoundary>
 
-      {/* Surfaces invite links generated during onboarding once the user
-          has actually landed on the dashboard. Reads sessionStorage and
-          self-clears on close. */}
-      <OnboardingInviteShareDialog />
       <BankAutoSync />
       <SchedulingGuideDialog />
 

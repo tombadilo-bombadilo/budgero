@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { clearLocalStorageForSignOut } from '@shared/lib/storage/sign-out-preserved';
 import { useEffect, useState } from 'react';
 import { useApiClient } from '@shared/hooks/useApiClient';
 import { useOptionalClerkAuth } from '@shared/hooks/useOptionalClerkAuth';
@@ -218,7 +219,7 @@ export function useLogout() {
         }
 
         try {
-          localStorage.clear();
+          clearLocalStorageForSignOut();
         } catch (error) {
           console.error('Failed to clear localStorage:', error);
         }

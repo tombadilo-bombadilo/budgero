@@ -204,6 +204,7 @@ export default function AllTransactionsPage() {
               and Quick Add keeps that open. The global loading overlay covers the wait. */}
           <TransactionsTable
             initialData={transactionsData}
+            dataLoading={isTransactionsLoading}
             hideAccountColumn={false}
             onMobilePageChange={handleMobilePageChange}
             forceBudgetCurrency

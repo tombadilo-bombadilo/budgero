@@ -4,7 +4,6 @@ import type { MessageDescriptor } from '@lingui/core';
 // Password is intentionally placed near the end of each path so the final
 // apply pipeline can set it immediately before creating the workspace.
 
-import { formatDateISO } from '@shared/lib/date-utils';
 import { AccountTypeEnum } from '@entities/account/model/accountTypes';
 import type {
   YNABApiPlanSnapshot,
@@ -42,34 +41,10 @@ export const ONBOARDING_STEPS: OnboardingStepDef[] = [
     hint: msg`Pick your path`,
   },
   {
-    id: 'rules',
-    title: msg`Three house rules`,
-    subtitle: msg`Before we build anything, here’s how Budgero thinks about money.`,
-    hint: msg`How Budgero thinks`,
-  },
-  {
     id: 'currency',
     title: msg`Where do you keep your money?`,
     subtitle: msg`Choose the currency for your budget. You can change the display language in Settings → Appearance.`,
     hint: msg`Budget currency`,
-  },
-  {
-    id: 'zbb',
-    title: msg`Give every coin a job`,
-    subtitle: msg`The one rule of zero-based budgeting.`,
-    hint: msg`The core idea`,
-  },
-  {
-    id: 'workspace',
-    title: msg`Name your budget`,
-    subtitle: msg`A household, a side hustle, a trip — whatever you’re planning for.`,
-    hint: msg`Your workspace`,
-  },
-  {
-    id: 'share',
-    title: msg`Invite your people`,
-    subtitle: msg`Budgero is better together. Share this workspace with up to five others — included free.`,
-    hint: msg`Up to 5 seats · free`,
   },
   {
     id: 'ynab_import',
@@ -90,22 +65,10 @@ export const ONBOARDING_STEPS: OnboardingStepDef[] = [
     hint: msg`Where money goes`,
   },
   {
-    id: 'goal',
-    title: msg`Pick a savings goal`,
-    subtitle: msg`One jar to get you started. Big or small.`,
-    hint: msg`Optional but encouraged`,
-  },
-  {
     id: 'where_heard',
     title: msg`How did you hear about us?`,
     subtitle: msg`Totally optional — it just helps us know where to find more people like you.`,
     hint: msg`Optional`,
-  },
-  {
-    id: 'theme',
-    title: msg`Pick a look`,
-    subtitle: msg`Budgero comes in a few flavors. Pick one that feels like you.`,
-    hint: msg`Make it yours`,
   },
   {
     id: 'password',
@@ -124,7 +87,7 @@ export const ONBOARDING_STEPS: OnboardingStepDef[] = [
 // Paths: password is second-to-last so apply can run it first in the pipeline.
 export const PATH_STEPS: Record<ActivePath, string[]> = {
   // Invitee shortcut: just confirm intent, set encryption key, redeem.
-  // Workspace/budget/accounts/categories/goal/theme all live with the
+  // Workspace/budget/accounts/categories all live with the
   // existing space they're joining — they don't need to build their own.
   join: ['welcome', 'where_heard', 'password', 'done'],
   // Setup asks only what the budget can't work without; how zero-based
@@ -260,107 +223,6 @@ export const CATEGORY_TO_GROUP: Record<string, 'needs' | 'wants' | 'savings'> = 
   )
 );
 
-// A goal's mode picks which Budgero goal shape we create at apply time:
-//   'monthly' → GoalType.MONTHLY_SAVINGS (assign X each month)
-//   'target'  → GoalType.TARGET_DATE     (allocate total by a date)
-// Both are SAVINGS-purpose goals attached to a category under SAVINGS.
-export type GoalMode = 'monthly' | 'target';
-
-export interface GoalTemplate {
-  id: string;
-  label: MessageDescriptor;
-  /** Default-mode amount. For 'monthly' this is $/month, for 'target' it's total. */
-  target: number;
-  mode: GoalMode;
-  /** Horizon for 'target' mode — months from today. Ignored for 'monthly'. */
-  monthsOut: number;
-}
-
-export const GOAL_TEMPLATES: GoalTemplate[] = [
-  { id: 'emergency', label: msg`Emergency fund`, target: 250, mode: 'monthly', monthsOut: 12 },
-  { id: 'vacation', label: msg`Vacation`, target: 2500, mode: 'target', monthsOut: 6 },
-  { id: 'home', label: msg`Home down payment`, target: 25000, mode: 'target', monthsOut: 36 },
-  { id: 'car', label: msg`New car`, target: 8000, mode: 'target', monthsOut: 12 },
-  { id: 'custom', label: msg`Something else`, target: 500, mode: 'monthly', monthsOut: 6 },
-];
-
-export interface ThemeOption {
-  id: string;
-  name: MessageDescriptor;
-  tag: MessageDescriptor;
-  bg: string;
-  fg: string;
-  accent: string;
-  recommended?: boolean;
-}
-
-// Theme ids match AppThemeId in `@shared/lib/theme`. Editing the list here without
-// updating the theme system will leave those ids unclickable in the dashboard.
-export const THEMES_AVAILABLE: ThemeOption[] = [
-  {
-    id: 'paper',
-    name: msg`Paper`,
-    tag: msg`Editorial, parchment. The Budgero classic.`,
-    bg: '#fbf7eb',
-    fg: '#141414',
-    accent: '#c6392c',
-    recommended: true,
-  },
-  {
-    id: 'default',
-    name: msg`Classic`,
-    tag: msg`Clean, neutral, out of the way.`,
-    bg: '#ffffff',
-    fg: '#18181b',
-    accent: '#2f7d31',
-  },
-  {
-    id: 'phosphor',
-    name: msg`Phosphor`,
-    tag: msg`CRT green-on-black. For terminal lovers.`,
-    bg: '#0a140a',
-    fg: '#5dff8f',
-    accent: '#5dff8f',
-  },
-  {
-    id: 'obsidian',
-    name: msg`Obsidian`,
-    tag: msg`Dark with copper warmth.`,
-    bg: '#1e1e2a',
-    fg: '#e8d4a8',
-    accent: '#d89a5e',
-  },
-  {
-    id: 'mesa',
-    name: msg`Mesa`,
-    tag: msg`Warm desert clay.`,
-    bg: '#efe0c5',
-    fg: '#3a2418',
-    accent: '#c06a3c',
-  },
-];
-
-// Budgero has two roles only: owner + collaborator. Every onboarding invite
-// maps to a collaborator, so the invite row doesn't need a role picker.
-export interface InviteInput {
-  id: number;
-  email: string;
-}
-
-// Populated at the end of the apply pipeline — the owner reads these off the
-// Done screen and sends the URL to the invitee themselves. The server never
-// sees the secret, so there is no automated delivery option.
-export interface InviteResult {
-  email: string;
-  url: string;
-  secret: string;
-}
-
-export interface InviteFailure {
-  email: string;
-  reason: string;
-}
-
 export interface AccountInput {
   id: number;
   type: AccountTypeDef['id'];
@@ -411,20 +273,8 @@ export interface OnboardingFormState {
   budgetName: string;
   password: string;
   passwordConfirm: string;
-  acknowledgedRules: boolean;
   accounts: AccountInput[];
   selectedCats: string[];
-  goal: {
-    id: string;
-    label: string;
-    target: number;
-    mode: GoalMode;
-    /** ISO YYYY-MM-DD. Only applied when mode === 'target'. */
-    targetDate: string;
-  };
-  theme: string;
-  zbbAssigned: { rent: string; groceries: string; savings: string };
-  invites: InviteInput[];
   ynabFile: { name: string; size: string; bytes: ArrayBuffer } | null;
   ynabApiSnapshot: YNABApiPlanSnapshot | null;
   ynabPreview: YNABImportPreview | null;
@@ -437,15 +287,6 @@ export interface OnboardingFormState {
   heardOther: string;
 }
 
-/** Compute an ISO YYYY-MM-DD string `monthsOut` months from today. */
-export function addMonthsIso(monthsOut: number): string {
-  const d = new Date();
-  d.setMonth(d.getMonth() + monthsOut);
-  return formatDateISO(d);
-}
-
-const EMERGENCY_TEMPLATE = GOAL_TEMPLATES[0];
-
 export const INITIAL_STATE: OnboardingFormState = {
   startMode: null,
   joinSecret: null,
@@ -453,29 +294,11 @@ export const INITIAL_STATE: OnboardingFormState = {
   budgetName: '',
   password: '',
   passwordConfirm: '',
-  acknowledgedRules: false,
   accounts: [{ id: 1, type: 'checking', name: '', balance: '' }],
   selectedCats: ['Rent / Mortgage', 'Groceries', 'Utilities', 'Dining out', 'Emergency fund'],
-  goal: {
-    id: EMERGENCY_TEMPLATE.id,
-    label: '',
-    target: EMERGENCY_TEMPLATE.target,
-    mode: EMERGENCY_TEMPLATE.mode,
-    targetDate: addMonthsIso(EMERGENCY_TEMPLATE.monthsOut),
-  },
-  theme: 'paper',
-  zbbAssigned: { rent: '', groceries: '', savings: '' },
-  invites: [],
   ynabFile: null,
   ynabApiSnapshot: null,
   ynabPreview: null,
   heardSource: '',
   heardOther: '',
 };
-
-export const WORKSPACE_SUGGESTIONS: MessageDescriptor[] = [
-  msg`Household 2026`,
-  msg`Freelance`,
-  msg`Europe trip`,
-  msg`Emergency rebuild`,
-];

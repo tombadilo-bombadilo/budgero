@@ -103,17 +103,11 @@ export type ErrorCode = (typeof ERROR_CODES)[number];
 export const ONBOARDING_STEP_IDS = [
   'welcome',
   'start_mode',
-  'rules',
   'currency',
-  'zbb',
-  'workspace',
-  'share',
   'ynab_import',
   'accounts',
   'categories',
-  'goal',
   'where_heard',
-  'theme',
   'password',
   'done',
 ] as const;

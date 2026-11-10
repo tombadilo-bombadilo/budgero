@@ -16,8 +16,8 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
   }[] = [
     {
       id: 'fresh',
-      title: t`Fresh start`,
-      sub: t`I’m new to zero-based budgeting, or starting clean.`,
+      title: t`Start my own budget`,
+      sub: t`New to zero-based budgeting, or starting clean.`,
       bullets: [
         t`We show you how it works as you go`,
         t`Add your accounts and pick categories`,
@@ -27,8 +27,8 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
     },
     {
       id: 'ynab',
-      title: t`Importing from YNAB`,
-      sub: t`I’ve got a budget elsewhere I want to bring over.`,
+      title: t`Import from YNAB`,
+      sub: t`Bring the budget you already have in YNAB.`,
       bullets: [
         t`Accounts, categories, and balances come with you`,
         t`Transaction history preserved`,
@@ -38,10 +38,10 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
     },
     {
       id: 'demo',
-      title: t`Try a demo first`,
-      sub: t`See a filled-in budget before you set up your own.`,
+      title: t`Try a demo budget`,
+      sub: t`Explore a filled-in budget before setting up your own.`,
       bullets: [
-        t`Two months of sample spending and goals`,
+        t`A year and a half of sample spending, reports and goals`,
         t`Click around: none of it is yours yet`,
         t`Start your own budget whenever you like`,
       ],
@@ -64,6 +64,7 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
             <OnboardingOptionTile
               key={m.id}
               active={active}
+              aria-pressed={active}
               onClick={() => set({ startMode: m.id })}
               borderAlpha={0.45}
               style={{

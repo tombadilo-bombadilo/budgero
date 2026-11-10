@@ -4,7 +4,6 @@ import { act, cleanup, render, screen } from '@testing-library/react';
 import { activateLocale, type SupportedLocale } from '@shared/i18n';
 import { StepHeroImage } from './steps/shared';
 import { getOnboardingImage } from './onboarding-images';
-import { RulesStep } from './steps/RulesStep';
 import { WelcomeStep } from './steps/WelcomeStep';
 import { INITIAL_STATE, ONBOARDING_STEPS } from './onboarding-data';
 
@@ -46,22 +45,11 @@ it('ships every localized text-bearing illustration and preserves shared artwork
   expect(getOnboardingImage('/onboarding-welcome.png', 'unknown')).toBe('/onboarding-welcome.png');
 });
 
-it('localizes standalone welcome and rules images along with the rule descriptions', async () => {
+it('localizes the standalone welcome image', async () => {
   await activateLocale('de', false);
   const props = { state: INITIAL_STATE, cur: ONBOARDING_STEPS[0], set: vi.fn() };
-  const { container } = render(
-    <>
-      <WelcomeStep {...props} />
-      <RulesStep {...props} />
-    </>
-  );
+  const { container } = render(<WelcomeStep {...props} />);
   expect(container.querySelector('img[src="/onboarding/de/welcome.png"]')).not.toBeNull();
-  expect(container.querySelector('img[src="/onboarding/de/rules-hero.png"]')).not.toBeNull();
-  expect(screen.getByText(/^Keine Prognosen, keine Kreditlimits\./)).toBeInTheDocument();
-  expect(screen.getByText(/^Miete, Lebensmittel, deine Zukunft\./)).toBeInTheDocument();
-  expect(screen.getByText(/^Transaktionen werden von Hand eingegeben/)).toBeInTheDocument();
-  expect(screen.getByRole('img', { name: 'Geldbörse mit Bargeld' })).toBeInTheDocument();
   await act(() => activateLocale('en', false));
   expect(container.querySelector('img[src="/onboarding-welcome.png"]')).not.toBeNull();
-  expect(container.querySelector('img[src="/onboarding-rules-hero.png"]')).not.toBeNull();
 });

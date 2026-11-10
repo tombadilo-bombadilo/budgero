@@ -101,10 +101,18 @@ msgstr "_(Ich habe mein Tool-Schritt-Limit erreicht, bevor ich fertig wurde. Bit
 msgid "-1 day"
 msgstr "-1 Tag"
 
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "— not set"
+msgstr "— nicht gesetzt"
+
 #. placeholder {0}: skippedRowIndices.size
 #: src/features/import/ui/steps/configure/MappingTab.tsx
 msgid ", {0} excluded from import"
 msgstr ", {0} vom Import ausgeschlossen"
+
+#: src/features/demo-budget/ui/DemoBudgetBanner.tsx
+msgid "· sample data"
+msgstr "· Beispieldaten"
 
 #. placeholder {0}: item.Name
 #: src/pages/settings/PayeesPage.tsx
@@ -956,6 +964,10 @@ msgstr "{0}Zeilen gesamt"
 msgid "{0}Undo changes"
 msgstr "{0}Änderungen rückgängig machen"
 
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "{accountCount, plural, one {# added} other {# added}}"
+msgstr "{accountCount, plural, one {# hinzugefügt} other {# hinzugefügt}}"
+
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #~ msgid "{activeFilters} active"
 #~ msgstr "{activeFilters} aktiv"
@@ -963,6 +975,10 @@ msgstr "{0}Änderungen rückgängig machen"
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "{base} vs previous period"
 msgstr "{base} ggü. Vorperiode"
+
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "{categoryCount, plural, one {# category} other {# categories}}"
+msgstr "{categoryCount, plural, one {# Kategorie} other {# Kategorien}}"
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
 msgid "{ccCategoryName} payments"
@@ -1091,8 +1107,12 @@ msgstr "vor {diffMins}m"
 
 #. placeholder {0}: FIRST_STEP_IDS.length
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-msgid "{doneCount} of {0} done"
-msgstr "{doneCount} von {0} erledigt"
+#~ msgid "{doneCount} of {0} done"
+#~ msgstr "{doneCount} von {0} erledigt"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "{doneCount} of {total} done"
+msgstr "{doneCount} von {total} erledigt"
 
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "{drilldownTitle} {drilldownItemLabel} breakdown"
@@ -1516,17 +1536,25 @@ msgstr "← Zurück"
 msgid "← Back to Money Map"
 msgstr "← Zurück zur Geldkarte"
 
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "← Back to the demo"
+msgstr "← Zurück zur Demo"
+
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "← Collapse Other"
 msgstr "← Sonstige einklappen"
+
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "↓ Imported from YNAB"
+msgstr "↓ Aus YNAB importiert"
 
 #: src/pages/onboarding/steps/AccountsStep.tsx
 msgid "+ ADD ANOTHER ACCOUNT"
 msgstr "+ WEITERES KONTO HINZUFÜGEN"
 
 #: src/pages/onboarding/steps/ShareStep.tsx
-msgid "+ INVITE SOMEONE"
-msgstr "+ PERSON EINLADEN"
+#~ msgid "+ INVITE SOMEONE"
+#~ msgstr "+ PERSON EINLADEN"
 
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
@@ -2173,7 +2201,6 @@ msgstr "<0/>Kein Arbeitsbereich ausgewählt."
 msgid "<0/>Open imported budget"
 msgstr "<0/>Importiertes Budget öffnen"
 
-#: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "<0/>Open in email"
 msgstr "<0/>In E-Mail öffnen"
@@ -2559,8 +2586,8 @@ msgid "<0>⚠ READ THIS</0>Your budget is encrypted with this password on your d
 msgstr "<0>⚠ LIES DIES</0>Dein Budget wird mit diesem Passwort auf deinem Gerät verschlüsselt. Wir sehen es nie. Wenn du es vergisst, ist <1>dein Haushaltsbuch nicht wiederherstellbar</1> — es gibt keine Reset-E-Mail, keine Support-Hotline und keine Hintertür."
 
 #: src/pages/onboarding/steps/ShareStep.tsx
-msgid "<0>✉</0>Flying solo? Skip this step and invite people later.<1>All 5 seats are free, included in your plan.</1>"
-msgstr "<0>✉</0>Allein unterwegs? Überspringe diesen Schritt und lade später Personen ein.<1>Alle 5 Plätze sind kostenlos und in deinem Plan enthalten.</1>"
+#~ msgid "<0>✉</0>Flying solo? Skip this step and invite people later.<1>All 5 seats are free, included in your plan.</1>"
+#~ msgstr "<0>✉</0>Allein unterwegs? Überspringe diesen Schritt und lade später Personen ein.<1>Alle 5 Plätze sind kostenlos und in deinem Plan enthalten.</1>"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 #~ msgid "<0>Account Added</0>— when you create a new account"
@@ -2739,8 +2766,8 @@ msgstr "<0>SQLite-Datenbank:</0>Lädt die vollständige Datenbankdatei herunter,
 #~ msgstr "<0>Abonnement gekündigt</0>— Kündigungsgrund (damit wir das Produkt verbessern können)"
 
 #: src/features/demo-budget/ui/DemoBudgetBanner.tsx
-msgid "<0>This is a demo budget</0> with sample data. Click around, then make it yours."
-msgstr "<0>Das ist ein Demo-Budget</0> mit Beispieldaten. Schau dich um und mach es dann zu deinem."
+#~ msgid "<0>This is a demo budget</0> with sample data. Click around, then make it yours."
+#~ msgstr "<0>Das ist ein Demo-Budget</0> mit Beispieldaten. Schau dich um und mach es dann zu deinem."
 
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "<0>This looks like a YNAB register.</0> Imported here, your transactions and categories come in, but not your category groups or what you assigned each month. To bring your whole YNAB budget, import the YNAB export ZIP instead: open the budget switcher, choose Create New Budget, then the YNAB tab."
@@ -2804,6 +2831,10 @@ msgstr "✓ Vollständig zugewiesen!"
 msgid "✓ Goal exceeded by {excess}"
 msgstr "✓ Ziel um {excess} überschritten"
 
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "✓ Master password set"
+msgstr "✓ Master-Passwort gesetzt"
+
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "✓ MATCH"
 msgstr "✓ STIMMT ÜBEREIN"
@@ -2837,8 +2868,8 @@ msgid "✓ This month's {monthlyTarget} saved!"
 msgstr "✓ Diesen Monat {monthlyTarget} gespart!"
 
 #: src/pages/onboarding/steps/ZbbStep.tsx
-msgid "✓ ZERO-BASED. EVERY COIN NOW HAS A JOB."
-msgstr "✓ ZERO-BASED. JETZT HAT JEDER CENT EINE AUFGABE."
+#~ msgid "✓ ZERO-BASED. EVERY COIN NOW HAS A JOB."
+#~ msgstr "✓ ZERO-BASED. JETZT HAT JEDER CENT EINE AUFGABE."
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "✗ DOES NOT MATCH"
@@ -2956,6 +2987,10 @@ msgstr "50%+ — außergewöhnlich"
 msgid "6 months"
 msgstr "6 Monate"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "6 nights"
+msgstr "6 Nächte"
+
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "60 days"
 msgstr "60 Tage"
@@ -3008,8 +3043,8 @@ msgid "A field with this name already exists."
 msgstr "Ein Feld mit diesem Namen gibt es schon."
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "A household, a side hustle, a trip — whatever you’re planning for."
-msgstr "Ein Haushalt, ein Nebenprojekt, eine Reise — wofür auch immer du planst."
+#~ msgid "A household, a side hustle, a trip — whatever you’re planning for."
+#~ msgstr "Ein Haushalt, ein Nebenprojekt, eine Reise — wofür auch immer du planst."
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "A metric has to be a number."
@@ -3046,6 +3081,10 @@ msgstr "Ein Arbeitsbereich hält deine Budgets, Konten und Mitwirkenden an einem
 #: src/app/startup/screens.tsx
 msgid "A workspace organizes your budgets and lets you share them with others. Think of it as a shared folder, everything inside is accessible to anyone you invite."
 msgstr "Ein Arbeitsbereich organisiert deine Budgets und ermöglicht dir, sie mit anderen zu teilen. Stell dir ihn wie einen gemeinsamen Ordner vor – alles darin ist für jeden zugänglich, den du einlädst."
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "A year and a half of sample spending, reports and goals"
+msgstr "Anderthalb Jahre Beispielausgaben, Berichte und Ziele"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/shared/model/nav-registry.ts
@@ -3235,6 +3274,7 @@ msgstr "Konto<0/>"
 #: src/pages/accounts/AccountsPage.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+#: src/pages/onboarding/steps/DoneStep.tsx
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
 #: src/widgets/navigation/MobileBottomNav.tsx
@@ -3668,6 +3708,14 @@ msgstr "KI-Einstellungen gespeichert"
 msgid "AI suggested: <0>{0}</0>"
 msgstr "KI-Vorschlag: <0>{0}</0>"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Airline"
+msgstr "Fluggesellschaft"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Airport taxi"
+msgstr "Flughafentaxi"
+
 #: src/pages/settings/push-api/EncryptionInfoPanel.tsx
 msgid "Algorithm"
 msgstr "Algorithmus"
@@ -3685,8 +3733,8 @@ msgid "All {0} series visible"
 msgstr "Alle {0} Serien sichtbar"
 
 #: src/pages/onboarding/steps/ShareStep.tsx
-msgid "ALL 5 SEATS FILLED"
-msgstr "ALLE 5 PLÄTZE BELEGT"
+#~ msgid "ALL 5 SEATS FILLED"
+#~ msgstr "ALLE 5 PLÄTZE BELEGT"
 
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
@@ -3976,8 +4024,8 @@ msgid "Amount owed"
 msgstr "Offener Betrag"
 
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "AMOUNT PER MONTH"
-msgstr "BETRAG PRO MONAT"
+#~ msgid "AMOUNT PER MONTH"
+#~ msgstr "BETRAG PRO MONAT"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Amount to start the month with"
@@ -4036,6 +4084,10 @@ msgstr "Planungsbeträge animieren"
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Annual percentage rate, e.g., 5 for 5%."
 msgstr "Effektiver Jahreszins, z. B. 5 für 5%."
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Annual service"
+msgstr "Jahresinspektion"
 
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #~ msgid "Any date"
@@ -4266,8 +4318,8 @@ msgid "Assign remaining"
 msgstr "Rest zuweisen"
 
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "Assign the same amount every month. Best for emergency funds and ongoing buckets."
-msgstr "Weise jeden Monat denselben Betrag zu. Ideal für Notgroschen und fortlaufende Budgets."
+#~ msgid "Assign the same amount every month. Best for emergency funds and ongoing buckets."
+#~ msgstr "Weise jeden Monat denselben Betrag zu. Ideal für Notgroschen und fortlaufende Budgets."
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Assign this to reach target"
@@ -4340,8 +4392,8 @@ msgstr "Assistenten-Tools"
 #. placeholder {0}: formatMoney(sym, target)
 #. placeholder {1}: formatMoney( sym, perYear )
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "At {0}/month, you’ll have {1} saved after a year."
-msgstr "Bei {0}/Monat hast du nach einem Jahr {1} gespart."
+#~ msgid "At {0}/month, you’ll have {1} saved after a year."
+#~ msgstr "Bei {0}/Monat hast du nach einem Jahr {1} gespart."
 
 #: src/app/startup/screens.tsx
 msgid "At least 12 characters"
@@ -4356,8 +4408,8 @@ msgid "At least 8 characters"
 msgstr "Mindestens 8 Zeichen"
 
 #: src/pages/onboarding/steps/ZbbStep.tsx
-msgid "At the start of the month, take your income, and divide it across everything you need to pay for — rent, food, savings, fun. When the pile hits zero, you’re done. That’s the whole trick."
-msgstr "Verteile am Monatsanfang dein Einkommen auf alles, wofür du Geld brauchst — Miete, Essen, Sparen, Freizeit. Sobald das gesamte Geld verteilt ist, bist du fertig. Das ist der ganze Trick."
+#~ msgid "At the start of the month, take your income, and divide it across everything you need to pay for — rent, food, savings, fun. When the pile hits zero, you’re done. That’s the whole trick."
+#~ msgstr "Verteile am Monatsanfang dein Einkommen auf alles, wofür du Geld brauchst — Miete, Essen, Sparen, Freizeit. Sobald das gesamte Geld verteilt ist, bist du fertig. Das ist der ganze Trick."
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "At-a-glance overview of balances, spending, and goals."
@@ -4563,8 +4615,8 @@ msgid "Back to Configuration"
 msgstr "Zurück zur Konfiguration"
 
 #: src/pages/onboarding/OnboardingFlow.tsx
-msgid "BACK TO THE DEMO"
-msgstr "ZURÜCK ZUR DEMO"
+#~ msgid "BACK TO THE DEMO"
+#~ msgstr "ZURÜCK ZUR DEMO"
 
 #: src/features/reports/ui/notebook/QuestionResult.tsx
 msgid "Back to the previous question"
@@ -4586,6 +4638,10 @@ msgstr "Backup gespeichert, aber die Speicherung auf dem Server ist fehlgeschlag
 #: src/features/budget-management/ui/EditBudgetForm.tsx
 msgid "Badge Icon"
 msgstr "Badge-Symbol"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Bakery"
+msgstr "Bäckerei"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/accounts/AccountPage.tsx
@@ -4714,13 +4770,17 @@ msgstr "Basis"
 msgid "Basic metrics"
 msgstr "Grundlegende Metriken"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Beach restaurant"
+msgstr "Strandrestaurant"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Before"
 msgstr "Vor"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Before we build anything, here’s how Budgero thinks about money."
-msgstr "Bevor wir loslegen: So geht Budgero mit Geld um."
+#~ msgid "Before we build anything, here’s how Budgero thinks about money."
+#~ msgstr "Bevor wir loslegen: So geht Budgero mit Geld um."
 
 #. placeholder {0}: (currentCategoryTotalTransactions ?? 0) > 0 && (currentCategoryAssigned ?? 0) !== 0 ? t` transactions and assignments` : (currentCategoryTotalTransactions ?? 0) > 0 ? ' transactions' : ' assignments'
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
@@ -4785,6 +4845,14 @@ msgstr "Fixkosten"
 msgid "Bills & Documents"
 msgstr "Rechnungen & Dokumente"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Birthday"
+msgstr "Geburtstag"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Bistro"
+msgstr "Bistro"
+
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Block user"
 msgstr "Nutzer blockieren"
@@ -4813,9 +4881,17 @@ msgstr "Blog oder Artikel"
 msgid "Blur behind dialogs"
 msgstr "Hintergrund hinter Dialogen weichzeichnen"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Boat tour"
+msgstr "Bootstour"
+
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Booking date (when the bank recorded it)"
 msgstr "Buchungsdatum (wann die Bank sie erfasst hat)"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Bookshop"
+msgstr "Buchhandlung"
 
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "Both accounts use the same currency, so this transfer has no conversion rate."
@@ -4836,6 +4912,10 @@ msgstr "Aufschlüsselung"
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Breakdown of user types"
 msgstr "Aufschlüsselung der Nutzertypen"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Bring the budget you already have in YNAB."
+msgstr "Bring dein bestehendes YNAB-Budget mit."
 
 #: src/app/startup/screens.tsx
 msgid "Bring your categories, accounts, and history"
@@ -4905,8 +4985,8 @@ msgid "Budgero Cloud"
 msgstr "Budgero Cloud"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Budgero comes in a few flavors. Pick one that feels like you."
-msgstr "Budgero gibt es in verschiedenen Varianten. Wähle die, die zu dir passt."
+#~ msgid "Budgero comes in a few flavors. Pick one that feels like you."
+#~ msgstr "Budgero gibt es in verschiedenen Varianten. Wähle die, die zu dir passt."
 
 #: src/app/startup/screens.tsx
 msgid "Budgero couldn't finish starting"
@@ -4941,8 +5021,8 @@ msgid "Budgero hit an error it could not recover from. Your data is safe on this
 msgstr "Budgero ist auf einen Fehler gestoßen, von dem es sich nicht erholen konnte. Deine Daten sind auf diesem Gerät sicher; ein Neuladen behebt das Problem meist."
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Budgero is better together. Share this workspace with up to five others — included free."
-msgstr "Gemeinsam ist Budgero besser. Teile diesen Arbeitsbereich mit bis zu fünf weiteren Personen — kostenlos enthalten."
+#~ msgid "Budgero is better together. Share this workspace with up to five others — included free."
+#~ msgstr "Gemeinsam ist Budgero besser. Teile diesen Arbeitsbereich mit bis zu fünf weiteren Personen — kostenlos enthalten."
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Budgero is continually updated. If you experience issues, share the version information above when contacting support so we can help quickly."
@@ -4953,8 +5033,8 @@ msgid "Budgero is fully synchronized."
 msgstr "Budgero ist vollständig synchronisiert."
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "Budgero is opinionated on purpose. These three rules shape everything — read them once, and the rest of the app will make sense."
-msgstr "Budgero folgt bewusst klaren Prinzipien. Diese drei Regeln bilden die Grundlage — lies sie einmal, und der Rest der App ergibt Sinn."
+#~ msgid "Budgero is opinionated on purpose. These three rules shape everything — read them once, and the rest of the app will make sense."
+#~ msgstr "Budgero folgt bewusst klaren Prinzipien. Diese drei Regeln bilden die Grundlage — lies sie einmal, und der Rest der App ergibt Sinn."
 
 #: src/app/startup/screens.tsx
 #: src/app/startup/StartupLayout.tsx
@@ -4989,8 +5069,8 @@ msgstr "Budgero-Wert"
 #. placeholder {0}: formatMoney( sym, perMonth )
 #. placeholder {1}: formatDateLabel(state.goal.targetDate)
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "Budgero will assign about {0}/month to this jar until {1}."
-msgstr "Budgero wird diesem Topf etwa {0}/Monat zuweisen, bis {1}."
+#~ msgid "Budgero will assign about {0}/month to this jar until {1}."
+#~ msgstr "Budgero wird diesem Topf etwa {0}/Monat zuweisen, bis {1}."
 
 #. placeholder {0}: preview.missingCategories .map((category) => `${category.categoryGroup} › ${category.category}`) .join(', ')
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
@@ -5020,6 +5100,7 @@ msgstr "Beträge auf Budgero-Seite, die diese Differenzen erklären könnten. Si
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/startup/StartupStepper.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
+#: src/pages/onboarding/steps/DoneStep.tsx
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Budget"
 msgstr "Budget"
@@ -5202,6 +5283,10 @@ msgstr "Gewohnheiten brauchen Zeit – bleib dran!"
 msgid "Bundle ready"
 msgstr "Paket bereit"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Burger place"
+msgstr "Burgerladen"
+
 #. placeholder {0}: money.amount(runway.avgMonthlySpend)
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "burn {0}/month"
@@ -5349,6 +5434,14 @@ msgstr "Nicht-leere Kategoriengruppe kann nicht gelöscht werden"
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Cannot log in"
 msgstr "Anmeldung nicht möglich"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Car & repairs"
+msgstr "Auto & Reparaturen"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Car repair shop"
+msgstr "Autowerkstatt"
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "Card balance owed:"
@@ -5890,12 +5983,12 @@ msgid "Cinema"
 msgstr "Kino"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Classic"
-msgstr "Klassisch"
+#~ msgid "Classic"
+#~ msgstr "Klassisch"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Clean, neutral, out of the way."
-msgstr "Sauber, neutral, dezent."
+#~ msgid "Clean, neutral, out of the way."
+#~ msgstr "Sauber, neutral, dezent."
 
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
@@ -6057,9 +6150,13 @@ msgstr "Zum Stoppen klicken"
 msgid "Click your budget name in the top-left corner and select <0>Export Budget</0>, then save the ZIP file"
 msgstr "Klicke oben links auf deinen Budget-Namen und wähle <0>Budget exportieren</0>, dann speichere die ZIP-Datei"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Climbing gym"
+msgstr "Kletterhalle"
+
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "Clipboard with checkmarks"
-msgstr "Klemmbrett mit Häkchen"
+#~ msgid "Clipboard with checkmarks"
+#~ msgstr "Klemmbrett mit Häkchen"
 
 #: src/features/reports/ui/notebook/ViewSqlDialog.tsx
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
@@ -6083,8 +6180,8 @@ msgid "Clothing"
 msgstr "Kleidung"
 
 #: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
-msgid "Code copied!"
-msgstr "Code kopiert!"
+#~ msgid "Code copied!"
+#~ msgstr "Code kopiert!"
 
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Coffee shop"
@@ -6103,32 +6200,32 @@ msgid "Cohort retention"
 msgstr "Kohorten-Retention"
 
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "Coin character feeding a coin into a piggy bank"
-msgstr "Münzcharakter, der eine Münze in ein Sparschwein steckt"
+#~ msgid "Coin character feeding a coin into a piggy bank"
+#~ msgstr "Münzcharakter, der eine Münze in ein Sparschwein steckt"
 
 #: src/pages/onboarding/steps/DoneStep.tsx
 msgid "Coin character holding a Your Budget Is Ready clipboard"
 msgstr "Münzcharakter mit einem Klemmbrett „Dein Budget ist bereit\""
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "Coin character pointing at a House Rules board"
-msgstr "Münzcharakter, der auf eine Hausregeln-Tafel zeigt"
+#~ msgid "Coin character pointing at a House Rules board"
+#~ msgstr "Münzcharakter, der auf eine Hausregeln-Tafel zeigt"
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "Coin character with a key approaching a Budgero padlock"
 msgstr "Münzcharakter mit Schlüssel, der sich einem Budgero-Vorhängeschloss nähert"
 
 #: src/pages/onboarding/steps/WorkspaceStep.tsx
-msgid "Coin character with a ledger and a budget nameplate"
-msgstr "Münzfigur mit einem Kassenbuch und einem Budget-Namensschild"
+#~ msgid "Coin character with a ledger and a budget nameplate"
+#~ msgstr "Münzfigur mit einem Kassenbuch und einem Budget-Namensschild"
 
 #: src/pages/onboarding/steps/AccountsStep.tsx
 msgid "Coin character with checking register, savings jar, and credit card"
 msgstr "Münzcharakter mit Kontobuch, Sparbüchse und Kreditkarte"
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "Coin character with hardhat and briefcase"
-msgstr "Münzfigur mit Schutzhelm und Aktentasche"
+#~ msgid "Coin character with hardhat and briefcase"
+#~ msgstr "Münzfigur mit Schutzhelm und Aktentasche"
 
 #. placeholder {0}: seatUsage.isLoading ? t`Loading…` : `${seatUsage.occupiedSlots}/5`
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
@@ -6282,6 +6379,10 @@ msgstr "Abgeschlossen"
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Composition"
 msgstr "Zusammensetzung"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Concert tickets"
+msgstr "Konzertkarten"
 
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 msgid "Condition"
@@ -6554,7 +6655,6 @@ msgstr "In SQL umgewandelt. Speichern ersetzt die Notebook-Version."
 msgid "Copied path"
 msgstr "Pfad kopiert"
 
-#: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
 #: src/pages/admin/admin-users/useAdminUsersState.ts
 msgid "Copied!"
 msgstr "Kopiert!"
@@ -6569,7 +6669,6 @@ msgstr "Vom Server aufbewahrte Kopien dieses Arbeitsbereichs, um ein Synchronisi
 msgid "Copy"
 msgstr "Kopieren"
 
-#: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "Copy code only"
 msgstr "Nur Code kopieren"
@@ -6589,8 +6688,8 @@ msgid "Copy from {0}. The workspace is replaced on all your devices."
 msgstr "Kopie vom {0}. Der Arbeitsbereich wird auf allen deinen Geräten ersetzt."
 
 #: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
-msgid "Copy link"
-msgstr "Link kopieren"
+#~ msgid "Copy link"
+#~ msgstr "Link kopieren"
 
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "Copy the link or open it in your email client to share."
@@ -6603,6 +6702,10 @@ msgstr "Kopiere den Token, sobald er erscheint, und füge ihn hier ein."
 #: src/pages/admin/admin-users/user-details/OverviewTab.tsx
 msgid "Core account and entitlement metadata."
 msgstr "Zentrale Konto- und Berechtigungsmetadaten."
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Corner shop"
+msgstr "Kiosk"
 
 #: src/features/account-management/ui/AccountCurrencyChangeDialog.tsx
 msgid "Correct a mislabeled account. For example, 10 {oldCurrency} becomes 10 {newCurrency}, and its value in the budget currency is recalculated."
@@ -7098,8 +7201,8 @@ msgid "Credit spending:"
 msgstr "Kreditausgaben:"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "CRT green-on-black. For terminal lovers."
-msgstr "CRT grün auf schwarz. Für Terminal-Fans."
+#~ msgid "CRT green-on-black. For terminal lovers."
+#~ msgstr "CRT grün auf schwarz. Für Terminal-Fans."
 
 #: src/entities/account/model/accountTypes.ts
 #: src/pages/accounts/AccountsPage.tsx
@@ -7147,6 +7250,7 @@ msgstr "Währungen"
 #: src/features/currencies/ui/CurrencySelector.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/onboarding/steps/CurrencyStep.tsx
+#: src/pages/onboarding/steps/DoneStep.tsx
 msgid "Currency"
 msgstr "Währung"
 
@@ -7344,8 +7448,8 @@ msgid "Dark"
 msgstr "Dunkel"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Dark with copper warmth."
-msgstr "Dunkel mit kupfernem Warmton."
+#~ msgid "Dark with copper warmth."
+#~ msgstr "Dunkel mit kupfernem Warmton."
 
 #: src/app/layout/AdminSidebar.tsx
 #: src/app/layout/desktop-shell/constants.ts
@@ -7776,6 +7880,7 @@ msgid "Deleting…"
 msgstr "Löschen…"
 
 #: src/features/demo-budget/lib/seed-demo-budget.ts
+#: src/features/demo-budget/ui/DemoBudgetBanner.tsx
 #: src/pages/onboarding/apply-onboarding.ts
 msgid "Demo budget"
 msgstr "Demo-Budget"
@@ -7783,6 +7888,10 @@ msgstr "Demo-Budget"
 #: src/pages/settings/AppearancePage.tsx
 msgid "Denser card layout with column summaries for faster scanning."
 msgstr "Kompaktere Kartenansicht mit Spaltenzusammenfassungen für schnelleres Erfassen."
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Department store"
+msgstr "Kaufhaus"
 
 #: src/pages/admin/SelfHostAdminDashboard.tsx
 msgid "Deployment details for this binary."
@@ -8078,6 +8187,10 @@ msgstr "Entferne überflüssige Zeilen am Anfang der Datei (Titel, Leerzeilen, S
 msgid "Drop your YNAB export here"
 msgstr "Lege deinen YNAB-Export hier ab"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Drugstore"
+msgstr "Drogerie"
+
 #: src/pages/admin/sql-explorer/QueryCard.tsx
 msgid "Dry Run"
 msgstr "Probelauf"
@@ -8151,8 +8264,8 @@ msgid "e.g. Groceries at Walmart"
 msgstr "z. B. Lebensmittel bei Walmart"
 
 #: src/pages/onboarding/steps/WorkspaceStep.tsx
-msgid "e.g. Household 2026"
-msgstr "z. B. Haushalt 2026"
+#~ msgid "e.g. Household 2026"
+#~ msgstr "z. B. Haushalt 2026"
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "e.g. Insurance — have {amount} ready every 6 months"
@@ -8183,8 +8296,8 @@ msgid "e.g. Vacation — allocate {amount} total by {date}"
 msgstr "z. B. Urlaub — insgesamt {amount} bis {date} zurücklegen"
 
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "e.g. Wedding fund"
-msgstr "z. B. Hochzeitsfonds"
+#~ msgid "e.g. Wedding fund"
+#~ msgstr "z. B. Hochzeitsfonds"
 
 #: src/features/category-management/ui/AddCategoryDialog.tsx
 msgid "e.g., Groceries"
@@ -8203,8 +8316,8 @@ msgid "Each category group on the Planning page shows its share of everything as
 msgstr "Jede Kategoriengruppe auf der Planungsseite zeigt neben ihrer zugewiesenen Summe ihren Anteil an allen Zuweisungen des ausgewählten Monats."
 
 #: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
-msgid "Each link contains a one-time secret that unlocks your shared workspace. <0>Budgero never sees it</0> — but whatever channel you use to share will. For the strongest privacy, hand the link off in person or through an end-to-end encrypted app (Signal, iMessage, WhatsApp). Plain email works too — just remember your email provider can read what you send."
-msgstr "Jeder Link enthält ein einmaliges Geheimnis, das deinen freigegebenen Arbeitsbereich entsperrt. <0>Budgero sieht es nie</0> — aber der Kanal, den du zum Teilen verwendest, schon. Für maximale Privatsphäre übergib den Link persönlich oder über eine Ende-zu-Ende-verschlüsselte App (Signal, iMessage, WhatsApp). Normale E-Mail funktioniert auch — denk nur daran, dass dein E-Mail-Anbieter mitlesen kann, was du sendest."
+#~ msgid "Each link contains a one-time secret that unlocks your shared workspace. <0>Budgero never sees it</0> — but whatever channel you use to share will. For the strongest privacy, hand the link off in person or through an end-to-end encrypted app (Signal, iMessage, WhatsApp). Plain email works too — just remember your email provider can read what you send."
+#~ msgstr "Jeder Link enthält ein einmaliges Geheimnis, das deinen freigegebenen Arbeitsbereich entsperrt. <0>Budgero sieht es nie</0> — aber der Kanal, den du zum Teilen verwendest, schon. Für maximale Privatsphäre übergib den Link persönlich oder über eine Ende-zu-Ende-verschlüsselte App (Signal, iMessage, WhatsApp). Normale E-Mail funktioniert auch — denk nur daran, dass dein E-Mail-Anbieter mitlesen kann, was du sendest."
 
 #: src/pages/analytics/components/TargetTable.tsx
 msgid "Each month's goal target added up over the period, against what you assigned and spent."
@@ -8373,8 +8486,8 @@ msgid "Editing transfer splits is not supported."
 msgstr "Das Bearbeiten von Umbuchungs-Teilungen wird nicht unterstützt."
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Editorial, parchment. The Budgero classic."
-msgstr "Editorial, Pergament. Der Budgero-Klassiker."
+#~ msgid "Editorial, parchment. The Budgero classic."
+#~ msgstr "Editorial, Pergament. Der Budgero-Klassiker."
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Education"
@@ -8394,8 +8507,8 @@ msgid "Emergency fund"
 msgstr "Notgroschen"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Emergency rebuild"
-msgstr "Notgroschen wieder auffüllen"
+#~ msgid "Emergency rebuild"
+#~ msgstr "Notgroschen wieder auffüllen"
 
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Employer"
@@ -8686,6 +8799,10 @@ msgstr "Unterhaltung"
 msgid "env(safe-area-inset-bottom, 0px)"
 msgstr "env(safe-area-inset-bottom, 0px)"
 
+#: src/pages/onboarding/steps/DoneStep.tsx
+msgid "Envelopes"
+msgstr "Umschläge"
+
 #: src/pages/settings/AboutPage.tsx
 msgid "Environment"
 msgstr "Umgebung"
@@ -8718,8 +8835,8 @@ msgid "Europe"
 msgstr "Europa"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Europe trip"
-msgstr "Europareise"
+#~ msgid "Europe trip"
+#~ msgstr "Europareise"
 
 #: src/features/import/model/types.ts
 msgid "European (1.234,56)"
@@ -8728,6 +8845,10 @@ msgstr "Europäisch (1.234,56)"
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "Evaluating matching transactions..."
 msgstr "Passende Transaktionen werden ausgewertet …"
+
+#: src/pages/onboarding/steps/PasswordStep.tsx
+msgid "Even the demo is encrypted on your device before anything is saved, so it needs a master password too. It’s the same one your own budget will use later. Pick something memorable — we can’t reset it for you."
+msgstr "Auch die Demo wird auf deinem Gerät verschlüsselt, bevor etwas gespeichert wird, deshalb braucht sie ebenfalls ein Master-Passwort. Dein eigenes Budget nutzt später dasselbe. Wähle etwas, das du dir merken kannst – wir können es nicht für dich zurücksetzen."
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Events & Tickets"
@@ -8773,8 +8894,8 @@ msgid "Every coin you earn gets a job before you spend it. How do you want to st
 msgstr "Jeder Cent, den du verdienst, bekommt eine Aufgabe, bevor du ihn ausgibst. Wie möchtest du starten?"
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "Every dollar gets a job"
-msgstr "Jeder Euro bekommt eine Aufgabe"
+#~ msgid "Every dollar gets a job"
+#~ msgstr "Jeder Euro bekommt eine Aufgabe"
 
 #: src/pages/analytics/reports/FlowReport.tsx
 #~ msgid "Every stream from income to {dimensionLabel}"
@@ -8801,8 +8922,8 @@ msgid "Everyday checking"
 msgstr "Girokonto"
 
 #: src/pages/onboarding/steps/ShareStep.tsx
-msgid "Everyone you invite becomes a <0>collaborator</0> with the same view and edit rights you have. After we set up your workspace we’ll generate a private link for each person — Budgero never emails them on your behalf, you copy or send each link yourself so the secret stays off our servers."
-msgstr "Jeder, den du einlädst, wird zu einem <0>Mitwirkenden</0> mit denselben Ansichts- und Bearbeitungsrechten wie du. Nachdem wir deinen Arbeitsbereich eingerichtet haben, generieren wir einen privaten Link für jede Person — Budgero verschickt niemals E-Mails in deinem Namen. Du kopierst oder sendest jeden Link selbst, damit das Geheimnis nicht auf unseren Servern landet."
+#~ msgid "Everyone you invite becomes a <0>collaborator</0> with the same view and edit rights you have. After we set up your workspace we’ll generate a private link for each person — Budgero never emails them on your behalf, you copy or send each link yourself so the secret stays off our servers."
+#~ msgstr "Jeder, den du einlädst, wird zu einem <0>Mitwirkenden</0> mit denselben Ansichts- und Bearbeitungsrechten wie du. Nachdem wir deinen Arbeitsbereich eingerichtet haben, generieren wir einen privaten Link für jede Person — Budgero verschickt niemals E-Mails in deinem Namen. Du kopierst oder sendest jeden Link selbst, damit das Geheimnis nicht auf unseren Servern landet."
 
 #: src/pages/settings/components/DuplicateHintSettingsCard.tsx
 msgid "Exact (±0.01)"
@@ -8948,6 +9069,10 @@ msgstr "{heading} erkunden"
 #: src/features/reports/ui/notebook/QuestionTable.tsx
 msgid "Explore {text}"
 msgstr "{text} erkunden"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Explore a filled-in budget before setting up your own."
+msgstr "Sieh dir ein ausgefülltes Budget an, bevor du dein eigenes einrichtest."
 
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "Explore detailed payoff projections. Adjust APR, monthly payment, and extras to see how they affect timeline and interest."
@@ -9609,8 +9734,8 @@ msgid "Fitness & Gym"
 msgstr "Fitness & Studio"
 
 #: src/pages/onboarding/steps/ShareStep.tsx
-msgid "Five characters tethered to a shared ledger"
-msgstr "Fünf Personen, verbunden mit einem gemeinsamen Hauptbuch"
+#~ msgid "Five characters tethered to a shared ledger"
+#~ msgstr "Fünf Personen, verbunden mit einem gemeinsamen Hauptbuch"
 
 #: src/pages/settings/components/GoalFundingSettingsCard.tsx
 msgid "Five levels (default)"
@@ -9627,6 +9752,14 @@ msgstr "Flags"
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Flat average"
 msgstr "Einfacher Durchschnitt"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Flights"
+msgstr "Flüge"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Florist"
+msgstr "Blumenladen"
 
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "Flow"
@@ -9735,8 +9868,8 @@ msgid "Free Trial Active"
 msgstr "Kostenlose Testphase aktiv"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Freelance"
-msgstr "Freiberuflich"
+#~ msgid "Freelance"
+#~ msgstr "Freiberuflich"
 
 #: src/features/import/model/types.ts
 msgid "French (1 234.56)"
@@ -9747,8 +9880,8 @@ msgid "French Alt (1 234,56)"
 msgstr "Französisch alt (1 234,56)"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Fresh start"
-msgstr "Neuanfang"
+#~ msgid "Fresh start"
+#~ msgstr "Neuanfang"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Fresh, or bringing a budget with you?"
@@ -9864,6 +9997,10 @@ msgstr "Zukünftige Erinnerungen für diesen Eintrag wurden gelöscht."
 msgid "Future transaction"
 msgstr "Zukünftige Transaktion"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Game store"
+msgstr "Spieleladen"
+
 #: src/features/budget-management/model/icon-options.ts
 msgid "Gaming"
 msgstr "Gaming"
@@ -9879,6 +10016,10 @@ msgstr "Garten & Outdoor"
 #: src/features/budget-management/model/icon-options.ts
 msgid "Gas"
 msgstr "Tanken"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Gas station"
+msgstr "Tankstelle"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 #: src/features/category-management/ui/SearchableCategorySelect.tsx
@@ -9909,18 +10050,21 @@ msgstr "Erhalte Erinnerungen, bevor wiederkehrende Transaktionen fällig werden.
 msgid "Getting you back online"
 msgstr "Verbindung wird wiederhergestellt"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Gifts"
+msgstr "Geschenke"
+
 #: src/features/budget-management/model/icon-options.ts
 msgid "Gifts & Donations"
 msgstr "Geschenke & Spenden"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-#: src/pages/onboarding/onboarding-data.ts
 msgid "Give every coin a job"
 msgstr "Gib jedem Cent eine Aufgabe"
 
 #: src/pages/onboarding/steps/ZbbStep.tsx
-msgid "Give every coin a job."
-msgstr "Gib jedem Cent eine Aufgabe."
+#~ msgid "Give every coin a job."
+#~ msgstr "Gib jedem Cent eine Aufgabe."
 
 #: src/features/reports/ui/notebook/ExpressionEditor.tsx
 msgid "Give it a name."
@@ -9983,8 +10127,8 @@ msgid "Goal line"
 msgstr "Ziellinie"
 
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "GOAL NAME"
-msgstr "ZIELNAME"
+#~ msgid "GOAL NAME"
+#~ msgstr "ZIELNAME"
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Goal Type"
@@ -10070,7 +10214,6 @@ msgstr "Größer als"
 
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 #: src/pages/onboarding/onboarding-data.ts
-#: src/pages/onboarding/steps/ZbbStep.tsx
 msgid "Groceries"
 msgstr "Lebensmittel"
 
@@ -10121,6 +10264,10 @@ msgstr "Gruppen"
 msgid "Groups"
 msgstr "Gruppen"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Gym"
+msgstr "Fitnessstudio"
+
 #: src/features/budget-management/model/icon-options.ts
 msgid "Hair & Beauty"
 msgstr "Haare & Beauty"
@@ -10144,6 +10291,10 @@ msgstr "Am Ende jedes Zeitraums einen Betrag verfügbar haben"
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Head to the Imports page to upload CSV/PDF files, review past imports, and undo anything that looks off."
 msgstr "Gehe zur Import-Seite, um CSV/PDF-Dateien hochzuladen, vergangene Importe zu prüfen und alles rückgängig zu machen, was nicht stimmt."
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Headphones"
+msgstr "Kopfhörer"
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Health & Medical"
@@ -10262,8 +10413,8 @@ msgid "Home & Rent"
 msgstr "Wohnen & Miete"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Home down payment"
-msgstr "Anzahlung für Immobilie"
+#~ msgid "Home down payment"
+#~ msgstr "Anzahlung für Immobilie"
 
 #: src/entities/account/model/accountTypes.ts
 msgid "Home mortgage and real estate loans"
@@ -10274,20 +10425,21 @@ msgid "Horizon"
 msgstr "Zeitraum"
 
 #: src/features/budget-management/model/icon-options.ts
+#: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Household"
 msgstr "Haushalt"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Household 2026"
-msgstr "Haushalt 2026"
+#~ msgid "Household 2026"
+#~ msgstr "Haushalt 2026"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "How are you starting?"
 msgstr "Wie startest du?"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "How Budgero thinks"
-msgstr "Wie Budgero denkt"
+#~ msgid "How Budgero thinks"
+#~ msgstr "Wie Budgero denkt"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "How did you hear about us?"
@@ -10298,8 +10450,8 @@ msgid "How do I invite someone?"
 msgstr "Wie lade ich jemanden ein?"
 
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "HOW DO YOU WANT TO SAVE?"
-msgstr "WIE MÖCHTEST DU SPAREN?"
+#~ msgid "HOW DO YOU WANT TO SAVE?"
+#~ msgstr "WIE MÖCHTEST DU SPAREN?"
 
 #: src/pages/analytics/AnalyticsPage.tsx
 #~ msgid "How does it move?"
@@ -10368,13 +10520,17 @@ msgstr "So sendest du Transaktionen über die Push API an Budgero."
 msgid "How would you like to get started?"
 msgstr "Wie möchtest du loslegen?"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Hypermarket"
+msgstr "Großmarkt"
+
 #: src/features/transactions/ui/form/CurrencyConversionNotice.tsx
 msgid "ℹ️ Offline or unauthorized – conversions will use cached or manual rates."
 msgstr "ℹ️ Offline oder nicht autorisiert – Umrechnungen verwenden zwischengespeicherte oder manuelle Kurse."
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "I understand. I will budget only the money I have, assign every coin, and enter transactions myself."
-msgstr "Ich verstehe. Ich werde nur das Geld budgetieren, das ich habe, jeden Cent zuweisen und Transaktionen selbst eingeben."
+#~ msgid "I understand. I will budget only the money I have, assign every coin, and enter transactions myself."
+#~ msgstr "Ich verstehe. Ich werde nur das Geld budgetieren, das ich habe, jeden Cent zuweisen und Transaktionen selbst eingeben."
 
 #: src/features/chat/ui/chat-panel/useChatPanelState.ts
 msgid "I'll add that transaction for you. Please confirm the details above."
@@ -10385,20 +10541,20 @@ msgid "I'll update that transaction. Please confirm the changes above."
 msgstr "Ich aktualisiere diese Transaktion. Bitte bestätige die obigen Änderungen."
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "I’m new to zero-based budgeting, or starting clean."
-msgstr "Ich bin neu beim Zero-Based-Budgeting oder fange von vorne an."
+#~ msgid "I’m new to zero-based budgeting, or starting clean."
+#~ msgstr "Ich bin neu beim Zero-Based-Budgeting oder fange von vorne an."
 
 #: src/pages/settings/subscription/subscription.constants.ts
 msgid "I'm switching to another app"
 msgstr "Ich wechsle zu einer anderen App"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "I’ve got a budget elsewhere I want to bring over."
-msgstr "Ich habe bereits ein Budget, das ich übernehmen möchte."
+#~ msgid "I’ve got a budget elsewhere I want to bring over."
+#~ msgstr "Ich habe bereits ein Budget, das ich übernehmen möchte."
 
 #: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
-msgid "I’ve shared them — done"
-msgstr "Ich habe sie geteilt — fertig"
+#~ msgid "I’ve shared them — done"
+#~ msgstr "Ich habe sie geteilt — fertig"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "IBM Plex Mono"
@@ -10487,8 +10643,13 @@ msgid "Import failed. Please check your source and try again."
 msgstr "Import fehlgeschlagen. Prüfe die Quelle und versuche es erneut."
 
 #: src/app/startup/screens.tsx
+#: src/pages/onboarding/steps/StartModeStep.tsx
 msgid "Import from YNAB"
 msgstr "Aus YNAB importieren"
+
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "Import from YNAB →"
+msgstr "Aus YNAB importieren →"
 
 #: src/features/budget-management/ui/create-budget-form/YnabExportGuide.tsx
 msgid "Import limitations"
@@ -10562,7 +10723,6 @@ msgid "Imported budget saved with warnings"
 msgstr "Importiertes Budget mit Warnungen gespeichert"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
-#: src/pages/onboarding/steps/StartModeStep.tsx
 msgid "Importing from YNAB"
 msgstr "Import aus YNAB"
 
@@ -10896,6 +11056,10 @@ msgstr "Internet & Telefon"
 msgid "Internet connection required"
 msgstr "Internetverbindung erforderlich"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Internet provider"
+msgstr "Internetanbieter"
+
 #: src/features/budget-planning/ui/budget-table/useCategoryOperations.ts
 msgid "Invalid amount"
 msgstr "Ungültiger Betrag"
@@ -10995,8 +11159,8 @@ msgid "Invite your partner, family, or friends to share a workspace, they get fu
 msgstr "Lade deinen Partner, deine Familie oder deine Freunde ein, einen Arbeitsbereich zu teilen – sie erhalten vollen Zugriff, ohne ein eigenes Abonnement zu benötigen."
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Invite your people"
-msgstr "Lade deine Leute ein"
+#~ msgid "Invite your people"
+#~ msgstr "Lade deine Leute ein"
 
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 msgid "Invoice"
@@ -11460,8 +11624,8 @@ msgid "Left per day:"
 msgstr "Pro Tag übrig:"
 
 #: src/pages/onboarding/steps/ZbbStep.tsx
-msgid "LEFT TO ASSIGN"
-msgstr "NOCH ZUZUWEISEN"
+#~ msgid "LEFT TO ASSIGN"
+#~ msgstr "NOCH ZUZUWEISEN"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Leftover balance rolls into next month"
@@ -11859,8 +12023,8 @@ msgid "Make Administrator"
 msgstr "Zum Administrator machen"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Make it yours"
-msgstr "Mach es zu deinem"
+#~ msgid "Make it yours"
+#~ msgstr "Mach es zu deinem"
 
 #: src/features/transactions/ui/add-transaction/TransactionFormHeader.tsx
 msgid "Make recurring"
@@ -12147,7 +12311,6 @@ msgstr "Memo<0/>"
 msgid "Merchant or counterparty name"
 msgstr "Name des Händlers oder der Gegenpartei"
 
-#: src/pages/onboarding/onboarding-data.ts
 #: src/shared/lib/theme/presets.ts
 msgid "Mesa"
 msgstr "Mesa"
@@ -12511,6 +12674,10 @@ msgstr "Mehrmonatige Budgetansicht"
 msgid "Music & Streaming"
 msgstr "Musik & Streaming"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Music service"
+msgstr "Musikdienst"
+
 #: src/pages/admin/admin-users/user-details/OverviewTab.tsx
 msgid "Mutation"
 msgstr "Änderung"
@@ -12540,6 +12707,7 @@ msgid "My"
 msgstr "Mein"
 
 #: src/pages/onboarding/apply-onboarding.ts
+#: src/pages/onboarding/steps/DoneStep.tsx
 msgid "My budget"
 msgstr "Mein Budget"
 
@@ -12594,8 +12762,8 @@ msgid "Name required"
 msgstr "Name erforderlich"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Name your budget"
-msgstr "Benenne dein Budget"
+#~ msgid "Name your budget"
+#~ msgstr "Benenne dein Budget"
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "Name your new custom dashboard."
@@ -12816,9 +12984,13 @@ msgstr "Neuer Betrag"
 msgid "New automation rule"
 msgstr "Neue Automatisierungsregel"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "New brake pads"
+msgstr "Neue Bremsbeläge"
+
 #: src/pages/onboarding/onboarding-data.ts
-msgid "New car"
-msgstr "Neues Auto"
+#~ msgid "New car"
+#~ msgstr "Neues Auto"
 
 #: src/features/import/ui/steps/CompleteStep.tsx
 msgid "New categories created:"
@@ -12890,6 +13062,10 @@ msgstr "Neue SQL-Abfrage"
 msgid "New SQL question"
 msgstr "Neue SQL-Frage"
 
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "New to zero-based budgeting, or starting clean."
+msgstr "Neu beim Zero-Based Budgeting oder ein Neuanfang."
+
 #: src/pages/settings/AppearancePage.tsx
 msgid "Newest entry first, or by amount: outflows first, then inflows, largest first. Handy when clearing a busy day."
 msgstr "Neueste zuerst, oder nach Betrag: erst Ausgaben, dann Einnahmen, jeweils die größten zuerst. Praktisch beim Abgleichen eines vollen Tages."
@@ -12931,6 +13107,10 @@ msgstr "Nächstes Jahr"
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Next, you give every coin a job. We’ll show you how."
 msgstr "Als Nächstes gibst du jedem Cent eine Aufgabe. Wir zeigen dir, wie."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Next:"
+msgstr "Als Nächstes:"
 
 #: src/features/budget-planning/ui/spending-drawer-mobile/TransactionList.tsx
 #: src/pages/settings/AuditLogPage.tsx
@@ -13452,8 +13632,8 @@ msgid "No prebuilt report matches your search."
 msgstr "Kein vorgefertigter Bericht passt zu deiner Suche."
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "No projections, no credit limits. We budget paychecks that have actually landed — never money you hope will arrive."
-msgstr "Keine Prognosen, keine Kreditlimits. Wir budgetieren nur Geld, das schon eingegangen ist — nie Geld, auf das du noch hoffst."
+#~ msgid "No projections, no credit limits. We budget paychecks that have actually landed — never money you hope will arrive."
+#~ msgstr "Keine Prognosen, keine Kreditlimits. Wir budgetieren nur Geld, das schon eingegangen ist — nie Geld, auf das du noch hoffst."
 
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "No query"
@@ -13682,6 +13862,10 @@ msgstr "Noch keine Arbeitsbereiche. Verwende die Schaltfläche oben, um deinen e
 msgid "None"
 msgstr "Keine"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Noodle bar"
+msgstr "Nudelbar"
+
 #: src/features/transactions/ui/form/DuplicateTransactionHint.tsx
 msgid "Not a duplicate"
 msgstr "Kein Duplikat"
@@ -13766,6 +13950,10 @@ msgstr "Nichts Neues zu importieren."
 msgid "Nothing to apply — no assignments last month."
 msgstr "Nichts anzuwenden — keine Zuweisungen im letzten Monat."
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Nothing to assign yet. When money comes in (an account balance or income you record), it shows up as Ready to Assign. Then give it a job here."
+msgstr "Noch nichts zu budgetieren. Sobald Geld da ist (ein Kontostand oder Einnahmen, die du erfasst), erscheint es als „Zu budgetieren“. Dann gib ihm hier eine Aufgabe."
+
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
 #: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
 #: src/features/reports/ui/notebook/viz/ComboView.tsx
@@ -13816,6 +14004,10 @@ msgstr "Benachrichtige mich"
 msgid "Notifying your other devices..."
 msgstr "Benachrichtige deine anderen Geräte …"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Now and then"
+msgstr "Ab und zu"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Number"
 msgstr "Zahl"
@@ -13862,7 +14054,6 @@ msgstr "Anzahl der zu erzeugenden Transaktionen"
 msgid "Number with trend"
 msgstr "Zahl mit Trend"
 
-#: src/pages/onboarding/onboarding-data.ts
 #: src/shared/lib/theme/presets.ts
 msgid "Obsidian"
 msgstr "Obsidian"
@@ -13967,12 +14158,12 @@ msgid "Once the workspace owner renews their plan, your shared workspace access 
 msgstr "Sobald der Arbeitsbereichsbesitzer seinen Plan verlängert, wird dein Zugriff auf den freigegebenen Arbeitsbereich automatisch wiederhergestellt."
 
 #: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
-msgid "Once you close this dialog the secrets are gone from Budgero. You can regenerate fresh invites any time from <0>Settings → Workspaces</0>."
-msgstr "Sobald du diesen Dialog schließt, sind die Geheimnisse aus Budgero verschwunden. Du kannst jederzeit neue Einladungen unter <0>Einstellungen → Arbeitsbereiche</0> generieren."
+#~ msgid "Once you close this dialog the secrets are gone from Budgero. You can regenerate fresh invites any time from <0>Settings → Workspaces</0>."
+#~ msgstr "Sobald du diesen Dialog schließt, sind die Geheimnisse aus Budgero verschwunden. Du kannst jederzeit neue Einladungen unter <0>Einstellungen → Arbeitsbereiche</0> generieren."
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "One jar to get you started. Big or small."
-msgstr "Ein Glas für den Einstieg. Groß oder klein."
+#~ msgid "One jar to get you started. Big or small."
+#~ msgstr "Ein Glas für den Einstieg. Groß oder klein."
 
 #: src/app/startup/screens.tsx
 msgid "One lowercase letter"
@@ -14023,6 +14214,10 @@ msgstr "Einmaliger Extra-Betrag (diesen Monat)"
 msgid "Online"
 msgstr "Online"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Online shop"
+msgstr "Onlineshop"
+
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "Only {daysLeftInBeta} days remaining!"
 msgstr "Nur noch {daysLeftInBeta} Tage übrig!"
@@ -14036,8 +14231,8 @@ msgid "Only a workspace owner can create the first budget here."
 msgstr "Nur ein Arbeitsbereich-Eigentümer kann hier das erste Budget erstellen."
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "Only money you have now"
-msgstr "Nur Geld, das du jetzt hast"
+#~ msgid "Only money you have now"
+#~ msgstr "Nur Geld, das du jetzt hast"
 
 #: src/pages/explorer-page/hooks/useExplorerState.ts
 msgid "Only read-only queries can run here (SELECT, WITH, EXPLAIN, DESCRIBE, SHOW, PRAGMA)."
@@ -14190,8 +14385,8 @@ msgid "Optional — type what you actually got, e.g. after a rounded cash swap."
 msgstr "Optional — gib ein, was du tatsächlich bekommen hast, z. B. nach einem gerundeten Bargeldtausch."
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Optional but encouraged"
-msgstr "Optional, aber empfohlen"
+#~ msgid "Optional but encouraged"
+#~ msgstr "Optional, aber empfohlen"
 
 #: src/features/rules/ui/rule-editor/RuleMetadataForm.tsx
 msgid "Optional context for your future self"
@@ -14236,8 +14431,8 @@ msgid "Or open one of your other workspaces instead:"
 msgstr "Oder öffne stattdessen einen deiner anderen Arbeitsbereiche:"
 
 #: src/pages/onboarding/steps/WorkspaceStep.tsx
-msgid "OR PICK ONE:"
-msgstr "ODER WÄHLE EINS:"
+#~ msgid "OR PICK ONE:"
+#~ msgstr "ODER WÄHLE EINS:"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Order within a day"
@@ -14493,7 +14688,6 @@ msgstr "Bisher gezahlt sollte über Transaktionen (Einnahmen) bearbeitet werden.
 msgid "Paid Users"
 msgstr "Zahlende Nutzer"
 
-#: src/pages/onboarding/onboarding-data.ts
 #: src/shared/lib/theme/presets.ts
 msgid "Paper"
 msgstr "Papier"
@@ -14767,7 +14961,6 @@ msgstr "Telefon & Internet"
 msgid "Phone company"
 msgstr "Mobilfunkanbieter"
 
-#: src/pages/onboarding/onboarding-data.ts
 #: src/shared/lib/theme/presets.ts
 msgid "Phosphor"
 msgstr "Phosphor"
@@ -14807,8 +15000,8 @@ msgid "Pick a label for the label action, or \"No label\" to clear it."
 msgstr "Wähle ein Label für die Label-Aktion oder \"Kein Label\", um es zu entfernen."
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Pick a look"
-msgstr "Design auswählen"
+#~ msgid "Pick a look"
+#~ msgstr "Design auswählen"
 
 #: src/pages/onboarding/steps/WelcomeStep.tsx
 msgid "Pick a master password — your encryption key on this device."
@@ -14831,12 +15024,16 @@ msgid "Pick a period with some history to project from."
 msgstr "Wähle einen Zeitraum mit etwas Historie als Projektionsbasis."
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Pick a savings goal"
-msgstr "Sparziel auswählen"
+#~ msgid "Pick a savings goal"
+#~ msgstr "Sparziel auswählen"
 
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "Pick a target amount and deadline. Best for trips, down payments, big purchases."
-msgstr "Wähle einen Zielbetrag und eine Frist. Ideal für Reisen, Anzahlungen und große Anschaffungen."
+#~ msgid "Pick a target amount and deadline. Best for trips, down payments, big purchases."
+#~ msgstr "Wähle einen Zielbetrag und eine Frist. Ideal für Reisen, Anzahlungen und große Anschaffungen."
+
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "Pick a way to start"
+msgstr "Wähle, wie du startest"
 
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "Pick range"
@@ -14860,8 +15057,8 @@ msgid "Pick your path"
 msgstr "Wähle deinen Weg"
 
 #: src/pages/onboarding/steps/ThemeStep.tsx
-msgid "PICKED FOR YOU"
-msgstr "FÜR DICH AUSGEWÄHLT"
+#~ msgid "PICKED FOR YOU"
+#~ msgstr "FÜR DICH AUSGEWÄHLT"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Pie"
@@ -15382,6 +15579,10 @@ msgstr "Fortschritt:"
 msgid "Progress: {available} of {target} ({pct})"
 msgstr "Fortschritt: {available} von {target} ({pct})"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Project bonus"
+msgstr "Projektbonus"
+
 #: src/pages/settings/AboutPage.tsx
 msgid "Project Resources"
 msgstr "Projektressourcen"
@@ -15685,8 +15886,8 @@ msgid "Re-download from server?"
 msgstr "Vom Server neu herunterladen?"
 
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "Reach a total by a date"
-msgstr "Einen Betrag bis zu einem Datum erreichen"
+#~ msgid "Reach a total by a date"
+#~ msgstr "Einen Betrag bis zu einem Datum erreichen"
 
 #: src/features/reports/ui/notebook/ViewSqlDialog.tsx
 msgid "Read-only. Convert to SQL to edit it by hand; a converted question can’t go back to the notebook editor."
@@ -15696,7 +15897,6 @@ msgstr "Nur lesbar. Wandle sie in SQL um, um sie von Hand zu bearbeiten; eine um
 msgid "Reading"
 msgstr "Lesen"
 
-#: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "Ready"
 msgstr "Bereit"
@@ -16036,6 +16236,10 @@ msgstr "Widget-Daten werden aktualisiert"
 msgid "Refreshing..."
 msgstr "Aktualisieren..."
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Refund"
+msgstr "Erstattung"
+
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Regenerate API Token?"
 msgstr "API-Token neu generieren?"
@@ -16255,7 +16459,6 @@ msgid "Renews in:"
 msgstr "Erneuert in:"
 
 #: src/features/demo-budget/lib/seed-demo-budget.ts
-#: src/pages/onboarding/steps/ZbbStep.tsx
 msgid "Rent"
 msgstr "Miete"
 
@@ -16264,8 +16467,8 @@ msgid "Rent / Mortgage"
 msgstr "Miete / Hypothek"
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "Rent, groceries, future-you. If a coin walks into Budgero with no assignment, it doesn't leave the front desk."
-msgstr "Miete, Lebensmittel, deine Zukunft. Wenn eine Münze ohne Aufgabe bei Budgero ankommt, bleibt sie am Empfang, bis sie eine bekommt."
+#~ msgid "Rent, groceries, future-you. If a coin walks into Budgero with no assignment, it doesn't leave the front desk."
+#~ msgstr "Miete, Lebensmittel, deine Zukunft. Wenn eine Münze ohne Aufgabe bei Budgero ankommt, bleibt sie am Empfang, bis sie eine bekommt."
 
 #: src/features/account-management/ui/AccountOrderCard.tsx
 msgid "Reorder how accounts appear in the sidebar and the mobile navigation. On-budget and off-budget accounts are ordered separately."
@@ -16884,6 +17087,10 @@ msgstr "Reichweite<0><1><2><3/></2></1><4>Anzahl Tage, die dein Zu budgetieren b
 msgid "Safari does not allow apps to trigger installation automatically. Follow these steps:"
 msgstr "Safari erlaubt es Apps nicht, die Installation automatisch auszulösen. Folge diesen Schritten:"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Salary"
+msgstr "Gehalt"
+
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Same currency"
 msgstr "Gleiche Währung"
@@ -17093,7 +17300,6 @@ msgstr "Wird gespeichert…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/onboarding/onboarding-data.ts
-#: src/pages/onboarding/steps/ZbbStep.tsx
 msgid "Savings"
 msgstr "Ersparnisse"
 
@@ -17321,20 +17527,25 @@ msgstr "Suchen…"
 msgid "Searching: \"{0}\""
 msgstr "Suche: \"{0}\""
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Seaside hotel"
+msgstr "Hotel am Meer"
+
 #. placeholder {0}: seasonalReady ? '' : t` (needs 12+ mo)`
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Seasonal average{0}"
 msgstr "Saisonaler Durchschnitt{0}"
 
 #: src/pages/onboarding/steps/ShareStep.tsx
-msgid "SEATS USED"
-msgstr "GENUTZTE PLÄTZE"
+#~ msgid "SEATS USED"
+#~ msgstr "GENUTZTE PLÄTZE"
 
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Second metric’s axis"
 msgstr "Achse der zweiten Metrik"
 
 #: src/app/startup/StartupStepper.tsx
+#: src/pages/onboarding/steps/DoneStep.tsx
 msgid "Security"
 msgstr "Sicherheit"
 
@@ -17350,8 +17561,8 @@ msgid "Security Warning"
 msgstr "Sicherheitswarnung"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "See a filled-in budget before you set up your own."
-msgstr "Sieh dir ein ausgefülltes Budget an, bevor du dein eigenes einrichtest."
+#~ msgid "See a filled-in budget before you set up your own."
+#~ msgstr "Sieh dir ein ausgefülltes Budget an, bevor du dein eigenes einrichtest."
 
 #: src/features/reports/ui/notebook/DrillMenu.tsx
 msgid "See these accounts"
@@ -17834,8 +18045,8 @@ msgid "Set as default workspace"
 msgstr "Als Standard-Arbeitsbereich festlegen"
 
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "Set aside each month"
-msgstr "Jeden Monat zurücklegen"
+#~ msgid "Set aside each month"
+#~ msgstr "Jeden Monat zurücklegen"
 
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
@@ -17885,6 +18096,10 @@ msgstr "Richte ein neues Budget ein, um deine Finanzen zu verfolgen"
 #: src/pages/onboarding/steps/StartModeStep.tsx
 #~ msgid "Set up accounts & envelopes by hand"
 #~ msgstr "Konten & Umschläge manuell einrichten"
+
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "Set up my budget →"
+msgstr "Mein Budget einrichten →"
 
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 msgid "Set up recurring paycheques, bills, or transfers and Budgero will remind you when they are due."
@@ -17936,8 +18151,8 @@ msgid "Share of everything assigned this month"
 msgstr "Anteil an allen Zuweisungen dieses Monats"
 
 #: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
-msgid "Share these invite links"
-msgstr "Teile diese Einladungslinks"
+#~ msgid "Share these invite links"
+#~ msgstr "Teile diese Einladungslinks"
 
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "Shared collaborators can view the workspaces they are invited to. Upgrade to a paid plan to create your own."
@@ -18367,8 +18582,8 @@ msgid "Someone shared their budget with you. We’ll set up an encryption key on
 msgstr "Jemand hat sein Budget mit dir geteilt. Wir richten einen Verschlüsselungsschlüssel auf diesem Gerät ein und bringen dich direkt in sein Haushaltsbuch — keine eigene Einrichtung nötig."
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Something else"
-msgstr "Etwas anderes"
+#~ msgid "Something else"
+#~ msgstr "Etwas anderes"
 
 #: src/app/system/AppErrorBoundary.tsx
 msgid "Something went wrong"
@@ -18397,6 +18612,7 @@ msgid "Sort bars"
 msgstr "Balken sortieren"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+#: src/pages/onboarding/steps/DoneStep.tsx
 #: src/pages/settings/ImportsPage.tsx
 msgid "Source"
 msgstr "Quelle"
@@ -18412,6 +18628,10 @@ msgstr "Quellenbericht fehlt. Wähle ein anderes Diagramm oder entferne dieses W
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 msgid "Source rows and account balances reconcile. Review the reporting differences before deciding whether to keep this budget."
 msgstr "Quellzeilen und Kontostände stimmen überein. Prüfe die Abweichungen in den Berichten, bevor du entscheidest, ob du dieses Budget behalten möchtest."
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Souvenir shop"
+msgstr "Souvenirladen"
 
 #: src/features/import/ui/steps/configure/FormattingTab.tsx
 msgid "Space ( )"
@@ -18686,6 +18906,7 @@ msgid "Start monthly plan"
 msgstr "Monatlichen Plan starten"
 
 #: src/features/demo-budget/ui/DemoBudgetBanner.tsx
+#: src/pages/onboarding/steps/StartModeStep.tsx
 msgid "Start my own budget"
 msgstr "Eigenes Budget starten"
 
@@ -18845,6 +19066,10 @@ msgstr "In einem sicheren Passwort-Manager speichern"
 msgid "Storing your master password outside memory lowers security. Anyone with access to this browser profile could decrypt your data until it expires."
 msgstr "Wenn du dein Master-Passwort außerhalb deines Gedächtnisses speicherst, sinkt die Sicherheit. Jeder mit Zugriff auf dieses Browser-Profil könnte deine Daten entschlüsseln, bis es abläuft."
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Streaming service"
+msgstr "Streamingdienst"
+
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "STRONG"
 msgstr "STARK"
@@ -18905,6 +19130,7 @@ msgstr "Abonnement-Status"
 msgid "Subscription Summary"
 msgstr "Abonnement-Zusammenfassung"
 
+#: src/features/demo-budget/lib/seed-demo-budget.ts
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Subscriptions"
 msgstr "Abonnements"
@@ -19191,8 +19417,8 @@ msgid "Target Date"
 msgstr "Zieldatum"
 
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "TARGET DATE"
-msgstr "ZIELDATUM"
+#~ msgid "TARGET DATE"
+#~ msgstr "ZIELDATUM"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Target date has passed"
@@ -19391,8 +19617,8 @@ msgid "The change will also be pushed to the server for this workspace"
 msgstr "Die Änderung wird auch an den Server für diesen Arbeitsbereich übertragen"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "The core idea"
-msgstr "Die Grundidee"
+#~ msgid "The core idea"
+#~ msgstr "Die Grundidee"
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "the currently active workspace"
@@ -19462,8 +19688,8 @@ msgstr "Das Mitglied hat keinen Zugriff mehr auf diesen Arbeitsbereich."
 #~ msgstr "Der Memo-Text, der für übereinstimmende Transaktionen gesetzt wird."
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "The one rule of zero-based budgeting."
-msgstr "Die eine Regel des Zero-Based-Budgetings."
+#~ msgid "The one rule of zero-based budgeting."
+#~ msgstr "Die eine Regel des Zero-Based-Budgetings."
 
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
 msgid "The opening balance is set so the account matches your bank today."
@@ -19799,8 +20025,8 @@ msgid "This month's goal targets against what you assigned and spent."
 msgstr "Die Ziele dieses Monats verglichen mit Zugewiesenem und Ausgegebenem."
 
 #: src/pages/onboarding/steps/ZbbStep.tsx
-msgid "THIS MONTH'S PAYCHECK"
-msgstr "GEHALT DIESEN MONAT"
+#~ msgid "THIS MONTH'S PAYCHECK"
+#~ msgstr "GEHALT DIESEN MONAT"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "This month's target met! Continue with {monthlyTarget}/month to stay on track"
@@ -20021,12 +20247,12 @@ msgid "Thousand: {0} | Decimal: {1} | Date: {2}"
 msgstr "Tausend: {0}| Dezimal: {1}| Datum: {2}"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Three house rules"
-msgstr "Drei Hausregeln"
+#~ msgid "Three house rules"
+#~ msgstr "Drei Hausregeln"
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "Three<0/>house rules."
-msgstr "Drei<0/>Hausregeln."
+#~ msgid "Three<0/>house rules."
+#~ msgstr "Drei<0/>Hausregeln."
 
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "through this month"
@@ -20061,8 +20287,8 @@ msgid "Tiny"
 msgstr "Winzig"
 
 #: src/pages/onboarding/steps/ZbbStep.tsx
-msgid "TIP:"
-msgstr "TIPP:"
+#~ msgid "TIP:"
+#~ msgstr "TIPP:"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
@@ -20256,8 +20482,8 @@ msgid "Total Spent:"
 msgstr "Insgesamt ausgegeben:"
 
 #: src/pages/onboarding/steps/GoalStep.tsx
-msgid "TOTAL TARGET"
-msgstr "GESAMTZIEL"
+#~ msgid "TOTAL TARGET"
+#~ msgstr "GESAMTZIEL"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Total to allocate"
@@ -20286,6 +20512,10 @@ msgstr "Vollkommen optional — es hilft uns nur zu wissen, wo wir mehr Leute wi
 #: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Totals"
 msgstr "Summen"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Toy store"
+msgstr "Spielwarenladen"
 
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "Tracking accounts"
@@ -20366,8 +20596,8 @@ msgid "Transactions analytics preview"
 msgstr "Transaktionsanalyse-Vorschau"
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "Transactions are entered by hand — no bank sync, no background fetch. Slow is the feature. You'll feel every transaction."
-msgstr "Transaktionen werden von Hand eingegeben — keine Banksynchronisierung, kein Abruf im Hintergrund. Das bewusste Tempo ist Absicht. So nimmst du jede Transaktion wahr."
+#~ msgid "Transactions are entered by hand — no bank sync, no background fetch. Slow is the feature. You'll feel every transaction."
+#~ msgstr "Transaktionen werden von Hand eingegeben — keine Banksynchronisierung, kein Abruf im Hintergrund. Das bewusste Tempo ist Absicht. So nimmst du jede Transaktion wahr."
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Transactions converted with a manually entered rate while offline are re-converted with the official rate once you reconnect. Rates you pinned on a transaction are never touched."
@@ -20533,8 +20763,12 @@ msgid "Trial Users"
 msgstr "Testnutzer"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Try a demo first"
-msgstr "Erst die Demo testen"
+msgid "Try a demo budget"
+msgstr "Demo-Budget ausprobieren"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+#~ msgid "Try a demo first"
+#~ msgstr "Erst die Demo testen"
 
 #: src/features/budget-planning/ui/EmptyStateDisplay.tsx
 msgid "Try a different search term"
@@ -20575,12 +20809,16 @@ msgstr "Versuche zu sagen: „Ich habe heute 20 $ für Kaffee ausgegeben“ oder
 
 #. placeholder {0}: total.toLocaleString()
 #: src/pages/onboarding/steps/ZbbStep.tsx
-msgid "Try spreading the {sym}{0} across the three rows until \"left to assign\" hits zero."
-msgstr "Verteile die {sym}{0} auf die drei Zeilen, bis „Noch zuzuweisen“ null erreicht."
+#~ msgid "Try spreading the {sym}{0} across the three rows until \"left to assign\" hits zero."
+#~ msgstr "Verteile die {sym}{0} auf die drei Zeilen, bis „Noch zuzuweisen“ null erreicht."
+
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "Try the demo →"
+msgstr "Demo ausprobieren →"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-msgid "Two months of sample spending and goals"
-msgstr "Zwei Monate Beispielausgaben und Ziele"
+#~ msgid "Two months of sample spending and goals"
+#~ msgstr "Zwei Monate Beispielausgaben und Ziele"
 
 #. placeholder {0}: change.transactionId
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
@@ -20895,8 +21133,8 @@ msgid "Unknown date"
 msgstr "Unbekanntes Datum"
 
 #: src/pages/onboarding/apply-onboarding.ts
-msgid "unknown error"
-msgstr "unbekannter Fehler"
+#~ msgid "unknown error"
+#~ msgstr "unbekannter Fehler"
 
 #: src/features/account-management/ui/DevSeedTransactionsButton.tsx
 #: src/pages/settings/AuditLogPage.tsx
@@ -20957,8 +21195,8 @@ msgid "until {runsOut} if income stopped"
 msgstr "bis {runsOut}, falls das Einkommen ausbliebe"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Up to 5 seats · free"
-msgstr "Bis zu 5 Plätze · kostenlos"
+#~ msgid "Up to 5 seats · free"
+#~ msgstr "Bis zu 5 Plätze · kostenlos"
 
 #. placeholder {0}: data.current.mutation_version
 #. placeholder {0}: entry.mutation_version
@@ -21486,8 +21724,8 @@ msgid "Waiting to start"
 msgstr "Wartet auf den Start"
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "Wallet with cash"
-msgstr "Geldbörse mit Bargeld"
+#~ msgid "Wallet with cash"
+#~ msgstr "Geldbörse mit Bargeld"
 
 #: src/entities/account/model/accountTypes.ts
 msgid "Wallets and exchange balances held in cryptocurrency"
@@ -21498,8 +21736,8 @@ msgid "WANTS"
 msgstr "WÜNSCHE"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Warm desert clay."
-msgstr "Warmer Wüstenlehm."
+#~ msgid "Warm desert clay."
+#~ msgstr "Warmer Wüstenlehm."
 
 #: src/shared/lib/theme/presets.ts
 msgid "Warm southwestern desert with sand, terracotta, and sage."
@@ -21901,6 +22139,10 @@ msgstr "Breite -"
 msgid "Width +"
 msgstr "Breite +"
 
+#: src/features/demo-budget/ui/DemoBudgetBanner.tsx
+msgid "with sample data. Click around, then make it yours."
+msgstr "mit Beispieldaten. Klick dich durch und mach es dann zu deinem."
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "With two groupings, the limit keeps the top values of the first non-date grouping."
 msgstr "Bei zwei Gruppierungen behält das Limit die höchsten Werte der ersten Gruppierung, die kein Datum ist."
@@ -22044,6 +22286,10 @@ msgstr "Jahr"
 #: src/pages/analytics/analytics-state.ts
 msgid "Year to date"
 msgstr "Seit Jahresbeginn"
+
+#: src/features/demo-budget/lib/seed-demo-budget.ts
+msgid "Year-end bonus"
+msgstr "Jahresbonus"
 
 #: src/features/goal-management/lib/goal-cycle-label.ts
 msgid "yearly"
@@ -22321,8 +22567,8 @@ msgid "You are now viewing this workspace."
 msgstr "Du siehst dir diesen Arbeitsbereich jetzt an."
 
 #: src/pages/onboarding/steps/RulesStep.tsx
-msgid "You are the accountant"
-msgstr "Du bist der Buchhalter"
+#~ msgid "You are the accountant"
+#~ msgstr "Du bist der Buchhalter"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "You assigned more than you have. Take some back until Ready to Assign shows 0."
@@ -22366,6 +22612,10 @@ msgstr "Du hast keine Berechtigung, auf das Admin-Panel zuzugreifen."
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "You have {0} set aside but the card only needs {1}. The extra is your money — it just isn't needed for this card."
 msgstr "Du hast {0} zurückgelegt, aber die Karte benötigt nur {1}. Der Rest ist dein Geld — es wird lediglich für diese Karte nicht benötigt."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "You have <0>{readyToAssignLabel}</0> to assign. Tap a category and enter an amount until Ready to Assign shows 0. Only budget money you already have."
+msgstr "Du hast <0>{readyToAssignLabel}</0> zu budgetieren. Tippe auf eine Kategorie und gib einen Betrag ein, bis „Zu budgetieren“ 0 zeigt. Budgetiere nur Geld, das du schon hast."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "You have <0>{readyToAssignLabel}</0> to assign. Type an amount in the Assigned column for each category until Ready to Assign shows 0. Only budget money you already have."
@@ -22667,8 +22917,8 @@ msgid "your trial end date"
 msgstr "dein Testzeitraum-Enddatum"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Your workspace"
-msgstr "Dein Arbeitsbereich"
+#~ msgid "Your workspace"
+#~ msgstr "Dein Arbeitsbereich"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "YouTube"

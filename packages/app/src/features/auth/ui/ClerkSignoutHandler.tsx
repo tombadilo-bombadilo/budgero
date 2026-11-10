@@ -3,6 +3,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { resetAnalytics } from '@shared/lib/analytics/analytics';
 import { clearIdbFiles } from '@budgero/core/browser';
+import { clearLocalStorageForSignOut } from '@shared/lib/storage/sign-out-preserved';
 import {
   PENDING_SPACE_INVITE_DB_NAME,
   PENDING_SPACE_INVITE_KEY,
@@ -135,7 +136,8 @@ async function runStorageCleanup() {
       /* no-op */
     }
     try {
-      localStorage.clear();
+      // Keeps the small non-secret markers listed in sign-out-preserved.ts.
+      clearLocalStorageForSignOut();
       sessionStorage.clear();
     } catch (e) {
       console.warn('[runStorageCleanup] Storage clear failed:', e);
