@@ -39,9 +39,17 @@ export function BudgetingPageMobile() {
   useClearCategorySelectionOnMount();
 
   const budgetId = selectedBudget?.ID ?? 0;
-  const { data: budgetData = [] } = useMonthlyBudget(currentMonth, budgetId);
+  const {
+    data: budgetData = [],
+    isSuccess: budgetLoaded,
+    isPlaceholderData: budgetIsPlaceholder,
+  } = useMonthlyBudget(currentMonth, budgetId);
   const { data: goalsData = [] } = useGoals(budgetId);
-  const { data: readyToAssign = 0 } = useReadyToAssign(budgetId, currentMonth);
+  const rta = useReadyToAssign(budgetId, currentMonth);
+  const readyToAssign = rta.data ?? 0;
+  // This month's real figures, not a loading default or last month's placeholder.
+  const figuresSettled =
+    rta.isSuccess && !rta.isPlaceholderData && budgetLoaded && !budgetIsPlaceholder;
   const formatAmount = useFormatMaskedMilli(globalLocalizer);
   const { hideCategory, hasHiddenCategories } = useHideCategory(budgetId);
 
@@ -80,6 +88,8 @@ export function BudgetingPageMobile() {
         readyToAssign={readyToAssign}
         readyToAssignLabel={formatAmount(readyToAssign)}
         rows={budgetData || []}
+        settled={figuresSettled}
+        variant="bar"
       />
       <Card className="flex-1 min-h-0 overflow-hidden py-0">
         <CardContent className="h-full px-0 overflow-hidden">
@@ -98,6 +108,7 @@ export function BudgetingPageMobile() {
                 <div className="sticky top-0 z-30">
                   <BudgetToolbar
                     readyToAssign={readyToAssign}
+                    readyToAssignSettled={figuresSettled}
                     globalLocalizer={globalLocalizer}
                     currentMonth={currentMonth}
                     budgetId={budgetId}

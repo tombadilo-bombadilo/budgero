@@ -45,9 +45,17 @@ export function BudgetingPageDesktop() {
   useClearCategorySelectionOnMount();
 
   const budgetId = selectedBudget?.ID ?? 0;
-  const { data: budgetData = [] } = useMonthlyBudget(currentMonth, budgetId);
+  const {
+    data: budgetData = [],
+    isSuccess: budgetLoaded,
+    isPlaceholderData: budgetIsPlaceholder,
+  } = useMonthlyBudget(currentMonth, budgetId);
   const { data: goalsData = [] } = useGoals(budgetId);
-  const { data: readyToAssign = 0 } = useReadyToAssign(budgetId, currentMonth);
+  const rta = useReadyToAssign(budgetId, currentMonth);
+  const readyToAssign = rta.data ?? 0;
+  // This month's real figures, not a loading default or last month's placeholder.
+  const figuresSettled =
+    rta.isSuccess && !rta.isPlaceholderData && budgetLoaded && !budgetIsPlaceholder;
   const { hideCategory, hasHiddenCategories } = useHideCategory(budgetId);
 
   const [multiMonthOpen, setMultiMonthOpen] = useState(false);
@@ -258,6 +266,7 @@ export function BudgetingPageDesktop() {
                 renderToolbar={(controls) => (
                   <BudgetToolbar
                     readyToAssign={readyToAssign}
+                    readyToAssignSettled={figuresSettled}
                     globalLocalizer={globalLocalizer}
                     currentMonth={currentMonth}
                     budgetId={budgetId}
@@ -291,6 +300,7 @@ export function BudgetingPageDesktop() {
                 readyToAssign={readyToAssign}
                 readyToAssignLabel={formatMilliAmount(readyToAssign)}
                 rows={budgetData || []}
+                settled={figuresSettled}
               />
               <BudgetContextPanel
                 budgetId={budgetId}

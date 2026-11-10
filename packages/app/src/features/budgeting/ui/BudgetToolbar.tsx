@@ -14,6 +14,8 @@ import { PlanningAnimatedNumber } from '@features/budget-planning/ui/PlanningNum
 
 interface BudgetToolbarProps {
   readyToAssign: number;
+  /** readyToAssign is this month's real figure (not loading or a placeholder). */
+  readyToAssignSettled?: boolean;
   globalLocalizer: Intl.NumberFormat;
   currentMonth: string;
   budgetId: number;
@@ -45,6 +47,7 @@ interface BudgetToolbarProps {
 
 export function BudgetToolbar({
   readyToAssign,
+  readyToAssignSettled = false,
   globalLocalizer,
   currentMonth,
   budgetId,
@@ -74,8 +77,8 @@ export function BudgetToolbar({
   const formatAmount = useFormatMaskedMilli(globalLocalizer);
 
   useEffect(() => {
-    noteReadyToAssign(readyToAssign);
-  }, [readyToAssign]);
+    noteReadyToAssign(readyToAssign, readyToAssignSettled);
+  }, [readyToAssign, readyToAssignSettled]);
 
   // Tone the Ready-to-Assign pill by state: money to assign (green),
   // over-budgeted (red), or fully assigned (neutral).
