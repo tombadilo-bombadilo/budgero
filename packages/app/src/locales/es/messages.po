@@ -4573,8 +4573,8 @@ msgid "Assigned amount ({0})"
 msgstr "Importe asignado ({0})"
 
 #: src/features/reports/ui/notebook/question-labels.ts
-msgid "Assigned and activity per category per month."
-msgstr "Asignado y actividad por categoría y mes."
+#~ msgid "Assigned and activity per category per month."
+#~ msgstr "Asignado y actividad por categoría y mes."
 
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Assigned in future months"
@@ -4603,6 +4603,10 @@ msgstr "Asignado frente a gastado por categoría este mes"
 #: src/pages/analytics/prebuilt-question.ts
 msgid "Assigned vs spent per month"
 msgstr "Asignado frente a gastado por mes"
+
+#: src/features/reports/ui/notebook/question-labels.ts
+msgid "Assigned, activity, available and goals per category per month, as the budget shows them."
+msgstr "Asignado, actividad, disponible y objetivos por categoría y mes, como los muestra el presupuesto."
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "Assigned:"
@@ -4770,8 +4774,8 @@ msgid "Available for payment:"
 msgstr "Disponible para pago:"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
-msgid "Available isn’t offered here: it depends on carry-over and credit card rules that only the Budget page applies."
-msgstr "Aquí no se ofrece el disponible: depende de reglas de arrastre y de tarjetas de crédito que solo aplica la página de presupuesto."
+#~ msgid "Available isn’t offered here: it depends on carry-over and credit card rules that only the Budget page applies."
+#~ msgstr "Aquí no se ofrece el disponible: depende de reglas de arrastre y de tarjetas de crédito que solo aplica la página de presupuesto."
 
 #. placeholder {0}: formatAmount(Math.max(0, available || 0))
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx

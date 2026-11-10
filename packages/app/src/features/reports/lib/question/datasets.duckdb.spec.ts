@@ -119,7 +119,7 @@ function snapshot() {
   }
   // The node DuckDB build has no clock: pin the views' CURRENT_DATE.
   for (const sql of REPORTING_VIEWS_SQL)
-    conn.query(sql.replaceAll('CURRENT_DATE', `DATE '${TODAY}'`));
+    conn.query(sql.split('CURRENT_DATE').join(`DATE '${TODAY}'`));
   for (const table of DERIVED_TABLES) {
     conn.query(
       `CREATE TABLE "${table.name}" (${table.columns.map((c) => `"${c.name}" ${c.type}`).join(', ')})`

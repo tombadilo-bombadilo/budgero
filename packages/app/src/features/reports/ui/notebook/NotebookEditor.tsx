@@ -425,14 +425,6 @@ function DataStep({
       </div>
       <CustomColumns spec={spec} onChange={onChange} />
       <p className="text-xs text-muted-foreground">{sourceDescription(spec.source)}</p>
-      {spec.source === 'budget' && (
-        <p className="text-xs text-muted-foreground">
-          <Trans>
-            Available isn’t offered here: it depends on carry-over and credit card rules that only
-            the Budget page applies.
-          </Trans>
-        </p>
-      )}
     </div>
   );
 }

@@ -54,7 +54,7 @@ export function sourceDescription(source: QuestionSource): string {
     case 'transactions':
       return t`Every transaction; split transactions count once per category.`;
     case 'budget':
-      return t`Assigned and activity per category per month.`;
+      return t`Assigned, activity, available and goals per category per month, as the budget shows them.`;
     case 'accounts':
       return t`Each account with its balance from transactions.`;
     case 'balances':
