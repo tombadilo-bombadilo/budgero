@@ -354,7 +354,7 @@ describe('validation instead of silent drops', () => {
     ]) {
       const result = parseExpression(text, { fields, level: 'metric' });
       expect(result.ok, text).toBe(false);
-      expect(!result.ok && result.error.code).toBe('unexpectedToken');
+      expect(!result.ok && result.error.code).toBe('numberTooPrecise');
     }
     const ok = parseExpression('Sum([outflow]) * 9007199254740991 + 0.125', {
       fields,

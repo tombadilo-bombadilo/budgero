@@ -221,7 +221,7 @@ describe('output columns and visualization', () => {
     );
     expect(chart).toEqual({
       id: 'keep-me',
-      chartType: 'line',
+      chartType: 'bar',
       title: 'Flows',
       xAxisColumn: 'month',
       yAxisColumn: 'income',

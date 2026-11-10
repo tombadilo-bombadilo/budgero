@@ -660,5 +660,7 @@ export function expressionErrorMessage(error: ExpressionError): string {
       return t`A custom column can be a number, text or a condition.`;
     case 'roundDigits':
       return t`round() takes a whole number of digits from −10 to 10.`;
+    case 'numberTooPrecise':
+      return t`The number ${detail} is too large or has too many decimals.`;
   }
 }

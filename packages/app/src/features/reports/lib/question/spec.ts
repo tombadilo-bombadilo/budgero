@@ -734,7 +734,8 @@ export function allowedVisualizations(spec: QuestionSpec): ResolvedVisualization
 
 /**
  * Auto choice: single value → number, two metrics in different units (money
- * vs count) → combo, date grouping → line, category grouping → bar. The row
+ * vs count) → combo, a date and a category grouping → (stacked) bar, date
+ * grouping → line, category grouping → bar. The row
  * chart is picked later from the result (long labels / many bars).
  */
 export function autoVisualization(spec: QuestionSpec): ResolvedVisualization {
@@ -747,6 +748,8 @@ export function autoVisualization(spec: QuestionSpec): ResolvedVisualization {
   ) {
     return 'combo';
   }
+  // A date and a category grouping: parts of each period's total, stacked.
+  if (spec.breakouts.length === 2 && !isDateBreakout(spec, spec.breakouts[1])) return 'bar';
   if (isDateBreakout(spec, spec.breakouts[0])) return 'line';
   return 'bar';
 }

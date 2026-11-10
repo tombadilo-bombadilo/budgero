@@ -168,7 +168,8 @@ export type ExprErrorCode =
   | 'metricUnavailable'
   | 'metricResultNotNumber'
   | 'columnResultDate'
-  | 'roundDigits';
+  | 'roundDigits'
+  | 'numberTooPrecise';
 
 export class ExpressionError extends Error {
   readonly code: ExprErrorCode;
@@ -249,6 +250,8 @@ function defaultErrorMessage(code: ExprErrorCode, detail: string): string {
       return 'A custom column must be a number, text or a condition';
     case 'roundDigits':
       return 'round() takes a whole number of digits from −10 to 10';
+    case 'numberTooPrecise':
+      return `The number ${detail} is too large or too precise`;
   }
 }
 
@@ -576,7 +579,7 @@ class Parser {
         // Only numbers that are stored and read back exactly: whole numbers
         // up to 2^53 and decimals that print without an exponent.
         if (!isExactNumber(value)) {
-          throw new ExpressionError('unexpectedToken', token.start, token.end, token.text);
+          throw new ExpressionError('numberTooPrecise', token.start, token.end, token.text);
         }
         return { kind: 'number', value, start: token.start, end: token.end };
       }
