@@ -5,11 +5,35 @@ import { clock } from '../../utils/clock.js';
 export interface DesktopWidgetLayout {
   colSpan: number;
   rowSpan: number;
+  /** Not shown on desktop (a card that only belongs on the phone layout). */
+  hidden?: boolean;
 }
 
 export interface MobileWidgetLayout {
   size: 's' | 'm' | 'l';
+  /**
+   * Position on the phone when it differs from the desktop order. Widgets
+   * without one follow, in desktop order.
+   */
+  order?: number;
+  /** Not shown on the phone. */
+  hidden?: boolean;
 }
+
+/**
+ * Layout patches as sent by callers: a key left out keeps its stored value
+ * (older builds send only colSpan/rowSpan or size); `order: null` clears it.
+ */
+export type DesktopWidgetLayoutInput = Omit<DesktopWidgetLayout, 'hidden'> & {
+  hidden?: boolean | null;
+};
+export type MobileWidgetLayoutInput = Omit<MobileWidgetLayout, 'order' | 'hidden'> & {
+  order?: number | null;
+  hidden?: boolean | null;
+};
+
+/** Origin of a dashboard made from the default home page on its first edit. */
+export const HOME_DEFAULT_ORIGIN = 'home_default';
 
 /**
  * Dashboard-level filters as stored: a plain JSON object the app owns
@@ -24,6 +48,10 @@ export interface CustomDashboard {
   sortOrder: number;
   /** Null when the dashboard has no filters set. */
   filters: CustomDashboardFilters | null;
+  /** The home page shows this dashboard (at most one per budget). */
+  isHome: boolean;
+  /** Where it came from: HOME_DEFAULT_ORIGIN, or null for one made by hand. */
+  origin: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -50,6 +78,7 @@ export interface CreateCustomDashboardInput {
   id?: string;
   budgetId: number;
   name: string;
+  origin?: string | null;
 }
 
 export interface UpdateCustomDashboardInput {
@@ -58,6 +87,8 @@ export interface UpdateCustomDashboardInput {
   sortOrder?: number;
   /** Null clears the filters. */
   filters?: CustomDashboardFilters | null;
+  /** true makes it the budget's home dashboard (clearing any other); false unsets it. */
+  isHome?: boolean;
 }
 
 export interface AddCustomDashboardWidgetInput {
@@ -66,15 +97,15 @@ export interface AddCustomDashboardWidgetInput {
   dashboardId: string;
   reportId: string;
   chartId: string;
-  desktopLayout?: DesktopWidgetLayout;
-  mobileLayout?: MobileWidgetLayout;
+  desktopLayout?: DesktopWidgetLayoutInput;
+  mobileLayout?: MobileWidgetLayoutInput;
   titleOverride?: string;
 }
 
 export interface UpdateCustomDashboardWidgetInput {
   id: string;
-  desktopLayout?: DesktopWidgetLayout;
-  mobileLayout?: MobileWidgetLayout;
+  desktopLayout?: DesktopWidgetLayoutInput;
+  mobileLayout?: MobileWidgetLayoutInput;
   sortOrder?: number;
   titleOverride?: string | null;
   chartId?: string;
@@ -94,6 +125,8 @@ export interface ReorderCustomDashboardWidgetsInput {
 export interface CustomDashboardService {
   getDashboards(budgetId: number): CustomDashboard[];
   getDashboard(id: string): CustomDashboardWithWidgets | null;
+  /** ID of the dashboard the home page shows, or null for the default home. */
+  getHomeDashboardId(budgetId: number): string | null;
   getWidgetById(id: string): CustomDashboardWidget | null;
   createDashboard(input: CreateCustomDashboardInput): CustomDashboard;
   updateDashboard(input: UpdateCustomDashboardInput): CustomDashboard;
@@ -111,6 +144,8 @@ interface DashboardRow {
   Name: string;
   SortOrder: number;
   Filters?: string | null;
+  IsHome?: number | bigint | null;
+  Origin?: string | null;
   CreatedAt: string;
   UpdatedAt: string;
 }
@@ -150,44 +185,77 @@ function createId(): string {
   return `cd_${clock.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
-function clampDesktopLayout(layout: DesktopWidgetLayout): DesktopWidgetLayout {
+const MAX_MOBILE_ORDER = 10_000;
+
+function clampOrder(value: unknown): number | undefined {
+  const order = Number(value);
+  if (value === null || value === undefined || !Number.isFinite(order)) return undefined;
+  return Math.max(0, Math.min(MAX_MOBILE_ORDER, Math.trunc(order)));
+}
+
+/**
+ * Stored desktop layout: spans clamped, `hidden` only when set. `previous`
+ * supplies keys the input leaves out (a patch from an older build).
+ */
+function clampDesktopLayout(
+  layout: DesktopWidgetLayoutInput,
+  previous?: DesktopWidgetLayout
+): DesktopWidgetLayout {
   const colSpan = Number.isFinite(layout.colSpan)
     ? Math.max(MIN_COL_SPAN, Math.min(MAX_COL_SPAN, Math.trunc(layout.colSpan)))
     : DEFAULT_DESKTOP_LAYOUT.colSpan;
   const rowSpan = Number.isFinite(layout.rowSpan)
     ? Math.max(MIN_ROW_SPAN, Math.min(MAX_ROW_SPAN, Math.trunc(layout.rowSpan)))
     : DEFAULT_DESKTOP_LAYOUT.rowSpan;
-  return { colSpan, rowSpan };
+  const hidden = 'hidden' in layout ? layout.hidden === true : previous?.hidden === true;
+  return hidden ? { colSpan, rowSpan, hidden } : { colSpan, rowSpan };
 }
 
-function clampMobileLayout(layout: MobileWidgetLayout): MobileWidgetLayout {
-  if (layout.size === 's' || layout.size === 'm' || layout.size === 'l') {
-    return { size: layout.size };
+function clampMobileLayout(
+  layout: MobileWidgetLayoutInput,
+  previous?: MobileWidgetLayout
+): MobileWidgetLayout {
+  const size =
+    layout.size === 's' || layout.size === 'm' || layout.size === 'l'
+      ? layout.size
+      : DEFAULT_MOBILE_LAYOUT.size;
+  const order = 'order' in layout ? clampOrder(layout.order) : previous?.order;
+  const hidden = 'hidden' in layout ? layout.hidden === true : previous?.hidden === true;
+  return {
+    size,
+    ...(order !== undefined ? { order } : {}),
+    ...(hidden ? { hidden } : {}),
+  };
+}
+
+function parseLayoutJson(raw: string | null | undefined): Record<string, unknown> | null {
+  if (!raw) return null;
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
   }
-  return DEFAULT_MOBILE_LAYOUT;
 }
 
 function parseDesktopLayout(raw: string | null | undefined): DesktopWidgetLayout {
-  if (!raw) return DEFAULT_DESKTOP_LAYOUT;
-  try {
-    const parsed = JSON.parse(raw) as Partial<DesktopWidgetLayout>;
-    return clampDesktopLayout({
-      colSpan: Number(parsed.colSpan),
-      rowSpan: Number(parsed.rowSpan),
-    });
-  } catch {
-    return DEFAULT_DESKTOP_LAYOUT;
-  }
+  const parsed = parseLayoutJson(raw);
+  if (!parsed) return DEFAULT_DESKTOP_LAYOUT;
+  return clampDesktopLayout({
+    colSpan: Number(parsed.colSpan),
+    rowSpan: Number(parsed.rowSpan),
+    hidden: parsed.hidden === true,
+  });
 }
 
 function parseMobileLayout(raw: string | null | undefined): MobileWidgetLayout {
-  if (!raw) return DEFAULT_MOBILE_LAYOUT;
-  try {
-    const parsed = JSON.parse(raw) as Partial<MobileWidgetLayout>;
-    return clampMobileLayout({ size: parsed.size as MobileWidgetLayout['size'] });
-  } catch {
-    return DEFAULT_MOBILE_LAYOUT;
-  }
+  const parsed = parseLayoutJson(raw);
+  if (!parsed) return DEFAULT_MOBILE_LAYOUT;
+  return clampMobileLayout({
+    size: parsed.size as MobileWidgetLayout['size'],
+    order: parsed.order as number | undefined,
+    hidden: parsed.hidden === true,
+  });
 }
 
 const MAX_FILTERS_JSON = 16 * 1024;
@@ -236,6 +304,18 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
     return rows.map((row) => this.mapDashboardRow(row));
   }
 
+  getHomeDashboardId(budgetId: number): string | null {
+    // One home per budget is kept by updateDashboard; the newest wins if two
+    // ever get through (e.g. a database restored from before a sync).
+    const row = getRow<{ ID: string }>(
+      this.db,
+      `SELECT ID FROM custom_dashboards WHERE BudgetID = ? AND IsHome = 1
+       ORDER BY UpdatedAt DESC, ID ASC LIMIT 1`,
+      budgetId
+    );
+    return row?.ID ?? null;
+  }
+
   getDashboard(id: string): CustomDashboardWithWidgets | null {
     const dashboardRow = getRow<DashboardRow>(
       this.db,
@@ -276,18 +356,20 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
 
     const id = input.id ?? createId();
     const now = clock.date().toISOString();
+    const origin = input.origin?.trim() || null;
 
     try {
       run(
         this.db,
         `
-        INSERT INTO custom_dashboards (ID, BudgetID, Name, SortOrder, CreatedAt, UpdatedAt)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO custom_dashboards (ID, BudgetID, Name, SortOrder, Origin, CreatedAt, UpdatedAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `,
         id,
         input.budgetId,
         name,
         sortOrder,
+        origin,
         now,
         now
       );
@@ -326,6 +408,11 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
       values.push(serializeFilters(input.filters));
     }
 
+    if (input.isHome !== undefined) {
+      updateFields.push('IsHome = ?');
+      values.push(input.isHome ? 1 : 0);
+    }
+
     if (updateFields.length === 0) {
       const existing = this.getDashboard(input.id);
       if (!existing) throw new Error('Dashboard not found');
@@ -336,17 +423,32 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
     values.push(clock.date().toISOString());
     values.push(input.id);
 
-    try {
+    const write = () => {
+      if (input.isHome === true) {
+        // One home per budget: taking it clears the previous one.
+        run(
+          this.db,
+          `UPDATE custom_dashboards SET IsHome = 0
+             WHERE IsHome = 1 AND ID != ?
+               AND BudgetID = (SELECT BudgetID FROM custom_dashboards WHERE ID = ?)`,
+          input.id,
+          input.id
+        );
+      }
       const result = run(
         this.db,
         `
-        UPDATE custom_dashboards
-        SET ${updateFields.join(', ')}
-        WHERE ID = ?
-      `,
+          UPDATE custom_dashboards
+          SET ${updateFields.join(', ')}
+          WHERE ID = ?
+        `,
         ...values
       );
       if (!result.changes) throw new Error('Dashboard not found');
+    };
+    try {
+      if (this.db.inTransaction) write();
+      else this.db.transaction(write);
     } catch (error) {
       if (hasUniqueConstraintError(error) && input.name) {
         throw new Error(`A dashboard named "${input.name.trim()}" already exists for this budget.`);
@@ -436,14 +538,19 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
       values.push(Math.max(0, Math.trunc(input.sortOrder)));
     }
 
+    const existing =
+      input.desktopLayout !== undefined || input.mobileLayout !== undefined
+        ? this.getWidgetById(input.id)
+        : null;
+
     if (input.desktopLayout !== undefined) {
       fields.push('DesktopLayout = ?');
-      values.push(JSON.stringify(clampDesktopLayout(input.desktopLayout)));
+      values.push(JSON.stringify(clampDesktopLayout(input.desktopLayout, existing?.desktopLayout)));
     }
 
     if (input.mobileLayout !== undefined) {
       fields.push('MobileLayout = ?');
-      values.push(JSON.stringify(clampMobileLayout(input.mobileLayout)));
+      values.push(JSON.stringify(clampMobileLayout(input.mobileLayout, existing?.mobileLayout)));
     }
 
     if (input.titleOverride !== undefined) {
@@ -547,6 +654,8 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
       name: row.Name,
       sortOrder: row.SortOrder,
       filters: parseFilters(row.Filters),
+      isHome: Number(row.IsHome ?? 0) === 1,
+      origin: row.Origin ?? null,
       createdAt: row.CreatedAt,
       updatedAt: row.UpdatedAt,
     };
