@@ -20,6 +20,7 @@ import {
   type TooltipRow,
 } from '@shared/lib/charts/echarts-chrome';
 import { cn } from '@shared/lib/utils';
+import { getLocaleTag } from '@shared/i18n';
 import { buildChartModel, OTHER_SERIES_ID, type ChartSeries } from './chart-model';
 import type { DrillRequest } from './DrillMenu';
 import { columnLabel } from './question-labels';
@@ -36,6 +37,8 @@ import {
   useHiddenSeries,
 } from './viz/series';
 import { applyCategoryDisplay, isOther } from './viz/transforms';
+import { axisLabelIndexes, shortMonthLabel } from './viz/time-axis';
+import { useElementWidth } from './viz/useElementWidth';
 
 interface QuestionVisualizationProps {
   result: QueryResult;
@@ -197,6 +200,8 @@ function ChartView({
     [palette]
   );
 
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const width = useElementWidth(containerRef, 800);
   const isPie = visualization === 'pie';
   const { otherXCount } = model;
   const otherX = t`Other (${otherXCount})`;
@@ -209,6 +214,31 @@ function ChartView({
   const xLongLabels = useMemo(
     () => model.xValues.map((value) => xLabel(value, 'long')),
     [model, xLabel]
+  );
+  const timeAxis = model.x?.kind === 'breakout' && model.x.breakout.bucket !== undefined;
+  const monthAxis = timeAxis && model.x?.kind === 'breakout' && model.x.breakout.bucket === 'month';
+  // Narrow charts: "Jun", with the year where it starts or changes ("Jan '26").
+  const shortMonths = monthAxis && width < 640;
+  const axisLabels = useMemo(() => {
+    if (!shortMonths) return null;
+    const locale = getLocaleTag();
+    return model.xValues.map((value, index) => {
+      const previous = index > 0 ? String(model.xValues[index - 1] ?? '').slice(0, 4) : null;
+      const year = String(value ?? '').slice(0, 4);
+      const withYear = index === 0 || index === model.xValues.length - 1 || previous !== year;
+      return shortMonthLabel(value, withYear, locale) ?? xLabels[index];
+    });
+  }, [shortMonths, model, xLabels]);
+  // Time axes always show their first and last label.
+  const shownLabels = useMemo(
+    () =>
+      timeAxis
+        ? axisLabelIndexes(
+            model.xValues.length,
+            Math.max(2, (width - 60) / (shortMonths ? 58 : 90))
+          )
+        : null,
+    [timeAxis, model, width, shortMonths]
   );
 
   // Slices are known by their value (not their position), so a new result
@@ -299,14 +329,18 @@ function ChartView({
       grid: { left: 8, right: 28, top: 16, bottom: 4, containLabel: true },
       xAxis: {
         type: 'category' as const,
-        data: xLabels,
+        data: axisLabels ?? xLabels,
         axisLine: { lineStyle: { color: chrome.axisLine } },
         axisTick: { show: false },
         axisLabel: {
           color: chrome.axisText,
           fontSize: 11,
-          hideOverlap: true,
-          rotate: xLabels.length > 12 && visualization === 'bar' ? 35 : 0,
+          ...(shownLabels
+            ? { interval: (index: number) => shownLabels.has(index), hideOverlap: false }
+            : {
+                hideOverlap: true,
+                rotate: xLabels.length > 12 && visualization === 'bar' ? 35 : 0,
+              }),
         },
       },
       yAxis: {
@@ -389,9 +423,10 @@ function ChartView({
     seriesName,
     colorOf,
     display,
+    axisLabels,
+    shownLabels,
   ]);
 
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const handleMarkClick = useCallback(
     (params: EChartClickParams) => {
       if (!onDrill) return;

@@ -33,7 +33,10 @@ export function SankeyView({
   );
   // Labels sit right of the last column: their room shrinks on narrow screens.
   const hostRef = useRef<HTMLDivElement | null>(null);
-  const labelWidth = labelWidthFor(useElementWidth(hostRef, 600), 180);
+  const hostWidth = useElementWidth(hostRef, 600);
+  const labelWidth = labelWidthFor(hostWidth, 180);
+  // Narrow screens: name and value on two lines, so neither gets cut.
+  const stacked = hostWidth < 560;
 
   const option = useMemo<EChartsCoreOption | null>(() => {
     if (!data || data.links.length === 0) return null;
@@ -96,7 +99,7 @@ export function SankeyView({
           top: 8,
           bottom: 8,
           nodeWidth: 12,
-          nodeGap: 10,
+          nodeGap: stacked ? 16 : 10,
           nodeAlign: 'justify' as const,
           layoutIterations: 32,
           emphasis: { focus: 'adjacency' as const },
@@ -110,18 +113,22 @@ export function SankeyView({
             fontSize: 11,
             width: labelWidth,
             overflow: 'truncate' as const,
+            lineHeight: 13,
             formatter: (params: { name: string }) => {
               const node = byId.get(params.name);
               if (!node) return '';
               const name = nodeName(node);
-              return format.masked ? name : `${name}  ${format.compact(data.metric, node.total)}`;
+              if (format.masked) return name;
+              const value = format.compact(data.metric, node.total);
+              return stacked ? `${name}\n{value|${value}}` : `${name}  ${value}`;
             },
+            rich: { value: { color: chrome.inkSecondary, fontSize: 10, lineHeight: 13 } },
           },
           lineStyle: { color: 'source' as const, opacity: 0.32, curveness: 0.5 },
         },
       ],
     };
-  }, [data, palette, format, source, t, labelWidth]);
+  }, [data, palette, format, source, t, labelWidth, stacked]);
 
   if (!option || !data) {
     return (
@@ -132,7 +139,7 @@ export function SankeyView({
   }
   const from = columnLabel(source, data.from);
   const to = columnLabel(source, data.to);
-  const height = Math.max(320, Math.min(900, data.nodes.length * 26));
+  const height = Math.max(320, Math.min(1000, data.nodes.length * (stacked ? 36 : 26)));
   return (
     <div
       ref={hostRef}

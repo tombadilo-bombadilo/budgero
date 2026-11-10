@@ -91,8 +91,11 @@ export function RowChartView({
     if (visible.length === 0) return null;
     const [{ metric }] = model.series;
 
+    // Single-series rows carry their value at the bar's end; the axis then
+    // stops at the largest bar instead of the next round tick.
+    const endLabels = !stack && !percent && display?.showValues !== false;
     const base = {
-      grid: { left: 8, right: 40, top: 8, bottom: 4, containLabel: true },
+      grid: { left: 8, right: endLabels ? 64 : 40, top: 8, bottom: 4, containLabel: true },
       yAxis: {
         type: 'category' as const,
         data: labels,
@@ -108,7 +111,7 @@ export function RowChartView({
       },
       xAxis: {
         type: 'value' as const,
-        ...(percent ? { max: 100 } : {}),
+        ...(percent ? { max: 100 } : endLabels ? { max: 'dataMax' as const } : {}),
         axisLabel: {
           color: chrome.axisText,
           fontSize: 11,
@@ -138,8 +141,8 @@ export function RowChartView({
           );
         },
       },
-      series: visible.map((entry) =>
-        barSeries(
+      series: visible.map((entry) => ({
+        ...barSeries(
           entry,
           { stack, plotted },
           {
@@ -148,8 +151,19 @@ export function RowChartView({
             maxWidth: BAR_MAX_WIDTH,
             radius: BAR_RADIUS_END,
           }
-        )
-      ),
+        ),
+        ...(endLabels
+          ? {
+              label: {
+                show: true,
+                position: 'right' as const,
+                color: chrome.inkSecondary,
+                fontSize: 11,
+                formatter: (params: { value: number }) => format.compact(metric, params.value),
+              },
+            }
+          : {}),
+      })),
     };
     return applyCartesianDisplay(base, display, {
       chrome,
