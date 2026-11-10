@@ -134,7 +134,10 @@ export function QuestionResult({
           <ChartTypePicker
             spec={spec}
             current={current}
-            onPick={(item) => onVisualizationChange(item === auto ? 'auto' : item)}
+            onPick={(item) =>
+              // Auto may have turned bars into rows: picking Bar then is an explicit choice.
+              onVisualizationChange(item === auto && current === auto ? 'auto' : item)
+            }
           />
         )}
 
