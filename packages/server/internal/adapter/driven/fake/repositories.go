@@ -664,6 +664,7 @@ func (r *SpaceRepository) MarkBlobPublished(ctx context.Context, spaceID, origin
 	if b, ok := r.blobs[spaceID]; ok {
 		b.Origin = origin
 		b.PublishedAt = at
+		b.Published = true
 	}
 	return nil
 }

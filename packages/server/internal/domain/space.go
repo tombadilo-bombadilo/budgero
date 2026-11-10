@@ -19,7 +19,8 @@ type SpaceBlob struct {
 	SizeBytes            int64  `json:"size_bytes"`
 	EncryptionKeyVersion int64  `json:"encryption_key_version"`
 	// MutationVersion is the mutation-log position the blob contents
-	// correspond to (client cursor at upload time). 0 = unknown (legacy).
+	// correspond to (client cursor at upload time). 0 is either a real
+	// position or unknown (legacy); see HasBoundMutationVersion.
 	MutationVersion int64 `json:"mutation_version"`
 	// DataFormatVersion is the client data format of the blob contents
 	// (2 = integer-milliunit money). Declared by clients on upload; the
@@ -31,6 +32,23 @@ type SpaceBlob struct {
 	// PublishedAt is when the current snapshot was published. Snapshots
 	// published before history existed report UpdatedAt.
 	PublishedAt time.Time `json:"published_at"`
+	// Published is true once a publish recorded origin and published_at
+	// (servers since v1.20.4). Such a server always binds MutationVersion,
+	// so it is a real log position even when it is 0.
+	Published bool `json:"-"`
+}
+
+// HasBoundMutationVersion reports whether MutationVersion is the real log
+// position of the snapshot's contents, so a device restoring it must replay
+// the log from exactly there, including from 0 (an import or a new budget
+// published before any change was logged). False means unknown: a legacy row
+// (0 = never bound) or a restored copy at 0 (the kept copy may itself be a
+// legacy one). Devices then seed from the log's current position instead.
+func (b *SpaceBlob) HasBoundMutationVersion() bool {
+	if b.MutationVersion > 0 {
+		return true
+	}
+	return b.MutationVersion == 0 && b.Published && b.Origin != SnapshotOriginRestore
 }
 
 // SyncState represents the sync state of a space.
