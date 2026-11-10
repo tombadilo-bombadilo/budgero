@@ -5,7 +5,7 @@ import remarkGfm from 'remark-gfm';
 import type { ChatMessage as ChatMessageType } from '@budgero/core/browser';
 import type { ChatChartSpec } from '@features/ai/lib/tools';
 import type { ToolEvent } from '@features/ai/lib/chat-client';
-import { ChartViewer } from '@features/analytics/ui/chart-viewer/ChartViewer';
+import { SqlChartVisualization } from '@features/reports/ui/notebook/SqlChartVisualization';
 import { ToolCallLog } from './ToolCallLog';
 import { MARKDOWN_PROSE_CLASSES, formatMessageTime } from './chat-panel/chat-panel.utils';
 
@@ -104,12 +104,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
                   </p>
                 )}
                 <div className="h-72 sm:h-80">
-                  <ChartViewer
-                    queryResult={chart.queryResult}
-                    chartConfig={chart.config}
+                  <SqlChartVisualization
+                    result={chart.queryResult}
+                    chart={chart.config}
+                    exportName={chart.config.title}
                     fitHeight
-                    compactToolbar
-                    showLegendSummary={false}
                   />
                 </div>
               </div>

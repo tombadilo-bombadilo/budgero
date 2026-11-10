@@ -10,6 +10,7 @@ import {
   MoreHorizontal,
   Play,
   Save,
+  SlidersHorizontal,
   Trash2,
 } from 'lucide-react';
 import type { UnifiedReport } from '@budgero/core/browser';
@@ -29,8 +30,11 @@ import { QuestionHeader } from '@pages/reports/question/QuestionHeader';
 import { useDeleteQuestion } from '@pages/reports/question/useDeleteQuestion';
 import { useOpenSavedQuestion } from '@pages/reports/question/useOpenSavedQuestion';
 import { usePinToDashboard } from '@pages/reports/question/usePinToDashboard';
+import { SqlChartVisualization } from '@features/reports/ui/notebook/SqlChartVisualization';
+import { chartChoiceLabel } from '@pages/custom-dashboards/components/question-choices';
+import { ToggleGroup, ToggleGroupItem } from '@shared/ui/toggle-group';
+import { SQLEditor, SchemaSidebar, ResultsTable } from './components';
 import { useExplorerState } from './hooks/useExplorerState';
-import { SQLEditor, SchemaSidebar, ResultsTable, ChartsPanel } from './components';
 import { COMMON_QUERIES } from './sql-utils';
 
 interface SqlQuestionViewProps {
@@ -306,12 +310,56 @@ export function SqlQuestionView({
         {queryResult && <ResultsTable result={queryResult} />}
 
         {editingReport?.charts && editingReport.charts.length > 0 && queryResult && (
-          <ChartsPanel
-            queryResult={queryResult}
-            charts={editingReport.charts}
-            selectedChartConfig={selectedChartConfig}
-            onSelectChart={setSelectedChartConfig}
-          />
+          <section
+            aria-label={t`Chart`}
+            className="space-y-3 rounded-lg border bg-card p-3 text-card-foreground sm:p-4"
+          >
+            <div className="flex flex-wrap items-center gap-2">
+              {editingReport.charts.length > 1 && (
+                <ToggleGroup
+                  type="single"
+                  variant="outline"
+                  size="sm"
+                  value={selectedChartConfig?.id ?? editingReport.charts[0].id}
+                  onValueChange={(id) => {
+                    const next = editingReport.charts.find((chart) => chart.id === id);
+                    if (next) setSelectedChartConfig(next);
+                  }}
+                  aria-label={t`Charts of this question`}
+                  className="flex-wrap"
+                >
+                  {editingReport.charts.map((chart) => (
+                    <ToggleGroupItem
+                      key={chart.id}
+                      value={chart.id}
+                      className="w-auto flex-none whitespace-nowrap px-2.5"
+                    >
+                      {chartChoiceLabel(chart)}
+                    </ToggleGroupItem>
+                  ))}
+                </ToggleGroup>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-auto h-8"
+                onClick={() => setShowSaveReportDialog(true)}
+                title={t`Chart type, columns and aggregate are set with the question`}
+              >
+                <SlidersHorizontal className="h-4 w-4" aria-hidden />
+                <Trans>Edit chart</Trans>
+              </Button>
+            </div>
+            <SqlChartVisualization
+              result={queryResult}
+              // The saved version of the picked chart (it may have just been edited).
+              chart={
+                editingReport.charts.find((chart) => chart.id === selectedChartConfig?.id) ??
+                editingReport.charts[0]
+              }
+              exportName={editingReport.name}
+            />
+          </section>
         )}
       </div>
 

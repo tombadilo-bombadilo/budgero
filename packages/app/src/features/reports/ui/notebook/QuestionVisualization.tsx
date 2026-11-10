@@ -306,8 +306,11 @@ function ChartView({
             label: {
               color: chrome.inkPrimary,
               fontSize: 11,
+              // Narrow charts: the legend names the slices, labels keep the share.
               formatter: (params: { name: string; percent?: number }) =>
-                `${params.name}\n${format.percent((params.percent ?? 0) / 100)}`,
+                width < 460
+                  ? format.percent((params.percent ?? 0) / 100)
+                  : `${params.name}\n${format.percent((params.percent ?? 0) / 100)}`,
             },
             labelLine: { lineStyle: { color: chrome.axisLine } },
           },
@@ -418,6 +421,7 @@ function ChartView({
     display,
     axisLabels,
     shownLabels,
+    width,
   ]);
 
   const handleMarkClick = useCallback(

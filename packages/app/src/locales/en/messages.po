@@ -684,8 +684,8 @@ msgstr "{0} Chart Configuration"
 #. placeholder {0}: charts.length
 #. placeholder {1}: charts.length > 1 ? 's' : ''
 #: src/pages/explorer-page/components/ChartsPanel.tsx
-msgid "{0} chart{1}"
-msgstr "{0} chart{1}"
+#~ msgid "{0} chart{1}"
+#~ msgstr "{0} chart{1}"
 
 #. placeholder {0}: rule.conditions.length
 #: src/pages/settings/AutomationRulesPage.tsx
@@ -835,10 +835,8 @@ msgstr "{0} of spending"
 msgid "{0} pings · {1} days"
 msgstr "{0} pings · {1} days"
 
-#. placeholder {0}: maskText(queryResult.rowCount.toLocaleString())
 #. placeholder {0}: result.rowCount
 #. placeholder {0}: table.rowCount.toLocaleString()
-#: src/features/analytics/ui/chart-viewer/ChartCanvas.tsx
 #: src/pages/admin/sql-explorer/SchemaSidebar.tsx
 #: src/pages/explorer-page/components/ResultsTable.tsx
 msgid "{0} rows"
@@ -1781,8 +1779,8 @@ msgstr "{upcomingCount} upcoming"
 
 #. placeholder {0}: legendItems.length
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
-msgid "{visibleCount}/{0} series visible"
-msgstr "{visibleCount}/{0} series visible"
+#~ msgid "{visibleCount}/{0} series visible"
+#~ msgstr "{visibleCount}/{0} series visible"
 
 #: src/features/reports/ui/notebook/viz/CalendarHeatmapView.tsx
 msgid "{yearText}: {total} over {activeDays} days"
@@ -2662,8 +2660,8 @@ msgid "<0/>Self-host installs"
 msgstr "<0/>Self-host installs"
 
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
-msgid "<0/>Series"
-msgstr "<0/>Series"
+#~ msgid "<0/>Series"
+#~ msgstr "<0/>Series"
 
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "<0/>Show Chat Bubble"
@@ -3799,6 +3797,10 @@ msgstr "Add a note for this transfer..."
 msgid "Add a note…"
 msgstr "Add a note…"
 
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Add a question"
+msgstr "Add a question"
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 #~ msgid "Add a step"
 #~ msgstr "Add a step"
@@ -3909,8 +3911,10 @@ msgstr "Add New Transaction"
 msgid "Add sort"
 msgstr "Add sort"
 
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
 #: src/pages/explorer-page/SqlQuestionView.tsx
 #: src/pages/reports/question/NotebookQuestionView.tsx
+#: src/pages/reports/question/usePinToDashboard.tsx
 msgid "Add to dashboard"
 msgstr "Add to dashboard"
 
@@ -3947,8 +3951,8 @@ msgstr "Add Warranty"
 
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Add Widget"
-msgstr "Add Widget"
+#~ msgid "Add Widget"
+#~ msgstr "Add Widget"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
 msgid "Add your accounts and pick categories"
@@ -3971,7 +3975,6 @@ msgid "Added to every monthly payment throughout the plan."
 msgstr "Added to every monthly payment throughout the plan."
 
 #: src/features/account-management/ui/AddAccountDialog.tsx
-#: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
 msgid "Adding..."
 msgstr "Adding..."
 
@@ -4038,7 +4041,6 @@ msgid "After N occurrences"
 msgstr "After N occurrences"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Aggregate Function"
 msgstr "Aggregate Function"
 
@@ -4097,8 +4099,8 @@ msgstr "All"
 
 #. placeholder {0}: legendItems.length
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
-msgid "All {0} series visible"
-msgstr "All {0} series visible"
+#~ msgid "All {0} series visible"
+#~ msgstr "All {0} series visible"
 
 #: src/pages/onboarding/steps/ShareStep.tsx
 #~ msgid "ALL 5 SEATS FILLED"
@@ -4635,7 +4637,6 @@ msgid "Area"
 msgstr "Area"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/shared/lib/analytics/visualization-labels.ts
 msgid "Area Chart"
 msgstr "Area Chart"
@@ -4935,7 +4936,6 @@ msgid "Available: {0}"
 msgstr "Available: {0}"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Average"
 msgstr "Average"
 
@@ -5144,7 +5144,6 @@ msgid "Bar"
 msgstr "Bar"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/shared/lib/analytics/visualization-labels.ts
 msgid "Bar Chart"
 msgstr "Bar Chart"
@@ -5797,11 +5796,9 @@ msgstr "Canadian Dollar"
 #: src/pages/admin/admin-users/ActionDialog.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
-#: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-#: src/pages/custom-dashboards/components/PinChartDialog.tsx
 #: src/pages/JoinWorkspacePage.tsx
 #: src/pages/reports/question/useDeleteQuestion.tsx
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
@@ -6129,17 +6126,21 @@ msgstr "Changing..."
 
 #: src/features/reports/ui/notebook/QuestionVisualization.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
-#: src/pages/custom-dashboards/components/ReportChartSelectFields.tsx
+#: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "Chart"
 msgstr "Chart"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Chart added to report"
-msgstr "Chart added to report"
+msgid "Chart added"
+msgstr "Chart added"
+
+#: src/features/reports/ui/SaveReportDialog.tsx
+#~ msgid "Chart added to report"
+#~ msgstr "Chart added to report"
 
 #: src/features/analytics/ui/chart-viewer/chart-viewer.utils.ts
-msgid "Chart data exported to CSV"
-msgstr "Chart data exported to CSV"
+#~ msgid "Chart data exported to CSV"
+#~ msgstr "Chart data exported to CSV"
 
 #: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
 msgid "Chart options"
@@ -6150,15 +6151,18 @@ msgstr "Chart options"
 #~ msgstr "Chart pinned to dashboard"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Chart removed from report"
-msgstr "Chart removed from report"
+msgid "Chart removed"
+msgstr "Chart removed"
+
+#: src/features/reports/ui/SaveReportDialog.tsx
+#~ msgid "Chart removed from report"
+#~ msgstr "Chart removed from report"
 
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Chart settings"
 msgstr "Chart settings"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Chart title..."
 msgstr "Chart title..."
 
@@ -6167,14 +6171,25 @@ msgid "Chart type"
 msgstr "Chart type"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Chart Type"
 msgstr "Chart Type"
 
+#: src/pages/explorer-page/SqlQuestionView.tsx
+msgid "Chart type, columns and aggregate are set with the question"
+msgstr "Chart type, columns and aggregate are set with the question"
+
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/explorer-page/components/ChartsPanel.tsx
-msgid "Chart Visualizations"
-msgstr "Chart Visualizations"
+#~ msgid "Chart Visualizations"
+#~ msgstr "Chart Visualizations"
+
+#: src/features/reports/ui/SaveReportDialog.tsx
+msgid "Charts"
+msgstr "Charts"
+
+#: src/pages/explorer-page/SqlQuestionView.tsx
+msgid "Charts of this question"
+msgstr "Charts of this question"
 
 #: src/features/ai/lib/chat-client.ts
 msgid "Chat"
@@ -6264,8 +6279,8 @@ msgid "Choose a destination account in Configuration for row {0}{1}."
 msgstr "Choose a destination account in Configuration for row {0}{1}."
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Choose a different source chart for this widget."
-msgstr "Choose a different source chart for this widget."
+#~ msgid "Choose a different source chart for this widget."
+#~ msgstr "Choose a different source chart for this widget."
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Choose a font"
@@ -6303,6 +6318,11 @@ msgstr "Choose another field"
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 msgid "Choose another income category to receive this category’s transactions and any assignments. Your income totals will stay the same."
 msgstr "Choose another income category to receive this category’s transactions and any assignments. Your income totals will stay the same."
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Choose another question"
+msgstr "Choose another question"
 
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Choose category"
@@ -7143,6 +7163,10 @@ msgstr "Corner shop"
 msgid "Correct a mislabeled account. For example, 10 {oldCurrency} becomes 10 {newCurrency}, and its value in the budget currency is recalculated."
 msgstr "Correct a mislabeled account. For example, 10 {oldCurrency} becomes 10 {newCurrency}, and its value in the budget currency is recalculated."
 
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "Could not add the question to the dashboard"
+msgstr "Could not add the question to the dashboard"
+
 #: src/features/category-management/ui/FundingPriorityEditor.tsx
 msgid "Could not change funding priority."
 msgstr "Could not change funding priority."
@@ -7158,6 +7182,10 @@ msgstr "Could not connect to YNAB"
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 msgid "Could not connect to YNAB."
 msgstr "Could not connect to YNAB."
+
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "Could not create the dashboard"
+msgstr "Could not create the dashboard"
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
 msgid "Could not create the zip archive"
@@ -7365,7 +7393,6 @@ msgstr "Couldn't verify the app with Enable Banking"
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/admin/admin-users/user-details/MutationsTab.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Count"
 msgstr "Count"
 
@@ -7431,13 +7458,17 @@ msgstr "Create “{0}”"
 msgid "Create \"{normalizedSearch}\""
 msgstr "Create \"{normalizedSearch}\""
 
-#: src/pages/custom-dashboards/components/PinChartDialog.tsx
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 msgid "Create \"My Dashboard\""
 msgstr "Create \"My Dashboard\""
 
 #: src/pages/custom-dashboards/components/PinChartDialog.tsx
-msgid "Create a dashboard first to pin charts."
-msgstr "Create a dashboard first to pin charts."
+#~ msgid "Create a dashboard first to pin charts."
+#~ msgstr "Create a dashboard first to pin charts."
+
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "Create a dashboard first."
+msgstr "Create a dashboard first."
 
 #: src/features/bank-sync/ui/EnableBankingSetupCard.tsx
 msgid "Create a free account in the <0>Enable Banking control panel</0>."
@@ -7589,8 +7620,8 @@ msgstr "Creating negative Ready to Assign"
 
 #: src/features/budget-management/ui/create-budget-form/ManualBudgetTab.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
-#: src/pages/custom-dashboards/components/PinChartDialog.tsx
 msgid "Creating..."
 msgstr "Creating..."
 
@@ -7829,8 +7860,8 @@ msgstr "Custom range…"
 #~ msgstr "Custom reports"
 
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
-msgid "Custom widget title (optional)"
-msgstr "Custom widget title (optional)"
+#~ msgid "Custom widget title (optional)"
+#~ msgstr "Custom widget title (optional)"
 
 #: src/pages/admin/admin-users/user-details/OverviewTab.tsx
 msgid "Customer ID"
@@ -7904,7 +7935,7 @@ msgstr "Dark"
 #: src/app/layout/desktop-shell/desktop-shell.utils.ts
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/app/layout/desktop-shell/useDesktopShellState.ts
-#: src/pages/custom-dashboards/components/PinChartDialog.tsx
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 #: src/pages/dashboard/DashboardPage.desktop.tsx
 #: src/pages/settings/AppearancePage.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
@@ -8883,9 +8914,13 @@ msgstr "Edit category"
 msgid "Edit Category"
 msgstr "Edit Category"
 
+#: src/pages/explorer-page/SqlQuestionView.tsx
+msgid "Edit chart"
+msgstr "Edit chart"
+
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-msgid "Edit Chart"
-msgstr "Edit Chart"
+#~ msgid "Edit Chart"
+#~ msgstr "Edit Chart"
 
 #: src/features/reports/ui/notebook/ExpressionEditor.tsx
 msgid "Edit custom column"
@@ -8954,16 +8989,16 @@ msgid "Edit Recurring Transaction"
 msgstr "Edit Recurring Transaction"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Edit Report"
-msgstr "Edit Report"
+#~ msgid "Edit Report"
+#~ msgstr "Edit Report"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Edit result filter: {label}"
 msgstr "Edit result filter: {label}"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Edit source visualization"
-msgstr "Edit source visualization"
+#~ msgid "Edit source visualization"
+#~ msgstr "Edit source visualization"
 
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Edit splits"
@@ -9246,8 +9281,8 @@ msgid "Enter new password (min 8 characters)"
 msgstr "Enter new password (min 8 characters)"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Enter report name..."
-msgstr "Enter report name..."
+#~ msgid "Enter report name..."
+#~ msgstr "Enter report name..."
 
 #. placeholder {0}: transferAccountRecord.Name
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
@@ -9595,8 +9630,8 @@ msgid "Export backups, restore snapshots, and manage your budget data"
 msgstr "Export backups, restore snapshots, and manage your budget data"
 
 #: src/features/analytics/ui/chart-viewer/ChartExportButton.tsx
-msgid "Export CSV"
-msgstr "Export CSV"
+#~ msgid "Export CSV"
+#~ msgstr "Export CSV"
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "Export CSVs"
@@ -9664,8 +9699,8 @@ msgid "Failed to add transaction"
 msgstr "Failed to add transaction"
 
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
-msgid "Failed to add widget"
-msgstr "Failed to add widget"
+#~ msgid "Failed to add widget"
+#~ msgstr "Failed to add widget"
 
 #: src/features/ai/ui/AICategorizeDialog.tsx
 msgid "Failed to analyze transactions"
@@ -9766,7 +9801,6 @@ msgid "Failed to create checkout session. Please try again."
 msgstr "Failed to create checkout session. Please try again."
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
-#: src/pages/custom-dashboards/components/PinChartDialog.tsx
 msgid "Failed to create dashboard"
 msgstr "Failed to create dashboard"
 
@@ -9775,8 +9809,8 @@ msgid "Failed to create default dashboard"
 msgstr "Failed to create default dashboard"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Failed to create report"
-msgstr "Failed to create report"
+#~ msgid "Failed to create report"
+#~ msgstr "Failed to create report"
 
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "Failed to create workspace. Please try again."
@@ -9825,8 +9859,8 @@ msgid "Failed to execute query"
 msgstr "Failed to execute query"
 
 #: src/features/analytics/ui/chart-viewer/chart-viewer.utils.ts
-msgid "Failed to export chart data"
-msgstr "Failed to export chart data"
+#~ msgid "Failed to export chart data"
+#~ msgstr "Failed to export chart data"
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Failed to export CSV files"
@@ -9914,8 +9948,8 @@ msgid "Failed to perform action"
 msgstr "Failed to perform action"
 
 #: src/pages/custom-dashboards/components/PinChartDialog.tsx
-msgid "Failed to pin chart"
-msgstr "Failed to pin chart"
+#~ msgid "Failed to pin chart"
+#~ msgstr "Failed to pin chart"
 
 #: src/pages/settings/push-api/usePushApiState.ts
 msgid "Failed to process mutations"
@@ -10000,6 +10034,7 @@ msgid "Failed to save split transaction"
 msgstr "Failed to save split transaction"
 
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+#: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Failed to save the question"
 msgstr "Failed to save the question"
 
@@ -10067,16 +10102,16 @@ msgid "Failed to update category group"
 msgstr "Failed to update category group"
 
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-msgid "Failed to update chart"
-msgstr "Failed to update chart"
+#~ msgid "Failed to update chart"
+#~ msgstr "Failed to update chart"
 
 #: src/features/subscription/api/useSubscription.ts
 msgid "Failed to update plan. Please try again."
 msgstr "Failed to update plan. Please try again."
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Failed to update report"
-msgstr "Failed to update report"
+#~ msgid "Failed to update report"
+#~ msgstr "Failed to update report"
 
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Failed to write to clipboard. Please try again."
@@ -10176,8 +10211,8 @@ msgid "Filter results"
 msgstr "Filter results"
 
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
-msgid "Filter series..."
-msgstr "Filter series..."
+#~ msgid "Filter series..."
+#~ msgstr "Filter series..."
 
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #~ msgid "Filters"
@@ -10750,7 +10785,6 @@ msgid "Group by"
 msgstr "Group by"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Group By"
 msgstr "Group By"
 
@@ -10875,8 +10909,8 @@ msgid "Hi! I'm your budget assistant."
 msgstr "Hi! I'm your budget assistant."
 
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
-msgid "Hide all"
-msgstr "Hide all"
+#~ msgid "Hide all"
+#~ msgstr "Hide all"
 
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Hide Archived"
@@ -11989,7 +12023,6 @@ msgstr "Label<0/>"
 #: src/features/labels/ui/LabelCombobox.tsx
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/shared/model/nav-registry.ts
 msgid "Labels"
 msgstr "Labels"
@@ -12171,8 +12204,8 @@ msgid "leave blank to use cached password"
 msgstr "leave blank to use cached password"
 
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
-msgid "Leave blank to use chart title"
-msgstr "Leave blank to use chart title"
+#~ msgid "Leave blank to use chart title"
+#~ msgstr "Leave blank to use chart title"
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Leave empty"
@@ -12293,7 +12326,6 @@ msgid "Line"
 msgstr "Line"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/shared/lib/analytics/visualization-labels.ts
 msgid "Line Chart"
 msgstr "Line Chart"
@@ -12437,8 +12469,8 @@ msgid "Loading categories..."
 msgstr "Loading categories..."
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Loading chart..."
-msgstr "Loading chart..."
+#~ msgid "Loading chart..."
+#~ msgstr "Loading chart..."
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
 msgid "Loading dashboards..."
@@ -12520,6 +12552,7 @@ msgstr "Loading..."
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
 #: src/pages/reports/question/QuestionPage.tsx
 msgid "Loading…"
 msgstr "Loading…"
@@ -12837,7 +12870,6 @@ msgstr "max(calc(env(safe-area-inset-bottom, 0px) - 12px), 0px)"
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/reports/ui/notebook/HavingEditor.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Maximum"
 msgstr "Maximum"
 
@@ -12918,13 +12950,13 @@ msgid "Metric"
 msgstr "Metric"
 
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-msgid "Metric Column"
-msgstr "Metric Column"
+#~ msgid "Metric Column"
+#~ msgstr "Metric Column"
 
 #. placeholder {0}: chartConfig.yAxisColumn
 #: src/features/analytics/ui/chart-viewer/ChartCanvas.tsx
-msgid "Metric column \"{0}\" is missing in query results."
-msgstr "Metric column \"{0}\" is missing in query results."
+#~ msgid "Metric column \"{0}\" is missing in query results."
+#~ msgstr "Metric column \"{0}\" is missing in query results."
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Metrics"
@@ -12946,7 +12978,6 @@ msgstr "Minimal rows, tap to expand."
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/reports/ui/notebook/HavingEditor.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Minimum"
 msgstr "Minimum"
 
@@ -13353,6 +13384,7 @@ msgstr "name"
 msgid "Name"
 msgstr "Name"
 
+#: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Name *"
 msgstr "Name *"
@@ -13369,6 +13401,10 @@ msgstr "Name cannot be empty"
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "Name required"
 msgstr "Name required"
+
+#: src/features/reports/ui/SaveReportDialog.tsx
+msgid "Name the question…"
+msgstr "Name the question…"
 
 #: src/pages/onboarding/onboarding-data.ts
 #~ msgid "Name your budget"
@@ -13955,8 +13991,8 @@ msgid "No changes on the server yet."
 msgstr "No changes on the server yet."
 
 #: src/pages/explorer-page/components/ChartsPanel.tsx
-msgid "No chart selected. Click a chart button above."
-msgstr "No chart selected. Click a chart button above."
+#~ msgid "No chart selected. Click a chart button above."
+#~ msgstr "No chart selected. Click a chart button above."
 
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "No cohorts in the selected window."
@@ -14003,16 +14039,16 @@ msgid "No data available"
 msgstr "No data available"
 
 #: src/features/analytics/ui/chart-viewer/ChartCanvas.tsx
-msgid "No data available for chart"
-msgstr "No data available for chart"
+#~ msgid "No data available for chart"
+#~ msgstr "No data available for chart"
 
 #: src/features/analytics/ui/chart-viewer/ChartCanvas.tsx
-msgid "No data available for stat"
-msgstr "No data available for stat"
+#~ msgid "No data available for stat"
+#~ msgstr "No data available for stat"
 
 #: src/features/analytics/ui/chart-viewer/ChartCanvas.tsx
-msgid "No data available for table"
-msgstr "No data available for table"
+#~ msgid "No data available for table"
+#~ msgstr "No data available for table"
 
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
@@ -14171,8 +14207,8 @@ msgid "No matching schema items."
 msgstr "No matching schema items."
 
 #: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
-msgid "No matching series."
-msgstr "No matching series."
+#~ msgid "No matching series."
+#~ msgstr "No matching series."
 
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "No members yet."
@@ -14284,6 +14320,14 @@ msgstr "No Query"
 msgid "No query results available to create chart"
 msgstr "No query results available to create chart"
 
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "No question matches."
+msgstr "No question matches."
+
+#: src/pages/custom-dashboards/components/DashboardGrid.tsx
+msgid "No questions on this dashboard yet. Add one with “Add a question”."
+msgstr "No questions on this dashboard yet. Add one with “Add a question”."
+
 #: src/pages/admin/AdminDashboard.tsx
 msgid "No recent activity"
 msgstr "No recent activity"
@@ -14329,8 +14373,8 @@ msgid "No saved questions yet. Open an example above, or ask your own: pick data
 msgstr "No saved questions yet. Open an example above, or ask your own: pick data, filter it, summarize it and save it to reuse or pin to a dashboard."
 
 #: src/pages/custom-dashboards/components/PinChartDialog.tsx
-msgid "No saved report with chart configuration is available yet."
-msgstr "No saved report with chart configuration is available yet."
+#~ msgid "No saved report with chart configuration is available yet."
+#~ msgstr "No saved report with chart configuration is available yet."
 
 #: src/pages/explorer-page/components/ReportsPanel.tsx
 #~ msgid "No saved reports yet. Save a query to get started."
@@ -14481,8 +14525,8 @@ msgid "No warranties yet. Add one to get started."
 msgstr "No warranties yet. Add one to get started."
 
 #: src/pages/custom-dashboards/components/DashboardGrid.tsx
-msgid "No widgets yet. Add your first chart widget."
-msgstr "No widgets yet. Add your first chart widget."
+#~ msgid "No widgets yet. Add your first chart widget."
+#~ msgstr "No widgets yet. Add your first chart widget."
 
 #: src/app/startup/screens.tsx
 msgid "No workspace available"
@@ -14502,7 +14546,6 @@ msgstr "No workspaces yet. Use the button above to create your first workspace."
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "None"
 msgstr "None"
@@ -15706,6 +15749,10 @@ msgstr "Pick a metric…"
 msgid "Pick a period with some history to project from."
 msgstr "Pick a period with some history to project from."
 
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Pick a saved question to show on this dashboard."
+msgstr "Pick a saved question to show on this dashboard."
+
 #: src/pages/onboarding/onboarding-data.ts
 #~ msgid "Pick a savings goal"
 #~ msgstr "Pick a savings goal"
@@ -15729,6 +15776,10 @@ msgstr "Pick range"
 #: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
 msgid "Pick the account these transactions go into."
 msgstr "Pick the account these transactions go into."
+
+#: src/pages/reports/question/usePinToDashboard.tsx
+msgid "Pick the dashboard to show this question on."
+msgstr "Pick the dashboard to show this question on."
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
@@ -15760,7 +15811,6 @@ msgid "Pie"
 msgstr "Pie"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/shared/lib/analytics/visualization-labels.ts
 msgid "Pie Chart"
 msgstr "Pie Chart"
@@ -15866,6 +15916,7 @@ msgid "Please drop an image file"
 msgstr "Please drop an image file"
 
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+#: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Please enter a name"
 msgstr "Please enter a name"
 
@@ -15874,8 +15925,8 @@ msgid "Please enter a name for this query."
 msgstr "Please enter a name for this query."
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Please enter a report name"
-msgstr "Please enter a report name"
+#~ msgid "Please enter a report name"
+#~ msgstr "Please enter a report name"
 
 #: src/pages/settings/simplefin/SimpleFINPage.tsx
 #~ msgid "Please enter a setup token"
@@ -15944,12 +15995,12 @@ msgid "Please select a metric column"
 msgstr "Please select a metric column"
 
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-msgid "Please select a metric column."
-msgstr "Please select a metric column."
+#~ msgid "Please select a metric column."
+#~ msgstr "Please select a metric column."
 
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
-msgid "Please select a report and chart."
-msgstr "Please select a report and chart."
+#~ msgid "Please select a report and chart."
+#~ msgstr "Please select a report and chart."
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Please select a valid database file (.db or .sqlite)"
@@ -15978,12 +16029,12 @@ msgid "Please select both X and Y axis columns"
 msgstr "Please select both X and Y axis columns"
 
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-msgid "Please select both X and Y axis columns."
-msgstr "Please select both X and Y axis columns."
+#~ msgid "Please select both X and Y axis columns."
+#~ msgstr "Please select both X and Y axis columns."
 
 #: src/pages/custom-dashboards/components/PinChartDialog.tsx
-msgid "Please select dashboard, report, and chart."
-msgstr "Please select dashboard, report, and chart."
+#~ msgid "Please select dashboard, report, and chart."
+#~ msgstr "Please select dashboard, report, and chart."
 
 #: src/features/transactions/ui/add-transaction/AddTransactionForm.tsx
 msgid "Please select the first occurrence date."
@@ -16481,6 +16532,8 @@ msgid "Query saved"
 msgstr "Query saved"
 
 #: src/app/layout/desktop-shell/useDesktopShellState.ts
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Question"
 msgstr "Question"
 
@@ -16497,6 +16550,7 @@ msgid "Question order"
 msgstr "Question order"
 
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+#: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Question saved"
 msgstr "Question saved"
 
@@ -16505,6 +16559,7 @@ msgid "Question steps"
 msgstr "Question steps"
 
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+#: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Question updated"
 msgstr "Question updated"
 
@@ -16932,6 +16987,7 @@ msgstr "Reduction failed"
 #: src/features/sync-diagnostics/ui/SyncActions.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Refresh"
 msgstr "Refresh"
 
@@ -16940,20 +16996,24 @@ msgid "Refresh failed"
 msgstr "Refresh failed"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Refresh widget data"
-msgstr "Refresh widget data"
+#~ msgid "Refresh widget data"
+#~ msgstr "Refresh widget data"
 
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "Refreshing budget data"
 msgstr "Refreshing budget data"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Refreshing widget data"
-msgstr "Refreshing widget data"
+#~ msgid "Refreshing widget data"
+#~ msgstr "Refreshing widget data"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Refreshing..."
-msgstr "Refreshing..."
+#~ msgid "Refreshing..."
+#~ msgstr "Refreshing..."
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "Refreshing…"
+msgstr "Refreshing…"
 
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Refund"
@@ -17102,6 +17162,10 @@ msgstr "Remove custom column: {0}"
 msgid "Remove filter: {label}"
 msgstr "Remove filter: {label}"
 
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "Remove from dashboard"
+msgstr "Remove from dashboard"
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Remove grouping: {label}"
 msgstr "Remove grouping: {label}"
@@ -17165,8 +17229,8 @@ msgid "Remove this payee?"
 msgstr "Remove this payee?"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Remove widget"
-msgstr "Remove widget"
+#~ msgid "Remove widget"
+#~ msgstr "Remove widget"
 
 #. placeholder {0}: result.transactionsRemoved
 #. placeholder {1}: result.accountsRemoved ? plural(result.accountsRemoved, { one: `, # account`, other: `, # accounts`, }) : ''
@@ -17253,13 +17317,13 @@ msgid "Repeats yearly. Current cycle: {0} · this cycle's target {1}. Cycles are
 msgstr "Repeats yearly. Current cycle: {0} · this cycle's target {1}. Cycles are counted from the target date; the goal amount applies to each cycle."
 
 #: src/pages/custom-dashboards/components/ReportChartSelectFields.tsx
-msgid "Report"
-msgstr "Report"
+#~ msgid "Report"
+#~ msgstr "Report"
 
 #. placeholder {0}: mode === 'create' ? 'created' : 'updated'
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Report {0} successfully"
-msgstr "Report {0} successfully"
+#~ msgid "Report {0} successfully"
+#~ msgstr "Report {0} successfully"
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Report a Bug"
@@ -17278,8 +17342,8 @@ msgstr "Report a Bug"
 #~ msgstr "Report Loaded"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Report Name *"
-msgstr "Report Name *"
+#~ msgid "Report Name *"
+#~ msgstr "Report Name *"
 
 #: src/features/reports/ui/report-builder/SaveBuilderReportDialog.tsx
 #~ msgid "Report saved"
@@ -17788,8 +17852,8 @@ msgid "Run read-only analysis or maintenance queries against the primary server 
 msgstr "Run read-only analysis or maintenance queries against the primary server database."
 
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-msgid "Run the report query first, then edit this chart."
-msgstr "Run the report query first, then edit this chart."
+#~ msgid "Run the report query first, then edit this chart."
+#~ msgstr "Run the report query first, then edit this chart."
 
 #: src/pages/settings/automation-rules/RuleRow.tsx
 msgid "Run this rule on past transactions?"
@@ -17857,6 +17921,7 @@ msgstr "Same period last year"
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 #: src/features/currencies/ui/ManualRatePrompt.tsx
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+#: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
@@ -17882,7 +17947,7 @@ msgstr "Save & Pin"
 msgid "Save 17%"
 msgstr "Save 17%"
 
-#: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 msgid "Save a question under Reports first."
 msgstr "Save a question under Reports first."
 
@@ -17939,6 +18004,7 @@ msgid "Save name"
 msgstr "Save name"
 
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+#: src/features/reports/ui/SaveReportDialog.tsx
 #: src/pages/explorer-page/SqlQuestionView.tsx
 #: src/pages/reports/question/NotebookQuestionView.tsx
 msgid "Save question"
@@ -17958,8 +18024,8 @@ msgstr "Save recurring transaction"
 #~ msgstr "Save report"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Save Report"
-msgstr "Save Report"
+#~ msgid "Save Report"
+#~ msgstr "Save Report"
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Save scenario"
@@ -17968,6 +18034,10 @@ msgstr "Save scenario"
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "Save Settings"
 msgstr "Save Settings"
+
+#: src/features/reports/ui/SaveReportDialog.tsx
+msgid "Save the SQL as a question. Add charts to draw its result."
+msgstr "Save the SQL as a question. Add charts to draw its result."
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 msgid "Save transaction"
@@ -17978,8 +18048,8 @@ msgid "Save transaction from any field"
 msgstr "Save transaction from any field"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Save your SQL query as a reusable report. Optionally add chart visualizations."
-msgstr "Save your SQL query as a reusable report. Optionally add chart visualizations."
+#~ msgid "Save your SQL query as a reusable report. Optionally add chart visualizations."
+#~ msgstr "Save your SQL query as a reusable report. Optionally add chart visualizations."
 
 #: src/pages/admin/sql-explorer/useSqlExplorerState.ts
 msgid "Saved as \"{trimmedName}\""
@@ -18038,9 +18108,8 @@ msgstr "Saving imported budget with accepted warnings"
 #: src/features/goal-management/ui/GoalForm.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-#: src/pages/custom-dashboards/components/PinChartDialog.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Saving..."
@@ -18107,7 +18176,6 @@ msgid "Scatter chart"
 msgstr "Scatter chart"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/shared/lib/analytics/visualization-labels.ts
 msgid "Scatter Plot"
 msgstr "Scatter Plot"
@@ -18251,6 +18319,14 @@ msgstr "Search models..."
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "Search payees…"
 msgstr "Search payees…"
+
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "Search questions"
+msgstr "Search questions"
+
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "Search questions…"
+msgstr "Search questions…"
 
 #: src/pages/reports/ReportsHomePage.tsx
 msgid "Search reports"
@@ -18423,8 +18499,8 @@ msgid "Select a new plan. The change will take effect immediately and you'll be 
 msgstr "Select a new plan. The change will take effect immediately and you'll be charged or credited the difference."
 
 #: src/pages/custom-dashboards/components/AddWidgetDialog.tsx
-msgid "Select a saved chart to pin to this dashboard."
-msgstr "Select a saved chart to pin to this dashboard."
+#~ msgid "Select a saved chart to pin to this dashboard."
+#~ msgstr "Select a saved chart to pin to this dashboard."
 
 #: src/features/import/ui/steps/configure/TemplatesTab.tsx
 msgid "Select a saved template"
@@ -18496,11 +18572,10 @@ msgid "Select category"
 msgstr "Select category"
 
 #: src/pages/custom-dashboards/components/ReportChartSelectFields.tsx
-msgid "Select chart"
-msgstr "Select chart"
+#~ msgid "Select chart"
+#~ msgstr "Select chart"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Select column"
 msgstr "Select column"
 
@@ -18508,8 +18583,8 @@ msgstr "Select column"
 msgid "Select currency..."
 msgstr "Select currency..."
 
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
-#: src/pages/custom-dashboards/components/PinChartDialog.tsx
 msgid "Select dashboard"
 msgstr "Select dashboard"
 
@@ -18559,12 +18634,12 @@ msgid "Select model..."
 msgstr "Select model..."
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Select new chart"
-msgstr "Select new chart"
+#~ msgid "Select new chart"
+#~ msgstr "Select new chart"
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Select New Chart"
-msgstr "Select New Chart"
+#~ msgid "Select New Chart"
+#~ msgstr "Select New Chart"
 
 #: src/features/budget-management/ui/create-budget-form/YnabPatHelpPopover.tsx
 msgid "Select New Token, enter your password, and choose Generate."
@@ -18600,8 +18675,8 @@ msgid "Select provider"
 msgstr "Select provider"
 
 #: src/pages/custom-dashboards/components/ReportChartSelectFields.tsx
-msgid "Select report"
-msgstr "Select report"
+#~ msgid "Select report"
+#~ msgstr "Select report"
 
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 msgid "Select rows to remove several at once."
@@ -18968,11 +19043,14 @@ msgstr "Shortcuts: {half} (half), {double} (double), {zero} (zero), {tenPercent}
 msgid "Show"
 msgstr "Show"
 
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Show a different question in this place on the dashboard."
+msgstr "Show a different question in this place on the dashboard."
+
 #: src/pages/settings/components/GoalFundingSettingsCard.tsx
 msgid "Show a small badge for categories with a priority other than 3. Funding is unaffected."
 msgstr "Show a small badge for categories with a priority other than 3. Funding is unaffected."
 
-#: src/features/analytics/ui/chart-viewer/ChartLegend.tsx
 #: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
 msgid "Show all"
 msgstr "Show all"
@@ -19088,6 +19166,10 @@ msgstr "Show the next 30 days"
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Show the top"
 msgstr "Show the top"
+
+#: src/pages/custom-dashboards/CustomDashboardsPage.tsx
+msgid "Show this question"
+msgstr "Show this question"
 
 #: src/features/reports/ui/report-builder/ReportBuilderForm.tsx
 #~ msgid "Show top"
@@ -19424,12 +19506,12 @@ msgid "Source"
 msgstr "Source"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Source chart is missing in this report."
-msgstr "Source chart is missing in this report."
+#~ msgid "Source chart is missing in this report."
+#~ msgstr "Source chart is missing in this report."
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Source report is missing. Choose another chart or remove this widget."
-msgstr "Source report is missing. Choose another chart or remove this widget."
+#~ msgid "Source report is missing. Choose another chart or remove this widget."
+#~ msgstr "Source report is missing. Choose another chart or remove this widget."
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 msgid "Source rows and account balances reconcile. Review the reporting differences before deciding whether to keep this budget."
@@ -19690,6 +19772,7 @@ msgid "SQL copied"
 msgstr "SQL copied"
 
 #: src/features/reports/ui/notebook/ViewSqlDialog.tsx
+#: src/pages/custom-dashboards/components/question-choices.ts
 #: src/pages/reports/ReportsHomePage.tsx
 msgid "SQL query"
 msgstr "SQL query"
@@ -19700,8 +19783,12 @@ msgid "SQL Query"
 msgstr "SQL Query"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "SQL reports run as written; dashboard filters only apply to questions built in the notebook."
-msgstr "SQL reports run as written; dashboard filters only apply to questions built in the notebook."
+msgid "SQL questions run as written; dashboard filters only apply to questions built in the notebook."
+msgstr "SQL questions run as written; dashboard filters only apply to questions built in the notebook."
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+#~ msgid "SQL reports run as written; dashboard filters only apply to questions built in the notebook."
+#~ msgstr "SQL reports run as written; dashboard filters only apply to questions built in the notebook."
 
 #: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
 msgid "Stacked"
@@ -19840,7 +19927,6 @@ msgid "Starts with"
 msgstr "Starts with"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Stat"
 msgstr "Stat"
 
@@ -20038,7 +20124,6 @@ msgid "Suggestions"
 msgstr "Suggestions"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Sum"
 msgstr "Sum"
 
@@ -20219,7 +20304,6 @@ msgstr "System Overview"
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/reports/ui/notebook/QuestionResult.tsx
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 #: src/pages/settings/AppearancePage.tsx
 msgid "Table"
 msgstr "Table"
@@ -20476,6 +20560,10 @@ msgstr "The card owes {0} but only {1} is set aside to pay it. Assign {2} here t
 msgid "The change will also be pushed to the server for this workspace"
 msgstr "The change will also be pushed to the server for this workspace"
 
+#: src/features/reports/ui/notebook/SqlChartVisualization.tsx
+msgid "The chart’s columns aren’t in this result, so its rows are shown instead."
+msgstr "The chart’s columns aren’t in this result, so its rows are shown instead."
+
 #: src/pages/onboarding/onboarding-data.ts
 #~ msgid "The core idea"
 #~ msgstr "The core idea"
@@ -20585,6 +20673,10 @@ msgstr "The question refers to a column or table that isn’t available. It may 
 #: src/features/reports/ui/notebook/query-error.ts
 msgid "The question was stopped before it finished. Run it again."
 msgstr "The question was stopped before it finished. Run it again."
+
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "The question’s name"
+msgstr "The question’s name"
 
 #: src/features/reports/ui/notebook/query-error.ts
 msgid "The question’s SQL could not be read. Check custom expressions or the SQL."
@@ -20976,8 +21068,20 @@ msgid "This question has its own category group filter, and none of its groups a
 msgstr "This question has its own category group filter, and none of its groups are in the dashboard’s filter, so nothing matches."
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "This question no longer has the chart shown here. Choose another question or remove it from the dashboard."
+msgstr "This question no longer has the chart shown here. Choose another question or remove it from the dashboard."
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "This question was deleted. Choose another question or remove it from the dashboard."
+msgstr "This question was deleted. Choose another question or remove it from the dashboard."
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "This question’s data has no field the dashboard filters use."
 msgstr "This question’s data has no field the dashboard filters use."
+
+#: src/pages/custom-dashboards/components/WidgetCard.tsx
+msgid "This question’s SQL changes data, so it can’t run on a dashboard."
+msgstr "This question’s SQL changes data, so it can’t run on a dashboard."
 
 #: src/features/transactions/ui/cells/ExchangeRateCell.tsx
 msgid "This rate is over 1,000× different. Check the decimal point or confirm it."
@@ -21010,8 +21114,8 @@ msgstr "This replaces the data on this device with the server copy, then applies
 #~ msgstr "This report could not be run"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "This report query is not read-only and cannot run in dashboard widgets."
-msgstr "This report query is not read-only and cannot run in dashboard widgets."
+#~ msgid "This report query is not read-only and cannot run in dashboard widgets."
+#~ msgstr "This report query is not read-only and cannot run in dashboard widgets."
 
 #: src/pages/settings/automation-rules/RuleRow.tsx
 msgid "This rule and its history will be removed. Recent runs can still be undone from the global undo menu."
@@ -21034,6 +21138,10 @@ msgstr "This setup token was already used or revoked. Create a new one in Simple
 #: src/pages/settings/components/WorkspaceRow.tsx
 msgid "This shared workspace is locked until the owner renews their plan."
 msgstr "This shared workspace is locked until the owner renews their plan."
+
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "This SQL question has no chart: the dashboard shows its rows as a table."
+msgstr "This SQL question has no chart: the dashboard shows its rows as a table."
 
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "This transaction has been reconciled and is locked as cleared."
@@ -21203,9 +21311,12 @@ msgstr "Tiny"
 #~ msgstr "TIP:"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-#: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
 msgid "Title (Optional)"
 msgstr "Title (Optional)"
+
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "Title on the dashboard (optional)"
+msgstr "Title on the dashboard (optional)"
 
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/admin/SignupsSection.tsx
@@ -22187,8 +22298,8 @@ msgid "Update Budget"
 msgstr "Update Budget"
 
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-msgid "Update Chart"
-msgstr "Update Chart"
+#~ msgid "Update Chart"
+#~ msgstr "Update Chart"
 
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Update failed"
@@ -22219,6 +22330,7 @@ msgid "Update payment methods, download invoices, or manage billing details"
 msgstr "Update payment methods, download invoices, or manage billing details"
 
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
+#: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Update question"
 msgstr "Update question"
 
@@ -22228,8 +22340,8 @@ msgstr "Update question"
 #~ msgstr "Update report"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Update Report"
-msgstr "Update Report"
+#~ msgid "Update Report"
+#~ msgstr "Update Report"
 
 #: src/shared/pwa/UpdateRequiredDialog.tsx
 msgid "Update required"
@@ -22244,6 +22356,10 @@ msgstr "Update Service Worker"
 msgid "Update the name for <0>{0}</0>."
 msgstr "Update the name for <0>{0}</0>."
 
+#: src/features/reports/ui/SaveReportDialog.tsx
+msgid "Update the question and its charts."
+msgstr "Update the question and its charts."
+
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Update the rate and date range. Affected transactions will be recalculated."
 msgstr "Update the rate and date range. Affected transactions will be recalculated."
@@ -22254,8 +22370,8 @@ msgstr "Update the rule's details, then save your changes to keep automations in
 
 #. placeholder {0}: reportName ? ` for ${reportName}` : ''
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-msgid "Update the selected chart widget configuration{0}."
-msgstr "Update the selected chart widget configuration{0}."
+#~ msgid "Update the selected chart widget configuration{0}."
+#~ msgstr "Update the selected chart widget configuration{0}."
 
 #: src/features/currencies/ui/ManualRatePrompt.tsx
 msgid "Update to the official rate when back online"
@@ -22266,8 +22382,8 @@ msgid "Update your master password to keep your data secure. This will re-encryp
 msgstr "Update your master password to keep your data secure. This will re-encrypt all your data with the new password. Sign-in password, email and 2FA are managed in your Clerk profile."
 
 #: src/features/reports/ui/SaveReportDialog.tsx
-msgid "Update your report and chart configurations."
-msgstr "Update your report and chart configurations."
+#~ msgid "Update your report and chart configurations."
+#~ msgstr "Update your report and chart configurations."
 
 #: src/pages/reports/ReportsHomePage.tsx
 msgid "Updated {updated}"
@@ -22519,8 +22635,8 @@ msgstr "Value date (when the money moved)"
 #~ msgstr "values"
 
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-msgid "Values"
-msgstr "Values"
+#~ msgid "Values"
+#~ msgstr "Values"
 
 #: src/features/transactions/ui/MobileTransactionList.tsx
 msgid "var(--mobile-bottom-nav-height, 96px)"
@@ -23045,6 +23161,10 @@ msgstr "Where your recurring transactions show up"
 msgid "Whether it worked, with our own error code. Crash reports contain the error type and code location, never the message."
 msgstr "Whether it worked, with our own error code. Crash reports contain the error type and code location, never the message."
 
+#: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+msgid "Which chart of this SQL question"
+msgstr "Which chart of this SQL question"
+
 #: src/shared/lib/analytics/klaro-config.ts
 #~ msgid "Which features get used. No personal or financial data."
 #~ msgstr "Which features get used. No personal or financial data."
@@ -23074,8 +23194,8 @@ msgid "Why is this flagged?"
 msgstr "Why is this flagged?"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
-msgid "Widget"
-msgstr "Widget"
+#~ msgid "Widget"
+#~ msgstr "Widget"
 
 #: src/pages/custom-dashboards/components/WidgetCard.tsx
 msgid "Width -"
@@ -23216,12 +23336,12 @@ msgid "X (Twitter)"
 msgstr "X (Twitter)"
 
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-msgid "X-Axis"
-msgstr "X-Axis"
+#~ msgid "X-Axis"
+#~ msgstr "X-Axis"
 
 #: src/pages/custom-dashboards/components/EditWidgetChartDialog.tsx
-msgid "Y-Axis"
-msgstr "Y-Axis"
+#~ msgid "Y-Axis"
+#~ msgstr "Y-Axis"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 #~ msgid "year"
