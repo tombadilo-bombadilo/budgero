@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Code2, LayoutGrid, MoreHorizontal, Save, Trash2 } from 'lucide-react';
@@ -35,6 +35,7 @@ import {
 import { collectionOf, listCollections, withCollection } from '../collections';
 import { QuestionHeader } from './QuestionHeader';
 import { useDeleteQuestion } from './useDeleteQuestion';
+import { useOpenSavedQuestion } from './useOpenSavedQuestion';
 import { usePinToDashboard } from './usePinToDashboard';
 
 const MAX_HISTORY = 20;
@@ -45,6 +46,8 @@ interface NotebookQuestionViewProps {
   report: UnifiedReport | null;
   initialSpec: QuestionSpec | null;
   openSaveDialog?: boolean;
+  /** Open "Add to dashboard" on arrival (the question was just saved with it). */
+  openPinDialog?: boolean;
   onConvertToSql: (sql: string) => void;
 }
 
@@ -53,6 +56,7 @@ export function NotebookQuestionView({
   report,
   initialSpec,
   openSaveDialog = false,
+  openPinDialog = false,
   onConvertToSql,
 }: NotebookQuestionViewProps) {
   const { t } = useLingui();
@@ -79,6 +83,13 @@ export function NotebookQuestionView({
   const [sqlOpen, setSqlOpen] = useState(false);
   const valueOptions = useFieldValueOptions(budgetId);
   const pin = usePinToDashboard(budgetId);
+  const opener = useOpenSavedQuestion();
+  const pinOnArrival = useRef(openPinDialog);
+  useEffect(() => {
+    if (!pinOnArrival.current || !report) return;
+    pinOnArrival.current = false;
+    pin.open(report);
+  }, [pin, report]);
   const { data: reports = [] } = useReports();
   const createReport = useCreateReport();
   const updateReport = useUpdateReport();
@@ -124,10 +135,10 @@ export function NotebookQuestionView({
       const { id: _id, ...newChart } = chart;
       const created = await createReport.mutateAsync({ ...payload, charts: [newChart] });
       await queryClient.invalidateQueries({ queryKey: ['reports'] });
-      void navigate(`/reports/question/${created.id}`, { replace: true });
+      opener.open(created);
       return created;
     },
-    [budgetId, createReport, navigate, queryClient, report, spec, updateReport]
+    [budgetId, createReport, opener, queryClient, report, spec, updateReport]
   );
 
   return (
@@ -207,7 +218,7 @@ export function NotebookQuestionView({
         initialCollection={report ? collectionOf(report) : undefined}
         collections={listCollections(reports)}
         onSave={save}
-        onSaveAndPin={pin.open}
+        onSaveAndPin={report ? pin.open : opener.openAndPin}
       />
       <ViewSqlDialog
         open={sqlOpen}

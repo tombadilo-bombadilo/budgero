@@ -16,6 +16,7 @@ import { SaveReportDialog } from '@features/reports/ui/SaveReportDialog';
 import { stripQuestionHeader } from '@features/reports/lib/question';
 import { QuestionHeader } from '@pages/reports/question/QuestionHeader';
 import { useDeleteQuestion } from '@pages/reports/question/useDeleteQuestion';
+import { useOpenSavedQuestion } from '@pages/reports/question/useOpenSavedQuestion';
 import { usePinToDashboard } from '@pages/reports/question/usePinToDashboard';
 import { useExplorerState } from './hooks/useExplorerState';
 import { SQLEditor, SchemaSidebar, ResultsTable, ChartsPanel } from './components';
@@ -31,6 +32,8 @@ interface SqlQuestionViewProps {
   /** SQL to start from (a converted question); defaults to the report's query. */
   initialSql?: string;
   openSaveDialog?: boolean;
+  /** Open "Add to dashboard" on arrival (the question was just saved with it). */
+  openPinDialog?: boolean;
 }
 
 /** SQL (advanced) editor for a question. Runs read-only queries only. */
@@ -39,11 +42,19 @@ export function SqlQuestionView({
   report,
   initialSql,
   openSaveDialog = false,
+  openPinDialog = false,
 }: SqlQuestionViewProps) {
   const { t } = useLingui();
   const navigate = useNavigate();
   const pin = usePinToDashboard(budgetId);
   const deletion = useDeleteQuestion(() => void navigate('/reports'));
+  const opener = useOpenSavedQuestion();
+  const pinOnArrival = useRef(openPinDialog);
+  useEffect(() => {
+    if (!pinOnArrival.current || !report) return;
+    pinOnArrival.current = false;
+    pin.open(report);
+  }, [pin, report]);
   const {
     sqlQuery,
     queryResult,
@@ -274,12 +285,11 @@ export function SqlQuestionView({
         queryResult={queryResult}
         onSave={async (data) => {
           const saved = await handleSaveReport(data);
-          if (!report || converting) {
-            void navigate(`/reports/question/${saved.id}`, { replace: true });
-          }
+          // A new (or converted) question moves to its own page.
+          if (!report || converting) opener.open(saved);
           return saved;
         }}
-        onSaveAndPin={pin.open}
+        onSaveAndPin={!report || converting ? opener.openAndPin : pin.open}
         initialData={
           editingReport
             ? {

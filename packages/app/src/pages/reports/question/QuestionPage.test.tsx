@@ -27,14 +27,17 @@ vi.mock('./NotebookQuestionView', () => ({
     report: r,
     initialSpec,
     openSaveDialog,
+    openPinDialog,
   }: {
     report: UnifiedReport | null;
     initialSpec: { source: string; aggregations: { op: string }[] } | null;
     openSaveDialog: boolean;
+    openPinDialog: boolean;
   }) => (
     <p>
       notebook:{r?.id ?? 'new'}:{initialSpec?.source ?? '-'}:
       {initialSpec?.aggregations.map((a) => a.op).join('+')}:{String(openSaveDialog)}
+      {openPinDialog ? ':pin' : ''}
     </p>
   ),
 }));
@@ -70,6 +73,11 @@ describe('QuestionPage', () => {
     cleanup();
     renderAt('/reports/question/legacy');
     expect(screen.getByText('notebook:legacy:transactions:income:false')).toBeInTheDocument();
+  });
+
+  it('passes "add to dashboard" on to a just-saved question', () => {
+    renderAt('/reports/question/notebook', { openPinDialog: true });
+    expect(screen.getByText('notebook:notebook:budget::false:pin')).toBeInTheDocument();
   });
 
   it('opens plain SQL reports and ?mode=sql in the SQL editor', () => {

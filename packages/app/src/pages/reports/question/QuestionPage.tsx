@@ -9,10 +9,7 @@ import { useUiStore } from '@shared/store/useUiStore';
 import { Button } from '@shared/ui/button';
 import { BackToReports } from '../BackToReports';
 import { NotebookQuestionView } from './NotebookQuestionView';
-
-interface QuestionRouteState {
-  openSaveDialog?: boolean;
-}
+import type { QuestionRouteState } from './useOpenSavedQuestion';
 
 /**
  * /reports/question/new and /reports/question/:reportId. Notebook questions
@@ -90,6 +87,7 @@ export default function QuestionPage() {
         report={report}
         initialSql={convertedSql ?? undefined}
         openSaveDialog={Boolean(routeState.openSaveDialog)}
+        openPinDialog={Boolean(routeState.openPinDialog)}
       />
     );
   }
@@ -101,6 +99,7 @@ export default function QuestionPage() {
       report={report}
       initialSpec={spec}
       openSaveDialog={Boolean(routeState.openSaveDialog)}
+      openPinDialog={Boolean(routeState.openPinDialog)}
       onConvertToSql={(sql) => setConverted({ key: location.key, sql })}
     />
   );
