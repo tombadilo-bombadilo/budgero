@@ -6,6 +6,7 @@ import { asMilli } from '../src/money';
 import { migrations } from '../src/database/migrations.js';
 import { createMigrationDatabase } from '../src/database/migration-database-factory.js';
 import type { RecurringSplitLine } from '../src/services/recurring/types';
+import { dumpDb } from './db-dump.helpers';
 
 function isoDate(date: Date): string {
   const year = date.getFullYear();
@@ -286,6 +287,184 @@ describe('recurring transactions with split lines', () => {
     ).rejects.toThrow(/category no longer exists/);
     expect(services.transactions.getTransactionsByAccount(checking)).toHaveLength(0);
     expect(services.recurring.getOccurrenceWithTemplate(occurrence.id).status).toBe('scheduled');
+  });
+});
+
+describe('split lines follow category and account changes', () => {
+  async function setup() {
+    const db = await NodeSqlJsAdapter.create();
+    const manager = new ServiceManager();
+    await manager.initialize(db);
+    const s = manager.getServices();
+    const budgetId = await s.budgets.createBudget({
+      name: 'Refs',
+      display_currency: 'USD',
+      badge_icon: 'dollar',
+      number_format: 'dollar',
+      create_default_categories: false,
+    });
+    const checking = (await s.accounts.createAccount('Checking', budgetId, 'checking', 'USD', 0))
+      .ID;
+    const savings = (await s.accounts.createAccount('Savings', budgetId, 'savings', 'USD', 0)).ID;
+    const group = s.categories.addCategoryGroup('Bills', budgetId);
+    const groceries = s.categories.addCategory(group, budgetId, 'Groceries');
+    const rent = s.categories.addCategory(group, budgetId, 'Rent');
+    const food = s.categories.addCategory(group, budgetId, 'Food');
+    const template = await s.recurring.createRecurringTransaction({
+      budgetId,
+      accountId: checking,
+      categoryId: null,
+      name: 'Payday moves',
+      amount: asMilli(100_000),
+      direction: 'outflow',
+      schedule: { startDate: isoDate(new Date()), intervalUnit: 'month', intervalCount: 1 },
+      splits: [
+        line(50_000, { categoryId: rent }),
+        line(30_000, { categoryId: groceries }),
+        line(20_000, { transferAccountId: savings }),
+      ],
+    });
+    const lineTargets = () =>
+      s.recurring
+        .getRecurringTransaction(template.id, { includeInactive: true })
+        .splits!.map((l) => l.categoryId ?? (l.transferAccountId ? 'transfer' : null));
+    return { db, s, budgetId, checking, savings, groceries, rent, food, template, lineTargets };
+  }
+
+  it('counts split templates in the delete impact', async () => {
+    const c = await setup();
+    expect(c.s.categories.getCategoryDeletionImpact(c.groceries).scheduled).toBe(1);
+    expect(c.s.categories.getCategoryDeletionImpact(c.food).scheduled).toBe(0);
+  });
+
+  it('delete and move: the line follows, and undo restores the database exactly', async () => {
+    const c = await setup();
+    const before = dumpDb(c.db);
+    const journal = c.s.categories.deleteCategoryWithUndo(c.groceries, c.food);
+    expect(c.lineTargets()).toEqual([c.rent, c.food, 'transfer']);
+    c.s.categories.restoreDeletedCategories(JSON.parse(JSON.stringify(journal)));
+    expect(dumpDb(c.db)).toEqual(before);
+  });
+
+  it('merge (reassign) moves the line to the surviving category', async () => {
+    const c = await setup();
+    c.s.transactions.reassignTransactions(c.food, c.groceries);
+    expect(c.lineTargets()).toEqual([c.rent, c.food, 'transfer']);
+  });
+
+  it('delete without a destination: the line loses its category and posting says so', async () => {
+    const c = await setup();
+    const before = dumpDb(c.db);
+    const journal = c.s.categories.deleteCategoryWithUndo(c.groceries);
+    expect(c.lineTargets()).toEqual([c.rent, null, 'transfer']);
+
+    const occurrence = c.s.recurring
+      .listOccurrences(c.budgetId, { status: 'scheduled' })
+      .find((o) => o.recurringTransactionId === c.template.id)!;
+    await expect(
+      c.s.recurring.markOccurrenceReady({ occurrenceId: occurrence.id })
+    ).rejects.toMatchObject({ code: 'RECURRING_SPLIT_CATEGORY_MISSING' });
+    // The template can still be paused, renamed, or given new lines.
+    await c.s.recurring.updateRecurringTransaction(c.template.id, { active: false });
+    await c.s.recurring.updateRecurringTransaction(c.template.id, { active: true });
+
+    c.s.categories.restoreDeletedCategories(JSON.parse(JSON.stringify(journal)));
+    expect(dumpDb(c.db)).toEqual(before);
+  });
+
+  it('two devices replaying the same delete write the same lines', async () => {
+    const a = await setup();
+    const b = await setup();
+    a.s.categories.deleteCategoryWithUndo(a.groceries, a.food);
+    b.s.categories.deleteCategoryWithUndo(b.groceries, b.food);
+    const json = (c: typeof a) =>
+      c.db.prepare('SELECT ID, SplitsJSON FROM recurring_transactions ORDER BY ID').all();
+    expect(json(b)).toEqual(json(a));
+  });
+
+  it('deleting the transfer target deletes the template, and undo brings it back', async () => {
+    const c = await setup();
+    const before = dumpDb(c.db);
+    const journal = c.s.accounts.deleteAccountWithUndo(c.savings);
+    expect(journal).not.toBeNull();
+    expect(c.s.recurring.listRecurringTransactions(c.budgetId, { includeInactive: true })).toEqual(
+      []
+    );
+    expect(
+      c.db.prepare('SELECT COUNT(*) AS n FROM recurring_transaction_occurrences').get()
+    ).toMatchObject({ n: 0 });
+    c.s.accounts.restoreDeletedAccount(JSON.parse(JSON.stringify(journal)));
+    expect(dumpDb(c.db)).toEqual(before);
+  });
+});
+
+describe('patching a split template without sending its lines (S8)', () => {
+  async function setup() {
+    const db = await NodeSqlJsAdapter.create();
+    const manager = new ServiceManager();
+    await manager.initialize(db);
+    const s = manager.getServices();
+    const budgetId = await s.budgets.createBudget({
+      name: 'Patch',
+      display_currency: 'USD',
+      badge_icon: 'dollar',
+      number_format: 'dollar',
+      create_default_categories: false,
+    });
+    const checking = (await s.accounts.createAccount('Checking', budgetId, 'checking', 'USD', 0))
+      .ID;
+    const savings = (await s.accounts.createAccount('Savings', budgetId, 'savings', 'USD', 0)).ID;
+    const cash = (await s.accounts.createAccount('Cash', budgetId, 'cash', 'USD', 0)).ID;
+    const group = s.categories.addCategoryGroup('Bills', budgetId);
+    const rent = s.categories.addCategory(group, budgetId, 'Rent');
+    const template = await s.recurring.createRecurringTransaction({
+      budgetId,
+      accountId: checking,
+      categoryId: null,
+      name: 'Payday moves',
+      amount: asMilli(100_000),
+      direction: 'outflow',
+      schedule: { startDate: isoDate(new Date()), intervalUnit: 'month', intervalCount: 1 },
+      splits: [line(60_000, { categoryId: rent }), line(40_000, { transferAccountId: savings })],
+    });
+    const patch = (p: Record<string, unknown>) =>
+      s.recurring.updateRecurringTransaction(template.id, p);
+    return { s, checking, savings, cash, rent, template, patch };
+  }
+
+  it('keeps the lines for patches that leave them consistent', async () => {
+    const c = await setup();
+    expect((await c.patch({ name: 'Renamed', memo: 'm' })).splits).toEqual(c.template.splits);
+    expect((await c.patch({ accountId: c.cash })).splits).toEqual(c.template.splits);
+    expect((await c.patch({ amount: asMilli(100_000), direction: 'outflow' })).splits).toEqual(
+      c.template.splits
+    );
+    // An undo sends the old lines back unchanged: same thing.
+    expect((await c.patch({ name: 'Back', splits: c.template.splits })).splits).toEqual(
+      c.template.splits
+    );
+  });
+
+  it('rejects only a result that cannot post, with a code the app translates', async () => {
+    const c = await setup();
+    await expect(c.patch({ amount: asMilli(90_000) })).rejects.toMatchObject({
+      code: 'RECURRING_SPLIT_SUM_MISMATCH',
+    });
+    await expect(c.patch({ direction: 'inflow' })).rejects.toMatchObject({
+      code: 'RECURRING_SPLIT_SUM_MISMATCH',
+    });
+    await expect(c.patch({ accountId: c.savings })).rejects.toMatchObject({
+      code: 'RECURRING_SPLIT_OWN_ACCOUNT',
+    });
+    await expect(c.patch({ toAccountId: c.cash })).rejects.toMatchObject({
+      code: 'RECURRING_SPLIT_ON_TRANSFER',
+    });
+    const stored = c.s.recurring.getRecurringTransaction(c.template.id);
+    expect(stored).toMatchObject({ amount: 100_000, direction: 'outflow', accountId: c.checking });
+    // Clearing or replacing the lines in the same patch is fine.
+    expect(
+      (await c.patch({ amount: asMilli(90_000), splits: null, categoryId: c.rent })).splits
+    ).toBeNull();
   });
 });
 

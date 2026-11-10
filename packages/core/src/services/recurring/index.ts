@@ -356,6 +356,52 @@ const isMilli = (value: unknown): value is number =>
   typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
 
 /**
+ * Split-line problems the user can fix. The codes are what the app translates
+ * (packages/app: recurringErrorMessage); the messages are for logs.
+ */
+export const RECURRING_SPLIT_ERROR_CODES = {
+  onTransfer: 'RECURRING_SPLIT_ON_TRANSFER',
+  ownAccount: 'RECURRING_SPLIT_OWN_ACCOUNT',
+  sumMismatch: 'RECURRING_SPLIT_SUM_MISMATCH',
+  categoryMissing: 'RECURRING_SPLIT_CATEGORY_MISSING',
+  accountMissing: 'RECURRING_SPLIT_ACCOUNT_MISSING',
+} as const;
+
+const splitError = (message: string, code: string) => new ValidationError(message, 'splits', code);
+
+const splitNet = (lines: RecurringSplitLine[]) =>
+  lines.reduce((sum, line) => sum + (line.inflow ?? 0) - (line.outflow ?? 0), 0);
+
+/**
+ * Checks lines a template keeps (the patch did not send new ones) against the
+ * patched amount, direction and accounts. Only a result that cannot post is
+ * rejected; the lines themselves are not re-validated, so a line whose
+ * category was deleted does not block renaming or pausing the template.
+ */
+function checkKeptSplits(
+  lines: RecurringSplitLine[] | null,
+  template: { accountId: number; toAccountId: number | null; amount: number; direction: string }
+): void {
+  if (!lines?.length) return;
+  if (template.toAccountId != null) {
+    throw splitError('Recurring transfers cannot be split', RECURRING_SPLIT_ERROR_CODES.onTransfer);
+  }
+  if (lines.some((line) => line.transferAccountId === template.accountId)) {
+    throw splitError(
+      'A split line cannot transfer to its own account',
+      RECURRING_SPLIT_ERROR_CODES.ownAccount
+    );
+  }
+  const expected = template.direction === 'inflow' ? template.amount : -template.amount;
+  if (splitNet(lines) !== expected) {
+    throw splitError(
+      'Split amounts must sum to the recurring amount',
+      RECURRING_SPLIT_ERROR_CODES.sumMismatch
+    );
+  }
+}
+
+/**
  * Validates a template's split lines against its amount and direction.
  * Null or [] means no splits. Lines are account-currency milliunits and must
  * sum to the signed template amount (inflow positive, outflow negative).
@@ -370,7 +416,7 @@ function normalizeSplits(
   }
   if (splits.length === 0) return null;
   if (template.toAccountId != null) {
-    throw new ValidationError('Recurring transfers cannot be split', 'splits');
+    throw splitError('Recurring transfers cannot be split', RECURRING_SPLIT_ERROR_CODES.onTransfer);
   }
   const lines = splits.map((line) => {
     const categoryId = line?.categoryId ?? null;
@@ -385,7 +431,10 @@ function normalizeSplits(
       throw new ValidationError('Invalid split line category or transfer account', 'splits');
     }
     if (transferAccountId === template.accountId) {
-      throw new ValidationError('A split line cannot transfer to its own account', 'splits');
+      throw splitError(
+        'A split line cannot transfer to its own account',
+        RECURRING_SPLIT_ERROR_CODES.ownAccount
+      );
     }
     const inflow = line.inflow ?? 0;
     const outflow = line.outflow ?? 0;
@@ -404,10 +453,13 @@ function normalizeSplits(
       outflow: asMilli(outflow),
     };
   });
-  const net = lines.reduce((sum, line) => sum + line.inflow - line.outflow, 0);
+  const net = splitNet(lines);
   const expected = template.direction === 'inflow' ? template.amount : -template.amount;
   if (net !== expected) {
-    throw new ValidationError('Split amounts must sum to the recurring amount', 'splits');
+    throw splitError(
+      'Split amounts must sum to the recurring amount',
+      RECURRING_SPLIT_ERROR_CODES.sumMismatch
+    );
   }
   return lines;
 }
@@ -643,13 +695,24 @@ export class RecurringTransactionService {
       effectiveToAccountId,
       patch.categoryId !== undefined ? (patch.categoryId ?? null) : existing.categoryId
     );
-    // Kept lines are checked again: they must still match the amount.
-    const splits = normalizeSplits(patch.splits !== undefined ? patch.splits : existing.splits, {
+    const effective = {
       accountId: effectiveAccountId,
       toAccountId: effectiveToAccountId,
       amount: patch.amount !== undefined ? patch.amount : existing.amount,
       direction: transferFields?.direction ?? patch.direction ?? existing.direction,
-    });
+    };
+    // Lines the patch leaves alone (omitted, or sent back unchanged as an undo
+    // does) only have to still fit the patched amount and accounts.
+    const keepsSplits =
+      patch.splits === undefined ||
+      (existing.splits != null && JSON.stringify(patch.splits) === JSON.stringify(existing.splits));
+    let splits: RecurringSplitLine[] | null;
+    if (keepsSplits) {
+      checkKeptSplits(existing.splits, effective);
+      splits = existing.splits;
+    } else {
+      splits = normalizeSplits(patch.splits, effective);
+    }
 
     const fields: string[] = [];
     const params: (string | number | null)[] = [];
@@ -682,7 +745,7 @@ export class RecurringTransactionService {
         params.push(patch.direction);
       }
     }
-    if (patch.splits !== undefined) {
+    if (!keepsSplits) {
       fields.push('SplitsJSON = ?');
       params.push(splits ? JSON.stringify(splits) : null);
     }
@@ -1221,17 +1284,25 @@ export class RecurringTransactionService {
    */
   private splitInputs(lines: RecurringSplitLine[]) {
     return lines.map((line, index) => {
+      // No category and no transfer: the line's category was deleted.
       if (
-        line.categoryId != null &&
-        !getRow(this.db, 'SELECT 1 FROM categories WHERE ID = ?', line.categoryId)
+        line.transferAccountId == null &&
+        (line.categoryId == null ||
+          !getRow(this.db, 'SELECT 1 FROM categories WHERE ID = ?', line.categoryId))
       ) {
-        throw new ValidationError('A split line category no longer exists', 'splits');
+        throw splitError(
+          'A split line category no longer exists',
+          RECURRING_SPLIT_ERROR_CODES.categoryMissing
+        );
       }
       if (
         line.transferAccountId != null &&
         !getRow(this.db, 'SELECT 1 FROM accounts WHERE ID = ?', line.transferAccountId)
       ) {
-        throw new ValidationError('A split line transfer account no longer exists', 'splits');
+        throw splitError(
+          'A split line transfer account no longer exists',
+          RECURRING_SPLIT_ERROR_CODES.accountMissing
+        );
       }
       return {
         CategoryID: line.categoryId,

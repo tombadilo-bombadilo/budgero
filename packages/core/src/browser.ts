@@ -53,6 +53,7 @@ export {
 export { AnalyticsService } from './services/analytics/index.js';
 export { RulesService } from './services/rules/index.js';
 export { RecurringTransactionService } from './services/recurring/index.js';
+export { RECURRING_SPLIT_ERROR_CODES } from './services/recurring/index.js';
 export { DatabaseCustomDashboardService } from './services/custom-dashboards/index.js';
 
 export { ServiceManager, type Services } from './services/service-manager.js';
