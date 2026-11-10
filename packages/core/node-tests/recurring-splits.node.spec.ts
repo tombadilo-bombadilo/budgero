@@ -398,6 +398,76 @@ describe('split lines follow category and account changes', () => {
   });
 });
 
+describe('analytics projections of split templates', () => {
+  it('gives each category its share and keeps transfer lines out of spending', async () => {
+    const db = await NodeSqlJsAdapter.create();
+    const manager = new ServiceManager();
+    await manager.initialize(db);
+    const s = manager.getServices();
+    const budgetId = await s.budgets.createBudget({
+      name: 'Proj',
+      display_currency: 'USD',
+      badge_icon: 'dollar',
+      number_format: 'dollar',
+      create_default_categories: false,
+    });
+    const checking = (await s.accounts.createAccount('Checking', budgetId, 'checking', 'USD', 0))
+      .ID;
+    const savings = (await s.accounts.createAccount('Savings', budgetId, 'savings', 'USD', 0)).ID;
+    const bills = s.categories.addCategoryGroup('Bills', budgetId);
+    const fun = s.categories.addCategoryGroup('Fun', budgetId);
+    const rent = s.categories.addCategory(bills, budgetId, 'Rent');
+    const games = s.categories.addCategory(fun, budgetId, 'Games');
+    const gone = s.categories.addCategory(fun, budgetId, 'Gone');
+    const today = new Date();
+    const due = new Date(today.getFullYear(), today.getMonth() + 1, 15);
+    const startDate = isoDate(today);
+    const endDate = isoDate(new Date(today.getFullYear(), today.getMonth() + 1, 28));
+    await s.recurring.createRecurringTransaction({
+      budgetId,
+      accountId: checking,
+      categoryId: null,
+      name: 'Payday moves',
+      amount: asMilli(100_000),
+      direction: 'outflow',
+      schedule: { startDate: isoDate(due), intervalUnit: 'year', intervalCount: 1 },
+      splits: [
+        line(50_000, { categoryId: rent }),
+        line(25_000, { categoryId: games }, { payee: 'Steam' }),
+        line(5_000, { categoryId: gone }),
+        line(20_000, { transferAccountId: savings }),
+      ],
+    });
+    s.categories.deleteCategory(gone);
+    s.recurring.ensureOccurrencesThrough(budgetId, endDate);
+    const opts = { includeProjections: true };
+
+    // 80 of the 100 is spending; the transfer line is not.
+    expect(s.analytics.getPeriodSummary(startDate, endDate, budgetId, opts).TotalSpending).toBe(
+      80_000
+    );
+    expect(s.analytics.getPeriodSummary(startDate, endDate, budgetId).TotalSpending).toBe(0);
+
+    const byGroup = s.analytics.getSpendingByDatesByCategories(startDate, endDate, budgetId, opts);
+    expect(Object.fromEntries(byGroup.map((row) => [row.CategoryGroupName, row.Spending]))).toEqual(
+      { Bills: 50_000, Fun: 25_000 }
+    );
+
+    const top = s.analytics.getTopSpendingCategories(startDate, endDate, budgetId, 10, opts);
+    expect(Object.fromEntries(top.map((row) => [row.CategoryName, row.Spending]))).toEqual({
+      Rent: 50_000,
+      Games: 25_000,
+      Uncategorized: 5_000,
+    });
+
+    const payees = s.analytics.getSpendingByPayees(startDate, endDate, budgetId, opts);
+    expect(Object.fromEntries(payees.map((row) => [row.Payee, row.Spending]))).toEqual({
+      'Payday moves': 55_000,
+      Steam: 25_000,
+    });
+  });
+});
+
 describe('patching a split template without sending its lines (S8)', () => {
   async function setup() {
     const db = await NodeSqlJsAdapter.create();

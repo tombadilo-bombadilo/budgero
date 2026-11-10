@@ -231,13 +231,21 @@ function currencyScaleSql(column: string): string {
   return `(CASE WHEN UPPER(${column}) IN (${cryptoCodesSql}) THEN ${CRYPTO_SCALE} ELSE ${FIAT_SCALE} END)`;
 }
 
-function projectedAmountSql(rate: string, destinationCurrency: string): string {
-  return `CAST(ROUND(r.Amount * (${rate}) *
+function projectedAmountSql(
+  rate: string,
+  destinationCurrency: string,
+  amount = 'r.Amount'
+): string {
+  return `CAST(ROUND(${amount} * (${rate}) *
     (1.0 * ${currencyScaleSql(destinationCurrency)} / ${currencyScaleSql('a.Currency')})) AS INTEGER)`;
 }
 
 /** Budget amounts shared by occurrence cards, transaction rows and analytics. */
 export const PROJECTION_AMOUNT_SQL = projectedAmountSql(PROJECTION_RATE_SQL, 'b.DisplayCurrency');
+
+/** The same conversion for another account-currency amount (a split line's). */
+export const projectionAmountSql = (amount: string) =>
+  projectedAmountSql(PROJECTION_RATE_SQL, 'b.DisplayCurrency', amount);
 const TRANSFER_LEG_AMOUNT_SQL = projectedAmountSql(TRANSFER_LEG_RATE_SQL, 'a2.Currency');
 
 const occurrenceColumns = `

@@ -1,6 +1,6 @@
 import { DatabaseAdapter } from '../../database/interface.js';
 import { getRow, allRows } from '../../database/sql.js';
-import { PROJECTION_AMOUNT_SQL } from '../recurring/index.js';
+import { PROJECTION_AMOUNT_SQL, projectionAmountSql } from '../recurring/index.js';
 import { NO_SPLITS_FILTER } from '../transactions/queries.js';
 
 export interface AnalyticsQueryOptions {
@@ -13,11 +13,26 @@ export interface AnalyticsQueryOptions {
   includeProjections?: boolean;
 }
 
+const PROJECTION_FROM_SQL = `
+  FROM recurring_transaction_occurrences o
+  JOIN recurring_transactions r ON r.ID = o.RecurringTransactionID
+  JOIN accounts a ON a.ID = r.AccountID
+  JOIN budgets b ON b.ID = o.BudgetID`;
+
+const HAS_SPLITS_SQL = `(r.SplitsJSON IS NOT NULL AND r.SplitsJSON != '' AND r.ToAccountID IS NULL)`;
+
+const lineAmount = (key: string) => `COALESCE(json_extract(line.value, '$.${key}'), 0)`;
+
 /**
  * Scheduled recurring occurrences projected into the transactions shape.
  * Budget-currency amounts use the effective custom or official exchange rate;
  * future months use the latest known rate. Synthetic IDs are negative so they
  * can't collide with real transactions or match transaction_splits rows.
+ *
+ * A split template projects one row per line (all under the occurrence's ID),
+ * so each category gets its share. A transfer line goes to the Transfers
+ * category, as a recurring transfer does: it leaves the account but is not
+ * spending. A line whose category was deleted is uncategorized.
  */
 const PROJECTED_TRANSACTIONS_SQL = `
   SELECT
@@ -35,11 +50,29 @@ const PROJECTED_TRANSACTIONS_SQL = `
     o.BudgetID AS BudgetID,
     r.Name AS Payee,
     NULL AS LabelID
-  FROM recurring_transaction_occurrences o
-  JOIN recurring_transactions r ON r.ID = o.RecurringTransactionID
-  JOIN accounts a ON a.ID = r.AccountID
-  JOIN budgets b ON b.ID = o.BudgetID
-  WHERE o.Status = 'scheduled' AND r.Active = 1
+  ${PROJECTION_FROM_SQL}
+  WHERE o.Status = 'scheduled' AND r.Active = 1 AND NOT ${HAS_SPLITS_SQL}
+  UNION ALL
+  SELECT
+    -o.ID AS ID,
+    CASE WHEN json_extract(line.value, '$.transferAccountId') IS NULL
+      THEN json_extract(line.value, '$.categoryId')
+      ELSE (SELECT c.ID FROM categories c
+             WHERE c.BudgetID = o.BudgetID AND c.Name = 'Transfers' ORDER BY c.ID LIMIT 1)
+    END AS CategoryID,
+    r.AccountID AS AccountID,
+    NULL AS TransferID,
+    o.DueDate AS Date,
+    COALESCE(NULLIF(json_extract(line.value, '$.memo'), ''), NULLIF(r.Memo, ''), r.Name) AS Memo,
+    0 AS Reconciled,
+    ${projectionAmountSql(lineAmount('inflow'))} AS InflowConverted,
+    ${projectionAmountSql(lineAmount('outflow'))} AS OutflowConverted,
+    o.BudgetID AS BudgetID,
+    COALESCE(NULLIF(json_extract(line.value, '$.payee'), ''), r.Name) AS Payee,
+    NULL AS LabelID
+  ${PROJECTION_FROM_SQL}
+  JOIN json_each(r.SplitsJSON) line
+  WHERE o.Status = 'scheduled' AND r.Active = 1 AND ${HAS_SPLITS_SQL}
 `;
 
 /**
