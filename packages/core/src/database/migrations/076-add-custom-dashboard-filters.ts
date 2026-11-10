@@ -10,7 +10,7 @@ export const migration076: Migration = {
     try {
       db.exec(`ALTER TABLE custom_dashboards ADD COLUMN Filters TEXT NULL`);
     } catch (error) {
-      debugLog('[Migration 75] statement failed (may already exist)', { error });
+      debugLog('[Migration 76] statement failed (may already exist)', { error });
     }
   },
   verify: (db: MigrationDatabase) => {
@@ -19,7 +19,7 @@ export const migration076: Migration = {
       const columns = info?.[0]?.values?.map((row: unknown[]) => row[1]) ?? [];
       return columns.includes('Filters');
     } catch (error) {
-      debugLog('[Migration 75] verification failed', { error });
+      debugLog('[Migration 76] verification failed', { error });
       return false;
     }
   },

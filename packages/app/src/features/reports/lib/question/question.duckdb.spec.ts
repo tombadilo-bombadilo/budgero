@@ -922,3 +922,294 @@ describe('power features', () => {
     });
   });
 });
+
+describe('review fixes and power features', () => {
+  // Budget 5: payee case variants, a long payee, a mixed in/out line, last
+  // year's rows, a future-dated row and two accounts.
+  const LONG_PAYEE = 'x'.repeat(520);
+  beforeAll(() => {
+    const row = (
+      id: number,
+      category: number,
+      account: number,
+      payee: string,
+      date: string,
+      inflow: number,
+      outflow: number
+    ) =>
+      `(${id}, ${category}, ${account}, NULL, 5, NULL, '${payee}', '${date}', '', 0, 0, ${inflow}, ${outflow}, ${inflow}, ${outflow}, 0, 0, 1, 0, 0)`;
+    for (const statement of [
+      `INSERT INTO budgets VALUES (5, 'Review', 'EUR')`,
+      `INSERT INTO accounts VALUES (500, 'Checking', 'Checking', 'EUR', 1, NULL, 5, 0, 0), (501, 'Savings', 'Savings', 'EUR', 1, NULL, 5, 0, 1)`,
+      `INSERT INTO category_groups VALUES (51, 'Living', '', 0, 5), (52, 'Income', '', 1, 5)`,
+      `INSERT INTO categories VALUES (510, 'Shopping', '', 51, 0, 5), (520, 'Salary', '', 52, 0, 5)`,
+      `INSERT INTO transactions VALUES ${[
+        row(2001, 510, 500, 'Amazon', '2026-01-05', 0, 10000),
+        row(2002, 510, 500, ' Amazon ', '2026-01-06', 0, 25000),
+        row(2003, 510, 500, 'amazon', '2026-02-07', 0, 120000),
+        row(2004, 510, 500, LONG_PAYEE, '2026-02-08', 0, 5000),
+        row(2005, 520, 500, 'Employer', '2026-02-02', 2000000, 0),
+        row(2006, 510, 500, 'Amazon', '2025-01-15', 0, 40000),
+        row(2007, 510, 500, 'Amazon', '2025-02-10', 0, 60000),
+        row(2008, 510, 500, 'Mixed', '2026-02-11', 1000, 3000),
+        row(2009, 510, 500, 'Future', '2026-11-20', 0, 70000),
+        row(2010, 510, 500, 'Cafe', '2026-11-02', 0, 8000),
+        row(2011, 510, 501, 'Store', '2026-03-03', 0, 500000),
+      ].join(',\n')}`,
+    ]) {
+      conn.query(statement);
+    }
+  });
+
+  const review = (spec: Partial<QuestionSpec>) => tx(spec, 5);
+
+  /** Every cell's "see these transactions" lists exactly the rows its count counted. */
+  const expectDrillMatchesCells = (spec: Partial<QuestionSpec>) => {
+    const full = normalizeQuestion({
+      source: 'transactions',
+      ...spec,
+      aggregations: [{ op: 'count' }],
+      filters: [NO_TRANSFERS, ON_BUDGET, ...(spec.filters ?? [])],
+    });
+    const rows = queryWithKeys(full, 5);
+    expect(rows.length).toBeGreaterThan(0);
+    const resultColumns = Object.keys(rows[0]);
+    for (const row of rows) {
+      const values = rowDrillValues(
+        questionColumns(full),
+        resultColumns,
+        resultColumns.map((key) => row[key])
+      );
+      const next = applyDrill({ spec: full, values }, { kind: 'records' });
+      expect(query(next, 5), JSON.stringify(row).slice(0, 120)).toHaveLength(row.count as number);
+    }
+    return rows;
+  };
+
+  it('drill: payee case / space variants are one group, drilled exactly', () => {
+    const rows = expectDrillMatchesCells({ breakouts: [{ field: 'payee' }] });
+    const amazon = rows.filter((row) => String(row.payee).toLowerCase() === 'amazon');
+    expect(amazon).toHaveLength(1);
+    expect(amazon[0].count).toBe(5);
+  });
+
+  it('drill: text custom columns group like the filters compare', () => {
+    const rows = expectDrillMatchesCells({
+      customColumns: [{ id: 'expr_1', name: 'Who', expression: '[payee]' }],
+      breakouts: [{ field: 'expr_1' }],
+    });
+    expect(rows.filter((row) => String(row.expr_1).trim().toLowerCase() === 'amazon')).toHaveLength(
+      1
+    );
+  });
+
+  it('drill: an undecidable boolean column counts as false', () => {
+    const rows = expectDrillMatchesCells({
+      customColumns: [{ id: 'expr_1', name: 'Over', expression: '[outflow] / [inflow] > 1' }],
+      breakouts: [{ field: 'expr_1' }],
+    });
+    expect(rows.map((row) => [row.expr_1, row.count])).toEqual([
+      [false, 10],
+      [true, 1], // 3 out / 1 in
+    ]);
+  });
+
+  it('drill and filters: long text matches exactly', () => {
+    const rows = expectDrillMatchesCells({ breakouts: [{ field: 'payee' }] });
+    expect(rows.some((row) => row.payee === LONG_PAYEE && row.count === 1)).toBe(true);
+    expect(
+      review({
+        aggregations: [{ op: 'count' }],
+        filters: [{ field: 'payee', op: 'is', values: [LONG_PAYEE] }],
+      })
+    ).toEqual([{ count: 1 }]);
+    expect(
+      review({
+        aggregations: [{ op: 'count' }],
+        filters: [{ field: 'payee', op: 'isNot', values: [LONG_PAYEE] }],
+      })
+    ).toEqual([{ count: 10 }]);
+  });
+
+  it('trend: "this month" counts up to today, like the previous period', () => {
+    const thisMonth: QuestionFilter = { field: 'date', op: 'current', unit: 'month', values: [] };
+    const spec = { aggregations: [{ op: 'spending' as const }], filters: [thisMonth] };
+    expect(review({ ...spec, visualization: 'trend' })).toEqual([{ spending: 8 }]);
+    // A plain number still shows the whole month, future-dated rows included.
+    expect(review({ ...spec, visualization: 'number' })).toEqual([{ spending: 78 }]);
+  });
+
+  it('two groupings: a metric sort orders rows inside each group', () => {
+    const rows = review({
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'category' }, { field: 'account' }],
+      sort: [{ column: 'spending', direction: 'desc' }],
+    });
+    expect(rows.map((row) => [row.account, row.spending])).toEqual([
+      ['Savings', 500],
+      ['Checking', 340], // 10 + 25 + 120 + 5 + 40 + 60 + 2 + 70 + 8
+    ]);
+    const ascending = review({
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'category' }, { field: 'account' }],
+      sort: [{ column: 'spending', direction: 'asc' }],
+    });
+    expect(ascending.map((row) => row.account)).toEqual(['Checking', 'Savings']);
+  });
+
+  it('% of total on net with mixed signs uses the sum of absolute values', () => {
+    const rows = review({
+      aggregations: [{ op: 'net', modifier: 'share' }],
+      breakouts: [{ field: 'category' }],
+    });
+    const share = Object.fromEntries(rows.map((row) => [row.category, row.net_share as number]));
+    // Salary +2000, Shopping −840 (outflows 841, inflow 1).
+    expect(share.Salary).toBeCloseTo((2000 / 2840) * 100, 6);
+    expect(share.Shopping).toBeCloseTo((-840 / 2840) * 100, 6);
+    // All-negative columns keep positive shares.
+    const spendingNet = review({
+      aggregations: [{ op: 'net', modifier: 'share' }],
+      breakouts: [{ field: 'account' }],
+      filters: [{ field: 'category', op: 'is', values: [510] }],
+    });
+    expect(spendingNet.map((row) => Math.round(row.net_share as number))).toEqual([60, 40]);
+  });
+
+  it('having: filters groups on a metric after aggregation', () => {
+    const rows = review({
+      aggregations: [{ op: 'spending' }, { op: 'count' }],
+      breakouts: [{ field: 'payee' }],
+      having: [{ column: 'spending', op: 'gt', values: [100] }],
+    });
+    expect(rows.map((row) => [row.payee, row.spending])).toEqual([
+      ['Store', 500],
+      ['Amazon', 255],
+    ]);
+    expect(
+      review({
+        aggregations: [{ op: 'count' }],
+        breakouts: [{ field: 'payee' }],
+        having: [{ column: 'count', op: 'between', values: [2, 10] }],
+      })
+    ).toEqual([{ payee: 'Amazon', count: 5 }]);
+  });
+
+  it('numeric bins: fixed and auto width, in order, drilled exactly', () => {
+    const fixed = expectDrillMatchesCells({ breakouts: [{ field: 'outflow', bin: 100 }] });
+    expect(fixed.map((row) => [row.outflow_bin, row.outflow_bin__key, row.count])).toEqual([
+      [0, 100, 9], // 0 (salary), 10, 25, 5, 40, 60, 3, 70, 8
+      [100, 100, 1], // 120
+      [500, 100, 1],
+    ]);
+    const auto = expectDrillMatchesCells({ breakouts: [{ field: 'outflow', bin: 'auto' }] });
+    // Range 0..500 → 50 per bin.
+    expect(auto[0].outflow_bin__key).toBe(50);
+    expect(auto.map((row) => row.outflow_bin)).toEqual([0, 50, 100, 500]);
+    // Custom number columns bin too.
+    expectDrillMatchesCells({
+      customColumns: [{ id: 'expr_1', name: 'Size', expression: 'abs([amount])' }],
+      breakouts: [{ field: 'expr_1', bin: 0.5 }],
+    });
+  });
+
+  it('date parts: spending by weekday and month of year, drilled exactly', () => {
+    const weekdays = expectDrillMatchesCells({
+      breakouts: [{ field: 'date', part: 'dayOfWeek' }],
+    });
+    expect(weekdays.map((row) => [row.date_day_of_week, row.count])).toEqual([
+      [1, 4], // 01-05, 02-02, 2025-02-10, 11-02
+      [2, 2],
+      [3, 2],
+      [5, 1],
+      [6, 1],
+      [7, 1],
+    ]);
+    const months = expectDrillMatchesCells({
+      breakouts: [
+        { field: 'date', part: 'monthOfYear' },
+        { field: 'date', part: 'year' },
+      ],
+    });
+    expect(months[0]).toMatchObject({ date_month_of_year: 1, date_year: 2025, count: 1 });
+    expect(
+      review({
+        aggregations: [{ op: 'spending' }],
+        filters: [{ field: 'date', op: 'is', values: [6, 7], part: 'dayOfWeek' }],
+      })
+    ).toEqual([{ spending: 125 }]);
+  });
+
+  it('date functions in custom columns', () => {
+    expect(
+      review({
+        customColumns: [
+          { id: 'expr_1', name: 'Weekend', expression: 'weekday([date]) >= 6' },
+          { id: 'expr_2', name: 'Month', expression: 'month([date]) + year([date]) * 100' },
+        ],
+        aggregations: [{ op: 'spending' }],
+        breakouts: [{ field: 'expr_1' }],
+        filters: [{ field: 'expr_2', op: 'is', values: [202602] }],
+      })
+    ).toEqual([
+      { expr_1: true, spending: 125 },
+      { expr_1: false, spending: 2 },
+    ]);
+  });
+
+  it('compares with the same period last year', () => {
+    const rows = review({
+      aggregations: [{ op: 'spending', compare: true, compareTo: 'lastYear' }],
+      breakouts: [{ field: 'date', bucket: 'month' }],
+      filters: [{ field: 'date', op: 'between', values: ['2026-01-01', '2026-03-31'] }],
+    });
+    expect(rows).toEqual([
+      { month: '2026-01', spending: 35, spending_last_year: 40, spending_yoy_change: -12.5 },
+      {
+        month: '2026-02',
+        spending: 127,
+        spending_last_year: 60,
+        spending_yoy_change: (67 / 60) * 100,
+      },
+      { month: '2026-03', spending: 500, spending_last_year: 0, spending_yoy_change: null },
+    ]);
+    // Per series with a second grouping; the previous bucket still works alongside.
+    const byAccount = review({
+      aggregations: [
+        { op: 'spending', compare: true, compareTo: 'lastYear' },
+        { op: 'count', compare: true },
+      ],
+      breakouts: [{ field: 'date', bucket: 'quarter' }, { field: 'account' }],
+      filters: [{ field: 'date', op: 'current', unit: 'year', values: [] }],
+    });
+    expect(
+      byAccount.find((row) => row.quarter === '2026-Q1' && row.account === 'Checking')
+    ).toMatchObject({
+      spending: 162,
+      spending_last_year: 100,
+    });
+  });
+
+  it('raw rows sort by a column that is not shown', () => {
+    const rows = review({
+      columns: ['payee'],
+      sort: [{ column: 'outflow', direction: 'desc' }],
+      limit: 3,
+    });
+    expect(rows).toEqual([{ payee: 'Store' }, { payee: 'amazon' }, { payee: 'Future' }]);
+  });
+
+  it('a custom column named like a field keeps working under a free name', () => {
+    const spec = normalizeQuestion({
+      source: 'transactions',
+      customColumns: [
+        { id: 'expr_1', name: 'Amount', expression: '[outflow] * 2' },
+        { id: 'expr_2', name: 'Plus', expression: '[expr_1] + 1' },
+      ],
+      filters: [{ field: 'payee', op: 'is', values: ['Store'] }],
+    });
+    expect(spec.customColumns?.map((column) => column.name)).toEqual(['Amount 2', 'Plus']);
+    expect(
+      review({ ...spec, aggregations: [{ op: 'sum', field: 'expr_2' }], filters: spec.filters })
+    ).toEqual([{ sum_expr_2: 1001 }]);
+  });
+});

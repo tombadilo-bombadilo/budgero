@@ -12,6 +12,30 @@ export type QuestionSource = (typeof QUESTION_SOURCES)[number];
 export const DATE_BUCKETS = ['day', 'week', 'month', 'quarter', 'year'] as const;
 export type DateBucket = (typeof DATE_BUCKETS)[number];
 
+/**
+ * Date parts: a grouping (or filter) on one component of a date, e.g.
+ * "spending by weekday". Values are whole numbers: year (2026), quarter of
+ * year (1-4), month of year (1-12), day of month (1-31), ISO day of week
+ * (1 = Monday ... 7 = Sunday).
+ */
+export const DATE_PARTS = [
+  'year',
+  'quarterOfYear',
+  'monthOfYear',
+  'dayOfMonth',
+  'dayOfWeek',
+] as const;
+export type DatePart = (typeof DATE_PARTS)[number];
+
+/** Inclusive value range of each date part. */
+export const DATE_PART_RANGE: Record<DatePart, readonly [number, number]> = {
+  year: [1, 9999],
+  quarterOfYear: [1, 4],
+  monthOfYear: [1, 12],
+  dayOfMonth: [1, 31],
+  dayOfWeek: [1, 7],
+};
+
 export type FieldType = 'date' | 'number' | 'text' | 'boolean' | 'entity';
 
 /** What kind of thing an entity / text field holds; drives the value picker. */
@@ -115,6 +139,13 @@ export const DEFAULT_RAW_COLUMNS: Record<QuestionSource, readonly string[]> = {
   budget: ['month', 'category_group', 'category', 'assigned', 'activity'],
   accounts: ['account', 'account_type', 'currency', 'on_budget', 'closed', 'balance'],
 };
+
+/** Date parts a date field offers (day-level parts need a day-level date). */
+export function datePartsFor(field: FieldDef | undefined): DatePart[] {
+  if (!field || field.type !== 'date') return [];
+  if (field.buckets?.includes('day')) return [...DATE_PARTS];
+  return ['year', 'quarterOfYear', 'monthOfYear'];
+}
 
 export function getField(source: QuestionSource, fieldId: string): FieldDef | undefined {
   return SOURCE_FIELDS[source].find((field) => field.id === fieldId);

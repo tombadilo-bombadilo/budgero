@@ -473,14 +473,14 @@ describe('stacking', () => {
 });
 
 describe('custom columns, custom metrics and metric options', () => {
-  it('keeps valid custom columns in canonical form and drops broken ones', () => {
+  it('keeps valid custom columns in canonical form, drops broken ones, renames taken names', () => {
     const spec = normalizeQuestion({
       source: 'transactions',
       customColumns: [
         { id: 'expr_1', name: '  Abs   amount ', expression: 'ABS([Amount])' },
         { id: 'expr_2', name: 'Bad', expression: 'abs([Nope])' },
         { id: 'expr_3', name: 'Uses later', expression: '[expr_4] + 1' },
-        { id: 'expr_4', name: 'abs amount', expression: '1' }, // duplicate name
+        { id: 'expr_4', name: 'abs amount', expression: '1' }, // duplicate name: renamed
         { id: 'oops', name: 'Bad id', expression: '1' },
         { id: 'expr_5', name: 'Has [bracket]', expression: '1' },
         { id: 'expr_6', name: 'Agg', expression: 'Sum([amount])' },
@@ -491,6 +491,7 @@ describe('custom columns, custom metrics and metric options', () => {
     });
     expect(spec.customColumns).toEqual([
       { id: 'expr_1', name: 'Abs amount', expression: 'abs([amount])' },
+      { id: 'expr_4', name: 'abs amount 2', expression: '1' },
       { id: 'expr_7', name: 'Twice', expression: '[expr_1] * 2' },
     ]);
     // Absent when empty, so older questions normalize unchanged.

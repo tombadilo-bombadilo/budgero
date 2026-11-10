@@ -15,6 +15,7 @@ import {
   type FieldDef,
 } from './fields';
 import {
+  isFilterTextTooLong,
   isValidIsoDate,
   normalizeQuestion,
   questionField,
@@ -32,8 +33,8 @@ export interface DrillValue {
   value: unknown;
   /**
    * Hidden key from the `<key>__key` result column: the entity id (or null
-   * for "Uncategorized" etc.) or the raw text. Undefined when the result has
-   * none (e.g. SQL saved before ids were added).
+   * for "Uncategorized" etc.), the raw text, or a numeric bin's width.
+   * Undefined when the result has none (e.g. SQL saved before ids were added).
    */
   key?: unknown;
 }
@@ -116,11 +117,36 @@ function isBlank(value: unknown): boolean {
   return value === null || value === undefined || (typeof value === 'string' && !value.trim());
 }
 
-/** "Is this value" filter for a clicked grouping value, or null when it can't be expressed. */
+/** Range [from, to) of a numeric bin cell: its lower bound and the bin width. */
+export function binRange(value: unknown, width: unknown): [number, number] | null {
+  const low = typeof value === 'number' ? value : Number.NaN;
+  const size = typeof width === 'number' ? width : Number.NaN;
+  if (!Number.isFinite(low) || !Number.isFinite(size) || size <= 0) return null;
+  return [low, low + size];
+}
+
+/**
+ * "Is this value" filter for a clicked grouping value, or null when it can't
+ * be expressed exactly (then no drill-through is offered for it).
+ */
 export function drillFilter(spec: QuestionSpec, drill: DrillValue): QuestionFilter | null {
   const { breakout } = drill.column;
   const field = questionField(spec, breakout.field);
   if (!field) return null;
+  if (breakout.part) {
+    if (isBlank(drill.value)) return { field: field.id, op: 'isEmpty', values: [] };
+    const part = Number(drill.value);
+    return Number.isInteger(part)
+      ? { field: field.id, op: 'is', values: [part], part: breakout.part }
+      : null;
+  }
+  if (breakout.bin !== undefined) {
+    if (isBlank(drill.value)) return { field: field.id, op: 'isEmpty', values: [] };
+    const width = breakout.bin === 'auto' ? drill.key : breakout.bin;
+    const range = binRange(drill.value, width);
+    if (!range) return null;
+    return { field: field.id, op: 'between', values: range, binWidth: width as number };
+  }
   if (breakout.bucket) {
     const range = bucketRange(breakout.bucket, drill.value);
     if (!range) return null;
@@ -130,6 +156,8 @@ export function drillFilter(spec: QuestionSpec, drill: DrillValue): QuestionFilt
   }
   switch (field.type) {
     case 'boolean':
+      // Undecidable conditions (NULL) count as false, like the `is` filter.
+      if (drill.value === null) return { field: field.id, op: 'is', values: [false] };
       return typeof drill.value === 'boolean'
         ? { field: field.id, op: 'is', values: [drill.value] }
         : null;
@@ -151,6 +179,8 @@ export function drillFilter(spec: QuestionSpec, drill: DrillValue): QuestionFilt
       // Name-keyed: the hidden raw value, else the cell text.
       const raw = drill.key !== undefined ? drill.key : drill.value;
       if (isBlank(raw)) return { field: field.id, op: 'isEmpty', values: [] };
+      // Too long to filter by: no drill rather than a filter that is dropped.
+      if (isFilterTextTooLong(String(raw))) return null;
       return { field: field.id, op: 'is', values: [String(raw)] };
     }
     default:
@@ -160,7 +190,8 @@ export function drillFilter(spec: QuestionSpec, drill: DrillValue): QuestionFilt
 
 /** "Is not this value" filter (categorical values only). */
 export function excludeFilter(spec: QuestionSpec, drill: DrillValue): QuestionFilter | null {
-  if (drill.column.breakout.bucket) return null;
+  const { breakout } = drill.column;
+  if (breakout.bucket || breakout.bin !== undefined) return null;
   const include = drillFilter(spec, drill);
   if (!include) return null;
   if (include.op === 'isEmpty') return { ...include, op: 'notEmpty' };
@@ -176,6 +207,8 @@ function withFilters(spec: QuestionSpec, added: QuestionFilter[]): QuestionFilte
   for (const filter of added) {
     filters = filters.filter((existing) => {
       if (existing.field !== filter.field) return true;
+      // A date-part or bin filter and a plain one on the same field both stay.
+      if (existing.part !== filter.part || existing.binWidth !== filter.binWidth) return true;
       // A wider date range on the same field.
       if (existing.op === 'between' && (filter.op === 'between' || filter.op === 'is')) {
         const [from, to] = existing.values as string[];
@@ -222,6 +255,9 @@ export interface DrillOptions {
 export function drillOptions(context: DrillContext): DrillOptions {
   const { spec, values } = context;
   const usable = values.filter((value) => drillFilter(spec, value) !== null);
+  // Rows behind a cell only when every clicked grouping value can be filtered
+  // exactly; a partial set of filters would list other cells' rows too.
+  const exact = usable.length === values.length;
   const clickedFields = new Set(
     usable.filter((value) => !value.column.breakout.bucket).map((v) => v.column.breakout.field)
   );
@@ -244,8 +280,8 @@ export function drillOptions(context: DrillContext): DrillOptions {
   }
 
   return {
-    records: usable.length > 0 || values.length === 0,
-    breakoutFields: usable.length > 0 ? breakoutFields : [],
+    records: exact,
+    breakoutFields: exact && usable.length > 0 ? breakoutFields : [],
     zoom,
     categorical: usable.filter(
       (value) => !value.column.breakout.bucket && excludeFilter(spec, value) !== null
@@ -303,6 +339,8 @@ export function applyDrill(context: DrillContext, action: DrillAction): Question
         limit: null,
         visualization: 'auto',
         stacking: 'auto',
+        // Filters on metrics belonged to the old grouping.
+        having: undefined,
       });
     }
     case 'zoom': {
@@ -321,6 +359,7 @@ export function applyDrill(context: DrillContext, action: DrillAction): Question
             : breakout
         ),
         sort: spec.sort.filter((entry) => entry.column !== action.key),
+        having: undefined,
       });
     }
     case 'filter': {
