@@ -4,11 +4,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // eslint-disable-next-line no-restricted-imports
 import { NodeSqlJsAdapter, ServiceManager, type Services } from '@budgero/core';
 import * as registry from '@shared/mutations/op-code-registry';
-import { materializeDefaultHome } from '@pages/custom-dashboards/useDashboardEditor';
+import {
+  materializeDefaultHome,
+  reuseHomeCopy,
+  stopUsingAsHomeOp,
+} from '@pages/custom-dashboards/useDashboardEditor';
 import {
   BUILTIN_CARDS,
   builtinKeyOf,
   defaultHomeDashboard,
+  defaultWidgetId,
+  resolveHomeDashboard,
   visibleFor,
 } from '@widgets/dashboard/builtin/builtin-cards';
 
@@ -237,5 +243,95 @@ describe('home dashboard', () => {
     expect(a.services.customDashboards.getWidgetById(widget.id)?.mobileLayout).toEqual({
       size: 'm',
     });
+  });
+
+  it('stop using a dashboard as home: the customised home comes back, and Customize edits it', async () => {
+    const exec = (op: string, payload: Record<string, unknown>) => originate(a, b, op, payload);
+    const copy = await materializeDefaultHome({
+      exec,
+      budgetId,
+      name: 'Home',
+      takenNames: [],
+      labelOf,
+    });
+    // Customise: drop the cash balance card from the stored home.
+    await exec('customDashboardWidgets.delete', {
+      id: copy.widgetId(defaultWidgetId('cash_balance')),
+    });
+    const travel = (await exec('customDashboards.create', { budgetId, name: 'Travel' })) as {
+      id: string;
+    };
+    await exec('customDashboards.update', { id: travel.id, isHome: true });
+    expect(resolveHomeDashboard(a.services.customDashboards.getDashboards(budgetId))?.id).toBe(
+      travel.id
+    );
+
+    const call = stopUsingAsHomeOp(travel.id, a.services.customDashboards.getDashboards(budgetId));
+    await exec(call.op, call.args);
+    for (const device of [a, b]) {
+      const dashboards = device.services.customDashboards.getDashboards(budgetId);
+      // Home is the customised copy again (not the pristine default), on both devices.
+      expect(device.services.customDashboards.getHomeDashboardId(budgetId)).toBe(copy.dashboardId);
+      expect(resolveHomeDashboard(dashboards)?.id).toBe(copy.dashboardId);
+      const shown = device.services.customDashboards.getDashboard(copy.dashboardId)!;
+      expect(shown.widgets.some((w) => w.reportId === 'builtin:cash_balance')).toBe(false);
+    }
+    // No second copy was made.
+    expect(
+      a.services.customDashboards.getDashboards(budgetId).filter((d) => d.origin === 'home_default')
+    ).toHaveLength(1);
+  });
+
+  it('a left-over customised home is reused by the next edit of the default view', async () => {
+    const exec = (op: string, payload: Record<string, unknown>) => originate(a, b, op, payload);
+    const copy = await materializeDefaultHome({
+      exec,
+      budgetId,
+      name: 'Home',
+      takenNames: [],
+      labelOf,
+    });
+    await exec('customDashboards.update', { id: copy.dashboardId, isHome: false });
+    // Home resolves to the copy even when it isn't flagged.
+    expect(resolveHomeDashboard(a.services.customDashboards.getDashboards(budgetId))?.id).toBe(
+      copy.dashboardId
+    );
+    const stored = a.services.customDashboards.getDashboard(copy.dashboardId)!;
+    const target = await reuseHomeCopy(exec, stored);
+    await exec('customDashboardWidgets.delete', {
+      id: target.widgetId(defaultWidgetId('overspent')),
+    });
+    for (const device of [a, b]) {
+      expect(device.services.customDashboards.getHomeDashboardId(budgetId)).toBe(copy.dashboardId);
+      const widgets = device.services.customDashboards.getDashboard(copy.dashboardId)!.widgets;
+      expect(widgets.some((w) => w.reportId === 'builtin:overspent')).toBe(false);
+      expect(widgets).toHaveLength(defaultHomeDashboard(budgetId, '').widgets.length - 1);
+    }
+  });
+
+  it('without a customised home, stopping a dashboard as home gives the pristine default', async () => {
+    const exec = (op: string, payload: Record<string, unknown>) => originate(a, b, op, payload);
+    const travel = (await exec('customDashboards.create', { budgetId, name: 'Travel' })) as {
+      id: string;
+    };
+    await exec('customDashboards.update', { id: travel.id, isHome: true });
+    const call = stopUsingAsHomeOp(travel.id, a.services.customDashboards.getDashboards(budgetId));
+    expect(call.args).toEqual({ id: travel.id, isHome: false });
+    await exec(call.op, call.args);
+    for (const device of [a, b]) {
+      expect(
+        resolveHomeDashboard(device.services.customDashboards.getDashboards(budgetId))
+      ).toBeNull();
+    }
+    // Reset deletes the copies, after which home is the pristine default too.
+    const copy = await materializeDefaultHome({
+      exec,
+      budgetId,
+      name: 'Home',
+      takenNames: ['Travel'],
+      labelOf,
+    });
+    await exec('customDashboards.delete', { id: copy.dashboardId });
+    expect(resolveHomeDashboard(a.services.customDashboards.getDashboards(budgetId))).toBeNull();
   });
 });

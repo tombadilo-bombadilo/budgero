@@ -16899,6 +16899,7 @@ msgstr "Instellingen herstellen"
 msgid "Reset the home page?"
 msgstr "Startpagina herstellen?"
 
+#: src/pages/custom-dashboards/useDashboardEditor.ts
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Reset to default"
 msgstr "Standaard herstellen"
@@ -18590,8 +18591,8 @@ msgid "Show target column"
 msgstr "Doelkolom tonen"
 
 #: src/pages/dashboard/HomeDashboard.tsx
-msgid "Show the default home page?"
-msgstr "Standaard startpagina tonen?"
+#~ msgid "Show the default home page?"
+#~ msgstr "Standaard startpagina tonen?"
 
 #: src/features/transactions/ui/SchedulingGuideDialog.tsx
 msgid "Show the next 30 days"
@@ -19375,6 +19376,11 @@ msgstr "Nog steeds onvoldoende gefinancierd"
 msgid "Stop recording"
 msgstr "Opname stoppen"
 
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Stop using as home page"
+msgstr "Niet meer als startpagina gebruiken"
+
 #. placeholder {0}: created.toLocaleString()
 #: src/features/account-management/ui/DevSeedTransactionsButton.tsx
 msgid "Stopped after {0}"
@@ -19984,17 +19990,21 @@ msgid "The goal has been permanently removed."
 msgstr "Het doel is permanent verwijderd."
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+msgid "The home page no longer shows this dashboard"
+msgstr "De startpagina toont dit dashboard niet meer"
+
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "The home page now shows this dashboard"
 msgstr "De startpagina toont nu dit dashboard"
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
-msgid "The home page shows the default cards again"
-msgstr "De startpagina toont weer de standaardkaarten"
+#~ msgid "The home page shows the default cards again"
+#~ msgstr "De startpagina toont weer de standaardkaarten"
 
 #. placeholder {0}: dashboard.name
 #: src/pages/dashboard/HomeDashboard.tsx
-msgid "The home page shows the default cards again. “{0}” stays under custom dashboards."
-msgstr "De startpagina toont weer de standaardkaarten. ‘{0}’ blijft bij de aangepaste dashboards."
+#~ msgid "The home page shows the default cards again. “{0}” stays under custom dashboards."
+#~ msgstr "De startpagina toont weer de standaardkaarten. ‘{0}’ blijft bij de aangepaste dashboards."
 
 #: src/features/transactions/ui/form/CurrencyConversionNotice.tsx
 msgid "The implied exchange rate will be saved with this transaction."
@@ -21847,13 +21857,13 @@ msgid "Use the cleared balance as the actual balance"
 msgstr "Het bevestigde saldo als werkelijk saldo gebruiken"
 
 #: src/pages/dashboard/HomeDashboard.tsx
-msgid "Use the default"
-msgstr "Standaard gebruiken"
+#~ msgid "Use the default"
+#~ msgstr "Standaard gebruiken"
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/dashboard/HomeDashboard.tsx
-msgid "Use the default home page"
-msgstr "Standaard startpagina gebruiken"
+#~ msgid "Use the default home page"
+#~ msgstr "Standaard startpagina gebruiken"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Use your phone, tablet, or computer"

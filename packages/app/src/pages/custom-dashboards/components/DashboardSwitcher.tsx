@@ -29,8 +29,8 @@ interface DashboardSwitcherProps {
   exportDisabled?: boolean;
   /** Show this dashboard on the home page. */
   onUseAsHome?: (dashboardId: string) => Promise<void>;
-  /** Show the default home page again (the dashboard stays). */
-  onUseDefaultHome?: (dashboardId: string) => Promise<void>;
+  /** Stop showing it on the home page (the home goes back to what it was). */
+  onStopUsingAsHome?: (dashboardId: string) => Promise<void>;
 }
 
 export function DashboardSwitcher({
@@ -43,7 +43,7 @@ export function DashboardSwitcher({
   onExportAll,
   exportDisabled = false,
   onUseAsHome,
-  onUseDefaultHome,
+  onStopUsingAsHome,
 }: DashboardSwitcherProps) {
   const { t } = useLingui();
 
@@ -106,14 +106,14 @@ export function DashboardSwitcher({
   };
 
   const handleHome = async (dashboardId: string, makeHome: boolean) => {
-    const action = makeHome ? onUseAsHome : onUseDefaultHome;
+    const action = makeHome ? onUseAsHome : onStopUsingAsHome;
     if (!action) return;
     try {
       await action(dashboardId);
       toast.success(
         makeHome
           ? t`The home page now shows this dashboard`
-          : t`The home page shows the default cards again`
+          : t`The home page no longer shows this dashboard`
       );
     } catch {
       // The action already reported it.
@@ -243,12 +243,12 @@ export function DashboardSwitcher({
                           <Trans>Use as home page</Trans>
                         </DropdownMenuItem>
                       )}
-                      {activeDashboard?.isHome && onUseDefaultHome && (
+                      {activeDashboard?.isHome && onStopUsingAsHome && (
                         <DropdownMenuItem
                           onSelect={() => void handleHome(activeDashboard.id, false)}
                         >
                           <Home className="h-4 w-4" aria-hidden />
-                          <Trans>Use the default home page</Trans>
+                          <Trans>Stop using as home page</Trans>
                         </DropdownMenuItem>
                       )}
                       {onExportAll && (

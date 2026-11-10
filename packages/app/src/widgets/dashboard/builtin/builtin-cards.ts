@@ -334,3 +334,37 @@ export function pickHomeDashboard<T extends { id: string; isHome: boolean; updat
       )[0] ?? null
   );
 }
+
+/** Origin of a dashboard stored from the default home on its first edit (core's HOME_DEFAULT_ORIGIN). */
+const HOME_COPY_ORIGIN = 'home_default';
+
+/**
+ * The newest dashboard stored from the default home (the user's customised
+ * home), or null. `except` skips one dashboard.
+ */
+export function pickHomeCopy<T extends { id: string; origin: string | null; updatedAt: string }>(
+  dashboards: T[],
+  except?: string
+): T | null {
+  return (
+    dashboards
+      .filter((dashboard) => dashboard.origin === HOME_COPY_ORIGIN && dashboard.id !== except)
+      .sort((a, b) =>
+        a.updatedAt === b.updatedAt
+          ? a.id.localeCompare(b.id)
+          : b.updatedAt.localeCompare(a.updatedAt)
+      )[0] ?? null
+  );
+}
+
+/**
+ * What the home page shows: the dashboard set as home; else the customised
+ * home (a copy of the default, e.g. after another dashboard stopped being
+ * home); else null for the default layout. Only "Reset to default" removes
+ * the copy.
+ */
+export function resolveHomeDashboard<
+  T extends { id: string; isHome: boolean; origin: string | null; updatedAt: string },
+>(dashboards: T[]): T | null {
+  return pickHomeDashboard(dashboards) ?? pickHomeCopy(dashboards);
+}

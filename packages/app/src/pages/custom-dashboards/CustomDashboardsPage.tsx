@@ -319,7 +319,7 @@ function CustomDashboardsView({ isMobile }: { isMobile: boolean }) {
         onExportAll={() => void handleExportAll()}
         exportDisabled={!activeDashboard || activeDashboard.widgets.length === 0}
         onUseAsHome={homeActions.makeHome}
-        onUseDefaultHome={homeActions.unsetHome}
+        onStopUsingAsHome={(id) => homeActions.unsetHome(id, dashboards)}
       />
 
       {!activeDashboard && (dashboardsQuery.isLoading || activeDashboardQuery.isLoading) && (

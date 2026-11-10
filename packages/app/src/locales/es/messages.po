@@ -16899,6 +16899,7 @@ msgstr "Restablecer ajustes"
 msgid "Reset the home page?"
 msgstr "¿Restablecer la página de inicio?"
 
+#: src/pages/custom-dashboards/useDashboardEditor.ts
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Reset to default"
 msgstr "Restablecer predeterminada"
@@ -18590,8 +18591,8 @@ msgid "Show target column"
 msgstr "Mostrar columna de objetivo"
 
 #: src/pages/dashboard/HomeDashboard.tsx
-msgid "Show the default home page?"
-msgstr "¿Mostrar la página de inicio predeterminada?"
+#~ msgid "Show the default home page?"
+#~ msgstr "¿Mostrar la página de inicio predeterminada?"
 
 #: src/features/transactions/ui/SchedulingGuideDialog.tsx
 msgid "Show the next 30 days"
@@ -19375,6 +19376,11 @@ msgstr "Aún sin fondos suficientes"
 msgid "Stop recording"
 msgstr "Detener grabación"
 
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+#: src/pages/dashboard/HomeDashboard.tsx
+msgid "Stop using as home page"
+msgstr "Dejar de usar como página de inicio"
+
 #. placeholder {0}: created.toLocaleString()
 #: src/features/account-management/ui/DevSeedTransactionsButton.tsx
 msgid "Stopped after {0}"
@@ -19984,17 +19990,21 @@ msgid "The goal has been permanently removed."
 msgstr "El objetivo ha sido eliminado permanentemente."
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
+msgid "The home page no longer shows this dashboard"
+msgstr "La página de inicio ya no muestra este panel"
+
+#: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "The home page now shows this dashboard"
 msgstr "La página de inicio muestra ahora este panel"
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
-msgid "The home page shows the default cards again"
-msgstr "La página de inicio vuelve a mostrar las tarjetas predeterminadas"
+#~ msgid "The home page shows the default cards again"
+#~ msgstr "La página de inicio vuelve a mostrar las tarjetas predeterminadas"
 
 #. placeholder {0}: dashboard.name
 #: src/pages/dashboard/HomeDashboard.tsx
-msgid "The home page shows the default cards again. “{0}” stays under custom dashboards."
-msgstr "La página de inicio vuelve a mostrar las tarjetas predeterminadas. «{0}» se queda en los paneles personalizados."
+#~ msgid "The home page shows the default cards again. “{0}” stays under custom dashboards."
+#~ msgstr "La página de inicio vuelve a mostrar las tarjetas predeterminadas. «{0}» se queda en los paneles personalizados."
 
 #: src/features/transactions/ui/form/CurrencyConversionNotice.tsx
 msgid "The implied exchange rate will be saved with this transaction."
@@ -21847,13 +21857,13 @@ msgid "Use the cleared balance as the actual balance"
 msgstr "Usar el saldo confirmado como saldo real"
 
 #: src/pages/dashboard/HomeDashboard.tsx
-msgid "Use the default"
-msgstr "Usar la predeterminada"
+#~ msgid "Use the default"
+#~ msgstr "Usar la predeterminada"
 
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/dashboard/HomeDashboard.tsx
-msgid "Use the default home page"
-msgstr "Usar la página de inicio predeterminada"
+#~ msgid "Use the default home page"
+#~ msgstr "Usar la página de inicio predeterminada"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Use your phone, tablet, or computer"

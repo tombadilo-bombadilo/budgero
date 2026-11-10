@@ -24,6 +24,7 @@ import {
   isHiddenOn,
   mergeVisibleOrder,
   orderedFor,
+  pickHomeCopy,
   uniqueDashboardName,
   type BuiltinCardKey,
   type Platform,
@@ -89,6 +90,25 @@ export async function materializeDefaultHome(input: {
   return { dashboardId, widgetId: (shownId) => ids.get(shownId) ?? shownId, widgets };
 }
 
+/**
+ * Make an earlier customised home the home again and map the default cards
+ * shown to its widgets (by card).
+ */
+export async function reuseHomeCopy(exec: Exec, copy: CustomDashboardWithWidgets): Promise<Target> {
+  await exec('customDashboards.update', { id: copy.id, isHome: true });
+  const byKey = new Map<string, string>();
+  for (const widget of copy.widgets) {
+    const key = builtinKeyOf(widget);
+    if (key && !byKey.has(key)) byKey.set(key, widget.id);
+  }
+  return {
+    dashboardId: copy.id,
+    widgetId: (shownId) =>
+      shownId.startsWith('default:') ? (byKey.get(shownId.slice(8)) ?? shownId) : shownId,
+    widgets: copy.widgets,
+  };
+}
+
 interface EditorOptions {
   /** The dashboard shown: a stored one, or the default home (stored on its first edit). */
   dashboard: CustomDashboardWithWidgets | null | undefined;
@@ -96,6 +116,8 @@ interface EditorOptions {
   platform: Platform;
   /** All of the budget's dashboards (names must stay unique). */
   dashboards: CustomDashboard[];
+  /** The home page: an edit also makes the shown dashboard the home. */
+  claimHome?: boolean;
 }
 
 /**
@@ -103,7 +125,13 @@ interface EditorOptions {
  * dashboards. On the default home, the first edit stores the default layout
  * as a dashboard and then applies the edit, as one undo step.
  */
-export function useDashboardEditor({ dashboard, budgetId, platform, dashboards }: EditorOptions) {
+export function useDashboardEditor({
+  dashboard,
+  budgetId,
+  platform,
+  dashboards,
+  claimHome = false,
+}: EditorOptions) {
   const { t } = useLingui();
   const runtime = useRuntime();
 
@@ -123,22 +151,38 @@ export function useDashboardEditor({ dashboard, budgetId, platform, dashboards }
     try {
       if (isDefaultHomeDashboard(dashboard)) {
         await runUndoGroup(label, async () => {
-          const target = await materializeDefaultHome({
-            exec,
-            budgetId,
-            name: t`Home`,
-            takenNames: dashboards.map((item) => item.name),
-            labelOf,
-          });
+          // A customised home left from before is taken up again; only
+          // without one is the default layout stored as a new dashboard.
+          const copy = pickHomeCopy(dashboards);
+          const stored = copy ? runtime.services().customDashboards.getDashboard(copy.id) : null;
+          const target = stored
+            ? await reuseHomeCopy(exec, stored)
+            : await materializeDefaultHome({
+                exec,
+                budgetId,
+                name: t`Home`,
+                takenNames: dashboards.map((item) => item.name),
+                labelOf,
+              });
           await work(target);
         });
         return;
       }
-      await work({
+      const target: Target = {
         dashboardId: dashboard.id,
         widgetId: (id) => id,
         widgets: dashboard.widgets,
-      });
+      };
+      if (claimHome && !dashboard.isHome) {
+        // The home page shows a customised home nobody has set as home:
+        // editing it makes it the home, in the same undo step.
+        await runUndoGroup(label, async () => {
+          await exec('customDashboards.update', { id: dashboard.id, isHome: true });
+          await work(target);
+        });
+        return;
+      }
+      await work(target);
     } catch (error) {
       toast.error(getErrorMessage(error, t`Could not save the dashboard`));
     }
@@ -321,6 +365,20 @@ export function useDashboardEditor({ dashboard, budgetId, platform, dashboards }
   };
 }
 
+/**
+ * The op that stops a dashboard being the home: the customised home (a copy
+ * of the default) becomes the home again if there is one, else nothing is.
+ */
+export function stopUsingAsHomeOp(
+  dashboardId: string,
+  dashboards: CustomDashboard[]
+): { op: string; args: Record<string, unknown> } {
+  const copy = pickHomeCopy(dashboards, dashboardId);
+  return copy
+    ? { op: 'customDashboards.update', args: { id: copy.id, isHome: true } }
+    : { op: 'customDashboards.update', args: { id: dashboardId, isHome: false } };
+}
+
 /** Home page choice: which dashboard the home page shows. */
 export function useHomeActions() {
   const { t } = useLingui();
@@ -345,15 +403,25 @@ export function useHomeActions() {
     /** Show this dashboard on the home page. */
     makeHome: (dashboardId: string) =>
       guard(() => exec('customDashboards.update', { id: dashboardId, isHome: true })),
-    /** Back to the default home; the dashboard stays as it is. */
-    unsetHome: (dashboardId: string) =>
-      guard(() => exec('customDashboards.update', { id: dashboardId, isHome: false })),
-    /** Back to the default home; a dashboard made from it on its first edit is removed. */
-    resetHome: (home: CustomDashboard) =>
+    /**
+     * Stop showing this dashboard on the home page: the home goes back to what
+     * it was, the customised home if there is one, else the default layout.
+     */
+    unsetHome: (dashboardId: string, dashboards: CustomDashboard[]) =>
+      guard(() => {
+        const call = stopUsingAsHomeOp(dashboardId, dashboards);
+        return exec(call.op, call.args);
+      }),
+    /** Back to the default layout: every customised copy of it is removed (one undo step). */
+    resetHome: (dashboards: CustomDashboard[]) =>
       guard(() =>
-        home.origin === HOME_DEFAULT_ORIGIN
-          ? exec('customDashboards.delete', { id: home.id })
-          : exec('customDashboards.update', { id: home.id, isHome: false })
+        runUndoGroup(t`Reset to default`, async () => {
+          for (const dashboard of dashboards) {
+            if (dashboard.origin === HOME_DEFAULT_ORIGIN) {
+              await exec('customDashboards.delete', { id: dashboard.id });
+            }
+          }
+        })
       ),
   };
 }

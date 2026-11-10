@@ -3,7 +3,9 @@ import type { CustomDashboardWidget } from '@budgero/core/browser';
 import {
   builtinKeyOf,
   mergeVisibleOrder,
+  pickHomeCopy,
   pickHomeDashboard,
+  resolveHomeDashboard,
   uniqueDashboardName,
   visibleFor,
 } from './builtin-cards';
@@ -66,5 +68,21 @@ describe('built-in cards', () => {
       ])?.id
     ).toBe('b');
     expect(pickHomeDashboard([{ id: 'c', isHome: false, updatedAt: '' }])).toBeNull();
+  });
+
+  it('home is the flagged dashboard, else the newest customised copy, else the default', () => {
+    const d = (id: string, isHome: boolean, origin: string | null, updatedAt: string) => ({
+      id,
+      isHome,
+      origin,
+      updatedAt,
+    });
+    const copyOld = d('c1', false, 'home_default', '2026-01-01');
+    const copyNew = d('c2', false, 'home_default', '2026-02-01');
+    const travel = d('t', true, null, '2026-03-01');
+    expect(resolveHomeDashboard([copyOld, copyNew, travel])?.id).toBe('t');
+    expect(resolveHomeDashboard([copyOld, copyNew, { ...travel, isHome: false }])?.id).toBe('c2');
+    expect(pickHomeCopy([copyOld, copyNew], 'c2')?.id).toBe('c1');
+    expect(resolveHomeDashboard([{ ...travel, isHome: false }])).toBeNull();
   });
 });

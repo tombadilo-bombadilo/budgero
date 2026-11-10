@@ -29,7 +29,7 @@ import {
 import {
   builtinKeyOf,
   defaultHomeDashboard,
-  pickHomeDashboard,
+  resolveHomeDashboard,
   widgetUsesPeriod,
 } from '@widgets/dashboard/builtin/builtin-cards';
 import { useDashboardPeriod } from '@widgets/dashboard/builtin/useDashboardPeriod';
@@ -57,7 +57,7 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
 
   const dashboardsQuery = useCustomDashboards(budgetId);
   const dashboards = useMemo(() => dashboardsQuery.data ?? [], [dashboardsQuery.data]);
-  const home = pickHomeDashboard(dashboards);
+  const home = resolveHomeDashboard(dashboards);
   const homeQuery = useCustomDashboard(home?.id);
   const defaultHome = useMemo(() => defaultHomeDashboard(budgetId, ''), [budgetId]);
   const loading = Boolean(budgetId) && (dashboardsQuery.isLoading || (home && homeQuery.isLoading));
@@ -71,7 +71,13 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
   const [resetOpen, setResetOpen] = useState(false);
   const [resetting, setResetting] = useState(false);
 
-  const editor = useDashboardEditor({ dashboard, budgetId, platform, dashboards });
+  const editor = useDashboardEditor({
+    dashboard,
+    budgetId,
+    platform,
+    dashboards,
+    claimHome: true,
+  });
   const homeActions = useHomeActions();
   const updateDashboard = useUpdateCustomDashboard();
 
@@ -117,7 +123,7 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
     if (!stored) return;
     setResetting(true);
     try {
-      await homeActions.resetHome(dashboard);
+      await homeActions.resetHome(dashboards);
       setResetOpen(false);
       setIsEditMode(false);
     } catch {
@@ -143,14 +149,22 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
           <SquareArrowOutUpRight className="h-4 w-4" aria-hidden />
           <Trans>Open in custom dashboards</Trans>
         </DropdownMenuItem>
-        <DropdownMenuItem onSelect={() => setTimeout(() => setResetOpen(true), 0)}>
-          <RotateCcw className="h-4 w-4" aria-hidden />
-          {madeFromDefault ? (
+        {madeFromDefault ? (
+          <DropdownMenuItem onSelect={() => setTimeout(() => setResetOpen(true), 0)}>
+            <RotateCcw className="h-4 w-4" aria-hidden />
             <Trans>Reset to default</Trans>
-          ) : (
-            <Trans>Use the default home page</Trans>
-          )}
-        </DropdownMenuItem>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem
+            onSelect={() => {
+              setIsEditMode(false);
+              void homeActions.unsetHome(dashboard.id, dashboards).catch(() => undefined);
+            }}
+          >
+            <RotateCcw className="h-4 w-4" aria-hidden />
+            <Trans>Stop using as home page</Trans>
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   ) : null;
@@ -243,16 +257,12 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
       <ConfirmDialog
         open={resetOpen}
         onOpenChange={setResetOpen}
-        title={madeFromDefault ? t`Reset the home page?` : t`Show the default home page?`}
-        description={
-          madeFromDefault
-            ? t`Your changes to the home page are removed and it shows the default cards again. You can undo this.`
-            : t`The home page shows the default cards again. “${dashboard.name}” stays under custom dashboards.`
-        }
-        confirmText={madeFromDefault ? t`Reset` : t`Use the default`}
+        title={t`Reset the home page?`}
+        description={t`Your changes to the home page are removed and it shows the default cards again. You can undo this.`}
+        confirmText={t`Reset`}
         cancelText={t`Cancel`}
         loadingText={t`Saving...`}
-        variant={madeFromDefault ? 'destructive' : 'default'}
+        variant="destructive"
         isLoading={resetting}
         onConfirm={handleReset}
       />
