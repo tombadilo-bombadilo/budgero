@@ -3,27 +3,30 @@ import { formatDateISO, startOfMonth, endOfMonth, getMonthKey } from '@shared/li
 import { getErrorMessage } from '@shared/lib/errors';
 import { toDecimal } from '@shared/lib/currency/milli';
 import { roundMilli } from '@shared/lib/currency/round-amount';
+import { withoutNulls } from './resolve-entity';
 import type { ToolContext, ToolExecutionResult } from './types';
 
 /** Service amounts are milliunits; the LLM sees decimal currency values. */
 const milliToDecimal = (milli: number) => toDecimal(roundMilli(milli));
 
-export const queryBudgetSchema = z.object({
-  queryType: z.enum([
-    'ready_to_assign',
-    'account_balances',
-    'category_spending',
-    'recent_transactions',
-    'monthly_summary',
-  ]),
-  categoryId: z.number().optional(),
-  categoryName: z.string().optional(),
-  accountId: z.number().optional(),
-  accountName: z.string().optional(),
-  startDate: z.string().optional(),
-  endDate: z.string().optional(),
-  limit: z.number().optional(),
-});
+export const queryBudgetSchema = withoutNulls(
+  z.object({
+    queryType: z.enum([
+      'ready_to_assign',
+      'account_balances',
+      'category_spending',
+      'recent_transactions',
+      'monthly_summary',
+    ]),
+    categoryId: z.number().optional(),
+    categoryName: z.string().optional(),
+    accountId: z.number().optional(),
+    accountName: z.string().optional(),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+    limit: z.number().optional(),
+  })
+);
 
 export type QueryBudgetArgs = z.infer<typeof queryBudgetSchema>;
 

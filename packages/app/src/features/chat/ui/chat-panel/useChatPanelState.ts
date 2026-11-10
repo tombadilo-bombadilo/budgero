@@ -25,11 +25,9 @@ import {
 import {
   executeConfirmedAddTransaction,
   executeConfirmedEditTransaction,
-  generateAddTransactionPreview,
-  generateEditTransactionPreview,
+  failureText,
   loadAnalyticsSchema,
-  type AddTransactionArgs,
-  type EditTransactionArgs,
+  prepareConfirmedTool,
   type ChatChartSpec,
 } from '@features/ai/lib/tools';
 import { buildBudgetContext } from '@budgero/core/browser';
@@ -171,7 +169,12 @@ export function useChatPanelState() {
       },
       enabledTools: chatSettings?.EnabledTools ?? null,
       categories: categories.map((c) => ({ ID: c.ID, Name: c.Name })),
-      accounts: accounts.map((a) => ({ ID: a.ID, Name: a.Name, Type: a.Type || 'checking' })),
+      accounts: accounts.map((a) => ({
+        ID: a.ID,
+        Name: a.Name,
+        Type: a.Type || 'checking',
+        Archived: !!a.Archived,
+      })),
       aiConfig: {
         provider: llmSettings.Provider,
         endpointURL: llmSettings.EndpointURL,
@@ -283,19 +286,42 @@ export function useChatPanelState() {
             }
           : undefined;
 
-      // Handle pending confirmation tool (add/edit transaction)
-      if (result.pendingTool) {
-        const { toolCallId, toolName, args } = result.pendingTool;
+      // Handle pending confirmation tool (add/edit transaction). A call that
+      // can't be carried out gets no Confirm card: its error is saved to the
+      // conversation, where the user reads it and the model sees it next turn.
+      const prepared = result.pendingTool
+        ? prepareConfirmedTool(result.pendingTool.toolName, result.pendingTool.args, toolContext)
+        : undefined;
+      if (result.pendingTool && prepared && !prepared.ok) {
+        if (result.text || chartToolResult) {
+          await addMessage.mutateAsync({
+            conversationId: activeConversationId,
+            budgetId,
+            role: 'assistant',
+            content: result.text,
+            toolResult: chartToolResult,
+          });
+        }
+        await addMessage.mutateAsync({
+          conversationId: activeConversationId,
+          budgetId,
+          role: 'tool',
+          content: failureText(prepared.result),
+          toolResult: {
+            toolCallId: result.pendingTool.toolCallId,
+            success: false,
+            error: prepared.result.error,
+          },
+        });
+      } else if (result.pendingTool && prepared?.ok) {
+        const { toolCallId, toolName } = result.pendingTool;
         const isEdit = toolName === 'edit_transaction';
-        const preview = isEdit
-          ? generateEditTransactionPreview(args as EditTransactionArgs, toolContext)
-          : generateAddTransactionPreview(args as AddTransactionArgs, toolContext);
 
         addPendingTool({
           id: toolCallId,
           toolName,
-          arguments: args,
-          preview,
+          arguments: prepared.args,
+          preview: prepared.preview,
           status: 'pending',
         });
 
@@ -389,7 +415,8 @@ export function useChatPanelState() {
         conversationId: activeConversationId,
         budgetId,
         role: 'tool',
-        content: result.message,
+        // A failure keeps its details: the history is all the model sees next turn.
+        content: result.success ? result.message : failureText(result),
         toolResult: {
           toolCallId: toolId,
           success: result.success,
