@@ -1286,8 +1286,8 @@ msgid "↓ Imported from YNAB"
 msgstr "↓ Aus YNAB importiert"
 
 #: src/pages/onboarding/steps/AccountsStep.tsx
-msgid "+ ADD ANOTHER ACCOUNT"
-msgstr "+ WEITERES KONTO HINZUFÜGEN"
+#~ msgid "+ ADD ANOTHER ACCOUNT"
+#~ msgstr "+ WEITERES KONTO HINZUFÜGEN"
 
 #: src/pages/onboarding/steps/ShareStep.tsx
 #~ msgid "+ INVITE SOMEONE"
@@ -2936,6 +2936,10 @@ msgstr "Konto erfolgreich abgeglichen. Ein Rundungsrest von einem Bruchteil eine
 msgid "Account settings need a live connection to Clerk. Please reconnect to the internet and try again."
 msgstr "Die Kontoeinstellungen benötigen eine aktive Verbindung zu Clerk. Bitte stelle die Internetverbindung wieder her und versuche es erneut."
 
+#: src/pages/onboarding/steps/AccountsStep.tsx
+msgid "Account type"
+msgstr "Kontotyp"
+
 #: src/features/account-management/ui/AddAccountDialog.tsx
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "Account Type"
@@ -3140,6 +3144,10 @@ msgstr "Füge zuerst ein Konto hinzu"
 #: src/features/account-management/ui/DevSimulateRateMoveButton.tsx
 msgid "Add an account in another currency (or crypto) first."
 msgstr "Füge zuerst ein Konto in einer anderen Währung (oder Krypto) hinzu."
+
+#: src/pages/onboarding/steps/AccountsStep.tsx
+msgid "Add another account"
+msgstr "Weiteres Konto hinzufügen"
 
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
 msgid "Add as new"
@@ -4504,8 +4512,8 @@ msgid "Budgero"
 msgstr "Budgero"
 
 #: src/pages/onboarding/OnboardingFlow.tsx
-msgid "BUDGERO · ONBOARDING v1"
-msgstr "BUDGERO · ONBOARDING v1"
+#~ msgid "BUDGERO · ONBOARDING v1"
+#~ msgstr "BUDGERO · ONBOARDING v1"
 
 #. placeholder {0}: data.build_version
 #: src/features/app-update/ui/UpdateAvailableBanner.tsx
@@ -5672,24 +5680,24 @@ msgstr "Kohorten-Retention"
 #~ msgstr "Münzcharakter, der eine Münze in ein Sparschwein steckt"
 
 #: src/pages/onboarding/steps/DoneStep.tsx
-msgid "Coin character holding a Your Budget Is Ready clipboard"
-msgstr "Münzcharakter mit einem Klemmbrett „Dein Budget ist bereit\""
+#~ msgid "Coin character holding a Your Budget Is Ready clipboard"
+#~ msgstr "Münzcharakter mit einem Klemmbrett „Dein Budget ist bereit\""
 
 #: src/pages/onboarding/steps/RulesStep.tsx
 #~ msgid "Coin character pointing at a House Rules board"
 #~ msgstr "Münzcharakter, der auf eine Hausregeln-Tafel zeigt"
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
-msgid "Coin character with a key approaching a Budgero padlock"
-msgstr "Münzcharakter mit Schlüssel, der sich einem Budgero-Vorhängeschloss nähert"
+#~ msgid "Coin character with a key approaching a Budgero padlock"
+#~ msgstr "Münzcharakter mit Schlüssel, der sich einem Budgero-Vorhängeschloss nähert"
 
 #: src/pages/onboarding/steps/WorkspaceStep.tsx
 #~ msgid "Coin character with a ledger and a budget nameplate"
 #~ msgstr "Münzfigur mit einem Kassenbuch und einem Budget-Namensschild"
 
 #: src/pages/onboarding/steps/AccountsStep.tsx
-msgid "Coin character with checking register, savings jar, and credit card"
-msgstr "Münzcharakter mit Kontobuch, Sparbüchse und Kreditkarte"
+#~ msgid "Coin character with checking register, savings jar, and credit card"
+#~ msgstr "Münzcharakter mit Kontobuch, Sparbüchse und Kreditkarte"
 
 #: src/pages/onboarding/steps/RulesStep.tsx
 #~ msgid "Coin character with hardhat and briefcase"
@@ -7571,6 +7579,10 @@ msgstr "z. B. Monatliche Rechnungen"
 msgid "Each category group on the Planning page shows its share of everything assigned in the selected month, next to its allocated total."
 msgstr "Jede Kategoriengruppe auf der Planungsseite zeigt neben ihrer zugewiesenen Summe ihren Anteil an allen Zuweisungen des ausgewählten Monats."
 
+#: src/pages/onboarding/onboarding-data.ts
+msgid "Each category is an envelope: money you put in it is kept for that one job. Group them by needs, wants and savings."
+msgstr "Jede Kategorie ist ein Umschlag: Geld, das du hineinlegst, bleibt für genau diese Aufgabe. Gruppiere sie nach Bedarf, Wünschen und Sparen."
+
 #: src/features/budget-sharing/ui/OnboardingInviteShareDialog.tsx
 #~ msgid "Each link contains a one-time secret that unlocks your shared workspace. <0>Budgero never sees it</0> — but whatever channel you use to share will. For the strongest privacy, hand the link off in person or through an end-to-end encrypted app (Signal, iMessage, WhatsApp). Plain email works too — just remember your email provider can read what you send."
 #~ msgstr "Jeder Link enthält ein einmaliges Geheimnis, das deinen freigegebenen Arbeitsbereich entsperrt. <0>Budgero sieht es nie</0> — aber der Kanal, den du zum Teilen verwendest, schon. Für maximale Privatsphäre übergib den Link persönlich oder über eine Ende-zu-Ende-verschlüsselte App (Signal, iMessage, WhatsApp). Normale E-Mail funktioniert auch — denk nur daran, dass dein E-Mail-Anbieter mitlesen kann, was du sendest."
@@ -9217,8 +9229,8 @@ msgid "Give your workspace a descriptive name so collaborators know what it incl
 msgstr "Gib deinem Arbeitsbereich einen aussagekräftigen Namen, damit Mitwirkende wissen, was er enthält."
 
 #: src/pages/onboarding/steps/CurrencyStep.tsx
-msgid "Globe with currencies orbiting around it"
-msgstr "Globus mit umkreisenden Währungen"
+#~ msgid "Globe with currencies orbiting around it"
+#~ msgstr "Globus mit umkreisenden Währungen"
 
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Go back"
@@ -9357,8 +9369,8 @@ msgid "Group By"
 msgstr "Gruppieren nach"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Group by needs, wants, and savings — or invent your own."
-msgstr "Gruppiere nach Bedürfnissen, Wünschen und Ersparnissen – oder erfinde deine eigenen."
+#~ msgid "Group by needs, wants, and savings — or invent your own."
+#~ msgstr "Gruppiere nach Bedürfnissen, Wünschen und Ersparnissen – oder erfinde deine eigenen."
 
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 msgid "Group name"
@@ -9488,7 +9500,6 @@ msgstr "Versteckte Kategorien ausblenden"
 msgid "Hide label column"
 msgstr "Label-Spalte ausblenden"
 
-#: src/pages/onboarding/steps/shared.tsx
 #: src/shared/ui/password-input.tsx
 msgid "Hide password"
 msgstr "Passwort verbergen"
@@ -11938,8 +11949,8 @@ msgid "Next year"
 msgstr "Nächstes Jahr"
 
 #: src/pages/onboarding/onboarding-data.ts
-msgid "Next, you give every coin a job. We’ll show you how."
-msgstr "Als Nächstes gibst du jedem Cent eine Aufgabe. Wir zeigen dir, wie."
+#~ msgid "Next, you give every coin a job. We’ll show you how."
+#~ msgstr "Als Nächstes gibst du jedem Cent eine Aufgabe. Wir zeigen dir, wie."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "Next:"
@@ -14901,6 +14912,10 @@ msgstr "{0}-Filter entfernen"
 msgid "Remove {0}?"
 msgstr "{0} entfernen?"
 
+#: src/pages/onboarding/steps/AccountsStep.tsx
+msgid "Remove account"
+msgstr "Konto entfernen"
+
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 msgid "Remove action"
 msgstr "Aktion entfernen"
@@ -16653,7 +16668,6 @@ msgstr "Nur nicht kategorisierte anzeigen (Kontoseite)"
 msgid "Show only uncleared (account page)"
 msgstr "Nur nicht gebuchte anzeigen (Kontoseite)"
 
-#: src/pages/onboarding/steps/shared.tsx
 #: src/shared/ui/password-input.tsx
 msgid "Show password"
 msgstr "Passwort anzeigen"
@@ -19947,8 +19961,8 @@ msgid "We’ll redeem the invite and unlock the shared workspace."
 msgstr "Wir lösen die Einladung ein und entsperren den gemeinsamen Arbeitsbereich."
 
 #: src/pages/onboarding/steps/WelcomeStep.tsx
-msgid "We’ll walk through it together. The idea is simple: every coin you earn gets a job before you spend it. Here’s what we’ll do, in six small steps."
-msgstr "Wir gehen das gemeinsam durch. Die Idee ist einfach: Jeder verdiente Euro bekommt eine Aufgabe, bevor du ihn ausgibst. Das machen wir in sechs kleinen Schritten."
+#~ msgid "We’ll walk through it together. The idea is simple: every coin you earn gets a job before you spend it. Here’s what we’ll do, in six small steps."
+#~ msgstr "Wir gehen das gemeinsam durch. Die Idee ist einfach: Jeder verdiente Euro bekommt eine Aufgabe, bevor du ihn ausgibst. Das machen wir in sechs kleinen Schritten."
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "WEAK"
@@ -20019,7 +20033,6 @@ msgid "Welcome to Budgero!"
 msgstr "Willkommen bei Budgero!"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
-#: src/pages/onboarding/steps/WelcomeStep.tsx
 msgid "Welcome to Budgero."
 msgstr "Willkommen bei Budgero."
 
@@ -20709,6 +20722,10 @@ msgstr "Du kennst jetzt die Grundlagen"
 msgid "You've saved {totalSaved} total"
 msgstr "Du hast insgesamt {totalSaved} gespart"
 
+#: src/pages/onboarding/onboarding-data.ts
+msgid "Your account balances become Ready to Assign: money that has no job yet. Next, you give every coin of it a job."
+msgstr "Deine Kontostände werden zu „Zu budgetieren“: Geld, das noch keine Aufgabe hat. Als Nächstes gibst du jedem Cent davon eine Aufgabe."
+
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "Your account has reached the 5-person collaborator limit across owned workspaces. Remove a member or cancel a pending invite before creating another one."
 msgstr "Dein Konto hat das Limit von 5 Mitbearbeitern in deinen Arbeitsbereichen erreicht. Entferne ein Mitglied oder widerrufe eine ausstehende Einladung, bevor du eine weitere erstellst."
@@ -20796,8 +20813,8 @@ msgid "Your goal has been updated successfully."
 msgstr "Dein Ziel wurde erfolgreich aktualisiert."
 
 #: src/pages/onboarding/steps/WelcomeStep.tsx
-msgid "Your journey in six steps: rules, currency, ZBB, name your budget, accounts, password"
-msgstr "Deine Reise in sechs Schritten: Regeln, Währung, ZBB, Budget benennen, Konten, Passwort"
+#~ msgid "Your journey in six steps: rules, currency, ZBB, name your budget, accounts, password"
+#~ msgstr "Deine Reise in sechs Schritten: Regeln, Währung, ZBB, Budget benennen, Konten, Passwort"
 
 #: src/app/startup/screens.tsx
 msgid "Your login credentials verify your identity with our server. Your master password is a separate encryption key that scrambles your data on your device. You can reset your master password, but doing so permanently destroys all existing encrypted data, there is no way to carry it over."

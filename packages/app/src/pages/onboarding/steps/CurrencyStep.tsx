@@ -2,118 +2,64 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { CurrencySelector } from '@features/currencies/ui/CurrencySelector';
 import { currencies as ALL_CURRENCIES } from '@features/currencies/model/currency-data';
 import React from 'react';
+import { cn } from '@shared/lib/utils';
 import { CURRENCIES } from '../onboarding-data';
 import { OnboardingOptionTile, Title, type StepProps } from './shared';
-
-const GLOBE_SRC = '/onboarding-globe-currencies.png';
 
 export const CurrencyStep: React.FC<StepProps> = ({ cur, state, set }) => {
   const { t } = useLingui();
 
   const popularCodes = new Set(CURRENCIES.map((c) => c.code));
-  // True when the user picked a currency from the long-tail dropdown rather
-  // than one of the 8 quick-pick tiles. Lets us highlight the dropdown row
-  // distinctly so the user sees that *something* is selected.
+  // True when the user picked a currency from the full list rather than one
+  // of the quick picks, so that row shows as the selected one.
   const usingDropdown = !popularCodes.has(state.currency);
 
   return (
     <div>
-      <div
-        style={{
-          margin: '-12px -24px 16px',
-          display: 'flex',
-          justifyContent: 'center',
-          background: '#fffdf8',
-        }}
-      >
-        <img
-          src={GLOBE_SRC}
-          alt={t`Globe with currencies orbiting around it`}
-          style={{
-            width: '100%',
-            maxWidth: 440,
-            height: 'auto',
-            display: 'block',
-            mixBlendMode: 'multiply',
-          }}
-        />
-      </div>
       <Title h={cur.title} sub={cur.subtitle} />
 
-      {/* Quick picks — eight top currencies as editorial tiles, matching the
-          paper aesthetic of the rest of the onboarding. */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(2, 1fr)',
-          gap: 10,
-          marginTop: 18,
-        }}
-      >
+      <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
         {CURRENCIES.map((c) => {
           const active = state.currency === c.code;
           return (
             <OnboardingOptionTile
               key={c.code}
               active={active}
+              aria-pressed={active}
               onClick={() => set({ currency: c.code })}
-              style={{
-                padding: '14px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                position: 'relative',
-              }}
+              className="flex items-center gap-2.5 px-3 py-2"
             >
               <span
-                style={{
-                  width: 32,
-                  height: 32,
-                  border: '1px solid #141414',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                  fontWeight: 700,
-                  background: active ? '#141414' : 'transparent',
-                  color: active ? '#fbf7eb' : '#141414',
-                }}
+                aria-hidden
+                className={cn(
+                  'flex size-7 shrink-0 items-center justify-center rounded-md text-sm font-semibold',
+                  active ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                )}
               >
                 {c.sym}
               </span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600 }}>{c.code}</div>
-                <div style={{ fontSize: 10, color: '#393939' }}>{t(c.name)}</div>
-              </div>
-              {active && <span style={{ fontSize: 14 }}>✓</span>}
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold leading-tight">{c.code}</span>
+                <span className="block truncate text-[11px] text-muted-foreground md:whitespace-normal md:leading-tight">
+                  {t(c.name)}
+                </span>
+              </span>
             </OnboardingOptionTile>
           );
         })}
       </div>
 
-      {/* Long-tail picker — Budgero supports 168 currencies. The shadcn
-          CurrencySelector handles search + region grouping + flags; we just
-          drop it below the quick picks and let it own the long list. */}
+      {/* The full list (search, regions, flags) for every other currency. */}
       <div
-        style={{
-          marginTop: 18,
-          padding: 14,
-          border: usingDropdown ? '1.5px solid #141414' : '1px dashed rgba(57,57,57,0.4)',
-          background: usingDropdown ? '#fbf7eb' : '#fffdf8',
-        }}
+        className={cn(
+          'mt-3 rounded-lg border p-3',
+          usingDropdown ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'border-border'
+        )}
       >
-        <div
-          style={{
-            fontSize: 11,
-            letterSpacing: 1.2,
-            fontWeight: 700,
-            color: '#393939',
-            marginBottom: 8,
-          }}
-        >
-          <Trans>NEED A DIFFERENT CURRENCY?</Trans>
-        </div>
-        <div style={{ fontSize: 11, color: '#393939', lineHeight: 1.55, marginBottom: 10 }}>
+        <div className="mb-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">
+            <Trans>NEED A DIFFERENT CURRENCY?</Trans>
+          </span>{' '}
           <Trans>Search the full list — Budgero supports {ALL_CURRENCIES.length} currencies.</Trans>
         </div>
         <CurrencySelector

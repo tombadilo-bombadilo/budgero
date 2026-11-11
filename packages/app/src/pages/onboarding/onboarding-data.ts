@@ -61,7 +61,7 @@ export const ONBOARDING_STEPS: OnboardingStepDef[] = [
   {
     id: 'categories',
     title: msg`Make a few envelopes`,
-    subtitle: msg`Group by needs, wants, and savings — or invent your own.`,
+    subtitle: msg`Each category is an envelope: money you put in it is kept for that one job. Group them by needs, wants and savings.`,
     hint: msg`Where money goes`,
   },
   {
@@ -79,7 +79,7 @@ export const ONBOARDING_STEPS: OnboardingStepDef[] = [
   {
     id: 'done',
     title: msg`You’re ready`,
-    subtitle: msg`Next, you give every coin a job. We’ll show you how.`,
+    subtitle: msg`Your account balances become Ready to Assign: money that has no job yet. Next, you give every coin of it a job.`,
     hint: msg`Finish line`,
   },
 ];

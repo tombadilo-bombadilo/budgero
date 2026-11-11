@@ -1,7 +1,7 @@
 import { msg, plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import React from 'react';
-import { StepHeroImage, Title, getCurrencySym, type StepProps } from './shared';
+import { Title, getCurrencySym, type StepProps } from './shared';
 
 interface DoneStepExtraProps {
   applyState: 'idle' | 'running' | 'error';
@@ -48,50 +48,23 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
 
   // Summary of choices shown on the Done screen (fresh/ynab paths only).
   const summaryCard = (
-    <div
-      style={{
-        marginTop: 16,
-        padding: 20,
-        border: '1px dashed rgba(57,57,57,0.5)',
-        background: '#fbf7eb',
-      }}
-    >
-      <div
-        style={{
-          fontSize: 11,
-          letterSpacing: 1.2,
-          fontWeight: 700,
-          color: '#393939',
-          marginBottom: 12,
-        }}
-      >
+    <div className="rounded-lg border bg-card p-3 md:p-4">
+      <div className="mb-2 text-[11px] font-semibold tracking-wider text-muted-foreground">
         <Trans>YOUR BUDGET SUMMARY</Trans>
       </div>
-      <div style={{ display: 'grid', gap: 8, fontSize: 13 }}>
-        {rows.map(([k, v], i, arr) => (
-          <div
-            key={i}
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              paddingBottom: 6,
-              borderBottom: i < arr.length - 1 ? '1px dotted rgba(57,57,57,0.2)' : 'none',
-            }}
-          >
-            <span style={{ color: '#393939' }}>{k}</span>
-            <span style={{ fontWeight: 600 }}>{v}</span>
+      <dl className="divide-y text-sm">
+        {rows.map(([k, v], i) => (
+          <div key={i} className="flex justify-between gap-3 py-1.5">
+            <dt className="text-muted-foreground">{k}</dt>
+            <dd className="text-right font-medium">{v}</dd>
           </div>
         ))}
-      </div>
+      </dl>
     </div>
   );
 
   return (
     <div>
-      <StepHeroImage
-        src="/onboarding-final.png"
-        alt={t`Coin character holding a Your Budget Is Ready clipboard`}
-      />
       {state.joinSecret ? (
         <Title
           h={msg`Ready to join.`}
@@ -105,29 +78,8 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
       )}
 
       {applyState === 'running' && (
-        <div
-          style={{
-            marginTop: 16,
-            padding: 12,
-            border: '1px dashed #141414',
-            background: '#fffdf8',
-            fontSize: 12,
-            color: '#141414',
-            letterSpacing: 0.5,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <span
-            style={{
-              width: 10,
-              height: 10,
-              background: '#c6392c',
-              borderRadius: '50%',
-              animation: 'budgero-onboarding-pulse 1.2s ease-in-out infinite',
-            }}
-          />
+        <div className="mt-3 flex items-center gap-2.5 rounded-lg border px-3 py-2 text-xs">
+          <span aria-hidden className="size-2.5 animate-pulse rounded-full bg-primary" />
           {state.joinSecret
             ? t`Decrypting shared workspace key and joining…`
             : t`Encrypting your ledger and creating accounts…`}
@@ -135,18 +87,10 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
       )}
       {applyState === 'error' && applyError && (
         <div
-          style={{
-            marginTop: 16,
-            padding: 12,
-            border: '1px solid #c6392c',
-            background: 'rgba(198,57,44,0.08)',
-            fontSize: 12,
-            color: '#c6392c',
-            letterSpacing: 0.3,
-            lineHeight: 1.5,
-          }}
+          role="alert"
+          className="mt-3 rounded-lg border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs leading-relaxed text-destructive"
         >
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>
+          <div className="mb-0.5 font-semibold">
             <Trans>Setup failed</Trans>
           </div>
           {applyError}

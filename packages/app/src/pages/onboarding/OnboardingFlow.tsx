@@ -23,6 +23,9 @@ import type {
   YNABImportResult,
 } from '@budgero/core/browser';
 import { YNABImportService } from '@budgero/core/browser';
+import { Check } from 'lucide-react';
+import { Button } from '@shared/ui/button';
+import { cn } from '@shared/lib/utils';
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import { useLogout, useProfile, useUpdateOnboarding } from '@entities/user/api/useAuth';
 import { readPendingSpaceInvite } from '@features/budget-sharing/lib/pending-space-invite';
@@ -52,7 +55,6 @@ import {
   YnabImportStep,
 } from './steps';
 import { classifyYnabZipError } from './steps/ynab-source-errors';
-import './onboarding.css';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
@@ -480,331 +482,251 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
         }
       : next;
 
-  const pageStyle: React.CSSProperties = {
-    width: '100%',
-    minHeight: '100vh',
-    background: 'linear-gradient(180deg, #fbf7eb 0%, #f6f1e3 100%)',
-    color: '#141414',
-    padding: '32px 24px 48px',
-    boxSizing: 'border-box',
-  };
   // An invite link may still be loading: show the page, not a step.
   if (!inviteChecked) {
-    return <div className="budgero-onboarding-font bo-page" style={pageStyle} aria-busy="true" />;
+    return <OnboardingFrame aria-busy="true" />;
   }
 
-  return (
-    <div className="budgero-onboarding-font bo-page" style={pageStyle}>
-      {mode === 'from_demo' && applyStatus !== 'running' && (
-        <div style={{ maxWidth: 880, margin: '0 auto 12px' }}>
-          <button
-            type="button"
-            onClick={() => {
-              void returnToDemo(runtime, queryClient, attempt)
-                .catch((err: unknown) => console.warn('[Onboarding] Back to the demo failed', err))
-                .finally(() => void navigate('/budgeting'));
-            }}
-            data-testid="back-to-demo"
-            style={{
-              background: 'transparent',
-              border: '1px dashed rgba(57,57,57,0.5)',
-              color: '#141414',
-              fontFamily: 'inherit',
-              fontSize: 13,
-              fontWeight: 600,
-              letterSpacing: 0.3,
-              padding: '8px 12px',
-              cursor: 'pointer',
-            }}
-          >
-            <Trans>← Back to the demo</Trans>
-          </button>
-        </div>
-      )}
-      {/* Header */}
-      <div
-        className="bo-header-stack"
-        style={{
-          maxWidth: isShowingYnabStatus ? 1240 : 880,
-          margin: '0 auto 20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img
-            src="/logo_48.png"
-            alt={t`Budgero logo`}
-            width={28}
-            height={28}
-            style={{ display: 'block' }}
-          />
-          <span style={{ fontWeight: 700, letterSpacing: 1 }}>BUDGERO</span>
-        </div>
-        <div
-          className="bo-header-step"
-          style={{
-            fontSize: 11,
-            letterSpacing: 1.2,
-            color: '#393939',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <span
-            style={{
-              display: 'inline-block',
-              width: 8,
-              height: 8,
-              background: '#c6392c',
-              borderRadius: '50%',
-            }}
-          />
-          {t`STEP ${stepLabel} / ${totalLabel}`}
-        </div>
-      </div>
+  const stepCounter = t`STEP ${stepLabel} / ${totalLabel}`;
+  const showBackToDemo = mode === 'from_demo' && applyStatus !== 'running';
 
-      {/* Progress */}
-      <div
-        style={{
-          maxWidth: isShowingYnabStatus ? 1240 : 880,
-          margin: '0 auto 28px',
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
+  return (
+    <OnboardingFrame wide={isShowingYnabStatus}>
+      {/* Desktop: the steps of this path down the side, so the window reads
+          as a short, finite setup rather than a stretched phone screen. */}
+      <aside className="hidden w-60 shrink-0 flex-col border-r bg-muted/40 px-6 py-7 md:flex">
+        <div className="flex items-center gap-2.5">
+          <img src="/logo_48.png" alt={t`Budgero logo`} width={28} height={28} />
+          <span className="font-semibold tracking-wide">Budgero</span>
+        </div>
+        <ol className="mt-8 space-y-1" aria-label={stepCounter}>
+          {pathIds.map((id, i) => {
+            const def = ONBOARDING_STEPS.find((step) => step.id === id);
+            if (!def) return null;
+            const status = i < safeStep ? 'done' : i === safeStep ? 'current' : 'todo';
+            return (
+              <li
+                key={id}
+                aria-current={status === 'current' ? 'step' : undefined}
+                className={cn(
+                  'flex items-start gap-2.5 rounded-md px-2 py-1.5 text-sm leading-snug',
+                  status === 'current' && 'bg-background font-medium text-foreground shadow-xs',
+                  status === 'done' && 'text-muted-foreground',
+                  status === 'todo' && 'text-muted-foreground/70'
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border text-[10px]',
+                    status === 'done' && 'border-primary bg-primary text-primary-foreground',
+                    status === 'current' && 'border-primary text-primary'
+                  )}
+                >
+                  {status === 'done' ? <Check className="size-3" /> : i + 1}
+                </span>
+                <span>{t(def.title)}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </aside>
+
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {/* Top bar: brand on phones, the step count, and the way out. */}
+        <div className="flex shrink-0 items-center gap-3 px-4 pt-3 md:px-10 md:pt-6">
+          <img src="/logo_48.png" alt="" width={22} height={22} className="md:hidden" aria-hidden />
+          {showBackToDemo && (
+            <button
+              type="button"
+              onClick={() => {
+                void returnToDemo(runtime, queryClient, attempt)
+                  .catch((err: unknown) =>
+                    console.warn('[Onboarding] Back to the demo failed', err)
+                  )
+                  .finally(() => void navigate('/budgeting'));
+              }}
+              data-testid="back-to-demo"
+              className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+            >
+              <Trans>← Back to the demo</Trans>
+            </button>
+          )}
+          <span className="ml-auto text-[11px] tracking-wider text-muted-foreground tabular-nums">
+            {stepCounter}
+          </span>
+          {mode !== 'from_demo' && (
+            <button
+              type="button"
+              onClick={() => logout.mutate()}
+              className="text-[11px] tracking-wider text-muted-foreground hover:text-foreground"
+            >
+              <Trans>SIGN OUT</Trans>
+            </button>
+          )}
+        </div>
         <div
-          className="bo-progress-track"
-          style={{ display: 'flex', gap: 6, alignItems: 'center' }}
+          className="mx-4 mt-2.5 flex shrink-0 gap-1 md:mx-10 md:mt-4"
+          role="progressbar"
+          aria-valuemin={1}
+          aria-valuemax={total}
+          aria-valuenow={safeStep + 1}
+          aria-label={stepCounter}
         >
           {Array.from({ length: total }).map((_, i) => (
             <span
               key={i}
-              style={{
-                width: 24,
-                height: 2,
-                background:
-                  i < safeStep ? '#141414' : i === safeStep ? '#c6392c' : 'rgba(57,57,57,0.3)',
-                transition: 'background 0.3s',
-              }}
+              className={cn(
+                'h-1 flex-1 rounded-full transition-colors',
+                i <= safeStep ? 'bg-primary' : 'bg-muted'
+              )}
             />
           ))}
         </div>
-      </div>
 
-      {/* Card */}
-      <div
-        className="bo-card"
-        style={{
-          maxWidth: isShowingYnabStatus ? 1240 : 880,
-          margin: '0 auto',
-          background: '#fffdf8',
-          border: '1px dashed rgba(57,57,57,0.55)',
-          boxShadow: '0 14px 24px -8px rgba(20,20,20,0.18), 0 6px 12px -6px rgba(20,20,20,0.10)',
-          padding: '44px 48px',
-          position: 'relative',
-          // Clip illustration bleed at the card boundary so the negative
-          // margins on hero images can't escape past the dashed border on
-          // mobile, where card padding is smaller than the bleed offset.
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          className="bo-card-stamp"
-          style={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            fontSize: 9,
-            letterSpacing: 1.5,
-            color: 'rgba(57,57,57,0.6)',
-            border: '1px dashed rgba(57,57,57,0.4)',
-            padding: '3px 8px',
-          }}
-        >
-          {t(cur.hint).toUpperCase()}
-        </div>
-
-        {curId === 'welcome' && <WelcomeStep cur={cur} state={state} set={set} />}
-        {curId === 'start_mode' && <StartModeStep cur={cur} state={state} set={set} />}
-        {curId === 'currency' && <CurrencyStep cur={cur} state={state} set={set} />}
-        {curId === 'ynab_import' && (
-          <YnabImportStep
-            cur={cur}
-            state={state}
-            set={set}
-            onFileSelected={handleYnabFile}
-            onApiSnapshotSelected={handleYnabApiSnapshot}
-            isInspecting={isInspectingYnab}
-            onStartFresh={startFreshInstead}
-          />
-        )}
-        {curId === 'accounts' && <AccountsStep cur={cur} state={state} set={set} />}
-        {curId === 'categories' && <CategoriesStep cur={cur} state={state} set={set} />}
-        {curId === 'where_heard' && <WhereHeardStep cur={cur} state={state} set={set} />}
-        {curId === 'password' && (
-          <>
-            <PasswordStep cur={cur} state={state} set={set} forDemo={activePath === 'demo'} />
-            {activePath !== 'join' && <WhereHeardPicker state={state} set={set} />}
-            {activePath === 'demo' && applyStatus === 'running' && (
-              <div role="status" style={{ marginTop: 16, fontSize: 13 }}>
-                <Trans>Setting up the demo budget…</Trans>
-              </div>
-            )}
-            {activePath === 'demo' && applyStatus === 'error' && applyError && (
-              <div role="alert" style={{ marginTop: 16, fontSize: 13, color: '#c6392c' }}>
-                {applyError}
-              </div>
-            )}
-          </>
-        )}
-        {curId === 'done' &&
-          (isShowingYnabStatus ? (
-            <YnabImportStatus
-              sourceMode={state.ynabApiSnapshot ? 'api' : 'zip'}
-              updates={ynabImportUpdates}
-              error={applyError}
-              summary={ynabImportResult?.summary ?? null}
-              verification={ynabImportResult?.verification ?? null}
-              currency={state.currency}
-              isFinalizing={isFinalizingYnab}
-              onBack={returnToYnabSource}
-              onContinue={continueFromYnabReport}
-              onAcceptWarnings={() => resolveYnabReview('accept')}
-              onCancelPending={() => resolveYnabReview('cancel')}
-            />
-          ) : (
-            <DoneStep
+        {/* The step. Long lists scroll here; the buttons below never move. */}
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-4 md:px-10 md:pt-7">
+          {curId === 'welcome' && <WelcomeStep cur={cur} state={state} set={set} />}
+          {curId === 'start_mode' && <StartModeStep cur={cur} state={state} set={set} />}
+          {curId === 'currency' && <CurrencyStep cur={cur} state={state} set={set} />}
+          {curId === 'ynab_import' && (
+            <YnabImportStep
               cur={cur}
               state={state}
-              applyState={applyStatus}
-              applyError={applyError}
-              fromDemo={activePath === 'from_demo'}
+              set={set}
+              onFileSelected={handleYnabFile}
+              onApiSnapshotSelected={handleYnabApiSnapshot}
+              isInspecting={isInspectingYnab}
+              onStartFresh={startFreshInstead}
             />
-          ))}
-
-        {/* Footer */}
-        {!isShowingYnabStatus && (
-          <div
-            style={{
-              marginTop: 36,
-              paddingTop: 22,
-              borderTop: '1px dashed rgba(57,57,57,0.4)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <div>
-              {!isFirst && applyStatus !== 'running' && (
-                <button
-                  type="button"
-                  onClick={back}
-                  style={{
-                    background: 'transparent',
-                    color: '#393939',
-                    border: 'none',
-                    padding: '12px 8px',
-                    fontFamily: 'inherit',
-                    fontSize: 13,
-                    letterSpacing: 0.5,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Trans>← Back</Trans>
-                </button>
+          )}
+          {curId === 'accounts' && <AccountsStep cur={cur} state={state} set={set} />}
+          {curId === 'categories' && <CategoriesStep cur={cur} state={state} set={set} />}
+          {curId === 'where_heard' && <WhereHeardStep cur={cur} state={state} set={set} />}
+          {curId === 'password' && (
+            <>
+              <PasswordStep cur={cur} state={state} set={set} forDemo={activePath === 'demo'} />
+              {activePath !== 'join' && <WhereHeardPicker state={state} set={set} />}
+              {activePath === 'demo' && applyStatus === 'running' && (
+                <div role="status" className="mt-4 text-sm">
+                  <Trans>Setting up the demo budget…</Trans>
+                </div>
               )}
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
+              {activePath === 'demo' && applyStatus === 'error' && applyError && (
+                <div role="alert" className="mt-4 text-sm text-destructive">
+                  {applyError}
+                </div>
+              )}
+            </>
+          )}
+          {curId === 'done' &&
+            (isShowingYnabStatus ? (
+              <YnabImportStatus
+                sourceMode={state.ynabApiSnapshot ? 'api' : 'zip'}
+                updates={ynabImportUpdates}
+                error={applyError}
+                summary={ynabImportResult?.summary ?? null}
+                verification={ynabImportResult?.verification ?? null}
+                currency={state.currency}
+                isFinalizing={isFinalizingYnab}
+                onBack={returnToYnabSource}
+                onContinue={continueFromYnabReport}
+                onAcceptWarnings={() => resolveYnabReview('accept')}
+                onCancelPending={() => resolveYnabReview('cancel')}
+              />
+            ) : (
+              <DoneStep
+                cur={cur}
+                state={state}
+                applyState={applyStatus}
+                applyError={applyError}
+                fromDemo={activePath === 'from_demo'}
+              />
+            ))}
+        </main>
+
+        {!isShowingYnabStatus && (
+          <div className="flex shrink-0 items-center gap-2 border-t bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 md:bg-transparent md:px-10 md:py-4">
+            {!isFirst && applyStatus !== 'running' && (
+              <Button type="button" variant="ghost" onClick={back} className="px-2">
+                <Trans>← Back</Trans>
+              </Button>
+            )}
+            <div className="ml-auto flex items-center gap-2">
               {/* Skip is only available on the referral question (purely
                   informational). Every other step feeds a real value into the
                   apply pipeline and can't be skipped. */}
               {curId === 'where_heard' && (
-                <button
-                  type="button"
-                  onClick={next}
-                  style={{
-                    background: 'transparent',
-                    color: '#393939',
-                    border: 'none',
-                    padding: '12px 8px',
-                    fontFamily: 'inherit',
-                    fontSize: 13,
-                    letterSpacing: 0.5,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
+                <Button type="button" variant="ghost" onClick={next}>
                   <Trans>Skip for now</Trans>
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 type="button"
                 onClick={primaryAction}
                 disabled={!canAdvance || applyStatus === 'running'}
-                style={{
-                  background: '#141414',
-                  color: '#fbf7eb',
-                  border: '1px solid #141414',
-                  padding: '12px 24px',
-                  fontFamily: 'inherit',
-                  fontSize: 13,
-                  letterSpacing: 0.5,
-                  fontWeight: 600,
-                  cursor: !canAdvance || applyStatus === 'running' ? 'not-allowed' : 'pointer',
-                  opacity: !canAdvance || applyStatus === 'running' ? 0.4 : 1,
-                }}
+                className="min-w-32"
               >
                 {isFinal && applyStatus === 'running'
                   ? t`Working…`
                   : isFinal && applyStatus === 'error'
                     ? t`Try again →`
                     : primaryLabel}
-              </button>
+              </Button>
             </div>
           </div>
         )}
       </div>
+    </OnboardingFrame>
+  );
+};
 
-      {/* Footnote */}
+/**
+ * The full-window frame. On a phone it is exactly the visible viewport (it
+ * shrinks with the on-screen keyboard, so the buttons stay in view); from md
+ * up it is a centred panel of a fixed height.
+ */
+function OnboardingFrame({
+  children,
+  wide = false,
+  ...rest
+}: { children?: React.ReactNode; wide?: boolean } & React.HTMLAttributes<HTMLDivElement>) {
+  const viewport = useVisualViewportBox();
+  return (
+    <div
+      {...rest}
+      className="fixed inset-x-0 top-0 flex h-dvh flex-col bg-background text-foreground md:items-center md:justify-center md:bg-muted/50 md:p-8"
+      style={viewport ? { top: viewport.top, height: viewport.height } : undefined}
+    >
       <div
-        style={{
-          maxWidth: 880,
-          margin: '20px auto 0',
-          fontSize: 10,
-          color: 'rgba(57,57,57,0.7)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          letterSpacing: 0.5,
-        }}
-      >
-        <span>
-          <Trans>BUDGERO · ONBOARDING v1</Trans>
-        </span>
-        {mode !== 'from_demo' && (
-          <button
-            type="button"
-            onClick={() => logout.mutate()}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'rgba(57,57,57,0.7)',
-              fontFamily: 'inherit',
-              fontSize: 10,
-              letterSpacing: 0.5,
-              cursor: 'pointer',
-              padding: 0,
-            }}
-          >
-            <Trans>SIGN OUT</Trans>
-          </button>
+        className={cn(
+          'flex min-h-0 w-full flex-1 flex-col md:flex-none md:flex-row md:overflow-hidden md:rounded-xl md:border md:bg-card md:shadow-sm',
+          wide ? 'md:h-full md:max-w-7xl' : 'md:h-[min(46rem,100%)] md:max-w-4xl'
         )}
+      >
+        {children}
       </div>
     </div>
   );
-};
+}
+
+/** The visual viewport (what is left above the on-screen keyboard), where supported. */
+function useVisualViewportBox(): { top: number; height: number } | null {
+  const [box, setBox] = useState<{ top: number; height: number } | null>(null);
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return;
+    const update = () => setBox({ top: vv.offsetTop, height: vv.height });
+    const frame = requestAnimationFrame(update);
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      cancelAnimationFrame(frame);
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+  return box;
+}
 
 export default OnboardingFlow;
