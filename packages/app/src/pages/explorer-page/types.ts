@@ -9,7 +9,8 @@ export interface TableInfo {
     nullable: boolean;
     primaryKey: boolean;
   }[];
-  rowCount: number;
+  /** Null when not counted (the computed reporting tables). */
+  rowCount: number | null;
 }
 
 /** SQL.js prepared statement interface */

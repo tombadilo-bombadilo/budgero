@@ -124,9 +124,11 @@ export const SchemaSidebar = memo(
                       <Trans>View</Trans>
                     </Badge>
                   ) : null}
-                  <Badge variant="secondary" className="ml-auto text-[10px] px-1">
-                    {table.rowCount}
-                  </Badge>
+                  {table.rowCount !== null && (
+                    <Badge variant="secondary" className="ml-auto text-[10px] px-1">
+                      {table.rowCount}
+                    </Badge>
+                  )}
                 </div>
 
                 {/* Columns */}
