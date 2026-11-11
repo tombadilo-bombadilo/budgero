@@ -39,6 +39,7 @@ import { DashboardGrid } from '@pages/custom-dashboards/components/DashboardGrid
 import { DashboardFilterBar } from '@pages/custom-dashboards/components/DashboardFilterBar';
 import { AddToDashboardDialog } from '@pages/custom-dashboards/components/AddToDashboardDialog';
 import { HOME_SPACING } from '@pages/custom-dashboards/components/grid-layout';
+import { DashboardEditBar } from '@pages/custom-dashboards/components/DashboardEditBar';
 import { useDashboardEditor, useHomeActions } from '@pages/custom-dashboards/useDashboardEditor';
 
 function HomePeriodTabs() {
@@ -173,26 +174,32 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
     </DropdownMenu>
   ) : null;
 
-  const editButtons = isEditMode ? (
-    <>
-      <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
-        <Trans>Add a card</Trans>
-      </Button>
-      <Button size="sm" onClick={() => setIsEditMode(false)}>
-        <Trans>Done</Trans>
-      </Button>
-    </>
-  ) : (
+  const customizeButton = isEditMode ? null : (
     <Button
       size="sm"
       variant="ghost"
       className="text-muted-foreground"
-      onClick={() => setIsEditMode(true)}
+      onClick={() => {
+        editor.beginSession();
+        setIsEditMode(true);
+      }}
     >
       <LayoutDashboard className="h-4 w-4" aria-hidden />
       <Trans>Customize</Trans>
     </Button>
   );
+
+  const editBar = isEditMode ? (
+    <DashboardEditBar
+      isMobile={isMobile}
+      onAdd={() => setAddOpen(true)}
+      onDone={() => setIsEditMode(false)}
+      onCancel={async () => {
+        await editor.cancelSession();
+        setIsEditMode(false);
+      }}
+    />
+  ) : null;
 
   const grid = loading ? null : (
     <DashboardGrid
@@ -275,10 +282,17 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
 
   if (isMobile) {
     return (
-      <div className="p-4 pb-20 space-y-4">
-        {isEditMode && (
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            {editButtons}
+      <div
+        className={
+          isEditMode
+            ? 'space-y-4 p-4 pb-[calc(var(--mobile-bottom-nav-height,96px)+5rem)]'
+            : 'space-y-4 p-4 pb-20'
+        }
+      >
+        {/* The way into edit mode sits where a phone user looks first. */}
+        {!loading && (
+          <div className="-my-2 flex items-center justify-end gap-1">
+            {customizeButton}
             {homeMenu}
           </div>
         )}
@@ -290,12 +304,7 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
           />
         )}
         {grid}
-        {!isEditMode && !loading && (
-          <div className="flex items-center justify-center gap-1">
-            {editButtons}
-            {homeMenu}
-          </div>
-        )}
+        {editBar}
         {dialogs}
       </div>
     );
@@ -306,11 +315,12 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold text-foreground">{title}</h1>
         <div className="flex flex-wrap items-center gap-2">
-          {editButtons}
+          {customizeButton}
           {homeMenu}
           {showPeriodTabs && <HomePeriodTabs />}
         </div>
       </div>
+      {editBar}
       {showFilterBar && (
         <DashboardFilterBar
           budgetId={budgetId}

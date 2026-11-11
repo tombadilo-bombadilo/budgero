@@ -3851,6 +3851,7 @@ msgctxt "mobile nav"
 msgid "Add"
 msgstr "Nieuw"
 
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
 #: src/pages/custom-dashboards/useDashboardEditor.ts
 #: src/pages/dashboard/HomeDashboard.tsx
@@ -5959,6 +5960,7 @@ msgstr "Canadese dollar"
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
 #: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/dashboard/HomeDashboard.tsx
@@ -7508,6 +7510,10 @@ msgstr "Het bericht kon niet worden opgeslagen"
 msgid "Could not save the query."
 msgstr "Kon de query niet opslaan."
 
+#: src/pages/custom-dashboards/useDashboardEditor.ts
+msgid "Could not undo the changes"
+msgstr "De wijzigingen konden niet ongedaan worden gemaakt"
+
 #: src/features/transactions/api/useClearedShortcut.ts
 #: src/features/transactions/ui/ClearedToggle.tsx
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
@@ -8833,13 +8839,13 @@ msgstr "Niet importeren"
 #: src/features/page-guides/ui/PageGuideDialog.tsx
 #: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
-#: src/pages/dashboard/HomeDashboard.tsx
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 msgid "Done"
 msgstr "Klaar"
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Done Editing"
-msgstr "Klaar met bewerken"
+#~ msgid "Done Editing"
+#~ msgstr "Klaar met bewerken"
 
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Donut"
@@ -9271,6 +9277,10 @@ msgstr "Splits bewerken"
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Edit Warranty"
 msgstr "Garantie bewerken"
+
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
+msgid "Editing"
+msgstr "Bewerkmodus"
 
 #: src/pages/explorer-page/components/ReportBuilderPanel.tsx
 #~ msgid "Editing saved report"
@@ -10249,6 +10259,7 @@ msgid "Failed to reconcile account. Please try again."
 msgstr "Rekening afstemmen mislukt. Probeer het opnieuw."
 
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Failed to redo action"
 msgstr "Actie opnieuw uitvoeren mislukt"
@@ -10358,6 +10369,7 @@ msgid "Failed to toggle token: {0}"
 msgstr "Token in-/uitschakelen mislukt: {0}"
 
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Failed to undo last action"
 msgstr "Laatste actie ongedaan maken mislukt"
@@ -17458,6 +17470,7 @@ msgstr "Doorsturen naar inloggen…"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Redo"
 msgstr "Opnieuw uitvoeren"
@@ -22839,6 +22852,7 @@ msgstr "Laatste actie ongedaan gemaakt"
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 #: src/features/transactions/api/useDeleteSelected.ts
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Undo"
 msgstr "Ongedaan maken"
@@ -22846,6 +22860,10 @@ msgstr "Ongedaan maken"
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "Undo completed"
 msgstr "Ongedaan maken voltooid"
+
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
+msgid "Undo the changes made while editing"
+msgstr "De wijzigingen van deze bewerking ongedaan maken"
 
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Undo this action?"
