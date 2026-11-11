@@ -243,8 +243,8 @@ func (r *UserRepository) UpsertPreferences(ctx context.Context, prefs *domain.Us
 	return nil
 }
 
-// ClearDanglingPrimarySpaceIDs is a no-op for the fake repository.
-func (r *UserRepository) ClearDanglingPrimarySpaceIDs(ctx context.Context) error {
+// RepairDanglingPrimarySpaceIDs is a no-op for the fake repository.
+func (r *UserRepository) RepairDanglingPrimarySpaceIDs(ctx context.Context) error {
 	return nil
 }
 

@@ -28,16 +28,20 @@ func (uc *GeneratePushTokenUsecase) Execute(ctx context.Context, userID string) 
 		return "", "", err
 	}
 
-	if user.PrimarySpaceID == "" {
+	spaceID, err = uc.users.EnsurePrimarySpace(ctx, user)
+	if err != nil {
+		return "", "", err
+	}
+	if spaceID == "" {
 		return "", "", fmt.Errorf("no primary space configured")
 	}
 
-	token, err = uc.push.GenerateAndSaveToken(ctx, userID, user.PrimarySpaceID)
+	token, err = uc.push.GenerateAndSaveToken(ctx, userID, spaceID)
 	if err != nil {
 		return "", "", err
 	}
 
-	return token, user.PrimarySpaceID, nil
+	return token, spaceID, nil
 }
 
 // GetPushEncryptionInfoUsecase orchestrates getting push encryption info.
@@ -61,7 +65,11 @@ func (uc *GetPushEncryptionInfoUsecase) Execute(ctx context.Context, userID stri
 		return "", false, err
 	}
 
-	if user.PrimarySpaceID == "" {
+	spaceID, err = uc.users.EnsurePrimarySpace(ctx, user)
+	if err != nil {
+		return "", false, err
+	}
+	if spaceID == "" {
 		return "", false, fmt.Errorf("no primary space configured")
 	}
 
@@ -70,5 +78,5 @@ func (uc *GetPushEncryptionInfoUsecase) Execute(ctx context.Context, userID stri
 		return "", false, err
 	}
 
-	return user.PrimarySpaceID, status.HasToken && status.IsEnabled, nil
+	return spaceID, status.HasToken && status.IsEnabled, nil
 }

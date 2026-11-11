@@ -123,7 +123,7 @@ func (h *Handlers) syncClerkUsers(ctx context.Context) (ClerkSyncResult, error) 
 	}
 
 	// Clear any dangling primary_space_id references left after orphan deletion.
-	if err := h.services.User.ClearDanglingPrimarySpaceIDs(ctx); err != nil {
+	if err := h.services.User.RepairDanglingPrimarySpaceIDs(ctx); err != nil {
 		log.Warn().Err(err).Msg("Failed to clear dangling primary_space_id references")
 	}
 
