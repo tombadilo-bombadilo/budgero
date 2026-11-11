@@ -4313,10 +4313,6 @@ msgstr "Gesamtsumme"
 msgid "All-time totals with a daily activity view for the current window."
 msgstr "Gesamtsummen mit täglicher Aktivitätsansicht für den aktuellen Zeitraum."
 
-#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
-msgid "Alloc."
-msgstr "Zugew."
-
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Allocate {monthlyNeeded} more this month"
 msgstr "Diesen Monat {monthlyNeeded} mehr zuweisen"
@@ -4336,24 +4332,6 @@ msgstr "Einen Gesamtbetrag über einen Zeitraum bis zu einem Zieldatum verteilen
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Allocate This Month"
 msgstr "Diesen Monat zuweisen"
-
-#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
-#: src/features/budget-planning/ui/CategoryGroupRow.tsx
-#: src/features/budget-planning/ui/DraggableBudgetTable.tsx
-msgid "Allocated"
-msgstr "Zugewiesen"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated so far: {totalAssigned} of {target} ({pct})"
-msgstr "Bisher zugewiesen: {totalAssigned} von {target} ({pct})"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated this month"
-msgstr "Diesen Monat zugewiesen"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated This Month"
-msgstr "Diesen Monat zugewiesen"
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Allow over-assignment"
@@ -4782,7 +4760,10 @@ msgid "Assign this to reach target"
 msgstr "Zum Erreichen des Ziels zuweisen"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
+#: src/features/budget-planning/ui/CategoryGroupRow.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
+#: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/analytics/components/TargetTable.tsx
@@ -4807,6 +4788,14 @@ msgstr "Zugewiesener Betrag ({0})"
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Assigned in future months"
 msgstr "In künftigen Monaten zugewiesen"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Assigned so far: {totalAssigned} of {target} ({pct})"
+msgstr "Bisher zugewiesen: {totalAssigned} von {target} ({pct})"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Assigned this month"
+msgstr "Diesen Monat zugewiesen"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Assigned This Month"
@@ -21975,10 +21964,6 @@ msgstr "Top-Empfänger nach Ausgaben (30 Tage)"
 msgid "Total"
 msgstr "Gesamt"
 
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Total Allocated"
-msgstr "Gesamt zugewiesen"
-
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Total amount borrowed at origination. Required."
 msgstr "Gesamter Kreditbetrag bei Auszahlung. Erforderlich."
@@ -21986,6 +21971,10 @@ msgstr "Gesamter Kreditbetrag bei Auszahlung. Erforderlich."
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Total Assets"
 msgstr "Gesamtvermögen"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Total Assigned"
+msgstr "Gesamt zugewiesen"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Total divided by the number of transactions."

@@ -231,7 +231,7 @@ export function CategoryGroupRow({
           <div className="hidden text-[11px] text-muted-foreground md:flex md:items-center md:justify-between md:gap-1 md:text-center lg:text-xs">
             <div className="flex flex-1 items-center justify-between gap-1 md:flex-1 md:min-w-0 md:border-l md:border-white/20 md:px-1 md:first:border-l-0 md:first:pl-0 md:justify-center">
               <span className="uppercase tracking-wide text-[9px] text-muted-foreground lg:text-[10px]">
-                <Trans>Allocated</Trans>
+                <Trans>Assigned</Trans>
               </span>
               <span className="truncate text-xs font-semibold text-foreground dark:text-white text-right md:text-center lg:text-sm">
                 <PlanningAnimatedNumber value={item.assigned} formatter={formatAmount} />
@@ -282,7 +282,7 @@ export function CategoryGroupRow({
         <div className="flex items-center justify-between gap-1 md:hidden">
           <div className="flex flex-col items-center gap-1 flex-1">
             <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              <Trans>Allocated</Trans>
+              <Trans>Assigned</Trans>
             </span>
             <span className="text-sm font-semibold text-foreground">
               <PlanningAnimatedNumber value={item.assigned} formatter={formatAmount} />

@@ -292,7 +292,7 @@ export function DraggableBudgetTable({
     () =>
       isTableLayout
         ? mobileTableColumnVars({
-            allocatedLabel: t`Allocated`,
+            allocatedLabel: t`Assigned`,
             availableLabel: t`Available`,
             allocatedValues: columnRows.map((row) => formatAmount(row.assigned)),
             availableValues: columnRows.map((row) => formatAmount(row.available)),
@@ -310,7 +310,7 @@ export function DraggableBudgetTable({
             <Trans>Category</Trans>
           </div>
           <div className="text-right">
-            <Trans>Allocated</Trans>
+            <Trans>Assigned</Trans>
           </div>
           <div className="text-right">
             <Trans>Activity</Trans>
@@ -338,7 +338,7 @@ export function DraggableBudgetTable({
             <Trans>Category</Trans>
           </div>
           <div className={cn('text-right', MOBILE_TABLE_ALLOCATED_CELL)}>
-            <Trans>Allocated</Trans>
+            <Trans>Assigned</Trans>
           </div>
           <div className={cn('text-right', MOBILE_TABLE_AVAILABLE_CELL)}>
             <Trans>Available</Trans>

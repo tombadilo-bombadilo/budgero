@@ -4313,10 +4313,6 @@ msgstr "Totaal aller tijden"
 msgid "All-time totals with a daily activity view for the current window."
 msgstr "Totale bedragen sinds het begin met een dagelijkse activiteitenweergave voor het huidige venster."
 
-#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
-msgid "Alloc."
-msgstr "Toeg."
-
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Allocate {monthlyNeeded} more this month"
 msgstr "Deze maand nog {monthlyNeeded} toewijzen"
@@ -4336,24 +4332,6 @@ msgstr "Een totaalbedrag verdelen over een periode tot een streefdatum"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Allocate This Month"
 msgstr "Deze maand toewijzen"
-
-#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
-#: src/features/budget-planning/ui/CategoryGroupRow.tsx
-#: src/features/budget-planning/ui/DraggableBudgetTable.tsx
-msgid "Allocated"
-msgstr "Toegewezen"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated so far: {totalAssigned} of {target} ({pct})"
-msgstr "Tot nu toe toegewezen: {totalAssigned} van {target} ({pct})"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated this month"
-msgstr "Deze maand toegewezen"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated This Month"
-msgstr "Deze maand toegewezen"
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Allow over-assignment"
@@ -4782,7 +4760,10 @@ msgid "Assign this to reach target"
 msgstr "Wijs dit toe om je doel te bereiken"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
+#: src/features/budget-planning/ui/CategoryGroupRow.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
+#: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/analytics/components/TargetTable.tsx
@@ -4807,6 +4788,14 @@ msgstr "Toegewezen bedrag ({0})"
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Assigned in future months"
 msgstr "Toegewezen aan toekomstige maanden"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Assigned so far: {totalAssigned} of {target} ({pct})"
+msgstr "Tot nu toe toegewezen: {totalAssigned} van {target} ({pct})"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Assigned this month"
+msgstr "Deze maand toegewezen"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Assigned This Month"
@@ -21975,10 +21964,6 @@ msgstr "Top begunstigden naar uitgaven (30d)"
 msgid "Total"
 msgstr "Totaal"
 
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Total Allocated"
-msgstr "Totaal toegewezen"
-
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Total amount borrowed at origination. Required."
 msgstr "Totaalbedrag geleend bij afsluiting. Vereist."
@@ -21986,6 +21971,10 @@ msgstr "Totaalbedrag geleend bij afsluiting. Vereist."
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Total Assets"
 msgstr "Totale bezittingen"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Total Assigned"
+msgstr "Totaal toegewezen"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Total divided by the number of transactions."

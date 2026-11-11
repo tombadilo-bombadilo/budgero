@@ -56,7 +56,7 @@ export function CategoryAmountsSectionRegular({
         <div className="flex items-center gap-1 text-muted-foreground sm:justify-center">
           <Wallet className="h-4 w-4" />
           <span className="uppercase tracking-wide text-[9px] lg:text-[10px] sm:text-center">
-            <Trans>Allocated</Trans>
+            <Trans>Assigned</Trans>
           </span>
         </div>
         <div className="flex-1 text-right sm:flex-none sm:w-full sm:text-center">
@@ -173,7 +173,7 @@ export function CategoryAmountsSectionCompact({
     <div className="mt-0 grid grid-cols-2 gap-x-1 border-t border-border/60 pt-1.5 text-[11px] text-muted-foreground overflow-hidden">
       <div className="flex flex-col items-end gap-0 px-1 min-w-0">
         <span className="uppercase tracking-wide text-[8px] text-muted-foreground self-start">
-          <Trans>Alloc.</Trans>
+          <Trans>Assigned</Trans>
         </span>
         <div className="min-w-0 w-full">
           <AllocatedCell
@@ -249,7 +249,7 @@ export function CategoryAmountsSectionDesktopCompactMobile({
         <div className="flex items-center gap-1 sm:justify-center">
           <Wallet className="h-4 w-4 text-muted-foreground" />
           <span className="uppercase tracking-wide text-[9px] lg:text-[10px]">
-            <Trans>Allocated</Trans>
+            <Trans>Assigned</Trans>
           </span>
         </div>
         <AllocatedCell
