@@ -566,6 +566,24 @@ describe('import wizard execution', () => {
         transactionsImported: 4,
         failedRows: 0,
       });
+      // Undo from Import history deletes the run's transactions: every leg,
+      // the mirror too, or half a transfer survives in Card.
+      const created = (await Promise.all(
+        mocks.mutate.mock.results
+          .filter((_, i) =>
+            ['transactions.addTransfer', 'transactions.import'].includes(
+              mocks.mutate.mock.calls[i][1].op
+            )
+          )
+          .map((r) => r.value)
+      )) as { sourceId?: number; destinationId?: number; transactionId?: number }[];
+      const ids = created.flatMap((r) =>
+        r.transactionId !== undefined ? [r.transactionId] : [r.sourceId!, r.destinationId!]
+      );
+      const records = mocks.record.mock.calls.map(([arg]) => arg.input);
+      expect(records.flatMap((c) => c.transactionIds).sort()).toEqual(ids.sort());
+      // The mirror leg is not a file row: it does not count as imported.
+      expect(records.at(-1)?.summary).toMatchObject({ mirrorTransactions: 1 });
     });
 
     it('keeps a pair plain when the user skips one side', async () => {

@@ -670,6 +670,8 @@ export function useImportDialogState(): ImportDialogState {
       const createdAccountIds: number[] = [];
       const createdCategoryIds: number[] = [];
       const importedTransactionIds: number[] = [];
+      // Mirror legs of one-sided transfers: in importedTransactionIds, but no file row.
+      let mirrorTransactions = 0;
       const { categoryIdByName, categoryGroupIdByName } = createImportNameMaps({
         categories,
         categoryGroups,
@@ -816,6 +818,7 @@ export function useImportDialogState(): ImportDialogState {
             sourceName: parsedData.source.fileName,
             summary: {
               transactionsImported: importedTransactionIds.length,
+              ...(mirrorTransactions ? { mirrorTransactions } : {}),
               ...(transactionsMatched ? { transactionsMatched } : {}),
               accountsCreated: createdAccountIds.length,
               categoriesCreated: createdCategoryIds.length,
@@ -959,13 +962,14 @@ export function useImportDialogState(): ImportDialogState {
               ? [sourceId, destinationId]
               : [destinationId, sourceId];
             matchedIds.set(plan.index, ownId);
-            importedTransactionIds.push(ownId);
+            // Both legs belong to the run, so undoing it from Import history
+            // removes the whole transfer (and an account the import created).
+            importedTransactionIds.push(ownId, otherId);
             successCount++;
             if (partner) {
               matchedIds.set(partner.input.index, otherId);
-              importedTransactionIds.push(otherId);
               successCount++;
-            }
+            } else mirrorTransactions++;
             processedCount++;
             await checkpointIfDue();
             continue;

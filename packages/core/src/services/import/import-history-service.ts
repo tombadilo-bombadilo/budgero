@@ -77,13 +77,20 @@ export function summarizeImportVerification(
 function parseSummary(value: string): ImportRunSummary {
   try {
     const parsed = JSON.parse(value);
+    // recordImportRun counts every transaction of the run (transactionIds),
+    // mirror legs included; the history shows file rows.
+    const mirrorTransactions = Math.max(0, Number(parsed.mirrorTransactions) || 0);
     return {
       duplicatesSkipped: Number(parsed.duplicatesSkipped) || 0,
       userSkipped: Number(parsed.userSkipped) || 0,
       invalidRows: Number(parsed.invalidRows) || 0,
       failedRows: Number(parsed.failedRows) || 0,
       failures: Array.isArray(parsed.failures) ? parsed.failures : [],
-      transactionsImported: Number(parsed.transactionsImported) || 0,
+      transactionsImported: Math.max(
+        0,
+        (Number(parsed.transactionsImported) || 0) - mirrorTransactions
+      ),
+      ...(mirrorTransactions ? { mirrorTransactions } : {}),
       accountsCreated: Number(parsed.accountsCreated) || 0,
       categoriesCreated: Number(parsed.categoriesCreated) || 0,
       ...(parsed.verification
