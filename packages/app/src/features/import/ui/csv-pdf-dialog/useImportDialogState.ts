@@ -788,7 +788,8 @@ export function useImportDialogState(): ImportDialogState {
           ? nameOf(destinationIds[0])
           : t`${destinationIds.length} accounts`;
       // Next import of a file with these accounts starts from the same choices.
-      const chosen: Record<string, number> = {};
+      // No prototype: a source named __proto__ is a key like any other.
+      const chosen = Object.create(null) as Record<string, number>;
       for (const [source, target] of routePlan.targets) {
         if (target.kind === 'existing') chosen[source] = target.accountId;
         if (target.kind === 'new') {

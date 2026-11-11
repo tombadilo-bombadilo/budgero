@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { webcrypto } from 'node:crypto';
+import { readRememberedRoutes } from '@features/import/lib/account-routes';
 import { useImportDialogState } from './useImportDialogState';
 
 const mocks = vi.hoisted(() => {
@@ -594,6 +595,25 @@ describe('import wizard execution', () => {
         ops.filter((spec) => spec.op === 'transactions.import').map((spec) => spec.payload.payee)
       ).toEqual(['To savings', 'Cafe']);
     });
+  });
+
+  it('remembers an account literally named __proto__', async () => {
+    localStorage.clear();
+    const file = { arrayBuffer: async () => new TextEncoder().encode('proto').buffer } as File;
+    mocks.parse.mockResolvedValue({
+      data: {
+        source: { file, fileName: 'proto.csv', type: 'csv' },
+        headers: ['Date', 'Amount', 'Account'],
+        rows: [{ Date: '2026-09-01', Amount: '-10', Account: '__proto__' }],
+      },
+    });
+    const { result } = await preview();
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    const stored = JSON.parse(localStorage.getItem('budgero:import-account-routes:1')!);
+    expect(Object.getOwnPropertyDescriptor(stored, '__proto__')?.value).toBe(10);
+    expect(readRememberedRoutes(1)).toEqual(JSON.parse('{"__proto__":10}'));
   });
 
   it('forgets account choices when another file is loaded', async () => {
