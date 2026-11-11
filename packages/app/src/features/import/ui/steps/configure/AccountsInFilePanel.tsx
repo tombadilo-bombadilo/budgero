@@ -54,7 +54,9 @@ export function AccountsInFilePanel({
 
   if (sources.length === 0) return null;
 
-  const listed = sources.slice(0, MAX_LISTED);
+  // Every account that needs a choice is listed; the cap only hides ones that don't.
+  let fine = 0;
+  const listed = sources.filter(({ source }) => problems.has(source) || fine++ < MAX_LISTED);
   const unlisted = sources.length - listed.length;
 
   return (
