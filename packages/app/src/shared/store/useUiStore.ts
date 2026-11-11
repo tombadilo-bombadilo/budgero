@@ -196,9 +196,6 @@ interface UiState {
 
   highlightGoalCategoryId: number | null;
   setHighlightGoalCategoryId: (id: number | null) => void;
-  /** Open the goal editor of this category once it is on screen (first steps). */
-  goalEditorCategoryId: number | null;
-  setGoalEditorCategoryId: (id: number | null) => void;
 
   highlightAssignmentCategoryId: number | null;
   setHighlightAssignmentCategoryId: (id: number | null) => void;
@@ -421,8 +418,6 @@ export const useUiStore = create<UiState>((set) => ({
 
   highlightGoalCategoryId: null,
   setHighlightGoalCategoryId: (id) => set({ highlightGoalCategoryId: id }),
-  goalEditorCategoryId: null,
-  setGoalEditorCategoryId: (id) => set({ goalEditorCategoryId: id }),
 
   highlightAssignmentCategoryId: null,
   setHighlightAssignmentCategoryId: (id) => set({ highlightAssignmentCategoryId: id }),

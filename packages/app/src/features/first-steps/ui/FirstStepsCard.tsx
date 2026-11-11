@@ -10,6 +10,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@shared/ui/dra
 import { cn } from '@shared/lib/utils';
 import { useActiveSpaceId } from '@shared/runtime/runtime-provider';
 import { useUiStore } from '@shared/store/useUiStore';
+import { openPageGuide } from '@features/page-guides';
 import {
   dismissFirstSteps,
   FIRST_STEP_IDS,
@@ -102,16 +103,14 @@ export function FirstStepsCard({
   if (!spaceId || !steps || steps.dismissed) return null;
 
   // Point at a category on this page: scroll to it, select it, and highlight
-  // the field to use (for the goal, its editor opens).
+  // the field to use (for the goal, its Create Goal button).
   const pointAt = (field: 'assign' | 'goal') => {
     const categoryId = pickCategory(rows);
     setDrawerOpen(false);
     if (!categoryId) return;
     const ui = useUiStore.getState();
-    if (field === 'goal') {
-      ui.setHighlightGoalCategoryId(categoryId);
-      ui.setGoalEditorCategoryId(categoryId);
-    } else ui.setHighlightAssignmentCategoryId(categoryId);
+    if (field === 'goal') ui.setHighlightGoalCategoryId(categoryId);
+    else ui.setHighlightAssignmentCategoryId(categoryId);
     ui.setFocusCategoryId(categoryId);
   };
   const runAction = (id: CountedFirstStepId, fallback: () => void) => () => {
@@ -177,7 +176,12 @@ export function FirstStepsCard({
       ),
       action: stepButton(
         <Trans>Set a goal</Trans>,
-        runAction('goal', () => pointAt('goal'))
+        runAction('goal', () => {
+          // The budget guide explains goals; behind it the category is
+          // selected with its Create Goal button highlighted.
+          pointAt('goal');
+          openPageGuide('budget', { card: 'goals' });
+        })
       ),
     },
     {

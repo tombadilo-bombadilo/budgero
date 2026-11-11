@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@shared/ui/dialog';
 import { useUiStore } from '@shared/store/useUiStore';
@@ -62,24 +62,6 @@ export function GoalSection({
   });
 
   const shouldHighlightCreate = !goal && highlightGoalCategoryId === categoryId;
-
-  // Asked to open this category's editor (the first-steps goal step): the
-  // first section showing it opens the form and takes the request.
-  useEffect(() => {
-    if (isLoading) return;
-    const take = () => {
-      const store = useUiStore.getState();
-      if (store.goalEditorCategoryId !== categoryId) return;
-      store.setGoalEditorCategoryId(null);
-      if (!goal) setIsFormOpen(true);
-    };
-    const timer = setTimeout(take, 0);
-    const unsubscribe = useUiStore.subscribe(take);
-    return () => {
-      clearTimeout(timer);
-      unsubscribe();
-    };
-  }, [categoryId, goal, isLoading]);
 
   const createGoalMutation = useCreateGoal();
   const updateGoalMutation = useUpdateGoal();

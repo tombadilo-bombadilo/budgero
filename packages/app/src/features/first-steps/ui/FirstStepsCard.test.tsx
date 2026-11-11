@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useUiStore } from '@shared/store/useUiStore';
+import { openPageGuide } from '@features/page-guides';
 import { MemoryRouter } from 'react-router-dom';
 import type { GetMonthlyBudgetRow } from '@budgero/core/browser';
 import {
@@ -14,6 +15,7 @@ import { FirstStepsCard } from './FirstStepsCard';
 const { toastSuccess } = vi.hoisted(() => ({ toastSuccess: vi.fn() }));
 vi.mock('sonner', () => ({ toast: { success: toastSuccess } }));
 vi.mock('@shared/runtime/runtime-provider', () => ({ useActiveSpaceId: () => 'space-1' }));
+vi.mock('@features/page-guides', () => ({ openPageGuide: vi.fn() }));
 
 const row = (assigned: number, categoryId = 11) =>
   ({
@@ -46,6 +48,7 @@ function renderCard(readyToAssign: number, rows: GetMonthlyBudgetRow[], extra: E
 }
 
 beforeEach(() => {
+  vi.mocked(openPageGuide).mockClear();
   localStorage.clear();
   resetFirstStepsForTests();
   toastSuccess.mockReset();
@@ -102,7 +105,7 @@ it('the goal step points at a category and ticks once a goal is created', () => 
   // The category with money in it, selected and its goal button highlighted.
   expect(useUiStore.getState().focusCategoryId).toBe(12);
   expect(useUiStore.getState().highlightGoalCategoryId).toBe(12);
-  expect(useUiStore.getState().goalEditorCategoryId).toBe(12);
+  expect(openPageGuide).toHaveBeenCalledWith('budget', { card: 'goals' });
   act(() => noteFirstStepsMutation('space-1', 'goals.create'));
   expect(screen.getByText('Set a goal for one category')).toHaveClass('line-through');
   expect(screen.getByText('Go to transactions')).toBeInTheDocument();
@@ -116,6 +119,7 @@ it('a page can take over a step’s button', () => {
   useUiStore.setState({ focusCategoryId: null });
   fireEvent.click(screen.getByRole('button', { name: 'Set a goal' }));
   expect(goal).toHaveBeenCalledOnce();
+  expect(openPageGuide).not.toHaveBeenCalled();
   expect(useUiStore.getState().focusCategoryId).toBeNull();
 });
 
