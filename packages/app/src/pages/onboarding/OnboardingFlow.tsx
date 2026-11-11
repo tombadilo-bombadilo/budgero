@@ -38,7 +38,7 @@ import {
   type ActivePath,
   type OnboardingFormState,
 } from './onboarding-data';
-import { runOnboardingApply } from './apply-onboarding';
+import { newOnboardingAttempt, returnToDemo, runOnboardingApply } from './apply-onboarding';
 import {
   AccountsStep,
   CategoriesStep,
@@ -115,6 +115,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
       active = false;
     };
   }, [mode]);
+  // Survives "Try again" so a retry reuses what the failed run left: the demo
+  // being left (open when this page mounted) and any half-built workspace.
+  const [attempt] = useState(() =>
+    newOnboardingAttempt(mode === 'from_demo' ? runtime.getActiveSpaceId() : null)
+  );
   const [stepIndex, setStepIndex] = useState(0);
   const [applyStatus, setApplyStatus] = useState<'idle' | 'running' | 'error'>('idle');
   const [applyError, setApplyError] = useState<string | null>(null);
@@ -412,9 +417,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
       reviewYnabImport,
       onYnabImportCancelled: returnToYnabSource,
       waitForYnabContinue,
+      attempt,
     });
   }, [
     activePath,
+    attempt,
     handleYnabProgress,
     navigate,
     completeOnboarding,
@@ -492,7 +499,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
         <div style={{ maxWidth: 880, margin: '0 auto 12px' }}>
           <button
             type="button"
-            onClick={() => navigate('/budgeting')}
+            onClick={() => {
+              void returnToDemo(runtime, queryClient, attempt)
+                .catch((err: unknown) => console.warn('[Onboarding] Back to the demo failed', err))
+                .finally(() => void navigate('/budgeting'));
+            }}
             data-testid="back-to-demo"
             style={{
               background: 'transparent',

@@ -3,7 +3,8 @@
  * and number format it opens in, and how it is removed.
  */
 import type { QueryClient } from '@tanstack/react-query';
-import { spaceApi } from '@shared/api/api-client';
+import type { Services } from '@budgero/core/browser';
+import { blobApi, spaceApi } from '@shared/api/api-client';
 import { DEMO_ACCOUNT_METADATA_KEY, getDemoSpaceId, setDemoSpaceId } from '@shared/lib/demo-space';
 import type { AppRuntime } from '@shared/runtime/app-runtime';
 import { syncBudgetStateFromRuntime } from '@shared/runtime/budget-gate';
@@ -23,6 +24,20 @@ export function isDemoAccount(account: { Metadata?: unknown }): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Proof, from the workspace's own data, that the open workspace is only the
+ * onboarding demo: it has a budget, and every budget in it has an account the
+ * demo seed marked. A workspace whose seed never ran, or where a budget of the
+ * user's own was set up, fails it, so it is never deleted as "the demo".
+ */
+export function holdsOnlyDemoBudgets(services: Pick<Services, 'budgets' | 'accounts'>): boolean {
+  const budgets = services.budgets.getAllBudgets();
+  return (
+    budgets.length > 0 &&
+    budgets.every((budget) => services.accounts.listAccounts(budget.ID).some(isDemoAccount))
+  );
 }
 
 /** Euro-area regions (ISO 3166). */
@@ -134,9 +149,12 @@ export async function removeDemoWorkspace(
 
 /**
  * A demo workspace left behind by an earlier attempt that never finished
- * (tab closed or seed failed mid-way): it is deleted before a new setup, so a
- * retry doesn't leave a second, half-filled demo. Only a workspace this user
- * owns is touched; errors leave it for Settings → Workspaces.
+ * (e.g. the tab was closed right after it was created). The device's cached
+ * id is no proof of what the workspace holds, so it is deleted only when the
+ * server shows it never received any data; otherwise it is just no longer
+ * treated as the demo (if it really holds the demo, its marked accounts say
+ * so again when it is opened). Only a workspace this user owns is touched;
+ * errors leave it for Settings → Workspaces.
  */
 export async function removeLeftoverDemoWorkspace(
   runtime: AppRuntime,
@@ -149,6 +167,12 @@ export async function removeLeftoverDemoWorkspace(
     const mine = spaces.find((space) => space.space_id === leftover && space.role === 'owner');
     if (!mine) {
       // Gone already, or someone else's (a previous user on this device).
+      setDemoSpaceId(null);
+      return;
+    }
+    const state = await blobApi.getState(leftover);
+    const neverFilled = state?.version === 0 && state.mutation_version === 0;
+    if (!neverFilled) {
       setDemoSpaceId(null);
       return;
     }

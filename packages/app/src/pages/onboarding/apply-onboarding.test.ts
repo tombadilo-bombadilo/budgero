@@ -3,8 +3,13 @@ import type { YNABApiPlanSnapshot, YNABImportResult } from '@budgero/core/browse
 import type { AppRuntime } from '@shared/runtime/app-runtime';
 import type { NavigateFunction } from 'react-router-dom';
 
-import { getDemoSpaceId, setDemoSpaceId } from '@shared/lib/demo-space';
-import { runOnboardingApply, type OnboardingApplyDeps } from './apply-onboarding';
+import { DEMO_ACCOUNT_METADATA_KEY, getDemoSpaceId, setDemoSpaceId } from '@shared/lib/demo-space';
+import {
+  newOnboardingAttempt,
+  returnToDemo,
+  runOnboardingApply,
+  type OnboardingApplyDeps,
+} from './apply-onboarding';
 import { INITIAL_STATE, type OnboardingFormState } from './onboarding-data';
 
 const mocks = vi.hoisted(() => ({
@@ -12,6 +17,8 @@ const mocks = vi.hoisted(() => ({
   createSpace: vi.fn(),
   deleteSpace: vi.fn(),
   listSpaces: vi.fn(),
+  getState: vi.fn(),
+  switchWorkspace: vi.fn(),
   seedDemoBudget: vi.fn(),
   setMasterPasswordStatus: vi.fn(),
   writeIntroAcknowledged: vi.fn(),
@@ -28,6 +35,7 @@ vi.mock('@shared/lib/crypto', () => ({
 
 vi.mock('@shared/api/api-client', () => ({
   authApi: { setMasterPasswordStatus: mocks.setMasterPasswordStatus },
+  blobApi: { getState: mocks.getState },
   spaceApi: {
     createSpace: mocks.createSpace,
     deleteSpace: mocks.deleteSpace,
@@ -46,6 +54,7 @@ vi.mock('@features/onboarding/lib/onboarding-intro', () => ({
 vi.mock('@shared/runtime/budget-gate', () => ({
   getBudgetsQueryKey: (spaceId: string | null) => ['budgets', spaceId],
   syncBudgetStateFromRuntime: mocks.syncBudgetState,
+  switchWorkspaceAndSyncBudgetState: mocks.switchWorkspace,
 }));
 
 vi.mock('sonner', () => ({
@@ -280,6 +289,33 @@ function freshRuntime() {
   return { runtime, execute };
 }
 
+/** A runtime with the demo open; `seeded` = its accounts carry the demo marker. */
+function demoRuntime(seeded: boolean) {
+  let nextId = 1;
+  const active = { id: 'demo-space' };
+  const execute = vi.fn(async (_call: Call) => ({ result: nextId++ }));
+  const metadata = seeded ? JSON.stringify({ [DEMO_ACCOUNT_METADATA_KEY]: true }) : '{}';
+  mocks.switchWorkspace.mockImplementation(async ({ spaceId }: { spaceId: string }) => {
+    active.id = spaceId;
+  });
+  const runtime = {
+    isInitialized: () => true,
+    refreshSpaces: vi.fn().mockResolvedValue(undefined),
+    switchSpace: vi.fn(async (spaceId: string) => {
+      active.id = spaceId;
+    }),
+    getActiveSpaceId: () => active.id,
+    getDatabase: () => ({}),
+    finalizeOutOfBandMutation: vi.fn().mockResolvedValue(undefined),
+    mutationsRouter: () => ({ execute }),
+    services: () => ({
+      budgets: { getAllBudgets: () => (active.id === 'demo-space' ? [{ ID: 1 }] : []) },
+      accounts: { listAccounts: () => [{ Metadata: metadata }] },
+    }),
+  } as unknown as AppRuntime;
+  return { runtime, execute, active };
+}
+
 function deps(path: OnboardingApplyDeps['activePath'], runtime: AppRuntime) {
   return {
     activePath: path,
@@ -379,9 +415,10 @@ describe('runOnboardingApply fresh, demo and leaving the demo', () => {
     expect(d.onComplete).not.toHaveBeenCalled();
   });
 
-  it('deletes a half-filled demo left by an interrupted attempt before trying again', async () => {
+  it('deletes an empty demo left by an interrupted attempt before trying again', async () => {
     setDemoSpaceId('old-demo');
     mocks.listSpaces.mockResolvedValue([{ space_id: 'old-demo', role: 'owner' }]);
+    mocks.getState.mockResolvedValue({ version: 0, mutation_version: 0 });
     mocks.createSpace.mockResolvedValue({ space_id: 'new-demo' });
     const { runtime } = freshRuntime();
     await runOnboardingApply({ ...freshState, startMode: 'demo' }, deps('demo', runtime));
@@ -392,6 +429,16 @@ describe('runOnboardingApply fresh, demo and leaving the demo', () => {
       mocks.createSpace.mock.invocationCallOrder[0]!
     );
     expect(getDemoSpaceId()).toBe('new-demo');
+  });
+
+  it('keeps a leftover marked workspace that holds data, and stops calling it the demo', async () => {
+    setDemoSpaceId('old-demo');
+    mocks.listSpaces.mockResolvedValue([{ space_id: 'old-demo', role: 'owner' }]);
+    mocks.getState.mockResolvedValue({ version: 3, mutation_version: 12 });
+    const { runtime } = freshRuntime();
+    await runOnboardingApply(freshState, deps('fresh', runtime));
+    expect(mocks.deleteSpace).not.toHaveBeenCalled();
+    expect(getDemoSpaceId()).toBeNull();
   });
 
   it("leaves a demo id alone that isn't this user's workspace", async () => {
@@ -407,8 +454,8 @@ describe('runOnboardingApply fresh, demo and leaving the demo', () => {
     setDemoSpaceId('demo-space');
     localStorage.setItem('budgero_default_space_v1', 'demo-space');
     mocks.createSpace.mockResolvedValue({ space_id: 'space-1' });
-    const { runtime, execute } = freshRuntime();
-    const d = deps('from_demo', runtime);
+    const { runtime, execute } = demoRuntime(true);
+    const d = { ...deps('from_demo', runtime), attempt: newOnboardingAttempt('demo-space') };
     await runOnboardingApply({ ...INITIAL_STATE, startMode: 'fresh', currency: 'EUR' }, d);
 
     expect(mocks.storeMasterPassword).not.toHaveBeenCalled();
@@ -425,6 +472,66 @@ describe('runOnboardingApply fresh, demo and leaving the demo', () => {
     expect(d.queryClient.removeQueries).toHaveBeenCalledWith({
       queryKey: ['space-members', 'demo-space'],
     });
+    // Onboarding was completed when the demo opened; it isn't completed again.
+    expect(d.updateOnboardingAsync).not.toHaveBeenCalled();
     expect(d.onComplete).toHaveBeenCalledOnce();
+  });
+
+  it('never deletes a marked workspace whose seed never ran and that now holds a real budget', async () => {
+    // The tab closed after the demo workspace was created, before the seed;
+    // the user then set up their own budget in it.
+    setDemoSpaceId('demo-space');
+    mocks.createSpace.mockResolvedValue({ space_id: 'space-1' });
+    const { runtime } = demoRuntime(false);
+    const d = { ...deps('from_demo', runtime), attempt: newOnboardingAttempt('demo-space') };
+    await runOnboardingApply({ ...INITIAL_STATE, startMode: 'fresh' }, d);
+
+    expect(mocks.deleteSpace).not.toHaveBeenCalled();
+    expect(getDemoSpaceId()).toBeNull();
+    expect(d.onComplete).toHaveBeenCalledOnce();
+  });
+
+  it('a retry after a failed start removes the half-built workspace and still deletes the demo', async () => {
+    setDemoSpaceId('demo-space');
+    mocks.createSpace
+      .mockResolvedValueOnce({ space_id: 'half-built' })
+      .mockResolvedValueOnce({ space_id: 'space-2' });
+    const { runtime, execute, active } = demoRuntime(true);
+    execute.mockRejectedValueOnce(new Error('offline'));
+    const attempt = newOnboardingAttempt('demo-space');
+    const d = { ...deps('from_demo', runtime), attempt };
+
+    await runOnboardingApply({ ...INITIAL_STATE, startMode: 'fresh' }, d);
+    expect(d.setApplyStatus).toHaveBeenLastCalledWith('error');
+    expect(mocks.deleteSpace).not.toHaveBeenCalled();
+    expect(active.id).toBe('half-built');
+
+    await runOnboardingApply({ ...INITIAL_STATE, startMode: 'fresh' }, d);
+    // The demo is reopened before the half-built workspace goes.
+    expect(mocks.switchWorkspace).toHaveBeenCalledWith(
+      expect.objectContaining({ spaceId: 'demo-space' })
+    );
+    expect(mocks.deleteSpace.mock.calls.map(([id]) => id)).toEqual(['half-built', 'demo-space']);
+    expect(mocks.createSpace).toHaveBeenCalledTimes(2);
+    expect(d.onComplete).toHaveBeenCalledOnce();
+  });
+
+  it('back to the demo after a failed start reopens the demo, not the half-built workspace', async () => {
+    setDemoSpaceId('demo-space');
+    mocks.createSpace.mockResolvedValueOnce({ space_id: 'half-built' });
+    const { runtime, execute, active } = demoRuntime(true);
+    execute.mockRejectedValueOnce(new Error('offline'));
+    const attempt = newOnboardingAttempt('demo-space');
+    await runOnboardingApply(
+      { ...INITIAL_STATE, startMode: 'fresh' },
+      { ...deps('from_demo', runtime), attempt }
+    );
+    expect(active.id).toBe('half-built');
+
+    await returnToDemo(runtime, deps('from_demo', runtime).queryClient, attempt);
+    expect(active.id).toBe('demo-space');
+    expect(mocks.deleteSpace).toHaveBeenCalledWith('half-built');
+    expect(mocks.deleteSpace).not.toHaveBeenCalledWith('demo-space');
+    expect(getDemoSpaceId()).toBe('demo-space');
   });
 });

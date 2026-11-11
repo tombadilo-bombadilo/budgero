@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
   apply: vi.fn(),
   readInvite: vi.fn(),
   navigate: vi.fn(),
+  returnToDemo: vi.fn(),
 }));
 
 vi.mock('@shared/lib/analytics/track', async (importOriginal) => ({
@@ -17,13 +18,22 @@ vi.mock('@shared/lib/analytics/track', async (importOriginal) => ({
   track: mocks.track,
   trackOnUnload: mocks.trackOnUnload,
 }));
-vi.mock('./apply-onboarding', () => ({ runOnboardingApply: mocks.apply }));
+vi.mock('./apply-onboarding', () => ({
+  runOnboardingApply: mocks.apply,
+  newOnboardingAttempt: (demoSpaceId: string | null = null) => ({
+    spaceId: null,
+    demoSpaceId,
+    demoProven: null,
+  }),
+  returnToDemo: mocks.returnToDemo,
+}));
 vi.mock('@features/budget-sharing/lib/pending-space-invite', () => ({
   readPendingSpaceInvite: mocks.readInvite,
 }));
 const runtime = {
   connectivityState: () => ({ overall: false }),
   onConnectivityChange: () => () => undefined,
+  getActiveSpaceId: () => 'space-demo',
 };
 vi.mock('@shared/runtime/runtime-provider', () => ({ useRuntime: () => runtime }));
 vi.mock('@entities/user/api/useAuth', () => ({
@@ -109,8 +119,16 @@ it('reports leaving again after the page comes back from the back/forward cache'
 describe('leaving the demo', () => {
   it('offers a visible way back to the demo and skips the password', async () => {
     renderFlow('from_demo');
+    mocks.returnToDemo.mockResolvedValue(undefined);
     fireEvent.click(screen.getByTestId('back-to-demo'));
-    expect(mocks.navigate).toHaveBeenCalledWith('/budgeting');
+    // Reopens the demo that was open when setup started (and drops anything
+    // a failed attempt half-built) before going back to it.
+    expect(mocks.returnToDemo).toHaveBeenCalledWith(
+      runtime,
+      expect.anything(),
+      expect.objectContaining({ demoSpaceId: 'space-demo' })
+    );
+    await waitFor(() => expect(mocks.navigate).toHaveBeenCalledWith('/budgeting'));
     expect(mocks.readInvite).not.toHaveBeenCalled();
     expect(stepViews()[0]).toEqual({ step: 'currency', path: 'from_demo' });
   });

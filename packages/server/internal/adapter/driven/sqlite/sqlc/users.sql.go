@@ -36,17 +36,6 @@ func (q *Queries) BlockUser(ctx context.Context, arg BlockUserParams) error {
 	return err
 }
 
-const clearDanglingPrimarySpaceIDs = `-- name: ClearDanglingPrimarySpaceIDs :exec
-UPDATE users SET primary_space_id = NULL
-WHERE primary_space_id IS NOT NULL
-AND primary_space_id NOT IN (SELECT space_id FROM budget_spaces)
-`
-
-func (q *Queries) ClearDanglingPrimarySpaceIDs(ctx context.Context) error {
-	_, err := q.db.ExecContext(ctx, clearDanglingPrimarySpaceIDs)
-	return err
-}
-
 const countUsers = `-- name: CountUsers :one
 SELECT COUNT(*) FROM users
 `
@@ -362,6 +351,24 @@ type MarkUserSubscribedIfFirstTimeParams struct {
 // user's first paid transition; renewals are no-ops here.
 func (q *Queries) MarkUserSubscribedIfFirstTime(ctx context.Context, arg MarkUserSubscribedIfFirstTimeParams) error {
 	_, err := q.db.ExecContext(ctx, markUserSubscribedIfFirstTime, arg.SubscribedAt, arg.ID)
+	return err
+}
+
+const repairDanglingPrimarySpaceIDs = `-- name: RepairDanglingPrimarySpaceIDs :exec
+UPDATE users SET primary_space_id = (
+    SELECT s.space_id FROM budget_spaces s
+    WHERE s.owner_user_id = users.id
+    ORDER BY s.created_at ASC, s.space_id ASC
+    LIMIT 1
+)
+WHERE primary_space_id IS NOT NULL
+AND primary_space_id NOT IN (SELECT space_id FROM budget_spaces)
+`
+
+// Points primary_space_id references to deleted spaces at the user's oldest
+// remaining owned space, or NULL when they own none.
+func (q *Queries) RepairDanglingPrimarySpaceIDs(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, repairDanglingPrimarySpaceIDs)
 	return err
 }
 

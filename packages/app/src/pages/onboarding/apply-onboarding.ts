@@ -30,7 +30,11 @@ import {
 import type { UpdateOnboardingInput } from '@entities/user/api/useAuth';
 import { writeIntroAcknowledged } from '@features/onboarding/lib/onboarding-intro';
 import { fromDecimal } from '@shared/lib/currency/milli';
-import { getBudgetsQueryKey, syncBudgetStateFromRuntime } from '@shared/runtime/budget-gate';
+import {
+  getBudgetsQueryKey,
+  switchWorkspaceAndSyncBudgetState,
+  syncBudgetStateFromRuntime,
+} from '@shared/runtime/budget-gate';
 import { BUDGET_SPACES_QUERY_KEY } from '@features/budget-sharing/lib/workspaces/queries';
 import type { BudgetSpaceSummary } from '@shared/model/budget-spaces';
 import { clearPendingSpaceInvite } from '@features/budget-sharing/lib/pending-space-invite';
@@ -39,6 +43,7 @@ import { getDemoSpaceId, setDemoSpaceId } from '@shared/lib/demo-space';
 import { seedDemoBudget } from '@features/demo-budget/lib/seed-demo-budget';
 import {
   guessDemoLocale,
+  holdsOnlyDemoBudgets,
   removeDemoWorkspace,
   removeLeftoverDemoWorkspace,
 } from '@features/demo-budget/lib/demo-workspace';
@@ -67,9 +72,65 @@ export interface OnboardingApplyDeps {
   reviewYnabImport: (result: YNABImportResult) => Promise<'accept' | 'cancel'>;
   onYnabImportCancelled: () => void;
   waitForYnabContinue: () => Promise<boolean>;
+  /** Kept by the flow across "Try again"; a one-off attempt when omitted. */
+  attempt?: OnboardingAttempt;
 }
 
-async function removeIncompleteYnabWorkspace(
+/** What a setup run leaves for the next one ("Try again", "Back to the demo"). */
+export interface OnboardingAttempt {
+  /** Workspace created by a run that did not finish; removed before the next run. */
+  spaceId: string | null;
+  /** Leaving the demo: the demo workspace (the one open when setup started). */
+  demoSpaceId: string | null;
+  /** Leaving the demo: its own data proved it holds only the demo (null = not checked yet). */
+  demoProven: boolean | null;
+}
+
+export function newOnboardingAttempt(demoSpaceId: string | null = null): OnboardingAttempt {
+  return { spaceId: null, demoSpaceId, demoProven: null };
+}
+
+/**
+ * Removes the workspace an unfinished run created (it holds only what that run
+ * built), after reopening the demo when setup started from there.
+ */
+async function discardUnfinishedWorkspace(
+  runtime: AppRuntime,
+  queryClient: QueryClient,
+  attempt: OnboardingAttempt
+): Promise<void> {
+  const leftover = attempt.spaceId;
+  if (attempt.demoSpaceId && runtime.getActiveSpaceId() !== attempt.demoSpaceId) {
+    try {
+      await switchWorkspaceAndSyncBudgetState({
+        runtime,
+        queryClient,
+        spaceId: attempt.demoSpaceId,
+      });
+    } catch (err) {
+      console.warn('[Onboarding] Could not reopen the demo workspace', err);
+    }
+  }
+  if (!leftover) return;
+  attempt.spaceId = null;
+  if (getDemoSpaceId() === leftover) setDemoSpaceId(null);
+  try {
+    await removeIncompleteWorkspace(runtime, queryClient, leftover);
+  } catch (err) {
+    console.warn('[Onboarding] Could not remove the unfinished workspace', err);
+  }
+}
+
+/** "← Back to the demo": the demo opens again and a half-built workspace goes. */
+export async function returnToDemo(
+  runtime: AppRuntime,
+  queryClient: QueryClient,
+  attempt: OnboardingAttempt
+): Promise<void> {
+  await discardUnfinishedWorkspace(runtime, queryClient, attempt);
+}
+
+async function removeIncompleteWorkspace(
   runtime: AppRuntime,
   queryClient: QueryClient,
   spaceId: string,
@@ -80,12 +141,15 @@ async function removeIncompleteYnabWorkspace(
   }
   await spaceApi.deleteSpace(spaceId);
   await runtime.refreshSpaces();
-  syncBudgetStateFromRuntime({
-    runtime,
-    queryClient,
-    spaceId: null,
-    candidateSelectedBudget: null,
-  });
+  const activeSpaceId = runtime.getActiveSpaceId();
+  if (!activeSpaceId || activeSpaceId === spaceId) {
+    syncBudgetStateFromRuntime({
+      runtime,
+      queryClient,
+      spaceId: null,
+      candidateSelectedBudget: null,
+    });
+  }
   await queryClient.invalidateQueries({ queryKey: BUDGET_SPACES_QUERY_KEY });
 }
 
@@ -230,7 +294,36 @@ export async function runOnboardingApply(
     // would then route them through normal workspace setup).
     // Leaving the demo: the password and the runtime already exist.
     const fromDemo = activePath === 'from_demo';
-    const demoSpaceId = fromDemo ? getDemoSpaceId() : null;
+    const attempt =
+      deps.attempt ?? newOnboardingAttempt(fromDemo ? runtime.getActiveSpaceId() : null);
+    // "Try again": the workspace the failed run created goes first, so a retry
+    // doesn't leave a second, half-built one.
+    await discardUnfinishedWorkspace(runtime, queryClient, attempt);
+
+    // The demo is deleted at the end only if its own data proves it is just
+    // the demo (checked while it is open). The device's cached id isn't enough:
+    // it is set before the seed runs, so a workspace whose seed never ran (and
+    // where a real budget was set up since) carries it too.
+    let demoSpaceId: string | null = null;
+    if (fromDemo) {
+      if (
+        attempt.demoProven === null &&
+        attempt.demoSpaceId &&
+        runtime.getActiveSpaceId() === attempt.demoSpaceId
+      ) {
+        try {
+          attempt.demoProven = holdsOnlyDemoBudgets(runtime.services());
+        } catch (err) {
+          console.warn('[Onboarding] Could not read the demo workspace', err);
+          attempt.demoProven = false;
+        }
+      }
+      if (attempt.demoProven) {
+        demoSpaceId = attempt.demoSpaceId;
+      } else if (attempt.demoSpaceId && getDemoSpaceId() === attempt.demoSpaceId) {
+        setDemoSpaceId(null);
+      }
+    }
     if (!fromDemo) await MasterPasswordManager.store(state.password);
 
     // A demo left half-filled by an earlier attempt (tab closed mid-seed, or
@@ -245,6 +338,7 @@ export async function runOnboardingApply(
       activePath === 'demo' ? t`Demo budget` : state.budgetName.trim() || t`My budget`
     );
     const spaceId = summary.space_id;
+    attempt.spaceId = spaceId;
     // Marked before it holds anything, so an interrupted seed is recognised.
     if (activePath === 'demo') setDemoSpaceId(spaceId);
 
@@ -280,6 +374,7 @@ export async function runOnboardingApply(
         // Nothing half-filled stays behind; trying again starts clean.
         try {
           await removeDemoWorkspace(runtime, queryClient, spaceId);
+          attempt.spaceId = null;
         } catch (cleanupError) {
           console.warn('[Onboarding] Could not remove the incomplete demo', cleanupError);
         }
@@ -301,6 +396,7 @@ export async function runOnboardingApply(
         console.warn('[Onboarding] Failed to mark onboarding completed', err);
       }
       writeIntroAcknowledged(profileId ?? null);
+      attempt.spaceId = null;
       await queryClient.invalidateQueries();
       await navigate('/budgeting', { replace: true });
       onComplete();
@@ -354,7 +450,8 @@ export async function runOnboardingApply(
       } catch (error) {
         importRun.error(error);
         try {
-          await removeIncompleteYnabWorkspace(runtime, queryClient, spaceId);
+          await removeIncompleteWorkspace(runtime, queryClient, spaceId);
+          attempt.spaceId = null;
         } catch (cleanupError) {
           console.warn('[Onboarding] Failed to remove an incomplete YNAB workspace', cleanupError);
         }
@@ -379,7 +476,8 @@ export async function runOnboardingApply(
         if (decision === 'cancel') {
           importRun.cancelled();
           try {
-            await removeIncompleteYnabWorkspace(runtime, queryClient, spaceId, budgetId);
+            await removeIncompleteWorkspace(runtime, queryClient, spaceId, budgetId);
+            attempt.spaceId = null;
           } catch (cleanupError) {
             throw new Error(
               `The import was cancelled, but Budgero could not completely remove its temporary workspace: ${getErrorMessage(cleanupError, 'unknown cleanup error')}`
@@ -592,8 +690,12 @@ export async function runOnboardingApply(
       if (!(await continueFromYnabReport)) return;
     }
 
-    // The real budget exists now, so the demo can go. If deleting it fails
-    // it stays as an ordinary workspace the owner can delete in Settings.
+    // The new workspace is complete: a later error must not discard it.
+    attempt.spaceId = null;
+
+    // The real budget exists now, so the demo can go (only when proven to be
+    // the demo, see above). If deleting it fails it stays as an ordinary
+    // workspace the owner can delete in Settings.
     if (fromDemo && demoSpaceId && demoSpaceId !== spaceId) {
       try {
         await removeDemoWorkspace(runtime, queryClient, demoSpaceId);
@@ -611,14 +713,18 @@ export async function runOnboardingApply(
     } catch (err) {
       console.warn('[Onboarding] Failed to mark master password set on server', err);
     }
-    try {
-      await updateOnboardingAsync({
-        status: 'completed',
-        snoozed_until: null,
-        where_heard_about: whereHeard,
-      });
-    } catch (err) {
-      console.warn('[Onboarding] Failed to mark onboarding completed', err);
+    // Leaving the demo: onboarding was completed when the demo opened, and
+    // repeating it would move onboarding_completed_at on the server.
+    if (!fromDemo) {
+      try {
+        await updateOnboardingAsync({
+          status: 'completed',
+          snoozed_until: null,
+          where_heard_about: whereHeard,
+        });
+      } catch (err) {
+        console.warn('[Onboarding] Failed to mark onboarding completed', err);
+      }
     }
     writeIntroAcknowledged(profileId ?? null);
 

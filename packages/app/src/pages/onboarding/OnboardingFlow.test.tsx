@@ -24,6 +24,8 @@ vi.mock('@shared/lib/analytics/track', async (importOriginal) => ({
 
 vi.mock('./apply-onboarding', () => ({
   runOnboardingApply: mockRunOnboardingApply,
+  newOnboardingAttempt: () => ({ spaceId: null, demoSpaceId: null, demoProven: null }),
+  returnToDemo: vi.fn(),
 }));
 
 vi.mock('./onboarding-data', async (importOriginal) => {

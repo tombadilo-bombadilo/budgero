@@ -200,9 +200,9 @@ func (r *UserRepository) GetPreferences(ctx context.Context, id string) (*domain
 	return ToUserPreferences(&prefs), nil
 }
 
-// ClearDanglingPrimarySpaceIDs nullifies primary_space_id references to deleted spaces.
-func (r *UserRepository) ClearDanglingPrimarySpaceIDs(ctx context.Context) error {
-	return r.queries.ClearDanglingPrimarySpaceIDs(ctx)
+// RepairDanglingPrimarySpaceIDs moves primary_space_id references to deleted spaces onto the user's oldest owned space (NULL if none).
+func (r *UserRepository) RepairDanglingPrimarySpaceIDs(ctx context.Context) error {
+	return r.queries.RepairDanglingPrimarySpaceIDs(ctx)
 }
 
 // UpsertPreferences creates or updates user preferences.

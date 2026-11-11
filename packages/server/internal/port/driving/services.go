@@ -65,8 +65,12 @@ type UserService interface {
 	// UpdatePreferences applies a partial user preference update.
 	UpdatePreferences(ctx context.Context, id string, patch domain.UserPreferencesPatch) (*domain.UserPreferences, error)
 
-	// ClearDanglingPrimarySpaceIDs nullifies primary_space_id references to deleted spaces.
-	ClearDanglingPrimarySpaceIDs(ctx context.Context) error
+	// EnsurePrimarySpace returns the user's primary space id, assigning their
+	// oldest owned space when none is set ("" if they own no space).
+	EnsurePrimarySpace(ctx context.Context, user *domain.User) (string, error)
+
+	// RepairDanglingPrimarySpaceIDs moves primary_space_id references to deleted spaces onto the user's oldest owned space (NULL if none).
+	RepairDanglingPrimarySpaceIDs(ctx context.Context) error
 }
 
 // SpaceService defines the interface for space management.
