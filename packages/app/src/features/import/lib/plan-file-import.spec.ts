@@ -271,13 +271,13 @@ describe('a transfer into an account that is not in the file', () => {
     input.parsedData.rows = [
       { Date: '2026-09-01', Amount: '-100', Payee: 'To savings', TransferAccount: 'Savings' },
       { Date: '2026-09-05', Amount: '-50', Payee: 'To savings', TransferAccount: 'Savings' },
-    ];
+    ] as Record<string, string>[] as typeof input.parsedData.rows;
     input.accounts = [
       { ID: 1, Name: 'Checking', Currency: 'USD' },
       { ID: 2, Name: 'Savings', Currency: 'USD' },
     ];
     // Savings already has the first transfer (its own file, or bank sync).
-    const plan = vi.fn((rows: DuplicateInput[]) =>
+    const plan = vi.fn((rows: DuplicateInput[], _options?: unknown) =>
       rows.map((row) =>
         row.accountId === 2 && row.date === '2026-09-01' && row.inflow === 100000
           ? {
