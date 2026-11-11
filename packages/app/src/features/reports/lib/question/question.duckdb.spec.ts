@@ -8,6 +8,7 @@ import path from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type * as DuckDbBlocking from '@duckdb/duckdb-wasm/blocking';
 import { TRANSACTIONS_ANALYTICS_VIEW_SQL } from '@shared/lib/sql/analytics-views';
+import { arrowTableToRows } from '@shared/lib/sql/arrow-rows';
 import { isReadOnlyQuery, stripLeadingSqlComments } from '@shared/lib/sql/read-only';
 import { compileQuestion } from './compile';
 import { applyDrill, rowDrillValues, type DrillAction } from './drill';
@@ -132,17 +133,11 @@ function queryWithKeys(spec: Partial<QuestionSpec>, budgetId = 1): Record<string
   expect(parseQuestionHeader(saved)).toEqual(full);
   const statement = stripLeadingSqlComments(saved);
   expect(isReadOnlyQuery(statement)).toBe(true);
-  return conn
-    .query(statement)
-    .toArray()
-    .map((row) =>
-      Object.fromEntries(
-        Object.entries(row.toJSON() as Record<string, unknown>).map(([key, value]) => [
-          key,
-          typeof value === 'bigint' ? Number(value) : value,
-        ])
-      )
-    );
+  // Read like the app's engine does (arrowTableToRows).
+  const { columns, rows } = arrowTableToRows(conn.query(statement));
+  return rows.map((cells) =>
+    Object.fromEntries(columns.map((name, index) => [name, cells[index]]))
+  );
 }
 
 /** Transactions question with the default "no transfers, on budget" filters. */

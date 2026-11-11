@@ -61,57 +61,57 @@ export function useSchemaLoader() {
         { maxRows: MAX_ROWS }
       );
 
+      // All their columns in one query.
+      const columnsResult = await executeReportQuery(
+        `SELECT table_name, column_name, data_type, is_nullable
+         FROM information_schema.columns
+         WHERE table_schema = 'main'
+         ORDER BY table_name, ordinal_position`,
+        db,
+        { maxRows: MAX_ROWS }
+      );
+      const columnsByTable = new Map<string, TableInfo['columns']>();
+      for (const [table, name, type, nullable] of columnsResult.rows) {
+        const key = String(table ?? '');
+        const list = columnsByTable.get(key) ?? [];
+        list.push({
+          name: String(name ?? ''),
+          type: String(type ?? 'VARCHAR'),
+          nullable: String(nullable ?? 'YES').toUpperCase() === 'YES',
+          primaryKey: false,
+        });
+        columnsByTable.set(key, list);
+      }
+
       for (const row of viewsResult.rows) {
         const viewName = String(row[0] ?? '').trim();
         if (!viewName) continue;
         const viewNameKey = viewName.toLowerCase();
         if (knownNames.has(viewNameKey)) continue;
+        const isView = String(row[1] ?? '') === 'VIEW';
 
-        const safeViewNameLiteral = viewName.replace(/'/g, "''");
-        const safeViewNameIdentifier = `"${viewName.replace(/"/g, '""')}"`;
-
-        const columnsResult = await executeReportQuery(
-          `SELECT
-             column_name AS name,
-             data_type AS type,
-             is_nullable AS is_nullable
-           FROM information_schema.columns
-           WHERE table_schema = 'main'
-             AND table_name = '${safeViewNameLiteral}'
-           ORDER BY ordinal_position`,
-          db,
-          { maxRows: MAX_ROWS }
-        );
-
-        let viewRowCount = 0;
-        try {
-          const countResult = await executeReportQuery(
-            `SELECT COUNT(*) AS count FROM ${safeViewNameIdentifier}`,
-            db,
-            { maxRows: 1 }
-          );
-          const rawCount = countResult.rows[0]?.[0];
-          const parsedCount = Number(rawCount ?? 0);
-          viewRowCount = Number.isFinite(parsedCount) ? parsedCount : 0;
-        } catch {
-          viewRowCount = 0;
+        // Views are counted; the computed reporting tables are not, since
+        // counting them would compute them (and materialize scheduled
+        // occurrences) just for opening the tab.
+        let viewRowCount: number | null = null;
+        if (isView) {
+          try {
+            const countResult = await executeReportQuery(
+              `SELECT COUNT(*) AS count FROM "${viewName.replace(/"/g, '""')}"`,
+              db,
+              { maxRows: 1 }
+            );
+            const parsedCount = Number(countResult.rows[0]?.[0] ?? 0);
+            viewRowCount = Number.isFinite(parsedCount) ? parsedCount : 0;
+          } catch {
+            viewRowCount = 0;
+          }
         }
 
         schema.push({
           name: viewName,
-          objectType: String(row[1] ?? '') === 'VIEW' ? 'view' : 'table',
-          columns: columnsResult.rows
-            .map((columnRow) => {
-              const name = String(columnRow[0] ?? '').trim();
-              if (!name) return null;
-              return {
-                name,
-                type: String(columnRow[1] ?? 'VARCHAR'),
-                nullable: String(columnRow[2] ?? 'YES').toUpperCase() === 'YES',
-                primaryKey: false,
-              };
-            })
-            .filter((column): column is TableInfo['columns'][number] => column !== null),
+          objectType: isView ? 'view' : 'table',
+          columns: (columnsByTable.get(viewName) ?? []).filter((column) => column.name),
           rowCount: viewRowCount,
         });
         knownNames.add(viewNameKey);

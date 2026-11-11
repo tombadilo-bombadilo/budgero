@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getErrorMessage } from '@shared/lib/errors';
+import { getTodayISO } from '@shared/lib/date-utils';
 import type { ToolContext, ToolExecutionResult } from './types';
 
 export const querySqlSchema = z.object({
@@ -19,13 +20,19 @@ const MAX_RENDER_ROWS = 100;
  * Schema/usage doc injected into the tool description. budgetId is interpolated
  * so the model always scopes to the active budget.
  */
-export function buildSqlToolDescription(budgetId: number, liveSchema = ''): string {
+export function buildSqlToolDescription(
+  budgetId: number,
+  liveSchema = '',
+  /** The user's local day: DuckDB's CURRENT_DATE is UTC. */
+  today = getTodayISO()
+): string {
   const schemaBlock = liveSchema
     ? `\nLIVE SCHEMA (authoritative — the exact columns/tables in THIS database; prefer these over the names below):\n${liveSchema}\n`
     : '';
   return `Run a READ-ONLY SQL query (DuckDB dialect) against the analytics database and get rows back. Use this for open-ended analytical questions that the simpler tools can't answer (trends, multi-dimensional breakdowns, custom aggregations, "what if" slicing).
 ${schemaBlock}
 RULES
+- TODAY is '${today}' (the user's local date). Use that literal for "today"; do NOT use CURRENT_DATE (it is UTC and can be a different day).
 - Read-only only: a single SELECT or WITH statement. No INSERT/UPDATE/DELETE/DDL.
 - ALWAYS scope to the active budget: include "WHERE budget_id = ${budgetId}" (or "b.budget_id = ${budgetId}" / "t.budget_id = ${budgetId}" when joining).
 - Use double quotes for identifiers only if needed; the snake_case columns below need no quoting.
@@ -34,7 +41,7 @@ RULES
 - In any JOIN or multi-CTE query, QUALIFY every column with its table/CTE alias (e.g. h.month, combined.total) to avoid "ambiguous reference" errors, and alias your aggregates.
 - Use the snake_case reporting views/tables below (transactions_analytics, account_balances_daily, payee_summary, budget_months, scheduled_transactions, scheduled_occurrences). Do NOT SELECT from raw tables like accounts/categories/budgets — they use different (PascalCase) column names and querying them will fail. The views already contain account_name, account_currency, account_on_budget, category_name, etc.
 - The "User's Budget Context" / ACCOUNTS summary in the system prompt is a human-readable digest, NOT the database schema. Column names there (e.g. balance_in_RSD, native_balance) are NOT SQL columns. ONLY the columns listed below / in LIVE SCHEMA exist.
-- Balances: use account_balances_daily (below), NOT SUM(inflow - outflow) — that misses foreign-currency revaluations and counts future-dated rows. Current balance per account: SELECT account_name, balance FROM account_balances_daily WHERE budget_id = ${budgetId} AND date = strftime(CURRENT_DATE, '%Y-%m-%d').
+- Balances: use account_balances_daily (below), NOT SUM(inflow - outflow) — that misses foreign-currency revaluations and counts future-dated rows. Current balance per account: SELECT account_name, balance FROM account_balances_daily WHERE budget_id = ${budgetId} AND date = '${today}'.
 
 MAIN VIEW: transactions_analytics (one row per transaction)
 - budget_id, transaction_id, date (TEXT 'YYYY-MM-DD'), week, month, quarter, year (each a truncated 'YYYY-MM-DD' string for GROUP BY)
@@ -59,7 +66,7 @@ ON-BUDGET vs OFF-BUDGET ACCOUNTS
 BALANCES / NET WORTH: account_balances_daily (one row per account per day, first transaction → today; days without transactions carry the balance)
 - budget_id, account_id, account_name, account_type, account_currency, account_on_budget (int 0/1), account_closed (int 0/1), is_liability (bool: credit/loan/mortgage)
 - date (TEXT 'YYYY-MM-DD'), balance (budget currency, end of that day: transactions at their recorded rates + revaluations), balance_original (account currency), change (that day's movement)
-- Net worth over time: SELECT date, SUM(balance) AS net_worth FROM account_balances_daily WHERE budget_id = ${budgetId} GROUP BY date ORDER BY date. Month-end: add "AND (date = strftime(last_day(CAST(date AS DATE)), '%Y-%m-%d') OR date = strftime(CURRENT_DATE, '%Y-%m-%d'))". Assets = SUM(balance) where NOT is_liability; debts = -SUM(balance) where is_liability.
+- Net worth over time: SELECT date, SUM(balance) AS net_worth FROM account_balances_daily WHERE budget_id = ${budgetId} GROUP BY date ORDER BY date. Month-end: add "AND (date = strftime(last_day(CAST(date AS DATE)), '%Y-%m-%d') OR date = '${today}')". Assets = SUM(balance) where NOT is_liability; debts = -SUM(balance) where is_liability.
 
 BUDGET (what the budget screen shows): budget_months (one row per category per month, Income/Transfers groups left out)
 - budget_id, month (TEXT 'YYYY-MM-01'), category_id, category_name, category_group_id, category_group_name
@@ -69,7 +76,7 @@ BUDGET (what the budget screen shows): budget_months (one row per category per m
 SCHEDULED (recurring) TRANSACTIONS: scheduled_transactions (one row per recurring template) and scheduled_occurrences (one row per due date)
 - budget_id, recurring_id, payee, memo, account_id, account_name, to_account_id/to_account_name (transfers), category_id, category_name, category_group_name, direction, currency, amount_native, amount (budget currency, inflow positive / outflow negative), inflow, outflow, interval_unit, interval_count, frequency ('month', '2-week', ...), is_transfer, is_split, paused
 - scheduled_transactions also: monthly_amount (amount × occurrences per year / 12), status (active | paused | ended), next_date, start_date, end_date. Recurring total per month: SELECT SUM(monthly_amount) FROM scheduled_transactions WHERE budget_id = ${budgetId} AND status = 'active' AND NOT is_transfer
-- scheduled_occurrences also: occurrence_id, due_date (TEXT), status (scheduled = still to come or overdue, ready = entered, skipped), transaction_id. Bills due in the next 30 days: ... WHERE budget_id = ${budgetId} AND status = 'scheduled' AND NOT paused AND amount < 0 AND due_date <= strftime(CURRENT_DATE + INTERVAL 30 DAY, '%Y-%m-%d')
+- scheduled_occurrences also: occurrence_id, due_date (TEXT), status (scheduled = still to come or overdue, ready = entered, skipped), transaction_id. Bills due in the next 30 days: ... WHERE budget_id = ${budgetId} AND status = 'scheduled' AND NOT paused AND amount < 0 AND due_date <= strftime(DATE '${today}' + INTERVAL 30 DAY, '%Y-%m-%d')
 
 PAYEES: payee_summary (one row per payee over all time, transfers left out; filter transactions_analytics yourself for a date range)
 - budget_id, payee_name, transaction_count, inflow, outflow, total, average_amount, first_seen, last_seen, top_category
@@ -90,7 +97,7 @@ EXAMPLES (note the transfer + on-budget exclusions on spending queries)
 - Total transferred between accounts (the thing to exclude above):
   SELECT SUM(outflow) AS transferred FROM transactions_analytics WHERE budget_id = ${budgetId} AND COALESCE(transfer_id,'') <> '' AND outflow > 0
 - Balance per account today (budget + native currency):
-  SELECT account_name, account_currency, balance, balance_original FROM account_balances_daily WHERE budget_id = ${budgetId} AND date = strftime(CURRENT_DATE, '%Y-%m-%d')
+  SELECT account_name, account_currency, balance, balance_original FROM account_balances_daily WHERE budget_id = ${budgetId} AND date = '${today}'
 
 Results are capped at ${MAX_SQL_ROWS} rows — aggregate in SQL rather than pulling raw rows.`;
 }

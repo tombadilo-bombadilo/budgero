@@ -7,9 +7,9 @@ import {
   type SqlDatabase,
 } from '@shared/lib/sql/report-query-executor';
 import { getErrorMessage } from '@shared/lib/errors';
+import { useLocalToday } from '@shared/hooks/useLocalToday';
 import {
   compileQuestion,
-  todayIso,
   type CompiledQuestion,
   type QuestionSpec,
 } from '@features/reports/lib/question';
@@ -61,6 +61,8 @@ export function useQuestionQuery({
   }>({ key: '', result: null, compiled: null, error: null });
   const latestKeyRef = useRef('');
 
+  // Turns over at midnight, so relative dates follow a notebook left open.
+  const today = useLocalToday();
   const { compiled, compileError } = useMemo(() => {
     try {
       return {
@@ -69,14 +71,14 @@ export function useQuestionQuery({
           chartId: chartId ?? 'question-preview',
           chartTitle,
           labels: getQuestionSqlLabels(),
-          today: todayIso(),
+          today,
         }),
         compileError: null,
       };
     } catch (err) {
       return { compiled: null, compileError: getErrorMessage(err, t`Invalid question`) };
     }
-  }, [spec, budgetId, chartId, chartTitle]);
+  }, [spec, budgetId, chartId, chartTitle, today]);
 
   const sql = enabled ? (compiled?.sql ?? null) : null;
   const runKey = sql ? `${refreshKey}\n${sql}` : '';

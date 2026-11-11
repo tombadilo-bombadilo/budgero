@@ -63,7 +63,9 @@ export function widgetQuestion(
   report: UnifiedReport | null,
   chart: ChartConfiguration | null,
   filters: DashboardFilters,
-  budgetId: number
+  budgetId: number,
+  /** The user's local day (widgets pass one that turns over at midnight). */
+  today: string = todayIso()
 ): WidgetQuestion | null {
   const saved = parseQuestionHeader(report?.query);
   if (!saved || !chart || chart.id !== report?.charts?.[0]?.id) return null;
@@ -79,7 +81,7 @@ export function widgetQuestion(
       sql = compileQuestion(merged.spec, {
         budgetId,
         labels: getQuestionSqlLabels(),
-        today: todayIso(),
+        today,
       }).sql;
     } catch {
       sql = null;
