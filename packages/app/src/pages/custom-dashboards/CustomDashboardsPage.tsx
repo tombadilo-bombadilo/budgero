@@ -35,6 +35,7 @@ import { DashboardSwitcher } from './components/DashboardSwitcher';
 import { DashboardGrid } from './components/DashboardGrid';
 import { AddToDashboardDialog } from './components/AddToDashboardDialog';
 import { DashboardFilterBar } from './components/DashboardFilterBar';
+import { DashboardEditBar } from './components/DashboardEditBar';
 import { buildCsvZip, zipFileName, type WidgetCsv } from './export-dashboard';
 import { runWidgetQuery, widgetQueryKey, widgetQuestion } from './components/widget-query';
 import { useDashboardEditor, useHomeActions } from './useDashboardEditor';
@@ -284,7 +285,13 @@ function CustomDashboardsView({ isMobile }: { isMobile: boolean }) {
   }
 
   return (
-    <div className="space-y-4 px-4 py-6 pb-[calc(var(--mobile-bottom-nav-height,96px)+1.5rem)] sm:pb-8 md:px-8">
+    <div
+      className={
+        isEditMode
+          ? 'space-y-4 px-4 py-6 pb-[calc(var(--mobile-bottom-nav-height,96px)+5rem)] sm:pb-8 md:px-8'
+          : 'space-y-4 px-4 py-6 pb-[calc(var(--mobile-bottom-nav-height,96px)+1.5rem)] sm:pb-8 md:px-8'
+      }
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
           <BackToReports />
@@ -295,19 +302,36 @@ function CustomDashboardsView({ isMobile }: { isMobile: boolean }) {
             <Trans>Saved questions side by side, filtered together.</Trans>
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={isEditMode ? 'default' : 'outline'}
-            onClick={() => setIsEditMode((prev) => !prev)}
-            disabled={!activeDashboard}
-          >
-            {isEditMode ? t`Done Editing` : t`Edit Layout`}
-          </Button>
-          <Button onClick={() => setAddWidgetDialogOpen(true)} disabled={!activeDashboard}>
-            <Trans>Add a card</Trans>
-          </Button>
-        </div>
+        {!isEditMode && (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                editor.beginSession();
+                setIsEditMode(true);
+              }}
+              disabled={!activeDashboard}
+            >
+              <Trans>Edit Layout</Trans>
+            </Button>
+            <Button onClick={() => setAddWidgetDialogOpen(true)} disabled={!activeDashboard}>
+              <Trans>Add a card</Trans>
+            </Button>
+          </div>
+        )}
       </div>
+
+      {isEditMode && activeDashboard && (
+        <DashboardEditBar
+          isMobile={isMobile}
+          onAdd={() => setAddWidgetDialogOpen(true)}
+          onDone={() => setIsEditMode(false)}
+          onCancel={async () => {
+            await editor.cancelSession();
+            setIsEditMode(false);
+          }}
+        />
+      )}
 
       <DashboardSwitcher
         dashboards={dashboards}

@@ -10,7 +10,7 @@ import {
 } from '@budgero/core/browser';
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import { getErrorMessage } from '@shared/lib/errors';
-import { runUndoGroup } from '@shared/mutations/UndoStore';
+import { latestUndoId, runUndoGroup, useUndoStore } from '@shared/mutations/UndoStore';
 import { newOpRowId } from '@shared/mutations/op-code-registry/shared';
 import {
   BUILTIN_CARDS,
@@ -189,58 +189,94 @@ export function useDashboardEditor({
         });
   };
 
+  // Undo entries made by this edit session, so Cancel can take them back.
+  const session = useRef(new Set<string>());
+  const remember = () => {
+    const id = latestUndoId();
+    if (id) session.current.add(id);
+  };
+
   const edit = async (label: string, work: (target: Target) => Promise<void>) => {
     if (!dashboard) return;
     try {
-      if (pendingHome.current) {
-        await work(current(await pendingHome.current));
-        return;
-      }
-      if (isDefaultHomeDashboard(dashboard)) {
-        let settle!: { resolve: (target: Target) => void; reject: (error: unknown) => void };
-        const shared = new Promise<Target>((resolve, reject) => {
-          settle = { resolve, reject };
-        });
-        shared.catch(() => undefined);
-        pendingHome.current = shared;
-        setMaterializing(true);
-        try {
-          await runUndoGroup(label, async () => {
-            let target: Target;
-            try {
-              target = await storeDefaultHome();
-            } catch (error) {
-              settle.reject(error);
-              throw error;
-            }
-            settle.resolve(target);
-            await work(target);
-          });
-        } catch (error) {
-          if (pendingHome.current === shared) pendingHome.current = null;
-          throw error;
-        } finally {
-          setMaterializing(false);
-        }
-        return;
-      }
-      const target: Target = {
-        dashboardId: dashboard.id,
-        widgetId: (id) => id,
-        widgets: dashboard.widgets,
-      };
-      if (claimHome && !dashboard.isHome) {
-        // The home page shows a customised home nobody has set as home:
-        // editing it makes it the home, in the same undo step.
-        await runUndoGroup(label, async () => {
-          await exec('customDashboards.update', { id: dashboard.id, isHome: true });
-          await work(target);
-        });
-        return;
-      }
-      await work(target);
+      await editInner(label, work);
+      remember();
     } catch (error) {
       toast.error(getErrorMessage(error, t`Could not save the dashboard`));
+    }
+  };
+
+  const editInner = async (label: string, work: (target: Target) => Promise<void>) => {
+    if (!dashboard) return;
+    if (pendingHome.current) {
+      await work(current(await pendingHome.current));
+      return;
+    }
+    if (isDefaultHomeDashboard(dashboard)) {
+      let settle!: { resolve: (target: Target) => void; reject: (error: unknown) => void };
+      const shared = new Promise<Target>((resolve, reject) => {
+        settle = { resolve, reject };
+      });
+      shared.catch(() => undefined);
+      pendingHome.current = shared;
+      setMaterializing(true);
+      try {
+        await runUndoGroup(label, async () => {
+          let target: Target;
+          try {
+            target = await storeDefaultHome();
+          } catch (error) {
+            settle.reject(error);
+            throw error;
+          }
+          settle.resolve(target);
+          await work(target);
+        });
+      } catch (error) {
+        if (pendingHome.current === shared) pendingHome.current = null;
+        throw error;
+      } finally {
+        setMaterializing(false);
+      }
+      return;
+    }
+    const target: Target = {
+      dashboardId: dashboard.id,
+      widgetId: (id) => id,
+      widgets: dashboard.widgets,
+    };
+    if (claimHome && !dashboard.isHome) {
+      // The home page shows a customised home nobody has set as home:
+      // editing it makes it the home, in the same undo step.
+      await runUndoGroup(label, async () => {
+        await exec('customDashboards.update', { id: dashboard.id, isHome: true });
+        await work(target);
+      });
+      return;
+    }
+    await work(target);
+  };
+
+  /** Start an edit session (entering edit mode). */
+  const beginSession = () => {
+    session.current = new Set();
+  };
+
+  /**
+   * Undo this session's edits, newest first, stopping at any other change
+   * on top of them (that one is left alone, and so is what lies below it).
+   */
+  const cancelSession = async () => {
+    try {
+      for (;;) {
+        const { past } = useUndoStore.getState();
+        const top = past[past.length - 1];
+        if (!top || !session.current.has(top.id)) break;
+        session.current.delete(top.id);
+        await useUndoStore.getState().undo();
+      }
+    } catch (error) {
+      toast.error(getErrorMessage(error, t`Could not undo the changes`));
     }
   };
 
@@ -409,6 +445,8 @@ export function useDashboardEditor({
   return {
     /** The default home is being stored by the first edit. */
     materializing,
+    beginSession,
+    cancelSession,
     /** What to draw: the default layout until the stored copy is complete. */
     view:
       materializing && dashboard && !isDefaultHomeDashboard(dashboard)

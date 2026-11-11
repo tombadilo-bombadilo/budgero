@@ -3638,6 +3638,7 @@ msgstr "Saldo real"
 msgid "Add"
 msgstr "Añadir"
 
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
 #: src/pages/custom-dashboards/useDashboardEditor.ts
 #: src/pages/dashboard/HomeDashboard.tsx
@@ -5594,6 +5595,7 @@ msgstr "Dólar canadiense"
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
 #: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/dashboard/HomeDashboard.tsx
@@ -7070,6 +7072,10 @@ msgstr "No se pudo guardar el mensaje"
 msgid "Could not save the query."
 msgstr "No se ha podido guardar la consulta."
 
+#: src/pages/custom-dashboards/useDashboardEditor.ts
+msgid "Could not undo the changes"
+msgstr "No se pudieron deshacer los cambios"
+
 #: src/features/transactions/api/useClearedShortcut.ts
 #: src/features/transactions/ui/ClearedToggle.tsx
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
@@ -8335,13 +8341,13 @@ msgstr "Valores distintos"
 #: src/features/ai/ui/receipt-scanner/ScanProgress.tsx
 #: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
-#: src/pages/dashboard/HomeDashboard.tsx
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 msgid "Done"
 msgstr "Hecho"
 
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
-msgid "Done Editing"
-msgstr "Terminar edición"
+#~ msgid "Done Editing"
+#~ msgstr "Terminar edición"
 
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Donut"
@@ -8749,6 +8755,10 @@ msgstr "Editar divisiones"
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Edit Warranty"
 msgstr "Editar garantía"
+
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
+msgid "Editing"
+msgstr "Editando"
 
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Editing transfer splits is not supported."
@@ -9662,6 +9672,7 @@ msgid "Failed to reconcile account. Please try again."
 msgstr "Error al conciliar la cuenta. Inténtalo de nuevo."
 
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Failed to redo action"
 msgstr "Error al rehacer la acción"
@@ -9767,6 +9778,7 @@ msgid "Failed to toggle token: {0}"
 msgstr "Error al alternar el token: {0}"
 
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Failed to undo last action"
 msgstr "No se pudo deshacer la última acción"
@@ -16476,6 +16488,7 @@ msgstr "Redirigiendo para iniciar sesión…"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 #: src/app/system/GlobalUndoHotkeys.tsx
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Redo"
 msgstr "Rehacer"
@@ -21522,6 +21535,7 @@ msgstr "Se deshizo la última acción"
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 #: src/features/transactions/api/useDeleteSelected.ts
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Undo"
 msgstr "Deshacer"
@@ -21529,6 +21543,10 @@ msgstr "Deshacer"
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "Undo completed"
 msgstr "Deshacer completado"
+
+#: src/pages/custom-dashboards/components/DashboardEditBar.tsx
+msgid "Undo the changes made while editing"
+msgstr "Deshacer los cambios hechos al editar"
 
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Undo this action?"
