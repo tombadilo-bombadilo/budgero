@@ -2,110 +2,43 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { msg } from '@lingui/core/macro';
 import React from 'react';
 import { Title, type StepProps } from './shared';
-import { getOnboardingImage } from '../onboarding-images';
 
-const WELCOME_SRC = '/onboarding-welcome.png';
+/**
+ * First step of the invite path only (a new user who landed via
+ * /join#code=…): they join someone else's workspace instead of building
+ * their own, so this says what the next two screens do.
+ */
+export const WelcomeStep: React.FC<StepProps> = () => {
+  const { t } = useLingui();
 
-export const WelcomeStep: React.FC<StepProps> = ({ state }) => {
-  const { t, i18n } = useLingui();
-
-  // Invitee shortcut: the user landed here via /join#code=…, so they're
-  // joining someone else's workspace, not building their own. Drop the
-  // 6-step journey illustration (misleading — they only see two screens
-  // before being dropped into the existing budget) and reframe the copy.
-  if (state.joinSecret) {
-    return (
-      <div>
-        <Title
-          h={msg`You’re joining a Budgero workspace.`}
-          sub={msg`Someone shared their budget with you. We’ll set up an encryption key on this device, then drop you straight into their ledger — no setup of your own required.`}
-        />
-        <ul
-          style={{
-            listStyle: 'none',
-            padding: 0,
-            margin: '24px 0 0',
-            display: 'grid',
-            gap: 12,
-            fontSize: 13,
-            color: '#393939',
-          }}
-        >
-          {[
-            t`Pick a master password — your encryption key on this device.`,
-            t`We’ll redeem the invite and unlock the shared workspace.`,
-            t`You land on the dashboard with their budget ready to go.`,
-          ].map((s, i) => (
-            <li key={i} style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-              <span
-                style={{
-                  width: 22,
-                  height: 22,
-                  border: '1px solid #141414',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  flexShrink: 0,
-                }}
-              >
-                {i + 1}
-              </span>
-              <span>{s}</span>
-            </li>
-          ))}
-        </ul>
-        <div
-          style={{
-            marginTop: 18,
-            padding: 12,
-            border: '1px dashed rgba(57,57,57,0.4)',
-            background: '#fbf7eb',
-            fontSize: 11,
-            color: '#393939',
-            lineHeight: 1.55,
-          }}
-        >
-          <Trans>
-            <span style={{ fontWeight: 700, color: '#141414', letterSpacing: 0.5 }}>
-              <Trans>HEADS UP:</Trans>
-            </span>{' '}
-            Your master password encrypts the shared workspace key on this device. Pick something
-            memorable — Budgero never sees it and we can’t reset it for you.
-          </Trans>
-        </div>
-      </div>
-    );
-  }
   return (
     <div>
       <Title
-        h={msg`Welcome to Budgero.`}
-        sub={msg`We’ll walk through it together. The idea is simple: every coin you earn gets a job before you spend it. Here’s what we’ll do, in six small steps.`}
+        h={msg`You’re joining a Budgero workspace.`}
+        sub={msg`Someone shared their budget with you. We’ll set up an encryption key on this device, then drop you straight into their ledger — no setup of your own required.`}
       />
-      <div
-        style={{
-          margin: '24px -24px 0',
-          display: 'flex',
-          justifyContent: 'center',
-          background: '#fffdf8',
-        }}
-      >
-        {/* The illustration is itself the journey checklist — six labelled
-            step icons across the top + a friendly coin at the bottom. We
-            drop the prior numbered text list since the visual covers it. */}
-        <img
-          src={getOnboardingImage(WELCOME_SRC, i18n.locale)}
-          alt={t`Your journey in six steps: rules, currency, ZBB, name your budget, accounts, password`}
-          style={{
-            width: '100%',
-            maxWidth: 720,
-            height: 'auto',
-            display: 'block',
-            mixBlendMode: 'multiply',
-          }}
-        />
+      <ol className="grid gap-2.5 text-sm text-muted-foreground">
+        {[
+          t`Pick a master password — your encryption key on this device.`,
+          t`We’ll redeem the invite and unlock the shared workspace.`,
+          t`You land on the dashboard with their budget ready to go.`,
+        ].map((s, i) => (
+          <li key={i} className="flex items-center gap-3">
+            <span className="flex size-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold text-foreground">
+              {i + 1}
+            </span>
+            <span>{s}</span>
+          </li>
+        ))}
+      </ol>
+      <div className="mt-4 rounded-lg border bg-muted/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+        <Trans>
+          <span className="font-semibold text-foreground">
+            <Trans>HEADS UP:</Trans>
+          </span>{' '}
+          Your master password encrypts the shared workspace key on this device. Pick something
+          memorable — Budgero never sees it and we can’t reset it for you.
+        </Trans>
       </div>
     </div>
   );

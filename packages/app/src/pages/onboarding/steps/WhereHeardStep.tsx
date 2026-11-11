@@ -1,7 +1,9 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import React, { useId } from 'react';
+import { cn } from '@shared/lib/utils';
+import { Input } from '@shared/ui/input';
 import { HEARD_OPTIONS } from '../onboarding-data';
-import { INK, OnboardingOptionTile, Title, type StepProps } from './shared';
+import { OnboardingOptionTile, Title, type StepProps } from './shared';
 
 export const WhereHeardStep: React.FC<StepProps> = ({ cur, state, set }) => {
   const { t } = useLingui();
@@ -9,38 +11,23 @@ export const WhereHeardStep: React.FC<StepProps> = ({ cur, state, set }) => {
   return (
     <div>
       <Title h={cur.title} sub={cur.subtitle} />
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+      <div className="grid grid-cols-2 gap-2">
         {HEARD_OPTIONS.map((opt) => {
           const active = state.heardSource === opt.id;
           return (
             <OnboardingOptionTile
               key={opt.id}
-              type="button"
               active={active}
               aria-pressed={active}
               onClick={() => set({ heardSource: opt.id })}
-              borderAlpha={0.45}
-              style={{
-                padding: '14px 16px',
-                fontSize: 14,
-                fontWeight: 600,
-                color: INK,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
+              className="flex items-center gap-2.5 px-3 py-2.5 text-sm font-medium"
             >
               <span
                 aria-hidden
-                style={{
-                  width: 16,
-                  height: 16,
-                  flexShrink: 0,
-                  borderRadius: '50%',
-                  border: '1.5px solid #141414',
-                  background: active ? '#141414' : 'transparent',
-                  boxShadow: active ? 'inset 0 0 0 3px #fffdf8' : 'none',
-                }}
+                className={cn(
+                  'size-3.5 shrink-0 rounded-full border',
+                  active ? 'border-primary bg-primary ring-2 ring-inset ring-background' : ''
+                )}
               />
               {t(opt.label)}
             </OnboardingOptionTile>
@@ -48,26 +35,14 @@ export const WhereHeardStep: React.FC<StepProps> = ({ cur, state, set }) => {
         })}
       </div>
       {state.heardSource === 'other' && (
-        <div style={{ marginTop: 14 }}>
-          <input
-            type="text"
-            value={state.heardOther}
-            onChange={(e) => set({ heardOther: e.target.value })}
-            placeholder={t`Tell us where…`}
-            maxLength={120}
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              border: '1px dashed rgba(57,57,57,0.55)',
-              background: '#fffdf8',
-              padding: '12px 14px',
-              fontFamily: 'IBM Plex Mono, monospace',
-              fontSize: 14,
-              color: '#141414',
-              outline: 'none',
-            }}
-          />
-        </div>
+        <Input
+          className="mt-3"
+          value={state.heardOther}
+          onChange={(e) => set({ heardOther: e.target.value })}
+          placeholder={t`Tell us where…`}
+          aria-label={t`Tell us where…`}
+          maxLength={120}
+        />
       )}
     </div>
   );
@@ -82,26 +57,26 @@ export const WhereHeardPicker: React.FC<Pick<StepProps, 'state' | 'set'>> = ({ s
   const labelId = useId();
 
   return (
-    <div style={{ marginTop: 22 }}>
-      <div id={labelId} style={{ fontSize: 12, fontWeight: 700, color: INK, marginBottom: 8 }}>
+    <div className="mt-4">
+      <div id={labelId} className="mb-1.5 text-xs font-medium text-muted-foreground">
         <Trans>Where did you hear about Budgero? (optional)</Trans>
       </div>
+      {/* One row that scrolls sideways on a phone, so an optional question
+          doesn't push the step past the screen. */}
       <div
         role="group"
         aria-labelledby={labelId}
-        style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}
+        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0"
       >
         {HEARD_OPTIONS.map((opt) => {
           const active = state.heardSource === opt.id;
           return (
             <OnboardingOptionTile
               key={opt.id}
-              type="button"
               active={active}
               aria-pressed={active}
               onClick={() => set({ heardSource: active ? '' : opt.id })}
-              borderAlpha={0.45}
-              style={{ padding: '6px 10px', fontSize: 12, fontWeight: 600, color: INK }}
+              className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs"
             >
               {t(opt.label)}
             </OnboardingOptionTile>
@@ -109,25 +84,13 @@ export const WhereHeardPicker: React.FC<Pick<StepProps, 'state' | 'set'>> = ({ s
         })}
       </div>
       {state.heardSource === 'other' && (
-        <input
-          type="text"
+        <Input
+          className="mt-2 h-8 text-sm"
           value={state.heardOther}
           onChange={(e) => set({ heardOther: e.target.value })}
           placeholder={t`Tell us where…`}
           aria-label={t`Tell us where…`}
           maxLength={120}
-          style={{
-            marginTop: 8,
-            width: '100%',
-            boxSizing: 'border-box',
-            border: '1px dashed rgba(57,57,57,0.55)',
-            background: '#fffdf8',
-            padding: '8px 12px',
-            fontFamily: 'IBM Plex Mono, monospace',
-            fontSize: 13,
-            color: '#141414',
-            outline: 'none',
-          }}
         />
       )}
     </div>

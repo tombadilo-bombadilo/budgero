@@ -98,6 +98,19 @@ it('labels the start button after the chosen way to start', async () => {
   expect(screen.getByRole('button', { name: 'Import from YNAB →' })).toBeEnabled();
 });
 
+it('keeps the step buttons outside the scrolling step, with no artwork', async () => {
+  renderFlow();
+  await screen.findByText('Welcome to Budgero.');
+  fireEvent.click(screen.getByRole('button', { name: /Start my own budget/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Set up my budget →' }));
+  const main = screen.getByRole('main');
+  // A long step scrolls inside <main>; Next stays in view below it.
+  expect(main).toHaveClass('overflow-y-auto');
+  expect(main).not.toContainElement(screen.getByRole('button', { name: 'Next →' }));
+  expect(main.querySelector('img[src*="onboarding"]')).toBeNull();
+  expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
+});
+
 it('reports leaving again after the page comes back from the back/forward cache', async () => {
   renderFlow();
   await screen.findByText('Welcome to Budgero.');

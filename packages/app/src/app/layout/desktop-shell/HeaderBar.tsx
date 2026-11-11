@@ -15,6 +15,7 @@ import {
 import { Button } from '@shared/ui/button';
 import { ConnectivityStatus } from '@widgets/sync-status/ConnectivityStatus';
 import { openQuackback } from '@features/feedback';
+import { PageGuideButton } from '@features/page-guides';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import { getKeyboardShortcutLabels } from '@shared/lib/keyboard-shortcuts';
 
@@ -68,6 +69,7 @@ export const HeaderBar = React.memo(function HeaderBar({ breadcrumbs }: HeaderBa
               ))}
             </BreadcrumbList>
           </Breadcrumb>
+          <PageGuideButton className="h-7 px-2" />
         </div>
         <div className="flex items-center gap-2">
           <Button

@@ -1,6 +1,7 @@
 import { useLingui } from '@lingui/react/macro';
 import { msg } from '@lingui/core/macro';
 import React from 'react';
+import { cn } from '@shared/lib/utils';
 import type { StartMode } from '../onboarding-data';
 import { OnboardingOptionTile, Title, type StepProps } from './shared';
 
@@ -54,10 +55,7 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
         h={msg`Welcome to Budgero.`}
         sub={msg`Every coin you earn gets a job before you spend it. How do you want to start?`}
       />
-      <div
-        className="bo-stack-mobile"
-        style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginTop: 8 }}
-      >
+      <div className="grid gap-2.5 md:grid-cols-3 md:gap-3">
         {modes.map((m) => {
           const active = state.startMode === m.id;
           return (
@@ -66,56 +64,39 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
               active={active}
               aria-pressed={active}
               onClick={() => set({ startMode: m.id })}
-              borderAlpha={0.45}
-              style={{
-                padding: '18px 18px 16px',
-                position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 8,
-              }}
+              className="flex items-start gap-3 p-3 md:flex-col md:gap-2 md:p-4"
             >
-              <div
-                style={{
-                  width: 38,
-                  height: 38,
-                  border: '1.5px solid #141414',
-                  background: active ? '#141414' : 'transparent',
-                  color: active ? '#fbf7eb' : '#141414',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 20,
-                  fontWeight: 700,
-                }}
+              <span
+                aria-hidden
+                className={cn(
+                  'flex size-8 shrink-0 items-center justify-center rounded-md text-base font-semibold',
+                  active ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'
+                )}
               >
                 {m.glyph}
-              </div>
-              <div style={{ fontSize: 16, fontWeight: 700, marginTop: 4 }}>
-                {m.title}
-                {active && ' ✓'}
-              </div>
-              <div style={{ fontSize: 12, color: '#393939', lineHeight: 1.45 }}>{m.sub}</div>
-              <ul
-                className="bo-mode-bullets"
-                data-active={active || undefined}
-                style={{
-                  margin: '6px 0 0',
-                  padding: 0,
-                  listStyle: 'none',
-                  display: 'grid',
-                  gap: 4,
-                  fontSize: 11,
-                  color: '#393939',
-                }}
-              >
-                {m.bullets.map((b, i) => (
-                  <li key={i} style={{ display: 'flex', gap: 6 }}>
-                    <span style={{ color: '#c6392c' }}>–</span>
-                    <span>{b}</span>
-                  </li>
-                ))}
-              </ul>
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">{m.title}</span>
+                <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
+                  {m.sub}
+                </span>
+                {/* Phones show the details of the picked way only. */}
+                <ul
+                  className={cn(
+                    'mt-2 space-y-1 text-xs text-muted-foreground',
+                    !active && 'hidden md:block'
+                  )}
+                >
+                  {m.bullets.map((b, i) => (
+                    <li key={i} className="flex gap-1.5">
+                      <span aria-hidden className="text-primary">
+                        –
+                      </span>
+                      <span>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+              </span>
             </OnboardingOptionTile>
           );
         })}

@@ -244,24 +244,13 @@ export default defineConfig(({ mode, isPreview }) => {
       workbox: {
         // Keep install/update lightweight. Large WASM assets are cached on-demand.
         globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
-        // Localized artwork is cached as viewed, rather than downloading every language.
         // Screenshots are only for install UX and do not need offline precache.
-        globIgnores: ['**/screenshots/*', '**/*_original.png', '**/onboarding/*/*.png'],
+        globIgnores: ['**/screenshots/*', '**/*_original.png'],
         maximumFileSizeToCacheInBytes: 50 * 1024 * 1024,
         navigateFallback: '/index.html',
         navigateFallbackAllowlist: [/^\/(?!__).*/], // Allow all routes starting with / except /__*
         navigateFallbackDenylist: [/^\/api\//, /^\/templates\//], // Never fallback navigations hitting /api or downloadable templates
         runtimeCaching: [
-          {
-            urlPattern: ({ url, sameOrigin }) =>
-              sameOrigin && /^\/onboarding\/(de|fr|es|nl)\/[^/]+\.png$/.test(url.pathname),
-            handler: 'StaleWhileRevalidate',
-            options: {
-              cacheName: 'onboarding-localized-images',
-              cacheableResponse: { statuses: [200] },
-              expiration: { maxEntries: 28, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
           // Never cache API calls, regardless of origin
           {
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),

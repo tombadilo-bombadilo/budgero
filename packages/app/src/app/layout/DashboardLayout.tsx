@@ -11,6 +11,7 @@ import { cn } from '@shared/lib/utils';
 import { CommandPalette } from '@widgets/command-palette/CommandPalette';
 import { BankAutoSync } from '@features/bank-sync';
 import { SchedulingGuideDialog } from '@features/transactions/ui/SchedulingGuideDialog';
+import { PageGuideHost } from '@features/page-guides';
 
 export default function DashboardLayout() {
   const isMobile = useIsMobile();
@@ -41,6 +42,10 @@ export default function DashboardLayout() {
 
       <BankAutoSync />
       <SchedulingGuideDialog />
+      {/* First-visit page guides and "How this works" */}
+      <AppErrorBoundary name="page_guide" variant="hidden">
+        <PageGuideHost />
+      </AppErrorBoundary>
 
       {isMobile && <MobileTopBar />}
       <main className={cn('flex-1 bg-background', isMobile && 'overflow-auto')}>
