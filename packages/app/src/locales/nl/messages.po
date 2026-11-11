@@ -3978,8 +3978,8 @@ msgid "Assigned"
 msgstr "Toegewezen"
 
 #: src/features/page-guides/ui/guide-content.tsx
-msgid "Assigned (Allocated on a phone) is what you put in a category this month, and Activity is what was spent from it. Available is what is left, and it carries over to next month; the arrows by the month move between months."
-msgstr "‘Toegewezen’ is wat je deze maand in een categorie hebt gezet, en ‘Activiteit’ is wat eruit is uitgegeven. ‘Beschikbaar’ is wat over is, en dat gaat mee naar de volgende maand; met de pijlen naast de maand wissel je van maand."
+#~ msgid "Assigned (Allocated on a phone) is what you put in a category this month, and Activity is what was spent from it. Available is what is left, and it carries over to next month; the arrows by the month move between months."
+#~ msgstr "‘Toegewezen’ is wat je deze maand in een categorie hebt gezet, en ‘Activiteit’ is wat eruit is uitgegeven. ‘Beschikbaar’ is wat over is, en dat gaat mee naar de volgende maand; met de pijlen naast de maand wissel je van maand."
 
 #. placeholder {0}: formatAmount(cover)
 #: src/features/budget-planning/ui/category-row/CoverOverspendingPopover.tsx
@@ -3994,6 +3994,10 @@ msgstr "Toegewezen bedrag ({0})"
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Assigned in future months"
 msgstr "Toegewezen aan toekomstige maanden"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Assigned is what you put in a category this month, and Activity is what was spent from it. Available is what is left, and it carries over to next month; the arrows by the month move between months."
+msgstr "‘Toegewezen’ is wat je deze maand in een categorie hebt gezet, en ‘Activiteit’ is wat eruit is uitgegeven. ‘Beschikbaar’ is wat over is, en dat gaat mee naar de volgende maand; met de pijlen naast de maand wissel je van maand."
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Assigned This Month"
