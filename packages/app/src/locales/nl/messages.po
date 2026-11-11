@@ -2733,6 +2733,7 @@ msgid "A split line can't transfer to the recurring transaction's own account."
 msgstr "Een splitregel kan niet overboeken naar de eigen rekening van de terugkerende transactie."
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/shared/mutations/op-code-registry/domains/transactions.ts
 msgid "A split line can't transfer to the transaction's own account."
 msgstr "Een splitregel kan niet overboeken naar de eigen rekening van de transactie."
 
@@ -6029,6 +6030,10 @@ msgstr "Instellingen voor dubbele transacties konden niet worden geladen."
 msgid "Could not load income categories."
 msgstr "De inkomstencategorieën konden niet worden geladen."
 
+#: src/features/transactions/api/useTransactionCellCommit.ts
+msgid "Could not move the transaction"
+msgstr "Kon de transactie niet verplaatsen"
+
 #: src/features/import/lib/import-display-text.ts
 msgid "Could not parse amount \"{value}\""
 msgstr "Bedrag ‘{value}’ kon niet worden gelezen"
@@ -7538,8 +7543,8 @@ msgid "Edit Warranty"
 msgstr "Garantie bewerken"
 
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
-msgid "Editing transfer splits is not supported."
-msgstr "Het bewerken van splits voor overboekingen wordt niet ondersteund."
+#~ msgid "Editing transfer splits is not supported."
+#~ msgstr "Het bewerken van splits voor overboekingen wordt niet ondersteund."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Editorial, parchment. The Budgero classic."
@@ -11831,7 +11836,9 @@ msgstr "Geen categorieën om toe te passen"
 msgid "No categories to reset"
 msgstr "Geen categorieën om te resetten"
 
+#: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
+#: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "No category (transfer)"
 msgstr "Geen categorie (overboeking)"
 
@@ -18426,6 +18433,7 @@ msgstr "Overboeking naar {0}"
 #. placeholder {0}: accountById(String(line.transferAccountId))?.Name ?? ''
 #. placeholder {0}: selectedTransfer.Name
 #: src/features/payees/ui/PayeeCombobox.tsx
+#: src/features/transactions/ui/cells/SplitLinePayeeCell.tsx
 #: src/features/transactions/ui/cells/TransactionPayeeCell.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx

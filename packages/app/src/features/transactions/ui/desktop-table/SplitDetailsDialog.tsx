@@ -19,7 +19,7 @@ import {
 import { Separator } from '@shared/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import { SearchableCategorySelect } from '@features/category-management/ui/SearchableCategorySelect';
-import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell';
+import { SplitLinePayeeCell } from '@features/transactions/ui/cells/SplitLinePayeeCell';
 import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
 import { asMilli, formatMilli } from '@shared/lib/currency/milli';
@@ -196,6 +196,7 @@ export function SplitDetailsDialog({
       inflow: number;
       outflow: number;
       category_id: number | null;
+      transfer_account_id: number | null;
     }>
   ) => {
     setEditSplits(
@@ -395,32 +396,27 @@ export function SplitDetailsDialog({
                       const editable =
                         editSplits?.find((line) => line.id === (s.id || s.ID || idx)) ||
                         (editSplits ? editSplits[idx] : split);
-                      const isTransferLine =
-                        Boolean(
-                          (editable as EditableSplit)?.transfer_account_id ??
-                          s.transfer_account_id ??
-                          s.TransferAccountID
-                        ) ||
-                        Boolean(
-                          (editable as unknown as Record<string, unknown>)?.transfer_account_name ??
-                          s.transfer_account_name ??
-                          s.TransferAccountName
-                        );
                       return (
                         <TableRow key={String(s.id || s.ID || idx)}>
                           <TableCell className="text-sm">
-                            {editSplits && !isTransferLine ? (
+                            {editSplits ? (
                               <SearchableCategorySelect
                                 budgetId={budgetId}
                                 selectedCategoryId={
                                   (editable as EditableSplit)?.category_id ?? null
                                 }
+                                // A category makes a transfer line a normal one again.
                                 onCategorySelect={(categoryId) =>
                                   handleUpdateSplit((editable as EditableSplit).id, {
                                     category_id: categoryId,
+                                    transfer_account_id: null,
                                   })
                                 }
-                                placeholder={t`Choose category`}
+                                placeholder={
+                                  (editable as EditableSplit)?.transfer_account_id
+                                    ? t`No category (transfer)`
+                                    : t`Choose category`
+                                }
                                 triggerClassName="h-8 w-full text-left"
                                 popoverContentClassName="w-[320px]"
                                 includeReadyToAssign
@@ -434,19 +430,16 @@ export function SplitDetailsDialog({
                             ) : (
                               getSplitCategoryLabel(s)
                             )}
-                            {isTransferLine && editSplits && (
-                              <p className="text-[11px] text-muted-foreground">
-                                <Trans>Editing transfer splits is not supported.</Trans>
-                              </p>
-                            )}
                           </TableCell>
                           <TableCell className="min-w-0 whitespace-normal text-xs text-muted-foreground">
                             {editSplits ? (
-                              <PayeeSelectCell
+                              <SplitLinePayeeCell
                                 budgetId={budgetId}
-                                value={(editable as EditableSplit)?.payee ?? ''}
-                                onCommit={(payee) =>
-                                  handleUpdateSplit((editable as EditableSplit).id, { payee })
+                                parent={transaction}
+                                payee={(editable as EditableSplit)?.payee ?? ''}
+                                transferAccountId={(editable as EditableSplit)?.transfer_account_id}
+                                onChange={(patch) =>
+                                  handleUpdateSplit((editable as EditableSplit).id, patch)
                                 }
                                 triggerClassName="h-8 w-full"
                               />
