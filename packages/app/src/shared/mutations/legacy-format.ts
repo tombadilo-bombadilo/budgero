@@ -217,13 +217,22 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
 
   // Mirror rows deleted with balance fix-up and found by parent (A3), and the
   // mirror accounts recalculated in full (repairs balances older builds left off).
+  // Kept mirror rows are now updated in place (same ID and status); v1.20
+  // re-inserts them under new IDs.
   'transactions.upsertSplits': (args, checks) => {
     const rowId = id(args.transactionId);
-    return Boolean(
-      checks &&
-      rowId &&
-      (checks.hasSplitMirrors(rowId) || checks.accountsOutOfBalance(transferTargets(args.splits)))
+    if (!checks || !rowId) return false;
+    if (checks.splitSaveKeepsMirrors(rowId, transferTargets(args.splits))) return NEWER_THAN_V1_20;
+    return (
+      checks.hasSplitMirrors(rowId) || checks.accountsOutOfBalance(transferTargets(args.splits))
     );
+  },
+  'transactions.saveSplits': (args, checks) => {
+    const rowId = id(args.transactionId);
+    const keeps = Boolean(
+      checks && rowId && checks.splitSaveKeepsMirrors(rowId, transferTargets(args.splits))
+    );
+    return keeps && NEWER_THAN_V1_20;
   },
   'transactions.clearSplits': (args, checks) => {
     const rowId = id(args.transactionId);

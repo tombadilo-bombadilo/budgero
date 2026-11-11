@@ -3460,6 +3460,7 @@ msgid "A split line can't transfer to the recurring transaction's own account."
 msgstr "A split line can't transfer to the recurring transaction's own account."
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/shared/mutations/op-code-registry/domains/transactions.ts
 msgid "A split line can't transfer to the transaction's own account."
 msgstr "A split line can't transfer to the transaction's own account."
 
@@ -7380,6 +7381,10 @@ msgstr "Could not load duplicate transaction settings."
 msgid "Could not load income categories."
 msgstr "Could not load income categories."
 
+#: src/features/transactions/api/useTransactionCellCommit.ts
+msgid "Could not move the transaction"
+msgstr "Could not move the transaction"
+
 #: src/features/import/lib/import-display-text.ts
 msgid "Could not parse amount \"{value}\""
 msgstr "Could not parse amount \"{value}\""
@@ -9200,8 +9205,8 @@ msgstr "Edit Warranty"
 #~ msgstr "Editing saved report"
 
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
-msgid "Editing transfer splits is not supported."
-msgstr "Editing transfer splits is not supported."
+#~ msgid "Editing transfer splits is not supported."
+#~ msgstr "Editing transfer splits is not supported."
 
 #: src/pages/reports/question/NotebookQuestionView.tsx
 msgid "Editor"
@@ -14275,7 +14280,9 @@ msgstr "No categories to apply"
 msgid "No categories to reset"
 msgstr "No categories to reset"
 
+#: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
+#: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "No category (transfer)"
 msgstr "No category (transfer)"
 
@@ -22263,6 +22270,7 @@ msgstr "Transfer to {name}"
 #. placeholder {0}: accountById(String(line.transferAccountId))?.Name ?? ''
 #. placeholder {0}: selectedTransfer.Name
 #: src/features/payees/ui/PayeeCombobox.tsx
+#: src/features/transactions/ui/cells/SplitLinePayeeCell.tsx
 #: src/features/transactions/ui/cells/TransactionPayeeCell.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx

@@ -3458,6 +3458,7 @@ msgid "A split line can't transfer to the recurring transaction's own account."
 msgstr "Eine Teilbuchung kann nicht auf das eigene Konto der wiederkehrenden Transaktion umbuchen."
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/shared/mutations/op-code-registry/domains/transactions.ts
 msgid "A split line can't transfer to the transaction's own account."
 msgstr "Eine Teilbuchung kann nicht auf das eigene Konto der Transaktion umbuchen."
 
@@ -7378,6 +7379,10 @@ msgstr "Einstellungen für doppelte Transaktionen konnten nicht geladen werden."
 msgid "Could not load income categories."
 msgstr "Die Einnahmekategorien konnten nicht geladen werden."
 
+#: src/features/transactions/api/useTransactionCellCommit.ts
+msgid "Could not move the transaction"
+msgstr "Die Buchung konnte nicht verschoben werden"
+
 #: src/features/import/lib/import-display-text.ts
 msgid "Could not parse amount \"{value}\""
 msgstr "Betrag „{value}“ konnte nicht gelesen werden"
@@ -9198,8 +9203,8 @@ msgstr "Garantie bearbeiten"
 #~ msgstr "Gespeicherter Bericht wird bearbeitet"
 
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
-msgid "Editing transfer splits is not supported."
-msgstr "Das Bearbeiten von Umbuchungs-Teilungen wird nicht unterstützt."
+#~ msgid "Editing transfer splits is not supported."
+#~ msgstr "Das Bearbeiten von Umbuchungs-Teilungen wird nicht unterstützt."
 
 #: src/pages/reports/question/NotebookQuestionView.tsx
 msgid "Editor"
@@ -14273,7 +14278,9 @@ msgstr "Keine Kategorien zum Anwenden"
 msgid "No categories to reset"
 msgstr "Keine Kategorien zum Zurücksetzen"
 
+#: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
+#: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "No category (transfer)"
 msgstr "Keine Kategorie (Umbuchung)"
 
@@ -22261,6 +22268,7 @@ msgstr "Umbuchung an {name}"
 #. placeholder {0}: accountById(String(line.transferAccountId))?.Name ?? ''
 #. placeholder {0}: selectedTransfer.Name
 #: src/features/payees/ui/PayeeCombobox.tsx
+#: src/features/transactions/ui/cells/SplitLinePayeeCell.tsx
 #: src/features/transactions/ui/cells/TransactionPayeeCell.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
