@@ -276,9 +276,10 @@ export function DraggableBudgetTable({
     return totals;
   }, [data, unfilteredData]);
 
+  // Headers stick right below the sticky toolbar (offset set by BudgetTable).
   const header =
     layoutVariant === 'desktop-compact' ? (
-      <div className="hidden md:block sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 -mx-1 px-1 md:-mx-2 md:px-2">
+      <div className="hidden md:block sticky top-[var(--budget-toolbar-offset,0px)] z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 -mx-1 px-1 md:-mx-2 md:px-2">
         <div className="px-3 py-2 text-[11px] uppercase tracking-wider font-medium text-muted-foreground grid grid-cols-[minmax(0,1fr)_minmax(96px,120px)_minmax(96px,120px)_minmax(96px,120px)] gap-2">
           <div>
             <Trans>Category</Trans>
@@ -295,7 +296,7 @@ export function DraggableBudgetTable({
         </div>
       </div>
     ) : isTableLayout ? (
-      <div className="md:hidden sticky top-0 z-10 bg-muted/90 backdrop-blur-sm border-b border-border/40 rounded-t-lg">
+      <div className="sticky top-[var(--budget-toolbar-offset,0px)] z-10 bg-muted/90 backdrop-blur-sm border-b border-border/40 rounded-t-lg">
         <div className="py-1 text-[9px] uppercase tracking-wider font-medium text-muted-foreground/60 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 items-center pl-4 pr-2">
           <div>
             <Trans>Category</Trans>

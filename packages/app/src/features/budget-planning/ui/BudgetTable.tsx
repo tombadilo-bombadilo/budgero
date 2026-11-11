@@ -3,7 +3,14 @@ import { toast } from 'sonner';
 import type { CategoryDeleteBlock, CategoryDeletionImpact } from '@budgero/core/browser';
 import { useAccounts } from '@entities/account/api/useAccounts';
 import { describeDeleteBlock } from '@features/category-management/lib/delete-block';
-import { useState, useEffect, useMemo, useCallback, type MouseEvent } from 'react';
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  type CSSProperties,
+  type MouseEvent,
+} from 'react';
 import { cn } from '@shared/lib/utils';
 import { Plus } from 'lucide-react';
 import { Button } from '@shared/ui/button';
@@ -21,6 +28,7 @@ import {
   useCategorySelection,
   useCategoryOperations,
   useSwipeMonth,
+  useStickyToolbarOffset,
   type BudgetTableProps,
   type BudgetTableToolbarControls,
   type CategoryModalState,
@@ -238,6 +246,9 @@ export function BudgetTable({
     transformedRows,
     rowsByCategoryId,
   });
+
+  // The column header sticks right below the sticky toolbar.
+  const { slotRef: toolbarSlotRef, offset: toolbarOffset } = useStickyToolbarOffset();
 
   const { enableSwipe, swipeHandlers } = useSwipeMonth({
     currentMonth,
@@ -499,25 +510,29 @@ export function BudgetTable({
   return (
     <div
       className={cn('flex flex-col relative', layoutVariant !== 'desktop-table' && 'select-none')}
+      style={{ '--budget-toolbar-offset': `${toolbarOffset}px` } as CSSProperties}
     >
-      {/* Search and Filter Controls */}
-      {renderToolbar ? (
-        renderToolbar(toolbarControls)
-      ) : (
-        <SearchAndFilterControls
-          searchTerm={searchTerm}
-          onSearchChange={handleSearchChange}
-          filterType={filterType}
-          onFilterChange={handleFilterChange}
-          collapsedGroups={collapsedGroups}
-          onToggleAllGroups={toggleAllGroups}
-          hideSearch={hideSearch}
-          hideCollapseButton={hideCollapseButton}
-          hideFilter={hideAddCategoryGroup}
-          onResetOrder={handleResetOrder}
-          hideResetOrder={hideAddCategoryGroup}
-        />
-      )}
+      {/* Search and Filter Controls (no box of its own, so a sticky toolbar
+          still sticks across the whole table) */}
+      <div ref={toolbarSlotRef} className="contents">
+        {renderToolbar ? (
+          renderToolbar(toolbarControls)
+        ) : (
+          <SearchAndFilterControls
+            searchTerm={searchTerm}
+            onSearchChange={handleSearchChange}
+            filterType={filterType}
+            onFilterChange={handleFilterChange}
+            collapsedGroups={collapsedGroups}
+            onToggleAllGroups={toggleAllGroups}
+            hideSearch={hideSearch}
+            hideCollapseButton={hideCollapseButton}
+            hideFilter={hideAddCategoryGroup}
+            onResetOrder={handleResetOrder}
+            hideResetOrder={hideAddCategoryGroup}
+          />
+        )}
+      </div>
 
       {/* Add Category Group Button */}
       {!hideAddCategoryGroup && (
