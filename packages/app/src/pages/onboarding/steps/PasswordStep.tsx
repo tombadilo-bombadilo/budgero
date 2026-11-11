@@ -39,7 +39,10 @@ export const PasswordStep: React.FC<StepProps & { forDemo?: boolean }> = ({
             : msg`Your budget lives on your device, encrypted with a master password only you know. Pick something memorable — we can’t reset it for you.`
         }
       />
-      <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+      <div
+        data-keep-in-view
+        className="grid gap-3 group-data-[compact]/onb:gap-2 md:grid-cols-2 md:gap-4"
+      >
         <div>
           <FieldLabel htmlFor={pwId}>
             <Trans>MASTER PASSWORD</Trans>
@@ -48,6 +51,13 @@ export const PasswordStep: React.FC<StepProps & { forDemo?: boolean }> = ({
             id={pwId}
             value={pw}
             onChange={(e) => set({ password: e.target.value })}
+            enterKeyHint="next"
+            onKeyDown={(e) => {
+              // Enter (Next on a phone keyboard) moves on to the confirm field.
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              document.getElementById(confirmId)?.focus();
+            }}
             placeholder={t`at least 8 characters`}
             autoComplete="new-password"
           />
@@ -79,6 +89,7 @@ export const PasswordStep: React.FC<StepProps & { forDemo?: boolean }> = ({
             id={confirmId}
             value={state.passwordConfirm}
             onChange={(e) => set({ passwordConfirm: e.target.value })}
+            enterKeyHint="done"
             placeholder={t`type it once more`}
             autoComplete="new-password"
           />

@@ -111,6 +111,18 @@ it('keeps the step buttons outside the scrolling step, with no artwork', async (
   expect(screen.getByRole('progressbar')).toHaveAttribute('aria-valuenow', '2');
 });
 
+it('Enter in the master password moves on to the confirm field', async () => {
+  renderFlow();
+  await screen.findByText('Welcome to Budgero.');
+  fireEvent.click(screen.getByRole('button', { name: /Try a demo budget/ }));
+  fireEvent.click(screen.getByRole('button', { name: 'Try the demo →' }));
+  const [first, confirm] = document.querySelectorAll<HTMLInputElement>('input[type=password]');
+  expect(first).toHaveAttribute('enterkeyhint', 'next');
+  first.focus();
+  fireEvent.keyDown(first, { key: 'Enter' });
+  expect(confirm).toHaveFocus();
+});
+
 it('reports leaving again after the page comes back from the back/forward cache', async () => {
   renderFlow();
   await screen.findByText('Welcome to Budgero.');

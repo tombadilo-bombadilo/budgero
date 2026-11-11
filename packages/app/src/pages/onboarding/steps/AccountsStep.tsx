@@ -31,6 +31,7 @@ export const AccountsStep: React.FC<StepProps> = ({ cur, state, set }) => {
             // Desktop: one row (the inner rows dissolve with md:contents).
             <div
               key={a.id}
+              data-keep-in-view
               className="grid gap-2 rounded-lg border bg-card p-2 md:flex md:items-center"
             >
               <div className="flex gap-2 md:contents">
