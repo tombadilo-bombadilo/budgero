@@ -1,4 +1,5 @@
 import { useLingui } from '@lingui/react/macro';
+import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   HOME_DEFAULT_ORIGIN,
@@ -18,6 +19,7 @@ import {
   BUILTIN_ROW_SPAN,
   builtinKeyOf,
   builtinReportId,
+  defaultHomeDashboard,
   defaultHomeWidgets,
   defaultWidgetId,
   hasPhoneOrder,
@@ -152,26 +154,74 @@ export function useDashboardEditor({
 
   const labelOf = (key: BuiltinCardKey) => t(BUILTIN_CARDS[key].label);
 
+  // The default home is stored by the first edit (a dozen ops). Edits made
+  // meanwhile (a double click, two fast drags) wait for that one copy instead
+  // of storing another; the view keeps the default layout until it is whole.
+  const pendingHome = useRef<Promise<Target> | null>(null);
+  const [materializing, setMaterializing] = useState(false);
+  useEffect(() => {
+    if (!materializing && dashboard && !isDefaultHomeDashboard(dashboard)) {
+      pendingHome.current = null;
+    }
+  }, [dashboard, materializing]);
+
+  /** A stored target with its widgets as they are now (earlier edits applied). */
+  const current = (target: Target): Target => ({
+    ...target,
+    widgets:
+      runtime.services().customDashboards.getDashboard(target.dashboardId)?.widgets ??
+      target.widgets,
+  });
+
+  const storeDefaultHome = async (): Promise<Target> => {
+    // A customised home left from before is taken up again; only without
+    // one is the default layout stored as a new dashboard.
+    const copy = pickHomeCopy(dashboards);
+    const stored = copy ? runtime.services().customDashboards.getDashboard(copy.id) : null;
+    return stored
+      ? reuseHomeCopy(exec, stored)
+      : materializeDefaultHome({
+          exec,
+          budgetId,
+          name: t`Home`,
+          takenNames: dashboards.map((item) => item.name),
+          labelOf,
+        });
+  };
+
   const edit = async (label: string, work: (target: Target) => Promise<void>) => {
     if (!dashboard) return;
     try {
+      if (pendingHome.current) {
+        await work(current(await pendingHome.current));
+        return;
+      }
       if (isDefaultHomeDashboard(dashboard)) {
-        await runUndoGroup(label, async () => {
-          // A customised home left from before is taken up again; only
-          // without one is the default layout stored as a new dashboard.
-          const copy = pickHomeCopy(dashboards);
-          const stored = copy ? runtime.services().customDashboards.getDashboard(copy.id) : null;
-          const target = stored
-            ? await reuseHomeCopy(exec, stored)
-            : await materializeDefaultHome({
-                exec,
-                budgetId,
-                name: t`Home`,
-                takenNames: dashboards.map((item) => item.name),
-                labelOf,
-              });
-          await work(target);
+        let settle!: { resolve: (target: Target) => void; reject: (error: unknown) => void };
+        const shared = new Promise<Target>((resolve, reject) => {
+          settle = { resolve, reject };
         });
+        shared.catch(() => undefined);
+        pendingHome.current = shared;
+        setMaterializing(true);
+        try {
+          await runUndoGroup(label, async () => {
+            let target: Target;
+            try {
+              target = await storeDefaultHome();
+            } catch (error) {
+              settle.reject(error);
+              throw error;
+            }
+            settle.resolve(target);
+            await work(target);
+          });
+        } catch (error) {
+          if (pendingHome.current === shared) pendingHome.current = null;
+          throw error;
+        } finally {
+          setMaterializing(false);
+        }
         return;
       }
       const target: Target = {
@@ -357,6 +407,13 @@ export function useDashboardEditor({
     }));
 
   return {
+    /** The default home is being stored by the first edit. */
+    materializing,
+    /** What to draw: the default layout until the stored copy is complete. */
+    view:
+      materializing && dashboard && !isDefaultHomeDashboard(dashboard)
+        ? defaultHomeDashboard(budgetId, '')
+        : dashboard,
     reorder,
     remove,
     updateDesktopLayout,

@@ -28,7 +28,7 @@ import { downloadBlob } from '@shared/lib/download';
 import type { CustomDashboardWidget } from '@budgero/core/browser';
 import { BackToReports } from '@pages/reports/BackToReports';
 import { PeriodTabs } from '@shared/ui/PeriodTabs';
-import { widgetUsesPeriod } from '@widgets/dashboard/builtin/builtin-cards';
+import { dashboardDisplayName, widgetUsesPeriod } from '@widgets/dashboard/builtin/builtin-cards';
 import { DashboardPeriodProvider } from '@widgets/dashboard/builtin/DashboardPeriod';
 import { useDashboardPeriod } from '@widgets/dashboard/builtin/useDashboardPeriod';
 import { DashboardSwitcher } from './components/DashboardSwitcher';
@@ -257,7 +257,7 @@ function CustomDashboardsView({ isMobile }: { isMobile: boolean }) {
     if (files.length === 0) return;
     try {
       const zip = await buildCsvZip(files);
-      downloadBlob(zip, zipFileName(activeDashboard.name), 'application/zip');
+      downloadBlob(zip, zipFileName(dashboardDisplayName(activeDashboard)), 'application/zip');
       toast.success(
         plural(files.length, {
           one: 'Downloaded # CSV file in a zip archive',

@@ -28,7 +28,9 @@ import {
 } from '@features/reports/lib/question';
 import {
   builtinKeyOf,
+  dashboardDisplayName,
   defaultHomeDashboard,
+  isDefaultHomeDashboard,
   resolveHomeDashboard,
   widgetUsesPeriod,
 } from '@widgets/dashboard/builtin/builtin-cards';
@@ -61,9 +63,7 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
   const homeQuery = useCustomDashboard(home?.id);
   const defaultHome = useMemo(() => defaultHomeDashboard(budgetId, ''), [budgetId]);
   const loading = Boolean(budgetId) && (dashboardsQuery.isLoading || (home && homeQuery.isLoading));
-  const dashboard = (home && homeQuery.data) || defaultHome;
-  const stored = dashboard !== defaultHome;
-  const madeFromDefault = stored && dashboard.origin === HOME_DEFAULT_ORIGIN;
+  const resolved = (home && homeQuery.data) || defaultHome;
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -72,12 +72,16 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
   const [resetting, setResetting] = useState(false);
 
   const editor = useDashboardEditor({
-    dashboard,
+    dashboard: resolved,
     budgetId,
     platform,
     dashboards,
     claimHome: true,
   });
+  // While the first edit stores the default home, keep drawing the default.
+  const dashboard = editor.view ?? resolved;
+  const stored = !isDefaultHomeDashboard(dashboard);
+  const madeFromDefault = stored && dashboard.origin === HOME_DEFAULT_ORIGIN;
   const homeActions = useHomeActions();
   const updateDashboard = useUpdateCustomDashboard();
 
@@ -133,7 +137,7 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
     }
   };
 
-  const title = stored && !madeFromDefault ? dashboard.name : t`Dashboard`;
+  const title = stored && !madeFromDefault ? dashboardDisplayName(dashboard) : t`Dashboard`;
 
   const homeMenu = stored ? (
     <DropdownMenu>

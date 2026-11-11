@@ -127,4 +127,26 @@ describe('AddToDashboardDialog', () => {
       chartId: 'new-table',
     });
   });
+
+  it('shows a home copy by its name without the internal tag', () => {
+    render(
+      <AddToDashboardDialog
+        open
+        onOpenChange={() => undefined}
+        questions={[notebook]}
+        question={notebook}
+        dashboards={[
+          { id: 'h1', name: 'Home ·a1b2', origin: 'home_default' } as CustomDashboard,
+          { id: 'd2', name: 'Travel ·x9y8', origin: null } as CustomDashboard,
+        ]}
+        title="Add to dashboard"
+        description="Pick one"
+        confirmLabel="Add to dashboard"
+        onSubmit={vi.fn(async () => undefined)}
+      />
+    );
+    const picker = screen.getByLabelText('Dashboard');
+    expect(picker.textContent).toBe('Home');
+    expect(document.body.textContent).not.toContain('·a1b2');
+  });
 });
