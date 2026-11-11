@@ -54,7 +54,9 @@ export function AccountsInFilePanel({
 
   if (sources.length === 0) return null;
 
-  const listed = sources.slice(0, MAX_LISTED);
+  // Every account that needs a choice is listed; the cap only hides ones that don't.
+  let fine = 0;
+  const listed = sources.filter(({ source }) => problems.has(source) || fine++ < MAX_LISTED);
   const unlisted = sources.length - listed.length;
 
   return (
@@ -95,6 +97,13 @@ export function AccountsInFilePanel({
               ? newAccounts.find((a) => a.placeholderId === target.placeholderId)
               : undefined;
           const sharedWith = shared && shared.sources[0] !== source ? shared.sources[0] : undefined;
+          // Not a blocker (amounts are not converted, the user may mean it), but never silent.
+          const existing =
+            target?.kind === 'existing'
+              ? accounts.find((a) => a.ID === target.accountId)
+              : undefined;
+          const existingName = existing?.Name;
+          const existingCurrency = existing?.Currency;
           return (
             <li
               key={source}
@@ -150,6 +159,17 @@ export function AccountsInFilePanel({
                 {problem === 'pick' && (
                   <p id={pickId} className="text-xs text-destructive" role="alert">
                     <Trans>Pick the account these transactions go into.</Trans>
+                  </p>
+                )}
+                {existing && currency && existing.Currency !== currency && (
+                  <p
+                    className="text-xs text-amber-700 dark:text-amber-400"
+                    data-testid="route-currency-warning"
+                  >
+                    <Trans>
+                      These transactions are in {currency}, but {existingName} is in{' '}
+                      {existingCurrency}.
+                    </Trans>
                   </p>
                 )}
                 {route?.kind === 'new' && target?.kind === 'new' && (

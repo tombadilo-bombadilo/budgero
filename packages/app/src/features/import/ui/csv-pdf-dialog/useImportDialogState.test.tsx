@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { webcrypto } from 'node:crypto';
+import { readRememberedRoutes } from '@features/import/lib/account-routes';
 import { useImportDialogState } from './useImportDialogState';
 
 const mocks = vi.hoisted(() => {
@@ -566,6 +567,24 @@ describe('import wizard execution', () => {
         transactionsImported: 4,
         failedRows: 0,
       });
+      // Undo from Import history deletes the run's transactions: every leg,
+      // the mirror too, or half a transfer survives in Card.
+      const created = (await Promise.all(
+        mocks.mutate.mock.results
+          .filter((_, i) =>
+            ['transactions.addTransfer', 'transactions.import'].includes(
+              mocks.mutate.mock.calls[i][1].op
+            )
+          )
+          .map((r) => r.value)
+      )) as { sourceId?: number; destinationId?: number; transactionId?: number }[];
+      const ids = created.flatMap((r) =>
+        r.transactionId !== undefined ? [r.transactionId] : [r.sourceId!, r.destinationId!]
+      );
+      const records = mocks.record.mock.calls.map(([arg]) => arg.input);
+      expect(records.flatMap((c) => c.transactionIds).sort()).toEqual(ids.sort());
+      // The mirror leg is not a file row: it does not count as imported.
+      expect(records.at(-1)?.summary).toMatchObject({ mirrorTransactions: 1 });
     });
 
     it('keeps a pair plain when the user skips one side', async () => {
@@ -576,6 +595,25 @@ describe('import wizard execution', () => {
         ops.filter((spec) => spec.op === 'transactions.import').map((spec) => spec.payload.payee)
       ).toEqual(['To savings', 'Cafe']);
     });
+  });
+
+  it('remembers an account literally named __proto__', async () => {
+    localStorage.clear();
+    const file = { arrayBuffer: async () => new TextEncoder().encode('proto').buffer } as File;
+    mocks.parse.mockResolvedValue({
+      data: {
+        source: { file, fileName: 'proto.csv', type: 'csv' },
+        headers: ['Date', 'Amount', 'Account'],
+        rows: [{ Date: '2026-09-01', Amount: '-10', Account: '__proto__' }],
+      },
+    });
+    const { result } = await preview();
+    await act(async () => {
+      await result.current.handleImport();
+    });
+    const stored = JSON.parse(localStorage.getItem('budgero:import-account-routes:1')!);
+    expect(Object.getOwnPropertyDescriptor(stored, '__proto__')?.value).toBe(10);
+    expect(readRememberedRoutes(1)).toEqual(JSON.parse('{"__proto__":10}'));
   });
 
   it('forgets account choices when another file is loaded', async () => {

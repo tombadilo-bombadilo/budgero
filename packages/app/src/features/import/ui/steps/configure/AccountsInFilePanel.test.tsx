@@ -8,12 +8,16 @@ afterEach(cleanup);
 
 const accounts = [{ ID: 1, Name: 'Checking', Currency: 'USD' }];
 
-function renderPanel(config: ImportConfig, rows: Record<string, string>[]) {
+function renderPanel(
+  config: ImportConfig,
+  rows: Record<string, string>[],
+  budgetAccounts: { ID: number; Name: string; Currency: string; Archived?: boolean }[] = accounts
+) {
   const onImportConfigChange = vi.fn();
   const plan = planAccountRoutes({
     rows,
     column: 'Account',
-    accounts,
+    accounts: budgetAccounts,
     chosen: config.accountRoutes,
     newAccountCurrency: 'EUR',
   });
@@ -21,7 +25,7 @@ function renderPanel(config: ImportConfig, rows: Record<string, string>[]) {
     <AccountsInFilePanel
       plan={plan}
       column="Account"
-      accounts={accounts}
+      accounts={budgetAccounts}
       importConfig={config}
       onImportConfigChange={onImportConfigChange}
     />
@@ -61,5 +65,28 @@ describe('accounts in this file', () => {
     renderPanel(DEFAULT_IMPORT_CONFIG, [{ Account: 'DE89 3704' }]);
     expect(screen.getByRole('alert')).toHaveTextContent('Pick the account');
     expect(screen.getByLabelText('Account for DE89 3704')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('lists every account that needs a choice, even past the cap', () => {
+    const rows = Array.from({ length: 55 }, (_, i) => ({ Account: `Acct ${i + 1}` }));
+    renderPanel(DEFAULT_IMPORT_CONFIG, rows, [
+      ...accounts,
+      { ID: 2, Name: 'Acct 53', Currency: 'USD', Archived: true },
+    ]);
+    expect(screen.getByLabelText('Account for Acct 53')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText('Account for Acct 50')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Account for Acct 51')).not.toBeInTheDocument();
+    expect(screen.getByText(/^4 more accounts are not listed/)).toBeInTheDocument();
+  });
+
+  it('warns when the account picked for a source is in another currency', () => {
+    renderPanel(DEFAULT_IMPORT_CONFIG, [
+      { Account: 'checking', Currency: 'EUR' },
+      { Account: 'Visa', Currency: 'USD' },
+    ]);
+    expect(screen.getByTestId('route-currency-warning')).toHaveTextContent(
+      'These transactions are in EUR, but Checking is in USD.'
+    );
+    expect(screen.getAllByTestId('route-currency-warning')).toHaveLength(1);
   });
 });

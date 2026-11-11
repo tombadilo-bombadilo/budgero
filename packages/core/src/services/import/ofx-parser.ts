@@ -24,7 +24,10 @@ export interface ParsedOfxTransaction {
   memo?: string;
   fitid?: string;
   checkNum?: string;
-  /** Per-transaction currency override (CURRENCY/CURSYM), if any. */
+  /**
+   * The currency TRNAMT is in, when a <CURRENCY> aggregate says it differs
+   * from CURDEF. <ORIGCURRENCY> is not read: its amount is already in CURDEF.
+   */
   currency?: string;
 }
 
@@ -83,7 +86,7 @@ export function parseOfx(text: string): ParsedOfx {
         memo: first(txnFields, 'MEMO'),
         fitid: first(txnFields, 'FITID'),
         checkNum: first(txnFields, 'CHECKNUM'),
-        currency: first(txnFields, 'CURSYM'),
+        currency: amountCurrency(txnMatch[1]),
       });
     }
 
@@ -128,6 +131,13 @@ function extractFields(block: string): Map<string, string[]> {
     else out.set(name, [value]);
   }
   return out;
+}
+
+// <CURRENCY> (not <ORIGCURRENCY>) and its CURSYM, in SGML or XML.
+const CURRENCY_RE = /<CURRENCY\s*>[\s\S]*?<CURSYM\s*>\s*([^<\s]+)/i;
+
+function amountCurrency(block: string): string | undefined {
+  return CURRENCY_RE.exec(block)?.[1];
 }
 
 function first(map: Map<string, string[]>, key: string): string | undefined {
@@ -200,6 +210,9 @@ export function ofxToImportRows(parsed: ParsedOfx): OfxImportRows {
         CheckNum: t.checkNum ?? '',
         Account: stmt.accountId ?? '',
         Currency: t.currency ?? stmt.currency ?? '',
+        // Not a column (not in OFX_HEADERS): the statement's CURDEF, the
+        // currency of the account itself, whatever single rows are in.
+        AccountCurrency: stmt.currency ?? '',
       });
     }
   }

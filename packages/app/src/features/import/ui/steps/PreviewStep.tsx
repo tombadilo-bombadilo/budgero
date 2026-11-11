@@ -162,6 +162,9 @@ export function PreviewStep({
                         }
                       />
                     )}
+                    {row.otherSideExists && (
+                      <OtherSideNote name={row.otherSideExists.counterpartName} />
+                    )}
                   </td>
                   <td className="p-2">
                     {row.input.date} ·{' '}
@@ -291,6 +294,15 @@ export function PreviewStep({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/** The row names a transfer, but the other account already has that side. */
+function OtherSideNote({ name }: { name: string }) {
+  return (
+    <span className="block text-xs text-muted-foreground" data-testid="import-transfer-exists">
+      <Trans>{name} already has the other side, so this is imported as a regular transaction</Trans>
+    </span>
   );
 }
 

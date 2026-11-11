@@ -32,6 +32,21 @@ describe('account routes', () => {
     ]);
   });
 
+  it("takes the account's own currency (OFX CURDEF) over a row's", () => {
+    const sources = sourceAccountsOf(
+      [
+        { Account: 'A', Currency: 'EUR', AccountCurrency: 'USD' },
+        { Account: 'A', Currency: 'USD', AccountCurrency: 'USD' },
+        { Account: 'B', Currency: 'AUD', AccountCurrency: '' },
+      ],
+      'Account'
+    );
+    expect(sources.map((s) => [s.source, s.currency])).toEqual([
+      ['A', 'USD'],
+      ['B', 'AUD'],
+    ]);
+  });
+
   it('starts from a same-name account, then the last choice, then a new account', () => {
     rememberRoutes(9, { '12345678': 2 });
     const routes = defaultRoutes(

@@ -1551,6 +1551,10 @@ msgstr "{name} > {first}"
 msgid "{name} after {firstDate}"
 msgstr "{name} after {firstDate}"
 
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "{name} already has the other side, so this is imported as a regular transaction"
+msgstr "{name} already has the other side, so this is imported as a regular transaction"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "{name} before {firstDate}"
 msgstr "{name} before {firstDate}"
@@ -21341,6 +21345,10 @@ msgstr "These dates can be read two ways. Select the date format used in YNAB."
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
 msgid "These incoming transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
 msgstr "These incoming transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "These transactions are in {currency}, but {existingName} is in {existingCurrency}."
+msgstr "These transactions are in {currency}, but {existingName} is in {existingCurrency}."
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "These values have different types."

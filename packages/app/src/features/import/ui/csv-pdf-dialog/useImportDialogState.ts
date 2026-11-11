@@ -498,7 +498,13 @@ export function useImportDialogState(): ImportDialogState {
       }
       const signature = (rows: PreviewRow[]) =>
         JSON.stringify(
-          rows.map((r) => [r.input.fileRowKey, r.input.accountId, r.duplicate, r.transfer])
+          rows.map((r) => [
+            r.input.fileRowKey,
+            r.input.accountId,
+            r.duplicate,
+            r.transfer,
+            r.otherSideExists,
+          ])
         );
       if (signature(fresh) !== signature(previewData)) {
         setPreviewData(fresh);
@@ -670,6 +676,8 @@ export function useImportDialogState(): ImportDialogState {
       const createdAccountIds: number[] = [];
       const createdCategoryIds: number[] = [];
       const importedTransactionIds: number[] = [];
+      // Mirror legs of one-sided transfers: in importedTransactionIds, but no file row.
+      let mirrorTransactions = 0;
       const { categoryIdByName, categoryGroupIdByName } = createImportNameMaps({
         categories,
         categoryGroups,
@@ -780,7 +788,8 @@ export function useImportDialogState(): ImportDialogState {
           ? nameOf(destinationIds[0])
           : t`${destinationIds.length} accounts`;
       // Next import of a file with these accounts starts from the same choices.
-      const chosen: Record<string, number> = {};
+      // No prototype: a source named __proto__ is a key like any other.
+      const chosen = Object.create(null) as Record<string, number>;
       for (const [source, target] of routePlan.targets) {
         if (target.kind === 'existing') chosen[source] = target.accountId;
         if (target.kind === 'new') {
@@ -816,6 +825,7 @@ export function useImportDialogState(): ImportDialogState {
             sourceName: parsedData.source.fileName,
             summary: {
               transactionsImported: importedTransactionIds.length,
+              ...(mirrorTransactions ? { mirrorTransactions } : {}),
               ...(transactionsMatched ? { transactionsMatched } : {}),
               accountsCreated: createdAccountIds.length,
               categoriesCreated: createdCategoryIds.length,
@@ -959,13 +969,14 @@ export function useImportDialogState(): ImportDialogState {
               ? [sourceId, destinationId]
               : [destinationId, sourceId];
             matchedIds.set(plan.index, ownId);
-            importedTransactionIds.push(ownId);
+            // Both legs belong to the run, so undoing it from Import history
+            // removes the whole transfer (and an account the import created).
+            importedTransactionIds.push(ownId, otherId);
             successCount++;
             if (partner) {
               matchedIds.set(partner.input.index, otherId);
-              importedTransactionIds.push(otherId);
               successCount++;
-            }
+            } else mirrorTransactions++;
             processedCount++;
             await checkpointIfDue();
             continue;
