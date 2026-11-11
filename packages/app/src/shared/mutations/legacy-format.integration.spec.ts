@@ -138,6 +138,7 @@ describe('the rule list', () => {
       'rules.redoRun',
       'rules.restoreDeleted',
       'transactions.batchEdit',
+      'transactions.saveSplits',
     ]);
     for (const op of Object.keys(LEGACY_FORMAT_RULES)) {
       expect(KNOWN_OP_CODES.has(op), op).toBe(true);
@@ -333,6 +334,30 @@ describe('format 3 only when the database is in a state the old code handles dif
     expect(
       await sentFormat('transactions.upsertSplits', { transactionId: fresh, splits: lines })
     ).toBe(2);
+  });
+
+  it('upsertSplits / saveSplits keeping a mirror row go out as format 5', async () => {
+    // Lines saves now update a kept mirror in place (same ID, status, provenance);
+    // v1.20 deletes and re-inserts it under a new ID.
+    const { parent } = await addTransferSplit();
+    const keep = [
+      { category_id: groceries, outflow: 6000 },
+      { transfer_account_id: savings, outflow: 4000, memo: 'new memo' },
+    ];
+    const drop = [{ category_id: groceries, outflow: 10000 }];
+    expect(
+      await sentFormat('transactions.upsertSplits', { transactionId: parent, splits: keep })
+    ).toBe(5);
+    expect(
+      await sentFormat('transactions.saveSplits', { transactionId: parent, splits: keep })
+    ).toBe(5);
+    // No mirror kept: both builds delete it the same way.
+    expect(
+      await sentFormat('transactions.upsertSplits', { transactionId: parent, splits: drop })
+    ).toBe(3);
+    expect(
+      await sentFormat('transactions.saveSplits', { transactionId: parent, splits: drop })
+    ).toBe(3);
   });
 
   it('transactions.delete / deleteBatch: only when the deleted set differs', async () => {
