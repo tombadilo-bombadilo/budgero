@@ -6,7 +6,7 @@ import {
   type QuestionSpec,
 } from '@features/reports/lib/question';
 import { CATEGORICAL_DARK, CATEGORICAL_LIGHT } from '@shared/lib/charts/palette';
-import { buildChartModel, MAX_SERIES } from '../chart-model';
+import { buildChartModel, MAX_SERIES, OTHER_SERIES_ID } from '../chart-model';
 import {
   layoutSeries,
   markDrillValues,
@@ -93,6 +93,28 @@ describe('markDrillValues', () => {
   it('does not drill into the folded Other bucket', () => {
     const model = applyCategoryDisplay(buildChartModel(rows, columns), { topN: 2 });
     expect(markDrillValues(model, model.xValues.length - 1)).toBeNull();
+  });
+
+  it('does not drill into the folded Other series of a stacked chart', () => {
+    // Month × payee with more payees than series: the rest fold into "Other".
+    const stacked = columnsOf({
+      aggregations: [{ op: 'spending' }],
+      breakouts: [{ field: 'date', bucket: 'month' }, { field: 'payee' }],
+    });
+    const payees = Array.from({ length: MAX_SERIES + 3 }, (_, index) => `Payee ${index}`);
+    const model = buildChartModel(
+      result(
+        ['month', 'payee', 'spending', 'payee__key'],
+        payees.map((payee, index) => ['2026-10', payee, 100 + index, payee])
+      ),
+      stacked
+    );
+    const other = model.series.find((series) => series.id === OTHER_SERIES_ID);
+    expect(other).toBeDefined();
+    // Drilling would list every payee of the month, not the folded ones.
+    expect(markDrillValues(model, 0, OTHER_SERIES_ID)).toBeNull();
+    const kept = model.series[0];
+    expect(markDrillValues(model, 0, kept.id)).toHaveLength(2);
   });
 });
 

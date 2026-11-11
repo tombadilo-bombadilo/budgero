@@ -250,8 +250,8 @@ export function barSeries(
 
 /**
  * What a clicked mark stands for: its x value and, with a second grouping,
- * its series value. Null when the mark is a folded "Other" bucket (it is
- * many values at once) or nothing drillable.
+ * its series value. Null when the mark is a folded "Other" bucket or
+ * series (it is many values at once) or nothing drillable.
  */
 export function markDrillValues(
   model: ChartModel,
@@ -267,7 +267,9 @@ export function markDrillValues(
   ];
   const series = model.series.find((item) => item.id === seriesId);
   if (model.seriesColumn?.kind === 'breakout' && series) {
-    if (series.id === OTHER_SERIES_ID) return values;
+    // "Other" is many series at once: drilling into the x value alone would
+    // list the kept series' rows too, so it isn't drillable (like the x-axis Other).
+    if (series.id === OTHER_SERIES_ID) return null;
     values.push({
       column: model.seriesColumn,
       value: series.groupValue,
