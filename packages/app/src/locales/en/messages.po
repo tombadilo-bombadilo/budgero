@@ -4343,10 +4343,6 @@ msgstr "All-time total"
 msgid "All-time totals with a daily activity view for the current window."
 msgstr "All-time totals with a daily activity view for the current window."
 
-#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
-msgid "Alloc."
-msgstr "Alloc."
-
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Allocate {monthlyNeeded} more this month"
 msgstr "Allocate {monthlyNeeded} more this month"
@@ -4366,24 +4362,6 @@ msgstr "Allocate a total amount over a period by a target date"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Allocate This Month"
 msgstr "Allocate This Month"
-
-#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
-#: src/features/budget-planning/ui/CategoryGroupRow.tsx
-#: src/features/budget-planning/ui/DraggableBudgetTable.tsx
-msgid "Allocated"
-msgstr "Allocated"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated so far: {totalAssigned} of {target} ({pct})"
-msgstr "Allocated so far: {totalAssigned} of {target} ({pct})"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated this month"
-msgstr "Allocated this month"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated This Month"
-msgstr "Allocated This Month"
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Allow over-assignment"
@@ -4820,7 +4798,10 @@ msgid "Assign this to reach target"
 msgstr "Assign this to reach target"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
+#: src/features/budget-planning/ui/CategoryGroupRow.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
+#: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 #: src/features/page-guides/ui/guide-content.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
@@ -4854,6 +4835,14 @@ msgstr "Assigned in future months"
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Assigned is what you put in a category this month, and Activity is what was spent from it. Available is what is left, and it carries over to next month; the arrows by the month move between months."
 msgstr "Assigned is what you put in a category this month, and Activity is what was spent from it. Available is what is left, and it carries over to next month; the arrows by the month move between months."
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Assigned so far: {totalAssigned} of {target} ({pct})"
+msgstr "Assigned so far: {totalAssigned} of {target} ({pct})"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Assigned this month"
+msgstr "Assigned this month"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Assigned This Month"
@@ -22168,10 +22157,6 @@ msgstr "Top payees by spending (30d)"
 msgid "Total"
 msgstr "Total"
 
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Total Allocated"
-msgstr "Total Allocated"
-
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Total amount borrowed at origination. Required."
 msgstr "Total amount borrowed at origination. Required."
@@ -22179,6 +22164,10 @@ msgstr "Total amount borrowed at origination. Required."
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Total Assets"
 msgstr "Total Assets"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Total Assigned"
+msgstr "Total Assigned"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Total divided by the number of transactions."

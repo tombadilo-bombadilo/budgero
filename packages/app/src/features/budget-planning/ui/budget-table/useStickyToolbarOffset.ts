@@ -35,7 +35,9 @@ export function useStickyToolbarOffset() {
       }
       const style = window.getComputedStyle(toolbar);
       setOffset(
-        style.position === 'sticky' ? (Number.parseFloat(style.top) || 0) + toolbar.offsetHeight : 0
+        style.position === 'sticky'
+          ? (Number.parseFloat(style.top) || 0) + toolbar.getBoundingClientRect().height
+          : 0
       );
     };
 

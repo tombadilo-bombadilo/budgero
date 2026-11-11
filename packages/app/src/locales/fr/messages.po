@@ -4341,10 +4341,6 @@ msgstr "Total cumulé"
 msgid "All-time totals with a daily activity view for the current window."
 msgstr "Totaux depuis le début avec une vue de l'activité quotidienne pour la fenêtre actuelle."
 
-#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
-msgid "Alloc."
-msgstr "Affect."
-
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Allocate {monthlyNeeded} more this month"
 msgstr "Affecter {monthlyNeeded} de plus ce mois-ci"
@@ -4364,24 +4360,6 @@ msgstr "Répartir un montant total sur une période jusqu'à une date cible"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Allocate This Month"
 msgstr "Affecter ce mois-ci"
-
-#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
-#: src/features/budget-planning/ui/CategoryGroupRow.tsx
-#: src/features/budget-planning/ui/DraggableBudgetTable.tsx
-msgid "Allocated"
-msgstr "Affecté"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated so far: {totalAssigned} of {target} ({pct})"
-msgstr "Affecté jusqu'à présent : {totalAssigned} sur {target} ({pct})"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated this month"
-msgstr "Affecté ce mois-ci"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Allocated This Month"
-msgstr "Affecté ce mois-ci"
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Allow over-assignment"
@@ -4818,7 +4796,10 @@ msgid "Assign this to reach target"
 msgstr "Affectez pour atteindre l'objectif"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+#: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
+#: src/features/budget-planning/ui/CategoryGroupRow.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
+#: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 #: src/features/page-guides/ui/guide-content.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
@@ -4852,6 +4833,14 @@ msgstr "Affecté aux mois futurs"
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Assigned is what you put in a category this month, and Activity is what was spent from it. Available is what is left, and it carries over to next month; the arrows by the month move between months."
 msgstr "« Affecté » est ce que vous avez mis dans une catégorie ce mois-ci, et « Activité » ce qui en a été dépensé. « Disponible » est ce qui reste, et ce montant est reporté sur le mois suivant ; les flèches à côté du mois permettent de changer de mois."
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Assigned so far: {totalAssigned} of {target} ({pct})"
+msgstr "Affecté jusqu'à présent : {totalAssigned} sur {target} ({pct})"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Assigned this month"
+msgstr "Affecté ce mois-ci"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Assigned This Month"
@@ -22166,10 +22155,6 @@ msgstr "Top bénéficiaires par dépenses (30 j)"
 msgid "Total"
 msgstr "Total"
 
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Total Allocated"
-msgstr "Total affecté"
-
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "Total amount borrowed at origination. Required."
 msgstr "Montant total emprunté à la souscription. Obligatoire."
@@ -22177,6 +22162,10 @@ msgstr "Montant total emprunté à la souscription. Obligatoire."
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Total Assets"
 msgstr "Total des actifs"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Total Assigned"
+msgstr "Total affecté"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Total divided by the number of transactions."

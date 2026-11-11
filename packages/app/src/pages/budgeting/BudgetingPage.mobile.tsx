@@ -19,6 +19,7 @@ import { useClearCategorySelectionOnMount } from '@shared/hooks/useClearCategory
 import { useNavigateMonth } from '@shared/hooks/useNavigateMonth';
 import { FirstStepsCard } from '@features/first-steps/ui/FirstStepsCard';
 import { useFormatMaskedMilli } from '@features/budget-planning/lib/useFormatMaskedMilli';
+import { OPAQUE_CARD_SURFACE } from '@features/budget-planning/ui/mobile-table-columns';
 
 export function BudgetingPageMobile() {
   const { t } = useLingui();
@@ -105,7 +106,8 @@ export function BudgetingPageMobile() {
               onHideCategory={(item) => hideCategory(item.categoryId)}
               showHiddenCategories={showHiddenCategories}
               renderToolbar={(controls) => (
-                <div className="sticky top-0 z-30">
+                // Opaque: the toolbar's own background is see-through (blur).
+                <div className={cn('sticky top-0 z-30', OPAQUE_CARD_SURFACE)}>
                   <BudgetToolbar
                     readyToAssign={readyToAssign}
                     readyToAssignSettled={figuresSettled}
