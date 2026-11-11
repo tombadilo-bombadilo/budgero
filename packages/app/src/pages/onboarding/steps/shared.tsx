@@ -27,6 +27,13 @@ export function getCurrencySym(code: string): string {
   }
 }
 
+/**
+ * Text fields in onboarding: a border that stays visible on every theme (the
+ * app's input token is nearly the page colour on the light themes, so an
+ * unfocused field read as cut off).
+ */
+export const FIELD_CLASS = 'border-foreground/25';
+
 export interface StepProps {
   cur: OnboardingStepDef;
   state: OnboardingFormState;
