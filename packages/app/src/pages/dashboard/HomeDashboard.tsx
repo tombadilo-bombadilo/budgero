@@ -28,6 +28,7 @@ import {
 } from '@features/reports/lib/question';
 import {
   builtinKeyOf,
+  dashboardDisplayName,
   defaultHomeDashboard,
   resolveHomeDashboard,
   widgetUsesPeriod,
@@ -133,7 +134,7 @@ export function HomeDashboard({ isMobile }: { isMobile: boolean }) {
     }
   };
 
-  const title = stored && !madeFromDefault ? dashboard.name : t`Dashboard`;
+  const title = stored && !madeFromDefault ? dashboardDisplayName(dashboard) : t`Dashboard`;
 
   const homeMenu = stored ? (
     <DropdownMenu>

@@ -27,6 +27,7 @@ import { Input } from '@shared/ui/input';
 import { Label } from '@shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@shared/ui/tabs';
+import { dashboardDisplayName } from '@widgets/dashboard/builtin/builtin-cards';
 import { chartChoiceLabel, questionChoices, rowsTableChart } from './question-choices';
 
 /** A built-in card offered in the "Built-in cards" tab. */
@@ -267,7 +268,7 @@ function AddToDashboardForm({
                   <SelectContent className={SOLID_OVERLAY}>
                     {dashboards.map((dashboard) => (
                       <SelectItem key={dashboard.id} value={dashboard.id}>
-                        {dashboard.name}
+                        {dashboardDisplayName(dashboard)}
                       </SelectItem>
                     ))}
                   </SelectContent>
