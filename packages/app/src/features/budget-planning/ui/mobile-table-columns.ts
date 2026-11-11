@@ -12,6 +12,14 @@
 
 import type { CSSProperties } from 'react';
 
+/**
+ * An opaque copy of the Card surface (Card is bg-card in light mode and a 6%
+ * white tint over the page in dark mode), for sticky bars inside a card:
+ * rows scrolling under them must not show through.
+ */
+export const OPAQUE_CARD_SURFACE =
+  'bg-card dark:bg-background dark:bg-[linear-gradient(rgb(255_255_255/0.06),rgb(255_255_255/0.06))]';
+
 export const MOBILE_TABLE_GRID = 'grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 items-center';
 
 // before: the label, styled like the header; after: the widest amount,

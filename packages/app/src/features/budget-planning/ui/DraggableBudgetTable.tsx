@@ -38,6 +38,7 @@ import {
   MOBILE_TABLE_ALLOCATED_CELL,
   MOBILE_TABLE_AVAILABLE_CELL,
   MOBILE_TABLE_GRID,
+  OPAQUE_CARD_SURFACE,
   mobileTableColumnVars,
 } from './mobile-table-columns';
 import {
@@ -320,13 +321,16 @@ export function DraggableBudgetTable({
         </div>
       </div>
     ) : isTableLayout ? (
+      // Square opaque cover, so rows don't show through the rounded corners
+      // or the tinted header while they scroll under it.
       <div
-        className="sticky top-[var(--budget-toolbar-offset,0px)] z-10 bg-muted/90 backdrop-blur-sm border-x border-x-transparent border-b border-border/40 rounded-t-lg"
+        className={cn('sticky top-[var(--budget-toolbar-offset,0px)] z-10', OPAQUE_CARD_SURFACE)}
         style={columnVars}
       >
         <div
           className={cn(
             MOBILE_TABLE_GRID,
+            'bg-muted/90 border-x border-x-transparent border-b border-border/40 rounded-t-lg',
             'py-1 text-[9px] uppercase tracking-wider font-medium text-muted-foreground/60 pl-4 pr-2'
           )}
         >
