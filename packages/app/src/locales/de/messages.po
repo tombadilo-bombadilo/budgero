@@ -2756,9 +2756,17 @@ msgstr "Eine kurze Beschreibung hilft uns, das Problem zu verstehen."
 msgid "A field guide to zero-based budgeting."
 msgstr "Ein Leitfaden zum Zero-Based-Budgeting."
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "A goal says what a category needs, so each month you see what’s still underfunded."
+msgstr "Ein Ziel sagt, was eine Kategorie braucht. So siehst du jeden Monat, wo noch Geld fehlt."
+
 #: src/pages/onboarding/onboarding-data.ts
 #~ msgid "A household, a side hustle, a trip — whatever you’re planning for."
 #~ msgstr "Ein Haushalt, ein Nebenprojekt, eine Reise — wofür auch immer du planst."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "A minute a day keeps your budget in step with your bank."
+msgstr "Eine Minute am Tag hält dein Budget im Einklang mit deiner Bank."
 
 #: src/shared/pwa/PWAUpdatePrompt.tsx
 msgid "A new Budgero build is ready to install. Refresh now to load the latest features and fixes."
@@ -5621,6 +5629,7 @@ msgstr "Kletterhalle"
 #~ msgid "Clipboard with checkmarks"
 #~ msgstr "Klemmbrett mit Häkchen"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 #: src/features/rules/ui/RuleRunOverlay.tsx
 #: src/pages/admin/sql-explorer/AdminSqlExplorer.tsx
@@ -9191,6 +9200,10 @@ msgstr "Geschenke & Spenden"
 msgid "Give every coin a job"
 msgstr "Gib jedem Cent eine Aufgabe"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Give every coin a job, plan with goals, record what you spend, and look in now and then. That’s all there is to it."
+msgstr "Gib jedem Cent eine Aufgabe, plane mit Zielen, erfasse deine Ausgaben und schau ab und zu vorbei. Mehr steckt nicht dahinter."
+
 #: src/pages/onboarding/steps/ZbbStep.tsx
 #~ msgid "Give every coin a job."
 #~ msgstr "Gib jedem Cent eine Aufgabe."
@@ -11388,6 +11401,10 @@ msgstr "Geld verschoben"
 msgid "Money out"
 msgstr "Geldausgang"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Money with a job can’t be spent twice. That’s the whole method."
+msgstr "Geld mit einer Aufgabe kann man nicht zweimal ausgeben. Das ist die ganze Methode."
+
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Money you can still assign to categories. Positive means funds to allocate; negative means you've over-budgeted."
 msgstr "Geld, das du noch Kategorien zuweisen kannst. Positiv bedeutet verfügbare Mittel; negativ bedeutet, du hast überbudgetiert."
@@ -12952,8 +12969,12 @@ msgid "Open <0>workspace settings</0> to see which shared workspaces are locked.
 msgstr "Öffne die <0>Arbeitsbereichseinstellungen</0>, um zu sehen, welche freigegebenen Arbeitsbereiche gesperrt sind."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-msgid "Open Budgero tomorrow and record yesterday’s spending. A minute a day keeps it right."
-msgstr "Öffne Budgero morgen und erfasse die Ausgaben von gestern. Eine Minute am Tag hält alles aktuell."
+msgid "Open Budgero tomorrow and record yesterday’s spending."
+msgstr "Öffne Budgero morgen und erfasse die Ausgaben von gestern."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+#~ msgid "Open Budgero tomorrow and record yesterday’s spending. A minute a day keeps it right."
+#~ msgstr "Öffne Budgero morgen und erfasse die Ausgaben von gestern. Eine Minute am Tag hält alles aktuell."
 
 #: src/features/chat/ui/ChatBubble.tsx
 msgid "Open chat assistant"
@@ -16382,6 +16403,14 @@ msgstr "Setze <0>Zahlenformat</0> auf <1>123,456.78</1>"
 msgid "Set a custom exchange rate for a specific date range."
 msgstr "Benutzerdefinierten Wechselkurs für einen bestimmten Zeitraum festlegen."
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Set a goal"
+msgstr "Ziel setzen"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Set a goal for one category"
+msgstr "Setze ein Ziel für eine Kategorie"
+
 #. placeholder {0}: resetDialog.user?.email
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Set a new password for {0}. Share it securely with the user."
@@ -16607,6 +16636,10 @@ msgstr "Label-Spalte anzeigen"
 #: src/app/layout/desktop-shell/AccountsList.tsx
 msgid "Show Less"
 msgstr "Weniger anzeigen"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Show me"
+msgstr "Zeig es mir"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Show only month selector and ready to assign in the budget header."
@@ -17005,6 +17038,10 @@ msgstr "Ausgaben nach {0}"
 #: src/pages/explorer-page/sql-utils.ts
 msgid "Spending by label (90d)"
 msgstr "Ausgaben nach Label (90 Tage)"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Spending comes out of a category, so you always see what’s left in it."
+msgstr "Ausgaben gehen von einer Kategorie ab, so siehst du immer, was darin noch übrig ist."
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Spending during the month doesn't reduce progress — only what you assign matters"
@@ -20657,12 +20694,16 @@ msgid "You’re ready"
 msgstr "Du bist bereit"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-msgid "You’re set up"
-msgstr "Alles eingerichtet"
+#~ msgid "You’re set up"
+#~ msgstr "Alles eingerichtet"
 
 #: src/pages/settings/ai/PrivacyWarnings.tsx
 msgid "You've configured a third-party server. Your financial data — transactions, payees, balances, receipt images and chat messages — will be sent to that provider, who can read and retain it. Only continue if you trust them and have reviewed their privacy policy. For full privacy, use a local server (Ollama or LM Studio) instead."
 msgstr "Du hast einen Drittanbieter-Server konfiguriert. Deine Finanzdaten — Transaktionen, Empfänger, Salden, Belegfotos und Chat-Nachrichten — werden an diesen Anbieter gesendet, der sie lesen und speichern kann. Fahre nur fort, wenn du ihm vertraust und seine Datenschutzerklärung geprüft hast. Für volle Privatsphäre verwende stattdessen einen lokalen Server (Ollama oder LM Studio)."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "You’ve got the basics"
+msgstr "Du kennst jetzt die Grundlagen"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "You've saved {totalSaved} total"

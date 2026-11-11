@@ -1,7 +1,8 @@
 /**
- * The week-one checklist for a budget set up through "Fresh start": give
- * every coin a job, add a transaction (or import one), come back another day,
- * and (optional) invite someone to budget with.
+ * The week-one checklist for a budget set up through "Fresh start", read as a
+ * small lesson: give every coin a job, set a goal for one category, add a
+ * transaction (or import one), come back another day, and (optional) invite
+ * someone to budget with.
  *
  * Progress lives on this device only (localStorage, per workspace) and is
  * worked out from what happens in the app, never sent anywhere: the server
@@ -9,19 +10,31 @@
  */
 import { useSyncExternalStore } from 'react';
 
-export type FirstStepId = 'assign' | 'transaction' | 'return' | 'share';
+export type FirstStepId = 'assign' | 'goal' | 'transaction' | 'return' | 'share';
+export type CountedFirstStepId = Exclude<FirstStepId, 'share'>;
 
 export interface FirstStepsState {
   /** Local calendar day the checklist started (YYYY-MM-DD). */
   startedOn: string;
-  /** `share` is optional: it isn't counted in FIRST_STEP_IDS. */
-  done: Record<Exclude<FirstStepId, 'share'>, boolean> & { share?: boolean };
+  /**
+   * `share` is optional: it isn't counted in FIRST_STEP_IDS. `goal` came later,
+   * so a checklist stored before it has no key for it (read as not done).
+   */
+  done: Record<Exclude<CountedFirstStepId, 'goal'>, boolean> & {
+    goal?: boolean;
+    share?: boolean;
+  };
+  /** Hidden by the user (the ✕, or closing the finished list). */
   dismissed: boolean;
 }
 
 const KEY = 'budgero:first-steps';
-/** The steps that count toward "x of 3 done". */
-export const FIRST_STEP_IDS: Exclude<FirstStepId, 'share'>[] = ['assign', 'transaction', 'return'];
+/** The steps that count toward "x of 4 done", in the order they are taught. */
+export const FIRST_STEP_IDS: CountedFirstStepId[] = ['assign', 'goal', 'transaction', 'return'];
+
+export function isFirstStepDone(state: FirstStepsState, step: FirstStepId): boolean {
+  return state.done[step] ?? false;
+}
 
 /** Ops that put a transaction in the budget, typed or imported. */
 const TRANSACTION_OPS = new Set([
@@ -29,6 +42,8 @@ const TRANSACTION_OPS = new Set([
   'transactions.addTransfer',
   'transactions.import',
 ]);
+/** Ops that give a category a goal (goals.restore is only undo). */
+const GOAL_OPS = new Set(['goals.create']);
 
 const listeners = new Set<() => void>();
 let cache: Record<string, FirstStepsState> | null = null;
@@ -77,7 +92,7 @@ export function startFirstSteps(spaceId: string, now = new Date()): void {
     ...all,
     [spaceId]: {
       startedOn: today(now),
-      done: { assign: false, transaction: false, return: false },
+      done: { assign: false, goal: false, transaction: false, return: false },
       dismissed: false,
     },
   });
@@ -85,7 +100,7 @@ export function startFirstSteps(spaceId: string, now = new Date()): void {
 
 export function markFirstStep(spaceId: string, step: FirstStepId): void {
   update(spaceId, (state) =>
-    state.done[step] ? state : { ...state, done: { ...state.done, [step]: true } }
+    isFirstStepDone(state, step) ? state : { ...state, done: { ...state.done, [step]: true } }
   );
 }
 
@@ -95,7 +110,9 @@ export function dismissFirstSteps(spaceId: string): void {
 
 /** Called for every local mutation (AppRuntime.executeMutation). */
 export function noteFirstStepsMutation(spaceId: string | null, op: string): void {
-  if (spaceId && TRANSACTION_OPS.has(op)) markFirstStep(spaceId, 'transaction');
+  if (!spaceId) return;
+  if (TRANSACTION_OPS.has(op)) markFirstStep(spaceId, 'transaction');
+  else if (GOAL_OPS.has(op)) markFirstStep(spaceId, 'goal');
 }
 
 /** Opening the budget on a later day than setup ticks "come back". */
@@ -111,9 +128,24 @@ export function getFirstSteps(spaceId: string | null): FirstStepsState | null {
   return spaceId ? (readAll()[spaceId] ?? null) : null;
 }
 
+// Another tab ticking a step (or hiding the list) shows up here too.
+function onStorage(event: StorageEvent): void {
+  if (event.key !== KEY && event.key !== null) return;
+  cache = null;
+  for (const listener of listeners) listener();
+}
+
 function subscribe(listener: () => void): () => void {
+  if (listeners.size === 0 && typeof window !== 'undefined') {
+    window.addEventListener('storage', onStorage);
+  }
   listeners.add(listener);
-  return () => listeners.delete(listener);
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0 && typeof window !== 'undefined') {
+      window.removeEventListener('storage', onStorage);
+    }
+  };
 }
 
 export function useFirstSteps(spaceId: string | null): FirstStepsState | null {
@@ -128,4 +160,5 @@ export function useFirstSteps(spaceId: string | null): FirstStepsState | null {
 export function resetFirstStepsForTests(): void {
   cache = null;
   listeners.clear();
+  if (typeof window !== 'undefined') window.removeEventListener('storage', onStorage);
 }

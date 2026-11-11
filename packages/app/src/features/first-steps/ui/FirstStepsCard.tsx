@@ -9,13 +9,15 @@ import { Card, CardContent } from '@shared/ui/card';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@shared/ui/drawer';
 import { cn } from '@shared/lib/utils';
 import { useActiveSpaceId } from '@shared/runtime/runtime-provider';
+import { useUiStore } from '@shared/store/useUiStore';
 import {
   dismissFirstSteps,
   FIRST_STEP_IDS,
+  isFirstStepDone,
   markFirstStep,
   noteFirstStepsVisit,
   useFirstSteps,
-  type FirstStepId,
+  type CountedFirstStepId,
   type FirstStepsState,
 } from '@shared/lib/first-steps/first-steps';
 
@@ -31,17 +33,28 @@ interface FirstStepsCardProps {
   settled?: boolean;
   /** 'bar': one compact row (phones) that opens the full list in a drawer. */
   variant?: 'card' | 'bar';
+  /**
+   * What a step's button does, per step. Without one, "assign" and "goal"
+   * point at a category on this page (scroll to it, select it, highlight
+   * the field). A page guide can take over a step here.
+   */
+  onStepAction?: Partial<Record<CountedFirstStepId, () => void>>;
   className?: string;
 }
 
-/** How long the finished checklist stays before it goes away on its own. */
-const DONE_BAR_MS = 4000;
-
 interface StepItem {
-  id: FirstStepId;
+  id: CountedFirstStepId;
   title: string;
-  body: React.ReactNode;
+  /** One line: what doing this step does for you. */
+  why: React.ReactNode;
+  body?: React.ReactNode;
   action?: React.ReactNode;
+}
+
+/** The category a step's button points at: one with money first, then the first one. */
+function pickCategory(rows: GetMonthlyBudgetRow[]): number | null {
+  const real = rows.filter((row) => row.CategoryID > 0 && row.Category !== 'Income');
+  return (real.find((row) => row.Assigned > 0) ?? real[0])?.CategoryID ?? null;
 }
 
 /**
@@ -55,17 +68,18 @@ export function FirstStepsCard({
   rows,
   settled = true,
   variant = 'card',
+  onStepAction,
   className,
 }: FirstStepsCardProps) {
   const { t } = useLingui();
   const spaceId = useActiveSpaceId();
   const steps = useFirstSteps(spaceId);
   const assignedAny = rows.some((row) => row.Assigned > 0);
-  const assignDone = steps?.done.assign ?? false;
+  const assignDone = steps ? isFirstStepDone(steps, 'assign') : false;
   const announced = useRef(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const total = FIRST_STEP_IDS.length;
-  const doneCount = steps ? FIRST_STEP_IDS.filter((id) => steps.done[id]).length : 0;
+  const doneCount = steps ? FIRST_STEP_IDS.filter((id) => isFirstStepDone(steps, id)).length : 0;
   const allDone = doneCount === total;
 
   useEffect(() => {
@@ -85,15 +99,34 @@ export function FirstStepsCard({
     }
   }, [spaceId, steps, assignDone, readyToAssign, assignedAny, settled, t]);
 
-  // Once everything is ticked, the finished list shows for a moment, then goes.
-  const autoDismiss = allDone && Boolean(steps && !steps.dismissed);
-  useEffect(() => {
-    if (!autoDismiss || !spaceId) return;
-    const timer = setTimeout(() => dismissFirstSteps(spaceId), DONE_BAR_MS);
-    return () => clearTimeout(timer);
-  }, [autoDismiss, spaceId]);
-
   if (!spaceId || !steps || steps.dismissed) return null;
+
+  // Point at a category on this page: scroll to it, select it, and highlight
+  // the field to use (for the goal, its editor opens).
+  const pointAt = (field: 'assign' | 'goal') => {
+    const categoryId = pickCategory(rows);
+    setDrawerOpen(false);
+    if (!categoryId) return;
+    const ui = useUiStore.getState();
+    if (field === 'goal') {
+      ui.setHighlightGoalCategoryId(categoryId);
+      ui.setGoalEditorCategoryId(categoryId);
+    } else ui.setHighlightAssignmentCategoryId(categoryId);
+    ui.setFocusCategoryId(categoryId);
+  };
+  const runAction = (id: CountedFirstStepId, fallback: () => void) => () => {
+    const custom = onStepAction?.[id];
+    setDrawerOpen(false);
+    if (custom) custom();
+    else fallback();
+  };
+  const stepButton = (label: React.ReactNode, onClick: () => void) => (
+    <div>
+      <Button size="sm" variant="outline" className="mt-2 h-7" onClick={onClick}>
+        {label}
+      </Button>
+    </div>
+  );
 
   // Nothing to assign yet (no balance or income): the first step waits, and
   // the next one is what to do now.
@@ -121,63 +154,112 @@ export function FirstStepsCard({
     );
 
   const items: StepItem[] = [
-    { id: 'assign', title: t`Give every coin a job`, body: assignBody },
+    {
+      id: 'assign',
+      title: t`Give every coin a job`,
+      why: <Trans>Money with a job can’t be spent twice. That’s the whole method.</Trans>,
+      body: assignBody,
+      action:
+        nothingToAssign || readyToAssign < 0
+          ? undefined
+          : stepButton(
+              <Trans>Show me</Trans>,
+              runAction('assign', () => pointAt('assign'))
+            ),
+    },
+    {
+      id: 'goal',
+      title: t`Set a goal for one category`,
+      why: (
+        <Trans>
+          A goal says what a category needs, so each month you see what’s still underfunded.
+        </Trans>
+      ),
+      action: stepButton(
+        <Trans>Set a goal</Trans>,
+        runAction('goal', () => pointAt('goal'))
+      ),
+    },
     {
       id: 'transaction',
       title: t`Add a transaction`,
+      why: <Trans>Spending comes out of a category, so you always see what’s left in it.</Trans>,
       body: <Trans>Record something you spent today, or import a file from your bank.</Trans>,
-      action: (
-        <Button asChild size="sm" variant="outline" className="mt-2 h-7">
-          <Link to="/accounts/all" onClick={() => setDrawerOpen(false)}>
-            <Trans>Go to transactions</Trans>
-          </Link>
-        </Button>
+      action: onStepAction?.transaction ? (
+        stepButton(
+          <Trans>Go to transactions</Trans>,
+          runAction('transaction', () => {})
+        )
+      ) : (
+        <div>
+          <Button asChild size="sm" variant="outline" className="mt-2 h-7">
+            <Link to="/accounts/all" onClick={() => setDrawerOpen(false)}>
+              <Trans>Go to transactions</Trans>
+            </Link>
+          </Button>
+        </div>
       ),
     },
     {
       id: 'return',
       title: t`Come back tomorrow`,
-      body: (
-        <Trans>
-          Open Budgero tomorrow and record yesterday’s spending. A minute a day keeps it right.
-        </Trans>
-      ),
+      why: <Trans>A minute a day keeps your budget in step with your bank.</Trans>,
+      body: <Trans>Open Budgero tomorrow and record yesterday’s spending.</Trans>,
     },
   ];
   const nextId = items.find(
-    (item) => !steps.done[item.id] && !(item.id === 'assign' && nothingToAssign)
+    (item) => !isFirstStepDone(steps, item.id) && !(item.id === 'assign' && nothingToAssign)
   )?.id;
   // A waiting first step stays open too, so its note is never hidden.
-  const openIds = new Set<FirstStepId>(
-    [nextId, nothingToAssign ? 'assign' : undefined].filter(Boolean) as FirstStepId[]
+  const openIds = new Set<CountedFirstStepId>(
+    [nextId, nothingToAssign ? 'assign' : undefined].filter(Boolean) as CountedFirstStepId[]
   );
 
-  const header = (
-    <>
-      <div className="text-sm font-semibold">
-        {allDone ? <Trans>You’re set up</Trans> : <Trans>Your first steps</Trans>}
+  const title = allDone ? <Trans>You’ve got the basics</Trans> : <Trans>Your first steps</Trans>;
+  const countLine = (
+    <Trans>
+      {doneCount} of {total} done
+    </Trans>
+  );
+  // The finished list stays until the user closes it.
+  const finished = (
+    <div className="mt-3 border-t pt-3 text-xs leading-relaxed text-muted-foreground">
+      <Trans>
+        Give every coin a job, plan with goals, record what you spend, and look in now and then.
+        That’s all there is to it.
+      </Trans>
+      <div>
+        <Button
+          size="sm"
+          className="mt-2 h-7"
+          onClick={() => {
+            setDrawerOpen(false);
+            dismissFirstSteps(spaceId);
+          }}
+        >
+          <Trans>Close</Trans>
+        </Button>
       </div>
-      <div className="text-xs text-muted-foreground">
-        <Trans>
-          {doneCount} of {total} done
-        </Trans>
-      </div>
-    </>
+    </div>
   );
   const list = (
-    <StepList
-      items={items}
-      steps={steps}
-      openIds={openIds}
-      onNavigate={() => setDrawerOpen(false)}
-    />
+    <>
+      <StepList
+        items={items}
+        steps={steps}
+        openIds={openIds}
+        onNavigate={() => setDrawerOpen(false)}
+        showShare={!allDone}
+      />
+      {allDone && finished}
+    </>
   );
 
   if (variant === 'bar') {
     const next = items.find((item) => item.id === nextId) ?? items.find((i) => i.id === 'assign')!;
     // Only "come back tomorrow" left: nothing to do today, so no call to action.
     const waitingForTomorrow =
-      !allDone && FIRST_STEP_IDS.every((id) => steps.done[id] || id === 'return');
+      !allDone && FIRST_STEP_IDS.every((id) => isFirstStepDone(steps, id) || id === 'return');
     return (
       <>
         <button
@@ -194,7 +276,7 @@ export function FirstStepsCard({
           <ProgressDots done={doneCount} total={total} />
           {allDone ? (
             <span className="min-w-0 flex-1 truncate text-sm font-medium">
-              <Trans>You’re set up</Trans>
+              <Trans>You’ve got the basics</Trans>
             </span>
           ) : waitingForTomorrow ? (
             <span className="min-w-0 flex-1 truncate text-sm text-muted-foreground">
@@ -225,14 +307,8 @@ export function FirstStepsCard({
           <DrawerContent>
             <DrawerHeader className="flex flex-row items-start justify-between gap-2 text-left">
               <div className="text-left">
-                <DrawerTitle>
-                  {allDone ? <Trans>You’re set up</Trans> : <Trans>Your first steps</Trans>}
-                </DrawerTitle>
-                <div className="text-xs text-muted-foreground">
-                  <Trans>
-                    {doneCount} of {total} done
-                  </Trans>
-                </div>
+                <DrawerTitle>{title}</DrawerTitle>
+                <div className="text-xs text-muted-foreground">{countLine}</div>
               </div>
               <Button
                 variant="ghost"
@@ -258,7 +334,10 @@ export function FirstStepsCard({
     <Card className={cn('gap-0 py-0', className)} data-testid="first-steps">
       <CardContent className="p-4">
         <div className="mb-3 flex items-start justify-between gap-2">
-          <div>{header}</div>
+          <div>
+            <div className="text-sm font-semibold">{title}</div>
+            <div className="text-xs text-muted-foreground">{countLine}</div>
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -293,11 +372,13 @@ function StepList({
   steps,
   openIds,
   onNavigate,
+  showShare,
 }: {
   items: StepItem[];
   steps: FirstStepsState;
-  openIds: Set<FirstStepId>;
+  openIds: Set<CountedFirstStepId>;
   onNavigate: () => void;
+  showShare: boolean;
 }) {
   const { t } = useLingui();
   const shared = steps.done.share ?? false;
@@ -305,7 +386,7 @@ function StepList({
     <>
       <ol className="space-y-3">
         {items.map((item) => {
-          const done = steps.done[item.id];
+          const done = isFirstStepDone(steps, item.id);
           const open = !done && openIds.has(item.id);
           return (
             <li key={item.id} className="flex gap-2.5">
@@ -325,8 +406,9 @@ function StepList({
                   <span className="sr-only">{done ? t`(done)` : ''}</span>
                 </div>
                 {open && (
-                  <div className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {item.body}
+                  <div className="mt-1 space-y-1 text-xs leading-relaxed text-muted-foreground">
+                    <div className="text-foreground/80">{item.why}</div>
+                    {item.body && <div>{item.body}</div>}
                     {item.action}
                   </div>
                 )}
@@ -335,36 +417,40 @@ function StepList({
           );
         })}
       </ol>
-      <div className="mt-3 flex gap-2.5 border-t pt-3">
-        {shared ? (
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
-        ) : (
-          <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
-        )}
-        <div className="min-w-0 text-xs leading-relaxed text-muted-foreground">
-          <span className={cn('text-sm', shared ? 'line-through' : 'font-medium text-foreground')}>
-            <Trans>Budget with someone?</Trans>
-          </span>{' '}
-          <span className="text-muted-foreground">
-            <Trans>Optional</Trans>
-          </span>
-          {!shared && (
-            <div>
-              <Trans>
-                Invite a partner or housemate. They get their own login and see the same budget.
-              </Trans>
-              <div>
-                {/* Ticks once an invite is actually created (useCreateSpaceInvite). */}
-                <Button asChild size="sm" variant="outline" className="mt-2 h-7">
-                  <Link to="/settings/workspaces" onClick={onNavigate}>
-                    <Trans>Invite someone</Trans>
-                  </Link>
-                </Button>
-              </div>
-            </div>
+      {showShare && (
+        <div className="mt-3 flex gap-2.5 border-t pt-3">
+          {shared ? (
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+          ) : (
+            <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
           )}
+          <div className="min-w-0 text-xs leading-relaxed text-muted-foreground">
+            <span
+              className={cn('text-sm', shared ? 'line-through' : 'font-medium text-foreground')}
+            >
+              <Trans>Budget with someone?</Trans>
+            </span>{' '}
+            <span className="text-muted-foreground">
+              <Trans>Optional</Trans>
+            </span>
+            {!shared && (
+              <div>
+                <Trans>
+                  Invite a partner or housemate. They get their own login and see the same budget.
+                </Trans>
+                <div>
+                  {/* Ticks once an invite is actually created (useCreateSpaceInvite). */}
+                  <Button asChild size="sm" variant="outline" className="mt-2 h-7">
+                    <Link to="/settings/workspaces" onClick={onNavigate}>
+                      <Trans>Invite someone</Trans>
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

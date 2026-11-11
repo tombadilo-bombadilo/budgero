@@ -2756,9 +2756,17 @@ msgstr "Een korte beschrijving helpt ons het probleem te begrijpen."
 msgid "A field guide to zero-based budgeting."
 msgstr "Een gids voor zero-based budgetteren."
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "A goal says what a category needs, so each month you see what’s still underfunded."
+msgstr "Een doel zegt wat een categorie nodig heeft, zodat je elke maand ziet waar nog geld ontbreekt."
+
 #: src/pages/onboarding/onboarding-data.ts
 #~ msgid "A household, a side hustle, a trip — whatever you’re planning for."
 #~ msgstr "Een huishouden, een bijbaantje, een reis — waarvoor je ook wilt budgetteren."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "A minute a day keeps your budget in step with your bank."
+msgstr "Eén minuut per dag houdt je budget gelijk met je bank."
 
 #: src/shared/pwa/PWAUpdatePrompt.tsx
 msgid "A new Budgero build is ready to install. Refresh now to load the latest features and fixes."
@@ -5621,6 +5629,7 @@ msgstr "Klimhal"
 #~ msgid "Clipboard with checkmarks"
 #~ msgstr "Klembord met vinkjes"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/rules/ui/rule-editor/RuleEditorDialog.tsx
 #: src/features/rules/ui/RuleRunOverlay.tsx
 #: src/pages/admin/sql-explorer/AdminSqlExplorer.tsx
@@ -9191,6 +9200,10 @@ msgstr "Cadeaus & Donaties"
 msgid "Give every coin a job"
 msgstr "Geef elke munt een taak"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Give every coin a job, plan with goals, record what you spend, and look in now and then. That’s all there is to it."
+msgstr "Geef elke munt een taak, plan met doelen, noteer wat je uitgeeft en kijk af en toe even. Meer is het niet."
+
 #: src/pages/onboarding/steps/ZbbStep.tsx
 #~ msgid "Give every coin a job."
 #~ msgstr "Geef elke munt een taak."
@@ -11388,6 +11401,10 @@ msgstr "Geld verplaatst"
 msgid "Money out"
 msgstr "Uitgaven"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Money with a job can’t be spent twice. That’s the whole method."
+msgstr "Geld met een taak kun je niet twee keer uitgeven. Dat is de hele methode."
+
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Money you can still assign to categories. Positive means funds to allocate; negative means you've over-budgeted."
 msgstr "Geld dat je nog aan categorieën kunt toewijzen. Positief betekent fondsen om toe te wijzen; negatief betekent dat je te veel hebt toegewezen."
@@ -12952,8 +12969,12 @@ msgid "Open <0>workspace settings</0> to see which shared workspaces are locked.
 msgstr "Open <0>werkruimte-instellingen</0> om te zien welke gedeelde werkruimtes zijn vergrendeld."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-msgid "Open Budgero tomorrow and record yesterday’s spending. A minute a day keeps it right."
-msgstr "Open Budgero morgen en noteer de uitgaven van gisteren. Een minuut per dag houdt alles bij."
+msgid "Open Budgero tomorrow and record yesterday’s spending."
+msgstr "Open Budgero morgen en noteer wat je gisteren hebt uitgegeven."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+#~ msgid "Open Budgero tomorrow and record yesterday’s spending. A minute a day keeps it right."
+#~ msgstr "Open Budgero morgen en noteer de uitgaven van gisteren. Een minuut per dag houdt alles bij."
 
 #: src/features/chat/ui/ChatBubble.tsx
 msgid "Open chat assistant"
@@ -16382,6 +16403,14 @@ msgstr "Stel <0>Getalnotatie</0> in op <1>123,456.78</1>"
 msgid "Set a custom exchange rate for a specific date range."
 msgstr "Stel een aangepaste wisselkoers in voor een specifieke periode."
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Set a goal"
+msgstr "Doel instellen"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Set a goal for one category"
+msgstr "Stel een doel in voor één categorie"
+
 #. placeholder {0}: resetDialog.user?.email
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Set a new password for {0}. Share it securely with the user."
@@ -16607,6 +16636,10 @@ msgstr "Label-kolom tonen"
 #: src/app/layout/desktop-shell/AccountsList.tsx
 msgid "Show Less"
 msgstr "Minder tonen"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Show me"
+msgstr "Laat zien"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Show only month selector and ready to assign in the budget header."
@@ -17005,6 +17038,10 @@ msgstr "Uitgaven per {0}"
 #: src/pages/explorer-page/sql-utils.ts
 msgid "Spending by label (90d)"
 msgstr "Uitgaven per label (90d)"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Spending comes out of a category, so you always see what’s left in it."
+msgstr "Uitgaven gaan van een categorie af, zo zie je altijd wat er nog in zit."
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Spending during the month doesn't reduce progress — only what you assign matters"
@@ -20657,12 +20694,16 @@ msgid "You’re ready"
 msgstr "Je bent er klaar voor"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-msgid "You’re set up"
-msgstr "Je bent klaar"
+#~ msgid "You’re set up"
+#~ msgstr "Je bent klaar"
 
 #: src/pages/settings/ai/PrivacyWarnings.tsx
 msgid "You've configured a third-party server. Your financial data — transactions, payees, balances, receipt images and chat messages — will be sent to that provider, who can read and retain it. Only continue if you trust them and have reviewed their privacy policy. For full privacy, use a local server (Ollama or LM Studio) instead."
 msgstr "Je hebt een externe server geconfigureerd. Je financiële gegevens — transacties, begunstigden, saldi, bonafbeeldingen en chatberichten — worden naar die provider gestuurd, die ze kan lezen en bewaren. Ga alleen door als je hen vertrouwt en hun privacybeleid hebt beoordeeld. Voor volledige privacy kun je beter een lokale server (Ollama of LM Studio) gebruiken."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "You’ve got the basics"
+msgstr "Je kent nu de basis"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "You've saved {totalSaved} total"
