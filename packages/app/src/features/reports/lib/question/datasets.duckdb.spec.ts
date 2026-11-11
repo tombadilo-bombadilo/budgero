@@ -21,7 +21,7 @@ import {
   setClock,
   type Services,
 } from '@budgero/core';
-import { REPORTING_VIEWS_SQL, mapSQLiteTypeToDuckDb } from '@shared/lib/sql/analytics-views';
+import { mapSQLiteTypeToDuckDb, reportingViewsSql } from '@shared/lib/sql/analytics-views';
 import {
   DERIVED_TABLES,
   frequencyCode,
@@ -118,9 +118,7 @@ function snapshot() {
     );
     insertJson(name, columns, rows);
   }
-  // The node DuckDB build has no clock: pin the views' CURRENT_DATE.
-  for (const sql of REPORTING_VIEWS_SQL)
-    conn.query(sql.split('CURRENT_DATE').join(`DATE '${TODAY}'`));
+  for (const sql of reportingViewsSql(TODAY)) conn.query(sql);
   for (const table of DERIVED_TABLES) {
     conn.query(
       `CREATE TABLE "${table.name}" (${table.columns.map((c) => `"${c.name}" ${c.type}`).join(', ')})`

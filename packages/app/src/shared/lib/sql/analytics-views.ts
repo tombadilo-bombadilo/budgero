@@ -120,7 +120,7 @@ export const TRANSACTIONS_ANALYTICS_VIEW_SQL = `
 
 /**
  * `account_balances_daily`: one row per account per day, from the account's
- * first transaction to today (CURRENT_DATE), balances carried forward over
+ * first transaction to `today` (the user's local day), balances carried forward over
  * days without transactions. `balance` is in the budget currency: every
  * transaction up to that day at its recorded rate plus the revaluation
  * journal (account_revaluations) up to that day, so today's row equals the
@@ -128,7 +128,10 @@ export const TRANSACTIONS_ANALYTICS_VIEW_SQL = `
  * page). Net worth on a day = SUM(balance); liabilities are credit, loan and
  * mortgage accounts (is_liability).
  */
-export const ACCOUNT_BALANCES_DAILY_VIEW_SQL = `
+export function accountBalancesDailyViewSql(today: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(today)) throw new Error('Invalid date');
+  const day = `DATE '${today}'`;
+  return `
     CREATE OR REPLACE VIEW account_balances_daily AS
     WITH moves AS (
       SELECT account_id, TRY_CAST(date AS DATE) AS day, inflow - outflow AS flow,
@@ -142,14 +145,14 @@ export const ACCOUNT_BALANCES_DAILY_VIEW_SQL = `
     flows AS (
       SELECT account_id, day, SUM(flow) AS flow, SUM(flow_native) AS flow_native
       FROM moves
-      WHERE day IS NOT NULL AND day <= CURRENT_DATE
+      WHERE day IS NOT NULL AND day <= ${day}
       GROUP BY 1, 2
     ),
     days AS (
       SELECT a."ID" AS account_id,
         CAST(UNNEST(generate_series(
-          CAST(COALESCE(first.day, CURRENT_DATE) AS TIMESTAMP),
-          CAST(CURRENT_DATE AS TIMESTAMP),
+          CAST(COALESCE(first.day, ${day}) AS TIMESTAMP),
+          CAST(${day} AS TIMESTAMP),
           INTERVAL 1 DAY
         )) AS DATE) AS day
       FROM accounts a
@@ -174,6 +177,7 @@ export const ACCOUNT_BALANCES_DAILY_VIEW_SQL = `
     LEFT JOIN flows f ON f.account_id = d.account_id AND f.day = d.day
     WINDOW w AS (PARTITION BY d.account_id ORDER BY d.day ROWS UNBOUNDED PRECEDING)
 `;
+}
 
 /**
  * `payee_summary`: one row per budget and payee (names compared trimmed and
@@ -233,9 +237,14 @@ export const PAYEE_SUMMARY_VIEW_SQL = `
     GROUP BY k.budget_id, k.payee_key
 `;
 
-/** Every prebuilt view, in creation order (later views read earlier ones). */
-export const REPORTING_VIEWS_SQL = [
-  TRANSACTIONS_ANALYTICS_VIEW_SQL,
-  ACCOUNT_BALANCES_DAILY_VIEW_SQL,
-  PAYEE_SUMMARY_VIEW_SQL,
-];
+/**
+ * Every prebuilt view, in creation order (later views read earlier ones).
+ * `today` is the user's local day (DuckDB's CURRENT_DATE is UTC).
+ */
+export function reportingViewsSql(today: string): string[] {
+  return [
+    TRANSACTIONS_ANALYTICS_VIEW_SQL,
+    accountBalancesDailyViewSql(today),
+    PAYEE_SUMMARY_VIEW_SQL,
+  ];
+}
