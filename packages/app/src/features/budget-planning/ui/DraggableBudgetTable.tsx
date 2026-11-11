@@ -1,4 +1,4 @@
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 /**
  * Draggable Budget Table
  *
@@ -27,12 +27,19 @@ import {
 import { restrictToVerticalAxis } from '@features/budget-planning/lib/dnd-modifiers';
 import { cn } from '@shared/lib/utils';
 import { useShowGroupPercent } from '@shared/hooks/useUserPreferences';
+import { useFormatMaskedMilli } from '../lib/useFormatMaskedMilli';
 import { BudgetRow } from '../lib/budget-transforms';
 import { DraggableCategoryGroupRow } from './DraggableCategoryGroupRow';
 import { DraggableCategoryRow } from './DraggableCategoryRow';
 import { CategoryGroupRow } from './CategoryGroupRow';
 import { CategoryRow } from './category-row';
 import { EmptyStateDisplay } from './EmptyStateDisplay';
+import {
+  MOBILE_TABLE_ALLOCATED_CELL,
+  MOBILE_TABLE_AVAILABLE_CELL,
+  MOBILE_TABLE_GRID,
+  mobileTableColumnVars,
+} from './mobile-table-columns';
 import {
   DesktopBudgetTableView,
   getMonthlyTarget,
@@ -114,7 +121,9 @@ export function DraggableBudgetTable({
   disableSelection = false,
   mobileLayout = 'cards',
 }: DraggableBudgetTableProps) {
+  const { t } = useLingui();
   const { data: showGroupPercent = false } = useShowGroupPercent();
+  const formatAmount = useFormatMaskedMilli(globalLocalizer);
   const isTableLayout = mobileLayout === 'table';
   const isCompactLayout = mobileLayout === 'compact';
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -276,9 +285,25 @@ export function DraggableBudgetTable({
     return totals;
   }, [data, unfilteredData]);
 
+  // Same width for a column in every row and the header (mobile table only).
+  const columnRows = unfilteredData || data;
+  const columnVars = useMemo(
+    () =>
+      isTableLayout
+        ? mobileTableColumnVars({
+            allocatedLabel: t`Allocated`,
+            availableLabel: t`Available`,
+            allocatedValues: columnRows.map((row) => formatAmount(row.assigned)),
+            availableValues: columnRows.map((row) => formatAmount(row.available)),
+          })
+        : undefined,
+    [isTableLayout, columnRows, formatAmount, t]
+  );
+
+  // Headers stick right below the sticky toolbar (offset set by BudgetTable).
   const header =
     layoutVariant === 'desktop-compact' ? (
-      <div className="hidden md:block sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 -mx-1 px-1 md:-mx-2 md:px-2">
+      <div className="hidden md:block sticky top-[var(--budget-toolbar-offset,0px)] z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 -mx-1 px-1 md:-mx-2 md:px-2">
         <div className="px-3 py-2 text-[11px] uppercase tracking-wider font-medium text-muted-foreground grid grid-cols-[minmax(0,1fr)_minmax(96px,120px)_minmax(96px,120px)_minmax(96px,120px)] gap-2">
           <div>
             <Trans>Category</Trans>
@@ -295,15 +320,23 @@ export function DraggableBudgetTable({
         </div>
       </div>
     ) : isTableLayout ? (
-      <div className="md:hidden sticky top-0 z-10 bg-muted/90 backdrop-blur-sm border-b border-border/40 rounded-t-lg">
-        <div className="py-1 text-[9px] uppercase tracking-wider font-medium text-muted-foreground/60 grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 items-center pl-4 pr-2">
+      <div
+        className="sticky top-[var(--budget-toolbar-offset,0px)] z-10 bg-muted/90 backdrop-blur-sm border-x border-x-transparent border-b border-border/40 rounded-t-lg"
+        style={columnVars}
+      >
+        <div
+          className={cn(
+            MOBILE_TABLE_GRID,
+            'py-1 text-[9px] uppercase tracking-wider font-medium text-muted-foreground/60 pl-4 pr-2'
+          )}
+        >
           <div>
             <Trans>Category</Trans>
           </div>
-          <div className="text-right">
+          <div className={cn('text-right', MOBILE_TABLE_ALLOCATED_CELL)}>
             <Trans>Allocated</Trans>
           </div>
-          <div className="text-right">
+          <div className={cn('text-right', MOBILE_TABLE_AVAILABLE_CELL)}>
             <Trans>Available</Trans>
           </div>
         </div>
@@ -439,6 +472,7 @@ export function DraggableBudgetTable({
               ? 'rounded-lg border border-border/60 bg-card overflow-hidden'
               : 'space-y-0.5'
           )}
+          style={columnVars}
           data-budget-table-root
         >
           {renderRows(false)}
@@ -464,6 +498,7 @@ export function DraggableBudgetTable({
               ? 'rounded-lg border border-border/60 bg-card overflow-hidden'
               : 'space-y-0.5'
           )}
+          style={columnVars}
           data-budget-table-root
         >
           {renderRows(true)}

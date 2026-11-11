@@ -64,8 +64,9 @@ export function DesktopBudgetTableView({
   );
 
   const headClass = 'h-8 text-xs font-medium uppercase tracking-wide text-muted-foreground';
+  // Sticks right below the sticky toolbar (offset set by BudgetTable).
   const tableHeader = (
-    <TableHeader>
+    <TableHeader className="sticky top-[var(--budget-toolbar-offset,0px)] z-20 bg-background shadow-[0_1px_0_var(--border)]">
       <TableRow>
         <TableHead className={cn(headClass, 'w-[48px]')} />
         <TableHead className={cn(headClass, 'w-auto')}>
@@ -100,11 +101,14 @@ export function DesktopBudgetTableView({
   // sortable wrappers call useSortable, which requires a surrounding
   // DndContext — that is why the fork exists at the component level.
   const renderTable = (sortable: boolean) => (
+    // No scroll container between the header and the page's scroll area, or
+    // the sticky header would stick to that instead: clip (not hidden/auto)
+    // keeps the rounded corners without creating one.
     <div
-      className="overflow-x-auto rounded-lg border border-border/60 bg-background"
+      className="overflow-clip rounded-lg border border-border/60 bg-background"
       data-row-density={compact ? 'compact' : 'comfortable'}
     >
-      <Table className="w-full">
+      <Table className="w-full" containerClassName="overflow-x-visible">
         {tableHeader}
         <TableBody>
           {filteredData.map((item) => {

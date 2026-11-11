@@ -8,6 +8,11 @@ import { PlanningAnimatedNumber } from './PlanningNumberAnimation';
 import { GroupNameEditPopover } from './GroupNameEditPopover';
 import { AddCategoryButton } from './AddCategoryButton';
 import { GroupShareBadge } from './GroupShareBadge';
+import {
+  MOBILE_TABLE_ALLOCATED_CELL,
+  MOBILE_TABLE_AVAILABLE_CELL,
+  MOBILE_TABLE_GRID,
+} from './mobile-table-columns';
 
 interface CategoryGroupRowProps {
   item: BudgetRow;
@@ -80,7 +85,7 @@ export function CategoryGroupRow({
   if (isTableLayout) {
     return (
       <div className="bg-muted/60 border-b border-border/40 select-none">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 items-center py-1.5 pl-1 pr-2">
+        <div className={cn(MOBILE_TABLE_GRID, 'py-1.5 pl-1 pr-2')}>
           {/* Group name column */}
           <div className="flex items-center gap-0.5 min-w-0">
             <button onClick={onToggle} className="shrink-0 text-muted-foreground/50">
@@ -109,7 +114,12 @@ export function CategoryGroupRow({
           </div>
 
           {/* Allocated total column */}
-          <div className="text-right text-[11px] font-semibold text-muted-foreground whitespace-nowrap tabular-nums">
+          <div
+            className={cn(
+              'text-right text-[11px] font-semibold text-muted-foreground whitespace-nowrap tabular-nums',
+              MOBILE_TABLE_ALLOCATED_CELL
+            )}
+          >
             <PlanningAnimatedNumber value={item.assigned} formatter={formatAmount} />
           </div>
 
@@ -117,6 +127,7 @@ export function CategoryGroupRow({
           <div
             className={cn(
               'text-right text-[11px] font-semibold whitespace-nowrap tabular-nums',
+              MOBILE_TABLE_AVAILABLE_CELL,
               item.available < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
             )}
           >
