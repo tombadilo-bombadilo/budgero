@@ -14,6 +14,11 @@ import { AvailableCell } from './AvailableCell';
 import { AllocatedCell } from './AllocatedCell';
 import { ActivityButton } from './ActivityButton';
 import { getStatusColor, getStatusDotClasses, type StatusColorParams } from './category-row.utils';
+import {
+  MOBILE_TABLE_ALLOCATED_CELL,
+  MOBILE_TABLE_AVAILABLE_CELL,
+  MOBILE_TABLE_GRID,
+} from '../mobile-table-columns';
 
 export interface CategoryRowTableLayoutProps {
   item: BudgetRow;
@@ -106,7 +111,7 @@ export function CategoryRowTableLayout({
       onClick={handleClick}
     >
       {/* Table row */}
-      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 items-center py-1.5 pl-1 pr-2">
+      <div className={cn(MOBILE_TABLE_GRID, 'py-1.5 pl-1 pr-2')}>
         {/* Category name column */}
         <div
           className="flex items-center gap-1 min-w-0 cursor-pointer"
@@ -136,7 +141,10 @@ export function CategoryRowTableLayout({
         </div>
 
         {/* Allocated column */}
-        <div className="text-right whitespace-nowrap" data-budget-prevent-row-select="true">
+        <div
+          className={cn('text-right whitespace-nowrap', MOBILE_TABLE_ALLOCATED_CELL)}
+          data-budget-prevent-row-select="true"
+        >
           <AllocatedCell
             item={item}
             globalLocalizer={globalLocalizer}
@@ -156,27 +164,29 @@ export function CategoryRowTableLayout({
         </div>
 
         {/* Available column */}
-        <AvailableCell
-          item={item}
-          globalLocalizer={globalLocalizer}
-          selectedBudgetId={selectedBudgetId}
-          currentMonth={currentMonth}
-          onMoveMoney={onMoveMoney}
-          moveOpen={moveOpen}
-          setMoveOpen={setMoveOpen}
-          moveAmount={moveAmount}
-          setMoveAmount={setMoveAmount}
-          moveTarget={moveTarget}
-          setMoveTarget={setMoveTarget}
-          initMovePopover={initMovePopover}
-          onConfirmMove={confirmMove}
-          className="flex items-center justify-end gap-0.5 whitespace-nowrap"
-          triggerClassName="text-[11px] font-medium tabular-nums"
-          fallbackClassName={cn(
-            'text-[11px] font-medium tabular-nums',
-            item.available < 0 ? 'text-red-600 dark:text-red-400' : 'text-foreground'
-          )}
-        />
+        <div className={MOBILE_TABLE_AVAILABLE_CELL}>
+          <AvailableCell
+            item={item}
+            globalLocalizer={globalLocalizer}
+            selectedBudgetId={selectedBudgetId}
+            currentMonth={currentMonth}
+            onMoveMoney={onMoveMoney}
+            moveOpen={moveOpen}
+            setMoveOpen={setMoveOpen}
+            moveAmount={moveAmount}
+            setMoveAmount={setMoveAmount}
+            moveTarget={moveTarget}
+            setMoveTarget={setMoveTarget}
+            initMovePopover={initMovePopover}
+            onConfirmMove={confirmMove}
+            className="flex items-center justify-end gap-0.5 whitespace-nowrap"
+            triggerClassName="text-[11px] font-medium tabular-nums"
+            fallbackClassName={cn(
+              'text-[11px] font-medium tabular-nums',
+              item.available < 0 ? 'text-red-600 dark:text-red-400' : 'text-foreground'
+            )}
+          />
+        </div>
       </div>
 
       {/* Expanded section - Activity, Goals, and Actions */}
