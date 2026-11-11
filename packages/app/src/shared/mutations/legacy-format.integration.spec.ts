@@ -293,7 +293,12 @@ describe('format 3 only when the database is in a state the old code handles dif
       sentFormat('transactions.updateColumn', { id, columnName, newValue });
     expect(await edit(parent, 'OutflowConverted', 20000)).toBe(3);
     expect(await edit(parent, 'Date', '2026-09-12')).toBe(3);
-    expect(await edit(parent, 'AccountID', savings)).toBe(3);
+    // Not into savings: its transfer line lands there (refused before it goes out).
+    const cash = (
+      await services.accounts.createAccount('Cash', budgetId, 'checking', 'USD', asMilli(0))
+    ).ID;
+    expect(await edit(parent, 'AccountID', cash)).toBe(3);
+    await expect(edit(parent, 'AccountID', savings)).rejects.toThrow(/own account/);
     expect(await edit(parent, 'ExchangeRate', 1.2)).toBe(3);
     expect(await edit(parent, 'Memo', 'note')).toBe(2);
     expect(await edit(parent, 'Payee', 'Shop')).toBe(2);

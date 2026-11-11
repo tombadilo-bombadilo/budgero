@@ -354,6 +354,50 @@ describe('ops replayed on another device create the same rows', () => {
         })
       ).rejects.toThrow(/own account/);
     });
+
+    it('a parent cannot move into the account one of its lines transfers to', async () => {
+      runtime.services = a.services;
+      const parent = (await registry.executeMutationOp(
+        'transactions.add',
+        await registry.prepareMutationArgs('transactions.add', addArgs(savingsId)),
+        { mutationId: 'move-split', isReceiver: false }
+      )) as number;
+      await expect(
+        registry.prepareMutationArgs('transactions.moveToNewAccount', {
+          transactionId: parent,
+          newAccountId: savingsId,
+        })
+      ).rejects.toThrow(/own account/);
+      for (const columnName of ['AccountID', 'account_id']) {
+        await expect(
+          registry.prepareMutationArgs('transactions.updateColumn', {
+            id: parent,
+            columnName,
+            newValue: savingsId,
+          })
+        ).rejects.toThrow(/own account/);
+      }
+      await expect(
+        registry.prepareMutationArgs('transactions.batchEdit', {
+          edits: [{ id: parent, accountId: savingsId }],
+        })
+      ).rejects.toThrow(/own account/);
+      // Any other account is fine, and so is a replay of an old logged move.
+      const other = (
+        await a.services.accounts.createAccount('Cash', budgetId, 'checking', 'USD', asMilli(0))
+      ).ID;
+      await expect(
+        registry.prepareMutationArgs('transactions.moveToNewAccount', {
+          transactionId: parent,
+          newAccountId: other,
+        })
+      ).resolves.toBeTruthy();
+      await registry.executeMutationOp(
+        'transactions.moveToNewAccount',
+        { transactionId: parent, newAccountId: savingsId },
+        { mutationId: 'old-move', isReceiver: true }
+      );
+    });
   });
 
   it('keeps old ops without IDs replayable', async () => {

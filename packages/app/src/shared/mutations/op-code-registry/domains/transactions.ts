@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import {
   type AccountService,
   type ImportIdentity,
@@ -171,7 +172,8 @@ function rejectOwnAccountLines(
   existing: readonly { TransferAccountID?: number | null }[] = []
 ): void {
   if (ownAccountLines(accountId, lines) > ownAccountLines(accountId, existing)) {
-    throw new Error('A split line cannot transfer to its own account.');
+    // Same wording as the add form; prepare runs on this device, so it is translated.
+    throw new Error(t`A split line can't transfer to the transaction's own account.`);
   }
 }
 
@@ -191,6 +193,25 @@ function guardExistingParentLines(args: Record<string, unknown>): Record<string,
     S().splits.getSplits(transactionId)
   );
   return args;
+}
+
+/**
+ * The same guard for moving an existing parent to another account: none of
+ * its lines may transfer to the account it moves to (the mirror row would
+ * land next to the parent). Originating device only, like the guards above.
+ */
+function rejectMoveIntoTransferTarget(transactionId: unknown, accountId: unknown): void {
+  const id = Number(transactionId);
+  const target = Number(accountId);
+  if (!Number.isSafeInteger(id) || !Number.isSafeInteger(target)) return;
+  let parent: { AccountID: number } | undefined;
+  try {
+    parent = S().transactions!.getTransactionByID(id);
+  } catch {
+    return; // the op fails on its own
+  }
+  if (!parent || parent.AccountID === target) return;
+  rejectOwnAccountLines(target, S().splits.getSplits(id));
 }
 
 type ReconcileWithAdjustment = ReconcileResult & { adjustmentId?: number };
@@ -906,6 +927,13 @@ export const transactionOps = {
 
   // useUpdateTransactionColumn
   'transactions.updateColumn': {
+    prepare: (args) => {
+      const column = String(args.columnName ?? '')
+        .toLowerCase()
+        .replace(/_/g, '');
+      if (column === 'accountid') rejectMoveIntoTransferTarget(args.id, args.newValue);
+      return args;
+    },
     execute: async (args) => {
       return await S().transactions!.updateTransactionColumn(
         args.id as number,
@@ -1181,6 +1209,13 @@ export const transactionOps = {
   // The register's batch toolbar: account / category / payee for many rows,
   // one op, one write, one undo step.
   'transactions.batchEdit': {
+    prepare: (args) => {
+      const edits = Array.isArray(args.edits) ? (args.edits as TransactionBatchEdit[]) : [];
+      for (const edit of edits) {
+        if (edit?.accountId !== undefined) rejectMoveIntoTransferTarget(edit.id, edit.accountId);
+      }
+      return args;
+    },
     execute: async (args) => {
       const edits = Array.isArray(args.edits) ? (args.edits as TransactionBatchEdit[]) : [];
       if (!edits.every((edit) => Number.isSafeInteger(edit?.id) && edit.id > 0)) {
@@ -1248,6 +1283,10 @@ export const transactionOps = {
 
   // useMoveTransactionToNewAccount
   'transactions.moveToNewAccount': {
+    prepare: (args) => {
+      rejectMoveIntoTransferTarget(args.transactionId, args.newAccountId);
+      return args;
+    },
     execute: async (args) => {
       return await S().transactions!.moveTransactionToNewAccount(
         args.transactionId as number,
