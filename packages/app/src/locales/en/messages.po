@@ -1126,6 +1126,10 @@ msgstr "{moved, plural, one {{revalued, plural, one {# rate shifted, # account r
 msgid "{name} ({currency}, archived)"
 msgstr "{name} ({currency}, archived)"
 
+#: src/features/import/ui/steps/PreviewStep.tsx
+msgid "{name} already has the other side, so this is imported as a regular transaction"
+msgstr "{name} already has the other side, so this is imported as a regular transaction"
+
 #: src/features/account-management/ui/AddAccountDialog.tsx
 msgid "{name} has been added successfully."
 msgstr "{name} has been added successfully."
@@ -17721,6 +17725,10 @@ msgstr "These dates can be read two ways. Select the date format used in YNAB."
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
 msgid "These incoming transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
 msgstr "These incoming transactions look like ones you already entered. Match them to mark your entry as cleared, or add them as new transactions."
+
+#: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
+msgid "These transactions are in {currency}, but {existingName} is in {existingCurrency}."
+msgstr "These transactions are in {currency}, but {existingName} is in {existingCurrency}."
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "They arrive uncleared and are updated once your bank books them. Pending transactions your bank drops, like a released card hold, are removed."

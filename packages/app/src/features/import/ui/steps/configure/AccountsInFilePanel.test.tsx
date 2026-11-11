@@ -78,4 +78,15 @@ describe('accounts in this file', () => {
     expect(screen.queryByLabelText('Account for Acct 51')).not.toBeInTheDocument();
     expect(screen.getByText(/^4 more accounts are not listed/)).toBeInTheDocument();
   });
+
+  it('warns when the account picked for a source is in another currency', () => {
+    renderPanel(DEFAULT_IMPORT_CONFIG, [
+      { Account: 'checking', Currency: 'EUR' },
+      { Account: 'Visa', Currency: 'USD' },
+    ]);
+    expect(screen.getByTestId('route-currency-warning')).toHaveTextContent(
+      'These transactions are in EUR, but Checking is in USD.'
+    );
+    expect(screen.getAllByTestId('route-currency-warning')).toHaveLength(1);
+  });
 });
