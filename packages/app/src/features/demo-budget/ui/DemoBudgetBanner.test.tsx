@@ -57,6 +57,7 @@ beforeEach(() => {
 describe('demo banner', () => {
   it('shows on the demo workspace this device made', () => {
     setDemoSpaceId('space-demo');
+    env.accounts = [demoAccount];
     renderAt('/budgeting');
     expect(screen.getByTestId('demo-banner')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Start my own budget' })).toHaveAttribute(
@@ -72,6 +73,16 @@ describe('demo banner', () => {
     await waitFor(() => expect(getDemoSpaceId()).toBe('space-demo'));
   });
 
+  it('ignores a workspace marked before a seed that never ran, once it holds a real budget', async () => {
+    // Tab closed after the demo workspace was created, before the seed: the
+    // user then set up a budget of their own in it.
+    setDemoSpaceId('space-demo');
+    env.accounts = [{ Metadata: '{}' }];
+    renderAt('/budgeting');
+    expect(screen.queryByTestId('demo-banner')).toBeNull();
+    await waitFor(() => expect(getDemoSpaceId()).toBeNull());
+  });
+
   it('stays away from an ordinary workspace', () => {
     env.accounts = [{ Metadata: '{}' }];
     setDemoSpaceId('another-space');
@@ -83,6 +94,7 @@ describe('demo banner', () => {
 describe('start my own budget page', () => {
   it('opens setup from the demo', () => {
     setDemoSpaceId('space-demo');
+    env.accounts = [demoAccount];
     renderAt('/start-own-budget');
     expect(screen.getByText('onboarding from_demo')).toBeInTheDocument();
   });
@@ -102,8 +114,17 @@ describe('start my own budget page', () => {
     expect(screen.getByText('budget page')).toBeInTheDocument();
   });
 
+  it('never opens setup (which deletes the demo) for a marked workspace without demo data', () => {
+    setDemoSpaceId('space-demo');
+    env.accounts = [{ Metadata: '{}' }];
+    renderAt('/start-own-budget');
+    expect(screen.getByText('budget page')).toBeInTheDocument();
+    expect(screen.queryByText(/onboarding/)).toBeNull();
+  });
+
   it('sends the user back when the demo workspace no longer exists', () => {
     setDemoSpaceId('space-demo');
+    env.accounts = [demoAccount];
     env.spaces = [];
     renderAt('/start-own-budget');
     expect(screen.getByText('budget page')).toBeInTheDocument();
