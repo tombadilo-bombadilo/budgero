@@ -27,6 +27,13 @@ export function getCurrencySym(code: string): string {
   }
 }
 
+/**
+ * Text fields in onboarding: a border that stays visible on every theme (the
+ * app's input token is nearly the page colour on the light themes, so an
+ * unfocused field read as cut off).
+ */
+export const FIELD_CLASS = 'border-foreground/25';
+
 export interface StepProps {
   cur: OnboardingStepDef;
   state: OnboardingFormState;
@@ -36,10 +43,16 @@ export interface StepProps {
 export const Title: React.FC<{ h: MessageDescriptor; sub?: MessageDescriptor }> = ({ h, sub }) => {
   const { t } = useLingui();
   return (
-    <div className="mb-4 md:mb-6">
-      <h1 className="text-xl font-semibold leading-tight tracking-tight md:text-2xl">{t(h)}</h1>
+    <div className="mb-4 group-data-[compact]/onb:mb-2 md:mb-6">
+      <h1 className="text-xl font-semibold leading-tight tracking-tight group-data-[compact]/onb:text-base md:text-2xl">
+        {t(h)}
+      </h1>
+      {/* With the keyboard open on a phone the intro folds away (it was read
+          before typing started), so the fields and Next fit. */}
       {sub && (
-        <p className="mt-1.5 max-w-prose text-sm leading-relaxed text-muted-foreground">{t(sub)}</p>
+        <p className="mt-1.5 max-w-prose text-sm leading-relaxed text-muted-foreground group-data-[compact]/onb:hidden">
+          {t(sub)}
+        </p>
       )}
     </div>
   );

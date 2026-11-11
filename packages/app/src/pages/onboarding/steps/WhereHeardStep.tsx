@@ -3,7 +3,7 @@ import React, { useId } from 'react';
 import { cn } from '@shared/lib/utils';
 import { Input } from '@shared/ui/input';
 import { HEARD_OPTIONS } from '../onboarding-data';
-import { OnboardingOptionTile, Title, type StepProps } from './shared';
+import { FIELD_CLASS, OnboardingOptionTile, Title, type StepProps } from './shared';
 
 export const WhereHeardStep: React.FC<StepProps> = ({ cur, state, set }) => {
   const { t } = useLingui();
@@ -36,7 +36,7 @@ export const WhereHeardStep: React.FC<StepProps> = ({ cur, state, set }) => {
       </div>
       {state.heardSource === 'other' && (
         <Input
-          className="mt-3"
+          className={cn(FIELD_CLASS, 'mt-3')}
           value={state.heardOther}
           onChange={(e) => set({ heardOther: e.target.value })}
           placeholder={t`Tell us where…`}
@@ -85,7 +85,7 @@ export const WhereHeardPicker: React.FC<Pick<StepProps, 'state' | 'set'>> = ({ s
       </div>
       {state.heardSource === 'other' && (
         <Input
-          className="mt-2 h-8 text-sm"
+          className={cn(FIELD_CLASS, 'mt-2 h-8 text-sm')}
           value={state.heardOther}
           onChange={(e) => set({ heardOther: e.target.value })}
           placeholder={t`Tell us where…`}

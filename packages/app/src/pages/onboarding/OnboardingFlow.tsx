@@ -534,7 +534,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
 
       <div className="flex min-h-0 min-w-0 flex-1 flex-col">
         {/* Top bar: brand on phones, the step count, and the way out. */}
-        <div className="flex shrink-0 items-center gap-3 px-4 pt-3 md:px-10 md:pt-6">
+        <div className="flex shrink-0 items-center gap-3 px-4 pt-3 group-data-[compact]/onb:pt-1.5 md:px-10 md:pt-6">
           <img src="/logo_48.png" alt="" width={22} height={22} className="md:hidden" aria-hidden />
           {showBackToDemo && (
             <button
@@ -566,7 +566,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
           )}
         </div>
         <div
-          className="mx-4 mt-2.5 flex shrink-0 gap-1 md:mx-10 md:mt-4"
+          className="mx-4 mt-2.5 flex shrink-0 gap-1 group-data-[compact]/onb:hidden md:mx-10 md:mt-4"
           role="progressbar"
           aria-valuemin={1}
           aria-valuemax={total}
@@ -585,7 +585,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
         </div>
 
         {/* The step. Long lists scroll here; the buttons below never move. */}
-        <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-4 md:px-10 md:pt-7">
+        <main
+          data-onboarding-step
+          onFocus={() => setTimeout(keepFocusInView, 60)}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-4 group-data-[compact]/onb:pb-2 group-data-[compact]/onb:pt-2 md:px-10 md:pt-7"
+        >
           {curId === 'welcome' && <WelcomeStep cur={cur} state={state} set={set} />}
           {curId === 'start_mode' && <StartModeStep cur={cur} state={state} set={set} />}
           {curId === 'currency' && <CurrencyStep cur={cur} state={state} set={set} />}
@@ -646,7 +650,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
         </main>
 
         {!isShowingYnabStatus && (
-          <div className="flex shrink-0 items-center gap-2 border-t bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 md:bg-transparent md:px-10 md:py-4">
+          <div className="flex shrink-0 items-center gap-2 border-t bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 group-data-[compact]/onb:py-2 md:bg-transparent md:px-10 md:py-4">
             {!isFirst && applyStatus !== 'running' && (
               <Button type="button" variant="ghost" onClick={back} className="px-2">
                 <Trans>← Back</Trans>
@@ -692,10 +696,14 @@ function OnboardingFrame({
   ...rest
 }: { children?: React.ReactNode; wide?: boolean } & React.HTMLAttributes<HTMLDivElement>) {
   const viewport = useVisualViewportBox();
+  // A phone with the keyboard open (~350 px left): the step's intro and the
+  // progress bar fold away so the fields and the buttons fit.
+  const compact = Boolean(viewport && viewport.height < 500 && viewport.width < 768);
   return (
     <div
       {...rest}
-      className="fixed inset-x-0 top-0 flex h-dvh flex-col bg-background text-foreground md:items-center md:justify-center md:bg-muted/50 md:p-8"
+      data-compact={compact || undefined}
+      className="group/onb fixed inset-x-0 top-0 flex h-dvh flex-col bg-background text-foreground md:items-center md:justify-center md:bg-muted/50 md:p-8"
       style={viewport ? { top: viewport.top, height: viewport.height } : undefined}
     >
       <div
@@ -710,13 +718,30 @@ function OnboardingFrame({
   );
 }
 
+/**
+ * Scrolls the focused field into view inside the step, together with what
+ * belongs to it (the nearest `data-keep-in-view` block: both password fields
+ * and their messages, one account row).
+ */
+function keepFocusInView(): void {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || !active.closest('[data-onboarding-step]')) return;
+  if (!active.matches('input, select, textarea')) return;
+  const block = active.closest('[data-keep-in-view]') ?? active;
+  block.scrollIntoView?.({ block: 'nearest' });
+}
+
 /** The visual viewport (what is left above the on-screen keyboard), where supported. */
-function useVisualViewportBox(): { top: number; height: number } | null {
-  const [box, setBox] = useState<{ top: number; height: number } | null>(null);
+function useVisualViewportBox(): { top: number; height: number; width: number } | null {
+  const [box, setBox] = useState<{ top: number; height: number; width: number } | null>(null);
   useEffect(() => {
     const vv = typeof window !== 'undefined' ? window.visualViewport : null;
     if (!vv) return;
-    const update = () => setBox({ top: vv.offsetTop, height: vv.height });
+    const update = () => {
+      setBox({ top: vv.offsetTop, height: vv.height, width: vv.width });
+      // The keyboard opened or closed: the field being typed in stays visible.
+      requestAnimationFrame(keepFocusInView);
+    };
     const frame = requestAnimationFrame(update);
     vv.addEventListener('resize', update);
     vv.addEventListener('scroll', update);

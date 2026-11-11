@@ -15,7 +15,7 @@ import { hasCompleteCreditPaymentMappings } from '@features/budget-management/ui
 import { YnabDateOrderChoice } from '@features/budget-management/ui/create-budget-form/YnabDateOrderChoice';
 import { track } from '@shared/lib/analytics/track';
 import type { YnabHelpTopic } from '@shared/lib/analytics/events';
-import { Title, type StepProps } from './shared';
+import { FIELD_CLASS, Title, type StepProps } from './shared';
 import { classifyYnabApiError, type YnabApiFailureReason } from './ynab-source-errors';
 
 interface YnabStepProps extends StepProps {
@@ -214,7 +214,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               }}
               placeholder={t`Used for this import only`}
               disabled={isConnecting}
-              className="min-w-0 flex-1"
+              className={`${FIELD_CLASS} min-w-0 flex-1`}
             />
             <Button
               type="button"

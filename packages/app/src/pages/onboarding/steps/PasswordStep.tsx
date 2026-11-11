@@ -3,7 +3,7 @@ import { msg } from '@lingui/core/macro';
 import React, { useId } from 'react';
 import { cn } from '@shared/lib/utils';
 import { PasswordInput } from '@shared/ui/password-input';
-import { FieldLabel, Title, type StepProps } from './shared';
+import { FIELD_CLASS, FieldLabel, Title, type StepProps } from './shared';
 
 export const PasswordStep: React.FC<StepProps & { forDemo?: boolean }> = ({
   state,
@@ -39,7 +39,10 @@ export const PasswordStep: React.FC<StepProps & { forDemo?: boolean }> = ({
             : msg`Your budget lives on your device, encrypted with a master password only you know. Pick something memorable — we can’t reset it for you.`
         }
       />
-      <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+      <div
+        data-keep-in-view
+        className="grid scroll-my-3 gap-3 group-data-[compact]/onb:gap-2 md:grid-cols-2 md:gap-4"
+      >
         <div>
           <FieldLabel htmlFor={pwId}>
             <Trans>MASTER PASSWORD</Trans>
@@ -48,8 +51,16 @@ export const PasswordStep: React.FC<StepProps & { forDemo?: boolean }> = ({
             id={pwId}
             value={pw}
             onChange={(e) => set({ password: e.target.value })}
+            enterKeyHint="next"
+            onKeyDown={(e) => {
+              // Enter (Next on a phone keyboard) moves on to the confirm field.
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              document.getElementById(confirmId)?.focus();
+            }}
             placeholder={t`at least 8 characters`}
             autoComplete="new-password"
+            className={FIELD_CLASS}
           />
           {pw.length > 0 && (
             <div className="mt-1.5 flex items-center gap-2">
@@ -79,8 +90,10 @@ export const PasswordStep: React.FC<StepProps & { forDemo?: boolean }> = ({
             id={confirmId}
             value={state.passwordConfirm}
             onChange={(e) => set({ passwordConfirm: e.target.value })}
+            enterKeyHint="done"
             placeholder={t`type it once more`}
             autoComplete="new-password"
+            className={FIELD_CLASS}
           />
           {state.passwordConfirm.length > 0 && (
             <div

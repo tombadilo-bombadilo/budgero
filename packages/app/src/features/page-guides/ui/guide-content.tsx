@@ -57,9 +57,9 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
         title: t`Assigned, Activity, Available`,
         body: (
           <Trans>
-            Assigned (Allocated on a phone) is what you put in a category this month, and Activity
-            is what was spent from it. Available is what is left, and it carries over to next month;
-            the arrows by the month move between months.
+            Assigned is what you put in a category this month, and Activity is what was spent from
+            it. Available is what is left, and it carries over to next month; the arrows by the
+            month move between months.
           </Trans>
         ),
         visual: (
