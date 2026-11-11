@@ -129,6 +129,10 @@ export type ActivationMilestone = (typeof ACTIVATION_MILESTONES)[number];
 export const EMPTY_STATE_SCREENS = ['budget', 'transactions', 'reports'] as const;
 export type EmptyStateScreen = (typeof EMPTY_STATE_SCREENS)[number];
 
+/** Page guides (features/page-guides): one per page that has one. */
+export const PAGE_GUIDE_IDS = ['budget', 'accounts', 'reports', 'home'] as const;
+export type PageGuideId = (typeof PAGE_GUIDE_IDS)[number];
+
 export const IMPORT_SOURCES = ['ynab_api', 'ynab_zip', 'csv', 'pdf', 'ofx', 'qif', 'camt'] as const;
 export type ImportSource = (typeof IMPORT_SOURCES)[number];
 const IMPORT_CONTEXTS = ['onboarding', 'app'] as const;
@@ -324,6 +328,11 @@ export const EVENT_SCHEMA = {
     imported: YES_NO,
   },
   empty_state_viewed: { screen: EMPTY_STATE_SCREENS },
+
+  // Page guides ("How this works"), opened automatically or by hand.
+  page_guide_shown: { guide: PAGE_GUIDE_IDS },
+  page_guide_completed: { guide: PAGE_GUIDE_IDS },
+  page_guide_skipped: { guide: PAGE_GUIDE_IDS },
 
   // Onboarding YNAB step (before import_started, which fires only after the password step)
   ynab_import_method_chosen: { method: YNAB_IMPORT_CHOICES },

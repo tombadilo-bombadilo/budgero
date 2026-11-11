@@ -1,14 +1,16 @@
 /**
  * Sign-out wipes localStorage. A few small markers have to outlive it, or
  * signing in again would lose the demo budget's banner, repeat first-month
- * analytics events and drop the first-steps checklist. They hold only ids,
- * dates and step/milestone names: no budget data, nothing secret.
+ * analytics events and page guides, and drop the first-steps checklist. They
+ * hold only ids, dates and step/milestone/guide names: no budget data,
+ * nothing secret.
  */
 export const SIGN_OUT_PRESERVED_LOCAL_KEYS: readonly string[] = [
   'budgero:demo-space', // shared/lib/demo-space.ts
   'budgero:fm-opened', // shared/lib/analytics/first-month.ts
   'budgero:fm-milestones',
   'budgero:first-steps', // shared/lib/first-steps/first-steps.ts
+  'budgero:page-guides', // features/page-guides/model/page-guides.ts
 ];
 
 /** localStorage.clear() that keeps the keys above (and any extra ones). */

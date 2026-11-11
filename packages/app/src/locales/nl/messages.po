@@ -2760,6 +2760,10 @@ msgstr "Een gids voor zero-based budgetteren."
 msgid "A goal says what a category needs, so each month you see what’s still underfunded."
 msgstr "Een doel zegt wat een categorie nodig heeft, zodat je elke maand ziet waar nog geld ontbreekt."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "A goal tells a category what it needs. Choose Create Goal under a category (open it with the arrow by its name if it is closed): the bar then shows how far along you are, and the goal says how much to assign this month."
+msgstr "Een doel vertelt een categorie wat ze nodig heeft. Kies ‘Doel aanmaken’ onder een categorie (is die dichtgeklapt, open hem dan met de pijl naast de naam): de balk laat dan zien hoe ver je bent, en het doel zegt hoeveel je deze maand moet toewijzen."
+
 #: src/pages/onboarding/onboarding-data.ts
 #~ msgid "A household, a side hustle, a trip — whatever you’re planning for."
 #~ msgstr "Een huishouden, een bijbaantje, een reis — waarvoor je ook wilt budgetteren."
@@ -2779,6 +2783,14 @@ msgstr "Een kort overzicht van deze Budgero-installatie, inclusief versie en nut
 #: src/features/rules/ui/rule-editor/RulePreview.tsx
 msgid "A quick reminder of how Budgero applies your automation."
 msgstr "Een korte herinnering over hoe Budgero jouw automatisering toepast."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "A red Available means a category spent more than it had. Select the red amount to cover it from Ready to Assign or from a category that can spare it; select a positive amount to move money the other way."
+msgstr "Een rood ‘Beschikbaar’ betekent dat een categorie meer heeft uitgegeven dan ze had. Kies het rode bedrag om het aan te vullen uit ‘Te verdelen’ of uit een categorie die iets kan missen; kies een positief bedrag om geld de andere kant op te verschuiven."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "A total by a date"
+msgstr "Een totaal op een datum"
 
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "A transaction with several labels counts in full under each, so labels can overlap."
@@ -3083,6 +3095,7 @@ msgstr "Actieve abonnees"
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/goal-management/lib/core-goal-text.ts
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/pages/admin/admin-users/UserDetailsDialog.tsx
 msgid "Activity"
 msgstr "Activiteit"
@@ -3126,6 +3139,7 @@ msgid "Add a note…"
 msgstr "Notitie toevoegen…"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "Add a transaction"
 msgstr "Een transactie toevoegen"
 
@@ -3673,6 +3687,10 @@ msgstr "Bedrag om de maand mee te beginnen"
 msgid "Amount:"
 msgstr "Bedrag:"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "An amount each month"
+msgstr "Een bedrag per maand"
+
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "An error occurred while deleting the rate."
 msgstr "Er is een fout opgetreden bij het verwijderen van de wisselkoers."
@@ -3909,6 +3927,10 @@ msgstr "Vraag iedereen die in de afgelopen 30 dagen actief was wat werkt en wat 
 msgid "Ask the owner to resubscribe"
 msgstr "Vraag de eigenaar om opnieuw te abonneren"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Ask your own question"
+msgstr "Stel je eigen vraag"
+
 #: src/pages/accounts/components/AssetLiabilityHistoryChart.tsx
 msgid "Asset & Liability History (24 months)"
 msgstr "Activa- en passivageschiedenis (24 maanden)"
@@ -3949,10 +3971,15 @@ msgstr "Wijs dit toe om je doel te bereiken"
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Assigned"
 msgstr "Toegewezen"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Assigned (Allocated on a phone) is what you put in a category this month, and Activity is what was spent from it. Available is what is left, and it carries over to next month; the arrows by the month move between months."
+msgstr "‘Toegewezen’ is wat je deze maand in een categorie hebt gezet, en ‘Activiteit’ is wat eruit is uitgegeven. ‘Beschikbaar’ is wat over is, en dat gaat mee naar de volgende maand; met de pijlen naast de maand wissel je van maand."
 
 #. placeholder {0}: formatAmount(cover)
 #: src/features/budget-planning/ui/category-row/CoverOverspendingPopover.tsx
@@ -3983,6 +4010,10 @@ msgstr "Toegewezen tot en met deze maand"
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Assigned to categories"
 msgstr "Toegewezen aan categorieën"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Assigned, Activity, Available"
+msgstr "Toegewezen, Activiteit, Beschikbaar"
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "Assigned:"
@@ -4121,6 +4152,7 @@ msgstr "Besch."
 #: src/features/budget-planning/ui/CategoryGroupRow.tsx
 #: src/features/budget-planning/ui/desktop-table/DesktopBudgetTableView.tsx
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "Available"
 msgstr "Beschikbaar"
 
@@ -4184,6 +4216,7 @@ msgstr "Azeret Mono"
 #: src/app/startup/screens.tsx
 #: src/features/ai/ui/receipt-scanner/ScanActions.tsx
 #: src/features/import/ui/steps/ConfigureStep.tsx
+#: src/features/page-guides/ui/PageGuideDialog.tsx
 msgid "Back"
 msgstr "Terug"
 
@@ -4821,6 +4854,10 @@ msgstr "Maak dashboardlay-outs van Explorer-grafieken. Sleep om te herschikken, 
 msgid "Build metadata for support or troubleshooting."
 msgstr "Maak metadata aan voor ondersteuning of probleemoplossing."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Build up a balance"
+msgstr "Een saldo opbouwen"
+
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Build up to an amount available, with no date and no repeat"
 msgstr "Opbouwen tot een beschikbaar bedrag, zonder datum en zonder herhaling"
@@ -5013,6 +5050,10 @@ msgstr "Contant"
 #: src/pages/dashboard/DashboardPage.mobile.tsx
 msgid "Cash Balance"
 msgstr "Contant saldo"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Cash Balance adds up your checking, savings and cash, and At a glance shows this month’s income, spending and what is left to assign. The period buttons set the range the charts cover."
+msgstr "‘Contant saldo’ telt je betaal-, spaar- en contante rekeningen op, en ‘In één oogopslag’ toont de inkomsten en uitgaven van deze maand en wat er nog te verdelen is. Met de periodeknoppen kies je welke periode de grafieken tonen."
 
 #. placeholder {0}: cause.month
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
@@ -5379,6 +5420,10 @@ msgstr "Kies een andere inkomstencategorie voor de transacties en toewijzingen v
 msgid "Choose category"
 msgstr "Kies categorie"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Choose Customize to add, move, resize or remove cards; Reset to default in the ⋯ menu brings the original back. To open Budgero on another page, change Default Home in Settings → Appearance."
+msgstr "Kies ‘Aanpassen’ om kaarten toe te voegen, te verplaatsen, van grootte te veranderen of te verwijderen; ‘Standaard herstellen’ in het ⋯-menu zet het origineel terug. Wil je Budgero op een andere pagina openen, wijzig dan ‘Standaard startpagina’ in Instellingen → Weergave."
+
 #: src/pages/settings/AppearancePage.tsx
 msgid "Choose how categories are displayed."
 msgstr "Kies hoe categorieën worden weergegeven."
@@ -5410,6 +5455,10 @@ msgstr "Kies hoe je deze categorie wilt bijhouden."
 #: src/features/budget-management/ui/create-budget-form/YnabCreditPaymentMatching.tsx
 msgid "Choose its payment category"
 msgstr "Betalingscategorie kiezen"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Choose New question, pick the data (for example Transactions), then add filters and a summary such as spending by category. Save it, and Add to dashboard puts it on a dashboard."
+msgstr "Kies ‘Nieuwe vraag’, kies de gegevens (bijvoorbeeld Transacties) en voeg filters en een samenvatting toe, zoals uitgaven per categorie. Sla hem op, en ‘Aan dashboard toevoegen’ zet hem op een dashboard."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Choose the currency for your budget. You can change the display language in Settings → Appearance."
@@ -5517,6 +5566,7 @@ msgstr "Begunstigde wissen"
 msgid "Clear selection"
 msgstr "Selectie wissen"
 
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/features/transactions/ui/ClearedToggle.tsx
 #: src/pages/accounts/AccountPage.tsx
 #: src/pages/accounts/components/AccountSummaryCards.tsx
@@ -5536,6 +5586,10 @@ msgstr "Bevestigd {0}"
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Cleared Balance"
 msgstr "Bevestigd saldo"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Cleared or not yet"
+msgstr "Bevestigd of nog niet"
 
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
 msgid "Cleared status"
@@ -7293,6 +7347,7 @@ msgid "Difference"
 msgstr "Verschil"
 
 #: src/features/demo-budget/lib/seed-demo-budget.ts
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Dining out"
 msgstr "Uit eten"
@@ -7374,6 +7429,7 @@ msgstr "Leven we binnen onze mogelijkheden?"
 
 #: src/features/ai/ui/AICategorizeDialog.tsx
 #: src/features/ai/ui/receipt-scanner/ScanProgress.tsx
+#: src/features/page-guides/ui/PageGuideDialog.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "Done"
 msgstr "Klaar"
@@ -8128,6 +8184,10 @@ msgstr "Elke munt die je verdient krijgt een taak voordat je hem uitgeeft. Hoe w
 #~ msgid "Every dollar gets a job"
 #~ msgstr "Elke euro krijgt een taak"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Every few months"
+msgstr "Om de paar maanden"
+
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "Every stream from income to {dimensionLabel}"
 msgstr "Alle geldstromen van inkomsten naar {dimensionLabel}"
@@ -8249,6 +8309,7 @@ msgid "Expand sidebar"
 msgstr "Zijbalk uitklappen"
 
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/features/transactions/ui/form/TransactionTypeSelector.tsx
 msgid "Expense"
 msgstr "Uitgave"
@@ -9209,6 +9270,7 @@ msgid "Gifts & Donations"
 msgstr "Cadeaus & Donaties"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "Give every coin a job"
 msgstr "Geef elke munt een taak"
 
@@ -9243,6 +9305,10 @@ msgstr "Teruggaan naar deze versie"
 #: src/features/ai/ui/AINotConfiguredWarning.tsx
 msgid "Go to Settings → AI Assistant to configure your local LLM connection."
 msgstr "Ga naar Instellingen → AI-assistent om je lokale LLM-verbinding te configureren."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Go to Settings → Imports, or drop the file onto the page on a computer. CSV, OFX, QFX, QIF, CAMT.053 and PDF statements work, and possible duplicates are shown before anything is added."
+msgstr "Ga naar Instellingen → Importen, of sleep het bestand op een computer naar de pagina. CSV-, OFX-, QFX-, QIF-, CAMT.053- en pdf-afschriften werken, en mogelijke dubbele transacties zie je voordat er iets wordt toegevoegd."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "Go to transactions"
@@ -9297,6 +9363,7 @@ msgid "Goal: start each month with this amount available"
 msgstr "Doel: begin elke maand met dit bedrag beschikbaar"
 
 #: src/features/budget-management/model/icon-options.ts
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "Goals"
 msgstr "Doelen"
 
@@ -9351,6 +9418,7 @@ msgid "Great job! No uncategorised transactions left."
 msgstr "Goed gedaan! Geen ongecategoriseerde transacties meer over."
 
 #: src/features/demo-budget/lib/seed-demo-budget.ts
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Groceries"
 msgstr "Boodschappen"
@@ -9617,6 +9685,10 @@ msgstr "Hoe moet de assistent omgaan met acties zoals het toevoegen van transact
 msgid "How this device's data compares to the server, and what is still syncing."
 msgstr "Hoe de gegevens op dit apparaat zich verhouden tot de server, en wat nog wordt gesynchroniseerd."
 
+#: src/features/page-guides/ui/PageGuideButton.tsx
+msgid "How this works"
+msgstr "Zo werkt het"
+
 #: src/features/budget-management/ui/create-budget-form/YnabPatHelpPopover.tsx
 msgid "How to create a YNAB personal access token"
 msgstr "Een persoonlijk YNAB-toegangstoken aanmaken"
@@ -9701,6 +9773,10 @@ msgstr "{selectedCount} transacties importeren"
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Import & map"
 msgstr "Importeren en koppelen"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Import a file from your bank"
+msgstr "Een bestand van je bank importeren"
 
 #: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "Import Account"
@@ -9857,6 +9933,10 @@ msgstr "In"
 msgid "In a dialog, or in an inline row at the top of the account register (desktop)."
 msgstr "In een dialoogvenster of in een inline rij bovenaan het rekeningregister (desktop)."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "In a question, select a bar, slice or table value to see those transactions, zoom in by month or break it down further. In the Ledger report, select an amount to list its transactions."
+msgstr "Kies in een vraag een staaf, een segment of een waarde in de tabel om die transacties te zien, per maand in te zoomen of verder uit te splitsen. Kies in het rapport Kasboek een bedrag om de transacties ervan te zien."
+
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "In budget ({conversionTargetCurrency}), edit to use your own rate"
 msgstr "In budget ({conversionTargetCurrency}), wijzig voor je eigen koers"
@@ -9914,6 +9994,7 @@ msgstr "Inclusief al geboekte of overgeslagen herhalingen."
 #: src/features/budget-management/model/icon-options.ts
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/features/transactions/ui/form/TransactionTypeSelector.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -10221,6 +10302,10 @@ msgstr "ZEER STERK"
 #: src/pages/admin/admin-users/ActionDialog.tsx
 msgid "Irreversible Action"
 msgstr "Onomkeerbare actie"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Is my net worth growing?"
+msgstr "Groeit mijn nettovermogen?"
 
 #: src/features/rules/ui/rule-editor/rule-editor.utils.ts
 msgid "is not"
@@ -10970,6 +11055,10 @@ msgstr "Logo"
 msgid "Logout"
 msgstr "Uitloggen"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Look inside a number"
+msgstr "Kijk achter een getal"
+
 #: src/features/ai/ui/AICategorizeDialog.tsx
 msgid "Low"
 msgstr "Laag"
@@ -11007,9 +11096,9 @@ msgstr "Maak een paar enveloppen"
 msgid "Make Administrator"
 msgstr "Beheerder maken"
 
-#: src/pages/onboarding/onboarding-data.ts
-#~ msgid "Make it yours"
-#~ msgstr "Maak het van jou"
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Make it yours"
+msgstr "Maak het van jou"
 
 #: src/features/transactions/ui/add-transaction/TransactionFormHeader.tsx
 msgid "Make recurring"
@@ -11924,6 +12013,7 @@ msgid "newest transaction {0}"
 msgstr "nieuwste transactie {0}"
 
 #: src/features/import/ui/steps/PreviewStep.tsx
+#: src/features/page-guides/ui/PageGuideDialog.tsx
 msgid "Next"
 msgstr "Volgende"
 
@@ -12979,6 +13069,10 @@ msgstr "Open <0>werkruimte-instellingen</0> om vergrendelde werkruimtes en event
 msgid "Open <0>workspace settings</0> to see which shared workspaces are locked."
 msgstr "Open <0>werkruimte-instellingen</0> om te zien welke gedeelde werkruimtes zijn vergrendeld."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Open an account, choose Reconcile and enter the balance your bank shows. Budgero compares it with your cleared balance, can add an adjustment for any difference, and locks the cleared transactions."
+msgstr "Open een rekening, kies ‘Afstemmen’ en vul het saldo in dat je bank toont. Budgero vergelijkt het met je bevestigde saldo, kan een correctie voor een verschil toevoegen en vergrendelt de bevestigde transacties."
+
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "Open Budgero tomorrow and record yesterday’s spending."
 msgstr "Open Budgero morgen en noteer wat je gisteren hebt uitgegeven."
@@ -13294,6 +13388,10 @@ msgstr "Overschreden met {0}in contanten"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Overspent by {overspent}"
 msgstr "Overschreden met {overspent}"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Overspent categories, upcoming transactions and transactions that need a category are listed here, so you can deal with them in one place."
+msgstr "Overschreden categorieën, aankomende transacties en transacties zonder categorie staan hier, zodat je ze op één plek kunt afhandelen."
 
 #: src/features/budget-planning/ui/category-row/CoverOverspendingPopover.tsx
 msgid "Overspent on credit by "
@@ -14456,6 +14554,10 @@ msgstr "Opnieuw downloaden van server?"
 #~ msgid "Reach a total by a date"
 #~ msgstr "Een totaal bereiken voor een datum"
 
+#: src/features/page-guides/ui/PageGuideDialog.tsx
+msgid "Read more in the docs"
+msgstr "Meer in de documentatie"
+
 #: src/features/budget-management/model/icon-options.ts
 msgid "Reading"
 msgstr "Bezig met lezen"
@@ -14470,6 +14572,7 @@ msgstr "Te verdelen"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
 msgid "Ready to Assign"
 msgstr "Te verdelen"
@@ -14477,6 +14580,10 @@ msgstr "Te verdelen"
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 msgid "Ready to Assign differences"
 msgstr "Verschillen in Te verdelen"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Ready to Assign is money you have that has no job yet. Assign it to categories until Ready to Assign shows 0, and only budget money you already have."
+msgstr "‘Te verdelen’ is geld dat je hebt en dat nog geen taak heeft. Wijs het toe aan categorieën tot ‘Te verdelen’ op 0 staat, en budgetteer alleen geld dat je al hebt."
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Ready to Assign is now calculated cumulatively"
@@ -14588,6 +14695,10 @@ msgstr "Aanbevolen. Je hebt een persoonlijk toegangstoken uit de YNAB-webapp nod
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Reconcile Account"
 msgstr "Rekening afstemmen"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Reconcile now and then"
+msgstr "Stem af en toe af"
 
 #: src/shared/lib/search-query-parser.ts
 msgid "Reconciled"
@@ -15077,6 +15188,10 @@ msgstr "Rapporten"
 msgctxt "mobile nav"
 msgid "Reports"
 msgstr "Rapporten"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Reports answer questions"
+msgstr "Rapporten beantwoorden vragen"
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Repository"
@@ -16880,6 +16995,7 @@ msgstr "Grootte"
 
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
 #: src/features/import/ui/steps/PreviewStep.tsx
+#: src/features/page-guides/ui/PageGuideDialog.tsx
 #: src/pages/settings/recurring/components/RecurringOccurrenceRow.tsx
 msgid "Skip"
 msgstr "Overslaan"
@@ -17018,6 +17134,7 @@ msgid "Speed up budgeting without leaving the keyboard."
 msgstr "Sneller budgetteren zonder het toetsenbord los te laten."
 
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/pages/analytics/AnalyticsPage.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -17105,6 +17222,10 @@ msgstr "Uitgegeven (boven plan)"
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 msgid "Spent (within plan)"
 msgstr "Uitgegeven (binnen plan)"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Spent too much? Move money"
+msgstr "Te veel uitgegeven? Verschuif geld"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
@@ -17315,6 +17436,10 @@ msgstr "Status: {0}"
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Stay covered if data ever corrupts or you lose your master password—we'll remind you to keep a fresh backup on hand."
 msgstr "Blijf gedekt als je gegevens ooit beschadigen of je je hoofdwachtwoord kwijtraakt—we herinneren je eraan om een actuele backup bij de hand te houden."
+
+#: src/features/page-guides/ui/PageGuideDialog.tsx
+msgid "Step {step} of {total}"
+msgstr "Stap {step} van {total}"
 
 #: src/pages/onboarding/OnboardingFlow.tsx
 msgid "STEP {stepLabel} / {totalLabel}"
@@ -17968,6 +18093,10 @@ msgstr "Het beginsaldo wordt zo ingesteld dat de rekening vandaag overeenkomt me
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
 msgid "The paired transfer transaction could not be loaded."
 msgstr "De gekoppelde overboekingstransactie kon niet worden geladen."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "The prebuilt reports answer common questions, such as where your money goes. Questions you save show up here too, and Dashboards put several of them side by side."
+msgstr "De kant-en-klare rapporten beantwoorden veelgestelde vragen, zoals waar je geld naartoe gaat. Vragen die je opslaat, staan hier ook, en dashboards zetten er meerdere naast elkaar."
 
 #: src/app/system/BackupReminderDialog.tsx
 msgid "The reminder may reappear until this works."
@@ -18815,6 +18944,10 @@ msgstr "Transacties zijn hersteld naar hun vorige waarden."
 msgid "Transactions will use accounts from the \"{0}\" column. If an account name doesn't match any existing account, you'll need to select a default account below:"
 msgstr "Transacties gebruiken rekeningen uit de kolom \"{0}\". Als een rekeningnaam niet overeenkomt met een bestaande rekening, moet je hieronder een standaardrekening selecteren:"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Transactions you add start uncleared. Select the circle once your bank shows the transaction; imported ones arrive cleared."
+msgstr "Transacties die je toevoegt, beginnen als niet bevestigd. Kies het rondje zodra je bank de transactie toont; geïmporteerde komen al bevestigd binnen."
+
 #: src/features/chat/ui/VoiceInputButton.tsx
 msgid "Transcribing"
 msgstr "Transcriberen"
@@ -18824,6 +18957,7 @@ msgid "Transcription failed"
 msgstr "Transcriptie mislukt"
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/form/TransactionTypeSelector.tsx
 #: src/pages/settings/recurring/components/RecurringKindBadge.tsx
@@ -19181,6 +19315,7 @@ msgstr "Niet-gecategoriseerd"
 msgid "Uncategorized ({uncategorizedCount})"
 msgstr "Niet-gecategoriseerd ({uncategorizedCount})"
 
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/features/transactions/ui/ClearedToggle.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Uncleared"
@@ -19554,6 +19689,10 @@ msgstr "Gebruik 'Overboekingen' om af te trekken van Te verdelen, of selecteer e
 #: src/pages/settings/LabelsPage.tsx
 msgid "Use a valid color"
 msgstr "Gebruik een geldige kleur"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Use Add Transaction (the + on a phone) and choose Expense, Income or Transfer. Give each expense a category; use Transfer when money moves between your own accounts, because that is not spending."
+msgstr "Gebruik ‘Transactie toevoegen’ (de + op een telefoon) en kies Uitgave, Inkomen of Overboeking. Geef elke uitgave een categorie; gebruik Overboeking als geld tussen je eigen rekeningen gaat, want dat is geen uitgave."
 
 #: src/pages/settings/push-api/PushApiPage.tsx
 msgid "Use AES-256-GCM encryption with the same key used by the Budgero app. The encrypted data format is: IV (12 bytes) + Ciphertext + Auth Tag (16 bytes), then Base64 encoded."
@@ -19968,6 +20107,7 @@ msgstr "We gebruiken de uitnodiging en ontgrendelen de gedeelde werkruimte."
 msgid "WEAK"
 msgstr "ZWAK"
 
+#: src/features/page-guides/ui/guide-content.tsx
 #: src/pages/analytics/AnalyticsPage.tsx
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Wealth"
@@ -20056,6 +20196,10 @@ msgstr "Wat is een werkruimte?"
 msgid "What is still available right now"
 msgstr "Wat er nu nog beschikbaar is"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "What needs you"
+msgstr "Wat jou nodig heeft"
+
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "What this means"
 msgstr "Wat dit betekent"
@@ -20127,6 +20271,10 @@ msgstr "Waar bewaar je je geld?"
 #: src/pages/analytics/AnalyticsPage.tsx
 msgid "Where does it go?"
 msgstr "Waar gaat het heen?"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Where does my money go?"
+msgstr "Waar gaat mijn geld naartoe?"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Where money goes"
@@ -20835,6 +20983,10 @@ msgstr "Je hoofdwachtwoord is vereist om je budgetgegevens te ontsleutelen"
 #: src/features/budget-sharing/ui/RedeemInviteDialog.tsx
 msgid "Your master password never leaves this device. It wraps the decrypted workspace key before sending it to the server."
 msgstr "Je hoofdwachtwoord verlaat dit apparaat nooit. Het verpakt de gedecodeerde werkruimtesleutel voordat deze naar de server wordt verzonden."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Your money at a glance"
+msgstr "Je geld in één oogopslag"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Your name"
