@@ -739,17 +739,11 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
     const target = this.aliasTarget(input.dashboardId);
     if (target) {
       // A hidden second copy's order applies to our copy: its seeded cards
-      // map to ours, the rest keep their IDs; cards only we have follow.
-      const current = this.getDashboard(target.ID)?.widgets.map((w) => w.id) ?? [];
-      const present = new Set(current);
-      const mapped = input.orderedIds
-        .map((id) => {
-          const key = seededCardKey(id, input.dashboardId);
-          return key ? seededWidgetId(target.ID, key) : id;
-        })
-        .filter((id, index, all) => present.has(id) && all.indexOf(id) === index);
-      const listed = new Set(mapped);
-      const orderedIds = [...mapped, ...current.filter((id) => !listed.has(id))];
+      // map to ours, the rest keep their IDs.
+      const orderedIds = input.orderedIds.map((id) => {
+        const key = seededCardKey(id, input.dashboardId);
+        return key ? seededWidgetId(target.ID, key) : id;
+      });
       if (orderedIds.length > 0) this.reorderWidgets({ dashboardId: target.ID, orderedIds });
       return;
     }
@@ -758,15 +752,25 @@ export class DatabaseCustomDashboardService implements CustomDashboardService {
       throw new Error('Dashboard not found');
     }
 
+    // Lenient on purpose: a reorder made on a device that had not seen a
+    // card another device added (or removed) lists other IDs. The listed
+    // cards take that order, the rest keep theirs after them; IDs this
+    // dashboard doesn't have are skipped. A strict check would fail that op
+    // on every other device and leave the order different there.
     const existingIds = dashboard.widgets.map((w) => w.id);
-    this.validateReorderIds(existingIds, input.orderedIds, 'widgets');
+    const present = new Set(existingIds);
+    const listed = input.orderedIds.filter(
+      (id, index, all) => present.has(id) && all.indexOf(id) === index
+    );
+    const listedSet = new Set(listed);
+    const orderedIds = [...listed, ...existingIds.filter((id) => !listedSet.has(id))];
 
     this.db.transaction(() => {
       const stmt = this.db.prepare(
         `UPDATE custom_dashboard_widgets SET SortOrder = ?, UpdatedAt = ? WHERE ID = ? AND DashboardID = ?`
       );
       const now = clock.date().toISOString();
-      input.orderedIds.forEach((id, index) => {
+      orderedIds.forEach((id, index) => {
         stmt.run(index, now, id, input.dashboardId);
       });
       stmt.finalize();

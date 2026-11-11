@@ -360,4 +360,63 @@ describe('two devices customise the default home before syncing', () => {
       expect(widgets.some((w) => w.card === 'report-1/question-widget')).toBe(true);
     });
   }
+
+  for (const kind of ['home copy', 'ordinary dashboard'] as const) {
+    it(`a reorder made before seeing another device's new card still applies (${kind})`, async () => {
+      const a = await openDevice('A', base);
+      const setup: Call[] = [];
+      let dashboardId: string;
+      if (kind === 'home copy') {
+        dashboardId = (
+          await materializeDefaultHome({
+            exec: (op, payload) => local(a, setup, op, payload),
+            budgetId,
+            name: 'Home',
+            takenNames: [],
+            labelOf,
+          })
+        ).dashboardId;
+      } else {
+        dashboardId = (
+          (await local(a, setup, 'customDashboards.create', { budgetId, name: 'Plain' })) as {
+            id: string;
+          }
+        ).id;
+        for (const id of ['w1', 'w2', 'w3']) {
+          await local(a, setup, 'customDashboardWidgets.add', {
+            id,
+            dashboardId,
+            reportId: 'report-1',
+            chartId: 'chart-1',
+          });
+        }
+      }
+      const b = await openDevice('B', a.adapter.backup() as Uint8Array);
+      const c = await openDevice('C', a.adapter.backup() as Uint8Array);
+      // A adds a card; B, not having seen it, moves its last card to the top.
+      const aOps: Call[] = [];
+      await local(a, aOps, 'customDashboardWidgets.add', {
+        id: 'new-card',
+        dashboardId,
+        reportId: 'report-1',
+        chartId: 'chart-1',
+      });
+      runtime.services = b.services;
+      const ids = b.services.customDashboards.getDashboard(dashboardId)!.widgets.map((w) => w.id);
+      const bOps: Call[] = [];
+      await local(b, bOps, 'customDashboardWidgets.reorder', {
+        dashboardId,
+        orderedIds: [ids[ids.length - 1], ...ids.slice(0, -1)],
+      });
+      await receive(a, bOps);
+      await receive(b, aOps);
+      await receive(c, [...aOps, ...bOps]);
+      for (const device of [a, b, c]) expect(device.failures).toEqual([]);
+      const order = (device: Device) =>
+        device.services.customDashboards.getDashboard(dashboardId)!.widgets.map((w) => w.id);
+      expect(order(a)[0]).toBe(ids[ids.length - 1]);
+      expect(order(a)).toEqual(order(c));
+      expect(order(b)).toEqual(order(c));
+    });
+  }
 });
