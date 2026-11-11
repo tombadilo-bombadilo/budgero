@@ -498,7 +498,13 @@ export function useImportDialogState(): ImportDialogState {
       }
       const signature = (rows: PreviewRow[]) =>
         JSON.stringify(
-          rows.map((r) => [r.input.fileRowKey, r.input.accountId, r.duplicate, r.transfer])
+          rows.map((r) => [
+            r.input.fileRowKey,
+            r.input.accountId,
+            r.duplicate,
+            r.transfer,
+            r.otherSideExists,
+          ])
         );
       if (signature(fresh) !== signature(previewData)) {
         setPreviewData(fresh);

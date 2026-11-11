@@ -262,3 +262,53 @@ describe('accounts in the file', () => {
     expect(rows[1].input.accountId).toBeLessThanOrEqual(-100);
   });
 });
+
+describe('a transfer into an account that is not in the file', () => {
+  function qif() {
+    const input = options();
+    input.parsedData.source.type = 'qif' as 'csv';
+    input.parsedData.headers = ['Date', 'Amount', 'Payee', 'TransferAccount'];
+    input.parsedData.rows = [
+      { Date: '2026-09-01', Amount: '-100', Payee: 'To savings', TransferAccount: 'Savings' },
+      { Date: '2026-09-05', Amount: '-50', Payee: 'To savings', TransferAccount: 'Savings' },
+    ];
+    input.accounts = [
+      { ID: 1, Name: 'Checking', Currency: 'USD' },
+      { ID: 2, Name: 'Savings', Currency: 'USD' },
+    ];
+    // Savings already has the first transfer (its own file, or bank sync).
+    const plan = vi.fn((rows: DuplicateInput[]) =>
+      rows.map((row) =>
+        row.accountId === 2 && row.date === '2026-09-01' && row.inflow === 100000
+          ? {
+              index: row.index,
+              status: 'needs-review' as const,
+              candidates: [
+                { id: 900, date: row.date, inflow: 100000, outflow: 0, payee: '', memo: '' },
+              ],
+              reason: 'Same date and amount in this account',
+            }
+          : { index: row.index, status: 'new' as const, candidates: [], reason: '' }
+      )
+    );
+    input.duplicates = { plan } as Pick<ImportDuplicateService, 'plan'>;
+    return { input, plan };
+  }
+
+  it('checks the other account for the mirror leg and never writes a second copy', async () => {
+    const { input, plan } = qif();
+    const tolerance = { toleranceBps: 100, dayWindow: 3 };
+    const rows = await buildFileImportPreview({ ...input, tolerance });
+    const mirrors = plan.mock.calls.at(-1)![0];
+    expect(mirrors.map((m) => [m.accountId, m.inflow, m.outflow, m.date])).toEqual([
+      [2, 100000, 0, '2026-09-01'],
+      [2, 50000, 0, '2026-09-05'],
+    ]);
+    expect(plan.mock.calls.at(-1)![1]).toEqual({ tolerance });
+    // Already there: imported as a plain transaction, and the preview says why.
+    expect(rows[0].transfer).toBeUndefined();
+    expect(rows[0].otherSideExists).toEqual({ counterpartName: 'Savings', transactionId: 900 });
+    expect(rows[1].transfer).toEqual({ counterpartAccountId: 2, counterpartName: 'Savings' });
+    expect(rows[1].otherSideExists).toBeUndefined();
+  });
+});

@@ -114,6 +114,16 @@ export interface FileTransfer {
   partnerIndex?: number;
 }
 
+/**
+ * A row marked as a transfer with an account that is not in the file, whose
+ * other side that account already has: imported as a plain transaction.
+ */
+export interface OtherSideExists {
+  counterpartName: string;
+  /** The transaction already in that account. */
+  transactionId: number;
+}
+
 export interface PreviewRow {
   input: DuplicateInput;
   duplicate: DuplicatePlan;
@@ -121,6 +131,7 @@ export interface PreviewRow {
   /** The row's account is set to "Don't import": skipped by the user, not invalid. */
   accountSkipped?: boolean;
   transfer?: FileTransfer;
+  otherSideExists?: OtherSideExists;
   original: Record<string, string>;
   parsed: {
     date?: string;

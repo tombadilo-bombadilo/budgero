@@ -7,7 +7,13 @@ import {
   type ImportDuplicateService,
   type DuplicateTolerance,
 } from '@budgero/core/browser';
-import type { ParsedData, ColumnMapping, ImportConfig, PreviewRow } from '../model/types';
+import type {
+  ParsedData,
+  ColumnMapping,
+  ImportConfig,
+  OtherSideExists,
+  PreviewRow,
+} from '../model/types';
 import {
   IMPORT_ACCOUNT_PLACEHOLDER,
   isPlaceholderAccountId,
@@ -200,8 +206,43 @@ export async function buildFileImportPreview({
     accounts,
     remembered: rememberedRoutes,
   });
+  // A one-sided transfer writes a mirror leg into the other account. An
+  // account that already exists may hold that side already (its own file,
+  // bank sync): look for it with the same duplicate check, and import the row
+  // as a plain transaction then, never a second copy. It is not linked as a
+  // transfer: that replaces the existing row (convert-to-transfer deletes and
+  // re-adds it), and undoing the import would then delete it.
+  const mirrors = [...transfers]
+    .filter(
+      ([, transfer]) =>
+        transfer.partnerIndex === undefined &&
+        !isPlaceholderAccountId(transfer.counterpartAccountId)
+    )
+    .map(([index, transfer]) => ({
+      ...inputs[index],
+      accountId: transfer.counterpartAccountId,
+      inflow: inputs[index].outflow,
+      outflow: inputs[index].inflow,
+      sourceKey: undefined,
+      fileRowKey: JSON.stringify(['mirror', inputs[index].fileRowKey]),
+      operationId: `${inputs[index].operationId}:mirror`,
+    }));
+  const otherSides = new Map<number, OtherSideExists>();
+  if (mirrors.length > 0) {
+    duplicates.plan(mirrors, tolerance ? { tolerance } : {}).forEach((plan, i) => {
+      const found = plan.candidates[0];
+      if (!found) return;
+      const { index } = mirrors[i];
+      otherSides.set(index, {
+        counterpartName: transfers.get(index)!.counterpartName,
+        transactionId: found.id,
+      });
+      transfers.delete(index);
+    });
+  }
   return inputs.map((input, index) => ({
     input,
+    ...(otherSides.has(index) ? { otherSideExists: otherSides.get(index) } : {}),
     ...(destinations[index].skipped && plans[index].status === 'ready'
       ? { accountSkipped: true }
       : {}),

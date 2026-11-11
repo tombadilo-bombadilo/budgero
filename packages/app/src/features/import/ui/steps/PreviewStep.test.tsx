@@ -108,4 +108,13 @@ describe('import review', () => {
     const notes = screen.getAllByTestId('import-transfer').map((n) => n.textContent);
     expect(notes).toEqual(['Transfer to Savings · with row 5', 'Transfer from Card']);
   });
+
+  it('says when the other account already has the transfer', () => {
+    const row = makeRow(0);
+    row.otherSideExists = { counterpartName: 'Savings', transactionId: 900 };
+    render(<PreviewStep {...props([row])} />);
+    expect(screen.getByTestId('import-transfer-exists')).toHaveTextContent(
+      'Savings already has the other side, so this is imported as a regular transaction'
+    );
+  });
 });
