@@ -7,6 +7,7 @@ import { getRuntime } from '@shared/runtime/global';
 import { getTodayISO } from '@shared/lib/date-utils';
 import type { QueryResult } from './report-query-executor';
 import { REPORTING_VIEWS_SQL, mapSQLiteTypeToDuckDb } from './analytics-views';
+import { arrowTableToRows } from './arrow-rows';
 import {
   DERIVED_TABLES,
   derivedTablesIn,
@@ -64,16 +65,6 @@ function sanitizeTempFileName(value: string): string {
 function normalizeBigInt(value: bigint): number | string {
   const asNumber = Number(value);
   return Number.isSafeInteger(asNumber) ? asNumber : value.toString();
-}
-
-function normalizeDuckDbValue(value: unknown): unknown {
-  if (typeof value === 'bigint') {
-    return normalizeBigInt(value);
-  }
-  if (value instanceof Date) {
-    return value.toISOString();
-  }
-  return value;
 }
 
 function normalizeForJson(value: unknown): unknown {
@@ -139,18 +130,6 @@ function createCountQuery(query: string): string {
 function querySupportsAutomaticLimit(query: string): boolean {
   const normalized = query.trim().toLowerCase();
   return normalized.startsWith('select') || normalized.startsWith('with');
-}
-
-function arrowTableToRows(table: Awaited<ReturnType<duckdb.AsyncDuckDBConnection['query']>>): {
-  columns: string[];
-  rows: unknown[][];
-} {
-  const columns = table.schema.fields.map((field) => field.name);
-  const objectRows = table.toArray() as Record<string, unknown>[];
-  const rows = objectRows.map((row) =>
-    columns.map((columnName) => normalizeDuckDbValue(row[columnName]))
-  );
-  return { columns, rows };
 }
 
 async function ensureInitialized(): Promise<void> {

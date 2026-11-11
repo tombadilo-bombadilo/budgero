@@ -28,6 +28,7 @@ import {
   monthlyEquivalent,
   type DerivedSqlDatabase,
 } from '@shared/lib/sql/report-derived-tables';
+import { arrowTableToRows } from '@shared/lib/sql/arrow-rows';
 import { compileQuestion, usesBudgetScreenFields } from './compile';
 import { applyDashboardFilters } from './dashboard-filters';
 import { applyDrill, drillOptions, rowDrillValues } from './drill';
@@ -133,17 +134,16 @@ function snapshot() {
   }
 }
 
+/** Rows as the app's engine reads them (arrowTableToRows: decimals scaled, dates ISO). */
 function rows(sql: string): Record<string, unknown>[] {
-  return conn
-    .query(sql)
-    .toArray()
-    .map((row) =>
-      Object.fromEntries(
-        Object.entries(row.toJSON() as Record<string, unknown>)
-          .filter(([key]) => !key.endsWith('__key'))
-          .map(([key, value]) => [key, typeof value === 'bigint' ? Number(value) : value])
-      )
-    );
+  const { columns, rows: cells } = arrowTableToRows(conn.query(sql));
+  return cells.map((cells) =>
+    Object.fromEntries(
+      columns
+        .map((name, index) => [name, cells[index]] as const)
+        .filter(([key]) => !key.endsWith('__key'))
+    )
+  );
 }
 
 function runSpec(spec: QuestionSpec) {
@@ -367,10 +367,10 @@ describe('Balances source', () => {
     }
     // The view says the same for today.
     const view = rows(
-      `SELECT account_name, CAST(balance AS DOUBLE) AS balance FROM account_balances_daily
+      `SELECT account_name, balance FROM account_balances_daily
        WHERE budget_id = ${budgetId} AND date = '${TODAY}' ORDER BY account_name`
     );
-    expect(view.map((row) => [row.account_name, Number(row.balance)])).toEqual(
+    expect(view.map((row) => [row.account_name, row.balance])).toEqual(
       [...byName.values()]
         .map((row) => [row.account, row.balance])
         .sort((x, y) => String(x[0]).localeCompare(String(y[0])))
@@ -816,9 +816,9 @@ describe('Payees source', () => {
   it('the payee_summary view agrees', () => {
     expect(
       rows(
-        `SELECT payee_name, transaction_count, CAST(outflow AS DOUBLE) AS outflow FROM payee_summary
+        `SELECT payee_name, transaction_count, outflow FROM payee_summary
          WHERE budget_id = ${budgetId} AND payee_name = 'Lidl'`
-      ).map((row) => ({ ...row, outflow: Number(row.outflow) }))
+      )
     ).toEqual([{ payee_name: 'Lidl', transaction_count: 4, outflow: 295 }]);
   });
 });
