@@ -74,11 +74,19 @@ export function sourceAccountsOf(
 ): SourceAccount[] {
   if (!column) return [];
   const bySource = new Map<string, SourceAccount>();
+  const statedFor = new Set<string>();
   for (const row of rows) {
     const source = row[column]?.trim();
     if (!source) continue;
     const entry = bySource.get(source) ?? { source, rows: 0 };
     entry.rows += 1;
+    // The account's own currency (OFX CURDEF) wins over a row's: one card
+    // payment abroad does not make a USD statement a EUR account.
+    const stated = currencyCodeOf(row.AccountCurrency);
+    if (stated && !statedFor.has(source)) {
+      entry.currency = stated;
+      statedFor.add(source);
+    }
     const currency = entry.currency ?? currencyCodeOf(row.Currency);
     if (currency) entry.currency = currency;
     if (!entry.type && ACCOUNT_TYPES.has(row.AccountType)) entry.type = row.AccountType;
