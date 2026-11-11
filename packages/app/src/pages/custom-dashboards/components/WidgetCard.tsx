@@ -22,6 +22,7 @@ import { QueryErrorMessage } from '@features/reports/ui/notebook/QueryErrorMessa
 import { ExportMenu } from '@features/reports/ui/notebook/viz/ExportMenu';
 import { refineAutoVisualization } from '@features/reports/ui/notebook/viz/transforms';
 import { getLocaleTag } from '@shared/i18n';
+import { useLocalToday } from '@shared/hooks/useLocalToday';
 import { useUiStore } from '@shared/store/useUiStore';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@shared/ui/tooltip';
 import { Button } from '@shared/ui/button';
@@ -202,9 +203,10 @@ export function WidgetCard({
 
   // Notebook questions take the dashboard's filters; SQL questions (and extra
   // charts of one) run as written. Both draw with the question visualization.
+  const today = useLocalToday();
   const question = useMemo(
-    () => widgetQuestion(report, chart, filters, budgetId),
-    [report, chart, filters, budgetId]
+    () => widgetQuestion(report, chart, filters, budgetId, today),
+    [report, chart, filters, budgetId, today]
   );
   const queryKey = widgetQueryKey(widget, report, question);
 
