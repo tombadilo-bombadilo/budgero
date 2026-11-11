@@ -8,6 +8,7 @@ import { getTodayISO } from '@shared/lib/date-utils';
 import type { QueryResult } from './report-query-executor';
 import { REPORTING_VIEWS_SQL, mapSQLiteTypeToDuckDb } from './analytics-views';
 import { arrowTableToRows } from './arrow-rows';
+import { applyQueryLimit, createCountQuery } from './sql-limit';
 import {
   DERIVED_TABLES,
   derivedTablesIn,
@@ -89,42 +90,6 @@ function normalizeForJson(value: unknown): unknown {
 
 function stripTrailingSemicolon(query: string): string {
   return query.replace(/;\s*$/, '').trim();
-}
-
-function extractLimit(query: string): number | null {
-  const limitMatch = query.match(/\bLIMIT\s+(\d+)/i);
-  return limitMatch ? parseInt(limitMatch[1], 10) : null;
-}
-
-function applyQueryLimit(
-  query: string,
-  maxRows: number
-): { query: string; userLimit: number | null; effectiveLimit: number } {
-  const userLimit = extractLimit(query);
-  const effectiveLimit = userLimit === null ? maxRows : Math.min(userLimit, maxRows);
-
-  if (userLimit === null) {
-    return {
-      query: `${query} LIMIT ${effectiveLimit}`,
-      userLimit: null,
-      effectiveLimit,
-    };
-  }
-
-  if (userLimit > maxRows) {
-    return {
-      query: query.replace(/\bLIMIT\s+\d+/i, `LIMIT ${effectiveLimit}`),
-      userLimit,
-      effectiveLimit,
-    };
-  }
-
-  return { query, userLimit, effectiveLimit };
-}
-
-function createCountQuery(query: string): string {
-  const queryWithoutLimit = query.replace(/\bLIMIT\s+\d+/i, '');
-  return `SELECT COUNT(*) as count FROM (${queryWithoutLimit}) as subquery`;
 }
 
 function querySupportsAutomaticLimit(query: string): boolean {
