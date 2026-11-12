@@ -5514,6 +5514,10 @@ msgstr "Eine Datei deiner Bank einlesen"
 msgid "Bring the budget you already have in YNAB."
 msgstr "Bring dein bestehendes YNAB-Budget mit."
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Bring them back from Help (?) on the Planning page or in Budget Settings."
+msgstr "Du holst sie über die Hilfe (?) auf der Planungsseite oder in den Budget-Einstellungen zurück."
+
 #: src/app/startup/screens.tsx
 msgid "Bring your categories, accounts, and history"
 msgstr "Bringe deine Kategorien, Konten und deinen Verlauf mit"
@@ -6964,6 +6968,10 @@ msgstr "Alle Gruppen einklappen"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardActions.tsx
 msgid "Collapse details"
 msgstr "Details einklappen"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Collapse first steps"
+msgstr "Erste Schritte einklappen"
 
 #: src/app/layout/AdminSidebar.tsx
 msgid "Collapse sidebar"
@@ -10665,6 +10673,14 @@ msgstr "Erster Wochentag"
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "First seen"
 msgstr "Zuerst gesehen"
+
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "First steps"
+msgstr "Erste Schritte"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "First steps hidden"
+msgstr "Erste Schritte ausgeblendet"
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Fitness & Gym"
@@ -19844,6 +19860,15 @@ msgstr "Detaillierte Ansicht anzeigen"
 msgid "Show details"
 msgstr "Details anzeigen"
 
+#: src/features/first-steps/model/visibility.ts
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Show first steps"
+msgstr "Erste Schritte anzeigen"
+
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "Show first steps on the Planning page"
+msgstr "Erste Schritte auf der Planungsseite anzeigen"
+
 #: src/features/budgeting/ui/BudgetToolbar.tsx
 msgid "Show hidden"
 msgstr "Ausgeblendete anzeigen"
@@ -21578,6 +21603,10 @@ msgstr "Der Server hat alle Änderungen dieses Geräts bestätigt."
 msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 msgstr "Der Server behält die letzten Kopien dieses Arbeitsbereichs und eine pro Tag für die letzte Woche. Du kannst zu einer Kopie zurückgehen und alles verwerfen, was danach geändert wurde, oder sie wiederherstellen und die späteren Änderungen erneut anwenden. Nutze das, wenn ein Arbeitsbereich nach dem Synchronisieren leer oder kaputt aussieht, oder um eine Reihe von Änderungen rückgängig zu machen."
 
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "The short checklist for your first week."
+msgstr "Die kurze Checkliste für deine erste Woche."
+
 #: src/entities/recurring/lib/error-message.ts
 msgid "The split lines no longer add up to the amount. Edit the recurring transaction and update its split lines."
 msgstr "Die Teilbuchungen ergeben nicht mehr den Betrag. Bearbeite die wiederkehrende Transaktion und passe ihre Teilbuchungen an."
@@ -23019,6 +23048,7 @@ msgid "Undid last action"
 msgstr "Letzte Aktion rückgängig gemacht"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
+#: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 #: src/features/transactions/api/useDeleteSelected.ts

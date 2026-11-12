@@ -5516,6 +5516,10 @@ msgstr "Bring in a file from your bank"
 msgid "Bring the budget you already have in YNAB."
 msgstr "Bring the budget you already have in YNAB."
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Bring them back from Help (?) on the Planning page or in Budget Settings."
+msgstr "Bring them back from Help (?) on the Planning page or in Budget Settings."
+
 #: src/app/startup/screens.tsx
 msgid "Bring your categories, accounts, and history"
 msgstr "Bring your categories, accounts, and history"
@@ -6966,6 +6970,10 @@ msgstr "Collapse all groups"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardActions.tsx
 msgid "Collapse details"
 msgstr "Collapse details"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Collapse first steps"
+msgstr "Collapse first steps"
 
 #: src/app/layout/AdminSidebar.tsx
 msgid "Collapse sidebar"
@@ -10667,6 +10675,14 @@ msgstr "First day of the week"
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "First seen"
 msgstr "First seen"
+
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "First steps"
+msgstr "First steps"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "First steps hidden"
+msgstr "First steps hidden"
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Fitness & Gym"
@@ -19846,6 +19862,15 @@ msgstr "Show detailed view"
 msgid "Show details"
 msgstr "Show details"
 
+#: src/features/first-steps/model/visibility.ts
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Show first steps"
+msgstr "Show first steps"
+
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "Show first steps on the Planning page"
+msgstr "Show first steps on the Planning page"
+
 #: src/features/budgeting/ui/BudgetToolbar.tsx
 msgid "Show hidden"
 msgstr "Show hidden"
@@ -21580,6 +21605,10 @@ msgstr "The server has confirmed all changes from this device."
 msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 msgstr "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "The short checklist for your first week."
+msgstr "The short checklist for your first week."
+
 #: src/entities/recurring/lib/error-message.ts
 msgid "The split lines no longer add up to the amount. Edit the recurring transaction and update its split lines."
 msgstr "The split lines no longer add up to the amount. Edit the recurring transaction and update its split lines."
@@ -23021,6 +23050,7 @@ msgid "Undid last action"
 msgstr "Undid last action"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
+#: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 #: src/features/transactions/api/useDeleteSelected.ts

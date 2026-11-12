@@ -1,12 +1,15 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
-  dismissFirstSteps,
   getFirstSteps,
+  hideFirstSteps,
   isFirstStepDone,
+  isFirstStepsHidden,
   markFirstStep,
   noteFirstStepsMutation,
   noteFirstStepsVisit,
   resetFirstStepsForTests,
+  setFirstStepsCollapsed,
+  showFirstSteps,
   startFirstSteps,
 } from './first-steps';
 
@@ -40,7 +43,7 @@ describe('first steps', () => {
   it('keeps progress across reloads and restarts', () => {
     startFirstSteps('space-1');
     markFirstStep('space-1', 'assign');
-    dismissFirstSteps('space-1');
+    hideFirstSteps('space-1');
     resetFirstStepsForTests();
     startFirstSteps('space-1');
     expect(getFirstSteps('space-1')).toMatchObject({
@@ -57,7 +60,7 @@ describe('first steps', () => {
     expect(getFirstSteps('space-1')?.done.goal).toBe(true);
   });
 
-  it('reads a checklist stored before the goal step: goal not done, dismissed stays', () => {
+  it('reads a checklist stored before the goal step: goal not done', () => {
     localStorage.setItem(
       'budgero:first-steps',
       JSON.stringify({
@@ -84,6 +87,91 @@ describe('first steps', () => {
       return: false,
       goal: true,
     });
-    expect(getFirstSteps('hidden')?.dismissed).toBe(true);
+    // Hidden with the goal step still open: shown again (see the migration below).
+    expect(getFirstSteps('hidden')?.dismissed).toBe(false);
+  });
+
+  it('hides only when asked, and comes back with showFirstSteps', () => {
+    startFirstSteps('space-1');
+    expect(isFirstStepsHidden('space-1')).toBe(false);
+    hideFirstSteps('space-1');
+    expect(isFirstStepsHidden('space-1')).toBe(true);
+    showFirstSteps('space-1');
+    expect(isFirstStepsHidden('space-1')).toBe(false);
+    // Survives a reload.
+    resetFirstStepsForTests();
+    expect(getFirstSteps('space-1')?.dismissed).toBe(false);
+  });
+
+  it('showing brings a folded list back unfolded', () => {
+    startFirstSteps('space-1');
+    setFirstStepsCollapsed('space-1', true);
+    hideFirstSteps('space-1');
+    showFirstSteps('space-1');
+    expect(getFirstSteps('space-1')).toMatchObject({ dismissed: false, collapsed: false });
+  });
+
+  it('remembers a folded list, and folding is not hiding', () => {
+    startFirstSteps('space-1');
+    setFirstStepsCollapsed('space-1', true);
+    resetFirstStepsForTests();
+    expect(getFirstSteps('space-1')).toMatchObject({ collapsed: true, dismissed: false });
+    expect(isFirstStepsHidden('space-1')).toBe(false);
+  });
+
+  it('never makes a list for a workspace that has none (demo, invited members, older budgets)', () => {
+    showFirstSteps('space-1');
+    setFirstStepsCollapsed('space-1', false);
+    expect(getFirstSteps('space-1')).toBeNull();
+    expect(isFirstStepsHidden('space-1')).toBe(false);
+    expect(isFirstStepsHidden(null)).toBe(false);
+    expect(localStorage.getItem('budgero:first-steps')).toBeNull();
+  });
+});
+
+describe('lists hidden by the old ✕', () => {
+  const all = { assign: true, goal: true, transaction: true, return: true };
+  function stored(entries: Record<string, unknown>) {
+    localStorage.setItem('budgero:first-steps', JSON.stringify(entries));
+    resetFirstStepsForTests();
+  }
+
+  it('shows a list hidden before all steps were done again, once', () => {
+    stored({
+      unfinished: {
+        startedOn: '2026-11-01',
+        done: { ...all, transaction: false },
+        dismissed: true,
+      },
+    });
+    expect(getFirstSteps('unfinished')).toMatchObject({ dismissed: false, v: 2 });
+    // Written back, so it isn't migrated again.
+    expect(JSON.parse(localStorage.getItem('budgero:first-steps')!).unfinished.v).toBe(2);
+    // Hidden again by the user now: it stays hidden.
+    hideFirstSteps('unfinished');
+    resetFirstStepsForTests();
+    expect(getFirstSteps('unfinished')?.dismissed).toBe(true);
+  });
+
+  it('keeps a finished list that was closed closed', () => {
+    stored({ finished: { startedOn: '2026-11-01', done: all, dismissed: true } });
+    expect(getFirstSteps('finished')?.dismissed).toBe(true);
+  });
+
+  it('leaves visible lists and progress as they were', () => {
+    const done = { ...all, return: false };
+    stored({ open: { startedOn: '2026-11-01', done, dismissed: false } });
+    expect(getFirstSteps('open')).toMatchObject({
+      startedOn: '2026-11-01',
+      done,
+      dismissed: false,
+    });
+  });
+
+  it('new lists start at the current version, so they are never migrated', () => {
+    startFirstSteps('space-1');
+    hideFirstSteps('space-1');
+    resetFirstStepsForTests();
+    expect(getFirstSteps('space-1')).toMatchObject({ dismissed: true, v: 2 });
   });
 });

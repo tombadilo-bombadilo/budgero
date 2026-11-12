@@ -24,8 +24,19 @@ export interface FirstStepsState {
     goal?: boolean;
     share?: boolean;
   };
-  /** Hidden by the user (the ✕, or closing the finished list). */
+  /**
+   * Hidden on purpose: "Hide first steps", or Close on the finished list.
+   * Nothing else sets it (closing a drawer or a dialog never does), and
+   * showFirstSteps() brings the list back.
+   */
   dismissed: boolean;
+  /** Desktop card folded to one row. Still there, just small. */
+  collapsed?: boolean;
+  /**
+   * Storage version. Until 2 a bare ✕ (on the phone, in the drawer where it
+   * reads as "close this sheet") hid the list for good; see migrate().
+   */
+  v?: number;
 }
 
 const KEY = 'budgero:first-steps';
@@ -54,6 +65,35 @@ function today(now = new Date()): string {
   return `${now.getFullYear()}-${m}-${d}`;
 }
 
+const VERSION = 2;
+
+function allCountedDone(state: FirstStepsState): boolean {
+  return FIRST_STEP_IDS.every((id) => isFirstStepDone(state, id));
+}
+
+/**
+ * A list stored before version 2 and hidden before all steps were done was
+ * most likely closed by accident (the old ✕): show it once more. One that
+ * was finished and closed stays closed.
+ */
+function migrate(all: Record<string, FirstStepsState>): Record<string, FirstStepsState> | null {
+  let changed = false;
+  const next: Record<string, FirstStepsState> = {};
+  for (const [spaceId, state] of Object.entries(all)) {
+    if (!state || typeof state !== 'object' || (state.v ?? 0) >= VERSION) {
+      next[spaceId] = state;
+      continue;
+    }
+    changed = true;
+    next[spaceId] = {
+      ...state,
+      dismissed: state.dismissed && allCountedDone(state),
+      v: VERSION,
+    };
+  }
+  return changed ? next : null;
+}
+
 function readAll(): Record<string, FirstStepsState> {
   if (cache) return cache;
   try {
@@ -61,6 +101,15 @@ function readAll(): Record<string, FirstStepsState> {
     cache = raw ? (JSON.parse(raw) as Record<string, FirstStepsState>) : {};
   } catch {
     cache = {};
+  }
+  const migrated = migrate(cache);
+  if (migrated) {
+    cache = migrated;
+    try {
+      localStorage.setItem(KEY, JSON.stringify(migrated));
+    } catch {
+      /* storage blocked: migrate again next time */
+    }
   }
   return cache;
 }
@@ -94,6 +143,7 @@ export function startFirstSteps(spaceId: string, now = new Date()): void {
       startedOn: today(now),
       done: { assign: false, goal: false, transaction: false, return: false },
       dismissed: false,
+      v: VERSION,
     },
   });
 }
@@ -104,8 +154,27 @@ export function markFirstStep(spaceId: string, step: FirstStepId): void {
   );
 }
 
-export function dismissFirstSteps(spaceId: string): void {
+/** The user's own "Hide first steps" (or Close on the finished list). */
+export function hideFirstSteps(spaceId: string): void {
   update(spaceId, (state) => (state.dismissed ? state : { ...state, dismissed: true }));
+}
+
+/** Bring a hidden list back, unfolded. */
+export function showFirstSteps(spaceId: string): void {
+  update(spaceId, (state) =>
+    state.dismissed || state.collapsed ? { ...state, dismissed: false, collapsed: false } : state
+  );
+}
+
+/** True only for a list this workspace started and the user hid. */
+export function isFirstStepsHidden(spaceId: string | null): boolean {
+  return getFirstSteps(spaceId)?.dismissed ?? false;
+}
+
+export function setFirstStepsCollapsed(spaceId: string, collapsed: boolean): void {
+  update(spaceId, (state) =>
+    (state.collapsed ?? false) === collapsed ? state : { ...state, collapsed }
+  );
 }
 
 /** Called for every local mutation (AppRuntime.executeMutation). */
