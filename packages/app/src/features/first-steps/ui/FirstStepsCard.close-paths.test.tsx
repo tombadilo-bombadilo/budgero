@@ -1,3 +1,4 @@
+import type { PageGuideId } from '@features/page-guides';
 /**
  * Closing anything on the Budget page (the page guide, however it was opened
  * and however it is closed, or the phone's first-steps sheet) must leave the
@@ -27,6 +28,21 @@ vi.mock('@features/demo-budget/lib/useIsDemoSpace', () => ({
   useDemoSpaceStatus: () => ({ isDemo: false, checking: false }),
 }));
 vi.mock('@shared/runtime/runtime-provider', () => ({ useActiveSpaceId: () => 'space-1' }));
+// Seen guides from the device cache only (the synced store has its own specs).
+vi.mock('@features/page-guides/api/usePageGuidesSeen', async () => {
+  const model = await vi.importActual<typeof import('@features/page-guides/model/page-guides')>(
+    '@features/page-guides/model/page-guides'
+  );
+  return {
+    usePageGuidesSeen: (userId: string | null) => ({
+      ready: true,
+      isSeen: (id: PageGuideId) => (userId ? model.hasSeenPageGuide(userId, id) : true),
+      markSeen: (id: PageGuideId) => {
+        if (userId) model.markPageGuideSeen(userId, id);
+      },
+    }),
+  };
+});
 
 const rows = [
   { Assigned: 0, CategoryID: 11, Category: 'Rent' },
