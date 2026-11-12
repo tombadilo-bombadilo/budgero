@@ -130,7 +130,16 @@ export const EMPTY_STATE_SCREENS = ['budget', 'transactions', 'reports'] as cons
 export type EmptyStateScreen = (typeof EMPTY_STATE_SCREENS)[number];
 
 /** Page guides (features/page-guides): one per page that has one. */
-export const PAGE_GUIDE_IDS = ['budget', 'accounts', 'reports', 'home'] as const;
+export const PAGE_GUIDE_IDS = [
+  'budget',
+  'accounts',
+  'transactions',
+  'reports',
+  'home',
+  'rules',
+  'recurring',
+  'imports',
+] as const;
 export type PageGuideId = (typeof PAGE_GUIDE_IDS)[number];
 
 export const IMPORT_SOURCES = ['ynab_api', 'ynab_zip', 'csv', 'pdf', 'ofx', 'qif', 'camt'] as const;

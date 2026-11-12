@@ -14,9 +14,13 @@ export type { PageGuideId };
 /** Stable card keys, so a caller can open a guide at a given card. */
 export const PAGE_GUIDE_CARDS = {
   budget: ['assign', 'columns', 'goals', 'overspending'],
-  accounts: ['add', 'import', 'cleared', 'reconcile'],
+  accounts: ['add', 'budget', 'balances', 'reconcile'],
+  transactions: ['add', 'dates', 'search', 'cleared'],
   reports: ['questions', 'build', 'drill'],
   home: ['overview', 'attention', 'yours'],
+  rules: ['what', 'when', 'existing', 'undo'],
+  recurring: ['what', 'register', 'actions'],
+  imports: ['files', 'accounts', 'duplicates', 'undo'],
 } as const satisfies Record<PageGuideId, readonly string[]>;
 
 export type PageGuideCardKey<G extends PageGuideId = PageGuideId> =
@@ -32,10 +36,16 @@ export function docsUrl(slug: string, locale: string): string {
 export function pageGuideForPath(pathname: string): PageGuideId | null {
   const path = pathname.replace(/\/+$/, '') || '/';
   if (path === '/budgeting') return 'budget';
-  if (path === '/accounts' || path.startsWith('/accounts/')) return 'accounts';
+  // The accounts overview has its own guide; every register (one account, or
+  // all of them at /accounts/all) shares the transactions guide.
+  if (path === '/accounts') return 'accounts';
+  if (path.startsWith('/accounts/')) return 'transactions';
   // /reports/prebuilt is the reports page before the reports home replaced it.
   if (path === '/reports' || path === '/reports/prebuilt') return 'reports';
   if (path === '/dashboard') return 'home';
+  if (path === '/settings/rules') return 'rules';
+  if (path === '/settings/recurring') return 'recurring';
+  if (path === '/settings/imports') return 'imports';
   return null;
 }
 

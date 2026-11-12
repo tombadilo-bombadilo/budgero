@@ -11,7 +11,22 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { PageGuideId } from '../model/page-guides';
-import { GoalKind, ReportTile } from './guide-visuals';
+import {
+  AccountRouteVisual,
+  FileTypesVisual,
+  BudgetAccountsVisual,
+  DateRangeVisual,
+  GoalKind,
+  ImportHistoryVisual,
+  ImportStatusVisual,
+  OccurrenceActionsVisual,
+  RecurringRowVisual,
+  ReportTile,
+  RuleRunVisual,
+  RuleTriggersVisual,
+  RuleVisual,
+  SearchVisual,
+} from './guide-visuals';
 
 export interface GuideCard {
   key: string;
@@ -131,6 +146,54 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
     accounts: [
       {
         key: 'add',
+        title: t`Add an account`,
+        body: (
+          <Trans>
+            Choose New Account, pick its type and enter its starting balance. Budgero records that
+            balance as the account’s first transaction.
+          </Trans>
+        ),
+        docs: 'accounts',
+      },
+      {
+        key: 'budget',
+        title: t`On budget or tracked`,
+        body: (
+          <Trans>
+            On-budget accounts, like checking, savings and credit cards, feed Ready to Assign and
+            your categories. Off-budget ones, like a mortgage or investments, only count toward net
+            worth.
+          </Trans>
+        ),
+        visual: <BudgetAccountsVisual />,
+        docs: 'accounts',
+      },
+      {
+        key: 'balances',
+        title: t`Balances and net worth`,
+        body: (
+          <Trans>
+            This page groups your accounts by type with their balances, and Net Worth is what you
+            own minus what you owe. Open an account to see and add its transactions.
+          </Trans>
+        ),
+      },
+      {
+        key: 'reconcile',
+        title: t`Reconcile now and then`,
+        body: (
+          <Trans>
+            Open an account, choose Reconcile and enter the balance your bank shows. Budgero
+            compares it with your cleared balance, can add an adjustment for any difference, and
+            locks the cleared transactions.
+          </Trans>
+        ),
+        docs: 'accounts',
+      },
+    ],
+    transactions: [
+      {
+        key: 'add',
         title: t`Add a transaction`,
         body: (
           <Trans>
@@ -154,24 +217,38 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
         ),
       },
       {
-        key: 'import',
-        title: t`Import a file from your bank`,
+        key: 'dates',
+        title: t`Pick the dates`,
         body: (
           <Trans>
-            Go to Settings → Imports, or drop the file onto the page on a computer. CSV, OFX, QFX,
-            QIF, CAMT.053 and PDF statements work, and possible duplicates are shown before anything
-            is added.
+            The list only shows the date range at the top, the last 180 days to start with. Future
+            dated transactions, and an account’s upcoming recurring ones, appear once the range
+            reaches their date: pick Next 30 days or Next 3 months to see them.
           </Trans>
         ),
-        docs: 'csv-import',
+        visual: <DateRangeVisual />,
+      },
+      {
+        key: 'search',
+        title: t`Search in plain words`,
+        body: (
+          <Trans>
+            Type in the search box above the list. Words like last month, outflows, uncleared or
+            over 50 and a category name become filters (these words are English); anything else is
+            looked up in payee, memo, category, label and account.
+          </Trans>
+        ),
+        visual: <SearchVisual />,
+        docs: 'semantic-search',
       },
       {
         key: 'cleared',
         title: t`Cleared or not yet`,
         body: (
           <Trans>
-            Transactions you add start uncleared. Select the circle once your bank shows the
-            transaction; imported ones arrive cleared.
+            Transactions you add start uncleared; select the circle once your bank shows one
+            (imported ones arrive cleared). On an account’s page, the Uncleared and Uncategorized
+            buttons under the search show only those.
           </Trans>
         ),
         visual: (
@@ -191,17 +268,92 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
         ),
         docs: 'accounts',
       },
+    ],
+    rules: [
       {
-        key: 'reconcile',
-        title: t`Reconcile now and then`,
+        key: 'what',
+        title: t`What a rule does`,
         body: (
           <Trans>
-            Open an account, choose Reconcile and enter the balance your bank shows. Budgero
-            compares it with your cleared balance, can add an adjustment for any difference, and
-            locks the cleared transactions.
+            A rule checks a transaction against conditions on memo, payee, amount or account, joined
+            with AND or OR, then runs its actions, such as Set category or Set payee. Choose New
+            rule to make one; when several rules match, the lower run order goes first.
           </Trans>
         ),
-        docs: 'accounts',
+        visual: <RuleVisual />,
+        docs: 'rules-engine',
+      },
+      {
+        key: 'when',
+        title: t`When rules run`,
+        body: (
+          <Trans>
+            Continuous rules run by themselves on every new transaction: added by hand, imported,
+            synced from your bank, pushed or posted from a recurring one. Autofill rules only
+            suggest values while you fill in a transaction.
+          </Trans>
+        ),
+        visual: <RuleTriggersVisual />,
+      },
+      {
+        key: 'existing',
+        title: t`Run on what you already have`,
+        body: (
+          <Trans>
+            Run now and Retro run apply a rule to every transaction in the budget, and Retro run
+            asks first. There is no preview, so check the conditions before you run it; a One time
+            rule is done after its first run.
+          </Trans>
+        ),
+      },
+      {
+        key: 'undo',
+        title: t`Undo a run`,
+        body: (
+          <Trans>
+            Open the rule’s History, pick its latest run and choose Undo changes: the transactions
+            go back to how they were.
+          </Trans>
+        ),
+        visual: <RuleRunVisual />,
+      },
+    ],
+    recurring: [
+      {
+        key: 'what',
+        title: t`Bills and pay on a schedule`,
+        body: (
+          <Trans>
+            Choose New recurring transaction, or switch on Make recurring while adding a
+            transaction, and pick how often it comes. Nothing is posted by itself: you decide each
+            time.
+          </Trans>
+        ),
+        visual: <RecurringRowVisual />,
+        docs: 'recurring-transactions',
+      },
+      {
+        key: 'register',
+        title: t`Where they show up`,
+        body: (
+          <Trans>
+            Each upcoming one appears in its account’s register once the date range at the top
+            reaches its due date: pick Next 30 days or Next 3 months there. The dashboard’s Upcoming
+            transactions card lists them too.
+          </Trans>
+        ),
+        visual: <DateRangeVisual />,
+      },
+      {
+        key: 'actions',
+        title: t`Post it or skip it`,
+        body: (
+          <Trans>
+            Mark ready posts it on its due date, Post now posts it today, and Skip leaves this one
+            out. You find them on each upcoming one here and in the register.
+          </Trans>
+        ),
+        visual: <OccurrenceActionsVisual />,
       },
     ],
     reports: [
@@ -276,6 +428,57 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
             Settings → Appearance.
           </Trans>
         ),
+      },
+    ],
+    imports: [
+      {
+        key: 'files',
+        title: t`Bring in a file from your bank`,
+        body: (
+          <Trans>
+            Choose Select File under New Import, or drop the file anywhere in Budgero on a computer.
+            No export to hand? The upload step links a spreadsheet and a CSV template.
+          </Trans>
+        ),
+        visual: <FileTypesVisual />,
+        docs: 'csv-import',
+      },
+      {
+        key: 'accounts',
+        title: t`Columns and accounts`,
+        body: (
+          <Trans>
+            Map a date column and an amount (or inflow and outflow) column; payee, memo, category
+            and account are optional. If the file names its accounts, Accounts in this file sends
+            each one to an account you have, a new account, or Don’t import.
+          </Trans>
+        ),
+        visual: <AccountRouteVisual />,
+      },
+      {
+        key: 'duplicates',
+        title: t`Check before anything is added`,
+        body: (
+          <Trans>
+            Each row shows as New, Already imported or Needs review. Match keeps your own
+            transaction and marks it cleared, Skip leaves the row out, and the rest are added as
+            cleared transactions.
+          </Trans>
+        ),
+        visual: <ImportStatusVisual />,
+        docs: 'csv-import',
+      },
+      {
+        key: 'undo',
+        title: t`Changed your mind?`,
+        body: (
+          <Trans>
+            Right after an import, undo (Ctrl+Z or ⌘Z, or the undo arrow on a phone) reverts all of
+            it. Later, Undo in Import History removes the imported transactions and any empty
+            accounts or categories the import created.
+          </Trans>
+        ),
+        visual: <ImportHistoryVisual />,
       },
     ],
   };
