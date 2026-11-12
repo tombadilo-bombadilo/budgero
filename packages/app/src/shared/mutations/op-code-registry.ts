@@ -30,6 +30,7 @@ import { transactionOps } from './op-code-registry/domains/transactions';
 import { userPreferenceOps } from './op-code-registry/domains/user-preferences';
 import { warrantyOps } from './op-code-registry/domains/warranties';
 import { pageGuideOps } from './op-code-registry/domains/page-guides';
+import { syncedStateOps } from './op-code-registry/domains/synced-state';
 
 const domainOpCodeRegistry = {
   ...budgetOps,
@@ -53,6 +54,7 @@ const domainOpCodeRegistry = {
   ...llmSettingsOps,
   ...bankSyncOps,
   ...pageGuideOps,
+  ...syncedStateOps,
 } satisfies Record<string, OpCodeEntry>;
 
 /** Unique invalidation keys, first occurrence order. */
@@ -286,6 +288,11 @@ export function isKnownOpCode(op: string): op is OpCode {
 }
 
 export type { OpCodeEntry } from './op-code-registry/shared';
+
+/** Ops kept out of the mutation history (OpCodeEntry.history === false). */
+export function isUnrecordedOp(op: string): boolean {
+  return isKnownOpCode(op) && (opCodeRegistry[op] as OpCodeEntry).history === false;
+}
 
 /**
  * Execute a mutation operation using the registered op code.

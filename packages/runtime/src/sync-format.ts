@@ -10,7 +10,8 @@
  * per call (REQUIRES_FORMAT_ARG, see the app's legacy-format rules). Format 5
  * (app v1.21): recurring templates with split lines, and recurring.markReady
  * calls that carry the payee to post or a split posting's mirror IDs (redo),
- * ask for it per call; adds the op code pageGuides.markSeen.
+ * ask for it per call; adds the op codes pageGuides.markSeen, syncedState.set
+ * and syncedState.merge.
  *
  * Each outgoing mutation is stamped with the LOWEST format that can express
  * it ({@link mutationFormatVersion}): ops every format-2 build knows stay
@@ -80,6 +81,8 @@ export const OP_CODE_FORMAT_VERSIONS: Readonly<Record<string, number>> = Object.
   'transactions.saveSplits': 3,
   'userPreferences.setCompactBudgetRows': 3,
   'pageGuides.markSeen': 5,
+  'syncedState.set': 5,
+  'syncedState.merge': 5,
 });
 
 /** Format that introduced `op` (BASE_MUTATION_FORMAT_VERSION if it predates format 3). */
