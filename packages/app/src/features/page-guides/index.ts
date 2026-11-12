@@ -7,3 +7,4 @@ export {
   type PageGuideCardKey,
   type PageGuideId,
 } from './model/page-guides';
+export { GoalKind, GuideProgress } from './ui/guide-visuals';

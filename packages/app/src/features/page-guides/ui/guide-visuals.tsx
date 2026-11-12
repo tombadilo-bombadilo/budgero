@@ -44,14 +44,47 @@ function FakeButton({
   );
 }
 
+/** The step dots on a guide card: the current one wide. */
+export function GuideProgress({ count, index }: { count: number; index: number }) {
+  return (
+    <div className="flex items-center gap-1" aria-hidden>
+      {Array.from({ length: count }, (_, i) => (
+        <span
+          key={i}
+          className={cn(
+            'h-1.5 rounded-full',
+            i === index ? 'w-4 bg-primary' : 'w-1.5 bg-muted-foreground/30'
+          )}
+        />
+      ))}
+    </div>
+  );
+}
+
 /** Goal type list in the goal editor (goal-management/ui/GoalForm.tsx). */
-export function GoalKind({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+export function GoalKind({
+  icon: Icon,
+  label,
+  description,
+}: {
+  icon: LucideIcon;
+  label: string;
+  /** One plain line under the title. */
+  description?: string;
+}) {
   return (
     <span className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 px-2 py-1.5">
       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
         <Icon className="h-3.5 w-3.5" aria-hidden />
       </span>
-      <span className="min-w-0 text-xs font-semibold leading-tight text-foreground">{label}</span>
+      <span className="min-w-0">
+        <span className="block text-xs font-semibold leading-tight text-foreground">{label}</span>
+        {description && (
+          <span className="block text-[11px] leading-snug text-muted-foreground">
+            {description}
+          </span>
+        )}
+      </span>
     </span>
   );
 }

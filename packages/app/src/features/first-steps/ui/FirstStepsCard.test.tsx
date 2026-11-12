@@ -3,7 +3,7 @@ import { useUiStore } from '@shared/store/useUiStore';
 import { openPageGuide } from '@features/page-guides';
 import { MemoryRouter } from 'react-router-dom';
 import { GoalPurpose, GoalType } from '@budgero/core/browser';
-import type { GetMonthlyBudgetRow, Goal } from '@budgero/core/browser';
+import type { Category, GetMonthlyBudgetRow, Goal } from '@budgero/core/browser';
 import {
   getFirstSteps,
   markFirstStep,
@@ -13,6 +13,11 @@ import {
   showFirstSteps,
   startFirstSteps,
 } from '@shared/lib/first-steps/first-steps';
+import {
+  closeGoalWalkthrough,
+  getGoalWalkthrough,
+  resetGoalWalkthroughForTests,
+} from '../model/goal-walkthrough';
 import { FirstStepsCard } from './FirstStepsCard';
 
 const { toastSuccess } = vi.hoisted(() => ({ toastSuccess: vi.fn() }));
@@ -80,8 +85,9 @@ beforeEach(() => {
     focusCategoryId: null,
     highlightGoalCategoryId: null,
     highlightAssignmentCategoryId: null,
-    goalFormRequestCategoryId: null,
+    selectedCategories: [],
   });
+  resetGoalWalkthroughForTests();
 });
 
 it('shows nothing for a workspace that did not start the checklist', () => {
@@ -101,47 +107,60 @@ it('reads as a lesson: goal, fund it, transaction, come back', () => {
 });
 
 describe('step 1: set a goal', () => {
-  it('suggests rent or groceries from the user’s own categories and explains the goal types', () => {
+  it('is a short why-line and a Show me; the goal types live in the walkthrough', () => {
     startFirstSteps('space-1');
-    renderCard(2_340_000, [row(0, 10, 'Dining out'), row(0, 11, 'Groceries'), row(0, 12, 'Fun')]);
+    renderCard(2_340_000, [row(0, 11, 'Groceries')]);
     const steps = screen.getByTestId('first-steps');
-    expect(steps).toHaveTextContent('Start with Groceries. Select it, press Create Goal');
-    const types = screen.getByTestId('goal-types');
-    expect(types).toHaveTextContent('Every month: have an amount ready');
-    expect(types).toHaveTextContent('By a date: save a total by a day');
-    expect(types).toHaveTextContent('Every few months:');
-    expect(types).toHaveTextContent('Build up to: an amount with no date');
+    expect(steps).toHaveTextContent('A goal says what a category needs');
+    expect(screen.queryByTestId('goal-types')).toBeNull();
+    expect(steps).not.toHaveTextContent('Start with');
+    expect(screen.getByRole('button', { name: 'Show me' })).toBeInTheDocument();
   });
 
-  it('falls back to the first category, skipping income and card payments', () => {
+  it('without categories, says to add one and has no button', () => {
     startFirstSteps('space-1');
     const income = { ...row(0, 5, 'Income') } as GetMonthlyBudgetRow;
-    const card = { ...row(0, 6, 'Visa'), cardBalance: -100 } as GetMonthlyBudgetRow;
-    renderCard(100, [income, card, row(0, 7, 'Hobbies'), row(0, 8, 'Pets')]);
-    expect(screen.getByTestId('first-steps')).toHaveTextContent('Start with Hobbies.');
+    renderCard(100, [income]);
+    expect(screen.getByText('Add a category first, then give it a goal.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Show me' })).toBeNull();
   });
 
-  it('“Show me” selects the category and opens its new-goal form, not the page guide', () => {
+  it('“Show me” starts the walkthrough: no category picked, no form, no page guide', () => {
     startFirstSteps('space-1');
     renderCard(2_340_000, [row(0, 10, 'Dining out'), row(0, 11, 'Rent / Mortgage')]);
     fireEvent.click(screen.getByRole('button', { name: 'Show me' }));
+    expect(getGoalWalkthrough()).toEqual({ step: 'pick' });
     const ui = useUiStore.getState();
-    expect(ui.focusCategoryId).toBe(11);
-    expect(ui.highlightGoalCategoryId).toBe(11);
-    expect(ui.goalFormRequestCategoryId).toBe(11);
+    expect(ui.focusCategoryId).toBeNull();
+    expect(ui.highlightGoalCategoryId).toBeNull();
+    expect(ui.selectedCategories).toEqual([]);
     expect(openPageGuide).not.toHaveBeenCalled();
+    // The desktop card folds out of the way, and unfolds when it ends.
+    expect(getFirstSteps('space-1')?.collapsed).toBe(true);
+    act(() => closeGoalWalkthrough());
+    expect(getFirstSteps('space-1')?.collapsed).toBe(false);
   });
 
-  it('on a phone says tap, and “Show me” closes the sheet first', () => {
+  it('“Show me” with a goal-less category already selected starts at the goal types', () => {
+    startFirstSteps('space-1');
+    useUiStore.setState({
+      selectedCategories: [{ ID: 11, Name: 'Groceries' }] as unknown as Category[],
+    });
+    renderCard(2_340_000, [row(0, 11, 'Groceries')]);
+    fireEvent.click(screen.getByRole('button', { name: 'Show me' }));
+    expect(getGoalWalkthrough()).toMatchObject({ step: 'types', categoryId: 11 });
+  });
+
+  it('on a phone, “Show me” closes the sheet and leaves the bar', () => {
     startFirstSteps('space-1');
     renderCard(2_340_000, [row(0, 11, 'Groceries')], { variant: 'bar' });
     const bar = screen.getByTestId('first-steps');
-    expect(bar).toHaveTextContent('Set a goal for one category');
     fireEvent.click(bar);
-    expect(screen.getByText(/Tap it, then Create Goal/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Show me' }));
     expect(screen.queryByRole('dialog')).toBeNull();
-    expect(useUiStore.getState().goalFormRequestCategoryId).toBe(11);
+    expect(screen.getByTestId('first-steps')).toBeInTheDocument();
+    expect(getGoalWalkthrough().step).toBe('pick');
+    expect(getFirstSteps('space-1')?.collapsed).toBeFalsy();
   });
 
   it('ticks once a goal is created, or when the budget already has one', () => {
@@ -164,7 +183,7 @@ describe('step 1: set a goal', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Show me' }));
     expect(goal).toHaveBeenCalledOnce();
     expect(useUiStore.getState().focusCategoryId).toBeNull();
-    expect(useUiStore.getState().goalFormRequestCategoryId).toBeNull();
+    expect(getGoalWalkthrough().step).toBe('closed');
   });
 });
 
@@ -438,8 +457,7 @@ describe('on a phone', () => {
     expect(screen.queryByText('Budget with someone?')).toBeNull();
     fireEvent.click(bar);
     expect(screen.getByText('Budget with someone?')).toBeInTheDocument();
-    // Phone wording: tap, not "select".
-    expect(screen.getByText(/Tap it, then Create Goal/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show me' })).toBeInTheDocument();
     // The ✕ closes the sheet; the row stays.
     fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.queryByText('Budget with someone?')).toBeNull();

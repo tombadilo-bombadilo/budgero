@@ -13,25 +13,6 @@ export function spendingRows(rows: GetMonthlyBudgetRow[]): GetMonthlyBudgetRow[]
   );
 }
 
-// Bills everyone knows the size of, so a first goal is easy to set: rent
-// first, then groceries, then utilities. Matches the setup's suggested
-// categories in every app language.
-const GOAL_FIRST_CHOICES = [
-  /rent|mortgage|miete|hypothek|loyer|immobilier|alquiler|hipoteca|huur|hypotheek/i,
-  /groceries|lebensmittel|épicerie|courses|compra|supermercado|boodschappen/i,
-  /utilities|nebenkosten|charges|suministros|vaste lasten/i,
-];
-
-/** The category the goal step suggests: rent, groceries or utilities if there is one, else the first. */
-export function pickGoalCategory(rows: GetMonthlyBudgetRow[]): GetMonthlyBudgetRow | null {
-  const real = spendingRows(rows);
-  for (const pattern of GOAL_FIRST_CHOICES) {
-    const match = real.find((row) => pattern.test(row.Category));
-    if (match) return match;
-  }
-  return real[0] ?? null;
-}
-
 export interface GoalToFund {
   categoryId: number;
   categoryName: string;

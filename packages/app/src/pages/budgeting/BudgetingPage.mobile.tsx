@@ -18,6 +18,7 @@ import { useFocusCategoryFromNavState } from '@shared/hooks/useFocusCategoryFrom
 import { useClearCategorySelectionOnMount } from '@shared/hooks/useClearCategorySelectionOnMount';
 import { useNavigateMonth } from '@shared/hooks/useNavigateMonth';
 import { FirstStepsCard } from '@features/first-steps/ui/FirstStepsCard';
+import { GoalWalkthroughHost } from '@features/first-steps/ui/GoalWalkthroughHost';
 import { useFormatMaskedMilli } from '@features/budget-planning/lib/useFormatMaskedMilli';
 import { OPAQUE_CARD_SURFACE } from '@features/budget-planning/ui/mobile-table-columns';
 
@@ -93,6 +94,13 @@ export function BudgetingPageMobile() {
         currentMonth={currentMonth}
         formatAmount={formatAmount}
         settled={figuresSettled}
+        variant="bar"
+      />
+      <GoalWalkthroughHost
+        rows={budgetData || []}
+        goals={goalsData}
+        currentMonth={currentMonth}
+        formatAmount={formatAmount}
         variant="bar"
       />
       <Card className="flex-1 min-h-0 overflow-hidden py-0">

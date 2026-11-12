@@ -9,7 +9,6 @@ import { Card, CardContent } from '@shared/ui/card';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@shared/ui/drawer';
 import { cn } from '@shared/lib/utils';
 import { useActiveSpaceId } from '@shared/runtime/runtime-provider';
-import { useUiStore } from '@shared/store/useUiStore';
 import {
   FIRST_STEP_IDS,
   hideFirstSteps,
@@ -22,7 +21,9 @@ import {
   type CountedFirstStepId,
   type FirstStepsState,
 } from '@shared/lib/first-steps/first-steps';
-import { pickGoalCategory, pickGoalToFund, spendingRows } from '../lib/goal-step';
+import { pickGoalToFund, spendingRows } from '../lib/goal-step';
+import { startGoalWalkthrough } from '../model/goal-walkthrough';
+import { pointAtAssigned, useSelectedForWalkthrough } from '../model/walkthrough-page';
 
 interface FirstStepsCardProps {
   readyToAssign: number;
@@ -99,7 +100,7 @@ export function FirstStepsCard({
     () => pickGoalToFund(goals, rows, currentMonth),
     [goals, rows, currentMonth]
   );
-  const goalCategory = useMemo(() => pickGoalCategory(rows), [rows]);
+  const selected = useSelectedForWalkthrough(rows, goals);
 
   useEffect(() => {
     if (spaceId) noteFirstStepsVisit(spaceId);
@@ -135,30 +136,21 @@ export function FirstStepsCard({
 
   if (!spaceId || !steps || steps.dismissed) return null;
 
-  const ui = () => useUiStore.getState();
-  // The goal's "Show me": select the suggested category, scroll to it, and
-  // open its new-goal form (GoalSection takes the request once it is on
-  // screen). The Create Goal button stays highlighted if the form is closed.
+  // The goal's "Show me": the walkthrough on the page (GoalWalkthroughHost).
+  // It never picks a category or opens a form for the user.
   const showGoal = () => {
     setDrawerOpen(false);
-    if (!goalCategory) return;
-    const id = goalCategory.CategoryID;
-    ui().setHighlightGoalCategoryId(id);
-    ui().setGoalFormRequestCategoryId(id);
-    ui().setFocusCategoryId(id);
-    // Not taken (the category isn't on screen): drop it, so the form never
-    // pops up later out of nowhere.
-    window.setTimeout(() => {
-      if (ui().goalFormRequestCategoryId === id) ui().setGoalFormRequestCategoryId(null);
-    }, 5000);
+    // Fold the desktop card out of the way while the walkthrough runs; it
+    // unfolds again when the walkthrough ends.
+    const fold = variant === 'card' && !steps.collapsed;
+    if (fold) setFirstStepsCollapsed(spaceId, true);
+    startGoalWalkthrough(selected, fold ? () => setFirstStepsCollapsed(spaceId, false) : undefined);
   };
   // The assign "Show me": the goal's row if there is one, and its Assigned field.
   const showAssign = () => {
     setDrawerOpen(false);
     const id = goalToFund?.categoryId ?? pickCategory(rows);
-    if (!id) return;
-    ui().setHighlightAssignmentCategoryId(id);
-    ui().setFocusCategoryId(id);
+    if (id) pointAtAssigned(id);
   };
   const runAction = (id: CountedFirstStepId, fallback: () => void) => () => {
     const custom = onStepAction?.[id];
@@ -175,51 +167,9 @@ export function FirstStepsCard({
   );
   const strong = (text: string) => <strong className="text-foreground">{text}</strong>;
 
-  // Step 1: a goal, for someone who has never set one.
-  const goalName = goalCategory ? strong(goalCategory.Category) : null;
-  const goalBody = goalName ? (
-    <>
-      <div>
-        {variant === 'bar' ? (
-          <Trans>
-            Start with {goalName}. Tap it, then Create Goal, pick a type, enter the amount and save.
-            Show me opens it for you.
-          </Trans>
-        ) : (
-          <Trans>
-            Start with {goalName}. Select it, press Create Goal, pick a type, enter the amount and
-            save. Show me opens it for you.
-          </Trans>
-        )}
-      </div>
-      <ul className="space-y-0.5" data-testid="goal-types">
-        <li>
-          <Trans>
-            <span className="font-medium text-foreground/80">Every month:</span> have an amount
-            ready, like rent or groceries.
-          </Trans>
-        </li>
-        <li>
-          <Trans>
-            <span className="font-medium text-foreground/80">By a date:</span> save a total by a
-            day, like a holiday.
-          </Trans>
-        </li>
-        <li>
-          <Trans>
-            <span className="font-medium text-foreground/80">Every few months:</span> bills that
-            come quarterly or once a year.
-          </Trans>
-        </li>
-        <li>
-          <Trans>
-            <span className="font-medium text-foreground/80">Build up to:</span> an amount with no
-            date, like an emergency fund.
-          </Trans>
-        </li>
-      </ul>
-    </>
-  ) : (
+  // Step 1: a goal. The walkthrough on the page explains the rest.
+  const hasCategories = spendingRows(rows).length > 0;
+  const goalBody = hasCategories ? undefined : (
     <Trans>Add a category first, then give it a goal.</Trans>
   );
 
@@ -280,7 +230,7 @@ export function FirstStepsCard({
       ),
       body: goalBody,
       action:
-        goalCategory || onStepAction?.goal
+        hasCategories || onStepAction?.goal
           ? stepButton(<Trans>Show me</Trans>, runAction('goal', showGoal))
           : undefined,
     },
