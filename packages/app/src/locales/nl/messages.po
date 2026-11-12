@@ -497,6 +497,11 @@ msgstr "{0, plural, one {# mutatie verwerkt} other {# mutaties verwerkt}}"
 msgid "{0, plural, one {Remove # payee?} other {Remove # payees?}}"
 msgstr "{0, plural, one {# begunstigde verwijderen?} other {# begunstigden verwijderen?}}"
 
+#. placeholder {0}: run.transactionCount
+#: src/features/page-guides/ui/guide-visuals.tsx
+msgid "{0, plural, one {Restore # transaction to its pre-run value.} other {Restore # transactions to their pre-run values.}}"
+msgstr "{0, plural, one {# transactie terugzetten naar de waarde van vóór de uitvoering.} other {# transacties terugzetten naar de waarden van vóór de uitvoering.}}"
+
 #. placeholder {0}: Number(draft) || 0
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "{0, plural, one {row} other {rows}}"
@@ -1153,6 +1158,7 @@ msgstr "{ccCategoryName} betalingen"
 msgid "{changedCount} categories adjusted"
 msgstr "{changedCount} categorieën aangepast"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/automation-rules/RuleRow.tsx
 msgid "{conditionCount} condition(s) · {actionCount} action(s)"
 msgstr "{conditionCount} voorwaarde(n) · {actionCount} actie(s)"
@@ -1236,8 +1242,12 @@ msgid "{count, plural, one {Yearly} other {Every # years}}"
 msgstr "{count, plural, one {Jaarlijks} other {Elke # jaar}}"
 
 #: src/features/page-guides/ui/guide-visuals.tsx
-msgid "{count} transactions updated."
-msgstr "{count} transacties bijgewerkt."
+msgid "{count} transactions"
+msgstr "{count} transacties"
+
+#: src/features/page-guides/ui/guide-visuals.tsx
+#~ msgid "{count} transactions updated."
+#~ msgstr "{count} transacties bijgewerkt."
 
 #: src/features/goal-management/lib/goal-cycle-label.ts
 msgid "{cycleMonths, plural, one {every # month} other {every # months}}"
@@ -2215,6 +2225,7 @@ msgid "<0/>Copy CSV"
 msgstr "<0/>CSV kopiëren"
 
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 msgid "<0/>Copy link"
 msgstr "<0/>Link kopiëren"
 
@@ -2553,6 +2564,7 @@ msgid "<0/>Open imported budget"
 msgstr "<0/>Geïmporteerd budget openen"
 
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 msgid "<0/>Open in email"
 msgstr "<0/>Openen in e-mail"
 
@@ -2671,6 +2683,7 @@ msgid "<0/>Revoke Token"
 msgstr "<0/>Token intrekken"
 
 #. placeholder {0}: rule.runOrder
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/automation-rules/RuleRow.tsx
 msgid "<0/>Run order {0}"
 msgstr "<0/>Volgorde uitvoeren {0}"
@@ -2795,6 +2808,7 @@ msgstr "<0/>Overboekingskoers"
 #~ msgid "<0/>Underfunded {0}"
 #~ msgstr "<0/>Ondergefinancierd {0}"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/AuditLogPage.tsx
 #: src/pages/settings/ImportsPage.tsx
 msgid "<0/>Undo"
@@ -3485,6 +3499,10 @@ msgstr "Een korte herinnering over hoe Budgero jouw automatisering toepast."
 msgid "A radar needs at least 3 values to compare"
 msgstr "Een radar heeft minstens 3 waarden nodig om te vergelijken"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "A rate for one transaction"
+msgstr "Een koers voor één transactie"
+
 #: src/entities/recurring/lib/error-message.ts
 msgid "A recurring transfer can't be split. Remove the split lines first."
 msgstr "Een terugkerende overboeking kan niet worden gesplitst. Verwijder eerst de splitregels."
@@ -3523,8 +3541,8 @@ msgid "A split line's category no longer exists. Edit the recurring transaction 
 msgstr "De categorie van een splitregel bestaat niet meer. Bewerk de terugkerende transactie en kies er een categorie voor."
 
 #: src/features/page-guides/ui/guide-content.tsx
-msgid "A total by a date"
-msgstr "Een totaal op een datum"
+#~ msgid "A total by a date"
+#~ msgstr "Een totaal op een datum"
 
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "A transaction with several labels counts in full under each, so labels can overlap."
@@ -3533,6 +3551,10 @@ msgstr "Een transactie met meerdere labels wordt volledig meegeteld onder elk la
 #: src/features/reports/ui/notebook/query-error.ts
 msgid "A value could not be calculated (for example a division by zero or a number that is too large). Check custom columns and metrics."
 msgstr "Een waarde kon niet worden berekend (bijvoorbeeld een deling door nul of een te groot getal). Controleer eigen kolommen en meetwaarden."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "A workspace holds one or more budgets, and everyone in it sees all of them. Switch moves you to another workspace, and New Workspace makes a new one."
+msgstr "Een werkruimte bevat een of meer budgetten, en iedereen erin ziet ze allemaal. ‘Schakelen’ brengt je naar een andere werkruimte, en ‘Nieuwe werkruimte’ maakt er een."
 
 #: src/app/startup/screens.tsx
 msgid "A workspace keeps your budgets, accounts, and collaborators organized in one place."
@@ -3824,6 +3846,7 @@ msgstr "Acties worden uitgevoerd in volgorde nadat alle voorwaarden zijn vervuld
 msgid "Activation"
 msgstr "Activatie"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 #: src/pages/settings/AuditLogPage.tsx
@@ -4041,6 +4064,10 @@ msgstr "Voeg nieuwe begunstigden toe, hernoem bestaande, of verwijder ze uit je 
 msgid "Add New Transaction"
 msgstr "Nieuwe transactie toevoegen"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Add Rate sets a rate for a currency pair from a start date, with an end date if you want one; Also add the reverse rate fills in the other direction. Custom rates take priority over fetched ones."
+msgstr "‘Koers toevoegen’ stelt een koers in voor een valutapaar vanaf een startdatum, desgewenst met een einddatum; ‘Ook de omgekeerde wisselkoers toevoegen’ vult de andere richting in. Aangepaste koersen gaan voor opgehaalde."
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Add sort"
 msgstr "Sortering toevoegen"
@@ -4062,7 +4089,6 @@ msgid "Add transaction"
 msgstr "Transactie toevoegen"
 
 #: src/app/layout/desktop-shell/HeaderBar.tsx
-#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
 msgid "Add Transaction"
 msgstr "Transactie toevoegen"
@@ -4566,8 +4592,8 @@ msgid "An account with this name already exists. Choose it from the list, or use
 msgstr "Er bestaat al een rekening met deze naam. Kies die uit de lijst of gebruik een andere naam."
 
 #: src/features/page-guides/ui/guide-content.tsx
-msgid "An amount each month"
-msgstr "Een bedrag per maand"
+#~ msgid "An amount each month"
+#~ msgstr "Een bedrag per maand"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "An error occurred while deleting the rate."
@@ -5038,6 +5064,7 @@ msgstr "Automatisch toegewezen aan doelen"
 msgid "Auto-Categorize"
 msgstr "Automatisch categoriseren"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/rules/ui/rule-editor/RuleMetadataForm.tsx
 #: src/pages/settings/automation-rules/RuleRow.tsx
 msgid "Autofill"
@@ -5320,7 +5347,6 @@ msgstr "Instellingen bankfeed"
 msgid "Bank feed settings saved"
 msgstr "Instellingen bankfeed opgeslagen"
 
-#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/bank-sync/BankSyncPage.tsx
 #: src/shared/model/nav-registry.ts
 msgid "Bank sync"
@@ -5904,8 +5930,8 @@ msgid "Build metadata for support or troubleshooting."
 msgstr "Maak metadata aan voor ondersteuning of probleemoplossing."
 
 #: src/features/page-guides/ui/guide-content.tsx
-msgid "Build up a balance"
-msgstr "Een saldo opbouwen"
+#~ msgid "Build up a balance"
+#~ msgstr "Een saldo opbouwen"
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Build up to an amount available, with no date and no repeat"
@@ -6357,6 +6383,10 @@ msgstr "Plan wijzigen"
 msgid "Change Subscription Plan"
 msgstr "Abonnement wijzigen"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Change the master password"
+msgstr "Het hoofdwachtwoord wijzigen"
+
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Change vs previous month"
 msgstr "Verschil t.o.v. vorige maand"
@@ -6611,6 +6641,10 @@ msgstr "Andere vraag kiezen"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Choose category"
 msgstr "Kies categorie"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Choose Change Master Password and enter the current and the new one (at least 8 characters). Your other devices then ask for the new one; people you share a workspace with keep their own."
+msgstr "Kies ‘Hoofdwachtwoord wijzigen’ en vul het huidige en het nieuwe in (minstens 8 tekens). Je andere apparaten vragen daarna om het nieuwe; wie een werkruimte met je deelt, houdt zijn eigen."
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Choose Customize to add, move, resize or remove cards; Reset to default in the ⋯ menu brings the original back. To open Budgero on another page, change Default Home in Settings → Appearance."
@@ -7350,6 +7384,7 @@ msgstr "Blijf elke maand {monthlyTarget} toewijzen om je doel te bereiken"
 msgid "Continue to bank login"
 msgstr "Verder naar inloggen bij de bank"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/rules/ui/rule-editor/RuleMetadataForm.tsx
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 #: src/pages/settings/automation-rules/RuleRow.tsx
@@ -9208,6 +9243,10 @@ msgstr "bijv. Boodschappen"
 msgid "e.g., Monthly Bills"
 msgstr "bijv. Vaste lasten"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Each account keeps its own currency, and the budget shows everything in its Display Currency, which you change under Manage Budget. Every transaction keeps both its own amount and the converted one."
+msgstr "Elke rekening houdt haar eigen valuta, en het budget toont alles in de weergavevaluta, die je wijzigt onder ‘Budget beheren’. Elke transactie bewaart haar eigen bedrag en het omgerekende."
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Each account with its balance from transactions."
 msgstr "Elke rekening met het saldo uit de transacties."
@@ -9864,8 +9903,8 @@ msgstr "Elke munt die je verdient krijgt een taak voordat je hem uitgeeft. Hoe w
 #~ msgstr "Elke euro krijgt een taak"
 
 #: src/features/page-guides/ui/guide-content.tsx
-msgid "Every few months"
-msgstr "Om de paar maanden"
+#~ msgid "Every few months"
+#~ msgstr "Om de paar maanden"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Every scheduled occurrence that hasn't been entered yet, by due date."
@@ -9940,6 +9979,10 @@ msgstr "Wisselkoers niet beschikbaar"
 msgid "Exchange rates are fetched daily and cached inside your budget file."
 msgstr "Wisselkoersen worden dagelijks opgehaald en gecached in je budgetbestand."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Exchange rates are fetched daily and kept in your budget file; if a day is missing, the nearest earlier rate up to a week back is used. Keep cached rates for sets how long they stay."
+msgstr "Wisselkoersen worden dagelijks opgehaald en in je budgetbestand bewaard; ontbreekt een dag, dan wordt de dichtstbijzijnde eerdere koers tot een week terug gebruikt. ‘Wisselkoersen bewaren voor’ bepaalt hoe lang ze blijven."
+
 #: src/entities/budget/api/useBudgets.ts
 msgid "Exchange rates for the new currency are unavailable, so nothing was changed. Check your connection and try again."
 msgstr "Wisselkoersen voor de nieuwe valuta zijn niet beschikbaar, dus er is niets gewijzigd. Controleer je verbinding en probeer het opnieuw."
@@ -10005,7 +10048,7 @@ msgid "Expand sidebar"
 msgstr "Zijbalk uitklappen"
 
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
-#: src/features/page-guides/ui/guide-content.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/transactions/ui/form/TransactionTypeSelector.tsx
 msgid "Expense"
 msgstr "Uitgave"
@@ -10567,6 +10610,7 @@ msgstr "Naar klembord kopiëren mislukt. Probeer het opnieuw."
 msgid "Family"
 msgstr "Familie"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "Family budget"
 msgstr "Familiebudget"
@@ -10902,6 +10946,7 @@ msgstr "Nieuw begin, of neem je een budget mee?"
 msgid "Friend or colleague"
 msgstr "Vriend of collega"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
@@ -11830,7 +11875,6 @@ msgstr "Importeren vanuit YNAB"
 msgid "Importing..."
 msgstr "Importeren..."
 
-#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/ImportsPage.tsx
 #: src/shared/model/nav-registry.ts
 msgid "Imports"
@@ -11948,7 +11992,7 @@ msgstr "Inclusief al geboekte of overgeslagen herhalingen."
 #: src/features/budget-management/model/icon-options.ts
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
-#: src/features/page-guides/ui/guide-content.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/form/TransactionTypeSelector.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
@@ -12294,6 +12338,7 @@ msgid "Invite ready"
 msgstr "Uitnodiging klaar"
 
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Invite ready — share the link below"
 msgstr "Uitnodiging klaar — deel de onderstaande link"
 
@@ -12303,6 +12348,7 @@ msgid "Invite secret"
 msgstr "Uitnodigingscode"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "Invite someone"
 msgstr "Iemand uitnodigen"
 
@@ -12441,6 +12487,10 @@ msgstr "Aangemeld op {0}"
 msgid "Joined workspace \"{0}\""
 msgstr "Deelgenomen aan werkruimte \"{0}\""
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Joining with an invite"
+msgstr "Deelnemen met een uitnodiging"
+
 #: src/features/budget-sharing/ui/RedeemInviteDialog.tsx
 msgid "Joining…"
 msgstr "Deelnemen…"
@@ -12486,9 +12536,14 @@ msgstr "Huidige labels behouden"
 msgid "Keep going until Ready to Assign shows 0. Then every coin has a job."
 msgstr "Ga door tot ‘Te verdelen’ 0 toont. Dan heeft elke munt een taak."
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/SecurityPage.tsx
 msgid "Keep in memory only (recommended)"
 msgstr "Alleen in geheugen bewaren (aanbevolen)"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Keep in memory only asks for the password again after a refresh or when the tab closes. Remember on this device keeps it for the Duration you pick, until you log out."
+msgstr "‘Alleen in geheugen bewaren’ vraagt het wachtwoord opnieuw na vernieuwen of als het tabblad sluit. ‘Onthouden op dit apparaat’ bewaart het voor de gekozen duur, tot je uitlogt."
 
 #: src/pages/settings/subscription/CancelDialog.tsx
 msgid "Keep Subscription"
@@ -13735,6 +13790,7 @@ msgstr "Maandbedrag"
 #: src/features/goal-management/lib/core-goal-text.ts
 #: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "Monthly Available Target"
 msgstr "Maandelijks beschikbaarheidsdoel"
 
@@ -15525,6 +15581,10 @@ msgstr "Zodra de werkruimte-eigenaar hun abonnement verlengt, krijg je automatis
 #~ msgid "Once you close this dialog the secrets are gone from Budgero. You can regenerate fresh invites any time from <0>Settings → Workspaces</0>."
 #~ msgstr "Zodra je dit dialoogvenster sluit, zijn de geheimen verdwenen uit Budgero. Je kunt op elk moment nieuwe uitnodigingen genereren via <0>Instellingen → Werkruimtes</0>."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "One budget, many currencies"
+msgstr "Eén budget, veel valuta’s"
+
 #: src/pages/onboarding/onboarding-data.ts
 #~ msgid "One jar to get you started. Big or small."
 #~ msgstr "Eén potje om mee te beginnen. Groot of klein."
@@ -15549,6 +15609,7 @@ msgstr "Eén speciaal teken (!@#$%...)"
 msgid "One subscription, up to 5 people"
 msgstr "Eén abonnement, tot 5 personen"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/rules/ui/rule-editor/RuleMetadataForm.tsx
 #: src/pages/settings/automation-rules/RuleRow.tsx
 msgid "One time"
@@ -15626,6 +15687,10 @@ msgstr "Alleen de werkruimte-eigenaar kan een Budgero Core-back-up herstellen in
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "Only workspace owners can create new invites. Ask an owner to share access with teammates."
 msgstr "Alleen werkruimte-eigenaren kunnen nieuwe uitnodigingen aanmaken. Vraag een eigenaar om toegang te delen met teamleden."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Only you can read your budget"
+msgstr "Alleen jij kunt je budget lezen"
 
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
@@ -16060,6 +16125,10 @@ msgstr "Eigen werkruimtes"
 msgid "Owner"
 msgstr "Eigenaar"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Owner and members"
+msgstr "Eigenaar en leden"
+
 #. placeholder {0}: currentPage + 1
 #: src/features/import/ui/steps/PreviewStep.tsx
 msgid "Page {0} of {pages}"
@@ -16208,7 +16277,6 @@ msgstr "Betalen"
 
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
-#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
@@ -16356,6 +16424,7 @@ msgstr "Procent"
 
 #: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "Periodic Allocation Target"
 msgstr "Periodiek toewijzingsdoel"
 
@@ -17342,6 +17411,7 @@ msgstr "Radar"
 msgid "Radar chart"
 msgstr "Radargrafiek"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Rate"
 msgstr "Koers"
@@ -17417,12 +17487,12 @@ msgid "Ready"
 msgstr "Klaar"
 
 #: src/features/budgeting/ui/BudgetToolbar.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "Ready to assign"
 msgstr "Te verdelen"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
-#: src/features/page-guides/ui/guide-content.tsx
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
 msgid "Ready to Assign"
 msgstr "Te verdelen"
@@ -17604,7 +17674,6 @@ msgid "Recording... {0} (click to stop)"
 msgstr "Bezig met opnemen... {0} (klik om te stoppen)"
 
 #: src/app/layout/desktop-shell/constants.ts
-#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/shared/model/nav-registry.ts
 #: src/widgets/command-palette/CommandPalette.tsx
 msgid "Recurring"
@@ -17840,10 +17909,15 @@ msgstr "Resterend toe te wijzen"
 #~ msgid "Remember how you file each payee, without writing a rule for it."
 #~ msgstr "Onthoud hoe je elke begunstigde indelt, zonder er een regel voor te schrijven."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Remember it on this device?"
+msgstr "Onthouden op dit apparaat?"
+
 #: src/features/transactions/ui/add-transaction/TransactionFormHeader.tsx
 msgid "Remember last category, payee, account"
 msgstr "Laatste categorie, begunstigde en rekening onthouden"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/SecurityPage.tsx
 msgid "Remember on this device (IndexedDB)"
 msgstr "Onthouden op dit apparaat (IndexedDB)"
@@ -19436,6 +19510,7 @@ msgstr "Selecteer dagen"
 #~ msgstr "Selecteer fallback-rekening"
 
 #: src/features/import/ui/steps/UploadStep.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Select File"
 msgstr "Bestand selecteren"
 
@@ -20719,6 +20794,7 @@ msgstr "Startdatum"
 
 #: src/features/account-management/ui/AddAccountDialog.tsx
 #: src/features/account-management/ui/EditAccountDialog.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Start Date"
 msgstr "Startdatum"
@@ -21111,6 +21187,7 @@ msgid "Swiss (1'234.56)"
 msgstr "Zwitsers (1'234.56)"
 
 #: src/features/budget-management/ui/WorkspaceBudgetList.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/components/WorkspaceRow.tsx
 msgid "Switch"
 msgstr "Schakelen"
@@ -21282,6 +21359,7 @@ msgstr "Doelsaldo"
 #: src/features/goal-management/lib/core-goal-text.ts
 #: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "Target Balance"
 msgstr "Doelsaldo"
 
@@ -21647,6 +21725,14 @@ msgstr "Het beginsaldo wordt zo ingesteld dat de rekening vandaag overeenkomt me
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "The other account of a scheduled transfer."
 msgstr "De andere rekening van een geplande overboeking."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "The other person opens the link, signs in with their own account and their own master password, then chooses Join workspace. Without the link, Redeem Invite takes the code."
+msgstr "De ander opent de link, logt in met een eigen account en een eigen hoofdwachtwoord, en kiest ‘Deelnemen aan werkruimte’. Zonder link neemt ‘Uitnodiging inwisselen’ de code aan."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "The owner creates invites, renames or deletes the workspace and can remove members; members budget alongside. Deleting a workspace removes its data for everyone and can’t be undone."
+msgstr "De eigenaar maakt uitnodigingen, hernoemt of verwijdert de werkruimte en kan leden verwijderen; leden budgetteren mee. Een werkruimte verwijderen wist de gegevens voor iedereen en kan niet ongedaan worden gemaakt."
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
 msgid "The paired transfer transaction could not be loaded."
@@ -22364,6 +22450,7 @@ msgstr "Titel (optioneel)"
 msgid "Title on the dashboard (optional)"
 msgstr "Titel op het dashboard (optioneel)"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/admin/SignupsSection.tsx
 #: src/pages/admin/StickinessAnalyticsSection.tsx
@@ -22388,6 +22475,10 @@ msgstr "Om het doel te voltooien"
 #: src/pages/settings/simplefin/SimpleFINPage.tsx
 #~ msgid "To connect, you need a SimpleFIN setup token. Get one from <0>SimpleFIN Bridge<1/></0>"
 #~ msgstr "Om te verbinden heb je een SimpleFIN-insteltoken nodig. Haal er een bij <0>SimpleFIN Bridge<1/></0>"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "To match your statement, you can set the rate on a single transaction. Rates you set there are never recalculated."
+msgstr "Om met je afschrift overeen te komen, kun je de koers van één transactie instellen. Koersen die je daar instelt, worden nooit opnieuw berekend."
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "To reach target available"
@@ -22746,7 +22837,7 @@ msgid "Transcription failed"
 msgstr "Transcriptie mislukt"
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
-#: src/features/page-guides/ui/guide-content.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/form/TransactionTypeSelector.tsx
@@ -23165,6 +23256,14 @@ msgstr "Onder"
 msgid "Under pace"
 msgstr "Achter op schema"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Under Privacy Settings you can switch Usage Analytics off. It never collects amounts, balances, or payee, category or account names, and self-hosted builds send none."
+msgstr "Onder ‘Privacy-instellingen’ kun je gebruiksanalyse uitzetten. Die verzamelt nooit bedragen, saldi of namen van begunstigden, categorieën of rekeningen, en zelf gehoste versies sturen niets."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Under Sharing & invitations, Create Invite makes a link that works for 7 days: send it with Copy link or Open in email. You have 5 seats across the workspaces you own, and pending invites count too."
+msgstr "Onder ‘Delen & uitnodigingen’ maakt ‘Uitnodiging maken’ een link die 7 dagen werkt: stuur hem met ‘Link kopiëren’ of ‘Openen in e-mail’. Je hebt 5 plaatsen voor alle werkruimtes die van jou zijn, openstaande uitnodigingen tellen mee."
+
 #: src/pages/analytics/report-answers.ts
 msgid "Under this scenario your money runs out in {month}."
 msgstr "In dit scenario is je geld op in {month}."
@@ -23194,7 +23293,6 @@ msgstr "Laatste actie ongedaan gemaakt"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 #: src/features/transactions/api/useDeleteSelected.ts
 #: src/pages/custom-dashboards/components/DashboardEditBar.tsx
@@ -23576,6 +23674,10 @@ msgstr "VS/VK (1,234.56)"
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 msgid "Usage"
 msgstr "Gebruik"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Usage analytics"
+msgstr "Gebruiksanalyse"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "Usage Analytics"
@@ -24297,6 +24399,10 @@ msgstr "Waar gaat mijn geld naartoe?"
 msgid "Where money goes"
 msgstr "Waar het geld naartoe gaat"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Where rates come from"
+msgstr "Waar koersen vandaan komen"
+
 #: src/pages/analytics/reports/SpendingReport.tsx
 #~ msgid "Where the money goes"
 #~ msgstr "Waar het geld heen gaat"
@@ -24486,6 +24592,10 @@ msgstr "Werkruimtes"
 msgid "Workspaces & Sharing"
 msgstr "Werkruimtes & Delen"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Workspaces hold budgets"
+msgstr "Werkruimtes bevatten budgetten"
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Write a formula, e.g. Spending / Income * 100"
 msgstr "Schrijf een formule, bijv. Uitgaven / Inkomen * 100"
@@ -24545,6 +24655,7 @@ msgstr "Jaarlijks"
 #: src/features/goal-management/lib/core-goal-text.ts
 #: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "Yearly Allocation Target"
 msgstr "Jaarlijks toewijzingsdoel"
 
@@ -25038,6 +25149,10 @@ msgstr "Je Budgero-abonnement is inactief"
 msgid "Your budget data isn’t ready yet. Wait a moment and refresh."
 msgstr "Je budgetgegevens zijn nog niet klaar. Wacht even en vernieuw."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Your budget is encrypted on your devices with your master password before it syncs, so our server can’t read it. Nobody can recover that password for you: resetting it on the unlock screen starts over without your data."
+msgstr "Je budget wordt op je apparaten versleuteld met je hoofdwachtwoord voordat het synchroniseert, dus onze server kan het niet lezen. Niemand kan dat wachtwoord voor je herstellen: het opnieuw instellen op het ontgrendelscherm begint opnieuw zonder je gegevens."
+
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "Your budget lives on your device, encrypted with a master password only you know. Pick something memorable — we can’t reset it for you."
 msgstr "Je budget staat op je apparaat, versleuteld met een hoofdwachtwoord dat alleen jij kent. Kies iets dat je kunt onthouden — we kunnen het niet voor je resetten."
@@ -25154,6 +25269,10 @@ msgstr "Je andere apparaten laden haar opnieuw bij de volgende synchronisatie."
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Your other workspaces are not affected"
 msgstr "Jouw andere werkruimtes worden niet beïnvloed"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Your own rates"
+msgstr "Je eigen koersen"
 
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "Your own workspaces are locked because your Budgero plan is inactive. Subscribe again to regain access."

@@ -14,6 +14,9 @@ const GUIDE_PAGES = [
   ['/settings/rules', 'rules'],
   ['/settings/recurring', 'recurring'],
   ['/settings/imports', 'imports'],
+  ['/settings/workspaces', 'workspaces'],
+  ['/settings/security', 'security'],
+  ['/settings/currencies', 'currencies'],
 ] as const;
 
 function renderButton(path: string, extra?: Parameters<typeof PageGuideButton>[0]) {

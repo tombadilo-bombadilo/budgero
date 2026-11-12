@@ -4,11 +4,8 @@ import { useState } from 'react';
 import { scaledToDecimal } from '@budgero/core/browser';
 import { Button } from '@shared/ui/button';
 import { cn } from '@shared/lib/utils';
-import {
-  ImportStatusChip,
-  importStatusChipClass,
-  type ImportStatus,
-} from '@shared/ui/import-status-chip';
+import { importStatusChipClass, type ImportRowStatus } from '@shared/lib/import-status-chip';
+import { ImportStatusChip } from '@shared/ui/import-status-chip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import type {
   PreviewRow,
@@ -18,10 +15,10 @@ import type {
 } from '@features/import/model/types';
 import { translateImportText } from '../../lib/import-display-text';
 
-const STATUSES: ImportStatus[] = ['new', 'already-imported', 'needs-review', 'invalid'];
+const STATUSES: ImportRowStatus[] = ['new', 'already-imported', 'needs-review', 'invalid'];
 
 /** Stronger background for the selected status filter. */
-const SELECTED_BG: Record<ImportStatus, string> = {
+const SELECTED_BG: Record<ImportRowStatus, string> = {
   new: 'bg-emerald-500/25',
   'already-imported': 'bg-muted-foreground/20',
   'needs-review': 'bg-amber-500/30',
@@ -60,7 +57,7 @@ export function PreviewStep({
     invalid: t`Invalid/skipped`,
   };
 
-  const [filter, setFilter] = useState<'all' | ImportStatus>('all');
+  const [filter, setFilter] = useState<'all' | ImportRowStatus>('all');
   const [page, setPage] = useState(0);
   const unresolved = previewData.filter(
     (r) => r.duplicate.status === 'needs-review' && !r.decision
@@ -115,7 +112,7 @@ export function PreviewStep({
                   'inline-flex min-h-9 items-center text-xs ring-offset-background transition-[box-shadow,background-color,opacity] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-h-8',
                   key === 'all'
                     ? 'rounded-full border font-medium text-foreground'
-                    : importStatusChipClass(key),
+                    : cn(importStatusChipClass(key), 'font-medium'),
                   'px-3 text-xs',
                   selected
                     ? cn(
@@ -212,7 +209,11 @@ export function PreviewStep({
                     <span className="break-words">{row.input.memo}</span>
                   </td>
                   <td className="p-2">
-                    <ImportStatusChip status={row.duplicate.status}>
+                    <ImportStatusChip
+                      status={row.duplicate.status}
+                      data-status={row.duplicate.status}
+                      className="w-fit text-[11px] font-medium"
+                    >
                       {labels[row.duplicate.status]}
                     </ImportStatusChip>
                     <p>

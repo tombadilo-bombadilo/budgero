@@ -1,36 +1,14 @@
-/* eslint-disable react-refresh/only-export-components */
-import type { ReactNode } from 'react';
+import type * as React from 'react';
 import { cn } from '@shared/lib/utils';
+import { importStatusChipClass, type ImportRowStatus } from '@shared/lib/import-status-chip';
 
-export type ImportStatus = 'new' | 'already-imported' | 'needs-review' | 'invalid';
+export type { ImportRowStatus };
 
-const STATUS_CLASSES: Record<ImportStatus, string> = {
-  new: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300',
-  'already-imported': 'bg-muted text-muted-foreground',
-  'needs-review': 'bg-amber-500/15 text-amber-800 dark:text-amber-300',
-  invalid: 'bg-red-500/10 text-red-700 dark:text-red-300',
-};
-
-/** Colour classes (pill shape included) for an import row status. */
-export function importStatusChipClass(status: ImportStatus): string {
-  return cn('rounded-full px-2 py-0.5 text-[11px] font-medium', STATUS_CLASSES[status]);
-}
-
+/** An import row status as a coloured pill; the label comes from the caller. */
 export function ImportStatusChip({
   status,
-  children,
   className,
-}: {
-  status: ImportStatus;
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <span
-      data-status={status}
-      className={cn('inline-flex w-fit items-center', importStatusChipClass(status), className)}
-    >
-      {children}
-    </span>
-  );
+  ...props
+}: React.ComponentProps<'span'> & { status: ImportRowStatus }) {
+  return <span className={cn(importStatusChipClass(status), className)} {...props} />;
 }

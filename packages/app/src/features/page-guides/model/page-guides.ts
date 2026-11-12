@@ -11,20 +11,41 @@ import type { PageGuideId } from '@shared/lib/analytics/events';
 
 export type { PageGuideId };
 
-/** Stable card keys, so a caller can open a guide at a given card. */
-export const PAGE_GUIDE_CARDS = {
-  budget: ['assign', 'columns', 'goals', 'overspending'],
-  accounts: ['add', 'budget', 'balances', 'reconcile'],
-  transactions: ['add', 'dates', 'search', 'cleared'],
-  reports: ['questions', 'build', 'drill'],
-  home: ['overview', 'attention', 'yours'],
-  rules: ['what', 'when', 'existing', 'undo'],
-  recurring: ['what', 'register', 'actions'],
-  imports: ['files', 'accounts', 'duplicates', 'undo'],
-} as const satisfies Record<PageGuideId, readonly string[]>;
+/**
+ * Every guide: the pages it belongs to and its card keys (stable, so a caller
+ * can open a guide at a given card). Adding a guide is one entry here, its
+ * cards in ui/guide-content.tsx and its id in PAGE_GUIDE_IDS (analytics).
+ * A path ending in `/*` covers everything below it.
+ */
+export const PAGE_GUIDES = {
+  budget: { paths: ['/budgeting'], cards: ['assign', 'columns', 'goals', 'overspending'] },
+  // The accounts overview has its own guide; every register (one account, or
+  // all of them at /accounts/all) shares the transactions guide.
+  accounts: { paths: ['/accounts'], cards: ['add', 'budget', 'balances', 'reconcile'] },
+  transactions: { paths: ['/accounts/*'], cards: ['add', 'dates', 'search', 'cleared'] },
+  // /reports/prebuilt is the reports page before the reports home replaced it.
+  reports: { paths: ['/reports', '/reports/prebuilt'], cards: ['questions', 'build', 'drill'] },
+  home: { paths: ['/dashboard'], cards: ['overview', 'attention', 'yours'] },
+  rules: { paths: ['/settings/rules'], cards: ['what', 'when', 'existing', 'undo'] },
+  recurring: { paths: ['/settings/recurring'], cards: ['what', 'register', 'actions'] },
+  imports: { paths: ['/settings/imports'], cards: ['files', 'accounts', 'duplicates', 'undo'] },
+  workspaces: { paths: ['/settings/workspaces'], cards: ['what', 'invite', 'join', 'members'] },
+  security: {
+    paths: ['/settings/security'],
+    cards: ['encryption', 'change', 'storage', 'privacy'],
+  },
+  currencies: {
+    paths: ['/settings/currencies'],
+    cards: ['currencies', 'rates', 'custom', 'override'],
+  },
+} as const satisfies Record<PageGuideId, { paths: readonly string[]; cards: readonly string[] }>;
+
+export const PAGE_GUIDE_CARDS = Object.fromEntries(
+  Object.entries(PAGE_GUIDES).map(([id, guide]) => [id, guide.cards])
+) as { [G in PageGuideId]: (typeof PAGE_GUIDES)[G]['cards'] };
 
 export type PageGuideCardKey<G extends PageGuideId = PageGuideId> =
-  (typeof PAGE_GUIDE_CARDS)[G][number];
+  (typeof PAGE_GUIDES)[G]['cards'][number];
 
 /** budgero.app docs page; English is unprefixed, the other locales are not. */
 export function docsUrl(slug: string, locale: string): string {
@@ -35,17 +56,15 @@ export function docsUrl(slug: string, locale: string): string {
 /** The guide for a route, if the page has one. */
 export function pageGuideForPath(pathname: string): PageGuideId | null {
   const path = pathname.replace(/\/+$/, '') || '/';
-  if (path === '/budgeting') return 'budget';
-  // The accounts overview has its own guide; every register (one account, or
-  // all of them at /accounts/all) shares the transactions guide.
-  if (path === '/accounts') return 'accounts';
-  if (path.startsWith('/accounts/')) return 'transactions';
-  // /reports/prebuilt is the reports page before the reports home replaced it.
-  if (path === '/reports' || path === '/reports/prebuilt') return 'reports';
-  if (path === '/dashboard') return 'home';
-  if (path === '/settings/rules') return 'rules';
-  if (path === '/settings/recurring') return 'recurring';
-  if (path === '/settings/imports') return 'imports';
+  for (const [id, guide] of Object.entries(PAGE_GUIDES) as [
+    PageGuideId,
+    { paths: readonly string[] },
+  ][]) {
+    const match = guide.paths.some((p) =>
+      p.endsWith('/*') ? path.startsWith(p.slice(0, -1)) : path === p
+    );
+    if (match) return id;
+  }
   return null;
 }
 
@@ -157,7 +176,7 @@ export function openPageGuide<G extends PageGuideId>(
   id: G,
   options: { card?: PageGuideCardKey<G> } = {}
 ): void {
-  const cards: readonly string[] = PAGE_GUIDE_CARDS[id];
+  const cards: readonly string[] = PAGE_GUIDES[id].cards;
   const card = options.card ? Math.max(0, cards.indexOf(options.card)) : 0;
   usePageGuideStore.setState({ request: { id, card, trigger: 'manual' } });
 }

@@ -1,3 +1,4 @@
+import { PAGE_GUIDE_IDS } from '@shared/lib/analytics/events';
 import { renderHook } from '@testing-library/react';
 import { usePageGuideCards } from '../ui/guide-content';
 import {
@@ -7,6 +8,7 @@ import {
   markPageGuideSeen,
   openPageGuide,
   PAGE_GUIDE_CARDS,
+  PAGE_GUIDES,
   PAGE_GUIDES_SEEN_KEY,
   pageGuideForPath,
   usePageGuideStore,
@@ -30,6 +32,10 @@ describe('pageGuideForPath', () => {
     expect(pageGuideForPath('/settings/rules')).toBe('rules');
     expect(pageGuideForPath('/settings/recurring')).toBe('recurring');
     expect(pageGuideForPath('/settings/imports')).toBe('imports');
+    expect(pageGuideForPath('/settings/workspaces')).toBe('workspaces');
+    expect(pageGuideForPath('/settings/security')).toBe('security');
+    expect(pageGuideForPath('/settings/currencies')).toBe('currencies');
+    expect(pageGuideForPath('/settings/currencies/x')).toBeNull();
     expect(pageGuideForPath('/reports')).toBe('reports');
     expect(pageGuideForPath('/reports/prebuilt')).toBe('reports');
     expect(pageGuideForPath('/dashboard')).toBe('home');
@@ -114,4 +120,10 @@ it('every guide has the cards PAGE_GUIDE_CARDS names, two to four of them', () =
 it('links to the docs in the reader’s language', () => {
   expect(docsUrl('goals', 'en')).toBe('https://budgero.app/docs/goals');
   expect(docsUrl('goals', 'de')).toBe('https://budgero.app/de/docs/goals');
+});
+
+it('every guide id has a registry entry with at least one page', () => {
+  for (const id of PAGE_GUIDE_IDS) {
+    expect(PAGE_GUIDES[id].paths.length).toBeGreaterThan(0);
+  }
 });
