@@ -986,6 +986,10 @@ msgstr "{count, plural, one {Chaque semaine} other {Toutes les # semaines}}"
 msgid "{count, plural, one {Every # year} other {Every # years}}"
 msgstr "{count, plural, one {Chaque année} other {Tous les # ans}}"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
+msgid "{count} transactions updated."
+msgstr "{count} transactions mises à jour."
+
 #: src/features/goal-management/lib/goal-cycle-label.ts
 msgid "{cycleMonths, plural, one {every # month} other {every # months}}"
 msgstr "{cycleMonths, plural, one {tous les # mois} other {tous les # mois}}"
@@ -1188,6 +1192,10 @@ msgstr "{restoredCount, plural, one {# transaction restaurée.} other {# transac
 #: src/features/account-management/ui/DevSimulateRateMoveButton.tsx
 msgid "{revalued, plural, one {Today's cache refetched; # account revalued.} other {Today's cache refetched; # accounts revalued.}}"
 msgstr "{revalued, plural, one {Cache du jour rechargé ; # compte réévalué.} other {Cache du jour rechargé ; # comptes réévalués.}}"
+
+#: src/features/page-guides/ui/guide-visuals.tsx
+msgid "{rows} transactions"
+msgstr "{rows} transactions"
 
 #. placeholder {0}: categorizedTransactions.length
 #: src/features/ai/ui/AICategorizeDialog.tsx
@@ -2789,6 +2797,10 @@ msgid "A red Available means a category spent more than it had. Select the red a
 msgstr "Un « Disponible » en rouge signifie qu’une catégorie a dépensé plus qu’elle n’avait. Sélectionnez le montant rouge pour le couvrir depuis « À affecter » ou une catégorie qui peut s’en passer ; sélectionnez un montant positif pour déplacer de l’argent dans l’autre sens."
 
 #: src/features/page-guides/ui/guide-content.tsx
+msgid "A rule checks a transaction against conditions on memo, payee, amount or account, joined with AND or OR, then runs its actions, such as Set category or Set payee. Choose New rule to make one; when several rules match, the lower run order goes first."
+msgstr "Une règle vérifie une transaction selon des conditions sur le mémo, le bénéficiaire, le montant ou le compte, reliées par ET ou OU, puis exécute ses actions, comme « Définir la catégorie » ou « Définir le bénéficiaire ». Choisissez « Nouvelle règle » pour en créer une ; si plusieurs règles correspondent, l’ordre d’exécution le plus bas passe en premier."
+
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "A total by a date"
 msgstr "Un total pour une date"
 
@@ -3151,6 +3163,10 @@ msgstr "Ajouter un compte"
 msgid "Add action"
 msgstr "Ajouter une action"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Add an account"
+msgstr "Ajouter un compte"
+
 #: src/features/transactions/ui/add-transaction/AddTransactionForm.tsx
 msgid "Add an account first"
 msgstr "Ajoutez d'abord un compte"
@@ -3238,6 +3254,7 @@ msgid "Add transaction"
 msgstr "Ajouter une transaction"
 
 #: src/app/layout/desktop-shell/HeaderBar.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/widgets/command-palette/CommandPalette.tsx
 msgid "Add Transaction"
 msgstr "Ajouter une transaction"
@@ -3594,6 +3611,7 @@ msgid "Already have an account? <0>Sign in</0>"
 msgstr "Vous avez déjà un compte ? <0>Connectez-vous</0>"
 
 #: src/features/import/ui/steps/PreviewStep.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Already imported"
 msgstr "Déjà importé"
 
@@ -4294,6 +4312,10 @@ msgstr "Solde : {0}"
 msgid "Balance<0/>"
 msgstr "Solde<0/>"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Balances and net worth"
+msgstr "Soldes et patrimoine net"
+
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Balances match - reconciliation will mark transactions as reconciled"
 msgstr "Les soldes correspondent - le rapprochement marquera les transactions comme rapprochées"
@@ -4325,6 +4347,7 @@ msgstr "Réglages du flux bancaire"
 msgid "Bank feed settings saved"
 msgstr "Réglages du flux bancaire enregistrés"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/bank-sync/BankSyncPage.tsx
 #: src/shared/model/nav-registry.ts
 msgid "Bank sync"
@@ -4446,6 +4469,10 @@ msgstr "Factures"
 msgid "Bills & Documents"
 msgstr "Factures et documents"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Bills and pay on a schedule"
+msgstr "Factures et salaire planifiés"
+
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Birthday"
 msgstr "Anniversaire"
@@ -4509,6 +4536,10 @@ msgstr "Répartition"
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Breakdown of user types"
 msgstr "Répartition par type d'utilisateur"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Bring in a file from your bank"
+msgstr "Importez un fichier de votre banque"
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
 msgid "Bring the budget you already have in YNAB."
@@ -5238,6 +5269,10 @@ msgstr "Variation par rapport au mois précédent"
 msgid "Change your master password (used to encrypt your local database)."
 msgstr "Modifier votre Mot de passe principal (utilisé pour chiffrer votre base de données locale)."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Changed your mind?"
+msgstr "Vous avez changé d’avis ?"
+
 #: src/pages/settings/AboutPage.tsx
 msgid "Changelog"
 msgstr "Journal des modifications"
@@ -5319,6 +5354,10 @@ msgstr "Discussions"
 msgid "Check Audit Log for error details"
 msgstr "Consultez le journal d'audit pour les détails de l'erreur"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Check before anything is added"
+msgstr "Vérifiez avant tout ajout"
+
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Check server logs. Re-sending is safe — delivered users are skipped."
 msgstr "Vérifiez les logs du serveur. Le renvoi est sans risque — les utilisateurs déjà notifiés sont ignorés."
@@ -5332,6 +5371,7 @@ msgid "Checked • {timestamp}"
 msgstr "Vérifié • {timestamp}"
 
 #: src/entities/account/model/accountTypes.ts
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Checking"
 msgstr "Compte courant"
@@ -5461,8 +5501,20 @@ msgid "Choose its payment category"
 msgstr "Choisir sa catégorie de paiement"
 
 #: src/features/page-guides/ui/guide-content.tsx
+msgid "Choose New Account, pick its type and enter its starting balance. Budgero records that balance as the account’s first transaction."
+msgstr "Choisissez « Nouveau compte », sélectionnez son type et saisissez son solde de départ. Budgero enregistre ce solde comme première transaction du compte."
+
+#: src/features/page-guides/ui/guide-content.tsx
 msgid "Choose New question, pick the data (for example Transactions), then add filters and a summary such as spending by category. Save it, and Add to dashboard puts it on a dashboard."
 msgstr "Choisissez « Nouvelle question », sélectionnez les données (par exemple Transactions), puis ajoutez des filtres et un résumé, comme les dépenses par catégorie. Enregistrez-la, et « Ajouter au tableau de bord » la place sur un tableau de bord."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Choose New recurring transaction, or switch on Make recurring while adding a transaction, and pick how often it comes. Nothing is posted by itself: you decide each time."
+msgstr "Choisissez « Nouvelle transaction récurrente », ou activez « Rendre récurrente » en ajoutant une transaction, et indiquez sa fréquence. Rien n’est validé tout seul : vous décidez à chaque fois."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Choose Select File under New Import, or drop the file anywhere in Budgero on a computer. No export to hand? The upload step links a spreadsheet and a CSV template."
+msgstr "Choisissez « Sélectionner un fichier » sous « Nouvel import », ou déposez le fichier n’importe où dans Budgero depuis un ordinateur. Pas d’export sous la main ? L’étape d’envoi propose un modèle de tableur et un modèle CSV."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Choose the currency for your budget. You can change the display language in Settings → Appearance."
@@ -5821,6 +5873,10 @@ msgstr "Mappage des colonnes"
 msgid "Columns"
 msgstr "Colonnes"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Columns and accounts"
+msgstr "Colonnes et comptes"
+
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "Come back tomorrow"
 msgstr "Revenez demain"
@@ -6067,6 +6123,10 @@ msgstr "Continuer vers la connexion bancaire"
 #: src/pages/settings/automation-rules/RuleRow.tsx
 msgid "Continuous"
 msgstr "Continu"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Continuous rules run by themselves on every new transaction: added by hand, imported, synced from your bank, pushed or posted from a recurring one. Autofill rules only suggest values while you fill in a transaction."
+msgstr "Les règles continues s’exécutent toutes seules sur chaque nouvelle transaction : saisie à la main, importée, synchronisée depuis la banque, envoyée par push ou validée depuis une récurrente. Les règles de remplissage automatique ne font que suggérer des valeurs pendant la saisie."
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "Control interface animations and visual effects."
@@ -7655,6 +7715,10 @@ msgstr "L'objectif de chaque mois additionné sur la période, comparé à ce qu
 msgid "Each row is a signup cohort. Cells show the % of that cohort active on day N after signup. Look for cliffs (every cohort drops at the same day) and cross-cohort drift (recent cohorts retaining better or worse than older ones). Daily cohorts are noisy at low signup volume — switch to weekly if rows look jagged."
 msgstr "Chaque ligne représente une cohorte d'inscription. Les cellules indiquent le % de cette cohorte actif au jour N après l'inscription. Recherchez les chutes brutales (toutes les cohortes chutent le même jour) et la dérive inter-cohortes (les cohortes récentes conservant mieux ou moins bien que les anciennes). Les cohortes quotidiennes sont bruitées lorsque le volume d'inscriptions est faible — passez aux cohortes hebdomadaires si les lignes semblent irrégulières."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Each row shows as New, Already imported or Needs review. Match keeps your own transaction and marks it cleared, Skip leaves the row out, and the rest are added as cleared transactions."
+msgstr "Chaque ligne apparaît comme Nouveau, Déjà importé ou À vérifier. « Associer » garde votre propre transaction et la marque pointée, « Ignorer » écarte la ligne, et le reste est ajouté en transactions pointées."
+
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Each split line needs a category. Please assign a category to every split."
 msgstr "Chaque ligne ventilée nécessite une catégorie. Veuillez affecter une catégorie à chaque ligne."
@@ -7662,6 +7726,10 @@ msgstr "Chaque ligne ventilée nécessite une catégorie. Veuillez affecter une 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Each split line needs either an inflow or an outflow amount."
 msgstr "Chaque ligne de ventilation doit comporter un montant d'entrée ou de sortie."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Each upcoming one appears in its account’s register once the date range at the top reaches its due date: pick Next 30 days or Next 3 months there. The dashboard’s Upcoming transactions card lists them too."
+msgstr "Chaque occurrence à venir apparaît dans le registre de son compte dès que la période en haut atteint son échéance : choisissez Next 30 days ou Next 3 months. La carte « Transactions à venir » du tableau de bord les liste aussi."
 
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Earlier version restored"
@@ -9149,8 +9217,8 @@ msgid "From savings"
 msgstr "Depuis l’épargne"
 
 #: src/features/transactions/ui/SchedulingGuideDialog.tsx
-msgid "From the register you can <0>Mark ready</0> (posts on the due date), <1>Post now</1> (posts today) or <2>Skip</2>. The dashboard’s Upcoming transactions card and Settings → Recurring Transactions list them too."
-msgstr "Depuis le registre, vous pouvez <0>Marquer comme prêt</0> (validé à la date d’échéance), <1>Valider maintenant</1> (validé aujourd’hui) ou <2>Ignorer</2>. La carte Transactions à venir du tableau de bord et Paramètres → Transactions récurrentes les listent aussi."
+#~ msgid "From the register you can <0>Mark ready</0> (posts on the due date), <1>Post now</1> (posts today) or <2>Skip</2>. The dashboard’s Upcoming transactions card and Settings → Recurring Transactions list them too."
+#~ msgstr "Depuis le registre, vous pouvez <0>Marquer comme prêt</0> (validé à la date d’échéance), <1>Valider maintenant</1> (validé aujourd’hui) ou <2>Ignorer</2>. La carte Transactions à venir du tableau de bord et Paramètres → Transactions récurrentes les listent aussi."
 
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
 msgid "From your last transaction for \"{name}\""
@@ -9311,8 +9379,8 @@ msgid "Go to Settings → AI Assistant to configure your local LLM connection."
 msgstr "Accédez à Paramètres → Assistant IA pour configurer votre connexion LLM locale."
 
 #: src/features/page-guides/ui/guide-content.tsx
-msgid "Go to Settings → Imports, or drop the file onto the page on a computer. CSV, OFX, QFX, QIF, CAMT.053 and PDF statements work, and possible duplicates are shown before anything is added."
-msgstr "Allez dans Paramètres → Imports, ou déposez le fichier sur la page depuis un ordinateur. Les relevés CSV, OFX, QFX, QIF, CAMT.053 et PDF fonctionnent, et les doublons possibles sont affichés avant tout ajout."
+#~ msgid "Go to Settings → Imports, or drop the file onto the page on a computer. CSV, OFX, QFX, QIF, CAMT.053 and PDF statements work, and possible duplicates are shown before anything is added."
+#~ msgstr "Allez dans Paramètres → Imports, ou déposez le fichier sur la page depuis un ordinateur. Les relevés CSV, OFX, QFX, QIF, CAMT.053 et PDF fonctionnent, et les doublons possibles sont affichés avant tout ajout."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "Go to transactions"
@@ -9423,6 +9491,7 @@ msgstr "Bravo ! Aucune transaction non catégorisée restante."
 
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 #: src/features/page-guides/ui/guide-content.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Groceries"
 msgstr "Épicerie"
@@ -9779,8 +9848,8 @@ msgid "Import & map"
 msgstr "Importer et associer"
 
 #: src/features/page-guides/ui/guide-content.tsx
-msgid "Import a file from your bank"
-msgstr "Importer un fichier de votre banque"
+#~ msgid "Import a file from your bank"
+#~ msgstr "Importer un fichier de votre banque"
 
 #: src/features/import/ui/csv-pdf-dialog/useImportDialogState.ts
 msgid "Import Account"
@@ -9920,6 +9989,7 @@ msgstr "Importation depuis YNAB"
 msgid "Importing..."
 msgstr "Importation…"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/ImportsPage.tsx
 #: src/shared/model/nav-registry.ts
 msgid "Imports"
@@ -10238,6 +10308,7 @@ msgid "Invalid/skipped"
 msgstr "Invalide/ignoré"
 
 #: src/entities/account/model/accountTypes.ts
+#: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Investment"
 msgstr "Investissement"
 
@@ -10585,6 +10656,7 @@ msgstr "Dernière connexion"
 msgid "Last Login"
 msgstr "Dernière connexion"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Last month"
 msgstr "Mois dernier"
@@ -11178,6 +11250,10 @@ msgstr "Gérez vos paramètres de sécurité et vos préférences de confidentia
 msgid "manual"
 msgstr "manuel"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Map a date column and an amount (or inflow and outflow) column; payee, memo, category and account are optional. If the file names its accounts, Accounts in this file sends each one to an account you have, a new account, or Don’t import."
+msgstr "Associez une colonne de date et une colonne de montant (ou entrée et sortie) ; bénéficiaire, mémo, catégorie et compte sont facultatifs. Si le fichier nomme ses comptes, « Comptes dans ce fichier » envoie chacun vers un compte existant, un nouveau compte ou « Ne pas importer »."
+
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Map your file columns to transaction fields and set formatting options"
 msgstr "Associez les colonnes de votre fichier aux champs de transaction et définissez les options de formatage"
@@ -11207,10 +11283,15 @@ msgstr "Marquer comme terminé après la première exécution rétroactive."
 #~ msgid "Mark items as ready when they land to create the matching transaction automatically."
 #~ msgstr "Marquez les éléments comme prêts dès leur arrivée pour créer automatiquement la transaction correspondante."
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/transactions/ui/RecurringOccurrenceActions.tsx
 #: src/pages/settings/recurring/components/RecurringOccurrenceRow.tsx
 msgid "Mark ready"
 msgstr "Marquer comme prêt"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Mark ready posts it on its due date, Post now posts it today, and Skip leaves this one out. You find them on each upcoming one here and in the register."
+msgstr "« Marquer comme prêt » la valide à son échéance, « Valider maintenant » la valide aujourd’hui, et « Ignorer » saute celle-ci. Vous les trouvez sur chaque occurrence ici et dans le registre."
 
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
 msgid "Mark uncleared"
@@ -11541,6 +11622,7 @@ msgid "monthly"
 msgstr "mensuellement"
 
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/transactions/ui/add-transaction/recurring-form.ts
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 #: src/pages/analytics/reports/InOutReport.tsx
@@ -11633,6 +11715,7 @@ msgid "More"
 msgstr "Plus"
 
 #: src/entities/account/model/accountTypes.ts
+#: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Mortgage"
 msgstr "Hypothèque"
 
@@ -11830,6 +11913,7 @@ msgid "Needs onboarding"
 msgstr "Onboarding nécessaire"
 
 #: src/features/import/ui/steps/PreviewStep.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Needs review"
 msgstr "À vérifier"
 
@@ -11930,6 +12014,7 @@ msgstr "Ne partagez jamais cette clé publiquement"
 
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 #: src/features/import/ui/steps/PreviewStep.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/explorer-page/ExplorerPage.tsx
 msgid "New"
 msgstr "Nouveau"
@@ -12792,8 +12877,8 @@ msgid "Notes"
 msgstr "Notes"
 
 #: src/features/transactions/ui/SchedulingGuideDialog.tsx
-msgid "Nothing is posted automatically. Each upcoming occurrence appears in the account register once the date range at the top reaches its due date. Pick <0>Next 30 days</0> or <1>Next 3 months</1> there to see them."
-msgstr "Rien n’est validé automatiquement. Chaque occurrence à venir apparaît dans le registre du compte dès que la plage de dates en haut atteint son échéance. Choisissez-y <0>Next 30 days</0> ou <1>Next 3 months</1> pour les voir."
+#~ msgid "Nothing is posted automatically. Each upcoming occurrence appears in the account register once the date range at the top reaches its due date. Pick <0>Next 30 days</0> or <1>Next 3 months</1> there to see them."
+#~ msgstr "Rien n’est validé automatiquement. Chaque occurrence à venir apparaît dans le registre du compte dès que la plage de dates en haut atteint son échéance. Choisissez-y <0>Next 30 days</0> ou <1>Next 3 months</1> pour les voir."
 
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
 msgid "Nothing left to review."
@@ -12889,6 +12974,7 @@ msgid "Off budget"
 msgstr "Hors budget"
 
 #: src/app/layout/desktop-shell/AccountsList.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Off Budget"
 msgstr "Hors budget"
@@ -12939,9 +13025,14 @@ msgid "On budget"
 msgstr "Dans le budget"
 
 #: src/app/layout/desktop-shell/AccountsList.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/widgets/navigation/MobileBottomNav.tsx
 msgid "On Budget"
 msgstr "Dans le budget"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "On budget or tracked"
+msgstr "Dans le budget ou suivi"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "On by default. Tells us which features you use, linked to your account ID, so we can improve Budgero. Turning it off also stops the events our server records."
@@ -12958,6 +13049,10 @@ msgstr "Sur la bonne voie — il reste {needed} sur {monthsMore} mois supplémen
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "On track — {needed} still needed over 1 more month."
 msgstr "Sur la bonne voie — il reste {needed} sur 1 mois supplémentaire."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "On-budget accounts, like checking, savings and credit cards, feed Ready to Assign and your categories. Off-budget ones, like a mortgage or investments, only count toward net worth."
+msgstr "Les comptes dans le budget, comme les comptes courants, d’épargne et les cartes de crédit, alimentent « À affecter » et vos catégories. Les comptes hors budget, comme un prêt immobilier ou des placements, ne comptent que dans le patrimoine net."
 
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "Once the workspace owner renews their plan, your shared workspace access comes back automatically."
@@ -13124,6 +13219,10 @@ msgstr "Ouvrir la démo →"
 #: src/pages/settings/AppearancePage.tsx
 msgid "Open the prebuilt reports for deeper insights."
 msgstr "Ouvrez les rapports préétablis pour des analyses plus approfondies."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Open the rule’s History, pick its latest run and choose Undo changes: the transactions go back to how they were."
+msgstr "Ouvrez l’historique de la règle, choisissez sa dernière exécution puis « Annuler les modifications » : les transactions reviennent à leur état d’avant."
 
 #: src/shared/ui/theme-switch.tsx
 msgid "Open theme preset menu"
@@ -13329,6 +13428,7 @@ msgstr "Sortie<0/>"
 msgid "Outstanding"
 msgstr "Restant dû"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Over"
 msgstr "Dépassé"
@@ -13541,6 +13641,7 @@ msgstr "Payer"
 
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
@@ -13792,6 +13893,10 @@ msgstr "Choisissez comment commencer"
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "Pick range"
 msgstr "Choisir une période"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Pick the dates"
+msgstr "Choisissez les dates"
 
 #: src/pages/accounts/hooks/useRecurringEditorFromTransaction.ts
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
@@ -14095,6 +14200,11 @@ msgstr "La valider datée d’aujourd’hui au lieu de sa date d’échéance"
 msgid "Post it on its due date"
 msgstr "La valider à sa date d’échéance"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Post it or skip it"
+msgstr "Validez ou ignorez"
+
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/transactions/ui/RecurringOccurrenceActions.tsx
 #: src/pages/settings/recurring/components/RecurringOccurrenceRow.tsx
 msgid "Post now"
@@ -14750,6 +14860,7 @@ msgid "Recording... {0} (click to stop)"
 msgstr "Enregistrement… {0} (cliquez pour arrêter)"
 
 #: src/app/layout/desktop-shell/constants.ts
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/shared/model/nav-registry.ts
 #: src/widgets/command-palette/CommandPalette.tsx
 msgid "Recurring"
@@ -15107,6 +15218,7 @@ msgid "Renews in:"
 msgstr "Renouvellement dans :"
 
 #: src/features/demo-budget/lib/seed-demo-budget.ts
+#: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Rent"
 msgstr "Loyer"
 
@@ -15507,6 +15619,10 @@ msgstr "rgba(148, 163, 184, {alpha})"
 msgid "Rich cards with goal details and drag-and-drop ordering."
 msgstr "Cartes riches avec détails des objectifs et réorganisation par glisser-déposer."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Right after an import, undo (Ctrl+Z or ⌘Z, or the undo arrow on a phone) reverts all of it. Later, Undo in Import History removes the imported transactions and any empty accounts or categories the import created."
+msgstr "Juste après un import, l’annulation (Ctrl+Z ou ⌘Z, ou la flèche d’annulation sur un téléphone) le défait entièrement. Plus tard, « Annuler » dans l’historique des imports retire les transactions importées et les comptes ou catégories vides créés par l’import."
+
 #: src/pages/settings/AppearancePage.tsx
 msgid "Roboto"
 msgstr "Roboto"
@@ -15640,6 +15756,14 @@ msgstr "Exécuter les modèles localement avec Ollama"
 #: src/pages/settings/automation-rules/RuleRow.tsx
 msgid "Run now"
 msgstr "Exécuter maintenant"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Run now and Retro run apply a rule to every transaction in the budget, and Retro run asks first. There is no preview, so check the conditions before you run it; a One time rule is done after its first run."
+msgstr "« Exécuter maintenant » et « Exécution rétroactive » appliquent une règle à chaque transaction du budget, et l’exécution rétroactive demande d’abord confirmation. Il n’y a pas d’aperçu, vérifiez donc les conditions avant ; une règle unique est terminée après sa première exécution."
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Run on what you already have"
+msgstr "Sur ce que vous avez déjà"
 
 #: src/features/rules/ui/rule-editor/RuleMetadataForm.tsx
 msgid "Run order"
@@ -15859,6 +15983,7 @@ msgstr "Enregistrement…"
 #: src/entities/account/model/accountTypes.ts
 #: src/features/budget-management/model/icon-options.ts
 #: src/features/demo-budget/lib/seed-demo-budget.ts
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/analytics/reports/FlowReport.tsx
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Savings"
@@ -16018,6 +16143,10 @@ msgstr "Rechercher des devises..."
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Search engine (Google, etc.)"
 msgstr "Moteur de recherche (Google, etc.)"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Search in plain words"
+msgstr "Cherchez avec des mots simples"
 
 #: src/features/labels/ui/LabelCombobox.tsx
 msgid "Search labels..."
@@ -16630,8 +16759,12 @@ msgid "Set up recurring paycheques, bills, or transfers and Budgero will remind 
 msgstr "Configurez des salaires, des factures ou des virements récurrents et Budgero vous rappellera quand ils arrivent à échéance."
 
 #: src/pages/settings/RecurringTransactionsPage.tsx
-msgid "Set up recurring transactions to automatically create entries on a schedule."
-msgstr "Configurez des transactions récurrentes pour créer automatiquement des écritures selon un calendrier."
+#~ msgid "Set up recurring transactions to automatically create entries on a schedule."
+#~ msgstr "Configurez des transactions récurrentes pour créer automatiquement des écritures selon un calendrier."
+
+#: src/pages/settings/RecurringTransactionsPage.tsx
+msgid "Set up transactions that repeat on a schedule. Nothing is posted until you mark it ready or post it."
+msgstr "Configurez des transactions qui se répètent selon un calendrier. Rien n’est validé tant que vous ne l’avez pas marqué comme prêt ou validé."
 
 #: src/pages/onboarding/OnboardingFlow.tsx
 msgid "Setting up the demo budget…"
@@ -16999,6 +17132,7 @@ msgstr "Taille"
 
 #: src/features/bank-sync/ui/BankReviewDialog.tsx
 #: src/features/import/ui/steps/PreviewStep.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/page-guides/ui/PageGuideDialog.tsx
 #: src/pages/settings/recurring/components/RecurringOccurrenceRow.tsx
 msgid "Skip"
@@ -18078,6 +18212,10 @@ msgstr "La clé est stockée chiffrée dans ce budget et n'est envoyée nulle pa
 msgid "The key will auto-hide after 60 seconds"
 msgstr "La clé se masquera automatiquement après 60 secondes"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "The list only shows the date range at the top, the last 180 days to start with. Future dated transactions, and an account’s upcoming recurring ones, appear once the range reaches their date: pick Next 30 days or Next 3 months to see them."
+msgstr "La liste n’affiche que la période indiquée en haut, au départ les 180 derniers jours. Les transactions datées dans le futur, et les récurrentes à venir d’un compte, apparaissent quand la période atteint leur date : choisissez Next 30 days ou Next 3 months pour les voir."
+
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "The member no longer has access to this workspace."
 msgstr "Le membre n'a plus accès à cet espace de travail."
@@ -18397,6 +18535,10 @@ msgstr "Objectif de ce mois-ci atteint ! Continuez avec {monthlyTarget}/mois pou
 #: src/app/system/AppErrorBoundary.tsx
 msgid "This page could not be shown"
 msgstr "Cette page n'a pas pu être affichée"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "This page groups your accounts by type with their balances, and Net Worth is what you own minus what you owe. Open an account to see and add its transactions."
+msgstr "Cette page regroupe vos comptes par type avec leurs soldes, et le patrimoine net est ce que vous possédez moins ce que vous devez. Ouvrez un compte pour voir et ajouter ses transactions."
 
 #: src/features/import/lib/parse-import-file.ts
 msgid "This PDF has no extractable text — it looks like a scanned image. Budgero imports PDFs by reading their text layer, which this file doesn't have. Try exporting the statement as CSV from your bank, or use a text-based PDF generated directly by the bank (not a scan or screenshot)."
@@ -18949,8 +19091,12 @@ msgid "Transactions will use accounts from the \"{0}\" column. If an account nam
 msgstr "Les transactions utiliseront les comptes de la colonne « {0} ». Si un nom de compte ne correspond à aucun compte existant, vous devrez sélectionner un compte par défaut ci-dessous :"
 
 #: src/features/page-guides/ui/guide-content.tsx
-msgid "Transactions you add start uncleared. Select the circle once your bank shows the transaction; imported ones arrive cleared."
-msgstr "Les transactions que vous ajoutez commencent non pointées. Sélectionnez le cercle dès que votre banque affiche la transaction ; celles importées arrivent déjà pointées."
+msgid "Transactions you add start uncleared; select the circle once your bank shows one (imported ones arrive cleared). On an account’s page, the Uncleared and Uncategorized buttons under the search show only those."
+msgstr "Les transactions que vous ajoutez commencent non pointées ; sélectionnez le cercle dès que votre banque l’affiche (les importées arrivent pointées). Sur la page d’un compte, les boutons « Non pointé » et « Non catégorisé » sous la recherche n’affichent que celles-là."
+
+#: src/features/page-guides/ui/guide-content.tsx
+#~ msgid "Transactions you add start uncleared. Select the circle once your bank shows the transaction; imported ones arrive cleared."
+#~ msgstr "Les transactions que vous ajoutez commencent non pointées. Sélectionnez le cercle dès que votre banque affiche la transaction ; celles importées arrivent déjà pointées."
 
 #: src/features/chat/ui/VoiceInputButton.tsx
 msgid "Transcribing"
@@ -19152,6 +19298,10 @@ msgstr "Saisissez {CONFIRM_WORD} pour confirmer"
 #: src/widgets/command-palette/CommandPalette.tsx
 msgid "Type a command or search..."
 msgstr "Saisissez une commande ou recherchez…"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Type in the search box above the list. Words like last month, outflows, uncleared or over 50 and a category name become filters (these words are English); anything else is looked up in payee, memo, category, label and account."
+msgstr "Tapez dans le champ de recherche au-dessus de la liste. Des mots comme last month, outflows, uncleared ou over 50 et un nom de catégorie deviennent des filtres (ces mots sont en anglais) ; le reste est cherché dans le bénéficiaire, le mémo, la catégorie, l’étiquette et le compte."
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "type it once more"
@@ -19366,10 +19516,19 @@ msgid "Undid last action"
 msgstr "Dernière action annulée"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/transactions/api/useDeleteSelected.ts
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Undo"
 msgstr "Annuler"
+
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Undo a run"
+msgstr "Annuler une exécution"
+
+#: src/features/page-guides/ui/guide-visuals.tsx
+msgid "Undo changes"
+msgstr "Annuler les modifications"
 
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "Undo completed"
@@ -20180,6 +20339,10 @@ msgstr "Bienvenue sur Budgero !"
 msgid "Welcome to Budgero."
 msgstr "Bienvenue sur Budgero."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "What a rule does"
+msgstr "Ce que fait une règle"
+
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "What does Ready to Assign mean?"
 msgstr "Que signifie « À affecter » ?"
@@ -20252,6 +20415,10 @@ msgstr "Lorsqu'activé, vous pouvez affecter plus d'argent aux catégories que c
 msgid "When off, sign-up links open sign-in. Existing users can still sign in, and admins can create accounts."
 msgstr "Lorsque cette option est désactivée, les liens d’inscription ouvrent la connexion. Les utilisateurs existants peuvent toujours se connecter et les administrateurs peuvent créer des comptes."
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "When rules run"
+msgstr "Quand les règles s’exécutent"
+
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "When viewing transactions from all accounts, amounts are always shown in your budget currency for consistency."
 msgstr "Lorsque vous consultez les transactions de tous les comptes, les montants sont toujours affichés dans votre devise de budget pour plus de cohérence."
@@ -20292,13 +20459,17 @@ msgstr "Où va l'argent"
 msgid "Where the plan leaks"
 msgstr "Où le plan fuit"
 
+#: src/features/page-guides/ui/guide-content.tsx
+msgid "Where they show up"
+msgstr "Où elles apparaissent"
+
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Where this debt came from"
 msgstr "D'où vient cette dette"
 
 #: src/features/transactions/ui/SchedulingGuideDialog.tsx
-msgid "Where your recurring transactions show up"
-msgstr "Où apparaissent vos transactions récurrentes"
+#~ msgid "Where your recurring transactions show up"
+#~ msgstr "Où apparaissent vos transactions récurrentes"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "Whether it worked, with our own error code. Crash reports contain the error type and code location, never the message."
