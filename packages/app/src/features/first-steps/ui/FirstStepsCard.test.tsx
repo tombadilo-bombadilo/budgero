@@ -8,6 +8,8 @@ import {
   markFirstStep,
   noteFirstStepsMutation,
   resetFirstStepsForTests,
+  setFirstStepsCollapsed,
+  showFirstSteps,
   startFirstSteps,
 } from '@shared/lib/first-steps/first-steps';
 import { FirstStepsCard } from './FirstStepsCard';
@@ -140,13 +142,30 @@ it('a checklist stored before the goal step gets it as not done', () => {
   expect(screen.getByRole('button', { name: 'Set a goal' })).toBeInTheDocument();
 });
 
-it('a checklist hidden before the goal step stays hidden', () => {
+it('a checklist hidden by the old ✕ before it was finished comes back once', () => {
   localStorage.setItem(
     'budgero:first-steps',
     JSON.stringify({
       'space-1': {
         startedOn: '2026-11-01',
         done: { assign: true, transaction: true, return: true },
+        dismissed: true,
+      },
+    })
+  );
+  resetFirstStepsForTests();
+  renderCard(0, [row(100)]);
+  // The goal step came later, so this list wasn't finished.
+  expect(screen.getByText('3 of 4 done')).toBeInTheDocument();
+});
+
+it('a finished checklist closed before this update stays closed', () => {
+  localStorage.setItem(
+    'budgero:first-steps',
+    JSON.stringify({
+      'space-1': {
+        startedOn: '2026-11-01',
+        done: { assign: true, goal: true, transaction: true, return: true },
         dismissed: true,
       },
     })
@@ -168,11 +187,52 @@ it('follows another tab', () => {
   expect(screen.getByText('Set a goal for one category')).toHaveClass('line-through');
 });
 
-it('can be hidden', () => {
+it('can be hidden on purpose, undone, and shown again later', () => {
   startFirstSteps('space-1');
   renderCard(100, [row(0)]);
   fireEvent.click(screen.getByRole('button', { name: 'Hide first steps' }));
   expect(screen.queryByTestId('first-steps')).toBeNull();
+  // The toast says where to get it back and offers Undo.
+  const [message, options] = toastSuccess.mock.calls[0] as [
+    string,
+    { description: string; action: { label: string; onClick: () => void } },
+  ];
+  expect(message).toBe('First steps hidden');
+  expect(options.description).toMatch(/Help \(\?\).*Budget Settings/);
+  expect(options.action.label).toBe('Undo');
+  act(() => options.action.onClick());
+  expect(screen.getByTestId('first-steps')).toBeInTheDocument();
+  // Hidden again, then brought back from elsewhere (Help menu, Settings).
+  fireEvent.click(screen.getByRole('button', { name: 'Hide first steps' }));
+  expect(screen.queryByTestId('first-steps')).toBeNull();
+  act(() => showFirstSteps('space-1'));
+  expect(screen.getByText('Your first steps')).toBeInTheDocument();
+});
+
+describe('on a desktop', () => {
+  it('has no bare ✕: the corner button folds the card to one row', () => {
+    startFirstSteps('space-1');
+    markFirstStep('space-1', 'assign');
+    renderCard(0, [row(100)]);
+    expect(screen.queryByRole('button', { name: 'Close' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Collapse first steps' }));
+    const card = screen.getByTestId('first-steps');
+    expect(card).toHaveTextContent('Next: Set a goal for one category');
+    expect(screen.queryByText('Add a transaction')).toBeNull();
+    expect(getFirstSteps('space-1')).toMatchObject({ collapsed: true, dismissed: false });
+  });
+
+  it('remembers the folded card across reloads, and unfolds it on a click', () => {
+    startFirstSteps('space-1');
+    setFirstStepsCollapsed('space-1', true);
+    resetFirstStepsForTests();
+    renderCard(0, [row(0)]);
+    const row1 = screen.getByRole('button', { name: /Show first steps/ });
+    expect(row1).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(row1);
+    expect(screen.getByText('Your first steps')).toBeInTheDocument();
+    expect(getFirstSteps('space-1')?.collapsed).toBe(false);
+  });
 });
 
 it('offers sharing as an optional step that does not count toward the three', () => {
@@ -223,8 +283,16 @@ describe('on a phone', () => {
     expect(screen.getByText('Budget with someone?')).toBeInTheDocument();
     // Phone wording: no "Assigned column" there.
     expect(screen.getByText(/Tap a category and enter an amount/)).toBeInTheDocument();
+    // The ✕ closes the sheet; the row stays.
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByText('Budget with someone?')).toBeNull();
+    expect(screen.getByTestId('first-steps')).toBeInTheDocument();
+    expect(getFirstSteps('space-1')?.dismissed).toBe(false);
+    // Hiding the list is its own button, inside the sheet.
+    fireEvent.click(bar);
     fireEvent.click(screen.getByRole('button', { name: 'Hide first steps' }));
     expect(getFirstSteps('space-1')?.dismissed).toBe(true);
+    expect(screen.queryByTestId('first-steps')).toBeNull();
   });
 
   it('when everything is done, stays with an end state the user closes', () => {
@@ -239,7 +307,11 @@ describe('on a phone', () => {
       act(() => vi.advanceTimersByTime(60_000));
       expect(getFirstSteps('space-1')?.dismissed).toBe(false);
       fireEvent.click(bar);
+      // ✕ closes the sheet only.
       fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+      expect(getFirstSteps('space-1')?.dismissed).toBe(false);
+      fireEvent.click(bar);
+      fireEvent.click(screen.getByRole('button', { name: 'Hide first steps' }));
       expect(getFirstSteps('space-1')?.dismissed).toBe(true);
     } finally {
       vi.useRealTimers();
@@ -258,7 +330,7 @@ it('the desktop card stays once all are done, until the user closes it', () => {
     act(() => vi.advanceTimersByTime(60_000));
     expect(screen.getByTestId('first-steps')).toHaveTextContent('You’ve got the basics');
     expect(screen.getByText('Give every coin a job')).toHaveClass('line-through');
-    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Hide first steps' }));
     expect(screen.queryByTestId('first-steps')).toBeNull();
   } finally {
     vi.useRealTimers();

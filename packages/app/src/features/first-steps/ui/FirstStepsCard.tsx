@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { CheckCircle2, ChevronRight, Circle, Users, X } from 'lucide-react';
+import { CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Circle, Users, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -12,11 +12,13 @@ import { useActiveSpaceId } from '@shared/runtime/runtime-provider';
 import { useUiStore } from '@shared/store/useUiStore';
 import { openPageGuide } from '@features/page-guides';
 import {
-  dismissFirstSteps,
   FIRST_STEP_IDS,
+  hideFirstSteps,
   isFirstStepDone,
   markFirstStep,
   noteFirstStepsVisit,
+  setFirstStepsCollapsed,
+  showFirstSteps,
   useFirstSteps,
   type CountedFirstStepId,
   type FirstStepsState,
@@ -225,6 +227,28 @@ export function FirstStepsCard({
       {doneCount} of {total} done
     </Trans>
   );
+  // Taking the list away is its own, labelled action (never a bare ✕ that
+  // reads as "close this"), and can be undone here or brought back later.
+  const hide = () => {
+    setDrawerOpen(false);
+    hideFirstSteps(spaceId);
+    toast.success(t`First steps hidden`, {
+      description: t`Bring them back from Help (?) on the Planning page or in Budget Settings.`,
+      action: { label: t`Undo`, onClick: () => showFirstSteps(spaceId) },
+    });
+  };
+  const hideButton = (
+    <div className="mt-3 border-t pt-2">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="-ml-2 h-7 px-2 text-xs text-muted-foreground"
+        onClick={hide}
+      >
+        <Trans>Hide first steps</Trans>
+      </Button>
+    </div>
+  );
   // The finished list stays until the user closes it.
   const finished = (
     <div className="mt-3 border-t pt-3 text-xs leading-relaxed text-muted-foreground">
@@ -233,15 +257,8 @@ export function FirstStepsCard({
         That’s all there is to it.
       </Trans>
       <div>
-        <Button
-          size="sm"
-          className="mt-2 h-7"
-          onClick={() => {
-            setDrawerOpen(false);
-            dismissFirstSteps(spaceId);
-          }}
-        >
-          <Trans>Close</Trans>
+        <Button size="sm" className="mt-2 h-7" onClick={hide}>
+          <Trans>Hide first steps</Trans>
         </Button>
       </div>
     </div>
@@ -255,12 +272,12 @@ export function FirstStepsCard({
         onNavigate={() => setDrawerOpen(false)}
         showShare={!allDone}
       />
-      {allDone && finished}
+      {allDone ? finished : hideButton}
     </>
   );
+  const next = items.find((item) => item.id === nextId) ?? items.find((i) => i.id === 'assign')!;
 
   if (variant === 'bar') {
-    const next = items.find((item) => item.id === nextId) ?? items.find((i) => i.id === 'assign')!;
     // Only "come back tomorrow" left: nothing to do today, so no call to action.
     const waitingForTomorrow =
       !allDone && FIRST_STEP_IDS.every((id) => isFirstStepDone(steps, id) || id === 'return');
@@ -314,15 +331,13 @@ export function FirstStepsCard({
                 <DrawerTitle>{title}</DrawerTitle>
                 <div className="text-xs text-muted-foreground">{countLine}</div>
               </div>
+              {/* Closes the sheet only: the row stays on the page. */}
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 shrink-0"
-                aria-label={t`Hide first steps`}
-                onClick={() => {
-                  setDrawerOpen(false);
-                  dismissFirstSteps(spaceId);
-                }}
+                aria-label={t`Close`}
+                onClick={() => setDrawerOpen(false)}
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -331,6 +346,40 @@ export function FirstStepsCard({
           </DrawerContent>
         </Drawer>
       </>
+    );
+  }
+
+  // Folded to one row (remembered): still on the page, out of the way.
+  if (steps.collapsed) {
+    return (
+      <Card className={cn('gap-0 py-0', className)} data-testid="first-steps">
+        <button
+          type="button"
+          aria-expanded={false}
+          onClick={() => setFirstStepsCollapsed(spaceId, false)}
+          className="flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left"
+        >
+          <ProgressDots done={doneCount} total={total} />
+          <span className="min-w-0 flex-1 truncate text-sm">
+            {allDone ? (
+              <span className="font-medium">
+                <Trans>You’ve got the basics</Trans>
+              </span>
+            ) : (
+              <>
+                <span className="text-muted-foreground">
+                  <Trans>Next:</Trans>
+                </span>{' '}
+                <span className="font-medium">{next.title}</span>
+              </>
+            )}
+          </span>
+          <span className="sr-only">
+            <Trans>Show first steps</Trans>
+          </span>
+          <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+        </button>
+      </Card>
     );
   }
 
@@ -346,10 +395,11 @@ export function FirstStepsCard({
             variant="ghost"
             size="icon"
             className="h-7 w-7 shrink-0"
-            aria-label={t`Hide first steps`}
-            onClick={() => dismissFirstSteps(spaceId)}
+            aria-label={t`Collapse first steps`}
+            aria-expanded
+            onClick={() => setFirstStepsCollapsed(spaceId, true)}
           >
-            <X className="h-4 w-4" />
+            <ChevronUp className="h-4 w-4" />
           </Button>
         </div>
         {list}

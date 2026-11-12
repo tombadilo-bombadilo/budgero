@@ -4514,6 +4514,10 @@ msgstr "Répartition par type d'utilisateur"
 msgid "Bring the budget you already have in YNAB."
 msgstr "Apportez le budget que vous avez déjà dans YNAB."
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Bring them back from Help (?) on the Planning page or in Budget Settings."
+msgstr "Vous pouvez les réafficher depuis l’aide (?) de la page Planification ou dans les paramètres du budget."
+
 #: src/app/startup/screens.tsx
 msgid "Bring your categories, accounts, and history"
 msgstr "Importez vos catégories, comptes et historique"
@@ -5786,6 +5790,10 @@ msgstr "Réduire tous les groupes"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardActions.tsx
 msgid "Collapse details"
 msgstr "Réduire les détails"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Collapse first steps"
+msgstr "Réduire les premiers pas"
 
 #: src/app/layout/AdminSidebar.tsx
 msgid "Collapse sidebar"
@@ -8957,6 +8965,14 @@ msgstr "Firefox n'expose pas l'invite d'installation sur ordinateur. Suivez les 
 #: src/pages/settings/components/CalendarSettingsCard.tsx
 msgid "First day of the week"
 msgstr "Premier jour de la semaine"
+
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "First steps"
+msgstr "Premiers pas"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "First steps hidden"
+msgstr "Premiers pas masqués"
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Fitness & Gym"
@@ -16755,6 +16771,15 @@ msgstr "Afficher la vue détaillée"
 msgid "Show details"
 msgstr "Afficher les détails"
 
+#: src/features/first-steps/model/visibility.ts
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Show first steps"
+msgstr "Afficher les premiers pas"
+
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "Show first steps on the Planning page"
+msgstr "Afficher les premiers pas sur la page Planification"
+
 #: src/features/budgeting/ui/BudgetToolbar.tsx
 msgid "Show hidden"
 msgstr "Afficher les masqués"
@@ -18138,6 +18163,10 @@ msgstr "Le serveur a confirmé toutes les modifications de cet appareil."
 msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 msgstr "Le serveur garde les dernières copies de cet espace de travail, et une par jour pendant la dernière semaine. Vous pouvez revenir à une copie et supprimer tout ce qui a été modifié après, ou la restaurer et réappliquer les modifications ultérieures. À utiliser quand un espace de travail semble vide ou cassé après une synchronisation, ou pour annuler une série de modifications."
 
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "The short checklist for your first week."
+msgstr "La courte liste à suivre pendant votre première semaine."
+
 #: src/features/category-management/lib/delete-block.ts
 msgid "The system Income category can't be deleted."
 msgstr "La catégorie système Revenus ne peut pas être supprimée."
@@ -19366,6 +19395,7 @@ msgid "Undid last action"
 msgstr "Dernière action annulée"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
+#: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/transactions/api/useDeleteSelected.ts
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Undo"

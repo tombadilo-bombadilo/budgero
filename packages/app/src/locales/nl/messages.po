@@ -4514,6 +4514,10 @@ msgstr "Uitsplitsing van gebruikerstypen"
 msgid "Bring the budget you already have in YNAB."
 msgstr "Neem het budget mee dat je al in YNAB hebt."
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Bring them back from Help (?) on the Planning page or in Budget Settings."
+msgstr "Haal ze terug via Help (?) op de Planning-pagina of in Budgetinstellingen."
+
 #: src/app/startup/screens.tsx
 msgid "Bring your categories, accounts, and history"
 msgstr "Neem je categorieën, rekeningen en geschiedenis mee"
@@ -5786,6 +5790,10 @@ msgstr "Alle groepen samenvouwen"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardActions.tsx
 msgid "Collapse details"
 msgstr "Details samenvouwen"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Collapse first steps"
+msgstr "Eerste stappen inklappen"
 
 #: src/app/layout/AdminSidebar.tsx
 msgid "Collapse sidebar"
@@ -8957,6 +8965,14 @@ msgstr "Firefox toont geen installatieprompt op desktop. Volg de onderstaande me
 #: src/pages/settings/components/CalendarSettingsCard.tsx
 msgid "First day of the week"
 msgstr "Eerste dag van de week"
+
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "First steps"
+msgstr "Eerste stappen"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "First steps hidden"
+msgstr "Eerste stappen verborgen"
 
 #: src/features/budget-management/model/icon-options.ts
 msgid "Fitness & Gym"
@@ -16755,6 +16771,15 @@ msgstr "Gedetailleerde weergave tonen"
 msgid "Show details"
 msgstr "Details tonen"
 
+#: src/features/first-steps/model/visibility.ts
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Show first steps"
+msgstr "Eerste stappen tonen"
+
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "Show first steps on the Planning page"
+msgstr "Eerste stappen tonen op de Planning-pagina"
+
 #: src/features/budgeting/ui/BudgetToolbar.tsx
 msgid "Show hidden"
 msgstr "Toon verborgen"
@@ -18138,6 +18163,10 @@ msgstr "De server heeft alle wijzigingen van dit apparaat bevestigd."
 msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 msgstr "De server bewaart de laatste kopieën van deze werkruimte en één per dag voor de afgelopen week. Je kunt teruggaan naar een kopie en alles verwijderen wat daarna is gewijzigd, of hem herstellen en de latere wijzigingen opnieuw toepassen. Gebruik dit als een werkruimte na het synchroniseren leeg of kapot lijkt, of om een reeks wijzigingen ongedaan te maken."
 
+#: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
+msgid "The short checklist for your first week."
+msgstr "De korte checklist voor je eerste week."
+
 #: src/features/category-management/lib/delete-block.ts
 msgid "The system Income category can't be deleted."
 msgstr "De systeemcategorie Inkomsten kan niet worden verwijderd."
@@ -19366,6 +19395,7 @@ msgid "Undid last action"
 msgstr "Laatste actie ongedaan gemaakt"
 
 #: src/app/layout/desktop-shell/KeyboardShortcutsDialog.tsx
+#: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/transactions/api/useDeleteSelected.ts
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Undo"
