@@ -1,5 +1,6 @@
 import React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { YNABApiPlanSnapshot, YNABImportPreview } from '@budgero/core/browser';
 import { INITIAL_STATE, ONBOARDING_STEPS, type OnboardingFormState } from '../onboarding-data';
 import { YnabImportStep } from './YnabImportStep';
@@ -14,34 +15,10 @@ vi.mock('@budgero/core/browser', async (importOriginal) => ({
   },
 }));
 
-vi.mock('@shared/ui/select', () => ({
-  Select: ({
-    children,
-    value,
-    onValueChange,
-    disabled,
-  }: {
-    children: React.ReactNode;
-    value: string;
-    onValueChange: (value: string) => void;
-    disabled?: boolean;
-  }) => (
-    <select
-      aria-label="YNAB plan"
-      value={value}
-      disabled={disabled}
-      onChange={(event) => onValueChange(event.target.value)}
-    >
-      {children}
-    </select>
-  ),
-  SelectContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  SelectTrigger: () => null,
-  SelectValue: () => null,
-  SelectItem: ({ children, value }: { children: React.ReactNode; value: string }) => (
-    <option value={value}>{children}</option>
-  ),
-}));
+beforeAll(() => {
+  HTMLElement.prototype.hasPointerCapture = () => false;
+  HTMLElement.prototype.scrollIntoView = () => {};
+});
 
 const preview: YNABImportPreview = {
   accountCount: 2,
@@ -102,6 +79,7 @@ beforeEach(() => {
 });
 
 async function connectAndMatch() {
+  const user = userEvent.setup();
   render(<Form />);
   fireEvent.change(screen.getByLabelText('YNAB personal access token'), {
     target: { value: 'test-token' },
@@ -109,11 +87,12 @@ async function connectAndMatch() {
   fireEvent.click(screen.getByRole('button', { name: 'CONNECT' }));
   const first = await screen.findByRole('combobox', { name: 'Visa · Card 1' });
   expect(screen.getByText('MATCH CARDS')).toBeInTheDocument();
-  fireEvent.change(first, { target: { value: 'cat-b' } });
-  fireEvent.change(screen.getByRole('combobox', { name: 'Visa · Card 2' }), {
-    target: { value: 'cat-a' },
-  });
+  await user.click(first);
+  await user.click(await screen.findByRole('option', { name: /Category 2/ }));
+  await user.click(screen.getByRole('combobox', { name: 'Visa · Card 2' }));
+  await user.click(await screen.findByRole('option', { name: /Category 1/ }));
   expect(screen.getByText('✓ READY')).toBeInTheDocument();
+  return user;
 }
 
 it('collects mappings and clears them when switching sources', async () => {
@@ -125,11 +104,10 @@ it('collects mappings and clears them when switching sources', async () => {
 });
 
 it('clears selected mappings before a plan reload, including when the reload fails', async () => {
-  await connectAndMatch();
+  const user = await connectAndMatch();
   mocks.getPlan.mockRejectedValue(new Error('Reload failed'));
-  fireEvent.change(screen.getByRole('combobox', { name: 'YNAB plan' }), {
-    target: { value: 'other-plan' },
-  });
+  await user.click(screen.getByRole('combobox', { name: 'YNAB plan' }));
+  await user.click(await screen.findByRole('option', { name: 'Another plan' }));
   expect(screen.getByText(/^Mappings:/)).not.toHaveTextContent('card-a');
   expect(screen.getByText('Source: none')).toBeInTheDocument();
   expect(await screen.findByText('Reload failed')).toBeInTheDocument();

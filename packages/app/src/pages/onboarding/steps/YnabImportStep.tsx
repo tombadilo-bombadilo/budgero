@@ -5,6 +5,7 @@ import type { YNABApiPlanSnapshot, YNABApiPlanSummary } from '@budgero/core/brow
 import { YNABApiClient } from '@budgero/core/browser';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
+import { Label } from '@shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import {
   YnabPatHelpPopover,
@@ -15,8 +16,12 @@ import { hasCompleteCreditPaymentMappings } from '@features/budget-management/ui
 import { YnabDateOrderChoice } from '@features/budget-management/ui/create-budget-form/YnabDateOrderChoice';
 import { track } from '@shared/lib/analytics/track';
 import type { YnabHelpTopic } from '@shared/lib/analytics/events';
-import { FIELD_CLASS, Title, type StepProps } from './shared';
+import { cn } from '@shared/lib/utils';
+import { FIELD_CLASS, SELECT_ITEM_CLASS, Title, type StepProps } from './shared';
 import { classifyYnabApiError, type YnabApiFailureReason } from './ynab-source-errors';
+
+/** The select can't hold an empty value; '' in state means "detect". */
+const DETECT_NUMBER_FORMAT = 'detect';
 
 interface YnabStepProps extends StepProps {
   onFileSelected: (file: File) => Promise<void> | void;
@@ -407,26 +412,17 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
           {onStartFresh && (
             <div style={{ marginTop: 6, lineHeight: 1.6 }}>
               <Trans>No token or export at hand?</Trans>{' '}
-              <button
+              <Button
                 type="button"
+                variant="link"
                 onClick={() => {
                   track('ynab_import_method_chosen', { method: 'start_fresh' });
                   onStartFresh();
                 }}
-                style={{
-                  padding: 0,
-                  border: 'none',
-                  background: 'transparent',
-                  color: 'var(--foreground)',
-                  fontFamily: 'inherit',
-                  fontSize: 'inherit',
-                  fontWeight: 700,
-                  textDecoration: 'underline',
-                  cursor: 'pointer',
-                }}
+                className="h-auto p-0 text-[length:inherit] font-bold text-foreground underline"
               >
                 <Trans>Start fresh instead</Trans>
-              </button>
+              </Button>
               <br />
               <Trans>You can still import from YNAB later as a new budget.</Trans>
             </div>
@@ -508,37 +504,43 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               </div>
 
               {file && (
-                <label htmlFor="onboarding-ynab-source-format" style={{ display: 'grid', gap: 5 }}>
-                  <span style={{ fontWeight: 700 }}>
-                    <Trans>Number format in YNAB</Trans>
-                  </span>
-                  <select
-                    id="onboarding-ynab-source-format"
-                    value={state.ynabSourceNumberFormat ?? ''}
-                    onChange={(event) => set({ ynabSourceNumberFormat: event.target.value })}
-                    style={{
-                      padding: 8,
-                      border: '1px solid var(--foreground)',
-                      background: 'var(--card)',
-                      color: 'var(--foreground)',
-                    }}
+                <div style={{ display: 'grid', gap: 5 }}>
+                  <Label
+                    htmlFor="onboarding-ynab-source-format"
+                    className="text-[11px] leading-normal font-bold"
                   >
-                    <option value="">
-                      <Trans>Detect from file</Trans>
-                    </option>
-                    <option value="1,234.567">
-                      <Trans>Decimal point (1,234.567)</Trans>
-                    </option>
-                    <option value="1.234,567">
-                      <Trans>Decimal comma (1.234,567)</Trans>
-                    </option>
-                  </select>
+                    <Trans>Number format in YNAB</Trans>
+                  </Label>
+                  <Select
+                    value={state.ynabSourceNumberFormat || DETECT_NUMBER_FORMAT}
+                    onValueChange={(value) =>
+                      set({ ynabSourceNumberFormat: value === DETECT_NUMBER_FORMAT ? '' : value })
+                    }
+                  >
+                    <SelectTrigger
+                      id="onboarding-ynab-source-format"
+                      className={cn(FIELD_CLASS, 'w-full min-w-0 text-foreground')}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={DETECT_NUMBER_FORMAT} className={SELECT_ITEM_CLASS}>
+                        <Trans>Detect from file</Trans>
+                      </SelectItem>
+                      <SelectItem value="1,234.567" className={SELECT_ITEM_CLASS}>
+                        <Trans>Decimal point (1,234.567)</Trans>
+                      </SelectItem>
+                      <SelectItem value="1.234,567" className={SELECT_ITEM_CLASS}>
+                        <Trans>Decimal comma (1.234,567)</Trans>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                   <span>
                     <Trans>
                       Choose the separator explicitly if your amounts use three decimal places.
                     </Trans>
                   </span>
-                </label>
+                </div>
               )}
 
               {apiSnapshot && preview.creditPaymentMatching && (

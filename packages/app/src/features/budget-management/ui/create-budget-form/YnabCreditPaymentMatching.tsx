@@ -1,7 +1,13 @@
 import { currencyDisplayFor } from '@shared/lib/number-format';
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useId } from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import type { CreditPaymentMatching, CreditPaymentMappings } from './ynab-credit-payment-matching';
+
+/** The select can't hold an empty value; this item clears the match. */
+const UNMATCHED = 'unmatched';
+/** Long option text wraps; rows are finger-sized on a phone. */
+const ITEM_CLASS = 'min-h-11 whitespace-normal md:min-h-8';
 
 export function YnabCreditPaymentMatching({
   matching,
@@ -84,40 +90,55 @@ export function YnabCreditPaymentMatching({
                 </ul>
               </details>
             )}
-            <select
-              id={`${id}-${index}`}
+            <Select
               value={byAccountId[account.accountId] ?? ''}
-              onChange={(event) => {
+              disabled={disabled}
+              onValueChange={(categoryId) => {
                 onChange({
                   planId: matching.planId,
                   serverKnowledge: matching.serverKnowledge,
-                  byAccountId: { ...byAccountId, [account.accountId]: event.target.value },
+                  byAccountId: {
+                    ...byAccountId,
+                    [account.accountId]: categoryId === UNMATCHED ? '' : categoryId,
+                  },
                 });
               }}
-              className="w-full min-w-0 rounded-md border bg-background p-2 text-foreground"
             >
-              <option value="">
-                <Trans>Choose its payment category</Trans>
-              </option>
-              {categories.map((category, categoryIndex) => {
-                if (!account.candidateCategoryIds.includes(category.categoryId)) return null;
-                const used = accounts.some(
-                  (other) =>
-                    other.accountId !== account.accountId &&
-                    byAccountId[other.accountId] === category.categoryId
-                );
-                return (
-                  <option key={category.categoryId} value={category.categoryId} disabled={used}>
-                    <Trans>
-                      {category.name} · Category {categoryIndex + 1} · Available{' '}
-                      {amount(category.available)} · Assigned {amount(category.assigned)}
-                      {category.note ? ` · ${category.note}` : ''}
-                      {used ? t` · Already matched` : ''}
-                    </Trans>
-                  </option>
-                );
-              })}
-            </select>
+              <SelectTrigger
+                id={`${id}-${index}`}
+                className="h-auto min-h-9 w-full min-w-0 border-foreground/25 bg-background text-left text-xs whitespace-normal text-foreground"
+              >
+                <SelectValue placeholder={t`Choose its payment category`} />
+              </SelectTrigger>
+              <SelectContent className="max-w-[min(var(--radix-select-content-available-width),32rem)]">
+                <SelectItem value={UNMATCHED} className={ITEM_CLASS}>
+                  <Trans>Choose its payment category</Trans>
+                </SelectItem>
+                {categories.map((category, categoryIndex) => {
+                  if (!account.candidateCategoryIds.includes(category.categoryId)) return null;
+                  const used = accounts.some(
+                    (other) =>
+                      other.accountId !== account.accountId &&
+                      byAccountId[other.accountId] === category.categoryId
+                  );
+                  return (
+                    <SelectItem
+                      key={category.categoryId}
+                      value={category.categoryId}
+                      disabled={used}
+                      className={ITEM_CLASS}
+                    >
+                      <Trans>
+                        {category.name} · Category {categoryIndex + 1} · Available{' '}
+                        {amount(category.available)} · Assigned {amount(category.assigned)}
+                        {category.note ? ` · ${category.note}` : ''}
+                        {used ? t` · Already matched` : ''}
+                      </Trans>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
             {selected?.note && (
               <p className="whitespace-pre-wrap break-words">
                 <Trans>Payment category note: {selected.note}</Trans>

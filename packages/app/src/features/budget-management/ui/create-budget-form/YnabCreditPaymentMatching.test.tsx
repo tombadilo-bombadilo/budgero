@@ -1,11 +1,17 @@
 import React from 'react';
-import { fireEvent, render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { YnabCreditPaymentMatching } from './YnabCreditPaymentMatching';
 import {
   hasCompleteCreditPaymentMappings,
   type CreditPaymentMatching,
   type CreditPaymentMappings,
 } from './ynab-credit-payment-matching';
+
+beforeAll(() => {
+  HTMLElement.prototype.hasPointerCapture = () => false;
+  HTMLElement.prototype.scrollIntoView = () => {};
+});
 
 const matching: CreditPaymentMatching = {
   planId: 'plan-1',
@@ -41,7 +47,8 @@ const matching: CreditPaymentMatching = {
   ],
 };
 
-it('requires explicit distinct choices and shows context for duplicate names', () => {
+it('requires explicit distinct choices and shows context for duplicate names', async () => {
+  const user = userEvent.setup();
   function Form() {
     const [value, onChange] = React.useState<CreditPaymentMappings>();
     return (
@@ -59,22 +66,36 @@ it('requires explicit distinct choices and shows context for duplicate names', (
   render(<Form />);
   const first = screen.getByRole('combobox', { name: 'Visa · Card 1' });
   const second = screen.getByRole('combobox', { name: 'Visa · Card 2 · Closed' });
-  expect(first).toHaveValue('');
-  expect(second).toHaveValue('');
+  expect(first).toHaveTextContent('Choose its payment category');
+  expect(second).toHaveTextContent('Choose its payment category');
   expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled();
   expect(screen.getByText('Account balance: -$120.00')).toBeInTheDocument();
   expect(screen.getByText('Personal card')).toBeInTheDocument();
   expect(screen.getByText('2026-09-01 · Groceries · -$25.00')).toBeInTheDocument();
-  const firstOption = within(first).getByRole('option', { name: /Category 1/ });
+
+  await user.click(first);
+  const firstOption = await screen.findByRole('option', { name: /Category 1/ });
   expect(firstOption).toHaveTextContent('Available $40.00 · Assigned $10.00 · Personal payments');
-  fireEvent.change(first, { target: { value: 'cat-b' } });
-  expect(within(second).getByRole('option', { name: /Category 2/ })).toBeDisabled();
-  expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled();
-  fireEvent.change(second, { target: { value: 'cat-a' } });
+  await user.click(screen.getByRole('option', { name: /Category 2/ }));
+  expect(first).toHaveTextContent('Category 2');
+
+  await user.click(second);
+  expect(await screen.findByRole('option', { name: /Category 2/ })).toHaveAttribute(
+    'aria-disabled',
+    'true'
+  );
+  expect(screen.getByRole('button', { name: 'Import', hidden: true })).toBeDisabled();
+  await user.click(screen.getByRole('option', { name: /Category 1/ }));
   expect(screen.getByRole('button', { name: 'Import' })).toBeEnabled();
-  fireEvent.change(first, { target: { value: '' } });
-  expect(within(second).getByRole('option', { name: /Category 2/ })).toBeEnabled();
+
+  await user.click(first);
+  await user.click(await screen.findByRole('option', { name: 'Choose its payment category' }));
+  expect(first).toHaveTextContent('Choose its payment category');
   expect(screen.getByRole('button', { name: 'Import' })).toBeDisabled();
+  await user.click(second);
+  expect(await screen.findByRole('option', { name: /Category 2/ })).not.toHaveAttribute(
+    'aria-disabled'
+  );
 });
 
 it.each([
@@ -103,5 +124,7 @@ it('does not display selections made for a different snapshot', () => {
       currency="USD"
     />
   );
-  expect(screen.getByRole('combobox', { name: 'Visa · Card 1' })).toHaveValue('');
+  expect(screen.getByRole('combobox', { name: 'Visa · Card 1' })).toHaveTextContent(
+    'Choose its payment category'
+  );
 });
