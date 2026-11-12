@@ -3,12 +3,10 @@ import { Plus, X } from 'lucide-react';
 import React from 'react';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { cn } from '@shared/lib/utils';
 import { ACCOUNT_TYPES, type AccountInput } from '../onboarding-data';
-import { FIELD_CLASS, Title, getCurrencySym, type StepProps } from './shared';
-
-const SELECT_CLASS =
-  'h-9 w-full min-w-0 rounded-md border border-foreground/25 bg-transparent px-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 dark:bg-input/30';
+import { FIELD_CLASS, SELECT_ITEM_CLASS, Title, getCurrencySym, type StepProps } from './shared';
 
 export const AccountsStep: React.FC<StepProps> = ({ cur, state, set }) => {
   const { t } = useLingui();
@@ -36,20 +34,26 @@ export const AccountsStep: React.FC<StepProps> = ({ cur, state, set }) => {
               className="grid scroll-my-3 gap-2 rounded-lg border bg-card p-2 md:flex md:items-center"
             >
               <div className="flex gap-2 md:contents">
-                <select
+                <Select
                   value={a.type}
-                  onChange={(e) =>
-                    updateAcct(a.id, { type: e.target.value as AccountInput['type'] })
+                  onValueChange={(value) =>
+                    updateAcct(a.id, { type: value as AccountInput['type'] })
                   }
-                  aria-label={t`Account type`}
-                  className={`${SELECT_CLASS} flex-1 md:w-36 md:flex-none`}
                 >
-                  {ACCOUNT_TYPES.map((tp) => (
-                    <option key={tp.id} value={tp.id}>
-                      {t(tp.name)}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger
+                    aria-label={t`Account type`}
+                    className={cn(FIELD_CLASS, 'h-9 min-w-0 flex-1 md:w-36 md:flex-none')}
+                  >
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ACCOUNT_TYPES.map((tp) => (
+                      <SelectItem key={tp.id} value={tp.id} className={SELECT_ITEM_CLASS}>
+                        {t(tp.name)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 <Button
                   type="button"
                   variant="ghost"

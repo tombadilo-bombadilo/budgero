@@ -537,8 +537,9 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
         <div className="flex shrink-0 items-center gap-3 px-4 pt-3 group-data-[compact]/onb:pt-1.5 md:px-10 md:pt-6">
           <img src="/logo_48.png" alt="" width={22} height={22} className="md:hidden" aria-hidden />
           {showBackToDemo && (
-            <button
+            <Button
               type="button"
+              variant="link"
               onClick={() => {
                 void returnToDemo(runtime, queryClient, attempt)
                   .catch((err: unknown) =>
@@ -547,22 +548,24 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
                   .finally(() => void navigate('/budgeting'));
               }}
               data-testid="back-to-demo"
-              className="text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+              className="h-auto px-0 py-1 text-xs text-muted-foreground hover:text-foreground"
             >
               <Trans>← Back to the demo</Trans>
-            </button>
+            </Button>
           )}
           <span className="ml-auto text-[11px] tracking-wider text-muted-foreground tabular-nums">
             {stepCounter}
           </span>
           {mode !== 'from_demo' && (
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => logout.mutate()}
-              className="text-[11px] tracking-wider text-muted-foreground hover:text-foreground"
+              className="-mr-2 h-auto px-2 py-1 text-[11px] font-normal tracking-wider text-muted-foreground hover:text-foreground"
             >
               <Trans>SIGN OUT</Trans>
-            </button>
+            </Button>
           )}
         </div>
         <div

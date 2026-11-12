@@ -34,6 +34,12 @@ export function getCurrencySym(code: string): string {
  */
 export const FIELD_CLASS = 'border-foreground/25';
 
+/**
+ * Dropdown options in onboarding: finger-sized rows on a phone, the app's
+ * usual compact rows from md up.
+ */
+export const SELECT_ITEM_CLASS = 'min-h-11 md:min-h-8';
+
 export interface StepProps {
   cur: OnboardingStepDef;
   state: OnboardingFormState;
