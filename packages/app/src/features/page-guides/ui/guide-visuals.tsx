@@ -1,31 +1,62 @@
+/**
+ * Small pictures for the guide cards. Each one is a simplified copy of the
+ * real control it explains (named above it), built from the same shared
+ * components, labels and colours, and never interactive.
+ */
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import {
-  ArrowRight,
-  CalendarCheck,
+  ArrowDownRight,
+  ArrowDownUp,
+  Calendar,
   CalendarDays,
-  History,
-  RefreshCw,
-  SkipForward,
-  Zap,
+  Check,
+  Copy,
+  ChevronDown,
+  ChevronRight,
+  Clock,
   Coins,
-  FileText,
+  Layers2,
+  Mail,
+  RefreshCw,
+  RotateCcw,
   Search,
-  TrendingDown,
   Undo2,
+  X,
   type LucideIcon,
 } from 'lucide-react';
+import { SUPPORTED_IMPORT_FORMATS_LABEL } from '@features/import/lib/constants';
+import { cn } from '@shared/lib/utils';
+import { Badge } from '@shared/ui/badge';
+import { Button } from '@shared/ui/button';
+import { ImportStatusChip } from '@shared/ui/import-status-chip';
 
-/** A goal type tile in the goals card. */
+/** A shared Button drawn as a picture: same look, not focusable or clickable. */
+function FakeButton({
+  className,
+  children,
+  ...props
+}: Omit<React.ComponentProps<typeof Button>, 'asChild'>) {
+  return (
+    <Button asChild {...props} className={cn('pointer-events-none', className)}>
+      <span aria-hidden>{children}</span>
+    </Button>
+  );
+}
+
+/** Goal type list in the goal editor (goal-management/ui/GoalForm.tsx). */
 export function GoalKind({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   return (
-    <span className="flex min-w-0 items-center gap-1.5 rounded-md border bg-card px-2 py-1.5 text-xs">
-      <Icon className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-      <span className="min-w-0 leading-tight">{label}</span>
+    <span className="flex min-w-0 items-center gap-2 rounded-lg border border-border/60 px-2 py-1.5">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" aria-hidden />
+      </span>
+      <span className="min-w-0 text-xs font-semibold leading-tight text-foreground">{label}</span>
     </span>
   );
 }
 
-/** A prebuilt report tile in the reports card. */
+/** Prebuilt report card on the Reports home (pages/reports/ReportsHomePage.tsx). */
 export function ReportTile({
   icon: Icon,
   label,
@@ -36,237 +67,446 @@ export function ReportTile({
   question: string;
 }) {
   return (
-    <span className="flex min-w-0 flex-col gap-0.5 rounded-md border bg-card px-2 py-1.5">
-      <span className="flex items-center gap-1.5 text-xs font-medium">
-        <Icon className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-        {label}
+    <span className="flex min-w-0 items-start gap-2 rounded-lg border bg-card p-2">
+      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
+        <Icon className="h-4 w-4" aria-hidden />
       </span>
-      <span className="text-[11px] leading-tight text-muted-foreground">{question}</span>
+      <span className="min-w-0">
+        <span className="block text-xs font-medium leading-snug">{question}</span>
+        <span className="block text-[11px] leading-tight text-muted-foreground">{label}</span>
+      </span>
     </span>
   );
 }
 
-/** The register search with a typed query and the filters it turns into. */
+/**
+ * Register search and the filters it turns into
+ * (transactions/ui/TransactionsToolbar.tsx, SearchActiveFilters.tsx).
+ */
 export function SearchVisual() {
   const { t, i18n } = useLingui();
   const amount = i18n.number(50, { minimumFractionDigits: 0 });
+  const chip = 'flex items-center gap-1.5 pr-1 text-xs font-medium';
   return (
-    <div className="space-y-1.5 rounded-md border bg-card px-2.5 py-2">
-      <div className="flex items-center gap-1.5 rounded border bg-background px-2 py-1 text-xs text-foreground">
-        <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-        <span className="truncate font-mono">last month outflows over 50</span>
+    <div className="space-y-2" aria-hidden>
+      <div className="flex h-8 items-center gap-2 rounded-md border bg-background px-2.5 text-xs">
+        <Search className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+        <span className="truncate">last month outflows over 50</span>
       </div>
-      <div className="flex flex-wrap gap-1 text-[11px]">
-        <span className="inline-flex items-center gap-1 rounded-full bg-blue-500/10 px-2 py-0.5 text-blue-700 dark:text-blue-300">
-          <CalendarDays className="h-3 w-3" aria-hidden />
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Badge
+          variant="outline"
+          className={cn(chip, 'border-blue-500/20 bg-blue-500/10 text-blue-700 dark:text-blue-300')}
+        >
+          <Calendar className="h-3 w-3" />
           <Trans>Last month</Trans>
-        </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/10 px-2 py-0.5 text-orange-700 dark:text-orange-300">
-          <TrendingDown className="h-3 w-3" aria-hidden />
+          <X className="h-3 w-3" />
+        </Badge>
+        <Badge
+          variant="outline"
+          className={cn(
+            chip,
+            'border-orange-500/20 bg-orange-500/10 text-orange-700 dark:text-orange-300'
+          )}
+        >
+          <ArrowDownRight className="h-3 w-3" />
           {/* The app shows this chip in English too (SearchActiveFilters). */}
           Outflows
-        </span>
-        <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/15 px-2 py-0.5 text-yellow-800 dark:text-yellow-300">
-          <Coins className="h-3 w-3" aria-hidden />
+          <X className="h-3 w-3" />
+        </Badge>
+        <Badge
+          variant="outline"
+          className={cn(
+            chip,
+            'border-yellow-500/20 bg-yellow-500/10 text-yellow-700 dark:text-yellow-300'
+          )}
+        >
+          <Coins className="h-3 w-3" />
           {t`Over`} {amount}
-        </span>
+          <X className="h-3 w-3" />
+        </Badge>
       </div>
     </div>
   );
 }
 
-const FILE_TYPES = ['CSV', 'OFX', 'QFX', 'QIF', 'CAMT.053', 'PDF'];
-
-/** The file types the importer reads. */
+/** Upload step: the file field and the formats it takes (import/ui/steps/UploadStep.tsx). */
 export function FileTypesVisual() {
+  const { t } = useLingui();
   return (
-    <div className="flex flex-wrap gap-1">
-      {FILE_TYPES.map((type) => (
-        <span
-          key={type}
-          className="inline-flex items-center gap-1 rounded-md border bg-card px-2 py-1 font-mono text-[11px] text-foreground"
-        >
-          <FileText className="h-3 w-3 text-primary" aria-hidden />
-          {type}
-        </span>
-      ))}
+    <div className="space-y-1" aria-hidden>
+      <div className="text-xs font-medium text-foreground">
+        <Trans>Select File</Trans>
+      </div>
+      <div className="flex h-8 items-center rounded-md border bg-background px-2.5 text-xs text-muted-foreground">
+        <span className="truncate">{t(SUPPORTED_IMPORT_FORMATS_LABEL)}</span>
+      </div>
     </div>
   );
 }
 
-/** One account named in the file, sent to an account of the user's. */
+/** One row of "Accounts in this file" (import/ui/steps/configure/AccountsInFilePanel.tsx). */
 export function AccountRouteVisual() {
+  const { i18n } = useLingui();
+  const count = i18n.number(42);
   return (
-    <div className="flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-xs">
-      <span className="min-w-0 truncate font-mono text-muted-foreground">DE89 3704 •••• 3000</span>
-      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-      <span className="ml-auto shrink-0 rounded border bg-background px-2 py-0.5 font-medium">
+    <div className="flex items-center gap-3 rounded-md border px-3 py-2 text-xs" aria-hidden>
+      <div className="min-w-0 flex-1">
+        <div className="truncate font-mono font-medium">DE89 3704 •••• 3000</div>
+        <div className="text-muted-foreground">
+          <Trans>{count} transactions</Trans>
+        </div>
+      </div>
+      <span className="flex h-8 w-32 shrink-0 items-center justify-between rounded-md border bg-background px-2.5">
         <Trans>Checking</Trans>
+        <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
       </span>
     </div>
   );
 }
 
-/** The review step's row statuses. */
+/** Import row statuses as coloured pills (shared/ui/import-status-chip.tsx). */
 export function ImportStatusVisual() {
   return (
     <div className="flex flex-wrap gap-1 text-[11px]">
-      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-emerald-700 dark:text-emerald-300">
+      <ImportStatusChip status="new">
         <Trans>New</Trans>
-      </span>
-      <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">
+      </ImportStatusChip>
+      <ImportStatusChip status="already-imported">
         <Trans>Already imported</Trans>
-      </span>
-      <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-800 dark:text-amber-300">
+      </ImportStatusChip>
+      <ImportStatusChip status="needs-review">
         <Trans>Needs review</Trans>
-      </span>
+      </ImportStatusChip>
     </div>
   );
 }
 
-/** An Import History row with its Undo button. */
+/** An Import History row with its Undo button (pages/settings/ImportsPage.tsx). */
 export function ImportHistoryVisual() {
   const { i18n } = useLingui();
   const rows = i18n.number(42);
   return (
-    <div className="flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-xs">
-      <FileText className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+    <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs">
       <span className="min-w-0 flex-1 truncate">
         statement.ofx · <Trans>{rows} transactions</Trans>
       </span>
-      <span className="inline-flex shrink-0 items-center gap-1 rounded border bg-background px-2 py-0.5 font-medium">
-        <Undo2 className="h-3 w-3" aria-hidden />
-        <Trans>Undo</Trans>
-      </span>
+      <FakeButton size="sm" variant="outline">
+        <Trans>
+          <Undo2 className="h-4 w-4 mr-1" />
+          Undo
+        </Trans>
+      </FakeButton>
     </div>
   );
 }
 
-/** On-budget and off-budget account groups, as in the account lists. */
+/** On Budget / Off Budget sections of the account list (app/layout/desktop-shell/AccountsList.tsx). */
 export function BudgetAccountsVisual() {
-  return (
-    <div className="grid grid-cols-2 gap-1.5 text-xs">
-      <div className="rounded-md border bg-card px-2 py-1.5">
-        <div className="font-medium">
-          <Trans>On Budget</Trans>
-        </div>
-        <div className="truncate text-muted-foreground">
-          <Trans>Checking</Trans> · <Trans>Savings</Trans>
-        </div>
+  const section = (title: React.ReactNode, names: React.ReactNode[]) => (
+    <div className="min-w-0">
+      <div className="px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        {title}
       </div>
-      <div className="rounded-md border bg-card px-2 py-1.5">
-        <div className="font-medium">
-          <Trans>Off Budget</Trans>
+      {names.map((name, i) => (
+        <div key={i} className="truncate rounded px-1 py-0.5 text-xs">
+          {name}
         </div>
-        <div className="truncate text-muted-foreground">
-          <Trans>Mortgage</Trans> · <Trans>Investment</Trans>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** The register's date range with the two future presets. */
-export function DateRangeVisual() {
-  return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded-md border bg-card px-2.5 py-2 text-xs">
-      <CalendarDays className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-      {/* The picker shows these presets in English in every language. */}
-      <span className="rounded bg-primary px-2 py-0.5 font-medium text-primary-foreground">
-        Next 30 days
-      </span>
-      <span className="rounded border px-2 py-0.5 text-muted-foreground">Next 3 months</span>
-    </div>
-  );
-}
-
-/** A rule: one condition, one action. */
-export function RuleVisual() {
-  return (
-    <div className="flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-xs">
-      <span className="min-w-0 truncate">
-        <Trans>Payee</Trans> <span className="text-muted-foreground">contains</span>{' '}
-        <span className="font-mono">Lidl</span>
-      </span>
-      <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden />
-      <span className="ml-auto shrink-0 rounded border bg-background px-2 py-0.5 font-medium">
-        <Trans>Groceries</Trans>
-      </span>
-    </div>
-  );
-}
-
-/** Where continuous rules run by themselves. */
-export function RuleTriggersVisual() {
-  const { t } = useLingui();
-  const triggers = [t`Add Transaction`, t`Imports`, t`Bank sync`, t`Recurring`];
-  return (
-    <div className="flex flex-wrap gap-1 text-[11px]">
-      {triggers.map((label) => (
-        <span
-          key={label}
-          className="inline-flex items-center gap-1 rounded-full border bg-card px-2 py-0.5"
-        >
-          <Zap className="h-3 w-3 text-primary" aria-hidden />
-          {label}
-        </span>
       ))}
     </div>
   );
-}
-
-/** A rule's run history entry with its undo button. */
-export function RuleRunVisual() {
-  const { i18n } = useLingui();
-  const count = i18n.number(12);
   return (
-    <div className="flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-xs">
-      <History className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-      <span className="min-w-0 flex-1 truncate">
-        <Trans>{count} transactions updated.</Trans>
-      </span>
-      <span className="inline-flex shrink-0 items-center gap-1 rounded border bg-background px-2 py-0.5 font-medium">
-        <Undo2 className="h-3 w-3" aria-hidden />
-        <Trans>Undo changes</Trans>
-      </span>
+    <div className="grid grid-cols-2 gap-3 rounded-md border px-2 py-1.5" aria-hidden>
+      {section(<Trans>On Budget</Trans>, [
+        <Trans key="c">Checking</Trans>,
+        <Trans key="s">Savings</Trans>,
+      ])}
+      {section(<Trans>Off Budget</Trans>, [
+        <Trans key="m">Mortgage</Trans>,
+        <Trans key="i">Investment</Trans>,
+      ])}
     </div>
   );
 }
 
-/** A recurring template row. */
+/** Date range picker: trigger and its preset list (shared/ui/date-range-picker.tsx). */
+export function DateRangeVisual() {
+  const { i18n } = useLingui();
+  const today = new Date();
+  const range = `${i18n.date(today, { day: 'numeric', month: 'short' })} – ${i18n.date(
+    new Date(today.getTime() + 30 * 86_400_000),
+    { day: 'numeric', month: 'short' }
+  )}`;
+  return (
+    <div className="flex items-start gap-2" aria-hidden>
+      <FakeButton size="sm" variant="outline" className="text-xs">
+        <CalendarDays className="h-4 w-4" />
+        {range}
+      </FakeButton>
+      <div className="flex flex-col rounded-md border p-1 text-xs">
+        {/* The picker shows its presets in English in every language. */}
+        <span className="rounded px-2 py-1">Last 30 days</span>
+        <span className="rounded bg-accent px-2 py-1 text-accent-foreground">Next 30 days</span>
+        <span className="rounded px-2 py-1">Next 3 months</span>
+      </div>
+    </div>
+  );
+}
+
+/** A rule in the rules list (pages/settings/automation-rules/RuleRow.tsx). */
+export function RuleVisual() {
+  const rule = { runOrder: 1 };
+  const conditionCount = 1;
+  const actionCount = 1;
+  return (
+    <div className="space-y-0.5 rounded-md border px-3 py-2" aria-hidden>
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="truncate text-sm font-medium">
+          Lidl → <Trans>Groceries</Trans>
+        </span>
+        <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+          <Trans>Continuous</Trans>
+        </Badge>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <Trans>
+            <Layers2 className="h-3 w-3" />
+            Run order {rule.runOrder}
+          </Trans>
+        </span>
+        <span>
+          <Trans>
+            {conditionCount} condition(s) · {actionCount} action(s)
+          </Trans>
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** The rule modes, as the badges in the rules list (RuleRow.tsx). */
+export function RuleTriggersVisual() {
+  return (
+    <div className="flex flex-wrap gap-1.5" aria-hidden>
+      <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+        <Trans>Continuous</Trans>
+      </Badge>
+      <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+        <Trans>Autofill</Trans>
+      </Badge>
+      <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+        <Trans>One time</Trans>
+      </Badge>
+    </div>
+  );
+}
+
+/** The undo box in a rule's run history (features/rules/ui/RuleHistoryDrawer.tsx). */
+export function RuleRunVisual() {
+  const run = { transactionCount: 12 };
+  return (
+    <div
+      className="flex flex-col gap-2 rounded-md border border-dashed bg-muted/40 p-2.5 sm:flex-row sm:items-center sm:justify-between"
+      aria-hidden
+    >
+      <div className="text-xs text-muted-foreground">
+        {plural(run.transactionCount, {
+          one: 'Restore # transaction to its pre-run value.',
+          other: 'Restore # transactions to their pre-run values.',
+        })}
+      </div>
+      <FakeButton size="sm" className="self-start">
+        <RotateCcw className="mr-2 h-4 w-4" />
+        <Trans>Undo changes</Trans>
+      </FakeButton>
+    </div>
+  );
+}
+
+/** A recurring template row (pages/settings/recurring/components/RecurringTemplateCard.tsx). */
 export function RecurringRowVisual() {
   const { i18n } = useLingui();
   const amount = i18n.number(-950, { minimumFractionDigits: 0 });
   return (
-    <div className="flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-xs">
-      <RefreshCw className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
-      <span className="min-w-0 flex-1 truncate">
-        <span className="font-medium">
+    <div className="flex items-start gap-2 rounded-md border px-3 py-2" aria-hidden>
+      <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+      <div className="min-w-0 flex-1 space-y-0.5">
+        <div className="truncate text-sm font-medium">
           <Trans>Rent</Trans>
-        </span>{' '}
-        · <Trans>Monthly</Trans>
-      </span>
-      <span className="shrink-0 tabular-nums">{amount}</span>
+        </div>
+        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <RefreshCw className="h-3 w-3" /> <Trans>Monthly</Trans>
+          <Clock className="ml-2 h-3 w-3" />
+        </div>
+      </div>
+      <span className="shrink-0 text-sm font-medium tabular-nums">{amount}</span>
     </div>
   );
 }
 
-/** The three things to do with an upcoming occurrence. */
+/** An upcoming occurrence with its buttons (recurring/components/RecurringOccurrenceRow.tsx). */
 export function OccurrenceActionsVisual() {
+  const { i18n } = useLingui();
+  const due = i18n.date(new Date(2026, 11, 1), { dateStyle: 'medium' });
   return (
-    <div className="flex flex-wrap gap-1 text-[11px]">
-      <span className="inline-flex items-center gap-1 rounded border bg-card px-2 py-1 font-medium">
-        <CalendarCheck className="h-3 w-3" aria-hidden />
-        <Trans>Mark ready</Trans>
+    <div
+      className="flex items-center justify-between gap-2 rounded-md border px-3 py-1.5"
+      aria-hidden
+    >
+      <span className="text-xs tabular-nums">{due}</span>
+      <div className="flex shrink-0 items-center gap-1">
+        <FakeButton size="sm" variant="outline" className="h-7 px-2.5 text-xs">
+          <Trans>Mark ready</Trans>
+        </FakeButton>
+        <FakeButton size="sm" variant="outline" className="h-7 px-2.5 text-xs">
+          <Trans>Post now</Trans>
+        </FakeButton>
+        <FakeButton size="sm" variant="ghost" className="h-7 px-2.5 text-xs">
+          <Trans>Skip</Trans>
+        </FakeButton>
+      </div>
+    </div>
+  );
+}
+
+/** Income / Expense / Transfer tabs of the transaction form (form/TransactionTypeSelector.tsx). */
+export function TransactionTypeVisual() {
+  const tab =
+    'flex items-center justify-center rounded-md border border-transparent px-2 py-1.5 text-xs';
+  return (
+    <div className="grid grid-cols-3 gap-1 p-1" aria-hidden>
+      <span className={tab}>
+        <span className="mr-1 text-base font-semibold leading-none">+</span>
+        <Trans>Income</Trans>
       </span>
-      <span className="inline-flex items-center gap-1 rounded border bg-card px-2 py-1 font-medium">
-        <Zap className="h-3 w-3" aria-hidden />
-        <Trans>Post now</Trans>
+      <span
+        className={cn(tab, 'border-destructive/20 bg-destructive/10 text-destructive shadow-sm')}
+      >
+        <span className="mr-1 text-base font-semibold leading-none">−</span>
+        <Trans>Expense</Trans>
       </span>
-      <span className="inline-flex items-center gap-1 rounded border bg-card px-2 py-1 text-muted-foreground">
-        <SkipForward className="h-3 w-3" aria-hidden />
-        <Trans>Skip</Trans>
+      <span className={tab}>
+        <ArrowDownUp className="mr-1 h-3 w-3" />
+        <Trans>Transfer</Trans>
       </span>
+    </div>
+  );
+}
+
+/** A workspace row on the Workspaces page (pages/settings/components/WorkspaceRow.tsx). */
+export function WorkspaceRowVisual() {
+  return (
+    <div
+      className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-card p-3"
+      aria-hidden
+    >
+      <div className="min-w-0">
+        <div className="truncate text-sm font-medium">
+          <Trans>Family budget</Trans>
+        </div>
+        {/* The page shows the role as stored, in English. */}
+        <div className="text-xs text-muted-foreground">Role: owner</div>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <Badge variant="secondary">
+          <Trans>Active</Trans>
+        </Badge>
+        <FakeButton size="sm" variant="outline">
+          <Trans>Switch</Trans>
+        </FakeButton>
+      </div>
+    </div>
+  );
+}
+
+/** The box shown after Create Invite (features/budget-sharing/ui/WorkspaceSharingPanel.tsx). */
+export function InviteReadyVisual() {
+  return (
+    <div
+      className="space-y-2 rounded-md border border-dashed border-primary/40 bg-primary/5 p-2.5"
+      aria-hidden
+    >
+      <div className="flex items-center gap-1.5 text-xs font-medium">
+        <Check className="h-3.5 w-3.5 text-primary" />
+        <Trans>Invite ready — share the link below</Trans>
+      </div>
+      <div className="truncate rounded bg-background px-2 py-1 font-mono text-[11px]">
+        https://my.budgero.app/join#code=••••••••
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        <FakeButton size="sm" className="h-7 px-2.5 text-xs">
+          <Trans>
+            <Copy className="h-3.5 w-3.5" />
+            Copy link
+          </Trans>
+        </FakeButton>
+        <FakeButton size="sm" variant="outline" className="h-7 px-2.5 text-xs">
+          <Trans>
+            <Mail className="h-3.5 w-3.5" />
+            Open in email
+          </Trans>
+        </FakeButton>
+      </div>
+    </div>
+  );
+}
+
+/** The two master-password storage choices (pages/settings/SecurityPage.tsx). */
+export function PasswordStorageVisual() {
+  const option = (selected: boolean, label: React.ReactNode) => (
+    <div
+      className={cn(
+        'flex items-center gap-2 rounded-md border p-2 text-xs font-medium',
+        selected ? 'border-primary/60 bg-primary/5' : 'border-border/70 bg-muted/20'
+      )}
+    >
+      <span
+        className={cn(
+          'flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border',
+          selected ? 'border-primary' : 'border-muted-foreground/50'
+        )}
+      >
+        {selected && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+      </span>
+      <span className="min-w-0">{label}</span>
+    </div>
+  );
+  return (
+    <div className="space-y-1.5" aria-hidden>
+      {option(true, <Trans>Keep in memory only (recommended)</Trans>)}
+      {option(false, <Trans>Remember on this device (IndexedDB)</Trans>)}
+    </div>
+  );
+}
+
+/** A row of the custom exchange rates table (pages/settings/CurrencySettingsPage.tsx). */
+export function CustomRateVisual() {
+  const { i18n } = useLingui();
+  const rate = i18n.number(1.0845, { minimumFractionDigits: 4 });
+  const start = i18n.date(new Date(2026, 0, 1), { dateStyle: 'medium' });
+  return (
+    <div className="overflow-hidden rounded-md border text-xs" aria-hidden>
+      <div className="grid grid-cols-[3rem_3rem_1fr_auto] gap-x-2 border-b px-2 py-1 text-muted-foreground">
+        <span>
+          <Trans>From</Trans>
+        </span>
+        <span>
+          <Trans>To</Trans>
+        </span>
+        <span className="text-right">
+          <Trans>Rate</Trans>
+        </span>
+        <span>
+          <Trans>Start Date</Trans>
+        </span>
+      </div>
+      <div className="grid grid-cols-[3rem_3rem_1fr_auto] gap-x-2 px-2 py-1.5">
+        <span className="font-medium">EUR</span>
+        <span className="font-medium">USD</span>
+        <span className="text-right font-mono">{rate}</span>
+        <span>{start}</span>
+      </div>
     </div>
   );
 }
