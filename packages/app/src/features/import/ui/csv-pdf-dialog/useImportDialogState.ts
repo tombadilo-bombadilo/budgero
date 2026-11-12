@@ -18,7 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useUiStore } from '@shared/store/useUiStore';
 import { getErrorMessage } from '@shared/lib/errors';
 import { applyOpInvalidations, invalidateRoots } from '@shared/lib/query-utils';
-import { useRuntime } from '@shared/runtime/runtime-provider';
+import { useActiveSpaceId, useRuntime } from '@shared/runtime/runtime-provider';
 
 import {
   DEFAULT_IMPORT_CONFIG,
@@ -79,6 +79,8 @@ export const STEPS: ImportStep[] = ['upload', 'configure', 'preview', 'import', 
 export interface ImportDialogState {
   /** The budget the file is imported into (0 when none is selected). */
   budgetId: number;
+  /** The space that budget is in (keys the remembered account choices). */
+  spaceId: string | null;
   /** Currency of accounts the import creates when the file states none. */
   newAccountCurrency: string;
   currentStep: ImportStep;
@@ -187,6 +189,7 @@ export function useImportDialogState(): ImportDialogState {
 
   const queryClient = useQueryClient();
   const runtime = useRuntime();
+  const spaceId = useActiveSpaceId();
   const recordImportRunMutation = useRecordImportRun();
   const { setSelectedBudget, selectedBudget, pendingImportFile, setPendingImportFile } =
     useUiStore();
@@ -407,7 +410,7 @@ export function useImportDialogState(): ImportDialogState {
       runKey: runKey.current,
       duplicates: runtime.services().importHistory.duplicates,
       tolerance: importTolerance(runtime.services()),
-      rememberedRoutes: readRememberedRoutes(selectedBudget.ID),
+      rememberedRoutes: readRememberedRoutes(spaceId, selectedBudget.ID),
       newCurrency: newAccountCurrency,
     });
   }, [
@@ -419,6 +422,7 @@ export function useImportDialogState(): ImportDialogState {
     skippedRowIndices,
     selectedHeaderIndex,
     runtime,
+    spaceId,
   ]);
 
   const generatePreview = useCallback(async () => {
@@ -736,7 +740,7 @@ export function useImportDialogState(): ImportDialogState {
         rows: parsedData.rows,
         column: columnMapping.account,
         accounts: runtime.services().accounts.listAccounts(budgetId),
-        remembered: readRememberedRoutes(budgetId),
+        remembered: readRememberedRoutes(spaceId, budgetId),
         chosen: importConfig.accountRoutes,
         newAccountCurrency,
         fallbackAccountId: importConfig.defaultAccountId,
@@ -797,7 +801,7 @@ export function useImportDialogState(): ImportDialogState {
           if (created) chosen[source] = created.ID;
         }
       }
-      rememberRoutes(budgetId, chosen);
+      rememberRoutes(spaceId, budgetId, chosen);
 
       // Process transactions (excluding any rows the user marked as skipped
       // in the configure step). The planner decides — using the exact same
@@ -1123,6 +1127,7 @@ export function useImportDialogState(): ImportDialogState {
     previewData,
     resolveCategoryId,
     runtime,
+    spaceId,
     recordImportRunMutation,
     setSelectedBudget,
     queryClient,
@@ -1130,6 +1135,7 @@ export function useImportDialogState(): ImportDialogState {
 
   return {
     budgetId: selectedBudget?.ID ?? 0,
+    spaceId,
     newAccountCurrency,
     currentStep,
     setCurrentStep,

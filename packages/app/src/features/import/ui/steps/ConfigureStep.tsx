@@ -90,6 +90,7 @@ interface ConfigureStepProps {
   accounts: Account[] | undefined;
   hasBudgetSelected: boolean;
   budgetId: number;
+  spaceId: string | null;
   /** Currency of accounts the import creates when the file states none. */
   newAccountCurrency?: string;
   onColumnMappingChange: (mapping: ColumnMapping) => void;
@@ -120,6 +121,7 @@ export function ConfigureStep({
   accounts,
   hasBudgetSelected,
   budgetId,
+  spaceId,
   newAccountCurrency,
   onColumnMappingChange,
   onImportConfigChange,
@@ -140,7 +142,7 @@ export function ConfigureStep({
     ? (parsedData?.rows.filter((row) => !row[columnMapping.account!]?.trim()).length ?? 0)
     : 0;
   const rows = parsedData?.rows;
-  const remembered = useMemo(() => readRememberedRoutes(budgetId), [budgetId]);
+  const remembered = useMemo(() => readRememberedRoutes(spaceId, budgetId), [spaceId, budgetId]);
   const routePlan = useMemo(
     () =>
       planAccountRoutes({

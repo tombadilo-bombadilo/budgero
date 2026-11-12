@@ -95,14 +95,25 @@ export function sourceAccountsOf(
   return [...bySource.values()];
 }
 
-const rememberKey = (budgetId: number) => `budgero:import-account-routes:${budgetId}`;
+/** Account ids belong to one budget in one space (as in last-used-storage.ts). */
+const rememberKey = (spaceId: string | null, budgetId: number): string | null =>
+  spaceId && Number.isInteger(budgetId) && budgetId > 0
+    ? `budgero:import-account-routes:${encodeURIComponent(spaceId)}:${budgetId}`
+    : null;
+/** Before routes were keyed by space; ids could leak between spaces, so never read. */
+const legacyRememberKey = (budgetId: number) => `budgero:import-account-routes:${budgetId}`;
 /** Oldest choices are dropped beyond this, so the list cannot grow without bound. */
 const MAX_REMEMBERED = 200;
 
 /** Earlier choices on this device, by source value (account id only). */
-export function readRememberedRoutes(budgetId: number): Record<string, number> {
+export function readRememberedRoutes(
+  spaceId: string | null,
+  budgetId: number
+): Record<string, number> {
+  const key = rememberKey(spaceId, budgetId);
+  if (!key) return {};
   try {
-    const stored: unknown = JSON.parse(localStorage.getItem(rememberKey(budgetId)) ?? '{}');
+    const stored: unknown = JSON.parse(localStorage.getItem(key) ?? '{}');
     if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
     return Object.fromEntries(
       Object.entries(stored).filter(([, id]) => typeof id === 'number' && Number.isInteger(id))
@@ -112,17 +123,23 @@ export function readRememberedRoutes(budgetId: number): Record<string, number> {
   }
 }
 
-export function rememberRoutes(budgetId: number, chosen: Record<string, number>): void {
-  if (Object.keys(chosen).length === 0) return;
+export function rememberRoutes(
+  spaceId: string | null,
+  budgetId: number,
+  chosen: Record<string, number>
+): void {
+  const key = rememberKey(spaceId, budgetId);
+  if (!key || Object.keys(chosen).length === 0) return;
   try {
     // Re-insert what was just chosen so it is the newest.
-    const merged = new Map(Object.entries(readRememberedRoutes(budgetId)));
+    const merged = new Map(Object.entries(readRememberedRoutes(spaceId, budgetId)));
     for (const [source, id] of Object.entries(chosen)) {
       merged.delete(source);
       merged.set(source, id);
     }
     const kept = [...merged].slice(-MAX_REMEMBERED);
-    localStorage.setItem(rememberKey(budgetId), JSON.stringify(Object.fromEntries(kept)));
+    localStorage.setItem(key, JSON.stringify(Object.fromEntries(kept)));
+    localStorage.removeItem(legacyRememberKey(budgetId));
   } catch {
     /* storage blocked: the next import asks again */
   }
