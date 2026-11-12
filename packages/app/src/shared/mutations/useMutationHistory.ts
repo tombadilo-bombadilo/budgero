@@ -297,6 +297,7 @@ export function formatOpCode(op: string): string {
     'history.applyOps': 'Undo / Redo',
     'history.restoreRows': 'Undo',
     'history.redoWithIds': 'Redo',
+    'pageGuides.markSeen': 'Mark Page Guide Seen',
   };
 
   return (

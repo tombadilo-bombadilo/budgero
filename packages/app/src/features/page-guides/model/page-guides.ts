@@ -2,9 +2,9 @@
  * Page guides: a few short cards that explain a page the first time a new
  * user opens it, and again whenever they ask ("How this works").
  *
- * Which guides a user has seen is remembered on this device only
- * (localStorage, per user) and never sent anywhere. The key is kept over
- * sign-out (sign-out-preserved.ts) so signing in again doesn't repeat them.
+ * Which guides a user has seen lives in the workspace's encrypted database
+ * (synced, per user) with a localStorage cache on each device; see "Seen
+ * guides" below. The cache key is kept over sign-out (sign-out-preserved.ts).
  */
 import { create } from 'zustand';
 import type { PageGuideId } from '@shared/lib/analytics/events';
@@ -109,8 +109,14 @@ export function isNewForPageGuides(audience: PageGuideAudience, now = Date.now()
 }
 
 // ---------------------------------------------------------------------------
-// Seen guides (per user, this device)
+// Seen guides
 // ---------------------------------------------------------------------------
+//
+// The source of truth is the open workspace's encrypted database (core
+// PageGuidesService, op pageGuides.markSeen), keyed by user id, so it syncs to
+// the user's other devices and survives cleared site data; the server only
+// sees an opaque encrypted mutation. localStorage (per user, this device, all
+// workspaces) is an instant cache: a guide counts as seen when either says so.
 
 export const PAGE_GUIDES_SEEN_KEY = 'budgero:page-guides';
 
@@ -124,25 +130,78 @@ function readSeen(): Record<string, PageGuideId[]> {
   }
 }
 
-/** True when storage can't be read either: better no guide than one on every visit. */
-export function hasSeenPageGuide(userId: string, id: PageGuideId): boolean {
+function storageReadable(): boolean {
   try {
     localStorage.getItem(PAGE_GUIDES_SEEN_KEY);
-  } catch {
     return true;
+  } catch {
+    return false;
   }
-  return readSeen()[userId]?.includes(id) ?? false;
 }
 
-export function markPageGuideSeen(userId: string, id: PageGuideId): void {
-  const all = readSeen();
-  const mine = all[userId] ?? [];
-  if (mine.includes(id)) return;
+/** Guides this device's cache has for the user. */
+export function cachedSeenPageGuides(userId: string): PageGuideId[] {
+  const mine = readSeen()[userId];
+  return Array.isArray(mine) ? mine.filter((id) => typeof id === 'string') : [];
+}
+
+/** True when storage can't be read either: better no guide than one on every visit. */
+export function hasSeenPageGuide(userId: string, id: PageGuideId): boolean {
+  if (!storageReadable()) return true;
+  return cachedSeenPageGuides(userId).includes(id);
+}
+
+/** Adds guides to the device cache; writes nothing when they are all there. */
+export function cachePageGuidesSeen(userId: string, ids: readonly PageGuideId[]): void {
+  const mine = cachedSeenPageGuides(userId);
+  const next = mergeGuideIds(mine, ids);
+  if (next.length === mine.length) return;
   try {
-    localStorage.setItem(PAGE_GUIDES_SEEN_KEY, JSON.stringify({ ...all, [userId]: [...mine, id] }));
+    localStorage.setItem(PAGE_GUIDES_SEEN_KEY, JSON.stringify({ ...readSeen(), [userId]: next }));
   } catch {
-    /* storage blocked: the guide may show again next time */
+    /* storage blocked: the synced state still remembers it */
   }
+}
+
+/** Marks one guide seen in the device cache (see usePageGuidesSeen for the synced write). */
+export function markPageGuideSeen(userId: string, id: PageGuideId): void {
+  cachePageGuidesSeen(userId, [id]);
+}
+
+/** Union, first list's order first. */
+export function mergeGuideIds(a: readonly PageGuideId[], b: readonly PageGuideId[]): PageGuideId[] {
+  const out = [...new Set(a)];
+  for (const id of b) if (!out.includes(id)) out.push(id);
+  return out;
+}
+
+/** Guides the cache has that the synced state doesn't: what one write should add. */
+export function unsyncedGuideIds(
+  cached: readonly PageGuideId[],
+  synced: readonly PageGuideId[]
+): PageGuideId[] {
+  return [...new Set(cached)].filter((id) => !synced.includes(id));
+}
+
+/**
+ * Synced seen state of the open workspace: still loading, unavailable (no
+ * database, read failed: the cache decides alone), or the list.
+ */
+export type SyncedPageGuides = 'loading' | 'unavailable' | readonly PageGuideId[];
+
+/**
+ * Whether a guide counts as seen: true when the cache or the synced state
+ * says so, null while the synced state is still loading (don't auto-open yet).
+ */
+export function isPageGuideSeen(
+  id: PageGuideId,
+  cacheSeen: boolean,
+  synced: SyncedPageGuides
+): boolean | null {
+  if (cacheSeen) return true;
+  if (synced === 'loading') return null;
+  if (synced === 'unavailable') return false;
+  return synced.includes(id);
 }
 
 // ---------------------------------------------------------------------------

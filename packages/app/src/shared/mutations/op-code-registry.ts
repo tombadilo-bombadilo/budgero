@@ -29,6 +29,7 @@ import { scenarioOps } from './op-code-registry/domains/scenarios';
 import { transactionOps } from './op-code-registry/domains/transactions';
 import { userPreferenceOps } from './op-code-registry/domains/user-preferences';
 import { warrantyOps } from './op-code-registry/domains/warranties';
+import { pageGuideOps } from './op-code-registry/domains/page-guides';
 
 const domainOpCodeRegistry = {
   ...budgetOps,
@@ -51,6 +52,7 @@ const domainOpCodeRegistry = {
   ...chatOps,
   ...llmSettingsOps,
   ...bankSyncOps,
+  ...pageGuideOps,
 } satisfies Record<string, OpCodeEntry>;
 
 /** Unique invalidation keys, first occurrence order. */
