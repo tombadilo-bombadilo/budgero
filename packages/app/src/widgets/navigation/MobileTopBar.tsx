@@ -167,7 +167,7 @@ export function MobileTopBar() {
               />
             </DropdownMenuContent>
           </DropdownMenu>
-          <PageGuideButton iconOnly className="h-8 w-6" />
+          <PageGuideButton iconOnly className="h-9 w-9 rounded-full" />
           <ConnectivityStatus className="ml-auto" />
         </div>
 

@@ -1,11 +1,14 @@
 import { create } from 'zustand';
 
-/** First future-dated transaction, or first recurring transaction, in a budget. */
-export type SchedulingGuideKind = 'future' | 'recurring';
+/**
+ * First future-dated transaction in a budget. Recurring transactions are
+ * explained by the Recurring page guide (features/page-guides).
+ */
+export type SchedulingGuideKind = 'future';
 
 interface SchedulingGuideState {
   pending: SchedulingGuideKind | null;
-  /** Account the transaction or recurring template belongs to. */
+  /** Account the transaction belongs to. */
   accountId: number | null;
   /** One-shot request for the next register to extend its range 30 days ahead. */
   showUpcomingRequested: boolean;

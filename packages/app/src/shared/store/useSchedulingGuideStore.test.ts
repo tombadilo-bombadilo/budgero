@@ -15,10 +15,6 @@ describe('requestSchedulingGuide', () => {
     requestSchedulingGuide('future', 'space-a', 1);
     expect(useSchedulingGuideStore.getState().pending).toBeNull();
 
-    requestSchedulingGuide('recurring', 'space-a', 1);
-    expect(useSchedulingGuideStore.getState().pending).toBe('recurring');
-    useSchedulingGuideStore.getState().dismiss();
-
     requestSchedulingGuide('future', 'space-a', 2);
     expect(useSchedulingGuideStore.getState().pending).toBe('future');
   });

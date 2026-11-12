@@ -25,8 +25,11 @@ describe('pageGuideForPath', () => {
   it('maps each page to its guide', () => {
     expect(pageGuideForPath('/budgeting')).toBe('budget');
     expect(pageGuideForPath('/accounts')).toBe('accounts');
-    expect(pageGuideForPath('/accounts/all')).toBe('accounts');
-    expect(pageGuideForPath('/accounts/12/')).toBe('accounts');
+    expect(pageGuideForPath('/accounts/all')).toBe('transactions');
+    expect(pageGuideForPath('/accounts/12/')).toBe('transactions');
+    expect(pageGuideForPath('/settings/rules')).toBe('rules');
+    expect(pageGuideForPath('/settings/recurring')).toBe('recurring');
+    expect(pageGuideForPath('/settings/imports')).toBe('imports');
     expect(pageGuideForPath('/reports')).toBe('reports');
     expect(pageGuideForPath('/reports/prebuilt')).toBe('reports');
     expect(pageGuideForPath('/dashboard')).toBe('home');
@@ -94,6 +97,8 @@ describe('openPageGuide', () => {
     });
     openPageGuide('accounts');
     expect(usePageGuideStore.getState().request?.card).toBe(0);
+    openPageGuide('transactions', { card: 'dates' });
+    expect(usePageGuideStore.getState().request).toMatchObject({ id: 'transactions', card: 1 });
   });
 });
 

@@ -110,6 +110,35 @@ it('waits for another open dialog to close first', () => {
   expect(screen.getByRole('dialog', { name: 'Add a transaction' })).toBeInTheDocument();
 });
 
+it('opens the transactions guide on one register only, not again on another', () => {
+  const { unmount } = renderHost('/accounts/all');
+  settle();
+  expect(screen.getByRole('dialog', { name: 'Add a transaction' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Skip' }));
+  expect(track).toHaveBeenCalledWith('page_guide_skipped', { guide: 'transactions' });
+  unmount();
+  renderHost('/accounts/5');
+  settle();
+  expect(screen.queryByRole('dialog')).toBeNull();
+});
+
+it('gives the accounts overview its own guide', () => {
+  markPageGuideSeen('u1', 'transactions');
+  renderHost('/accounts');
+  settle();
+  expect(screen.getByRole('dialog', { name: 'Add an account' })).toBeInTheDocument();
+});
+
+it.each([
+  ['/settings/rules', 'What a rule does'],
+  ['/settings/recurring', 'Bills and pay on a schedule'],
+  ['/settings/imports', 'Bring in a file from your bank'],
+])('opens a guide on %s', (path, title) => {
+  renderHost(path);
+  settle();
+  expect(screen.getByRole('dialog', { name: title })).toBeInTheDocument();
+});
+
 it('reopens on request at a given card, also for existing users', () => {
   profile.current = { id: 'u1', created_at: longAgo() };
   renderHost();
