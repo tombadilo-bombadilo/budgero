@@ -9,4 +9,5 @@ export { AccountsStep } from './AccountsStep';
 export { CategoriesStep } from './CategoriesStep';
 export { WhereHeardPicker, WhereHeardStep } from './WhereHeardStep';
 export { YnabImportStep } from './YnabImportStep';
+export { InviteCodeStep } from './InviteCodeStep';
 export { DoneStep } from './DoneStep';
