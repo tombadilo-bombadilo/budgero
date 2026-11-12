@@ -230,10 +230,10 @@ export class GoalCalculations {
     let statusMessage: string;
     const statusValues: Record<string, number | string> = {};
     if (status === 'completed') {
-      statusMessage = '✓ Target available!';
+      statusMessage = 'Target available!';
     } else if (status === 'overfunded') {
       const excess = effectiveAvailable - target;
-      statusMessage = '✓ Goal exceeded by {{excess}}';
+      statusMessage = 'Goal exceeded by {{excess}}';
       statusValues.excess = excess;
     } else {
       statusMessage = 'Need {{needed}} more available';
@@ -356,9 +356,9 @@ export class GoalCalculations {
       statusMessage = 'Overspent by {{overspent}}';
       statusValues.overspent = Math.abs(available);
     } else if (status === 'completed') {
-      statusMessage = '✓ Target available!';
+      statusMessage = 'Target available!';
     } else if (status === 'overfunded') {
-      statusMessage = '✓ Goal exceeded by {{excess}}';
+      statusMessage = 'Goal exceeded by {{excess}}';
       statusValues.excess = available - target;
     } else {
       statusMessage = 'Need {{needed}} more available';
@@ -469,7 +469,7 @@ export class GoalCalculations {
       statusMessage = 'Exceeded target! Saved {{saved}} this month';
       statusValues.saved = currentMonthAssigned;
     } else if (status === 'completed') {
-      statusMessage = "✓ This month's {{monthlyTarget}} saved!";
+      statusMessage = "This month's {{monthlyTarget}} saved!";
       statusValues.monthlyTarget = monthlyTarget;
     } else if (status === 'not-started') {
       statusMessage = 'Start saving {{monthlyTarget}} this month';
@@ -792,10 +792,10 @@ export class GoalCalculations {
       // totalAssigned includes current month — subtract it to get the start-of-month total
       metricAtMonthStart: (totalAssigned) => totalAssigned - (finances.assigned || 0),
       texts: ({ monthsRemaining }) => ({
-        fundedStatusMessage: '✓ Fully allocated!',
-        monthlyFundedStatusMessage: '✓ {{assigned}} allocated this month — on track!',
+        fundedStatusMessage: 'Fully allocated!',
+        monthlyFundedStatusMessage: '{{assigned}} allocated this month — on track!',
         datePassedStatusMessage: '⚠️ Target date passed - need {{needed}} more',
-        monthDoneStatusMessage: '✓ This month done! {{totalAssigned}} of {{target}} allocated',
+        monthDoneStatusMessage: 'This month done! {{totalAssigned}} of {{target}} allocated',
         fundedRecommendation: 'Target amount fully allocated for this cycle.',
         monthlyFundedRecommendation:
           monthsRemaining === 2
@@ -838,10 +838,10 @@ export class GoalCalculations {
       metricAtMonthStart: () =>
         Math.max(0, finances.available - (finances.assigned || 0) - (finances.activity || 0)),
       texts: () => ({
-        fundedStatusMessage: '✓ Target amount available!',
-        monthlyFundedStatusMessage: "✓ This month's {{monthlyTarget}} allocated!",
+        fundedStatusMessage: 'Target amount available!',
+        monthlyFundedStatusMessage: "This month's {{monthlyTarget}} allocated!",
         datePassedStatusMessage: '⚠️ Target date passed - need {{needed}} more available',
-        monthDoneStatusMessage: '✓ This month funded! {{available}}/{{target}} available',
+        monthDoneStatusMessage: 'This month funded! {{available}}/{{target}} available',
         fundedRecommendation: 'Target amount is available and ready to use.',
         monthlyFundedRecommendation:
           "This month's target met! Continue with {{monthlyTarget}}/month to stay on track",

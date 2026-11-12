@@ -2850,16 +2850,16 @@ msgid "⚠️ Target date passed - need {needed} more available"
 msgstr "⚠️ Target date passed - need {needed} more available"
 
 #: src/features/goal-management/lib/core-goal-text.ts
-msgid "✓ {assigned} allocated this month — on track!"
-msgstr "✓ {assigned} allocated this month — on track!"
+msgid "{assigned} allocated this month — on track!"
+msgstr "{assigned} allocated this month — on track!"
 
 #: src/features/goal-management/lib/core-goal-text.ts
-msgid "✓ Fully allocated!"
-msgstr "✓ Fully allocated!"
+msgid "Fully allocated!"
+msgstr "Fully allocated!"
 
 #: src/features/goal-management/lib/core-goal-text.ts
-msgid "✓ Goal exceeded by {excess}"
-msgstr "✓ Goal exceeded by {excess}"
+msgid "Goal exceeded by {excess}"
+msgstr "Goal exceeded by {excess}"
 
 #: src/pages/onboarding/steps/DoneStep.tsx
 msgid "✓ Master password set"
@@ -2874,28 +2874,28 @@ msgid "✓ READY"
 msgstr "✓ READY"
 
 #: src/features/goal-management/lib/core-goal-text.ts
-msgid "✓ Target amount available!"
-msgstr "✓ Target amount available!"
+msgid "Target amount available!"
+msgstr "Target amount available!"
 
 #: src/features/goal-management/lib/core-goal-text.ts
-msgid "✓ Target available!"
-msgstr "✓ Target available!"
+msgid "Target available!"
+msgstr "Target available!"
 
 #: src/features/goal-management/lib/core-goal-text.ts
-msgid "✓ This month done! {totalAssigned} of {target} allocated"
-msgstr "✓ This month done! {totalAssigned} of {target} allocated"
+msgid "This month done! {totalAssigned} of {target} allocated"
+msgstr "This month done! {totalAssigned} of {target} allocated"
 
 #: src/features/goal-management/lib/core-goal-text.ts
-msgid "✓ This month funded! {available}/{target} available"
-msgstr "✓ This month funded! {available}/{target} available"
+msgid "This month funded! {available}/{target} available"
+msgstr "This month funded! {available}/{target} available"
 
 #: src/features/goal-management/lib/core-goal-text.ts
-msgid "✓ This month's {monthlyTarget} allocated!"
-msgstr "✓ This month's {monthlyTarget} allocated!"
+msgid "This month's {monthlyTarget} allocated!"
+msgstr "This month's {monthlyTarget} allocated!"
 
 #: src/features/goal-management/lib/core-goal-text.ts
-msgid "✓ This month's {monthlyTarget} saved!"
-msgstr "✓ This month's {monthlyTarget} saved!"
+msgid "This month's {monthlyTarget} saved!"
+msgstr "This month's {monthlyTarget} saved!"
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "✗ DOES NOT MATCH"

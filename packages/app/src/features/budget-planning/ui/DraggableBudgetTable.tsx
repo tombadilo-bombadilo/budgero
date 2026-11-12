@@ -304,7 +304,10 @@ export function DraggableBudgetTable({
   // Headers stick right below the sticky toolbar (offset set by BudgetTable).
   const header =
     layoutVariant === 'desktop-compact' ? (
-      <div className="hidden md:block sticky top-[var(--budget-toolbar-offset,0px)] z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 -mx-1 px-1 md:-mx-2 md:px-2">
+      <div
+        data-budget-sticky-header
+        className="hidden md:block sticky top-[var(--budget-toolbar-offset,0px)] z-10 bg-background/95 backdrop-blur-sm border-b border-border/50 -mx-1 px-1 md:-mx-2 md:px-2"
+      >
         <div className="px-3 py-2 text-[11px] uppercase tracking-wider font-medium text-muted-foreground grid grid-cols-[minmax(0,1fr)_minmax(96px,120px)_minmax(96px,120px)_minmax(96px,120px)] gap-2">
           <div>
             <Trans>Category</Trans>
@@ -326,6 +329,7 @@ export function DraggableBudgetTable({
       <div
         className={cn('sticky top-[var(--budget-toolbar-offset,0px)] z-10', OPAQUE_CARD_SURFACE)}
         style={columnVars}
+        data-budget-sticky-header
       >
         <div
           className={cn(
