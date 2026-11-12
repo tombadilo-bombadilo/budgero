@@ -16,6 +16,7 @@ import { Button } from '@shared/ui/button';
 import { ConnectivityStatus } from '@widgets/sync-status/ConnectivityStatus';
 import { openQuackback } from '@features/feedback';
 import { PageGuideButton } from '@features/page-guides';
+import { useShowFirstStepsMenuItems } from '@features/first-steps';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import { getKeyboardShortcutLabels } from '@shared/lib/keyboard-shortcuts';
 
@@ -30,6 +31,7 @@ interface HeaderBarProps {
 
 export const HeaderBar = React.memo(function HeaderBar({ breadcrumbs }: HeaderBarProps) {
   const { t } = useLingui();
+  const firstStepsItems = useShowFirstStepsMenuItems();
 
   const privacyMaskNumbers = useUiStore((state) => state.privacyMaskNumbers);
   const togglePrivacyMaskNumbers = useUiStore((state) => state.togglePrivacyMaskNumbers);
@@ -69,7 +71,7 @@ export const HeaderBar = React.memo(function HeaderBar({ breadcrumbs }: HeaderBa
               ))}
             </BreadcrumbList>
           </Breadcrumb>
-          <PageGuideButton className="h-7 px-2" />
+          <PageGuideButton className="h-7 px-2" extraItems={firstStepsItems} />
         </div>
         <div className="flex items-center gap-2">
           <Button

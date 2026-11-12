@@ -20,6 +20,7 @@ import { useUndoStore } from '@shared/mutations/UndoStore';
 import { toastError } from '@shared/lib/errors';
 import { openQuackback } from '@features/feedback';
 import { PageGuideButton } from '@features/page-guides';
+import { useShowFirstStepsMenuItems } from '@features/first-steps';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/ui/tooltip';
 import { toast } from 'sonner';
@@ -32,6 +33,7 @@ import logoImg from '/logo_144.png';
 
 export function MobileTopBar() {
   const { t } = useLingui();
+  const firstStepsItems = useShowFirstStepsMenuItems();
 
   const selectedBudget = useUiStore((state) => state.selectedBudget);
   const privacyMaskNumbers = useUiStore((state) => state.privacyMaskNumbers);
@@ -167,7 +169,7 @@ export function MobileTopBar() {
               />
             </DropdownMenuContent>
           </DropdownMenu>
-          <PageGuideButton iconOnly className="h-9 w-9 rounded-full" />
+          <PageGuideButton iconOnly className="h-9 w-9 rounded-full" extraItems={firstStepsItems} />
           <ConnectivityStatus className="ml-auto" />
         </div>
 
