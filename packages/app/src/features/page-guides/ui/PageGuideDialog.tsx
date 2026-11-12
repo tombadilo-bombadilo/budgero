@@ -2,7 +2,6 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { ExternalLink } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useIsMobile } from '@shared/hooks/useIsMobile';
-import { cn } from '@shared/lib/utils';
 import { Button } from '@shared/ui/button';
 import {
   Dialog,
@@ -22,6 +21,7 @@ import {
 } from '@shared/ui/drawer';
 import { docsUrl, type PageGuideId } from '../model/page-guides';
 import { usePageGuideCards } from './guide-content';
+import { GuideProgress } from './guide-visuals';
 
 export type PageGuideCloseReason = 'completed' | 'skipped';
 
@@ -60,19 +60,7 @@ export function PageGuideDialog({ id, startCard, onClose }: PageGuideDialogProps
   const step = index + 1;
   const total = cards.length;
   const stepLabel = t`Step ${step} of ${total}`;
-  const progress = (
-    <div className="flex items-center gap-1" aria-hidden>
-      {cards.map((c, i) => (
-        <span
-          key={c.key}
-          className={cn(
-            'h-1.5 rounded-full',
-            i === index ? 'w-4 bg-primary' : 'w-1.5 bg-muted-foreground/30'
-          )}
-        />
-      ))}
-    </div>
-  );
+  const progress = <GuideProgress count={cards.length} index={index} />;
   const body = (
     <div className="space-y-3 text-sm leading-relaxed text-muted-foreground" aria-live="polite">
       <span className="sr-only">{stepLabel}</span>

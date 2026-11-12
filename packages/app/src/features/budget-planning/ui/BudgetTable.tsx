@@ -509,6 +509,7 @@ export function BudgetTable({
 
   return (
     <div
+      data-budget-categories
       className={cn('flex flex-col relative', layoutVariant !== 'desktop-table' && 'select-none')}
       style={{ '--budget-toolbar-offset': `${toolbarOffset}px` } as CSSProperties}
     >

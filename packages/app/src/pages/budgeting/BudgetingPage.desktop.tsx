@@ -25,6 +25,7 @@ import { useFocusCategoryFromNavState } from '@shared/hooks/useFocusCategoryFrom
 import { useClearCategorySelectionOnMount } from '@shared/hooks/useClearCategorySelectionOnMount';
 import { useNavigateMonth } from '@shared/hooks/useNavigateMonth';
 import { FirstStepsCard } from '@features/first-steps/ui/FirstStepsCard';
+import { GoalWalkthroughHost } from '@features/first-steps/ui/GoalWalkthroughHost';
 
 export function BudgetingPageDesktop() {
   const { t } = useLingui();
@@ -304,6 +305,12 @@ export function BudgetingPageDesktop() {
                 currentMonth={currentMonth}
                 formatAmount={formatMilliAmount}
                 settled={figuresSettled}
+              />
+              <GoalWalkthroughHost
+                rows={budgetData || []}
+                goals={goalsData}
+                currentMonth={currentMonth}
+                formatAmount={formatMilliAmount}
               />
               <BudgetContextPanel
                 budgetId={budgetId}

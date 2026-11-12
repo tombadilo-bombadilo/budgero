@@ -1,5 +1,5 @@
-import { useLingui } from '@lingui/react/macro';
-import { useEffect, useState } from 'react';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@shared/ui/dialog';
 import { useUiStore } from '@shared/store/useUiStore';
@@ -14,6 +14,10 @@ import {
 import { GoalCard } from '@features/goal-management/ui/GoalCard';
 import { GoalForm } from '@features/goal-management/ui/GoalForm';
 import type { Goal } from '@budgero/core/browser';
+import {
+  dispatchGoalWalkthrough,
+  useGoalWalkthroughFormHint,
+} from '@features/first-steps/model/goal-walkthrough';
 import { GoalPurpose, GoalType } from '@budgero/core/browser';
 
 interface GoalSectionProps {
@@ -63,25 +67,12 @@ export function GoalSection({
 
   const shouldHighlightCreate = !goal && highlightGoalCategoryId === categoryId;
 
-  // Asked to open the new-goal form for this category (first steps' "Show
-  // me"), now or before this section was on screen. The same category can
-  // have this section twice (its row and the side panel): the first one to
-  // see the request takes it, so only one form opens.
-  useEffect(() => {
-    if (isLoading) return;
-    const take = () => {
-      const ui = useUiStore.getState();
-      if (ui.goalFormRequestCategoryId !== categoryId) return;
-      ui.setGoalFormRequestCategoryId(null);
-      if (!goal) setIsFormOpen(true);
-    };
-    const pending = window.setTimeout(take, 0);
-    const unsubscribe = useUiStore.subscribe(take);
-    return () => {
-      window.clearTimeout(pending);
-      unsubscribe();
-    };
-  }, [isLoading, goal, categoryId]);
+  // The first-steps goal walkthrough follows the form: open, saved, or closed.
+  const walkthroughHint = useGoalWalkthroughFormHint(categoryId);
+  const setFormOpen = (open: boolean) => {
+    setIsFormOpen(open);
+    if (!goal) dispatchGoalWalkthrough({ type: open ? 'formOpened' : 'formClosed', categoryId });
+  };
 
   const createGoalMutation = useCreateGoal();
   const updateGoalMutation = useUpdateGoal();
@@ -118,6 +109,7 @@ export function GoalSection({
           cycleMonths: goalData.CycleMonths,
           budgetId,
         });
+        dispatchGoalWalkthrough({ type: 'goalSaved', categoryId });
       }
 
       setHighlightGoalCategoryId(null);
@@ -174,7 +166,7 @@ export function GoalSection({
         onEdit={() => setIsFormOpen(true)}
         onCreate={() => {
           setHighlightGoalCategoryId(null);
-          setIsFormOpen(true);
+          setFormOpen(true);
         }}
         onDelete={handleDelete}
         compact={compact}
@@ -183,8 +175,18 @@ export function GoalSection({
       />
 
       {/* Goal Form Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+      <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
         <DialogContent className="p-3 sm:p-6 max-w-[22rem] sm:max-w-lg md:max-w-xl max-h-[90dvh] overflow-y-auto">
+          {/* First steps: one line inside the form, so it never covers a field. */}
+          {walkthroughHint && (
+            <p
+              className="rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary"
+              data-testid="goal-walkthrough-hint"
+              aria-live="polite"
+            >
+              <Trans>Pick a type, enter the amount, save.</Trans>
+            </p>
+          )}
           <GoalForm
             goal={goal}
             categoryId={categoryId}
@@ -194,7 +196,7 @@ export function GoalSection({
             formatter={formatter}
             onSave={handleSave}
             onCancel={() => {
-              setIsFormOpen(false);
+              setFormOpen(false);
               if (!goal) {
                 setHighlightGoalCategoryId(categoryId);
               }

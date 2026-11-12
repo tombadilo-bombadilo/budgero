@@ -291,7 +291,13 @@ export function GoalCard({
           </span>
         </div>
         {onCreate && (
-          <Button onClick={onCreate} variant="ghost" size="sm" className="h-6 px-2 text-xs">
+          <Button
+            onClick={onCreate}
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            data-goal-create={highlightCreate ? 'highlighted' : undefined}
+          >
             <Trans>Create Goal</Trans>
           </Button>
         )}
