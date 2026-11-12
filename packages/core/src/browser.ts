@@ -60,6 +60,14 @@ export {
 export { AnalyticsService } from './services/analytics/index.js';
 export { RulesService } from './services/rules/index.js';
 export { RecurringTransactionService } from './services/recurring/index.js';
+export {
+  SyncedStateService,
+  SYNCED_STATE_MAX_VALUE_LENGTH,
+  isSyncedStateKey,
+  isSyncedStateScope,
+  type SyncedStateMergePatch,
+  type SyncedStateScope,
+} from './services/synced-state/index.js';
 export { RECURRING_SPLIT_ERROR_CODES } from './services/recurring/index.js';
 export {
   DatabaseCustomDashboardService,

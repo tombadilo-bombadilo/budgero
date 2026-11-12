@@ -32,6 +32,14 @@ describe('per-op mutation formats', () => {
     expect(mutationFormatVersion('some.wrapper', { ops: [{ op: 'transactions.update' }] })).toBe(2);
   });
 
+  it('stamps pageGuides.markSeen and syncedState.* with format 5, so older builds ask for an update', () => {
+    expect(mutationFormatVersion('pageGuides.markSeen', { userId: 'u', guides: ['budget'] })).toBe(
+      5
+    );
+    expect(mutationFormatVersion('syncedState.set', {})).toBe(5);
+    expect(mutationFormatVersion('syncedState.merge', {})).toBe(5);
+  });
+
   it('never stamps a format this build cannot read', () => {
     for (const version of Object.values(OP_CODE_FORMAT_VERSIONS)) {
       expect(version).toBeGreaterThan(BASE_MUTATION_FORMAT_VERSION);

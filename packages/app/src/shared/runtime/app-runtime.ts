@@ -45,7 +45,11 @@ import type { SyncStatus } from '@shared/lib/utils';
 import { MutationRouter } from '@shared/runtime/mutation-router';
 import { createRuntimeDeps } from '@shared/runtime/runtime-bridge';
 import { runInUndoGroup } from '@shared/mutations/UndoStore';
-import { getInvalidatesForOp, prepareMutationArgs } from '@shared/mutations/op-code-registry';
+import {
+  getInvalidatesForOp,
+  isUnrecordedOp,
+  prepareMutationArgs,
+} from '@shared/mutations/op-code-registry';
 import { discardInterruptedImports } from '@shared/runtime/pending-import';
 import { getErrorMessage } from '@shared/lib/errors';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
@@ -873,6 +877,8 @@ export class AppRuntime {
   }
 
   private resolveHistoryBudgetId(context: MutationBudgetResolutionContext): number | null {
+    // No budget, no history row: synced app state stays out of the audit log.
+    if (isUnrecordedOp(context.op)) return null;
     const services = this.getServicesSafe();
     if (!services) {
       return null;

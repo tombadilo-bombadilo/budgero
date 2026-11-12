@@ -5,6 +5,9 @@ import {
   docsUrl,
   hasSeenPageGuide,
   isNewForPageGuides,
+  isPageGuideSeen,
+  mergeGuideIds,
+  unsyncedGuideIds,
   markPageGuideSeen,
   openPageGuide,
   PAGE_GUIDE_CARDS,
@@ -90,6 +93,30 @@ describe('seen guides', () => {
     });
     expect(hasSeenPageGuide('u1', 'home')).toBe(true);
     spy.mockRestore();
+  });
+});
+
+describe('synced seen state', () => {
+  it('merges as a union, keeping order and dropping repeats', () => {
+    expect(mergeGuideIds(['budget', 'home'], ['home', 'rules', 'rules'])).toEqual([
+      'budget',
+      'home',
+      'rules',
+    ]);
+    expect(mergeGuideIds([], [])).toEqual([]);
+  });
+
+  it('writes only what the cache has and the synced state lacks', () => {
+    expect(unsyncedGuideIds(['budget', 'home'], ['home'])).toEqual(['budget']);
+    expect(unsyncedGuideIds(['home'], ['home', 'budget'])).toEqual([]);
+  });
+
+  it('counts a guide seen when either side says so, unknown while loading', () => {
+    expect(isPageGuideSeen('budget', true, 'loading')).toBe(true);
+    expect(isPageGuideSeen('budget', false, 'loading')).toBeNull();
+    expect(isPageGuideSeen('budget', false, 'unavailable')).toBe(false);
+    expect(isPageGuideSeen('budget', false, ['budget'])).toBe(true);
+    expect(isPageGuideSeen('budget', false, ['home'])).toBe(false);
   });
 });
 

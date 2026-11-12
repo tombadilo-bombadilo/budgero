@@ -1,13 +1,39 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { resetFirstStepsForTests, startFirstSteps } from '@shared/lib/first-steps/first-steps';
-import { markPageGuideSeen, openPageGuide, usePageGuideStore } from '../model/page-guides';
+import {
+  hasSeenPageGuide,
+  isPageGuideSeen,
+  markPageGuideSeen,
+  openPageGuide,
+  usePageGuideStore,
+  type PageGuideId,
+  type SyncedPageGuides,
+} from '../model/page-guides';
 import { PageGuideHost } from './PageGuideHost';
 
-const { track, profile, demo } = vi.hoisted(() => ({
+const { track, profile, demo, synced, writes } = vi.hoisted(() => ({
   track: vi.fn(),
   profile: { current: undefined as { id: string; created_at: string } | undefined },
   demo: { current: { isDemo: false, checking: false } },
+  synced: { current: [] as unknown },
+  writes: [] as { userId: string; id: string }[],
+}));
+// The synced store, faked on top of the real seen-state rules (the hook has its own spec).
+vi.mock('../api/usePageGuidesSeen', () => ({
+  usePageGuidesSeen: (userId: string | null, canWrite: boolean) => {
+    const state = synced.current as SyncedPageGuides;
+    return {
+      ready: state !== 'loading',
+      isSeen: (id: PageGuideId) =>
+        userId ? isPageGuideSeen(id, hasSeenPageGuide(userId, id), state) : true,
+      markSeen: (id: PageGuideId) => {
+        if (!userId || hasSeenPageGuide(userId, id)) return;
+        markPageGuideSeen(userId, id);
+        if (canWrite) writes.push({ userId, id });
+      },
+    };
+  },
 }));
 vi.mock('@shared/lib/analytics/track', () => ({ track }));
 vi.mock('@entities/user/api/useAuth', () => ({ useProfile: () => ({ data: profile.current }) }));
@@ -37,6 +63,8 @@ beforeEach(() => {
   track.mockReset();
   profile.current = { id: 'u1', created_at: recent() };
   demo.current = { isDemo: false, checking: false };
+  synced.current = [];
+  writes.length = 0;
 });
 
 afterEach(() => {
@@ -166,4 +194,48 @@ it('closes with Escape as skipped', () => {
   fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape' });
   expect(screen.queryByRole('dialog')).toBeNull();
   expect(track).toHaveBeenCalledWith('page_guide_skipped', { guide: 'reports' });
+});
+
+it('waits for the synced state before opening a guide by itself', () => {
+  synced.current = 'loading';
+  const { rerender } = renderHost();
+  settle();
+  expect(screen.queryByRole('dialog')).toBeNull();
+  synced.current = [];
+  rerender(
+    <MemoryRouter initialEntries={['/budgeting']}>
+      <PageGuideHost />
+    </MemoryRouter>
+  );
+  settle();
+  expect(screen.getByRole('dialog', { name: 'Give every coin a job' })).toBeInTheDocument();
+  expect(writes).toEqual([{ userId: 'u1', id: 'budget' }]);
+});
+
+it('does not open a guide seen on another device', () => {
+  synced.current = ['budget'];
+  renderHost();
+  settle();
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(writes).toEqual([]);
+});
+
+it('falls back to the device cache when the synced state is unavailable', () => {
+  synced.current = 'unavailable';
+  markPageGuideSeen('u1', 'budget');
+  const { unmount } = renderHost();
+  settle();
+  expect(screen.queryByRole('dialog')).toBeNull();
+  unmount();
+  renderHost('/reports');
+  settle();
+  expect(screen.getByRole('dialog', { name: 'Reports answer questions' })).toBeInTheDocument();
+});
+
+it('writes nothing when a guide is opened in the demo', () => {
+  demo.current = { isDemo: true, checking: false };
+  renderHost();
+  act(() => openPageGuide('budget'));
+  expect(screen.getByRole('dialog', { name: 'Give every coin a job' })).toBeInTheDocument();
+  expect(writes).toEqual([]);
 });
