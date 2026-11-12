@@ -50,6 +50,7 @@ export function CSVPDFImportDialog() {
           accounts={state.accounts}
           hasBudgetSelected={state.hasBudgetSelected}
           budgetId={state.budgetId}
+          spaceId={state.spaceId}
           newAccountCurrency={state.newAccountCurrency}
           onColumnMappingChange={state.setColumnMapping}
           onImportConfigChange={state.setImportConfig}

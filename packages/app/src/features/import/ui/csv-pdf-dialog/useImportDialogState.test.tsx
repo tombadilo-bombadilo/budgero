@@ -63,6 +63,7 @@ vi.mock('@features/import/api/useImportHistory', () => ({
 vi.mock('@tanstack/react-query', () => ({ useQueryClient: () => mocks.queryClient }));
 vi.mock('@shared/store/useUiStore', () => ({ useUiStore: () => mocks.store }));
 vi.mock('@shared/runtime/runtime-provider', () => ({
+  useActiveSpaceId: () => 'space-a',
   useRuntime: () => ({
     services: () => ({
       accounts: { listAccounts: () => mocks.accounts },
@@ -442,7 +443,7 @@ describe('import wizard execution', () => {
       invalidRows: 0,
       destinationAccountName: '3 accounts',
     });
-    expect(JSON.parse(localStorage.getItem('budgero:import-account-routes:1')!)).toEqual({
+    expect(JSON.parse(localStorage.getItem('budgero:import-account-routes:space-a:1')!)).toEqual({
       Card: 77,
       checking: 10,
       Cash: 78,
@@ -611,9 +612,9 @@ describe('import wizard execution', () => {
     await act(async () => {
       await result.current.handleImport();
     });
-    const stored = JSON.parse(localStorage.getItem('budgero:import-account-routes:1')!);
+    const stored = JSON.parse(localStorage.getItem('budgero:import-account-routes:space-a:1')!);
     expect(Object.getOwnPropertyDescriptor(stored, '__proto__')?.value).toBe(10);
-    expect(readRememberedRoutes(1)).toEqual(JSON.parse('{"__proto__":10}'));
+    expect(readRememberedRoutes('space-a', 1)).toEqual(JSON.parse('{"__proto__":10}'));
   });
 
   it('forgets account choices when another file is loaded', async () => {
