@@ -1365,6 +1365,14 @@ msgstr "{funded} of {target} · met {monthsMet}/{monthsWithTarget} mo"
 msgid "{funded}% funded"
 msgstr "{funded}% funded"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "{fundName} still needs {needed} this month. Tap {fundName} and enter it as Assigned. You have {rta} to assign."
+msgstr "{fundName} still needs {needed} this month. Tap {fundName} and enter it as Assigned. You have {rta} to assign."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "{fundName} still needs {needed} this month. Type it in the Assigned column on the {fundName} row. You have {rta} to assign."
+msgstr "{fundName} still needs {needed} this month. Type it in the Assigned column on the {fundName} row. You have {rta} to assign."
+
 #: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
 msgid "{goalShare}% of the {goalText} goal"
 msgstr "{goalShare}% of the {goalText} goal"
@@ -2974,6 +2982,14 @@ msgstr "<0>Before you export:</0> in YNAB’s <1>Plan Settings</1>, set Date For
 #~ msgid "<0>Budget Created</0>— when you create a new budget"
 #~ msgstr "<0>Budget Created</0>— when you create a new budget"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "<0>Build up to:</0> an amount with no date, like an emergency fund."
+msgstr "<0>Build up to:</0> an amount with no date, like an emergency fund."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "<0>By a date:</0> save a total by a day, like a holiday."
+msgstr "<0>By a date:</0> save a total by a day, like a holiday."
+
 #. placeholder {0}: preview.missingCategories .map((category) => `${category.categoryGroup} › ${category.category}`) .join(', ')
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "<0>Categories missing from Plan.csv:</0> {0}. Budgero will create them and report them when the import finishes."
@@ -3024,6 +3040,14 @@ msgstr "<0>Disabled (default):</0>Budgero prevents you from assigning more than 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "<0>Enabled:</0>You can assign any amount to categories regardless of Ready to Assign. This creates negative Ready to Assign, indicating you've assigned more money than you currently have."
 msgstr "<0>Enabled:</0>You can assign any amount to categories regardless of Ready to Assign. This creates negative Ready to Assign, indicating you've assigned more money than you currently have."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "<0>Every few months:</0> bills that come quarterly or once a year."
+msgstr "<0>Every few months:</0> bills that come quarterly or once a year."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "<0>Every month:</0> have an amount ready, like rent or groceries."
+msgstr "<0>Every month:</0> have an amount ready, like rent or groceries."
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "<0>Funded</0>: Auto-moved from budgeted CC spending"
@@ -3871,6 +3895,10 @@ msgstr "Add"
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Add a card"
 msgstr "Add a card"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Add a category first, then give it a goal."
+msgstr "Add a category first, then give it a goal."
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Add a custom rate to override automatically fetched exchange rates for specific date ranges."
@@ -4836,6 +4864,10 @@ msgstr "Assign remaining"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Assign this to reach target"
 msgstr "Assign this to reach target"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Assign your money"
+msgstr "Assign your money"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
@@ -10950,6 +10982,10 @@ msgstr "Fund Goals"
 msgid "Fund underfunded"
 msgstr "Fund underfunded"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Fund your goal"
+msgstr "Fund your goal"
+
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "Funded from budgeted spending"
 msgstr "Funded from budgeted spending"
@@ -11047,7 +11083,6 @@ msgstr "Gifts"
 msgid "Gifts & Donations"
 msgstr "Gifts & Donations"
 
-#: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Give every coin a job"
 msgstr "Give every coin a job"
@@ -12449,6 +12484,10 @@ msgstr "Keep Clerk users aligned with Budgero."
 msgid "Keep current labels"
 msgstr "Keep current labels"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Keep going until Ready to Assign shows 0. Then every coin has a job."
+msgstr "Keep going until Ready to Assign shows 0. Then every coin has a job."
+
 #: src/pages/settings/SecurityPage.tsx
 msgid "Keep in memory only (recommended)"
 msgstr "Keep in memory only (recommended)"
@@ -13595,6 +13634,10 @@ msgstr "Model: {0}"
 msgid "Monday"
 msgstr "Monday"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Money assigned."
+msgstr "Money assigned."
+
 #: src/pages/analytics/reports/InOutReport.tsx
 #: src/widgets/dashboard/CashflowTrendCard.tsx
 msgid "Money in"
@@ -13620,6 +13663,10 @@ msgstr "Money out"
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "Money with a job can’t be spent twice. That’s the whole method."
 msgstr "Money with a job can’t be spent twice. That’s the whole method."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Money you assign to a goal is set aside for it, so it can’t be spent twice."
+msgstr "Money you assign to a goal is set aside for it, so it can’t be spent twice."
 
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Money you can still assign to categories. Positive means funds to allocate; negative means you've over-budgeted."
@@ -19652,8 +19699,8 @@ msgid "Set a custom exchange rate for a specific date range."
 msgstr "Set a custom exchange rate for a specific date range."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-msgid "Set a goal"
-msgstr "Set a goal"
+#~ msgid "Set a goal"
+#~ msgstr "Set a goal"
 
 #: src/features/reports/ui/notebook/viz/ProgressView.tsx
 msgid "Set a goal above zero in Settings to see progress."
@@ -20727,6 +20774,14 @@ msgstr "Start Using Budgero"
 msgid "Start voice input"
 msgstr "Start voice input"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Start with {goalName}. Select it, press Create Goal, pick a type, enter the amount and save. Show me opens it for you."
+msgstr "Start with {goalName}. Select it, press Create Goal, pick a type, enter the amount and save. Show me opens it for you."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Start with {goalName}. Tap it, then Create Goal, pick a type, enter the amount and save. Show me opens it for you."
+msgstr "Start with {goalName}. Tap it, then Create Goal, pick a type, enter the amount and save. Show me opens it for you."
+
 #: src/features/budget-management/ui/create-budget-form/ManualBudgetTab.tsx
 msgid "Start with common categories like Rent, Groceries, and Savings. Recommended for new users."
 msgstr "Start with common categories like Rent, Groceries, and Savings. Recommended for new users."
@@ -21759,6 +21814,10 @@ msgstr "Then"
 #: src/pages/auth/AuthPage.tsx
 msgid "Then {monthly}/month or {yearly}/year, tax included."
 msgstr "Then {monthly}/month or {yearly}/year, tax included."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Then keep going until Ready to Assign shows 0: every coin gets a job."
+msgstr "Then keep going until Ready to Assign shows 0: every coin gets a job."
 
 #: src/pages/analytics/report-answers.ts
 msgid "There are no account balances in this period yet."
@@ -24802,12 +24861,20 @@ msgid "You have {0} set aside but the card only needs {1}. The extra is your mon
 msgstr "You have {0} set aside but the card only needs {1}. The extra is your money — it just isn't needed for this card."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-msgid "You have <0>{readyToAssignLabel}</0> to assign. Tap a category and enter an amount until Ready to Assign shows 0. Only budget money you already have."
-msgstr "You have <0>{readyToAssignLabel}</0> to assign. Tap a category and enter an amount until Ready to Assign shows 0. Only budget money you already have."
+msgid "You have {rta} to assign. Tap a category and enter an amount until Ready to Assign shows 0. Only budget money you already have."
+msgstr "You have {rta} to assign. Tap a category and enter an amount until Ready to Assign shows 0. Only budget money you already have."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-msgid "You have <0>{readyToAssignLabel}</0> to assign. Type an amount in the Assigned column for each category until Ready to Assign shows 0. Only budget money you already have."
-msgstr "You have <0>{readyToAssignLabel}</0> to assign. Type an amount in the Assigned column for each category until Ready to Assign shows 0. Only budget money you already have."
+msgid "You have {rta} to assign. Type an amount in the Assigned column for each category until Ready to Assign shows 0. Only budget money you already have."
+msgstr "You have {rta} to assign. Type an amount in the Assigned column for each category until Ready to Assign shows 0. Only budget money you already have."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+#~ msgid "You have <0>{readyToAssignLabel}</0> to assign. Tap a category and enter an amount until Ready to Assign shows 0. Only budget money you already have."
+#~ msgstr "You have <0>{readyToAssignLabel}</0> to assign. Tap a category and enter an amount until Ready to Assign shows 0. Only budget money you already have."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+#~ msgid "You have <0>{readyToAssignLabel}</0> to assign. Type an amount in the Assigned column for each category until Ready to Assign shows 0. Only budget money you already have."
+#~ msgstr "You have <0>{readyToAssignLabel}</0> to assign. Type an amount in the Assigned column for each category until Ready to Assign shows 0. Only budget money you already have."
 
 #. placeholder {0}: format(betaExpiresAt, 'MMMM dd, yyyy')
 #. placeholder {1}: daysLeftInBeta <= 7 && ( <span className="font-semibold"> <Trans>Only {daysLeftInBeta} days remaining!</Trans> </span> )

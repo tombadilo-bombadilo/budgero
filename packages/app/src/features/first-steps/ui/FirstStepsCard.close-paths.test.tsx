@@ -97,13 +97,6 @@ const openers: Record<string, (variant: 'card' | 'bar') => void> = {
     settle();
     settle();
   },
-  'from "Set a goal"': (variant) => {
-    settle();
-    if (guide()) closers.Skip(variant); // the first-visit one, out of the way
-    if (variant === 'bar') fireEvent.click(screen.getByTestId('first-steps'));
-    fireEvent.click(screen.getByRole('button', { name: 'Set a goal' }));
-    settle();
-  },
   'from "How this works"': (variant) => {
     settle();
     if (guide()) closers.Skip(variant);
@@ -118,7 +111,6 @@ beforeEach(() => {
   resetFirstStepsForTests();
   usePageGuideStore.setState({ request: null });
   startFirstSteps('space-1');
-  markFirstStep('space-1', 'assign');
 });
 
 afterEach(() => {
@@ -163,11 +155,17 @@ describe('the phone sheet', () => {
     ['Escape', () => fireEvent.keyDown(sheet()!, { key: 'Escape' })],
     ['a tap outside', () => clickOutside()],
     // Each step's button closes the sheet on its way somewhere else.
-    ['"Set a goal"', () => fireEvent.click(screen.getByRole('button', { name: 'Set a goal' }))],
+    [
+      'the goal\'s "Show me"',
+      () => fireEvent.click(screen.getByRole('button', { name: 'Show me' })),
+    ],
     [
       '"Go to transactions"',
       () => {
-        act(() => markFirstStep('space-1', 'goal'));
+        act(() => {
+          markFirstStep('space-1', 'goal');
+          markFirstStep('space-1', 'assign');
+        });
         fireEvent.click(screen.getByRole('link', { name: 'Go to transactions' }));
       },
     ],

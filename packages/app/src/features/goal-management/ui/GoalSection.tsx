@@ -1,5 +1,5 @@
 import { useLingui } from '@lingui/react/macro';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@shared/ui/dialog';
 import { useUiStore } from '@shared/store/useUiStore';
@@ -62,6 +62,26 @@ export function GoalSection({
   });
 
   const shouldHighlightCreate = !goal && highlightGoalCategoryId === categoryId;
+
+  // Asked to open the new-goal form for this category (first steps' "Show
+  // me"), now or before this section was on screen. The same category can
+  // have this section twice (its row and the side panel): the first one to
+  // see the request takes it, so only one form opens.
+  useEffect(() => {
+    if (isLoading) return;
+    const take = () => {
+      const ui = useUiStore.getState();
+      if (ui.goalFormRequestCategoryId !== categoryId) return;
+      ui.setGoalFormRequestCategoryId(null);
+      if (!goal) setIsFormOpen(true);
+    };
+    const pending = window.setTimeout(take, 0);
+    const unsubscribe = useUiStore.subscribe(take);
+    return () => {
+      window.clearTimeout(pending);
+      unsubscribe();
+    };
+  }, [isLoading, goal, categoryId]);
 
   const createGoalMutation = useCreateGoal();
   const updateGoalMutation = useUpdateGoal();

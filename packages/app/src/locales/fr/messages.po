@@ -1363,6 +1363,14 @@ msgstr "{funded} sur {target} · atteint {monthsMet}/{monthsWithTarget} mois"
 msgid "{funded}% funded"
 msgstr "{funded} % financé"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "{fundName} still needs {needed} this month. Tap {fundName} and enter it as Assigned. You have {rta} to assign."
+msgstr "Il manque encore {needed} à {fundName} ce mois-ci. Touchez {fundName} et saisissez ce montant dans « Affecté ». Vous avez {rta} à affecter."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "{fundName} still needs {needed} this month. Type it in the Assigned column on the {fundName} row. You have {rta} to assign."
+msgstr "Il manque encore {needed} à {fundName} ce mois-ci. Saisissez ce montant dans la colonne « Affecté » de la ligne {fundName}. Vous avez {rta} à affecter."
+
 #: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
 msgid "{goalShare}% of the {goalText} goal"
 msgstr "{goalShare} % de l’objectif de {goalText}"
@@ -2972,6 +2980,14 @@ msgstr "<0>Avant d'exporter :</0> dans les <1>Paramètres du plan</1> de YNAB, d
 #~ msgid "<0>Budget Created</0>— when you create a new budget"
 #~ msgstr "<0>Budget créé</0> — lorsque vous créez un nouveau budget"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "<0>Build up to:</0> an amount with no date, like an emergency fund."
+msgstr "<0>Atteindre un montant :</0> une somme sans date, comme une épargne de précaution."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "<0>By a date:</0> save a total by a day, like a holiday."
+msgstr "<0>Avant une date :</0> réunir un total pour un jour donné, comme des vacances."
+
 #. placeholder {0}: preview.missingCategories .map((category) => `${category.categoryGroup} › ${category.category}`) .join(', ')
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "<0>Categories missing from Plan.csv:</0> {0}. Budgero will create them and report them when the import finishes."
@@ -3022,6 +3038,14 @@ msgstr "<0>Désactivé (par défaut) :</0> Budgero vous empêche d'affecter plus
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "<0>Enabled:</0>You can assign any amount to categories regardless of Ready to Assign. This creates negative Ready to Assign, indicating you've assigned more money than you currently have."
 msgstr "<0>Activé :</0> Vous pouvez affecter n'importe quel montant aux catégories, quel que soit le montant À affecter. Cela crée un montant À affecter négatif, indiquant que vous avez affecté plus d'argent que vous n'en disposez actuellement."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "<0>Every few months:</0> bills that come quarterly or once a year."
+msgstr "<0>Tous les quelques mois :</0> les factures trimestrielles ou annuelles."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "<0>Every month:</0> have an amount ready, like rent or groceries."
+msgstr "<0>Chaque mois :</0> avoir un montant prêt, comme le loyer ou les courses."
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "<0>Funded</0>: Auto-moved from budgeted CC spending"
@@ -3869,6 +3893,10 @@ msgstr "Ajouter"
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Add a card"
 msgstr "Ajouter une carte"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Add a category first, then give it a goal."
+msgstr "Ajoutez d’abord une catégorie, puis donnez-lui un objectif."
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Add a custom rate to override automatically fetched exchange rates for specific date ranges."
@@ -4834,6 +4862,10 @@ msgstr "Affecter le reste"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Assign this to reach target"
 msgstr "Affectez pour atteindre l'objectif"
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Assign your money"
+msgstr "Affectez votre argent"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/features/budget-planning/ui/category-row/CategoryAmountsSection.tsx
@@ -10948,6 +10980,10 @@ msgstr "Financer les objectifs"
 msgid "Fund underfunded"
 msgstr "Financer les objectifs sous-financés"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Fund your goal"
+msgstr "Financez votre objectif"
+
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "Funded from budgeted spending"
 msgstr "Financé par les dépenses budgétées"
@@ -11045,7 +11081,6 @@ msgstr "Cadeaux"
 msgid "Gifts & Donations"
 msgstr "Cadeaux & Dons"
 
-#: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Give every coin a job"
 msgstr "Donnez un rôle à chaque centime"
@@ -12447,6 +12482,10 @@ msgstr "Garder les utilisateurs Clerk synchronisés avec Budgero."
 msgid "Keep current labels"
 msgstr "Conserver les étiquettes actuelles"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Keep going until Ready to Assign shows 0. Then every coin has a job."
+msgstr "Continuez jusqu’à ce que « À affecter » affiche 0. Chaque centime aura alors un rôle."
+
 #: src/pages/settings/SecurityPage.tsx
 msgid "Keep in memory only (recommended)"
 msgstr "Conserver en mémoire uniquement (recommandé)"
@@ -13593,6 +13632,10 @@ msgstr "Modèle : {0}"
 msgid "Monday"
 msgstr "Lundi"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Money assigned."
+msgstr "Argent affecté."
+
 #: src/pages/analytics/reports/InOutReport.tsx
 #: src/widgets/dashboard/CashflowTrendCard.tsx
 msgid "Money in"
@@ -13618,6 +13661,10 @@ msgstr "Argent sortant"
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 msgid "Money with a job can’t be spent twice. That’s the whole method."
 msgstr "L’argent qui a un rôle ne peut pas être dépensé deux fois. C’est toute la méthode."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Money you assign to a goal is set aside for it, so it can’t be spent twice."
+msgstr "L’argent affecté à un objectif est mis de côté pour lui, il ne peut pas être dépensé deux fois."
 
 #: src/features/budgeting/ui/ReadyToAssignHelpPopover.tsx
 msgid "Money you can still assign to categories. Positive means funds to allocate; negative means you've over-budgeted."
@@ -19650,8 +19697,8 @@ msgid "Set a custom exchange rate for a specific date range."
 msgstr "Définir un taux de change personnalisé pour une période spécifique."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-msgid "Set a goal"
-msgstr "Fixer un objectif"
+#~ msgid "Set a goal"
+#~ msgstr "Fixer un objectif"
 
 #: src/features/reports/ui/notebook/viz/ProgressView.tsx
 msgid "Set a goal above zero in Settings to see progress."
@@ -20725,6 +20772,14 @@ msgstr "Commencez à utiliser Budgero"
 msgid "Start voice input"
 msgstr "Démarrer la saisie vocale"
 
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Start with {goalName}. Select it, press Create Goal, pick a type, enter the amount and save. Show me opens it for you."
+msgstr "Commencez par {goalName}. Sélectionnez-la, cliquez sur « Créer un objectif », choisissez un type, saisissez le montant et enregistrez. « Montrez-moi » l’ouvre pour vous."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Start with {goalName}. Tap it, then Create Goal, pick a type, enter the amount and save. Show me opens it for you."
+msgstr "Commencez par {goalName}. Touchez-la, puis « Créer un objectif », choisissez un type, saisissez le montant et enregistrez. « Montrez-moi » l’ouvre pour vous."
+
 #: src/features/budget-management/ui/create-budget-form/ManualBudgetTab.tsx
 msgid "Start with common categories like Rent, Groceries, and Savings. Recommended for new users."
 msgstr "Commencez avec des catégories courantes comme Loyer, Courses et Épargne. Recommandé pour les nouveaux utilisateurs."
@@ -21757,6 +21812,10 @@ msgstr "Alors"
 #: src/pages/auth/AuthPage.tsx
 msgid "Then {monthly}/month or {yearly}/year, tax included."
 msgstr "Puis {monthly}/mois ou {yearly}/an, taxes comprises."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+msgid "Then keep going until Ready to Assign shows 0: every coin gets a job."
+msgstr "Continuez ensuite jusqu’à ce que « À affecter » affiche 0 : chaque centime reçoit un rôle."
 
 #: src/pages/analytics/report-answers.ts
 msgid "There are no account balances in this period yet."
@@ -24800,12 +24859,20 @@ msgid "You have {0} set aside but the card only needs {1}. The extra is your mon
 msgstr "Vous avez mis de côté {0} mais la carte n'a besoin que de {1}. Le surplus vous appartient — il n'est simplement pas nécessaire pour cette carte."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-msgid "You have <0>{readyToAssignLabel}</0> to assign. Tap a category and enter an amount until Ready to Assign shows 0. Only budget money you already have."
-msgstr "Vous avez <0>{readyToAssignLabel}</0> à affecter. Touchez une catégorie et saisissez un montant jusqu’à ce que « À affecter » affiche 0. N’affectez que l’argent que vous avez déjà."
+msgid "You have {rta} to assign. Tap a category and enter an amount until Ready to Assign shows 0. Only budget money you already have."
+msgstr "Vous avez {rta} à affecter. Touchez une catégorie et saisissez un montant jusqu’à ce que « À affecter » affiche 0. N’affectez que l’argent que vous avez déjà."
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
-msgid "You have <0>{readyToAssignLabel}</0> to assign. Type an amount in the Assigned column for each category until Ready to Assign shows 0. Only budget money you already have."
-msgstr "Vous avez <0>{readyToAssignLabel}</0> à affecter. Saisissez un montant dans la colonne « Affecté » de chaque catégorie jusqu’à ce que « À affecter » affiche 0. N’affectez que l’argent que vous avez déjà."
+msgid "You have {rta} to assign. Type an amount in the Assigned column for each category until Ready to Assign shows 0. Only budget money you already have."
+msgstr "Vous avez {rta} à affecter. Saisissez un montant dans la colonne « Affecté » de chaque catégorie jusqu’à ce que « À affecter » affiche 0. N’affectez que l’argent que vous avez déjà."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+#~ msgid "You have <0>{readyToAssignLabel}</0> to assign. Tap a category and enter an amount until Ready to Assign shows 0. Only budget money you already have."
+#~ msgstr "Vous avez <0>{readyToAssignLabel}</0> à affecter. Touchez une catégorie et saisissez un montant jusqu’à ce que « À affecter » affiche 0. N’affectez que l’argent que vous avez déjà."
+
+#: src/features/first-steps/ui/FirstStepsCard.tsx
+#~ msgid "You have <0>{readyToAssignLabel}</0> to assign. Type an amount in the Assigned column for each category until Ready to Assign shows 0. Only budget money you already have."
+#~ msgstr "Vous avez <0>{readyToAssignLabel}</0> à affecter. Saisissez un montant dans la colonne « Affecté » de chaque catégorie jusqu’à ce que « À affecter » affiche 0. N’affectez que l’argent que vous avez déjà."
 
 #. placeholder {0}: format(betaExpiresAt, 'MMMM dd, yyyy')
 #. placeholder {1}: daysLeftInBeta <= 7 && ( <span className="font-semibold"> <Trans>Only {daysLeftInBeta} days remaining!</Trans> </span> )

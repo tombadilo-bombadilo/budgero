@@ -1,16 +1,15 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Circle, Users, X } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import type { GetMonthlyBudgetRow } from '@budgero/core/browser';
+import type { GetMonthlyBudgetRow, Goal } from '@budgero/core/browser';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent } from '@shared/ui/card';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@shared/ui/drawer';
 import { cn } from '@shared/lib/utils';
 import { useActiveSpaceId } from '@shared/runtime/runtime-provider';
 import { useUiStore } from '@shared/store/useUiStore';
-import { openPageGuide } from '@features/page-guides';
 import {
   FIRST_STEP_IDS,
   hideFirstSteps,
@@ -23,12 +22,19 @@ import {
   type CountedFirstStepId,
   type FirstStepsState,
 } from '@shared/lib/first-steps/first-steps';
+import { pickGoalCategory, pickGoalToFund, spendingRows } from '../lib/goal-step';
 
 interface FirstStepsCardProps {
   readyToAssign: number;
   /** Ready to Assign, formatted for display. */
   readyToAssignLabel: string;
   rows: GetMonthlyBudgetRow[];
+  /** This budget's goals: the "fund it" step talks about the user's goal. */
+  goals?: Goal[];
+  /** The month on screen (YYYY-MM), for what a goal still needs this month. */
+  currentMonth?: string;
+  /** Formats a milliunit amount (what a goal still needs). */
+  formatAmount?: (milli: number) => string;
   /**
    * The figures are this month's real ones, not a loading default or the
    * previous month's placeholder. Nothing is ticked until they are.
@@ -37,9 +43,9 @@ interface FirstStepsCardProps {
   /** 'bar': one compact row (phones) that opens the full list in a drawer. */
   variant?: 'card' | 'bar';
   /**
-   * What a step's button does, per step. Without one, "assign" and "goal"
-   * point at a category on this page (scroll to it, select it, highlight
-   * the field). A page guide can take over a step here.
+   * What a step's button does, per step. Without one, "goal" opens the goal
+   * form for a suggested category and "assign" points at the row to type in.
+   * A page can take over a step here.
    */
   onStepAction?: Partial<Record<CountedFirstStepId, () => void>>;
   className?: string;
@@ -54,21 +60,25 @@ interface StepItem {
   action?: React.ReactNode;
 }
 
-/** The category a step's button points at: one with money first, then the first one. */
+/** The category the assign step points at: one with money first, then the first one. */
 function pickCategory(rows: GetMonthlyBudgetRow[]): number | null {
-  const real = rows.filter((row) => row.CategoryID > 0 && row.Category !== 'Income');
+  const real = spendingRows(rows);
   return (real.find((row) => row.Assigned > 0) ?? real[0])?.CategoryID ?? null;
 }
 
 /**
  * Week-one checklist on the Budget page for a workspace set up through
- * "Fresh start". The first item is the guided first assignment: it explains
- * zero-based budgeting at the moment it applies, with the real number.
+ * "Start my own budget", read as a lesson: set a goal for one category, then
+ * fund it (the first assignment, with the real numbers), then spend, then
+ * come back.
  */
 export function FirstStepsCard({
   readyToAssign,
   readyToAssignLabel,
   rows,
+  goals = [],
+  currentMonth = '',
+  formatAmount = (milli) => String(milli / 1000),
   settled = true,
   variant = 'card',
   onStepAction,
@@ -79,41 +89,76 @@ export function FirstStepsCard({
   const steps = useFirstSteps(spaceId);
   const assignedAny = rows.some((row) => row.Assigned > 0);
   const assignDone = steps ? isFirstStepDone(steps, 'assign') : false;
-  const announced = useRef(false);
+  const goalDone = steps ? isFirstStepDone(steps, 'goal') : false;
+  const everyCoinDone = steps ? isFirstStepDone(steps, 'everyCoin') : false;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const total = FIRST_STEP_IDS.length;
   const doneCount = steps ? FIRST_STEP_IDS.filter((id) => isFirstStepDone(steps, id)).length : 0;
   const allDone = doneCount === total;
+  const goalToFund = useMemo(
+    () => pickGoalToFund(goals, rows, currentMonth),
+    [goals, rows, currentMonth]
+  );
+  const goalCategory = useMemo(() => pickGoalCategory(rows), [rows]);
 
   useEffect(() => {
     if (spaceId) noteFirstStepsVisit(spaceId);
   }, [spaceId]);
 
+  // A goal that exists counts, however it was made (also on another device).
   useEffect(() => {
-    if (!spaceId || !steps || assignDone || !settled) return;
-    if (readyToAssign === 0 && assignedAny) {
+    if (spaceId && steps && !goalDone && settled && goals.length > 0)
+      markFirstStep(spaceId, 'goal');
+  }, [spaceId, steps, goalDone, settled, goals.length]);
+
+  // "Fund it" is done once the goal's category has money assigned (any
+  // category without a goal). Ready to Assign reaching 0 is the closing
+  // line, said once.
+  const funded = goalToFund
+    ? rows.some((row) => row.CategoryID === goalToFund.categoryId && row.Assigned > 0)
+    : assignedAny;
+  useEffect(() => {
+    if (!spaceId || !steps || !settled || !assignedAny) return;
+    if (readyToAssign === 0 && !everyCoinDone) {
+      if (!assignDone) markFirstStep(spaceId, 'assign');
+      markFirstStep(spaceId, 'everyCoin');
+      toast.success(t`Every coin has a job.`, {
+        description: t`That’s the whole method: when money comes in, give it a job here.`,
+      });
+    } else if (!assignDone && funded) {
       markFirstStep(spaceId, 'assign');
-      if (!announced.current) {
-        announced.current = true;
-        toast.success(t`Every coin has a job.`, {
-          description: t`That’s the whole method: when money comes in, give it a job here.`,
-        });
-      }
+      toast.success(t`Money assigned.`, {
+        description: t`Keep going until Ready to Assign shows 0. Then every coin has a job.`,
+      });
     }
-  }, [spaceId, steps, assignDone, readyToAssign, assignedAny, settled, t]);
+  }, [spaceId, steps, assignDone, everyCoinDone, readyToAssign, assignedAny, funded, settled, t]);
 
   if (!spaceId || !steps || steps.dismissed) return null;
 
-  // Point at a category on this page: scroll to it, select it, and highlight
-  // the field to use (for the goal, its Create Goal button).
-  const pointAt = (field: 'assign' | 'goal') => {
-    const categoryId = pickCategory(rows);
+  const ui = () => useUiStore.getState();
+  // The goal's "Show me": select the suggested category, scroll to it, and
+  // open its new-goal form (GoalSection takes the request once it is on
+  // screen). The Create Goal button stays highlighted if the form is closed.
+  const showGoal = () => {
     setDrawerOpen(false);
-    if (!categoryId) return;
-    const ui = useUiStore.getState();
-    if (field === 'goal') ui.setHighlightGoalCategoryId(categoryId);
-    else ui.setHighlightAssignmentCategoryId(categoryId);
-    ui.setFocusCategoryId(categoryId);
+    if (!goalCategory) return;
+    const id = goalCategory.CategoryID;
+    ui().setHighlightGoalCategoryId(id);
+    ui().setGoalFormRequestCategoryId(id);
+    ui().setFocusCategoryId(id);
+    // Not taken (the category isn't on screen): drop it, so the form never
+    // pops up later out of nowhere.
+    window.setTimeout(() => {
+      if (ui().goalFormRequestCategoryId === id) ui().setGoalFormRequestCategoryId(null);
+    }, 5000);
+  };
+  // The assign "Show me": the goal's row if there is one, and its Assigned field.
+  const showAssign = () => {
+    setDrawerOpen(false);
+    const id = goalToFund?.categoryId ?? pickCategory(rows);
+    if (!id) return;
+    ui().setHighlightAssignmentCategoryId(id);
+    ui().setFocusCategoryId(id);
   };
   const runAction = (id: CountedFirstStepId, fallback: () => void) => () => {
     const custom = onStepAction?.[id];
@@ -128,10 +173,63 @@ export function FirstStepsCard({
       </Button>
     </div>
   );
+  const strong = (text: string) => <strong className="text-foreground">{text}</strong>;
 
-  // Nothing to assign yet (no balance or income): the first step waits, and
-  // the next one is what to do now.
+  // Step 1: a goal, for someone who has never set one.
+  const goalName = goalCategory ? strong(goalCategory.Category) : null;
+  const goalBody = goalName ? (
+    <>
+      <div>
+        {variant === 'bar' ? (
+          <Trans>
+            Start with {goalName}. Tap it, then Create Goal, pick a type, enter the amount and save.
+            Show me opens it for you.
+          </Trans>
+        ) : (
+          <Trans>
+            Start with {goalName}. Select it, press Create Goal, pick a type, enter the amount and
+            save. Show me opens it for you.
+          </Trans>
+        )}
+      </div>
+      <ul className="space-y-0.5" data-testid="goal-types">
+        <li>
+          <Trans>
+            <span className="font-medium text-foreground/80">Every month:</span> have an amount
+            ready, like rent or groceries.
+          </Trans>
+        </li>
+        <li>
+          <Trans>
+            <span className="font-medium text-foreground/80">By a date:</span> save a total by a
+            day, like a holiday.
+          </Trans>
+        </li>
+        <li>
+          <Trans>
+            <span className="font-medium text-foreground/80">Every few months:</span> bills that
+            come quarterly or once a year.
+          </Trans>
+        </li>
+        <li>
+          <Trans>
+            <span className="font-medium text-foreground/80">Build up to:</span> an amount with no
+            date, like an emergency fund.
+          </Trans>
+        </li>
+      </ul>
+    </>
+  ) : (
+    <Trans>Add a category first, then give it a goal.</Trans>
+  );
+
+  // Step 2: fund the goal. Nothing to assign yet (no balance or income): the
+  // step waits with a note, and the next one is what to do now.
   const nothingToAssign = settled && readyToAssign === 0 && !assignedAny && !assignDone;
+  const rta = strong(readyToAssignLabel);
+  const fundName = goalToFund ? strong(goalToFund.categoryName) : null;
+  const needed =
+    goalToFund && goalToFund.needed > 0 ? strong(formatAmount(goalToFund.needed)) : null;
   const assignBody =
     readyToAssign < 0 ? (
       <Trans>You assigned more than you have. Take some back until Ready to Assign shows 0.</Trans>
@@ -140,34 +238,38 @@ export function FirstStepsCard({
         Nothing to assign yet. When money comes in (an account balance or income you record), it
         shows up as Ready to Assign. Then give it a job here.
       </Trans>
+    ) : fundName && needed ? (
+      <>
+        <div>
+          {variant === 'bar' ? (
+            <Trans>
+              {fundName} still needs {needed} this month. Tap {fundName} and enter it as Assigned.
+              You have {rta} to assign.
+            </Trans>
+          ) : (
+            <Trans>
+              {fundName} still needs {needed} this month. Type it in the Assigned column on the{' '}
+              {fundName} row. You have {rta} to assign.
+            </Trans>
+          )}
+        </div>
+        <div>
+          <Trans>Then keep going until Ready to Assign shows 0: every coin gets a job.</Trans>
+        </div>
+      </>
     ) : variant === 'bar' ? (
       <Trans>
-        You have <strong className="text-foreground">{readyToAssignLabel}</strong> to assign. Tap a
-        category and enter an amount until Ready to Assign shows 0. Only budget money you already
-        have.
+        You have {rta} to assign. Tap a category and enter an amount until Ready to Assign shows 0.
+        Only budget money you already have.
       </Trans>
     ) : (
       <Trans>
-        You have <strong className="text-foreground">{readyToAssignLabel}</strong> to assign. Type
-        an amount in the Assigned column for each category until Ready to Assign shows 0. Only
-        budget money you already have.
+        You have {rta} to assign. Type an amount in the Assigned column for each category until
+        Ready to Assign shows 0. Only budget money you already have.
       </Trans>
     );
 
   const items: StepItem[] = [
-    {
-      id: 'assign',
-      title: t`Give every coin a job`,
-      why: <Trans>Money with a job can’t be spent twice. That’s the whole method.</Trans>,
-      body: assignBody,
-      action:
-        nothingToAssign || readyToAssign < 0
-          ? undefined
-          : stepButton(
-              <Trans>Show me</Trans>,
-              runAction('assign', () => pointAt('assign'))
-            ),
-    },
     {
       id: 'goal',
       title: t`Set a goal for one category`,
@@ -176,15 +278,25 @@ export function FirstStepsCard({
           A goal says what a category needs, so each month you see what’s still underfunded.
         </Trans>
       ),
-      action: stepButton(
-        <Trans>Set a goal</Trans>,
-        runAction('goal', () => {
-          // The budget guide explains goals; behind it the category is
-          // selected with its Create Goal button highlighted.
-          pointAt('goal');
-          openPageGuide('budget', { card: 'goals' });
-        })
+      body: goalBody,
+      action:
+        goalCategory || onStepAction?.goal
+          ? stepButton(<Trans>Show me</Trans>, runAction('goal', showGoal))
+          : undefined,
+    },
+    {
+      id: 'assign',
+      title: goalToFund ? t`Fund your goal` : t`Assign your money`,
+      why: goalToFund ? (
+        <Trans>Money you assign to a goal is set aside for it, so it can’t be spent twice.</Trans>
+      ) : (
+        <Trans>Money with a job can’t be spent twice. That’s the whole method.</Trans>
       ),
+      body: assignBody,
+      action:
+        nothingToAssign || readyToAssign < 0
+          ? undefined
+          : stepButton(<Trans>Show me</Trans>, runAction('assign', showAssign)),
     },
     {
       id: 'transaction',
@@ -216,7 +328,7 @@ export function FirstStepsCard({
   const nextId = items.find(
     (item) => !isFirstStepDone(steps, item.id) && !(item.id === 'assign' && nothingToAssign)
   )?.id;
-  // A waiting first step stays open too, so its note is never hidden.
+  // A waiting step stays open too, so its note is never hidden.
   const openIds = new Set<CountedFirstStepId>(
     [nextId, nothingToAssign ? 'assign' : undefined].filter(Boolean) as CountedFirstStepId[]
   );
@@ -275,7 +387,7 @@ export function FirstStepsCard({
       {allDone ? finished : hideButton}
     </>
   );
-  const next = items.find((item) => item.id === nextId) ?? items.find((i) => i.id === 'assign')!;
+  const next = items.find((item) => item.id === nextId) ?? items[0];
 
   if (variant === 'bar') {
     // Only "come back tomorrow" left: nothing to do today, so no call to action.

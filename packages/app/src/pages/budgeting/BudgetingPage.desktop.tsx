@@ -300,6 +300,9 @@ export function BudgetingPageDesktop() {
                 readyToAssign={readyToAssign}
                 readyToAssignLabel={formatMilliAmount(readyToAssign)}
                 rows={budgetData || []}
+                goals={goalsData}
+                currentMonth={currentMonth}
+                formatAmount={formatMilliAmount}
                 settled={figuresSettled}
               />
               <BudgetContextPanel

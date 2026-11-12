@@ -89,6 +89,9 @@ export function BudgetingPageMobile() {
         readyToAssign={readyToAssign}
         readyToAssignLabel={formatAmount(readyToAssign)}
         rows={budgetData || []}
+        goals={goalsData}
+        currentMonth={currentMonth}
+        formatAmount={formatAmount}
         settled={figuresSettled}
         variant="bar"
       />
