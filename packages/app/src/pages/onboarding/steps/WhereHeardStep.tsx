@@ -49,7 +49,7 @@ export const WhereHeardStep: React.FC<StepProps> = ({ cur, state, set }) => {
 };
 
 /**
- * The same question as one optional row of chips, shown under the password
+ * The same question as optional wrapping chips, shown under the password
  * on the fresh and YNAB paths (the invite path keeps the full step).
  */
 export const WhereHeardPicker: React.FC<Pick<StepProps, 'state' | 'set'>> = ({ state, set }) => {
@@ -61,13 +61,10 @@ export const WhereHeardPicker: React.FC<Pick<StepProps, 'state' | 'set'>> = ({ s
       <div id={labelId} className="mb-1.5 text-xs font-medium text-muted-foreground">
         <Trans>Where did you hear about Budgero? (optional)</Trans>
       </div>
-      {/* One row that scrolls sideways on a phone, so an optional question
-          doesn't push the step past the screen. */}
-      <div
-        role="group"
-        aria-labelledby={labelId}
-        className="-mx-4 flex gap-1.5 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 md:pb-0"
-      >
+      {/* Chips wrap onto as many lines as they need, so every option is
+          visible without sideways scrolling; a label longer than the screen
+          wraps inside its chip. */}
+      <div role="group" aria-labelledby={labelId} className="flex flex-wrap gap-1.5">
         {HEARD_OPTIONS.map((opt) => {
           const active = state.heardSource === opt.id;
           return (
@@ -76,7 +73,7 @@ export const WhereHeardPicker: React.FC<Pick<StepProps, 'state' | 'set'>> = ({ s
               active={active}
               aria-pressed={active}
               onClick={() => set({ heardSource: active ? '' : opt.id })}
-              className="shrink-0 whitespace-nowrap rounded-full px-2.5 py-1 text-xs"
+              className="max-w-full break-words rounded-full px-2.5 py-1 text-xs"
             >
               {t(opt.label)}
             </OnboardingOptionTile>
