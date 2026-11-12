@@ -18,7 +18,6 @@ import {
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
-import { CSS } from '@dnd-kit/utilities';
 import type {
   CustomDashboardWidget,
   CustomDashboardWithWidgets,
@@ -34,6 +33,7 @@ import {
 } from '@widgets/dashboard/builtin/builtin-cards';
 import { WidgetCard } from './WidgetCard';
 import { BuiltinWidget } from './BuiltinWidget';
+import { sortableTransform } from './sortable-style';
 import {
   DASHBOARD_SPACING,
   GRID_COLUMNS,
@@ -142,14 +142,23 @@ function WidgetContent({
 }
 
 function SortableWidget({ style, ...props }: ItemProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: props.widget.id,
-  });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging, isOver } =
+    useSortable({
+      id: props.widget.id,
+    });
   return (
     <div
       ref={setNodeRef}
-      style={{ ...style, transform: CSS.Transform.toString(transform), transition }}
-      className={isDragging ? 'opacity-60 z-50' : ''}
+      style={{ ...style, transform: sortableTransform(transform), transition }}
+      className={
+        isDragging
+          ? // The card being moved: its own size, above the others.
+            'relative z-50 rounded-2xl opacity-80 shadow-2xl'
+          : isOver
+            ? // Where it will land.
+              'rounded-2xl outline-2 outline-offset-2 outline-dashed outline-primary'
+            : ''
+      }
       {...attributes}
       {...listeners}
     >
