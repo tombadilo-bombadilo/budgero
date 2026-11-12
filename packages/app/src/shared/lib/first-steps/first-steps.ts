@@ -1,6 +1,6 @@
 /**
  * The week-one checklist for a budget set up through "Fresh start", read as a
- * small lesson: give every coin a job, set a goal for one category, add a
+ * small lesson: set a goal for one category, assign money to fund it, add a
  * transaction (or import one), come back another day, and (optional) invite
  * someone to budget with.
  *
@@ -10,8 +10,9 @@
  */
 import { useSyncExternalStore } from 'react';
 
-export type FirstStepId = 'assign' | 'goal' | 'transaction' | 'return' | 'share';
-export type CountedFirstStepId = Exclude<FirstStepId, 'share'>;
+export type FirstStepId = 'assign' | 'goal' | 'transaction' | 'return' | 'share' | 'everyCoin';
+/** `share` (optional) and `everyCoin` (Ready to Assign reached 0, announced once) don't count. */
+export type CountedFirstStepId = Exclude<FirstStepId, 'share' | 'everyCoin'>;
 
 export interface FirstStepsState {
   /** Local calendar day the checklist started (YYYY-MM-DD). */
@@ -23,6 +24,7 @@ export interface FirstStepsState {
   done: Record<Exclude<CountedFirstStepId, 'goal'>, boolean> & {
     goal?: boolean;
     share?: boolean;
+    everyCoin?: boolean;
   };
   /**
    * Hidden on purpose: "Hide first steps", or Close on the finished list.
@@ -40,8 +42,12 @@ export interface FirstStepsState {
 }
 
 const KEY = 'budgero:first-steps';
-/** The steps that count toward "x of 4 done", in the order they are taught. */
-export const FIRST_STEP_IDS: CountedFirstStepId[] = ['assign', 'goal', 'transaction', 'return'];
+/**
+ * The steps that count toward "x of 4 done", in the order they are taught:
+ * a goal first, then money to fund it. Stored lists keep their ticks; they
+ * just show in this order.
+ */
+export const FIRST_STEP_IDS: CountedFirstStepId[] = ['goal', 'assign', 'transaction', 'return'];
 
 export function isFirstStepDone(state: FirstStepsState, step: FirstStepId): boolean {
   return state.done[step] ?? false;
@@ -65,16 +71,18 @@ function today(now = new Date()): string {
   return `${now.getFullYear()}-${m}-${d}`;
 }
 
-const VERSION = 2;
+const VERSION = 3;
 
 function allCountedDone(state: FirstStepsState): boolean {
   return FIRST_STEP_IDS.every((id) => isFirstStepDone(state, id));
 }
 
 /**
- * A list stored before version 2 and hidden before all steps were done was
- * most likely closed by accident (the old ✕): show it once more. One that
- * was finished and closed stays closed.
+ * Before version 2 a bare ✕ hid the list: one hidden before all steps were
+ * done was most likely closed by accident, so it shows once more (a finished
+ * one that was closed stays closed). Before version 3 "assign" was only
+ * ticked once Ready to Assign reached 0, which was announced then, so a
+ * ticked one isn't announced again.
  */
 function migrate(all: Record<string, FirstStepsState>): Record<string, FirstStepsState> | null {
   let changed = false;
@@ -85,9 +93,14 @@ function migrate(all: Record<string, FirstStepsState>): Record<string, FirstStep
       continue;
     }
     changed = true;
+    const v = state.v ?? 0;
     next[spaceId] = {
       ...state,
-      dismissed: state.dismissed && allCountedDone(state),
+      dismissed: v < 2 ? state.dismissed && allCountedDone(state) : state.dismissed,
+      done:
+        state.done?.assign && state.done.everyCoin === undefined
+          ? { ...state.done, everyCoin: true }
+          : state.done,
       v: VERSION,
     };
   }

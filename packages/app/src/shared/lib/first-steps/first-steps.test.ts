@@ -86,6 +86,7 @@ describe('first steps', () => {
       transaction: true,
       return: false,
       goal: true,
+      everyCoin: true,
     });
     // Hidden with the goal step still open: shown again (see the migration below).
     expect(getFirstSteps('hidden')?.dismissed).toBe(false);
@@ -144,9 +145,9 @@ describe('lists hidden by the old ✕', () => {
         dismissed: true,
       },
     });
-    expect(getFirstSteps('unfinished')).toMatchObject({ dismissed: false, v: 2 });
+    expect(getFirstSteps('unfinished')).toMatchObject({ dismissed: false, v: 3 });
     // Written back, so it isn't migrated again.
-    expect(JSON.parse(localStorage.getItem('budgero:first-steps')!).unfinished.v).toBe(2);
+    expect(JSON.parse(localStorage.getItem('budgero:first-steps')!).unfinished.v).toBe(3);
     // Hidden again by the user now: it stays hidden.
     hideFirstSteps('unfinished');
     resetFirstStepsForTests();
@@ -168,10 +169,27 @@ describe('lists hidden by the old ✕', () => {
     });
   });
 
+  it('keeps every tick and adds no new ones when the order changed (version 3)', () => {
+    const done = { assign: true, goal: false, transaction: true, return: false };
+    stored({ mid: { startedOn: '2026-11-01', done, dismissed: false, v: 2 } });
+    expect(getFirstSteps('mid')).toMatchObject({
+      dismissed: false,
+      v: 3,
+      // Its first assignment was announced under the old rule.
+      done: { ...done, everyCoin: true },
+    });
+    stored({
+      fresh: { startedOn: '2026-11-01', done: { ...done, assign: false }, dismissed: true, v: 2 },
+    });
+    // Hidden on purpose (version 2 already had the labelled button): stays hidden.
+    expect(getFirstSteps('fresh')).toMatchObject({ dismissed: true, done: { assign: false } });
+    expect(getFirstSteps('fresh')?.done.everyCoin).toBeUndefined();
+  });
+
   it('new lists start at the current version, so they are never migrated', () => {
     startFirstSteps('space-1');
     hideFirstSteps('space-1');
     resetFirstStepsForTests();
-    expect(getFirstSteps('space-1')).toMatchObject({ dismissed: true, v: 2 });
+    expect(getFirstSteps('space-1')).toMatchObject({ dismissed: true, v: 3 });
   });
 });

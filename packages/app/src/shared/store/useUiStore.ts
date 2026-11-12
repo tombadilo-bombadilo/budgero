@@ -197,6 +197,10 @@ interface UiState {
   highlightGoalCategoryId: number | null;
   setHighlightGoalCategoryId: (id: number | null) => void;
 
+  /** Open the new-goal form for this category once it is on screen (first steps' "Show me"). */
+  goalFormRequestCategoryId: number | null;
+  setGoalFormRequestCategoryId: (id: number | null) => void;
+
   highlightAssignmentCategoryId: number | null;
   setHighlightAssignmentCategoryId: (id: number | null) => void;
 
@@ -418,6 +422,9 @@ export const useUiStore = create<UiState>((set) => ({
 
   highlightGoalCategoryId: null,
   setHighlightGoalCategoryId: (id) => set({ highlightGoalCategoryId: id }),
+
+  goalFormRequestCategoryId: null,
+  setGoalFormRequestCategoryId: (id) => set({ goalFormRequestCategoryId: id }),
 
   highlightAssignmentCategoryId: null,
   setHighlightAssignmentCategoryId: (id) => set({ highlightAssignmentCategoryId: id }),
