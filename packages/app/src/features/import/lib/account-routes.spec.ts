@@ -48,14 +48,14 @@ describe('account routes', () => {
   });
 
   it('starts from a same-name account, then the last choice, then a new account', () => {
-    rememberRoutes(9, { '12345678': 2 });
+    rememberRoutes('space-a', 9, { '12345678': 2 });
     const routes = defaultRoutes(
       sourceAccountsOf(
         [{ Account: 'current account' }, { Account: '12345678' }, { Account: 'IBAN-X' }],
         'Account'
       ),
       accounts,
-      readRememberedRoutes(9)
+      readRememberedRoutes('space-a', 9)
     );
     expect(routes).toEqual({
       'current account': { kind: 'existing', accountId: 1 },
@@ -159,15 +159,15 @@ describe('account routes', () => {
   });
 
   it('ignores a garbage stored value and handles source names like __proto__', () => {
-    localStorage.setItem('budgero:import-account-routes:4', '[1,2]');
-    expect(readRememberedRoutes(4)).toEqual({});
-    localStorage.setItem('budgero:import-account-routes:4', '{"__proto__":2,"ok":1.5}');
-    expect(readRememberedRoutes(4)).toEqual({ ['__proto__']: 2 });
+    localStorage.setItem('budgero:import-account-routes:space-a:4', '[1,2]');
+    expect(readRememberedRoutes('space-a', 4)).toEqual({});
+    localStorage.setItem('budgero:import-account-routes:space-a:4', '{"__proto__":2,"ok":1.5}');
+    expect(readRememberedRoutes('space-a', 4)).toEqual({ ['__proto__']: 2 });
     const plan = planAccountRoutes({
       rows: [{ Account: '__proto__' }, { Account: 'constructor' }],
       column: 'Account',
       accounts,
-      remembered: readRememberedRoutes(4),
+      remembered: readRememberedRoutes('space-a', 4),
       newAccountCurrency: 'EUR',
     });
     expect(plan.targets.get('__proto__')).toEqual({ kind: 'existing', accountId: 2 });
@@ -175,11 +175,29 @@ describe('account routes', () => {
   });
 
   it('keeps at most 200 remembered sources, newest last', () => {
-    for (let i = 0; i < 210; i++) rememberRoutes(5, { [`s${i}`]: 1 });
-    const stored = readRememberedRoutes(5);
+    for (let i = 0; i < 210; i++) rememberRoutes('space-a', 5, { [`s${i}`]: 1 });
+    const stored = readRememberedRoutes('space-a', 5);
     expect(Object.keys(stored)).toHaveLength(200);
     expect(stored.s0).toBeUndefined();
     expect(stored.s209).toBe(1);
+  });
+
+  it('keeps each space apart, even for budgets with the same id', () => {
+    rememberRoutes('space-a', 1, { 'IBAN-X': 2 });
+    rememberRoutes('space-b', 1, { 'IBAN-X': 3 });
+    expect(readRememberedRoutes('space-a', 1)).toEqual({ 'IBAN-X': 2 });
+    expect(readRememberedRoutes('space-b', 1)).toEqual({ 'IBAN-X': 3 });
+    expect(readRememberedRoutes(null, 1)).toEqual({});
+    rememberRoutes(null, 1, { 'IBAN-Y': 2 });
+    expect(localStorage.getItem('budgero:import-account-routes:null:1')).toBeNull();
+  });
+
+  it('ignores the old budget-only key and removes it on write', () => {
+    localStorage.setItem('budgero:import-account-routes:6', '{"IBAN-X":2}');
+    expect(readRememberedRoutes('space-a', 6)).toEqual({});
+    rememberRoutes('space-a', 6, { 'IBAN-Y': 1 });
+    expect(readRememberedRoutes('space-a', 6)).toEqual({ 'IBAN-Y': 1 });
+    expect(localStorage.getItem('budgero:import-account-routes:6')).toBeNull();
   });
 
   it('treats names that differ only by case, spacing or width as one', () => {
