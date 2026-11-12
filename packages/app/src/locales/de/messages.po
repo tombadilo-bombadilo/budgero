@@ -409,6 +409,11 @@ msgstr "{0, plural, one {# Mutation verarbeitet} other {# Mutationen verarbeitet
 msgid "{0, plural, one {Remove # payee?} other {Remove # payees?}}"
 msgstr "{0, plural, one {# Empfänger entfernen?} other {# Empfänger entfernen?}}"
 
+#. placeholder {0}: run.transactionCount
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
+msgid "{0, plural, one {Restore # transaction to its pre-run values.} other {Restore # transactions to their pre-run values.}}"
+msgstr "{0, plural, one {Setze # Transaktion auf ihre Werte vor der Ausführung zurück.} other {Setze # Transaktionen auf ihre Werte vor der Ausführung zurück.}}"
+
 #. placeholder {0}: associatedCategories.length
 #: src/features/budget-planning/ui/budget-table/useCategoryOperations.ts
 msgid "{0, plural, one {This group contains # category. Please move or delete them first.} other {This group contains # categories. Please move or delete them first.}}"
@@ -2794,12 +2799,17 @@ msgstr "Zugriffsart:"
 msgid "Access until:"
 msgstr "Zugriff bis:"
 
-#: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
+msgid "Account"
+msgstr "Konto"
+
+#: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/shared/model/nav-registry.ts
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "settings-section"
 msgid "Account"
 msgstr "Konto"
 
@@ -2894,7 +2904,6 @@ msgid "Account:"
 msgstr "Konto:"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Account<0/>"
 msgstr "Konto<0/>"
 
@@ -5026,6 +5035,10 @@ msgstr "Tarif ändern"
 #: src/pages/settings/subscription/PlanChangeDialog.tsx
 msgid "Change Subscription Plan"
 msgstr "Abonnement ändern"
+
+#: src/pages/settings/SecurityPage.tsx
+msgid "Change the password that unlocks your data. Your data stays encrypted, and your other devices will ask for the new password. Sign-in password, email and 2FA are managed in your Clerk profile."
+msgstr "Ändere das Passwort, mit dem du deine Daten entsperrst. Deine Daten bleiben verschlüsselt, und deine anderen Geräte fragen nach dem neuen Passwort. Anmeldepasswort, E-Mail und 2FA verwaltest du in deinem Clerk-Profil."
 
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Change vs previous month"
@@ -7802,8 +7815,12 @@ msgid "Enter your card’s minimum payment from statements."
 msgstr "Gib die Mindestzahlung deiner Karte aus den Abrechnungen ein."
 
 #: src/pages/settings/SecurityPage.tsx
-msgid "Enter your current password and choose a new one. Your data will be re-encrypted with the new password."
-msgstr "Gib dein aktuelles Passwort ein und wähle ein neues. Deine Daten werden mit dem neuen Passwort neu verschlüsselt."
+msgid "Enter your current password and choose a new one. Your data stays encrypted; only the password that unlocks it changes."
+msgstr "Gib dein aktuelles Passwort ein und wähle ein neues. Deine Daten bleiben verschlüsselt; nur das Passwort, mit dem du sie entsperrst, ändert sich."
+
+#: src/pages/settings/SecurityPage.tsx
+#~ msgid "Enter your current password and choose a new one. Your data will be re-encrypted with the new password."
+#~ msgstr "Gib dein aktuelles Passwort ein und wähle ein neues. Deine Daten werden mit dem neuen Passwort neu verschlüsselt."
 
 #: src/app/startup/screens.tsx
 #: src/features/subscription/ui/ExportDataCard.tsx
@@ -11896,6 +11913,10 @@ msgstr "Keine Beschreibung"
 msgid "No earlier versions yet. One is kept each time this workspace syncs."
 msgstr "Noch keine früheren Versionen. Bei jeder Synchronisierung dieses Arbeitsbereichs wird eine aufbewahrt."
 
+#: src/pages/settings/CurrencySettingsPage.tsx
+msgid "No end date"
+msgstr "Kein Enddatum"
+
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
 msgid "No exchange rate available"
 msgstr "Kein Wechselkurs verfügbar"
@@ -12601,7 +12622,6 @@ msgid "Only workspace owners can create new invites. Ask an owner to share acces
 msgstr "Nur Arbeitsbereich-Eigentümer können neue Einladungen erstellen. Bitte einen Eigentümer, den Zugriff für Teammitglieder freizugeben."
 
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
-#: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Open"
 msgstr "Öffnen"
 
@@ -14763,8 +14783,8 @@ msgstr "Wiederherstellen"
 #. placeholder {0}: run.transactionCount
 #. placeholder {1}: run.transactionCount === 1 ? '' : 's'
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
-msgid "Restore {0} transaction{1} to their pre-run values."
-msgstr "Stelle {0}Transaktion{1}auf ihre Werte vor der Ausführung zurück."
+#~ msgid "Restore {0} transaction{1} to their pre-run values."
+#~ msgstr "Stelle {0}Transaktion{1}auf ihre Werte vor der Ausführung zurück."
 
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Restore and keep later changes"
@@ -18951,8 +18971,8 @@ msgid "Update to the official rate when back online"
 msgstr "Auf offiziellen Kurs aktualisieren, wenn wieder online"
 
 #: src/pages/settings/SecurityPage.tsx
-msgid "Update your master password to keep your data secure. This will re-encrypt all your data with the new password. Sign-in password, email and 2FA are managed in your Clerk profile."
-msgstr "Aktualisiere dein Master-Passwort, um deine Daten sicher zu halten. Dadurch werden alle deine Daten mit dem neuen Passwort neu verschlüsselt. Anmeldepasswort, E-Mail und 2FA werden in deinem Clerk-Profil verwaltet."
+#~ msgid "Update your master password to keep your data secure. This will re-encrypt all your data with the new password. Sign-in password, email and 2FA are managed in your Clerk profile."
+#~ msgstr "Aktualisiere dein Master-Passwort, um deine Daten sicher zu halten. Dadurch werden alle deine Daten mit dem neuen Passwort neu verschlüsselt. Anmeldepasswort, E-Mail und 2FA werden in deinem Clerk-Profil verwaltet."
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 msgid "Update your report and chart configurations."

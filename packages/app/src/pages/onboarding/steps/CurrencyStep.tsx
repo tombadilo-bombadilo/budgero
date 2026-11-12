@@ -91,7 +91,7 @@ export const CurrencyStep: React.FC<StepProps> = ({ cur, state, set }) => {
         })}
       </div>
 
-      {/* Long-tail picker — Budgero supports 168 currencies. The shadcn
+      {/* Long-tail picker — Budgero supports 121 fiat currencies. The shadcn
           CurrencySelector handles search + region grouping + flags; we just
           drop it below the quick picks and let it own the long list. */}
       <div

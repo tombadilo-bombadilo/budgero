@@ -26,7 +26,7 @@ export const INK_MUTED = '#393939';
 export function getCurrencySym(code: string): string {
   const quickPick = CURRENCIES.find((c) => c.code === code)?.sym;
   if (quickPick) return quickPick;
-  // Long-tail currencies come from the 168-entry dropdown, which carries no
+  // Long-tail currencies come from the full fiat dropdown, which carries no
   // symbol data — derive it via Intl, falling back to the code itself.
   try {
     const parts = new Intl.NumberFormat('en-US', {

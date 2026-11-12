@@ -46,7 +46,7 @@ export function TrialCta({
     `&utm_campaign=${encodeURIComponent(campaign)}` +
     `&utm_content=${encodeURIComponent(location)}`;
 
-  const defaultBody = `Zero-based budgeting with end-to-end encryption, 168 currencies, and offline mode. No credit card required. Cloud from ${pricing.monthly}/mo — or self-host for free.`;
+  const defaultBody = `Zero-based budgeting with end-to-end encryption, 120+ currencies, and offline mode. No credit card required. Cloud from ${pricing.monthly}/mo — or self-host for free.`;
 
   return (
     <aside

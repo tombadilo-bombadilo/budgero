@@ -419,15 +419,13 @@ export function MobileBottomNav() {
                       >
                         <CollapsibleTrigger asChild>
                           <button className="flex w-full items-center justify-between px-2 py-1.5 text-sm font-medium hover:bg-accent rounded-sm">
-                            <Trans>
-                              Account
-                              <ChevronDown
-                                className={cn(
-                                  'h-4 w-4 transition-transform',
-                                  openSettingsSections.account && 'rotate-180'
-                                )}
-                              />
-                            </Trans>
+                            <Trans context="settings-section">Account</Trans>
+                            <ChevronDown
+                              className={cn(
+                                'h-4 w-4 transition-transform',
+                                openSettingsSections.account && 'rotate-180'
+                              )}
+                            />
                           </button>
                         </CollapsibleTrigger>
                         <CollapsibleContent className="space-y-0.5">
