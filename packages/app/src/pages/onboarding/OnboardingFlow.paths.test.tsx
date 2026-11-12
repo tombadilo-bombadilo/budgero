@@ -11,6 +11,12 @@ const mocks = vi.hoisted(() => ({
   readInvite: vi.fn(),
   navigate: vi.fn(),
   returnToDemo: vi.fn(),
+  checkInviteCode: vi.fn(),
+}));
+
+vi.mock('./invite-code', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./invite-code')>()),
+  checkInviteCode: mocks.checkInviteCode,
 }));
 
 vi.mock('@shared/lib/analytics/track', async (importOriginal) => ({
@@ -190,5 +196,116 @@ describe('the step counter', () => {
   it('is a translated label', async () => {
     renderFlow();
     expect(await screen.findByText('STEP 01 / 06')).toBeInTheDocument();
+  });
+});
+
+describe('joining with an invite code', () => {
+  function pickJoin() {
+    fireEvent.click(screen.getByRole('button', { name: /Join with an invite code/ }));
+    fireEvent.click(screen.getByRole('button', { name: 'Enter my code →' }));
+  }
+  function codeInput() {
+    return screen.getByLabelText('INVITE CODE');
+  }
+
+  it('is a fourth way to start, with its own short path', async () => {
+    renderFlow();
+    await screen.findByText('Welcome to Budgero.');
+    for (const name of [
+      /Start my own budget/,
+      /Import from YNAB/,
+      /Try a demo budget/,
+      /Join with an invite code/,
+    ]) {
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    }
+    pickJoin();
+    expect(screen.getByText('STEP 02 / 04')).toBeInTheDocument();
+    const sidebar = screen.getAllByRole('listitem').map((li) => li.textContent);
+    expect(sidebar).toEqual([
+      expect.stringContaining('How are you starting?'),
+      expect.stringContaining('Enter your invite code'),
+      expect.stringContaining('Lock it with a master password'),
+      expect.stringContaining('You’re ready'),
+    ]);
+    expect(stepViews()).toContainEqual({ step: 'invite_code', path: 'join_code' });
+    expect(mocks.track).toHaveBeenCalledWith(
+      'onboarding_step_completed',
+      expect.objectContaining({ step: 'start_mode', path: 'join_code' })
+    );
+    expect(screen.getByRole('button', { name: 'Check code →' })).toBeDisabled();
+  });
+
+  it('checks the pasted link, then joins with the password', async () => {
+    mocks.checkInviteCode.mockResolvedValue({ ok: true, spaceName: 'Family budget' });
+    const onComplete = vi.fn();
+    renderFlow('intro', onComplete);
+    await screen.findByText('Welcome to Budgero.');
+    pickJoin();
+    fireEvent.change(codeInput(), {
+      target: { value: ' https://my.budgero.app/join#code=abc123 ' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Check code →' }));
+    await screen.findByText('Lock your ledger.');
+    expect(mocks.checkInviteCode).toHaveBeenCalledWith('abc123');
+
+    const [pw, confirm] = document.querySelectorAll<HTMLInputElement>('input[type=password]');
+    fireEvent.change(pw, { target: { value: 'long-password' } });
+    fireEvent.change(confirm, { target: { value: 'long-password' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Next →' }));
+    expect(screen.getByText('Ready to join.')).toBeInTheDocument();
+    expect(screen.getByText('Family budget')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Join workspace →' }));
+
+    expect(mocks.apply).toHaveBeenCalledWith(
+      expect.objectContaining({ startMode: 'join', inviteCode: 'abc123', joinSecret: null }),
+      expect.objectContaining({ activePath: 'join_code' })
+    );
+  });
+
+  it.each([
+    ['not_found', /doesn’t match an open invite/],
+    ['expired', /has expired/],
+    ['incomplete', /isn’t ready yet/],
+    ['network', /Couldn’t reach Budgero/],
+  ] as const)('says why a %s code is turned down, until it is edited', async (reason, text) => {
+    mocks.checkInviteCode.mockResolvedValue({ ok: false, reason });
+    renderFlow();
+    await screen.findByText('Welcome to Budgero.');
+    pickJoin();
+    fireEvent.change(codeInput(), { target: { value: 'nope' } });
+    fireEvent.keyDown(codeInput(), { key: 'Enter' });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(text);
+    expect(codeInput()).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByRole('button', { name: 'Check code →' })).toBeDisabled();
+    expect(mocks.track).toHaveBeenCalledWith('onboarding_invite_code_rejected', { reason });
+    // The code itself never goes into an event.
+    expect(JSON.stringify(mocks.track.mock.calls)).not.toContain('nope');
+    expect(screen.queryByText('Lock your ledger.')).toBeNull();
+
+    fireEvent.change(codeInput(), { target: { value: 'nope2' } });
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Check code →' })).toBeEnabled();
+  });
+
+  it('an invite link skips the code step and joins with the link code', async () => {
+    mocks.readInvite.mockResolvedValue('from-link');
+    renderFlow();
+    await screen.findByText('You’re joining a Budgero workspace.');
+    expect(screen.queryByLabelText('INVITE CODE')).toBeNull();
+    expect(screen.getByText('STEP 01 / 04')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Let’s begin →' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Skip for now' }));
+    const [pw, confirm] = document.querySelectorAll<HTMLInputElement>('input[type=password]');
+    fireEvent.change(pw, { target: { value: 'long-password' } });
+    fireEvent.change(confirm, { target: { value: 'long-password' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Next →' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Join workspace →' }));
+    expect(mocks.checkInviteCode).not.toHaveBeenCalled();
+    expect(mocks.apply).toHaveBeenCalledWith(
+      expect.objectContaining({ joinSecret: 'from-link' }),
+      expect.objectContaining({ activePath: 'join' })
+    );
   });
 });

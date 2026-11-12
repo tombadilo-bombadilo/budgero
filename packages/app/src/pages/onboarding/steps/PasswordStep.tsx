@@ -5,10 +5,11 @@ import { cn } from '@shared/lib/utils';
 import { PasswordInput } from '@shared/ui/password-input';
 import { FIELD_CLASS, FieldLabel, Title, type StepProps } from './shared';
 
-export const PasswordStep: React.FC<StepProps & { forDemo?: boolean }> = ({
+export const PasswordStep: React.FC<StepProps & { forDemo?: boolean; forJoin?: boolean }> = ({
   state,
   set,
   forDemo = false,
+  forJoin = false,
 }) => {
   const { t } = useLingui();
 
@@ -34,9 +35,11 @@ export const PasswordStep: React.FC<StepProps & { forDemo?: boolean }> = ({
       <Title
         h={msg`Lock your ledger.`}
         sub={
-          forDemo
-            ? msg`Even the demo is encrypted on your device before anything is saved, so it needs a master password too. It’s the same one your own budget will use later. Pick something memorable — we can’t reset it for you.`
-            : msg`Your budget lives on your device, encrypted with a master password only you know. Pick something memorable — we can’t reset it for you.`
+          forJoin
+            ? msg`The shared budget is kept on this device, encrypted with a master password only you know. It’s yours alone — not the password of the person who invited you. Pick something memorable — we can’t reset it for you.`
+            : forDemo
+              ? msg`Even the demo is encrypted on your device before anything is saved, so it needs a master password too. It’s the same one your own budget will use later. Pick something memorable — we can’t reset it for you.`
+              : msg`Your budget lives on your device, encrypted with a master password only you know. Pick something memorable — we can’t reset it for you.`
         }
       />
       <div

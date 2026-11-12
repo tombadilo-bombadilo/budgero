@@ -47,6 +47,7 @@ import {
   CategoriesStep,
   CurrencyStep,
   DoneStep,
+  InviteCodeStep,
   PasswordStep,
   StartModeStep,
   WelcomeStep,
@@ -55,6 +56,7 @@ import {
   YnabImportStep,
 } from './steps';
 import { classifyYnabZipError } from './steps/ynab-source-errors';
+import { checkInviteCode, normalizeInviteCode } from './invite-code';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
@@ -126,6 +128,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
   const [applyStatus, setApplyStatus] = useState<'idle' | 'running' | 'error'>('idle');
   const [applyError, setApplyError] = useState<string | null>(null);
   const [isInspectingYnab, setIsInspectingYnab] = useState(false);
+  const [isCheckingInvite, setIsCheckingInvite] = useState(false);
   const [ynabImportUpdates, setYnabImportUpdates] = useState<YNABImportProgressUpdate[]>([]);
   const [ynabImportResult, setYnabImportResult] = useState<YNABImportResult | null>(null);
   const [isFinalizingYnab, setIsFinalizingYnab] = useState(false);
@@ -166,7 +169,10 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
           ? 'ynab'
           : state.startMode === 'demo'
             ? 'demo'
-            : 'fresh';
+            : state.startMode === 'join'
+              ? 'join_code'
+              : 'fresh';
+  const joining = activePath === 'join' || activePath === 'join_code';
   const pathIds = PATH_STEPS[activePath];
   const total = pathIds.length;
   const safeStep = Math.min(stepIndex, total - 1);
@@ -239,6 +245,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
     switch (curId) {
       case 'start_mode':
         return state.startMode !== null;
+      case 'invite_code':
+        return (
+          normalizeInviteCode(state.inviteCode).length > 0 &&
+          !state.inviteCodeProblem &&
+          !isCheckingInvite
+        );
       case 'password': {
         const pw = state.password;
         return pw.length >= 8 && pw === state.passwordConfirm;
@@ -258,12 +270,32 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
       default:
         return true;
     }
-  }, [curId, state]);
+  }, [curId, isCheckingInvite, state]);
 
   const next = useCallback(() => {
     trackStepCompleted();
     setStepIndex((s) => Math.min(s + 1, total - 1));
   }, [total, trackStepCompleted]);
+  // Invite-code step: check the code before asking for a password, so a
+  // mistyped or expired code is caught where it can be fixed.
+  const checkCodeAndContinue = useCallback(async () => {
+    const code = normalizeInviteCode(state.inviteCode);
+    if (!code || isCheckingInvite || state.inviteCodeProblem) return;
+    setIsCheckingInvite(true);
+    try {
+      const result = await checkInviteCode(code);
+      if (!result.ok) {
+        track('onboarding_invite_code_rejected', { reason: result.reason });
+        set({ inviteCodeProblem: result.reason, inviteSpaceName: null });
+        return;
+      }
+      set({ inviteCode: code, inviteSpaceName: result.spaceName });
+      next();
+    } finally {
+      setIsCheckingInvite(false);
+    }
+  }, [isCheckingInvite, next, set, state.inviteCode, state.inviteCodeProblem]);
+
   const back = useCallback(() => {
     setStepIndex((s) => Math.max(s - 1, 0));
   }, []);
@@ -453,34 +485,42 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
         ? t`Try the demo →`
         : state.startMode === 'ynab'
           ? t`Import from YNAB →`
-          : state.startMode === 'fresh'
-            ? t`Set up my budget →`
-            : t`Pick a way to start`
-      : isFirst
-        ? t`Let’s begin →`
-        : launchesYnabImport
-          ? t`Import my budget →`
-          : isFinal
-            ? activePath === 'join'
-              ? t`Join workspace →`
-              : activePath === 'demo'
-                ? t`Open the demo →`
-                : t`Open my budget →`
-            : t`Next →`;
+          : state.startMode === 'join'
+            ? t`Enter my code →`
+            : state.startMode === 'fresh'
+              ? t`Set up my budget →`
+              : t`Pick a way to start`
+      : curId === 'invite_code'
+        ? isCheckingInvite
+          ? t`Checking…`
+          : t`Check code →`
+        : isFirst
+          ? t`Let’s begin →`
+          : launchesYnabImport
+            ? t`Import my budget →`
+            : isFinal
+              ? joining
+                ? t`Join workspace →`
+                : activePath === 'demo'
+                  ? t`Open the demo →`
+                  : t`Open my budget →`
+              : t`Next →`;
   const primaryAction = isFinal
     ? () => {
         if (applyStatus === 'running') return;
         trackStepCompleted();
         void applyOnboarding();
       }
-    : launchesYnabImport
-      ? () => {
-          if (applyStatus === 'running') return;
-          trackStepCompleted();
-          setStepIndex((current) => Math.min(current + 1, total - 1));
-          void applyOnboarding();
-        }
-      : next;
+    : curId === 'invite_code'
+      ? () => void checkCodeAndContinue()
+      : launchesYnabImport
+        ? () => {
+            if (applyStatus === 'running') return;
+            trackStepCompleted();
+            setStepIndex((current) => Math.min(current + 1, total - 1));
+            void applyOnboarding();
+          }
+        : next;
 
   // An invite link may still be loading: show the page, not a step.
   if (!inviteChecked) {
@@ -607,12 +647,27 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
               onStartFresh={startFreshInstead}
             />
           )}
+          {curId === 'invite_code' && (
+            <InviteCodeStep
+              cur={cur}
+              state={state}
+              set={set}
+              onSubmit={() => void checkCodeAndContinue()}
+              isChecking={isCheckingInvite}
+            />
+          )}
           {curId === 'accounts' && <AccountsStep cur={cur} state={state} set={set} />}
           {curId === 'categories' && <CategoriesStep cur={cur} state={state} set={set} />}
           {curId === 'where_heard' && <WhereHeardStep cur={cur} state={state} set={set} />}
           {curId === 'password' && (
             <>
-              <PasswordStep cur={cur} state={state} set={set} forDemo={activePath === 'demo'} />
+              <PasswordStep
+                cur={cur}
+                state={state}
+                set={set}
+                forDemo={activePath === 'demo'}
+                forJoin={joining}
+              />
               {activePath !== 'join' && <WhereHeardPicker state={state} set={set} />}
               {activePath === 'demo' && applyStatus === 'running' && (
                 <div role="status" className="mt-4 text-sm">
@@ -648,6 +703,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
                 applyState={applyStatus}
                 applyError={applyError}
                 fromDemo={activePath === 'from_demo'}
+                joining={joining}
               />
             ))}
         </main>

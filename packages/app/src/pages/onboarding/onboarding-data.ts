@@ -5,20 +5,23 @@ import type { MessageDescriptor } from '@lingui/core';
 // apply pipeline can set it immediately before creating the workspace.
 
 import { AccountTypeEnum } from '@entities/account/model/accountTypes';
+import type { InviteCodeProblem } from '@shared/lib/analytics/events';
 import type {
   YNABApiPlanSnapshot,
   YNABImportConfig,
   YNABImportPreview,
 } from '@budgero/core/browser';
 
-export type StartMode = 'fresh' | 'ynab' | 'demo';
+export type StartMode = 'fresh' | 'ynab' | 'demo' | 'join';
 
 // 'join' is an invitee-only path — used when a brand new user lands via a
 // /join#code=… link. It bypasses workspace/budget/accounts setup entirely
 // since they're joining an existing space owned by someone else.
 // 'from_demo' is the setup a demo user runs from "Start my own budget": the
 // master password already exists, so it is only the budget's own steps.
-export type ActivePath = StartMode | 'join' | 'from_demo';
+// 'join_code' is the same join, picked on the first step: the invitee types
+// or pastes the code instead of arriving through the link.
+export type ActivePath = Exclude<StartMode, 'join'> | 'join' | 'join_code' | 'from_demo';
 
 export interface OnboardingStepDef {
   id: string;
@@ -71,6 +74,12 @@ export const ONBOARDING_STEPS: OnboardingStepDef[] = [
     hint: msg`Optional`,
   },
   {
+    id: 'invite_code',
+    title: msg`Enter your invite code`,
+    subtitle: msg`Paste the code or the whole link from your invite.`,
+    hint: msg`From the person who invited you`,
+  },
+  {
     id: 'password',
     title: msg`Lock it with a master password`,
     subtitle: msg`Budgero encrypts everything on your device. Only you hold the key.`,
@@ -90,6 +99,9 @@ export const PATH_STEPS: Record<ActivePath, string[]> = {
   // Workspace/budget/accounts/categories all live with the
   // existing space they're joining — they don't need to build their own.
   join: ['welcome', 'where_heard', 'password', 'done'],
+  // "Join with an invite code" on the first step: the code instead of the
+  // link, then the same password and redeem as the link path.
+  join_code: ['start_mode', 'invite_code', 'password', 'done'],
   // Setup asks only what the budget can't work without; how zero-based
   // budgeting works is explained in the app, at the moment it matters.
   fresh: ['start_mode', 'currency', 'accounts', 'categories', 'password', 'done'],
@@ -269,6 +281,12 @@ export interface OnboardingFormState {
    *  the regular fresh/ynab paths. Captured from sessionStorage on mount
    *  (a brand new user clicked a /join#code=… invite link). */
   joinSecret: string | null;
+  /** What was typed or pasted on the invite-code step (join_code path). */
+  inviteCode: string;
+  /** Why the typed code was turned down, until it is edited. */
+  inviteCodeProblem: InviteCodeProblem | null;
+  /** Name of the workspace the checked code opens, when it has one. */
+  inviteSpaceName: string | null;
   currency: string;
   budgetName: string;
   password: string;
@@ -290,6 +308,9 @@ export interface OnboardingFormState {
 export const INITIAL_STATE: OnboardingFormState = {
   startMode: null,
   joinSecret: null,
+  inviteCode: '',
+  inviteCodeProblem: null,
+  inviteSpaceName: null,
   currency: 'USD',
   budgetName: '',
   password: '',

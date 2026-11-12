@@ -27,6 +27,11 @@ const mocks = vi.hoisted(() => ({
   syncBudgetState: vi.fn(),
   toastSuccess: vi.fn(),
   toastError: vi.fn(),
+  inspectInvite: vi.fn(),
+  redeemInvite: vi.fn(),
+  decryptInvite: vi.fn(),
+  wrapSpaceKey: vi.fn(),
+  clearPendingInvite: vi.fn(),
 }));
 
 vi.mock('@shared/lib/crypto', () => ({
@@ -34,13 +39,33 @@ vi.mock('@shared/lib/crypto', () => ({
 }));
 
 vi.mock('@shared/api/api-client', () => ({
+  ApiError: class ApiError extends Error {
+    constructor(
+      message: string,
+      public status: number
+    ) {
+      super(message);
+    }
+  },
   authApi: { setMasterPasswordStatus: mocks.setMasterPasswordStatus },
   blobApi: { getState: mocks.getState },
   spaceApi: {
     createSpace: mocks.createSpace,
     deleteSpace: mocks.deleteSpace,
     listSpaces: mocks.listSpaces,
+    inspectInvite: mocks.inspectInvite,
+    redeemInvite: mocks.redeemInvite,
   },
+}));
+
+vi.mock('@budgero/runtime', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@budgero/runtime')>()),
+  decryptSpaceKeyFromInvite: mocks.decryptInvite,
+  wrapSpaceKeyWithMaster: mocks.wrapSpaceKey,
+}));
+
+vi.mock('@features/budget-sharing/lib/pending-space-invite', () => ({
+  clearPendingSpaceInvite: mocks.clearPendingInvite,
 }));
 
 vi.mock('@features/demo-budget/lib/seed-demo-budget', () => ({
@@ -533,5 +558,105 @@ describe('runOnboardingApply fresh, demo and leaving the demo', () => {
     expect(mocks.deleteSpace).toHaveBeenCalledWith('half-built');
     expect(mocks.deleteSpace).not.toHaveBeenCalledWith('demo-space');
     expect(getDemoSpaceId()).toBe('demo-space');
+  });
+});
+
+describe('runOnboardingApply joining a workspace', () => {
+  const code = 'invite-code-123';
+
+  function joinRuntime() {
+    const runtime = {
+      isInitialized: () => false,
+      init: vi.fn().mockResolvedValue(undefined),
+      refreshSpaces: vi.fn().mockResolvedValue(undefined),
+      switchSpace: vi.fn().mockResolvedValue(undefined),
+      getActiveSpaceId: () => 'shared-space',
+    } as unknown as AppRuntime;
+    return runtime;
+  }
+
+  function joinDeps(path: 'join' | 'join_code') {
+    const d = deps(path, joinRuntime());
+    (d.queryClient as unknown as { refetchQueries: unknown }).refetchQueries = vi
+      .fn()
+      .mockResolvedValue(undefined);
+    return d;
+  }
+
+  const joinCodeState: OnboardingFormState = {
+    ...INITIAL_STATE,
+    startMode: 'join',
+    inviteCode: `  https://my.budgero.app/join#code=${code}\n`,
+    password: 'pw-12345678',
+    passwordConfirm: 'pw-12345678',
+  };
+
+  async function sha256(text: string) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.inspectInvite.mockResolvedValue({ space_id: 'shared-space', encrypted_bundle: 'b' });
+    mocks.decryptInvite.mockResolvedValue(new Uint8Array(32));
+    mocks.wrapSpaceKey.mockResolvedValue('wrapped');
+    mocks.redeemInvite.mockResolvedValue({ space_id: 'shared-space', display_name: 'Home' });
+  });
+
+  it('redeems a typed code into the shared workspace without creating one', async () => {
+    const d = joinDeps('join_code');
+    await runOnboardingApply(joinCodeState, d);
+
+    const token = await sha256(code);
+    expect(mocks.inspectInvite).toHaveBeenCalledWith(token);
+    expect(mocks.decryptInvite).toHaveBeenCalledWith('b', code);
+    expect(mocks.wrapSpaceKey).toHaveBeenCalledWith(expect.any(Uint8Array), 'pw-12345678');
+    expect(mocks.redeemInvite).toHaveBeenCalledWith(token, 'wrapped');
+    expect(d.runtime.switchSpace).toHaveBeenCalledWith('shared-space');
+    expect(mocks.createSpace).not.toHaveBeenCalled();
+    expect(mocks.storeMasterPassword).toHaveBeenCalledWith('pw-12345678');
+    expect(d.updateOnboardingAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'completed' })
+    );
+    expect(mocks.writeIntroAcknowledged).toHaveBeenCalledWith('profile-1');
+    expect(d.onComplete).toHaveBeenCalledTimes(1);
+    expect(d.setApplyError).toHaveBeenLastCalledWith(null);
+  });
+
+  it('uses the link code on the link path', async () => {
+    const d = joinDeps('join');
+    await runOnboardingApply({ ...joinCodeState, startMode: null, joinSecret: 'from-link' }, d);
+    expect(mocks.inspectInvite).toHaveBeenCalledWith(await sha256('from-link'));
+    expect(mocks.createSpace).not.toHaveBeenCalled();
+    expect(d.onComplete).toHaveBeenCalled();
+  });
+
+  it.each([
+    [410, 'invite expired', /has expired/],
+    [404, 'invite not found', /doesn’t match an open invite/],
+    [409, 'collaborator seat limit reached', /no free seat/],
+  ])(
+    'a %i on redeem says why, keeps the password local and creates nothing',
+    async (status, body, message) => {
+      const { ApiError } = await import('@shared/api/api-client');
+      mocks.redeemInvite.mockRejectedValue(new ApiError(body, status));
+      const d = joinDeps('join_code');
+      await runOnboardingApply(joinCodeState, d);
+
+      expect(d.setApplyStatus).toHaveBeenLastCalledWith('error');
+      expect(d.setApplyError).toHaveBeenLastCalledWith(expect.stringMatching(message));
+      expect(mocks.storeMasterPassword).not.toHaveBeenCalled();
+      expect(mocks.createSpace).not.toHaveBeenCalled();
+      expect(d.onComplete).not.toHaveBeenCalled();
+    }
+  );
+
+  it('never falls through to creating a workspace without a code', async () => {
+    const d = joinDeps('join_code');
+    await runOnboardingApply({ ...joinCodeState, inviteCode: '   ' }, d);
+    expect(mocks.inspectInvite).not.toHaveBeenCalled();
+    expect(mocks.createSpace).not.toHaveBeenCalled();
+    expect(d.setApplyStatus).toHaveBeenLastCalledWith('error');
   });
 });

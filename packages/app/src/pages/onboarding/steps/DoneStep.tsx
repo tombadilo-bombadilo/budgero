@@ -11,6 +11,8 @@ interface DoneStepExtraProps {
    * and the demo is deleted once the real budget exists.
    */
   fromDemo?: boolean;
+  /** Joining someone else's workspace (invite link or typed code). */
+  joining?: boolean;
 }
 
 export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = ({
@@ -19,6 +21,7 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
   applyState,
   applyError,
   fromDemo = false,
+  joining = false,
 }) => {
   const { t } = useLingui();
 
@@ -65,11 +68,21 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
 
   return (
     <div>
-      {state.joinSecret ? (
-        <Title
-          h={msg`Ready to join.`}
-          sub={msg`Click below and we’ll redeem the invite, decrypt the shared workspace key on this device, and drop you into the budget.`}
-        />
+      {joining ? (
+        <>
+          <Title
+            h={msg`Ready to join.`}
+            sub={msg`Click below and we’ll redeem the invite, decrypt the shared workspace key on this device, and drop you into the budget.`}
+          />
+          {state.inviteSpaceName && (
+            <div className="rounded-lg border bg-card px-3 py-2 text-sm md:px-4">
+              <span className="text-muted-foreground">
+                <Trans>Workspace</Trans>
+              </span>{' '}
+              <span className="font-medium">{state.inviteSpaceName}</span>
+            </div>
+          )}
+        </>
       ) : (
         <>
           <Title h={cur.title} sub={cur.subtitle} />
@@ -80,7 +93,7 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
       {applyState === 'running' && (
         <div className="mt-3 flex items-center gap-2.5 rounded-lg border px-3 py-2 text-xs">
           <span aria-hidden className="size-2.5 animate-pulse rounded-full bg-primary" />
-          {state.joinSecret
+          {joining
             ? t`Decrypting shared workspace key and joining…`
             : t`Encrypting your ledger and creating accounts…`}
         </div>

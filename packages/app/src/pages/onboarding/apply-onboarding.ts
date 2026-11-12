@@ -56,6 +56,12 @@ import {
   type ActivePath,
   type OnboardingFormState,
 } from './onboarding-data';
+import {
+  InviteCodeError,
+  classifyInviteError,
+  inviteProblemMessage,
+  normalizeInviteCode,
+} from './invite-code';
 
 export interface OnboardingApplyDeps {
   activePath: ActivePath;
@@ -179,6 +185,7 @@ export async function runOnboardingApply(
   // Referral source from the optional "How did you hear about us?" step.
   // Empty when skipped — the server leaves the field untouched in that case.
   const whereHeard = resolveHeardValue(state.heardSource, state.heardOther);
+  const isJoinPath = activePath === 'join' || activePath === 'join_code';
   try {
     // INVITEE PATH — short-circuit before workspace creation. We don't
     // create our own space; we redeem the invite, attach to theirs, then
@@ -191,18 +198,20 @@ export async function runOnboardingApply(
     // StartupController sees hasLocalMasterPassword=true but the server
     // has no membership/no master password recorded — the workspace gate
     // then traps them on the "Create Workspace" required screen.
-    if (activePath === 'join' && state.joinSecret) {
-      const token = await hashInviteSecret(state.joinSecret);
+    //
+    // Both join paths land here: the /join link ('join', secret captured
+    // from the link) and "Join with an invite code" ('join_code', typed).
+    // Neither may fall through to the workspace creation below.
+    if (isJoinPath) {
+      const joinSecret =
+        activePath === 'join' ? state.joinSecret : normalizeInviteCode(state.inviteCode);
+      if (!joinSecret) throw new InviteCodeError('not_found');
+      const token = await hashInviteSecret(joinSecret);
       const inspection = await spaceApi.inspectInvite(token);
       if (!inspection.encrypted_bundle) {
-        throw new Error(
-          'This invite is missing its encrypted bundle. Ask the workspace owner to resend.'
-        );
+        throw new InviteCodeError('incomplete');
       }
-      const spaceKey = await decryptSpaceKeyFromInvite(
-        inspection.encrypted_bundle,
-        state.joinSecret
-      );
+      const spaceKey = await decryptSpaceKeyFromInvite(inspection.encrypted_bundle, joinSecret);
       const wrapped = await wrapSpaceKeyWithMaster(spaceKey, state.password);
       const joined = await spaceApi.redeemInvite(token, wrapped);
 
@@ -733,7 +742,12 @@ export async function runOnboardingApply(
     await queryClient.invalidateQueries();
     onComplete();
   } catch (err) {
-    const message = getErrorMessage(err, t`Setup failed. Try again or contact support.`);
+    // Invite failures (expired, cancelled, no seat…) get a message the
+    // invitee can act on instead of the raw server reply.
+    const inviteProblem = isJoinPath ? classifyInviteError(err) : null;
+    const message = inviteProblem
+      ? inviteProblemMessage(inviteProblem)
+      : getErrorMessage(err, t`Setup failed. Try again or contact support.`);
     console.error('[Onboarding] Apply failed', err);
     setApplyError(message);
     setApplyStatus('error');

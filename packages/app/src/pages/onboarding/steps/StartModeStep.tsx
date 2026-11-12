@@ -48,6 +48,17 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
       ],
       glyph: '◎',
     },
+    {
+      id: 'join',
+      title: t`Join with an invite code`,
+      sub: t`Someone shared their budget with you.`,
+      bullets: [
+        t`Paste the code or link from your invite`,
+        t`No budget of your own to set up`,
+        t`You land in their budget, ready to go`,
+      ],
+      glyph: '⇄',
+    },
   ];
   return (
     <div>
@@ -55,7 +66,9 @@ export const StartModeStep: React.FC<StepProps> = ({ state, set }) => {
         h={msg`Welcome to Budgero.`}
         sub={msg`Every coin you earn gets a job before you spend it. How do you want to start?`}
       />
-      <div className="grid gap-2.5 md:grid-cols-3 md:gap-3">
+      {/* A column on phones; two by two from md up, where four columns would
+          squeeze each card to a sliver of the panel. */}
+      <div className="grid gap-2.5 md:grid-cols-2 md:gap-3">
         {modes.map((m) => {
           const active = state.startMode === m.id;
           return (

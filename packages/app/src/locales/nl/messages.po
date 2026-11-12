@@ -6454,6 +6454,10 @@ msgstr "Controleer het auditlogboek op foutdetails"
 msgid "Check before anything is added"
 msgstr "Controleer voordat er iets bijkomt"
 
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "Check code →"
+msgstr "Code controleren →"
+
 #: src/pages/admin/AdminDashboard.tsx
 msgid "Check server logs. Re-sending is safe — delivered users are skipped."
 msgstr "Controleer de serverlogbestanden. Opnieuw verzenden is veilig — gebruikers die al zijn bereikt worden overgeslagen."
@@ -6506,6 +6510,7 @@ msgstr "Betaalrekening, spaarrekening, creditcard"
 
 #: src/features/budget-sharing/ui/RedeemInviteDialog.tsx
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
+#: src/pages/onboarding/OnboardingFlow.tsx
 msgid "Checking…"
 msgstr "Controleren…"
 
@@ -7607,6 +7612,10 @@ msgstr "Bevestigingsstatus kon niet worden bijgewerkt"
 msgid "Could not update goal funding settings"
 msgstr "De instellingen voor doelfinanciering konden niet worden bijgewerkt"
 
+#: src/pages/onboarding/invite-code.ts
+msgid "Couldn’t check the code. Try again in a moment."
+msgstr "De code kon niet worden gecontroleerd. Probeer het zo opnieuw."
+
 #: src/features/bank-sync/ui/ConnectSimpleFINCard.tsx
 msgid "Couldn't connect to SimpleFIN"
 msgstr "Kon niet koppelen met SimpleFIN"
@@ -7663,6 +7672,10 @@ msgstr "Zelf gehoste installaties konden niet worden geladen."
 #: src/features/sync-diagnostics/ui/MutationLogCard.tsx
 msgid "Couldn't load the mutation log"
 msgstr "Kon het wijzigingslogboek niet laden"
+
+#: src/pages/onboarding/invite-code.ts
+msgid "Couldn’t reach Budgero to check the code. Check your connection and try again."
+msgstr "Budgero is niet bereikbaar om de code te controleren. Controleer je verbinding en probeer het opnieuw."
 
 #: src/features/bank-sync/lib/enable-banking/client.ts
 msgid "Couldn't reach Enable Banking through the Budgero relay. Check your connection and try again."
@@ -9653,6 +9666,10 @@ msgstr "Wisselkoers invoeren"
 msgid "Enter Master Password"
 msgstr "Hoofdwachtwoord invoeren"
 
+#: src/pages/onboarding/OnboardingFlow.tsx
+msgid "Enter my code →"
+msgstr "Mijn code invoeren →"
+
 #: src/pages/settings/SecurityPage.tsx
 msgid "Enter new password (min 8 characters)"
 msgstr "Voer nieuw wachtwoord in (min. 8 tekens)"
@@ -9697,6 +9714,11 @@ msgstr "Voer de minimale betaling van je kaart in zoals aangegeven op je afschri
 #: src/pages/settings/SecurityPage.tsx
 msgid "Enter your current password and choose a new one. Your data will be re-encrypted with the new password."
 msgstr "Voer je huidige wachtwoord in en kies een nieuw wachtwoord. Je gegevens worden opnieuw versleuteld met het nieuwe wachtwoord."
+
+#: src/pages/onboarding/onboarding-data.ts
+#: src/pages/onboarding/steps/InviteCodeStep.tsx
+msgid "Enter your invite code"
+msgstr "Voer je uitnodigingscode in"
 
 #: src/app/startup/screens.tsx
 #: src/features/subscription/ui/ExportDataCard.tsx
@@ -10885,6 +10907,10 @@ msgstr "Uit Budgero's officiële documentatie/beleid:\n"
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "From savings"
 msgstr "Uit spaargeld"
+
+#: src/pages/onboarding/onboarding-data.ts
+msgid "From the person who invited you"
+msgstr "Van de persoon die je heeft uitgenodigd"
 
 #: src/features/transactions/ui/SchedulingGuideDialog.tsx
 #~ msgid "From the register you can <0>Mark ready</0> (posts on the due date), <1>Post now</1> (posts today) or <2>Skip</2>. The dashboard’s Upcoming transactions card and Settings → Recurring Transactions list them too."
@@ -12216,6 +12242,10 @@ msgstr "Uitnodiging geannuleerd"
 msgid "Invite code"
 msgstr "Uitnodigingscode"
 
+#: src/pages/onboarding/steps/InviteCodeStep.tsx
+msgid "INVITE CODE"
+msgstr "UITNODIGINGSCODE"
+
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "Invite collaborators, manage pending invites, and control access for the active workspace."
 msgstr "Nodig medewerkers uit, beheer openstaande uitnodigingen en regel de toegang voor de actieve werkruimte."
@@ -12344,6 +12374,10 @@ msgstr "John Doe"
 #: src/pages/JoinWorkspacePage.tsx
 msgid "Join a shared workspace"
 msgstr "Deelnemen aan een gedeelde werkruimte"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Join with an invite code"
+msgstr "Deelnemen met een uitnodigingscode"
 
 #: src/features/rules/ui/rule-editor/RuleConditionsEditor.tsx
 msgid "Join with previous condition"
@@ -14439,6 +14473,10 @@ msgstr "Geen Budgero-documenten komen overeen met \"{0}\". Beschikbare documente
 msgid "No budget assigned"
 msgstr "Geen budget toegewezen"
 
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "No budget of your own to set up"
+msgstr "Geen eigen budget om in te stellen"
+
 #: src/features/account-management/ui/DevSeedAccountsButton.tsx
 #: src/features/account-management/ui/DevSeedTransactionsButton.tsx
 #: src/features/account-management/ui/DevSimulateRateMoveButton.tsx
@@ -16074,6 +16112,18 @@ msgstr "Wachtwoorden komen overeen"
 #: src/features/budget-sharing/ui/RedeemInviteDialog.tsx
 msgid "paste secret here"
 msgstr "plak hier het geheim"
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Paste the code or link from your invite"
+msgstr "Plak de code of link uit je uitnodiging"
+
+#: src/pages/onboarding/steps/InviteCodeStep.tsx
+msgid "paste the code or link here"
+msgstr "plak de code of link hier"
+
+#: src/pages/onboarding/onboarding-data.ts
+msgid "Paste the code or the whole link from your invite."
+msgstr "Plak de code of de hele link uit je uitnodiging."
 
 #: src/features/bank-sync/ui/ConnectSimpleFINCard.tsx
 msgid "Paste the token below."
@@ -20230,9 +20280,17 @@ msgstr "De pagina achter dialoogvensters vervagen. Schakel dit uit om rekeningna
 msgid "Some queued changes still need retry."
 msgstr "Sommige wijzigingen in de wachtrij moeten nog opnieuw worden geprobeerd."
 
+#: src/pages/onboarding/steps/InviteCodeStep.tsx
+msgid "Someone shared their Budgero budget with you. Paste the code or the whole link from their invite — you’ll join their budget instead of setting up your own."
+msgstr "Iemand heeft zijn Budgero-budget met je gedeeld. Plak de code of de hele link uit de uitnodiging — je neemt deel aan dat budget in plaats van een eigen budget in te stellen."
+
 #: src/pages/JoinWorkspacePage.tsx
 msgid "Someone shared their Budgero workspace with you. Decrypt the space key on this device and add it to your account — the secret never leaves your browser."
 msgstr "Iemand heeft zijn Budgero-werkruimte met je gedeeld. Ontsleutel de space key op dit apparaat en voeg deze toe aan je rekening — het geheim verlaat nooit je browser."
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "Someone shared their budget with you."
+msgstr "Iemand heeft zijn budget met je gedeeld."
 
 #: src/pages/onboarding/steps/WelcomeStep.tsx
 msgid "Someone shared their budget with you. We’ll set up an encryption key on this device, then drop you straight into their ledger — no setup of your own required."
@@ -21396,6 +21454,10 @@ msgstr "De wijziging wordt ook naar de server gepusht voor deze werkruimte"
 msgid "The chart’s columns aren’t in this result, so its rows are shown instead."
 msgstr "De kolommen van de grafiek staan niet in dit resultaat, dus de rijen worden getoond."
 
+#: src/pages/onboarding/steps/InviteCodeStep.tsx
+msgid "The code stays on this device: Budgero only ever sees a fingerprint of it. Next, you pick a master password that keeps the shared budget encrypted here."
+msgstr "De code blijft op dit apparaat: Budgero ziet er alleen een vingerafdruk van. Daarna kies je een hoofdwachtwoord dat het gedeelde budget hier versleuteld houdt."
+
 #: src/pages/onboarding/onboarding-data.ts
 #~ msgid "The core idea"
 #~ msgstr "Het kernidee"
@@ -21602,6 +21664,10 @@ msgstr "De server heeft alle wijzigingen van dit apparaat bevestigd."
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "The server keeps the last few copies of this workspace, and one a day for the past week. You can go back to a copy and discard everything changed after it, or restore it and re-apply the later changes. Use it when a workspace looks empty or broken after syncing, or to undo a batch of changes."
 msgstr "De server bewaart de laatste kopieën van deze werkruimte en één per dag voor de afgelopen week. Je kunt teruggaan naar een kopie en alles verwijderen wat daarna is gewijzigd, of hem herstellen en de latere wijzigingen opnieuw toepassen. Gebruik dit als een werkruimte na het synchroniseren leeg of kapot lijkt, of om een reeks wijzigingen ongedaan te maken."
+
+#: src/pages/onboarding/steps/PasswordStep.tsx
+msgid "The shared budget is kept on this device, encrypted with a master password only you know. It’s yours alone — not the password of the person who invited you. Pick something memorable — we can’t reset it for you."
+msgstr "Het gedeelde budget wordt op dit apparaat bewaard, versleuteld met een hoofdwachtwoord dat alleen jij kent. Het is alleen van jou — niet het wachtwoord van de persoon die je heeft uitgenodigd. Kies iets wat je onthoudt — we kunnen het niet voor je resetten."
 
 #: src/features/first-steps/ui/FirstStepsSettingsCard.tsx
 msgid "The short checklist for your first week."
@@ -21841,6 +21907,10 @@ msgstr "Deze wijziging zorgt voor een negatief Beschikbaar in toekomstige maande
 msgid "This clears the selected payees from your transactions in this budget.{0} You can add them back later if needed."
 msgstr "Dit wist de geselecteerde begunstigden uit jouw transacties in dit budget.{0} Je kunt ze later indien nodig weer toevoegen."
 
+#: src/pages/onboarding/invite-code.ts
+msgid "This code doesn’t match an open invite. Check it for typos — or it was already used or cancelled, so ask for a new one."
+msgstr "Deze code hoort bij geen open uitnodiging. Controleer hem op typefouten — of hij is al gebruikt of ingetrokken; vraag dan om een nieuwe."
+
 #. placeholder {0}: formatBytes(totalBytes)
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "This deletes {totalSpaces} budgets ({0}), their sync history, activity records and every other trace of these accounts. It can't be undone. Budgets they only shared with others stay with their owners."
@@ -21861,6 +21931,18 @@ msgstr "Deze expressie is te lang."
 #: src/features/import/lib/import-display-text.ts
 msgid "This file row was already imported"
 msgstr "Deze bestandsrij is al geïmporteerd"
+
+#: src/pages/onboarding/invite-code.ts
+msgid "This invite can’t be used with your account. Ask the person who invited you for help."
+msgstr "Deze uitnodiging kan niet met je account worden gebruikt. Vraag de persoon die je heeft uitgenodigd om hulp."
+
+#: src/pages/onboarding/invite-code.ts
+msgid "This invite has expired. Ask the person who invited you for a new one."
+msgstr "Deze uitnodiging is verlopen. Vraag de persoon die je heeft uitgenodigd om een nieuwe."
+
+#: src/pages/onboarding/invite-code.ts
+msgid "This invite isn’t ready yet. Ask the person who invited you to create it again."
+msgstr "Deze uitnodiging is nog niet klaar. Vraag de persoon die je heeft uitgenodigd om hem opnieuw te maken."
 
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "This is over 1,000× different from the current rate. Check the decimal point before confirming."
@@ -22137,6 +22219,10 @@ msgstr "Dit verwijdert aankomende herinneringen. Bestaande transacties worden ni
 #: src/app/startup/screens.tsx
 msgid "This workspace has no budgets yet"
 msgstr "Deze werkruimte heeft nog geen budgetten"
+
+#: src/pages/onboarding/invite-code.ts
+msgid "This workspace has no free seat left. Ask its owner to free one up."
+msgstr "Deze werkruimte heeft geen vrije plek meer. Vraag de eigenaar er een vrij te maken."
 
 #: src/features/budget-management/ui/WorkspaceBudgetList.tsx
 msgid "This workspace is currently inaccessible"
@@ -24265,6 +24351,7 @@ msgstr "Bezig…"
 #: src/app/startup/StartupStepper.tsx
 #: src/features/budget-management/ui/WorkspaceBudgetList.tsx
 #: src/pages/admin/admin-users/user-details/WorkspacesTab.tsx
+#: src/pages/onboarding/steps/DoneStep.tsx
 msgid "Workspace"
 msgstr "Werkruimte"
 
@@ -24743,6 +24830,10 @@ msgstr "Je hebt in deze periode {0} van je inkomen overgehouden."
 #: src/pages/analytics/insights.ts
 #~ msgid "You kept {0}% of income over this period."
 #~ msgstr "Je hebt {0}% van je inkomen behouden in deze periode."
+
+#: src/pages/onboarding/steps/StartModeStep.tsx
+msgid "You land in their budget, ready to go"
+msgstr "Je komt direct in hun budget, klaar voor gebruik"
 
 #: src/pages/onboarding/steps/WelcomeStep.tsx
 msgid "You land on the dashboard with their budget ready to go."

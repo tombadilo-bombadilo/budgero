@@ -108,11 +108,24 @@ export const ONBOARDING_STEP_IDS = [
   'accounts',
   'categories',
   'where_heard',
+  'invite_code',
   'password',
   'done',
 ] as const;
 export type OnboardingStepId = (typeof ONBOARDING_STEP_IDS)[number];
-const ONBOARDING_PATHS = ['fresh', 'ynab', 'join', 'demo', 'from_demo'] as const;
+// 'join': arrived through an invite link; 'join_code': picked "Join with an invite code".
+const ONBOARDING_PATHS = ['fresh', 'ynab', 'join', 'join_code', 'demo', 'from_demo'] as const;
+/** Why a typed invite code was turned down (pages/onboarding/invite-code.ts). */
+export const INVITE_CODE_PROBLEMS = [
+  'not_found',
+  'expired',
+  'incomplete',
+  'no_seats',
+  'restricted',
+  'network',
+  'unknown',
+] as const;
+export type InviteCodeProblem = (typeof INVITE_CODE_PROBLEMS)[number];
 
 /** Days since signup, for first-month events (first-month.ts sends nothing after day 30). */
 export const SIGNUP_DAY_BUCKETS = ['0', '1', '2', '3', '4-7', '8-14', '15-30'] as const;
@@ -323,6 +336,8 @@ export const EVENT_SCHEMA = {
     duration_bucket: DURATION_BUCKETS,
   },
   onboarding_finished: { path: ONBOARDING_PATHS, duration_bucket: DURATION_BUCKETS },
+  // The invite-code step turned a code down (the code itself is never sent).
+  onboarding_invite_code_rejected: { reason: INVITE_CODE_PROBLEMS },
   // The demo budget's banner: "Start my own budget".
   demo_start_own_clicked: NONE,
 
