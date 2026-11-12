@@ -27,8 +27,17 @@ vi.mock('@entities/goal/api/useGoals', () => {
 });
 // The real form is big; these two buttons are all the walkthrough cares about.
 vi.mock('@features/goal-management/ui/GoalForm', () => ({
-  GoalForm: ({ onSave, onCancel }: { onSave: (g: object) => void; onCancel: () => void }) => (
+  GoalForm: ({
+    onSave,
+    onCancel,
+    notice,
+  }: {
+    onSave: (g: object) => void;
+    onCancel: () => void;
+    notice?: React.ReactNode;
+  }) => (
     <div>
+      {notice}
       <button onClick={() => onSave({ Type: 'monthly', Target: 300_000 })}>Save goal</button>
       <button onClick={onCancel}>Cancel goal</button>
     </div>
@@ -130,20 +139,21 @@ describe.each(['card', 'bar'] as const)('%s layout', (variant) => {
     expect(document.activeElement).toBe(document.body);
     expect(screen.queryByRole('button', { name: 'Next' })).toBeNull();
 
-    // 2. Their own click: the goal types, with GoalForm's titles.
+    // 2. Their own click: the goal types, grouped the way GoalForm lists them.
     select(11);
     expect(card()).toHaveTextContent('A goal for Rent');
     expect(screen.getByTestId('list')).not.toHaveClass('ring-2');
     const types = screen.getByTestId('goal-types');
     for (const text of [
-      'Monthly Available Target',
-      'Every month: have an amount ready, like rent or groceries.',
-      'Yearly Allocation Target',
-      'By a date: save a total by a day, like a holiday.',
-      'Periodic Allocation Target',
-      'Every few months: for bills that come quarterly or once a year.',
+      'Monthly',
+      'Every month, like rent or groceries.',
+      'Yearly',
+      'By a date, like a holiday or a yearly bill.',
+      'Periodic',
+      'Every few months, like a quarterly bill.',
       'Target Balance',
-      'Build up to: an amount with no date, like an emergency fund.',
+      'Build up to an amount, no date, like an emergency fund.',
+      'Available: have the amount ready. Allocation: put a set amount aside.',
     ])
       expect(types).toHaveTextContent(text);
     fireEvent.click(screen.getByRole('button', { name: 'Next' }));

@@ -997,6 +997,10 @@ msgstr "{amount, plural, one {week} other {weeks}}"
 msgid "{amount, plural, one {year} other {years}}"
 msgstr "{amount, plural, one {year} other {years}}"
 
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "{assigned} allocated this month — on track!"
+msgstr "{assigned} allocated this month — on track!"
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "{base} vs last year"
 msgstr "{base} vs last year"
@@ -2849,18 +2853,6 @@ msgstr "⚠️ Target date passed - need {needed} more"
 msgid "⚠️ Target date passed - need {needed} more available"
 msgstr "⚠️ Target date passed - need {needed} more available"
 
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "{assigned} allocated this month — on track!"
-msgstr "{assigned} allocated this month — on track!"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Fully allocated!"
-msgstr "Fully allocated!"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Goal exceeded by {excess}"
-msgstr "Goal exceeded by {excess}"
-
 #: src/pages/onboarding/steps/DoneStep.tsx
 msgid "✓ Master password set"
 msgstr "✓ Master password set"
@@ -2872,30 +2864,6 @@ msgstr "✓ MATCH"
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "✓ READY"
 msgstr "✓ READY"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Target amount available!"
-msgstr "Target amount available!"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "Target available!"
-msgstr "Target available!"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "This month done! {totalAssigned} of {target} allocated"
-msgstr "This month done! {totalAssigned} of {target} allocated"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "This month funded! {available}/{target} available"
-msgstr "This month funded! {available}/{target} available"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "This month's {monthlyTarget} allocated!"
-msgstr "This month's {monthlyTarget} allocated!"
-
-#: src/features/goal-management/lib/core-goal-text.ts
-msgid "This month's {monthlyTarget} saved!"
-msgstr "This month's {monthlyTarget} saved!"
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "✗ DOES NOT MATCH"
@@ -4011,12 +3979,12 @@ msgid "Allocate {stillNeeded} more to complete this month's target"
 msgstr "Allocate {stillNeeded} more to complete this month's target"
 
 #: src/features/goal-management/ui/GoalForm.tsx
-msgid "Allocate a total amount every few months, cycle after cycle"
-msgstr "Allocate a total amount every few months, cycle after cycle"
+#~ msgid "Allocate a total amount every few months, cycle after cycle"
+#~ msgstr "Allocate a total amount every few months, cycle after cycle"
 
 #: src/features/goal-management/ui/GoalForm.tsx
-msgid "Allocate a total amount over a period by a target date"
-msgstr "Allocate a total amount over a period by a target date"
+#~ msgid "Allocate a total amount over a period by a target date"
+#~ msgstr "Allocate a total amount over a period by a target date"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Allocate This Month"
@@ -4409,8 +4377,12 @@ msgid "Assign {needed} to reach your target"
 msgstr "Assign {needed} to reach your target"
 
 #: src/features/goal-management/ui/GoalForm.tsx
-msgid "Assign a fixed amount every month, regardless of spending"
-msgstr "Assign a fixed amount every month, regardless of spending"
+msgid "Assign a fixed amount every month"
+msgstr "Assign a fixed amount every month"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+#~ msgid "Assign a fixed amount every month, regardless of spending"
+#~ msgstr "Assign a fixed amount every month, regardless of spending"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Assign remaining"
@@ -5379,12 +5351,20 @@ msgid "Build metadata for support or troubleshooting."
 msgstr "Build metadata for support or troubleshooting."
 
 #: src/features/goal-management/ui/GoalForm.tsx
-msgid "Build up to an amount available, with no date and no repeat"
-msgstr "Build up to an amount available, with no date and no repeat"
+#~ msgid "Build up to an amount available, with no date and no repeat"
+#~ msgstr "Build up to an amount available, with no date and no repeat"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Build up to an amount, no date"
+msgstr "Build up to an amount, no date"
+
+#: src/features/page-guides/ui/guide-visuals.tsx
+msgid "Build up to an amount, no date, like an emergency fund."
+msgstr "Build up to an amount, no date, like an emergency fund."
 
 #: src/features/first-steps/ui/GoalWalkthroughHost.tsx
-msgid "Build up to: an amount with no date, like an emergency fund."
-msgstr "Build up to: an amount with no date, like an emergency fund."
+#~ msgid "Build up to: an amount with no date, like an emergency fund."
+#~ msgstr "Build up to: an amount with no date, like an emergency fund."
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Building habits takes time - keep trying!"
@@ -5423,9 +5403,13 @@ msgstr "by"
 msgid "By"
 msgstr "By"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
+msgid "By a date, like a holiday or a yearly bill."
+msgstr "By a date, like a holiday or a yearly bill."
+
 #: src/features/first-steps/ui/GoalWalkthroughHost.tsx
-msgid "By a date: save a total by a day, like a holiday."
-msgstr "By a date: save a total by a day, like a holiday."
+#~ msgid "By a date: save a total by a day, like a holiday."
+#~ msgstr "By a date: save a total by a day, like a holiday."
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "By amount"
@@ -5491,6 +5475,7 @@ msgstr "Canadian Dollar"
 #: src/features/category-management/ui/CreateCategoryDialog.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 #: src/features/currencies/ui/ManualRatePrompt.tsx
+#: src/features/goal-management/ui/GoalForm.tsx
 #: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/reports/ui/notebook/HavingEditor.tsx
@@ -5821,6 +5806,10 @@ msgstr "Change the master password"
 #: src/pages/settings/SecurityPage.tsx
 msgid "Change the password that unlocks your data. Your data stays encrypted, and your other devices will ask for the new password. Sign-in password, email and 2FA are managed in your Clerk profile."
 msgstr "Change the password that unlocks your data. Your data stays encrypted, and your other devices will ask for the new password. Sign-in password, email and 2FA are managed in your Clerk profile."
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Change type"
+msgstr "Change type"
 
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Change vs previous month"
@@ -9047,13 +9036,21 @@ msgstr "Every coin has a job."
 msgid "Every coin you earn gets a job before you spend it. How do you want to start?"
 msgstr "Every coin you earn gets a job before you spend it. How do you want to start?"
 
-#: src/features/first-steps/ui/GoalWalkthroughHost.tsx
-msgid "Every few months: for bills that come quarterly or once a year."
-msgstr "Every few months: for bills that come quarterly or once a year."
+#: src/features/page-guides/ui/guide-visuals.tsx
+msgid "Every few months, like a quarterly bill."
+msgstr "Every few months, like a quarterly bill."
 
 #: src/features/first-steps/ui/GoalWalkthroughHost.tsx
-msgid "Every month: have an amount ready, like rent or groceries."
-msgstr "Every month: have an amount ready, like rent or groceries."
+#~ msgid "Every few months: for bills that come quarterly or once a year."
+#~ msgstr "Every few months: for bills that come quarterly or once a year."
+
+#: src/features/page-guides/ui/guide-visuals.tsx
+msgid "Every month, like rent or groceries."
+msgstr "Every month, like rent or groceries."
+
+#: src/features/first-steps/ui/GoalWalkthroughHost.tsx
+#~ msgid "Every month: have an amount ready, like rent or groceries."
+#~ msgstr "Every month: have an amount ready, like rent or groceries."
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Every scheduled occurrence that hasn't been entered yet, by due date."
@@ -10047,6 +10044,10 @@ msgstr "Full cards with all details visible."
 msgid "full import guide"
 msgstr "full import guide"
 
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Fully allocated!"
+msgstr "Fully allocated!"
+
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Fun money"
 msgstr "Fun money"
@@ -10215,6 +10216,10 @@ msgstr "Goal created"
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "Goal deleted"
 msgstr "Goal deleted"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Goal exceeded by {excess}"
+msgstr "Goal exceeded by {excess}"
 
 #: src/pages/settings/components/GoalFundingSettingsCard.tsx
 msgid "Goal funding"
@@ -10415,12 +10420,20 @@ msgid "Halve amount"
 msgstr "Halve amount"
 
 #: src/features/goal-management/ui/GoalForm.tsx
-msgid "Have a specific amount available by a target date"
-msgstr "Have a specific amount available by a target date"
+#~ msgid "Have a specific amount available by a target date"
+#~ msgstr "Have a specific amount available by a target date"
 
 #: src/features/goal-management/ui/GoalForm.tsx
-msgid "Have an amount available at the end of every period"
-msgstr "Have an amount available at the end of every period"
+#~ msgid "Have an amount available at the end of every period"
+#~ msgstr "Have an amount available at the end of every period"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Have it ready every few months"
+msgstr "Have it ready every few months"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Have the amount ready by a date"
+msgstr "Have the amount ready by a date"
 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Head to the Imports page to upload CSV/PDF files, review past imports, and undo anything that looks off."
@@ -12631,11 +12644,9 @@ msgstr "Monthly Allocation Target"
 msgid "Monthly amount"
 msgstr "Monthly amount"
 
-#: src/features/first-steps/ui/GoalWalkthroughHost.tsx
 #: src/features/goal-management/lib/core-goal-text.ts
 #: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
-#: src/features/page-guides/ui/guide-content.tsx
 msgid "Monthly Available Target"
 msgstr "Monthly Available Target"
 
@@ -15112,10 +15123,12 @@ msgstr "Per month historically"
 msgid "Percent"
 msgstr "Percent"
 
-#: src/features/first-steps/ui/GoalWalkthroughHost.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
+msgid "Periodic"
+msgstr "Periodic"
+
 #: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
-#: src/features/page-guides/ui/guide-content.tsx
 msgid "Periodic Allocation Target"
 msgstr "Periodic Allocation Target"
 
@@ -15859,6 +15872,14 @@ msgstr "Push API {0}"
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Put a field name between the brackets, like [Amount]."
 msgstr "Put a field name between the brackets, like [Amount]."
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Put aside a total by a date"
+msgstr "Put aside a total by a date"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Put aside a total every few months"
+msgstr "Put aside a total every few months"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Q{number}"
@@ -19097,8 +19118,12 @@ msgid "Start Date"
 msgstr "Start Date"
 
 #: src/features/goal-management/ui/GoalForm.tsx
-msgid "Start each month with a certain amount available"
-msgstr "Start each month with a certain amount available"
+#~ msgid "Start each month with a certain amount available"
+#~ msgstr "Start each month with a certain amount available"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Start every month with this much"
+msgstr "Start every month with this much"
 
 #: src/app/startup/screens.tsx
 msgid "Start fresh"
@@ -19622,6 +19647,10 @@ msgid "Target Amount"
 msgstr "Target Amount"
 
 #: src/features/goal-management/lib/core-goal-text.ts
+msgid "Target amount available!"
+msgstr "Target amount available!"
+
+#: src/features/goal-management/lib/core-goal-text.ts
 msgid "Target amount fully allocated for this cycle."
 msgstr "Target amount fully allocated for this cycle."
 
@@ -19633,15 +19662,18 @@ msgstr "Target amount is available and ready to use."
 msgid "Target Available"
 msgstr "Target Available"
 
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "Target available!"
+msgstr "Target available!"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Target balance"
 msgstr "Target balance"
 
-#: src/features/first-steps/ui/GoalWalkthroughHost.tsx
 #: src/features/goal-management/lib/core-goal-text.ts
 #: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
-#: src/features/page-guides/ui/guide-content.tsx
+#: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Target Balance"
 msgstr "Target Balance"
 
@@ -19899,6 +19931,10 @@ msgstr "The error has been recorded. You can try again or open another page."
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "The expression ends too early."
 msgstr "The expression ends too early."
+
+#: src/features/page-guides/ui/guide-visuals.tsx
+msgid "The first three come in two kinds. Available: have the amount ready. Allocation: put a set amount aside."
+msgstr "The first three come in two kinds. Available: have the amount ready. Allocation: put a set amount aside."
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "The goal counts as met (or on track) this month."
@@ -20339,6 +20375,22 @@ msgstr "This liability now has a positive balance. There's nothing to pay off ri
 #: src/shared/lib/search-query-parser.ts
 msgid "This month"
 msgstr "This month"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "This month done! {totalAssigned} of {target} allocated"
+msgstr "This month done! {totalAssigned} of {target} allocated"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "This month funded! {available}/{target} available"
+msgstr "This month funded! {available}/{target} available"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "This month's {monthlyTarget} allocated!"
+msgstr "This month's {monthlyTarget} allocated!"
+
+#: src/features/goal-management/lib/core-goal-text.ts
+msgid "This month's {monthlyTarget} saved!"
+msgstr "This month's {monthlyTarget} saved!"
 
 #: src/pages/analytics/components/TargetTable.tsx
 msgid "This month's goal targets against what you assigned and spent."
@@ -22583,17 +22635,16 @@ msgstr "Year-end bonus"
 msgid "yearly"
 msgstr "yearly"
 
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/transactions/ui/add-transaction/recurring-form.ts
 #: src/pages/settings/recurring/components/RecurringTemplateCard.tsx
 #: src/pages/settings/subscription/PlanSelection.tsx
 msgid "Yearly"
 msgstr "Yearly"
 
-#: src/features/first-steps/ui/GoalWalkthroughHost.tsx
 #: src/features/goal-management/lib/core-goal-text.ts
 #: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
-#: src/features/page-guides/ui/guide-content.tsx
 msgid "Yearly Allocation Target"
 msgstr "Yearly Allocation Target"
 

@@ -1,9 +1,9 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { CalendarClock, Flag, Repeat, Wallet, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useEffect, useLayoutEffect, useState, type CSSProperties } from 'react';
 import type { GetMonthlyBudgetRow, Goal } from '@budgero/core/browser';
 import { calculateUnderfundedGoals } from '@features/budget-planning/ui/assign-dropdown/assign-dropdown.utils';
-import { GoalKind, GuideProgress } from '@features/page-guides';
+import { GoalTypesVisual, GuideProgress } from '@features/page-guides';
 import { cn } from '@shared/lib/utils';
 import { useUiStore } from '@shared/store/useUiStore';
 import { Button } from '@shared/ui/button';
@@ -168,28 +168,8 @@ export function GoalWalkthroughHost({
     title = <Trans>A goal for {name}</Trans>;
     body = (
       <>
-        <div className="grid gap-1.5" data-testid="goal-types">
-          {/* The titles and icons of GoalForm's presets. */}
-          <GoalKind
-            icon={Wallet}
-            label={t`Monthly Available Target`}
-            description={t`Every month: have an amount ready, like rent or groceries.`}
-          />
-          <GoalKind
-            icon={CalendarClock}
-            label={t`Yearly Allocation Target`}
-            description={t`By a date: save a total by a day, like a holiday.`}
-          />
-          <GoalKind
-            icon={Repeat}
-            label={t`Periodic Allocation Target`}
-            description={t`Every few months: for bills that come quarterly or once a year.`}
-          />
-          <GoalKind
-            icon={Flag}
-            label={t`Target Balance`}
-            description={t`Build up to: an amount with no date, like an emergency fund.`}
-          />
+        <div data-testid="goal-types">
+          <GoalTypesVisual />
         </div>
         <p>
           <Trans>You pick one in the goal form, and can change it later.</Trans>

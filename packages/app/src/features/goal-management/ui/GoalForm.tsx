@@ -3,7 +3,6 @@ import { useMemo, useState } from 'react';
 import { toDecimal, ZERO_MILLI } from '@budgero/core/browser';
 import { Button } from '@shared/ui/button';
 import { Label } from '@shared/ui/label';
-import { CardContent, CardHeader, CardTitle, CardDescription } from '@shared/ui/card';
 import { CalculatorCell } from '@shared/ui/calculator-cell';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { MonthYearCalendar } from '@shared/ui/MonthYearCalendar';
@@ -16,7 +15,6 @@ import {
   ArrowUpFromLine,
   CalendarClock,
   PiggyBank,
-  ChevronRight,
   Repeat,
   RefreshCw,
   Flag,
@@ -50,17 +48,21 @@ interface GoalFormProps {
   onDelete?: () => Promise<void>;
   isSaving?: boolean;
   isDeleting?: boolean;
-  asCard?: boolean;
+  /** One line pinned above the form (the first-steps walkthrough hint). */
+  notice?: React.ReactNode;
 }
 
 /**
  * Each "goal preset" maps a user-friendly concept to the internal GoalType + GoalPurpose.
+ * Listed in pairs per cadence: "Available" (have it ready) before "Allocation"
+ * (put aside a fixed amount).
  *
  * 1. monthly-available  → MONTHLY    + SPENDING  — "Have X available each month"
  * 2. monthly-allocation → MONTHLY_SAVINGS + SAVINGS — "Assign X each month"
- * 3. yearly-allocation  → TARGET_DATE + SAVINGS  — "Allocate X total by date"
- * 4. yearly-available   → YEARLY     + SPENDING  — "Have X available by date"
- * 5. target-balance     → TARGET_BALANCE + SAVINGS — "Have X available", no date or repeat
+ * 3. yearly-available   → YEARLY     + SPENDING  — "Have X available by date"
+ * 4. yearly-allocation  → TARGET_DATE + SAVINGS  — "Allocate X total by date"
+ * 5/6. periodic-*      → same as yearly-*, repeating every N months
+ * 7. target-balance     → TARGET_BALANCE + SAVINGS — "Have X available", no date or repeat
  */
 type GoalPreset =
   | 'monthly-available'
@@ -108,11 +110,11 @@ export function GoalForm({
   currentMonth,
   formatter,
   onSave,
-  onCancel: _onCancel,
+  onCancel,
   onDelete,
   isSaving = false,
   isDeleting = false,
-  asCard = true,
+  notice,
 }: GoalFormProps) {
   const { t } = useLingui();
 
@@ -133,9 +135,9 @@ export function GoalForm({
       key: 'monthly-available',
       type: GoalType.MONTHLY,
       purpose: GoalPurpose.SPENDING,
-      icon: <Wallet className="h-5 w-5" />,
+      icon: <Wallet className="h-4 w-4" />,
       title: t`Monthly Available Target`,
-      subtitle: t`Start each month with a certain amount available`,
+      subtitle: t`Start every month with this much`,
       buildExample: (amount) => t`e.g. Groceries — start each month with ${amount}`,
       needsDate: false,
     },
@@ -143,51 +145,51 @@ export function GoalForm({
       key: 'monthly-allocation',
       type: GoalType.MONTHLY_SAVINGS,
       purpose: GoalPurpose.SAVINGS,
-      icon: <ArrowUpFromLine className="h-5 w-5" />,
+      icon: <ArrowUpFromLine className="h-4 w-4" />,
       title: t`Monthly Allocation Target`,
-      subtitle: t`Assign a fixed amount every month, regardless of spending`,
+      subtitle: t`Assign a fixed amount every month`,
       buildExample: (amount) => t`e.g. Savings — put aside ${amount} each month`,
       needsDate: false,
-    },
-    {
-      key: 'yearly-allocation',
-      type: GoalType.TARGET_DATE,
-      purpose: GoalPurpose.SAVINGS,
-      icon: <CalendarClock className="h-5 w-5" />,
-      title: t`Yearly Allocation Target`,
-      subtitle: t`Allocate a total amount over a period by a target date`,
-      buildExample: (amount, date) => t`e.g. Vacation — allocate ${amount} total by ${date}`,
-      needsDate: true,
     },
     {
       key: 'yearly-available',
       type: GoalType.YEARLY,
       purpose: GoalPurpose.SPENDING,
-      icon: <PiggyBank className="h-5 w-5" />,
+      icon: <PiggyBank className="h-4 w-4" />,
       title: t`Yearly Available Target`,
-      subtitle: t`Have a specific amount available by a target date`,
+      subtitle: t`Have the amount ready by a date`,
       buildExample: (amount, date) => t`e.g. Car registration — need ${amount} ready by ${date}`,
       needsDate: true,
     },
     {
-      key: 'periodic-allocation',
+      key: 'yearly-allocation',
       type: GoalType.TARGET_DATE,
       purpose: GoalPurpose.SAVINGS,
-      icon: <Repeat className="h-5 w-5" />,
-      title: t`Periodic Allocation Target`,
-      subtitle: t`Allocate a total amount every few months, cycle after cycle`,
-      buildExample: (amount) => t`e.g. Quarterly tax — allocate ${amount} every 3 months`,
-      needsDate: false,
-      periodic: true,
+      icon: <CalendarClock className="h-4 w-4" />,
+      title: t`Yearly Allocation Target`,
+      subtitle: t`Put aside a total by a date`,
+      buildExample: (amount, date) => t`e.g. Vacation — allocate ${amount} total by ${date}`,
+      needsDate: true,
     },
     {
       key: 'periodic-available',
       type: GoalType.YEARLY,
       purpose: GoalPurpose.SPENDING,
-      icon: <RefreshCw className="h-5 w-5" />,
+      icon: <RefreshCw className="h-4 w-4" />,
       title: t`Periodic Available Target`,
-      subtitle: t`Have an amount available at the end of every period`,
+      subtitle: t`Have it ready every few months`,
       buildExample: (amount) => t`e.g. Insurance — have ${amount} ready every 6 months`,
+      needsDate: false,
+      periodic: true,
+    },
+    {
+      key: 'periodic-allocation',
+      type: GoalType.TARGET_DATE,
+      purpose: GoalPurpose.SAVINGS,
+      icon: <Repeat className="h-4 w-4" />,
+      title: t`Periodic Allocation Target`,
+      subtitle: t`Put aside a total every few months`,
+      buildExample: (amount) => t`e.g. Quarterly tax — allocate ${amount} every 3 months`,
       needsDate: false,
       periodic: true,
     },
@@ -195,9 +197,9 @@ export function GoalForm({
       key: 'target-balance',
       type: GoalType.TARGET_BALANCE,
       purpose: GoalPurpose.SAVINGS,
-      icon: <Flag className="h-5 w-5" />,
+      icon: <Flag className="h-4 w-4" />,
       title: t`Target Balance`,
-      subtitle: t`Build up to an amount available, with no date and no repeat`,
+      subtitle: t`Build up to an amount, no date`,
       buildExample: (amount) => t`e.g. Emergency fund — build up to ${amount}`,
       needsDate: false,
     },
@@ -208,6 +210,8 @@ export function GoalForm({
   const [selectedPreset, setSelectedPreset] = useState<GoalPreset>(
     goal ? presetFromGoal(goal) : 'monthly-available'
   );
+  // Create: the full list, open. Edit (or after a pick): just the chosen type.
+  const [pickerOpen, setPickerOpen] = useState(!goal);
   const [target, setTarget] = useState(goal?.Target ?? ZERO_MILLI);
   const [targetDate, setTargetDate] = useState<Date>(() => {
     if (goal?.TargetDate) return new Date(goal.TargetDate);
@@ -296,6 +300,7 @@ export function GoalForm({
   const handlePresetChange = (key: GoalPreset) => {
     setSelectedPreset(key);
     setErrors([]);
+    setPickerOpen(false);
   };
 
   const validateForm = (): boolean => {
@@ -346,86 +351,111 @@ export function GoalForm({
     await onSave(goalData);
   };
 
-  return (
-    <div className="w-full">
-      <CardHeader className={asCard ? undefined : 'px-0 sm:px-6'}>
-        <CardTitle className="flex items-center gap-2">
-          <Trans>
-            <Target className="h-5 w-5" />
-            {isEditing ? t`Edit Goal` : t`Create Goal`} for {categoryName}
-          </Trans>
-        </CardTitle>
-        <CardDescription>
-          <Trans>Choose how you want to track this category.</Trans>
-        </CardDescription>
-      </CardHeader>
+  const example = activePreset.buildExample(
+    target > 0 ? formatter.format(toDecimal(target)) : 'X',
+    format(targetDate, 'MMM d, yyyy')
+  );
 
-      <CardContent className={asCard ? undefined : 'px-0 sm:px-6'}>
-        <form onSubmit={handleSubmit} className="space-y-5">
+  /** One compact type row: icon, title, one line; the example only on the chosen one. */
+  const presetBody = (preset: (typeof GOAL_PRESETS)[number], isActive: boolean) => (
+    <>
+      <span
+        className={cn(
+          'flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-colors',
+          isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+        )}
+      >
+        {preset.icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span
+          className={cn(
+            'block text-sm font-semibold leading-tight',
+            isActive ? 'text-primary' : 'text-foreground'
+          )}
+        >
+          {preset.title}
+        </span>
+        <span className="block text-xs leading-snug text-muted-foreground">{preset.subtitle}</span>
+        {isActive && (
+          <span
+            className="mt-0.5 block text-[11px] italic leading-snug text-muted-foreground/70"
+            data-testid="goal-preset-example"
+          >
+            {example}
+          </span>
+        )}
+      </span>
+    </>
+  );
+
+  return (
+    <form onSubmit={handleSubmit} className="flex min-h-0 w-full flex-1 flex-col">
+      {notice && <div className="shrink-0 px-3 pt-3 pr-10 sm:px-6 sm:pt-6 sm:pr-12">{notice}</div>}
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-3 py-3 sm:px-6 sm:py-5">
+        <div className={cn('space-y-1', !notice && 'pr-7')}>
+          <h2 className="flex items-center gap-2 text-base font-semibold leading-tight sm:text-lg">
+            <Trans>
+              <Target className="h-5 w-5 shrink-0" />
+              {isEditing ? t`Edit Goal` : t`Create Goal`} for {categoryName}
+            </Trans>
+          </h2>
+          <p className="text-sm text-muted-foreground">
+            <Trans>Choose how you want to track this category.</Trans>
+          </p>
+        </div>
+
+        <div className="space-y-4">
           {/* ── Goal Type Selection ── */}
           <div className="space-y-2">
-            <Label className="text-xs uppercase tracking-wider text-muted-foreground">
+            <Label
+              id="goal-type-label"
+              className="text-xs uppercase tracking-wider text-muted-foreground"
+            >
               <Trans>Goal Type</Trans>
             </Label>
-            <div className="grid gap-2">
-              {GOAL_PRESETS.map((preset) => {
-                const isActive = selectedPreset === preset.key;
-                return (
-                  <button
-                    key={preset.key}
-                    type="button"
-                    onClick={() => handlePresetChange(preset.key)}
-                    className={cn(
-                      'group relative w-full rounded-lg border px-3.5 py-3 text-left transition-all',
-                      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-                      isActive
-                        ? 'border-primary bg-primary/[0.04] dark:bg-primary/10 ring-1 ring-primary/20'
-                        : 'border-border/60 hover:border-border hover:bg-muted/30'
-                    )}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div
-                        className={cn(
-                          'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors',
-                          isActive
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted text-muted-foreground group-hover:bg-muted/80'
-                        )}
-                      >
-                        {preset.icon}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span
-                            className={cn(
-                              'text-sm font-semibold leading-tight',
-                              isActive ? 'text-primary' : 'text-foreground'
-                            )}
-                          >
-                            {preset.title}
-                          </span>
-                          <ChevronRight
-                            className={cn(
-                              'h-4 w-4 shrink-0 transition-transform',
-                              isActive ? 'text-primary rotate-90' : 'text-muted-foreground/40'
-                            )}
-                          />
-                        </div>
-                        <p className="text-xs text-muted-foreground leading-snug mt-0.5">
-                          {preset.subtitle}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground/60 italic mt-1">
-                          {preset.buildExample(
-                            target > 0 ? formatter.format(toDecimal(target)) : 'X',
-                            format(targetDate, 'MMM d, yyyy')
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
+            {pickerOpen ? (
+              <div className="grid gap-1" role="group" aria-labelledby="goal-type-label">
+                {GOAL_PRESETS.map((preset) => {
+                  const isActive = selectedPreset === preset.key;
+                  return (
+                    <button
+                      key={preset.key}
+                      type="button"
+                      aria-pressed={isActive}
+                      data-testid={`goal-preset-${preset.key}`}
+                      onClick={() => handlePresetChange(preset.key)}
+                      className={cn(
+                        'flex w-full items-center gap-2.5 rounded-lg border px-2.5 py-1.5 text-left transition-colors',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                        isActive
+                          ? 'border-primary bg-primary/[0.04] ring-1 ring-primary/20 dark:bg-primary/10'
+                          : 'border-border/60 hover:border-border hover:bg-muted/30'
+                      )}
+                    >
+                      {presetBody(preset, isActive)}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div
+                className="flex items-center gap-2.5 rounded-lg border border-primary bg-primary/[0.04] px-2.5 py-1.5 ring-1 ring-primary/20 dark:bg-primary/10"
+                data-testid="goal-preset-selected"
+              >
+                {presetBody(activePreset, true)}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 shrink-0 px-2 text-xs"
+                  aria-expanded={false}
+                  onClick={() => setPickerOpen(true)}
+                >
+                  <Trans>Change type</Trans>
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* ── Target Amount ── */}
@@ -635,29 +665,34 @@ export function GoalForm({
               </div>
             </div>
           )}
+        </div>
+      </div>
 
-          {/* ── Actions ── */}
-          <div className="flex items-center justify-between pt-4 border-t">
-            <div>
-              {isEditing && onDelete && (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={onDelete}
-                  disabled={isDeleting}
-                >
-                  {isDeleting ? t`Deleting...` : t`Delete Goal`}
-                </Button>
-              )}
-            </div>
-            <Button type="submit" disabled={isSaving || isDeleting}>
-              <Save className="h-4 w-4 mr-2" />
-              {isSaving ? t`Saving...` : isEditing ? t`Update Goal` : t`Create Goal`}
+      {/* ── Actions: pinned under the scrolling fields ── */}
+      <div className="flex shrink-0 items-center justify-between gap-2 border-t px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-4">
+        <div>
+          {isEditing && onDelete && (
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={onDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? t`Deleting...` : t`Delete Goal`}
             </Button>
-          </div>
-        </form>
-      </CardContent>
-    </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="ghost" onClick={onCancel}>
+            <Trans>Cancel</Trans>
+          </Button>
+          <Button type="submit" disabled={isSaving || isDeleting}>
+            <Save className="h-4 w-4 mr-2" />
+            {isSaving ? t`Saving...` : isEditing ? t`Update Goal` : t`Create Goal`}
+          </Button>
+        </div>
+      </div>
+    </form>
   );
 }
