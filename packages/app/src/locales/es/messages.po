@@ -480,10 +480,11 @@ msgstr "{0, plural, one {¿Eliminar # beneficiario?} other {¿Eliminar # benefic
 
 #. placeholder {0}: run.transactionCount
 #: src/features/page-guides/ui/guide-visuals.tsx
-msgid "{0, plural, one {Restore # transaction to its pre-run value.} other {Restore # transactions to their pre-run values.}}"
-msgstr "{0, plural, one {Restaurar # transacción a su valor anterior a la ejecución.} other {Restaurar # transacciones a sus valores anteriores a la ejecución.}}"
+#~ msgid "{0, plural, one {Restore # transaction to its pre-run value.} other {Restore # transactions to their pre-run values.}}"
+#~ msgstr "{0, plural, one {Restaurar # transacción a su valor anterior a la ejecución.} other {Restaurar # transacciones a sus valores anteriores a la ejecución.}}"
 
 #. placeholder {0}: run.transactionCount
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "{0, plural, one {Restore # transaction to its pre-run values.} other {Restore # transactions to their pre-run values.}}"
 msgstr "{0, plural, one {Restaurar # transacción a sus valores anteriores a la ejecución.} other {Restaurar # transacciones a sus valores anteriores a la ejecución.}}"

@@ -345,7 +345,7 @@ export function RuleRunVisual() {
     >
       <div className="text-xs text-muted-foreground">
         {plural(run.transactionCount, {
-          one: 'Restore # transaction to its pre-run value.',
+          one: 'Restore # transaction to its pre-run values.',
           other: 'Restore # transactions to their pre-run values.',
         })}
       </div>

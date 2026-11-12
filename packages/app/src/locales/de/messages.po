@@ -480,10 +480,11 @@ msgstr "{0, plural, one {# Empfänger entfernen?} other {# Empfänger entfernen?
 
 #. placeholder {0}: run.transactionCount
 #: src/features/page-guides/ui/guide-visuals.tsx
-msgid "{0, plural, one {Restore # transaction to its pre-run value.} other {Restore # transactions to their pre-run values.}}"
-msgstr "{0, plural, one {# Transaktion auf ihren Wert vor der Ausführung zurücksetzen.} other {# Transaktionen auf ihre Werte vor der Ausführung zurücksetzen.}}"
+#~ msgid "{0, plural, one {Restore # transaction to its pre-run value.} other {Restore # transactions to their pre-run values.}}"
+#~ msgstr "{0, plural, one {# Transaktion auf ihren Wert vor der Ausführung zurücksetzen.} other {# Transaktionen auf ihre Werte vor der Ausführung zurücksetzen.}}"
 
 #. placeholder {0}: run.transactionCount
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "{0, plural, one {Restore # transaction to its pre-run values.} other {Restore # transactions to their pre-run values.}}"
 msgstr "{0, plural, one {Setze # Transaktion auf ihre Werte vor der Ausführung zurück.} other {Setze # Transaktionen auf ihre Werte vor der Ausführung zurück.}}"
