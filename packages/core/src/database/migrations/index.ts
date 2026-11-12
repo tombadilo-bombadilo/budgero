@@ -16,6 +16,7 @@ import { migration076 } from './076-add-custom-dashboard-filters.js';
 import { migration077 } from './077-add-custom-dashboard-home.js';
 import { migration078 } from './078-repair-home-copies.js';
 import { migration079 } from './079-add-page-guides-seen.js';
+import { migration080 } from './080-add-synced-state.js';
 import { migration001 } from './001-initial-schema.js';
 import { migration002 } from './002-add-exclude-from-budget-pace-to-categories.js';
 import { migration003 } from './003-add-metadata-column-to-accounts-for-liability-tr.js';
@@ -157,4 +158,5 @@ export const migrations: Migration[] = [
   migration077,
   migration078,
   migration079,
+  migration080,
 ];
