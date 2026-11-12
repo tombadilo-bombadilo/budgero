@@ -3,6 +3,12 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import { scaledToDecimal } from '@budgero/core/browser';
 import { Button } from '@shared/ui/button';
+import { cn } from '@shared/lib/utils';
+import {
+  ImportStatusChip,
+  importStatusChipClass,
+  type ImportStatus,
+} from '@shared/ui/import-status-chip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import type {
   PreviewRow,
@@ -11,6 +17,16 @@ import type {
   ImportDecision,
 } from '@features/import/model/types';
 import { translateImportText } from '../../lib/import-display-text';
+
+const STATUSES: ImportStatus[] = ['new', 'already-imported', 'needs-review', 'invalid'];
+
+/** Stronger background for the selected status filter. */
+const SELECTED_BG: Record<ImportStatus, string> = {
+  new: 'bg-emerald-500/25',
+  'already-imported': 'bg-muted-foreground/20',
+  'needs-review': 'bg-amber-500/30',
+  invalid: 'bg-red-500/25',
+};
 
 interface PreviewStepProps {
   busy?: boolean;
@@ -44,7 +60,7 @@ export function PreviewStep({
     invalid: t`Invalid/skipped`,
   };
 
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState<'all' | ImportStatus>('all');
   const [page, setPage] = useState(0);
   const unresolved = previewData.filter(
     (r) => r.duplicate.status === 'needs-review' && !r.decision
@@ -80,20 +96,40 @@ export function PreviewStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-2" aria-label={t`Filter import rows`}>
-          {['all', ...Object.keys(labels)].map((key) => (
-            <Button
-              key={key}
-              variant={filter === key ? 'default' : 'outline'}
-              onClick={() => {
-                setFilter(key);
-                setPage(0);
-              }}
-            >
-              {key === 'all' ? t`All` : labels[key as keyof typeof labels]} (
-              {previewData.filter((r) => key === 'all' || r.duplicate.status === key).length})
-            </Button>
-          ))}
+        <div role="group" className="flex flex-wrap gap-2" aria-label={t`Filter import rows`}>
+          {(['all', ...STATUSES] as const).map((key) => {
+            const count = previewData.filter(
+              (r) => key === 'all' || r.duplicate.status === key
+            ).length;
+            const selected = filter === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => {
+                  setFilter(key);
+                  setPage(0);
+                }}
+                className={cn(
+                  'inline-flex min-h-9 items-center text-xs ring-offset-background transition-[box-shadow,background-color,opacity] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-h-8',
+                  key === 'all'
+                    ? 'rounded-full border font-medium text-foreground'
+                    : importStatusChipClass(key),
+                  'px-3 text-xs',
+                  selected
+                    ? cn(
+                        'ring-2 ring-current ring-inset',
+                        key === 'all' ? 'bg-accent' : SELECTED_BG[key]
+                      )
+                    : 'hover:brightness-95 dark:hover:brightness-125',
+                  count === 0 && !selected && 'opacity-50'
+                )}
+              >
+                {key === 'all' ? t`All` : labels[key]} ({count})
+              </button>
+            );
+          })}
         </div>
         {matching > 0 && (
           <p className="text-sm">
@@ -176,7 +212,9 @@ export function PreviewStep({
                     <span className="break-words">{row.input.memo}</span>
                   </td>
                   <td className="p-2">
-                    <strong>{labels[row.duplicate.status]}</strong>
+                    <ImportStatusChip status={row.duplicate.status}>
+                      {labels[row.duplicate.status]}
+                    </ImportStatusChip>
                     <p>
                       {row.accountSkipped
                         ? t`Not imported: its account is set to “Don’t import”.`

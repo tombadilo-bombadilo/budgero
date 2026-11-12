@@ -117,4 +117,31 @@ describe('import review', () => {
       'Savings already has the other side, so this is imported as a regular transaction'
     );
   });
+  it('shows a status chip per row and pill filters with pressed state and counts', () => {
+    const rows = [makeRow(0), makeRow(1), makeRow(2)];
+    rows[1].duplicate.status = 'already-imported';
+    rows[1].decision = 'skip';
+    rows[2].duplicate.status = 'needs-review';
+    const { container } = render(<PreviewStep {...props(rows)} />);
+    const chips = container.querySelectorAll('tbody [data-status]');
+    expect([...chips].map((c) => c.getAttribute('data-status'))).toEqual([
+      'new',
+      'already-imported',
+      'needs-review',
+    ]);
+    expect(chips[1]).toHaveTextContent('Already imported');
+    const all = screen.getByRole('button', { name: 'All (3)' });
+    const invalid = screen.getByRole('button', { name: 'Invalid/skipped (0)' });
+    expect(all).toHaveAttribute('aria-pressed', 'true');
+    expect(invalid).toHaveAttribute('aria-pressed', 'false');
+    expect(invalid.className).toContain('opacity-50');
+    fireEvent.click(screen.getByRole('button', { name: 'Already imported (1)' }));
+    expect(screen.getByRole('button', { name: 'Already imported (1)' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(all).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByText('Purchase 0')).not.toBeInTheDocument();
+    expect(screen.getByText('Purchase 1')).toBeInTheDocument();
+  });
 });
