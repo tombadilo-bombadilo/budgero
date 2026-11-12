@@ -641,7 +641,7 @@ export default function CurrencySettingsPage() {
                       <TableCell>
                         {rate.EndDate || (
                           <span className="text-muted-foreground">
-                            <Trans>Open</Trans>
+                            <Trans>No end date</Trans>
                           </span>
                         )}
                       </TableCell>

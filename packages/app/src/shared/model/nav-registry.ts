@@ -45,7 +45,11 @@ export const NAV_REPORTS: NavRouteItem[] = [
 
 /** Settings → Account & Access links (only shown when not a self-hostable build). */
 export const NAV_SETTINGS_ACCOUNT: NavRouteItem[] = [
-  { to: '/settings/account', icon: User, label: msg`Account` },
+  {
+    to: '/settings/account',
+    icon: User,
+    label: msg({ message: 'Account', context: 'settings-section' }),
+  },
   { to: '/settings/subscription', icon: CreditCard, label: msg`Subscription` },
   { to: '/settings/security', icon: Shield, label: msg`Security & Privacy` },
 ];

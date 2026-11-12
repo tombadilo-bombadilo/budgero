@@ -186,10 +186,10 @@ function RunAccordionItem({
         {canUndo ? (
           <div className="mb-3 flex flex-col gap-3 rounded-md border border-dashed bg-muted/40 p-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-muted-foreground">
-              <Trans>
-                Restore {run.transactionCount} transaction{run.transactionCount === 1 ? '' : 's'} to
-                their pre-run values.
-              </Trans>
+              {plural(run.transactionCount, {
+                one: 'Restore # transaction to its pre-run values.',
+                other: 'Restore # transactions to their pre-run values.',
+              })}
             </div>
             <ConfirmDialog
               trigger={

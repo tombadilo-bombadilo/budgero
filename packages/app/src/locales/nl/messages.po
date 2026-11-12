@@ -502,6 +502,11 @@ msgstr "{0, plural, one {# begunstigde verwijderen?} other {# begunstigden verwi
 msgid "{0, plural, one {Restore # transaction to its pre-run value.} other {Restore # transactions to their pre-run values.}}"
 msgstr "{0, plural, one {# transactie terugzetten naar de waarde van vóór de uitvoering.} other {# transacties terugzetten naar de waarden van vóór de uitvoering.}}"
 
+#. placeholder {0}: run.transactionCount
+#: src/features/rules/ui/RuleHistoryDrawer.tsx
+msgid "{0, plural, one {Restore # transaction to its pre-run values.} other {Restore # transactions to their pre-run values.}}"
+msgstr "{0, plural, one {Herstel # transactie naar de waarden van vóór de uitvoering.} other {Herstel # transacties naar hun waarden van vóór de uitvoering.}}"
+
 #. placeholder {0}: Number(draft) || 0
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "{0, plural, one {row} other {rows}}"
@@ -3630,15 +3635,20 @@ msgstr "Toegangstype:"
 msgid "Access until:"
 msgstr "Toegang tot:"
 
-#: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
-#: src/shared/model/nav-registry.ts
 msgid "Account"
 msgstr "Rekening"
+
+#: src/app/layout/desktop-shell/SidebarNav.tsx
+#: src/shared/model/nav-registry.ts
+#: src/widgets/navigation/MobileBottomNav.tsx
+msgctxt "settings-section"
+msgid "Account"
+msgstr "Account"
 
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 msgid "Account archived"
@@ -3744,7 +3754,6 @@ msgid "Account:"
 msgstr "Rekening:"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#: src/widgets/navigation/MobileBottomNav.tsx
 msgid "Account<0/>"
 msgstr "Rekening<0/>"
 
@@ -6386,6 +6395,10 @@ msgstr "Abonnement wijzigen"
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Change the master password"
 msgstr "Het hoofdwachtwoord wijzigen"
+
+#: src/pages/settings/SecurityPage.tsx
+msgid "Change the password that unlocks your data. Your data stays encrypted, and your other devices will ask for the new password. Sign-in password, email and 2FA are managed in your Clerk profile."
+msgstr "Wijzig het wachtwoord waarmee je je gegevens ontgrendelt. Je gegevens blijven versleuteld, en je andere apparaten vragen om het nieuwe wachtwoord. Inlogwachtwoord, e-mail en 2FA beheer je in je Clerk-profiel."
 
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Change vs previous month"
@@ -9783,8 +9796,12 @@ msgid "Enter your card’s minimum payment from statements."
 msgstr "Voer de minimale betaling van je kaart in zoals aangegeven op je afschriften."
 
 #: src/pages/settings/SecurityPage.tsx
-msgid "Enter your current password and choose a new one. Your data will be re-encrypted with the new password."
-msgstr "Voer je huidige wachtwoord in en kies een nieuw wachtwoord. Je gegevens worden opnieuw versleuteld met het nieuwe wachtwoord."
+msgid "Enter your current password and choose a new one. Your data stays encrypted; only the password that unlocks it changes."
+msgstr "Voer je huidige wachtwoord in en kies een nieuw. Je gegevens blijven versleuteld; alleen het wachtwoord waarmee je ze ontgrendelt verandert."
+
+#: src/pages/settings/SecurityPage.tsx
+#~ msgid "Enter your current password and choose a new one. Your data will be re-encrypted with the new password."
+#~ msgstr "Voer je huidige wachtwoord in en kies een nieuw wachtwoord. Je gegevens worden opnieuw versleuteld met het nieuwe wachtwoord."
 
 #: src/pages/onboarding/onboarding-data.ts
 #: src/pages/onboarding/steps/InviteCodeStep.tsx
@@ -14770,6 +14787,10 @@ msgstr "Geen eerdere periode om mee te vergelijken."
 msgid "No earlier versions yet. One is kept each time this workspace syncs."
 msgstr "Nog geen eerdere versies. Elke keer dat deze werkruimte synchroniseert, wordt er een bewaard."
 
+#: src/pages/settings/CurrencySettingsPage.tsx
+msgid "No end date"
+msgstr "Geen einddatum"
+
 #: src/pages/reports/ReportsHomePage.tsx
 msgid "No example matches your search."
 msgstr "Geen voorbeeld past bij je zoekopdracht."
@@ -15693,7 +15714,6 @@ msgid "Only you can read your budget"
 msgstr "Alleen jij kunt je budget lezen"
 
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
-#: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Open"
 msgstr "Openen"
 
@@ -18325,8 +18345,8 @@ msgstr "Herstellen"
 #. placeholder {0}: run.transactionCount
 #. placeholder {1}: run.transactionCount === 1 ? '' : 's'
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
-msgid "Restore {0} transaction{1} to their pre-run values."
-msgstr "Herstel {0}transacties{1} naar hun waarden vóór de uitvoering."
+#~ msgid "Restore {0} transaction{1} to their pre-run values."
+#~ msgstr "Herstel {0}transacties{1} naar hun waarden vóór de uitvoering."
 
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Restore and keep later changes"
@@ -23586,8 +23606,8 @@ msgid "Update to the official rate when back online"
 msgstr "Bijwerken naar officiële wisselkoers wanneer weer online"
 
 #: src/pages/settings/SecurityPage.tsx
-msgid "Update your master password to keep your data secure. This will re-encrypt all your data with the new password. Sign-in password, email and 2FA are managed in your Clerk profile."
-msgstr "Werk je hoofdwachtwoord bij om je gegevens veilig te houden. Hiermee worden al je gegevens opnieuw versleuteld met het nieuwe wachtwoord. Inlogwachtwoord, e-mail en 2FA worden beheerd in je Clerk-profiel."
+#~ msgid "Update your master password to keep your data secure. This will re-encrypt all your data with the new password. Sign-in password, email and 2FA are managed in your Clerk profile."
+#~ msgstr "Werk je hoofdwachtwoord bij om je gegevens veilig te houden. Hiermee worden al je gegevens opnieuw versleuteld met het nieuwe wachtwoord. Inlogwachtwoord, e-mail en 2FA worden beheerd in je Clerk-profiel."
 
 #: src/features/reports/ui/SaveReportDialog.tsx
 #~ msgid "Update your report and chart configurations."

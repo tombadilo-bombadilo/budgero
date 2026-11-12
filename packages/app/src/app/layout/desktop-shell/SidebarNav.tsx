@@ -195,7 +195,7 @@ export const SidebarNav = React.memo(function SidebarNav() {
               <>
                 <div className="ml-6 mr-2 mt-2 mb-1">
                   <span className={SETTINGS_SECTION_LABEL_CLASS}>
-                    <Trans>Account</Trans>
+                    <Trans context="settings-section">Account</Trans>
                   </span>
                 </div>
                 {NAV_SETTINGS_ACCOUNT.map((link) => (
