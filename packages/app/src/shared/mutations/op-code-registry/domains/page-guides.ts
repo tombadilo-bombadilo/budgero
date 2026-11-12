@@ -2,7 +2,7 @@ import { S, type OpCodeEntry } from '../shared';
 
 /**
  * Page guides a workspace member has seen (core PageGuidesService). Adds only,
- * so marks from several devices merge; not undoable (nothing to put back).
+ * so marks from several devices merge; not undoable and not in the audit log.
  */
 export const pageGuideOps = {
   'pageGuides.markSeen': {
@@ -18,5 +18,6 @@ export const pageGuideOps = {
       return { added };
     },
     invalidates: [['pageGuidesSeen']],
+    history: false,
   },
 } satisfies Record<string, OpCodeEntry>;

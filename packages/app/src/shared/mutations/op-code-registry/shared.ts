@@ -297,6 +297,11 @@ export interface OpCodeEntry {
     // Build inverse operations to undo this mutation
     build: (args: Record<string, unknown>, result: unknown, before: unknown) => OpCall[];
   };
+  /**
+   * false: app state the user didn't edit as such (synced UI state, seen
+   * guides); no row in the mutation history (audit log). Such ops have no undo.
+   */
+  history?: false;
   // Optional redo customization (defaults to re-applying the original op)
   redo?: {
     build: (args: Record<string, unknown>, result: unknown, before: unknown) => OpCall[];
