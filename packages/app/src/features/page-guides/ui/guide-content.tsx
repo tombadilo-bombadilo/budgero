@@ -13,6 +13,10 @@ import type { ReactNode } from 'react';
 import type { PageGuideId } from '../model/page-guides';
 import {
   AccountRouteVisual,
+  CustomRateVisual,
+  InviteReadyVisual,
+  PasswordStorageVisual,
+  WorkspaceRowVisual,
   FileTypesVisual,
   BudgetAccountsVisual,
   DateRangeVisual,
@@ -26,6 +30,7 @@ import {
   RuleTriggersVisual,
   RuleVisual,
   SearchVisual,
+  TransactionTypeVisual,
 } from './guide-visuals';
 
 export interface GuideCard {
@@ -54,13 +59,16 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
             Ready to Assign shows 0, and only budget money you already have.
           </Trans>
         ),
+        // The Ready to Assign pill in BudgetToolbar, in its fully assigned (neutral) state.
         visual: (
-          <div className="flex items-center justify-between rounded-md border bg-card px-3 py-2">
-            <span className="text-xs text-muted-foreground">
-              <Trans>Ready to Assign</Trans>
+          <div className="inline-flex flex-col justify-center rounded-lg border border-border/70 bg-muted/40 py-1 pl-2.5 pr-3 shadow-sm">
+            <span className="flex items-center gap-1">
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+              <span className="text-[10px] font-medium uppercase leading-none tracking-[0.08em] text-muted-foreground">
+                <Trans>Ready to assign</Trans>
+              </span>
             </span>
-            <span className="flex items-center gap-1.5 text-sm font-semibold tabular-nums text-emerald-600">
-              <CircleCheck className="h-4 w-4" aria-hidden />
+            <span className="mt-1 block text-sm font-semibold leading-none tabular-nums text-foreground">
               {n(0)}
             </span>
           </div>
@@ -77,24 +85,28 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
             month move between months.
           </Trans>
         ),
+        // The budget table's header and one category row (DesktopBudgetTableView, CategoryRowTableLayout).
         visual: (
-          <div className="rounded-md border bg-card px-3 py-2 text-xs tabular-nums">
-            <div className="mb-1 truncate font-medium">
-              <Trans>Groceries</Trans>
-            </div>
-            <div className="grid grid-cols-3 gap-x-2 gap-y-0.5 text-right">
-              <span className="text-muted-foreground">
+          <div className="rounded-md border text-[11px] tabular-nums">
+            <div className="grid grid-cols-[minmax(0,1fr)_repeat(3,4rem)] gap-x-2 border-b px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <span />
+              <span className="truncate text-right">
                 <Trans>Assigned</Trans>
               </span>
-              <span className="text-muted-foreground">
+              <span className="truncate text-right">
                 <Trans>Activity</Trans>
               </span>
-              <span className="text-muted-foreground">
+              <span className="truncate text-right">
                 <Trans>Available</Trans>
               </span>
-              <span>{n(300)}</span>
-              <span>{n(-120)}</span>
-              <span className="font-semibold text-emerald-600">{n(180)}</span>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_repeat(3,4rem)] gap-x-2 px-2 py-1.5">
+              <span className="truncate font-medium">
+                <Trans>Groceries</Trans>
+              </span>
+              <span className="text-right">{n(300)}</span>
+              <span className="text-right">{n(-120)}</span>
+              <span className="text-right font-medium text-foreground">{n(180)}</span>
             </div>
           </div>
         ),
@@ -112,10 +124,11 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
         ),
         visual: (
           <div className="grid grid-cols-2 gap-1.5">
-            <GoalKind icon={Wallet} label={t`An amount each month`} />
-            <GoalKind icon={CalendarClock} label={t`A total by a date`} />
-            <GoalKind icon={Repeat} label={t`Every few months`} />
-            <GoalKind icon={Flag} label={t`Build up a balance`} />
+            {/* Four of the goal types, with the titles and icons of GoalForm. */}
+            <GoalKind icon={Wallet} label={t`Monthly Available Target`} />
+            <GoalKind icon={CalendarClock} label={t`Yearly Allocation Target`} />
+            <GoalKind icon={Repeat} label={t`Periodic Allocation Target`} />
+            <GoalKind icon={Flag} label={t`Target Balance`} />
           </div>
         ),
         docs: 'goals',
@@ -131,11 +144,12 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
           </Trans>
         ),
         visual: (
-          <div className="flex items-center justify-between rounded-md border bg-card px-3 py-2 text-xs">
+          // CoverOverspendingPopover's trigger: the red, dotted-underlined Available.
+          <div className="flex items-center justify-between rounded-md border px-3 py-2 text-[11px]">
             <span className="font-medium">
               <Trans>Dining out</Trans>
             </span>
-            <span className="font-semibold tabular-nums text-red-600 underline decoration-dotted underline-offset-2 dark:text-red-300">
+            <span className="font-medium tabular-nums text-red-600 underline decoration-dotted underline-offset-2 dark:text-red-300">
               {n(-25)}
             </span>
           </div>
@@ -202,19 +216,7 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
             that is not spending.
           </Trans>
         ),
-        visual: (
-          <div className="grid grid-cols-3 gap-1 rounded-md border bg-muted/40 p-1 text-center text-xs">
-            <span className="rounded px-1 py-1 text-muted-foreground">
-              <Trans>Income</Trans>
-            </span>
-            <span className="rounded bg-background px-1 py-1 font-medium shadow-sm">
-              <Trans>Expense</Trans>
-            </span>
-            <span className="rounded px-1 py-1 text-muted-foreground">
-              <Trans>Transfer</Trans>
-            </span>
-          </div>
-        ),
+        visual: <TransactionTypeVisual />,
       },
       {
         key: 'dates',
@@ -251,10 +253,11 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
             buttons under the search show only those.
           </Trans>
         ),
+        // ClearedToggle's two states, with their labels.
         visual: (
-          <div className="flex items-center justify-center gap-4 rounded-md border bg-card px-3 py-2 text-xs">
+          <div className="flex items-center justify-center gap-4 rounded-md border px-3 py-2 text-xs">
             <span className="flex items-center gap-1.5 text-muted-foreground">
-              <CircleDashed className="h-4 w-4" aria-hidden />
+              <CircleDashed className="h-4 w-4 text-muted-foreground/60" aria-hidden />
               <Trans>Uncleared</Trans>
             </span>
             <span aria-hidden className="text-muted-foreground">
@@ -479,6 +482,149 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
           </Trans>
         ),
         visual: <ImportHistoryVisual />,
+      },
+    ],
+    workspaces: [
+      {
+        key: 'what',
+        title: t`Workspaces hold budgets`,
+        body: (
+          <Trans>
+            A workspace holds one or more budgets, and everyone in it sees all of them. Switch moves
+            you to another workspace, and New Workspace makes a new one.
+          </Trans>
+        ),
+        visual: <WorkspaceRowVisual />,
+        docs: 'sharing',
+      },
+      {
+        key: 'invite',
+        title: t`Invite someone`,
+        body: (
+          <Trans>
+            Under Sharing & invitations, Create Invite makes a link that works for 7 days: send it
+            with Copy link or Open in email. You have 5 seats across the workspaces you own, and
+            pending invites count too.
+          </Trans>
+        ),
+        visual: <InviteReadyVisual />,
+        docs: 'sharing',
+      },
+      {
+        key: 'join',
+        title: t`Joining with an invite`,
+        body: (
+          <Trans>
+            The other person opens the link, signs in with their own account and their own master
+            password, then chooses Join workspace. Without the link, Redeem Invite takes the code.
+          </Trans>
+        ),
+      },
+      {
+        key: 'members',
+        title: t`Owner and members`,
+        body: (
+          <Trans>
+            The owner creates invites, renames or deletes the workspace and can remove members;
+            members budget alongside. Deleting a workspace removes its data for everyone and can’t
+            be undone.
+          </Trans>
+        ),
+      },
+    ],
+    security: [
+      {
+        key: 'encryption',
+        title: t`Only you can read your budget`,
+        body: (
+          <Trans>
+            Your budget is encrypted on your devices with your master password before it syncs, so
+            our server can’t read it. Nobody can recover that password for you: resetting it on the
+            unlock screen starts over without your data.
+          </Trans>
+        ),
+        docs: 'master-password',
+      },
+      {
+        key: 'change',
+        title: t`Change the master password`,
+        body: (
+          <Trans>
+            Choose Change Master Password and enter the current and the new one (at least 8
+            characters). Your other devices then ask for the new one; people you share a workspace
+            with keep their own.
+          </Trans>
+        ),
+        docs: 'master-password',
+      },
+      {
+        key: 'storage',
+        title: t`Remember it on this device?`,
+        body: (
+          <Trans>
+            Keep in memory only asks for the password again after a refresh or when the tab closes.
+            Remember on this device keeps it for the Duration you pick, until you log out.
+          </Trans>
+        ),
+        visual: <PasswordStorageVisual />,
+      },
+      {
+        key: 'privacy',
+        title: t`Usage analytics`,
+        body: (
+          <Trans>
+            Under Privacy Settings you can switch Usage Analytics off. It never collects amounts,
+            balances, or payee, category or account names, and self-hosted builds send none.
+          </Trans>
+        ),
+      },
+    ],
+    currencies: [
+      {
+        key: 'currencies',
+        title: t`One budget, many currencies`,
+        body: (
+          <Trans>
+            Each account keeps its own currency, and the budget shows everything in its Display
+            Currency, which you change under Manage Budget. Every transaction keeps both its own
+            amount and the converted one.
+          </Trans>
+        ),
+        docs: 'multi-currency',
+      },
+      {
+        key: 'rates',
+        title: t`Where rates come from`,
+        body: (
+          <Trans>
+            Exchange rates are fetched daily and kept in your budget file; if a day is missing, the
+            nearest earlier rate up to a week back is used. Keep cached rates for sets how long they
+            stay.
+          </Trans>
+        ),
+        docs: 'multi-currency',
+      },
+      {
+        key: 'custom',
+        title: t`Your own rates`,
+        body: (
+          <Trans>
+            Add Rate sets a rate for a currency pair from a start date, with an end date if you want
+            one; Also add the reverse rate fills in the other direction. Custom rates take priority
+            over fetched ones.
+          </Trans>
+        ),
+        visual: <CustomRateVisual />,
+      },
+      {
+        key: 'override',
+        title: t`A rate for one transaction`,
+        body: (
+          <Trans>
+            To match your statement, you can set the rate on a single transaction. Rates you set
+            there are never recalculated.
+          </Trans>
+        ),
       },
     ],
   };

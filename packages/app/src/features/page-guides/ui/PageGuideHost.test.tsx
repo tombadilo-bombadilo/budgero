@@ -133,6 +133,9 @@ it.each([
   ['/settings/rules', 'What a rule does'],
   ['/settings/recurring', 'Bills and pay on a schedule'],
   ['/settings/imports', 'Bring in a file from your bank'],
+  ['/settings/workspaces', 'Workspaces hold budgets'],
+  ['/settings/security', 'Only you can read your budget'],
+  ['/settings/currencies', 'One budget, many currencies'],
 ])('opens a guide on %s', (path, title) => {
   renderHost(path);
   settle();

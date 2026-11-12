@@ -139,6 +139,9 @@ export const PAGE_GUIDE_IDS = [
   'rules',
   'recurring',
   'imports',
+  'workspaces',
+  'security',
+  'currencies',
 ] as const;
 export type PageGuideId = (typeof PAGE_GUIDE_IDS)[number];
 
