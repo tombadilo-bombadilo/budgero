@@ -1,5 +1,5 @@
 export { PageGuideHost } from './ui/PageGuideHost';
-export { PageGuideButton } from './ui/PageGuideButton';
+export { PageGuideButton, type PageGuideMenuItem } from './ui/PageGuideButton';
 export {
   openPageGuide,
   PAGE_GUIDE_CARDS,

@@ -10,7 +10,8 @@ export default function RecurringTransactionsPage() {
         </h1>
         <p className="text-muted-foreground">
           <Trans>
-            Set up recurring transactions to automatically create entries on a schedule.
+            Set up transactions that repeat on a schedule. Nothing is posted until you mark it ready
+            or post it.
           </Trans>
         </p>
       </header>
