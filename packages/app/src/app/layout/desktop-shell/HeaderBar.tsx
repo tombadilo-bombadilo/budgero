@@ -16,6 +16,7 @@ import { Button } from '@shared/ui/button';
 import { ConnectivityStatus } from '@widgets/sync-status/ConnectivityStatus';
 import { openQuackback } from '@features/feedback';
 import { PageGuideButton } from '@features/page-guides';
+import { useShowFirstStepsMenuItems } from '@features/first-steps';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import { getKeyboardShortcutLabels } from '@shared/lib/keyboard-shortcuts';
 
@@ -35,6 +36,8 @@ export const HeaderBar = React.memo(function HeaderBar({ breadcrumbs }: HeaderBa
   const togglePrivacyMaskNumbers = useUiStore((state) => state.togglePrivacyMaskNumbers);
   const feedbackEnabled = !IS_SELF_HOSTABLE_BUILD;
   const shortcuts = getKeyboardShortcutLabels();
+  // On the Budget page while the first steps are hidden: "Show first steps".
+  const guideMenuItems = useShowFirstStepsMenuItems();
 
   return (
     <div className="sticky top-0 z-30 bg-background/80 backdrop-blur border-b">
@@ -69,7 +72,7 @@ export const HeaderBar = React.memo(function HeaderBar({ breadcrumbs }: HeaderBa
               ))}
             </BreadcrumbList>
           </Breadcrumb>
-          <PageGuideButton className="h-7 px-2" />
+          <PageGuideButton className="h-7 px-2" extraItems={guideMenuItems} />
         </div>
         <div className="flex items-center gap-2">
           <Button
