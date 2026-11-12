@@ -267,7 +267,9 @@ export function GoalWalkthroughHost({
         // The page guide card: same surface, type and spacing.
         'z-40 grid gap-3 rounded-lg border bg-background/80 p-4 shadow-lg backdrop-blur-xl supports-[backdrop-filter]:bg-background/60',
         variant === 'bar'
-          ? 'fixed inset-x-3 bottom-[calc(5.5rem+env(safe-area-inset-bottom))]'
+          ? // Above the bottom nav (its measured height includes the safe-area
+            // inset); never taller than the space above it, scrolling inside.
+            'fixed inset-x-3 bottom-[calc(var(--mobile-bottom-nav-height,96px)+0.5rem)] max-h-[calc(100dvh-var(--mobile-bottom-nav-height,96px)-5rem)] overflow-y-auto'
           : !style && 'fixed bottom-6 right-6 w-80'
       )}
     >

@@ -19,6 +19,7 @@ import { useClearCategorySelectionOnMount } from '@shared/hooks/useClearCategory
 import { useNavigateMonth } from '@shared/hooks/useNavigateMonth';
 import { FirstStepsCard } from '@features/first-steps/ui/FirstStepsCard';
 import { GoalWalkthroughHost } from '@features/first-steps/ui/GoalWalkthroughHost';
+import { useGoalWalkthrough } from '@features/first-steps/model/goal-walkthrough';
 import { useFormatMaskedMilli } from '@features/budget-planning/lib/useFormatMaskedMilli';
 import { OPAQUE_CARD_SURFACE } from '@features/budget-planning/ui/mobile-table-columns';
 
@@ -35,6 +36,9 @@ export function BudgetingPageMobile() {
   const setShowHiddenCategories = useUiStore((state) => state.setShowHiddenCategories);
 
   const [contextOpen, setContextOpen] = useState(false);
+  // The goal walkthrough's card sits where the Context button floats; the
+  // button steps aside while the walkthrough runs and comes back after.
+  const walkthroughOpen = useGoalWalkthrough().step !== 'closed';
 
   const focusCategoryId = useFocusCategoryFromNavState();
 
@@ -181,19 +185,21 @@ export function BudgetingPageMobile() {
         </CardContent>
       </Card>
 
-      <Button
-        variant="default"
-        size="lg"
-        className={cn(
-          'fixed left-1/2 z-40 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-full shadow-lg',
-          contextOpen && 'pointer-events-none opacity-0'
-        )}
-        style={{ bottom: 'calc(var(--mobile-bottom-nav-height, 96px) + 0.5rem)' }}
-        onClick={() => setContextOpen(true)}
-      >
-        <BarChart3 className="mr-2 h-4 w-4" />
-        {contextButtonLabel}
-      </Button>
+      {!walkthroughOpen && (
+        <Button
+          variant="default"
+          size="lg"
+          className={cn(
+            'fixed left-1/2 z-40 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-full shadow-lg',
+            contextOpen && 'pointer-events-none opacity-0'
+          )}
+          style={{ bottom: 'calc(var(--mobile-bottom-nav-height, 96px) + 0.5rem)' }}
+          onClick={() => setContextOpen(true)}
+        >
+          <BarChart3 className="mr-2 h-4 w-4" />
+          {contextButtonLabel}
+        </Button>
+      )}
 
       <Drawer open={contextOpen} onOpenChange={setContextOpen}>
         <DrawerContent className="h-[85vh] data-[vaul-drawer-direction=bottom]:max-h-[85vh] max-w-full px-0 pb-6">
