@@ -366,7 +366,19 @@ export function useBudgetTableState({
         `[data-category-id="${focusCategoryId}"]`
       ) as HTMLElement | null;
       if (el?.scrollIntoView) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Land below the phone's sticky toolbar (CATEGORY / ASSIGNED / AVAILABLE):
+        // an opened card can be taller than half the screen, and centring it
+        // would hide its top (the goal title and buttons) under that header.
+        // Toolbar and column header both stick; hidden ones measure 0.
+        const headers = [...document.querySelectorAll<HTMLElement>('[data-budget-sticky-header]')];
+        const offset = headers.reduce((sum, h) => sum + h.offsetHeight, 0) + 8;
+        el.style.scrollMarginTop = `${offset}px`;
+        const scroller = el.closest<HTMLElement>('.overflow-y-auto');
+        const room = (scroller?.clientHeight ?? window.innerHeight) - offset;
+        el.scrollIntoView({
+          behavior: 'smooth',
+          block: el.offsetHeight > room / 2 ? 'start' : 'center',
+        });
       }
       setHighlightedCategoryId(focusCategoryId);
       setTimeout(() => setHighlightedCategoryId(null), 2000);

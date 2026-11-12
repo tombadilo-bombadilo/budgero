@@ -176,18 +176,21 @@ export function GoalSection({
 
       {/* Goal Form Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
-        <DialogContent className="p-3 sm:p-6 max-w-[22rem] sm:max-w-lg md:max-w-xl max-h-[90dvh] overflow-y-auto">
-          {/* First steps: one line inside the form, so it never covers a field. */}
-          {walkthroughHint && (
-            <p
-              className="rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary"
-              data-testid="goal-walkthrough-hint"
-              aria-live="polite"
-            >
-              <Trans>Pick a type, enter the amount, save.</Trans>
-            </p>
-          )}
+        {/* Fixed height budget: the form scrolls inside, Save/Cancel stay pinned. */}
+        <DialogContent className="flex max-h-[min(90dvh,calc(100dvh-2rem))] max-w-[22rem] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg md:max-w-xl">
           <GoalForm
+            notice={
+              walkthroughHint && (
+                // First steps: one line inside the form, so it never covers a field.
+                <p
+                  className="rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary"
+                  data-testid="goal-walkthrough-hint"
+                  aria-live="polite"
+                >
+                  <Trans>Pick a type, enter the amount, save.</Trans>
+                </p>
+              )
+            }
             goal={goal}
             categoryId={categoryId}
             categoryName={categoryName}
@@ -204,7 +207,6 @@ export function GoalSection({
             onDelete={goal ? handleDelete : undefined}
             isSaving={createGoalMutation.isPending || updateGoalMutation.isPending}
             isDeleting={deleteGoalMutation.isPending}
-            asCard={false}
           />
         </DialogContent>
       </Dialog>

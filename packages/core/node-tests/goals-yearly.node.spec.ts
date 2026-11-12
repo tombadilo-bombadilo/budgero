@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { GoalCalculations, CategoryFinancials, GoalProgress } from '../src/services/goals/calculations';
+import {
+  GoalCalculations,
+  CategoryFinancials,
+  GoalProgress,
+} from '../src/services/goals/calculations';
 import { Goal, GoalType, GoalPurpose } from '../src/services/goals/types';
 import { asMilli, MILLIS_PER_CENT } from '../src/money/index.js';
 
@@ -107,7 +111,6 @@ const finances = (overrides: Partial<CategoryFinancials> = {}): CategoryFinancia
   ...overrides,
 });
 
-
 /**
  * Core now returns {{token}} templates plus raw values (the app formats them
  * with its localizer). Render them here the same way so the expected literals
@@ -117,7 +120,8 @@ const fillTemplate = (msg: string, values?: Record<string, number | string>): st
   msg.replace(/\{\{(\w+)\}\}/g, (_, k) => {
     const v = values?.[k];
     if (typeof v === 'number') return usd(v);
-    if (typeof v === 'string') return /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(v).toLocaleDateString() : v;
+    if (typeof v === 'string')
+      return /^\d{4}-\d{2}-\d{2}$/.test(v) ? new Date(v).toLocaleDateString() : v;
     return `{{${k}}}`;
   });
 
@@ -155,7 +159,7 @@ describe('Yearly allocation goal (savings, target-date)', () => {
       isFunded: true,
       isOnTrack: true,
       status: 'on-track',
-      statusMessage: `✓ ${usd(110000)} allocated this month — on track!`,
+      statusMessage: `${usd(110000)} allocated this month — on track!`,
       recommendation: `On track — ${usd(490000)} still needed over 5 more months.`,
       breakdown: {
         title: 'Yearly Allocation Target',
@@ -284,7 +288,7 @@ describe('Yearly allocation goal (savings, target-date)', () => {
       isFunded: true,
       isOnTrack: true,
       status: 'completed',
-      statusMessage: '✓ Fully allocated!',
+      statusMessage: 'Fully allocated!',
       recommendation: 'Target amount fully allocated for this cycle.',
       breakdown: {
         title: 'Yearly Allocation Target',
@@ -524,7 +528,7 @@ describe('Yearly available goal (spending, yearly with target date)', () => {
       isFunded: true,
       isOnTrack: true,
       status: 'on-track',
-      statusMessage: `✓ This month's ${usd(200000)} allocated!`,
+      statusMessage: `This month's ${usd(200000)} allocated!`,
       recommendation: `This month's target met! Continue with ${usd(200000)}/month to stay on track`,
       breakdown: {
         title: 'Yearly Available Target',
@@ -653,7 +657,7 @@ describe('Yearly available goal (spending, yearly with target date)', () => {
       isFunded: true,
       isOnTrack: true,
       status: 'completed',
-      statusMessage: '✓ Target amount available!',
+      statusMessage: 'Target amount available!',
       recommendation: 'Target amount is available and ready to use.',
       breakdown: {
         title: 'Yearly Available Target',

@@ -109,7 +109,8 @@ export function BudgetingPageMobile() {
       />
       <Card className="flex-1 min-h-0 overflow-hidden py-0">
         <CardContent className="h-full px-0 overflow-hidden">
-          <div className="h-full overflow-y-auto pb-24">
+          {/* Bottom room: the last card scrolls clear of the floating View context button. */}
+          <div className="h-full overflow-y-auto pb-36">
             <BudgetTable
               rawRows={budgetData || []}
               goals={goalsData || []}
@@ -122,7 +123,10 @@ export function BudgetingPageMobile() {
               showHiddenCategories={showHiddenCategories}
               renderToolbar={(controls) => (
                 // Opaque: the toolbar's own background is see-through (blur).
-                <div className={cn('sticky top-0 z-30', OPAQUE_CARD_SURFACE)}>
+                <div
+                  className={cn('sticky top-0 z-30', OPAQUE_CARD_SURFACE)}
+                  data-budget-sticky-header
+                >
                   <BudgetToolbar
                     readyToAssign={readyToAssign}
                     readyToAssignSettled={figuresSettled}

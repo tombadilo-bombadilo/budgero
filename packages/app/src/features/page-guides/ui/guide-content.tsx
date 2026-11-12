@@ -1,14 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import {
-  CalendarClock,
-  CircleCheck,
-  CircleDashed,
-  Flag,
-  Landmark,
-  Repeat,
-  Tag,
-  Wallet,
-} from 'lucide-react';
+import { CircleCheck, CircleDashed, Landmark, Tag } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { PageGuideId } from '../model/page-guides';
 import {
@@ -20,7 +11,7 @@ import {
   FileTypesVisual,
   BudgetAccountsVisual,
   DateRangeVisual,
-  GoalKind,
+  GoalTypesVisual,
   ImportHistoryVisual,
   ImportStatusVisual,
   OccurrenceActionsVisual,
@@ -123,13 +114,8 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
           </Trans>
         ),
         visual: (
-          <div className="grid grid-cols-2 gap-1.5">
-            {/* Four of the goal types, with the titles and icons of GoalForm. */}
-            <GoalKind icon={Wallet} label={t`Monthly Available Target`} />
-            <GoalKind icon={CalendarClock} label={t`Yearly Allocation Target`} />
-            <GoalKind icon={Repeat} label={t`Periodic Allocation Target`} />
-            <GoalKind icon={Flag} label={t`Target Balance`} />
-          </div>
+          // The goal types as GoalForm lists them.
+          <GoalTypesVisual />
         ),
         docs: 'goals',
       },

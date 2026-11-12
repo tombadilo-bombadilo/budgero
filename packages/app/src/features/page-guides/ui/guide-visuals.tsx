@@ -7,6 +7,10 @@ import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import {
   ArrowDownRight,
+  CalendarClock,
+  Flag,
+  Repeat,
+  Wallet,
   ArrowDownUp,
   Calendar,
   CalendarDays,
@@ -86,6 +90,44 @@ export function GoalKind({
         )}
       </span>
     </span>
+  );
+}
+
+/**
+ * The goal types the way GoalForm lists them: one cadence per line (the start
+ * of each type's title), then what Available and Allocation mean.
+ */
+export function GoalTypesVisual() {
+  const { t } = useLingui();
+  return (
+    <div className="grid gap-1.5">
+      <GoalKind
+        icon={Wallet}
+        label={t`Monthly`}
+        description={t`Every month, like rent or groceries.`}
+      />
+      <GoalKind
+        icon={CalendarClock}
+        label={t`Yearly`}
+        description={t`By a date, like a holiday or a yearly bill.`}
+      />
+      <GoalKind
+        icon={Repeat}
+        label={t`Periodic`}
+        description={t`Every few months, like a quarterly bill.`}
+      />
+      <GoalKind
+        icon={Flag}
+        label={t`Target Balance`}
+        description={t`Build up to an amount, no date, like an emergency fund.`}
+      />
+      <p className="text-[11px] leading-snug text-muted-foreground">
+        <Trans>
+          The first three come in two kinds. Available: have the amount ready. Allocation: put a set
+          amount aside.
+        </Trans>
+      </p>
+    </div>
   );
 }
 

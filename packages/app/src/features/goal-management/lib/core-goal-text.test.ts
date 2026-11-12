@@ -23,7 +23,7 @@ const templates = [
   'Start saving {{monthlyTarget}} this month',
   '{{successfulMonths}}/{{monthsTracked}} months',
   'On track — {{needed}} still needed over {{monthsMore}} more months.',
-  '✓ Goal exceeded by {{excess}}',
+  'Goal exceeded by {{excess}}',
 ];
 
 it.each(SUPPORTED_LOCALES)(
