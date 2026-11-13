@@ -91,6 +91,7 @@ export function BudgetingPageMobile() {
     <div className="flex h-[calc(100dvh-6rem)] flex-col p-4">
       <FirstStepsCard
         className="mb-3 shrink-0"
+        budgetId={budgetId}
         readyToAssign={readyToAssign}
         readyToAssignLabel={formatAmount(readyToAssign)}
         rows={budgetData || []}

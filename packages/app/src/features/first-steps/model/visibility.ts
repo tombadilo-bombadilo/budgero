@@ -1,11 +1,12 @@
 import { useLingui } from '@lingui/react/macro';
 import { useLocation } from 'react-router-dom';
+import { useProfile } from '@entities/user/api/useAuth';
 import {
   hideFirstSteps,
   isFirstStepsHidden as isHiddenFor,
   showFirstSteps as showFor,
-  useFirstSteps,
 } from '@shared/lib/first-steps/first-steps';
+import { useFirstSteps } from '@shared/lib/first-steps/useFirstSteps';
 import { getRuntime } from '@shared/runtime/global';
 import { useActiveSpaceId } from '@shared/runtime/runtime-provider';
 
@@ -17,19 +18,21 @@ export function showFirstSteps(): void {
   if (spaceId) showFor(spaceId);
 }
 
-/** The open workspace started a first-steps list and the user hid it. */
+/** The signed-in user has a first-steps list in the open workspace and hid it. */
 export function isFirstStepsHidden(): boolean {
   return isHiddenFor(getActiveSpaceId());
 }
 
 /**
- * The open workspace's first-steps list, live. `available` is false for a
- * workspace that never started one (demo, invited members, older budgets):
- * nothing to show or hide there.
+ * The signed-in user's first-steps list in the open workspace, live (on any
+ * of their devices). `available` is false until it is loaded and for a user
+ * who never started one (demo, invited members, older budgets): nothing to
+ * show or hide there.
  */
 export function useFirstStepsVisibility() {
   const spaceId = useActiveSpaceId();
-  const steps = useFirstSteps(spaceId);
+  const { data: profile } = useProfile();
+  const steps = useFirstSteps(spaceId, profile?.id ?? null);
   return {
     available: steps !== null,
     hidden: steps?.dismissed ?? false,

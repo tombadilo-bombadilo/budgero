@@ -1,9 +1,11 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { CheckCircle2, ChevronDown, ChevronRight, ChevronUp, Circle, Users, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import type { GetMonthlyBudgetRow, Goal } from '@budgero/core/browser';
+import type { GetAllTransactions, GetMonthlyBudgetRow, Goal } from '@budgero/core/browser';
+import { useAllTransactions } from '@entities/transaction/api/queries';
+import { useProfile } from '@entities/user/api/useAuth';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent } from '@shared/ui/card';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@shared/ui/drawer';
@@ -11,21 +13,24 @@ import { cn } from '@shared/lib/utils';
 import { useActiveSpaceId } from '@shared/runtime/runtime-provider';
 import {
   FIRST_STEP_IDS,
+  firstStepsLocalActions,
   hideFirstSteps,
   isFirstStepDone,
   markFirstStep,
-  noteFirstStepsVisit,
+  markFirstSteps,
   setFirstStepsCollapsed,
   showFirstSteps,
-  useFirstSteps,
   type CountedFirstStepId,
   type FirstStepsState,
 } from '@shared/lib/first-steps/first-steps';
+import { useFirstSteps } from '@shared/lib/first-steps/useFirstSteps';
 import { pickGoalToFund, spendingRows } from '../lib/goal-step';
 import { startGoalWalkthrough } from '../model/goal-walkthrough';
 import { pointAtAssigned, useSelectedForWalkthrough } from '../model/walkthrough-page';
 
 interface FirstStepsCardProps {
+  /** The budget on screen: its transactions tick "Add a transaction" (from any device). */
+  budgetId?: number;
   readyToAssign: number;
   /** Ready to Assign, formatted for display. */
   readyToAssignLabel: string;
@@ -61,6 +66,16 @@ interface StepItem {
   action?: React.ReactNode;
 }
 
+/** Payee of the opening-balance rows core writes for a new account (not the user's). */
+const OPENING_PAYEE = 'Budgero';
+/** Newest rows looked at; a budget with this many has the user's own. */
+const RECENT_TRANSACTIONS = 50;
+
+function hasOwnTransaction(rows: GetAllTransactions[] | undefined): boolean {
+  if (!rows) return false;
+  return rows.length >= RECENT_TRANSACTIONS || rows.some((row) => row.Payee !== OPENING_PAYEE);
+}
+
 /** The category the assign step points at: one with money first, then the first one. */
 function pickCategory(rows: GetMonthlyBudgetRow[]): number | null {
   const real = spendingRows(rows);
@@ -74,6 +89,7 @@ function pickCategory(rows: GetMonthlyBudgetRow[]): number | null {
  * come back.
  */
 export function FirstStepsCard({
+  budgetId,
   readyToAssign,
   readyToAssignLabel,
   rows,
@@ -87,11 +103,13 @@ export function FirstStepsCard({
 }: FirstStepsCardProps) {
   const { t } = useLingui();
   const spaceId = useActiveSpaceId();
-  const steps = useFirstSteps(spaceId);
+  const { data: profile } = useProfile();
+  const steps = useFirstSteps(spaceId, profile?.id ?? null);
   const assignedAny = rows.some((row) => row.Assigned > 0);
   const assignDone = steps ? isFirstStepDone(steps, 'assign') : false;
   const goalDone = steps ? isFirstStepDone(steps, 'goal') : false;
   const everyCoinDone = steps ? isFirstStepDone(steps, 'everyCoin') : false;
+  const transactionDone = steps ? isFirstStepDone(steps, 'transaction') : false;
   const [drawerOpen, setDrawerOpen] = useState(false);
   const total = FIRST_STEP_IDS.length;
   const doneCount = steps ? FIRST_STEP_IDS.filter((id) => isFirstStepDone(steps, id)).length : 0;
@@ -102,9 +120,17 @@ export function FirstStepsCard({
   );
   const selected = useSelectedForWalkthrough(rows, goals);
 
+  // A transaction the user entered counts, from whichever device (the
+  // opening balances of new accounts don't). Only read while it's open.
+  const { data: recent } = useAllTransactions(budgetId ?? 0, {
+    limit: RECENT_TRANSACTIONS,
+    enabled: Boolean(steps) && !transactionDone,
+  });
+  const ownTransaction = hasOwnTransaction(recent);
   useEffect(() => {
-    if (spaceId) noteFirstStepsVisit(spaceId);
-  }, [spaceId]);
+    if (spaceId && steps && !transactionDone && ownTransaction)
+      markFirstStep(spaceId, 'transaction');
+  }, [spaceId, steps, transactionDone, ownTransaction]);
 
   // A goal that exists counts, however it was made (also on another device).
   useEffect(() => {
@@ -114,25 +140,38 @@ export function FirstStepsCard({
 
   // "Fund it" is done once the goal's category has money assigned (any
   // category without a goal). Ready to Assign reaching 0 is the closing
-  // line, said once.
+  // line, said once. Celebrated only here and now: when this user just did
+  // it on this device (a local change since it was last seen open), never
+  // for a tick from another device or figures that were already there.
   const funded = goalToFund
     ? rows.some((row) => row.CategoryID === goalToFund.categoryId && row.Assigned > 0)
     : assignedAny;
+  const fundedNow = assignedAny && funded;
+  const everyCoinNow = assignedAny && readyToAssign === 0;
+  const openSince = useRef<{ assign?: number; everyCoin?: number }>({});
   useEffect(() => {
-    if (!spaceId || !steps || !settled || !assignedAny) return;
-    if (readyToAssign === 0 && !everyCoinDone) {
-      if (!assignDone) markFirstStep(spaceId, 'assign');
-      markFirstStep(spaceId, 'everyCoin');
-      toast.success(t`Every coin has a job.`, {
-        description: t`That’s the whole method: when money comes in, give it a job here.`,
-      });
-    } else if (!assignDone && funded) {
+    if (!spaceId || !steps || !settled) return;
+    const actions = firstStepsLocalActions();
+    const seen = openSince.current;
+    const justDone = (since: number | undefined) => since !== undefined && actions > since;
+    if (everyCoinNow && !everyCoinDone) {
+      markFirstSteps(spaceId, assignDone ? ['everyCoin'] : ['assign', 'everyCoin']);
+      if (justDone(seen.everyCoin)) {
+        toast.success(t`Every coin has a job.`, {
+          description: t`That’s the whole method: when money comes in, give it a job here.`,
+        });
+      }
+    } else if (!assignDone && fundedNow) {
       markFirstStep(spaceId, 'assign');
-      toast.success(t`Money assigned.`, {
-        description: t`Keep going until Ready to Assign shows 0. Then every coin has a job.`,
-      });
+      if (justDone(seen.assign)) {
+        toast.success(t`Money assigned.`, {
+          description: t`Keep going until Ready to Assign shows 0. Then every coin has a job.`,
+        });
+      }
     }
-  }, [spaceId, steps, assignDone, everyCoinDone, readyToAssign, assignedAny, funded, settled, t]);
+    seen.everyCoin = everyCoinDone || everyCoinNow ? undefined : actions;
+    seen.assign = assignDone || fundedNow ? undefined : actions;
+  }, [spaceId, steps, assignDone, everyCoinDone, everyCoinNow, fundedNow, settled, t]);
 
   if (!spaceId || !steps || steps.dismissed) return null;
 

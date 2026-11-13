@@ -298,6 +298,7 @@ export function BudgetingPageDesktop() {
             <div className="px-1 pb-4">
               <FirstStepsCard
                 className="mb-4"
+                budgetId={budgetId}
                 readyToAssign={readyToAssign}
                 readyToAssignLabel={formatMilliAmount(readyToAssign)}
                 rows={budgetData || []}

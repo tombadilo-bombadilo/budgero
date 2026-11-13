@@ -16,6 +16,7 @@ import {
   resetFirstStepsForTests,
   startFirstSteps,
 } from '@shared/lib/first-steps/first-steps';
+import { flushSyncedState, resetSyncedRuntime, SyncedRuntimeProvider } from '@/test/synced-runtime';
 import { FirstStepsCard } from './FirstStepsCard';
 
 const { profile } = vi.hoisted(() => ({
@@ -27,7 +28,10 @@ vi.mock('@entities/user/api/useAuth', () => ({ useProfile: () => ({ data: profil
 vi.mock('@features/demo-budget/lib/useIsDemoSpace', () => ({
   useDemoSpaceStatus: () => ({ isDemo: false, checking: false }),
 }));
-vi.mock('@shared/runtime/runtime-provider', () => ({ useActiveSpaceId: () => 'space-1' }));
+vi.mock('@shared/runtime/global', async () => (await import('@/test/synced-runtime')).globalMock());
+vi.mock('@shared/runtime/runtime-provider', async () =>
+  (await import('@/test/synced-runtime')).runtimeProviderMock()
+);
 // Seen guides from the device cache only (the synced store has its own specs).
 vi.mock('@features/page-guides/api/usePageGuidesSeen', async () => {
   const model = await vi.importActual<typeof import('@features/page-guides/model/page-guides')>(
@@ -50,17 +54,25 @@ const rows = [
 
 function Page({ variant }: { variant: 'card' | 'bar' }) {
   return (
-    <MemoryRouter initialEntries={['/budgeting']}>
-      <PageGuideButton />
-      <FirstStepsCard
-        readyToAssign={2_340_000}
-        readyToAssignLabel="€2,340.00"
-        rows={rows}
-        variant={variant}
-      />
-      <PageGuideHost />
-    </MemoryRouter>
+    <SyncedRuntimeProvider>
+      <MemoryRouter initialEntries={['/budgeting']}>
+        <PageGuideButton />
+        <FirstStepsCard
+          readyToAssign={2_340_000}
+          readyToAssignLabel="€2,340.00"
+          rows={rows}
+          variant={variant}
+        />
+        <PageGuideHost />
+      </MemoryRouter>
+    </SyncedRuntimeProvider>
   );
+}
+
+async function renderPage(variant: 'card' | 'bar') {
+  const view = render(<Page variant={variant} />);
+  await flushSyncedState();
+  return view;
 }
 
 /** Press on the dimmed backdrop around the open dialog or sheet. */
@@ -78,12 +90,12 @@ const settle = () => act(() => vi.advanceTimersByTime(1500));
 const guide = () => screen.queryByTestId('page-guide');
 
 /** The list is on the page, not hidden in storage, and still there after a reload. */
-function expectListStays(variant: 'card' | 'bar', unmount: () => void) {
+async function expectListStays(variant: 'card' | 'bar', unmount: () => void) {
   expect(screen.getByTestId('first-steps')).toBeInTheDocument();
   expect(getFirstSteps('space-1')?.dismissed).toBe(false);
   unmount();
   resetFirstStepsForTests();
-  render(<Page variant={variant} />);
+  await renderPage(variant);
   settle();
   expect(screen.getByTestId('first-steps')).toBeInTheDocument();
 }
@@ -124,9 +136,10 @@ const openers: Record<string, (variant: 'card' | 'bar') => void> = {
 beforeEach(() => {
   vi.useFakeTimers();
   localStorage.clear();
+  resetSyncedRuntime();
   resetFirstStepsForTests();
   usePageGuideStore.setState({ request: null });
-  startFirstSteps('space-1');
+  startFirstSteps('space-1', 'u1');
 });
 
 afterEach(() => {
@@ -143,14 +156,14 @@ describe.each([
   });
 
   describe.each(Object.keys(openers))('the Budget guide opened %s', (opener) => {
-    it.each(Object.keys(closers))('closed with %s leaves the list', (closer) => {
-      const { unmount } = render(<Page variant={variant} />);
+    it.each(Object.keys(closers))('closed with %s leaves the list', async (closer) => {
+      const { unmount } = await renderPage(variant);
       openers[opener](variant);
       expect(guide()).not.toBeNull();
       closers[closer](variant);
       settle();
       expect(guide()).toBeNull();
-      expectListStays(variant, unmount);
+      await expectListStays(variant, unmount);
     });
   });
 });
@@ -185,8 +198,8 @@ describe('the phone sheet', () => {
         fireEvent.click(screen.getByRole('link', { name: 'Go to transactions' }));
       },
     ],
-  ])('closed with %s closes only the sheet', (_, close) => {
-    const { unmount } = render(<Page variant="bar" />);
+  ])('closed with %s closes only the sheet', async (_, close) => {
+    const { unmount } = await renderPage('bar');
     settle();
     if (guide()) closers.Skip('bar');
     openSheet();
@@ -196,6 +209,6 @@ describe('the phone sheet', () => {
     if (guide()) closers.Skip('bar');
     settle();
     expect(sheet()).toBeNull();
-    expectListStays('bar', unmount);
+    await expectListStays('bar', unmount);
   });
 });

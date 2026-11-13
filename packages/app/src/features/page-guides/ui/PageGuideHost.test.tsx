@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { resetFirstStepsForTests, startFirstSteps } from '@shared/lib/first-steps/first-steps';
+import { flushSyncedState, resetSyncedRuntime, SyncedRuntimeProvider } from '@/test/synced-runtime';
 import {
   hasSeenPageGuide,
   isPageGuideSeen,
@@ -40,16 +41,21 @@ vi.mock('@entities/user/api/useAuth', () => ({ useProfile: () => ({ data: profil
 vi.mock('@features/demo-budget/lib/useIsDemoSpace', () => ({
   useDemoSpaceStatus: () => demo.current,
 }));
-vi.mock('@shared/runtime/runtime-provider', () => ({ useActiveSpaceId: () => 'space-1' }));
+vi.mock('@shared/runtime/global', async () => (await import('@/test/synced-runtime')).globalMock());
+vi.mock('@shared/runtime/runtime-provider', async () =>
+  (await import('@/test/synced-runtime')).runtimeProviderMock()
+);
 
 const recent = () => new Date().toISOString();
 const longAgo = () => new Date(Date.now() - 400 * 86_400_000).toISOString();
 
 function renderHost(path = '/budgeting') {
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <PageGuideHost />
-    </MemoryRouter>
+    <SyncedRuntimeProvider>
+      <MemoryRouter initialEntries={[path]}>
+        <PageGuideHost />
+      </MemoryRouter>
+    </SyncedRuntimeProvider>
   );
 }
 
@@ -58,6 +64,7 @@ const settle = () => act(() => vi.advanceTimersByTime(1500));
 beforeEach(() => {
   vi.useFakeTimers();
   localStorage.clear();
+  resetSyncedRuntime();
   resetFirstStepsForTests();
   usePageGuideStore.setState({ request: null });
   track.mockReset();
@@ -94,10 +101,14 @@ it('shows nothing by itself to someone who used Budgero before', () => {
   expect(screen.queryByRole('dialog')).toBeNull();
 });
 
-it('counts a workspace set up from scratch on this device as new', () => {
+it('counts a workspace the user set up from scratch as new, on any device', async () => {
   profile.current = { id: 'u1', created_at: longAgo() };
-  startFirstSteps('space-1');
+  startFirstSteps('space-1', 'u1');
+  // Another device: only the synced state has the checklist.
+  localStorage.clear();
+  resetFirstStepsForTests();
   renderHost('/dashboard');
+  await flushSyncedState();
   settle();
   expect(screen.getByRole('dialog', { name: 'Your money at a glance' })).toBeInTheDocument();
 });
@@ -203,9 +214,11 @@ it('waits for the synced state before opening a guide by itself', () => {
   expect(screen.queryByRole('dialog')).toBeNull();
   synced.current = [];
   rerender(
-    <MemoryRouter initialEntries={['/budgeting']}>
-      <PageGuideHost />
-    </MemoryRouter>
+    <SyncedRuntimeProvider>
+      <MemoryRouter initialEntries={['/budgeting']}>
+        <PageGuideHost />
+      </MemoryRouter>
+    </SyncedRuntimeProvider>
   );
   settle();
   expect(screen.getByRole('dialog', { name: 'Give every coin a job' })).toBeInTheDocument();

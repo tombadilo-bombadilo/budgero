@@ -58,7 +58,10 @@ import {
   reportMutationAnalytics,
   type MutationAnalyticsServices,
 } from '@shared/lib/analytics/mutation-events';
-import { noteFirstStepsMutation } from '@shared/lib/first-steps/first-steps';
+import {
+  noteFirstStepsLocalAction,
+  noteFirstStepsMutation,
+} from '@shared/lib/first-steps/first-steps';
 import { track } from '@shared/lib/analytics/track';
 import { pushMatchReview, withPushIdentity } from './push-identity';
 
@@ -230,6 +233,8 @@ export class AppRuntime {
       : { ...spec, payload: await prepareMutationArgs(spec.op, spec.payload) };
     const isLocal = !prepared.mutationId;
     const before = isLocal ? readBeforeState(prepared, this.analyticsServices()) : null;
+    // Counted before it runs, so the figures it changes are already ours to celebrate.
+    if (isLocal) noteFirstStepsLocalAction(prepared.op);
     const run = async () => {
       const result = await this.coordinator.executeMutation<T>(prepared);
       if (isLocal) {

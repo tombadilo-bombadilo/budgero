@@ -1,51 +1,78 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { setDemoSpaceId } from '@shared/lib/demo-space';
+import { resetSyncedRuntime, syncedRuntime, syncedWrites } from '@/test/synced-runtime';
 import {
+  firstStepsLocalActions,
   getFirstSteps,
   hideFirstSteps,
   isFirstStepDone,
   isFirstStepsHidden,
   markFirstStep,
+  migrateLegacyFirstSteps,
+  noteFirstStepsLocalAction,
   noteFirstStepsMutation,
   noteFirstStepsVisit,
   resetFirstStepsForTests,
   setFirstStepsCollapsed,
+  setFirstStepsUser,
   showFirstSteps,
   startFirstSteps,
 } from './first-steps';
 
+vi.mock('@shared/runtime/global', async () => (await import('@/test/synced-runtime')).globalMock());
+
+const synced = (userId = 'u1') => syncedRuntime.store.get(`user:${userId}|firstSteps`);
+
 beforeEach(() => {
   localStorage.clear();
+  setDemoSpaceId(null);
+  resetSyncedRuntime();
   resetFirstStepsForTests();
 });
 
 describe('first steps', () => {
-  it('only tracks workspaces that started the checklist', () => {
+  it('only tracks users who started the checklist', () => {
+    setFirstStepsUser('space-1', 'u1');
     noteFirstStepsMutation('space-1', 'transactions.add');
     expect(getFirstSteps('space-1')).toBeNull();
+    expect(syncedWrites()).toEqual([]);
+  });
+
+  it('starts in the user’s synced state, with one write', () => {
+    startFirstSteps('space-1', 'u1', new Date(2026, 10, 3));
+    expect(synced()).toEqual({ startedOn: '2026-11-03', version: 4 });
+    expect(syncedWrites()).toHaveLength(1);
+    startFirstSteps('space-1', 'u1', new Date(2026, 10, 4));
+    expect(syncedWrites()).toHaveLength(1);
   });
 
   it('ticks the transaction step for typed and imported transactions', () => {
-    startFirstSteps('space-1');
+    startFirstSteps('space-1', 'u1');
     noteFirstStepsMutation('space-1', 'categories.create');
     expect(getFirstSteps('space-1')?.done.transaction).toBe(false);
     noteFirstStepsMutation('space-1', 'transactions.import');
     expect(getFirstSteps('space-1')?.done.transaction).toBe(true);
+    expect(synced()).toMatchObject({ transaction: true });
+    // Once is enough.
+    noteFirstStepsMutation('space-1', 'transactions.add');
+    expect(syncedWrites()).toHaveLength(2);
   });
 
   it('ticks "come back" only on a later day', () => {
-    startFirstSteps('space-1', new Date(2026, 10, 3, 23, 50));
+    startFirstSteps('space-1', 'u1', new Date(2026, 10, 3, 23, 50));
     noteFirstStepsVisit('space-1', new Date(2026, 10, 3, 23, 59));
     expect(getFirstSteps('space-1')?.done.return).toBe(false);
     noteFirstStepsVisit('space-1', new Date(2026, 10, 4, 0, 5));
     expect(getFirstSteps('space-1')?.done.return).toBe(true);
   });
 
-  it('keeps progress across reloads and restarts', () => {
-    startFirstSteps('space-1');
+  it('keeps progress across reloads and cleared site data', () => {
+    startFirstSteps('space-1', 'u1');
     markFirstStep('space-1', 'assign');
     hideFirstSteps('space-1');
+    localStorage.clear();
     resetFirstStepsForTests();
-    startFirstSteps('space-1');
+    setFirstStepsUser('space-1', 'u1');
     expect(getFirstSteps('space-1')).toMatchObject({
       dismissed: true,
       done: { assign: true, goal: false, transaction: false, return: false },
@@ -53,31 +80,189 @@ describe('first steps', () => {
   });
 
   it('ticks the goal step when a goal is created', () => {
-    startFirstSteps('space-1');
+    startFirstSteps('space-1', 'u1');
     noteFirstStepsMutation('space-1', 'goals.update');
     expect(getFirstSteps('space-1')?.done.goal).toBe(false);
     noteFirstStepsMutation('space-1', 'goals.create');
     expect(getFirstSteps('space-1')?.done.goal).toBe(true);
   });
 
+  it('hides only when asked, and comes back with showFirstSteps', () => {
+    startFirstSteps('space-1', 'u1');
+    expect(isFirstStepsHidden('space-1')).toBe(false);
+    hideFirstSteps('space-1');
+    expect(isFirstStepsHidden('space-1')).toBe(true);
+    showFirstSteps('space-1');
+    expect(isFirstStepsHidden('space-1')).toBe(false);
+    expect(synced()).toMatchObject({ dismissed: false });
+  });
+
+  it('showing brings a folded list back unfolded', () => {
+    startFirstSteps('space-1', 'u1');
+    setFirstStepsCollapsed('space-1', true);
+    hideFirstSteps('space-1');
+    showFirstSteps('space-1');
+    expect(getFirstSteps('space-1')).toMatchObject({ dismissed: false, collapsed: false });
+  });
+
+  it('remembers a folded list on this device only, and folding is not hiding', () => {
+    startFirstSteps('space-1', 'u1');
+    const writes = syncedWrites().length;
+    setFirstStepsCollapsed('space-1', true);
+    expect(syncedWrites()).toHaveLength(writes);
+    resetFirstStepsForTests();
+    setFirstStepsUser('space-1', 'u1');
+    expect(getFirstSteps('space-1')).toMatchObject({ collapsed: true, dismissed: false });
+    expect(isFirstStepsHidden('space-1')).toBe(false);
+  });
+
+  it('never makes a list for a user who has none (demo, invited members, older budgets)', () => {
+    setFirstStepsUser('space-1', 'u1');
+    showFirstSteps('space-1');
+    hideFirstSteps('space-1');
+    setFirstStepsCollapsed('space-1', false);
+    markFirstStep('space-1', 'share');
+    expect(getFirstSteps('space-1')).toBeNull();
+    expect(isFirstStepsHidden('space-1')).toBe(false);
+    expect(isFirstStepsHidden(null)).toBe(false);
+    expect(syncedWrites()).toEqual([]);
+  });
+
+  it('writes nothing in the demo', () => {
+    setDemoSpaceId('space-1');
+    startFirstSteps('space-1', 'u1');
+    noteFirstStepsMutation('space-1', 'transactions.add');
+    expect(syncedWrites()).toEqual([]);
+  });
+
+  it('keeps two members of one workspace apart', () => {
+    startFirstSteps('space-1', 'u1');
+    hideFirstSteps('space-1');
+    setFirstStepsUser('space-1', 'u2');
+    expect(getFirstSteps('space-1')).toBeNull();
+    startFirstSteps('space-1', 'u2');
+    expect(getFirstSteps('space-1')?.dismissed).toBe(false);
+    setFirstStepsUser('space-1', 'u1');
+    expect(getFirstSteps('space-1')?.dismissed).toBe(true);
+  });
+
+  it('counts the user’s own changes, not its bookkeeping writes', () => {
+    const before = firstStepsLocalActions();
+    noteFirstStepsLocalAction('syncedState.merge');
+    noteFirstStepsLocalAction('pageGuides.markSeen');
+    expect(firstStepsLocalActions()).toBe(before);
+    noteFirstStepsLocalAction('budgets.assign');
+    expect(firstStepsLocalActions()).toBe(before + 1);
+  });
+});
+
+describe('a checklist kept only on this device', () => {
+  const all = { assign: true, goal: true, transaction: true, return: true };
+  function stored(entries: Record<string, unknown>) {
+    localStorage.setItem('budgero:first-steps', JSON.stringify(entries));
+    resetFirstStepsForTests();
+  }
+  const legacy = () => JSON.parse(localStorage.getItem('budgero:first-steps')!)['space-1'];
+
+  it('moves into the synced state with one write, and is dropped here', () => {
+    stored({
+      'space-1': {
+        startedOn: '2026-11-01',
+        done: { ...all, return: false },
+        dismissed: false,
+        collapsed: true,
+        v: 3,
+      },
+    });
+    migrateLegacyFirstSteps('space-1', 'u1');
+    expect(syncedWrites()).toHaveLength(1);
+    expect(synced()).toEqual({
+      startedOn: '2026-11-01',
+      version: 4,
+      assign: true,
+      goal: true,
+      transaction: true,
+    });
+    expect(legacy()).toBeUndefined();
+    setFirstStepsUser('space-1', 'u1');
+    expect(getFirstSteps('space-1')).toMatchObject({ collapsed: true, dismissed: false });
+    migrateLegacyFirstSteps('space-1', 'u1');
+    expect(syncedWrites()).toHaveLength(1);
+  });
+
+  it('adds only what the synced state lacks', () => {
+    syncedRuntime.store.set('user:u1|firstSteps', {
+      startedOn: '2026-10-30',
+      version: 4,
+      goal: true,
+      dismissed: false,
+    });
+    stored({
+      'space-1': {
+        startedOn: '2026-11-01',
+        done: { assign: false, goal: true, transaction: true, return: false },
+        dismissed: true,
+        v: 3,
+      },
+    });
+    migrateLegacyFirstSteps('space-1', 'u1');
+    // Shown again on another device later than it was hidden here: stays shown.
+    expect(syncedWrites()[0].payload.patch).toEqual({ set: { transaction: true } });
+    // Nothing to add: no write, but still dropped.
+    stored({ 'space-1': { startedOn: '2026-11-01', done: all, dismissed: false, v: 3 } });
+    syncedRuntime.store.set('user:u1|firstSteps', { startedOn: '2026-11-01', version: 4, ...all });
+    migrateLegacyFirstSteps('space-1', 'u1');
+    expect(syncedWrites()).toHaveLength(1);
+    expect(legacy()).toBeUndefined();
+  });
+
+  it('is left for the owner: a member opening it on the same device does not take it', () => {
+    stored({ 'space-1': { startedOn: '2026-11-01', done: all, dismissed: false, v: 3 } });
+    syncedRuntime.role = 'editor';
+    migrateLegacyFirstSteps('space-1', 'u2');
+    expect(syncedWrites()).toEqual([]);
+    expect(legacy()).toBeDefined();
+  });
+
+  it('stays until it can be written (demo, store not ready)', () => {
+    stored({ 'space-1': { startedOn: '2026-11-01', done: all, dismissed: false, v: 3 } });
+    setDemoSpaceId('space-1');
+    migrateLegacyFirstSteps('space-1', 'u1');
+    expect(syncedWrites()).toEqual([]);
+    expect(legacy()).toBeDefined();
+  });
+
+  it('started without a user id, it is written when the owner opens the app', () => {
+    startFirstSteps('space-1', null, new Date(2026, 10, 3));
+    expect(syncedWrites()).toEqual([]);
+    migrateLegacyFirstSteps('space-1', 'u1');
+    expect(synced()).toEqual({ startedOn: '2026-11-03', version: 4 });
+  });
+});
+
+describe('older device-only lists (migrated before they are moved)', () => {
+  const all = { assign: true, goal: true, transaction: true, return: true };
+  function moved(entries: Record<string, unknown>, spaceId: string) {
+    localStorage.setItem('budgero:first-steps', JSON.stringify(entries));
+    resetFirstStepsForTests();
+    syncedRuntime.spaceId = spaceId;
+    syncedRuntime.store.clear();
+    migrateLegacyFirstSteps(spaceId, 'u1');
+    setFirstStepsUser(spaceId, 'u1');
+    return getFirstSteps(spaceId);
+  }
+
   it('reads a checklist stored before the goal step: goal not done', () => {
-    localStorage.setItem(
-      'budgero:first-steps',
-      JSON.stringify({
+    const started = moved(
+      {
         started: {
           startedOn: '2026-11-01',
           done: { assign: true, transaction: true, return: false },
           dismissed: false,
         },
-        hidden: {
-          startedOn: '2026-11-01',
-          done: { assign: true, transaction: true, return: true },
-          dismissed: true,
-        },
-      })
-    );
-    resetFirstStepsForTests();
-    const started = getFirstSteps('started')!;
+      },
+      'started'
+    )!;
     expect(isFirstStepDone(started, 'goal')).toBe(false);
     expect(isFirstStepDone(started, 'assign')).toBe(true);
     noteFirstStepsMutation('started', 'goals.create');
@@ -88,108 +273,47 @@ describe('first steps', () => {
       goal: true,
       everyCoin: true,
     });
-    // Hidden with the goal step still open: shown again (see the migration below).
-    expect(getFirstSteps('hidden')?.dismissed).toBe(false);
   });
 
-  it('hides only when asked, and comes back with showFirstSteps', () => {
-    startFirstSteps('space-1');
-    expect(isFirstStepsHidden('space-1')).toBe(false);
-    hideFirstSteps('space-1');
-    expect(isFirstStepsHidden('space-1')).toBe(true);
-    showFirstSteps('space-1');
-    expect(isFirstStepsHidden('space-1')).toBe(false);
-    // Survives a reload.
-    resetFirstStepsForTests();
-    expect(getFirstSteps('space-1')?.dismissed).toBe(false);
-  });
-
-  it('showing brings a folded list back unfolded', () => {
-    startFirstSteps('space-1');
-    setFirstStepsCollapsed('space-1', true);
-    hideFirstSteps('space-1');
-    showFirstSteps('space-1');
-    expect(getFirstSteps('space-1')).toMatchObject({ dismissed: false, collapsed: false });
-  });
-
-  it('remembers a folded list, and folding is not hiding', () => {
-    startFirstSteps('space-1');
-    setFirstStepsCollapsed('space-1', true);
-    resetFirstStepsForTests();
-    expect(getFirstSteps('space-1')).toMatchObject({ collapsed: true, dismissed: false });
-    expect(isFirstStepsHidden('space-1')).toBe(false);
-  });
-
-  it('never makes a list for a workspace that has none (demo, invited members, older budgets)', () => {
-    showFirstSteps('space-1');
-    setFirstStepsCollapsed('space-1', false);
-    expect(getFirstSteps('space-1')).toBeNull();
-    expect(isFirstStepsHidden('space-1')).toBe(false);
-    expect(isFirstStepsHidden(null)).toBe(false);
-    expect(localStorage.getItem('budgero:first-steps')).toBeNull();
-  });
-});
-
-describe('lists hidden by the old ✕', () => {
-  const all = { assign: true, goal: true, transaction: true, return: true };
-  function stored(entries: Record<string, unknown>) {
-    localStorage.setItem('budgero:first-steps', JSON.stringify(entries));
-    resetFirstStepsForTests();
-  }
-
-  it('shows a list hidden before all steps were done again, once', () => {
-    stored({
-      unfinished: {
-        startedOn: '2026-11-01',
-        done: { ...all, transaction: false },
-        dismissed: true,
+  it('shows a list hidden by the old ✕ before all steps were done again', () => {
+    const state = moved(
+      {
+        unfinished: {
+          startedOn: '2026-11-01',
+          done: { ...all, transaction: false },
+          dismissed: true,
+        },
       },
-    });
-    expect(getFirstSteps('unfinished')).toMatchObject({ dismissed: false, v: 3 });
-    // Written back, so it isn't migrated again.
-    expect(JSON.parse(localStorage.getItem('budgero:first-steps')!).unfinished.v).toBe(3);
-    // Hidden again by the user now: it stays hidden.
-    hideFirstSteps('unfinished');
-    resetFirstStepsForTests();
-    expect(getFirstSteps('unfinished')?.dismissed).toBe(true);
+      'unfinished'
+    );
+    expect(state?.dismissed).toBe(false);
   });
 
   it('keeps a finished list that was closed closed', () => {
-    stored({ finished: { startedOn: '2026-11-01', done: all, dismissed: true } });
-    expect(getFirstSteps('finished')?.dismissed).toBe(true);
-  });
-
-  it('leaves visible lists and progress as they were', () => {
-    const done = { ...all, return: false };
-    stored({ open: { startedOn: '2026-11-01', done, dismissed: false } });
-    expect(getFirstSteps('open')).toMatchObject({
-      startedOn: '2026-11-01',
-      done,
-      dismissed: false,
-    });
+    const state = moved(
+      { finished: { startedOn: '2026-11-01', done: all, dismissed: true } },
+      'finished'
+    );
+    expect(state?.dismissed).toBe(true);
   });
 
   it('keeps every tick and adds no new ones when the order changed (version 3)', () => {
     const done = { assign: true, goal: false, transaction: true, return: false };
-    stored({ mid: { startedOn: '2026-11-01', done, dismissed: false, v: 2 } });
-    expect(getFirstSteps('mid')).toMatchObject({
+    expect(
+      moved({ mid: { startedOn: '2026-11-01', done, dismissed: false, v: 2 } }, 'mid')
+    ).toMatchObject({
       dismissed: false,
-      v: 3,
       // Its first assignment was announced under the old rule.
       done: { ...done, everyCoin: true },
     });
-    stored({
-      fresh: { startedOn: '2026-11-01', done: { ...done, assign: false }, dismissed: true, v: 2 },
-    });
+    const fresh = moved(
+      {
+        fresh: { startedOn: '2026-11-01', done: { ...done, assign: false }, dismissed: true, v: 2 },
+      },
+      'fresh'
+    );
     // Hidden on purpose (version 2 already had the labelled button): stays hidden.
-    expect(getFirstSteps('fresh')).toMatchObject({ dismissed: true, done: { assign: false } });
-    expect(getFirstSteps('fresh')?.done.everyCoin).toBeUndefined();
-  });
-
-  it('new lists start at the current version, so they are never migrated', () => {
-    startFirstSteps('space-1');
-    hideFirstSteps('space-1');
-    resetFirstStepsForTests();
-    expect(getFirstSteps('space-1')).toMatchObject({ dismissed: true, v: 3 });
+    expect(fresh).toMatchObject({ dismissed: true, done: { assign: false } });
+    expect(fresh?.done.everyCoin).toBeUndefined();
   });
 });
