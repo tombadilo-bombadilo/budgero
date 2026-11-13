@@ -124,3 +124,25 @@ it('caches values per workspace and drops deleted ones', () => {
   writeSyncedStateCache('s1', 'user:u1', 'k', null);
   expect(readSyncedStateCache('s1', 'user:u1', 'k')).toBeUndefined();
 });
+
+it('treats prototype-named entries as plain entries when deciding what a merge changes', async () => {
+  const stored = JSON.parse('{"__proto__":"p","constructor":1}') as Record<string, unknown>;
+  const { runtime, calls } = fakeRuntime({ 'workspace|m': stored });
+  const same = JSON.parse('{"set":{"__proto__":"p"},"remove":["toString"]}') as {
+    set: Record<string, unknown>;
+    remove: string[];
+  };
+  expect(await mergeSyncedState('workspace', 'm', same, runtime)).toBe(false);
+  const change = JSON.parse(
+    '{"set":{"__proto__":"q","hasOwnProperty":2},"remove":["constructor"]}'
+  ) as {
+    set: Record<string, unknown>;
+    remove: string[];
+  };
+  expect(await mergeSyncedState('workspace', 'm', change, runtime)).toBe(true);
+  const sent = calls[0].payload.patch as { set: Record<string, unknown>; remove: string[] };
+  expect(Object.getPrototypeOf(sent.set)).toBe(Object.prototype);
+  expect(Object.keys(sent.set).sort()).toEqual(['__proto__', 'hasOwnProperty']);
+  expect(JSON.stringify(sent.set)).toBe('{"__proto__":"q","hasOwnProperty":2}');
+  expect(sent.remove).toEqual(['constructor']);
+});

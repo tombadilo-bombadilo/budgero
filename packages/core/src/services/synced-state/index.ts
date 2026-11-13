@@ -19,12 +19,26 @@ import { atomically, getRow, run } from '../../database/sql.js';
  * - merge: a JSON object edited entry by entry; each entry keeps its own time,
  *   so two devices adding different entries both keep theirs, and removing an
  *   entry beats an older add of it. Use either set or merge for a key, not both.
+ *
+ * Entry keys may be any string (account names, IBANs, `__proto__`): entries
+ * are handled as Maps and written with Object.fromEntries, never assigned onto
+ * an object, so no key reaches a prototype.
+ *
+ * Tombstones: a removed entry keeps its time so an older add can't bring it
+ * back. Per key at most MAX_TOMBSTONES are kept; beyond that the oldest are
+ * dropped (oldest time first, then key order: the same rule on every device).
+ * Trade-off: an add older than a dropped tombstone that arrives only after
+ * the drop (a device offline through hundreds of removals) brings its entry
+ * back on the devices that dropped it. Live entries are bounded by the value
+ * cap, tombstones by this count, so Clocks stays bounded too.
  */
 
 export const SYNCED_STATE_MAX_VALUE_LENGTH = 65_536;
 const MAX_KEY_LENGTH = 128;
 const MAX_ENTRY_KEY_LENGTH = 256;
 const MAX_ID_LENGTH = 128;
+/** Removed merge entries remembered per key (see the header). */
+export const SYNCED_STATE_MAX_TOMBSTONES = 500;
 
 const KEY_PATTERN = /^[A-Za-z][A-Za-z0-9_.:-]*$/;
 const SCOPE_ID_PATTERN = /^[A-Za-z0-9_.:@|-]+$/;
@@ -39,13 +53,14 @@ export interface SyncedStateMergePatch {
   remove?: string[];
 }
 
+/** Clock state of one row, as Maps/Sets so any entry key is safe. */
 interface Clocks {
   /** Time of the last whole-value set (or delete). */
   base: string;
   /** Time each merge entry was last set or removed. */
-  entries: Record<string, string>;
-  /** Entries whose latest write was a removal. */
-  removed?: string[];
+  entries: Map<string, string>;
+  /** Entries whose latest write was a removal (tombstones). */
+  removed: Set<string>;
 }
 
 interface Row {
@@ -90,12 +105,25 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** Own entries of a JSON object (JSON.parse makes `__proto__` an own key), else null. */
+function entriesOf(value: unknown): Map<string, unknown> | null {
+  return isPlainObject(value) ? new Map(Object.entries(value)) : null;
+}
+
+const byKey = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+/** JSON object text with the entries in key order: the same text on every device. */
+function encodeEntries(entries: Map<string, unknown>): string {
+  return encode(Object.fromEntries([...entries].sort(([a], [b]) => byKey(a, b))));
+}
+
 function assertPatch(patch: unknown): asserts patch is SyncedStateMergePatch {
   if (!isPlainObject(patch)) throw new Error('Synced state merge needs a patch');
   const { set, remove } = patch as SyncedStateMergePatch;
   if (set !== undefined && !isPlainObject(set)) throw new Error('merge.set must be an object');
-  if (remove !== undefined && !Array.isArray(remove))
+  if (remove !== undefined && !Array.isArray(remove)) {
     throw new Error('merge.remove must be a list');
+  }
   const keys = [...Object.keys(set ?? {}), ...(remove ?? [])];
   if (keys.length === 0) throw new Error('Synced state merge changes nothing');
   for (const entry of keys) {
@@ -119,13 +147,47 @@ function wins(atA: string, encA: string, atB: string | undefined, encB: string):
 function parseClocks(raw: string | null, fallback: string): Clocks {
   if (raw) {
     try {
-      const parsed = JSON.parse(raw) as Clocks;
-      if (parsed && typeof parsed.base === 'string' && isPlainObject(parsed.entries)) return parsed;
+      const parsed = JSON.parse(raw) as { base?: unknown; entries?: unknown; removed?: unknown };
+      if (parsed && typeof parsed.base === 'string' && isPlainObject(parsed.entries)) {
+        const entries = new Map<string, string>();
+        for (const [entry, at] of Object.entries(parsed.entries)) {
+          if (typeof at === 'string') entries.set(entry, at);
+        }
+        const removed = new Set<string>(
+          Array.isArray(parsed.removed)
+            ? parsed.removed.filter((e): e is string => typeof e === 'string' && entries.has(e))
+            : []
+        );
+        return { base: parsed.base, entries, removed };
+      }
     } catch {
       /* rebuilt below */
     }
   }
-  return { base: fallback, entries: {} };
+  return { base: fallback, entries: new Map(), removed: new Set() };
+}
+
+/** Drops the oldest tombstones beyond the cap (oldest time, then key: deterministic). */
+function pruneTombstones(clocks: Clocks): void {
+  const excess = clocks.removed.size - SYNCED_STATE_MAX_TOMBSTONES;
+  if (excess <= 0) return;
+  const oldest = [...clocks.removed]
+    .map((entry) => [clocks.entries.get(entry) ?? '', entry] as const)
+    .sort(([atA, a], [atB, b]) => byKey(atA, atB) || byKey(a, b))
+    .slice(0, excess);
+  for (const [, entry] of oldest) {
+    clocks.removed.delete(entry);
+    clocks.entries.delete(entry);
+  }
+}
+
+function encodeClocks(clocks: Clocks): string {
+  const out: { base: string; entries: Record<string, string>; removed?: string[] } = {
+    base: clocks.base,
+    entries: Object.fromEntries([...clocks.entries].sort(([a], [b]) => byKey(a, b))),
+  };
+  if (clocks.removed.size > 0) out.removed = [...clocks.removed].sort(byKey);
+  return JSON.stringify(out);
 }
 
 function parseValue(raw: string | null): unknown {
@@ -136,6 +198,10 @@ function parseValue(raw: string | null): unknown {
     return undefined;
   }
 }
+
+const UPSERT = `INSERT INTO synced_state (Scope, Key, Value, UpdatedAt, Clocks) VALUES (?, ?, ?, ?, ?)
+  ON CONFLICT(Scope, Key) DO UPDATE SET
+    Value = excluded.Value, UpdatedAt = excluded.UpdatedAt, Clocks = excluded.Clocks`;
 
 export class SyncedStateService {
   constructor(private db: DatabaseAdapter) {}
@@ -182,11 +248,10 @@ export class SyncedStateService {
   checkMerge(scope: unknown, key: unknown, patch: unknown): void {
     assertScopeAndKey(scope, key);
     assertPatch(patch);
-    const current = this.get(scope as SyncedStateScope, key as string);
-    const next: Record<string, unknown> = { ...(isPlainObject(current) ? current : {}) };
-    Object.assign(next, patch.set ?? {});
-    for (const entry of patch.remove ?? []) delete next[entry];
-    if (encode(next).length > SYNCED_STATE_MAX_VALUE_LENGTH) {
+    const next = entriesOf(this.get(scope as SyncedStateScope, key as string)) ?? new Map();
+    for (const [entry, value] of Object.entries(patch.set ?? {})) next.set(entry, value);
+    for (const entry of patch.remove ?? []) next.delete(entry);
+    if (encodeEntries(next).length > SYNCED_STATE_MAX_VALUE_LENGTH) {
       throw new Error('Synced state value is too large');
     }
   }
@@ -198,43 +263,31 @@ export class SyncedStateService {
     let next = value === null || value === undefined ? null : encode(value);
     return atomically(this.db, () => {
       const row = this.row(scope, key);
-      const clocks: Clocks = { base: at, entries: {} };
+      const clocks: Clocks = { base: at, entries: new Map(), removed: new Set() };
       let updatedAt = at;
       if (row) {
         const prev = parseClocks(row.Clocks, row.UpdatedAt);
         if (!wins(at, next ?? '', prev.base, row.Value ?? '')) return false;
         // Merge entries written after this set survive it, whatever the arrival order.
-        const current = parseValue(row.Value);
-        const newer = Object.entries(prev.entries).filter(([, entryAt]) => entryAt > at);
-        const base = next === null ? null : (JSON.parse(next) as unknown);
-        if (newer.length > 0 && (base === null || isPlainObject(base))) {
-          const merged: Record<string, unknown> = { ...(base ?? {}) };
-          const removed: string[] = [];
+        const current = entriesOf(parseValue(row.Value));
+        const newer = [...prev.entries].filter(([, entryAt]) => entryAt > at);
+        const base = next === null ? new Map<string, unknown>() : entriesOf(JSON.parse(next));
+        if (newer.length > 0 && base) {
           for (const [entry, entryAt] of newer) {
-            clocks.entries[entry] = entryAt;
-            if (prev.removed?.includes(entry)) {
-              delete merged[entry];
-              removed.push(entry);
-            } else if (isPlainObject(current) && Object.hasOwn(current, entry)) {
-              merged[entry] = current[entry];
+            clocks.entries.set(entry, entryAt);
+            if (prev.removed.has(entry)) {
+              base.delete(entry);
+              clocks.removed.add(entry);
+            } else if (current?.has(entry)) {
+              base.set(entry, current.get(entry));
             }
             if (entryAt > updatedAt) updatedAt = entryAt;
           }
-          if (removed.length > 0) clocks.removed = removed.sort();
-          next = encode(sortedObject(merged));
+          next = encodeEntries(base);
         }
       }
-      run(
-        this.db,
-        `INSERT INTO synced_state (Scope, Key, Value, UpdatedAt, Clocks) VALUES (?, ?, ?, ?, ?)
-         ON CONFLICT(Scope, Key) DO UPDATE SET
-           Value = excluded.Value, UpdatedAt = excluded.UpdatedAt, Clocks = excluded.Clocks`,
-        scope,
-        key,
-        next,
-        updatedAt,
-        JSON.stringify(clocks)
-      );
+      pruneTombstones(clocks);
+      run(this.db, UPSERT, scope, key, next, updatedAt, encodeClocks(clocks));
       return true;
     });
   }
@@ -246,62 +299,41 @@ export class SyncedStateService {
     assertPatch(patch);
     return atomically(this.db, () => {
       const row = this.row(scope, key);
-      const clocks = row ? parseClocks(row.Clocks, row.UpdatedAt) : { base: '', entries: {} };
+      const clocks = row
+        ? parseClocks(row.Clocks, row.UpdatedAt)
+        : { base: '', entries: new Map<string, string>(), removed: new Set<string>() };
       // A whole-value set newer than this merge wins over it.
       if (row && clocks.base > at) return false;
-      const current = parseValue(row?.Value ?? null);
-      const value: Record<string, unknown> = isPlainObject(current) ? { ...current } : {};
-      const removed = new Set(clocks.removed ?? []);
+      const value = entriesOf(parseValue(row?.Value ?? null)) ?? new Map<string, unknown>();
       let changed = false;
 
       const apply = (entry: string, enc: string, write: () => void) => {
-        const prevAt = clocks.entries[entry];
-        const prevEnc = removed.has(entry)
+        const prevEnc = clocks.removed.has(entry)
           ? '0'
-          : `1${Object.hasOwn(value, entry) ? encode(value[entry]) : ''}`;
-        if (!wins(at, enc, prevAt, prevEnc)) return;
+          : `1${value.has(entry) ? encode(value.get(entry)) : ''}`;
+        if (!wins(at, enc, clocks.entries.get(entry), prevEnc)) return;
         write();
-        clocks.entries[entry] = at;
+        clocks.entries.set(entry, at);
         changed = true;
       };
       for (const [entry, entryValue] of Object.entries(patch.set ?? {})) {
         apply(entry, `1${encode(entryValue)}`, () => {
-          value[entry] = entryValue;
-          removed.delete(entry);
+          value.set(entry, entryValue);
+          clocks.removed.delete(entry);
         });
       }
       for (const entry of patch.remove ?? []) {
         apply(entry, '0', () => {
-          delete value[entry];
-          removed.add(entry);
+          value.delete(entry);
+          clocks.removed.add(entry);
         });
       }
       if (!changed) return false;
 
-      const next: Clocks = { base: clocks.base, entries: clocks.entries };
-      if (removed.size > 0) next.removed = [...removed].sort();
+      pruneTombstones(clocks);
       const updatedAt = row && row.UpdatedAt > at ? row.UpdatedAt : at;
-      run(
-        this.db,
-        `INSERT INTO synced_state (Scope, Key, Value, UpdatedAt, Clocks) VALUES (?, ?, ?, ?, ?)
-         ON CONFLICT(Scope, Key) DO UPDATE SET
-           Value = excluded.Value, UpdatedAt = excluded.UpdatedAt, Clocks = excluded.Clocks`,
-        scope,
-        key,
-        encode(sortedObject(value)),
-        updatedAt,
-        JSON.stringify(next)
-      );
+      run(this.db, UPSERT, scope, key, encodeEntries(value), updatedAt, encodeClocks(clocks));
       return true;
     });
   }
-}
-
-/** Same entries in key order, so every device stores the same text. */
-function sortedObject(value: Record<string, unknown>): Record<string, unknown> {
-  return Object.fromEntries(
-    Object.keys(value)
-      .sort()
-      .map((k) => [k, value[k]])
-  );
 }
