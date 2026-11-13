@@ -67,7 +67,7 @@ RUN --mount=type=secret,id=posthog_cli_token \
       "$(node -p 'require("./package.json").version')"
 
 # Go builder stage
-FROM golang:1.26.10-alpine AS go-builder
+FROM golang:1.26.11-alpine AS go-builder
 
 # Install build dependencies
 RUN apk upgrade --no-cache && apk add --no-cache git

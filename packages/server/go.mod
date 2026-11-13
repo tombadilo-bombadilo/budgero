@@ -1,6 +1,6 @@
 module budgero-server
 
-go 1.26.10
+go 1.26.11
 
 require (
 	github.com/caarlos0/env/v11 v11.3.1
