@@ -25,18 +25,19 @@ export const CategoryHeader = memo(function CategoryHeader({
         </div>
 
         {!loading && (
-          <div className="mt-2 flex items-end justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-xl md:text-2xl font-bold truncate">
-                {formatMilli(globalLocalizer, asMilli(Math.abs(totalSpent)))}
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                <Trans>Total Spent</Trans>
-              </div>
+          <div className="mt-2 min-w-0">
+            {/* The total takes the full row and wraps as a last resort: money is never truncated. */}
+            <div
+              data-testid="spending-total"
+              className="text-lg sm:text-xl md:text-2xl font-bold leading-tight tabular-nums break-words [overflow-wrap:anywhere]"
+            >
+              {formatMilli(globalLocalizer, asMilli(Math.abs(totalSpent)))}
             </div>
-
-            {goalStatus && (
-              <div className="flex flex-col items-end gap-1 shrink-0 text-right">
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
+              <span className="text-[11px] text-muted-foreground">
+                <Trans>Total Spent</Trans>
+              </span>
+              {goalStatus && (
                 <span
                   className={cn(
                     'px-2 py-0.5 rounded-full text-[11px] font-medium border whitespace-nowrap',
@@ -47,22 +48,28 @@ export const CategoryHeader = memo(function CategoryHeader({
                 >
                   <Trans>{goalStatus.percentage}% of goal</Trans>
                 </span>
-                {goalStatus.isOver && (
-                  <span className="text-[11px] text-destructive whitespace-nowrap">
-                    <Trans>
-                      Over by {formatMilli(globalLocalizer, asMilli(0 - goalStatus.remaining))}
-                    </Trans>
-                  </span>
-                )}
-                {!goalStatus.isOver && dailyAllowance && dailyAllowance.remaining > 0 && (
-                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                    <Plural
-                      value={dailyAllowance.daysLeft}
-                      one={`${formatMilli(globalLocalizer, dailyAllowance.perDay)}/day left · # day`}
-                      other={`${formatMilli(globalLocalizer, dailyAllowance.perDay)}/day left · # days`}
-                    />
-                  </span>
-                )}
+              )}
+            </div>
+            {goalStatus?.isOver && (
+              <div
+                data-testid="spending-goal-detail"
+                className="mt-1 text-[11px] text-destructive tabular-nums break-words [overflow-wrap:anywhere]"
+              >
+                <Trans>
+                  Over by {formatMilli(globalLocalizer, asMilli(0 - goalStatus.remaining))}
+                </Trans>
+              </div>
+            )}
+            {goalStatus && !goalStatus.isOver && dailyAllowance && dailyAllowance.remaining > 0 && (
+              <div
+                data-testid="spending-goal-detail"
+                className="mt-1 text-[11px] text-muted-foreground tabular-nums break-words [overflow-wrap:anywhere]"
+              >
+                <Plural
+                  value={dailyAllowance.daysLeft}
+                  one={`${formatMilli(globalLocalizer, dailyAllowance.perDay)}/day left · # day`}
+                  other={`${formatMilli(globalLocalizer, dailyAllowance.perDay)}/day left · # days`}
+                />
               </div>
             )}
           </div>

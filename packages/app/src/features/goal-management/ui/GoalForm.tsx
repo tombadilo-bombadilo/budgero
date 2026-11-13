@@ -668,30 +668,44 @@ export function GoalForm({
         </div>
       </div>
 
-      {/* ── Actions: pinned under the scrolling fields ── */}
-      <div className="flex shrink-0 items-center justify-between gap-2 border-t px-3 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-6 sm:pb-4">
-        <div>
-          {isEditing && onDelete && (
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={onDelete}
-              disabled={isDeleting}
-            >
-              {isDeleting ? t`Deleting...` : t`Delete Goal`}
-            </Button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button type="button" variant="ghost" onClick={onCancel}>
-            <Trans>Cancel</Trans>
+      {/* ── Actions: pinned under the scrolling fields ──
+          Phone: the primary action gets its own full-width row on top, Delete and
+          Cancel share the row below (each takes a whole row if they don't fit side
+          by side). sm+: one row, Delete at the start, Cancel + save at the end, and
+          it wraps instead of clipping when long labels don't fit. A centered
+          dialog, so no safe-area padding. */}
+      <div
+        className="flex shrink-0 flex-wrap items-center gap-2 border-t px-3 py-3 sm:px-6 sm:pb-4"
+        data-testid="goal-form-actions"
+      >
+        {isEditing && onDelete && (
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            className="flex-auto max-sm:h-9 sm:mr-auto sm:flex-none"
+            onClick={onDelete}
+            disabled={isDeleting}
+          >
+            {isDeleting ? t`Deleting...` : t`Delete Goal`}
           </Button>
-          <Button type="submit" disabled={isSaving || isDeleting}>
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? t`Saving...` : isEditing ? t`Update Goal` : t`Create Goal`}
-          </Button>
-        </div>
+        )}
+        <Button
+          type="button"
+          variant="ghost"
+          className="flex-auto sm:ml-auto sm:flex-none"
+          onClick={onCancel}
+        >
+          <Trans>Cancel</Trans>
+        </Button>
+        <Button
+          type="submit"
+          className="order-first h-auto min-h-9 basis-full whitespace-normal sm:order-none sm:h-9 sm:basis-auto sm:whitespace-nowrap"
+          disabled={isSaving || isDeleting}
+        >
+          <Save className="h-4 w-4 mr-2" />
+          {isSaving ? t`Saving...` : isEditing ? t`Update Goal` : t`Create Goal`}
+        </Button>
       </div>
     </form>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { GoalType, GoalPurpose, type Goal } from '@budgero/core/browser';
 import { asMilli } from '@shared/lib/currency/milli';
@@ -250,5 +250,48 @@ describe('GoalForm — compact type picker', () => {
     expect(screen.getByTestId('hint')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Cancel' }));
     expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+
+  it('footer stacks on phones: save gets its own row, Delete + Cancel share the next', () => {
+    render(
+      <GoalForm
+        goal={yearlyGoal}
+        categoryId={3}
+        categoryName="Insurance"
+        budgetId={1}
+        currentMonth="2026-08"
+        formatter={formatter}
+        onSave={vi.fn()}
+        onCancel={() => {}}
+        onDelete={vi.fn().mockResolvedValue(undefined)}
+      />
+    );
+    const actions = screen.getByTestId('goal-form-actions');
+    // Wraps instead of overflowing; no bottom safe-area band in a centered dialog.
+    expect(actions).toHaveClass('flex-wrap');
+    expect(actions.className).not.toMatch(/safe-area/);
+
+    const update = within(actions).getByRole('button', { name: 'Update Goal' });
+    const cancel = within(actions).getByRole('button', { name: 'Cancel' });
+    const del = within(actions).getByRole('button', { name: 'Delete Goal' });
+    expect(update).toHaveClass('order-first', 'basis-full', 'whitespace-normal', 'sm:basis-auto');
+    for (const b of [cancel, del]) expect(b).toHaveClass('flex-auto', 'sm:flex-none');
+    expect(del).toHaveClass('sm:mr-auto');
+    // DOM (tab) order stays Delete, Cancel, Update.
+    expect([...actions.querySelectorAll('button')]).toEqual([del, cancel, update]);
+  });
+
+  it('create state: no Delete, Create Goal on its own row above Cancel', () => {
+    renderForm(null);
+    const actions = screen.getByTestId('goal-form-actions');
+    expect(within(actions).queryByRole('button', { name: 'Delete Goal' })).toBeNull();
+    expect(within(actions).getByRole('button', { name: 'Create Goal' })).toHaveClass(
+      'order-first',
+      'basis-full'
+    );
+    expect(within(actions).getByRole('button', { name: 'Cancel' })).toHaveClass(
+      'flex-auto',
+      'sm:ml-auto'
+    );
   });
 });
