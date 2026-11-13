@@ -139,10 +139,10 @@ describe('DesktopBudgetTableView target column', () => {
     expect(groupPill).toHaveAttribute('data-funded', '82');
   });
 
-  it('remembers the choice on this device', () => {
+  it('caches the choice on this device, off included (an explicit choice, not the default)', () => {
     useUiStore.getState().toggleBudgetTargetColumn();
     expect(localStorage.getItem('budgero:budget-target-column')).toBe('1');
     useUiStore.getState().toggleBudgetTargetColumn();
-    expect(localStorage.getItem('budgero:budget-target-column')).toBeNull();
+    expect(localStorage.getItem('budgero:budget-target-column')).toBe('0');
   });
 });
