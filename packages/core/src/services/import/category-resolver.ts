@@ -1,5 +1,14 @@
 export const IMPORT_CATEGORIES_GROUP_NAME = 'Import Categories';
 
+/** Category names other apps use for money that goes to Ready to Assign. */
+const INCOME_ALIASES = new Set([
+  'income',
+  'ready to assign',
+  'inflow: ready to assign',
+  'to be budgeted',
+  'inflow: to be budgeted',
+]);
+
 type NameEntity = {
   ID: number;
   Name: string;
@@ -82,7 +91,7 @@ export async function resolveImportCategoryId(
   if (!categoryName) return fallbackId;
 
   const normalizedCategoryName = normalizeImportName(categoryName);
-  if (normalizedCategoryName === 'income') return incomeId;
+  if (INCOME_ALIASES.has(normalizedCategoryName)) return incomeId;
   if (normalizedCategoryName === 'uncategorized') return uncategorizedId;
 
   const existingCategoryId = categoryIdByName.get(normalizedCategoryName);

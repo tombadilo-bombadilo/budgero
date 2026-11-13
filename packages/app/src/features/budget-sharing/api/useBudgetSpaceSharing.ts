@@ -15,6 +15,7 @@ import {
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import { syncBudgetStateFromRuntime } from '@shared/runtime/budget-gate';
 import { MasterPasswordManager } from '@shared/lib/crypto';
+import { markFirstStep } from '@shared/lib/first-steps/first-steps';
 
 const MAX_COLLABORATOR_SEATS = 5;
 
@@ -136,6 +137,8 @@ export function useCreateSpaceInvite(spaceId: string | null) {
       }
 
       await qc.invalidateQueries({ queryKey: ['space-invites', spaceId] });
+      // An invite that exists ticks "Budget with someone?" in the first steps.
+      markFirstStep(spaceId, 'share');
       // Return the raw secret so it can be displayed to the user
       return { ...invite, invite_secret: secret };
     },

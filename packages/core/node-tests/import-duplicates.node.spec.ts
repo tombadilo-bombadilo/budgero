@@ -324,4 +324,53 @@ describe('Statement matching within the duplicate tolerance', () => {
     const bank = { ...row, date: '2026-09-04', fileRowKey: 'file-b:0', operationId: 'b:0' };
     expect(duplicates.plan([bank], { tolerance })[0].status).toBe('new');
   });
+
+  it('recognizes both legs of an imported transfer on reimport', async () => {
+    const { services, row, duplicates } = await setup();
+    const savings = await services.accounts.createAccount(
+      'Savings',
+      row.budgetId,
+      'Savings',
+      'USD',
+      asMilli(0),
+      true
+    );
+    const out = { ...row, operationId: 'run1:0', fileRowKey: 'qif:0' };
+    const into = {
+      ...row,
+      index: 1,
+      accountId: savings.ID,
+      inflow: 10000,
+      outflow: 0,
+      operationId: 'run1:1',
+      fileRowKey: 'qif:1',
+    };
+    // What transactions.addTransfer writes for an imported pair.
+    for (const leg of [out, into]) {
+      await services.transactions.addTransaction(
+        asMilli(leg.inflow),
+        asMilli(leg.outflow),
+        leg.accountId,
+        0,
+        leg.budgetId,
+        leg.date,
+        leg.memo,
+        'import_run1_0',
+        leg.payee,
+        null,
+        null,
+        false,
+        [leg]
+      );
+    }
+    expect(services.transactions.getTransactionsByTransferID('import_run1_0')).toHaveLength(2);
+    const again = [
+      { ...out, operationId: 'run2:0' },
+      { ...into, operationId: 'run2:1' },
+    ];
+    expect(duplicates.plan(again).map((plan) => plan.status)).toEqual([
+      'already-imported',
+      'already-imported',
+    ]);
+  });
 });

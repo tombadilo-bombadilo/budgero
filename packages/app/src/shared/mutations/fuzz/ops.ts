@@ -1353,7 +1353,9 @@ export function realize(device: Device, intent: Intent): OpCall | null {
             op: k,
             payload: f
               ? { id, name: `Dash ${b % 5}`, budgetId }
-              : { id, sortOrder: b % 4, budgetId },
+              : g
+                ? { id, filters: b % 3 ? { date: { preset: 'lastYear' } } : null, budgetId }
+                : { id, sortOrder: b % 4, budgetId },
           }
         : null;
     }

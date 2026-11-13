@@ -189,6 +189,43 @@ describe('looksLikeOfx', () => {
 });
 
 describe('ofxToImportRows', () => {
+  // A USD statement whose first transaction was a card payment in EUR.
+  const foreign = (aggregate: 'ORIGCURRENCY' | 'CURRENCY') => `OFXHEADER:100
+DATA:OFXSGML
+VERSION:102
+
+<OFX><BANKMSGSRSV1><STMTTRNRS><STMTRS><CURDEF>USD<BANKACCTFROM><ACCTID>111</BANKACCTFROM>
+<BANKTRANLIST>
+<STMTTRN><TRNTYPE>POS<DTPOSTED>20260901<TRNAMT>-11.00<FITID>1<NAME>Cafe Paris
+<${aggregate}><CURRATE>1.10<CURSYM>EUR</${aggregate}></STMTTRN>
+<STMTTRN><TRNTYPE>POS<DTPOSTED>20260902<TRNAMT>-5.00<FITID>2<NAME>Diner</STMTTRN>
+</BANKTRANLIST></STMTRS></STMTTRNRS></BANKMSGSRSV1></OFX>`;
+
+  it('keeps the statement currency for a row converted from another currency', () => {
+    const { rows, currency } = ofxToImportRows(parseOfx(foreign('ORIGCURRENCY')));
+    expect(currency).toBe('USD');
+    // ORIGCURRENCY: TRNAMT is already in CURDEF; EUR is only where it came from.
+    expect(rows.map((r) => [r.Amount, r.Currency, r.AccountCurrency])).toEqual([
+      ['-11.00', 'USD', 'USD'],
+      ['-5.00', 'USD', 'USD'],
+    ]);
+  });
+
+  it('marks a row whose amount is in another currency, and still states the account currency', () => {
+    const { rows } = ofxToImportRows(parseOfx(foreign('CURRENCY')));
+    // CURRENCY: TRNAMT is in CURSYM. Not converted; the wizard asks for an
+    // account in that currency instead of storing EUR as USD.
+    expect(rows.map((r) => [r.Currency, r.AccountCurrency])).toEqual([
+      ['EUR', 'USD'],
+      ['USD', 'USD'],
+    ]);
+  });
+
+  it('uses the per-transaction currency when CURDEF is empty', () => {
+    const { rows } = ofxToImportRows(parseOfx(loadFixture('ofx-v102-empty-tags.ofx')));
+    expect(rows.map((r) => [r.Currency, r.AccountCurrency])).toEqual([['AUD', '']]);
+  });
+
   it('flattens a multi-statement OFX into per-row Account columns', () => {
     const parsed = parseOfx(loadFixture('checking.ofx'));
     const { headers, rows, currency, accountId } = ofxToImportRows(parsed);

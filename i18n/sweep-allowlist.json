@@ -125,6 +125,86 @@
       "file": "src/shared/lib/analytics/error-capture.ts",
       "text": "Error",
       "reason": "JavaScript error type name sent to PostHog error tracking; never shown to users."
+    },
+    {
+      "file": "src/features/reports/lib/question/compile.ts",
+      "text": "*",
+      "reason": "Question spec to SQL compiler: SQL fragments, not user-visible copy (display labels are passed in translated)."
+    },
+    {
+      "file": "src/features/reports/lib/question/expression.ts",
+      "text": "*",
+      "reason": "Expression parser and SQL compiler: SQL fragments and developer error text; the UI shows translated messages per error code (expressionErrorMessage)."
+    },
+    {
+      "file": "src/features/reports/ui/notebook/ExpressionEditor.tsx",
+      "text": "Sum([…]) / Count",
+      "reason": "Formula syntax placeholder; function names are the same in every language."
+    },
+    {
+      "file": "src/features/budget-planning/ui/mobile-table-columns.ts",
+      "text": "bg-card dark:bg-background dark:bg-[linear-gradient(rgb(255_255_255/0.06),rgb(255_255_255/0.06))]",
+      "reason": "Tailwind CSS classes for the mobile budget table, not user-visible copy."
+    },
+    {
+      "file": "src/features/budget-planning/ui/mobile-table-columns.ts",
+      "text": "grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 items-center",
+      "reason": "Tailwind CSS classes for the mobile budget table, not user-visible copy."
+    },
+    {
+      "file": "src/features/budget-planning/ui/mobile-table-columns.ts",
+      "text": "{\u2026} before:content-[var(--budget-col-allocated-label)] after:content-[var(--budget-col-allocated-value)]",
+      "reason": "Tailwind CSS classes for the mobile budget table, not user-visible copy."
+    },
+    {
+      "file": "src/features/budget-planning/ui/mobile-table-columns.ts",
+      "text": "{\u2026} before:content-[var(--budget-col-available-label)] after:content-[var(--budget-col-available-value)] after:pr-3.5",
+      "reason": "Tailwind CSS classes for the mobile budget table, not user-visible copy."
+    },
+    {
+      "file": "src/features/demo-budget/lib/demo-workspace.ts",
+      "text": "1 096,56 $US",
+      "reason": "Number format setting values (format ids the demo picks per locale), not user-visible copy."
+    },
+    {
+      "file": "src/features/demo-budget/lib/demo-workspace.ts",
+      "text": "1,096.56 USD",
+      "reason": "Number format setting values (format ids the demo picks per locale), not user-visible copy."
+    },
+    {
+      "file": "src/features/page-guides/api/usePageGuidesSeen.ts",
+      "text": "Mark page guide seen",
+      "reason": "Mutation meta label for error reports and analytics; the write skips undo, errors are swallowed and history only stores the op, so users never see it."
+    },
+    {
+      "file": "src/features/page-guides/ui/guide-visuals.tsx",
+      "text": "DE89 3704 \u2022\u2022\u2022\u2022 3000",
+      "reason": "Sample masked IBAN in the guide picture; account numbers are not translated."
+    },
+    {
+      "file": "src/features/page-guides/ui/guide-visuals.tsx",
+      "text": "Lidl \u2192",
+      "reason": "Sample payee (a store brand) in the guide picture, the same in every language; the category after the arrow is translated."
+    },
+    {
+      "file": "src/pages/onboarding/OnboardingFlow.tsx",
+      "text": "Budgero",
+      "reason": "Brand name, the same in every language."
+    },
+    {
+      "file": "src/shared/lib/sql/sql-limit.ts",
+      "text": "SELECT COUNT(*) as count FROM ({\u2026}) as subquery",
+      "reason": "SQL, not user-visible copy."
+    },
+    {
+      "file": "src/shared/lib/synced-state/synced-state.ts",
+      "text": "Synced state: {\u2026}",
+      "reason": "Mutation meta label for error reports and analytics; these writes skip undo and history only stores the op, so users never see it."
+    },
+    {
+      "file": "src/shared/lib/sql/analytics-views.ts",
+      "text": "*",
+      "reason": "DuckDB analytics view definitions: SQL only, no user-visible copy (exact entries would break on every query edit)."
     }
   ]
 }

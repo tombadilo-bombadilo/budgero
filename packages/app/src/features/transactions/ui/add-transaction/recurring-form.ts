@@ -1,8 +1,10 @@
 import type { MessageDescriptor } from '@lingui/core';
 import { msg, t, plural } from '@lingui/core/macro';
 import { format } from 'date-fns';
-import type { MilliUnits, RecurringSchedule } from '@budgero/core/browser';
+import type { MilliUnits, RecurringSchedule, RecurringSplitLine } from '@budgero/core/browser';
 import type { TransactionFormInitialValues } from '@features/transactions/api/useTransactionForm';
+import type { SplitLine } from '../form';
+import { newSplitLine } from '../form/split-lines';
 
 export type RecurringEndMode = 'never' | 'date' | 'count';
 
@@ -25,6 +27,7 @@ export interface RecurringTransactionFormInitialValues {
   /** Display name only; categoryId decides which category is meant. */
   categoryName?: string;
   categoryId?: number | null;
+  splits?: RecurringSplitLine[] | null;
   schedule?: RecurringSchedule;
   notifyDaysBefore?: number;
   active?: boolean;
@@ -38,6 +41,8 @@ export interface RecurringTransactionFormSubmit {
   accountId: number | null;
   toAccountId: number | null;
   categoryId: number | null;
+  /** Null when the template is not split. */
+  splits: RecurringSplitLine[] | null;
   schedule: RecurringSchedule;
   notifyDaysBefore: number;
   active: boolean;
@@ -112,6 +117,22 @@ export function recurringInitialToTransactionValues(
     selectedToAccount: initial.toAccountId != null ? String(initial.toAccountId) : '',
     rememberLast: false,
   };
+}
+
+/** A template's split lines as split editor lines (non-transfer templates only). */
+export function recurringInitialSplitLines(
+  initial?: RecurringTransactionFormInitialValues
+): SplitLine[] | undefined {
+  if (!initial?.splits?.length || initial.toAccountId != null) return undefined;
+  return initial.splits.map((line) => ({
+    ...newSplitLine(),
+    categoryId: line.categoryId,
+    transferAccountId: line.transferAccountId,
+    memo: line.memo,
+    payee: line.payee,
+    inflow: line.inflow,
+    outflow: line.outflow,
+  }));
 }
 
 export function buildRecurringSchedule(

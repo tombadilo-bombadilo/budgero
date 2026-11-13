@@ -161,7 +161,8 @@ export const MobileTransactionCard = React.memo(function MobileTransactionCard({
                 )}
               </div>
               <div className="truncate text-[11px] text-muted-foreground">
-                {transaction.Date} · {transaction.Category}
+                {transaction.Date} ·{' '}
+                {transaction.Category === 'Split' ? <Trans>Split</Trans> : transaction.Category}
               </div>
             </div>
             <div className="flex shrink-0 items-center gap-1">

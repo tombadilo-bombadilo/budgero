@@ -91,7 +91,12 @@ export function SpendingBreakdownContent() {
   }
 
   if (aggregatedData.length === 0) {
-    return <ChartEmptyState hint="No transactions found for the selected period" />;
+    return (
+      <ChartEmptyState
+        hint="No transactions found for the selected period"
+        countAsEmptyScreen={!selectedCategoryGroup}
+      />
+    );
   }
 
   return (

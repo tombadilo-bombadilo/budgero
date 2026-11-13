@@ -151,3 +151,104 @@ describe('GoalForm — periodic presets', () => {
     expect(saved.TargetDate).toBeUndefined();
   });
 });
+
+describe('GoalForm — compact type picker', () => {
+  const titles = [
+    'Monthly Available Target',
+    'Monthly Allocation Target',
+    'Yearly Available Target',
+    'Yearly Allocation Target',
+    'Periodic Available Target',
+    'Periodic Allocation Target',
+    'Target Balance',
+  ];
+
+  it('create: lists every type in pairs, one line each, the example only on the chosen one', () => {
+    renderForm(null);
+    const rows = screen
+      .getAllByRole('button', { pressed: undefined })
+      .filter((b) => b.dataset.testid?.startsWith('goal-preset-'));
+    expect(rows.map((r) => r.querySelector('span > span')?.textContent)).toEqual(titles);
+    expect(screen.getByTestId('goal-preset-monthly-available')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    const examples = screen.getAllByTestId('goal-preset-example');
+    expect(examples).toHaveLength(1);
+    expect(examples[0]).toHaveTextContent('e.g. Groceries — start each month with X');
+    expect(screen.getByTestId('goal-preset-monthly-available')).toContainElement(examples[0]);
+  });
+
+  it('picking a type collapses the list to it, shows its example and its fields', async () => {
+    const user = userEvent.setup();
+    renderForm(null);
+    expect(screen.queryByText('Target Date')).not.toBeInTheDocument();
+    await user.click(screen.getByText('Yearly Available Target'));
+
+    const selected = screen.getByTestId('goal-preset-selected');
+    expect(selected).toHaveTextContent('Yearly Available Target');
+    expect(selected).toHaveTextContent('e.g. Car registration — need X ready by');
+    expect(screen.queryByText('Monthly Available Target')).not.toBeInTheDocument();
+    expect(screen.getByText('Target Date')).toBeInTheDocument();
+    expect(screen.getByText('Enter amount')).toBeInTheDocument();
+  });
+
+  it('Change type reopens the list and a new pick replaces the fields', async () => {
+    const user = userEvent.setup();
+    const onSave = renderForm(null);
+    await user.click(screen.getByText('Yearly Available Target'));
+    await user.click(screen.getByRole('button', { name: 'Change type' }));
+    for (const title of titles) expect(screen.getByText(title)).toBeInTheDocument();
+    expect(screen.getByTestId('goal-preset-yearly-available')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+
+    await user.click(screen.getByText('Monthly Allocation Target'));
+    expect(screen.queryByText('Target Date')).not.toBeInTheDocument();
+    await user.click(screen.getByText('Enter amount'));
+    await user.keyboard('200{Enter}');
+    await submit(user);
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0][0]).toMatchObject({
+      Type: GoalType.MONTHLY_SAVINGS,
+      Purpose: GoalPurpose.SAVINGS,
+    });
+  });
+
+  it('edit: opens on the goal’s own type, collapsed, with its fields', async () => {
+    const user = userEvent.setup();
+    renderForm(yearlyGoal);
+    expect(screen.getByTestId('goal-preset-selected')).toHaveTextContent(
+      'Yearly Allocation Target'
+    );
+    expect(screen.queryByTestId('goal-preset-monthly-available')).not.toBeInTheDocument();
+    expect(screen.getByText('Target Date')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Change type' }));
+    expect(screen.getByTestId('goal-preset-yearly-allocation')).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+  });
+
+  it('Cancel calls onCancel; the notice renders above the form', async () => {
+    const user = userEvent.setup();
+    const onCancel = vi.fn();
+    render(
+      <GoalForm
+        goal={null}
+        categoryId={3}
+        categoryName="Insurance"
+        budgetId={1}
+        currentMonth="2026-08"
+        formatter={formatter}
+        onSave={vi.fn()}
+        onCancel={onCancel}
+        notice={<p data-testid="hint">Pick a type, enter the amount, save.</p>}
+      />
+    );
+    expect(screen.getByTestId('hint')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(onCancel).toHaveBeenCalledTimes(1);
+  });
+});

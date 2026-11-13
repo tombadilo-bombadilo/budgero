@@ -19,6 +19,8 @@ import { WorkspaceBudgetList } from '@features/budget-management/ui/WorkspaceBud
 import { useUndoStore } from '@shared/mutations/UndoStore';
 import { toastError } from '@shared/lib/errors';
 import { openQuackback } from '@features/feedback';
+import { PageGuideButton } from '@features/page-guides';
+import { useShowFirstStepsMenuItems } from '@features/first-steps';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/ui/tooltip';
 import { toast } from 'sonner';
@@ -39,6 +41,8 @@ export function MobileTopBar() {
   const activeSpace = useActiveSpace();
   const canManageBudgets = activeSpace?.role === 'owner';
   const setCommandPaletteOpen = useUiStore((state) => state.setCommandPaletteOpen);
+  // On the Budget page while the first steps are hidden: "Show first steps".
+  const guideMenuItems = useShowFirstStepsMenuItems();
 
   const [budgetDropdownOpen, setBudgetDropdownOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -132,7 +136,7 @@ export function MobileTopBar() {
       {/* Top Bar */}
       <div
         ref={topBarRef}
-        className="sticky top-0 z-50 grid grid-cols-3 items-center px-4 py-3 border-b bg-card relative"
+        className="sticky top-0 z-50 grid grid-cols-[1fr_auto_1fr] items-center px-4 py-3 border-b bg-card relative"
         data-mobile-top-bar
       >
         {/* Left: Budget selector and sync status */}
@@ -166,6 +170,7 @@ export function MobileTopBar() {
               />
             </DropdownMenuContent>
           </DropdownMenu>
+          <PageGuideButton iconOnly className="h-9 w-9 rounded-full" extraItems={guideMenuItems} />
           <ConnectivityStatus className="ml-auto" />
         </div>
 

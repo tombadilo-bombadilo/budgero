@@ -24,6 +24,8 @@ import MonthPickerPopover from '@shared/ui/MonthPickerPopover';
 import { useFocusCategoryFromNavState } from '@shared/hooks/useFocusCategoryFromNavState';
 import { useClearCategorySelectionOnMount } from '@shared/hooks/useClearCategorySelectionOnMount';
 import { useNavigateMonth } from '@shared/hooks/useNavigateMonth';
+import { FirstStepsCard } from '@features/first-steps/ui/FirstStepsCard';
+import { GoalWalkthroughHost } from '@features/first-steps/ui/GoalWalkthroughHost';
 
 export function BudgetingPageDesktop() {
   const { t } = useLingui();
@@ -44,9 +46,17 @@ export function BudgetingPageDesktop() {
   useClearCategorySelectionOnMount();
 
   const budgetId = selectedBudget?.ID ?? 0;
-  const { data: budgetData = [] } = useMonthlyBudget(currentMonth, budgetId);
+  const {
+    data: budgetData = [],
+    isSuccess: budgetLoaded,
+    isPlaceholderData: budgetIsPlaceholder,
+  } = useMonthlyBudget(currentMonth, budgetId);
   const { data: goalsData = [] } = useGoals(budgetId);
-  const { data: readyToAssign = 0 } = useReadyToAssign(budgetId, currentMonth);
+  const rta = useReadyToAssign(budgetId, currentMonth);
+  const readyToAssign = rta.data ?? 0;
+  // This month's real figures, not a loading default or last month's placeholder.
+  const figuresSettled =
+    rta.isSuccess && !rta.isPlaceholderData && budgetLoaded && !budgetIsPlaceholder;
   const { hideCategory, hasHiddenCategories } = useHideCategory(budgetId);
 
   const [multiMonthOpen, setMultiMonthOpen] = useState(false);
@@ -257,6 +267,7 @@ export function BudgetingPageDesktop() {
                 renderToolbar={(controls) => (
                   <BudgetToolbar
                     readyToAssign={readyToAssign}
+                    readyToAssignSettled={figuresSettled}
                     globalLocalizer={globalLocalizer}
                     currentMonth={currentMonth}
                     budgetId={budgetId}
@@ -285,6 +296,23 @@ export function BudgetingPageDesktop() {
               its right edge off. Block layout keeps it at the panel width. */}
           <ScrollArea className="h-full [&_[data-slot=scroll-area-viewport]>div]:!block">
             <div className="px-1 pb-4">
+              <FirstStepsCard
+                className="mb-4"
+                budgetId={budgetId}
+                readyToAssign={readyToAssign}
+                readyToAssignLabel={formatMilliAmount(readyToAssign)}
+                rows={budgetData || []}
+                goals={goalsData}
+                currentMonth={currentMonth}
+                formatAmount={formatMilliAmount}
+                settled={figuresSettled}
+              />
+              <GoalWalkthroughHost
+                rows={budgetData || []}
+                goals={goalsData}
+                currentMonth={currentMonth}
+                formatAmount={formatMilliAmount}
+              />
               <BudgetContextPanel
                 budgetId={budgetId}
                 currentMonth={currentMonth}

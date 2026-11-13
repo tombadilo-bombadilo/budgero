@@ -14,6 +14,7 @@ import { useBudgets, useUpdateBudgetRtaMode } from '@entities/budget/api/useBudg
 import { useUiStore } from '@shared/store/useUiStore';
 import { cn } from '@shared/lib/utils';
 import { SettingsPageHeader } from '@pages/settings/SettingsPageHeader';
+import { FirstStepsSettingsCard } from '@features/first-steps';
 import { IncomeCategoriesCard } from './components/IncomeCategoriesCard';
 import { CalendarSettingsCard } from './components/CalendarSettingsCard';
 import { GoalFundingSettingsCard } from './components/GoalFundingSettingsCard';
@@ -210,6 +211,8 @@ export default function BudgetSettingsPage() {
       <IncomeCategoriesCard />
 
       <GroupPercentCard />
+
+      <FirstStepsSettingsCard />
 
       <CalendarSettingsCard />
 

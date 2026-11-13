@@ -14,6 +14,7 @@ import { useDuplicateShortcut } from '@features/transactions/api/useDuplicateSho
 import { useDeleteSelected } from '@features/transactions/api/useDeleteSelected';
 import { useRegisterActionShortcuts } from '@features/transactions/api/useRegisterActionShortcuts';
 import { useQuickFilterShortcuts } from '@features/transactions/api/useQuickFilterShortcuts';
+import { useEmptyStateViewed } from '@shared/lib/analytics/first-month';
 import {
   useTransactionSearch,
   filterTransactions,
@@ -90,6 +91,8 @@ interface TransactionsTableProps {
   onLoadMoreTransactions?: () => Promise<unknown>;
   /** Extra action buttons rendered in the toolbar row (replaces "Transactions" heading) */
   headerActions?: React.ReactNode;
+  /** initialData is still loading (an empty list isn't an empty register yet). */
+  dataLoading?: boolean;
 }
 
 export function TransactionsTable({
@@ -111,6 +114,7 @@ export function TransactionsTable({
   isLoadingMoreTransactions = false,
   onLoadMoreTransactions,
   headerActions,
+  dataLoading = false,
 }: TransactionsTableProps) {
   const { t } = useLingui();
 
@@ -328,6 +332,12 @@ export function TransactionsTable({
       getPrimaryInflow,
       getPrimaryOutflow,
     ]
+  );
+
+  // An empty register, not one a search or quick filter emptied.
+  useEmptyStateViewed(
+    'transactions',
+    !dataLoading && !isFilterModeActive && rawData.length === 0 && !totalTransactionCount
   );
 
   const effectiveTransactionCount =

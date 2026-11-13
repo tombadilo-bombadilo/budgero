@@ -1,10 +1,8 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 // Post-signup onboarding — collects every setup choice, then fires the whole
 // setup pipeline on the final click. The pipeline has to run in order:
-// master password → workspace → runtime init → budget (or YNAB import) →
-// accounts/categories/goal → invites → theme → intro acknowledged.
-// Invites come after the workspace + master password because they encrypt
-// the space key for each recipient.
+// master password → workspace → runtime init → budget (or YNAB import, or
+// the demo) → accounts/categories → intro acknowledged.
 //
 // We replace the simple IntroRequiredScreen as the first startup gate. Once
 // acknowledgeIntro() fires at the tail of the pipeline, StartupController
@@ -25,15 +23,17 @@ import type {
   YNABImportResult,
 } from '@budgero/core/browser';
 import { YNABImportService } from '@budgero/core/browser';
+import { Check } from 'lucide-react';
+import { Button } from '@shared/ui/button';
+import { cn } from '@shared/lib/utils';
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import { useLogout, useProfile, useUpdateOnboarding } from '@entities/user/api/useAuth';
-import { useThemePreset } from '@shared/contexts/ThemePresetContext';
-import { getTodayISO } from '@shared/lib/date-utils';
 import { readPendingSpaceInvite } from '@features/budget-sharing/lib/pending-space-invite';
 import { hasCompleteCreditPaymentMappings } from '@features/budget-management/ui/create-budget-form/ynab-credit-payment-matching';
 import { YnabImportStatus } from '@features/budget-management/ui/create-budget-form/YnabImportStatus';
-import { track } from '@shared/lib/analytics/track';
+import { track, trackOnUnload } from '@shared/lib/analytics/track';
 import { durationBucket, type OnboardingStepId } from '@shared/lib/analytics/events';
+import { guessDemoLocale } from '@features/demo-budget/lib/demo-workspace';
 import {
   INITIAL_STATE,
   ONBOARDING_STEPS,
@@ -41,29 +41,27 @@ import {
   type ActivePath,
   type OnboardingFormState,
 } from './onboarding-data';
-import { runOnboardingApply } from './apply-onboarding';
+import { newOnboardingAttempt, returnToDemo, runOnboardingApply } from './apply-onboarding';
 import {
   AccountsStep,
   CategoriesStep,
   CurrencyStep,
   DoneStep,
-  GoalStep,
+  InviteCodeStep,
   PasswordStep,
-  RulesStep,
-  ShareStep,
   StartModeStep,
-  ThemeStep,
   WelcomeStep,
+  WhereHeardPicker,
   WhereHeardStep,
-  WorkspaceStep,
   YnabImportStep,
-  ZbbStep,
 } from './steps';
 import { classifyYnabZipError } from './steps/ynab-source-errors';
-import './onboarding.css';
+import { checkInviteCode, normalizeInviteCode } from './invite-code';
 
 interface OnboardingFlowProps {
   onComplete: () => void;
+  /** 'from_demo': set up a real budget after trying the demo (no password step). */
+  mode?: 'intro' | 'from_demo';
 }
 
 function formatFileSize(bytes: number): string {
@@ -86,7 +84,7 @@ function yieldAfterPaint(): Promise<void> {
   });
 }
 
-const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
+const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'intro' }) => {
   const { t } = useLingui();
 
   const runtime = useRuntime();
@@ -94,27 +92,43 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   const navigate = useNavigate();
   const { data: profile } = useProfile();
   const logout = useLogout();
-  const { setThemeId } = useThemePreset();
   const { mutateAsync: updateOnboardingAsync } = useUpdateOnboarding();
 
-  const [state, setState] = useState<OnboardingFormState>(INITIAL_STATE);
+  const [state, setState] = useState<OnboardingFormState>(() => {
+    // Preselect the currency the browser's region uses (euro for de-DE, …).
+    const initial = { ...INITIAL_STATE, currency: guessDemoLocale().currency };
+    // Leaving the demo is a fresh start without the "how are you starting" step.
+    return mode === 'from_demo' ? { ...initial, startMode: 'fresh' } : initial;
+  });
   // Cross-tab invite handoff is encrypted in IndexedDB, so hydration is
-  // asynchronous. Prime the invitee shortcut as soon as the vault resolves.
+  // asynchronous. Nothing is shown (or reported) until it resolves, so an
+  // invitee never sees the start-mode screen flash by. Leaving the demo
+  // can't be a join, so that path doesn't wait.
+  const [inviteChecked, setInviteChecked] = useState(mode === 'from_demo');
   useEffect(() => {
+    if (mode === 'from_demo') return;
     let active = true;
-    void readPendingSpaceInvite().then((pending) => {
-      if (active && pending) {
-        setState((current) => ({ ...current, joinSecret: pending }));
-      }
-    });
+    void readPendingSpaceInvite()
+      .catch(() => null)
+      .then((pending) => {
+        if (!active) return;
+        if (pending) setState((current) => ({ ...current, joinSecret: pending }));
+        setInviteChecked(true);
+      });
     return () => {
       active = false;
     };
-  }, []);
+  }, [mode]);
+  // Survives "Try again" so a retry reuses what the failed run left: the demo
+  // being left (open when this page mounted) and any half-built workspace.
+  const [attempt] = useState(() =>
+    newOnboardingAttempt(mode === 'from_demo' ? runtime.getActiveSpaceId() : null)
+  );
   const [stepIndex, setStepIndex] = useState(0);
   const [applyStatus, setApplyStatus] = useState<'idle' | 'running' | 'error'>('idle');
   const [applyError, setApplyError] = useState<string | null>(null);
   const [isInspectingYnab, setIsInspectingYnab] = useState(false);
+  const [isCheckingInvite, setIsCheckingInvite] = useState(false);
   const [ynabImportUpdates, setYnabImportUpdates] = useState<YNABImportProgressUpdate[]>([]);
   const [ynabImportResult, setYnabImportResult] = useState<YNABImportResult | null>(null);
   const [isFinalizingYnab, setIsFinalizingYnab] = useState(false);
@@ -146,11 +160,19 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   // Invitee shortcut path takes precedence when a /join secret was captured
   // before mount — those users are joining an existing workspace, not
   // setting up their own. Otherwise pick fresh/ynab as before.
-  const activePath: ActivePath = state.joinSecret
-    ? 'join'
-    : state.startMode === 'ynab'
-      ? 'ynab'
-      : 'fresh';
+  const activePath: ActivePath =
+    mode === 'from_demo'
+      ? 'from_demo'
+      : state.joinSecret
+        ? 'join'
+        : state.startMode === 'ynab'
+          ? 'ynab'
+          : state.startMode === 'demo'
+            ? 'demo'
+            : state.startMode === 'join'
+              ? 'join_code'
+              : 'fresh';
+  const joining = activePath === 'join' || activePath === 'join_code';
   const pathIds = PATH_STEPS[activePath];
   const total = pathIds.length;
   const safeStep = Math.min(stepIndex, total - 1);
@@ -159,18 +181,59 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
 
   const startedAtRef = useRef<number | null>(null);
   const analyticsStep = curId as OnboardingStepId;
-  const lastViewedStepRef = useRef<string | null>(null);
+  const lastViewedStepRef = useRef<OnboardingStepId | null>(null);
+  const stepViewedAtRef = useRef(0);
+  /** onboarding_left was sent for this visit (the page may come back from bfcache). */
+  const finishedRef = useRef(false);
+  /** Setup finished: nothing more to report, even if the page comes back. */
+  const completedRef = useRef(false);
+  const leftRef = useRef({ step: analyticsStep, path: activePath });
+  leftRef.current = { step: analyticsStep, path: activePath };
   useEffect(() => {
+    if (!inviteChecked) return;
     // Once per step: picking a start mode changes the path, not the step.
     startedAtRef.current ??= Date.now();
-    if (lastViewedStepRef.current === analyticsStep) return;
+    const prev = lastViewedStepRef.current;
+    if (prev === analyticsStep) return;
     lastViewedStepRef.current = analyticsStep;
+    stepViewedAtRef.current = Date.now();
+    const from = PATH_STEPS[activePath].indexOf(prev ?? '');
+    if (prev && from > PATH_STEPS[activePath].indexOf(analyticsStep)) {
+      track('onboarding_step_back', { from: prev, to: analyticsStep, path: activePath });
+    }
     track('onboarding_step_viewed', { step: analyticsStep, path: activePath });
-  }, [analyticsStep, activePath]);
+  }, [analyticsStep, activePath, inviteChecked]);
+  useEffect(() => {
+    // Closing the tab mid-setup: where, and after how long.
+    const onPageHide = () => {
+      if (finishedRef.current) return;
+      finishedRef.current = true;
+      trackOnUnload('onboarding_left', {
+        ...leftRef.current,
+        duration_bucket: durationBucket(Date.now() - (startedAtRef.current ?? Date.now())),
+      });
+    };
+    // Back from the back/forward cache: still mid-setup, so leaving again counts.
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted && !completedRef.current) finishedRef.current = false;
+    };
+    window.addEventListener('pagehide', onPageHide);
+    window.addEventListener('pageshow', onPageShow);
+    return () => {
+      window.removeEventListener('pagehide', onPageHide);
+      window.removeEventListener('pageshow', onPageShow);
+    };
+  }, []);
   const trackStepCompleted = useCallback(() => {
-    track('onboarding_step_completed', { step: analyticsStep, path: activePath });
+    track('onboarding_step_completed', {
+      step: analyticsStep,
+      path: activePath,
+      duration_bucket: durationBucket(Date.now() - stepViewedAtRef.current),
+    });
   }, [analyticsStep, activePath]);
   const completeOnboarding = useCallback(() => {
+    finishedRef.current = true;
+    completedRef.current = true;
     track('onboarding_finished', {
       path: activePath,
       duration_bucket: durationBucket(Date.now() - (startedAtRef.current ?? Date.now())),
@@ -182,38 +245,12 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
     switch (curId) {
       case 'start_mode':
         return state.startMode !== null;
-      case 'rules':
-        return state.acknowledgedRules;
-      case 'workspace':
-        return state.budgetName.trim().length > 0;
-      case 'share': {
-        // If the user added rows, every row must have a non-empty email
-        // before we let them proceed. Otherwise the apply pipeline would
-        // silently drop empty rows and the post-onboarding share panel
-        // would never appear, leaving the user wondering what happened.
-        // Empty list is fine — share is optional; they can use Skip.
-        return state.invites.every((inv) => inv.email.trim().length > 0);
-      }
-      case 'goal': {
-        // Custom goal needs a non-default name before we'll turn it into a
-        // real envelope during apply.
-        if (state.goal.id === 'custom') {
-          const label = state.goal.label.trim();
-          if (label.length === 0 || label.toLowerCase() === 'something else') {
-            return false;
-          }
-        }
-        // Target-date mode needs a date that's actually in the future so the
-        // monthly amount maths out. Past dates would create goals that are
-        // immediately "overdue" in the budget UI.
-        if (state.goal.mode === 'target') {
-          const today = getTodayISO();
-          if (!state.goal.targetDate || state.goal.targetDate <= today) {
-            return false;
-          }
-        }
-        return true;
-      }
+      case 'invite_code':
+        return (
+          normalizeInviteCode(state.inviteCode).length > 0 &&
+          !state.inviteCodeProblem &&
+          !isCheckingInvite
+        );
       case 'password': {
         const pw = state.password;
         return pw.length >= 8 && pw === state.passwordConfirm;
@@ -233,12 +270,32 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       default:
         return true;
     }
-  }, [curId, state]);
+  }, [curId, isCheckingInvite, state]);
 
   const next = useCallback(() => {
     trackStepCompleted();
     setStepIndex((s) => Math.min(s + 1, total - 1));
   }, [total, trackStepCompleted]);
+  // Invite-code step: check the code before asking for a password, so a
+  // mistyped or expired code is caught where it can be fixed.
+  const checkCodeAndContinue = useCallback(async () => {
+    const code = normalizeInviteCode(state.inviteCode);
+    if (!code || isCheckingInvite || state.inviteCodeProblem) return;
+    setIsCheckingInvite(true);
+    try {
+      const result = await checkInviteCode(code);
+      if (!result.ok) {
+        track('onboarding_invite_code_rejected', { reason: result.reason });
+        set({ inviteCodeProblem: result.reason, inviteSpaceName: null });
+        return;
+      }
+      set({ inviteCode: code, inviteSpaceName: result.spaceName });
+      next();
+    } finally {
+      setIsCheckingInvite(false);
+    }
+  }, [isCheckingInvite, next, set, state.inviteCode, state.inviteCodeProblem]);
+
   const back = useCallback(() => {
     setStepIndex((s) => Math.max(s - 1, 0));
   }, []);
@@ -316,7 +373,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       ynabCreditPaymentMappings: undefined,
       ynabSourceNumberFormat: undefined,
     });
-    setStepIndex(PATH_STEPS.fresh.indexOf('accounts'));
+    setStepIndex(PATH_STEPS.fresh.indexOf('currency'));
   }, [set]);
 
   const handleYnabProgress = useCallback(async (update: YNABImportProgressUpdate) => {
@@ -385,7 +442,6 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       queryClient,
       navigate,
       profileId: profile?.id,
-      setThemeId,
       updateOnboardingAsync,
       onComplete: completeOnboarding,
       setApplyStatus,
@@ -395,9 +451,11 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
       reviewYnabImport,
       onYnabImportCancelled: returnToYnabSource,
       waitForYnabContinue,
+      attempt,
     });
   }, [
     activePath,
+    attempt,
     handleYnabProgress,
     navigate,
     completeOnboarding,
@@ -406,12 +464,13 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
     runtime,
     reviewYnabImport,
     returnToYnabSource,
-    setThemeId,
     state,
     updateOnboardingAsync,
     waitForYnabContinue,
   ]);
 
+  const stepLabel = String(safeStep + 1).padStart(2, '0');
+  const totalLabel = String(total).padStart(2, '0');
   const isFinal = safeStep === total - 1;
   const isFirst = safeStep === 0;
   const launchesYnabImport = activePath === 'ynab' && curId === 'password';
@@ -420,310 +479,338 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) => {
   // the dashboard.
   const isShowingYnabStatus = curId === 'done' && activePath === 'ynab';
 
-  const primaryLabel = isFirst
-    ? t`Let’s begin →`
-    : launchesYnabImport
-      ? t`Import my budget →`
-      : isFinal
-        ? activePath === 'join'
-          ? t`Join workspace →`
-          : t`Open my budget →`
-        : t`Next →`;
+  const primaryLabel =
+    curId === 'start_mode'
+      ? state.startMode === 'demo'
+        ? t`Try the demo →`
+        : state.startMode === 'ynab'
+          ? t`Import from YNAB →`
+          : state.startMode === 'join'
+            ? t`Enter my code →`
+            : state.startMode === 'fresh'
+              ? t`Set up my budget →`
+              : t`Pick a way to start`
+      : curId === 'invite_code'
+        ? isCheckingInvite
+          ? t`Checking…`
+          : t`Check code →`
+        : isFirst
+          ? t`Let’s begin →`
+          : launchesYnabImport
+            ? t`Import my budget →`
+            : isFinal
+              ? joining
+                ? t`Join workspace →`
+                : activePath === 'demo'
+                  ? t`Open the demo →`
+                  : t`Open my budget →`
+              : t`Next →`;
   const primaryAction = isFinal
     ? () => {
         if (applyStatus === 'running') return;
         trackStepCompleted();
         void applyOnboarding();
       }
-    : launchesYnabImport
-      ? () => {
-          if (applyStatus === 'running') return;
-          trackStepCompleted();
-          setStepIndex((current) => Math.min(current + 1, total - 1));
-          void applyOnboarding();
-        }
-      : next;
+    : curId === 'invite_code'
+      ? () => void checkCodeAndContinue()
+      : launchesYnabImport
+        ? () => {
+            if (applyStatus === 'running') return;
+            trackStepCompleted();
+            setStepIndex((current) => Math.min(current + 1, total - 1));
+            void applyOnboarding();
+          }
+        : next;
+
+  // An invite link may still be loading: show the page, not a step.
+  if (!inviteChecked) {
+    return <OnboardingFrame aria-busy="true" />;
+  }
+
+  const stepCounter = t`STEP ${stepLabel} / ${totalLabel}`;
+  const showBackToDemo = mode === 'from_demo' && applyStatus !== 'running';
 
   return (
-    <div
-      className="budgero-onboarding-font bo-page"
-      style={{
-        width: '100%',
-        minHeight: '100vh',
-        background: 'linear-gradient(180deg, #fbf7eb 0%, #f6f1e3 100%)',
-        color: '#141414',
-        padding: '32px 24px 48px',
-        boxSizing: 'border-box',
-      }}
-    >
-      {/* Header */}
-      <div
-        className="bo-header-stack"
-        style={{
-          maxWidth: isShowingYnabStatus ? 1240 : 880,
-          margin: '0 auto 20px',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img
-            src="/logo_48.png"
-            alt={t`Budgero logo`}
-            width={28}
-            height={28}
-            style={{ display: 'block' }}
-          />
-          <span style={{ fontWeight: 700, letterSpacing: 1 }}>BUDGERO</span>
+    <OnboardingFrame wide={isShowingYnabStatus}>
+      {/* Desktop: the steps of this path down the side, so the window reads
+          as a short, finite setup rather than a stretched phone screen. */}
+      <aside className="hidden w-60 shrink-0 flex-col border-r bg-muted/40 px-6 py-7 md:flex">
+        <div className="flex items-center gap-2.5">
+          <img src="/logo_48.png" alt={t`Budgero logo`} width={28} height={28} />
+          <span className="font-semibold tracking-wide">Budgero</span>
         </div>
-        <div
-          className="bo-header-step"
-          style={{
-            fontSize: 11,
-            letterSpacing: 1.2,
-            color: '#393939',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <span
-            style={{
-              display: 'inline-block',
-              width: 8,
-              height: 8,
-              background: '#c6392c',
-              borderRadius: '50%',
-            }}
-          />
-          STEP {String(safeStep + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
-        </div>
-      </div>
+        <ol className="mt-8 space-y-1" aria-label={stepCounter}>
+          {pathIds.map((id, i) => {
+            const def = ONBOARDING_STEPS.find((step) => step.id === id);
+            if (!def) return null;
+            const status = i < safeStep ? 'done' : i === safeStep ? 'current' : 'todo';
+            return (
+              <li
+                key={id}
+                aria-current={status === 'current' ? 'step' : undefined}
+                className={cn(
+                  'flex items-start gap-2.5 rounded-md px-2 py-1.5 text-sm leading-snug',
+                  status === 'current' && 'bg-background font-medium text-foreground shadow-xs',
+                  status === 'done' && 'text-muted-foreground',
+                  status === 'todo' && 'text-muted-foreground/70'
+                )}
+              >
+                <span
+                  aria-hidden
+                  className={cn(
+                    'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border text-[10px]',
+                    status === 'done' && 'border-primary bg-primary text-primary-foreground',
+                    status === 'current' && 'border-primary text-primary'
+                  )}
+                >
+                  {status === 'done' ? <Check className="size-3" /> : i + 1}
+                </span>
+                <span>{t(def.title)}</span>
+              </li>
+            );
+          })}
+        </ol>
+      </aside>
 
-      {/* Progress */}
-      <div
-        style={{
-          maxWidth: isShowingYnabStatus ? 1240 : 880,
-          margin: '0 auto 28px',
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        {/* Top bar: brand on phones, the step count, and the way out. */}
+        <div className="flex shrink-0 items-center gap-3 px-4 pt-3 group-data-[compact]/onb:pt-1.5 md:px-10 md:pt-6">
+          <img src="/logo_48.png" alt="" width={22} height={22} className="md:hidden" aria-hidden />
+          {showBackToDemo && (
+            <Button
+              type="button"
+              variant="link"
+              onClick={() => {
+                void returnToDemo(runtime, queryClient, attempt)
+                  .catch((err: unknown) =>
+                    console.warn('[Onboarding] Back to the demo failed', err)
+                  )
+                  .finally(() => void navigate('/budgeting'));
+              }}
+              data-testid="back-to-demo"
+              className="h-auto px-0 py-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <Trans>← Back to the demo</Trans>
+            </Button>
+          )}
+          <span className="ml-auto text-[11px] tracking-wider text-muted-foreground tabular-nums">
+            {stepCounter}
+          </span>
+          {mode !== 'from_demo' && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => logout.mutate()}
+              className="-mr-2 h-auto px-2 py-1 text-[11px] font-normal tracking-wider text-muted-foreground hover:text-foreground"
+            >
+              <Trans>SIGN OUT</Trans>
+            </Button>
+          )}
+        </div>
         <div
-          className="bo-progress-track"
-          style={{ display: 'flex', gap: 6, alignItems: 'center' }}
+          className="mx-4 mt-2.5 flex shrink-0 gap-1 group-data-[compact]/onb:hidden md:mx-10 md:mt-4"
+          role="progressbar"
+          aria-valuemin={1}
+          aria-valuemax={total}
+          aria-valuenow={safeStep + 1}
+          aria-label={stepCounter}
         >
           {Array.from({ length: total }).map((_, i) => (
             <span
               key={i}
-              style={{
-                width: 24,
-                height: 2,
-                background:
-                  i < safeStep ? '#141414' : i === safeStep ? '#c6392c' : 'rgba(57,57,57,0.3)',
-                transition: 'background 0.3s',
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Card */}
-      <div
-        className="bo-card"
-        style={{
-          maxWidth: isShowingYnabStatus ? 1240 : 880,
-          margin: '0 auto',
-          background: '#fffdf8',
-          border: '1px dashed rgba(57,57,57,0.55)',
-          boxShadow: '0 14px 24px -8px rgba(20,20,20,0.18), 0 6px 12px -6px rgba(20,20,20,0.10)',
-          padding: '44px 48px',
-          position: 'relative',
-          // Clip illustration bleed at the card boundary so the negative
-          // margins on hero images can't escape past the dashed border on
-          // mobile, where card padding is smaller than the bleed offset.
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          className="bo-card-stamp"
-          style={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            fontSize: 9,
-            letterSpacing: 1.5,
-            color: 'rgba(57,57,57,0.6)',
-            border: '1px dashed rgba(57,57,57,0.4)',
-            padding: '3px 8px',
-          }}
-        >
-          {t(cur.hint).toUpperCase()}
-        </div>
-
-        {curId === 'welcome' && <WelcomeStep cur={cur} state={state} set={set} />}
-        {curId === 'start_mode' && <StartModeStep cur={cur} state={state} set={set} />}
-        {curId === 'rules' && <RulesStep cur={cur} state={state} set={set} />}
-        {curId === 'currency' && <CurrencyStep cur={cur} state={state} set={set} />}
-        {curId === 'zbb' && <ZbbStep cur={cur} state={state} set={set} />}
-        {curId === 'workspace' && <WorkspaceStep cur={cur} state={state} set={set} />}
-        {curId === 'share' && <ShareStep cur={cur} state={state} set={set} />}
-        {curId === 'ynab_import' && (
-          <YnabImportStep
-            cur={cur}
-            state={state}
-            set={set}
-            onFileSelected={handleYnabFile}
-            onApiSnapshotSelected={handleYnabApiSnapshot}
-            isInspecting={isInspectingYnab}
-            onStartFresh={startFreshInstead}
-          />
-        )}
-        {curId === 'accounts' && <AccountsStep cur={cur} state={state} set={set} />}
-        {curId === 'categories' && <CategoriesStep cur={cur} state={state} set={set} />}
-        {curId === 'goal' && <GoalStep cur={cur} state={state} set={set} />}
-        {curId === 'where_heard' && <WhereHeardStep cur={cur} state={state} set={set} />}
-        {curId === 'theme' && <ThemeStep cur={cur} state={state} set={set} />}
-        {curId === 'password' && <PasswordStep cur={cur} state={state} set={set} />}
-        {curId === 'done' &&
-          (isShowingYnabStatus ? (
-            <YnabImportStatus
-              sourceMode={state.ynabApiSnapshot ? 'api' : 'zip'}
-              updates={ynabImportUpdates}
-              error={applyError}
-              summary={ynabImportResult?.summary ?? null}
-              verification={ynabImportResult?.verification ?? null}
-              currency={state.currency}
-              isFinalizing={isFinalizingYnab}
-              onBack={returnToYnabSource}
-              onContinue={continueFromYnabReport}
-              onAcceptWarnings={() => resolveYnabReview('accept')}
-              onCancelPending={() => resolveYnabReview('cancel')}
-            />
-          ) : (
-            <DoneStep cur={cur} state={state} applyState={applyStatus} applyError={applyError} />
-          ))}
-
-        {/* Footer */}
-        {!isShowingYnabStatus && (
-          <div
-            style={{
-              marginTop: 36,
-              paddingTop: 22,
-              borderTop: '1px dashed rgba(57,57,57,0.4)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <div>
-              {!isFirst && applyStatus !== 'running' && (
-                <button
-                  type="button"
-                  onClick={back}
-                  style={{
-                    background: 'transparent',
-                    color: '#393939',
-                    border: 'none',
-                    padding: '12px 8px',
-                    fontFamily: 'inherit',
-                    fontSize: 13,
-                    letterSpacing: 0.5,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <Trans>← Back</Trans>
-                </button>
+              className={cn(
+                'h-1 flex-1 rounded-full transition-colors',
+                i <= safeStep ? 'bg-primary' : 'bg-muted'
               )}
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {/* Skip is only available on the educational ZBB demo, on Sharing
-                  (invites are optional), and on the referral question (purely
+            />
+          ))}
+        </div>
+
+        {/* The step. Long lists scroll here; the buttons below never move. */}
+        <main
+          data-onboarding-step
+          onFocus={() => setTimeout(keepFocusInView, 60)}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-4 pt-4 group-data-[compact]/onb:pb-2 group-data-[compact]/onb:pt-2 md:px-10 md:pt-7"
+        >
+          {curId === 'welcome' && <WelcomeStep cur={cur} state={state} set={set} />}
+          {curId === 'start_mode' && <StartModeStep cur={cur} state={state} set={set} />}
+          {curId === 'currency' && <CurrencyStep cur={cur} state={state} set={set} />}
+          {curId === 'ynab_import' && (
+            <YnabImportStep
+              cur={cur}
+              state={state}
+              set={set}
+              onFileSelected={handleYnabFile}
+              onApiSnapshotSelected={handleYnabApiSnapshot}
+              isInspecting={isInspectingYnab}
+              onStartFresh={startFreshInstead}
+            />
+          )}
+          {curId === 'invite_code' && (
+            <InviteCodeStep
+              cur={cur}
+              state={state}
+              set={set}
+              onSubmit={() => void checkCodeAndContinue()}
+              isChecking={isCheckingInvite}
+            />
+          )}
+          {curId === 'accounts' && <AccountsStep cur={cur} state={state} set={set} />}
+          {curId === 'categories' && <CategoriesStep cur={cur} state={state} set={set} />}
+          {curId === 'where_heard' && <WhereHeardStep cur={cur} state={state} set={set} />}
+          {curId === 'password' && (
+            <>
+              <PasswordStep
+                cur={cur}
+                state={state}
+                set={set}
+                forDemo={activePath === 'demo'}
+                forJoin={joining}
+              />
+              {activePath !== 'join' && <WhereHeardPicker state={state} set={set} />}
+              {activePath === 'demo' && applyStatus === 'running' && (
+                <div role="status" className="mt-4 text-sm">
+                  <Trans>Setting up the demo budget…</Trans>
+                </div>
+              )}
+              {activePath === 'demo' && applyStatus === 'error' && applyError && (
+                <div role="alert" className="mt-4 text-sm text-destructive">
+                  {applyError}
+                </div>
+              )}
+            </>
+          )}
+          {curId === 'done' &&
+            (isShowingYnabStatus ? (
+              <YnabImportStatus
+                sourceMode={state.ynabApiSnapshot ? 'api' : 'zip'}
+                updates={ynabImportUpdates}
+                error={applyError}
+                summary={ynabImportResult?.summary ?? null}
+                verification={ynabImportResult?.verification ?? null}
+                currency={state.currency}
+                isFinalizing={isFinalizingYnab}
+                onBack={returnToYnabSource}
+                onContinue={continueFromYnabReport}
+                onAcceptWarnings={() => resolveYnabReview('accept')}
+                onCancelPending={() => resolveYnabReview('cancel')}
+              />
+            ) : (
+              <DoneStep
+                cur={cur}
+                state={state}
+                applyState={applyStatus}
+                applyError={applyError}
+                fromDemo={activePath === 'from_demo'}
+                joining={joining}
+              />
+            ))}
+        </main>
+
+        {!isShowingYnabStatus && (
+          <div className="flex shrink-0 items-center gap-2 border-t bg-background/95 px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 group-data-[compact]/onb:py-2 md:bg-transparent md:px-10 md:py-4">
+            {!isFirst && applyStatus !== 'running' && (
+              <Button type="button" variant="ghost" onClick={back} className="px-2">
+                <Trans>← Back</Trans>
+              </Button>
+            )}
+            <div className="ml-auto flex items-center gap-2">
+              {/* Skip is only available on the referral question (purely
                   informational). Every other step feeds a real value into the
                   apply pipeline and can't be skipped. */}
-              {(curId === 'zbb' || curId === 'share' || curId === 'where_heard') && (
-                <button
-                  type="button"
-                  onClick={next}
-                  style={{
-                    background: 'transparent',
-                    color: '#393939',
-                    border: 'none',
-                    padding: '12px 8px',
-                    fontFamily: 'inherit',
-                    fontSize: 13,
-                    letterSpacing: 0.5,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                  }}
-                >
+              {curId === 'where_heard' && (
+                <Button type="button" variant="ghost" onClick={next}>
                   <Trans>Skip for now</Trans>
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 type="button"
                 onClick={primaryAction}
                 disabled={!canAdvance || applyStatus === 'running'}
-                style={{
-                  background: '#141414',
-                  color: '#fbf7eb',
-                  border: '1px solid #141414',
-                  padding: '12px 24px',
-                  fontFamily: 'inherit',
-                  fontSize: 13,
-                  letterSpacing: 0.5,
-                  fontWeight: 600,
-                  cursor: !canAdvance || applyStatus === 'running' ? 'not-allowed' : 'pointer',
-                  opacity: !canAdvance || applyStatus === 'running' ? 0.4 : 1,
-                }}
+                className="min-w-32"
               >
                 {isFinal && applyStatus === 'running'
                   ? t`Working…`
                   : isFinal && applyStatus === 'error'
                     ? t`Try again →`
                     : primaryLabel}
-              </button>
+              </Button>
             </div>
           </div>
         )}
       </div>
+    </OnboardingFrame>
+  );
+};
 
-      {/* Footnote */}
+/**
+ * The full-window frame. On a phone it is exactly the visible viewport (it
+ * shrinks with the on-screen keyboard, so the buttons stay in view); from md
+ * up it is a centred panel of a fixed height.
+ */
+function OnboardingFrame({
+  children,
+  wide = false,
+  ...rest
+}: { children?: React.ReactNode; wide?: boolean } & React.HTMLAttributes<HTMLDivElement>) {
+  const viewport = useVisualViewportBox();
+  // A phone with the keyboard open (~350 px left): the step's intro and the
+  // progress bar fold away so the fields and the buttons fit.
+  const compact = Boolean(viewport && viewport.height < 500 && viewport.width < 768);
+  return (
+    <div
+      {...rest}
+      data-compact={compact || undefined}
+      className="group/onb fixed inset-x-0 top-0 flex h-dvh flex-col bg-background text-foreground md:items-center md:justify-center md:bg-muted/50 md:p-8"
+      style={viewport ? { top: viewport.top, height: viewport.height } : undefined}
+    >
       <div
-        style={{
-          maxWidth: 880,
-          margin: '20px auto 0',
-          fontSize: 10,
-          color: 'rgba(57,57,57,0.7)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          letterSpacing: 0.5,
-        }}
+        className={cn(
+          'flex min-h-0 w-full flex-1 flex-col md:flex-none md:flex-row md:overflow-hidden md:rounded-xl md:border md:bg-card md:shadow-sm',
+          wide ? 'md:h-full md:max-w-7xl' : 'md:h-[min(46rem,100%)] md:max-w-4xl'
+        )}
       >
-        <span>
-          <Trans>BUDGERO · ONBOARDING v1</Trans>
-        </span>
-        <button
-          type="button"
-          onClick={() => logout.mutate()}
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: 'rgba(57,57,57,0.7)',
-            fontFamily: 'inherit',
-            fontSize: 10,
-            letterSpacing: 0.5,
-            cursor: 'pointer',
-            padding: 0,
-          }}
-        >
-          <Trans>SIGN OUT</Trans>
-        </button>
+        {children}
       </div>
     </div>
   );
-};
+}
+
+/**
+ * Scrolls the focused field into view inside the step, together with what
+ * belongs to it (the nearest `data-keep-in-view` block: both password fields
+ * and their messages, one account row).
+ */
+function keepFocusInView(): void {
+  const active = document.activeElement;
+  if (!(active instanceof HTMLElement) || !active.closest('[data-onboarding-step]')) return;
+  if (!active.matches('input, select, textarea')) return;
+  const block = active.closest('[data-keep-in-view]') ?? active;
+  block.scrollIntoView?.({ block: 'nearest' });
+}
+
+/** The visual viewport (what is left above the on-screen keyboard), where supported. */
+function useVisualViewportBox(): { top: number; height: number; width: number } | null {
+  const [box, setBox] = useState<{ top: number; height: number; width: number } | null>(null);
+  useEffect(() => {
+    const vv = typeof window !== 'undefined' ? window.visualViewport : null;
+    if (!vv) return;
+    const update = () => {
+      setBox({ top: vv.offsetTop, height: vv.height, width: vv.width });
+      // The keyboard opened or closed: the field being typed in stays visible.
+      requestAnimationFrame(keepFocusInView);
+    };
+    const frame = requestAnimationFrame(update);
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    return () => {
+      cancelAnimationFrame(frame);
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+  return box;
+}
 
 export default OnboardingFlow;

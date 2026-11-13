@@ -2,20 +2,24 @@ import type {
   CustomDashboard,
   CustomDashboardWidget,
   CustomDashboardWithWidgets,
+  DesktopWidgetLayoutInput,
+  MobileWidgetLayoutInput,
 } from '@budgero/core/browser';
 import {
   S,
   redoWithIds,
+  newOpRowId,
   safeCapture,
   withGeneratedId,
   type OpCall,
   type OpCodeEntry,
 } from '../shared';
 
-function addWidgetOp(widget: CustomDashboardWidget): OpCall {
+function addWidgetOp(widget: CustomDashboardWidget, extra: Record<string, unknown> = {}): OpCall {
   return {
     op: 'customDashboardWidgets.add',
     args: {
+      ...extra,
       id: widget.id,
       dashboardId: widget.dashboardId,
       reportId: widget.reportId,
@@ -35,6 +39,27 @@ function addedWidgetId(result: unknown, before: unknown): string | undefined {
   )?.id;
 }
 
+/**
+ * A widget's layouts with every optional key spelled out, so restoring them
+ * clears a `hidden` / phone `order` set since (a missing key keeps the stored one).
+ */
+function explicitLayouts(widget: CustomDashboardWidget) {
+  return {
+    desktopLayout: { ...widget.desktopLayout, hidden: widget.desktopLayout.hidden ?? false },
+    mobileLayout: {
+      ...widget.mobileLayout,
+      order: widget.mobileLayout.order ?? null,
+      hidden: widget.mobileLayout.hidden ?? false,
+    },
+  };
+}
+
+interface UpdateCapture {
+  dashboard: CustomDashboard | null;
+  /** The budget's home dashboard before the update (isHome changes only). */
+  homeId: string | null;
+}
+
 const captureWidget = (args: Record<string, unknown>) =>
   safeCapture(() => S().customDashboards!.getWidgetById(args.id as string));
 
@@ -46,6 +71,7 @@ export const customDashboardOps = {
         id: args.id as string | undefined,
         budgetId: args.budgetId as number,
         name: args.name as string,
+        origin: args.origin as string | null | undefined,
       });
     },
     invalidates: [['customDashboards', '*']],
@@ -67,6 +93,8 @@ export const customDashboardOps = {
         id: args.id as string,
         name: args.name as string | undefined,
         sortOrder: args.sortOrder as number | undefined,
+        filters: args.filters as CustomDashboard['filters'] | undefined,
+        isHome: typeof args.isHome === 'boolean' ? args.isHome : undefined,
       });
     },
     invalidates: [
@@ -74,18 +102,48 @@ export const customDashboardOps = {
       ['customDashboard', '*'],
     ],
     undo: {
-      capture: async (args) =>
-        safeCapture(() => S().customDashboards!.getDashboard(args.id as string)),
+      capture: async (args): Promise<UpdateCapture | null> =>
+        safeCapture(() => {
+          const dashboard = S().customDashboards!.getDashboard(args.id as string);
+          return {
+            dashboard,
+            homeId:
+              dashboard && typeof args.isHome === 'boolean'
+                ? S().customDashboards!.getHomeDashboardId(dashboard.budgetId)
+                : null,
+          };
+        }),
       build: (args, _result, before) => {
-        const dashboard = before as CustomDashboard | null;
-        return dashboard
-          ? [
-              {
-                op: 'customDashboards.update',
-                args: { id: args.id, name: dashboard.name, sortOrder: dashboard.sortOrder },
-              },
-            ]
-          : [];
+        const { dashboard, homeId } = (before as UpdateCapture | null) ?? {
+          dashboard: null,
+          homeId: null,
+        };
+        if (!dashboard) return [];
+        const ops = [];
+        const changesFields =
+          args.name !== undefined || args.sortOrder !== undefined || args.filters !== undefined;
+        if (changesFields) {
+          ops.push({
+            op: 'customDashboards.update',
+            args: {
+              id: args.id,
+              name: dashboard.name,
+              sortOrder: dashboard.sortOrder,
+              // Only a filters change restores filters, so undoing a rename
+              // never rolls back filters set since.
+              ...(args.filters !== undefined ? { filters: dashboard.filters ?? null } : {}),
+            },
+          });
+        }
+        if (typeof args.isHome === 'boolean') {
+          // Give the home back to whichever dashboard had it (or none).
+          ops.push(
+            homeId && homeId !== args.id
+              ? { op: 'customDashboards.update', args: { id: homeId, isHome: true } }
+              : { op: 'customDashboards.update', args: { id: args.id, isHome: homeId === args.id } }
+          );
+        }
+        return ops;
       },
     },
   },
@@ -108,13 +166,35 @@ export const customDashboardOps = {
         return [
           {
             op: 'customDashboards.create',
-            args: { id: dashboard.id, budgetId: dashboard.budgetId, name: dashboard.name },
+            args: {
+              id: dashboard.id,
+              budgetId: dashboard.budgetId,
+              name: dashboard.name,
+              ...(dashboard.origin ? { origin: dashboard.origin } : {}),
+            },
           },
           {
             op: 'customDashboards.update',
-            args: { id: dashboard.id, sortOrder: dashboard.sortOrder },
+            args: {
+              id: dashboard.id,
+              sortOrder: dashboard.sortOrder,
+              ...(dashboard.filters ? { filters: dashboard.filters } : {}),
+              ...(dashboard.isHome ? { isHome: true } : {}),
+            },
           },
-          ...dashboard.widgets.map(addWidgetOp),
+          ...dashboard.widgets.map((widget) =>
+            // A customised home can hold widgets another device added to its
+            // own copy (merged here); builds that keep the copies apart still
+            // have those IDs there, so they come back under new IDs. Seeded
+            // cards (`<copy id>:<card>`) only ever belong to this copy.
+            dashboard.origin && !widget.id.startsWith(`${dashboard.id}:`)
+              ? addWidgetOp({ ...widget, id: newOpRowId() })
+              : dashboard.origin
+                ? // The copy comes back whole: if it returns hidden behind a
+                  // newer copy, its cards stay with it.
+                  addWidgetOp(widget, { seed: true })
+                : addWidgetOp(widget)
+          ),
         ];
       },
     },
@@ -152,9 +232,10 @@ export const customDashboardOps = {
         dashboardId: args.dashboardId as string,
         reportId: args.reportId as string,
         chartId: args.chartId as string,
-        desktopLayout: args.desktopLayout as { colSpan: number; rowSpan: number } | undefined,
-        mobileLayout: args.mobileLayout as { size: 's' | 'm' | 'l' } | undefined,
+        desktopLayout: args.desktopLayout as DesktopWidgetLayoutInput | undefined,
+        mobileLayout: args.mobileLayout as MobileWidgetLayoutInput | undefined,
         titleOverride: args.titleOverride as string | undefined,
+        seed: args.seed === true ? true : undefined,
       });
     },
     invalidates: [
@@ -185,8 +266,8 @@ export const customDashboardOps = {
         id: args.id as string,
         reportId: args.reportId as string | undefined,
         chartId: args.chartId as string | undefined,
-        desktopLayout: args.desktopLayout as { colSpan: number; rowSpan: number } | undefined,
-        mobileLayout: args.mobileLayout as { size: 's' | 'm' | 'l' } | undefined,
+        desktopLayout: args.desktopLayout as DesktopWidgetLayoutInput | undefined,
+        mobileLayout: args.mobileLayout as MobileWidgetLayoutInput | undefined,
         sortOrder: args.sortOrder as number | undefined,
         titleOverride: args.titleOverride as string | null | undefined,
       });
@@ -207,8 +288,7 @@ export const customDashboardOps = {
                   id: widget.id,
                   reportId: widget.reportId,
                   chartId: widget.chartId,
-                  desktopLayout: widget.desktopLayout,
-                  mobileLayout: widget.mobileLayout,
+                  ...explicitLayouts(widget),
                   sortOrder: widget.sortOrder,
                   titleOverride: widget.titleOverride ?? null,
                 },

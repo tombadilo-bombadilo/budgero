@@ -63,8 +63,8 @@ type UserRepository interface {
 	// UpsertPreferences creates or updates user preferences.
 	UpsertPreferences(ctx context.Context, prefs *domain.UserPreferences) error
 
-	// ClearDanglingPrimarySpaceIDs nullifies primary_space_id references to deleted spaces.
-	ClearDanglingPrimarySpaceIDs(ctx context.Context) error
+	// RepairDanglingPrimarySpaceIDs moves primary_space_id references to deleted spaces onto the user's oldest owned space (NULL if none).
+	RepairDanglingPrimarySpaceIDs(ctx context.Context) error
 }
 
 // UserPurgeRepository permanently removes a user and everything tied to them.

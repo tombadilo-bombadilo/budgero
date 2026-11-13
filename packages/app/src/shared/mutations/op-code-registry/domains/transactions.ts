@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 import {
   type AccountService,
   type ImportIdentity,
@@ -150,6 +151,68 @@ const splitsUndo: NonNullable<OpCodeEntry['undo']> = {
       : [{ op: 'transactions.clearSplits', args: { transactionId: args.transactionId } }];
   },
 };
+
+const ownAccountLines = (
+  accountId: number,
+  lines: readonly { TransferAccountID?: number | null }[]
+) =>
+  lines.filter(
+    (line) => line.TransferAccountID != null && Number(line.TransferAccountID) === accountId
+  ).length;
+
+/**
+ * `prepare` guard: a split line can't transfer to the parent's own account
+ * (its mirror row would land next to the parent). Only on the originating
+ * device, so ops already logged replay exactly as before. Lines a parent
+ * already has are kept: editing old data must not fail because of them.
+ */
+function rejectOwnAccountLines(
+  accountId: number,
+  lines: readonly { TransferAccountID?: number | null }[],
+  existing: readonly { TransferAccountID?: number | null }[] = []
+): void {
+  if (ownAccountLines(accountId, lines) > ownAccountLines(accountId, existing)) {
+    // Same wording as the add form; prepare runs on this device, so it is translated.
+    throw new Error(t`A split line can't transfer to the transaction's own account.`);
+  }
+}
+
+/** The same guard for an op on an existing parent (`args.transactionId`). */
+function guardExistingParentLines(args: Record<string, unknown>): Record<string, unknown> {
+  const transactionId = Number(args.transactionId);
+  if (!Number.isSafeInteger(transactionId)) return args;
+  let parent: { AccountID: number } | undefined;
+  try {
+    parent = S().transactions!.getTransactionByID(transactionId);
+  } catch {
+    return args; // the op fails on its own
+  }
+  rejectOwnAccountLines(
+    parent.AccountID,
+    normalizeSplitLines(args.splits),
+    S().splits.getSplits(transactionId)
+  );
+  return args;
+}
+
+/**
+ * The same guard for moving an existing parent to another account: none of
+ * its lines may transfer to the account it moves to (the mirror row would
+ * land next to the parent). Originating device only, like the guards above.
+ */
+function rejectMoveIntoTransferTarget(transactionId: unknown, accountId: unknown): void {
+  const id = Number(transactionId);
+  const target = Number(accountId);
+  if (!Number.isSafeInteger(id) || !Number.isSafeInteger(target)) return;
+  let parent: { AccountID: number } | undefined;
+  try {
+    parent = S().transactions!.getTransactionByID(id);
+  } catch {
+    return; // the op fails on its own
+  }
+  if (!parent || parent.AccountID === target) return;
+  rejectOwnAccountLines(target, S().splits.getSplits(id));
+}
 
 type ReconcileWithAdjustment = ReconcileResult & { adjustmentId?: number };
 
@@ -588,6 +651,17 @@ export const transactionOps = {
     },
   },
   'transactions.add': {
+    prepare: (args) => {
+      if (Array.isArray(args.splits)) {
+        rejectOwnAccountLines(
+          Number(args.accountId),
+          (args.splits as { transferAccountId?: number | null }[]).map((line) => ({
+            TransferAccountID: line?.transferAccountId ?? null,
+          }))
+        );
+      }
+      return args;
+    },
     execute: async (args) => {
       const identity = (args.importIdentities as ImportIdentity[] | undefined)?.[0];
       if (identity) {
@@ -853,6 +927,13 @@ export const transactionOps = {
 
   // useUpdateTransactionColumn
   'transactions.updateColumn': {
+    prepare: (args) => {
+      const column = String(args.columnName ?? '')
+        .toLowerCase()
+        .replace(/_/g, '');
+      if (column === 'accountid') rejectMoveIntoTransferTarget(args.id, args.newValue);
+      return args;
+    },
     execute: async (args) => {
       return await S().transactions!.updateTransactionColumn(
         args.id as number,
@@ -1099,6 +1180,7 @@ export const transactionOps = {
 
   // The split editor's save: parent total and lines in one op and one write.
   'transactions.saveSplits': {
+    prepare: guardExistingParentLines,
     execute: async (args) => {
       const amount = args.amount as
         { inflow?: unknown; outflow?: unknown; currency?: unknown } | undefined;
@@ -1127,6 +1209,13 @@ export const transactionOps = {
   // The register's batch toolbar: account / category / payee for many rows,
   // one op, one write, one undo step.
   'transactions.batchEdit': {
+    prepare: (args) => {
+      const edits = Array.isArray(args.edits) ? (args.edits as TransactionBatchEdit[]) : [];
+      for (const edit of edits) {
+        if (edit?.accountId !== undefined) rejectMoveIntoTransferTarget(edit.id, edit.accountId);
+      }
+      return args;
+    },
     execute: async (args) => {
       const edits = Array.isArray(args.edits) ? (args.edits as TransactionBatchEdit[]) : [];
       if (!edits.every((edit) => Number.isSafeInteger(edit?.id) && edit.id > 0)) {
@@ -1194,6 +1283,10 @@ export const transactionOps = {
 
   // useMoveTransactionToNewAccount
   'transactions.moveToNewAccount': {
+    prepare: (args) => {
+      rejectMoveIntoTransferTarget(args.transactionId, args.newAccountId);
+      return args;
+    },
     execute: async (args) => {
       return await S().transactions!.moveTransactionToNewAccount(
         args.transactionId as number,
@@ -1475,6 +1568,7 @@ export const transactionOps = {
 
   // upsert split transaction
   'transactions.upsertSplits': {
+    prepare: guardExistingParentLines,
     execute: async (args) => {
       // Normalize client payload (snake_case) to core service shape (PascalCase).
       const normalized = normalizeSplitLines(args.splits);

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { trackSettingChanged } from '@shared/lib/analytics/track';
+import { saveSyncedPreference } from '@shared/lib/synced-state';
 import { useLingui } from '@lingui/react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import {
   activateLocale,
+  LANGUAGE_PREFERENCE_KEY,
   LOCALE_FLAGS,
   LOCALE_LABELS,
   SUPPORTED_LOCALES,
@@ -17,7 +19,9 @@ export function LanguageSwitch({ id }: { id?: string }) {
   const onChange = (value: string) => {
     setPending(true);
     trackSettingChanged('language', value as SupportedLocale);
-    void activateLocale(value as SupportedLocale).finally(() => setPending(false));
+    void activateLocale(value as SupportedLocale)
+      .then(() => saveSyncedPreference(LANGUAGE_PREFERENCE_KEY, value))
+      .finally(() => setPending(false));
   };
 
   return (

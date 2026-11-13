@@ -243,8 +243,8 @@ func (r *UserRepository) UpsertPreferences(ctx context.Context, prefs *domain.Us
 	return nil
 }
 
-// ClearDanglingPrimarySpaceIDs is a no-op for the fake repository.
-func (r *UserRepository) ClearDanglingPrimarySpaceIDs(ctx context.Context) error {
+// RepairDanglingPrimarySpaceIDs is a no-op for the fake repository.
+func (r *UserRepository) RepairDanglingPrimarySpaceIDs(ctx context.Context) error {
 	return nil
 }
 
@@ -664,6 +664,7 @@ func (r *SpaceRepository) MarkBlobPublished(ctx context.Context, spaceID, origin
 	if b, ok := r.blobs[spaceID]; ok {
 		b.Origin = origin
 		b.PublishedAt = at
+		b.Published = true
 	}
 	return nil
 }

@@ -498,6 +498,12 @@ export interface ImportRunSummary {
   failedRows?: number;
   failures?: { index: number; message: string }[];
   transactionsImported: number;
+  /**
+   * Transfer legs created for an account the file only names (a one-sided
+   * transfer's mirror). Kept in transactionIds so undoing the run removes
+   * them, but not file rows: not counted in transactionsImported.
+   */
+  mirrorTransactions?: number;
   accountsCreated: number;
   categoriesCreated: number;
   verification?: YNABImportVerificationSummary;

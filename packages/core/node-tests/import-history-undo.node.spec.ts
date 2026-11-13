@@ -114,6 +114,64 @@ describe('ImportHistoryService.undoImportRun — balance recalculation', () => {
     );
   });
 
+  it('removes both legs of a one-sided transfer and the account it created', async () => {
+    const { services, budgetId } = await setup();
+    const checking = await services.accounts.createAccount(
+      'Checking',
+      budgetId,
+      'checking',
+      'USD',
+      0
+    );
+    // Created by the import: only named by the file (QIF L[Card]).
+    const card = await services.accounts.createAccount('Card', budgetId, 'credit', 'USD', 0);
+    const own = await services.transactions.addTransaction(
+      0,
+      200,
+      checking.ID,
+      0,
+      budgetId,
+      '2026-01-02',
+      'card payment',
+      'import_r_0'
+    );
+    const mirror = await services.transactions.addTransaction(
+      200,
+      0,
+      card.ID,
+      0,
+      budgetId,
+      '2026-01-02',
+      'card payment',
+      'import_r_0'
+    );
+    const runId = services.importHistory.recordImportRun({
+      runKey: 'r',
+      budgetId,
+      sourceType: 'qif',
+      sourceName: 'quicken.qif',
+      summary: {
+        transactionsImported: 2,
+        mirrorTransactions: 1,
+        accountsCreated: 1,
+        categoriesCreated: 0,
+      },
+      transactionIds: [own, mirror],
+      accountIds: [card.ID],
+      categoryIds: [],
+    });
+    // One file row was imported; the mirror leg is not shown as one.
+    expect(services.importHistory.listImportRuns(budgetId)[0].summary).toMatchObject({
+      transactionsImported: 1,
+      mirrorTransactions: 1,
+    });
+
+    const result = services.importHistory.undoImportRun(runId);
+    expect(result).toMatchObject({ transactionsRemoved: 2, accountsRemoved: 1 });
+    expect(services.transactions.getTransactionsByTransferID('import_r_0')).toHaveLength(0);
+    expect(services.accounts.getAccount(checking.ID).BalanceNative).toBe(0);
+  });
+
   it('restores the account balance after undoing an import into a pre-existing account', async () => {
     const { services, budgetId, categoryId } = await setup();
     const acc = await services.accounts.createAccount('Checking', budgetId, 'checking', 'USD', 0);

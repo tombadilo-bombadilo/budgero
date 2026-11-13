@@ -12,7 +12,14 @@ export type {
   LocalPersistenceCipher,
 } from './database/interface.js';
 export { DatabaseError } from './database/interface.js';
-export { WebDatabaseAdapter } from './database/web-adapter.js';
+export { WebDatabaseAdapter, whenLocalWritesSettle } from './database/web-adapter.js';
+export {
+  clearIdbFiles,
+  clearLocalFiles,
+  getOpfsRoot,
+  localFileBackend,
+  localFileExists,
+} from './database/local-file-store.js';
 
 export { MigrationRunner, getMaxSupportedSchemaVersion } from './database/migrations.js';
 export { reconcileSpaceScope } from './database/space-scope.js';
@@ -53,7 +60,21 @@ export {
 export { AnalyticsService } from './services/analytics/index.js';
 export { RulesService } from './services/rules/index.js';
 export { RecurringTransactionService } from './services/recurring/index.js';
-export { DatabaseCustomDashboardService } from './services/custom-dashboards/index.js';
+export {
+  SyncedStateService,
+  SYNCED_STATE_MAX_VALUE_LENGTH,
+  isSyncedStateKey,
+  isSyncedStateScope,
+  type SyncedStateMergePatch,
+  type SyncedStateScope,
+} from './services/synced-state/index.js';
+export { RECURRING_SPLIT_ERROR_CODES } from './services/recurring/index.js';
+export {
+  DatabaseCustomDashboardService,
+  HOME_ALIAS_ORIGIN,
+  HOME_DEFAULT_ORIGIN,
+  seededWidgetId,
+} from './services/custom-dashboards/index.js';
 
 export { ServiceManager, type Services } from './services/service-manager.js';
 export { LegacyReplayService } from './services/legacy-replay/index.js';
@@ -101,9 +122,12 @@ export type {
 export type { ScenarioRecord, SaveScenarioInput } from './services/scenarios/index.js';
 export type {
   CustomDashboard,
+  CustomDashboardFilters,
   CustomDashboardWidget,
   DesktopWidgetLayout,
+  DesktopWidgetLayoutInput,
   MobileWidgetLayout,
+  MobileWidgetLayoutInput,
   CustomDashboardWithWidgets,
   CustomDashboardService,
 } from './services/custom-dashboards/index.js';
@@ -226,6 +250,7 @@ export {
 export {
   parseDelimitedText,
   detectColumnMapping,
+  looksLikeYnabRegister,
   getSeparatorsFromFormat,
   parseAmount,
   parseDate,

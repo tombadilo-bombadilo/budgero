@@ -89,4 +89,59 @@ describe('import review', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Match 1 transaction' }));
     expect(decided.onStartImport).toHaveBeenCalledOnce();
   });
+  it('says why rows of a skipped account are not imported', () => {
+    const row = makeRow(0);
+    row.input.valid = false;
+    row.accountSkipped = true;
+    row.duplicate = { index: 0, status: 'invalid', candidates: [], reason: 'x' };
+    render(<PreviewStep {...props([row])} />);
+    expect(screen.getByText(/its account is set to “Don’t import”/)).toBeInTheDocument();
+  });
+  it('says which rows are imported as transfers', () => {
+    const paired = makeRow(0);
+    paired.transfer = { counterpartAccountId: 2, counterpartName: 'Savings', partnerIndex: 4 };
+    const incoming = makeRow(1);
+    incoming.input.inflow = 10000;
+    incoming.input.outflow = 0;
+    incoming.transfer = { counterpartAccountId: 3, counterpartName: 'Card' };
+    render(<PreviewStep {...props([paired, incoming])} />);
+    const notes = screen.getAllByTestId('import-transfer').map((n) => n.textContent);
+    expect(notes).toEqual(['Transfer to Savings · with row 5', 'Transfer from Card']);
+  });
+
+  it('says when the other account already has the transfer', () => {
+    const row = makeRow(0);
+    row.otherSideExists = { counterpartName: 'Savings', transactionId: 900 };
+    render(<PreviewStep {...props([row])} />);
+    expect(screen.getByTestId('import-transfer-exists')).toHaveTextContent(
+      'Savings already has the other side, so this is imported as a regular transaction'
+    );
+  });
+  it('shows a status chip per row and pill filters with pressed state and counts', () => {
+    const rows = [makeRow(0), makeRow(1), makeRow(2)];
+    rows[1].duplicate.status = 'already-imported';
+    rows[1].decision = 'skip';
+    rows[2].duplicate.status = 'needs-review';
+    const { container } = render(<PreviewStep {...props(rows)} />);
+    const chips = container.querySelectorAll('tbody [data-status]');
+    expect([...chips].map((c) => c.getAttribute('data-status'))).toEqual([
+      'new',
+      'already-imported',
+      'needs-review',
+    ]);
+    expect(chips[1]).toHaveTextContent('Already imported');
+    const all = screen.getByRole('button', { name: 'All (3)' });
+    const invalid = screen.getByRole('button', { name: 'Invalid/skipped (0)' });
+    expect(all).toHaveAttribute('aria-pressed', 'true');
+    expect(invalid).toHaveAttribute('aria-pressed', 'false');
+    expect(invalid.className).toContain('opacity-50');
+    fireEvent.click(screen.getByRole('button', { name: 'Already imported (1)' }));
+    expect(screen.getByRole('button', { name: 'Already imported (1)' })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    );
+    expect(all).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.queryByText('Purchase 0')).not.toBeInTheDocument();
+    expect(screen.getByText('Purchase 1')).toBeInTheDocument();
+  });
 });

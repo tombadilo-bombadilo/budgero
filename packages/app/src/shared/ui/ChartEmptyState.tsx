@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useEmptyStateViewed } from '@shared/lib/analytics/first-month';
 
 const DefaultChartIcon = (
   <svg
@@ -25,6 +26,12 @@ interface ChartEmptyStateProps {
   icon?: ReactNode;
   /** Wrapper height/layout override. Defaults to a 300px-tall centered block. */
   className?: string;
+  /**
+   * Report this as the empty reports screen (first-month analytics). Only
+   * for a budget with nothing to show at all, not a period or filter that
+   * happens to be empty.
+   */
+  countAsEmptyScreen?: boolean;
 }
 
 /**
@@ -37,7 +44,9 @@ export function ChartEmptyState({
   hint,
   icon = DefaultChartIcon,
   className = 'flex h-[300px] flex-col items-center justify-center space-y-3',
+  countAsEmptyScreen = false,
 }: ChartEmptyStateProps) {
+  useEmptyStateViewed('reports', countAsEmptyScreen);
   return (
     <div className={className}>
       <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">{icon}</div>

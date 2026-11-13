@@ -39,6 +39,7 @@ export function CSVPDFImportDialog() {
           columnMapping={state.columnMapping}
           importConfig={state.importConfig}
           templates={state.templates}
+          canEditTemplates={state.canEditTemplates}
           selectedTemplate={state.selectedTemplate}
           saveAsTemplate={state.saveAsTemplate}
           templateName={state.templateName}
@@ -49,6 +50,8 @@ export function CSVPDFImportDialog() {
           onSetSkippedRowsInRange={state.setSkippedRowsInRange}
           accounts={state.accounts}
           hasBudgetSelected={state.hasBudgetSelected}
+          rememberedRoutes={state.rememberedRoutes}
+          newAccountCurrency={state.newAccountCurrency}
           onColumnMappingChange={state.setColumnMapping}
           onImportConfigChange={state.setImportConfig}
           onTemplateSelect={state.setSelectedTemplate}

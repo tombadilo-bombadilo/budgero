@@ -162,7 +162,7 @@ func (s *SpaceService) Delete(ctx context.Context, actorID, spaceID string) erro
 		return fmt.Errorf("%w: %w", domain.ErrSpaceDeleteFailed, err)
 	}
 	if s.userRepo != nil {
-		if err := s.userRepo.ClearDanglingPrimarySpaceIDs(ctx); err != nil {
+		if err := s.userRepo.RepairDanglingPrimarySpaceIDs(ctx); err != nil {
 			return fmt.Errorf("%w: %w", domain.ErrSpaceDeleteFailed, err)
 		}
 	}

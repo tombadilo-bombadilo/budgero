@@ -1,28 +1,52 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useProfile } from '@entities/user/api/useAuth';
 import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
+import { userScope, useSyncedState } from '@shared/lib/synced-state';
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const SHOW_WITHIN_DAYS = 2;
 
+/** Synced per user: the trial end (ISO) the banner was dismissed for. */
+export const TRIAL_ENDING_DISMISSED_KEY = 'trialEndingDismissed';
+
+/** Device cache (and where the dismissal lived before it synced). */
 const dismissKeyFor = (trialEndsAtIso: string) =>
   `budgero:trial_ending_dismissed:${trialEndsAtIso}`;
 
-function readPersistedDismiss(trialEndsAtIso: string): boolean {
+/** One spelling of a trial end, so the server's format can't miss a dismissal. */
+function trialKeyFor(trialEndsAtIso: string | null): string | null {
+  if (!trialEndsAtIso) return null;
+  const date = new Date(trialEndsAtIso);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function readCachedDismiss(trialEndsAtIso: string, trialKey: string): boolean {
   try {
-    return localStorage.getItem(dismissKeyFor(trialEndsAtIso)) === '1';
+    // Older builds wrote the key with the server's spelling or the ISO one.
+    return [trialEndsAtIso, trialKey].some(
+      (iso) => localStorage.getItem(dismissKeyFor(iso)) === '1'
+    );
   } catch {
     return false;
+  }
+}
+
+function cacheDismiss(trialKey: string): void {
+  try {
+    localStorage.setItem(dismissKeyFor(trialKey), '1');
+  } catch {
+    /* no-op */
   }
 }
 
 /**
  * Top-of-app banner that appears in the final 2 days of the trial. Dismissable
  * per-trial (re-keyed by trial_ends_at, so the dismissal state doesn't leak
- * across trials). Shows the time left + a checkout CTA.
+ * across trials); a dismissal syncs to the user's other devices through the
+ * workspace's encrypted database. Shows the time left + a checkout CTA.
  */
 export function TrialEndingBanner() {
   const { t } = useLingui();
@@ -32,15 +56,32 @@ export function TrialEndingBanner() {
   const { data: user } = useProfile();
 
   const trialEndsAtIso = user?.trial_ends_at ?? null;
-  const persistedDismissed = useMemo(
-    () => (trialEndsAtIso ? readPersistedDismiss(trialEndsAtIso) : false),
-    [trialEndsAtIso]
+  const trialKey = trialKeyFor(trialEndsAtIso);
+  const synced = useSyncedState<string>(
+    user?.id ? userScope(user.id) : null,
+    TRIAL_ENDING_DISMISSED_KEY
   );
-  const dismissed = explicitlyDismissed || persistedDismissed;
+  const cachedDismissed = useMemo(
+    () => (trialEndsAtIso && trialKey ? readCachedDismiss(trialEndsAtIso, trialKey) : false),
+    [trialEndsAtIso, trialKey]
+  );
+  const syncedDismissed = synced.available && trialKey !== null && synced.value === trialKey;
+  const dismissed = explicitlyDismissed || cachedDismissed || syncedDismissed;
+
+  // Dismissed elsewhere → cache it here; dismissed only here (before it synced)
+  // → one synced write.
+  const { set: setSynced, canWrite } = synced;
+  useEffect(() => {
+    if (!trialKey) return;
+    if (syncedDismissed && !cachedDismissed) cacheDismiss(trialKey);
+    else if (cachedDismissed && !syncedDismissed && canWrite) void setSynced(trialKey);
+  }, [trialKey, syncedDismissed, cachedDismissed, canWrite, setSynced]);
 
   if (IS_SELF_HOSTABLE_BUILD) return null;
   if (!user) return null;
   if (dismissed) return null;
+  // Not before the synced state is read, so a dismissed banner doesn't flash.
+  if (!synced.loaded) return null;
 
   const subscriptionActive =
     user.subscription_status === 'active' || user.subscription_status === 'lifetime';
@@ -59,11 +100,9 @@ export function TrialEndingBanner() {
 
   const handleDismiss = () => {
     setExplicitlyDismissed(true);
-    try {
-      localStorage.setItem(dismissKeyFor(trialEndsAt.toISOString()), '1');
-    } catch {
-      /* no-op */
-    }
+    const key = trialEndsAt.toISOString();
+    cacheDismiss(key);
+    void setSynced(key);
   };
 
   const timeLabel =

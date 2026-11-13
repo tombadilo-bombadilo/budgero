@@ -7,7 +7,11 @@
  * same encoding as format 2, plus the op codes listed in
  * {@link OP_CODE_FORMAT_VERSIONS}. Format 4 (app v1.20): no new op codes;
  * calls that set labels through rules (label.set) or batch edits ask for it
- * per call (REQUIRES_FORMAT_ARG, see the app's legacy-format rules).
+ * per call (REQUIRES_FORMAT_ARG, see the app's legacy-format rules). Format 5
+ * (app v1.21): recurring templates with split lines, and recurring.markReady
+ * calls that carry the payee to post or a split posting's mirror IDs (redo),
+ * ask for it per call; adds the op codes pageGuides.markSeen, syncedState.set
+ * and syncedState.merge.
  *
  * Each outgoing mutation is stamped with the LOWEST format that can express
  * it ({@link mutationFormatVersion}): ops every format-2 build knows stay
@@ -32,7 +36,7 @@
 export const MILLIUNIT_FORMAT_VERSION = 2;
 
 /** Highest mutation format this build reads (and the highest it writes). */
-export const MUTATION_FORMAT_VERSION = 4;
+export const MUTATION_FORMAT_VERSION = 5;
 
 /** Format of mutations whose op codes every milliunit build knows. */
 export const BASE_MUTATION_FORMAT_VERSION = MILLIUNIT_FORMAT_VERSION;
@@ -76,6 +80,9 @@ export const OP_CODE_FORMAT_VERSIONS: Readonly<Record<string, number>> = Object.
   'transactions.restoreAmounts': 3,
   'transactions.saveSplits': 3,
   'userPreferences.setCompactBudgetRows': 3,
+  'pageGuides.markSeen': 5,
+  'syncedState.set': 5,
+  'syncedState.merge': 5,
 });
 
 /** Format that introduced `op` (BASE_MUTATION_FORMAT_VERSION if it predates format 3). */

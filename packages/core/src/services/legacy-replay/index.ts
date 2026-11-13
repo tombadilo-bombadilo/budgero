@@ -52,6 +52,21 @@ export class LegacyReplayService {
   }
 
   /**
+   * Saving a split parent's lines now keeps the existing mirror row of each
+   * transfer line whose target account is unchanged (same ID, status,
+   * provenance) and updates it in place; v1.20 and older delete and re-insert
+   * every mirror under new IDs. Differs as soon as one existing mirror lies in
+   * an account the new lines transfer to (see matchMirrors).
+   */
+  splitSaveKeepsMirrors(transactionId: number, transferTargets: number[]): boolean {
+    if (!transferTargets.length) return false;
+    const targets = new Set(transferTargets.map(Number));
+    return this.queries
+      .getSplitMirrorTransactions(Number(transactionId))
+      .some((mirror) => targets.has(Number(mirror.AccountID)));
+  }
+
+  /**
    * True when deleting `ids` removes a different set of rows than older
    * builds remove (their getTransactionsForDelete: the rows, plus every row
    * sharing a TransferID, plus a split parent's mirrors keyed by its CURRENT

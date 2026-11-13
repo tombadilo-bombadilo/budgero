@@ -15,6 +15,7 @@ import { getLocalDateString, getUTCDateString } from '../../utils/date.js';
 import { TransactionService, type TransactionWriteBatch } from '../transactions/index.js';
 import { isAccountOnBudget, resolveTransferPayees } from '../transactions/transfer-payee.js';
 import { ensureTransferCategory } from '../transactions/category-helpers.js';
+import { SplitService } from '../transactions/split-service.js';
 import { CategoryService } from '../categories/index.js';
 import { CurrencyService } from '../currency/index.js';
 import type {
@@ -29,6 +30,7 @@ import type {
   RecurringOccurrenceStatus,
   RecurringOccurrenceWithTemplate,
   RecurringSchedule,
+  RecurringSplitLine,
   RecurringTransaction,
   RecurringIntervalUnit,
   RecurringTemplateSnapshot,
@@ -46,6 +48,7 @@ interface RecurringTransactionRow {
   /** Computed by occurrence queries only, not a real column. */
   BudgetAmount?: number | bigint | null;
   CategoryID: number | bigint | null;
+  SplitsJSON?: string | null;
   Name: string;
   Memo: string | null;
   Amount: number;
@@ -86,6 +89,7 @@ interface OccurrenceWithTemplateRow {
   TemplateDestinationAmount?: number | bigint | null;
   TemplateBudgetAmount?: number | bigint | null;
   TemplateCategoryID?: number | bigint | null;
+  TemplateSplitsJSON?: string | null;
   TemplateName?: string;
   TemplateMemo?: string | null;
   TemplateAmount?: number;
@@ -227,13 +231,21 @@ function currencyScaleSql(column: string): string {
   return `(CASE WHEN UPPER(${column}) IN (${cryptoCodesSql}) THEN ${CRYPTO_SCALE} ELSE ${FIAT_SCALE} END)`;
 }
 
-function projectedAmountSql(rate: string, destinationCurrency: string): string {
-  return `CAST(ROUND(r.Amount * (${rate}) *
+function projectedAmountSql(
+  rate: string,
+  destinationCurrency: string,
+  amount = 'r.Amount'
+): string {
+  return `CAST(ROUND(${amount} * (${rate}) *
     (1.0 * ${currencyScaleSql(destinationCurrency)} / ${currencyScaleSql('a.Currency')})) AS INTEGER)`;
 }
 
 /** Budget amounts shared by occurrence cards, transaction rows and analytics. */
 export const PROJECTION_AMOUNT_SQL = projectedAmountSql(PROJECTION_RATE_SQL, 'b.DisplayCurrency');
+
+/** The same conversion for another account-currency amount (a split line's). */
+export const projectionAmountSql = (amount: string) =>
+  projectedAmountSql(PROJECTION_RATE_SQL, 'b.DisplayCurrency', amount);
 const TRANSFER_LEG_AMOUNT_SQL = projectedAmountSql(TRANSFER_LEG_RATE_SQL, 'a2.Currency');
 
 const occurrenceColumns = `
@@ -255,6 +267,7 @@ const templateColumns = `
   r.AccountID AS TemplateAccountID,
   r.ToAccountID AS TemplateToAccountID,
   r.CategoryID AS TemplateCategoryID,
+  r.SplitsJSON AS TemplateSplitsJSON,
   r.Name AS TemplateName,
   r.Memo AS TemplateMemo,
   r.Amount AS TemplateAmount,
@@ -344,6 +357,127 @@ function normalizeSchedule(schedule: RecurringSchedule): RecurringSchedule {
   return normalized;
 }
 
+const isPositiveId = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value > 0;
+
+const isMilli = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+
+/**
+ * Split-line problems the user can fix. The codes are what the app translates
+ * (packages/app: recurringErrorMessage); the messages are for logs.
+ */
+export const RECURRING_SPLIT_ERROR_CODES = {
+  onTransfer: 'RECURRING_SPLIT_ON_TRANSFER',
+  ownAccount: 'RECURRING_SPLIT_OWN_ACCOUNT',
+  sumMismatch: 'RECURRING_SPLIT_SUM_MISMATCH',
+  categoryMissing: 'RECURRING_SPLIT_CATEGORY_MISSING',
+  accountMissing: 'RECURRING_SPLIT_ACCOUNT_MISSING',
+} as const;
+
+const splitError = (message: string, code: string) => new ValidationError(message, 'splits', code);
+
+const splitNet = (lines: RecurringSplitLine[]) =>
+  lines.reduce((sum, line) => sum + (line.inflow ?? 0) - (line.outflow ?? 0), 0);
+
+/**
+ * Checks lines a template keeps (the patch did not send new ones) against the
+ * patched amount, direction and accounts. Only a result that cannot post is
+ * rejected; the lines themselves are not re-validated, so a line whose
+ * category was deleted does not block renaming or pausing the template.
+ */
+function checkKeptSplits(
+  lines: RecurringSplitLine[] | null,
+  template: { accountId: number; toAccountId: number | null; amount: number; direction: string }
+): void {
+  if (!lines?.length) return;
+  if (template.toAccountId != null) {
+    throw splitError('Recurring transfers cannot be split', RECURRING_SPLIT_ERROR_CODES.onTransfer);
+  }
+  if (lines.some((line) => line.transferAccountId === template.accountId)) {
+    throw splitError(
+      'A split line cannot transfer to its own account',
+      RECURRING_SPLIT_ERROR_CODES.ownAccount
+    );
+  }
+  const expected = template.direction === 'inflow' ? template.amount : -template.amount;
+  if (splitNet(lines) !== expected) {
+    throw splitError(
+      'Split amounts must sum to the recurring amount',
+      RECURRING_SPLIT_ERROR_CODES.sumMismatch
+    );
+  }
+}
+
+/**
+ * Validates a template's split lines against its amount and direction.
+ * Null or [] means no splits. Lines are account-currency milliunits and must
+ * sum to the signed template amount (inflow positive, outflow negative).
+ */
+function normalizeSplits(
+  splits: RecurringSplitLine[] | null | undefined,
+  template: { accountId: number; toAccountId: number | null; amount: number; direction: string }
+): RecurringSplitLine[] | null {
+  if (splits == null) return null;
+  if (!Array.isArray(splits)) {
+    throw new ValidationError('Splits must be a list of split lines', 'splits');
+  }
+  if (splits.length === 0) return null;
+  if (template.toAccountId != null) {
+    throw splitError('Recurring transfers cannot be split', RECURRING_SPLIT_ERROR_CODES.onTransfer);
+  }
+  const lines = splits.map((line) => {
+    const categoryId = line?.categoryId ?? null;
+    const transferAccountId = line?.transferAccountId ?? null;
+    if ((categoryId === null) === (transferAccountId === null)) {
+      throw new ValidationError(
+        'Each split line must have either a category or a transfer account',
+        'splits'
+      );
+    }
+    if (!isPositiveId(categoryId ?? transferAccountId)) {
+      throw new ValidationError('Invalid split line category or transfer account', 'splits');
+    }
+    if (transferAccountId === template.accountId) {
+      throw splitError(
+        'A split line cannot transfer to its own account',
+        RECURRING_SPLIT_ERROR_CODES.ownAccount
+      );
+    }
+    const inflow = line.inflow ?? 0;
+    const outflow = line.outflow ?? 0;
+    if (!isMilli(inflow) || !isMilli(outflow) || inflow > 0 === outflow > 0) {
+      throw new ValidationError(
+        'Each split line needs either an inflow or an outflow amount',
+        'splits'
+      );
+    }
+    return {
+      categoryId,
+      transferAccountId,
+      memo: typeof line.memo === 'string' ? line.memo.trim() : '',
+      payee: typeof line.payee === 'string' ? line.payee.trim() : '',
+      inflow: asMilli(inflow),
+      outflow: asMilli(outflow),
+    };
+  });
+  const net = splitNet(lines);
+  const expected = template.direction === 'inflow' ? template.amount : -template.amount;
+  if (net !== expected) {
+    throw splitError(
+      'Split amounts must sum to the recurring amount',
+      RECURRING_SPLIT_ERROR_CODES.sumMismatch
+    );
+  }
+  return lines;
+}
+
+function parseSplits(json: string | null | undefined): RecurringSplitLine[] | null {
+  if (!json) return null;
+  const lines = safeParseJSON<RecurringSplitLine[] | null>(json, null);
+  return Array.isArray(lines) && lines.length ? lines : null;
+}
+
 function addInterval(date: Date, schedule: RecurringSchedule): Date {
   const count = clampIntervalCount(schedule.intervalCount);
   switch (schedule.intervalUnit) {
@@ -426,10 +560,13 @@ export class RecurringTransactionService {
 
   private currency: CurrencyService;
 
+  private splits: SplitService;
+
   constructor(private db: DatabaseAdapter) {
     this.transactions = new TransactionService(db);
     this.categories = new CategoryService(db);
     this.currency = new CurrencyService(db);
+    this.splits = new SplitService(db);
   }
 
   /**
@@ -502,6 +639,12 @@ export class RecurringTransactionService {
       toAccountId,
       input.categoryId ?? null
     );
+    const splits = normalizeSplits(input.splits, {
+      accountId: input.accountId,
+      toAccountId,
+      amount: input.amount,
+      direction: input.direction,
+    });
 
     const result = run(
       this.db,
@@ -512,6 +655,7 @@ export class RecurringTransactionService {
         AccountID,
         ToAccountID,
         CategoryID,
+        SplitsJSON,
         Name,
         Memo,
         Amount,
@@ -519,13 +663,15 @@ export class RecurringTransactionService {
         ScheduleJSON,
         NotifyDaysBefore,
         Active
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
       input.id ?? null,
       input.budgetId,
       input.accountId,
       toAccountId,
-      transferFields ? transferFields.categoryId : (input.categoryId ?? null),
+      // A split template's categories live on its lines.
+      transferFields ? transferFields.categoryId : splits ? null : (input.categoryId ?? null),
+      splits ? JSON.stringify(splits) : null,
       input.name,
       memo,
       input.amount,
@@ -557,6 +703,24 @@ export class RecurringTransactionService {
       effectiveToAccountId,
       patch.categoryId !== undefined ? (patch.categoryId ?? null) : existing.categoryId
     );
+    const effective = {
+      accountId: effectiveAccountId,
+      toAccountId: effectiveToAccountId,
+      amount: patch.amount !== undefined ? patch.amount : existing.amount,
+      direction: transferFields?.direction ?? patch.direction ?? existing.direction,
+    };
+    // Lines the patch leaves alone (omitted, or sent back unchanged as an undo
+    // does) only have to still fit the patched amount and accounts.
+    const keepsSplits =
+      patch.splits === undefined ||
+      (existing.splits != null && JSON.stringify(patch.splits) === JSON.stringify(existing.splits));
+    let splits: RecurringSplitLine[] | null;
+    if (keepsSplits) {
+      checkKeptSplits(existing.splits, effective);
+      splits = existing.splits;
+    } else {
+      splits = normalizeSplits(patch.splits, effective);
+    }
 
     const fields: string[] = [];
     const params: (string | number | null)[] = [];
@@ -577,7 +741,10 @@ export class RecurringTransactionService {
       fields.push('CategoryID = ?');
       params.push(transferFields.categoryId);
     } else {
-      if (patch.categoryId !== undefined) {
+      if (splits) {
+        fields.push('CategoryID = ?');
+        params.push(null);
+      } else if (patch.categoryId !== undefined) {
         fields.push('CategoryID = ?');
         params.push(patch.categoryId);
       }
@@ -585,6 +752,10 @@ export class RecurringTransactionService {
         fields.push('Direction = ?');
         params.push(patch.direction);
       }
+    }
+    if (!keepsSplits) {
+      fields.push('SplitsJSON = ?');
+      params.push(splits ? JSON.stringify(splits) : null);
     }
     if (patch.name !== undefined) {
       fields.push('Name = ?');
@@ -862,8 +1033,10 @@ export class RecurringTransactionService {
          o.BudgetID AS BudgetID,
          CASE WHEN r.ToAccountID IS NOT NULL AND COALESCE(a.OnBudget, 1) = 0
            THEN transfer_category.ID ELSE r.CategoryID END AS CategoryID,
-         CASE WHEN r.ToAccountID IS NOT NULL AND COALESCE(a.OnBudget, 1) = 0
-           THEN 'Transfers' ELSE c.Name END AS Category,
+         CASE WHEN r.ToAccountID IS NOT NULL AND COALESCE(a.OnBudget, 1) = 0 THEN 'Transfers'
+           -- Labelled like a posted split parent in the register.
+           WHEN r.SplitsJSON IS NOT NULL THEN 'Split'
+           ELSE c.Name END AS Category,
          o.DueDate AS Date,
          COALESCE(NULLIF(r.Memo, ''), r.Name) AS Memo,
          CASE
@@ -1015,7 +1188,7 @@ export class RecurringTransactionService {
       throw new ValidationError('Recurring transaction is inactive', 'active');
     }
     const { template } = occurrence;
-    if (template.toAccountId == null && template.categoryId == null) {
+    if (template.toAccountId == null && template.categoryId == null && !template.splits) {
       throw new ValidationError(
         'Recurring transactions must specify a category before marking ready',
         'categoryId'
@@ -1040,16 +1213,19 @@ export class RecurringTransactionService {
       const inflow = template.direction === 'inflow' ? template.amount : ZERO_MILLI;
       const outflow = template.direction === 'outflow' ? template.amount : ZERO_MILLI;
 
-      await this.transactions.addTransaction(
+      const parent = await this.transactions.addTransaction(
         inflow,
         outflow,
         template.accountId,
-        template.categoryId ?? 0,
+        // A split parent has no category of its own, as with transactions.add.
+        template.splits ? 0 : (template.categoryId ?? 0),
         template.budgetId,
         transactionDate,
         memo,
         '',
-        undefined,
+        // Only what the op carries: a replay of an older op (no payee) must
+        // not add a payee, or payee IDs drift apart between devices.
+        options.payee?.trim() || undefined,
         undefined,
         undefined,
         false,
@@ -1058,8 +1234,16 @@ export class RecurringTransactionService {
         reuse?.transactionId,
         batch
       );
+      if (template.splits) {
+        // Lines (and mirror rows for transfer lines) commit with the parent.
+        await this.splits.upsertSplits(
+          { batchIndex: parent },
+          this.splitInputs(template.splits),
+          batch,
+          reuse?.mirrorTransactionIds
+        );
+      }
     }
-    const postedSteps = batch.size;
 
     batch.queue((results) => {
       const marked = run(
@@ -1088,7 +1272,12 @@ export class RecurringTransactionService {
     });
     const results = batch.commit();
     const transactionId = results[0] as number;
-    const destinationTransactionId = postedSteps > 1 ? (results[1] as number) : undefined;
+    const destinationTransactionId = transferId ? (results[1] as number) : undefined;
+    // Mirror rows of split transfer lines, in line order (created in it), so
+    // a redo can put them back under the same IDs.
+    const mirrorTransactionIds = template.splits?.some((line) => line.transferAccountId != null)
+      ? this.splits.getSplitMirrorTransactionIds(transactionId)
+      : undefined;
 
     this.ensureOccurrencesForTemplate(
       this.getRecurringTransaction(template.id, { includeInactive: true }),
@@ -1099,7 +1288,50 @@ export class RecurringTransactionService {
       occurrence: this.getOccurrenceWithTemplate(occurrenceId),
       transactionId,
       ...(transferId ? { destinationTransactionId, transferId } : {}),
+      ...(mirrorTransactionIds?.length ? { mirrorTransactionIds } : {}),
     };
+  }
+
+  /**
+   * A split template's lines in the split service's shape. Lines whose
+   * category or transfer account is gone fail here, before anything is
+   * written. Amounts are account currency (native), like the parent's.
+   */
+  private splitInputs(lines: RecurringSplitLine[]) {
+    return lines.map((line, index) => {
+      // No category and no transfer: the line's category was deleted.
+      if (
+        line.transferAccountId == null &&
+        (line.categoryId == null ||
+          !getRow(this.db, 'SELECT 1 FROM categories WHERE ID = ?', line.categoryId))
+      ) {
+        throw splitError(
+          'A split line category no longer exists',
+          RECURRING_SPLIT_ERROR_CODES.categoryMissing
+        );
+      }
+      if (
+        line.transferAccountId != null &&
+        !getRow(this.db, 'SELECT 1 FROM accounts WHERE ID = ?', line.transferAccountId)
+      ) {
+        throw splitError(
+          'A split line transfer account no longer exists',
+          RECURRING_SPLIT_ERROR_CODES.accountMissing
+        );
+      }
+      return {
+        CategoryID: line.categoryId,
+        TransferAccountID: line.transferAccountId,
+        Memo: line.memo,
+        Payee: line.payee,
+        InflowConverted: line.inflow,
+        OutflowConverted: line.outflow,
+        InflowNative: line.inflow,
+        OutflowNative: line.outflow,
+        PairID: null,
+        OrderIndex: index,
+      };
+    });
   }
 
   /**
@@ -1439,6 +1671,7 @@ export class RecurringTransactionService {
           : null,
       categoryId:
         row.CategoryID !== null && row.CategoryID !== undefined ? Number(row.CategoryID) : null,
+      splits: parseSplits(row.SplitsJSON),
       name: row.Name,
       memo: row.Memo ?? '',
       amount: asMilli(Number(row.Amount)),
@@ -1486,6 +1719,7 @@ export class RecurringTransactionService {
       DestinationAmount: row.TemplateDestinationAmount ?? null,
       BudgetAmount: row.TemplateBudgetAmount ?? null,
       CategoryID: row.TemplateCategoryID ?? null,
+      SplitsJSON: row.TemplateSplitsJSON ?? null,
       Name: row.TemplateName as string,
       Memo: row.TemplateMemo ?? null,
       Amount: row.TemplateAmount as number,

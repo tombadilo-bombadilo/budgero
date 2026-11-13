@@ -1,4 +1,6 @@
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
+import { useMemo } from 'react';
 /**
  * Configure Step Component
  *
@@ -10,7 +12,9 @@ import { Button } from '@shared/ui/button';
 import { Label } from '@shared/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@shared/ui/tabs';
-import { FileSpreadsheet, ArrowRight } from 'lucide-react';
+import { FileSpreadsheet, ArrowRight, Info } from 'lucide-react';
+import { looksLikeYnabRegister } from '@budgero/core/browser';
+import { Alert, AlertDescription } from '@shared/ui/alert';
 import {
   type ParsedData,
   type ColumnMapping,
@@ -18,14 +22,17 @@ import {
   type ImportTemplate,
   type RawTableData,
 } from '@features/import/model/types';
+import { planAccountRoutes } from '@features/import/lib/account-routes';
 import { MappingTab } from './configure/MappingTab';
 import { FormattingTab } from './configure/FormattingTab';
 import { TemplatesTab } from './configure/TemplatesTab';
+import { AccountsInFilePanel } from './configure/AccountsInFilePanel';
 
 interface Account {
   ID: number;
   Name: string;
   Currency: string;
+  Archived?: boolean;
 }
 
 interface DefaultAccountSelectProps {
@@ -54,7 +61,9 @@ function DefaultAccountSelect({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="-1">Create Import Account</SelectItem>
+        <SelectItem value="-1">
+          <Trans>Create Import Account</Trans>
+        </SelectItem>
         {accounts?.map((account) => (
           <SelectItem key={account.ID} value={account.ID.toString()}>
             {account.Name} ({account.Currency})
@@ -70,6 +79,7 @@ interface ConfigureStepProps {
   columnMapping: ColumnMapping;
   importConfig: ImportConfig;
   templates: ImportTemplate[];
+  canEditTemplates: boolean;
   selectedTemplate: string;
   saveAsTemplate: boolean;
   templateName: string;
@@ -80,6 +90,10 @@ interface ConfigureStepProps {
   onSetSkippedRowsInRange: (indices: number[], shouldSkip: boolean) => void;
   accounts: Account[] | undefined;
   hasBudgetSelected: boolean;
+  /** Account choices of earlier imports; null while they load (routes wait for them). */
+  rememberedRoutes: Record<string, number> | null;
+  /** Currency of accounts the import creates when the file states none. */
+  newAccountCurrency?: string;
   onColumnMappingChange: (mapping: ColumnMapping) => void;
   onImportConfigChange: (config: ImportConfig) => void;
   onTemplateSelect: (id: string) => void;
@@ -97,6 +111,7 @@ export function ConfigureStep({
   columnMapping,
   importConfig,
   templates,
+  canEditTemplates,
   selectedTemplate,
   saveAsTemplate,
   templateName,
@@ -107,6 +122,8 @@ export function ConfigureStep({
   onSetSkippedRowsInRange,
   accounts,
   hasBudgetSelected,
+  rememberedRoutes,
+  newAccountCurrency,
   onColumnMappingChange,
   onImportConfigChange,
   onTemplateSelect,
@@ -120,11 +137,43 @@ export function ConfigureStep({
 }: ConfigureStepProps) {
   const { t } = useLingui();
 
+  const isYnabRegister =
+    parsedData?.source.type === 'csv' && looksLikeYnabRegister(parsedData.headers);
+  const rowsWithoutAccount = columnMapping.account
+    ? (parsedData?.rows.filter((row) => !row[columnMapping.account!]?.trim()).length ?? 0)
+    : 0;
+  const rows = parsedData?.rows;
+  const routePlan = useMemo(
+    () =>
+      planAccountRoutes({
+        rows: rows ?? [],
+        column: columnMapping.account,
+        accounts: accounts ?? [],
+        remembered: rememberedRoutes ?? {},
+        chosen: importConfig.accountRoutes,
+        newAccountCurrency: newAccountCurrency ?? importConfig.accountCurrency,
+        fallbackAccountId: importConfig.defaultAccountId,
+      }),
+    [
+      rows,
+      columnMapping.account,
+      accounts,
+      rememberedRoutes,
+      importConfig.accountRoutes,
+      importConfig.accountCurrency,
+      importConfig.defaultAccountId,
+      newAccountCurrency,
+    ]
+  );
   const canProceed =
     columnMapping.date &&
     (columnMapping.amount || columnMapping.inflow || columnMapping.outflow) &&
     hasBudgetSelected &&
-    (columnMapping.account || importConfig.defaultAccountId);
+    rememberedRoutes !== null &&
+    routePlan.problems.size === 0 &&
+    (columnMapping.account
+      ? rowsWithoutAccount === 0 || importConfig.defaultAccountId
+      : importConfig.defaultAccountId);
 
   return (
     <Card className="mx-auto w-full max-w-4xl overflow-x-hidden">
@@ -193,6 +242,7 @@ export function ConfigureStep({
           <TabsContent value="templates" className="space-y-4">
             <TemplatesTab
               templates={templates}
+              canEdit={canEditTemplates}
               selectedTemplate={selectedTemplate}
               saveAsTemplate={saveAsTemplate}
               templateName={templateName}
@@ -204,6 +254,20 @@ export function ConfigureStep({
             />
           </TabsContent>
         </Tabs>
+
+        {isYnabRegister && (
+          <Alert data-testid="ynab-register-hint">
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              <Trans>
+                <strong>This looks like a YNAB register.</strong> Imported here, your transactions
+                and categories come in, but not your category groups or what you assigned each
+                month. To bring your whole YNAB budget, import the YNAB export ZIP instead: open the
+                budget switcher, choose Create New Budget, then the YNAB tab.
+              </Trans>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Account Selection for Unmapped Transactions */}
         {!columnMapping.account && hasBudgetSelected && (
@@ -226,30 +290,33 @@ export function ConfigureStep({
           </div>
         )}
 
-        {columnMapping.account && hasBudgetSelected && (
-          <div className="p-4 border rounded-lg bg-blue-50 dark:bg-blue-950/30">
+        {columnMapping.account && hasBudgetSelected && parsedData && (
+          <AccountsInFilePanel
+            plan={routePlan}
+            column={columnMapping.account}
+            accounts={accounts ?? []}
+            importConfig={importConfig}
+            onImportConfigChange={onImportConfigChange}
+          />
+        )}
+
+        {columnMapping.account && hasBudgetSelected && rowsWithoutAccount > 0 && (
+          <div className="p-4 border rounded-lg bg-muted/50">
             <Label className="text-sm font-medium">
-              <Trans>Account Column Mapped</Trans>
+              <Trans>Rows without an account</Trans>
             </Label>
-            <p className="text-xs text-muted-foreground">
-              <Trans>
-                Transactions will use accounts from the "{columnMapping.account}" column. If an
-                account name doesn't match any existing account, you'll need to select a default
-                account below:
-              </Trans>
+            <p className="text-xs text-muted-foreground mb-3">
+              {plural(rowsWithoutAccount, {
+                one: `One row has an empty "${columnMapping.account}" value. It goes into this account:`,
+                other: `# rows have an empty "${columnMapping.account}" value. They go into this account:`,
+              })}
             </p>
-            <div className="mt-3">
-              <Label className="text-xs">
-                <Trans>Fallback Account (for unmatched account names)</Trans>
-              </Label>
-              <DefaultAccountSelect
-                accounts={accounts}
-                importConfig={importConfig}
-                onImportConfigChange={onImportConfigChange}
-                placeholder={t`Select fallback account`}
-                triggerClassName="mt-1 w-full min-w-0"
-              />
-            </div>
+            <DefaultAccountSelect
+              accounts={accounts}
+              importConfig={importConfig}
+              onImportConfigChange={onImportConfigChange}
+              placeholder={t`Select account`}
+            />
           </div>
         )}
 

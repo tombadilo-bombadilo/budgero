@@ -12,7 +12,8 @@ export interface ToolContext {
   budgetId: number;
   services: Services;
   categories: { ID: number; Name: string }[];
-  accounts: { ID: number; Name: string; Type: string }[];
+  /** Archived accounts are never a target for a new transaction. */
+  accounts: { ID: number; Name: string; Type: string; Archived?: boolean }[];
   executeMutation?: <T = unknown>(spec: {
     op: string;
     payload: Record<string, unknown>;

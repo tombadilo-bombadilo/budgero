@@ -36,6 +36,7 @@ import { ChatBubble } from '@features/chat/ui/ChatBubble';
 import { ChatPanel } from '@features/chat/ui/chat-panel';
 import { TooltipProvider } from '@shared/ui/tooltip';
 import { UserPreferencesSync } from '@app/system/UserPreferencesSync';
+import { SyncedPreferencesSync } from '@app/system/SyncedPreferencesSync';
 import { ActivityHeartbeat } from '@app/system/ActivityHeartbeat';
 import { RateResync } from '@app/system/RateResync';
 import { STARTUP_INTENT_KEY } from '@shared/lib/pwa-constants';
@@ -311,6 +312,7 @@ function AppContentBase({ topSlot }: { topSlot?: React.ReactNode }) {
     <TooltipProvider>
       {topSlot}
       <UserPreferencesSync />
+      <SyncedPreferencesSync />
       <ThemeColorController />
       <SonnerToaster position="bottom-right" />
       {/* SW update prompts handled via ServiceWorkerUpdateProvider */}

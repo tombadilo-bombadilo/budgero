@@ -17,6 +17,7 @@ import { useAccounts } from '@entities/account/api/useAccounts';
 import { useCategories } from '@entities/category/api/useCategories';
 import type { RecurringTransaction, RecurringOccurrenceWithTemplate } from '@budgero/core/browser';
 import { getErrorMessage } from '@shared/lib/errors';
+import { recurringErrorMessage } from '@entities/recurring/lib/error-message';
 import { toast } from 'sonner';
 import { useRecurringNotifications } from '@features/recurring/api/useRecurringNotifications';
 import {
@@ -125,6 +126,7 @@ export function RecurringTransactionsSection() {
       accountId: template.accountId,
       toAccountId: template.toAccountId ?? null,
       categoryId: template.categoryId ?? null,
+      splits: template.splits ?? null,
       schedule: template.schedule,
       notifyDaysBefore: template.notifyDaysBefore ?? 0,
       active: template.active,
@@ -151,7 +153,7 @@ export function RecurringTransactionsSection() {
         toast.error(t`Pick two different accounts for a transfer`);
         return;
       }
-    } else if (!values.categoryId) {
+    } else if (!values.categoryId && !values.splits?.length) {
       toast.error(t`Select a category`);
       return;
     }
@@ -167,6 +169,7 @@ export function RecurringTransactionsSection() {
           accountId: values.accountId,
           toAccountId: values.toAccountId,
           categoryId: values.categoryId,
+          splits: values.splits,
           name: values.name,
           memo: values.memo,
           amount: values.amount,
@@ -187,6 +190,7 @@ export function RecurringTransactionsSection() {
             accountId: values.accountId,
             toAccountId: values.toAccountId,
             categoryId: values.categoryId,
+            splits: values.splits,
             name: values.name,
             memo: values.memo,
             amount: values.amount,
@@ -203,7 +207,7 @@ export function RecurringTransactionsSection() {
 
       handleEditorOpenChange(false);
     } catch (error) {
-      const message = getErrorMessage(error, t`Something went wrong.`);
+      const message = recurringErrorMessage(error, t`Something went wrong.`);
       toast.error(t`Unable to save recurring transaction`, {
         description: message,
       });
@@ -220,7 +224,7 @@ export function RecurringTransactionsSection() {
         description: t`Future reminders for this item were cleared.`,
       });
     } catch (error) {
-      const message = getErrorMessage(error, t`Something went wrong.`);
+      const message = recurringErrorMessage(error, t`Something went wrong.`);
       toast.error(t`Unable to delete recurring transaction`, {
         description: message,
       });
@@ -246,7 +250,7 @@ export function RecurringTransactionsSection() {
         }
       );
     } catch (error) {
-      const message = getErrorMessage(error, t`Something went wrong.`);
+      const message = recurringErrorMessage(error, t`Something went wrong.`);
       toast.error(t`Unable to update recurring transaction`, {
         description: message,
       });
@@ -273,7 +277,7 @@ export function RecurringTransactionsSection() {
           : t`Recorded successfully. Review it in the Transactions view.`,
       });
     } catch (error) {
-      const message = getErrorMessage(error, t`Something went wrong.`);
+      const message = recurringErrorMessage(error, t`Something went wrong.`);
       toast.error(t`Unable to mark ready`, { description: message });
     } finally {
       setProcessingOccurrenceId(null);
@@ -288,7 +292,7 @@ export function RecurringTransactionsSection() {
         description: t`We will remind you again next time.`,
       });
     } catch (error) {
-      const message = getErrorMessage(error, t`Something went wrong.`);
+      const message = recurringErrorMessage(error, t`Something went wrong.`);
       toast.error(t`Unable to skip occurrence`, { description: message });
     } finally {
       setProcessingOccurrenceId(null);
@@ -354,7 +358,11 @@ export function RecurringTransactionsSection() {
                 : undefined
             }
             categoryName={
-              template.categoryId ? categoriesById.get(template.categoryId) : 'Unassigned category'
+              template.splits
+                ? t`Split`
+                : template.categoryId
+                  ? categoriesById.get(template.categoryId)
+                  : 'Unassigned category'
             }
             occurrences={occurrencesByTemplate.get(template.id) ?? EMPTY_OCCURRENCES}
             accountLocalizer={accountLocalizersById.get(template.accountId) ?? globalLocalizer}

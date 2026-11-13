@@ -13,6 +13,7 @@ import type {
   TrendSeries,
 } from './analytics-model';
 import type { LinearForecast } from './forecast';
+import { formatPercent } from './format-percent';
 
 export interface Insight {
   /** 'good' | 'warn' | 'neutral' — drives the marker color only. */
@@ -63,13 +64,13 @@ export function wealthInsights(
         tone: forecast.slope >= 0 ? 'good' : 'warn',
         text:
           forecast.slope >= 0
-            ? t`The upward trend is statistically solid (p = ${formatP(forecast.pValue)}, R² = ${forecast.rSquared.toFixed(2)}): ${fmt.money(Math.round(Math.abs(forecast.slope)))}/month.`
-            : t`The downward trend is statistically solid (p = ${formatP(forecast.pValue)}, R² = ${forecast.rSquared.toFixed(2)}): ${fmt.money(Math.round(Math.abs(forecast.slope)))}/month.`,
+            ? t`The upward trend is statistically solid (p ${formatP(forecast.pValue)}, R² = ${forecast.rSquared.toFixed(2)}): ${fmt.money(Math.round(Math.abs(forecast.slope)))}/month.`
+            : t`The downward trend is statistically solid (p ${formatP(forecast.pValue)}, R² = ${forecast.rSquared.toFixed(2)}): ${fmt.money(Math.round(Math.abs(forecast.slope)))}/month.`,
       });
     } else {
       insights.push({
         tone: 'neutral',
-        text: t`No statistically reliable trend yet (p = ${formatP(forecast.pValue)}) — the forecast band is honest about that.`,
+        text: t`No statistically reliable trend yet (p ${formatP(forecast.pValue)}) — the forecast band is honest about that.`,
       });
     }
   }
@@ -91,8 +92,8 @@ export function inOutInsights(
     tone: rate >= 0.1 ? 'good' : rate >= 0 ? 'neutral' : 'warn',
     text:
       rate >= 0
-        ? t`You kept ${(rate * 100).toFixed(0)}% of income over this period.`
-        : t`You spent ${Math.abs(rate * 100).toFixed(0)}% more than you earned over this period.`,
+        ? t`You kept ${formatPercent(rate * 100)} of income over this period.`
+        : t`You spent ${formatPercent(Math.abs(rate * 100))} more than you earned over this period.`,
   });
   if (savingsTargetPct !== null && totalIncome > 0) {
     const hit = withIncome.filter(
@@ -100,7 +101,10 @@ export function inOutInsights(
     ).length;
     insights.push({
       tone: hit >= withIncome.length / 2 ? 'good' : 'warn',
-      text: t`Savings target of ${savingsTargetPct}% was met in ${hit} of ${withIncome.length} months.`,
+      text: plural(withIncome.length, {
+        one: `Savings target of ${formatPercent(savingsTargetPct)} was met in ${hit} of # month.`,
+        other: `Savings target of ${formatPercent(savingsTargetPct)} was met in ${hit} of # months.`,
+      }),
     });
   }
   const negativeMonths = points.filter((point) => point.net < 0);
@@ -126,7 +130,7 @@ export function spendingInsights(series: TrendSeries[], fmt: InsightFormat): Ins
   if (total > 0) {
     insights.push({
       tone: 'neutral',
-      text: t`${top.name} leads at ${((top.total / total) * 100).toFixed(0)}% of spending (${fmt.money(top.total)}).`,
+      text: t`${top.name} leads at ${formatPercent((top.total / total) * 100)} of spending (${fmt.money(top.total)}).`,
     });
   }
   // Momentum: compare each series' last-3-month average to its prior average.
@@ -158,8 +162,8 @@ export function planInsights(plan: PlanVsReality, fmt: InsightFormat): Insight[]
     tone: usage <= 1 ? 'good' : 'warn',
     text:
       usage <= 1
-        ? t`Spending ran at ${(usage * 100).toFixed(0)}% of plan — ${fmt.money(plan.totalAssigned - plan.totalSpent)} of assigned money went unspent.`
-        : t`Spending overran the plan by ${fmt.money(plan.totalSpent - plan.totalAssigned)} (${(usage * 100).toFixed(0)}% of assigned).`,
+        ? t`Spending ran at ${formatPercent(usage * 100)} of plan — ${fmt.money(plan.totalAssigned - plan.totalSpent)} of assigned money went unspent.`
+        : t`Spending overran the plan by ${fmt.money(plan.totalSpent - plan.totalAssigned)} (${formatPercent(usage * 100)} of assigned).`,
   });
   insights.push({
     tone: plan.monthsOnPlan >= 0.5 ? 'good' : 'warn',
@@ -176,7 +180,10 @@ export function planInsights(plan: PlanVsReality, fmt: InsightFormat): Insight[]
   if (chronic) {
     insights.push({
       tone: 'warn',
-      text: t`${chronic.name} runs over its assignment almost every month — ${chronic.monthsOver} of ${chronic.monthsWithPlan} planned months. The assignment may be set too low.`,
+      text: plural(chronic.monthsWithPlan, {
+        one: `${chronic.name} runs over its assignment almost every month — ${chronic.monthsOver} of # planned month. The assignment may be set too low.`,
+        other: `${chronic.name} runs over its assignment almost every month — ${chronic.monthsOver} of # planned months. The assignment may be set too low.`,
+      }),
     });
   } else {
     const leak = plan.categories.find(
@@ -196,7 +203,8 @@ function average(values: number[]): number {
   return values.length === 0 ? 0 : values.reduce((sum, v) => sum + v, 0) / values.length;
 }
 
-function formatP(p: number): string {
+/** "< 0.001" or "= 0.012", so "p {0}" never reads "p = < 0.001". */
+export function formatP(p: number): string {
   if (p < 0.001) return '< 0.001';
-  return p.toFixed(3);
+  return `= ${p.toFixed(3)}`;
 }

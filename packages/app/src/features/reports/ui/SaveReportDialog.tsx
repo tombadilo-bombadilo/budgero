@@ -187,17 +187,17 @@ export function SaveReportDialog({
     ]);
     setNewChart(defaultChartForm);
     setIsAddingChart(false);
-    toast.success(t`Chart added to report`);
+    toast.success(t`Chart added`);
   };
 
   const handleRemoveChart = (index: number) => {
     setCharts((prev) => prev.filter((_, i) => i !== index));
-    toast.success(t`Chart removed from report`);
+    toast.success(t`Chart removed`);
   };
 
   const handleSave = async (pinAfterSave = false) => {
     if (!reportName.trim()) {
-      toast.error(t`Please enter a report name`);
+      toast.error(t`Please enter a name`);
       return;
     }
 
@@ -225,16 +225,13 @@ export function SaveReportDialog({
         charts: chartConfigs,
       });
 
-      toast.success(t`Report ${mode === 'create' ? 'created' : 'updated'} successfully`);
+      toast.success(mode === 'create' ? t`Question saved` : t`Question updated`);
       if (pinAfterSave && onSaveAndPin) {
         onSaveAndPin(savedReport);
       }
       handleClose();
     } catch (error) {
-      const message = getErrorMessage(
-        error,
-        mode === 'create' ? t`Failed to create report` : t`Failed to update report`
-      );
+      const message = getErrorMessage(error, t`Failed to save the question`);
       toast.error(message);
     } finally {
       setIsSaving(false);
@@ -251,23 +248,23 @@ export function SaveReportDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto p-4 sm:p-6">
         <DialogHeader>
-          <DialogTitle>{mode === 'create' ? t`Save Report` : t`Edit Report`}</DialogTitle>
+          <DialogTitle>{mode === 'create' ? t`Save question` : t`Update question`}</DialogTitle>
           <DialogDescription>
             {mode === 'create'
-              ? t`Save your SQL query as a reusable report. Optionally add chart visualizations.`
-              : t`Update your report and chart configurations.`}
+              ? t`Save the SQL as a question. Add charts to draw its result.`
+              : t`Update the question and its charts.`}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Report Details */}
           <div className="space-y-4">
-            <Field label={t`Report Name *`} htmlFor="name" className="space-y-2">
+            <Field label={t`Name *`} htmlFor="name" className="space-y-2">
               <Input
                 id="name"
                 value={reportName}
                 onChange={(e) => setReportName(e.target.value)}
-                placeholder={t`Enter report name...`}
+                placeholder={t`Name the question…`}
                 disabled={isSaving}
               />
             </Field>
@@ -291,7 +288,7 @@ export function SaveReportDialog({
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium">
-                  <Trans>Chart Visualizations</Trans>
+                  <Trans>Charts</Trans>
                 </h3>
                 <p className="text-sm text-muted-foreground">
                   <Trans>Add charts to visualize your query results</Trans>
@@ -582,7 +579,7 @@ export function SaveReportDialog({
             disabled={!reportName.trim() || isSaving}
             className="w-full sm:w-auto"
           >
-            {isSaving ? t`Saving...` : mode === 'create' ? t`Save Report` : t`Update Report`}
+            {isSaving ? t`Saving...` : mode === 'create' ? t`Save` : t`Update`}
           </Button>
           <Button
             onClick={() => void handleSave(true)}

@@ -45,7 +45,11 @@ import type { SyncStatus } from '@shared/lib/utils';
 import { MutationRouter } from '@shared/runtime/mutation-router';
 import { createRuntimeDeps } from '@shared/runtime/runtime-bridge';
 import { runInUndoGroup } from '@shared/mutations/UndoStore';
-import { getInvalidatesForOp, prepareMutationArgs } from '@shared/mutations/op-code-registry';
+import {
+  getInvalidatesForOp,
+  isUnrecordedOp,
+  prepareMutationArgs,
+} from '@shared/mutations/op-code-registry';
 import { discardInterruptedImports } from '@shared/runtime/pending-import';
 import { getErrorMessage } from '@shared/lib/errors';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
@@ -54,6 +58,10 @@ import {
   reportMutationAnalytics,
   type MutationAnalyticsServices,
 } from '@shared/lib/analytics/mutation-events';
+import {
+  noteFirstStepsLocalAction,
+  noteFirstStepsMutation,
+} from '@shared/lib/first-steps/first-steps';
 import { track } from '@shared/lib/analytics/track';
 import { pushMatchReview, withPushIdentity } from './push-identity';
 
@@ -225,13 +233,16 @@ export class AppRuntime {
       : { ...spec, payload: await prepareMutationArgs(spec.op, spec.payload) };
     const isLocal = !prepared.mutationId;
     const before = isLocal ? readBeforeState(prepared, this.analyticsServices()) : null;
+    // Counted before it runs, so the figures it changes are already ours to celebrate.
+    if (isLocal) noteFirstStepsLocalAction(prepared.op);
     const run = async () => {
       const result = await this.coordinator.executeMutation<T>(prepared);
       if (isLocal) {
         try {
           reportMutationAnalytics(prepared, result.result, this.analyticsServices(), before);
+          noteFirstStepsMutation(this.getActiveSpaceId(), prepared.op);
         } catch {
-          /* analytics must never fail a mutation */
+          /* analytics and the first-steps checklist must never fail a mutation */
         }
       }
       await this.applyContinuousRulesIfNeeded(result.result, prepared, isLocal);
@@ -871,6 +882,8 @@ export class AppRuntime {
   }
 
   private resolveHistoryBudgetId(context: MutationBudgetResolutionContext): number | null {
+    // No budget, no history row: synced app state stays out of the audit log.
+    if (isUnrecordedOp(context.op)) return null;
     const services = this.getServicesSafe();
     if (!services) {
       return null;

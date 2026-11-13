@@ -212,6 +212,113 @@ PSeed
     const result = parseQif(sample);
     expect(result.sections.length).toBe(1);
     expect(result.sections[0].transactions.length).toBe(1);
+    expect(result.sections[0].account).toBe('MyChecking');
+  });
+
+  it('keeps each account of a multi-account Quicken export apart', () => {
+    const sample = `!Option:AutoSwitch
+!Account
+NChecking
+TBank
+^
+NVisa
+TCCard
+^
+!Clear:AutoSwitch
+!Account
+NChecking
+TBank
+^
+!Type:Bank
+D01/02/2024
+T-40.00
+PGrocer
+^
+D01/03/2024
+T2000.00
+PEmployer
+^
+!Account
+NVisa
+TCCard
+^
+!Type:CCard
+D01/04/2024
+T-12.50
+PCafe
+^
+`;
+    const result = parseQif(sample);
+    expect(result.sections.map((s) => [s.account, s.kind, s.transactions.length])).toEqual([
+      ['Checking', 'bank', 2],
+      ['Visa', 'ccard', 1],
+    ]);
+    const { headers, rows } = qifToImportRows(result);
+    expect(headers[0]).toBe('Account');
+    expect(rows.map((r) => [r.Account, r.AccountType, r.Payee])).toEqual([
+      ['Checking', 'Checking', 'Grocer'],
+      ['Checking', 'Checking', 'Employer'],
+      ['Visa', 'Credit', 'Cafe'],
+    ]);
+  });
+
+  it('names accounts even when the export never clears AutoSwitch', () => {
+    const sample = `!Option:AutoSwitch
+!Account
+NChecking
+TBank
+^
+NSavings
+TBank
+^
+!Account
+NSavings
+TBank
+^
+!Type:Bank
+D01/02/2024
+T-40.00
+PTransfer
+^
+!Account
+NChecking
+TBank
+^
+!Type:Bank
+D01/03/2024
+T10.00
+PRefund
+^
+`;
+    expect(parseQif(sample).sections.map((s) => s.account)).toEqual(['Savings', 'Checking']);
+  });
+
+  it('does not take a name from the AutoSwitch list for an unnamed section', () => {
+    const sample = `!Option:AutoSwitch
+!Account
+NChecking
+TBank
+^
+!Clear:AutoSwitch
+!Type:Bank
+D01/02/2024
+T-40.00
+^
+`;
+    expect(parseQif(sample).sections[0].account).toBeUndefined();
+  });
+
+  it('adds no Account column for a single-account file', () => {
+    const { headers, rows } = qifToImportRows(
+      parseQif(`!Type:Bank
+D01/01/2024
+T100.00
+PSeed
+^
+`)
+    );
+    expect(headers).not.toContain('Account');
+    expect(rows[0]).not.toHaveProperty('Account');
   });
 });
 

@@ -10,6 +10,10 @@ import {
 import { BudgetError, NotFoundError } from '../../types/index.js';
 import { CategoryQueries } from './queries.js';
 import { MonthlyBudgetQueries } from '../monthly-budgets/queries.js';
+import {
+  countSplitTemplatesInCategories,
+  moveSplitLinesOutOfCategories,
+} from '../recurring/split-refs.js';
 import { BudgetQueries } from '../budgets/queries.js';
 import { TransactionQueries } from '../transactions/queries.js';
 import {
@@ -301,6 +305,9 @@ export class CategoryService {
     const rows = [...inCategories, ...linked];
 
     this.transactionQueries.deleteTransactions(rows.map((transaction) => transaction.ID));
+    // A template keeps running without its category (ON DELETE SET NULL); its
+    // split lines get the same treatment.
+    moveSplitLinesOutOfCategories(this.db, categoryIds, null);
     remove();
     this.transactionQueries.recalculateBalancesForAccounts(
       rows.map((transaction) => transaction.AccountID)
@@ -482,7 +489,9 @@ export class CategoryService {
       assignedMonths: Number(row?.assignedMonths ?? 0),
       assignedTotal: Number(row?.assignedTotal ?? 0),
       goals: Number(row?.goals ?? 0),
-      scheduled: Number(row?.scheduled ?? 0),
+      // Templates whose split lines use the category count too.
+      scheduled:
+        Number(row?.scheduled ?? 0) + countSplitTemplatesInCategories(this.db, categoryIds),
     };
   }
 
@@ -642,6 +651,9 @@ export class CategoryService {
     const capture = new RowCapture(this.db).addKeys('categories', categoryIds);
     // Merging assignments changes the destination's rows for the same months.
     if (destination !== null) capture.addWhere('assignments', 'CategoryID = ?', destination);
+    // Split lines of recurring templates name categories inside SplitsJSON,
+    // where no foreign key leads: unchanged templates leave nothing behind.
+    capture.addWhere('recurring_transactions', 'SplitsJSON IS NOT NULL');
     return capture;
   }
 
@@ -652,6 +664,7 @@ export class CategoryService {
         for (const table of ['transactions', 'transaction_splits', 'recurring_transactions']) {
           run(this.db, `UPDATE ${table} SET CategoryID = ? WHERE CategoryID = ?`, destination, id);
         }
+        moveSplitLinesOutOfCategories(this.db, [id], destination);
         this.mergeAssignmentsInto(destination, id);
       }
       this.deleteCategoriesWithTransactions([id], () => this.queries.deleteCategory(id));

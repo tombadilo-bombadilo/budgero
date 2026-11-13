@@ -138,6 +138,7 @@ describe('the rule list', () => {
       'rules.redoRun',
       'rules.restoreDeleted',
       'transactions.batchEdit',
+      'transactions.saveSplits',
     ]);
     for (const op of Object.keys(LEGACY_FORMAT_RULES)) {
       expect(KNOWN_OP_CODES.has(op), op).toBe(true);
@@ -255,6 +256,13 @@ describe('format 3 only when the new args are present', () => {
     expect(stamp({ occurrenceId: 3, recurringTransactionId: 1, dueDate: '2026-09-10' })).toBe(3);
     expect(stamp({ occurrenceId: 3, transferId: 'tx-1' })).toBe(3);
     expect(stamp({ occurrenceId: 3, reuse: { transactionId: 5 } })).toBe(3);
+    // A carried payee (#127): v1.20 would post without it.
+    expect(stamp({ occurrenceId: 3, transferId: 'tx-1', payee: 'Netflix' })).toBe(5);
+    expect(stamp({ occurrenceId: 3, transferId: 'tx-1', payee: '' })).toBe(3);
+    // Redo of a split template's posting carries its mirror IDs (format 5).
+    expect(stamp({ occurrenceId: 3, reuse: { transactionId: 5, mirrorTransactionIds: [6] } })).toBe(
+      5
+    );
   });
 
   it.each(['recurring.skip', 'recurring.markNotified', 'recurring.resetOccurrence'])(
@@ -285,7 +293,12 @@ describe('format 3 only when the database is in a state the old code handles dif
       sentFormat('transactions.updateColumn', { id, columnName, newValue });
     expect(await edit(parent, 'OutflowConverted', 20000)).toBe(3);
     expect(await edit(parent, 'Date', '2026-09-12')).toBe(3);
-    expect(await edit(parent, 'AccountID', savings)).toBe(3);
+    // Not into savings: its transfer line lands there (refused before it goes out).
+    const cash = (
+      await services.accounts.createAccount('Cash', budgetId, 'checking', 'USD', asMilli(0))
+    ).ID;
+    expect(await edit(parent, 'AccountID', cash)).toBe(3);
+    await expect(edit(parent, 'AccountID', savings)).rejects.toThrow(/own account/);
     expect(await edit(parent, 'ExchangeRate', 1.2)).toBe(3);
     expect(await edit(parent, 'Memo', 'note')).toBe(2);
     expect(await edit(parent, 'Payee', 'Shop')).toBe(2);
@@ -326,6 +339,30 @@ describe('format 3 only when the database is in a state the old code handles dif
     expect(
       await sentFormat('transactions.upsertSplits', { transactionId: fresh, splits: lines })
     ).toBe(2);
+  });
+
+  it('upsertSplits / saveSplits keeping a mirror row go out as format 5', async () => {
+    // Lines saves now update a kept mirror in place (same ID, status, provenance);
+    // v1.20 deletes and re-inserts it under a new ID.
+    const { parent } = await addTransferSplit();
+    const keep = [
+      { category_id: groceries, outflow: 6000 },
+      { transfer_account_id: savings, outflow: 4000, memo: 'new memo' },
+    ];
+    const drop = [{ category_id: groceries, outflow: 10000 }];
+    expect(
+      await sentFormat('transactions.upsertSplits', { transactionId: parent, splits: keep })
+    ).toBe(5);
+    expect(
+      await sentFormat('transactions.saveSplits', { transactionId: parent, splits: keep })
+    ).toBe(5);
+    // No mirror kept: both builds delete it the same way.
+    expect(
+      await sentFormat('transactions.upsertSplits', { transactionId: parent, splits: drop })
+    ).toBe(3);
+    expect(
+      await sentFormat('transactions.saveSplits', { transactionId: parent, splits: drop })
+    ).toBe(3);
   });
 
   it('transactions.delete / deleteBatch: only when the deleted set differs', async () => {

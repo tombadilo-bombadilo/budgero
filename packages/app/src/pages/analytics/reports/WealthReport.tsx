@@ -3,7 +3,6 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useMemo, useState } from 'react';
 import type { EChartsCoreOption } from 'echarts/core';
 import { EChart } from '@shared/ui/echart';
-import { AnimatedNumber } from '@shared/ui/animated-number';
 import { trendTextClass } from '@shared/lib/amount-color';
 import { AssetLiabilityHistoryChart } from '@pages/accounts/components/AssetLiabilityHistoryChart';
 import { useMonthlyAssetHistory } from '@entities/account/api/useMonthlyAssetHistory';
@@ -18,26 +17,24 @@ import { linearForecast } from '../forecast';
 import { wealthInsights } from '../insights';
 import type { AnalyticsData } from '../useAnalyticsData';
 import {
-  BASE_GRID,
   BAR_MAX_WIDTH,
   BAR_RADIUS_BOTTOM,
   BAR_RADIUS_TOP,
-  monthAxis,
+  BASE_GRID,
+  longMonthLabel,
   moneyAxis,
+  monthAxis,
   shortMonthLabel,
   tooltipBase,
   tooltipHtml,
   useMoneyFormatters,
   usePalette,
 } from '../components/chart-utils';
-import { ModeToggle, ReportShell } from '../components/ReportShell';
-import {
-  InsightStrip,
-  LegendChips,
-  MonthRow,
-  PanelSectionTitle,
-  StatTile,
-} from '../components/panels';
+import { KeyFigures, ReportLayout, ViewSwitch } from '../components/ReportLayout';
+import { LedgerTable } from '../components/LedgerTable';
+import { InsightStrip, LegendChips } from '../components/panels';
+import { reportMeta } from '../report-questions';
+import { wealthAnswer } from '../report-answers';
 
 type WealthMode = 'assets-debt' | 'change' | 'forecast' | 'by-type';
 
@@ -105,8 +102,6 @@ export function WealthReport({ data, months, accountIds }: WealthReportProps) {
   );
 
   const current = points.at(-1);
-  const first = points[0];
-  const change = current && first ? current.netWorth - first.netWorth : 0;
   const isEmpty = points.every((point) => point.assets === 0 && point.debt === 0);
 
   const assetColor = palette.series[0];
@@ -116,7 +111,7 @@ export function WealthReport({ data, months, accountIds }: WealthReportProps) {
   // Resolve copy on every locale render; the three summaries are inexpensive.
   const insights = wealthInsights(points, forecast, {
     money: (milli) => money.amount(milli),
-    monthLabel: shortMonthLabel,
+    monthLabel: longMonthLabel,
   });
 
   const option = useMemo<EChartsCoreOption>(() => {
@@ -337,26 +332,17 @@ export function WealthReport({ data, months, accountIds }: WealthReportProps) {
       ? shortMonthLabel(runway.projection[runway.projection.length - 1].monthKey)
       : null;
 
+  const fmt = { money: (milli: number) => money.amount(milli), monthLabel: longMonthLabel };
+
   return (
-    <ReportShell
-      title={t`Wealth`}
-      hero={
-        current ? (
-          <AnimatedNumber
-            value={current.netWorth}
-            formatter={(value) => money.amount(value)}
-            rounding="integer"
-          />
-        ) : (
-          '—'
-        )
-      }
-      subtitle={t`What you own, what you owe, and where it's heading`}
-      controls={
-        <ModeToggle
+    <ReportLayout
+      question={reportMeta('wealth').question}
+      answer={wealthAnswer(points, fmt)}
+      toolbar={
+        <ViewSwitch
+          label={t`Show`}
           value={mode}
           onChange={setMode}
-          ariaLabel={t`Wealth chart mode`}
           options={[
             { value: 'assets-debt', label: t`Assets vs Debt` },
             { value: 'by-type', label: t`By Type` },
@@ -402,58 +388,35 @@ export function WealthReport({ data, months, accountIds }: WealthReportProps) {
             )}
           </>
         ) : (
-          <>
-            <EChart option={option} ariaLabel={t`Wealth over time`} />
-            <div className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-dashed border-border/60 pt-3 text-sm">
-              <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                <Trans>Runway</Trans>
-              </span>
-              <span className="font-semibold">{formatRunway(runway.runwayMonths)}</span>
-              {runsOut ? (
-                <span className="text-muted-foreground">
-                  <Trans>
-                    funds last until <span className="font-medium text-foreground">{runsOut}</span>
-                    if income stopped
-                  </Trans>
-                </span>
-              ) : null}
-              <span className="text-muted-foreground">
-                <Trans>
-                  burn{' '}
-                  <span className="font-medium text-foreground">
-                    {money.amount(runway.avgMonthlySpend)}
-                  </span>
-                  /month
-                </Trans>
-              </span>
-            </div>
-          </>
+          <EChart option={option} ariaLabel={t`Wealth over time`} />
         )
       }
       isLoading={data.isLoading}
       isEmpty={isEmpty}
       emptyText={t`No account activity in this period.`}
-      panel={
+      figures={
         <>
-          <div className="grid grid-cols-2 gap-2">
-            <StatTile label={t`Net worth`} value={current ? money.tile(current.netWorth) : '—'} />
-            <StatTile
-              label={t`Net change`}
-              value={money.tile(change)}
-              valueClassName={trendTextClass(change)}
-              detail={first ? t`vs ${shortMonthLabel(first.monthKey)}` : undefined}
-            />
-            <StatTile label={t`Assets`} value={current ? money.tile(current.assets) : '—'} />
-            <StatTile
-              label={t`Debt`}
-              value={current ? money.tile(current.debt) : '—'}
-              valueClassName={
-                current && current.debt > 0 ? 'text-red-600 dark:text-red-300' : undefined
-              }
-            />
-          </div>
+          <KeyFigures
+            items={[
+              { label: t`Net worth`, value: current ? money.tile(current.netWorth) : '—' },
+              { label: t`Assets`, value: current ? money.tile(current.assets) : '—' },
+              {
+                label: t`Debt`,
+                value: current ? money.tile(current.debt) : '—',
+                valueClassName:
+                  current && current.debt > 0 ? 'text-red-600 dark:text-red-300' : undefined,
+              },
+              {
+                label: t`Runway`,
+                value: formatRunway(runway.runwayMonths),
+                detail: runsOut
+                  ? t`until ${runsOut} if income stopped`
+                  : t`burn ${money.amount(runway.avgMonthlySpend)}/month`,
+              },
+            ]}
+          />
           {forecast ? (
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="mt-2 text-xs text-muted-foreground">
               <Trans>
                 Forecast: OLS over {points.length} months, slope{' '}
                 {money.amount(Math.round(forecast.slope))}/mo ±{' '}
@@ -463,25 +426,52 @@ export function WealthReport({ data, months, accountIds }: WealthReportProps) {
               </Trans>
             </p>
           ) : null}
-          <PanelSectionTitle>
-            <Trans>Monthly</Trans>
-          </PanelSectionTitle>
-          <div className="divide-y divide-border/50">
-            {monthlyRows.map(({ point, delta }) => (
-              <MonthRow
-                key={point.monthKey}
-                label={shortMonthLabel(point.monthKey)}
-                primary={money.amount(point.netWorth)}
-                secondary={
-                  delta === null
-                    ? undefined
-                    : t`${delta >= 0 ? '+' : ''}${money.amount(delta)} vs prev`
-                }
-              />
-            ))}
-          </div>
         </>
       }
-    />
+    >
+      {isEmpty ? null : (
+        <LedgerTable
+          title={<Trans>Month by month</Trans>}
+          rows={monthlyRows}
+          rowKey={({ point }) => point.monthKey}
+          columns={[
+            {
+              key: 'month',
+              header: t`Month`,
+              render: ({ point }) => shortMonthLabel(point.monthKey),
+            },
+            {
+              key: 'net-worth',
+              header: t`Net worth`,
+              align: 'right',
+              render: ({ point }) => money.amount(point.netWorth),
+              cellClassName: () => 'font-medium',
+            },
+            {
+              key: 'change',
+              header: t`Change`,
+              align: 'right',
+              render: ({ delta }) =>
+                delta === null ? '—' : `${delta >= 0 ? '+' : ''}${money.amount(delta)}`,
+              cellClassName: ({ delta }) => (delta === null ? undefined : trendTextClass(delta)),
+            },
+            {
+              key: 'assets',
+              header: t`Assets`,
+              align: 'right',
+              hideOnMobile: true,
+              render: ({ point }) => money.amount(point.assets),
+            },
+            {
+              key: 'debt',
+              header: t`Debt`,
+              align: 'right',
+              hideOnMobile: true,
+              render: ({ point }) => money.amount(point.debt),
+            },
+          ]}
+        />
+      )}
+    </ReportLayout>
   );
 }

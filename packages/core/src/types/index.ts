@@ -18,9 +18,11 @@ export class BudgetError extends Error {
 export class ValidationError extends BudgetError {
   constructor(
     message: string,
-    public readonly field?: string
+    public readonly field?: string,
+    /** A more specific code the UI can translate; defaults to VALIDATION_ERROR. */
+    code = 'VALIDATION_ERROR'
   ) {
-    super(message, 'VALIDATION_ERROR');
+    super(message, code);
     this.name = 'ValidationError';
   }
 }

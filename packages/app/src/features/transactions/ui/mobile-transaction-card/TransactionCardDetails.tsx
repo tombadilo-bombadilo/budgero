@@ -19,7 +19,7 @@ import { CalculatorCell } from '@shared/ui/calculator-cell';
 import { DatePickerCell } from '@features/transactions/ui/cells/DatePickerCell';
 import { CategorySelectCell } from '@features/transactions/ui/cells/CategorySelectCell';
 import { AccountSelectCell } from '@features/transactions/ui/cells/AccountSelectCell';
-import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell';
+import { SplitLinePayeeCell } from '@features/transactions/ui/cells/SplitLinePayeeCell';
 import { TransactionPayeeCell } from '@features/transactions/ui/cells/TransactionPayeeCell';
 import { LabelSelectCell } from '@features/transactions/ui/cells/LabelSelectCell';
 import { EditableCell } from '@features/transactions/ui/cells/EditableCell';
@@ -412,6 +412,11 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                                   transfer_account_id: undefined,
                                 })
                               }
+                              placeholder={
+                                (s.transfer_account_id ?? s.TransferAccountID)
+                                  ? t`No category (transfer)`
+                                  : undefined
+                              }
                               triggerClassName="h-8 w-full"
                               popoverContentClassName="w-[280px]"
                             />
@@ -445,10 +450,12 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
 
                       <div>
                         {editSplits ? (
-                          <PayeeSelectCell
+                          <SplitLinePayeeCell
                             budgetId={selectedBudgetId || budgetId}
-                            value={s.payee ?? s.Payee ?? ''}
-                            onCommit={(payee) => onUpdateSplitLine(idx, { payee })}
+                            parent={transaction}
+                            payee={s.payee ?? s.Payee ?? ''}
+                            transferAccountId={s.transfer_account_id ?? s.TransferAccountID}
+                            onChange={(patch) => onUpdateSplitLine(idx, patch)}
                             triggerClassName="h-8 w-full"
                           />
                         ) : (

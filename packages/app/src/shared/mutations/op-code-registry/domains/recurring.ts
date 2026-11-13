@@ -25,6 +25,7 @@ import {
   TRANSACTION_INVALIDATION_KEYS,
   type OpCodeEntry,
 } from '../shared';
+import { missingPayees, removeAddedPayees, type MissingPayees } from './transactions';
 
 // Analytics/projection queries union scheduled occurrences in as projections when
 // their range extends past today, so changing recurring rules must refresh them.
@@ -98,6 +99,23 @@ function occurrenceArgs(
   return args;
 }
 
+/**
+ * The payee a non-transfer template posts with: its name. Undefined for
+ * transfer templates (the legs name the accounts) and when the occurrence
+ * can't be read (the op then fails on its own).
+ */
+function templatePayee(options: MarkOccurrenceReadyOptions): string | undefined {
+  try {
+    const recurring = S().recurring!;
+    const { template } = recurring.getOccurrenceWithTemplate(
+      recurring.resolveOccurrenceId(options)
+    );
+    return template.toAccountId == null ? template.name.trim() || undefined : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export const recurringOps = {
   'recurring.create': {
     execute: async (args) => {
@@ -168,6 +186,8 @@ export const recurringOps = {
           accountId: template.accountId,
           toAccountId: template.toAccountId,
           categoryId: template.categoryId,
+          // Older captures have no splits field: no lines.
+          splits: template.splits ?? null,
           name: template.name,
           memo: template.memo,
           amount: template.amount,
@@ -236,11 +256,20 @@ export const recurringOps = {
   'recurring.markReady': {
     // A transfer template posts two legs sharing a TransferID: mint it here so
     // every device's legs carry the same one (later edits are keyed by it).
+    // The payee to post (the template's name, #127) travels with the op too:
+    // ops logged before that have none and must keep replaying without one.
     prepare: (args) => {
       const options = (args.options ?? {}) as MarkOccurrenceReadyOptions;
-      return options.transferId
-        ? args
-        : { ...args, options: { ...options, transferId: newOpRowId() } };
+      const payee = options.payee === undefined ? templatePayee(options) : undefined;
+      if (options.transferId && !payee) return args;
+      return {
+        ...args,
+        options: {
+          ...options,
+          transferId: options.transferId || newOpRowId(),
+          ...(payee ? { payee } : {}),
+        },
+      };
     },
     execute: async (args) => {
       return await S().recurring!.markOccurrenceReady(args.options as MarkOccurrenceReadyOptions);
@@ -259,7 +288,16 @@ export const recurringOps = {
           const occurrence = await recurring.getOccurrenceWithTemplate(
             recurring.resolveOccurrenceId(options)
           );
-          return { occurrence, categoryMark: captureCategoryMark() };
+          // Posting adds the carried payee (and split line payees) to the
+          // payee list when missing; undo drops the entries nothing uses.
+          const template = occurrence?.template;
+          const payees = template
+            ? missingPayees(template.budgetId, [
+                template.toAccountId == null ? options.payee : undefined,
+                ...(template.splits ?? []).map((line) => line.payee),
+              ])
+            : undefined;
+          return { occurrence, categoryMark: captureCategoryMark(), payees };
         } catch (error) {
           console.warn(
             '[OpCodeRegistry] Unable to capture occurrence before markReady undo',
@@ -279,6 +317,7 @@ export const recurringOps = {
         const ops: { op: string; args: Record<string, unknown> }[] = [];
         ops.push({ op: 'transactions.delete', args: { id: transactionId } });
         ops.push({ op: 'recurring.resetOccurrence', args: reset });
+        ops.push(...removeAddedPayees((before as { payees?: MissingPayees } | null)?.payees));
         // Posting a transfer re-creates the Transfers category if it was deleted.
         ops.push(
           ...createdCategoriesUndo(
@@ -309,6 +348,9 @@ export const recurringOps = {
                     ? { destinationTransactionId: ready.destinationTransactionId }
                     : {}),
                   ...(ready.transferId ? { transferId: ready.transferId } : {}),
+                  ...(ready.mirrorTransactionIds?.length
+                    ? { mirrorTransactionIds: ready.mirrorTransactionIds }
+                    : {}),
                 },
               },
             },

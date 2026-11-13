@@ -48,7 +48,15 @@ export interface ImportConfig {
    * CIBC statements). Ignored when dates already include a year.
    */
   defaultYear?: number;
+  /**
+   * The user's own choice for values of the file's Account column. Values
+   * without one get a default (see planAccountRoutes in lib/account-routes.ts).
+   */
+  accountRoutes?: Record<string, AccountRoute>;
 }
+
+export type AccountRoute =
+  { kind: 'existing'; accountId: number } | { kind: 'new'; name: string } | { kind: 'skip' };
 
 export interface ImportTemplate {
   id: string;
@@ -96,10 +104,34 @@ export interface ImportSummary {
  */
 export type ImportDecision = 'skip' | 'import' | 'match';
 
+/** A row imported as a transfer with another account of the import (lib/plan-transfers.ts). */
+export interface FileTransfer {
+  /** The account the other side goes to (a placeholder id when it is new). */
+  counterpartAccountId: number;
+  /** The other account as the file names it. */
+  counterpartName: string;
+  /** The row holding the other side, when it is in the file. */
+  partnerIndex?: number;
+}
+
+/**
+ * A row marked as a transfer with an account that is not in the file, whose
+ * other side that account already has: imported as a plain transaction.
+ */
+export interface OtherSideExists {
+  counterpartName: string;
+  /** The transaction already in that account. */
+  transactionId: number;
+}
+
 export interface PreviewRow {
   input: DuplicateInput;
   duplicate: DuplicatePlan;
   decision?: ImportDecision;
+  /** The row's account is set to "Don't import": skipped by the user, not invalid. */
+  accountSkipped?: boolean;
+  transfer?: FileTransfer;
+  otherSideExists?: OtherSideExists;
   original: Record<string, string>;
   parsed: {
     date?: string;

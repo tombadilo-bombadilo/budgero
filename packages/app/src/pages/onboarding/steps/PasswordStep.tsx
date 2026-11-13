@@ -1,9 +1,16 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { msg } from '@lingui/core/macro';
-import React from 'react';
-import { FieldLabel, InputRow, StepHeroImage, Title, type StepProps } from './shared';
+import React, { useId } from 'react';
+import { cn } from '@shared/lib/utils';
+import { PasswordInput } from '@shared/ui/password-input';
+import { FIELD_CLASS, FieldLabel, Title, type StepProps } from './shared';
 
-export const PasswordStep: React.FC<StepProps> = ({ state, set }) => {
+export const PasswordStep: React.FC<StepProps & { forDemo?: boolean; forJoin?: boolean }> = ({
+  state,
+  set,
+  forDemo = false,
+  forJoin = false,
+}) => {
   const { t } = useLingui();
 
   const pw = state.password;
@@ -21,49 +28,57 @@ export const PasswordStep: React.FC<StepProps> = ({ state, set }) => {
     strength
   ];
   const matches = pw.length > 0 && pw === state.passwordConfirm;
+  const pwId = useId();
+  const confirmId = useId();
   return (
     <div>
-      <StepHeroImage
-        src="/onboarding-password.png"
-        alt={t`Coin character with a key approaching a Budgero padlock`}
-      />
       <Title
         h={msg`Lock your ledger.`}
-        sub={msg`Your budget lives on your device, encrypted with a master password only you know. Pick something memorable — we can’t reset it for you.`}
+        sub={
+          forJoin
+            ? msg`The shared budget is kept on this device, encrypted with a master password only you know. It’s yours alone — not the password of the person who invited you. Pick something memorable — we can’t reset it for you.`
+            : forDemo
+              ? msg`Even the demo is encrypted on your device before anything is saved, so it needs a master password too. It’s the same one your own budget will use later. Pick something memorable — we can’t reset it for you.`
+              : msg`Your budget lives on your device, encrypted with a master password only you know. Pick something memorable — we can’t reset it for you.`
+        }
       />
-      <div style={{ display: 'grid', gap: 14, marginTop: 8 }}>
+      <div
+        data-keep-in-view
+        className="grid scroll-my-3 gap-3 group-data-[compact]/onb:gap-2 md:grid-cols-2 md:gap-4"
+      >
         <div>
-          <FieldLabel>
+          <FieldLabel htmlFor={pwId}>
             <Trans>MASTER PASSWORD</Trans>
           </FieldLabel>
-          <InputRow
-            big
-            type="password"
+          <PasswordInput
+            id={pwId}
             value={pw}
-            onChange={(v) => set({ password: v })}
+            onChange={(e) => set({ password: e.target.value })}
+            enterKeyHint="next"
+            onKeyDown={(e) => {
+              // Enter (Next on a phone keyboard) moves on to the confirm field.
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              document.getElementById(confirmId)?.focus();
+            }}
             placeholder={t`at least 8 characters`}
+            autoComplete="new-password"
+            className={FIELD_CLASS}
           />
           {pw.length > 0 && (
-            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ display: 'flex', gap: 3, flex: 1 }}>
+            <div className="mt-1.5 flex items-center gap-2">
+              <div className="flex flex-1 gap-0.5">
                 {[0, 1, 2, 3, 4].map((i) => (
                   <span
                     key={i}
-                    style={{
-                      flex: 1,
-                      height: 4,
-                      background: i < strength ? strengthColor : 'rgba(57,57,57,0.15)',
-                    }}
+                    className="h-1 flex-1 rounded-full bg-muted"
+                    style={i < strength ? { background: strengthColor } : undefined}
                   />
                 ))}
               </div>
               <span
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: strengthColor,
-                  letterSpacing: 1,
-                }}
+                className="text-[10px] font-semibold tracking-wider"
+                style={{ color: strengthColor }}
               >
                 {strengthLabel}
               </span>
@@ -71,48 +86,38 @@ export const PasswordStep: React.FC<StepProps> = ({ state, set }) => {
           )}
         </div>
         <div>
-          <FieldLabel>
+          <FieldLabel htmlFor={confirmId}>
             <Trans>CONFIRM PASSWORD</Trans>
           </FieldLabel>
-          <InputRow
-            type="password"
+          <PasswordInput
+            id={confirmId}
             value={state.passwordConfirm}
-            onChange={(v) => set({ passwordConfirm: v })}
+            onChange={(e) => set({ passwordConfirm: e.target.value })}
+            enterKeyHint="done"
             placeholder={t`type it once more`}
+            autoComplete="new-password"
+            className={FIELD_CLASS}
           />
           {state.passwordConfirm.length > 0 && (
             <div
-              style={{
-                marginTop: 6,
-                fontSize: 10,
-                color: matches ? '#2f7d31' : '#c6392c',
-                fontWeight: 700,
-                letterSpacing: 1,
-              }}
+              className={cn(
+                'mt-1.5 text-[10px] font-semibold tracking-wider',
+                matches ? 'text-emerald-600' : 'text-destructive'
+              )}
             >
               {matches ? t`✓ MATCH` : t`✗ DOES NOT MATCH`}
             </div>
           )}
         </div>
       </div>
-      <div
-        style={{
-          marginTop: 18,
-          padding: 12,
-          border: '1px dashed rgba(57,57,57,0.5)',
-          background: '#fbf7eb',
-          fontSize: 11,
-          color: '#393939',
-          lineHeight: 1.55,
-        }}
-      >
+      <div className="mt-3 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
         <Trans>
-          <div style={{ fontWeight: 700, color: '#c6392c', letterSpacing: 1, marginBottom: 4 }}>
+          <span className="mr-1.5 font-semibold text-foreground">
             <Trans>⚠ READ THIS</Trans>
-          </div>
+          </span>
           Your budget is encrypted with this password on your device. We never see it. If you forget
           it,{' '}
-          <span style={{ fontWeight: 700, color: '#141414' }}>
+          <span className="font-semibold text-foreground">
             <Trans>your ledger is unrecoverable</Trans>
           </span>{' '}
           — there is no reset email, no support line, no backdoor.

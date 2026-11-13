@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { clearLocalStorageForSignOut } from '@shared/lib/storage/sign-out-preserved';
 import { useEffect, useState } from 'react';
 import { useApiClient } from '@shared/hooks/useApiClient';
 import { useOptionalClerkAuth } from '@shared/hooks/useOptionalClerkAuth';
@@ -8,6 +9,7 @@ import { getRuntime } from '@shared/runtime/global';
 import { getConnectivityService } from '@shared/runtime/connectivity-service';
 import type { OnboardingStatus, User } from '@shared/model/auth';
 import { useSelfHostAuth } from '@shared/model/useSelfHostAuth';
+import { wipeLocalBudgetCopies } from '@shared/lib/local-copies';
 
 export { useOptionalClerkAuth };
 
@@ -217,7 +219,7 @@ export function useLogout() {
         }
 
         try {
-          localStorage.clear();
+          clearLocalStorageForSignOut();
         } catch (error) {
           console.error('Failed to clear localStorage:', error);
         }
@@ -229,26 +231,9 @@ export function useLogout() {
         }
       }
 
-      // 2. Clear OPFS database cache
-      if ('storage' in navigator && 'getDirectory' in navigator.storage) {
-        try {
-          const root = await navigator.storage.getDirectory();
-          const rootWithIterators = root as FileSystemDirectoryHandle & {
-            values?: () => AsyncIterable<{ name: string; kind: string }>;
-          };
-          if (rootWithIterators.values) {
-            for await (const entry of rootWithIterators.values()) {
-              if (entry.kind === 'file') {
-                await root.removeEntry(entry.name);
-              } else if (entry.kind === 'directory') {
-                await root.removeEntry(entry.name, { recursive: true });
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Failed to clear OPFS:', error);
-        }
-      }
+      // 2. Remove the local budget copies (OPFS, or the IndexedDB fallback
+      // when the browser has no OPFS or refuses it). The runtime is gone (step 0).
+      await wipeLocalBudgetCopies('logout');
 
       // 3. Clear IndexedDB (used by some caching mechanisms)
       if ('indexedDB' in window) {

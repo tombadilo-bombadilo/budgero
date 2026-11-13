@@ -1,6 +1,8 @@
-import { Trans } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { useId } from 'react';
 import type { YNABImportConfig } from '@budgero/core/browser';
+import { Label } from '@shared/ui/label';
+import { RadioGroup, RadioGroupItem } from '@shared/ui/radio-group';
 
 type DateOrder = NonNullable<YNABImportConfig['dateOrder']>;
 
@@ -13,6 +15,7 @@ export function YnabDateOrderChoice({
   onChange: (value: DateOrder) => void;
   disabled?: boolean;
 }) {
+  const { t } = useLingui();
   const name = useId();
 
   return (
@@ -23,30 +26,32 @@ export function YnabDateOrderChoice({
       <p>
         <Trans>These dates can be read two ways. Select the date format used in YNAB.</Trans>
       </p>
-      <label htmlFor={`${name}-month`} className="flex cursor-pointer items-center gap-2">
-        <Trans>
-          <input
-            id={`${name}-month`}
-            type="radio"
-            name={name}
-            checked={value === 'month-first'}
-            onChange={() => onChange('month-first')}
-          />
-          Month first (MM/DD/YYYY): 09/01 is September 1
-        </Trans>
-      </label>
-      <label htmlFor={`${name}-day`} className="flex cursor-pointer items-center gap-2">
-        <Trans>
-          <input
-            id={`${name}-day`}
-            type="radio"
-            name={name}
-            checked={value === 'day-first'}
-            onChange={() => onChange('day-first')}
-          />
-          Day first (DD/MM/YYYY): 09/01 is January 9
-        </Trans>
-      </label>
+      <RadioGroup
+        value={value ?? ''}
+        onValueChange={(next) => onChange(next as DateOrder)}
+        disabled={disabled}
+        aria-label={t`Dates in this export`}
+        className="gap-2"
+      >
+        <Label
+          htmlFor={`${name}-month`}
+          className="min-h-11 cursor-pointer text-xs leading-normal font-normal md:min-h-8"
+        >
+          <Trans>
+            <RadioGroupItem id={`${name}-month`} value="month-first" />
+            Month first (MM/DD/YYYY): 09/01 is September 1
+          </Trans>
+        </Label>
+        <Label
+          htmlFor={`${name}-day`}
+          className="min-h-11 cursor-pointer text-xs leading-normal font-normal md:min-h-8"
+        >
+          <Trans>
+            <RadioGroupItem id={`${name}-day`} value="day-first" />
+            Day first (DD/MM/YYYY): 09/01 is January 9
+          </Trans>
+        </Label>
+      </RadioGroup>
     </fieldset>
   );
 }

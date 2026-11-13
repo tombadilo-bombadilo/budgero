@@ -109,6 +109,7 @@ func ToSpaceBlob(b *sqlc.BudgetSpaceBlob) *domain.SpaceBlob {
 		UpdatedAt:            b.UpdatedAt,
 		Origin:               origin,
 		PublishedAt:          publishedAt,
+		Published:            b.PublishedAt.Valid,
 	}
 }
 

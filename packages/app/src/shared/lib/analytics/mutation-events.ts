@@ -135,7 +135,8 @@ export function reportMutationAnalytics(
   services: MutationAnalyticsServices | null,
   before: BeforeState | null = null
 ): void {
-  if (spec.meta?.replay) return;
+  // Replays, and the demo budget's sample data, aren't the user's own actions.
+  if (spec.meta?.replay || spec.meta?.label === 'demo.seed') return;
   const args = asArgs(spec.payload);
   const res = asArgs(result);
 

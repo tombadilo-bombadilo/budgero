@@ -259,7 +259,12 @@ export function useAuthStartupSnapshot(): AuthStartupSnapshot {
       };
     }
 
-    if (isLoading) {
+    // Still loading, or not even started: useProfile waits for the first
+    // connectivity probe, and until then the query is idle (isLoading false)
+    // with no user. Reporting "ready" here let the intro gate read a missing
+    // profile as "no master password" and open onboarding (reload before
+    // unlocking on a new device).
+    if (isLoading || (!user && !isError)) {
       return {
         status: 'loading',
         user,
@@ -408,6 +413,13 @@ export function useAuthStartupSnapshot(): AuthStartupSnapshot {
   };
 }
 
+/** The server's word that this account finished setup on some device. */
+export function isAccountSetUp(
+  profile: Pick<User, 'is_master_password_set' | 'onboarding_status'>
+) {
+  return Boolean(profile.is_master_password_set) || profile.onboarding_status === 'completed';
+}
+
 export function useIntroStartupSnapshot(
   enabled: boolean,
   profile: User | undefined
@@ -436,11 +448,16 @@ export function useIntroStartupSnapshot(
     setAcknowledgedSessionKey(introSessionKey);
   }, [introSessionKey, profileId]);
 
+  // Onboarding is only for an account the server says has not been set up.
+  // Without a profile (offline, or not loaded yet) nothing is known, so the
+  // master password gate decides (unlock, or a retry offline); a profile with
+  // a master password or a completed onboarding never sees onboarding again.
   if (
     enabled &&
     !hasLocalMasterPassword &&
     !introAcknowledged &&
-    !profile?.is_master_password_set
+    profile !== undefined &&
+    !isAccountSetUp(profile)
   ) {
     return {
       status: 'intro_required',

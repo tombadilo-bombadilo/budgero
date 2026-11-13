@@ -3,6 +3,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { useProfile } from '@entities/user/api/useAuth';
 import { useUiStore } from '@shared/store/useUiStore';
 import { setAnalyticsBudgetContext, setAnalyticsSubject } from '@shared/lib/analytics/analytics';
+import { setFirstMonthUser } from '@shared/lib/analytics/first-month';
 
 /**
  * Cloud only (mounted inside ClerkProvider). Tells analytics who is using the
@@ -18,6 +19,7 @@ export function AnalyticsGate() {
 
   const userId = profile?.id ?? null;
   const serverDisabled = profile?.is_analytics_disabled;
+  const createdAt = profile?.created_at ?? null;
 
   useEffect(() => {
     if (!isLoaded) {
@@ -33,7 +35,8 @@ export function AnalyticsGate() {
       return;
     }
     setAnalyticsSubject({ kind: 'user', id: userId, optedOut: serverDisabled });
-  }, [isLoaded, isSignedIn, userId, serverDisabled]);
+    if (!serverDisabled) setFirstMonthUser(userId, createdAt);
+  }, [isLoaded, isSignedIn, userId, serverDisabled, createdAt]);
 
   useEffect(() => {
     setAnalyticsBudgetContext(rtaMode);

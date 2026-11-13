@@ -1,31 +1,34 @@
 import { z } from 'zod';
 import { getErrorMessage } from '@shared/lib/errors';
+import { withoutNulls } from './resolve-entity';
 import type { ToolContext, ToolExecutionResult } from './types';
 import { getSchemaHint } from './query-sql';
 
-export const renderChartSchema = z.object({
-  sql: z
-    .string()
-    .describe(
-      'Read-only SQL (SELECT/WITH) returning the columns to plot. Same rules as run_analytics_sql.'
-    ),
-  chartType: z
-    .enum(['bar', 'line', 'area', 'pie', 'scatter', 'table', 'stat'])
-    .describe('Chart type to render.'),
-  xAxisColumn: z
-    .string()
-    .describe('Column for the X axis / category (for pie: the slice label; for stat: ignored).'),
-  yAxisColumn: z.string().describe('Numeric column for the value / Y axis.'),
-  groupByColumn: z
-    .string()
-    .optional()
-    .describe('Optional column to split into multiple series / stacks.'),
-  aggregateFunction: z
-    .enum(['SUM', 'COUNT', 'AVG', 'MAX', 'MIN'])
-    .optional()
-    .describe('How to aggregate the value column (default SUM).'),
-  title: z.string().optional().describe('Chart title shown to the user.'),
-});
+export const renderChartSchema = withoutNulls(
+  z.object({
+    sql: z
+      .string()
+      .describe(
+        'Read-only SQL (SELECT/WITH) returning the columns to plot. Same rules as run_analytics_sql.'
+      ),
+    chartType: z
+      .enum(['bar', 'line', 'area', 'pie', 'scatter', 'table', 'stat'])
+      .describe('Chart type to render.'),
+    xAxisColumn: z
+      .string()
+      .describe('Column for the X axis / category (for pie: the slice label; for stat: ignored).'),
+    yAxisColumn: z.string().describe('Numeric column for the value / Y axis.'),
+    groupByColumn: z
+      .string()
+      .optional()
+      .describe('Optional column to split into multiple series / stacks.'),
+    aggregateFunction: z
+      .enum(['SUM', 'COUNT', 'AVG', 'MAX', 'MIN'])
+      .optional()
+      .describe('How to aggregate the value column (default SUM).'),
+    title: z.string().optional().describe('Chart title shown to the user.'),
+  })
+);
 
 export type RenderChartArgs = z.infer<typeof renderChartSchema>;
 

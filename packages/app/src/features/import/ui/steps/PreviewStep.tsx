@@ -3,6 +3,9 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import { scaledToDecimal } from '@budgero/core/browser';
 import { Button } from '@shared/ui/button';
+import { cn } from '@shared/lib/utils';
+import { importStatusChipClass, type ImportRowStatus } from '@shared/lib/import-status-chip';
+import { ImportStatusChip } from '@shared/ui/import-status-chip';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@shared/ui/card';
 import type {
   PreviewRow,
@@ -11,6 +14,16 @@ import type {
   ImportDecision,
 } from '@features/import/model/types';
 import { translateImportText } from '../../lib/import-display-text';
+
+const STATUSES: ImportRowStatus[] = ['new', 'already-imported', 'needs-review', 'invalid'];
+
+/** Stronger background for the selected status filter. */
+const SELECTED_BG: Record<ImportRowStatus, string> = {
+  new: 'bg-emerald-500/25',
+  'already-imported': 'bg-muted-foreground/20',
+  'needs-review': 'bg-amber-500/30',
+  invalid: 'bg-red-500/25',
+};
 
 interface PreviewStepProps {
   busy?: boolean;
@@ -44,7 +57,7 @@ export function PreviewStep({
     invalid: t`Invalid/skipped`,
   };
 
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState<'all' | ImportRowStatus>('all');
   const [page, setPage] = useState(0);
   const unresolved = previewData.filter(
     (r) => r.duplicate.status === 'needs-review' && !r.decision
@@ -80,20 +93,40 @@ export function PreviewStep({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-2" aria-label={t`Filter import rows`}>
-          {['all', ...Object.keys(labels)].map((key) => (
-            <Button
-              key={key}
-              variant={filter === key ? 'default' : 'outline'}
-              onClick={() => {
-                setFilter(key);
-                setPage(0);
-              }}
-            >
-              {key === 'all' ? t`All` : labels[key as keyof typeof labels]} (
-              {previewData.filter((r) => key === 'all' || r.duplicate.status === key).length})
-            </Button>
-          ))}
+        <div role="group" className="flex flex-wrap gap-2" aria-label={t`Filter import rows`}>
+          {(['all', ...STATUSES] as const).map((key) => {
+            const count = previewData.filter(
+              (r) => key === 'all' || r.duplicate.status === key
+            ).length;
+            const selected = filter === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => {
+                  setFilter(key);
+                  setPage(0);
+                }}
+                className={cn(
+                  'inline-flex min-h-9 items-center text-xs ring-offset-background transition-[box-shadow,background-color,opacity] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:min-h-8',
+                  key === 'all'
+                    ? 'rounded-full border font-medium text-foreground'
+                    : cn(importStatusChipClass(key), 'font-medium'),
+                  'px-3 text-xs',
+                  selected
+                    ? cn(
+                        'ring-2 ring-current ring-inset',
+                        key === 'all' ? 'bg-accent' : SELECTED_BG[key]
+                      )
+                    : 'hover:brightness-95 dark:hover:brightness-125',
+                  count === 0 && !selected && 'opacity-50'
+                )}
+              >
+                {key === 'all' ? t`All` : labels[key]} ({count})
+              </button>
+            );
+          })}
         </div>
         {matching > 0 && (
           <p className="text-sm">
@@ -151,6 +184,20 @@ export function PreviewStep({
                     {row.input.index + 1}
                     <br />
                     {row.parsed.account}
+                    {row.transfer && (
+                      <TransferNote
+                        name={row.transfer.counterpartName}
+                        outgoing={row.input.outflow > row.input.inflow}
+                        partnerRow={
+                          row.transfer.partnerIndex !== undefined
+                            ? row.transfer.partnerIndex + 1
+                            : undefined
+                        }
+                      />
+                    )}
+                    {row.otherSideExists && (
+                      <OtherSideNote name={row.otherSideExists.counterpartName} />
+                    )}
                   </td>
                   <td className="p-2">
                     {row.input.date} ·{' '}
@@ -162,8 +209,18 @@ export function PreviewStep({
                     <span className="break-words">{row.input.memo}</span>
                   </td>
                   <td className="p-2">
-                    <strong>{labels[row.duplicate.status]}</strong>
-                    <p>{translateImportText(row.duplicate.reason)}</p>
+                    <ImportStatusChip
+                      status={row.duplicate.status}
+                      data-status={row.duplicate.status}
+                      className="w-fit text-[11px] font-medium"
+                    >
+                      {labels[row.duplicate.status]}
+                    </ImportStatusChip>
+                    <p>
+                      {row.accountSkipped
+                        ? t`Not imported: its account is set to “Don’t import”.`
+                        : translateImportText(row.duplicate.reason)}
+                    </p>
                     {row.duplicate.candidates.map((candidate) => (
                       <p key={candidate.id} className="mt-2">
                         <Trans>
@@ -276,5 +333,37 @@ export function PreviewStep({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/** The row names a transfer, but the other account already has that side. */
+function OtherSideNote({ name }: { name: string }) {
+  return (
+    <span className="block text-xs text-muted-foreground" data-testid="import-transfer-exists">
+      <Trans>{name} already has the other side, so this is imported as a regular transaction</Trans>
+    </span>
+  );
+}
+
+/** The row is imported as a transfer with another account of this import. */
+function TransferNote({
+  name,
+  outgoing,
+  partnerRow,
+}: {
+  name: string;
+  outgoing: boolean;
+  partnerRow?: number;
+}) {
+  return (
+    <span className="block text-xs text-muted-foreground" data-testid="import-transfer">
+      {outgoing ? <Trans>Transfer to {name}</Trans> : <Trans>Transfer from {name}</Trans>}
+      {partnerRow !== undefined && (
+        <>
+          {' · '}
+          <Trans>with row {partnerRow}</Trans>
+        </>
+      )}
+    </span>
   );
 }

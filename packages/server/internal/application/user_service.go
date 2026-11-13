@@ -287,9 +287,44 @@ func (s *UserService) UpdatePreferences(ctx context.Context, id string, patch do
 	return &next, nil
 }
 
-// ClearDanglingPrimarySpaceIDs nullifies primary_space_id references to deleted spaces.
-func (s *UserService) ClearDanglingPrimarySpaceIDs(ctx context.Context) error {
-	return s.userRepo.ClearDanglingPrimarySpaceIDs(ctx)
+// EnsurePrimarySpace returns the user's primary space id. A user without one
+// who owns at least one space gets their oldest owned space assigned.
+// Returns "" when the user owns no space.
+func (s *UserService) EnsurePrimarySpace(ctx context.Context, user *domain.User) (string, error) {
+	if user.PrimarySpaceID != "" {
+		return user.PrimarySpaceID, nil
+	}
+	if s.spaceRepo == nil {
+		return "", nil
+	}
+	spaces, err := s.spaceRepo.ListForUser(ctx, user.ID)
+	if err != nil {
+		return "", err
+	}
+	var oldest *domain.SpaceSummary
+	for i := range spaces {
+		sp := &spaces[i]
+		if sp.OwnerUserID != user.ID {
+			continue
+		}
+		if oldest == nil || sp.CreatedAt.Before(oldest.CreatedAt) ||
+			(sp.CreatedAt.Equal(oldest.CreatedAt) && sp.SpaceID < oldest.SpaceID) {
+			oldest = sp
+		}
+	}
+	if oldest == nil {
+		return "", nil
+	}
+	if err := s.userRepo.SetPrimarySpace(ctx, user.ID, oldest.SpaceID); err != nil {
+		return "", err
+	}
+	user.PrimarySpaceID = oldest.SpaceID
+	return oldest.SpaceID, nil
+}
+
+// RepairDanglingPrimarySpaceIDs moves primary_space_id references to deleted spaces onto the user's oldest owned space (NULL if none).
+func (s *UserService) RepairDanglingPrimarySpaceIDs(ctx context.Context) error {
+	return s.userRepo.RepairDanglingPrimarySpaceIDs(ctx)
 }
 
 func normalizePreferenceValue(value string) string {

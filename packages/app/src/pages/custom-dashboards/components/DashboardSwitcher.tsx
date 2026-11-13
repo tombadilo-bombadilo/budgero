@@ -4,11 +4,19 @@ import type { CustomDashboard } from '@budgero/core/browser';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Label } from '@shared/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@shared/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { getErrorMessage } from '@shared/lib/errors';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Download, Home, HousePlus, MoreHorizontal, Plus, Pencil, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { dashboardDisplayName } from '@widgets/dashboard/builtin/builtin-cards';
 
 interface DashboardSwitcherProps {
   dashboards: CustomDashboard[];
@@ -17,6 +25,13 @@ interface DashboardSwitcherProps {
   onCreateDashboard: (name: string) => Promise<void>;
   onRenameDashboard: (dashboardId: string, name: string) => Promise<void>;
   onDeleteDashboard: (dashboardId: string) => Promise<void>;
+  /** Download every widget's CSV (in the "…" menu). */
+  onExportAll?: () => void;
+  exportDisabled?: boolean;
+  /** Show this dashboard on the home page. */
+  onUseAsHome?: (dashboardId: string) => Promise<void>;
+  /** Stop showing it on the home page (the home goes back to what it was). */
+  onStopUsingAsHome?: (dashboardId: string) => Promise<void>;
 }
 
 export function DashboardSwitcher({
@@ -26,6 +41,10 @@ export function DashboardSwitcher({
   onCreateDashboard,
   onRenameDashboard,
   onDeleteDashboard,
+  onExportAll,
+  exportDisabled = false,
+  onUseAsHome,
+  onStopUsingAsHome,
 }: DashboardSwitcherProps) {
   const { t } = useLingui();
 
@@ -40,7 +59,7 @@ export function DashboardSwitcher({
 
   useEffect(() => {
     if (!renameOpen) return;
-    setRenameName(activeDashboard?.name ?? '');
+    setRenameName(activeDashboard ? dashboardDisplayName(activeDashboard) : '');
   }, [renameOpen, activeDashboard]);
 
   useEffect(() => {
@@ -72,7 +91,7 @@ export function DashboardSwitcher({
       toast.error(t`Dashboard name cannot be empty`);
       return;
     }
-    if (nextName === activeDashboard.name) {
+    if (nextName === dashboardDisplayName(activeDashboard)) {
       setRenameOpen(false);
       return;
     }
@@ -84,6 +103,21 @@ export function DashboardSwitcher({
       toast.error(getErrorMessage(error, t`Failed to rename dashboard`));
     } finally {
       setPendingAction(null);
+    }
+  };
+
+  const handleHome = async (dashboardId: string, makeHome: boolean) => {
+    const action = makeHome ? onUseAsHome : onStopUsingAsHome;
+    if (!action) return;
+    try {
+      await action(dashboardId);
+      toast.success(
+        makeHome
+          ? t`The home page now shows this dashboard`
+          : t`The home page no longer shows this dashboard`
+      );
+    } catch {
+      // The action already reported it.
     }
   };
 
@@ -101,19 +135,29 @@ export function DashboardSwitcher({
   };
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex items-center gap-2">
       <Select
         value={activeDashboardId ?? ''}
         onValueChange={onSelectDashboard}
         disabled={dashboards.length === 0}
       >
-        <SelectTrigger className="w-[240px]">
+        <SelectTrigger className="min-w-0 flex-1 sm:w-[240px] sm:flex-none">
           <SelectValue placeholder={t`Select dashboard`} />
         </SelectTrigger>
         <SelectContent>
           {dashboards.map((dashboard) => (
             <SelectItem key={dashboard.id} value={dashboard.id}>
-              {dashboard.name}
+              <span className="inline-flex min-w-0 items-center gap-1.5">
+                <span className="truncate">{dashboardDisplayName(dashboard)}</span>
+                {dashboard.isHome && (
+                  <>
+                    <Home className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden />
+                    <span className="sr-only">
+                      <Trans>(home page)</Trans>
+                    </span>
+                  </>
+                )}
+              </span>
             </SelectItem>
           ))}
         </SelectContent>
@@ -168,66 +212,111 @@ export function DashboardSwitcher({
         </PopoverContent>
       </Popover>
 
-      <Popover open={renameOpen} onOpenChange={setRenameOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" disabled={!activeDashboard || pendingAction !== null}>
-            <Trans>
-              <Pencil className="h-4 w-4 mr-1" />
-              Rename
-            </Trans>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-80 space-y-3">
-          <div className="space-y-1">
-            <p className="text-sm font-medium">
-              <Trans>Rename dashboard</Trans>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              <Trans>
-                Update the name for <span className="font-medium">{activeDashboard?.name}</span>.
-              </Trans>
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="rename-dashboard-name">
-              <Trans>Name</Trans>
-            </Label>
-            <Input
-              id="rename-dashboard-name"
-              value={renameName}
-              onChange={(event) => setRenameName(event.target.value)}
-              placeholder={t`Dashboard name`}
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setRenameOpen(false)}
-              disabled={pendingAction === 'rename'}
-            >
-              <Trans>Cancel</Trans>
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => void handleRename()}
-              disabled={pendingAction === 'rename'}
-            >
-              {pendingAction === 'rename' ? t`Saving...` : t`Save`}
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
-
+      {/* Rename / Delete / Export live in one "…" menu; their forms open next to it. */}
       <Popover open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" disabled={!activeDashboard || pendingAction !== null}>
-            <Trans>
-              <Trash2 className="h-4 w-4 mr-1" />
-              Delete
-            </Trans>
-          </Button>
-        </PopoverTrigger>
+        <PopoverAnchor asChild>
+          <span className="inline-flex">
+            <Popover open={renameOpen} onOpenChange={setRenameOpen}>
+              <PopoverAnchor asChild>
+                <span className="inline-flex">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        aria-label={t`Dashboard actions`}
+                        disabled={!activeDashboard || pendingAction !== null}
+                      >
+                        <MoreHorizontal className="h-4 w-4" aria-hidden />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => setTimeout(() => setRenameOpen(true), 0)}>
+                        <Pencil className="h-4 w-4" aria-hidden />
+                        <Trans>Rename</Trans>
+                      </DropdownMenuItem>
+                      {activeDashboard && !activeDashboard.isHome && onUseAsHome && (
+                        <DropdownMenuItem
+                          onSelect={() => void handleHome(activeDashboard.id, true)}
+                        >
+                          <HousePlus className="h-4 w-4" aria-hidden />
+                          <Trans>Use as home page</Trans>
+                        </DropdownMenuItem>
+                      )}
+                      {activeDashboard?.isHome && onStopUsingAsHome && (
+                        <DropdownMenuItem
+                          onSelect={() => void handleHome(activeDashboard.id, false)}
+                        >
+                          <Home className="h-4 w-4" aria-hidden />
+                          <Trans>Stop using as home page</Trans>
+                        </DropdownMenuItem>
+                      )}
+                      {onExportAll && (
+                        <DropdownMenuItem disabled={exportDisabled} onSelect={onExportAll}>
+                          <Download className="h-4 w-4" aria-hidden />
+                          <Trans>Export CSVs</Trans>
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onSelect={() => setTimeout(() => setDeleteOpen(true), 0)}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                        <Trans>Delete</Trans>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </span>
+              </PopoverAnchor>
+              <PopoverContent align="end" className="w-80 space-y-3">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">
+                    <Trans>Rename dashboard</Trans>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    <Trans>
+                      Update the name for{' '}
+                      <span className="font-medium">
+                        {activeDashboard ? dashboardDisplayName(activeDashboard) : ''}
+                      </span>
+                      .
+                    </Trans>
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rename-dashboard-name">
+                    <Trans>Name</Trans>
+                  </Label>
+                  <Input
+                    id="rename-dashboard-name"
+                    value={renameName}
+                    onChange={(event) => setRenameName(event.target.value)}
+                    placeholder={t`Dashboard name`}
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setRenameOpen(false)}
+                    disabled={pendingAction === 'rename'}
+                  >
+                    <Trans>Cancel</Trans>
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => void handleRename()}
+                    disabled={pendingAction === 'rename'}
+                  >
+                    {pendingAction === 'rename' ? t`Saving...` : t`Save`}
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </span>
+        </PopoverAnchor>
         <PopoverContent align="end" className="w-80 space-y-3">
           <div className="space-y-1">
             <p className="text-sm font-medium">
@@ -235,8 +324,11 @@ export function DashboardSwitcher({
             </p>
             <p className="text-xs text-muted-foreground">
               <Trans>
-                Delete <span className="font-medium">{activeDashboard?.name}</span>? This removes
-                all widgets on it.
+                Delete{' '}
+                <span className="font-medium">
+                  {activeDashboard ? dashboardDisplayName(activeDashboard) : ''}
+                </span>
+                ? This removes all widgets on it.
               </Trans>
             </p>
           </div>

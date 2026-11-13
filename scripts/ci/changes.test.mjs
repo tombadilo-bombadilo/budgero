@@ -31,6 +31,8 @@ for (const [name, paths, expected] of [
   ['ci workflow changes', ['.github/workflows/ci.yml'], all],
   ['ci workflow alongside other workflows', ['.github/workflows/release.yml', '.github/workflows/ci.yml'], all],
   ['classifier changes (tested by the changes job itself)', ['scripts/ci/changes.mjs', 'scripts/ci/changes.test.mjs'], none],
+  ['govulncheck gate (tested by the changes job itself)', ['scripts/ci/govulncheck.mjs', 'scripts/ci/govulncheck.test.mjs'], none],
+  ['govulncheck ignore list', ['packages/server/govulncheck-ignore.json', 'packages/server/osv-scanner.toml'], { ...none, server: true }],
   ['release-only files', ['packages/server/internal/appmeta/version.txt', 'packages/app/src/features/ai/lib/knowledge/knowledge-base.generated.ts'], none],
   ['manifests without line info still run checks', ['package.json'], all],
   ['app manifest without line info', ['packages/app/package.json'], { ...none, app: true }],

@@ -1,4 +1,4 @@
-import { msg } from '@lingui/core/macro';
+import { msg, plural } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
 import { useState, useCallback, useRef, useMemo } from 'react';
 import { useTheme } from 'next-themes';
@@ -63,42 +63,18 @@ export function useExplorerState() {
         const db = runtime.getDatabase() as SqlDatabase | null;
         if (!db) throw new Error('Database not available');
 
-        if (isSelectQuery(queryToRun)) {
-          const result = await executeReportQuery(queryToRun, db, { maxRows: MAX_ROWS });
-          setQueryResult(result);
-          if (result.rowCount > result.rows.length && result.rows.length === MAX_ROWS) {
-            toast.warning(t`Results Limited`, {
-              description: t`Showing first ${MAX_ROWS.toLocaleString()} rows. Add a LIMIT clause for better performance.`,
-            });
-          }
-        } else {
-          const startTime = performance.now();
-          const result = db.exec(queryToRun);
-          const endTime = performance.now();
-          const executionTime = endTime - startTime;
-
-          if (result && result.length > 0) {
-            const lastResult = result[result.length - 1];
-            setQueryResult({
-              columns: lastResult.columns || [],
-              rows: lastResult.values || [],
-              rowCount: lastResult.values?.length || 0,
-              executionTime,
-            });
-          } else {
-            setQueryResult({
-              columns: [],
-              rows: [],
-              rowCount: 0,
-              executionTime,
-            });
-          }
-
-          // Raw SQL writes bypass op-code mutation log; finalize as out-of-band mutation.
-          await runtime.finalizeOutOfBandMutation({ uploadSnapshot: true });
-
-          toast.success(t`Query Executed`, {
-            description: t`Query executed successfully`,
+        // Read-only by design: every run goes through the DuckDB report snapshot,
+        // never the live SQLite database (writes here would bypass the mutation log).
+        if (!isSelectQuery(queryToRun)) {
+          throw new Error(
+            t`Only read-only queries can run here (SELECT, WITH, EXPLAIN, DESCRIBE, SHOW, PRAGMA).`
+          );
+        }
+        const result = await executeReportQuery(queryToRun, db, { maxRows: MAX_ROWS });
+        setQueryResult(result);
+        if (result.rowCount > result.rows.length && result.rows.length === MAX_ROWS) {
+          toast.warning(t`Results Limited`, {
+            description: t`Showing first ${MAX_ROWS.toLocaleString()} rows. Add a LIMIT clause for better performance.`,
           });
         }
       } catch (error) {
@@ -137,7 +113,10 @@ export function useExplorerState() {
         const rowCount = queryResult.rows.length;
         const columnCount = queryResult.columns.length;
         toast.success(t`CSV Copied!`, {
-          description: t`${rowCount.toLocaleString()} rows x ${columnCount} columns copied to clipboard`,
+          description: plural(rowCount, {
+            one: `# row × ${columnCount} columns copied to the clipboard`,
+            other: `# rows × ${columnCount} columns copied to the clipboard`,
+          }),
         });
       })
       .catch((error) => {
@@ -149,21 +128,14 @@ export function useExplorerState() {
   }, [queryResult, t]);
 
   const {
-    showReportsDialog,
     showSaveReportDialog,
     editingReport,
     selectedChartConfig,
-    savedReports,
-    setShowReportsDialog,
     setShowSaveReportDialog,
     setEditingReport,
     setSelectedChartConfig,
     handleSaveReport,
-    handleLoadReport,
-    handleEditReport,
-    handleDeleteReport,
     handleCreateReport,
-    handleNewReport,
   } = useReportActions({
     sqlQuery,
     setSqlQuery,
@@ -217,18 +189,15 @@ export function useExplorerState() {
     tableSchema,
     expandedTables,
     sidebarOpen,
-    showReportsDialog,
     showSaveReportDialog,
     editingReport,
     selectedChartConfig,
-    savedReports,
     editorTheme,
     editorModules,
     extensions,
 
     setSqlQuery,
     setSidebarOpen,
-    setShowReportsDialog,
     setShowSaveReportDialog,
     setEditingReport,
     setSelectedChartConfig,
@@ -240,10 +209,6 @@ export function useExplorerState() {
     formatSQL,
     copyResultsAsCSV,
     handleSaveReport,
-    handleLoadReport,
-    handleEditReport,
-    handleDeleteReport,
     handleCreateReport,
-    handleNewReport,
   };
 }

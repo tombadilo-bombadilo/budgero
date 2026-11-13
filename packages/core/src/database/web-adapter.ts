@@ -11,6 +11,14 @@ import { MigrationRunner } from './migrations.js';
 import { createMigrationDatabase } from './migration-database-factory.js';
 import { readAllRows, readRow } from './sqljs-rows.js';
 import { needsOpfsWorkerWriter, writeOpfsFileViaWorker } from './opfs-sync-writer.js';
+import {
+  deleteLocalFile,
+  getOpfsRoot,
+  idbDeleteFile,
+  idbListFiles,
+  idbReadFile,
+  idbWriteFile,
+} from './local-file-store.js';
 
 import { createLogger } from '../logger.js';
 
@@ -80,6 +88,31 @@ export function enqueueOpfsWrite(filename: string, write: () => Promise<void>): 
     if (opfsWriteChains.get(filename) === tail) opfsWriteChains.delete(filename);
   });
   return result;
+}
+
+/** Saves between "bytes exported" and "bytes on disk", across every adapter of this tab. */
+const savesInFlight = new Set<Promise<void>>();
+
+/**
+ * Resolves once no save to local storage is in flight (or after `timeoutMs`,
+ * so a stuck writer can't hold up a sign-out). Wiping local storage before
+ * that would let a save that already started put the budget back. Stop the
+ * runtime first, so no new save starts.
+ */
+export async function whenLocalWritesSettle(timeoutMs = 3000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (savesInFlight.size > 0 || opfsWriteChains.size > 0) {
+    const remaining = deadline - Date.now();
+    if (remaining <= 0) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    await Promise.race([
+      Promise.allSettled([...savesInFlight, ...opfsWriteChains.values()]),
+      new Promise((resolve) => {
+        timer = setTimeout(resolve, remaining);
+      }),
+    ]);
+    clearTimeout(timer);
+  }
 }
 
 const FILE_BUSY_RETRY_MS = [50, 200, 600, 1500];
@@ -318,12 +351,13 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
 
   private static async loadFromOPFS(filename: string): Promise<Uint8Array | null> {
     try {
-      if (!navigator.storage || !navigator.storage.getDirectory) {
-        debugLog('OPFS not available');
-        return null;
+      const opfsRoot = await getOpfsRoot();
+      if (!opfsRoot) {
+        // OPFS refused (e.g. a Firefox private window): the copy lives in IndexedDB.
+        const data = await idbReadFile(filename);
+        debugLog(`Loaded database from IndexedDB (${filename})`, { size: data?.length ?? 0 });
+        return data;
       }
-
-      const opfsRoot = await navigator.storage.getDirectory();
       const fileHandle = await opfsRoot.getFileHandle(filename);
       const file = await fileHandle.getFile();
       const data = new Uint8Array(await file.arrayBuffer());
@@ -534,11 +568,16 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
   private async writeToOPFS(data: Uint8Array, encrypted: boolean): Promise<void> {
     let writable: FileSystemWritableFileStream | undefined;
     try {
-      if (!globalThis.navigator?.storage?.getDirectory) {
-        throw new Error('Browser storage is unavailable. The budget could not be saved locally.');
+      const opfsRoot = await getOpfsRoot();
+      if (!opfsRoot) {
+        // OPFS refused (e.g. a Firefox private window): keep the copy in IndexedDB.
+        await idbWriteFile(this.dbFilename, data);
+        debugLog(`Saved database to IndexedDB (${this.dbFilename})`, {
+          encryptedSize: data.length,
+          encrypted,
+        });
+        return;
       }
-
-      const opfsRoot = await navigator.storage.getDirectory();
       const fileHandle = await opfsRoot.getFileHandle(this.dbFilename, { create: true });
       if (needsOpfsWorkerWriter(fileHandle)) {
         // Safari < 26: no createWritable() on the main thread.
@@ -584,7 +623,18 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
     await this.persist(data);
   }
 
-  private async persist(data: Uint8Array): Promise<void> {
+  private persist(data: Uint8Array): Promise<void> {
+    const save = this.encryptAndSave(data);
+    const tracked = save.then(
+      () => undefined,
+      () => undefined
+    );
+    savesInFlight.add(tracked);
+    void tracked.then(() => savesInFlight.delete(tracked));
+    return save;
+  }
+
+  private async encryptAndSave(data: Uint8Array): Promise<void> {
     let payload = data;
     let payloadWasEncrypted = false;
     if (this.localPersistenceCipher) {
@@ -688,20 +738,9 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
     try {
       const target = filename || WebDatabaseAdapter.getUserDatabaseFilename();
       if (!target) return;
-      if (!navigator.storage || !navigator.storage.getDirectory) {
-        return;
-      }
-
-      const opfsRoot = await navigator.storage.getDirectory();
-      try {
-        await opfsRoot.removeEntry(target);
-        debugLog(`Cleaned up database file: ${target}`);
-      } catch (error: unknown) {
-        if (error instanceof DOMException && error.name === 'NotFoundError') {
-          return;
-        }
-        debugLog('Failed to remove database file', { error, target });
-      }
+      // Both stores: a copy left in the one this tab doesn't use must go too.
+      await deleteLocalFile(target);
+      debugLog(`Cleaned up database file: ${target}`);
     } catch (error) {
       debugLog('Failed to cleanup database file', { error, filename });
     }
@@ -711,41 +750,61 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
     keepSpaceIds: string[],
     options?: { suffix?: string }
   ): Promise<void> {
-    try {
-      if (!navigator.storage || !navigator.storage.getDirectory) {
-        return;
-      }
+    const suffix = options?.suffix ?? '';
+    const filenameFor = (id: string) => `space_${id}${suffix}.db`;
+    const relevantSuffix = `${suffix}.db`;
+    const keepNames = new Set(keepSpaceIds.map(filenameFor).filter(Boolean));
+    const isStale = (name: unknown): name is string =>
+      typeof name === 'string' &&
+      name.endsWith('.db') &&
+      name.startsWith('space_') &&
+      (!suffix || name.endsWith(relevantSuffix)) &&
+      !keepNames.has(name);
 
-      const suffix = options?.suffix ?? '';
-      const filenameFor = (id: string) => `space_${id}${suffix}.db`;
-      const relevantSuffix = `${suffix}.db`;
-      const keepNames = new Set(keepSpaceIds.map(filenameFor).filter(Boolean));
-      const opfsRoot = await navigator.storage.getDirectory();
+    try {
+      const opfsRoot = await getOpfsRoot();
       // FileSystemDirectoryHandle.entries() is not in all TypeScript DOM libs, so we use a type assertion
-      const { entries } = opfsRoot as unknown as {
+      const { entries } = (opfsRoot ?? {}) as unknown as {
         entries?: () => AsyncIterable<[string, FileSystemHandle]>;
       };
-      if (typeof entries !== 'function') return;
+      if (opfsRoot && typeof entries === 'function') {
+        for await (const entry of entries.call(opfsRoot)) {
+          const [name] = entry;
+          if (!isStale(name)) continue;
+          try {
+            await opfsRoot.removeEntry(name);
+            debugLog('[WebDatabaseAdapter] Removed stale space database', { name });
+          } catch (error) {
+            debugLog('[WebDatabaseAdapter] Failed to remove stale space database', {
+              name,
+              error,
+            });
+          }
+        }
+      }
+    } catch (error) {
+      debugLog('[WebDatabaseAdapter] Failed to cleanup stale space databases', { error });
+    }
 
-      for await (const entry of entries.call(opfsRoot)) {
-        const [name] = entry;
-        if (typeof name !== 'string') continue;
-        if (!name.endsWith('.db')) continue;
-        if (!name.startsWith('space_')) continue;
-        if (suffix && !name.endsWith(relevantSuffix)) continue;
-        if (keepNames.has(name)) continue;
+    // Copies in IndexedDB: this tab's own when the browser has no OPFS (they
+    // persist like OPFS ones) or refuses it, and any an earlier session left.
+    try {
+      for (const name of await idbListFiles()) {
+        if (!isStale(name)) continue;
         try {
-          await opfsRoot.removeEntry(name);
-          debugLog('[WebDatabaseAdapter] Removed stale space database', { name });
+          await idbDeleteFile(name);
+          debugLog('[WebDatabaseAdapter] Removed stale space database (IndexedDB)', { name });
         } catch (error) {
-          debugLog('[WebDatabaseAdapter] Failed to remove stale space database', {
+          debugLog('[WebDatabaseAdapter] Failed to remove stale space database (IndexedDB)', {
             name,
             error,
           });
         }
       }
     } catch (error) {
-      debugLog('[WebDatabaseAdapter] Failed to cleanup stale space databases', { error });
+      debugLog('[WebDatabaseAdapter] Failed to cleanup stale IndexedDB space databases', {
+        error,
+      });
     }
   }
 }

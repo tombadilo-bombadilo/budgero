@@ -25,6 +25,21 @@ export interface RecurringSchedule {
   };
 }
 
+/**
+ * One split line of a recurring template, in the template account's currency
+ * (like the add form's split lines). Exactly one of categoryId and
+ * transferAccountId is set; a transfer line posts a mirror row there.
+ */
+export interface RecurringSplitLine {
+  categoryId: number | null;
+  transferAccountId: number | null;
+  memo: string;
+  /** Empty means inherit the posted transaction's payee (the template name). */
+  payee: string;
+  inflow: MilliUnits;
+  outflow: MilliUnits;
+}
+
 export interface RecurringTransaction {
   id: number;
   budgetId: number;
@@ -49,6 +64,11 @@ export interface RecurringTransaction {
    */
   budgetAmount?: MilliUnits | null;
   categoryId: number | null;
+  /**
+   * Split lines posted with every occurrence (categoryId is then null). They
+   * sum to the signed amount; never set on transfer templates.
+   */
+  splits: RecurringSplitLine[] | null;
   name: string;
   memo: string;
   amount: MilliUnits;
@@ -68,6 +88,8 @@ export interface CreateRecurringTransactionInput {
   accountId: number;
   toAccountId?: number | null;
   categoryId?: number | null;
+  /** Null or [] means no splits. */
+  splits?: RecurringSplitLine[] | null;
   name: string;
   memo?: string;
   amount: MilliUnits;
@@ -81,6 +103,8 @@ export interface UpdateRecurringTransactionInput {
   accountId?: number;
   toAccountId?: number | null;
   categoryId?: number | null;
+  /** Null or [] clears the splits; omitted keeps them. */
+  splits?: RecurringSplitLine[] | null;
   name?: string;
   memo?: string;
   amount?: MilliUnits;
@@ -115,6 +139,8 @@ export interface MarkOccurrenceReadyResult {
   /** Transfer templates: the destination leg and the transfer's TransferID. */
   destinationTransactionId?: number;
   transferId?: string;
+  /** Split templates: the mirror rows of the transfer lines, in line order. */
+  mirrorTransactionIds?: number[];
 }
 
 /**
@@ -132,6 +158,13 @@ export interface RecurringOccurrenceRef {
 export interface MarkOccurrenceReadyOptions extends RecurringOccurrenceRef {
   transactionDate?: string;
   memoOverride?: string;
+  /**
+   * Payee of the posted row (the app sends the template's name, #127). Ops
+   * carry it so every device writes the same payee and payee-list entry; ops
+   * logged before it existed have none and post without a payee, as they
+   * always did. Not used by transfer templates (their legs name the accounts).
+   */
+  payee?: string;
   /** TransferID for a transfer template's two legs. Ops carry it so every
    * device posts the same one; generated when absent (older ops). */
   transferId?: string;
@@ -139,7 +172,13 @@ export interface MarkOccurrenceReadyOptions extends RecurringOccurrenceRef {
    * Redo re-posts under the IDs (and TransferID) the first run produced, so
    * the undo entry that deletes them stays valid.
    */
-  reuse?: { transactionId: number; destinationTransactionId?: number; transferId?: string };
+  reuse?: {
+    transactionId: number;
+    destinationTransactionId?: number;
+    transferId?: string;
+    /** Split templates: the transfer lines' mirror rows (redo, format 5). */
+    mirrorTransactionIds?: number[];
+  };
 }
 
 export interface ListOccurrencesOptions {

@@ -38,6 +38,9 @@ const NEWER_THAN_V1_18 = 3;
 /** Format 4: the first format v1.19 builds reject (labels set by rules and batch edits). */
 const NEWER_THAN_V1_19 = 4;
 
+/** Format 5: the first format v1.20 builds reject (recurring split lines, markReady payee). */
+const NEWER_THAN_V1_20 = 5;
+
 /**
  * true: the call needs format 3 (v1.18 would apply it differently); a number:
  * the call needs that format; false: the base format will do.
@@ -58,6 +61,12 @@ const runChangedLabels = (runId: unknown): boolean => {
   const runIdNum = id(runId);
   const changes = runIdNum ? services()?.rules?.listRunChanges(runIdNum) : undefined;
   return Boolean(changes?.some((change) => change.field === 'labelId'));
+};
+
+/** Split lines on a recurring template: v1.20 drops them and posts a plain row. */
+const hasRecurringSplits = (template: unknown): boolean => {
+  const splits = (template as Args | null | undefined)?.splits;
+  return Array.isArray(splits) && splits.length > 0;
 };
 
 const has = (args: Args, ...keys: string[]) => keys.some((key) => args[key] !== undefined);
@@ -147,11 +156,18 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   'payees.rename': (args) => args.newPayeeId !== undefined,
 
   // Occurrence key (A1), carried TransferID (A14) and redo IDs (U5).
+  // A carried payee (#127): v1.20 ignores it, posts without one and adds no
+  // payee-list entry, so later payee IDs would differ between devices.
   'recurring.markReady': (args) => {
     const options = (args.options ?? {}) as Args;
+    if (typeof options.payee === 'string' && options.payee.trim()) return NEWER_THAN_V1_20;
+    // Mirror IDs for a split template's redo: only format-5 builds post splits.
+    if (has((options.reuse ?? {}) as Args, 'mirrorTransactionIds')) return NEWER_THAN_V1_20;
     return occurrenceKeyed(options) || has(options, 'transferId', 'reuse');
   },
   'recurring.skip': (args) => occurrenceKeyed(args),
+  'recurring.create': (args) => hasRecurringSplits(args.input) && NEWER_THAN_V1_20,
+  'recurring.update': (args) => hasRecurringSplits(args.patch) && NEWER_THAN_V1_20,
   'recurring.markNotified': (args) => occurrenceKeyed(args),
   'recurring.resetOccurrence': (args) => occurrenceKeyed(args),
 
@@ -201,13 +217,22 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
 
   // Mirror rows deleted with balance fix-up and found by parent (A3), and the
   // mirror accounts recalculated in full (repairs balances older builds left off).
+  // Kept mirror rows are now updated in place (same ID and status); v1.20
+  // re-inserts them under new IDs.
   'transactions.upsertSplits': (args, checks) => {
     const rowId = id(args.transactionId);
-    return Boolean(
-      checks &&
-      rowId &&
-      (checks.hasSplitMirrors(rowId) || checks.accountsOutOfBalance(transferTargets(args.splits)))
+    if (!checks || !rowId) return false;
+    if (checks.splitSaveKeepsMirrors(rowId, transferTargets(args.splits))) return NEWER_THAN_V1_20;
+    return (
+      checks.hasSplitMirrors(rowId) || checks.accountsOutOfBalance(transferTargets(args.splits))
     );
+  },
+  'transactions.saveSplits': (args, checks) => {
+    const rowId = id(args.transactionId);
+    const keeps = Boolean(
+      checks && rowId && checks.splitSaveKeepsMirrors(rowId, transferTargets(args.splits))
+    );
+    return keeps && NEWER_THAN_V1_20;
   },
   'transactions.clearSplits': (args, checks) => {
     const rowId = id(args.transactionId);

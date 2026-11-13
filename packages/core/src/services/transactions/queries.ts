@@ -23,6 +23,7 @@ import type { Budget } from '../budgets/types.js';
 import { asMilli, ZERO_MILLI } from '../../money/index.js';
 import type { BalanceHistoryBucket, BalanceHistoryRow } from './types.js';
 import { linesOutOfStep } from './split-amounts.js';
+import { moveSplitLinesOutOfCategories } from '../recurring/split-refs.js';
 
 /**
  * Shared column list for the detailed transaction-row SELECTs.
@@ -1398,6 +1399,7 @@ export class TransactionQueries {
         newCategoryId,
         oldCategoryId
       );
+      moveSplitLinesOutOfCategories(this.db, [oldCategoryId], newCategoryId);
     });
   }
 

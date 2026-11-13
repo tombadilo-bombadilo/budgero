@@ -17,6 +17,11 @@ import { cn } from '@shared/lib/utils';
 import { useFocusCategoryFromNavState } from '@shared/hooks/useFocusCategoryFromNavState';
 import { useClearCategorySelectionOnMount } from '@shared/hooks/useClearCategorySelectionOnMount';
 import { useNavigateMonth } from '@shared/hooks/useNavigateMonth';
+import { FirstStepsCard } from '@features/first-steps/ui/FirstStepsCard';
+import { GoalWalkthroughHost } from '@features/first-steps/ui/GoalWalkthroughHost';
+import { useGoalWalkthrough } from '@features/first-steps/model/goal-walkthrough';
+import { useFormatMaskedMilli } from '@features/budget-planning/lib/useFormatMaskedMilli';
+import { OPAQUE_CARD_SURFACE } from '@features/budget-planning/ui/mobile-table-columns';
 
 export function BudgetingPageMobile() {
   const { t } = useLingui();
@@ -31,15 +36,27 @@ export function BudgetingPageMobile() {
   const setShowHiddenCategories = useUiStore((state) => state.setShowHiddenCategories);
 
   const [contextOpen, setContextOpen] = useState(false);
+  // The goal walkthrough's card sits where the Context button floats; the
+  // button steps aside while the walkthrough runs and comes back after.
+  const walkthroughOpen = useGoalWalkthrough().step !== 'closed';
 
   const focusCategoryId = useFocusCategoryFromNavState();
 
   useClearCategorySelectionOnMount();
 
   const budgetId = selectedBudget?.ID ?? 0;
-  const { data: budgetData = [] } = useMonthlyBudget(currentMonth, budgetId);
+  const {
+    data: budgetData = [],
+    isSuccess: budgetLoaded,
+    isPlaceholderData: budgetIsPlaceholder,
+  } = useMonthlyBudget(currentMonth, budgetId);
   const { data: goalsData = [] } = useGoals(budgetId);
-  const { data: readyToAssign = 0 } = useReadyToAssign(budgetId, currentMonth);
+  const rta = useReadyToAssign(budgetId, currentMonth);
+  const readyToAssign = rta.data ?? 0;
+  // This month's real figures, not a loading default or last month's placeholder.
+  const figuresSettled =
+    rta.isSuccess && !rta.isPlaceholderData && budgetLoaded && !budgetIsPlaceholder;
+  const formatAmount = useFormatMaskedMilli(globalLocalizer);
   const { hideCategory, hasHiddenCategories } = useHideCategory(budgetId);
 
   const transformedRows = useMemo(
@@ -72,9 +89,29 @@ export function BudgetingPageMobile() {
 
   return (
     <div className="flex h-[calc(100dvh-6rem)] flex-col p-4">
+      <FirstStepsCard
+        className="mb-3 shrink-0"
+        budgetId={budgetId}
+        readyToAssign={readyToAssign}
+        readyToAssignLabel={formatAmount(readyToAssign)}
+        rows={budgetData || []}
+        goals={goalsData}
+        currentMonth={currentMonth}
+        formatAmount={formatAmount}
+        settled={figuresSettled}
+        variant="bar"
+      />
+      <GoalWalkthroughHost
+        rows={budgetData || []}
+        goals={goalsData}
+        currentMonth={currentMonth}
+        formatAmount={formatAmount}
+        variant="bar"
+      />
       <Card className="flex-1 min-h-0 overflow-hidden py-0">
         <CardContent className="h-full px-0 overflow-hidden">
-          <div className="h-full overflow-y-auto pb-24">
+          {/* Bottom room: the last card scrolls clear of the floating View context button. */}
+          <div className="h-full overflow-y-auto pb-36">
             <BudgetTable
               rawRows={budgetData || []}
               goals={goalsData || []}
@@ -86,9 +123,14 @@ export function BudgetingPageMobile() {
               onHideCategory={(item) => hideCategory(item.categoryId)}
               showHiddenCategories={showHiddenCategories}
               renderToolbar={(controls) => (
-                <div className="sticky top-0 z-30">
+                // Opaque: the toolbar's own background is see-through (blur).
+                <div
+                  className={cn('sticky top-0 z-30', OPAQUE_CARD_SURFACE)}
+                  data-budget-sticky-header
+                >
                   <BudgetToolbar
                     readyToAssign={readyToAssign}
+                    readyToAssignSettled={figuresSettled}
                     globalLocalizer={globalLocalizer}
                     currentMonth={currentMonth}
                     budgetId={budgetId}
@@ -148,19 +190,21 @@ export function BudgetingPageMobile() {
         </CardContent>
       </Card>
 
-      <Button
-        variant="default"
-        size="lg"
-        className={cn(
-          'fixed left-1/2 z-40 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-full shadow-lg',
-          contextOpen && 'pointer-events-none opacity-0'
-        )}
-        style={{ bottom: 'calc(var(--mobile-bottom-nav-height, 96px) + 0.5rem)' }}
-        onClick={() => setContextOpen(true)}
-      >
-        <BarChart3 className="mr-2 h-4 w-4" />
-        {contextButtonLabel}
-      </Button>
+      {!walkthroughOpen && (
+        <Button
+          variant="default"
+          size="lg"
+          className={cn(
+            'fixed left-1/2 z-40 w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 rounded-full shadow-lg',
+            contextOpen && 'pointer-events-none opacity-0'
+          )}
+          style={{ bottom: 'calc(var(--mobile-bottom-nav-height, 96px) + 0.5rem)' }}
+          onClick={() => setContextOpen(true)}
+        >
+          <BarChart3 className="mr-2 h-4 w-4" />
+          {contextButtonLabel}
+        </Button>
+      )}
 
       <Drawer open={contextOpen} onOpenChange={setContextOpen}>
         <DrawerContent className="h-[85vh] data-[vaul-drawer-direction=bottom]:max-h-[85vh] max-w-full px-0 pb-6">

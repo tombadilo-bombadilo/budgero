@@ -305,9 +305,9 @@ export default function SecurityPage() {
             </h3>
             <p className="text-sm text-muted-foreground">
               <Trans>
-                Update your master password to keep your data secure. This will re-encrypt all your
-                data with the new password. Sign-in password, email and 2FA are managed in your
-                Clerk profile.
+                Change the password that unlocks your data. Your data stays encrypted, and your
+                other devices will ask for the new password. Sign-in password, email and 2FA are
+                managed in your Clerk profile.
               </Trans>
             </p>
             <Button
@@ -446,8 +446,8 @@ export default function SecurityPage() {
             </DialogTitle>
             <DialogDescription>
               <Trans>
-                Enter your current password and choose a new one. Your data will be re-encrypted
-                with the new password.
+                Enter your current password and choose a new one. Your data stays encrypted; only
+                the password that unlocks it changes.
               </Trans>
             </DialogDescription>
           </DialogHeader>

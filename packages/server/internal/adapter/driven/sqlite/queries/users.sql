@@ -113,8 +113,15 @@ SELECT * FROM users ORDER BY created_at DESC;
 UPDATE users SET is_analytics_disabled = ? WHERE id = ?;
 
 
--- name: ClearDanglingPrimarySpaceIDs :exec
-UPDATE users SET primary_space_id = NULL
+-- name: RepairDanglingPrimarySpaceIDs :exec
+-- Points primary_space_id references to deleted spaces at the user's oldest
+-- remaining owned space, or NULL when they own none.
+UPDATE users SET primary_space_id = (
+    SELECT s.space_id FROM budget_spaces s
+    WHERE s.owner_user_id = users.id
+    ORDER BY s.created_at ASC, s.space_id ASC
+    LIMIT 1
+)
 WHERE primary_space_id IS NOT NULL
 AND primary_space_id NOT IN (SELECT space_id FROM budget_spaces);
 

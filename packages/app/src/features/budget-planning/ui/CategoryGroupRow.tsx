@@ -8,6 +8,11 @@ import { PlanningAnimatedNumber } from './PlanningNumberAnimation';
 import { GroupNameEditPopover } from './GroupNameEditPopover';
 import { AddCategoryButton } from './AddCategoryButton';
 import { GroupShareBadge } from './GroupShareBadge';
+import {
+  MOBILE_TABLE_ALLOCATED_CELL,
+  MOBILE_TABLE_AVAILABLE_CELL,
+  MOBILE_TABLE_GRID,
+} from './mobile-table-columns';
 
 interface CategoryGroupRowProps {
   item: BudgetRow;
@@ -80,7 +85,7 @@ export function CategoryGroupRow({
   if (isTableLayout) {
     return (
       <div className="bg-muted/60 border-b border-border/40 select-none">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 items-center py-1.5 pl-1 pr-2">
+        <div className={cn(MOBILE_TABLE_GRID, 'py-1.5 pl-1 pr-2')}>
           {/* Group name column */}
           <div className="flex items-center gap-0.5 min-w-0">
             <button onClick={onToggle} className="shrink-0 text-muted-foreground/50">
@@ -109,7 +114,12 @@ export function CategoryGroupRow({
           </div>
 
           {/* Allocated total column */}
-          <div className="text-right text-[11px] font-semibold text-muted-foreground whitespace-nowrap tabular-nums">
+          <div
+            className={cn(
+              'text-right text-[11px] font-semibold text-muted-foreground whitespace-nowrap tabular-nums',
+              MOBILE_TABLE_ALLOCATED_CELL
+            )}
+          >
             <PlanningAnimatedNumber value={item.assigned} formatter={formatAmount} />
           </div>
 
@@ -117,6 +127,7 @@ export function CategoryGroupRow({
           <div
             className={cn(
               'text-right text-[11px] font-semibold whitespace-nowrap tabular-nums',
+              MOBILE_TABLE_AVAILABLE_CELL,
               item.available < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
             )}
           >
@@ -220,7 +231,7 @@ export function CategoryGroupRow({
           <div className="hidden text-[11px] text-muted-foreground md:flex md:items-center md:justify-between md:gap-1 md:text-center lg:text-xs">
             <div className="flex flex-1 items-center justify-between gap-1 md:flex-1 md:min-w-0 md:border-l md:border-white/20 md:px-1 md:first:border-l-0 md:first:pl-0 md:justify-center">
               <span className="uppercase tracking-wide text-[9px] text-muted-foreground lg:text-[10px]">
-                <Trans>Allocated</Trans>
+                <Trans>Assigned</Trans>
               </span>
               <span className="truncate text-xs font-semibold text-foreground dark:text-white text-right md:text-center lg:text-sm">
                 <PlanningAnimatedNumber value={item.assigned} formatter={formatAmount} />
@@ -271,7 +282,7 @@ export function CategoryGroupRow({
         <div className="flex items-center justify-between gap-1 md:hidden">
           <div className="flex flex-col items-center gap-1 flex-1">
             <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-              <Trans>Allocated</Trans>
+              <Trans>Assigned</Trans>
             </span>
             <span className="text-sm font-semibold text-foreground">
               <PlanningAnimatedNumber value={item.assigned} formatter={formatAmount} />

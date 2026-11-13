@@ -123,7 +123,7 @@ func (h *Handlers) DownloadDatabase(c echo.Context) error {
 	c.Response().Header().Set("Content-Type", "application/octet-stream")
 	c.Response().Header().Set("X-Budget-Space-ID", blob.SpaceID)
 	c.Response().Header().Set("X-Database-Version", fmt.Sprintf("%d", blob.SyncVersion))
-	if blob.MutationVersion > 0 {
+	if blob.HasBoundMutationVersion() {
 		c.Response().Header().Set("X-Mutation-Version", fmt.Sprintf("%d", blob.MutationVersion))
 	}
 	c.Response().Header().Set(dataFormatHeader, fmt.Sprintf("%d", blob.DataFormatVersion))
@@ -627,7 +627,7 @@ func (h *Handlers) GetDatabaseBlob(c echo.Context) error {
 	}
 	c.Response().Header().Set("X-Budget-Space-ID", blob.SpaceID)
 	c.Response().Header().Set("X-Database-Version", fmt.Sprintf("%d", blob.SyncVersion))
-	if blob.MutationVersion > 0 {
+	if blob.HasBoundMutationVersion() {
 		c.Response().Header().Set("X-Mutation-Version", fmt.Sprintf("%d", blob.MutationVersion))
 	}
 	c.Response().Header().Set("X-Encryption-Key-Version", fmt.Sprintf("%d", blob.EncryptionKeyVersion))

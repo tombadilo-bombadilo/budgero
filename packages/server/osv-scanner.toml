@@ -1,4 +1,5 @@
 # Scanned by osv-scanner for packages/server/go.mod: it only reads the config next to the scanned file.
+# govulncheck (pnpm run security:go) reads govulncheck-ignore.json instead: keep shared entries in sync there.
 
 [[IgnoredVulns]]
 id = "GHSA-vvm8-gf78-28g4"

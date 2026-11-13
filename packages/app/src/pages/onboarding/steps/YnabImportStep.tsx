@@ -3,6 +3,9 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import React from 'react';
 import type { YNABApiPlanSnapshot, YNABApiPlanSummary } from '@budgero/core/browser';
 import { YNABApiClient } from '@budgero/core/browser';
+import { Button } from '@shared/ui/button';
+import { Input } from '@shared/ui/input';
+import { Label } from '@shared/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import {
   YnabPatHelpPopover,
@@ -13,8 +16,12 @@ import { hasCompleteCreditPaymentMappings } from '@features/budget-management/ui
 import { YnabDateOrderChoice } from '@features/budget-management/ui/create-budget-form/YnabDateOrderChoice';
 import { track } from '@shared/lib/analytics/track';
 import type { YnabHelpTopic } from '@shared/lib/analytics/events';
-import { Title, type StepProps } from './shared';
+import { cn } from '@shared/lib/utils';
+import { FIELD_CLASS, SELECT_ITEM_CLASS, Title, type StepProps } from './shared';
 import { classifyYnabApiError, type YnabApiFailureReason } from './ynab-source-errors';
+
+/** The select can't hold an empty value; '' in state means "detect". */
+const DETECT_NUMBER_FORMAT = 'detect';
 
 interface YnabStepProps extends StepProps {
   onFileSelected: (file: File) => Promise<void> | void;
@@ -152,37 +159,29 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
   return (
     <div>
       <Title h={cur.title} sub={cur.subtitle} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 12 }}>
-        <button
+      <div className="grid grid-cols-2 gap-2">
+        <Button
           type="button"
+          variant={sourceMode === 'api' ? 'default' : 'outline'}
+          aria-pressed={sourceMode === 'api'}
           onClick={() => switchSource('api')}
-          style={{
-            padding: 9,
-            border: '1px solid #141414',
-            background: sourceMode === 'api' ? '#141414' : 'transparent',
-            color: sourceMode === 'api' ? '#fbf7eb' : '#141414',
-            fontFamily: 'inherit',
-            fontWeight: 700,
-          }}
+          className="h-auto min-h-9 whitespace-normal py-2"
         >
           <Trans>CONNECT DIRECTLY</Trans>
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
+          variant={sourceMode === 'zip' ? 'default' : 'outline'}
+          aria-pressed={sourceMode === 'zip'}
           onClick={() => switchSource('zip')}
-          style={{
-            padding: 9,
-            border: '1px solid #141414',
-            background: sourceMode === 'zip' ? '#141414' : 'transparent',
-            color: sourceMode === 'zip' ? '#fbf7eb' : '#141414',
-            fontFamily: 'inherit',
-            fontWeight: 700,
-          }}
+          className="h-auto min-h-9 whitespace-normal py-2"
         >
           <Trans>EXPORT ZIP</Trans>
-        </button>
+        </Button>
       </div>
-      <div style={{ marginTop: 6, fontSize: 11, color: '#393939', lineHeight: 1.5 }}>
+      <div
+        style={{ marginTop: 6, fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.5 }}
+      >
         {sourceMode === 'api' ? (
           <Trans>
             Recommended. You need a personal access token from the YNAB web app; creating one takes
@@ -200,12 +199,12 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               <Trans>YNAB PERSONAL ACCESS TOKEN</Trans>
             </div>
             <YnabPatHelpPopover
-              className="text-[#393939] hover:bg-black/10 hover:text-[#141414]"
+              className="text-[var(--muted-foreground)] hover:bg-black/10 hover:text-[var(--foreground)]"
               onOpenChange={(open) => open && helpOpened('token_popover')}
             />
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input
+          <div className="flex gap-2">
+            <Input
               id="onboarding-ynab-token"
               aria-label={t`YNAB personal access token`}
               type="password"
@@ -220,31 +219,26 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               }}
               placeholder={t`Used for this import only`}
               disabled={isConnecting}
-              style={{ flex: 1, minWidth: 0, padding: 9, border: '1px solid #141414' }}
+              className={`${FIELD_CLASS} min-w-0 flex-1`}
             />
-            <button
+            <Button
               type="button"
               disabled={!token.trim() || isConnecting}
               onClick={() => void connect()}
-              style={{
-                padding: '8px 14px',
-                border: '1px solid #141414',
-                background: '#141414',
-                color: '#fbf7eb',
-                fontFamily: 'inherit',
-                fontWeight: 700,
-              }}
             >
               {isConnecting ? t`CONNECTING…` : t`CONNECT`}
-            </button>
+            </Button>
           </div>
-          <div style={{ fontSize: 10, color: '#393939' }}>
+          <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
             <Trans>
               Kept in memory for this import and never saved to Budgero or browser storage.
             </Trans>
           </div>
           {connectionError && (
-            <div role="alert" style={{ fontSize: 11, color: '#9f2d24', lineHeight: 1.5 }}>
+            <div
+              role="alert"
+              style={{ fontSize: 11, color: 'var(--destructive)', lineHeight: 1.5 }}
+            >
               {connectionError}
             </div>
           )}
@@ -254,17 +248,18 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
             style={{
               padding: '8px 10px',
               fontSize: 11,
-              color: '#393939',
+              color: 'var(--muted-foreground)',
               lineHeight: 1.6,
-              border: '1px dashed rgba(57,57,57,0.3)',
+              border: '1px dashed var(--border)',
+              borderRadius: 'var(--radius)',
             }}
           >
-            <summary style={{ cursor: 'pointer', fontWeight: 700, color: '#141414' }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 700, color: 'var(--foreground)' }}>
               <Trans>Where do I find my token?</Trans>
             </summary>
             <div style={{ marginTop: 8, display: 'grid', gap: 8 }}>
               <YnabPatHelpSteps
-                linkClassName="text-[#141414]"
+                linkClassName="text-[var(--foreground)]"
                 onLinkClick={() => helpOpened('ynab_developer_settings')}
               />
               <span>
@@ -286,7 +281,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
         >
           <SelectTrigger
             aria-label={t`YNAB plan`}
-            className="mt-2.5 w-full min-w-0 border-[#141414] bg-[#fbf7eb] text-[#141414]"
+            className="mt-2.5 w-full min-w-0 border-border bg-muted text-foreground"
           >
             <SelectValue placeholder={t`Select a YNAB plan`} />
           </SelectTrigger>
@@ -306,13 +301,13 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
             marginTop: 12,
             padding: 10,
             fontSize: 11,
-            color: '#393939',
+            color: 'var(--muted-foreground)',
             lineHeight: 1.6,
-            border: '1px dashed rgba(57,57,57,0.3)',
+            border: '1px dashed var(--border)',
           }}
         >
           <Trans>
-            <span style={{ fontWeight: 700, color: '#141414' }}>
+            <span style={{ fontWeight: 700, color: 'var(--foreground)' }}>
               <Trans>Before you export:</Trans>
             </span>{' '}
             in YNAB’s{' '}
@@ -327,7 +322,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => helpOpened('import_guide')}
-              style={{ color: '#141414', fontWeight: 700 }}
+              style={{ color: 'var(--foreground)', fontWeight: 700 }}
             >
               <Trans>import guide</Trans>
             </a>
@@ -352,18 +347,19 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
           }}
           style={{
             marginTop: 12,
-            padding: '36px 20px',
+            padding: '20px 16px',
             textAlign: 'center',
             cursor: 'pointer',
-            border: '2px dashed rgba(57,57,57,0.55)',
-            background: '#fffdf8',
+            border: '2px dashed var(--border)',
+            borderRadius: 'var(--radius)',
+            background: 'var(--card)',
           }}
         >
-          <div style={{ fontSize: 32, marginBottom: 8 }}>☁</div>
+          <div style={{ fontSize: 24, marginBottom: 4 }}>☁</div>
           <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>
             {isInspecting ? t`Inspecting your YNAB export…` : t`Drop your YNAB export here`}
           </div>
-          <div style={{ fontSize: 11, color: '#393939', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 11, color: 'var(--muted-foreground)', lineHeight: 1.5 }}>
             <Trans>
               In the YNAB web app, click your plan name in the top-left corner and choose{' '}
               <em>
@@ -373,26 +369,19 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               nothing leaves your device until you finish.
             </Trans>
           </div>
-          <button
+          <Button
             type="button"
+            variant="outline"
+            size="sm"
             disabled={isInspecting}
             onClick={(e) => {
               e.stopPropagation();
               inputRef.current?.click();
             }}
-            style={{
-              marginTop: 14,
-              padding: '8px 16px',
-              border: '1px solid #141414',
-              background: 'transparent',
-              fontFamily: 'inherit',
-              fontSize: 11,
-              letterSpacing: 1,
-              cursor: 'pointer',
-            }}
+            className="mt-3"
           >
             {isInspecting ? t`INSPECTING…` : t`BROWSE FILES`}
-          </button>
+          </Button>
           <input
             ref={inputRef}
             type="file"
@@ -407,7 +396,14 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
         </div>
       )}
       {!hasSource && (
-        <div style={{ marginTop: 14, fontSize: 11, color: '#393939', textAlign: 'center' }}>
+        <div
+          style={{
+            marginTop: 14,
+            fontSize: 11,
+            color: 'var(--muted-foreground)',
+            textAlign: 'center',
+          }}
+        >
           {sourceMode === 'api' ? (
             <Trans>Connect to YNAB to continue.</Trans>
           ) : (
@@ -416,26 +412,17 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
           {onStartFresh && (
             <div style={{ marginTop: 6, lineHeight: 1.6 }}>
               <Trans>No token or export at hand?</Trans>{' '}
-              <button
+              <Button
                 type="button"
+                variant="link"
                 onClick={() => {
                   track('ynab_import_method_chosen', { method: 'start_fresh' });
                   onStartFresh();
                 }}
-                style={{
-                  padding: 0,
-                  border: 'none',
-                  background: 'transparent',
-                  color: '#141414',
-                  fontFamily: 'inherit',
-                  fontSize: 'inherit',
-                  fontWeight: 700,
-                  textDecoration: 'underline',
-                  cursor: 'pointer',
-                }}
+                className="h-auto p-0 text-[length:inherit] font-bold text-foreground underline"
               >
                 <Trans>Start fresh instead</Trans>
-              </button>
+              </Button>
               <br />
               <Trans>You can still import from YNAB later as a new budget.</Trans>
             </div>
@@ -450,17 +437,19 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              border: '1px dashed rgba(57,57,57,0.5)',
-              background: '#fbf7eb',
+              border: '1px dashed var(--border)',
+              borderRadius: 'var(--radius)',
+              background: 'var(--muted)',
             }}
           >
             <div
               style={{
+                borderRadius: 'calc(var(--radius) - 2px)',
                 width: 34,
                 height: 34,
-                border: '1.5px solid #141414',
-                background: '#141414',
-                color: '#fbf7eb',
+                border: '1.5px solid var(--foreground)',
+                background: 'var(--foreground)',
+                color: 'var(--background)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -474,7 +463,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               <div style={{ fontSize: 13, fontWeight: 700 }}>
                 {file?.name || apiSnapshot?.plan.name}
               </div>
-              <div style={{ fontSize: 10, color: '#393939' }}>
+              <div style={{ fontSize: 10, color: 'var(--muted-foreground)' }}>
                 {file ? `${file.size} · ` : t`Connected through YNAB API · `}
                 {needsDateOrder
                   ? t`select the date format below`
@@ -493,16 +482,16 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
                 padding: 12,
                 display: 'grid',
                 gap: 10,
-                border: '1px dashed rgba(57,57,57,0.35)',
-                background: '#fffdf8',
+                border: '1px dashed var(--border)',
+                background: 'var(--card)',
                 fontSize: 11,
-                color: '#393939',
+                color: 'var(--muted-foreground)',
                 lineHeight: 1.5,
               }}
             >
               <div>
                 <Trans>
-                  <span style={{ fontWeight: 700, color: '#141414' }}>
+                  <span style={{ fontWeight: 700, color: 'var(--foreground)' }}>
                     <Trans>Detected in this export:</Trans>
                   </span>{' '}
                   {preview.accountCount.toLocaleString()}{' '}
@@ -515,37 +504,43 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               </div>
 
               {file && (
-                <label htmlFor="onboarding-ynab-source-format" style={{ display: 'grid', gap: 5 }}>
-                  <span style={{ fontWeight: 700 }}>
-                    <Trans>Number format in YNAB</Trans>
-                  </span>
-                  <select
-                    id="onboarding-ynab-source-format"
-                    value={state.ynabSourceNumberFormat ?? ''}
-                    onChange={(event) => set({ ynabSourceNumberFormat: event.target.value })}
-                    style={{
-                      padding: 8,
-                      border: '1px solid #141414',
-                      background: '#fffdf8',
-                      color: '#141414',
-                    }}
+                <div style={{ display: 'grid', gap: 5 }}>
+                  <Label
+                    htmlFor="onboarding-ynab-source-format"
+                    className="text-[11px] leading-normal font-bold"
                   >
-                    <option value="">
-                      <Trans>Detect from file</Trans>
-                    </option>
-                    <option value="1,234.567">
-                      <Trans>Decimal point (1,234.567)</Trans>
-                    </option>
-                    <option value="1.234,567">
-                      <Trans>Decimal comma (1.234,567)</Trans>
-                    </option>
-                  </select>
+                    <Trans>Number format in YNAB</Trans>
+                  </Label>
+                  <Select
+                    value={state.ynabSourceNumberFormat || DETECT_NUMBER_FORMAT}
+                    onValueChange={(value) =>
+                      set({ ynabSourceNumberFormat: value === DETECT_NUMBER_FORMAT ? '' : value })
+                    }
+                  >
+                    <SelectTrigger
+                      id="onboarding-ynab-source-format"
+                      className={cn(FIELD_CLASS, 'w-full min-w-0 text-foreground')}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={DETECT_NUMBER_FORMAT} className={SELECT_ITEM_CLASS}>
+                        <Trans>Detect from file</Trans>
+                      </SelectItem>
+                      <SelectItem value="1,234.567" className={SELECT_ITEM_CLASS}>
+                        <Trans>Decimal point (1,234.567)</Trans>
+                      </SelectItem>
+                      <SelectItem value="1.234,567" className={SELECT_ITEM_CLASS}>
+                        <Trans>Decimal comma (1.234,567)</Trans>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
                   <span>
                     <Trans>
                       Choose the separator explicitly if your amounts use three decimal places.
                     </Trans>
                   </span>
-                </label>
+                </div>
               )}
 
               {apiSnapshot && preview.creditPaymentMatching && (
@@ -575,7 +570,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
                   }}
                 >
                   <Trans>
-                    <span style={{ fontWeight: 700, color: '#141414' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--foreground)' }}>
                       <Trans>Review account types after import.</Trans>
                     </span>{' '}
                     YNAB does not reliably export account types. Budgero recognizes credit cards
@@ -588,7 +583,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
               {preview.missingCategories.length > 0 && (
                 <div style={{ padding: 9, border: '1px solid rgba(198,57,44,0.35)' }}>
                   <Trans>
-                    <span style={{ fontWeight: 700, color: '#141414' }}>
+                    <span style={{ fontWeight: 700, color: 'var(--foreground)' }}>
                       <Trans>Categories missing from Plan.csv:</Trans>
                     </span>{' '}
                     {preview.missingCategories
@@ -603,10 +598,10 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
                 <div
                   style={{
                     padding: 9,
-                    border: '1px solid rgba(57,57,57,0.35)',
+                    border: '1px solid var(--border)',
                   }}
                 >
-                  <span style={{ display: 'block', fontWeight: 700, color: '#141414' }}>
+                  <span style={{ display: 'block', fontWeight: 700, color: 'var(--foreground)' }}>
                     {plural(preview.splitTransactions.length, {
                       one: '# split transaction detected',
                       other: '# split transactions detected',
@@ -624,13 +619,13 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
             style={{
               padding: 10,
               fontSize: 11,
-              color: '#393939',
+              color: 'var(--muted-foreground)',
               lineHeight: 1.5,
-              border: '1px dashed rgba(57,57,57,0.3)',
+              border: '1px dashed var(--border)',
             }}
           >
             <Trans>
-              <span style={{ fontWeight: 700, color: '#141414' }}>
+              <span style={{ fontWeight: 700, color: 'var(--foreground)' }}>
                 <Trans>Heads up:</Trans>
               </span>
               YNAB’s “Age of Money”, scheduled transactions, and goals don’t carry over. Accounts,

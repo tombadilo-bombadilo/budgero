@@ -136,7 +136,7 @@ jobs:
 
       - name: Test release tooling and render notes
         run: |
-          node --experimental-strip-types --test scripts/release.test.mjs
+          node --experimental-strip-types --test scripts/release.test.mjs scripts/ci/govulncheck.test.mjs
           node --experimental-strip-types scripts/release-notes.mjs "v$(node -p 'require("./package.json").version')" "$RUNNER_TEMP/release-notes.md"
 
       - name: Install GoReleaser

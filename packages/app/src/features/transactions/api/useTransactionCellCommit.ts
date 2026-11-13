@@ -1,3 +1,5 @@
+import { t } from '@lingui/core/macro';
+import { toastError } from '@shared/lib/errors';
 import { useUpdateTransactionColumn } from '@entities/transaction/api/useTransactions';
 import { type TransactionColumnName as DbTransactionColumn } from '@entities/transaction/api/mutations';
 
@@ -106,13 +108,19 @@ export function useTransactionCellCommit() {
     const result = computeCellCommit(columnId, newVal, options);
     if (!result) return null;
 
-    updateColumn.mutate({
-      transactionId,
-      column: result.column,
-      value: result.value,
-      accountId: result.accountId,
-      skipInvalidate: options.skipInvalidate,
-    });
+    updateColumn.mutate(
+      {
+        transactionId,
+        column: result.column,
+        value: result.value,
+        accountId: result.accountId,
+        skipInvalidate: options.skipInvalidate,
+      },
+      // A refused move (e.g. into an account a split line transfers to) says why.
+      result.column === 'AccountID'
+        ? { onError: (error) => toastError(t`Could not move the transaction`, error) }
+        : undefined
+    );
 
     return result.optimisticPatch;
   }

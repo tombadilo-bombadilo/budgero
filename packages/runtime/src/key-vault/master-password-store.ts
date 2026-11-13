@@ -20,12 +20,15 @@ import {
   MASTER_PASSWORD_INDEXEDDB_NAME,
   MASTER_PASSWORD_INDEXEDDB_STORE,
   MASTER_PASSWORD_INDEXEDDB_RECORD_KEY,
+  OFFLINE_QUEUE_DEVICE_KEY_RECORD_KEY,
 } from '../types/storage-keys';
 import { readStoredVersion, writeStoredVersion } from '../utils/stored-version';
 import { toBase64, fromBase64 } from '../crypto/base64';
 import {
   DEVICE_ENCRYPTED_PREFIX,
+  QUEUE_ENCRYPTED_PREFIX,
   getOrCreateDeviceKey,
+  loadExistingDeviceKey,
   deleteDeviceKeyRecord,
   encryptWithDeviceKey,
   decryptWithDeviceKey,
@@ -35,8 +38,7 @@ import { IndexedDBStore } from './indexeddb-store';
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 export type MasterPasswordPersistenceSetting =
-  | { mode: 'memory' }
-  | { mode: 'session'; days: number };
+  { mode: 'memory' } | { mode: 'session'; days: number };
 
 const DEFAULT_PERSISTENCE_SETTING: MasterPasswordPersistenceSetting = { mode: 'memory' };
 
@@ -125,7 +127,12 @@ export class MasterPasswordStore {
     return this.inMemoryPassword !== null;
   }
 
-  /** Clear master password (only on logout / full reset). */
+  /**
+   * Clear master password (only on logout / full reset). Also deletes the
+   * offline queue's key: whatever is still queued becomes unreadable, so
+   * nothing decryptable outlives the sign-out even where the IndexedDB wipe
+   * does not run (full reset).
+   */
   clear(): void {
     this.inMemoryPassword = null;
     try {
@@ -136,6 +143,7 @@ export class MasterPasswordStore {
     void this.clearPersistedPassword().catch(() => {
       /* no-op */
     });
+    void deleteDeviceKeyRecord(this.getIndexedDBStore(), OFFLINE_QUEUE_DEVICE_KEY_RECORD_KEY);
   }
 
   /** Clear cached/session master password but keep device marker (to force re-prompt). */
@@ -289,6 +297,56 @@ export class MasterPasswordStore {
     const plaintext = await decryptWithDeviceKey(key, { iv, ciphertext });
     if (!plaintext) return null;
     return new TextDecoder().decode(plaintext);
+  }
+
+  // ---- Offline queue key ----
+  //
+  // The queue has its own device key. device_key_v1 is deleted whenever the
+  // password cache is cleared (every unlock in 'memory' mode, session expiry,
+  // re-prompt); a queue encrypted under it became unreadable at the next load
+  // and its unsent mutations were silently dropped.
+
+  /** Encrypt under the offline queue's key into an `encq1:` token. Null when unavailable. */
+  async encryptStringForQueue(value: string): Promise<string | null> {
+    const key = await getOrCreateDeviceKey(
+      this.getIndexedDBStore(),
+      OFFLINE_QUEUE_DEVICE_KEY_RECORD_KEY
+    );
+    if (!key) return null;
+    const record = await encryptWithDeviceKey(key, new TextEncoder().encode(value));
+    if (!record) return null;
+    return `${QUEUE_ENCRYPTED_PREFIX}${toBase64(record.iv)}.${toBase64(record.ciphertext)}`;
+  }
+
+  /**
+   * Decrypt a stored queue token: `encq1:` (queue key) or `enc1:` (shared
+   * device key, written by older builds). Never creates a key. Null when the
+   * key is gone or the token does not decrypt; throws when the key store
+   * cannot be read at all (transient, worth retrying).
+   */
+  async decryptQueueToken(token: string): Promise<string | null> {
+    const isQueueToken = token.startsWith(QUEUE_ENCRYPTED_PREFIX);
+    const prefix = isQueueToken ? QUEUE_ENCRYPTED_PREFIX : DEVICE_ENCRYPTED_PREFIX;
+    if (!token.startsWith(prefix)) return null;
+    const parts = this.splitToken(token.slice(prefix.length));
+    if (!parts) return null;
+    const key = await loadExistingDeviceKey(
+      this.getIndexedDBStore(),
+      isQueueToken ? OFFLINE_QUEUE_DEVICE_KEY_RECORD_KEY : undefined
+    );
+    if (!key) return null;
+    const plaintext = await decryptWithDeviceKey(key, parts);
+    return plaintext ? new TextDecoder().decode(plaintext) : null;
+  }
+
+  private splitToken(body: string): { iv: Uint8Array; ciphertext: Uint8Array } | null {
+    const dot = body.indexOf('.');
+    if (dot <= 0) return null;
+    try {
+      return { iv: fromBase64(body.slice(0, dot)), ciphertext: fromBase64(body.slice(dot + 1)) };
+    } catch {
+      return null;
+    }
   }
 
   private getIndexedDBStore(): IndexedDBStore | null {

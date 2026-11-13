@@ -1,3 +1,5 @@
+import { AccountTypeEnum } from '../accounts/types.js';
+
 /**
  * QIF parser.
  *
@@ -33,8 +35,19 @@ export interface ParsedQifTransaction {
 
 export type QifSectionKind = 'bank' | 'ccard' | 'cash' | 'asset' | 'liability';
 
+/** The Budgero account type for a QIF section (`!Type:Bank`, `!Type:CCard`, ...). */
+export const QIF_ACCOUNT_TYPES: Record<QifSectionKind, AccountTypeEnum> = {
+  bank: AccountTypeEnum.CHECKING,
+  ccard: AccountTypeEnum.CREDIT,
+  cash: AccountTypeEnum.CASH,
+  asset: AccountTypeEnum.OTHER_ASSET,
+  liability: AccountTypeEnum.LOAN,
+};
+
 export interface ParsedQifSection {
   kind: QifSectionKind;
+  /** Name from the `!Account` block before this section (multi-account exports). */
+  account?: string;
   transactions: ParsedQifTransaction[];
 }
 
@@ -62,21 +75,42 @@ export function parseQif(text: string): ParsedQif {
   const lines = stripQifBom(text).split(/\r?\n/);
 
   // currentKind === null means "we're in a section we don't extract from"
-  // (e.g. !Account, !Type:Cat, !Type:Invst, !Option:AutoSwitch). The loop
+  // (e.g. !Type:Cat, !Type:Invst, !Option:AutoSwitch). The loop
   // skips data lines while currentKind is null; the `^` separator inside
   // those sections still fires flushTransactions(), which clears the buffer.
   let currentKind: QifSectionKind | null = null;
   let currentTransactions: ParsedQifTransaction[] = [];
   let buffer: string[] = [];
+  // Quicken exports several accounts as `!Account` (N name, T type, ^) followed
+  // by that account's `!Type:` section. Between !Option:AutoSwitch and
+  // !Clear:AutoSwitch the same blocks are only a list of accounts, so a name
+  // only applies to the `!Type:` header that directly follows its block (some
+  // exporters never write !Clear:AutoSwitch).
+  let inAccountBlock = false;
+  let pendingAccount: string | undefined;
+  let currentAccount: string | undefined;
 
   const flushSection = () => {
     if (currentKind && currentTransactions.length > 0) {
-      sections.push({ kind: currentKind, transactions: currentTransactions });
+      sections.push({
+        kind: currentKind,
+        ...(currentAccount ? { account: currentAccount } : {}),
+        transactions: currentTransactions,
+      });
     }
     currentTransactions = [];
   };
 
   const flushTransactions = () => {
+    if (inAccountBlock) {
+      const name = buffer
+        .find((l) => l.startsWith('N'))
+        ?.slice(1)
+        .trim();
+      if (name) pendingAccount = name;
+      buffer = [];
+      return;
+    }
     if (!currentKind) {
       buffer = [];
       return;
@@ -99,7 +133,12 @@ export function parseQif(text: string): ParsedQif {
       flushSection();
 
       const header = line.slice(1).trim();
+      const lower = header.toLowerCase();
+      const wasAccountBlock = inAccountBlock;
+      inAccountBlock = lower === 'account';
       const match = header.match(/^[Tt]ype\s*:\s*(.+)$/);
+      if (match && wasAccountBlock && pendingAccount) currentAccount = pendingAccount;
+      if (!inAccountBlock) pendingAccount = undefined;
       const kind = match ? SUPPORTED_SECTIONS[match[1].trim().toLowerCase()] : undefined;
       currentKind = kind ?? null;
       continue;
@@ -110,7 +149,7 @@ export function parseQif(text: string): ParsedQif {
       continue;
     }
 
-    if (!currentKind) continue;
+    if (!currentKind && !inAccountBlock) continue;
     buffer.push(line);
   }
 
@@ -308,9 +347,15 @@ export interface QifImportRows {
 
 export function qifToImportRows(parsed: ParsedQif): QifImportRows {
   const rows: Record<string, string>[] = [];
+  // Only multi-account exports name their accounts; a single-account file
+  // keeps the old columns so it still imports into the chosen account.
+  const named = parsed.sections.some((section) => section.account);
   for (const section of parsed.sections) {
     for (const t of section.transactions) {
       rows.push({
+        ...(named
+          ? { Account: section.account ?? '', AccountType: QIF_ACCOUNT_TYPES[section.kind] }
+          : {}),
         Date: t.date,
         Amount: t.amount,
         Payee: t.payee ?? '',
@@ -322,5 +367,5 @@ export function qifToImportRows(parsed: ParsedQif): QifImportRows {
       });
     }
   }
-  return { headers: QIF_HEADERS, rows };
+  return { headers: named ? ['Account', 'AccountType', ...QIF_HEADERS] : QIF_HEADERS, rows };
 }

@@ -1,4 +1,4 @@
-import { useLingui } from '@lingui/react/macro';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@shared/ui/dialog';
@@ -14,6 +14,10 @@ import {
 import { GoalCard } from '@features/goal-management/ui/GoalCard';
 import { GoalForm } from '@features/goal-management/ui/GoalForm';
 import type { Goal } from '@budgero/core/browser';
+import {
+  dispatchGoalWalkthrough,
+  useGoalWalkthroughFormHint,
+} from '@features/first-steps/model/goal-walkthrough';
 import { GoalPurpose, GoalType } from '@budgero/core/browser';
 
 interface GoalSectionProps {
@@ -63,6 +67,13 @@ export function GoalSection({
 
   const shouldHighlightCreate = !goal && highlightGoalCategoryId === categoryId;
 
+  // The first-steps goal walkthrough follows the form: open, saved, or closed.
+  const walkthroughHint = useGoalWalkthroughFormHint(categoryId);
+  const setFormOpen = (open: boolean) => {
+    setIsFormOpen(open);
+    if (!goal) dispatchGoalWalkthrough({ type: open ? 'formOpened' : 'formClosed', categoryId });
+  };
+
   const createGoalMutation = useCreateGoal();
   const updateGoalMutation = useUpdateGoal();
   const deleteGoalMutation = useDeleteGoal();
@@ -98,6 +109,7 @@ export function GoalSection({
           cycleMonths: goalData.CycleMonths,
           budgetId,
         });
+        dispatchGoalWalkthrough({ type: 'goalSaved', categoryId });
       }
 
       setHighlightGoalCategoryId(null);
@@ -154,7 +166,7 @@ export function GoalSection({
         onEdit={() => setIsFormOpen(true)}
         onCreate={() => {
           setHighlightGoalCategoryId(null);
-          setIsFormOpen(true);
+          setFormOpen(true);
         }}
         onDelete={handleDelete}
         compact={compact}
@@ -163,9 +175,22 @@ export function GoalSection({
       />
 
       {/* Goal Form Dialog */}
-      <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="p-3 sm:p-6 max-w-[22rem] sm:max-w-lg md:max-w-xl max-h-[90dvh] overflow-y-auto">
+      <Dialog open={isFormOpen} onOpenChange={setFormOpen}>
+        {/* Fixed height budget: the form scrolls inside, Save/Cancel stay pinned. */}
+        <DialogContent className="flex max-h-[min(90dvh,calc(100dvh-2rem))] max-w-[22rem] flex-col gap-0 overflow-hidden p-0 sm:max-w-lg md:max-w-xl">
           <GoalForm
+            notice={
+              walkthroughHint && (
+                // First steps: one line inside the form, so it never covers a field.
+                <p
+                  className="rounded-md bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary"
+                  data-testid="goal-walkthrough-hint"
+                  aria-live="polite"
+                >
+                  <Trans>Pick a type, enter the amount, save.</Trans>
+                </p>
+              )
+            }
             goal={goal}
             categoryId={categoryId}
             categoryName={categoryName}
@@ -174,7 +199,7 @@ export function GoalSection({
             formatter={formatter}
             onSave={handleSave}
             onCancel={() => {
-              setIsFormOpen(false);
+              setFormOpen(false);
               if (!goal) {
                 setHighlightGoalCategoryId(categoryId);
               }
@@ -182,7 +207,6 @@ export function GoalSection({
             onDelete={goal ? handleDelete : undefined}
             isSaving={createGoalMutation.isPending || updateGoalMutation.isPending}
             isDeleting={deleteGoalMutation.isPending}
-            asCard={false}
           />
         </DialogContent>
       </Dialog>

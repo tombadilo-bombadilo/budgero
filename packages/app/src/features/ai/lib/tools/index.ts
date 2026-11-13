@@ -1,7 +1,20 @@
+import type { z } from 'zod';
 import { tool } from 'ai';
 import type { ToolContext, ToolExecutionResult } from './types';
-import { addTransactionSchema, executeAddTransaction } from './add-transaction';
-import { editTransactionSchema, executeEditTransaction } from './edit-transaction';
+import {
+  addTransactionSchema,
+  describeAddTransactionPlan,
+  executeAddTransaction,
+  pinAddTransactionArgs,
+  planAddTransaction,
+} from './add-transaction';
+import {
+  editTransactionSchema,
+  executeEditTransaction,
+  generateEditTransactionPreview,
+  pinEditTransactionArgs,
+  planEditTransaction,
+} from './edit-transaction';
 import { queryBudgetSchema, executeQueryBudget } from './query-budget';
 import { queryTransactionsSchema, executeQueryTransactions } from './query-transactions';
 import { querySqlSchema, executeQuerySql, buildSqlToolDescription } from './query-sql';
@@ -15,7 +28,11 @@ export type {
   PendingToolExecution,
   ChatChartSpec,
 } from './types';
-export { generateAddTransactionPreview, type AddTransactionArgs } from './add-transaction';
+export {
+  generateAddTransactionPreview,
+  failureText,
+  type AddTransactionArgs,
+} from './add-transaction';
 export { generateEditTransactionPreview, type EditTransactionArgs } from './edit-transaction';
 export { loadAnalyticsSchema } from './query-sql';
 export { CHAT_TOOL_DEFS, ALL_TOOL_KEYS, isToolEnabled, type ChatToolDef } from './tool-registry';
@@ -100,14 +117,66 @@ export function buildChatTools(context: ToolContext) {
 }
 
 /**
+ * A tool call whose arguments don't fit the schema. `message` is what the user
+ * reads; `error` names each bad field so the model can fix the call. Both are
+ * saved to the chat history (see failureText).
+ */
+function invalidToolArgs(error: z.ZodError): ToolExecutionResult {
+  const issues = error.issues
+    .map((issue) => `${issue.path.join('.') || 'arguments'}: ${issue.message}`)
+    .join('; ');
+  return {
+    success: false,
+    message: 'Those transaction details are incomplete or not valid',
+    error: `${issues}. Nothing was changed.`,
+  };
+}
+
+/** A confirmation tool call checked and resolved: either a card to confirm, or what is wrong. */
+export type PreparedConfirmedTool =
+  | { ok: true; preview: string; args: Record<string, unknown> }
+  | { ok: false; result: ToolExecutionResult };
+
+/**
+ * Validate a pending add/edit call and build its confirm card. A call that
+ * can't be carried out (bad arguments, no or ambiguous account, unknown
+ * category on edit) never gets a card. The returned args have the resolved
+ * account/category pinned by ID, so Confirm writes exactly what the card says.
+ */
+export function prepareConfirmedTool(
+  toolName: string,
+  args: unknown,
+  context: ToolContext
+): PreparedConfirmedTool {
+  if (toolName === 'edit_transaction') {
+    const parsed = editTransactionSchema.safeParse(args);
+    if (!parsed.success) return { ok: false, result: invalidToolArgs(parsed.error) };
+    const plan = planEditTransaction(parsed.data, context);
+    if (!plan.ok) return plan;
+    const pinned = pinEditTransactionArgs(parsed.data, plan);
+    return { ok: true, preview: generateEditTransactionPreview(pinned, context), args: pinned };
+  }
+  const parsed = addTransactionSchema.safeParse(args);
+  if (!parsed.success) return { ok: false, result: invalidToolArgs(parsed.error) };
+  const plan = planAddTransaction(parsed.data, context);
+  if (!plan.ok) return plan;
+  return {
+    ok: true,
+    preview: describeAddTransactionPlan(parsed.data, plan, context),
+    args: pinAddTransactionArgs(parsed.data, plan),
+  };
+}
+
+/**
  * Execute the add_transaction tool after user confirmation.
  */
 export async function executeConfirmedAddTransaction(
   args: Record<string, unknown>,
   context: ToolContext
 ): Promise<ToolExecutionResult> {
-  const validatedArgs = addTransactionSchema.parse(args);
-  return executeAddTransaction(validatedArgs, context);
+  const parsed = addTransactionSchema.safeParse(args);
+  if (!parsed.success) return invalidToolArgs(parsed.error);
+  return executeAddTransaction(parsed.data, context);
 }
 
 /**
@@ -117,6 +186,7 @@ export async function executeConfirmedEditTransaction(
   args: Record<string, unknown>,
   context: ToolContext
 ): Promise<ToolExecutionResult> {
-  const validatedArgs = editTransactionSchema.parse(args);
-  return executeEditTransaction(validatedArgs, context);
+  const parsed = editTransactionSchema.safeParse(args);
+  if (!parsed.success) return invalidToolArgs(parsed.error);
+  return executeEditTransaction(parsed.data, context);
 }

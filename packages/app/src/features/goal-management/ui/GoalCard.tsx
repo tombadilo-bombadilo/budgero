@@ -127,20 +127,23 @@ function BreakdownItemsList({
           />
         );
         return showDescriptions ? (
-          <div key={idx} className="flex justify-between text-sm">
-            <span className="text-muted-foreground">{translateGoalText(item.label)}:</span>
-            <div className="text-right">
-              {animatedValue}
-              {item.description && (
-                <div className="text-xs text-muted-foreground">
-                  <GoalMessageFormatter
-                    message={translateGoalText(item.description)}
-                    values={values}
-                    formatter={formatter}
-                  />
-                </div>
-              )}
+          // Label and value on one line, the helper under the label.
+          <div key={idx} className="text-sm">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="min-w-0 text-muted-foreground">
+                {translateGoalText(item.label)}:
+              </span>
+              <span className="shrink-0 text-right">{animatedValue}</span>
             </div>
+            {item.description && (
+              <div className="text-xs text-muted-foreground/80">
+                <GoalMessageFormatter
+                  message={translateGoalText(item.description)}
+                  values={values}
+                  formatter={formatter}
+                />
+              </div>
+            )}
           </div>
         ) : (
           <div key={idx} className="flex justify-between">
@@ -291,7 +294,13 @@ export function GoalCard({
           </span>
         </div>
         {onCreate && (
-          <Button onClick={onCreate} variant="ghost" size="sm" className="h-6 px-2 text-xs">
+          <Button
+            onClick={onCreate}
+            variant="ghost"
+            size="sm"
+            className="h-6 px-2 text-xs"
+            data-goal-create={highlightCreate ? 'highlighted' : undefined}
+          >
             <Trans>Create Goal</Trans>
           </Button>
         )}
@@ -393,18 +402,25 @@ export function GoalCard({
     );
   }
 
-  // Full view (no card wrapper)
+  // Full view (no card wrapper). Embedded (opened from the compact row inside a
+  // category card): the category card's type scale, one-line title.
+  const embedded = compact;
   return (
     <div className={className}>
-      <div className="pb-3">
+      <div className={embedded ? 'pb-2' : 'pb-3'}>
         {/* min-w-0 + wrapping: in a narrow panel (or a long translation, e.g.
             "Wiederholt sich alle 6 Monate") the title row must wrap instead of
             pushing the edit button out of view. */}
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
-            <CardTitle className="text-lg flex flex-wrap items-center gap-x-2 gap-y-1 break-words">
+            <CardTitle
+              className={cn(
+                'flex flex-wrap items-center gap-x-2 gap-y-1 break-words',
+                embedded ? 'text-sm' : 'text-lg'
+              )}
+            >
               {getGoalTypeIcon()}
-              {getGoalTypeLabel()}
+              <span className={cn(embedded && 'min-w-0 truncate')}>{getGoalTypeLabel()}</span>
               {cadenceLabel && (
                 <Badge
                   variant="outline"
@@ -414,14 +430,16 @@ export function GoalCard({
                 </Badge>
               )}
             </CardTitle>
-            <p className="text-sm text-muted-foreground mt-1">{categoryName}</p>
+            <p className={cn('mt-1 text-muted-foreground', embedded ? 'text-xs' : 'text-sm')}>
+              {categoryName}
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-1">
             {(compact || localExpanded) && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className={embedded ? 'h-7 w-7' : 'h-8 w-8'}
                 onClick={() => setLocalExpanded(false)}
                 title={t`Show compact view`}
               >
@@ -429,17 +447,22 @@ export function GoalCard({
               </Button>
             )}
             {onEdit && (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onEdit}>
-                <Edit3 className="h-4 w-4" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className={embedded ? 'h-7 w-7' : 'h-8 w-8'}
+                onClick={onEdit}
+              >
+                <Edit3 className={embedded ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
               </Button>
             )}
           </div>
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className={embedded ? 'space-y-3' : 'space-y-4'}>
         {/* Main Progress */}
-        <div className="space-y-2">
+        <div className={embedded ? 'space-y-1' : 'space-y-2'}>
           <div className="flex justify-between text-sm">
             <span className="text-muted-foreground">
               <Trans>Progress</Trans>
@@ -465,10 +488,16 @@ export function GoalCard({
 
         {/* Status Message & Recommendation */}
         <div className="space-y-2">
-          <div className={cn('rounded-lg p-3 text-sm', getStatusColor(progress.status))}>
+          <div
+            className={cn(
+              'rounded-lg text-sm',
+              embedded ? 'p-2.5' : 'p-3',
+              getStatusColor(progress.status)
+            )}
+          >
             <div className="flex items-start gap-2">
-              {getStatusIcon(progress.status)}
-              <div className="space-y-1">
+              <span className="mt-0.5 shrink-0">{getStatusIcon(progress.status)}</span>
+              <div className="min-w-0 space-y-1">
                 <div className="font-medium">
                   <GoalMessageFormatter
                     message={translateGoalText(progress.statusMessage)}
@@ -490,8 +519,8 @@ export function GoalCard({
 
         {/* Breakdown Details - Always show when expanded */}
         <div className="space-y-3 pt-2 border-t">
+          {/* No heading: the title above already names the goal type. */}
           <div className="space-y-2">
-            <h4 className="text-sm font-medium">{translateGoalText(progress.breakdown.title)}</h4>
             <BreakdownItemsList
               items={progress.breakdown.items}
               values={progress.breakdown.values}

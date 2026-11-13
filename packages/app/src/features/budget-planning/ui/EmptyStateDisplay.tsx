@@ -1,6 +1,7 @@
 import { Trans } from '@lingui/react/macro';
 import { Wallet, Search, Plus } from 'lucide-react';
 import { Button } from '@shared/ui/button';
+import { useEmptyStateViewed } from '@shared/lib/analytics/first-month';
 
 interface EmptyStateDisplayProps {
   type: 'no-categories' | 'no-search-results';
@@ -13,6 +14,7 @@ export function EmptyStateDisplay({
   searchTerm,
   onAddCategoryGroup,
 }: EmptyStateDisplayProps) {
+  useEmptyStateViewed('budget', type === 'no-categories');
   if (type === 'no-categories') {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center px-4">

@@ -10,6 +10,7 @@ import {
 export {
   SUPPORTED_LOCALES,
   DEFAULT_LOCALE,
+  LANGUAGE_PREFERENCE_KEY,
   LOCALE_LABELS,
   LOCALE_FLAGS,
   type SupportedLocale,

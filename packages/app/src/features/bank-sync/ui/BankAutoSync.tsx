@@ -1,8 +1,10 @@
 import { plural, t } from '@lingui/core/macro';
 import { parseEnableBankingConfig, type BankConnection } from '@budgero/core/browser';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { useProfile } from '@entities/user/api/useAuth';
+import { userScope, useSyncedState, type SyncedStateMergePatch } from '@shared/lib/synced-state';
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import { useUiStore } from '@shared/store/useUiStore';
 import { formatDateISO } from '@shared/lib/date-utils';
@@ -10,22 +12,47 @@ import { invalidateAfterBankSync, useBankConnections, useBankLinks } from '../ap
 import { isSyncDue, runBankSync } from '../model/run-bank-sync';
 import { isSessionExpired, sessionExpiresSoon } from '../lib/provider';
 
+/** Device cache (and where reminders lived before they synced): session id → day shown. */
 const REMINDER_KEY = 'budgero.bankSync.expiryReminder';
+/** Synced per user, same shape: the day each bank session's reminder was last shown. */
+export const BANK_EXPIRY_REMINDERS_KEY = 'bankExpiryReminders';
 
-/** Nags at most once a day per bank while consent is about to run out. */
-function remindExpiringSessions(connection: BankConnection) {
-  const config = parseEnableBankingConfig(connection);
-  if (!config) return;
-  const today = formatDateISO(new Date());
-  let shown: Record<string, string> = {};
+type ShownOn = Record<string, string>;
+
+function readCachedReminders(): ShownOn {
   try {
-    shown = JSON.parse(localStorage.getItem(REMINDER_KEY) ?? '{}') as Record<string, string>;
+    return JSON.parse(localStorage.getItem(REMINDER_KEY) ?? '{}') as ShownOn;
   } catch {
-    /* fall through with nothing shown */
+    return {};
   }
+}
+
+function cacheReminders(shown: ShownOn): void {
+  try {
+    localStorage.setItem(REMINDER_KEY, JSON.stringify(shown));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/**
+ * Nags at most once a day per bank while consent is about to run out, counting
+ * a reminder shown on any of the user's devices (`synced`) or this one.
+ * Returns the sessions it reminded about (session id → today).
+ */
+function remindExpiringSessions(connection: BankConnection, synced: ShownOn): ShownOn {
+  const config = parseEnableBankingConfig(connection);
+  if (!config) return {};
+  const today = formatDateISO(new Date());
+  const shown = readCachedReminders();
+  const reminded: ShownOn = {};
   for (const session of config.sessions) {
-    if (!sessionExpiresSoon(session) || shown[session.sessionId] === today) continue;
-    shown[session.sessionId] = today;
+    const { sessionId } = session;
+    if (!sessionExpiresSoon(session) || shown[sessionId] === today || synced[sessionId] === today) {
+      continue;
+    }
+    shown[sessionId] = today;
+    reminded[sessionId] = today;
     const bank = session.aspsp.name;
     const expired = isSessionExpired(session.validUntil);
     toast.warning(
@@ -35,12 +62,11 @@ function remindExpiringSessions(connection: BankConnection) {
       { duration: 10_000 }
     );
   }
-  try {
-    localStorage.setItem(REMINDER_KEY, JSON.stringify(shown));
-  } catch {
-    /* storage unavailable */
-  }
+  cacheReminders(shown);
+  return reminded;
 }
+
+const NONE_SHOWN: ShownOn = {};
 
 /** Pulls linked bank feeds on app open and on refocus, at most every few hours across devices. */
 export function BankAutoSync() {
@@ -50,6 +76,42 @@ export function BankAutoSync() {
   const { data: connections } = useBankConnections(budgetId);
   const { data: links } = useBankLinks(budgetId);
   const enabled = Boolean(budgetId && connections?.length && links?.length);
+
+  // Reminders shown sync per user through the workspace's encrypted database.
+  // Without a profile (offline) this device's cache alone decides.
+  const profile = useProfile();
+  const userId = profile.data?.id ?? null;
+  const reminders = useSyncedState<ShownOn>(
+    userId ? userScope(userId) : null,
+    BANK_EXPIRY_REMINDERS_KEY
+  );
+  const remindersReady = userId ? reminders.loaded : !profile.isLoading;
+  const syncedShown = reminders.available ? (reminders.value ?? NONE_SHOWN) : null;
+  const { merge, canWrite } = reminders;
+  // Read by the reminder effect, which runs once per budget, not per sync.
+  const latest = useRef({ syncedShown, merge });
+  useEffect(() => {
+    latest.current = { syncedShown, merge };
+  });
+
+  // Days shown on this device but not in the synced state (before reminders
+  // synced, or while they couldn't be written) → one synced write.
+  useEffect(() => {
+    if (!syncedShown || !canWrite) return;
+    const cached = readCachedReminders();
+    const newer = Object.entries(cached).filter(([id, day]) => day > (syncedShown[id] ?? ''));
+    if (newer.length > 0) void merge({ set: Object.fromEntries(newer) }).catch(() => {});
+  }, [syncedShown, canWrite, merge]);
+
+  useEffect(() => {
+    if (!enabled || !budgetId || !remindersReady) return;
+    const { syncedShown: synced, merge: write } = latest.current;
+    const patch: SyncedStateMergePatch = { set: {} };
+    for (const connection of runtime.services().bankSync.listConnections(budgetId)) {
+      Object.assign(patch.set!, remindExpiringSessions(connection, synced ?? NONE_SHOWN));
+    }
+    if (Object.keys(patch.set!).length > 0) void write(patch).catch(() => {});
+  }, [enabled, budgetId, runtime, remindersReady]);
 
   useEffect(() => {
     if (!enabled || !budgetId) return undefined;
@@ -97,9 +159,6 @@ export function BankAutoSync() {
       }
     };
     const onVisible = () => void maybeSync();
-    for (const connection of runtime.services().bankSync.listConnections(budgetId)) {
-      remindExpiringSessions(connection);
-    }
     void maybeSync();
     document.addEventListener('visibilitychange', onVisible);
     return () => {

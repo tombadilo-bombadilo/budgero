@@ -178,6 +178,35 @@ function buildMessages(
 }
 
 /**
+ * The confirmation tool call (add/edit) a turn ended on, if any — last one wins.
+ * A call the SDK rejected (arguments don't fit the schema) was already answered
+ * with the error for the model to retry; it is never confirmable.
+ */
+export function pickPendingTool(
+  steps: readonly {
+    toolCalls: readonly {
+      toolCallId: string;
+      toolName: string;
+      input: unknown;
+      invalid?: boolean;
+    }[];
+  }[]
+): PendingTool | undefined {
+  let pendingTool: PendingTool | undefined;
+  for (const step of steps) {
+    for (const toolCall of step.toolCalls) {
+      if (toolCall.invalid || !CONFIRMATION_TOOLS.has(toolCall.toolName)) continue;
+      pendingTool = {
+        toolCallId: toolCall.toolCallId,
+        toolName: toolCall.toolName,
+        args: toolCall.input as Record<string, unknown>,
+      };
+    }
+  }
+  return pendingTool;
+}
+
+/**
  * Stream a chat turn using the AI SDK's native tool calling.
  * Tool steps (query_transactions, query_budget) run automatically via stopWhen.
  * add_transaction has no execute, so the SDK returns it as a pending tool call.
@@ -249,20 +278,8 @@ export async function streamChat(
     };
   }
 
-  // Check for a pending confirmation tool (add/edit) — last one wins.
   // (Auto-run tool calls were already collected live in onStepFinish.)
-  let pendingTool: PendingTool | undefined;
-  for (const step of steps) {
-    for (const toolCall of step.toolCalls) {
-      if (CONFIRMATION_TOOLS.has(toolCall.toolName)) {
-        pendingTool = {
-          toolCallId: toolCall.toolCallId,
-          toolName: toolCall.toolName,
-          args: toolCall.input as Record<string, unknown>,
-        };
-      }
-    }
-  }
+  const pendingTool = pickPendingTool(steps);
 
   // If we stopped on a tool-call step, the model was cut off before answering.
   const cutOff = lastStep?.finishReason === 'tool-calls';

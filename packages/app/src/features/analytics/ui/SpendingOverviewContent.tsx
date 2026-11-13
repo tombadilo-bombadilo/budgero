@@ -183,7 +183,13 @@ export function SpendingOverviewContent() {
   }
 
   if (formattedData.length === 0) {
-    return <ChartEmptyState hint="No transactions found for the selected period" />;
+    // Nothing in this period or the one before: most likely nothing yet at all.
+    return (
+      <ChartEmptyState
+        hint="No transactions found for the selected period"
+        countAsEmptyScreen={(previousSpendingData?.length ?? 0) === 0}
+      />
+    );
   }
 
   return (

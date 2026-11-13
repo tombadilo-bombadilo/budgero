@@ -40,6 +40,8 @@ vi.mock('@shared/ui/animated-number', () => ({
 
 vi.mock('../components/chart-utils', () => ({
   inkOnFill: () => '#ffffff',
+  shortMonthLabel: (month: string) => month,
+  longMonthLabel: (month: string) => month,
   tooltipBase: () => ({}),
   tooltipHtml: () => '',
   useMoneyFormatters: () => ({
@@ -150,7 +152,8 @@ describe('FlowReport', () => {
     expect(series.links).toContainEqual(
       expect.objectContaining({ source: 'Income', target: 'Saved ' })
     );
-    expect(screen.getByText('Income — Details')).toBeInTheDocument();
+    // The user's own "Income" group stays a drillable, untranslated table row.
+    expect(screen.getByRole('button', { name: 'Income' })).not.toHaveAttribute('aria-expanded');
   });
   it('toggles to categories and expands Other into a focused colored breakdown', () => {
     const income: AnalyticsTxn = {
@@ -195,6 +198,77 @@ describe('FlowReport', () => {
     fireEvent.click(screen.getByRole('button', { name: '← Back to Money Map' }));
     expect(chartType()).toBe('sankey');
     expect(destinationNames()).toContain('Other spending');
+  });
+
+  it('flows top to bottom and answers in one sentence', () => {
+    const data: AnalyticsData = {
+      budgetId: 1,
+      isLoading: false,
+      allTxns: [],
+      txns: [
+        {
+          ...transaction(100),
+          category: 'Salary',
+          groupName: 'Income',
+          inflow: 1_000_000,
+          outflow: 0,
+          isIncome: true,
+        },
+        { ...transaction(1), category: 'Housing', groupName: 'Fixed', outflow: 400_000 },
+      ],
+      accounts: [],
+      onBudgetAccountIds: new Set([1]),
+      categories: [],
+      categoryGroups: [],
+      labels: [],
+      payees: [],
+    };
+    render(<FlowReport data={data} months={['2026-07', '2026-08']} />);
+    const series = (chartState.option as { series: { orient?: string }[] }).series[0];
+    expect(series.orient).toBe('vertical');
+    expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('How does my money move?');
+    expect(screen.getByTestId('report-answer')).toHaveTextContent(
+      '1000000 came in and 400000 went out — you kept 60%.'
+    );
+    // Housing has spending in one of the two months → a sparkline per destination row.
+    expect(screen.getAllByTestId('sparkline').length).toBeGreaterThan(0);
+  });
+
+  it('drills down from the breakdown table rows', () => {
+    const income: AnalyticsTxn = {
+      ...transaction(100),
+      category: 'Salary',
+      groupName: 'Income',
+      inflow: 1_000_000,
+      outflow: 0,
+      isIncome: true,
+    };
+    const data: AnalyticsData = {
+      budgetId: 1,
+      isLoading: false,
+      allTxns: [],
+      txns: [income, ...Array.from({ length: 10 }, (_, index) => transaction(index + 1))],
+      accounts: [],
+      onBudgetAccountIds: new Set([1]),
+      categories: [],
+      categoryGroups: [],
+      labels: [],
+      payees: [],
+    };
+    render(<FlowReport data={data} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Other spending (3 groups)' }));
+    expect(chartType()).toBe('treemap');
+    expect(screen.getByText('Inside Other spending · 3 groups')).toBeInTheDocument();
+
+    // Inside Other, a folded group opens its categories.
+    fireEvent.click(screen.getByRole('button', { name: 'Group 9' }));
+    expect(chartType()).toBe('treemap');
+    expect(destinationNames()).toEqual(['Category 9']);
+
+    fireEvent.click(screen.getByRole('button', { name: '← Back to Money Map' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Group 1' }));
+    expect(screen.getByText('Inside Group 1 · 1 category')).toBeInTheDocument();
   });
 
   it('opens a group as a category treemap and returns to the Money Map', () => {
