@@ -106,8 +106,11 @@ jobs:
         if: needs.changes.outputs.app == 'true'
         run: pnpm run lint:runtime
 
+      # Type-aware app lint outgrows Node's default ~2 GB heap on the Dell runner.
       - name: Lint app
         if: needs.changes.outputs.app == 'true'
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm run lint:app
 
       - name: Check translation catalogs
@@ -239,7 +242,8 @@ jobs:
   # push run finds the marker and skips the suite instead of repeating it.
   record-pass:
     needs: [changes, web, server]
-    if: github.event_name == 'pull_request' && needs.changes.outputs.tree != ''
+    # A status function is required, else a skipped checks job skips this one.
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.result == 'success' && needs.web.result == 'success' && needs.server.result == 'success' && needs.changes.outputs.tree != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
