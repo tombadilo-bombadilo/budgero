@@ -1,5 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { budgetScope, useSyncedState } from '@shared/lib/synced-state';
+import type { Services } from '@budgero/core/browser';
+import { getDemoSpaceId } from '@shared/lib/demo-space';
+import {
+  budgetScope,
+  readSyncedState,
+  setSyncedState,
+  syncedStateWriteBlocker,
+  useSyncedState,
+  type SyncedStateRuntime,
+} from '@shared/lib/synced-state';
+import { useAvailableSpaces, useRuntime } from '@shared/runtime/runtime-provider';
 
 export const SAVINGS_TARGET_KEY = 'savingsTarget';
 
@@ -13,19 +23,71 @@ export function parseSavingsTarget(raw: unknown): number | null {
   return Number.isFinite(parsed) && parsed > 0 && parsed <= 100 ? parsed : null;
 }
 
-/**
- * The old per-device keys have no workspace id, and budget ids repeat across
- * workspaces (the demo's first budget has the same id as your own), so a value
- * there can't be tied to this budget safely: drop them rather than migrate.
- */
-function dropLegacyTargets(): void {
+/** The old per-device values: budget id → raw value. */
+function readLegacyTargets(): Map<number, string> {
+  const found = new Map<number, string>();
   try {
-    const keys = Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i));
-    for (const key of keys) {
-      if (key?.startsWith(LEGACY_PREFIX)) localStorage.removeItem(key);
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith(LEGACY_PREFIX)) continue;
+      found.set(Number(key.slice(LEGACY_PREFIX.length)), localStorage.getItem(key) ?? '');
     }
   } catch {
-    /* storage blocked: nothing to drop */
+    /* storage blocked: nothing to move */
+  }
+  return found;
+}
+
+function removeLegacyTargets(budgetIds: Iterable<number>): void {
+  try {
+    for (const id of budgetIds) localStorage.removeItem(`${LEGACY_PREFIX}${id}`);
+  } catch {
+    /* storage blocked */
+  }
+}
+
+let settling = false;
+
+/**
+ * The old per-device values have no workspace id, and budget ids repeat
+ * across workspaces (the demo's first budget has the same id as your own). So
+ * a value moves into the synced store only when it can only be this
+ * workspace's: the user has exactly one workspace besides the demo, it is the
+ * one open, the budget exists in it and has no synced target yet. Otherwise
+ * the values are dropped. Nothing happens in the demo (the real workspace
+ * opened later still gets to move them) or before the store and the
+ * workspace list are known.
+ */
+export async function settleLegacySavingsTargets(
+  spaces: readonly { space_id: string }[],
+  rt: SyncedStateRuntime
+): Promise<void> {
+  const legacy = readLegacyTargets();
+  if (settling || legacy.size === 0 || spaces.length === 0) return;
+  // Also the demo (cached id or the seed's marker) and a store not open yet.
+  if (syncedStateWriteBlocker(rt)) return;
+  const spaceId = rt.getActiveSpaceId();
+  settling = true;
+  try {
+    const demoId = getDemoSpaceId();
+    const own = spaces.filter((space) => space.space_id !== demoId);
+    if (own.length === 1 && own[0]!.space_id === spaceId) {
+      const services = rt.services() as Pick<Services, 'budgets'>;
+      const budgetIds = new Set(services.budgets.getAllBudgets().map((budget) => budget.ID));
+      for (const [budgetId, raw] of legacy) {
+        const value = parseSavingsTarget(raw);
+        if (value === null || !budgetIds.has(budgetId)) continue;
+        if (readSyncedState(budgetScope(budgetId), SAVINGS_TARGET_KEY, rt).value !== undefined) {
+          continue;
+        }
+        await setSyncedState(budgetScope(budgetId), SAVINGS_TARGET_KEY, value, rt);
+      }
+    }
+    removeLegacyTargets(legacy.keys());
+  } catch {
+    /* a write failed: the old values stay for the next try */
+  } finally {
+    settling = false;
   }
 }
 
@@ -50,7 +112,11 @@ export function useSavingsTarget(budgetId: number) {
   const timer = useRef<number | undefined>(undefined);
   const flushRef = useRef<() => void>(() => {});
 
-  useEffect(dropLegacyTargets, []);
+  const runtime = useRuntime() as unknown as SyncedStateRuntime;
+  const spaces = useAvailableSpaces();
+  useEffect(() => {
+    if (synced.loaded && synced.available) void settleLegacySavingsTargets(spaces, runtime);
+  }, [synced.loaded, synced.available, spaces, runtime]);
 
   const { set } = synced;
   const flush = useCallback(() => {

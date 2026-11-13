@@ -7,12 +7,21 @@ import { useSavingsTarget } from './useSavingsTarget';
 const { store, calls, env } = vi.hoisted(() => ({
   store: new Map<string, unknown>(),
   calls: [] as { op: string; payload: Record<string, unknown> }[],
-  env: { initialized: true, spaceId: 'space-1' as string | null },
+  env: {
+    initialized: true,
+    spaceId: 'space-1' as string | null,
+    spaces: [{ space_id: 'space-1' }] as { space_id: string }[],
+    demo: false,
+  },
 }));
 
 const runtime = {
   services: () => ({
     syncedState: { get: (scope: string, key: string) => store.get(`${scope}|${key}`) },
+    budgets: { getAllBudgets: () => [{ ID: 1 }, { ID: 2 }] },
+    accounts: {
+      listAccounts: () => [{ Metadata: env.demo ? '{"demo_budget":true}' : '{}' }],
+    },
   }),
   getActiveSpaceId: () => env.spaceId,
   isInitialized: () => env.initialized,
@@ -31,6 +40,7 @@ vi.mock('@shared/runtime/runtime-provider', () => ({
   useRuntimeInitialized: () => env.initialized,
   useRuntimeState: () => (env.initialized ? 'Ready' : 'Initializing'),
   useActiveSpaceId: () => env.spaceId,
+  useAvailableSpaces: () => env.spaces,
 }));
 
 let client: QueryClient;
@@ -50,6 +60,8 @@ beforeEach(() => {
   calls.length = 0;
   env.initialized = true;
   env.spaceId = 'space-1';
+  env.spaces = [{ space_id: 'space-1' }];
+  env.demo = false;
 });
 
 afterEach(() => {
@@ -91,12 +103,52 @@ it('writes a pending edit when the report closes', async () => {
   expect(calls[0]!.payload).toMatchObject({ scope: 'budget:1', value: 15 });
 });
 
-it('drops the old per-device value instead of migrating it', async () => {
+const settle = () =>
+  act(async () => {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  });
+
+it('moves old values into the only workspace once, for budgets it has', async () => {
   localStorage.setItem('budgero.analytics.savingsTarget.1', '30');
-  localStorage.setItem('budgero.analytics.savingsTarget.7', '10');
+  localStorage.setItem('budgero.analytics.savingsTarget.2', '10');
+  localStorage.setItem('budgero.analytics.savingsTarget.7', '15');
+  store.set('budget:2|savingsTarget', 40);
+  // The demo, when the device knows it, doesn't count as a second workspace.
+  setDemoSpaceId('demo-space');
+  env.spaces = [{ space_id: 'space-1' }, { space_id: 'demo-space' }];
+  const first = render();
+  await waitFor(() => expect(first.result.current.target).toBe(30));
+  expect(calls).toEqual([
+    expect.objectContaining({
+      op: 'syncedState.set',
+      payload: { scope: 'budget:1', key: 'savingsTarget', value: 30 },
+    }),
+  ]);
+  for (const id of [1, 2, 7]) {
+    expect(localStorage.getItem(`budgero.analytics.savingsTarget.${id}`)).toBeNull();
+  }
+  first.unmount();
+  render();
+  await settle();
+  expect(calls).toHaveLength(1);
+});
+
+it('drops old values when the user has two workspaces', async () => {
+  localStorage.setItem('budgero.analytics.savingsTarget.1', '30');
+  env.spaces = [{ space_id: 'space-1' }, { space_id: 'space-2' }];
   const { result } = render();
-  await waitFor(() => expect(result.current.target).toBeNull());
+  await settle();
+  expect(result.current.target).toBeNull();
   expect(localStorage.getItem('budgero.analytics.savingsTarget.1')).toBeNull();
-  expect(localStorage.getItem('budgero.analytics.savingsTarget.7')).toBeNull();
+  expect(calls).toEqual([]);
+});
+
+it('leaves old values alone while the demo is open', async () => {
+  localStorage.setItem('budgero.analytics.savingsTarget.1', '30');
+  // Not cached as the demo yet: its accounts carry the seed's marker.
+  env.demo = true;
+  render();
+  await settle();
+  expect(localStorage.getItem('budgero.analytics.savingsTarget.1')).toBe('30');
   expect(calls).toEqual([]);
 });
