@@ -29,20 +29,9 @@ import { InsightStrip, LegendChips } from '../components/panels';
 import { reportMeta } from '../report-questions';
 import { inOutAnswer } from '../report-answers';
 import { formatPercent } from '../format-percent';
+import { useSavingsTarget } from './useSavingsTarget';
 
 type InOutMode = 'flow' | 'rate';
-
-const targetKey = (budgetId: number) => `budgero.analytics.savingsTarget.${budgetId}`;
-
-function loadTarget(budgetId: number): number | null {
-  try {
-    const raw = localStorage.getItem(targetKey(budgetId));
-    const parsed = raw === null ? NaN : Number(raw);
-    return Number.isFinite(parsed) && parsed > 0 && parsed <= 100 ? parsed : null;
-  } catch {
-    return null;
-  }
-}
 
 interface InOutReportProps {
   data: AnalyticsData;
@@ -51,14 +40,14 @@ interface InOutReportProps {
 
 /**
  * In vs Out: do we live within our means — inflow/outflow mirrored around
- * zero with the net line, plus the savings-rate thread with a personal
- * target line.
+ * zero with the net line, plus the savings-rate thread with the budget's
+ * target line (synced, shared by the workspace's members).
  */
 export function InOutReport({ data, months }: InOutReportProps) {
   const { t } = useLingui();
 
   const [mode, setMode] = useState<InOutMode>('flow');
-  const [target, setTarget] = useState<number | null>(() => loadTarget(data.budgetId));
+  const { target, setTarget: updateTarget } = useSavingsTarget(data.budgetId);
   const palette = usePalette();
   const money = useMoneyFormatters();
 
@@ -91,21 +80,6 @@ export function InOutReport({ data, months }: InOutReportProps) {
       }),
     [points, target, money]
   );
-
-  const updateTarget = (raw: string) => {
-    const parsed = Number(raw);
-    const next = Number.isFinite(parsed) && parsed > 0 && parsed <= 100 ? parsed : null;
-    setTarget(next);
-    try {
-      if (next === null) {
-        localStorage.removeItem(targetKey(data.budgetId));
-      } else {
-        localStorage.setItem(targetKey(data.budgetId), String(next));
-      }
-    } catch {
-      /* no-op */
-    }
-  };
 
   const option = useMemo<EChartsCoreOption>(() => {
     const { chrome } = palette;
