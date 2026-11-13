@@ -21,11 +21,30 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.21.1',
+    date: 'November 13, 2026',
+    summary: 'Two layout fixes on phones: the goal form buttons fit, and the spending total shows in full.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Goal form buttons cut off on phones',
+        description:
+          'When editing a goal on a phone, the Update Goal button ran off the edge of the form and an empty band showed below the buttons.',
+      },
+      {
+        type: 'fixed',
+        title: 'Spending total cut off on phones',
+        description:
+          'In a category’s spending overview on a phone, a large Total Spent amount was cut short with “…”. It now shows in full.',
+      },
+    ],
+  },
+  {
     version: 'v1.21.0',
     date: 'November 13, 2026',
     summary:
       'Build your own reports and arrange your own home page, short guides on every main page, a first-steps checklist for new budgets, imports that sort a multi-account file into the right accounts, and recurring transactions with splits. Update Budgero on all your devices: a device still on v1.20 pauses sync until it is updated once a newer device sends it one of the new changes.',
-    isLatest: true,
     items: [
       {
         type: 'new',
