@@ -9,6 +9,7 @@
  * import all call, so they cannot disagree.
  */
 import { AccountTypeEnum, isCryptoCurrency } from '@budgero/core/browser';
+import type { SyncedStateMergePatch } from '@shared/lib/synced-state';
 import type { AccountRoute } from '../model/types';
 
 export interface SourceAccount {
@@ -95,54 +96,126 @@ export function sourceAccountsOf(
   return [...bySource.values()];
 }
 
-/** Account ids belong to one budget in one space (as in last-used-storage.ts). */
-const rememberKey = (spaceId: string | null, budgetId: number): string | null =>
-  spaceId && Number.isInteger(budgetId) && budgetId > 0
-    ? `budgero:import-account-routes:${encodeURIComponent(spaceId)}:${budgetId}`
-    : null;
-/** Before routes were keyed by space; ids could leak between spaces, so never read. */
-const legacyRememberKey = (budgetId: number) => `budgero:import-account-routes:${budgetId}`;
-/** Oldest choices are dropped beyond this, so the list cannot grow without bound. */
+/**
+ * Earlier choices live in the budget's synced state (budgetScope, key
+ * ACCOUNT_ROUTES_KEY), shared by every member and device of the workspace,
+ * like rules. Value: a map of routeEntryKey(source) → { accountId, usedAt }.
+ * The entry key is prefixed, so a source named __proto__ is a key like any
+ * other. Entries are stored in key order, so usedAt (ms) says which are newest.
+ */
+export const ACCOUNT_ROUTES_KEY = 'importAccountRoutes';
+/** Oldest choices are dropped beyond this, so the map cannot grow without bound. */
 const MAX_REMEMBERED = 200;
+/**
+ * Longer sources (free-text names) are not remembered: 200 entries then stay
+ * well under the synced value cap. IBANs and ACCTIDs are far shorter.
+ */
+const MAX_REMEMBERED_SOURCE = 120;
 
-/** Earlier choices on this device, by source value (account id only). */
-export function readRememberedRoutes(
-  spaceId: string | null,
-  budgetId: number
-): Record<string, number> {
-  const key = rememberKey(spaceId, budgetId);
-  if (!key) return {};
+export interface StoredRoute {
+  accountId: number;
+  usedAt: number;
+}
+
+export function routeEntryKey(source: string): string | null {
+  return source && source.length <= MAX_REMEMBERED_SOURCE ? `s:${source}` : null;
+}
+
+function storedRoutes(stored: unknown): [string, StoredRoute][] {
+  if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return [];
+  return Object.entries(stored).filter((entry): entry is [string, StoredRoute] => {
+    const [key, route] = entry as [string, Partial<StoredRoute> | null];
+    return (
+      key.startsWith('s:') &&
+      Number.isInteger(route?.accountId) &&
+      typeof route?.usedAt === 'number'
+    );
+  });
+}
+
+/** The stored map as source → account id. */
+export function rememberedRoutesOf(stored: unknown): Record<string, number> {
+  // No prototype: a source named __proto__ is a key like any other.
+  const routes = Object.create(null) as Record<string, number>;
+  for (const [key, route] of storedRoutes(stored)) routes[key.slice(2)] = route.accountId;
+  return routes;
+}
+
+/** Adds `set` and drops the oldest entries beyond MAX_REMEMBERED; null when `set` is empty. */
+function cappedPatch(
+  stored: unknown,
+  set: Record<string, StoredRoute>
+): SyncedStateMergePatch | null {
+  if (Object.keys(set).length === 0) return null;
+  const before = new Map(storedRoutes(stored));
+  const all = new Map(before);
+  for (const [key, route] of Object.entries(set)) all.set(key, route);
+  const dropped = [...all]
+    .sort(([ka, a], [kb, b]) => a.usedAt - b.usedAt || (ka < kb ? -1 : 1))
+    .slice(0, Math.max(0, all.size - MAX_REMEMBERED))
+    .map(([key]) => key);
+  const remove = dropped.filter((key) => before.has(key));
+  for (const key of dropped) delete set[key];
+  if (Object.keys(set).length === 0 && remove.length === 0) return null;
+  return { ...(Object.keys(set).length ? { set } : {}), ...(remove.length ? { remove } : {}) };
+}
+
+/**
+ * The merge patch that records `chosen` (source → account id) as used at
+ * `now`. Null when there is nothing to remember.
+ */
+export function rememberRoutesPatch(
+  stored: unknown,
+  chosen: Record<string, number>,
+  now: number
+): SyncedStateMergePatch | null {
+  const set: Record<string, StoredRoute> = {};
+  for (const [source, accountId] of Object.entries(chosen)) {
+    const key = routeEntryKey(source);
+    if (key && Number.isInteger(accountId)) set[key] = { accountId, usedAt: now };
+  }
+  return cappedPatch(stored, set);
+}
+
+/** Where this device kept choices before they were synced (per space and budget). */
+export const legacyRememberKeys = (spaceId: string, budgetId: number): string[] => [
+  `budgero:import-account-routes:${encodeURIComponent(spaceId)}:${budgetId}`,
+  // Older still, keyed by budget only; ids could leak between spaces, so never read.
+  `budgero:import-account-routes:${budgetId}`,
+];
+
+/** This device's choices from before syncing, oldest first (account id only). */
+export function readLegacyRememberedRoutes(spaceId: string, budgetId: number): [string, number][] {
   try {
-    const stored: unknown = JSON.parse(localStorage.getItem(key) ?? '{}');
-    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
-    return Object.fromEntries(
-      Object.entries(stored).filter(([, id]) => typeof id === 'number' && Number.isInteger(id))
-    ) as Record<string, number>;
+    const stored: unknown = JSON.parse(
+      localStorage.getItem(legacyRememberKeys(spaceId, budgetId)[0]) ?? '{}'
+    );
+    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return [];
+    return Object.entries(stored).filter(
+      (entry): entry is [string, number] =>
+        typeof entry[1] === 'number' && Number.isInteger(entry[1])
+    );
   } catch {
-    return {};
+    return [];
   }
 }
 
-export function rememberRoutes(
-  spaceId: string | null,
-  budgetId: number,
-  chosen: Record<string, number>
-): void {
-  const key = rememberKey(spaceId, budgetId);
-  if (!key || Object.keys(chosen).length === 0) return;
-  try {
-    // Re-insert what was just chosen so it is the newest.
-    const merged = new Map(Object.entries(readRememberedRoutes(spaceId, budgetId)));
-    for (const [source, id] of Object.entries(chosen)) {
-      merged.delete(source);
-      merged.set(source, id);
-    }
-    const kept = [...merged].slice(-MAX_REMEMBERED);
-    localStorage.setItem(key, JSON.stringify(Object.fromEntries(kept)));
-    localStorage.removeItem(legacyRememberKey(budgetId));
-  } catch {
-    /* storage blocked: the next import asks again */
-  }
+/**
+ * The merge patch that adds the legacy choices the synced map lacks, in their
+ * old order just before `now`. Null when it adds nothing.
+ */
+export function legacyRoutesPatch(
+  stored: unknown,
+  legacy: [string, number][],
+  now: number
+): SyncedStateMergePatch | null {
+  const known = new Set(storedRoutes(stored).map(([key]) => key));
+  const set: Record<string, StoredRoute> = {};
+  legacy.forEach(([source, accountId], index) => {
+    const key = routeEntryKey(source);
+    if (key && !known.has(key)) set[key] = { accountId, usedAt: now - (legacy.length - index) };
+  });
+  return cappedPatch(stored, set);
 }
 
 const own = <T>(record: Record<string, T>, key: string): T | undefined =>

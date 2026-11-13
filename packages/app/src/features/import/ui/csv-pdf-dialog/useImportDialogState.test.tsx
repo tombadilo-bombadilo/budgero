@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { webcrypto } from 'node:crypto';
-import { readRememberedRoutes } from '@features/import/lib/account-routes';
 import { useImportDialogState } from './useImportDialogState';
 
 const mocks = vi.hoisted(() => {
@@ -25,8 +24,11 @@ const mocks = vi.hoisted(() => {
     plan: vi.fn(),
     parse: vi.fn(),
     save: vi.fn(),
+    remembered: {} as Record<string, number>,
+    remember: vi.fn(),
     templates: {
       templates: [],
+      canEditTemplates: true,
       selectedTemplate: '',
       setSelectedTemplate: vi.fn(),
       saveAsTemplate: false,
@@ -77,6 +79,10 @@ vi.mock('@shared/runtime/mutation-router', () => ({
 }));
 vi.mock('@features/import/lib/parse-import-file', () => ({ parseImportFile: mocks.parse }));
 vi.mock('@shared/lib/analytics/analytics', () => ({ trackImportedCsvPdf: vi.fn() }));
+vi.mock('@features/import/api/useRememberedRoutes', () => ({
+  useRememberedRoutes: () => mocks.remembered,
+  rememberRoutes: (...args: unknown[]) => mocks.remember(...args),
+}));
 vi.mock('./useImportTemplates', () => ({ useImportTemplates: () => mocks.templates }));
 afterEach(cleanup);
 beforeEach(() => {
@@ -443,11 +449,7 @@ describe('import wizard execution', () => {
       invalidRows: 0,
       destinationAccountName: '3 accounts',
     });
-    expect(JSON.parse(localStorage.getItem('budgero:import-account-routes:space-a:1')!)).toEqual({
-      Card: 77,
-      checking: 10,
-      Cash: 78,
-    });
+    expect(mocks.remember).toHaveBeenCalledWith(1, { Card: 77, checking: 10, Cash: 78 });
   });
 
   describe('transfers between accounts of one file', () => {
@@ -612,9 +614,9 @@ describe('import wizard execution', () => {
     await act(async () => {
       await result.current.handleImport();
     });
-    const stored = JSON.parse(localStorage.getItem('budgero:import-account-routes:space-a:1')!);
-    expect(Object.getOwnPropertyDescriptor(stored, '__proto__')?.value).toBe(10);
-    expect(readRememberedRoutes('space-a', 1)).toEqual(JSON.parse('{"__proto__":10}'));
+    const [budgetId, chosen] = mocks.remember.mock.calls[0];
+    expect(budgetId).toBe(1);
+    expect(Object.getOwnPropertyDescriptor(chosen, '__proto__')?.value).toBe(10);
   });
 
   it('forgets account choices when another file is loaded', async () => {
