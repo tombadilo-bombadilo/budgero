@@ -3,9 +3,8 @@
  * and number format it opens in, and how it is removed.
  */
 import type { QueryClient } from '@tanstack/react-query';
-import type { Services } from '@budgero/core/browser';
 import { blobApi, spaceApi } from '@shared/api/api-client';
-import { DEMO_ACCOUNT_METADATA_KEY, getDemoSpaceId, setDemoSpaceId } from '@shared/lib/demo-space';
+import { getDemoSpaceId, setDemoSpaceId } from '@shared/lib/demo-space';
 import type { AppRuntime } from '@shared/runtime/app-runtime';
 import { syncBudgetStateFromRuntime } from '@shared/runtime/budget-gate';
 import {
@@ -14,31 +13,7 @@ import {
 } from '@shared/runtime/workspace-preferences';
 import { BUDGET_SPACES_QUERY_KEY } from '@features/budget-sharing/lib/workspaces/queries';
 
-/** True when an account was created by the demo seed (the synced marker). */
-export function isDemoAccount(account: { Metadata?: unknown }): boolean {
-  const raw = account.Metadata;
-  if (!raw) return false;
-  try {
-    const metadata = typeof raw === 'string' ? JSON.parse(raw) : raw;
-    return Boolean(metadata && (metadata as Record<string, unknown>)[DEMO_ACCOUNT_METADATA_KEY]);
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Proof, from the workspace's own data, that the open workspace is only the
- * onboarding demo: it has a budget, and every budget in it has an account the
- * demo seed marked. A workspace whose seed never ran, or where a budget of the
- * user's own was set up, fails it, so it is never deleted as "the demo".
- */
-export function holdsOnlyDemoBudgets(services: Pick<Services, 'budgets' | 'accounts'>): boolean {
-  const budgets = services.budgets.getAllBudgets();
-  return (
-    budgets.length > 0 &&
-    budgets.every((budget) => services.accounts.listAccounts(budget.ID).some(isDemoAccount))
-  );
-}
+export { holdsOnlyDemoBudgets, isDemoAccount } from '@shared/lib/demo-space';
 
 /** Euro-area regions (ISO 3166). */
 // prettier-ignore

@@ -70,6 +70,27 @@ it('sends only the entries a merge changes, nothing when none do', async () => {
   ]);
 });
 
+it('refuses writes when the open workspace holds only demo-seeded budgets', async () => {
+  const { runtime, calls } = fakeRuntime();
+  const services = runtime.services() as Record<string, unknown>;
+  const marked = { Metadata: JSON.stringify({ demo_budget: true }) };
+  runtime.services = () => ({
+    ...services,
+    budgets: { getAllBudgets: () => [{ ID: 1 }, { ID: 2 }] },
+    accounts: { listAccounts: (id: number) => (id === 1 ? [marked] : [marked, {}]) },
+  });
+  expect(syncedStateWriteBlocker(runtime)).toBe('demo');
+  expect(await setSyncedState('workspace', 'k', 1, runtime)).toBe(false);
+  // A budget of the user's own in the same workspace: not the demo.
+  runtime.services = () => ({
+    ...services,
+    budgets: { getAllBudgets: () => [{ ID: 1 }, { ID: 2 }] },
+    accounts: { listAccounts: (id: number) => (id === 1 ? [marked] : [{}]) },
+  });
+  expect(syncedStateWriteBlocker(runtime)).toBeNull();
+  expect(calls).toEqual([]);
+});
+
 it('writes nothing in the demo workspace or with no workspace open', async () => {
   setDemoSpaceId('space-1');
   const demo = fakeRuntime();
