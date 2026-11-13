@@ -30,9 +30,11 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { SUPPORTED_IMPORT_FORMATS_LABEL } from '@features/import/lib/constants';
+import { getTransactionTypeLabel } from '@shared/lib/search-query-parser';
 import { cn } from '@shared/lib/utils';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
+import { PRESET_LABELS } from '@shared/ui/date-range-presets';
 import { ImportStatusChip } from '@shared/ui/import-status-chip';
 
 /** A shared Button drawn as a picture: same look, not focusable or clickable. */
@@ -185,8 +187,7 @@ export function SearchVisual() {
           )}
         >
           <ArrowDownRight className="h-3 w-3" />
-          {/* The app shows this chip in English too (SearchActiveFilters). */}
-          Outflows
+          {getTransactionTypeLabel('outflows')}
           <X className="h-3 w-3" />
         </Badge>
         <Badge
@@ -261,10 +262,11 @@ export function ImportStatusVisual() {
 export function ImportHistoryVisual() {
   const { i18n } = useLingui();
   const rows = i18n.number(42);
+  const fileName = 'statement.ofx';
   return (
     <div className="flex items-center gap-2 rounded-md border px-3 py-2 text-xs">
       <span className="min-w-0 flex-1 truncate">
-        statement.ofx · <Trans>{rows} transactions</Trans>
+        {fileName} · <Trans>{rows} transactions</Trans>
       </span>
       <FakeButton size="sm" variant="outline">
         <Trans>
@@ -306,7 +308,7 @@ export function BudgetAccountsVisual() {
 
 /** Date range picker: trigger and its preset list (shared/ui/date-range-picker.tsx). */
 export function DateRangeVisual() {
-  const { i18n } = useLingui();
+  const { t, i18n } = useLingui();
   const today = new Date();
   const range = `${i18n.date(today, { day: 'numeric', month: 'short' })} – ${i18n.date(
     new Date(today.getTime() + 30 * 86_400_000),
@@ -319,10 +321,11 @@ export function DateRangeVisual() {
         {range}
       </FakeButton>
       <div className="flex flex-col rounded-md border p-1 text-xs">
-        {/* The picker shows its presets in English in every language. */}
-        <span className="rounded px-2 py-1">Last 30 days</span>
-        <span className="rounded bg-accent px-2 py-1 text-accent-foreground">Next 30 days</span>
-        <span className="rounded px-2 py-1">Next 3 months</span>
+        <span className="rounded px-2 py-1">{t(PRESET_LABELS.last30Days)}</span>
+        <span className="rounded bg-accent px-2 py-1 text-accent-foreground">
+          {t(PRESET_LABELS.next30Days)}
+        </span>
+        <span className="rounded px-2 py-1">{t(PRESET_LABELS.next3Months)}</span>
       </div>
     </div>
   );
@@ -471,6 +474,7 @@ export function TransactionTypeVisual() {
 
 /** A workspace row on the Workspaces page (pages/settings/components/WorkspaceRow.tsx). */
 export function WorkspaceRowVisual() {
+  const space = { role: 'owner', invitation_status: 'accepted' };
   return (
     <div
       className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-card p-3"
@@ -480,8 +484,13 @@ export function WorkspaceRowVisual() {
         <div className="truncate text-sm font-medium">
           <Trans>Family budget</Trans>
         </div>
-        {/* The page shows the role as stored, in English. */}
-        <div className="text-xs text-muted-foreground">Role: owner</div>
+        {/* Same message as WorkspaceRow; the role shows as stored. */}
+        <div className="text-xs text-muted-foreground">
+          <Trans>
+            Role: {space.role}
+            {space.invitation_status !== 'accepted' && ` • ${space.invitation_status}`}
+          </Trans>
+        </div>
       </div>
       <div className="flex shrink-0 items-center gap-2">
         <Badge variant="secondary">

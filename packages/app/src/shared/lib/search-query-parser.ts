@@ -573,11 +573,11 @@ export function removeTokenFromQuery(
 export function getTransactionTypeLabel(type: 'inflows' | 'outflows' | 'transfers'): string {
   switch (type) {
     case 'inflows':
-      return 'Inflows';
+      return t`Inflows`;
     case 'outflows':
-      return 'Outflows';
+      return t`Outflows`;
     case 'transfers':
-      return 'Transfers';
+      return t`Transfers`;
   }
 }
 
