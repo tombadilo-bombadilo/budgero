@@ -20,6 +20,13 @@ const NO_CHECK_FILES = new Set([
   'packages/app/src/features/ai/lib/knowledge/knowledge-base.generated.ts',
 ]);
 
+const CHANGES_JOB_FILES = new Set([
+  'scripts/ci/changes.mjs',
+  'scripts/ci/changes.test.mjs',
+  'scripts/ci/govulncheck.mjs',
+  'scripts/ci/govulncheck.test.mjs',
+]);
+
 /** True when every added/removed line of a manifest is its `"version"` field. */
 export function isVersionOnlyChange(lines) {
   return Array.isArray(lines) && lines.length > 0 && lines.every((line) => VERSION_LINE.test(line));
@@ -34,8 +41,9 @@ export function planChanges(paths, changedLines = () => null) {
   for (const path of paths) {
     if (NO_CHECK_FILES.has(path)) continue;
     if (VERSION_MANIFESTS.has(path) && isVersionOnlyChange(changedLines(path))) continue;
-    // The classifier is tested by the changes job itself on every event.
-    if (path === 'scripts/ci/changes.mjs' || path === 'scripts/ci/changes.test.mjs') continue;
+    // The classifier and the govulncheck gate are tested by the changes job
+    // itself on every event.
+    if (CHANGES_JOB_FILES.has(path)) continue;
     // Dependency patches affect the shared workspace installation.
     if (path.startsWith('packages/website/patches/')) return all();
     // The web job invokes the server's package.json build script too.

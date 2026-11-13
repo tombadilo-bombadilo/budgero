@@ -39,7 +39,7 @@ jobs:
           persist-credentials: false
 
       - name: Test change selection
-        run: node --test scripts/ci/changes.test.mjs
+        run: node --test scripts/ci/changes.test.mjs scripts/ci/govulncheck.test.mjs
 
       - name: Select affected checks
         id: paths

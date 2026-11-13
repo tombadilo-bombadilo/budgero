@@ -1,0 +1,17 @@
+{
+  "_comment": "Read by scripts/ci/govulncheck.mjs (pnpm run security:go). Keep each entry in sync with its alias in osv-scanner.toml (same reason and expiry); scripts/ci/govulncheck.test.mjs checks that.",
+  "ignore": [
+    {
+      "id": "GO-2026-6872",
+      "alias": "GHSA-246p-cpwv-v3jq",
+      "ignoreUntil": "2026-12-10",
+      "reason": "echo v4 has no fix (fixed in v5). Only affects echo.New() without Echo#IPExtractor; the server sets IPExtractor explicitly (cmd/shared/server.go), so the rate limiter does not trust a client-supplied X-Forwarded-For"
+    },
+    {
+      "id": "GO-2026-6875",
+      "alias": "GHSA-99jh-6h7p-pp36",
+      "ignoreUntil": "2026-12-10",
+      "reason": "echo v4 has no fix (fixed in v5). Only affects echo's proxy middleware, which the server does not use"
+    }
+  ]
+}
