@@ -3,6 +3,7 @@ import {
   DatabaseAdapter,
   NodeSqlJsAdapter,
   ServiceManager,
+  SYNCED_STATE_MAX_TOMBSTONES,
   SYNCED_STATE_MAX_VALUE_LENGTH,
   type SyncedStateService,
 } from '../src';
@@ -153,5 +154,134 @@ describe('synced state: validation', () => {
       /too large/
     );
     expect(() => s.checkMerge('workspace', 'm', { remove: ['a'] })).not.toThrow();
+  });
+});
+
+/** A patch whose `set` has the entry as an own key (as JSON.parse of synced args gives). */
+const patchSet = (entry: string, value: unknown) =>
+  JSON.parse(`{"set":{${JSON.stringify(entry)}:${JSON.stringify(value)}}}`) as {
+    set: Record<string, unknown>;
+  };
+
+const read = (s: SyncedStateService) => ({
+  value: s.get('workspace', 'routes'),
+  text: JSON.stringify(s.get('workspace', 'routes')),
+});
+
+describe('synced state: any string is a safe entry key', () => {
+  const T4 = '2026-11-12T10:00:03.000Z';
+  for (const entry of ['__proto__', 'constructor', 'hasOwnProperty', 'toString', 'prototype']) {
+    it(`keeps "${entry}" as a plain entry through set, remove and re-add, in any order`, async () => {
+      const ops: Op[] = [
+        (s) => s.merge('workspace', 'routes', patchSet(entry, 'first'), T1),
+        (s) => s.merge('workspace', 'routes', { remove: [entry] }, T2),
+        (s) => s.merge('workspace', 'routes', patchSet(entry, 'again'), T3),
+        (s) => s.merge('workspace', 'routes', patchSet('other', 1), T4),
+      ];
+      const result = (await convergesTo(ops, read)) as { text: string };
+      const parsed = JSON.parse(result.text) as Record<string, unknown>;
+      expect(Object.getPrototypeOf(parsed)).toBe(Object.prototype);
+      expect(Object.keys(parsed).sort()).toEqual([entry, 'other'].sort());
+      expect(Object.getOwnPropertyDescriptor(parsed, entry)?.value).toBe('again');
+    }, 60_000); // 24 orders, a fresh database each
+
+    it(`does not see an inherited "${entry}" on an empty value`, async () => {
+      const s = await store();
+      // Only a remove that has nothing to remove: no own entry, so it's a new tombstone.
+      expect(s.merge('workspace', 'routes', { remove: [entry] }, T1)).toBe(true);
+      expect(s.get('workspace', 'routes')).toEqual({});
+      // An add older than the removal stays removed.
+      expect(s.merge('workspace', 'routes', patchSet(entry, 1), '2026-11-12T09:00:00.000Z')).toBe(
+        false
+      );
+      expect(Object.keys(s.get('workspace', 'routes') as object)).toEqual([]);
+    });
+  }
+
+  it('checks the size of a merge with such keys without touching prototypes', async () => {
+    const s = await store();
+    expect(() => s.checkMerge('workspace', 'routes', patchSet('__proto__', 'x'))).not.toThrow();
+    expect(() =>
+      s.checkMerge(
+        'workspace',
+        'routes',
+        patchSet('__proto__', 'x'.repeat(SYNCED_STATE_MAX_VALUE_LENGTH))
+      )
+    ).toThrow(/too large/);
+  });
+
+  it('keeps such keys when a whole-value set lands before a newer merge', async () => {
+    const value = await convergesTo(
+      [
+        (s) => s.set('workspace', 'routes', { a: 1 }, T1),
+        (s) => s.merge('workspace', 'routes', patchSet('__proto__', 'p'), T2),
+      ],
+      read
+    );
+    expect(JSON.parse((value as { text: string }).text)).toEqual(
+      JSON.parse('{"__proto__":"p","a":1}')
+    );
+  });
+});
+
+describe('synced state: tombstones', () => {
+  const at = (i: number) => new Date(Date.UTC(2026, 10, 12, 10) + i * 1000).toISOString();
+  type Clocks = { entries: Record<string, string>; removed?: string[] };
+  const clocksOf = (s: SyncedStateService): Clocks => {
+    const row = (s as unknown as { row(scope: string, key: string): { Clocks: string } }).row(
+      'workspace',
+      'routes'
+    );
+    return JSON.parse(row.Clocks) as Clocks;
+  };
+
+  /** Remembered routes: add one per step, keep the newest `keep`, remove the oldest. */
+  function rotation(steps: number, keep: number): { op: Op; i: number }[] {
+    const ops: { op: Op; i: number }[] = [];
+    for (let i = 0; i < steps; i += 1) {
+      const patch: { set: Record<string, unknown>; remove?: string[] } = {
+        set: { [`route-${i}`]: i },
+      };
+      if (i >= keep) patch.remove = [`route-${i - keep}`];
+      ops.push({ op: (s) => s.merge('workspace', 'routes', patch, at(i)), i });
+    }
+    return ops;
+  }
+
+  it('keeps at most the cap of removed entries, dropping the oldest', async () => {
+    const s = await store();
+    const steps = SYNCED_STATE_MAX_TOMBSTONES + 300;
+    rotation(steps, 50).forEach(({ op }) => op(s));
+    const clocks = clocksOf(s);
+    expect(clocks.removed).toHaveLength(SYNCED_STATE_MAX_TOMBSTONES);
+    // Live entries plus the newest tombstones, nothing else.
+    expect(Object.keys(clocks.entries)).toHaveLength(SYNCED_STATE_MAX_TOMBSTONES + 50);
+    const removedIds = clocks.removed!.map((e) => Number(e.slice(6))).sort((a, b) => a - b);
+    expect(removedIds[0]).toBe(steps - 50 - SYNCED_STATE_MAX_TOMBSTONES);
+    expect(Object.keys(s.get('workspace', 'routes') as object)).toHaveLength(50);
+  });
+
+  it('two devices end up with the same value and clocks', async () => {
+    const ops = rotation(SYNCED_STATE_MAX_TOMBSTONES + 200, 20);
+    const a = await store();
+    const b = await store();
+    ops.forEach(({ op }) => op(a));
+    // B receives in batches of 7, each batch in reverse (offline device catching up).
+    for (let i = 0; i < ops.length; i += 7) {
+      ops
+        .slice(i, i + 7)
+        .reverse()
+        .forEach(({ op }) => op(b));
+    }
+    expect(b.get('workspace', 'routes')).toEqual(a.get('workspace', 'routes'));
+    expect(clocksOf(b)).toEqual(clocksOf(a));
+  });
+
+  it('documents the trade-off: an add older than a dropped tombstone comes back', async () => {
+    const s = await store();
+    rotation(SYNCED_STATE_MAX_TOMBSTONES + 100, 10).forEach(({ op }) => op(s));
+    // route-0's tombstone is long gone; its original add arriving now restores it.
+    s.merge('workspace', 'routes', { set: { 'route-0': 0 } }, at(0));
+    expect((s.get('workspace', 'routes') as Record<string, unknown>)['route-0']).toBe(0);
   });
 });
