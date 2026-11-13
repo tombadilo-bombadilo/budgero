@@ -8,13 +8,19 @@ import { useSyncedState } from './useSyncedState';
 const { store, calls, env } = vi.hoisted(() => ({
   store: new Map<string, unknown>(),
   calls: [] as { op: string; payload: Record<string, unknown> }[],
-  env: { initialized: true, spaceId: 'space-1' as string | null, hasStore: true },
+  env: { initialized: true, spaceId: 'space-1' as string | null, hasStore: true, demo: false },
 }));
 
 const runtime = {
   services: () =>
     env.hasStore
-      ? { syncedState: { get: (scope: string, key: string) => store.get(`${scope}|${key}`) } }
+      ? {
+          syncedState: { get: (scope: string, key: string) => store.get(`${scope}|${key}`) },
+          budgets: { getAllBudgets: () => [{ ID: 1 }] },
+          accounts: {
+            listAccounts: () => [{ Metadata: env.demo ? '{"demo_budget":true}' : '{}' }],
+          },
+        }
       : {},
   getActiveSpaceId: () => env.spaceId,
   isInitialized: () => env.initialized,
@@ -48,6 +54,7 @@ beforeEach(() => {
   env.initialized = true;
   env.spaceId = 'space-1';
   env.hasStore = true;
+  env.demo = false;
 });
 
 it('is not loaded until the workspace database is read', async () => {
@@ -105,6 +112,18 @@ it('writes through the synced op, and never in the demo', async () => {
   expect(demo.result.current.canWrite).toBe(false);
   await act(async () => {
     expect(await demo.result.current.set(true)).toBe(false);
+  });
+  expect(calls).toEqual([]);
+});
+
+it('refuses writes in the demo before its id is cached, from the seed’s marker', async () => {
+  env.demo = true;
+  const { result } = render<boolean>('user:u1', 'dismissed');
+  await waitFor(() => expect(result.current.loaded).toBe(true));
+  expect(result.current.canWrite).toBe(false);
+  await act(async () => {
+    expect(await result.current.set(true)).toBe(false);
+    expect(await result.current.merge({ set: { a: 1 } })).toBe(false);
   });
   expect(calls).toEqual([]);
 });

@@ -8,6 +8,7 @@ import {
   useRuntimeState,
 } from '@shared/runtime/runtime-provider';
 import {
+  isDemoWorkspaceOpen,
   mergeSyncedState,
   readSyncedState,
   readSyncedStateCache,
@@ -37,7 +38,10 @@ export interface SyncedState<T> {
   loaded: boolean;
   /** `value` comes from the synced database. */
   available: boolean;
-  /** Writes would be sent (state loaded from the database, not the demo, not read-only). */
+  /**
+   * Writes would be sent: state loaded from the database, not read-only, and
+   * not the demo (by its cached id or, once loaded, its own data).
+   */
   canWrite: boolean;
   /** Replace the value (null deletes). Resolves false when refused or nothing changes. */
   set: (value: T | null) => Promise<boolean>;
@@ -63,12 +67,14 @@ export function useSyncedState<T>(
   const demoSpaceId = useDemoSpaceId();
   const { cache = false, readOnly = false } = options;
 
-  const query = useQuery<{ available: boolean; value: T | null }>({
+  const query = useQuery<{ available: boolean; value: T | null; demo: boolean }>({
     queryKey: [SYNCED_STATE_QUERY, spaceId, scope, key],
     queryFn: () => {
       const read = readSyncedState<T>(scope!, key, runtime);
-      // react-query can't hold undefined.
-      return { available: read.available, value: read.value ?? null };
+      // react-query can't hold undefined. The demo check rides along, so there
+      // is no moment where the state is loaded but the demo status unknown.
+      const demo = read.available && isDemoWorkspaceOpen(runtime);
+      return { available: read.available, value: read.value ?? null, demo };
     },
     enabled: runtimeInitialized && Boolean(spaceId) && scope !== null,
     staleTime: Infinity,
@@ -92,7 +98,8 @@ export function useSyncedState<T>(
   if (available) value = data!.value ?? undefined;
   else if (cache && spaceId && scope) value = readSyncedStateCache<T>(spaceId, scope, key);
 
-  const canWrite = !readOnly && available && Boolean(spaceId) && spaceId !== demoSpaceId && !failed;
+  const canWrite =
+    !readOnly && available && !data!.demo && Boolean(spaceId) && spaceId !== demoSpaceId && !failed;
 
   const set = useCallback(
     async (next: T | null) => {

@@ -8,6 +8,7 @@
  * workspace exists, kept across sign-out, and refilled from the accounts.
  */
 import { useSyncExternalStore } from 'react';
+import type { Services } from '@budgero/core/browser';
 
 export const DEMO_SPACE_STORAGE_KEY = 'budgero:demo-space';
 /** Set to true in the metadata of every account the demo seed creates. */
@@ -40,4 +41,30 @@ function subscribe(listener: () => void): () => void {
 
 export function useDemoSpaceId(): string | null {
   return useSyncExternalStore(subscribe, getDemoSpaceId, () => null);
+}
+
+/** True when an account was created by the demo seed (the synced marker). */
+export function isDemoAccount(account: { Metadata?: unknown }): boolean {
+  const raw = account.Metadata;
+  if (!raw) return false;
+  try {
+    const metadata = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Boolean(metadata && (metadata as Record<string, unknown>)[DEMO_ACCOUNT_METADATA_KEY]);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Proof, from the workspace's own data, that the open workspace is only the
+ * onboarding demo: it has a budget, and every budget in it has an account the
+ * demo seed marked. A workspace whose seed never ran, or where a budget of the
+ * user's own was set up, fails it, so it is never deleted as "the demo".
+ */
+export function holdsOnlyDemoBudgets(services: Pick<Services, 'budgets' | 'accounts'>): boolean {
+  const budgets = services.budgets.getAllBudgets();
+  return (
+    budgets.length > 0 &&
+    budgets.every((budget) => services.accounts.listAccounts(budget.ID).some(isDemoAccount))
+  );
 }

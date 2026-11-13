@@ -4,6 +4,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // eslint-disable-next-line no-restricted-imports
 import { NodeSqlJsAdapter, ServiceManager, type Services } from '@budgero/core';
 import * as registry from '@shared/mutations/op-code-registry';
+import { BANK_EXPIRY_REMINDERS_KEY } from '@features/bank-sync/ui/BankAutoSync';
+import { TRIAL_ENDING_DISMISSED_KEY } from '@features/subscription/ui/TrialEndingBanner';
+import { SAVINGS_TARGET_KEY } from '@pages/analytics/reports/useSavingsTarget';
+import {
+  SCHEDULING_GUIDES_SEEN_KEY,
+  schedulingGuideEntry,
+} from '@shared/store/useSchedulingGuideStore';
+import { budgetScope, userScope } from './synced-state';
 
 const runtime = vi.hoisted(() => ({ services: undefined as Services | undefined }));
 vi.mock('@shared/runtime/global', () => ({
@@ -106,6 +114,54 @@ describe('synced state across devices', () => {
     await receive(b, [fromA]);
     expect(a.pageGuides.getSeen('u1')).toEqual(['budget', 'reports']);
     expect(b.pageGuides.getSeen('u1')).toEqual(['budget', 'reports']);
+  });
+});
+
+describe('device flags moved into synced state', () => {
+  it('reach a second device with the keys and shapes the app writes', async () => {
+    const [a, b] = [await openDevice(), await openDevice()];
+    const fromA = [
+      await local(a, 'syncedState.set', {
+        scope: budgetScope(3),
+        key: SAVINGS_TARGET_KEY,
+        value: 20,
+      }),
+      await local(a, 'syncedState.merge', {
+        scope: userScope('u1'),
+        key: SCHEDULING_GUIDES_SEEN_KEY,
+        patch: { set: { [schedulingGuideEntry('future', 3)]: true } },
+      }),
+      await local(a, 'syncedState.set', {
+        scope: userScope('u1'),
+        key: TRIAL_ENDING_DISMISSED_KEY,
+        value: '2026-11-14T10:00:00.000Z',
+      }),
+      await local(a, 'syncedState.merge', {
+        scope: userScope('u1'),
+        key: BANK_EXPIRY_REMINDERS_KEY,
+        patch: { set: { s1: '2026-11-13' } },
+      }),
+    ];
+    const fromB = await local(b, 'syncedState.merge', {
+      scope: userScope('u1'),
+      key: BANK_EXPIRY_REMINDERS_KEY,
+      patch: { set: { s2: '2026-11-13' } },
+    });
+    await receive(b, fromA);
+    await receive(a, [fromB]);
+    for (const device of [a, b]) {
+      expect(device.syncedState.get('budget:3', SAVINGS_TARGET_KEY)).toBe(20);
+      expect(device.syncedState.get('user:u1', SCHEDULING_GUIDES_SEEN_KEY)).toEqual({
+        'future:3': true,
+      });
+      expect(device.syncedState.get('user:u1', TRIAL_ENDING_DISMISSED_KEY)).toBe(
+        '2026-11-14T10:00:00.000Z'
+      );
+      expect(device.syncedState.get('user:u1', BANK_EXPIRY_REMINDERS_KEY)).toEqual({
+        s1: '2026-11-13',
+        s2: '2026-11-13',
+      });
+    }
   });
 });
 

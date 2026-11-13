@@ -22,11 +22,12 @@
  * entries both keep theirs; use it for maps and sets (a set = {id: true}).
  * Use one or the other for a key. Values are JSON, at most 64 KB. Writes are
  * not undoable and not in the audit log; nothing is written in the demo
- * workspace or when no workspace is open. Keep writes rare: write on a user
+ * workspace (cached id or the seed's marker, see isDemoWorkspaceOpen) or when
+ * no workspace is open. Keep writes rare: write on a user
  * action or a real change, never per render or per keystroke.
  */
-import type { SyncedStateMergePatch, SyncedStateScope } from '@budgero/core/browser';
-import { getDemoSpaceId } from '@shared/lib/demo-space';
+import type { Services, SyncedStateMergePatch, SyncedStateScope } from '@budgero/core/browser';
+import { getDemoSpaceId, holdsOnlyDemoBudgets } from '@shared/lib/demo-space';
 import { getRuntime } from '@shared/runtime/global';
 
 export type { SyncedStateMergePatch, SyncedStateScope };
@@ -86,6 +87,29 @@ export function readSyncedState<T>(
   }
 }
 
+/**
+ * The open workspace is the onboarding demo, read from its own data (the seed's
+ * account marker), so it is known as soon as the database is, without waiting
+ * for the device's cached demo id. That id still covers the seed's first
+ * moments, before the marked accounts exist.
+ */
+export function isDemoWorkspaceOpen(runtime?: SyncedStateRuntime | null): boolean {
+  const rt = runtimeOrNull(runtime);
+  try {
+    const spaceId = rt?.getActiveSpaceId();
+    if (!spaceId) return false;
+    if (spaceId === getDemoSpaceId()) return true;
+    const services = rt!.services() as Partial<Pick<Services, 'budgets' | 'accounts'>> | null;
+    return Boolean(
+      services?.budgets &&
+      services.accounts &&
+      holdsOnlyDemoBudgets(services as Pick<Services, 'budgets' | 'accounts'>)
+    );
+  } catch {
+    return false;
+  }
+}
+
 /** Why a write would be refused here, or null when it may go ahead. */
 export function syncedStateWriteBlocker(
   runtime?: SyncedStateRuntime | null
@@ -94,8 +118,8 @@ export function syncedStateWriteBlocker(
   if (!rt || rt.isInitialized?.() === false) return 'no-runtime';
   const spaceId = rt.getActiveSpaceId();
   if (!spaceId) return 'no-workspace';
-  if (spaceId === getDemoSpaceId()) return 'demo';
   if (!readSyncedState('workspace', 'probe', rt).available) return 'no-store';
+  if (isDemoWorkspaceOpen(rt)) return 'demo';
   return null;
 }
 
