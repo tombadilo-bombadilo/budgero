@@ -169,6 +169,18 @@ test('actual required gate scripts reject failed, cancelled, and unexpectedly sk
   }
 });
 
+test('record-pass runs after skipped checks jobs but only marks fully successful runs', () => {
+  const workflow = readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  const job = workflow.split('\n  record-pass:\n')[1].split(/\n  [a-z-]+:\n/)[0];
+  const condition = job.match(/^    if: (.*)$/m)[1];
+  // Without a status function a skipped server-checks/web-checks skips this job.
+  assert.match(condition, /!cancelled\(\)/);
+  for (const need of ['changes', 'web', 'server']) {
+    assert.ok(condition.includes(`needs.${need}.result == 'success'`), `record-pass must require ${need} success`);
+  }
+  assert.ok(condition.includes("github.event_name == 'pull_request'"));
+});
+
 test('a tree that passed on its pull request is recognised, anything doubtful is not', async () => {
   const tree = 'a'.repeat(40);
   const base = { tree, repository: 'o/r', repositoryId: 42, token: 't' };
