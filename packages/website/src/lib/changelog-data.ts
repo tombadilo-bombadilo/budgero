@@ -21,10 +21,113 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.21.0',
+    date: 'November 13, 2026',
+    summary:
+      'Build your own reports and arrange your own home page, short guides on every main page, a first-steps checklist for new budgets, imports that sort a multi-account file into the right accounts, and recurring transactions with splits. Update Budgero on all your devices: a device still on v1.20 pauses sync until it is updated once a newer device sends it one of the new changes.',
+    isLatest: true,
+    items: [
+      {
+        type: 'new',
+        title: 'Build your own reports',
+        description:
+          'Reports opens on a page of ready-made reports and your saved questions. Build a question step by step: pick the data (transactions, balances, budget and goals, scheduled and upcoming transactions, payees), filter it, group it by period or category, and choose a chart. Any ready-made report opens as a question you can change.',
+      },
+      {
+        type: 'new',
+        title: 'More charts, and click to dig in',
+        description:
+          'New chart types: stacked and 100% bars and areas, numbers with a trend, pivot tables, calendar, waterfall, sankey, scatter, treemap, radar and progress. Recommended types come first. Click a bar or a cell to see its transactions, break it down further, or keep or drop that value. Charts and tables download as PNG or CSV.',
+      },
+      {
+        type: 'new',
+        title: 'Dashboard filters',
+        description:
+          'A dashboard can have its own date range, accounts and category groups, applied to every card on it. Each card downloads as CSV or PNG, and the whole dashboard as one file of CSVs.',
+      },
+      {
+        type: 'new',
+        title: 'Make Home your own',
+        description:
+          'Customize the home page: move, hide and add cards, with separate layouts for desktop and phone, or use one of your dashboards as home.',
+      },
+      {
+        type: 'new',
+        title: 'Page guides',
+        description:
+          'Budget, Accounts, each account register, Reports, Home, Rules, Recurring, Imports, Workspaces, Security and Currencies each have a short guide to how the page works. It opens by itself the first time in your first 30 days, and How this works (?) in the header opens it again any time.',
+      },
+      {
+        type: 'new',
+        title: 'First steps for a new budget',
+        description:
+          'A new budget gets a short checklist: set a goal for one category, fund it, add a transaction, and come back tomorrow. The goal step walks you through it on the budget page. On phones it is one slim bar. Close it any time and bring it back from Help.',
+      },
+      {
+        type: 'improved',
+        title: 'Shorter setup, a demo budget and invite codes',
+        description:
+          'Setup is shorter and fits a phone. You can now try a filled-in demo budget before starting your own, or join someone’s budget with an invite code instead of setting one up.',
+      },
+      {
+        type: 'new',
+        title: 'Import files with several accounts',
+        description:
+          'A QIF or YNAB file that holds several accounts now sends each account to the Budgero account you pick, or creates it with the right type. Transfers between those accounts become transfers instead of two loose transactions, and Budgero asks instead of guessing when an account name is unclear. Coloured chips show each row’s status in the review step, and you are warned when a file goes to an account in another currency.',
+      },
+      {
+        type: 'new',
+        title: 'Recurring transactions with splits',
+        description:
+          'A recurring transaction can now have split lines, including lines that transfer to another account, and posts them as a split transaction. It also keeps its payee.',
+      },
+      {
+        type: 'improved',
+        title: 'Your settings follow you',
+        description:
+          'Your language, the target column on Budget, which guides you have seen, the first-steps checklist, import account choices and templates, the savings-rate target and a few dismissed reminders are now stored in your encrypted workspace, so they follow you to your other devices.',
+      },
+      {
+        type: 'improved',
+        title: 'Goals on phones',
+        description:
+          'The goal form is compact on a phone: goal types are one-line rows, the list folds to the type you picked, and Save stays in reach. Goal cards inside phone category cards are smaller too.',
+      },
+      {
+        type: 'fixed',
+        title: 'Changes made offline',
+        description:
+          'Changes waiting to sync while offline could be lost when Budgero asked for your master password again before they were sent. They are now kept until they sync.',
+      },
+      {
+        type: 'fixed',
+        title: 'Firefox private windows',
+        description: 'In a Firefox private window, Budgero keeps its local copy in the browser’s other storage instead of failing to save it.',
+      },
+      {
+        type: 'fixed',
+        title: 'Split lines that transfer',
+        description:
+          'A split line that transfers to another account now reaches that account, also from the split details and on phones, and can be undone. Lines that transfer to their own account, or have both a transfer and a category, are refused.',
+      },
+      {
+        type: 'fixed',
+        title: 'Net worth',
+        description:
+          'Credit cards entered with a differently capitalised type, and overdrawn accounts, now count as debt in net worth.',
+      },
+      {
+        type: 'fixed',
+        title: 'Small fixes',
+        description:
+          'Reloading on a new device before unlocking no longer opens setup for an account that is already set up. CSV exports quote their headers and guard against spreadsheet formulas. The AI assistant handles adding transactions more reliably. Planning keeps its header visible on phones, the phone menu labels fit every language, and some settings and help texts are clearer.',
+      },
+    ],
+  },
+  {
     version: 'v1.20.8',
     date: 'November 2, 2026',
     summary: 'Fixes for new budgets: the first account is always created, and reloading during setup works.',
-    isLatest: true,
     items: [
       {
         type: 'fixed',
