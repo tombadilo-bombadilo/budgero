@@ -23,6 +23,21 @@ vi.mock('@shared/runtime/global', () => ({
   getRuntime: () => env.runtime ?? { services: () => env.services },
 }));
 
+const analytics = vi.hoisted(() => ({
+  observer: null as ((name: string, props: Record<string, string>) => void) | null,
+  track: vi.fn(),
+}));
+vi.mock('@shared/lib/analytics/track', () => ({
+  track: analytics.track,
+  trackOnUnload: vi.fn(),
+  observeTrackedEvents: (observer: (name: string, props: Record<string, string>) => void) => {
+    analytics.observer = observer;
+    return () => {
+      analytics.observer = null;
+    };
+  },
+}));
+
 async function openDevice(): Promise<Services> {
   const cwd = vi.spyOn(process, 'cwd').mockReturnValue(resolve(process.cwd(), '../core'));
   try {
@@ -84,9 +99,12 @@ async function load(pref: SyncedPreference<string>, rt: SyncedStateRuntime) {
   );
 }
 
+const settle = () => new Promise((r) => setTimeout(r, 0));
+
 beforeEach(() => {
   localStorage.clear();
   env.runtime = null;
+  analytics.track.mockReset();
 });
 
 afterEach(() => {
@@ -127,5 +145,45 @@ describe('synced preferences across devices', () => {
     const deviceB = { stored: 'nl' as string | null, shown: 'nl' };
     expect(await load(languageOn(deviceB), rtB)).toBe('applied');
     expect(deviceB.shown).toBe('fr');
+  });
+});
+
+describe('first-month milestones across devices', () => {
+  it('a milestone sent on one device is not sent again on another', async () => {
+    const fm = await import('@shared/lib/analytics/first-month');
+    const [a, b] = [await openDevice(), await openDevice()];
+    const fromA: Call[] = [];
+    const signedUp = new Date(Date.now() - 86_400_000).toISOString();
+
+    env.runtime = deviceRuntime(a, fromA);
+    fm.setFirstMonthUser('u1', signedUp);
+    analytics.observer!('Assignment Upserted', {});
+    await settle();
+    expect(analytics.track).toHaveBeenCalledWith('activation_milestone', {
+      milestone: 'first_assign',
+      day: '1',
+    });
+    expect(fromA.map((c) => c.op)).toEqual(['syncedState.merge']);
+    // Again on A: neither sent nor written again.
+    analytics.observer!('Assignment Upserted', {});
+    await settle();
+    expect(fromA).toHaveLength(1);
+    fm.resetFirstMonthForTests();
+
+    // Device B: its own (empty) storage, A's write received.
+    localStorage.clear();
+    analytics.track.mockReset();
+    await receive(b, fromA);
+    const fromB: Call[] = [];
+    env.runtime = deviceRuntime(b, fromB);
+    fm.setFirstMonthUser('u1', signedUp);
+    analytics.observer!('Assignment Upserted', {});
+    await settle();
+    expect(analytics.track).not.toHaveBeenCalledWith('activation_milestone', expect.anything());
+    expect(fromB).toEqual([]);
+    expect(JSON.parse(localStorage.getItem('budgero:fm-milestones')!)).toEqual({
+      u1: ['first_assign'],
+    });
+    fm.resetFirstMonthForTests();
   });
 });
