@@ -3927,6 +3927,7 @@ msgstr "all time"
 #: src/pages/accounts/components/ValueChangeStat.tsx
 #: src/pages/analytics/analytics-state.ts
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+#: src/shared/ui/date-range-presets.ts
 msgid "All time"
 msgstr "All time"
 
@@ -11079,6 +11080,10 @@ msgstr "Inflow vs Outflow"
 msgid "Inflow<0/>"
 msgstr "Inflow<0/>"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Inflows"
+msgstr "Inflows"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Inflows minus outflows."
 msgstr "Inflows minus outflows."
@@ -11584,6 +11589,10 @@ msgstr "Largest first"
 msgid "Last 12 months"
 msgstr "Last 12 months"
 
+#: src/shared/ui/date-range-presets.ts
+msgid "Last 14 days"
+msgstr "Last 14 days"
+
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 24 months"
 msgstr "Last 24 months"
@@ -11596,6 +11605,7 @@ msgstr "Last 3 months"
 
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/accounts/components/ValueChangeStat.tsx
+#: src/shared/ui/date-range-presets.ts
 msgid "Last 30 days"
 msgstr "Last 30 days"
 
@@ -11603,6 +11613,10 @@ msgstr "Last 30 days"
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Last 6 months"
 msgstr "Last 6 months"
+
+#: src/shared/ui/date-range-presets.ts
+msgid "Last 90 days"
+msgstr "Last 90 days"
 
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Last active"
@@ -11636,6 +11650,7 @@ msgstr "Last Login"
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
+#: src/shared/ui/date-range-presets.ts
 msgid "Last month"
 msgstr "Last month"
 
@@ -11693,6 +11708,7 @@ msgstr "Last week"
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
+#: src/shared/ui/date-range-presets.ts
 msgid "Last year"
 msgstr "Last year"
 
@@ -12618,6 +12634,7 @@ msgid "Month of year"
 msgstr "Month of year"
 
 #: src/pages/analytics/analytics-state.ts
+#: src/shared/ui/date-range-presets.ts
 msgid "Month to date"
 msgstr "Month to date"
 
@@ -13264,6 +13281,14 @@ msgstr "Next"
 #: src/pages/onboarding/OnboardingFlow.tsx
 msgid "Next →"
 msgstr "Next →"
+
+#: src/shared/ui/date-range-presets.ts
+msgid "Next 3 months"
+msgstr "Next 3 months"
+
+#: src/shared/ui/date-range-presets.ts
+msgid "Next 30 days"
+msgstr "Next 30 days"
 
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "Next billing:"
@@ -14734,6 +14759,10 @@ msgstr "Outflow"
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 msgid "Outflow<0/>"
 msgstr "Outflow<0/>"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Outflows"
+msgstr "Outflows"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Outflows minus refunds, income categories left out"
@@ -17107,6 +17136,7 @@ msgstr "Role: {0}"
 
 #. placeholder {0}: space.role
 #. placeholder {1}: space.invitation_status !== 'accepted' && ` • ${space.invitation_status}`
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/components/WorkspaceRow.tsx
 msgid "Role: {0}{1}"
 msgstr "Role: {0}{1}"
@@ -21070,6 +21100,7 @@ msgstr "Transfer: {0}"
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "Transfers"
 msgstr "Transfers"
 
@@ -22624,6 +22655,7 @@ msgstr "Year"
 
 #: src/pages/accounts/AccountsPage.tsx
 #: src/pages/analytics/analytics-state.ts
+#: src/shared/ui/date-range-presets.ts
 msgid "Year to date"
 msgstr "Year to date"
 

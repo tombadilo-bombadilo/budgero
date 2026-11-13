@@ -21,31 +21,7 @@ import { DateRange } from 'react-day-picker';
 import { cn } from '@shared/lib/utils';
 import { Button } from '@shared/ui/button';
 import { Calendar } from '@shared/ui/calendar';
-
-type PresetKey =
-  | 'last14Days'
-  | 'last30Days'
-  | 'last90Days'
-  | 'monthToDate'
-  | 'lastMonth'
-  | 'yearToDate'
-  | 'lastYear'
-  | 'allTime'
-  | 'next30Days'
-  | 'next3Months';
-
-const PRESET_LABELS: Record<PresetKey, string> = {
-  last14Days: 'Last 14 days',
-  last30Days: 'Last 30 days',
-  last90Days: 'Last 90 days',
-  monthToDate: 'Month to date',
-  lastMonth: 'Last month',
-  yearToDate: 'Year to date',
-  lastYear: 'Last year',
-  allTime: 'All time',
-  next30Days: 'Next 30 days',
-  next3Months: 'Next 3 months',
-};
+import { PRESET_LABELS, type PresetKey } from '@shared/ui/date-range-presets';
 
 const FUTURE_PRESETS: ReadonlySet<PresetKey> = new Set(['next30Days', 'next3Months']);
 
@@ -208,7 +184,7 @@ export function DateRangePicker({
                         className="justify-start whitespace-nowrap sm:w-full"
                         onClick={() => handlePreset(presetRange, presetKey)}
                       >
-                        {PRESET_LABELS[presetKey]}
+                        {t(PRESET_LABELS[presetKey])}
                       </Button>
                     );
                   })}

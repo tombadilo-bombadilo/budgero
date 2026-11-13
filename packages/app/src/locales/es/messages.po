@@ -3925,6 +3925,7 @@ msgstr "todo el histórico"
 #: src/pages/accounts/components/ValueChangeStat.tsx
 #: src/pages/analytics/analytics-state.ts
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
+#: src/shared/ui/date-range-presets.ts
 msgid "All time"
 msgstr "Todo el histórico"
 
@@ -8489,7 +8490,7 @@ msgstr "Cada línea dividida necesita un importe de ingreso o de gasto."
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Each upcoming one appears in its account’s register once the date range at the top reaches its due date: pick Next 30 days or Next 3 months there. The dashboard’s Upcoming transactions card lists them too."
-msgstr "Cada una aparece en el registro de su cuenta cuando el rango de fechas de arriba llega a su vencimiento: elige allí Next 30 days o Next 3 months. La tarjeta «Próximas transacciones» del panel también las muestra."
+msgstr "Cada una aparece en el registro de su cuenta cuando el rango de fechas de arriba llega a su vencimiento: elige allí Próximos 30 días o Próximos 3 meses. La tarjeta «Próximas transacciones» del panel también las muestra."
 
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Earlier version restored"
@@ -11077,6 +11078,10 @@ msgstr "Ingreso vs Gasto"
 msgid "Inflow<0/>"
 msgstr "Ingreso<0/>"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Inflows"
+msgstr "Ingresos"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Inflows minus outflows."
 msgstr "Entradas menos salidas."
@@ -11582,6 +11587,10 @@ msgstr "Mayores primero"
 msgid "Last 12 months"
 msgstr "Últimos 12 meses"
 
+#: src/shared/ui/date-range-presets.ts
+msgid "Last 14 days"
+msgstr "Últimos 14 días"
+
 #: src/pages/analytics/analytics-state.ts
 msgid "Last 24 months"
 msgstr "Últimos 24 meses"
@@ -11594,6 +11603,7 @@ msgstr "Últimos 3 meses"
 
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/accounts/components/ValueChangeStat.tsx
+#: src/shared/ui/date-range-presets.ts
 msgid "Last 30 days"
 msgstr "Últimos 30 días"
 
@@ -11601,6 +11611,10 @@ msgstr "Últimos 30 días"
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 msgid "Last 6 months"
 msgstr "Últimos 6 meses"
+
+#: src/shared/ui/date-range-presets.ts
+msgid "Last 90 days"
+msgstr "Últimos 90 días"
 
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 msgid "Last active"
@@ -11634,6 +11648,7 @@ msgstr "Último acceso"
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
+#: src/shared/ui/date-range-presets.ts
 msgid "Last month"
 msgstr "Último mes"
 
@@ -11691,6 +11706,7 @@ msgstr "Última semana"
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/pages/custom-dashboards/components/DashboardFilterBar.tsx
 #: src/shared/lib/search-query-parser.ts
+#: src/shared/ui/date-range-presets.ts
 msgid "Last year"
 msgstr "Último año"
 
@@ -12616,6 +12632,7 @@ msgid "Month of year"
 msgstr "Mes del año"
 
 #: src/pages/analytics/analytics-state.ts
+#: src/shared/ui/date-range-presets.ts
 msgid "Month to date"
 msgstr "Desde el inicio del mes"
 
@@ -13262,6 +13279,14 @@ msgstr "Siguiente"
 #: src/pages/onboarding/OnboardingFlow.tsx
 msgid "Next →"
 msgstr "Siguiente →"
+
+#: src/shared/ui/date-range-presets.ts
+msgid "Next 3 months"
+msgstr "Próximos 3 meses"
+
+#: src/shared/ui/date-range-presets.ts
+msgid "Next 30 days"
+msgstr "Próximos 30 días"
 
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "Next billing:"
@@ -14732,6 +14757,10 @@ msgstr "Gasto"
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 msgid "Outflow<0/>"
 msgstr "Gasto<0/>"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Outflows"
+msgstr "Gastos"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Outflows minus refunds, income categories left out"
@@ -16462,7 +16491,7 @@ msgstr "Registra una nueva aplicación (Production para tus bancos reales, Sandb
 
 #: src/features/transactions/ui/SchedulingGuideDialog.tsx
 msgid "Registers show the date range at the top of the page, and the usual presets end today, so future transactions are out of view. Pick <0>Next 30 days</0> or <1>Next 3 months</1> in the date range to see them."
-msgstr "Los registros muestran el rango de fechas de la parte superior, y los ajustes habituales terminan hoy, así que las transacciones futuras quedan fuera de vista. Elige <0>Next 30 days</0> o <1>Next 3 months</1> en el rango de fechas para verlas."
+msgstr "Los registros muestran el rango de fechas de la parte superior, y los ajustes habituales terminan hoy, así que las transacciones futuras quedan fuera de vista. Elige <0>Próximos 30 días</0> o <1>Próximos 3 meses</1> en el rango de fechas para verlas."
 
 #: src/pages/admin/components/RegistrationSettings.tsx
 msgid "Registration"
@@ -17105,6 +17134,7 @@ msgstr "Rol: {0}"
 
 #. placeholder {0}: space.role
 #. placeholder {1}: space.invitation_status !== 'accepted' && ` • ${space.invitation_status}`
+#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/pages/settings/components/WorkspaceRow.tsx
 msgid "Role: {0}{1}"
 msgstr "Rol: {0}{1}"
@@ -19980,7 +20010,7 @@ msgstr "La clave se ocultará automáticamente después de 60 segundos"
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "The list only shows the date range at the top, the last 180 days to start with. Future dated transactions, and an account’s upcoming recurring ones, appear once the range reaches their date: pick Next 30 days or Next 3 months to see them."
-msgstr "La lista solo muestra el rango de fechas de arriba, al principio los últimos 180 días. Las transacciones con fecha futura, y las recurrentes próximas de una cuenta, aparecen cuando el rango llega a su fecha: elige Next 30 days o Next 3 months para verlas."
+msgstr "La lista solo muestra el rango de fechas de arriba, al principio los últimos 180 días. Las transacciones con fecha futura, y las recurrentes próximas de una cuenta, aparecen cuando el rango llega a su fecha: elige Próximos 30 días o Próximos 3 meses para verlas."
 
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "The member no longer has access to this workspace."
@@ -21068,6 +21098,7 @@ msgstr "Transferencia: {0}"
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "Transfers"
 msgstr "Transferencias"
 
@@ -22622,6 +22653,7 @@ msgstr "Año"
 
 #: src/pages/accounts/AccountsPage.tsx
 #: src/pages/analytics/analytics-state.ts
+#: src/shared/ui/date-range-presets.ts
 msgid "Year to date"
 msgstr "Lo que va de año"
 
