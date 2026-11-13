@@ -5,6 +5,7 @@ import { getCurrencyInfo, isCryptoCurrency, MILLIS_PER_UNIT } from '@budgero/cor
 import { DateRange } from 'react-day-picker';
 import { subDays } from 'date-fns';
 import { persistUserPreferencesPatch } from '@shared/lib/user-preferences-sync';
+import { saveSyncedPreference } from '@shared/lib/synced-state/synced-preferences';
 import { getMonthKey } from '@shared/lib/date-utils';
 
 export function buildCurrencyLocalizer(
@@ -90,7 +91,13 @@ const COMPACT_MOBILE_LAYOUT_KEY = 'budgero:compact-mobile-layout';
 const MOBILE_BUDGET_LAYOUT_KEY = 'budgero:mobile-budget-layout';
 const LEGACY_COMPACT_MOBILE_TABLE_KEY = 'budgero:compact-mobile-table';
 const HOME_PAGE_STORAGE_KEY = 'budgero:home-page';
-const BUDGET_TARGET_COLUMN_KEY = 'budgero:budget-target-column';
+/**
+ * Cache of the synced `budgetTargetColumn` preference (user scope, see
+ * synced-preferences.ts): '1' shown, '0' hidden by the user, absent = default
+ * (hidden, never written up).
+ */
+export const BUDGET_TARGET_COLUMN_KEY = 'budgero:budget-target-column';
+export const BUDGET_TARGET_COLUMN_PREFERENCE = 'budgetTargetColumn';
 
 /**
  * Read a persisted UI preference. `validate` maps the raw stored string to a
@@ -235,9 +242,11 @@ interface UiState {
   showHiddenCategories: boolean;
   setShowHiddenCategories: (show: boolean) => void;
 
-  // Goal target column on the desktop planning table (this device only)
+  // Goal target column on the desktop planning table (synced per user)
   showBudgetTargetColumn: boolean;
   toggleBudgetTargetColumn: () => void;
+  /** Applies the synced value: cache only, no write back. */
+  setShowBudgetTargetColumn: (show: boolean) => void;
 
   // Privacy mode - masks visible numeric digits across the UI
   privacyMaskNumbers: boolean;
@@ -456,12 +465,16 @@ export const useUiStore = create<UiState>((set) => ({
     (stored) => stored === '1',
     false
   ),
-  toggleBudgetTargetColumn: () =>
-    set((state) => {
-      const next = !state.showBudgetTargetColumn;
-      writeStoredPref(BUDGET_TARGET_COLUMN_KEY, next ? '1' : null);
-      return { showBudgetTargetColumn: next };
-    }),
+  toggleBudgetTargetColumn: () => {
+    const next = !useUiStore.getState().showBudgetTargetColumn;
+    writeStoredPref(BUDGET_TARGET_COLUMN_KEY, next ? '1' : '0');
+    set({ showBudgetTargetColumn: next });
+    saveSyncedPreference(BUDGET_TARGET_COLUMN_PREFERENCE, next);
+  },
+  setShowBudgetTargetColumn: (show) => {
+    writeStoredPref(BUDGET_TARGET_COLUMN_KEY, show ? '1' : '0');
+    set({ showBudgetTargetColumn: show });
+  },
 
   // Privacy mode (session-only, non-persistent)
   privacyMaskNumbers: false,
