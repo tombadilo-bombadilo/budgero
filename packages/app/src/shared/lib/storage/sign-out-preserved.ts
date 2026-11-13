@@ -1,7 +1,8 @@
 /**
  * Sign-out wipes localStorage. A few small markers have to outlive it, or
  * signing in again would lose the demo budget's banner, repeat first-month
- * analytics events and page guides, and drop the first-steps checklist. They
+ * analytics events and page guides, and lose a first-steps checklist not yet
+ * moved into the synced state (and the folded card). They
  * hold only ids, dates and step/milestone/guide names: no budget data,
  * nothing secret.
  */

@@ -578,7 +578,7 @@ export async function runOnboardingApply(
         meta: { label: 'onboarding.addBudget' },
       });
       budgetId = result.result;
-      startFirstSteps(spaceId);
+      startFirstSteps(spaceId, profileId);
     }
 
     // Tell the UI store which budget we just made — otherwise the

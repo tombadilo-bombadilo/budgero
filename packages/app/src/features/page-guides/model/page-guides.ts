@@ -79,7 +79,7 @@ const DAY_MS = 86_400_000;
 export interface PageGuideAudience {
   /** Profile `created_at`; unknown while the profile loads or offline. */
   signedUpAt: string | null | undefined;
-  /** The open workspace's first-steps checklist start day (YYYY-MM-DD), if this device started one. */
+  /** The user's first-steps checklist start day in the open workspace (YYYY-MM-DD, synced), if any. */
   firstStepsStartedOn: string | null | undefined;
   /** The open workspace is the onboarding demo. */
   isDemo: boolean;
@@ -91,7 +91,7 @@ function withinNewUserWindow(ms: number, now: number): boolean {
 
 /**
  * Guides open by themselves only for someone new: signed up in the last 30
- * days, or set this workspace up from scratch on this device in that time.
+ * days, or set this workspace up from scratch in that time (on any device).
  * People who used Budgero before guides existed get only the "How this
  * works" button. Never in the demo: it is sample data, and the guides are
  * worth more on the user's own budget.

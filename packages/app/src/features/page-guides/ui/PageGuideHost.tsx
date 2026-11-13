@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useProfile } from '@entities/user/api/useAuth';
 import { useDemoSpaceStatus } from '@features/demo-budget/lib/useIsDemoSpace';
 import { track } from '@shared/lib/analytics/track';
-import { useFirstSteps } from '@shared/lib/first-steps/first-steps';
+import { useFirstSteps } from '@shared/lib/first-steps/useFirstSteps';
 import { useActiveSpaceId } from '@shared/runtime/runtime-provider';
 import { usePageGuidesSeen } from '../api/usePageGuidesSeen';
 import {
@@ -34,7 +34,7 @@ export function PageGuideHost() {
   const { data: profile } = useProfile();
   const userId = profile?.id ?? null;
   const spaceId = useActiveSpaceId();
-  const firstSteps = useFirstSteps(spaceId);
+  const firstSteps = useFirstSteps(spaceId, userId);
   const demo = useDemoSpaceStatus();
   const isNew =
     !demo.checking &&

@@ -9,30 +9,43 @@ import {
   startFirstSteps,
 } from '@shared/lib/first-steps/first-steps';
 import { SidebarProvider } from '@shared/ui/sidebar';
+import { flushSyncedState, resetSyncedRuntime, SyncedRuntimeProvider } from '@/test/synced-runtime';
 import { HeaderBar } from './HeaderBar';
 
-vi.mock('@shared/runtime/runtime-provider', () => ({ useActiveSpaceId: () => 'space-1' }));
+vi.mock('@shared/runtime/global', async () => (await import('@/test/synced-runtime')).globalMock());
+vi.mock('@shared/runtime/runtime-provider', async () =>
+  (await import('@/test/synced-runtime')).runtimeProviderMock()
+);
+vi.mock('@entities/user/api/useAuth', async (importActual) => ({
+  ...(await importActual<object>()),
+  useProfile: () => ({ data: { id: 'u1' } }),
+}));
 vi.mock('@widgets/sync-status/ConnectivityStatus', () => ({ ConnectivityStatus: () => null }));
 
 beforeEach(() => {
   localStorage.clear();
+  resetSyncedRuntime();
   resetFirstStepsForTests();
   usePageGuideStore.setState({ request: null });
 });
 
-const renderAt = (path: string) =>
+const renderAt = async (path: string) => {
   render(
-    <MemoryRouter initialEntries={[path]}>
-      <SidebarProvider>
-        <HeaderBar breadcrumbs={[]} />
-      </SidebarProvider>
-    </MemoryRouter>
+    <SyncedRuntimeProvider>
+      <MemoryRouter initialEntries={[path]}>
+        <SidebarProvider>
+          <HeaderBar breadcrumbs={[]} />
+        </SidebarProvider>
+      </MemoryRouter>
+    </SyncedRuntimeProvider>
   );
+  await flushSyncedState();
+};
 
 it('offers "Show first steps" on the Budget page while the list is hidden', async () => {
-  startFirstSteps('space-1');
+  startFirstSteps('space-1', 'u1');
   hideFirstSteps('space-1');
-  renderAt('/budgeting');
+  await renderAt('/budgeting');
   const user = userEvent.setup();
   await user.click(screen.getByRole('button', { name: 'How this works' }));
   await user.click(await screen.findByRole('menuitem', { name: 'Show first steps' }));
@@ -40,17 +53,17 @@ it('offers "Show first steps" on the Budget page while the list is hidden', asyn
 });
 
 it('opens the guide directly while the list is showing', async () => {
-  startFirstSteps('space-1');
-  renderAt('/budgeting');
+  startFirstSteps('space-1', 'u1');
+  await renderAt('/budgeting');
   await userEvent.setup().click(screen.getByRole('button', { name: 'How this works' }));
   expect(screen.queryByRole('menuitem', { name: 'Show first steps' })).toBeNull();
   expect(usePageGuideStore.getState().request?.id).toBe('budget');
 });
 
 it('offers nothing extra on other pages', async () => {
-  startFirstSteps('space-1');
+  startFirstSteps('space-1', 'u1');
   hideFirstSteps('space-1');
-  renderAt('/accounts');
+  await renderAt('/accounts');
   await userEvent.setup().click(screen.getByRole('button', { name: 'How this works' }));
   expect(screen.queryByRole('menuitem', { name: 'Show first steps' })).toBeNull();
   expect(usePageGuideStore.getState().request?.id).toBe('accounts');
