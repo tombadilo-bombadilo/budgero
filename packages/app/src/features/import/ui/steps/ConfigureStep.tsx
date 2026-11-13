@@ -22,7 +22,7 @@ import {
   type ImportTemplate,
   type RawTableData,
 } from '@features/import/model/types';
-import { planAccountRoutes, readRememberedRoutes } from '@features/import/lib/account-routes';
+import { planAccountRoutes } from '@features/import/lib/account-routes';
 import { MappingTab } from './configure/MappingTab';
 import { FormattingTab } from './configure/FormattingTab';
 import { TemplatesTab } from './configure/TemplatesTab';
@@ -79,6 +79,7 @@ interface ConfigureStepProps {
   columnMapping: ColumnMapping;
   importConfig: ImportConfig;
   templates: ImportTemplate[];
+  canEditTemplates: boolean;
   selectedTemplate: string;
   saveAsTemplate: boolean;
   templateName: string;
@@ -89,8 +90,8 @@ interface ConfigureStepProps {
   onSetSkippedRowsInRange: (indices: number[], shouldSkip: boolean) => void;
   accounts: Account[] | undefined;
   hasBudgetSelected: boolean;
-  budgetId: number;
-  spaceId: string | null;
+  /** Account choices of earlier imports; null while they load (routes wait for them). */
+  rememberedRoutes: Record<string, number> | null;
   /** Currency of accounts the import creates when the file states none. */
   newAccountCurrency?: string;
   onColumnMappingChange: (mapping: ColumnMapping) => void;
@@ -110,6 +111,7 @@ export function ConfigureStep({
   columnMapping,
   importConfig,
   templates,
+  canEditTemplates,
   selectedTemplate,
   saveAsTemplate,
   templateName,
@@ -120,8 +122,7 @@ export function ConfigureStep({
   onSetSkippedRowsInRange,
   accounts,
   hasBudgetSelected,
-  budgetId,
-  spaceId,
+  rememberedRoutes,
   newAccountCurrency,
   onColumnMappingChange,
   onImportConfigChange,
@@ -142,14 +143,13 @@ export function ConfigureStep({
     ? (parsedData?.rows.filter((row) => !row[columnMapping.account!]?.trim()).length ?? 0)
     : 0;
   const rows = parsedData?.rows;
-  const remembered = useMemo(() => readRememberedRoutes(spaceId, budgetId), [spaceId, budgetId]);
   const routePlan = useMemo(
     () =>
       planAccountRoutes({
         rows: rows ?? [],
         column: columnMapping.account,
         accounts: accounts ?? [],
-        remembered,
+        remembered: rememberedRoutes ?? {},
         chosen: importConfig.accountRoutes,
         newAccountCurrency: newAccountCurrency ?? importConfig.accountCurrency,
         fallbackAccountId: importConfig.defaultAccountId,
@@ -158,7 +158,7 @@ export function ConfigureStep({
       rows,
       columnMapping.account,
       accounts,
-      remembered,
+      rememberedRoutes,
       importConfig.accountRoutes,
       importConfig.accountCurrency,
       importConfig.defaultAccountId,
@@ -169,6 +169,7 @@ export function ConfigureStep({
     columnMapping.date &&
     (columnMapping.amount || columnMapping.inflow || columnMapping.outflow) &&
     hasBudgetSelected &&
+    rememberedRoutes !== null &&
     routePlan.problems.size === 0 &&
     (columnMapping.account
       ? rowsWithoutAccount === 0 || importConfig.defaultAccountId
@@ -241,6 +242,7 @@ export function ConfigureStep({
           <TabsContent value="templates" className="space-y-4">
             <TemplatesTab
               templates={templates}
+              canEdit={canEditTemplates}
               selectedTemplate={selectedTemplate}
               saveAsTemplate={saveAsTemplate}
               templateName={templateName}

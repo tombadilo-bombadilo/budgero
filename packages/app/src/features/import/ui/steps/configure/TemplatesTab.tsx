@@ -16,6 +16,8 @@ import type { ImportTemplate } from '@features/import/model/types';
 
 interface TemplatesTabProps {
   templates: ImportTemplate[];
+  /** Saving and deleting would be written (false in the demo): hide those controls. */
+  canEdit: boolean;
   selectedTemplate: string;
   saveAsTemplate: boolean;
   templateName: string;
@@ -28,6 +30,7 @@ interface TemplatesTabProps {
 
 export function TemplatesTab({
   templates,
+  canEdit,
   selectedTemplate,
   saveAsTemplate,
   templateName,
@@ -69,28 +72,30 @@ export function TemplatesTab({
         </div>
       </div>
 
-      <Separator />
+      {canEdit && <Separator />}
 
-      <div className="space-y-2">
-        <div className="flex items-center space-x-2">
-          <input
-            type="checkbox"
-            id="save-template"
-            checked={saveAsTemplate}
-            onChange={(e) => onSaveAsTemplateChange(e.target.checked)}
-          />
-          <Label htmlFor="save-template">
-            <Trans>Save current settings as template</Trans>
-          </Label>
+      {canEdit && (
+        <div className="space-y-2">
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="save-template"
+              checked={saveAsTemplate}
+              onChange={(e) => onSaveAsTemplateChange(e.target.checked)}
+            />
+            <Label htmlFor="save-template">
+              <Trans>Save current settings as template</Trans>
+            </Label>
+          </div>
+          {saveAsTemplate && (
+            <Input
+              placeholder={t`Template name`}
+              value={templateName}
+              onChange={(e) => onTemplateNameChange(e.target.value)}
+            />
+          )}
         </div>
-        {saveAsTemplate && (
-          <Input
-            placeholder={t`Template name`}
-            value={templateName}
-            onChange={(e) => onTemplateNameChange(e.target.value)}
-          />
-        )}
-      </div>
+      )}
 
       {templates.length > 0 && (
         <>
@@ -114,9 +119,11 @@ export function TemplatesTab({
                       </Trans>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => onDeleteTemplate(template.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {canEdit && (
+                    <Button variant="ghost" size="sm" onClick={() => onDeleteTemplate(template.id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>

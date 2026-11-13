@@ -18,7 +18,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useUiStore } from '@shared/store/useUiStore';
 import { getErrorMessage } from '@shared/lib/errors';
 import { applyOpInvalidations, invalidateRoots } from '@shared/lib/query-utils';
-import { useActiveSpaceId, useRuntime } from '@shared/runtime/runtime-provider';
+import { useRuntime } from '@shared/runtime/runtime-provider';
 
 import {
   DEFAULT_IMPORT_CONFIG,
@@ -46,9 +46,8 @@ import {
   IMPORT_ACCOUNT_PLACEHOLDER,
   isPlaceholderAccountId,
   planAccountRoutes,
-  readRememberedRoutes,
-  rememberRoutes,
 } from '@features/import/lib/account-routes';
+import { rememberRoutes, useRememberedRoutes } from '@features/import/api/useRememberedRoutes';
 import { buildFileImportPreview, importTolerance } from '@features/import/lib/plan-file-import';
 import { trackImportedCsvPdf } from '@shared/lib/analytics/analytics';
 import { startImportRun } from '@shared/lib/analytics/import-tracking';
@@ -77,10 +76,8 @@ export function inDateOrder<T extends { input: { date: string; index: number } }
 export const STEPS: ImportStep[] = ['upload', 'configure', 'preview', 'import', 'complete'];
 
 export interface ImportDialogState {
-  /** The budget the file is imported into (0 when none is selected). */
-  budgetId: number;
-  /** The space that budget is in (keys the remembered account choices). */
-  spaceId: string | null;
+  /** Account choices of earlier imports into the budget; null while they load. */
+  rememberedRoutes: Record<string, number> | null;
   /** Currency of accounts the import creates when the file states none. */
   newAccountCurrency: string;
   currentStep: ImportStep;
@@ -105,6 +102,8 @@ export interface ImportDialogState {
   setSkippedRowsInRange: (indices: number[], shouldSkip: boolean) => void;
 
   templates: ImportTemplate[];
+  /** Templates can be saved and deleted here (not in the demo, nor before they load). */
+  canEditTemplates: boolean;
   selectedTemplate: string;
   setSelectedTemplate: (id: string) => void;
   saveAsTemplate: boolean;
@@ -189,12 +188,12 @@ export function useImportDialogState(): ImportDialogState {
 
   const queryClient = useQueryClient();
   const runtime = useRuntime();
-  const spaceId = useActiveSpaceId();
   const recordImportRunMutation = useRecordImportRun();
   const { setSelectedBudget, selectedBudget, pendingImportFile, setPendingImportFile } =
     useUiStore();
   const { data: budgets } = useBudgets();
   const { data: accounts } = useAccounts(selectedBudget?.ID || 0);
+  const rememberedRoutes = useRememberedRoutes(selectedBudget?.ID);
   // OFX/CAMT state their currency (parse-import-file puts it in accountCurrency);
   // otherwise accountCurrency is only the 'USD' default, so new accounts take
   // the budget's currency.
@@ -209,6 +208,7 @@ export function useImportDialogState(): ImportDialogState {
 
   const {
     templates,
+    canEditTemplates,
     selectedTemplate,
     setSelectedTemplate,
     saveAsTemplate,
@@ -410,7 +410,7 @@ export function useImportDialogState(): ImportDialogState {
       runKey: runKey.current,
       duplicates: runtime.services().importHistory.duplicates,
       tolerance: importTolerance(runtime.services()),
-      rememberedRoutes: readRememberedRoutes(spaceId, selectedBudget.ID),
+      rememberedRoutes: rememberedRoutes ?? {},
       newCurrency: newAccountCurrency,
     });
   }, [
@@ -422,7 +422,7 @@ export function useImportDialogState(): ImportDialogState {
     skippedRowIndices,
     selectedHeaderIndex,
     runtime,
-    spaceId,
+    rememberedRoutes,
   ]);
 
   const generatePreview = useCallback(async () => {
@@ -662,8 +662,9 @@ export function useImportDialogState(): ImportDialogState {
     // entry, so a single Ctrl+Z reverts it instead of one row at a time.
     useUndoStore.getState().beginGroup();
     try {
+      // A template that can't be saved (oversized, write failed) doesn't stop the import.
       if (saveAsTemplate && templateName.trim()) {
-        saveTemplateHandler({
+        await saveTemplateHandler({
           name: templateName.trim(),
           columnMapping,
           numberFormat: importConfig.numberFormat,
@@ -740,7 +741,7 @@ export function useImportDialogState(): ImportDialogState {
         rows: parsedData.rows,
         column: columnMapping.account,
         accounts: runtime.services().accounts.listAccounts(budgetId),
-        remembered: readRememberedRoutes(spaceId, budgetId),
+        remembered: rememberedRoutes ?? {},
         chosen: importConfig.accountRoutes,
         newAccountCurrency,
         fallbackAccountId: importConfig.defaultAccountId,
@@ -801,7 +802,7 @@ export function useImportDialogState(): ImportDialogState {
           if (created) chosen[source] = created.ID;
         }
       }
-      rememberRoutes(spaceId, budgetId, chosen);
+      await rememberRoutes(budgetId, chosen);
 
       // Process transactions (excluding any rows the user marked as skipped
       // in the configure step). The planner decides — using the exact same
@@ -1127,15 +1128,14 @@ export function useImportDialogState(): ImportDialogState {
     previewData,
     resolveCategoryId,
     runtime,
-    spaceId,
+    rememberedRoutes,
     recordImportRunMutation,
     setSelectedBudget,
     queryClient,
   ]);
 
   return {
-    budgetId: selectedBudget?.ID ?? 0,
-    spaceId,
+    rememberedRoutes,
     newAccountCurrency,
     currentStep,
     setCurrentStep,
@@ -1159,6 +1159,7 @@ export function useImportDialogState(): ImportDialogState {
     setSkippedRowsInRange,
 
     templates,
+    canEditTemplates,
     selectedTemplate,
     setSelectedTemplate,
     saveAsTemplate,

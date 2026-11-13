@@ -1,10 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import type { SyncedStateMergePatch } from '@shared/lib/synced-state';
 import {
   accountNameKey,
   defaultRoutes,
+  legacyRoutesPatch,
   planAccountRoutes,
-  readRememberedRoutes,
-  rememberRoutes,
+  rememberedRoutesOf,
+  rememberRoutesPatch,
   sourceAccountsOf,
 } from './account-routes';
 
@@ -13,7 +15,13 @@ const accounts = [
   { ID: 2, Name: 'Visa' },
 ];
 
-beforeEach(() => localStorage.clear());
+/** What the store holds after `patch` (as the synced merge applies it). */
+function applied(stored: unknown, patch: SyncedStateMergePatch | null): Record<string, unknown> {
+  const next = { ...(stored as Record<string, unknown>) };
+  Object.assign(next, patch?.set);
+  for (const key of patch?.remove ?? []) delete next[key];
+  return next;
+}
 
 describe('account routes', () => {
   it('lists each account in the file once, with its row count and currency', () => {
@@ -48,14 +56,14 @@ describe('account routes', () => {
   });
 
   it('starts from a same-name account, then the last choice, then a new account', () => {
-    rememberRoutes('space-a', 9, { '12345678': 2 });
+    const stored = applied({}, rememberRoutesPatch({}, { '12345678': 2 }, 1));
     const routes = defaultRoutes(
       sourceAccountsOf(
         [{ Account: 'current account' }, { Account: '12345678' }, { Account: 'IBAN-X' }],
         'Account'
       ),
       accounts,
-      readRememberedRoutes('space-a', 9)
+      rememberedRoutesOf(stored)
     );
     expect(routes).toEqual({
       'current account': { kind: 'existing', accountId: 1 },
@@ -159,45 +167,66 @@ describe('account routes', () => {
   });
 
   it('ignores a garbage stored value and handles source names like __proto__', () => {
-    localStorage.setItem('budgero:import-account-routes:space-a:4', '[1,2]');
-    expect(readRememberedRoutes('space-a', 4)).toEqual({});
-    localStorage.setItem('budgero:import-account-routes:space-a:4', '{"__proto__":2,"ok":1.5}');
-    expect(readRememberedRoutes('space-a', 4)).toEqual({ ['__proto__']: 2 });
+    expect(rememberedRoutesOf([1, 2])).toEqual({});
+    const stored = JSON.parse(
+      '{"s:__proto__":{"accountId":2,"usedAt":1},"s:ok":{"accountId":1.5,"usedAt":1},"x":{"accountId":1,"usedAt":1}}'
+    );
+    expect(rememberedRoutesOf(stored)).toEqual(JSON.parse('{"__proto__":2}'));
+    const patch = rememberRoutesPatch({}, JSON.parse('{"__proto__":3}'), 5);
+    expect(patch?.set).toEqual({ 's:__proto__': { accountId: 3, usedAt: 5 } });
     const plan = planAccountRoutes({
       rows: [{ Account: '__proto__' }, { Account: 'constructor' }],
       column: 'Account',
       accounts,
-      remembered: readRememberedRoutes('space-a', 4),
+      remembered: rememberedRoutesOf(stored),
       newAccountCurrency: 'EUR',
     });
     expect(plan.targets.get('__proto__')).toEqual({ kind: 'existing', accountId: 2 });
     expect(plan.routes.constructor).toEqual({ kind: 'new', name: 'constructor' });
   });
 
-  it('keeps at most 200 remembered sources, newest last', () => {
-    for (let i = 0; i < 210; i++) rememberRoutes('space-a', 5, { [`s${i}`]: 1 });
-    const stored = readRememberedRoutes('space-a', 5);
-    expect(Object.keys(stored)).toHaveLength(200);
-    expect(stored.s0).toBeUndefined();
-    expect(stored.s209).toBe(1);
+  it('keeps at most 200 remembered sources, dropping the oldest', () => {
+    let stored: Record<string, unknown> = {};
+    for (let i = 0; i < 210; i++) {
+      stored = applied(stored, rememberRoutesPatch(stored, { [`s${i}`]: 1 }, 1000 + i));
+    }
+    const routes = rememberedRoutesOf(stored);
+    expect(Object.keys(routes)).toHaveLength(200);
+    expect(routes.s9).toBeUndefined();
+    expect(routes.s10).toBe(1);
+    expect(routes.s209).toBe(1);
+    // Picking an old source again makes it new.
+    stored = applied(stored, rememberRoutesPatch(stored, { s10: 2, s210: 1 }, 2000));
+    expect(rememberedRoutesOf(stored).s10).toBe(2);
+    expect(rememberedRoutesOf(stored).s11).toBeUndefined();
   });
 
-  it('keeps each space apart, even for budgets with the same id', () => {
-    rememberRoutes('space-a', 1, { 'IBAN-X': 2 });
-    rememberRoutes('space-b', 1, { 'IBAN-X': 3 });
-    expect(readRememberedRoutes('space-a', 1)).toEqual({ 'IBAN-X': 2 });
-    expect(readRememberedRoutes('space-b', 1)).toEqual({ 'IBAN-X': 3 });
-    expect(readRememberedRoutes(null, 1)).toEqual({});
-    rememberRoutes(null, 1, { 'IBAN-Y': 2 });
-    expect(localStorage.getItem('budgero:import-account-routes:null:1')).toBeNull();
+  it('stays well under the synced value cap and skips very long sources', () => {
+    let stored: Record<string, unknown> = {};
+    for (let i = 0; i < 200; i++) {
+      const source = `${i}`.padEnd(120, 'x');
+      stored = applied(stored, rememberRoutesPatch(stored, { [source]: 1_000_000 + i }, 1e12 + i));
+    }
+    expect(JSON.stringify(stored).length).toBeLessThan(40_000);
+    expect(rememberRoutesPatch({}, { ['y'.repeat(121)]: 1 }, 1)).toBeNull();
+    expect(rememberRoutesPatch({}, {}, 1)).toBeNull();
   });
 
-  it('ignores the old budget-only key and removes it on write', () => {
-    localStorage.setItem('budgero:import-account-routes:6', '{"IBAN-X":2}');
-    expect(readRememberedRoutes('space-a', 6)).toEqual({});
-    rememberRoutes('space-a', 6, { 'IBAN-Y': 1 });
-    expect(readRememberedRoutes('space-a', 6)).toEqual({ 'IBAN-Y': 1 });
-    expect(localStorage.getItem('budgero:import-account-routes:6')).toBeNull();
+  it("adds only the device's old choices the synced map lacks, oldest first", () => {
+    const stored = applied({}, rememberRoutesPatch({}, { A: 1 }, 500));
+    const patch = legacyRoutesPatch(
+      stored,
+      [
+        ['A', 9],
+        ['B', 2],
+        ['C', 3],
+      ],
+      1000
+    );
+    expect(patch).toEqual({
+      set: { 's:B': { accountId: 2, usedAt: 998 }, 's:C': { accountId: 3, usedAt: 999 } },
+    });
+    expect(legacyRoutesPatch(stored, [['A', 9]], 1000)).toBeNull();
   });
 
   it('treats names that differ only by case, spacing or width as one', () => {
