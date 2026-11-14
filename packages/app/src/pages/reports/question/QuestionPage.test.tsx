@@ -20,6 +20,8 @@ const REPORTS = [
   report('sql', 'SELECT 1'),
 ];
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@shared/lib/analytics/track', () => ({ track }));
 vi.mock('@entities/report/api/useReports', () => ({
   useReports: () => ({ data: REPORTS, isLoading: false, isFetching: false }),
 }));
@@ -71,7 +73,10 @@ vi.mock('@pages/explorer-page/SqlQuestionView', () => ({
   ),
 }));
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  track.mockReset();
+});
 
 function renderAt(path: string, state?: unknown) {
   return render(
@@ -131,5 +136,32 @@ describe('QuestionPage', () => {
     expect(screen.getByText('sql:notebook')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Back to the notebook' }));
     expect(screen.getByText('resumed:draft')).toBeInTheDocument();
+  });
+
+  it('counts a new question started, by where it started, and not the SQL editor', () => {
+    renderAt('/reports/question/new');
+    expect(track).toHaveBeenCalledWith('question_started', { from: 'blank' });
+    cleanup();
+    track.mockReset();
+    renderAt('/reports/question/new', { startSpec: { source: 'budget' }, startFrom: 'example' });
+    expect(track).toHaveBeenCalledWith('question_started', { from: 'example' });
+    expect(track).toHaveBeenCalledTimes(1);
+    cleanup();
+    track.mockReset();
+    renderAt('/reports/question/new?mode=sql');
+    expect(track).not.toHaveBeenCalled();
+  });
+
+  it('counts saved questions opened, but not the page a save moves to', () => {
+    renderAt('/reports/question/notebook');
+    expect(track).toHaveBeenCalledWith('report_opened', { kind: 'question', report: 'none' });
+    cleanup();
+    track.mockReset();
+    renderAt('/reports/question/sql');
+    expect(track).toHaveBeenCalledWith('report_opened', { kind: 'sql_question', report: 'none' });
+    cleanup();
+    track.mockReset();
+    renderAt('/reports/question/notebook', { justSaved: true });
+    expect(track).not.toHaveBeenCalled();
   });
 });

@@ -5,6 +5,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Download } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import type { BreakoutColumn } from '@features/reports/lib/question';
 import { useChartPalette } from '@shared/lib/charts/echarts-chrome';
+import { track } from '@shared/lib/analytics/track';
 import { cn } from '@shared/lib/utils';
 import { columnLabel } from '../question-labels';
 import { useQuestionFormatters } from '../useQuestionFormatters';
@@ -135,6 +136,7 @@ export function PivotTableView({
       col: (value) => format.cell(pivot.colColumn, value),
     });
     downloadCsv(csv, exportName || t`pivot`);
+    track('report_exported', { format: 'csv', scope: 'pivot' });
   };
 
   const headerButton =

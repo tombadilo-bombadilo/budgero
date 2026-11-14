@@ -10,6 +10,9 @@ import {
 } from '@budgero/core/browser';
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import { getErrorMessage } from '@shared/lib/errors';
+import type { HomeLayoutAction } from '@shared/lib/analytics/events';
+import { track } from '@shared/lib/analytics/track';
+import { useIsMobile } from '@shared/hooks/useIsMobile';
 import { latestUndoId, runUndoGroup, useUndoStore } from '@shared/mutations/UndoStore';
 import { newOpRowId } from '@shared/mutations/op-code-registry/shared';
 import {
@@ -196,11 +199,22 @@ export function useDashboardEditor({
     if (id) session.current.add(id);
   };
 
-  const edit = async (label: string, work: (target: Target) => Promise<void>) => {
+  const edit = async (
+    label: string,
+    action: HomeLayoutAction,
+    work: (target: Target) => Promise<void>
+  ) => {
     if (!dashboard) return;
     try {
       await editInner(label, work);
       remember();
+      // One event per stored edit (a drag reports once, on drop).
+      if (claimHome) {
+        track('home_layout_changed', {
+          action,
+          layout: platform === 'mobile' ? 'phone' : 'desktop',
+        });
+      }
     } catch (error) {
       toast.error(getErrorMessage(error, t`Could not save the dashboard`));
     }
@@ -312,7 +326,7 @@ export function useDashboardEditor({
   };
 
   const reorder = (visibleIds: string[]) =>
-    edit(t`Move a card`, async (target) => {
+    edit(t`Move a card`, 'moved', async (target) => {
       if (platform === 'mobile' && hasPhoneOrder(target.widgets)) {
         await runUndoGroup(t`Move a card`, () => reorderOn(target, visibleIds, platform));
         return;
@@ -321,7 +335,7 @@ export function useDashboardEditor({
     });
 
   const remove = (shownId: string) =>
-    edit(t`Remove a card`, async (target) => {
+    edit(t`Remove a card`, 'removed', async (target) => {
       await exec('customDashboardWidgets.delete', { id: target.widgetId(shownId) });
     });
 
@@ -329,7 +343,7 @@ export function useDashboardEditor({
     shownId: string,
     patch: Partial<{ colSpan: number; rowSpan: number }>
   ) =>
-    edit(t`Resize a card`, async (target) => {
+    edit(t`Resize a card`, 'resized', async (target) => {
       const widget = byId(target, shownId);
       if (!widget) return;
       await exec('customDashboardWidgets.update', {
@@ -343,7 +357,7 @@ export function useDashboardEditor({
     });
 
   const updateMobileSize = (shownId: string, size: 's' | 'm' | 'l') =>
-    edit(t`Resize a card`, async (target) => {
+    edit(t`Resize a card`, 'resized', async (target) => {
       await exec('customDashboardWidgets.update', {
         id: target.widgetId(shownId),
         dashboardId: target.dashboardId,
@@ -352,7 +366,7 @@ export function useDashboardEditor({
     });
 
   const addQuestion = (input: { reportId: string; chartId: string; titleOverride?: string }) =>
-    edit(t`Add a question`, async (target) => {
+    edit(t`Add a question`, 'added_question', async (target) => {
       await exec('customDashboardWidgets.add', {
         dashboardId: target.dashboardId,
         reportId: input.reportId,
@@ -362,7 +376,7 @@ export function useDashboardEditor({
     });
 
   const addBuiltin = (key: BuiltinCardKey) =>
-    edit(t`Add a card`, async (target) => {
+    edit(t`Add a card`, 'added_card', async (target) => {
       // A card this platform hides (the other platform's) is shown instead of doubled.
       const hidden = target.widgets.find(
         (widget) => builtinKeyOf(widget) === key && isHiddenOn(widget, platform)
@@ -420,7 +434,7 @@ export function useDashboardEditor({
     });
 
   const replaceQuestion = (shownId: string, input: { reportId: string; chartId: string }) =>
-    edit(t`Choose another question`, async (target) => {
+    edit(t`Choose another question`, 'replaced_question', async (target) => {
       await exec('customDashboardWidgets.update', {
         id: target.widgetId(shownId),
         dashboardId: target.dashboardId,
@@ -484,6 +498,9 @@ export function stopUsingAsHomeOp(
 export function useHomeActions() {
   const { t } = useLingui();
   const runtime = useRuntime();
+  const isMobile = useIsMobile();
+  const tracked = (action: HomeLayoutAction) => () =>
+    track('home_layout_changed', { action, layout: isMobile ? 'phone' : 'desktop' });
   const exec: Exec = async (op, payload) => {
     const { result } = await runtime.mutationsRouter().execute<unknown>({
       op,
@@ -503,7 +520,9 @@ export function useHomeActions() {
   return {
     /** Show this dashboard on the home page. */
     makeHome: (dashboardId: string) =>
-      guard(() => exec('customDashboards.update', { id: dashboardId, isHome: true })),
+      guard(() => exec('customDashboards.update', { id: dashboardId, isHome: true })).then(
+        tracked('dashboard_as_home')
+      ),
     /**
      * Stop showing this dashboard on the home page: the home goes back to what
      * it was, the customised home if there is one, else the default layout.
@@ -512,7 +531,7 @@ export function useHomeActions() {
       guard(() => {
         const call = stopUsingAsHomeOp(dashboardId, dashboards);
         return exec(call.op, call.args);
-      }),
+      }).then(tracked('stopped_dashboard_as_home')),
     /** Back to the default layout: every customised copy of it is removed (one undo step). */
     resetHome: (dashboards: CustomDashboard[]) =>
       guard(() =>
@@ -523,6 +542,6 @@ export function useHomeActions() {
             }
           }
         })
-      ),
+      ).then(tracked('reset')),
   };
 }

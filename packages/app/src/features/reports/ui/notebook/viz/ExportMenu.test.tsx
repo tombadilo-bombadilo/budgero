@@ -8,6 +8,8 @@ vi.mock('@shared/lib/download', () => ({
   downloadBlob: (...args: unknown[]) => download.calls.push(args),
 }));
 const warning = vi.hoisted(() => vi.fn());
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@shared/lib/analytics/track', () => ({ track }));
 vi.mock('sonner', () => ({ toast: { warning, error: vi.fn(), success: vi.fn() } }));
 
 beforeAll(() => {
@@ -41,5 +43,22 @@ describe('ExportMenu', () => {
     await user.click(item);
     expect(download.calls).toHaveLength(1);
     expect(warning).toHaveBeenCalledWith(expect.stringContaining('first 2 of 9,000 rows'));
+    expect(track).toHaveBeenCalledWith('report_exported', { format: 'csv', scope: 'question' });
+  });
+
+  it('counts a card download as a card export', async () => {
+    track.mockReset();
+    const user = userEvent.setup();
+    render(
+      <ExportMenu
+        name="Payees"
+        result={{ columns: ['a'], rows: [[1]], rowCount: 1, executionTime: 1 }}
+        chartRef={createRef()}
+        scope="card"
+      />
+    );
+    await user.click(screen.getByRole('button', { name: 'Download' }));
+    await user.click(await screen.findByRole('menuitem', { name: /Download CSV/ }));
+    expect(track).toHaveBeenCalledWith('report_exported', { format: 'csv', scope: 'card' });
   });
 });

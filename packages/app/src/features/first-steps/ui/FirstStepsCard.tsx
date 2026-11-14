@@ -9,6 +9,7 @@ import { useProfile } from '@entities/user/api/useAuth';
 import { Button } from '@shared/ui/button';
 import { Card, CardContent } from '@shared/ui/card';
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from '@shared/ui/drawer';
+import { track } from '@shared/lib/analytics/track';
 import { cn } from '@shared/lib/utils';
 import { useActiveSpaceId } from '@shared/runtime/runtime-provider';
 import {
@@ -328,6 +329,11 @@ export function FirstStepsCard({
       {doneCount} of {total} done
     </Trans>
   );
+  // The user's own fold / unfold (the goal walkthrough's fold isn't counted).
+  const foldCard = (collapsed: boolean) => {
+    setFirstStepsCollapsed(spaceId, collapsed);
+    track('first_steps_toggled', { action: collapsed ? 'collapsed' : 'expanded' });
+  };
   // Taking the list away is its own, labelled action (never a bare ✕ that
   // reads as "close this"), and can be undone here or brought back later.
   const hide = () => {
@@ -457,7 +463,7 @@ export function FirstStepsCard({
         <button
           type="button"
           aria-expanded={false}
-          onClick={() => setFirstStepsCollapsed(spaceId, false)}
+          onClick={() => foldCard(false)}
           className="flex h-11 w-full items-center gap-3 rounded-xl px-4 text-left"
         >
           <ProgressDots done={doneCount} total={total} />
@@ -498,7 +504,7 @@ export function FirstStepsCard({
             className="h-7 w-7 shrink-0"
             aria-label={t`Collapse first steps`}
             aria-expanded
-            onClick={() => setFirstStepsCollapsed(spaceId, true)}
+            onClick={() => foldCard(true)}
           >
             <ChevronUp className="h-4 w-4" />
           </Button>

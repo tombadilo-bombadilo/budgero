@@ -7,6 +7,8 @@ const download = vi.hoisted(() => ({ calls: [] as [string, string][] }));
 vi.mock('@shared/lib/download', () => ({
   downloadBlob: (data: string, filename: string) => download.calls.push([String(data), filename]),
 }));
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@shared/lib/analytics/track', () => ({ track }));
 
 const spec = normalizeQuestion({
   source: 'transactions',
@@ -98,6 +100,7 @@ describe('PivotTableView', () => {
     );
     await user.click(screen.getByRole('button', { name: /Pivot CSV/ }));
     expect(download.calls).toHaveLength(1);
+    expect(track).toHaveBeenCalledWith('report_exported', { format: 'csv', scope: 'pivot' });
     const [csv, filename] = download.calls[0];
     expect(filename).toBe('Counts.csv');
     // UTF-8 BOM first, so Excel reads non-ASCII names right.

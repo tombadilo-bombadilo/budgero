@@ -1,5 +1,5 @@
 import { track } from './track';
-import { countBucket, durationBucket, type ImportSource } from './events';
+import { countBucket, durationBucket, smallCountBucket, type ImportSource } from './events';
 import { toErrorCode } from './error-codes';
 
 type ImportContext = 'onboarding' | 'app';
@@ -36,4 +36,25 @@ export function startImportRun(source: ImportSource, context: ImportContext): Im
     error: (error) => finish('error', toErrorCode(error, 'import'), 0),
     cancelled: () => finish('cancelled', 'cancelled', 0),
   };
+}
+
+/** import_accounts_mapped: a finished import that had "Accounts in this file". */
+export function trackAccountsMapped(
+  source: ImportSource,
+  summary: {
+    accounts: number;
+    existing: number;
+    created: number;
+    skipped: number;
+    rememberedUsed: boolean;
+  }
+): void {
+  track('import_accounts_mapped', {
+    source,
+    accounts_bucket: smallCountBucket(summary.accounts),
+    existing_bucket: smallCountBucket(summary.existing),
+    new_bucket: smallCountBucket(summary.created),
+    skipped_bucket: smallCountBucket(summary.skipped),
+    remembered: summary.rememberedUsed ? 'yes' : 'no',
+  });
 }

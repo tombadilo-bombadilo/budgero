@@ -29,7 +29,8 @@ import {
 } from '../model/goal-walkthrough';
 import { FirstStepsCard } from './FirstStepsCard';
 
-const { toastSuccess } = vi.hoisted(() => ({ toastSuccess: vi.fn() }));
+const { toastSuccess, track } = vi.hoisted(() => ({ toastSuccess: vi.fn(), track: vi.fn() }));
+vi.mock('@shared/lib/analytics/track', () => ({ track }));
 vi.mock('sonner', () => ({ toast: { success: toastSuccess } }));
 vi.mock('@shared/runtime/global', async () => (await import('@/test/synced-runtime')).globalMock());
 vi.mock('@shared/runtime/runtime-provider', async () =>
@@ -106,6 +107,7 @@ beforeEach(() => {
   resetSyncedRuntime();
   resetFirstStepsForTests();
   toastSuccess.mockReset();
+  track.mockReset();
   useUiStore.setState({
     focusCategoryId: null,
     highlightGoalCategoryId: null,
@@ -537,6 +539,7 @@ describe('on a desktop', () => {
     expect(card).toHaveTextContent('Next: Set a goal for one category');
     expect(screen.queryByText('Add a transaction')).toBeNull();
     expect(getFirstSteps('space-1')).toMatchObject({ collapsed: true, dismissed: false });
+    expect(track).toHaveBeenCalledWith('first_steps_toggled', { action: 'collapsed' });
   });
 
   it('remembers the folded card across reloads, and unfolds it on a click', async () => {
@@ -549,6 +552,7 @@ describe('on a desktop', () => {
     fireEvent.click(row1);
     expect(screen.getByText('Your first steps')).toBeInTheDocument();
     expect(getFirstSteps('space-1')?.collapsed).toBe(false);
+    expect(track).toHaveBeenCalledWith('first_steps_toggled', { action: 'expanded' });
   });
 });
 

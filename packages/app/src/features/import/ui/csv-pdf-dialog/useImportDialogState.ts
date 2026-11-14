@@ -46,11 +46,12 @@ import {
   IMPORT_ACCOUNT_PLACEHOLDER,
   isPlaceholderAccountId,
   planAccountRoutes,
+  summarizeAccountRoutes,
 } from '@features/import/lib/account-routes';
 import { rememberRoutes, useRememberedRoutes } from '@features/import/api/useRememberedRoutes';
 import { buildFileImportPreview, importTolerance } from '@features/import/lib/plan-file-import';
 import { trackImportedCsvPdf } from '@shared/lib/analytics/analytics';
-import { startImportRun } from '@shared/lib/analytics/import-tracking';
+import { startImportRun, trackAccountsMapped } from '@shared/lib/analytics/import-tracking';
 import { parseImportFile } from '@features/import/lib/parse-import-file';
 import { useImportTemplates } from './useImportTemplates';
 
@@ -737,10 +738,11 @@ export function useImportDialogState(): ImportDialogState {
       // "Import Account", or one per new account chosen in "Accounts in this
       // file" (planAccountRoutes, the same plan the preview used). Create each
       // once, then send its rows there. Placeholder ids never reach a mutation.
+      const routeAccounts = runtime.services().accounts.listAccounts(budgetId);
       const routePlan = planAccountRoutes({
         rows: parsedData.rows,
         column: columnMapping.account,
-        accounts: runtime.services().accounts.listAccounts(budgetId),
+        accounts: routeAccounts,
         remembered: rememberedRoutes ?? {},
         chosen: importConfig.accountRoutes,
         newAccountCurrency,
@@ -1079,6 +1081,17 @@ export function useImportDialogState(): ImportDialogState {
 
       trackImportedCsvPdf();
       importRun.ok(successCount);
+      if (routePlan.sources.length > 0) {
+        trackAccountsMapped(
+          parsedData.source.type,
+          summarizeAccountRoutes(
+            routePlan,
+            routeAccounts,
+            rememberedRoutes ?? {},
+            importConfig.accountRoutes
+          )
+        );
+      }
 
       await checkpoint(true);
 

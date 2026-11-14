@@ -21,6 +21,8 @@
  * state once, by the workspace owner, and then removed.
  */
 import { getRuntime } from '@shared/runtime/global';
+import type { FirstStepEventId } from '@shared/lib/analytics/events';
+import { track } from '@shared/lib/analytics/track';
 import {
   mergeSyncedState,
   readSyncedState,
@@ -290,7 +292,12 @@ function toState(
  * nothing changes). Only for the open workspace, never in the demo, and only
  * for a user with a checklist unless this starts one.
  */
-function write(spaceId: string, userId: string, entries: SyncedFirstSteps): void {
+function write(
+  spaceId: string,
+  userId: string,
+  entries: SyncedFirstSteps,
+  { silent = false }: { silent?: boolean } = {}
+): void {
   if (getRuntime()?.getActiveSpaceId() !== spaceId || syncedStateWriteBlocker()) return;
   const current = syncedValue(spaceId, userId);
   if (!current.startedOn && !entries.startedOn) return;
@@ -299,6 +306,7 @@ function write(spaceId: string, userId: string, entries: SyncedFirstSteps): void
   );
   if (changed.length === 0) return;
   const patch = Object.fromEntries(changed) as SyncedFirstSteps;
+  if (!silent) trackChanges(current, patch);
   const key = firstStepsDeviceKey(spaceId, userId);
   setOverlay(key, { ...overlays.get(key), ...patch });
   void mergeSyncedState(userScope(userId), FIRST_STEPS_KEY, { set: { ...patch } })
@@ -307,6 +315,24 @@ function write(spaceId: string, userId: string, entries: SyncedFirstSteps): void
       if (!sent) settleOverlay(key, {}, patch);
     })
     .catch(() => settleOverlay(key, {}, patch));
+}
+
+const allSyncedDone = (value: SyncedFirstSteps) => FIRST_STEP_IDS.every((id) => value[id]);
+const stepEventId = (step: FirstStepId): FirstStepEventId =>
+  step === 'everyCoin' ? 'every_coin' : step;
+
+/** Analytics for what this write changes (each entry counts once: unchanged ones aren't written). */
+function trackChanges(current: SyncedFirstSteps, patch: SyncedFirstSteps): void {
+  if (!current.startedOn) return;
+  for (const step of STEP_ENTRIES) {
+    if (patch[step] === true) track('first_step_completed', { step: stepEventId(step) });
+  }
+  if (!allSyncedDone(current) && allSyncedDone({ ...current, ...patch })) {
+    track('first_steps_finished');
+  }
+  if (patch.dismissed !== undefined) {
+    track('first_steps_toggled', { action: patch.dismissed ? 'hidden' : 'shown' });
+  }
 }
 
 function forActiveUser(spaceId: string | null, run: (userId: string) => void): void {
@@ -370,7 +396,7 @@ export function migrateLegacyFirstSteps(spaceId: string, userId: string): void {
   // Hidden here and never shown or hidden on another device.
   if (legacy.dismissed && stored.dismissed === undefined) adds.dismissed = true;
   // Merged and dropped here in one go, so it is written once.
-  if (Object.keys(adds).length > 0) write(spaceId, userId, adds);
+  if (Object.keys(adds).length > 0) write(spaceId, userId, adds, { silent: true });
   const all = { ...readAll() };
   delete all[spaceId];
   const key = firstStepsDeviceKey(spaceId, userId);

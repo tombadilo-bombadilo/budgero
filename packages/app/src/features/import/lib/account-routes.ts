@@ -361,3 +361,52 @@ export function planAccountRoutes({
 
   return { sources, routes, targets, newAccounts: [...newByName.values()], problems };
 }
+
+export interface AccountRoutesSummary {
+  /** Accounts the file names. */
+  accounts: number;
+  existing: number;
+  created: number;
+  skipped: number;
+  /**
+   * At least one account went where an earlier import sent it: not picked
+   * again, and not matched by name to an account.
+   */
+  rememberedUsed: boolean;
+}
+
+/** Counts of a route plan for analytics (no names or ids leave this function). */
+export function summarizeAccountRoutes(
+  plan: AccountRoutePlan,
+  accounts: RoutableAccount[],
+  remembered: Record<string, number> = {},
+  chosen: Record<string, AccountRoute> = {}
+): AccountRoutesSummary {
+  const openNames = new Map<string, number>();
+  for (const account of accounts) {
+    if (account.Archived) continue;
+    const key = accountNameKey(account.Name);
+    openNames.set(key, (openNames.get(key) ?? 0) + 1);
+  }
+  const summary: AccountRoutesSummary = {
+    accounts: plan.sources.length,
+    existing: 0,
+    created: 0,
+    skipped: 0,
+    rememberedUsed: false,
+  };
+  for (const [source, target] of plan.targets) {
+    if (target.kind === 'existing') {
+      summary.existing += 1;
+      if (
+        own(chosen, source) === undefined &&
+        openNames.get(accountNameKey(source)) !== 1 &&
+        own(remembered, source) === target.accountId
+      ) {
+        summary.rememberedUsed = true;
+      }
+    } else if (target.kind === 'new') summary.created += 1;
+    else if (target.kind === 'skip') summary.skipped += 1;
+  }
+  return summary;
+}

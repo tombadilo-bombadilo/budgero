@@ -10,6 +10,9 @@ import { useState } from 'react';
 import { DrillMenu, type DrillRequest } from './DrillMenu';
 import { withReturnFocus } from './drill-focus';
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@shared/lib/analytics/track', () => ({ track }));
+
 beforeAll(() => {
   Element.prototype.scrollIntoView ??= () => undefined;
   Element.prototype.hasPointerCapture ??= () => false;
@@ -23,7 +26,10 @@ beforeAll(() => {
   } as unknown as typeof ResizeObserver;
 });
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  track.mockReset();
+});
 
 const spec = normalizeQuestion({
   source: 'transactions',
@@ -76,6 +82,23 @@ describe('DrillMenu', () => {
       { field: 'is_income', op: 'is', values: [false] },
     ]);
     expect(onClose).toHaveBeenCalled();
+    expect(track).toHaveBeenCalledWith('report_drilled', { chart: 'bar', action: 'records' });
+  });
+
+  it('counts the drill with the chart shown', async () => {
+    const onDrill = vi.fn();
+    render(
+      <DrillMenu
+        spec={spec}
+        request={clicked}
+        onDrill={onDrill}
+        onClose={() => undefined}
+        chart="row"
+      />
+    );
+    await userEvent.setup().click(await screen.findByRole('menuitem', { name: 'Only Groceries' }));
+    expect(track).toHaveBeenCalledTimes(1);
+    expect(track).toHaveBeenCalledWith('report_drilled', { chart: 'row', action: 'keep' });
   });
 
   it('keyboard: open the break-out submenu and pick a field', async () => {
@@ -92,6 +115,7 @@ describe('DrillMenu', () => {
     const next = onDrill.mock.calls[0][0];
     expect(next.breakouts).toEqual(spec.breakouts);
     expect(next.filters.at(-1)).toEqual({ field: 'category', op: 'isNot', values: [20] });
+    expect(track).toHaveBeenCalledWith('report_drilled', { chart: 'bar', action: 'drop' });
   });
 
   it('renders nothing without a request', () => {

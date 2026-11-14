@@ -25,6 +25,7 @@ import {
 } from '@features/reports/lib/question';
 import { questionResultCsv } from '@features/reports/ui/notebook/viz/export';
 import { downloadBlob } from '@shared/lib/download';
+import { track } from '@shared/lib/analytics/track';
 import type { CustomDashboardWidget } from '@budgero/core/browser';
 import { BackToReports } from '@pages/reports/BackToReports';
 import { PeriodTabs } from '@shared/ui/PeriodTabs';
@@ -90,6 +91,11 @@ function CustomDashboardsView({ isMobile }: { isMobile: boolean }) {
     }
     return dashboards[0].id;
   }, [dashboards, dashboardId]);
+
+  // Each dashboard shown counts as one open (switching to another is a new one).
+  useEffect(() => {
+    if (activeDashboardId) track('report_opened', { kind: 'dashboard', report: 'none' });
+  }, [activeDashboardId]);
 
   const activeDashboardQuery = useCustomDashboard(activeDashboardId);
   const activeDashboard = activeDashboardQuery.data;
@@ -259,6 +265,7 @@ function CustomDashboardsView({ isMobile }: { isMobile: boolean }) {
     try {
       const zip = await buildCsvZip(files);
       downloadBlob(zip, zipFileName(dashboardDisplayName(activeDashboard)), 'application/zip');
+      track('report_exported', { format: 'csv_zip', scope: 'dashboard' });
       toast.success(
         plural(files.length, {
           one: 'Downloaded # CSV file in a zip archive',

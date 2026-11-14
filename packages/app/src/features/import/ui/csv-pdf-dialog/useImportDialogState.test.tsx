@@ -79,6 +79,8 @@ vi.mock('@shared/runtime/mutation-router', () => ({
 }));
 vi.mock('@features/import/lib/parse-import-file', () => ({ parseImportFile: mocks.parse }));
 vi.mock('@shared/lib/analytics/analytics', () => ({ trackImportedCsvPdf: vi.fn() }));
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@shared/lib/analytics/track', () => ({ track }));
 vi.mock('@features/import/api/useRememberedRoutes', () => ({
   useRememberedRoutes: () => mocks.remembered,
   rememberRoutes: (...args: unknown[]) => mocks.remember(...args),
@@ -288,6 +290,8 @@ describe('import wizard execution', () => {
       failedRows: 1,
       invalidRows: 0,
     });
+    // A file without an Account column has no "Accounts in this file" step.
+    expect(track).not.toHaveBeenCalledWith('import_accounts_mapped', expect.anything());
     expect(mocks.record.mock.calls.at(-1)?.[0].input).toMatchObject({
       transactionIds: [101],
       summary: { failedRows: 1 },
@@ -450,6 +454,14 @@ describe('import wizard execution', () => {
       destinationAccountName: '3 accounts',
     });
     expect(mocks.remember).toHaveBeenCalledWith(1, { Card: 77, checking: 10, Cash: 78 });
+    expect(track).toHaveBeenCalledWith('import_accounts_mapped', {
+      source: 'csv',
+      accounts_bucket: '3-5',
+      existing_bucket: '1',
+      new_bucket: '2',
+      skipped_bucket: '1',
+      remembered: 'no',
+    });
   });
 
   describe('transfers between accounts of one file', () => {
