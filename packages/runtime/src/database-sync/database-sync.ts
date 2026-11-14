@@ -54,6 +54,11 @@ export class DatabaseSync {
 
   private uploadInProgress = false;
 
+  /** Running upload() calls (any caller: debounced flush, save, out-of-band). */
+  private uploadsInFlight = 0;
+
+  private uploadSettledWaiters: (() => void)[] = [];
+
   /** Server blob version for optimistic concurrency control */
   private blobVersion: number | undefined;
 
@@ -110,6 +115,23 @@ export class DatabaseSync {
   }
 
   /**
+   * True while one of this device's own snapshot uploads is running. The
+   * server can announce that blob (sync_state_changed) before the upload's
+   * HTTP response lands, i.e. before getBlobVersion() knows it — a caller
+   * deciding whether an announced version is "ours" must wait for
+   * whenUploadsSettled() first.
+   */
+  isUploadInFlight(): boolean {
+    return this.uploadsInFlight > 0;
+  }
+
+  /** Resolves once no upload is running (immediately when none is). */
+  whenUploadsSettled(): Promise<void> {
+    if (this.uploadsInFlight === 0) return Promise.resolve();
+    return new Promise<void>((resolve) => this.uploadSettledWaiters.push(resolve));
+  }
+
+  /**
    * Mark the start of work that writes the DB across awaits (an op running,
    * a bulk import awaiting review). Until every such operation has ended, no
    * snapshot is captured: a blob taken in the middle would publish a
@@ -160,6 +182,18 @@ export class DatabaseSync {
    * its version — the log will never deliver this data to them.
    */
   async upload(options?: { outOfBand?: boolean }): Promise<void> {
+    this.uploadsInFlight += 1;
+    try {
+      await this.runUpload(options);
+    } finally {
+      this.uploadsInFlight -= 1;
+      if (this.uploadsInFlight === 0) {
+        for (const resolve of this.uploadSettledWaiters.splice(0)) resolve();
+      }
+    }
+  }
+
+  private async runUpload(options?: { outOfBand?: boolean }): Promise<void> {
     const db = this.deps.getDatabase();
     if (!db) return;
     if (!options?.outOfBand && this.deps.canUploadSnapshot && !this.deps.canUploadSnapshot()) {

@@ -188,6 +188,175 @@ describe('RuntimeCoordinator', () => {
     coordinator.destroy();
   });
 
+  describe('out-of-band blob announcements', () => {
+    type BlobTestContext = {
+      dbSync: { setBlobVersion(version: number): void; getBlobVersion(): number | undefined };
+    };
+    type BlobTestCoordinator = {
+      handleRemoteBlobVersion(spaceId: string, version: number): void;
+      lastSnapshotDownloadAt: number;
+      remoteBlobRetryTimer: ReturnType<typeof setTimeout> | null;
+      activeContext: BlobTestContext;
+    };
+
+    function deferred<T>() {
+      let resolve!: (value: T) => void;
+      const promise = new Promise<T>((r) => {
+        resolve = r;
+      });
+      return { promise, resolve };
+    }
+
+    async function setup() {
+      vi.stubGlobal('localStorage', localStorageMock as unknown as Storage);
+      vi.stubGlobal('sessionStorage', sessionStorageMock as unknown as Storage);
+      const created = createCoordinator();
+      await created.coordinator.init({
+        masterPassword: 'master',
+        queryClient: created.queryClient,
+      });
+      const internals = created.coordinator as unknown as BlobTestCoordinator;
+      internals.activeContext.dbSync.setBlobVersion(1);
+      return { ...created, internals, ctx: internals.activeContext };
+    }
+
+    /** Our own out-of-band upload; its HTTP response is held until released. */
+    function holdUploadResponse(deps: ReturnType<typeof createCoordinator>['deps']) {
+      const response = deferred<{ version: number }>();
+      const sent = deferred<void>();
+      vi.mocked(deps.uploadBlob).mockImplementationOnce(async () => {
+        sent.resolve();
+        return response.promise;
+      });
+      return { response, sent: sent.promise };
+    }
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('does not re-download its own upload announced before the upload response', async () => {
+      const { coordinator, deps, internals, ctx } = await setup();
+      internals.lastSnapshotDownloadAt = 0; // no rate limit: would download at once
+      const cursorBefore = coordinator.getSyncCursor();
+      const restore = vi.spyOn(ctx.dbSync as never, 'downloadAndRestore');
+
+      const upload = holdUploadResponse(deps);
+      const saving = coordinator.save({ outOfBand: true });
+      await upload.sent;
+
+      // The server broadcasts the new blob to every client of the space,
+      // including us, before our upload's HTTP response arrives.
+      internals.handleRemoteBlobVersion('local-core-space', 2);
+      upload.response.resolve({ version: 2 });
+      await saving;
+      await new Promise((r) => setTimeout(r, 20));
+
+      expect(deps.downloadBlob).not.toHaveBeenCalled();
+      expect(restore).not.toHaveBeenCalled();
+      expect(ctx.dbSync.getBlobVersion()).toBe(2);
+      expect(coordinator.getSyncCursor()).toBe(cursorBefore);
+      expect(internals.remoteBlobRetryTimer).toBeNull();
+      coordinator.destroy();
+    });
+
+    it('does not re-download its own upload via the rate-limited retry', async () => {
+      const { coordinator, deps, internals, ctx } = await setup();
+      internals.lastSnapshotDownloadAt = Date.now(); // load-time download just ran
+      const cursorBefore = coordinator.getSyncCursor();
+      const restore = vi.spyOn(ctx.dbSync as never, 'downloadAndRestore');
+
+      const upload = holdUploadResponse(deps);
+      const saving = coordinator.save({ outOfBand: true });
+      await upload.sent;
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+
+      internals.handleRemoteBlobVersion('local-core-space', 2);
+      await vi.advanceTimersByTimeAsync(10);
+      upload.response.resolve({ version: 2 });
+      await saving;
+
+      // Past the rate-limit window, the armed retry (if any) fires.
+      internals.lastSnapshotDownloadAt = 0;
+      await vi.advanceTimersByTimeAsync(6000);
+
+      expect(deps.downloadBlob).not.toHaveBeenCalled();
+      expect(restore).not.toHaveBeenCalled();
+      expect(coordinator.getSyncCursor()).toBe(cursorBefore);
+      coordinator.destroy();
+    });
+
+    it('re-checks the version before the rate-limited retry downloads', async () => {
+      const { coordinator, deps, internals, ctx } = await setup();
+      internals.lastSnapshotDownloadAt = Date.now();
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+
+      // Announced with no upload of ours visibly in flight (e.g. it is only
+      // recorded afterwards): the download is rate-limited and a retry armed.
+      internals.handleRemoteBlobVersion('local-core-space', 2);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(internals.remoteBlobRetryTimer).not.toBeNull();
+
+      // By the time the retry fires, the version is known (our upload's
+      // response recorded it): nothing to download.
+      ctx.dbSync.setBlobVersion(2);
+      internals.lastSnapshotDownloadAt = 0;
+      await vi.advanceTimersByTimeAsync(6000);
+
+      expect(deps.downloadBlob).not.toHaveBeenCalled();
+      coordinator.destroy();
+    });
+
+    it("still downloads another client's blob through the rate-limited retry", async () => {
+      const { coordinator, deps, internals } = await setup();
+      internals.lastSnapshotDownloadAt = Date.now();
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+
+      internals.handleRemoteBlobVersion('local-core-space', 5);
+      await vi.advanceTimersByTimeAsync(10);
+      expect(deps.downloadBlob).not.toHaveBeenCalled();
+      expect(internals.remoteBlobRetryTimer).not.toBeNull();
+
+      internals.lastSnapshotDownloadAt = 0;
+      await vi.advanceTimersByTimeAsync(6000);
+      expect(deps.downloadBlob).toHaveBeenCalledWith('local-core-space');
+      coordinator.destroy();
+    });
+
+    it("still downloads another client's newer blob announced during our upload", async () => {
+      const { coordinator, deps, internals } = await setup();
+      internals.lastSnapshotDownloadAt = 0;
+
+      const upload = holdUploadResponse(deps);
+      const saving = coordinator.save({ outOfBand: true });
+      await upload.sent;
+
+      // Another client's blob (v3) lands right after ours (v2).
+      internals.handleRemoteBlobVersion('local-core-space', 3);
+      await new Promise((r) => setTimeout(r, 10));
+      expect(deps.downloadBlob).not.toHaveBeenCalled(); // waits for our upload
+
+      upload.response.resolve({ version: 2 });
+      await saving;
+      await vi.waitFor(() => expect(deps.downloadBlob).toHaveBeenCalledWith('local-core-space'));
+      coordinator.destroy();
+    });
+
+    it('ignores announcements for a version it already has', async () => {
+      const { coordinator, deps, internals, ctx } = await setup();
+      internals.lastSnapshotDownloadAt = 0;
+      ctx.dbSync.setBlobVersion(5);
+
+      internals.handleRemoteBlobVersion('local-core-space', 5);
+      internals.handleRemoteBlobVersion('local-core-space', 4);
+      await new Promise((r) => setTimeout(r, 20));
+
+      expect(deps.downloadBlob).not.toHaveBeenCalled();
+      expect(internals.remoteBlobRetryTimer).toBeNull();
+      coordinator.destroy();
+    });
+  });
+
   it('replays the log tail after a snapshot restore', async () => {
     vi.stubGlobal('localStorage', localStorageMock as unknown as Storage);
     vi.stubGlobal('sessionStorage', sessionStorageMock as unknown as Storage);

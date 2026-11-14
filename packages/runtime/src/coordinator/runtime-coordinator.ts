@@ -69,6 +69,9 @@ export class RuntimeCoordinator {
 
   private remoteBlobRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
+  /** A drain is running; a concurrent call leaves it to that one. */
+  private remoteBlobDrainRunning = false;
+
   private queryClientRef: QueryClientLike | undefined;
 
   private readonly events: RuntimeCoordinatorEvents;
@@ -548,24 +551,74 @@ export class RuntimeCoordinator {
 
   private async drainPendingRemoteBlob(): Promise<void> {
     if (this.remoteBlobRetryTimer) return; // a retry is already armed
+    // The running drain re-reads pendingRemoteBlob before it finishes, so a
+    // newer announcement is picked up there (download or retry).
+    if (this.remoteBlobDrainRunning) return;
+    this.remoteBlobDrainRunning = true;
+    try {
+      await this.drainPendingRemoteBlobOnce();
+    } finally {
+      this.remoteBlobDrainRunning = false;
+    }
+  }
+
+  /**
+   * True when the pending announcement no longer needs a download: it was
+   * dropped, belongs to another space, or names a blob this device already
+   * has. The last case is our OWN upload: the server announces it to every
+   * client of the space, often before our upload's HTTP response has
+   * recorded the new version. Restoring our own snapshot would roll the DB
+   * and cursor back to its bound version (2026-11-14: the daily rate
+   * refresh's upload, re-downloaded by the same device).
+   */
+  private isPendingRemoteBlobSettled(): boolean {
     const pending = this.pendingRemoteBlob;
-    if (!pending) return;
+    if (!pending) return true;
     if (pending.spaceId !== this.getActiveSpaceId()) {
       this.pendingRemoteBlob = null;
-      return;
+      return true;
     }
+    const current = this.activeContext?.dbSync.getBlobVersion() ?? 0;
+    if (pending.version <= current) {
+      this.log('debug', 'Skipped out-of-band blob download: version already known', {
+        spaceId: pending.spaceId,
+        version: pending.version,
+        blobVersion: current,
+      });
+      this.pendingRemoteBlob = null;
+      return true;
+    }
+    return false;
+  }
+
+  private async drainPendingRemoteBlobOnce(): Promise<void> {
+    if (this.isPendingRemoteBlobSettled()) return;
     if (!this.statePolicy.isInitialized(this.state)) {
       // Mid-switch/init: the (re)activation downloads a fresh snapshot anyway.
       this.pendingRemoteBlob = null;
       return;
     }
 
+    // One of our own uploads is running: the announcement may be that very
+    // blob, whose version we learn only from the upload's response. Decide
+    // once it has settled.
+    const dbSync = this.activeContext?.dbSync;
+    if (dbSync?.isUploadInFlight()) {
+      await dbSync.whenUploadsSettled();
+      if (this.isPendingRemoteBlobSettled()) return;
+      if (!this.statePolicy.isInitialized(this.state)) {
+        this.pendingRemoteBlob = null;
+        return;
+      }
+    }
+
+    const pending = this.pendingRemoteBlob;
     try {
       await this.downloadLatest();
     } catch (error) {
       this.log('warn', 'Out-of-band blob download failed; retry armed', {
-        spaceId: pending.spaceId,
-        version: pending.version,
+        spaceId: pending?.spaceId,
+        version: pending?.version,
         error: errorMessage(error),
         originalError: error,
       });
@@ -578,6 +631,7 @@ export class RuntimeCoordinator {
     }
 
     // downloadLatest was rate-limited or failed — retry after its window.
+    // The retry re-checks the version first: it may be known by then.
     this.remoteBlobRetryTimer = setTimeout(() => {
       this.remoteBlobRetryTimer = null;
       void this.drainPendingRemoteBlob();

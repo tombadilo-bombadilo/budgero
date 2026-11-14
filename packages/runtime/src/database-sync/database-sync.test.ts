@@ -57,6 +57,45 @@ describe('DatabaseSync', () => {
     expect(sync.getBlobVersion()).toBe(11);
   });
 
+  it('reports an upload in flight until it settles, with the new version recorded', async () => {
+    const { deps } = createDeps();
+    vi.spyOn(crypto, 'compressAndEncryptDatabase').mockResolvedValue({
+      encrypted: new Uint8Array([7]),
+      compressed: new Uint8Array([6]),
+    });
+    let respond!: (value: { version: number }) => void;
+    deps.uploadBlob.mockImplementationOnce(
+      () => new Promise<{ version: number }>((resolve) => (respond = resolve))
+    );
+
+    const sync = new DatabaseSync('s1', deps as never);
+    sync.setBlobVersion(5);
+    expect(sync.isUploadInFlight()).toBe(false);
+    await sync.whenUploadsSettled(); // resolves at once when idle
+
+    const uploading = sync.upload({ outOfBand: true });
+    expect(sync.isUploadInFlight()).toBe(true);
+    let versionWhenSettled: number | undefined;
+    const settled = sync.whenUploadsSettled().then(() => {
+      versionWhenSettled = sync.getBlobVersion();
+    });
+    await vi.waitFor(() => expect(deps.uploadBlob).toHaveBeenCalled());
+    expect(versionWhenSettled).toBeUndefined();
+
+    respond({ version: 6 });
+    await uploading;
+    await settled;
+    expect(versionWhenSettled).toBe(6);
+    expect(sync.isUploadInFlight()).toBe(false);
+
+    // A failed upload settles too.
+    deps.uploadBlob.mockRejectedValueOnce(new Error('boom'));
+    const failing = sync.upload();
+    expect(sync.isUploadInFlight()).toBe(true);
+    await expect(failing).rejects.toThrow('boom');
+    expect(sync.isUploadInFlight()).toBe(false);
+  });
+
   it('skips upload when api/passphrase/db missing', async () => {
     const { deps } = createDeps();
     deps.checkApiHealth.mockResolvedValue(false);
