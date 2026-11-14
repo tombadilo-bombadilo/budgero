@@ -21,10 +21,36 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.21.2',
+    date: 'November 14, 2026',
+    summary:
+      'A change you had just made no longer briefly disappears after opening the app, PayPal subscription updates reach your account, and anonymous usage counts now cover the new reports and Home.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'Changes briefly undone after opening the app',
+        description:
+          'On the first open of the day, the app could reload its own copy of your budget a few seconds later, so a change you had just made vanished for a moment before coming back. It no longer reloads its own copy.',
+      },
+      {
+        type: 'fixed',
+        title: 'PayPal subscription updates',
+        description:
+          'An update to a subscription paid with PayPal could arrive before the subscription itself and was never applied. It is now matched to your account.',
+      },
+      {
+        type: 'improved',
+        title: 'Usage counts for the new features',
+        description:
+          'If you allow anonymous usage analytics, Budgero now also counts how custom reports, dashboards, the Home layout, the first-steps checklist and multi-account imports are used. Only fixed categories are sent, never names, amounts or anything in your budget. The privacy policy lists what is sent.',
+      },
+    ],
+  },
+  {
     version: 'v1.21.1',
     date: 'November 13, 2026',
     summary: 'Two layout fixes on phones: the goal form buttons fit, and the spending total shows in full.',
-    isLatest: true,
     items: [
       {
         type: 'fixed',
