@@ -354,7 +354,9 @@ func (h *Handlers) UploadDatabase(c echo.Context) error {
 	}
 
 	if h.syncHub != nil {
-		h.syncHub.NotifyDatabaseUpdate(blob.SpaceID, userID, newVersion, hash, legacyOutOfBand)
+		// Not echoed to the uploading session: it has the version from this
+		// response, and an echo arriving first made it re-download its own blob.
+		h.syncHub.NotifyDatabaseUpdateFrom(blob.SpaceID, userID, middleware.ClientSession(c), newVersion, hash, legacyOutOfBand)
 	}
 
 	log.Info().
@@ -1000,7 +1002,9 @@ func (h *Handlers) postDatabaseBlob(c echo.Context, rec *blobUploadRecord) error
 	}
 
 	if h.syncHub != nil {
-		h.syncHub.NotifyDatabaseUpdate(blob.SpaceID, userID, newVersion, hash, outOfBand)
+		// Not echoed to the uploading session: it has the version from this
+		// response, and an echo arriving first made it re-download its own blob.
+		h.syncHub.NotifyDatabaseUpdateFrom(blob.SpaceID, userID, middleware.ClientSession(c), newVersion, hash, outOfBand)
 	}
 
 	logger.Info().
