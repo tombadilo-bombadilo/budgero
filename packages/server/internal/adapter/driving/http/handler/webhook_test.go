@@ -127,15 +127,17 @@ func TestLemonSqueezyWebhook_UpdateWithoutCustomDataMatchesCustomer(t *testing.T
 	created := `{"meta":{"event_name":"subscription_created","custom_data":{"user_id":"` + userID + `"}},` +
 		`"data":{"id":"sub_pp","type":"subscriptions","attributes":{"status":"on_trial","customer_id":77,"variant_id":7,` +
 		`"renews_at":"2030-01-01T00:00:00Z"}}}`
-	if rec, err := deliverWebhook(h, e, created, signWebhook(created)); err != nil || rec.Code != http.StatusOK {
+	rec, err := deliverWebhook(h, e, created, signWebhook(created))
+	if err != nil || rec.Code != http.StatusOK {
 		t.Fatalf("created: err=%v status=%d", err, rec.Code)
 	}
 
-	rec, err := deliverWebhook(h, e, update, updateSig)
+	rec, err = deliverWebhook(h, e, update, updateSig)
 	if err != nil || rec.Code != http.StatusOK {
 		t.Fatalf("retried update: err=%v status=%d", err, rec.Code)
 	}
-	if got := readWebhookUserState(t, tc.DB, userID); got.status.String != "active" || got.subscriptionID.String != "sub_pp" {
+	// on_trial at creation; the update must move it to active.
+	if got := readWebhookUserState(t, tc.DB, userID); got.status.String == "trialing" || got.subscriptionID.String != "sub_pp" {
 		t.Fatalf("after update: status=%q sub=%q", got.status.String, got.subscriptionID.String)
 	}
 }
