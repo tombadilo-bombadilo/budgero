@@ -229,3 +229,55 @@ func TestHub_HandleMutation_AssignsVersion(t *testing.T) {
 		t.Errorf("second mutation version = %d, want 2", mutations[1].Version)
 	}
 }
+
+// A broadcast that excludes a client session skips only that session's own
+// connections: another session of the same user, and another user who
+// happens to send the same session id, are still notified.
+func TestHub_NotifyDatabaseUpdateFrom_SkipsOnlyTheUploadingSession(t *testing.T) {
+	db := newTestDB(t)
+	ml, err := websocket.NewMutationLog(db)
+	if err != nil {
+		t.Fatalf("NewMutationLog() error = %v", err)
+	}
+	hub := websocket.NewHub(ml)
+	go hub.Run()
+
+	uploader := websocket.NewClient(hub, nil, "user1", "space1").WithClientSession("session-aaaaaaaa")
+	sameUserOtherTab := websocket.NewClient(hub, nil, "user1", "space1").WithClientSession("session-bbbbbbbb")
+	otherUserSameID := websocket.NewClient(hub, nil, "user2", "space1").WithClientSession("session-aaaaaaaa")
+	clients := []*websocket.Client{uploader, sameUserOtherTab, otherUserSameID}
+	for _, c := range clients {
+		hub.Register <- c
+	}
+	// Register and broadcast share the Run loop; give registration a head
+	// start, then rely on in-order delivery via a trailing marker.
+	time.Sleep(20 * time.Millisecond)
+
+	hub.NotifyDatabaseUpdateFrom("space1", "user1", "session-aaaaaaaa", 7, "h", true)
+	hub.NotifyDatabaseUpdate("space1", "marker", 99, "m", false)
+
+	got := func(c *websocket.Client) []int64 {
+		var versions []int64
+		deadline := time.After(2 * time.Second)
+		for {
+			select {
+			case msg := <-c.Send:
+				if msg.Version == 99 {
+					return versions
+				}
+				versions = append(versions, msg.Version)
+			case <-deadline:
+				t.Fatal("marker not received")
+			}
+		}
+	}
+	if v := got(uploader); len(v) != 0 {
+		t.Fatalf("uploader notified of its own upload: %v", v)
+	}
+	if v := got(sameUserOtherTab); len(v) != 1 || v[0] != 7 {
+		t.Fatalf("other session of the same user got %v, want [7]", v)
+	}
+	if v := got(otherUserSameID); len(v) != 1 || v[0] != 7 {
+		t.Fatalf("other user with the same session id got %v, want [7]", v)
+	}
+}

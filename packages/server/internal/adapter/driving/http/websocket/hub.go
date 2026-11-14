@@ -104,6 +104,12 @@ type Message struct {
 	// (catch-up responses, key-version acks) route arbitrary JSON through the
 	// Send channel so WritePump stays the sole socket writer.
 	Raw map[string]interface{} `json:"-"`
+
+	// ExceptClientSession, when set, keeps a broadcast away from the
+	// connections of that client session (of UserID): the uploader of a blob
+	// learns its version from the upload response, and an echo that beats
+	// the response makes it download its own snapshot. Server-side only.
+	ExceptClientSession string `json:"-"`
 }
 
 // sendTimeout bounds how long a must-not-drop message (catch-up response)
@@ -185,6 +191,11 @@ func (h *Hub) Run() {
 		case message := <-h.broadcast:
 			// Send to all clients of the same space
 			for _, client := range h.clientsForSpace(message.SpaceID) {
+				if message.ExceptClientSession != "" &&
+					client.clientSession == message.ExceptClientSession &&
+					client.userID == message.UserID {
+					continue // the uploading session itself
+				}
 				if h.TrySend(client, message) {
 					log.Debug().
 						Str("user_id", message.UserID).
@@ -425,13 +436,22 @@ func (h *Hub) NotifyUserPasswordChanged(userID string, sender *Client) {
 // of the space. outOfBand marks blobs whose content is not in the mutation log
 // (imports/restores) so receivers download them instead of waiting for catch-up.
 func (h *Hub) NotifyDatabaseUpdate(spaceID, userID string, version int64, hash string, outOfBand bool) {
+	h.NotifyDatabaseUpdateFrom(spaceID, userID, "", version, hash, outOfBand)
+}
+
+// NotifyDatabaseUpdateFrom is NotifyDatabaseUpdate for a blob uploaded by
+// the client session clientSession of userID: every client of the space is
+// notified except that session's own connections (other tabs and devices of
+// the same user still are). An empty clientSession notifies everyone.
+func (h *Hub) NotifyDatabaseUpdateFrom(spaceID, userID, clientSession string, version int64, hash string, outOfBand bool) {
 	message := &Message{
-		Type:      "sync_state_changed",
-		UserID:    userID,
-		SpaceID:   spaceID,
-		Version:   version,
-		Hash:      hash,
-		OutOfBand: outOfBand,
+		Type:                "sync_state_changed",
+		UserID:              userID,
+		SpaceID:             spaceID,
+		Version:             version,
+		Hash:                hash,
+		OutOfBand:           outOfBand,
+		ExceptClientSession: clientSession,
 	}
 
 	select {
