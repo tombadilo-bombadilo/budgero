@@ -1,8 +1,9 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { SquarePen } from 'lucide-react';
 import type { QuestionRouteState } from '@pages/reports/question/useOpenSavedQuestion';
+import { track } from '@shared/lib/analytics/track';
 import { Button } from '@shared/ui/button';
 import { BackToReports } from '@pages/reports/BackToReports';
 import { useAnalyticsPageState, type ReportKey } from './analytics-state';
@@ -40,6 +41,9 @@ export default function PrebuiltReportPage() {
 
 function PrebuiltReport({ report }: { report: ReportKey }) {
   const { t } = useLingui();
+  useEffect(() => {
+    track('report_opened', { kind: 'prebuilt', report });
+  }, [report]);
   const state = useAnalyticsPageState();
   const data = useAnalyticsData(state.filters);
 
@@ -70,6 +74,7 @@ function PrebuiltReport({ report }: { report: ReportKey }) {
               const routeState: QuestionRouteState = {
                 startSpec: asQuestion.spec,
                 startName: asQuestion.name,
+                startFrom: 'prebuilt',
               };
               void navigate('/reports/question/new', { state: routeState });
             }}

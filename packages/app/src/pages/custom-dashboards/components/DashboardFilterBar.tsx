@@ -15,6 +15,8 @@ import {
   useFieldValueOptions,
   type ValueOption,
 } from '@features/reports/ui/notebook/useFieldValueOptions';
+import type { DashboardFilterKind } from '@shared/lib/analytics/events';
+import { track } from '@shared/lib/analytics/track';
 import { Button } from '@shared/ui/button';
 import {
   Command,
@@ -82,8 +84,11 @@ export function DashboardFilterBar({ budgetId, filters, onChange }: DashboardFil
       }),
     [filters, accountOptions, categoryGroupOptions]
   );
-  const update = (patch: Partial<DashboardFilters>) =>
+  // Only the user's own changes are counted, not the pruning below.
+  const update = (patch: Partial<DashboardFilters>, filter: DashboardFilterKind) => {
     onChange(normalizeDashboardFilters({ ...pruned, ...patch }));
+    track('dashboard_filter_applied', { filter });
+  };
 
   const onChangeRef = useRef(onChange);
   useEffect(() => {
@@ -120,7 +125,7 @@ export function DashboardFilterBar({ budgetId, filters, onChange }: DashboardFil
         initialFrom={date?.from}
         initialTo={date?.to}
         onApply={(from, to) => {
-          update({ date: { preset: 'custom', from, to } });
+          update({ date: { preset: 'custom', from, to } }, 'date');
           setCustomOpen(false);
         }}
       >
@@ -131,9 +136,10 @@ export function DashboardFilterBar({ budgetId, filters, onChange }: DashboardFil
               setCustomOpen(true);
               return;
             }
-            update({
-              date: value === ALL_TIME ? undefined : { preset: value as DashboardDatePreset },
-            });
+            update(
+              { date: value === ALL_TIME ? undefined : { preset: value as DashboardDatePreset } },
+              'date'
+            );
           }}
         >
           <SelectTrigger id={`${id}-date`} className="h-8 w-auto min-w-40 gap-2">
@@ -170,18 +176,26 @@ export function DashboardFilterBar({ budgetId, filters, onChange }: DashboardFil
         allLabel={t`All accounts`}
         options={accountOptions}
         selected={pruned.accounts ?? []}
-        onChange={(accounts) => update({ accounts })}
+        onChange={(accounts) => update({ accounts }, 'accounts')}
       />
       <MultiSelectFilter
         label={t`Category groups`}
         allLabel={t`All category groups`}
         options={categoryGroupOptions}
         selected={pruned.categoryGroups ?? []}
-        onChange={(categoryGroups) => update({ categoryGroups })}
+        onChange={(categoryGroups) => update({ categoryGroups }, 'category_groups')}
       />
 
       {hasDashboardFilters(pruned) && (
-        <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => onChange({})}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 px-2"
+          onClick={() => {
+            onChange({});
+            track('dashboard_filter_applied', { filter: 'clear' });
+          }}
+        >
           <X className="h-4 w-4" aria-hidden />
           <Trans>Clear filters</Trans>
         </Button>

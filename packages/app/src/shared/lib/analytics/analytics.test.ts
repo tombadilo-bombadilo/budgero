@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CaptureResult } from 'posthog-js';
+import { QUESTION_SOURCES, VISUALIZATIONS } from '@features/reports/lib/question';
+import { REPORT_ORDER } from '@pages/analytics/report-questions';
 import { ONBOARDING_STEPS } from '@pages/onboarding/onboarding-data';
 import { SUPPORTED_LOCALES } from '@shared/runtime/locale-preference';
 import {
@@ -7,8 +9,12 @@ import {
   durationBucket,
   EVENT_SCHEMA,
   ONBOARDING_STEP_IDS,
+  PREBUILT_REPORT_IDS,
+  REPORT_CHART_TYPES,
+  REPORT_DATA_SOURCES,
   sanitizeEvent,
   SETTING_VALUES,
+  smallCountBucket,
 } from './events';
 
 const posthog = {
@@ -108,6 +114,86 @@ describe('event registry', () => {
   it('matches the real onboarding steps and locales', () => {
     expect([...ONBOARDING_STEP_IDS].sort()).toEqual(ONBOARDING_STEPS.map((s) => s.id).sort());
     expect([...SETTING_VALUES.language].sort()).toEqual([...SUPPORTED_LOCALES].sort());
+  });
+
+  it('matches the real report sources, chart types and prebuilt reports', () => {
+    expect([...REPORT_DATA_SOURCES].sort()).toEqual([...QUESTION_SOURCES].sort());
+    expect([...REPORT_CHART_TYPES].sort()).toEqual(
+      VISUALIZATIONS.filter((v) => v !== 'auto').sort()
+    );
+    expect([...PREBUILT_REPORT_IDS].sort()).toEqual([...REPORT_ORDER].sort());
+  });
+
+  it('keeps the v1.21 feature events to their fixed values', () => {
+    expect(
+      sanitizeEvent('question_saved', {
+        source: 'budget',
+        chart: 'sankey',
+        stacking: 'none',
+        mode: 'new',
+        name: 'Groceries',
+      })
+    ).toEqual({ source: 'budget', chart: 'sankey', stacking: 'none', mode: 'new' });
+    expect(
+      sanitizeEvent('question_saved', {
+        source: 'budget',
+        chart: 'auto',
+        stacking: 'none',
+        mode: 'new',
+      })
+    ).toBeNull();
+    expect(sanitizeEvent('report_opened', { kind: 'prebuilt', report: 'money-map' })).toEqual({
+      kind: 'prebuilt',
+      report: 'money-map',
+    });
+    expect(sanitizeEvent('report_opened', { kind: 'question', report: 'q-123' })).toBeNull();
+    expect(sanitizeEvent('report_drilled', { chart: 'bar', action: 'keep' })).not.toBeNull();
+    expect(sanitizeEvent('dashboard_filter_applied', { filter: 'payees' })).toBeNull();
+    expect(
+      sanitizeEvent('report_exported', { format: 'csv_zip', scope: 'dashboard' })
+    ).not.toBeNull();
+    expect(sanitizeEvent('report_exported', { format: 'xlsx', scope: 'card' })).toBeNull();
+    expect(
+      sanitizeEvent('home_layout_changed', { action: 'moved', layout: 'phone' })
+    ).not.toBeNull();
+    expect(sanitizeEvent('home_layout_changed', { action: 'moved', layout: 'tablet' })).toBeNull();
+    expect(sanitizeEvent('first_step_completed', { step: 'every_coin' })).not.toBeNull();
+    expect(sanitizeEvent('first_step_completed', { step: 'everyCoin' })).toBeNull();
+    expect(sanitizeEvent('first_steps_finished', {})).toEqual({});
+    expect(
+      sanitizeEvent('import_accounts_mapped', {
+        source: 'ofx',
+        accounts_bucket: '3-5',
+        existing_bucket: '2',
+        new_bucket: '1',
+        skipped_bucket: '0',
+        remembered: 'yes',
+      })
+    ).not.toBeNull();
+    expect(
+      sanitizeEvent('import_accounts_mapped', {
+        source: 'ofx',
+        accounts_bucket: '4',
+        existing_bucket: '2',
+        new_bucket: '1',
+        skipped_bucket: '0',
+        remembered: 'yes',
+      })
+    ).toBeNull();
+  });
+
+  it('buckets small counts', () => {
+    expect([0, 1, 2, 3, 5, 6, 10, 11, 400].map(smallCountBucket)).toEqual([
+      '0',
+      '1',
+      '2',
+      '3-5',
+      '3-5',
+      '6-10',
+      '6-10',
+      '11+',
+      '11+',
+    ]);
   });
 
   it('buckets counts and durations', () => {

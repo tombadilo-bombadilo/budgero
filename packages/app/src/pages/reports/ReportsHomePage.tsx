@@ -85,7 +85,11 @@ export default function ReportsHomePage() {
     matches(query, example.name, example.hint)
   );
   const openExample = (example: (typeof examples)[number]) => {
-    const state: QuestionRouteState = { startSpec: example.spec, startName: example.name };
+    const state: QuestionRouteState = {
+      startSpec: example.spec,
+      startName: example.name,
+      startFrom: 'example',
+    };
     void navigate('/reports/question/new', { state });
   };
 

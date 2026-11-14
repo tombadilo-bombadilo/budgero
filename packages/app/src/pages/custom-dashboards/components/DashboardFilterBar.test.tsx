@@ -11,6 +11,8 @@ const optionState = vi.hoisted(() => ({
   categoryGroup: [] as { value: number; label: string }[],
 }));
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@shared/lib/analytics/track', () => ({ track }));
 vi.mock('@features/reports/ui/notebook/useFieldValueOptions', () => ({
   useFieldValueOptions: () => (kind: 'account' | 'categoryGroup') => optionState[kind],
 }));
@@ -25,6 +27,7 @@ function renderBar(filters: DashboardFilters, onChange = vi.fn()) {
 }
 
 beforeEach(() => {
+  track.mockReset();
   i18n.load('en', {});
   i18n.activate('en');
   optionState.account = [
@@ -62,6 +65,8 @@ describe('DashboardFilterBar', () => {
     const onChange = renderBar({ accounts: [1, 99], categoryGroups: [77] });
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(onChange).toHaveBeenCalledWith({ accounts: [1] });
+    // Pruning is not the user's own filter change.
+    expect(track).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: 'Accounts: Checking' })).toBeInTheDocument();
     expect(
       screen.getByRole('button', { name: 'Category groups: All category groups' })
@@ -105,6 +110,14 @@ describe('DashboardFilterBar', () => {
     expect(onChange).toHaveBeenCalledWith({
       date: { preset: 'custom', from: '2026-01-01', to: '2026-03-01' },
     });
+    expect(track).toHaveBeenCalledWith('dashboard_filter_applied', { filter: 'date' });
+  });
+
+  it('counts "Clear filters"', () => {
+    const onChange = renderBar({ accounts: [1] });
+    fireEvent.click(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(onChange).toHaveBeenCalledWith({});
+    expect(track).toHaveBeenCalledWith('dashboard_filter_applied', { filter: 'clear' });
   });
 
   it('offers no edit button for presets', () => {

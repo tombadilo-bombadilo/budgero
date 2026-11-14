@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { NodeSqlJsAdapter, ServiceManager, type Services } from '@budgero/core';
 import * as registry from '@shared/mutations/op-code-registry';
 import { defaultHomeDashboard } from '@widgets/dashboard/builtin/builtin-cards';
-import { useDashboardEditor } from './useDashboardEditor';
+import { useDashboardEditor, useHomeActions } from './useDashboardEditor';
 
 const runtime = vi.hoisted(() => ({
   services: undefined as Services | undefined,
@@ -33,6 +33,9 @@ vi.mock('@shared/runtime/runtime-provider', () => ({
     }),
   }),
 }));
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@shared/lib/analytics/track', () => ({ track }));
+vi.mock('@shared/hooks/useIsMobile', () => ({ useIsMobile: () => true }));
 const toastError = vi.hoisted(() => vi.fn());
 vi.mock('sonner', () => ({ toast: { error: toastError, success: vi.fn() } }));
 
@@ -96,5 +99,26 @@ describe('first edit of the default home', () => {
     ).toEqual({ colSpan: 9, rowSpan: 3 });
     expect(stored.widgets.some((w) => w.reportId === 'builtin:overspent')).toBe(false);
     expect(toastError).not.toHaveBeenCalled();
+    // One event per stored edit, on the home page only.
+    expect(track.mock.calls).toEqual(
+      expect.arrayContaining([
+        ['home_layout_changed', { action: 'resized', layout: 'desktop' }],
+        ['home_layout_changed', { action: 'removed', layout: 'desktop' }],
+      ])
+    );
+    expect(track).toHaveBeenCalledTimes(2);
+
+    // The home page choices count too, with this device's layout.
+    track.mockReset();
+    const actions = renderHook(() => useHomeActions()).result.current;
+    const dashboardId = String(rows[0].values[0][0]);
+    await act(async () => {
+      await actions.makeHome(dashboardId);
+      await actions.resetHome(device.services.customDashboards.getDashboards(budgetId));
+    });
+    expect(track.mock.calls).toEqual([
+      ['home_layout_changed', { action: 'dashboard_as_home', layout: 'phone' }],
+      ['home_layout_changed', { action: 'reset', layout: 'phone' }],
+    ]);
   });
 });

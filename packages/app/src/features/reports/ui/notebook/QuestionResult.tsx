@@ -289,6 +289,7 @@ export function QuestionResult({
           request={drillRequest}
           onClose={() => setDrillRequest(null)}
           onDrill={onDrill}
+          chart={showTable ? 'table' : shownVisualization}
         />
       )}
     </section>

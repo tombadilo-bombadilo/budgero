@@ -5,6 +5,7 @@ import { Download, FileSpreadsheet, ImageDown } from 'lucide-react';
 import { toast } from 'sonner';
 import type { QuestionColumn, QuestionSource } from '@features/reports/lib/question';
 import type { QueryResult } from '@shared/lib/sql/report-query-executor';
+import { track } from '@shared/lib/analytics/track';
 import { useChartPalette } from '@shared/lib/charts/echarts-chrome';
 import { getErrorMessage } from '@shared/lib/errors';
 import { Button } from '@shared/ui/button';
@@ -26,6 +27,8 @@ interface ExportMenuProps {
   /** Element holding the rendered chart. */
   chartRef: RefObject<HTMLElement | null>;
   className?: string;
+  /** Where the menu is (analytics): the question page or a dashboard card. */
+  scope?: 'question' | 'card';
 }
 
 /** Download menu: result CSV and chart PNG. */
@@ -36,6 +39,7 @@ export function ExportMenu({
   source,
   chartRef,
   className,
+  scope = 'question',
 }: ExportMenuProps) {
   const { t } = useLingui();
   const palette = useChartPalette();
@@ -50,6 +54,7 @@ export function ExportMenu({
         ? questionResultCsv(result, columns, source)
         : questionResultCsv(result, [], 'transactions');
     downloadCsv(csv, name);
+    track('report_exported', { format: 'csv', scope });
     if (truncated) {
       // The result holds only the first rows; say so instead of a silently short file.
       const shown = result.rows.length.toLocaleString();
@@ -68,6 +73,7 @@ export function ExportMenu({
         ink: palette.chrome.inkPrimary,
       });
       if (!saved) toast.error(t`There is no chart to save as an image.`);
+      else track('report_exported', { format: 'png', scope });
     } catch (error) {
       toast.error(getErrorMessage(error, t`Could not save the chart image`));
     }

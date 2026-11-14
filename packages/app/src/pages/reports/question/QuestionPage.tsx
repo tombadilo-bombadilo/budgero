@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/react/macro';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { useReports } from '@entities/report/api/useReports';
@@ -8,6 +8,7 @@ import {
   parseQuestionHeader,
   type QuestionSpec,
 } from '@features/reports/lib/question';
+import { track } from '@shared/lib/analytics/track';
 import { SqlQuestionView } from '@pages/explorer-page/SqlQuestionView';
 import { useUiStore } from '@shared/store/useUiStore';
 import { Button } from '@shared/ui/button';
@@ -52,6 +53,25 @@ export default function QuestionPage() {
     [reports, reportId]
   );
   const spec = useMemo(() => (report ? parseQuestionHeader(report.query) : null), [report]);
+
+  // Once per visit: a new notebook question (started − saved = given up), or
+  // a saved question opened. Saving a new one moves to its own page
+  // (`justSaved`), which is not an open.
+  const sqlMode = searchParams.get('mode') === 'sql';
+  const counted = useRef<string | null>(null);
+  const reportKind = report ? (spec ? 'question' : 'sql_question') : null;
+  useEffect(() => {
+    const visit = `${reportId ?? 'new'}:${location.key}`;
+    if (counted.current === visit) return;
+    if (!reportId) {
+      if (sqlMode) return;
+      counted.current = visit;
+      track('question_started', { from: routeState.startFrom ?? 'blank' });
+    } else if (reportKind) {
+      counted.current = visit;
+      if (!routeState.justSaved) track('report_opened', { kind: reportKind, report: 'none' });
+    }
+  }, [reportId, location.key, sqlMode, reportKind, routeState.startFrom, routeState.justSaved]);
 
   if (reportId && isLoading) {
     return (

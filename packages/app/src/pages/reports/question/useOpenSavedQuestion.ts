@@ -10,6 +10,10 @@ export interface QuestionRouteState {
   /** A new question that starts from an example (unsaved): its spec and name. */
   startSpec?: unknown;
   startName?: string;
+  /** Arrived here by saving a new question (analytics: not an open). */
+  justSaved?: boolean;
+  /** Where that spec came from (analytics only). */
+  startFrom?: 'example' | 'prebuilt';
 }
 
 /**
@@ -24,7 +28,9 @@ export function useOpenSavedQuestion() {
 
   useEffect(() => {
     if (!pending) return;
-    const state: QuestionRouteState | null = pending.pin ? { openPinDialog: true } : null;
+    const state: QuestionRouteState = pending.pin
+      ? { openPinDialog: true, justSaved: true }
+      : { justSaved: true };
     void navigate(`/reports/question/${pending.id}`, { replace: true, state });
   }, [pending, navigate]);
 

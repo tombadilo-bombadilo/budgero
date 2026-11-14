@@ -3,11 +3,15 @@ import { Ban, Filter, ListTree, ReceiptText, Rows3, ZoomIn } from 'lucide-react'
 import {
   applyDrill,
   drillOptions,
+  resolveVisualization,
   type DateBucket,
   type DrillAction,
   type DrillValue,
   type QuestionSpec,
+  type ResolvedVisualization,
 } from '@features/reports/lib/question';
+import type { DrillActionKind } from '@shared/lib/analytics/events';
+import { track } from '@shared/lib/analytics/track';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,13 +62,20 @@ interface DrillMenuProps {
   onClose: () => void;
   /** Called with the drilled question. */
   onDrill: (spec: QuestionSpec) => void;
+  /** The chart shown (analytics); defaults to the spec's own. */
+  chart?: ResolvedVisualization;
+}
+
+function drillActionKind(action: DrillAction): DrillActionKind {
+  if (action.kind === 'filter') return action.exclude ? 'drop' : 'keep';
+  return action.kind;
 }
 
 /**
  * "What do you want to see?" menu for a clicked value: the rows behind it,
  * a break-out by another field, a finer date bucket, or keep / drop the value.
  */
-export function DrillMenu({ spec, request, onClose, onDrill }: DrillMenuProps) {
+export function DrillMenu({ spec, request, onClose, onDrill, chart }: DrillMenuProps) {
   const { t } = useLingui();
   const format = useQuestionFormatters(spec.source);
   const zoomLabel = useZoomLabel();
@@ -73,6 +84,10 @@ export function DrillMenu({ spec, request, onClose, onDrill }: DrillMenuProps) {
   const options = drillOptions(context);
   const run = (action: DrillAction) => {
     onDrill(applyDrill(context, action));
+    track('report_drilled', {
+      chart: chart ?? resolveVisualization(spec),
+      action: drillActionKind(action),
+    });
     onClose();
   };
   const valueText = (value: DrillValue) => {

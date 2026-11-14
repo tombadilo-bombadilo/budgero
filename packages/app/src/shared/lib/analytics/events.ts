@@ -262,6 +262,104 @@ const FEATURES = [
 ] as const;
 const FEATURE_ACTIONS = ['opened', 'created'] as const;
 
+/** Small counts (accounts in an import file). */
+export const SMALL_COUNT_BUCKETS = ['0', '1', '2', '3-5', '6-10', '11+'] as const;
+export type SmallCountBucket = (typeof SMALL_COUNT_BUCKETS)[number];
+
+/** Notebook question data sources (features/reports QUESTION_SOURCES; a test keeps them equal). */
+export const REPORT_DATA_SOURCES = [
+  'transactions',
+  'budget',
+  'accounts',
+  'balances',
+  'scheduled',
+  'upcoming',
+  'payees',
+] as const;
+export type ReportDataSource = (typeof REPORT_DATA_SOURCES)[number];
+/** Resolved chart types (features/reports VISUALIZATIONS without 'auto'; a test keeps them equal). */
+export const REPORT_CHART_TYPES = [
+  'number',
+  'line',
+  'bar',
+  'area',
+  'pie',
+  'table',
+  'trend',
+  'combo',
+  'pivot',
+  'calendar',
+  'waterfall',
+  'sankey',
+  'scatter',
+  'row',
+  'treemap',
+  'radar',
+  'progress',
+] as const;
+export type ReportChartType = (typeof REPORT_CHART_TYPES)[number];
+/** Resolved bar/area stacking ('none' for every other chart). */
+const REPORT_STACKINGS = ['none', 'stacked', 'percent'] as const;
+/** Where a new notebook question started. */
+export const QUESTION_STARTS = ['blank', 'example', 'prebuilt'] as const;
+export type QuestionStart = (typeof QUESTION_STARTS)[number];
+/** Prebuilt report keys (pages/analytics REPORT_ORDER; a test keeps them equal), 'none' otherwise. */
+export const PREBUILT_REPORT_IDS = [
+  'wealth',
+  'spending',
+  'in-out',
+  'plan',
+  'money-map',
+  'scenario',
+  'ledger',
+] as const;
+export type PrebuiltReportId = (typeof PREBUILT_REPORT_IDS)[number];
+const REPORT_KINDS = ['prebuilt', 'question', 'sql_question', 'dashboard'] as const;
+/** What a click on a chart value opened (drill.ts DrillAction; filter split into keep/drop). */
+export const DRILL_ACTIONS = [
+  'records',
+  'transactions',
+  'breakout',
+  'zoom',
+  'keep',
+  'drop',
+] as const;
+export type DrillActionKind = (typeof DRILL_ACTIONS)[number];
+/** 'clear' is "Clear filters". */
+const DASHBOARD_FILTERS = ['date', 'accounts', 'category_groups', 'clear'] as const;
+export type DashboardFilterKind = (typeof DASHBOARD_FILTERS)[number];
+const REPORT_EXPORT_FORMATS = ['csv', 'png', 'csv_zip'] as const;
+/** question: the question page; card: a dashboard or home card; pivot: a pivot table's own CSV button. */
+const REPORT_EXPORT_SCOPES = ['question', 'card', 'dashboard', 'pivot'] as const;
+export type ReportExportScope = (typeof REPORT_EXPORT_SCOPES)[number];
+
+/** One committed edit of the home page (never a drag frame). */
+export const HOME_LAYOUT_ACTIONS = [
+  'moved',
+  'removed',
+  'resized',
+  'added_card',
+  'added_question',
+  'replaced_question',
+  'reset',
+  'dashboard_as_home',
+  'stopped_dashboard_as_home',
+] as const;
+export type HomeLayoutAction = (typeof HOME_LAYOUT_ACTIONS)[number];
+const HOME_LAYOUTS = ['desktop', 'phone'] as const;
+
+/** First-steps checklist steps (shared/lib/first-steps FirstStepId, snake_case). */
+export const FIRST_STEP_EVENT_IDS = [
+  'goal',
+  'assign',
+  'transaction',
+  'return',
+  'share',
+  'every_coin',
+] as const;
+export type FirstStepEventId = (typeof FIRST_STEP_EVENT_IDS)[number];
+const FIRST_STEPS_TOGGLES = ['hidden', 'shown', 'collapsed', 'expanded'] as const;
+
 const MONEY_INTEGRITY_KINDS = ['transactions', 'account_balance'] as const;
 
 /** CANCEL_REASON_OPTIONS values (never the free-text notes). */
@@ -381,6 +479,17 @@ export const EVENT_SCHEMA = {
     duration_bucket: DURATION_BUCKETS,
   },
 
+  // A finished import whose file names its accounts ("Accounts in this file"):
+  // how many accounts, where they went, and whether an earlier choice was reused.
+  import_accounts_mapped: {
+    source: IMPORT_SOURCES,
+    accounts_bucket: SMALL_COUNT_BUCKETS,
+    existing_bucket: SMALL_COUNT_BUCKETS,
+    new_bucket: SMALL_COUNT_BUCKETS,
+    skipped_bucket: SMALL_COUNT_BUCKETS,
+    remembered: YES_NO,
+  },
+
   // Bank sync
   bank_connect_started: { provider: BANK_PROVIDERS },
   bank_connect_finished: { provider: BANK_PROVIDERS, outcome: OUTCOMES, error_code: ERROR_CODES },
@@ -428,6 +537,27 @@ export const EVENT_SCHEMA = {
   // Export
   export_done: { format: EXPORT_FORMATS },
   backup_downloaded: { format: EXPORT_FORMATS },
+
+  // Reports: the question builder, saved questions, dashboards
+  question_started: { from: QUESTION_STARTS },
+  question_saved: {
+    source: REPORT_DATA_SOURCES,
+    chart: REPORT_CHART_TYPES,
+    stacking: REPORT_STACKINGS,
+    mode: ['new', 'edited'],
+  },
+  report_opened: { kind: REPORT_KINDS, report: [...PREBUILT_REPORT_IDS, 'none'] },
+  report_drilled: { chart: REPORT_CHART_TYPES, action: DRILL_ACTIONS },
+  dashboard_filter_applied: { filter: DASHBOARD_FILTERS },
+  report_exported: { format: REPORT_EXPORT_FORMATS, scope: REPORT_EXPORT_SCOPES },
+
+  // Home page layout
+  home_layout_changed: { action: HOME_LAYOUT_ACTIONS, layout: HOME_LAYOUTS },
+
+  // First-steps checklist (ticked on this device by this user)
+  first_step_completed: { step: FIRST_STEP_EVENT_IDS },
+  first_steps_finished: NONE,
+  first_steps_toggled: { action: FIRST_STEPS_TOGGLES },
 
   // Usage
   feature_used: { feature: FEATURES, action: FEATURE_ACTIONS },
@@ -525,6 +655,15 @@ export function ageBucket(ms: number): AgeBucket {
   if (h < 1) return '<1h';
   if (h < 24) return '1-24h';
   return '1d+';
+}
+
+export function smallCountBucket(n: number): SmallCountBucket {
+  if (!Number.isFinite(n) || n <= 0) return '0';
+  if (n === 1) return '1';
+  if (n === 2) return '2';
+  if (n <= 5) return '3-5';
+  if (n <= 10) return '6-10';
+  return '11+';
 }
 
 export function actionsBucket(n: number): ActionsBucket {

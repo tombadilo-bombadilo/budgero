@@ -354,6 +354,7 @@ export function WidgetCard({
               source={question?.spec.source}
               chartRef={chartRef}
               className="h-9 w-9"
+              scope="card"
             />
             {report && (
               <Button

@@ -8,6 +8,7 @@ import {
   rememberedRoutesOf,
   rememberRoutesPatch,
   sourceAccountsOf,
+  summarizeAccountRoutes,
 } from './account-routes';
 
 const accounts = [
@@ -232,5 +233,51 @@ describe('account routes', () => {
   it('treats names that differ only by case, spacing or width as one', () => {
     expect(accountNameKey('  My   Visa ')).toBe(accountNameKey('my visa'));
     expect(accountNameKey('ＶＩＳＡ')).toBe(accountNameKey('visa'));
+  });
+});
+
+describe('summarizeAccountRoutes', () => {
+  const rows = [
+    { Account: 'Current Account' },
+    { Account: 'DE89 3704' },
+    { Account: 'Savings Pot' },
+    { Account: 'Old card' },
+  ];
+  const plan = (remembered: Record<string, number>, chosen = {}) =>
+    planAccountRoutes({
+      rows,
+      column: 'Account',
+      accounts,
+      remembered,
+      chosen,
+      newAccountCurrency: 'EUR',
+    });
+
+  it('counts where each account in the file went', () => {
+    const chosen = { 'Old card': { kind: 'skip' as const } };
+    expect(summarizeAccountRoutes(plan({}, chosen), accounts, {}, chosen)).toEqual({
+      accounts: 4,
+      existing: 1,
+      created: 2,
+      skipped: 1,
+      rememberedUsed: false,
+    });
+  });
+
+  it('says a remembered choice was reused only when it decided the route', () => {
+    // Same-name match: the name decided it, not the memory.
+    expect(
+      summarizeAccountRoutes(plan({ 'Current Account': 1 }), accounts, { 'Current Account': 1 })
+        .rememberedUsed
+    ).toBe(false);
+    expect(
+      summarizeAccountRoutes(plan({ 'DE89 3704': 2 }), accounts, { 'DE89 3704': 2 })
+    ).toMatchObject({ existing: 2, created: 2, rememberedUsed: true });
+    // Picked again by hand.
+    const chosen = { 'DE89 3704': { kind: 'existing' as const, accountId: 2 } };
+    expect(
+      summarizeAccountRoutes(plan({ 'DE89 3704': 2 }, chosen), accounts, { 'DE89 3704': 2 }, chosen)
+        .rememberedUsed
+    ).toBe(false);
   });
 });

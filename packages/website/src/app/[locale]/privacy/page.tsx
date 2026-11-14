@@ -51,7 +51,7 @@ export default async function PrivacyPolicy({
             {t('privacy_policy')}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mb-1">
-            <strong>{t('last_updated')}</strong> {t('3_november_2026')}{' '}
+            <strong>{t('last_updated')}</strong> {t('14_november_2026')}{' '}
           </p>
           <p className="text-gray-600 dark:text-gray-400 mb-8">
             <strong>{t('effective')}</strong> {t('29_april_2026')}{' '}
@@ -154,6 +154,7 @@ export default async function PrivacyPolicy({
               <li>{t('pa_imports')}</li>
               <li>{t('pa_bank_sync')}</li>
               <li>{t('pa_features')}</li>
+              <li>{t('pa_reports_home')}</li>
               <li>{t('pa_ai')}</li>
               <li>{t('pa_settings')}</li>
               <li>{t('pa_account')}</li>

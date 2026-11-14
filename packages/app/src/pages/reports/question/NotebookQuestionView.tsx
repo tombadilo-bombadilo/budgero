@@ -20,6 +20,8 @@ import {
   createQuestion,
   normalizeQuestion,
   questionHeaderIssues,
+  resolveStacking,
+  resolveVisualization,
   serializeQuestionHeader,
   type QuestionSpec,
 } from '@features/reports/lib/question';
@@ -37,6 +39,7 @@ import {
 } from '@features/reports/ui/notebook/question-labels';
 import { useFieldValueOptions } from '@features/reports/ui/notebook/useFieldValueOptions';
 import { useQuestionQuery } from '@features/reports/ui/notebook/useQuestionQuery';
+import { track } from '@shared/lib/analytics/track';
 import { useLeaveGuard } from '@shared/hooks/useLeaveGuard';
 import { useIsMobile } from '@shared/hooks/useIsMobile';
 import { Button } from '@shared/ui/button';
@@ -185,6 +188,13 @@ export function NotebookQuestionView({
         labels: getQuestionSqlLabels(),
       });
       setName(savedName);
+      const chartType = resolveVisualization(spec);
+      const saved = {
+        source: spec.source,
+        chart: chartType,
+        stacking: resolveStacking(spec, chartType),
+        mode: report ? 'edited' : 'new',
+      } as const;
       const payload = {
         name: savedName,
         description,
@@ -194,11 +204,13 @@ export function NotebookQuestionView({
       if (report) {
         const charts = [chart, ...(report.charts?.slice(1) ?? [])];
         const updated = await updateReport.mutateAsync({ id: report.id, ...payload, charts });
+        track('question_saved', saved);
         await queryClient.invalidateQueries({ queryKey: ['reports'] });
         return updated;
       }
       const { id: _id, ...newChart } = chart;
       const created = await createReport.mutateAsync({ ...payload, charts: [newChart] });
+      track('question_saved', saved);
       clearQuestionDraft(budgetId, null);
       await queryClient.invalidateQueries({ queryKey: ['reports'] });
       opener.open(created);

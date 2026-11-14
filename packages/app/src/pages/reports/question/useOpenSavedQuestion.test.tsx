@@ -49,12 +49,14 @@ describe('useOpenSavedQuestion', () => {
   it('carries "add to dashboard" to the saved question page', async () => {
     const user = renderEditor();
     await user.click(screen.getByRole('button', { name: 'Save and pin' }));
-    expect(await screen.findByText('saved:{"openPinDialog":true}')).toBeInTheDocument();
+    expect(
+      await screen.findByText('saved:{"openPinDialog":true,"justSaved":true}')
+    ).toBeInTheDocument();
   });
 
   it('just opens the page after a plain save', async () => {
     const user = renderEditor();
     await user.click(screen.getByRole('button', { name: 'Save' }));
-    expect(await screen.findByText('saved:null')).toBeInTheDocument();
+    expect(await screen.findByText('saved:{"justSaved":true}')).toBeInTheDocument();
   });
 });

@@ -19,6 +19,8 @@ import {
   startFirstSteps,
 } from './first-steps';
 
+const track = vi.hoisted(() => vi.fn());
+vi.mock('@shared/lib/analytics/track', () => ({ track }));
 vi.mock('@shared/runtime/global', async () => (await import('@/test/synced-runtime')).globalMock());
 
 const synced = (userId = 'u1') => syncedRuntime.store.get(`user:${userId}|firstSteps`);
@@ -28,6 +30,7 @@ beforeEach(() => {
   setDemoSpaceId(null);
   resetSyncedRuntime();
   resetFirstStepsForTests();
+  track.mockReset();
 });
 
 describe('first steps', () => {
@@ -315,5 +318,59 @@ describe('older device-only lists (migrated before they are moved)', () => {
     // Hidden on purpose (version 2 already had the labelled button): stays hidden.
     expect(fresh).toMatchObject({ dismissed: true, done: { assign: false } });
     expect(fresh?.done.everyCoin).toBeUndefined();
+  });
+});
+
+describe('first steps analytics', () => {
+  it('counts each step once, then the finished list', () => {
+    startFirstSteps('space-1', 'u1', new Date(2026, 10, 3));
+    expect(track).not.toHaveBeenCalled();
+    noteFirstStepsMutation('space-1', 'transactions.add');
+    noteFirstStepsMutation('space-1', 'transactions.add');
+    expect(track.mock.calls).toEqual([['first_step_completed', { step: 'transaction' }]]);
+    track.mockReset();
+    markFirstStep('space-1', 'goal');
+    markFirstStep('space-1', 'everyCoin');
+    noteFirstStepsVisit('space-1', new Date(2026, 10, 4));
+    expect(track).not.toHaveBeenCalledWith('first_steps_finished');
+    markFirstStep('space-1', 'assign');
+    expect(track.mock.calls).toEqual([
+      ['first_step_completed', { step: 'goal' }],
+      ['first_step_completed', { step: 'every_coin' }],
+      ['first_step_completed', { step: 'return' }],
+      ['first_step_completed', { step: 'assign' }],
+      ['first_steps_finished'],
+    ]);
+  });
+
+  it('counts hiding and showing the list, not folding it from code', () => {
+    startFirstSteps('space-1', 'u1');
+    hideFirstSteps('space-1');
+    hideFirstSteps('space-1');
+    showFirstSteps('space-1');
+    setFirstStepsCollapsed('space-1', true);
+    expect(track.mock.calls).toEqual([
+      ['first_steps_toggled', { action: 'hidden' }],
+      ['first_steps_toggled', { action: 'shown' }],
+    ]);
+  });
+
+  it('sends nothing for a list moved over from this device, or for a user without one', () => {
+    localStorage.setItem(
+      'budgero:first-steps',
+      JSON.stringify({
+        'space-1': {
+          startedOn: '2026-11-01',
+          done: { assign: true, goal: true, transaction: true, return: true },
+          dismissed: true,
+          v: 3,
+        },
+      })
+    );
+    resetFirstStepsForTests();
+    migrateLegacyFirstSteps('space-1', 'u1');
+    setFirstStepsUser('space-2', 'u1');
+    noteFirstStepsMutation('space-2', 'transactions.add');
+    expect(track).not.toHaveBeenCalled();
   });
 });
