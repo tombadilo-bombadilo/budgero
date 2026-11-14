@@ -108,6 +108,38 @@ func TestLemonSqueezyWebhook_FailureReturns5xxAndRetryAppliesOnce(t *testing.T) 
 	}
 }
 
+// LemonSqueezy can send subscription_updated without custom data, before
+// subscription_created (seen with PayPal checkouts). It must be retried until
+// the customer is linked, then applied by customer ID.
+func TestLemonSqueezyWebhook_UpdateWithoutCustomDataMatchesCustomer(t *testing.T) {
+	h, e, tc := setupWebhookHandler(t)
+	userID := testkit.SeedUser(t, tc.Queries, "webhook-paypal@example.com")
+
+	update := `{"meta":{"event_name":"subscription_updated"},` +
+		`"data":{"id":"sub_pp","type":"subscriptions","attributes":{"status":"active","customer_id":77,` +
+		`"variant_id":null,"product_id":null,"renews_at":"2030-01-01T00:00:00Z"}}}`
+	updateSig := signWebhook(update)
+
+	// Customer not linked yet: not acknowledged, so LemonSqueezy retries.
+	_, err := deliverWebhook(h, e, update, updateSig)
+	requireHTTPStatus(t, err, http.StatusInternalServerError)
+
+	created := `{"meta":{"event_name":"subscription_created","custom_data":{"user_id":"` + userID + `"}},` +
+		`"data":{"id":"sub_pp","type":"subscriptions","attributes":{"status":"on_trial","customer_id":77,"variant_id":7,` +
+		`"renews_at":"2030-01-01T00:00:00Z"}}}`
+	if rec, err := deliverWebhook(h, e, created, signWebhook(created)); err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("created: err=%v status=%d", err, rec.Code)
+	}
+
+	rec, err := deliverWebhook(h, e, update, updateSig)
+	if err != nil || rec.Code != http.StatusOK {
+		t.Fatalf("retried update: err=%v status=%d", err, rec.Code)
+	}
+	if got := readWebhookUserState(t, tc.DB, userID); got.status.String != "active" || got.subscriptionID.String != "sub_pp" {
+		t.Fatalf("after update: status=%q sub=%q", got.status.String, got.subscriptionID.String)
+	}
+}
+
 func TestLemonSqueezyWebhook_IgnoredEventsStill2xx(t *testing.T) {
 	h, e, tc := setupWebhookHandler(t)
 	userID := testkit.SeedUser(t, tc.Queries, "webhook-ignored@example.com")

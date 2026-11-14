@@ -601,10 +601,21 @@ func (s *SubscriptionService) planFor(variantID, variantName string) analytics.P
 // webhookUserID returns the event's user, failing when it is missing or not
 // (yet) in the database. Writes to an unknown user would match no rows and
 // silently drop the event; failing makes LemonSqueezy retry it instead.
+// Some events (e.g. the subscription_updated LemonSqueezy sends for a PayPal
+// checkout, before subscription_created) carry no custom data; those are
+// matched by the customer ID that subscription_created stored.
 func (s *SubscriptionService) webhookUserID(ctx context.Context, event *lemonsqueezy.WebhookEvent) (string, error) {
 	userID := event.Meta.CustomData.UserID
 	if userID == "" {
-		return "", errors.New("missing user_id in custom data")
+		customerID := event.Data.Attributes.CustomerID
+		if customerID == 0 || s.users == nil {
+			return "", errors.New("missing user_id in custom data")
+		}
+		user, err := s.users.GetByCustomerID(ctx, fmt.Sprintf("%d", customerID))
+		if err != nil {
+			return "", fmt.Errorf("no user_id in custom data and no user for customer %d: %w", customerID, err)
+		}
+		return user.ID, nil
 	}
 	if s.users != nil {
 		if _, err := s.users.GetByID(ctx, userID); err != nil {
