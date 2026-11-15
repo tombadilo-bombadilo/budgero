@@ -3860,7 +3860,7 @@
           "label": "Hosted option",
           "actual": "None from the project since 2024. The docs recommend PikaPods, about $1.50 a month.",
           "firefly": "None from the project. The docs list third-party hosts such as PikaPods and Hostinger.",
-          "sure": "app.sure.am: a free tier without bank sync, paid tiers from $5 a month or $50 a year.",
+          "sure": "app.sure.am: 45 days free, then $2.50 a month or $25 a year, which Sure calls a contribution. If you don't pay, the data is deleted.",
           "openbudgeteer": "None.",
           "budgero": "Budgero Cloud: {monthly} a month or {yearly} a year, 35-day free trial."
         },
@@ -3902,7 +3902,7 @@
           "p1": "Sure is the community fork of Maybe Finance. Maybe's repository is archived and its last release, v0.6.0, came out in July 2025. Sure picked up the code and already has 15,632 stars of its own.",
           "p2": "It's a net-worth tracker first, with the longest list of connections here: SimpleFIN and Plaid in the US, Enable Banking in the EU, Lunch Flow worldwide, direct connectors for Wise, Monobank, Up and Mercury, brokers such as Interactive Brokers and Trading 212, and crypto exchanges. You bring your own keys for each one. If you hold stocks and crypto in several countries, Sure adds it all up in one currency.",
           "p3": "Budgets are its weak side. You set a monthly spending limit per category, and only a surplus can roll over. A panel that shows cash not set aside for goals is still a preview feature. The server needs more too: Postgres 16, Redis and a Sidekiq worker next to the web container. The docs say 512 MB of RAM is enough, or 1 GB if you turn on the AI assistant, which needs an OpenAI-compatible or Anthropic key.",
-          "p4": "The Flutter phone app only does login and account balances so far. Sure Finances, LLC also runs a hosted version at app.sure.am with a free tier and paid plans from $5 a month."
+          "p4": "The Flutter phone app only does login and account balances so far. Sure Finances, LLC also runs a hosted version at app.sure.am. Signing up gives you 45 days. After that the data is deleted unless you pay $2.50 a month or $25 a year, which the app calls a contribution. The pricing page on sure.am lists different plans ($0, $5 and $9 a month), so check the sign-up screen for the current price."
         },
         "pick": "you want to see net worth across banks, brokers and crypto, and the budget is a side feature for you."
       },

@@ -192,18 +192,18 @@ export default async function BestSelfHostedBudgetingAppsPage({
               </div>
 
               <div
-                className="overflow-x-auto rounded-2xl border border-border/70 bg-card"
+                className="max-h-[80vh] overflow-auto rounded-2xl border border-border/70 bg-card"
                 role="region"
                 aria-label={t('table.title')}
                 tabIndex={0}
               >
                 <table className="w-full min-w-[1040px] text-sm leading-relaxed">
                   <caption className="sr-only">{t('table.title')}</caption>
-                  <thead className="bg-muted/35">
+                  <thead>
                     <tr>
                       <th
                         scope="col"
-                        className="px-3 py-3 text-left font-semibold text-foreground sticky left-0 bg-muted"
+                        className="px-3 py-3 text-left font-semibold text-foreground sticky top-0 left-0 z-20 bg-muted"
                       >
                         <span className="sr-only">{t('table.criterion')}</span>
                       </th>
@@ -211,7 +211,7 @@ export default async function BestSelfHostedBudgetingAppsPage({
                         <th
                           key={id}
                           scope="col"
-                          className="px-3 py-3 text-left font-semibold text-foreground align-bottom"
+                          className="px-3 py-3 text-left font-semibold text-foreground align-bottom sticky top-0 z-10 bg-muted"
                         >
                           <a href={`#${id}`} className={linkClass}>
                             {names[id]}
