@@ -50,10 +50,18 @@ export function resolvePost<T extends LocalizedPost>(posts: T[], locale: string,
   return { post: undefined, redirect: locale !== 'en' ? englishPost?.url : undefined };
 }
 
+/** Pages that exist only in English; other locales redirect to the English URL. */
+export const ENGLISH_ONLY_PATHS = new Set([
+  '/actual-budget-alternative',
+  '/best-self-hosted-budgeting-apps',
+  '/maybe-finance-alternative',
+  '/ynab-alternative-canada',
+]);
+
 export function localeSwitchPath(pathname: string, locale: string, search = '', hash = '') {
   // Independent articles are not translations. Another language's index is the
   // useful destination, and an article's query/fragment has no meaning there.
   if (pathname.startsWith('/blog/')) return localizedPath(locale, '/blog');
-  if (pathname === '/actual-budget-alternative') return localizedPath(locale, '/');
+  if (ENGLISH_ONLY_PATHS.has(pathname)) return localizedPath(locale, '/');
   return `${localizedPath(locale, pathname)}${search}${hash}`;
 }

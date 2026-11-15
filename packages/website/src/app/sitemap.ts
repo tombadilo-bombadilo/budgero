@@ -152,5 +152,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...guideSitemap(allGuides),
     // This comparison is an independent English page, not a translation group.
     { url: `${base}/actual-budget-alternative`, changeFrequency: 'monthly', priority: 0.8 },
+    // English only until the translations are approved.
+    {
+      url: `${base}/best-self-hosted-budgeting-apps`,
+      lastModified: '2026-11-15',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${base}/maybe-finance-alternative`,
+      lastModified: '2026-11-15',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
+    {
+      url: `${base}/ynab-alternative-canada`,
+      lastModified: '2026-11-15',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
   ];
 }

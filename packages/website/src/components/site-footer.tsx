@@ -67,6 +67,16 @@ export async function SiteFooter() {
                   </Link>
                 </li>
               )}
+              {locale === 'en' && (
+                <li>
+                  <Link
+                    href="/best-self-hosted-budgeting-apps"
+                    className="hover:text-[#141414] transition-colors"
+                  >
+                    Self-hosted budgeting apps
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link
                   href="/monarch-money-alternative"
