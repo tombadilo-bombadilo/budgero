@@ -111,7 +111,18 @@ function placeholders(value) {
     .sort()
     .join(',');
 }
-const websiteSource = flatten(JSON.parse(readFileSync(join(WEBSITE, 'en.json'), 'utf8')));
+// Pages that exist only in English (ENGLISH_ONLY_PATHS in the website's
+// content-routing.ts). Other locales redirect to them, so they need no catalog.
+const ENGLISH_ONLY_NAMESPACES = [
+  'best_self_hosted_budgeting_apps',
+  'maybe_finance_alternative',
+  'ynab_alternative_canada',
+];
+const websiteSource = Object.fromEntries(
+  Object.entries(flatten(JSON.parse(readFileSync(join(WEBSITE, 'en.json'), 'utf8')))).filter(
+    ([key]) => !ENGLISH_ONLY_NAMESPACES.some((ns) => key.startsWith(`${ns}.`))
+  )
+);
 for (const locale of TARGETS) {
   const target = flatten(JSON.parse(readFileSync(join(WEBSITE, `${locale}.json`), 'utf8')));
   const missing = Object.keys(websiteSource).filter(
