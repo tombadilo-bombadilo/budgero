@@ -117,6 +117,8 @@ const ENGLISH_ONLY_NAMESPACES = [
   'best_self_hosted_budgeting_apps',
   'maybe_finance_alternative',
   'ynab_alternative_canada',
+  'debt_payoff_calculator',
+  'fire_calculator',
 ];
 const websiteSource = Object.fromEntries(
   Object.entries(flatten(JSON.parse(readFileSync(join(WEBSITE, 'en.json'), 'utf8')))).filter(
