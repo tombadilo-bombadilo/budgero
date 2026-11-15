@@ -584,6 +584,9 @@ importers:
       contentlayer2:
         specifier: ^0.5.8
         version: 0.5.8(esbuild@0.25.12)
+      echarts:
+        specifier: ^6.1.0
+        version: 6.1.0
       lucide-react:
         specifier: ^0.542.0
         version: 0.542.0(react@19.1.0)

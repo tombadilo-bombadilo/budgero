@@ -2585,6 +2585,8 @@
     "chart_heading": "Balance over time",
     "chart_label": "Total balance by month. Snowball reaches 0 in month {snowball}, avalanche in month {avalanche}.",
     "chart_axis": "Months 0 to {months}",
+    "chart_debt_free": "debt-free {date}",
+    "chart_tooltip_month": "Month {month}, {date}",
     "schedule_summary": "Month-by-month schedule ({months, plural, one {# month} other {# months}})",
     "schedule_caption": "What you pay each month, the interest added, and what's left afterwards. The columns on the right show what's left on each debt.",
     "col_month": "Month",

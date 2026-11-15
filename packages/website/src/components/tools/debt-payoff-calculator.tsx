@@ -1,11 +1,20 @@
 'use client';
 
 import { useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
+import type { EChartsCoreOption } from 'echarts/core';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { track } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
+import {
+  BASE_GRID,
+  tooltipBase,
+  tooltipHtml,
+  useChartPalette,
+  valueAxis,
+} from '@/components/tools/chart-theme';
 import {
   minimumShortfalls,
   parseAmount,
@@ -23,6 +32,9 @@ interface Row {
   apr: string;
   min: string;
 }
+
+// The chart library loads after hydration; the chart box reserves its height.
+const EChart = dynamic(() => import('@/components/tools/echart'), { ssr: false });
 
 const MAX_ROWS = 20;
 
@@ -97,12 +109,29 @@ export function DebtPayoffCalculator() {
     () => new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric', timeZone: 'UTC' }),
     [locale]
   );
+  const compactNumber = useMemo(
+    () => new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }),
+    [locale]
+  );
   const fmt = (value: number) => money.format(value);
   const monthDate = (month: number, format = monthFormat) => {
     if (startMonth === null) return t('month_number', { month });
     const index = startMonth + month;
     return format.format(Date.UTC(Math.floor(index / 12), index % 12, 1));
   };
+  // Stable between renders so the chart only redraws when its data changes.
+  const chartFormat = useMemo<ChartFormat>(
+    () => ({
+      amount: (value) => money.format(value),
+      compact: (value) => compactNumber.format(value),
+      month: (month) => {
+        if (startMonth === null) return '';
+        const index = startMonth + month;
+        return shortMonthFormat.format(Date.UTC(Math.floor(index / 12), index % 12, 1));
+      },
+    }),
+    [money, compactNumber, shortMonthFormat, startMonth]
+  );
   const duration = (total: number) => {
     const years = Math.floor(total / 12);
     const months = total % 12;
@@ -417,6 +446,8 @@ export function DebtPayoffCalculator() {
             snowball={plans.snowball.schedule}
             avalanche={plans.avalanche.schedule}
             strategy={strategy}
+            format={chartFormat}
+            hasDate={startMonth !== null}
             t={t}
           />
         )}
@@ -494,6 +525,13 @@ export function DebtPayoffCalculator() {
 }
 
 type T = ReturnType<typeof useTranslations>;
+
+interface ChartFormat {
+  amount: (value: number) => string;
+  compact: (value: number) => string;
+  /** Short month name and year, or '' before the visitor's month is known. */
+  month: (month: number) => string;
+}
 
 function PlanSummary({
   plan,
@@ -678,89 +716,140 @@ function BalanceChart({
   snowball,
   avalanche,
   strategy,
+  format,
+  hasDate,
   t,
 }: {
   snowball: ScheduleMonth[];
   avalanche: ScheduleMonth[];
   strategy: Strategy;
+  format: ChartFormat;
+  hasDate: boolean;
   t: T;
 }) {
-  const width = 640;
-  const height = 220;
-  const pad = { top: 12, right: 12, bottom: 28, left: 12 };
+  const palette = useChartPalette();
   const start = snowball[0].balance + snowball[0].payment - snowball[0].interest;
   const months = Math.max(snowball.length, avalanche.length);
-  const x = (month: number) => pad.left + (month / months) * (width - pad.left - pad.right);
-  const y = (balance: number) => pad.top + (1 - balance / start) * (height - pad.top - pad.bottom);
-  const path = (schedule: ScheduleMonth[]) =>
-    [`M${x(0)},${y(start)}`, ...schedule.map((m) => `L${x(m.month)},${y(m.balance)}`)].join(' ');
-  const ticks = Array.from(new Set([0, Math.round(months / 2), months]));
-  const lines = [
-    { key: 'snowball' as const, d: path(snowball) },
-    { key: 'avalanche' as const, d: path(avalanche) },
-  ];
+  const lines = useMemo(
+    () => [
+      { key: 'snowball' as const, schedule: snowball, color: palette.blue, dashed: false },
+      { key: 'avalanche' as const, schedule: avalanche, color: palette.orange, dashed: true },
+    ],
+    [snowball, avalanche, palette]
+  );
+
+  const option = useMemo<EChartsCoreOption>(() => {
+    const balanceAt = (schedule: ScheduleMonth[], month: number) =>
+      month === 0 ? start : month <= schedule.length ? schedule[month - 1].balance : 0;
+    return {
+      grid: BASE_GRID,
+      xAxis: {
+        type: 'value' as const,
+        min: 0,
+        max: months,
+        minInterval: 1,
+        axisLine: { lineStyle: { color: palette.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: palette.axisText, fontSize: 11, hideOverlap: true },
+        splitLine: { show: false },
+      },
+      yAxis: { ...valueAxis(palette, format.compact), min: 0 },
+      tooltip: {
+        ...tooltipBase(palette),
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: palette.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { value: [number, number] }[];
+          const month = items[0]?.value[0] ?? 0;
+          const title = hasDate
+            ? t('chart_tooltip_month', { month, date: format.month(month) })
+            : t('month_number', { month });
+          return tooltipHtml(
+            title,
+            lines.map((line) => ({
+              color: line.color,
+              name: t(`strategy_${line.key}`),
+              value: format.amount(balanceAt(line.schedule, month)),
+            }))
+          );
+        },
+      },
+      series: lines.map((line) => {
+        const selected = line.key === strategy;
+        const freeMonth = line.schedule.length;
+        return {
+          name: t(`strategy_${line.key}`),
+          type: 'line' as const,
+          data: [[0, start], ...line.schedule.map((m) => [m.month, m.balance])],
+          showSymbol: false,
+          symbol: 'circle',
+          symbolSize: 8,
+          lineStyle: {
+            color: line.color,
+            width: selected ? 2.5 : 2,
+            type: line.dashed ? ('dashed' as const) : ('solid' as const),
+          },
+          itemStyle: { color: line.color, borderColor: palette.surface, borderWidth: 2 },
+          // Only the selected method is filled: two overlapping tints turn grey.
+          ...(selected ? { areaStyle: { color: line.color, opacity: 0.12 } } : {}),
+          emphasis: { disabled: true },
+          z: selected ? 3 : 2,
+          markLine: {
+            silent: true,
+            symbol: 'none',
+            label: { show: false },
+            lineStyle: { color: line.color, type: 'dotted' as const, width: 1.5, opacity: 0.8 },
+            data: [{ xAxis: freeMonth }],
+          },
+          markPoint: {
+            silent: true,
+            symbol: 'circle',
+            symbolSize: 10,
+            itemStyle: { color: line.color, borderColor: palette.surface, borderWidth: 2 },
+            label: { show: false },
+            data: [{ coord: [freeMonth, 0] }],
+          },
+        };
+      }),
+    };
+  }, [lines, months, start, strategy, palette, format, hasDate, t]);
 
   return (
     <figure>
       <h3 className="mb-2 font-semibold text-foreground">{t('chart_heading')}</h3>
       <div className="rounded-xl border border-border/70 bg-card p-3 sm:p-4">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="h-auto w-full text-foreground"
-          role="img"
-          aria-label={t('chart_label', {
-            snowball: snowball.length,
-            avalanche: avalanche.length,
-          })}
-        >
-          <line
-            x1={pad.left}
-            x2={width - pad.right}
-            y1={height - pad.bottom}
-            y2={height - pad.bottom}
-            stroke="currentColor"
-            strokeOpacity={0.25}
+        <div className="h-[240px] sm:h-[300px]">
+          <EChart
+            option={option}
+            ariaLabel={t('chart_label', {
+              snowball: snowball.length,
+              avalanche: avalanche.length,
+            })}
           />
-          {ticks.map((tick) => (
-            <text
-              key={tick}
-              x={x(tick)}
-              y={height - 8}
-              fontSize={12}
-              fill="currentColor"
-              fillOpacity={0.6}
-              textAnchor={tick === 0 ? 'start' : tick === months ? 'end' : 'middle'}
-            >
-              {tick}
-            </text>
-          ))}
-          {lines.map((line) => (
-            <path
-              key={line.key}
-              d={line.d}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={line.key === strategy ? 2.5 : 1.5}
-              strokeOpacity={line.key === strategy ? 1 : 0.45}
-              strokeDasharray={line.key === 'avalanche' ? '6 4' : undefined}
-            />
-          ))}
-        </svg>
+        </div>
         <figcaption className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-foreground/70">
           {lines.map((line) => (
             <span key={line.key} className="inline-flex items-center gap-2">
-              <svg width="24" height="6" aria-hidden className="text-foreground">
+              <svg width="24" height="6" aria-hidden>
                 <line
                   x1="0"
                   x2="24"
                   y1="3"
                   y2="3"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  strokeDasharray={line.key === 'avalanche' ? '6 4' : undefined}
+                  stroke={line.color}
+                  strokeWidth={2.5}
+                  strokeDasharray={line.dashed ? '6 4' : undefined}
                 />
               </svg>
-              {t(`strategy_${line.key}`)}
+              <span>
+                <span className="text-foreground">{t(`strategy_${line.key}`)}</span>
+                {hasDate && (
+                  <>
+                    {', '}
+                    {t('chart_debt_free', { date: format.month(line.schedule.length) })}
+                  </>
+                )}
+              </span>
             </span>
           ))}
           <span>{t('chart_axis', { months })}</span>

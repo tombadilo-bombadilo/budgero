@@ -33,6 +33,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "contentlayer2": "^0.5.8",
+    "echarts": "^6.1.0",
     "lucide-react": "^0.542.0",
     "next": "15.5.28",
     "next-contentlayer2": "^0.5.8",
