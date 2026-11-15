@@ -21,11 +21,37 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.21.3',
+    date: 'November 15, 2026',
+    summary:
+      'A clearer review step when a YNAB import differs from YNAB, and removing your only workspace now closes it cleanly.',
+    isLatest: true,
+    items: [
+      {
+        type: 'improved',
+        title: 'Clearer YNAB import review',
+        description:
+          'When an import from YNAB finds that some past months differ from what YNAB showed, the review now says in plain words what matched and what differs, recommends keeping the budget, and keeps the detailed tables under Show details. The differences stay listed in Import History.',
+      },
+      {
+        type: 'fixed',
+        title: 'Removing your only workspace',
+        description:
+          'Removing your only workspace, for example by cancelling an import during setup, now closes it completely instead of leaving it open in the background until you switched, and no longer shows up as an error.',
+      },
+      {
+        type: 'improved',
+        title: 'Usage counts for the YNAB review',
+        description:
+          'If you allow anonymous usage analytics, Budgero now also counts which checks differed in a YNAB import review and whether you kept or removed the import. Only fixed categories and rough counts are sent, never months, amounts or names. The privacy policy lists what is sent.',
+      },
+    ],
+  },
+  {
     version: 'v1.21.2',
     date: 'November 14, 2026',
     summary:
       'A change you had just made no longer briefly disappears after opening the app, PayPal subscription updates reach your account, and anonymous usage counts now cover the new reports and Home.',
-    isLatest: true,
     items: [
       {
         type: 'fixed',
