@@ -56,12 +56,14 @@ export const ENGLISH_ONLY_PATHS = new Set([
   '/best-self-hosted-budgeting-apps',
   '/maybe-finance-alternative',
   '/ynab-alternative-canada',
+  '/tools/debt-payoff-calculator',
+  '/tools/fire-calculator',
 ]);
 
 export function localeSwitchPath(pathname: string, locale: string, search = '', hash = '') {
   // Independent articles are not translations. Another language's index is the
   // useful destination, and an article's query/fragment has no meaning there.
   if (pathname.startsWith('/blog/')) return localizedPath(locale, '/blog');
-  if (ENGLISH_ONLY_PATHS.has(pathname)) return localizedPath(locale, '/');
+  if (ENGLISH_ONLY_PATHS.has(pathname) && locale !== 'en') return localizedPath(locale, '/');
   return `${localizedPath(locale, pathname)}${search}${hash}`;
 }
