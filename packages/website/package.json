@@ -12,6 +12,7 @@
     "test:analytics": "node --experimental-strip-types --test src/lib/analytics.test.ts",
     "test:content": "node --experimental-strip-types --test src/lib/content-routing.test.ts",
     "test:debt-payoff": "node --experimental-strip-types --test src/lib/debt-payoff.test.ts",
+    "test:fire": "node --experimental-strip-types --test src/lib/fire.test.ts",
     "start": "next start",
     "lint": "eslint",
     "test:tracing": "node scripts/check-contentlayer-tracing.mjs",

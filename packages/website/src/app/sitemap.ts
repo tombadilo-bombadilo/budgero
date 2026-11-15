@@ -173,5 +173,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     // English only until translated; other locales redirect to it.
     { url: `${base}/tools/debt-payoff-calculator`, changeFrequency: 'monthly', priority: 0.8 },
+    { url: `${base}/tools/fire-calculator`, changeFrequency: 'monthly', priority: 0.8 },
   ];
 }

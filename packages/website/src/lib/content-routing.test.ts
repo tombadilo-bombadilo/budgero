@@ -63,6 +63,8 @@ test('article language switches lead to a useful index without stale fragments',
     localeSwitchPath('/tools/debt-payoff-calculator', 'en'),
     '/tools/debt-payoff-calculator'
   );
+  assert.equal(localeSwitchPath('/tools/fire-calculator', 'de'), '/de');
+  assert.equal(localeSwitchPath('/tools/fire-calculator', 'en'), '/tools/fire-calculator');
   assert.equal(
     localeSwitchPath('/docs/offline', 'fr', '?view=all', '#sync'),
     '/fr/docs/offline?view=all#sync'

@@ -57,6 +57,7 @@ export const ENGLISH_ONLY_PATHS = new Set([
   '/maybe-finance-alternative',
   '/ynab-alternative-canada',
   '/tools/debt-payoff-calculator',
+  '/tools/fire-calculator',
 ]);
 
 export function localeSwitchPath(pathname: string, locale: string, search = '', hash = '') {
