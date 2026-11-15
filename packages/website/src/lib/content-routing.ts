@@ -54,6 +54,7 @@ export function resolvePost<T extends LocalizedPost>(posts: T[], locale: string,
 export const ENGLISH_ONLY_PATHS = new Set([
   '/actual-budget-alternative',
   '/best-self-hosted-budgeting-apps',
+  '/maybe-finance-alternative',
 ]);
 
 export function localeSwitchPath(pathname: string, locale: string, search = '', hash = '') {

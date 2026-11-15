@@ -4002,7 +4002,8 @@
         "best": "<bestYnab>Best YNAB alternatives</bestYnab>: hosted and self-hosted apps compared",
         "actual": "<actualAlt>Actual Budget alternative</actualAlt>: Actual and Budgero side by side",
         "firefly": "<fireflyAlt>Firefly III alternative</fireflyAlt>: a ledger compared with an envelope budget",
-        "bank": "Bank sync with <enableBanking>Enable Banking</enableBanking> (Europe) or <simplefin>SimpleFIN</simplefin> (US and Canada)"
+        "bank": "Bank sync with <enableBanking>Enable Banking</enableBanking> (Europe) or <simplefin>SimpleFIN</simplefin> (US and Canada)",
+        "maybe": "<maybeAlt>Maybe Finance alternative</maybeAlt>: what to run now that Maybe is archived, and how to move your data"
       }
     },
     "sources": {
@@ -4103,6 +4104,353 @@
     "cta": {
       "title": "Try Budgero on your own server",
       "body": "Pull budgero/budgero, mount a /data volume and read the admin password from the log. The guide has the compose file.",
+      "primary": "Read the self-hosting guide",
+      "secondary": "Or try Budgero Cloud for 35 days"
+    }
+  },
+  "maybe_finance_alternative": {
+    "meta": {
+      "title": "Maybe Finance archived? Sure and other alternatives | Budgero",
+      "headline": "Maybe Finance is archived. What to run instead",
+      "description": "Maybe Finance's last release was v0.6.0 in July 2025, and the repo is archived. Sure is the community fork. How it compares with staying put, Budgero, Actual and Firefly III.",
+      "breadcrumb": "Maybe Finance alternative",
+      "keywords": [
+        "maybe finance alternative",
+        "maybe finance archived",
+        "maybe finance fork",
+        "sure vs maybe",
+        "sure finance self-hosted",
+        "maybe finance replacement"
+      ]
+    },
+    "names": {
+      "maybe": "Maybe v0.6.0",
+      "sure": "Sure",
+      "budgero": "Budgero"
+    },
+    "hero": {
+      "eyebrow": "Maybe Finance alternatives",
+      "title": "Maybe Finance is archived. What to run instead",
+      "subtitle": "Sure, the last Maybe release, and the budgeting apps worth a look",
+      "answerTitle": "Short answer",
+      "answer": [
+        "Install Sure if you want Maybe back. It's the community fork of Maybe's code, its first release was a copy of Maybe's last one, and it has shipped 21 stable releases since July 2025.",
+        "Staying on Maybe v0.6.0 works for now. Nobody fixes its bugs or security issues any more, and its stock prices and exchange rates come from a single outside provider.",
+        "Look at Budgero only if what you wanted from Maybe was a monthly budget. It's an envelope budgeting app with many currencies and end-to-end encryption, and it doesn't track stocks or holdings.",
+        "Actual Budget and Firefly III are the other mature self-hosted apps, for envelope budgeting and for double-entry bookkeeping."
+      ],
+      "disclosure": "We make Budgero. What we say about Maybe, Sure, Actual Budget and Firefly III comes from their own repositories, release notes and docs, checked on 15 November 2026. We didn't install them for this page. The sources are listed at the end."
+    },
+    "history": {
+      "title": "What happened to Maybe",
+      "items": [
+        {
+          "date": "1 January 2024",
+          "text": "The maybe-finance/maybe repository is created on GitHub, under the AGPL-3.0 licence."
+        },
+        {
+          "date": "11 October 2024",
+          "text": "v0.1.0, the first release without an alpha tag."
+        },
+        {
+          "date": "11 April 2025",
+          "text": "v0.5.0 moves background jobs to Sidekiq and Redis, and adds an AI chat that uses your own OpenAI key. The chat is off by default."
+        },
+        {
+          "date": "24 July 2025",
+          "text": "v0.6.0, the final release. The notes say Maybe is pivoting to B2B financial forecasting and scenario planning, and will no longer maintain the repository or accept contributions."
+        },
+        {
+          "date": "25 July 2025",
+          "text": "The community fork Sure publishes its own v0.6.0, described as a clone of Maybe's last release."
+        },
+        {
+          "date": "27 July 2025",
+          "text": "The Maybe repository is archived. It has been read-only since."
+        }
+      ],
+      "body": {
+        "p1": "The farewell notes call v0.6.0 a working, as-is version of the software. According to the notes, the company's obligation is to its investors, and building the app further was not its best chance of paying them back. They also list what was hardest to build. Bank data providers come first, called the single biggest challenge, then keeping balances consistent across every view, then price data for investments.",
+        "p2": "The README now says the repository is no longer actively maintained. You can fork the code under AGPLv3, but the name Maybe is a trademark of Maybe Finance Inc., and forks may not use it or the logo. The archived repository has 54,194 stars and 5,665 forks."
+      }
+    },
+    "options": {
+      "title": "Your options",
+      "pickLabel": "Pick it if:",
+      "sure": {
+        "title": "Sure, the community fork",
+        "facts": "AGPL-3.0 · ghcr.io/we-promise/sure · v0.7.6-hotfix.1, 12 Nov 2026 · 15,632 stars",
+        "body": {
+          "p1": "Sure is where Maybe's code went. The fork's first release, on 25 July 2025, was a copy of Maybe v0.6.0, and its README calls it a community fork of the now-abandoned Maybe Finance project. It isn't affiliated with Maybe Finance Inc. Since then it has put out 21 stable releases, the latest on 12 November 2026.",
+          "p2": "If you liked Maybe, Sure will feel familiar. The app is still built around net worth, you can import trades, and budgets are a monthly spending limit per category, with an option to roll a surplus over. The Docker setup has the same shape as Maybe's: a web container and a worker on one image, Postgres 16 and Redis. Its docs say 512 MB of RAM is enough, or 1 GB with the AI assistant turned on.",
+          "p3": "It has added a lot since the fork. You can connect banks through SimpleFIN, Plaid, Enable Banking, Lunch Flow or Akahu (beta), plus Wise, brokers such as Interactive Brokers and Trading 212, and crypto exchanges, each with your own keys. Bank credentials and other sensitive fields are encrypted in the database. The compose file has a backup service with daily backups and a restore script. A basic phone app shows login and account balances, and the project runs a hosted version at app.sure.am with a free tier.",
+          "p4": "We found no guide in Sure's docs for pointing an existing Maybe install at the Sure image. The documented route is an export from Maybe and an import into Sure, covered below."
+        },
+        "pick": "you liked Maybe and want the same app with people still working on it."
+      },
+      "stay": {
+        "title": "Staying on Maybe v0.6.0",
+        "facts": "AGPL-3.0 · ghcr.io/maybe-finance/maybe · last release 24 Jul 2025",
+        "body": {
+          "p1": "Your install keeps running, and the images are still on GitHub's container registry. We checked the stable, latest and 0.6.0 tags on 15 November 2026.",
+          "p2": "The repository is archived, so bugs and security issues found from now on stay open, and the libraries inside the image get no updates. In v0.6.0 the exchange rates and stock prices come from one provider, Synth, through an API key, and nobody will change Maybe if that service changes. The latest tag follows the last commit, and the docs recommend stable for the last release."
+        },
+        "listTitle": "If you stay for now",
+        "list": [
+          "Pin the stable or 0.6.0 image tag in your compose file.",
+          "Keep the app on your own network or behind a VPN.",
+          "Run the data export now. It arrived in v0.6.0, so an older install needs that upgrade first.",
+          "Back up the Postgres volume before any change."
+        ],
+        "pick": "you need a few months before you move, and the app never faces the internet."
+      },
+      "budgero": {
+        "title": "Budgero, if you wanted a budget",
+        "facts": "AGPL-3.0 · budgero/budgero · v1.21.3, 15 Nov 2026 · 58 stars",
+        "body": {
+          "p1": "Budgero is our app, and it does a different job from Maybe. It's a zero-based envelope budget. You assign money you already have to categories, and each category shows what's left to spend. Sure sets a monthly spending limit per category instead.",
+          "p2": "Two things set it apart from Sure. Accounts can be in different currencies inside one budget, with more than 120 fiat currencies and 25 cryptocurrencies, and each transaction keeps its original amount. The budget is also end-to-end encrypted, always. Your browser encrypts it with AES-256-GCM before it syncs, so your server stores ciphertext, and bank-sync keys sit inside the encrypted budget. <security>The security model</security> lists what the server can see.",
+          "p3": "Budgero doesn't track investments the way Maybe did. An investment or retirement account is a balance that counts toward net worth, with no tickers, holdings or price updates. There's a net worth page and a wealth report, but no portfolio view. Bank sync is in beta and covers SimpleFIN (US and Canada) and <enableBanking>Enable Banking</enableBanking> (EEA and UK). There's no native phone app, only an installable web app that works offline. The project is small, with 58 GitHub stars against Sure's 15,632.",
+          "p4": "It runs as one container or a single binary with SQLite in a /data volume, so there's no Postgres or Redis to look after. Self-hosting is free with every feature. Budgero Cloud costs {monthly} a month or {yearly} a year. Forget the master password and a reset deletes the budget, because nobody else can decrypt it."
+        },
+        "pick": "a monthly budget matters more to you than a portfolio, and you can do without investment tracking and a native phone app."
+      },
+      "others": {
+        "title": "Actual Budget and Firefly III",
+        "actual": "<strong>Actual Budget</strong> is an envelope budgeting app with 30,273 GitHub stars, the most of any app in our self-hosted comparison. The server is one container on port 5006, and there are desktop apps for Windows, macOS and Linux. Bank sync works through SimpleFIN in North America, with more providers for Europe, New Zealand and Brazil. It has no multi-currency support. Our <actualAlt>Actual Budget alternative page</actualAlt> compares it with Budgero.",
+        "firefly": "<strong>Firefly III</strong> is double-entry bookkeeping with a REST API, a rules engine and multiple currencies. Its budgets are amounts per period that you attach to spending, and its docs say YNAB-style zero-based budgeting will not be supported. It needs a database server and a cron container, and bank imports go through a separate app, the Data Importer. More on our <fireflyAlt>Firefly III alternative page</fireflyAlt>."
+      }
+    },
+    "table": {
+      "title": "Maybe, Sure and Budgero side by side",
+      "intro": "On a phone, scroll the table sideways. Actual Budget and Firefly III are in our <bestSelfHosted>comparison of self-hosted budgeting apps</bestSelfHosted>.",
+      "criterion": "What we compared",
+      "note": "Versions and star counts are from GitHub on 15 November 2026. Bank connections go through third-party providers that you sign up with yourself.",
+      "rows": [
+        {
+          "label": "Built for",
+          "maybe": "Net worth, accounts and investments, with monthly budgets",
+          "sure": "The same as Maybe, with many more bank, broker and crypto connections",
+          "budgero": "Zero-based envelope budgeting"
+        },
+        {
+          "label": "Maintained",
+          "maybe": "No. Archived on 27 Jul 2025",
+          "sure": "Yes. v0.7.6-hotfix.1, 12 Nov 2026, the 21st stable release",
+          "budgero": "Yes. v1.21.3, 15 Nov 2026"
+        },
+        {
+          "label": "Budgets",
+          "maybe": "Monthly budgets with category averages and an income summary",
+          "sure": "A monthly spending limit per category. A surplus can roll over",
+          "budgero": "Assign money you already have to categories, with goals per category"
+        },
+        {
+          "label": "Investments",
+          "maybe": "Trades and holdings. Prices and exchange rates from Synth, with your API key",
+          "sure": "Trades and holdings, broker connections such as Interactive Brokers and Trading 212, crypto exchanges",
+          "budgero": "None. An investment account is a balance that counts toward net worth"
+        },
+        {
+          "label": "Bank sync",
+          "maybe": "Not in the self-hosted feature list of the final release",
+          "sure": "SimpleFIN, Plaid, Enable Banking, Lunch Flow, Akahu (beta), Wise and more",
+          "budgero": "Beta. SimpleFIN (US, Canada) and Enable Banking (EEA, UK)"
+        },
+        {
+          "label": "Currencies",
+          "maybe": "Multi-currency",
+          "sure": "Multi-currency, totals in the household's main currency",
+          "budgero": "120+ fiat currencies and 25 cryptocurrencies in one budget, with rate overrides"
+        },
+        {
+          "label": "Encryption",
+          "maybe": "Not described in the final release notes",
+          "sure": "Bank credentials and other sensitive fields encrypted in the database",
+          "budgero": "End to end and always on. The server stores ciphertext"
+        },
+        {
+          "label": "Install",
+          "maybe": "Web and worker containers, Postgres 16, Redis",
+          "sure": "Same layout as Maybe, plus an optional backup service. 512 MB RAM, 1 GB with AI",
+          "budgero": "One container (amd64, arm64) or a single binary. SQLite, no database server"
+        },
+        {
+          "label": "Several people",
+          "maybe": "Invite members to your household",
+          "sure": "Household members. Each account shared as view, annotate or full control",
+          "budgero": "An owner can share budgets with up to 5 people"
+        },
+        {
+          "label": "On your phone",
+          "maybe": "No app in the final release's feature list",
+          "sure": "Basic app with login and account balances",
+          "budgero": "Installable web app that works offline. No native app"
+        },
+        {
+          "label": "Licence and GitHub stars",
+          "maybe": "AGPL-3.0. 54,194",
+          "sure": "AGPL-3.0. 15,632",
+          "budgero": "AGPL-3.0. 58"
+        }
+      ]
+    },
+    "move": {
+      "title": "Moving your data out of Maybe",
+      "intro": "Maybe v0.6.0 has a data export. A household admin starts it from the profile page in settings, and shortly after there's a ZIP to download with five files: accounts.csv, transactions.csv, trades.csv, categories.csv and all.ndjson. Installs older than v0.6.0 don't have the export, so back up the database and upgrade to v0.6.0 first. Maybe's own export dialog says that accounts, transactions (with categories and tags) and trades are the parts its CSV importer can read back.",
+      "items": [
+        {
+          "to": "Into Sure",
+          "text": "Use Sure's CSV import for accounts.csv, transactions.csv, trades.csv and categories.csv. The import lets you set the date format, number format and the sign of amounts. Sure can also import an all.ndjson file, but its docs describe that as a Sure export and don't say whether Maybe's file works, so try it on a fresh household first. We found no documented way to upgrade a Maybe database to Sure in place."
+        },
+        {
+          "to": "Into Budgero",
+          "text": "Create your accounts first, then import transactions.csv with the CSV importer. Map date and amount, name as the payee, notes as the memo, and category and account_name if you want them. Budgero reads negative amounts as money going out and has no switch to flip the sign, so compare a few rows with Maybe and flip the column in a spreadsheet if they come out reversed. Trades and holdings have no place in Budgero. Add each investment account as a tracking account with its current balance."
+        },
+        {
+          "to": "Into Actual Budget or Firefly III",
+          "text": "Both take CSV files, Actual directly and Firefly III through its Data Importer, so transactions.csv is the file to start with."
+        }
+      ],
+      "csvLink": "Budgero's import steps are in the <fileImport>CSV import guide</fileImport>."
+    },
+    "faq": {
+      "title": "Questions people ask",
+      "items": [
+        {
+          "q": "What happened to Maybe Finance?",
+          "a": "The company stopped work on the open-source app to pivot to B2B financial forecasting and scenario planning. Its final release, v0.6.0, came out on 24 July 2025, and the GitHub repository was archived on 27 July 2025."
+        },
+        {
+          "q": "Is Maybe Finance still safe to self-host?",
+          "a": "It still runs, and its Docker images are still published. Nobody maintains it, so security problems found after July 2025 won't be fixed. If you keep it for a while, pin the stable or 0.6.0 tag and keep it off the public internet."
+        },
+        {
+          "q": "Is Sure the same as Maybe?",
+          "a": "Sure started as a copy. Its first release on 25 July 2025 was a clone of Maybe v0.6.0, and it has had 21 stable releases since, with many more bank and broker connections, a backup service and a basic phone app. It isn't affiliated with Maybe Finance Inc., and Maybe's trademark rules don't let forks use the Maybe name."
+        },
+        {
+          "q": "Can I move my Maybe data to Sure?",
+          "a": "Yes, through Maybe's export. Download the ZIP from Maybe v0.6.0 and load the accounts, transactions, trades and categories CSV files with Sure's import. Sure's docs don't describe upgrading a Maybe database in place."
+        },
+        {
+          "q": "Does Budgero track investments like Maybe?",
+          "a": "No. You can add investment, retirement and property accounts as tracking accounts, and their balances count toward net worth. There are no tickers, holdings or price updates. If your portfolio is the reason you used Maybe, use Sure."
+        },
+        {
+          "q": "Is there a Maybe alternative that isn't a fork?",
+          "a": "Yes, if you mostly used Maybe for budgets. Budgero and Actual Budget do envelope budgeting, and Firefly III does double-entry bookkeeping. Each is a separate project with its own data model, so you move your history with CSV files."
+        }
+      ]
+    },
+    "related": {
+      "title": "Related pages",
+      "items": {
+        "best": "<bestSelfHosted>Best self-hosted budgeting apps</bestSelfHosted>: Actual, Firefly III, Sure, OpenBudgeteer and Budgero compared",
+        "actual": "<actualAlt>Actual Budget alternative</actualAlt>: Actual and Budgero side by side",
+        "firefly": "<fireflyAlt>Firefly III alternative</fireflyAlt>: a ledger compared with an envelope budget",
+        "guide": "<selfhostGuide>Budgero self-hosting guide</selfhostGuide>: Docker, Compose, reverse proxies and environment variables",
+        "accounts": "<accounts>Accounts in Budgero</accounts>: on-budget and tracking accounts, and how net worth is counted"
+      }
+    },
+    "sources": {
+      "title": "Sources",
+      "intro": "Facts about each project come from its own repository, release notes or docs. Checked on",
+      "date": "15 November 2026",
+      "items": [
+        {
+          "label": "Maybe: README",
+          "href": "https://github.com/maybe-finance/maybe"
+        },
+        {
+          "label": "Maybe: v0.6.0 release notes (farewell)",
+          "href": "https://github.com/maybe-finance/maybe/releases/tag/v0.6.0"
+        },
+        {
+          "label": "Maybe: v0.5.0 release notes",
+          "href": "https://github.com/maybe-finance/maybe/releases/tag/v0.5.0"
+        },
+        {
+          "label": "Maybe: self-hosting with Docker",
+          "href": "https://github.com/maybe-finance/maybe/blob/main/docs/hosting/docker.md"
+        },
+        {
+          "label": "Maybe: data export code in v0.6.0",
+          "href": "https://github.com/maybe-finance/maybe/blob/v0.6.0/app/models/family/data_exporter.rb"
+        },
+        {
+          "label": "Maybe: environment settings in v0.6.0 (Synth key)",
+          "href": "https://github.com/maybe-finance/maybe/blob/v0.6.0/.env.example"
+        },
+        {
+          "label": "Sure: README",
+          "href": "https://github.com/we-promise/sure"
+        },
+        {
+          "label": "Sure: v0.6.0 release",
+          "href": "https://github.com/we-promise/sure/releases/tag/v0.6.0"
+        },
+        {
+          "label": "Sure: releases",
+          "href": "https://github.com/we-promise/sure/releases"
+        },
+        {
+          "label": "Sure: self-hosting with Docker",
+          "href": "https://github.com/we-promise/sure/blob/main/docs/hosting/docker.md"
+        },
+        {
+          "label": "Sure: imports",
+          "href": "https://docs.sure.am/guides/app-features/csv-imports"
+        },
+        {
+          "label": "Sure: bank and broker providers",
+          "href": "https://docs.sure.am/providers/overview"
+        },
+        {
+          "label": "Sure: budgets",
+          "href": "https://docs.sure.am/guides/app-features/budgets"
+        },
+        {
+          "label": "Sure: clients and mobile app",
+          "href": "https://github.com/we-promise/sure/blob/main/docs/clients.md"
+        },
+        {
+          "label": "Actual Budget: installing with Docker",
+          "href": "https://actualbudget.org/docs/install/docker"
+        },
+        {
+          "label": "Actual Budget: multi-currency",
+          "href": "https://actualbudget.org/docs/budgeting/multi-currency"
+        },
+        {
+          "label": "Actual Budget: importing transactions",
+          "href": "https://actualbudget.org/docs/transactions/importing"
+        },
+        {
+          "label": "Firefly III: what Firefly III is not",
+          "href": "https://docs.firefly-iii.org/explanation/more-information/what-its-not/"
+        },
+        {
+          "label": "Firefly III: Data Importer",
+          "href": "https://docs.firefly-iii.org/explanation/data-importer/introduction/"
+        },
+        {
+          "label": "Budgero: accounts",
+          "href": "https://budgero.app/docs/accounts"
+        },
+        {
+          "label": "Budgero: CSV import",
+          "href": "https://budgero.app/docs/csv-import"
+        },
+        {
+          "label": "Budgero: security model",
+          "href": "https://budgero.app/docs/security"
+        }
+      ]
+    },
+    "cta": {
+      "title": "If a budget is what you need",
+      "body": "Budgero runs as one container with SQLite. Pull budgero/budgero, mount a /data volume and read the admin password from the log.",
       "primary": "Read the self-hosting guide",
       "secondary": "Or try Budgero Cloud for 35 days"
     }

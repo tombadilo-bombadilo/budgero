@@ -60,6 +60,7 @@ const richTags = {
   sharing: internal('/docs/sharing'),
   masterPassword: internal('/docs/master-password'),
   ynabImport: internal('/docs/ynab-import'),
+  maybeAlt: internal('/maybe-finance-alternative'),
   monthly: pricing.monthly,
   yearly: pricing.yearly,
 };

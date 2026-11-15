@@ -159,5 +159,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    {
+      url: `${base}/maybe-finance-alternative`,
+      lastModified: '2026-11-15',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
   ];
 }

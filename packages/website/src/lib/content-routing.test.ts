@@ -56,6 +56,7 @@ test('article language switches lead to a useful index without stale fragments',
   assert.equal(localeSwitchPath('/blog/haushaltsbuch', 'fr', '?ref=old', '#example'), '/fr/blog');
   assert.equal(localeSwitchPath('/actual-budget-alternative', 'de', '?ref=old', '#compare'), '/de');
   assert.equal(localeSwitchPath('/best-self-hosted-budgeting-apps', 'nl', '', '#sure'), '/nl');
+  assert.equal(localeSwitchPath('/maybe-finance-alternative', 'es', '', '#move'), '/es');
   assert.equal(
     localeSwitchPath('/docs/offline', 'fr', '?view=all', '#sync'),
     '/fr/docs/offline?view=all#sync'
