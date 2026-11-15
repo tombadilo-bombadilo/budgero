@@ -1,6 +1,6 @@
 import { writeFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
-import { changelogEntries } from '../packages/website/src/lib/changelog-data.ts';
+import { changelogEntries } from '../docs/changelog/changelog-data.ts';
 
 export function releaseNotes(tag, entries = changelogEntries) {
   const matches = entries.filter((entry) => entry.version === tag);

@@ -2,14 +2,13 @@ import { execFileSync } from 'node:child_process';
 import { appendFileSync, readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 
-const all = () => ({ app: true, website: true, server: true });
+const all = () => ({ app: true, server: true });
 
 /** Package manifests whose `"version"` line a release bumps. */
 const VERSION_MANIFESTS = new Set([
   'package.json',
   'packages/app/package.json',
   'packages/server/package.json',
-  'packages/website/package.json',
 ]);
 const VERSION_LINE = /^\s*"version":\s*"[^"]*",?\s*$/;
 // Release-only files: the server's version string and the assistant's
@@ -26,6 +25,10 @@ const CHANGES_JOB_FILES = new Set([
   'scripts/ci/govulncheck.mjs',
   'scripts/ci/govulncheck.test.mjs',
 ]);
+// User docs and the changelog feed the assistant's knowledge base and the
+// release notes; the changes job checks both on every event. The website,
+// which renders them, lives in its own repository.
+const CHANGES_JOB_DIRS = ['docs/user/', 'docs/changelog/'];
 
 /** True when every added/removed line of a manifest is its `"version"` field. */
 export function isVersionOnlyChange(lines) {
@@ -37,24 +40,21 @@ export function isVersionOnlyChange(lines) {
  * +/- marker), or null when unknown; unknown always counts as a real change.
  */
 export function planChanges(paths, changedLines = () => null) {
-  const plan = { app: false, website: false, server: false };
+  const plan = { app: false, server: false };
   for (const path of paths) {
     if (NO_CHECK_FILES.has(path)) continue;
     if (VERSION_MANIFESTS.has(path) && isVersionOnlyChange(changedLines(path))) continue;
     // The classifier and the govulncheck gate are tested by the changes job
     // itself on every event.
     if (CHANGES_JOB_FILES.has(path)) continue;
-    // Dependency patches affect the shared workspace installation.
-    if (path.startsWith('packages/website/patches/')) return all();
+    if (CHANGES_JOB_DIRS.some((dir) => path.startsWith(dir))) continue;
     // The web job invokes the server's package.json build script too.
     if (path === 'packages/server/package.json') {
       plan.app = true;
       plan.server = true;
       continue;
     }
-    if (path.startsWith('packages/website/') || path === 'scripts/i18n/audit-website.mjs') {
-      plan.website = true;
-    } else if (/^packages\/(app|core|runtime|eslint-config)\//.test(path) || path.startsWith('scripts/i18n/')) {
+    if (/^packages\/(app|core|runtime|eslint-config)\//.test(path) || path.startsWith('scripts/i18n/')) {
       plan.app = true;
     } else if (path.startsWith('packages/server/')) {
       plan.server = true;
@@ -174,7 +174,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   let plan = planEvent(event);
   if (
     isPush &&
-    (plan.app || plan.website || plan.server) &&
+    (plan.app || plan.server) &&
     (await alreadyPassed({
       tree,
       repository: process.env.GITHUB_REPOSITORY,
@@ -183,7 +183,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     }))
   ) {
     console.log(`Tree ${tree} already passed CI on its pull request; skipping the checks.`);
-    plan = { app: false, website: false, server: false };
+    plan = { app: false, server: false };
   }
   const output =
     Object.entries(plan).map(([key, value]) => `${key}=${value}`).join('\n') + `\ntree=${tree ?? ''}\n`;

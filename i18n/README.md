@@ -54,7 +54,7 @@ The review branch locked all 46 translatable glossary terms in German, French, S
 
 ## Coverage
 
-App strings, website pages and metadata, consent controls, and all 22 documentation guides have German, French, Spanish, and Dutch catalogs. The current homepage design and English copy are retained. Blog article bodies and historical release-note entries retain their original English text; their navigation is localized.
+App strings and all documentation guides in `docs/user` have German, French, Spanish, and Dutch versions (`docs/user/<locale>/`). Historical changelog entries stay in English. The website's own catalogs and checks live in the website repository.
 
 The new translations have automated coverage, placeholder, and rendering checks. They have not received a new native-speaker review.
 
@@ -66,10 +66,8 @@ pnpm --dir packages/app exec lingui compile --strict
 pnpm run i18n:check
 pnpm run i18n:sweep
 pnpm run test:app
-pnpm --dir packages/website run build
-node scripts/i18n/audit-website.mjs --max 0
 ```
 
 Translate complete messages and use ICU plurals for counts. Never translate storage keys, identifiers, source data, or analytics event names. Module-level Lingui `msg` values are descriptors: resolve them with `t(descriptor)` or `i18n._(descriptor)` before passing them to libraries that require strings. React components must subscribe with `useLingui()` when using translated values in memoized data.
 
-`i18n:check` covers all website namespaces and checks documentation counterparts. `i18n:sweep` is a conservative source audit; a clean report does not replace rendered-page checks. The website `updates` namespace contains stable content-hash keys for copy added during integration; edit the English message and all locale values together when its wording changes.
+`i18n:check` covers the app catalogs and checks that every English guide in `docs/user` has a counterpart with the same `topicId` in each locale. `i18n:sweep` is a conservative source audit; a clean report does not replace rendered-page checks.

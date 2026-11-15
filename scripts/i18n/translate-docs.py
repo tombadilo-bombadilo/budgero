@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Translate docs MDX into content/docs/<locale>/<slug>.mdx.
+"""Translate docs MDX into docs/user/<locale>/<slug>.mdx.
 
 Code fences, inline code, URLs and JSX tags are masked before translation and
 restored afterwards, so only prose is ever sent to the model. Frontmatter keys
@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import translate as T  # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-DOCS = os.path.join(ROOT, "packages", "website", "content", "docs")
+DOCS = os.path.join(ROOT, "docs", "user")
 
 # The shared prompt is tuned for short UI labels; documentation is prose and
 # must keep its Markdown structure intact.
@@ -165,7 +165,7 @@ def main():
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
         list(pool.map(run, files))
 
-    print(f"{locale}: wrote {len(files)} files to content/docs/{locale}/")
+    print(f"{locale}: wrote {len(files)} files to docs/user/{locale}/")
 
 
 if __name__ == "__main__":

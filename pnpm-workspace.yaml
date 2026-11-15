@@ -9,7 +9,6 @@ allowBuilds:
   '@parcel/watcher': true
   '@swc/core': true
   '@tailwindcss/oxide': true
-  contentlayer2: true
   core-js: true
   esbuild: true
   # false: unused at runtime (browser uses onnxruntime-web); its postinstall binary download flakes CI
@@ -20,23 +19,12 @@ allowBuilds:
 
 # Security overrides for transitive vulnerabilities
 overrides:
-  # Contentlayer 0.5.8 needs the tracing adapter patch below for OpenTelemetry 2.
-  '@opentelemetry/core': 2.11.0
-  '@opentelemetry/resources': 2.11.0
-  '@opentelemetry/sdk-trace-base': 2.11.0
-  '@opentelemetry/sdk-trace-node': 2.11.0
-  '@opentelemetry/context-async-hooks': 2.11.0
-  '@opentelemetry/propagator-jaeger': 2.11.0
-  '@opentelemetry/propagator-b3': 2.11.0
-  '@opentelemetry/exporter-trace-otlp-grpc': 0.222.0
   js-yaml@^3.0.0: ^3.15.2
   js-yaml@^4.0.0: ^4.3.2
-  toml@<4.2.0: ^4.2.0
   '@babel/plugin-transform-modules-systemjs@<7.29.4': ^7.29.4
   '@clerk/clerk-react@<5.61.6': ^5.61.7
   '@clerk/shared@<3.47.5': ^3.47.7
   '@eslint/plugin-kit@<0.3.4': ^0.3.4
-  '@grpc/grpc-js@<1.14.5': ^1.14.5
   '@protobufjs/utf8@<1.1.1': ^1.1.1
   ajv@<6.14.0: ^6.14.0
   ajv@>=7.0.0-alpha.0 <8.20.0: ^8.20.0
@@ -77,9 +65,6 @@ overrides:
   vite@<6.4.2: ^6.4.2
   yaml@<1.10.3: ^1.10.3
   yaml@<2.8.3: ^2.8.3
-
-patchedDependencies:
-  '@contentlayer2/utils@0.5.8': packages/website/patches/@contentlayer2__utils@0.5.8.patch
 
 # Prevent pnpm from auto-running `pnpm install` before every `pnpm exec`/`pnpm run`
 # in non-TTY contexts (husky hooks). This stops cascading failures from

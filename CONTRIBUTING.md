@@ -34,11 +34,11 @@ pnpm run dev:selfhost
 ## Quality gates
 
 CI selects checks from the files changed across the whole PR (and the full commit
-range on pushes). Website changes run website builds, type-checking, translation
-audits, and validation of the app knowledge generated from the docs. App, core,
-and runtime changes run the app checks; server changes run the Go checks. Shared
-configuration, dependency patches, lockfiles, the CI workflow and its change
-selection, and unknown paths run the full suite. Repository-only prose, metadata,
+range on pushes). Every run checks that the app's knowledge base matches
+`docs/user` and that the changelog in `docs/changelog` loads. App, core, and
+runtime changes run the app checks; server changes run the Go checks. Shared
+configuration, lockfiles, the CI workflow and its change selection, and unknown
+paths run the full suite. Repository-only prose, metadata,
 and other workflows (release, runner checks) skip build steps.
 
 The required `web` and `server` checks still report on every PR; a failed
