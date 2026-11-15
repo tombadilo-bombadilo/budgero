@@ -110,7 +110,10 @@ export async function removeDemoWorkspace(
   if (getStoredDefaultSpaceId() === spaceId) setStoredDefaultSpaceId(null);
   queryClient.removeQueries({ queryKey: ['space-members', spaceId] });
   queryClient.removeQueries({ queryKey: ['space-invites', spaceId] });
-  if (runtime.isInitialized()) await runtime.refreshSpaces();
+  if (runtime.isInitialized()) {
+    await runtime.forgetDeletedSpace(spaceId);
+    await runtime.refreshSpaces();
+  }
   if (runtime.getActiveSpaceId() === spaceId) {
     syncBudgetStateFromRuntime({
       runtime,

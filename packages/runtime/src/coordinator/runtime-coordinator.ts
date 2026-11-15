@@ -813,6 +813,29 @@ export class RuntimeCoordinator {
     }
   }
 
+  /**
+   * Call right after the user deleted `spaceId` on the server, before
+   * refreshing. refreshSpaces can't tell a deleted workspace from one that is
+   * only temporarily missing, and must not prune on an empty list, so it
+   * would leave a deleted active workspace open (socket, upload timers, DB
+   * handle, active id) when it was the last one. This closes it: no active
+   * space afterwards, its queue, key and registry entry gone. Deleting any
+   * other workspace changes nothing here.
+   */
+  async forgetDeletedSpace(spaceId: string): Promise<void> {
+    if (this.pendingRemoteBlob?.spaceId === spaceId) {
+      this.pendingRemoteBlob = null;
+      if (this.remoteBlobRetryTimer) {
+        clearTimeout(this.remoteBlobRetryTimer);
+        this.remoteBlobRetryTimer = null;
+      }
+    }
+    if (!(await this.lifecycle.forgetDeletedSpace(spaceId))) return;
+    this.lastSnapshotDownloadAt = 0;
+    this.hasLocalChangesSinceLastDownload = false;
+    this.log('info', 'Closed the deleted active workspace', { spaceId });
+  }
+
   // ---- Overlay & Listeners ----
   // These are coordinator-level: listeners survive context switches and
   // can be registered before init (when activeContext is still null).

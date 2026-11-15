@@ -184,6 +184,7 @@ describe('runOnboardingApply YNAB completion gate', () => {
     } as unknown as QueryClient;
     const runtime = {
       isInitialized: () => true,
+      forgetDeletedSpace: vi.fn().mockResolvedValue(undefined),
       refreshSpaces: vi.fn().mockResolvedValue(undefined),
       switchSpace: vi.fn().mockResolvedValue(undefined),
       getDatabase: () => ({}),
@@ -295,6 +296,7 @@ describe('runOnboardingApply YNAB review analytics', () => {
   ] as const)('reports the review and a %s as %s', async (choice, decision) => {
     const runtime = {
       isInitialized: () => true,
+      forgetDeletedSpace: vi.fn().mockResolvedValue(undefined),
       refreshSpaces: vi.fn().mockResolvedValue(undefined),
       switchSpace: vi.fn().mockResolvedValue(undefined),
       getActiveSpaceId: () => null,
@@ -341,6 +343,18 @@ describe('runOnboardingApply YNAB review analytics', () => {
     ]);
     // Never a month, an amount or a name.
     expect(JSON.stringify(reviewEvents)).not.toMatch(/2018|Synthetic|Bills|5000/);
+
+    // Removing the import closes the deleted workspace in the runtime before
+    // the refresh (which can't, when it was the account's only one).
+    const forget = vi.mocked(runtime.forgetDeletedSpace);
+    if (decision === 'remove') {
+      expect(forget).toHaveBeenCalledWith('space-1');
+      expect(forget.mock.invocationCallOrder[0]).toBeLessThan(
+        vi.mocked(runtime.refreshSpaces).mock.invocationCallOrder.at(-1)!
+      );
+    } else {
+      expect(forget).not.toHaveBeenCalled();
+    }
   });
 });
 
@@ -353,6 +367,7 @@ it.each(['', '1.234,567'])(
     mocks.importFromZip.mockResolvedValue({ ...passedResult, verification: undefined });
     const runtime = {
       isInitialized: () => true,
+      forgetDeletedSpace: vi.fn().mockResolvedValue(undefined),
       refreshSpaces: vi.fn().mockResolvedValue(undefined),
       switchSpace: vi.fn().mockResolvedValue(undefined),
       getDatabase: () => ({}),
@@ -406,6 +421,7 @@ function freshRuntime() {
   const execute = vi.fn(async (_call: Call) => ({ result: nextId++ }));
   const runtime = {
     isInitialized: () => true,
+    forgetDeletedSpace: vi.fn().mockResolvedValue(undefined),
     refreshSpaces: vi.fn().mockResolvedValue(undefined),
     switchSpace: vi.fn().mockResolvedValue(undefined),
     getActiveSpaceId: () => 'space-1',
@@ -428,6 +444,7 @@ function demoRuntime(seeded: boolean) {
   });
   const runtime = {
     isInitialized: () => true,
+    forgetDeletedSpace: vi.fn().mockResolvedValue(undefined),
     refreshSpaces: vi.fn().mockResolvedValue(undefined),
     switchSpace: vi.fn(async (spaceId: string) => {
       active.id = spaceId;
@@ -671,6 +688,7 @@ describe('runOnboardingApply joining a workspace', () => {
     const runtime = {
       isInitialized: () => false,
       init: vi.fn().mockResolvedValue(undefined),
+      forgetDeletedSpace: vi.fn().mockResolvedValue(undefined),
       refreshSpaces: vi.fn().mockResolvedValue(undefined),
       switchSpace: vi.fn().mockResolvedValue(undefined),
       getActiveSpaceId: () => 'shared-space',

@@ -3,7 +3,11 @@ import { NoAcceptedSpacesError } from './space-catalog-service';
 import { RuntimeCoordinator } from './runtime-coordinator';
 import { createStorageMock } from '../__tests__/storage-mock';
 import { CancellationError } from '../utils/diagnostics';
-import { BLOB_VERSION_STORAGE_PREFIX, MUTATION_CURSOR_STORAGE_PREFIX } from '../types/storage-keys';
+import {
+  ACTIVE_SPACE_STORAGE,
+  BLOB_VERSION_STORAGE_PREFIX,
+  MUTATION_CURSOR_STORAGE_PREFIX,
+} from '../types/storage-keys';
 import { FakeIndexedDBFactory } from '../__tests__/indexeddb-mock';
 import { masterPasswordStore } from '../key-vault/master-password-store';
 
@@ -992,5 +996,171 @@ describe('RuntimeCoordinator', () => {
       }
     ).log('info', 'fallback-log', { ok: true });
     expect(runtimeLogSpy).toHaveBeenCalled();
+  });
+
+  describe('deleting a workspace', () => {
+    function space(id: string) {
+      return {
+        space_id: id,
+        display_name: id,
+        owner_user_id: 'u1',
+        role: 'owner',
+        invitation_status: 'accepted',
+        encrypted_space_key: '',
+        created_at: '2024-01-01',
+      };
+    }
+
+    type TestContext = {
+      spaceId: string;
+      db: { close(): void };
+      sync: { destroy(): void };
+      dbSync: { destroy(): void };
+      offlineQueue: { getQueue(): Promise<{ id: string }[]> };
+    };
+
+    function activeContext(coordinator: RuntimeCoordinator): TestContext | null {
+      return (
+        coordinator as unknown as { session: { getContext(): TestContext | null } }
+      ).session.getContext();
+    }
+
+    function uploadTimerOf(ctx: TestContext): unknown {
+      return (ctx.dbSync as unknown as { uploadTimer: unknown }).uploadTimer;
+    }
+
+    async function initWith(spaces: ReturnType<typeof space>[]) {
+      vi.stubGlobal('localStorage', localStorageMock as unknown as Storage);
+      vi.stubGlobal('sessionStorage', sessionStorageMock as unknown as Storage);
+      vi.stubGlobal('indexedDB', new FakeIndexedDBFactory() as unknown as IDBFactory);
+      const listSpaces = vi.fn(async () => spaces);
+      const created = createCoordinator({
+        listSpaces,
+        getProfile: vi.fn(async () => ({ primary_space_id: spaces[0]!.space_id })),
+      });
+      await created.coordinator.init({
+        masterPassword: 'master',
+        queryClient: created.queryClient,
+      });
+      return { ...created, listSpaces };
+    }
+
+    it('closes the deleted active (only) workspace, and the empty refresh after it is quiet', async () => {
+      const { coordinator, deps, queryClient, listSpaces } = await initWith([space('only')]);
+      await coordinator.executeMutation({ op: 'budgets.create', payload: { budget_id: 1 } });
+      coordinator.scheduleSnapshotUpload();
+
+      const ctx = activeContext(coordinator)!;
+      expect(ctx.spaceId).toBe('only');
+      expect(await ctx.offlineQueue.getQueue()).not.toHaveLength(0);
+      expect(uploadTimerOf(ctx)).not.toBeNull();
+      const syncDestroy = vi.spyOn(ctx.sync, 'destroy');
+      const dbClose = vi.spyOn(ctx.db, 'close');
+      queryClient.clear.mockClear();
+
+      // The server deleted it; it was the account's only workspace.
+      listSpaces.mockResolvedValue([]);
+      await coordinator.forgetDeletedSpace('only');
+
+      expect(coordinator.getActiveSpaceId()).toBeNull();
+      expect(coordinator.getDatabase()).toBeNull();
+      expect(activeContext(coordinator)).toBeNull();
+      expect(syncDestroy).toHaveBeenCalled();
+      expect(dbClose).toHaveBeenCalled();
+      expect(uploadTimerOf(ctx)).toBeNull();
+      expect(await ctx.offlineQueue.getQueue()).toHaveLength(0);
+      expect(queryClient.clear).toHaveBeenCalled();
+      expect(coordinator.spaceRegistry.listSpaces()).toEqual([]);
+      expect(coordinator.getSpacePassphrase('only')).toBeNull();
+      expect(localStorageMock.getItem(ACTIVE_SPACE_STORAGE)).toBeNull();
+
+      await expect(coordinator.refreshSpaces()).resolves.toBeUndefined();
+      expect(deps.runtimeLog).not.toHaveBeenCalledWith(
+        'warn',
+        'RuntimeCoordinator',
+        'Failed to refresh spaces',
+        expect.anything()
+      );
+      expect(coordinator.state).toBe('Ready');
+      expect(coordinator.getActiveSpaceId()).toBeNull();
+
+      coordinator.destroy();
+    });
+
+    it('opens a workspace created afterwards with nothing left from the deleted one', async () => {
+      const { coordinator, deps, listSpaces } = await initWith([space('only')]);
+      await coordinator.executeMutation({ op: 'budgets.create', payload: { budget_id: 1 } });
+      const oldCtx = activeContext(coordinator)!;
+      const oldDb = coordinator.getDatabase();
+
+      listSpaces.mockResolvedValue([]);
+      await coordinator.forgetDeletedSpace('only');
+      await coordinator.refreshSpaces();
+
+      // The user creates a new workspace; the refresh opens it.
+      listSpaces.mockResolvedValue([space('fresh')]);
+      await coordinator.refreshSpaces();
+
+      const ctx = activeContext(coordinator)!;
+      expect(coordinator.getActiveSpaceId()).toBe('fresh');
+      expect(ctx).not.toBe(oldCtx);
+      expect(coordinator.getDatabase()).not.toBe(oldDb);
+      expect(deps.createDatabase).toHaveBeenLastCalledWith(
+        undefined,
+        expect.objectContaining({ path: 'space_fresh_sas.db' })
+      );
+      expect(await ctx.offlineQueue.getQueue()).toHaveLength(0);
+      // The deleted workspace's undeliverable queue went with it.
+      expect(await oldCtx.offlineQueue.getQueue()).toHaveLength(0);
+      expect(coordinator.spaceRegistry.listSpaces().map((s) => s.space_id)).toEqual(['fresh']);
+      expect(coordinator.state).toBe('Ready');
+
+      const result = await coordinator.executeMutation({
+        op: 'budgets.create',
+        payload: { budget_id: 2 },
+      });
+      expect(result.queued || result.synced).toBe(true);
+      const queued = (await ctx.offlineQueue.getQueue()) as { spaceId?: string }[];
+      expect(queued).toHaveLength(1);
+      expect(queued[0]!.spaceId).toBe('fresh');
+
+      coordinator.destroy();
+    });
+
+    it('leaves the session alone when the deleted workspace is not the active one', async () => {
+      const { coordinator } = await initWith([space('a'), space('b')]);
+      const ctx = activeContext(coordinator)!;
+      expect(ctx.spaceId).toBe('a');
+      const syncDestroy = vi.spyOn(ctx.sync, 'destroy');
+
+      await coordinator.forgetDeletedSpace('b');
+
+      expect(coordinator.getActiveSpaceId()).toBe('a');
+      expect(activeContext(coordinator)).toBe(ctx);
+      expect(syncDestroy).not.toHaveBeenCalled();
+      expect(coordinator.spaceRegistry.listSpaces().map((s) => s.space_id)).toEqual(['a', 'b']);
+      expect(coordinator.getSpacePassphrase('b')).toBeTruthy();
+
+      coordinator.destroy();
+    });
+
+    it('an empty refresh without a delete still prunes and closes nothing', async () => {
+      const { coordinator, listSpaces } = await initWith([space('a'), space('b')]);
+      const ctx = activeContext(coordinator)!;
+      const syncDestroy = vi.spyOn(ctx.sync, 'destroy');
+
+      // e.g. a lapsed subscription: the server lists nothing for now.
+      listSpaces.mockResolvedValue([]);
+      await expect(coordinator.refreshSpaces()).resolves.toBeUndefined();
+
+      expect(coordinator.getActiveSpaceId()).toBe('a');
+      expect(activeContext(coordinator)).toBe(ctx);
+      expect(syncDestroy).not.toHaveBeenCalled();
+      expect(coordinator.spaceRegistry.listSpaces().map((s) => s.space_id)).toEqual(['a', 'b']);
+      expect(coordinator.getSpacePassphrase('a')).toBeTruthy();
+      expect(coordinator.getSpacePassphrase('b')).toBeTruthy();
+
+      coordinator.destroy();
+    });
   });
 });

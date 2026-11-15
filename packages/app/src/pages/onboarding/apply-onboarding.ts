@@ -146,6 +146,7 @@ async function removeIncompleteWorkspace(
     runtime.services().budgets.deleteBudget(budgetId);
   }
   await spaceApi.deleteSpace(spaceId);
+  await runtime.forgetDeletedSpace(spaceId);
   await runtime.refreshSpaces();
   const activeSpaceId = runtime.getActiveSpaceId();
   if (!activeSpaceId || activeSpaceId === spaceId) {
