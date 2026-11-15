@@ -58,6 +58,11 @@ test('article language switches lead to a useful index without stale fragments',
   assert.equal(localeSwitchPath('/best-self-hosted-budgeting-apps', 'nl', '', '#sure'), '/nl');
   assert.equal(localeSwitchPath('/maybe-finance-alternative', 'es', '', '#move'), '/es');
   assert.equal(localeSwitchPath('/ynab-alternative-canada', 'fr', '?ref=x', '#faq'), '/fr');
+  assert.equal(localeSwitchPath('/tools/debt-payoff-calculator', 'fr'), '/fr');
+  assert.equal(
+    localeSwitchPath('/tools/debt-payoff-calculator', 'en'),
+    '/tools/debt-payoff-calculator'
+  );
   assert.equal(
     localeSwitchPath('/docs/offline', 'fr', '?view=all', '#sync'),
     '/fr/docs/offline?view=all#sync'

@@ -77,6 +77,16 @@ export async function SiteFooter() {
                   </Link>
                 </li>
               )}
+              {locale === 'en' && (
+                <li>
+                  <Link
+                    href="/tools/debt-payoff-calculator"
+                    className="hover:text-[#141414] transition-colors"
+                  >
+                    Debt payoff calculator
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link
                   href="/monarch-money-alternative"
