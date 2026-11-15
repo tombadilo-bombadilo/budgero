@@ -19,7 +19,7 @@ import type {
 import { YNABImportService } from '@budgero/core/browser';
 import { MasterPasswordManager } from '@shared/lib/crypto';
 import { getErrorMessage } from '@shared/lib/errors';
-import { startImportRun } from '@shared/lib/analytics/import-tracking';
+import { startImportRun, startYnabReview } from '@shared/lib/analytics/import-tracking';
 import { authApi, spaceApi } from '@shared/api/api-client';
 import type { AppRuntime } from '@shared/runtime/app-runtime';
 import {
@@ -146,6 +146,7 @@ async function removeIncompleteWorkspace(
     runtime.services().budgets.deleteBudget(budgetId);
   }
   await spaceApi.deleteSpace(spaceId);
+  await runtime.forgetDeletedSpace(spaceId);
   await runtime.refreshSpaces();
   const activeSpaceId = runtime.getActiveSpaceId();
   if (!activeSpaceId || activeSpaceId === spaceId) {
@@ -474,6 +475,11 @@ export async function runOnboardingApply(
         // Register the decision resolver before painting the review screen so
         // even an immediate click cannot race ahead of the suspended pipeline.
         const reviewDecision = reviewYnabImport(importResult);
+        const review = startYnabReview(
+          importResult.verification,
+          state.ynabApiSnapshot ? 'ynab_api' : 'ynab_zip',
+          'onboarding'
+        );
         await onYnabProgress({
           stage: 'complete',
           status: 'warning',
@@ -482,6 +488,7 @@ export async function runOnboardingApply(
           detail: 'The imported budget has not been saved or synced yet.',
         });
         const decision = await reviewDecision;
+        review.decided(decision === 'cancel' ? 'remove' : 'keep');
         if (decision === 'cancel') {
           importRun.cancelled();
           try {

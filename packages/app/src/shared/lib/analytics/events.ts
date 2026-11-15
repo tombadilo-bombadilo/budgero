@@ -186,6 +186,20 @@ export const YNAB_HELP_TOPICS = [
 ] as const;
 export type YnabHelpTopic = (typeof YNAB_HELP_TOPICS)[number];
 
+/**
+ * YNAB import review screen (verification ended with warnings): which checks
+ * differ, the cause kinds the verifier reports (YNABReadyToAssignCategoryCause
+ * reason, plus months it could not attribute), and the user's decision.
+ */
+const YNAB_REVIEW_CHECKS = ['rta', 'category', 'both'] as const;
+export type YnabReviewChecks = (typeof YNAB_REVIEW_CHECKS)[number];
+/** Whether every differing month is more than 12 months old. */
+const YNAB_REVIEW_RECENCY = ['older_only', 'includes_recent'] as const;
+export type YnabReviewRecency = (typeof YNAB_REVIEW_RECENCY)[number];
+/** 'left': the screen closed (form unmounted) without a choice. */
+const YNAB_REVIEW_DECISIONS = ['keep', 'remove', 'left'] as const;
+export type YnabReviewDecision = (typeof YNAB_REVIEW_DECISIONS)[number];
+
 const BANK_PROVIDERS = ['simplefin', 'enablebanking'] as const;
 const BANK_SYNC_TRIGGERS = ['manual', 'auto', 'link'] as const;
 
@@ -476,6 +490,32 @@ export const EVENT_SCHEMA = {
     outcome: OUTCOMES,
     error_code: ERROR_CODES,
     rows_bucket: COUNT_BUCKETS,
+    duration_bucket: DURATION_BUCKETS,
+  },
+
+  // A YNAB import whose verification found differences: the review screen's
+  // shape (counts bucketed, cause kinds as yes/no, never months or amounts)
+  // and what the user decided.
+  ynab_import_review_shown: {
+    source: IMPORT_SOURCES,
+    context: IMPORT_CONTEXTS,
+    checks: YNAB_REVIEW_CHECKS,
+    rta_months_bucket: SMALL_COUNT_BUCKETS,
+    months_checked_bucket: COUNT_BUCKETS,
+    category_values_bucket: COUNT_BUCKETS,
+    cause_cash_overspend: YES_NO,
+    cause_assigned_diff: YES_NO,
+    cause_not_attributed: YES_NO,
+    category_assigned: YES_NO,
+    category_activity: YES_NO,
+    category_available: YES_NO,
+    debt_adjustments: YES_NO,
+    recency: YNAB_REVIEW_RECENCY,
+  },
+  ynab_import_review_decided: {
+    source: IMPORT_SOURCES,
+    context: IMPORT_CONTEXTS,
+    decision: YNAB_REVIEW_DECISIONS,
     duration_bucket: DURATION_BUCKETS,
   },
 

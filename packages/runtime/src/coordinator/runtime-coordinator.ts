@@ -21,7 +21,7 @@ import { RuntimeContextFactory, type RuntimeContext } from './runtime-context-fa
 import { SpaceActivationService } from './space-activation-service';
 import { MutationDispatchService } from './mutation-dispatch-service';
 import { RuntimeStateMachine } from './runtime-state-machine';
-import { SpaceCatalogService } from './space-catalog-service';
+import { isNoAcceptedSpacesError, SpaceCatalogService } from './space-catalog-service';
 import { ActiveSpaceSession } from './active-space-session';
 import { RuntimeStatePolicy, type RuntimeStateIntent } from './runtime-state-policy';
 import { RuntimeLifecycleService } from './runtime-lifecycle-service';
@@ -800,11 +800,40 @@ export class RuntimeCoordinator {
         await this.switchSpace(fallbackSpaceId);
       });
     } catch (error) {
+      if (isNoAcceptedSpacesError(error)) {
+        // No workspace left (e.g. a cancelled onboarding import deleted it):
+        // a state the app handles, not a failed refresh.
+        this.log('info', 'No workspaces left after refresh');
+        return;
+      }
       this.log('warn', 'Failed to refresh spaces', {
         error: errorMessage(error),
         originalError: error,
       });
     }
+  }
+
+  /**
+   * Call right after the user deleted `spaceId` on the server, before
+   * refreshing. refreshSpaces can't tell a deleted workspace from one that is
+   * only temporarily missing, and must not prune on an empty list, so it
+   * would leave a deleted active workspace open (socket, upload timers, DB
+   * handle, active id) when it was the last one. This closes it: no active
+   * space afterwards, its queue, key and registry entry gone. Deleting any
+   * other workspace changes nothing here.
+   */
+  async forgetDeletedSpace(spaceId: string): Promise<void> {
+    if (this.pendingRemoteBlob?.spaceId === spaceId) {
+      this.pendingRemoteBlob = null;
+      if (this.remoteBlobRetryTimer) {
+        clearTimeout(this.remoteBlobRetryTimer);
+        this.remoteBlobRetryTimer = null;
+      }
+    }
+    if (!(await this.lifecycle.forgetDeletedSpace(spaceId))) return;
+    this.lastSnapshotDownloadAt = 0;
+    this.hasLocalChangesSinceLastDownload = false;
+    this.log('info', 'Closed the deleted active workspace', { spaceId });
   }
 
   // ---- Overlay & Listeners ----

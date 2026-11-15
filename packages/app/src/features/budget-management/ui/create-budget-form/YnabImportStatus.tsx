@@ -1,5 +1,6 @@
 import { currencyDisplayFor } from '@shared/lib/number-format';
 import * as React from 'react';
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import type {
   YNABImportProgressUpdate,
@@ -11,11 +12,14 @@ import type {
 } from '@budgero/core/browser';
 import { Alert, AlertDescription, AlertTitle } from '@shared/ui/alert';
 import { Button } from '@shared/ui/button';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
+import { ynabReviewShape } from '@shared/lib/analytics/import-tracking';
 import { Progress } from '@shared/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@shared/ui/table';
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Circle,
@@ -308,6 +312,98 @@ function ReadyToAssignMismatchesTable({
   );
 }
 
+/**
+ * The decision at a glance: what the verification proved, what differs, and
+ * why keeping the budget is safe. A review only opens after the source-row and
+ * account-balance checks passed (they stop the import otherwise), so both are
+ * stated as facts here.
+ */
+function ReviewSummary({ verification }: { verification: YNABReconciliationReport }) {
+  const { t } = useLingui();
+  const rtaMonths = verification.readyToAssign.mismatches.length;
+  const categoryValues = verification.categories.checked - verification.categories.matched;
+  const olderOnly = ynabReviewShape(verification).recency === 'older_only';
+
+  return (
+    <section
+      aria-labelledby="ynab-review-summary-heading"
+      className="space-y-3 rounded-md border bg-muted/15 p-3 text-sm"
+    >
+      <h4 id="ynab-review-summary-heading" className="sr-only">
+        <Trans>Import summary</Trans>
+      </h4>
+      <ul className="space-y-2">
+        <li className="flex items-start gap-2">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden />
+          <span>
+            {verification.accounts.checked > 0
+              ? t`Your account balances match YNAB and every transaction came across.`
+              : t`Every transaction came across.`}
+          </span>
+        </li>
+        {rtaMonths > 0 && (
+          <li className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+            <span>
+              {plural(rtaMonths, {
+                one: 'In # month, Ready to Assign differs from what YNAB showed.',
+                other: 'In # months, Ready to Assign differs from what YNAB showed.',
+              })}
+            </span>
+          </li>
+        )}
+        {categoryValues > 0 && (
+          <li className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" aria-hidden />
+            <span>
+              {plural(categoryValues, {
+                one: '# category value in your budget history differs from YNAB.',
+                other: '# category values in your budget history differ from YNAB.',
+              })}
+            </span>
+          </li>
+        )}
+      </ul>
+      {olderOnly && (
+        <p className="text-xs text-muted-foreground">
+          <Trans>All of these differences are more than a year old.</Trans>
+        </p>
+      )}
+      <div className="space-y-1 border-t pt-3">
+        <p className="font-medium">
+          <Trans>We recommend keeping this budget.</Trans>
+        </p>
+        <p className="text-xs text-muted-foreground">
+          <Trans>
+            Budgero didn’t change any transactions to force these numbers to match. The differences
+            stay listed in Settings › Imports › Import History, and you can adjust your budget at
+            any time.
+          </Trans>
+        </p>
+      </div>
+    </section>
+  );
+}
+
+/** Technical sections behind "Show details", collapsed until the user asks. */
+function DetailsDisclosure({ children }: { children: React.ReactNode }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <Collapsible open={open} onOpenChange={setOpen} className="space-y-3">
+      <CollapsibleTrigger asChild>
+        <Button type="button" variant="ghost" size="sm" className="w-full justify-between">
+          {open ? <Trans>Hide details</Trans> : <Trans>Show details</Trans>}
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`}
+            aria-hidden
+          />
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-4">{children}</CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 export function YnabImportStatus({
   sourceMode,
   updates,
@@ -350,34 +446,41 @@ export function YnabImportStatus({
   const isSaved = latestByStage.get('complete')?.status === 'passed';
   const isPendingReview = Boolean(summary && hasWarning && !isSaved && !error);
   const progress = isSaved ? 100 : (lastUpdate?.progress ?? 0);
+  const hasDifferences = Boolean(
+    verification &&
+    (verification.readyToAssign.mismatches.length > 0 ||
+      verification.categories.mismatches.length > 0)
+  );
 
-  return (
-    <div className="space-y-4" aria-live="polite">
-      <div className="space-y-1">
-        <h3 className="text-base font-semibold">
-          {isPendingReview
-            ? t`Review YNAB differences`
-            : isSaved
-              ? hasWarning
-                ? t`YNAB import saved with warnings`
-                : t`YNAB import verified`
-              : error
-                ? t`YNAB import stopped`
-                : t`Importing from YNAB`}
-        </h3>
-        <p className="text-xs text-muted-foreground">
-          {isPendingReview
-            ? t`Source rows and account balances reconcile. Review the reporting differences before deciding whether to keep this budget.`
-            : isSaved
-              ? hasWarning
-                ? t`You accepted the differences below. Import History keeps a summary of them.`
-                : t`Budgero finished the import and passed every available integrity check.`
-              : error
-                ? t`Review the failed check below before trying again.`
-                : t`You can follow each import and verification stage here.`}
-        </p>
-      </div>
+  const header = (
+    <div className="space-y-1">
+      <h3 className="text-base font-semibold">
+        {isPendingReview
+          ? t`Your YNAB budget is ready`
+          : isSaved
+            ? hasWarning
+              ? t`YNAB import saved with warnings`
+              : t`YNAB import verified`
+            : error
+              ? t`YNAB import stopped`
+              : t`Importing from YNAB`}
+      </h3>
+      <p className="text-xs text-muted-foreground">
+        {isPendingReview
+          ? t`It isn’t saved or synced until you choose below.`
+          : isSaved
+            ? hasWarning
+              ? t`You accepted the differences below. Import History keeps a summary of them.`
+              : t`Budgero finished the import and passed every available integrity check.`
+            : error
+              ? t`Review the failed check below before trying again.`
+              : t`You can follow each import and verification stage here.`}
+      </p>
+    </div>
+  );
 
+  const progressAndSteps = (
+    <>
       <div className="space-y-1.5">
         <div className="flex justify-between text-xs text-muted-foreground">
           <span>{lastUpdate?.label ?? t`Waiting to start`}</span>
@@ -422,17 +525,10 @@ export function YnabImportStatus({
           );
         })}
       </ol>
-
-      {error && (
-        <Alert variant="destructive">
-          <XCircle className="h-4 w-4" />
-          <AlertTitle>
-            <Trans>Integrity check failed</Trans>
-          </AlertTitle>
-          <AlertDescription className="break-words text-xs">{error}</AlertDescription>
-        </Alert>
-      )}
-
+    </>
+  );
+  const verificationDetails = (
+    <>
       {verification && (
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-md border bg-emerald-50/70 p-3 dark:bg-emerald-950/20">
@@ -488,7 +584,6 @@ export function YnabImportStatus({
           </div>
         </div>
       )}
-
       {verification && verification.accounts.debtBalanceAdjustments.length > 0 && (
         <Alert>
           <CheckCircle2 className="h-4 w-4 text-emerald-600" />
@@ -513,7 +608,10 @@ export function YnabImportStatus({
           </AlertDescription>
         </Alert>
       )}
-
+    </>
+  );
+  const differenceDetails = (
+    <>
       {verification && verification.readyToAssign.mismatches.length > 0 && (
         <div className="space-y-2 rounded-md border border-amber-500/50 bg-amber-50/60 p-3 dark:bg-amber-950/20">
           <div>
@@ -530,7 +628,6 @@ export function YnabImportStatus({
           />
         </div>
       )}
-
       {verification && verification.categories.mismatches.length > 0 && (
         <div className="space-y-2 rounded-md border border-amber-500/50 bg-amber-50/60 p-3 dark:bg-amber-950/20">
           <p className="text-xs font-semibold">
@@ -570,6 +667,60 @@ export function YnabImportStatus({
           )}
         </div>
       )}
+    </>
+  );
+
+  if (isPendingReview && verification) {
+    return (
+      <div className="space-y-4" aria-live="polite">
+        {header}
+        <ReviewSummary verification={verification} />
+        <div className="flex flex-col gap-2">
+          <Button type="button" disabled={isFinalizing} onClick={onAcceptWarnings}>
+            <Trans>
+              {isFinalizing ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
+              Keep this budget
+            </Trans>
+          </Button>
+          <Button type="button" variant="outline" disabled={isFinalizing} onClick={onCancelPending}>
+            <Trans>
+              <Trash2 className="h-4 w-4" />
+              Remove this import
+            </Trans>
+          </Button>
+        </div>
+        <DetailsDisclosure>
+          {progressAndSteps}
+          {verificationDetails}
+          {differenceDetails}
+        </DetailsDisclosure>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4" aria-live="polite">
+      {header}
+
+      {progressAndSteps}
+
+      {error && (
+        <Alert variant="destructive">
+          <XCircle className="h-4 w-4" />
+          <AlertTitle>
+            <Trans>Integrity check failed</Trans>
+          </AlertTitle>
+          <AlertDescription className="break-words text-xs">{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {verificationDetails}
+
+      {hasDifferences && <DetailsDisclosure>{differenceDetails}</DetailsDisclosure>}
 
       {error && (
         <Button type="button" variant="outline" className="w-full" onClick={onBack}>
@@ -578,27 +729,6 @@ export function YnabImportStatus({
             Back to import
           </Trans>
         </Button>
-      )}
-
-      {isPendingReview && (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-          <Button type="button" variant="outline" disabled={isFinalizing} onClick={onCancelPending}>
-            <Trans>
-              <Trash2 className="h-4 w-4" />
-              Cancel and remove
-            </Trans>
-          </Button>
-          <Button type="button" disabled={isFinalizing} onClick={onAcceptWarnings}>
-            <Trans>
-              {isFinalizing ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <AlertTriangle className="h-4 w-4" />
-              )}
-              Import anyway
-            </Trans>
-          </Button>
-        </div>
       )}
 
       {summary && !isPendingReview && isSaved && (

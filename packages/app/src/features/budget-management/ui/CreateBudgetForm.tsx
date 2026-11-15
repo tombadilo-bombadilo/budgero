@@ -26,7 +26,12 @@ import { YNABApiClient, YNABImportService } from '@budgero/core/browser';
 import { useUpdateOnboarding } from '@entities/user/api/useAuth';
 import { getBudgetsQueryKey, syncBudgetStateFromRuntime } from '@shared/runtime/budget-gate';
 import { trackBudgetCreated, trackImportedFromYnab } from '@shared/lib/analytics/analytics';
-import { startImportRun, type ImportRun } from '@shared/lib/analytics/import-tracking';
+import {
+  startImportRun,
+  startYnabReview,
+  type ImportRun,
+  type YnabReviewRun,
+} from '@shared/lib/analytics/import-tracking';
 import { getErrorMessage } from '@shared/lib/errors';
 import { notifyUpdateRequired } from '@shared/lib/update-required';
 import { ManualBudgetTab } from '@features/budget-management/ui/create-budget-form/ManualBudgetTab';
@@ -125,6 +130,8 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
     /** Holds snapshot uploads until the import is accepted or removed. */
     uploads: ImportUploadGuard;
     analytics: ImportRun;
+    /** Set while the verification-warning review is open. */
+    review: YnabReviewRun | null;
   } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,6 +160,7 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
         if (run && !run.importing) run.uploads.rollBack();
         return;
       }
+      run?.review?.decided('left');
       try {
         run?.deleteBudget(pendingBudgetId);
         run?.uploads.rollBack();
@@ -499,6 +507,7 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
       // import may reach the server (a timer/hide upload would publish it).
       uploads: holdUploadsForImport(runtime, deleteBudget),
       analytics: startImportRun(ynabSourceMode === 'api' ? 'ynab_api' : 'ynab_zip', 'app'),
+      review: null as YnabReviewRun | null,
     };
     ynabImportRunRef.current = run;
     setIsImporting(true);
@@ -564,6 +573,11 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
       pendingYnabBudgetIdRef.current = result.budgetId;
       setYnabImportResult(result);
       if (result.verification?.status === 'warning') {
+        run.review = startYnabReview(
+          result.verification,
+          ynabSourceMode === 'api' ? 'ynab_api' : 'ynab_zip',
+          'app'
+        );
         setYnabImportUpdates((current) => [
           ...current,
           {
@@ -615,6 +629,7 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
       pendingYnabBudgetIdRef.current = null;
     }
     ynabImportRunRef.current?.uploads.rollBack();
+    ynabImportRunRef.current?.review?.decided('remove');
     ynabImportRunRef.current?.analytics.cancelled();
     setYnabImportView('form');
     setYnabImportUpdates([]);
@@ -624,6 +639,7 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
 
   const handleAcceptYnabWarnings = async () => {
     if (!ynabImportResult || ynabImportResult.verification?.status !== 'warning') return;
+    ynabImportRunRef.current?.review?.decided('keep');
     setYnabImportError(null);
     try {
       await finalizeYnabImport(ynabImportResult, true);

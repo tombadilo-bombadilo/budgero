@@ -339,6 +339,15 @@ export class AppRuntime {
     await this.initializeServices();
   }
 
+  /**
+   * The user just deleted this workspace on the server: if it was open, close
+   * it (sync, timers, DB, active id, queue) before the refresh that follows.
+   */
+  async forgetDeletedSpace(spaceId: string): Promise<void> {
+    await this.coordinator.forgetDeletedSpace(spaceId);
+    await this.initializeServices();
+  }
+
   getEncryption(): RuntimeEncryption | null {
     return this.coordinator.getEncryption();
   }

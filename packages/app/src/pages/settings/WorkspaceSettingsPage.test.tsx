@@ -9,6 +9,7 @@ const {
   mockDeleteSpace,
   mockListSpaces,
   mockRefreshSpaces,
+  mockForgetDeletedSpace,
   mockSetStoredDefaultSpaceId,
   mockSwitchWorkspaceAndSyncBudgetState,
   mockSyncBudgetStateFromRuntime,
@@ -17,6 +18,7 @@ const {
   mockDeleteSpace: vi.fn(),
   mockListSpaces: vi.fn(),
   mockRefreshSpaces: vi.fn(),
+  mockForgetDeletedSpace: vi.fn(),
   mockSetStoredDefaultSpaceId: vi.fn(),
   mockSwitchWorkspaceAndSyncBudgetState: vi.fn(),
   mockSyncBudgetStateFromRuntime: vi.fn(),
@@ -33,6 +35,7 @@ vi.mock('@entities/user/api/useAuth', () => ({
 vi.mock('@shared/runtime/runtime-provider', () => ({
   useRuntime: () => ({
     refreshSpaces: mockRefreshSpaces,
+    forgetDeletedSpace: mockForgetDeletedSpace,
   }),
   useActiveSpaceId: () => activeSpaceId,
   useAvailableSpaces: () => runtimeSpaces,
@@ -124,6 +127,7 @@ describe('WorkspaceSettingsPage', () => {
     mockListSpaces.mockResolvedValue(runtimeSpaces);
     mockDeleteSpace.mockResolvedValue({ success: true });
     mockRefreshSpaces.mockResolvedValue(undefined);
+    mockForgetDeletedSpace.mockResolvedValue(undefined);
     mockSwitchWorkspaceAndSyncBudgetState.mockResolvedValue(undefined);
     mockSyncBudgetStateFromRuntime.mockReturnValue(undefined);
   });
@@ -176,6 +180,12 @@ describe('WorkspaceSettingsPage', () => {
       expect(mockSyncBudgetStateFromRuntime).toHaveBeenCalledWith(
         expect.objectContaining({ spaceId: null, candidateSelectedBudget: null })
       )
+    );
+    // The runtime closes the deleted workspace before the refresh, which
+    // finds nothing left and so can't.
+    expect(mockForgetDeletedSpace).toHaveBeenCalledWith('space-owner');
+    expect(mockForgetDeletedSpace.mock.invocationCallOrder[0]).toBeLessThan(
+      mockRefreshSpaces.mock.invocationCallOrder[0]
     );
     expect(mockSwitchWorkspaceAndSyncBudgetState).not.toHaveBeenCalled();
   });

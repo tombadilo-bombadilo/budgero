@@ -230,6 +230,7 @@ export default function WorkspaceSettingsPage() {
     try {
       setIsDeletingSpace(true);
       await spaceApi.deleteSpace(spaceId);
+      await runtime.forgetDeletedSpace(spaceId);
       if (getDemoSpaceId() === spaceId) setDemoSpaceId(null);
 
       if (deletingDefault) {

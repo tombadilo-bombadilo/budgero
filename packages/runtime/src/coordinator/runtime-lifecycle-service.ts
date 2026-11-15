@@ -1,5 +1,5 @@
 import { createLocalPersistenceCipher, type LocalPersistenceCipher } from '../crypto';
-import { checkAbort } from '../utils/diagnostics';
+import { checkAbort, errorMessage } from '../utils/diagnostics';
 import { scopedLogger, type RuntimeLogFn } from '../logging';
 import type { KeyVault } from '../key-vault';
 import type { SpaceRegistry } from '../space-registry';
@@ -110,6 +110,39 @@ export class RuntimeLifecycleService {
     if (refreshed.fallbackSpaceId && mp) {
       await onFallbackSwitch(refreshed.fallbackSpaceId);
     }
+  }
+
+  /**
+   * The user deleted `spaceId` on the server. When it is the active space,
+   * tear its session down here: a refresh can't (an empty list is not
+   * authoritative, so it throws before disposing anything). Its queued
+   * mutations go too, since nothing can ever accept them. Returns whether the
+   * active space was torn down; any other space is left to the next refresh.
+   */
+  async forgetDeletedSpace(spaceId: string): Promise<boolean> {
+    const context = this.deps.session.getContext();
+    if (!context || context.spaceId !== spaceId) return false;
+
+    // Late callbacks from the dying context see a stale generation.
+    this.generation++;
+    try {
+      await context.offlineQueue.clear();
+    } catch (error) {
+      this.log('warn', 'Failed to clear the deleted workspace queue', {
+        spaceId,
+        error: errorMessage(error),
+        originalError: error,
+      });
+    }
+    // No flush: the deleted space's pending local persist is dropped.
+    this.deps.session.dispose();
+
+    const remaining = this.deps.spaceRegistry
+      .listSpaces()
+      .filter((space) => space.space_id !== spaceId);
+    this.deps.spaceRegistry.setAvailableSpaces(remaining);
+    this.deps.keyVault.pruneKeys(remaining.map((space) => space.space_id));
+    return true;
   }
 
   /**
