@@ -3739,5 +3739,372 @@
     "u_ede573c2e73d": "Budgero Wealth report showing a year of net worth changes, including a dip for a planned holiday, using demo data.",
     "u_647294baf1ef": "Budgero Scenario Planner with adjustable income and spending, showing an illustrative 24-month balance projection from demo data.",
     "u_6e7d19eaf95d": "Optional (beta), bring your own SimpleFIN or Enable Banking; zero-knowledge"
+  },
+  "best_self_hosted_budgeting_apps": {
+    "meta": {
+      "title": "Best self-hosted budgeting apps in 2026: 5 compared | Budgero",
+      "headline": "The best self-hosted budgeting apps in 2026",
+      "description": "Actual Budget, Firefly III, Sure, OpenBudgeteer and Budgero compared for a home server or VPS: budgeting method, install, bank sync, encryption, mobile and currencies.",
+      "breadcrumb": "Best self-hosted budgeting apps",
+      "keywords": [
+        "best self-hosted budgeting app",
+        "self-hosted budget app",
+        "self hosted personal finance",
+        "open source budgeting app self hosted",
+        "Actual Budget vs Firefly III",
+        "Sure finance self-hosted",
+        "OpenBudgeteer",
+        "Budgero self-host"
+      ]
+    },
+    "names": {
+      "actual": "Actual Budget",
+      "firefly": "Firefly III",
+      "sure": "Sure",
+      "openbudgeteer": "OpenBudgeteer",
+      "budgero": "Budgero"
+    },
+    "hero": {
+      "eyebrow": "Self-hosted budgeting apps, compared",
+      "title": "The best self-hosted budgeting apps in 2026",
+      "subtitle": "Five apps you can run on a home server or a VPS, and which one to install",
+      "answerTitle": "Short answer",
+      "answer": [
+        "Actual Budget if you want envelope budgeting in one currency and the biggest community. It has over 30,000 GitHub stars and installs as one container.",
+        "Firefly III if you want a double-entry ledger with a REST API and a rules engine. Its budgets are spending limits per period, and its docs say YNAB-style budgeting isn't possible there.",
+        "Sure if net worth, investments and crypto matter more to you than a monthly budget. It has the longest list of bank, broker and exchange connections here.",
+        "Budgero if your accounts are in more than one currency, or you want end-to-end encryption that is always on. That's our app, and it's the smallest project on this list.",
+        "OpenBudgeteer if you like its bucket types and can live with CSV imports and a single login."
+      ],
+      "disclosure": "We make Budgero, one of the five apps. What we say about the other four comes from their own websites, docs and GitHub repositories, checked on 15 November 2026, and the sources are listed at the end. We left out ezBookkeeping, a well-kept expense tracker, because it has no budgets."
+    },
+    "table": {
+      "title": "The five apps side by side",
+      "intro": "On a phone, scroll the table sideways. App names link to their sections.",
+      "criterion": "What we compared",
+      "note": "Star counts and versions are from GitHub on 15 November 2026. Every bank connection here goes through a third-party provider: you sign up with that provider and paste your own keys into the app.",
+      "rows": [
+        {
+          "label": "Budgeting method",
+          "actual": "Envelope budgeting: all income goes to categories. An optional tracking mode works like a classic monthly budget.",
+          "firefly": "Double-entry bookkeeping. A budget is an amount per period (day to year) that you attach to withdrawals.",
+          "sure": "A monthly spending limit per category. A surplus can roll over. The app is built around net worth.",
+          "openbudgeteer": "Bucket (envelope) budgeting with four bucket types, inspired by YNAB.",
+          "budgero": "Zero-based envelope budgeting: you assign money you already have, with goals per category."
+        },
+        {
+          "label": "Licence",
+          "actual": "MIT",
+          "firefly": "AGPL-3.0",
+          "sure": "AGPL-3.0",
+          "openbudgeteer": "AGPL-3.0 (MIT until v1.10)",
+          "budgero": "AGPL-3.0"
+        },
+        {
+          "label": "Install",
+          "actual": "One container (actualbudget/actual-server, port 5006) and a /data volume. Desktop apps for Windows, macOS and Linux.",
+          "firefly": "Core container, MariaDB or Postgres, and a cron container. Bank and file imports need a second app, the Data Importer.",
+          "sure": "Docker Compose: web container, Sidekiq worker, Postgres 16 and Redis. 512 MB of RAM, 1 GB with AI.",
+          "openbudgeteer": "Container (axelander/openbudgeteer) plus MySQL, MariaDB or Postgres, plus Redis.",
+          "budgero": "One container (budgero/budgero, amd64 and arm64) or a single binary. SQLite in a /data volume, no database server."
+        },
+        {
+          "label": "Bank sync",
+          "actual": "SimpleFIN (North America), Akahu (New Zealand), Enable Banking (Europe) and Pluggy.ai (Brazil), the last two experimental. GoCardless takes no new accounts.",
+          "firefly": "Through the Data Importer: Enable Banking (Europe), SimpleFIN, Sophtron (US, Canada, Mexico), Lunch Flow (paid). Scheduled imports need your own cron job.",
+          "sure": "SimpleFIN, Plaid (US), Enable Banking (EU), Lunch Flow (worldwide, paid), Akahu (NZ, beta), plus Wise, Monobank, Up, Mercury, brokers and crypto exchanges.",
+          "openbudgeteer": "None. CSV import only.",
+          "budgero": "In beta. SimpleFIN (US and Canada) and Enable Banking (EEA and UK, free for personal use)."
+        },
+        {
+          "label": "Encryption",
+          "actual": "Optional end-to-end encryption with a second password. It doesn't cover bank-sync tokens, and data on your device is unencrypted.",
+          "firefly": "None. The docs say the database is readable and attachments are stored unencrypted.",
+          "sure": "Sensitive fields (bank credentials, MFA secrets, emails, names) are encrypted in the database. No end-to-end encryption documented.",
+          "openbudgeteer": "Nothing documented.",
+          "budgero": "End to end and always on (AES-256-GCM). The server stores ciphertext, and bank-sync keys sit inside the encrypted budget."
+        },
+        {
+          "label": "On your phone",
+          "actual": "Installable web app that works offline. Official iOS app in TestFlight beta. No official Android app.",
+          "firefly": "No official app. Third-party apps use the API: Waterfly III, Abacus, Photuris III, FireFlow and more.",
+          "sure": "Basic Flutter app for iOS and Android: login and account balances.",
+          "openbudgeteer": "Web app. The docs don't mention phones.",
+          "budgero": "Installable web app that works offline. No native app."
+        },
+        {
+          "label": "Multiple currencies",
+          "actual": "No. The docs describe a workaround with a fixed rate in rules.",
+          "firefly": "Yes. Rates are manual or downloaded weekly. Budgets count only a transaction's main currency.",
+          "sure": "Yes. Totals convert to the household's main currency.",
+          "openbudgeteer": "Not documented. One app-wide setting controls the currency format.",
+          "budgero": "Yes. 120+ fiat currencies and 25 cryptocurrencies in one budget, with per-transaction rate overrides."
+        },
+        {
+          "label": "Several users",
+          "actual": "Needs an OpenID provider. Admin and Basic roles, access per budget.",
+          "firefly": "Unlimited users, each with a separate ledger. A ledger can't be shared yet.",
+          "sure": "Households with several members. Each account is shared as view, annotate or full control.",
+          "openbudgeteer": "One optional username and password, off by default.",
+          "budgero": "User accounts are managed in /admin or the CLI. An owner can share budgets with up to 5 people."
+        },
+        {
+          "label": "Imports",
+          "actual": "CSV, QIF, OFX, QFX, CAMT. Migration from YNAB4 and nYNAB (JSON export).",
+          "firefly": "CSV, CAMT.052 and CAMT.053 through the Data Importer.",
+          "sure": "CSV (transactions, trades, accounts and more), QIF, Mint, Actual Budget, PDF statements (needs AI).",
+          "openbudgeteer": "CSV, with saved import profiles.",
+          "budgero": "CSV, TSV, OFX, QFX, QIF, CAMT.053, tables from PDF statements, YNAB (API or export ZIP)."
+        },
+        {
+          "label": "Hosted option",
+          "actual": "None from the project since 2024. The docs recommend PikaPods, about $1.50 a month.",
+          "firefly": "None from the project. The docs list third-party hosts such as PikaPods and Hostinger.",
+          "sure": "app.sure.am: a free tier without bank sync, paid tiers from $5 a month or $50 a year.",
+          "openbudgeteer": "None.",
+          "budgero": "Budgero Cloud: {monthly} a month or {yearly} a year, 35-day free trial."
+        },
+        {
+          "label": "GitHub",
+          "actual": "30,273 stars. v26.11.0, 2 Nov 2026.",
+          "firefly": "25,257 stars. v6.7.9, 11 Oct 2026.",
+          "sure": "15,632 stars. v0.7.6-hotfix.1, 12 Nov 2026.",
+          "openbudgeteer": "974 stars. v1.11.3, 5 Nov 2026.",
+          "budgero": "58 stars. v1.21.3, 15 Nov 2026."
+        }
+      ]
+    },
+    "apps": {
+      "pickLabel": "Pick it if:",
+      "actual": {
+        "facts": "MIT · actualbudget/actual-server · v26.11.0",
+        "body": {
+          "p1": "Actual has the biggest community of the five. Its docs call the method zero-sum envelope budgeting: all your income goes into categories and you spend from there. If you'd rather not work that way, a tracking mode turns it into a plain monthly budget.",
+          "p2": "It's easy to install. The server is one container on port 5006 with one data volume, and there's no separate database. You can even skip the server at first: desktop apps exist for Windows, macOS and Linux, and you only need the server for sync, bank sync and phone access. If you'd rather not run it at all, the docs point to PikaPods at about $1.50 a month, and part of that goes to the project.",
+          "p3": "Actual doesn't support multiple currencies, and the docs suggest rules that multiply amounts by a fixed rate you type in. End-to-end encryption is optional and can't be turned off once it's on, and it leaves bank-sync tokens readable on the server. More than one user needs an OpenID provider. Bank sync covers SimpleFIN in North America and Akahu in New Zealand, with Enable Banking for Europe and Pluggy.ai for Brazil still marked experimental. GoCardless, which older guides recommend, stopped taking new accounts in July 2025.",
+          "p4": "On a phone you install the web app to your home screen, and it works offline. An iOS app is in TestFlight beta; Android has none yet. We compared the two apps in more detail on our <actualAlt>Actual Budget alternative page</actualAlt>."
+        },
+        "pick": "you budget in one currency, you want the most widely used envelope app, and you want lots of other people around to ask when something breaks."
+      },
+      "firefly": {
+        "facts": "AGPL-3.0 · fireflyiii/core plus the Data Importer · v6.7.9",
+        "body": {
+          "p1": "Firefly III is a bookkeeping app. Every transaction is double-entry, and around that you get a rules engine, piggy banks, bills, recurring transactions, webhooks and a REST API that covers almost the whole app. If you want to script your finances, this is the one to install.",
+          "p2": "Its budgets work differently from envelopes. A budget is an amount for a period that you attach to withdrawals, and income can't top it up. The docs say YNAB-style zero-based budgeting will not be supported, and they say that most zero-based tools, especially commercial ones, look better and are easier to use than Firefly III.",
+          "p3": "It takes the most work to run. You need the core container, MariaDB or Postgres, and a cron container, because auto-budgets, recurring transactions and exchange rates only run on a schedule. Bank connections and CSV or CAMT files go through a second app, the Data Importer, with its own install. It can pull from Enable Banking in Europe, SimpleFIN, Sophtron for the US, Canada and Mexico, or the paid Lunch Flow, and a daily import means another cron job.",
+          "p4": "The security page says the database is not encrypted at rest. One install can hold any number of users, but each has a separate ledger, and you can't share one with a partner yet. Our <fireflyAlt>Firefly III alternative page</fireflyAlt> goes into the method difference."
+        },
+        "pick": "you think in accounts and journals, you want an API for everything, and a spending limit per period is all the budget you need."
+      },
+      "sure": {
+        "facts": "AGPL-3.0 · ghcr.io/we-promise/sure · v0.7.6-hotfix.1",
+        "body": {
+          "p1": "Sure is the community fork of Maybe Finance. Maybe's repository is archived and its last release, v0.6.0, came out in July 2025. Sure picked up the code and already has 15,632 stars of its own.",
+          "p2": "It's a net-worth tracker first, with the longest list of connections here: SimpleFIN and Plaid in the US, Enable Banking in the EU, Lunch Flow worldwide, direct connectors for Wise, Monobank, Up and Mercury, brokers such as Interactive Brokers and Trading 212, and crypto exchanges. You bring your own keys for each one. If you hold stocks and crypto in several countries, Sure adds it all up in one currency.",
+          "p3": "Budgets are its weak side. You set a monthly spending limit per category, and only a surplus can roll over. A panel that shows cash not set aside for goals is still a preview feature. The server needs more too: Postgres 16, Redis and a Sidekiq worker next to the web container. The docs say 512 MB of RAM is enough, or 1 GB if you turn on the AI assistant, which needs an OpenAI-compatible or Anthropic key.",
+          "p4": "The Flutter phone app only does login and account balances so far. Sure Finances, LLC also runs a hosted version at app.sure.am with a free tier and paid plans from $5 a month."
+        },
+        "pick": "you want to see net worth across banks, brokers and crypto, and the budget is a side feature for you."
+      },
+      "openbudgeteer": {
+        "facts": "AGPL-3.0 · axelander/openbudgeteer · v1.11.3",
+        "body": {
+          "p1": "OpenBudgeteer is a small project (974 stars) that describes itself as bucket budgeting inspired by YNAB. You put money into buckets, and there are four bucket types, including one for an expense every few months and one for saving a set amount by a date, so irregular bills have a place from day one.",
+          "p2": "The rest is basic. Import is CSV only, with a saved profile for each bank's format, and there's no bank sync. One app-wide setting controls the currency format, and we found nothing in the docs about multiple currencies, encryption or phones. Login arrived in v1.11 in December 2025. It is off by default and is a single username and password set by environment variables, so turn it on or keep the app on your LAN.",
+          "p3": "It needs more services than its size suggests: MySQL, MariaDB or Postgres, plus Redis. SQLite support was dropped in 1.8.3. Security fixes do ship (1.11.1 fixed an SQL injection, 1.11.3 fixed session handling), and only the latest version gets them."
+        },
+        "pick": "you want bucket budgeting for one person, you don't mind importing CSV files, and the app stays on your own network."
+      },
+      "budgero": {
+        "facts": "AGPL-3.0 · budgero/budgero · v1.21.3",
+        "body": {
+          "p1": "Budgero is our app. It does zero-based envelope budgeting like Actual, and it differs in two places. Accounts can be in different currencies inside one budget: more than 120 fiat currencies and 25 cryptocurrencies, where each transaction keeps its original amount and categories use your budget currency. And encryption is always on. Your browser encrypts the budget with AES-256-GCM before it syncs, with keys derived from a master password, so your own server only stores ciphertext. Bank-sync keys live inside that encrypted budget too. <security>The security model</security> lists what the server can and can't see.",
+          "p2": "It runs as one container for amd64 and arm64, or as a single binary for Linux, macOS and Windows, with SQLite in a /data volume. On first start it prints an admin password to the log. If you open it from anything other than localhost, set WEBSOCKET_ALLOWED_ORIGINS to the exact address, or sync won't connect. The <selfhostGuide>self-hosting guide</selfhostGuide> has compose files and reverse-proxy configs. Self-hosting is free with every feature and no licence key; if you'd rather not run it, Budgero Cloud costs {monthly} a month or {yearly} a year.",
+          "p3": "Budgero is small, with 58 GitHub stars against Actual's 30,000, so there are fewer guides and fewer people who have already hit your problem. Bank sync is in beta and only covers SimpleFIN (US and Canada, about $1.50 a month paid to SimpleFIN) and <enableBanking>Enable Banking</enableBanking> (EEA and UK, free for personal use). There's nothing for New Zealand or Brazil, and no Plaid.",
+          "p4": "There's no native phone app, only the installable web app, which works offline. If you forget your master password, a reset deletes your budget data, because nobody can decrypt it; keep it in a password manager. An owner can share budgets with at most 5 people. Imports cover CSV, OFX, QFX, QIF, CAMT.053, tables from PDF statements and <ynabImport>YNAB</ynabImport>, but there's no direct importer for Actual or Firefly III."
+        },
+        "pick": "you have accounts in more than one currency, or you want the server to hold only encrypted data, and you can live with a small project and a web app on your phone."
+      }
+    },
+    "choose": {
+      "title": "How to choose",
+      "intro": "Start with the budgeting method, because it's the hardest thing to change later. Actual, OpenBudgeteer and Budgero have you assign money you already have. Firefly III and Sure set limits on future spending. If you're leaving YNAB specifically, our <ynabSelfHosted>self-hosted YNAB alternative page</ynabSelfHosted> covers the move.",
+      "items": [
+        {
+          "if": "Your accounts are in two or more currencies",
+          "pick": "Budgero. Firefly III and Sure handle currencies too, but neither has envelope budgets, and Actual has no multi-currency support."
+        },
+        {
+          "if": "You want the fewest moving parts",
+          "pick": "Actual or Budgero. Each is one container with one volume to back up and no database server."
+        },
+        {
+          "if": "You want bank sync in New Zealand or Brazil",
+          "pick": "Actual, through Akahu or Pluggy.ai. Sure also supports Akahu, in beta."
+        },
+        {
+          "if": "You're in the US and want Plaid",
+          "pick": "Sure. Its own docs warn that Plaid's terms may not allow personal use."
+        },
+        {
+          "if": "You want an API to script everything",
+          "pick": "Firefly III."
+        },
+        {
+          "if": "Your partner budgets with you",
+          "pick": "Actual (with an OpenID provider), Sure or Budgero. Firefly III can't share a ledger yet, and OpenBudgeteer has a single login."
+        },
+        {
+          "if": "You decide you don't want to run a server after all",
+          "pick": "Actual on PikaPods (about $1.50 a month), Budgero Cloud ({monthly} a month) or Sure's hosted app."
+        }
+      ]
+    },
+    "faq": {
+      "title": "Questions people ask",
+      "items": [
+        {
+          "q": "What is the best self-hosted budgeting app?",
+          "a": "For envelope budgeting in one currency, Actual Budget: it has the biggest community and a one-container install. For several currencies or always-on end-to-end encryption, Budgero. For bookkeeping with an API, Firefly III. For net worth and investments, Sure."
+        },
+        {
+          "q": "Which self-hosted budgeting app is most like YNAB?",
+          "a": "Actual Budget and Budgero are the closest. Both have you assign money you already have to categories, and both import YNAB data: Actual migrates YNAB4 files and nYNAB JSON exports, and Budgero imports through the YNAB API or an export ZIP. OpenBudgeteer says it is inspired by YNAB, but it only imports CSV. Firefly III's docs say YNAB-style zero-based budgeting isn't possible there."
+        },
+        {
+          "q": "Can I get automatic bank sync on a self-hosted budgeting app?",
+          "a": "Yes, through a provider you sign up with yourself. Enable Banking covers Europe and has a free mode for personal use; Actual, Firefly III, Sure and Budgero all support it. SimpleFIN covers the US and Canada for about $1.50 a month and works with the same four. GoCardless Bank Account Data stopped taking new accounts in 2025, so guides that recommend it are out of date."
+        },
+        {
+          "q": "Which self-hosted budgeting apps encrypt my data?",
+          "a": "Budgero encrypts the whole budget end to end, always. Actual has optional end-to-end encryption for budget data, but not for bank-sync tokens. Sure encrypts sensitive fields such as bank credentials in its database. Firefly III's docs say its database is not encrypted, and OpenBudgeteer's docs don't mention encryption. Full-disk encryption on the server helps with all of them."
+        },
+        {
+          "q": "Is there a self-hosted budgeting app with a proper phone app?",
+          "a": "Not a finished official one. Actual has an iOS app in TestFlight beta, and Sure has a basic Flutter app for login and balances. Firefly III has third-party apps such as Waterfly III and Abacus that use its API. Actual and Budgero both install as web apps on your home screen and work offline."
+        },
+        {
+          "q": "Is self-hosting Budgero free?",
+          "a": "Yes. The self-hosted version has every feature and needs no licence key, and the code is AGPL-3.0 on GitHub. Budgero Cloud, the hosted version, costs {monthly} a month or {yearly} a year. Self-hosters can donate if they want to."
+        },
+        {
+          "q": "What about ezBookkeeping?",
+          "a": "ezBookkeeping is an active, MIT-licensed expense tracker with multiple currencies, multiple users and a long list of import formats, including MT940, GnuCash and Firefly III. Its own comparison page says it has no budgeting feature and no bank connections, so we left it out of a comparison of budgeting apps."
+        }
+      ]
+    },
+    "related": {
+      "title": "Related pages",
+      "items": {
+        "guide": "<selfhostGuide>Budgero self-hosting guide</selfhostGuide>: Docker, Compose, reverse proxies and environment variables",
+        "selfhostable": "<selfhostable>Self-hosting Budgero</selfhostable>: what you take on when you run it yourself",
+        "ynab": "<ynabSelfHosted>Self-hosted YNAB alternative</ynabSelfHosted>: moving a YNAB budget onto your own server",
+        "best": "<bestYnab>Best YNAB alternatives</bestYnab>: hosted and self-hosted apps compared",
+        "actual": "<actualAlt>Actual Budget alternative</actualAlt>: Actual and Budgero side by side",
+        "firefly": "<fireflyAlt>Firefly III alternative</fireflyAlt>: a ledger compared with an envelope budget",
+        "bank": "Bank sync with <enableBanking>Enable Banking</enableBanking> (Europe) or <simplefin>SimpleFIN</simplefin> (US and Canada)"
+      }
+    },
+    "sources": {
+      "title": "Sources",
+      "intro": "Facts about each app come from its own website, docs or GitHub repository. Checked on",
+      "date": "15 November 2026",
+      "items": [
+        {
+          "label": "Actual Budget: installing with Docker",
+          "href": "https://actualbudget.org/docs/install/docker"
+        },
+        {
+          "label": "Actual Budget: bank sync providers",
+          "href": "https://actualbudget.org/docs/advanced/bank-sync"
+        },
+        {
+          "label": "Actual Budget: sync and end-to-end encryption",
+          "href": "https://actualbudget.org/docs/getting-started/sync"
+        },
+        {
+          "label": "Actual Budget: multi-currency",
+          "href": "https://actualbudget.org/docs/budgeting/multi-currency"
+        },
+        {
+          "label": "Actual Budget: multi-user",
+          "href": "https://actualbudget.org/docs/config/multi-user"
+        },
+        {
+          "label": "Actual Budget: FAQ (mobile apps, hosting)",
+          "href": "https://actualbudget.org/docs/faq"
+        },
+        {
+          "label": "Firefly III: what Firefly III is not",
+          "href": "https://docs.firefly-iii.org/explanation/more-information/what-its-not/"
+        },
+        {
+          "label": "Firefly III: budgets",
+          "href": "https://docs.firefly-iii.org/explanation/financial-concepts/budgets/"
+        },
+        {
+          "label": "Firefly III: security",
+          "href": "https://docs.firefly-iii.org/explanation/more-information/security/"
+        },
+        {
+          "label": "Firefly III: Data Importer",
+          "href": "https://docs.firefly-iii.org/explanation/data-importer/introduction/"
+        },
+        {
+          "label": "Firefly III: multiple users",
+          "href": "https://docs.firefly-iii.org/how-to/firefly-iii/features/multi-user/"
+        },
+        {
+          "label": "Firefly III: third-party apps",
+          "href": "https://docs.firefly-iii.org/references/firefly-iii/third-parties/apps/"
+        },
+        {
+          "label": "Sure: README",
+          "href": "https://github.com/we-promise/sure"
+        },
+        {
+          "label": "Sure: self-hosting with Docker",
+          "href": "https://github.com/we-promise/sure/blob/main/docs/hosting/docker.md"
+        },
+        {
+          "label": "Sure: bank and broker providers",
+          "href": "https://docs.sure.am/providers/overview"
+        },
+        {
+          "label": "Sure: budgets",
+          "href": "https://docs.sure.am/guides/app-features/budgets"
+        },
+        {
+          "label": "Sure: clients and mobile app",
+          "href": "https://github.com/we-promise/sure/blob/main/docs/clients.md"
+        },
+        {
+          "label": "Sure: pricing",
+          "href": "https://sure.am/pricing"
+        },
+        {
+          "label": "OpenBudgeteer: README",
+          "href": "https://github.com/TheAxelander/OpenBudgeteer"
+        },
+        {
+          "label": "OpenBudgeteer: configuration",
+          "href": "https://axelander.dev/latest/config/"
+        },
+        {
+          "label": "ezBookkeeping: comparison",
+          "href": "https://ezbookkeeping.mayswind.net/comparison/"
+        },
+        {
+          "label": "Budgero: security model",
+          "href": "https://budgero.app/docs/security"
+        }
+      ]
+    },
+    "cta": {
+      "title": "Try Budgero on your own server",
+      "body": "Pull budgero/budgero, mount a /data volume and read the admin password from the log. The guide has the compose file.",
+      "primary": "Read the self-hosting guide",
+      "secondary": "Or try Budgero Cloud for 35 days"
+    }
   }
 }
