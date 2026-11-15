@@ -768,6 +768,17 @@ export default async function BestYnabAlternativesPage({
                     {copy('u_e7171254aee3')}{' '}
                   </Link>
                 </li>
+                {locale === 'en' && (
+                  <li>
+                    In Canada?{' '}
+                    <Link
+                      href="/ynab-alternative-canada"
+                      className="underline hover:text-foreground"
+                    >
+                      YNAB alternative for Canada
+                    </Link>
+                  </li>
+                )}
                 <li>
                   {' '}
                   {copy('u_dfcc832a6b0e')}{' '}

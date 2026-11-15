@@ -4454,5 +4454,321 @@
       "primary": "Read the self-hosting guide",
       "secondary": "Or try Budgero Cloud for 35 days"
     }
+  },
+  "ynab_alternative_canada": {
+    "meta": {
+      "title": "YNAB alternative for Canada: CAD and USD in one budget | Budgero",
+      "headline": "A YNAB alternative for Canada",
+      "description": "A YNAB alternative for Canadians: CAD and USD accounts in one budget, bank sync for RBC, TD, BMO, Scotiabank and CIBC through SimpleFIN (beta), and YNAB import.",
+      "breadcrumb": "YNAB alternative for Canada",
+      "keywords": [
+        "ynab alternative canada",
+        "budgeting app canada",
+        "simplefin canada",
+        "ynab canada bank sync",
+        "zero-based budgeting canada",
+        "budget app cad usd",
+        "ynab alternative",
+        "Budgero"
+      ]
+    },
+    "names": {
+      "budgero": "Budgero",
+      "ynab": "YNAB",
+      "actual": "Actual Budget",
+      "monarch": "Monarch Money",
+      "lunchmoney": "Lunch Money",
+      "waypoint": "Waypoint Budget"
+    },
+    "hero": {
+      "eyebrow": "For budgeters in Canada",
+      "title": "A YNAB alternative for Canada",
+      "subtitle": "Zero-based budgeting with CAD and USD accounts in the same budget",
+      "answerTitle": "Short answer",
+      "answer": [
+        "Budgero keeps CAD and USD accounts in one budget and converts each transaction at that day's rate. YNAB recommends a separate plan for each currency.",
+        "Bank sync goes through SimpleFIN, whose institution search lists RBC, TD, Scotiabank, BMO, CIBC, National Bank, Desjardins, Tangerine and EQ Bank. It costs $1.50 a month, paid to SimpleFIN. In Budgero, bank sync is in beta.",
+        "Budgero Cloud is {monthly} a month or {yearly} a year. YNAB is $14.99 USD a month or $109 USD a year. Both charge in US dollars.",
+        "You can import your YNAB plan with its full history in a few minutes."
+      ],
+      "compareLink": "See the comparison",
+      "disclosure": "We make Budgero. What we say about YNAB, Actual Budget, Monarch Money, Lunch Money and Waypoint Budget comes from their own websites and help pages, checked on 15 November 2026. The sources are listed at the end."
+    },
+    "sections": [
+      {
+        "id": "price",
+        "title": "What it costs in Canada"
+      },
+      {
+        "id": "banks",
+        "title": "Bank sync with Canadian banks"
+      },
+      {
+        "id": "currencies",
+        "title": "CAD and USD in one budget"
+      },
+      {
+        "id": "registered",
+        "title": "TFSA, RRSP and other registered accounts"
+      },
+      {
+        "id": "moving",
+        "title": "Moving from YNAB"
+      }
+    ],
+    "body": {
+      "price": {
+        "p1": "YNAB costs $14.99 USD a month or $109 USD a year, plus tax where it applies. Its pricing page says it is priced in US dollars and the price doesn't follow exchange rates, so what you pay in CAD depends on the rate on the day you renew.",
+        "p2": "Budgero Cloud is {monthly} a month or {yearly} a year, also in US dollars. Our checkout runs through Lemon Squeezy, which processes every payment in USD. The trial is 35 days and doesn't ask for a card. If you run Budgero on your own computer or server, it's free and has every feature.",
+        "p3": "Bank sync adds SimpleFIN's fee of $1.50 a month or $15 a year, plus tax, which you pay to SimpleFIN. Budgero adds nothing on top. Importing bank files costs nothing."
+      },
+      "banks": {
+        "p1": "Budgero connects to Canadian banks through <simplefin>SimpleFIN Bridge</simplefin>. You open a SimpleFIN account, link your banks there, and paste a setup token into Budgero. Your browser then fetches transactions from SimpleFIN directly, so your bank data never passes through Budgero's servers. Bank sync is in beta.",
+        "p2": "On 15 November 2026 SimpleFIN's institution search listed Royal Bank of Canada, TD Canada Trust, Scotiabank, BMO, CIBC, National Bank of Canada, Desjardins, Tangerine, Simplii Financial, EQ Bank, Koho, Meridian Credit Union and American Express (Canada). A listing doesn't tell you how well a connection works.",
+        "p3": "There are gaps. Wealthsimple, PC Financial, Rogers Bank and Neo Financial returned no results. Vancity showed only business accounts and a Visa card, and Coast Capital only its Mastercard. SimpleFIN updates most banks about once a day, so a purchase from this morning may not appear until tomorrow. Search for your bank or credit union at beta-bridge.simplefin.org before you subscribe.",
+        "p4": "If your bank isn't there, export a file from online banking. Budgero imports <fileImport>CSV, OFX, QFX, QIF and CAMT.053 files</fileImport>, and you can always type transactions in.",
+        "p5": "YNAB's direct import uses Plaid and MX, and its pricing page says it supports select Canadian banks. Its help center says some banks and credit cards are harder to connect, \"especially so with Canadian institutions.\""
+      },
+      "currencies": {
+        "p1": "If you have a USD account or a US-dollar credit card, Budgero keeps it in USD. Set CAD as your <budgetCurrency>budget currency</budgetCurrency> and every USD transaction stores two amounts: what you paid in USD, and the CAD value at that day's rate. Your categories and Ready to Assign use the CAD value.",
+        "p2": "Your bank's rate usually differs a little from the market rate. When your statement shows what a purchase cost in CAD, you can set the rate on that one transaction so Budgero matches the statement to the cent. If you converted money at a known rate, you can pin that rate to a date range.",
+        "p3": "You reconcile a USD account in USD, against your USD statement. Budgero supports more than 120 currencies and 25 cryptocurrencies. <multiCurrency>How multi-currency works</multiCurrency>.",
+        "p4": "YNAB uses one currency per plan. Its help center recommends a separate plan for each currency and uses US and Canadian dollars as the example."
+      },
+      "registered": {
+        "p1": "Budgero has Investment and Retirement <accounts>account types</accounts>. Both stay off-budget. The balance counts toward your net worth, and market swings don't change what you have to assign. A TFSA, RRSP, RESP or FHSA can go in either.",
+        "p2": "A TFSA that holds cash in a savings account can also be added as a Savings account, which is part of your budget.",
+        "p3": "Budgero has no Canadian tax features. It doesn't track contribution room or know what a TFSA is beyond the name you give the account."
+      },
+      "moving": {
+        "p1": "Budgero is zero-based, like YNAB. You assign income to categories until Ready to Assign reaches zero.",
+        "p2": "Budgero can connect to YNAB with a personal access token, or read YNAB's export file, and rebuild your accounts, categories, transactions and monthly assignments in a few minutes. <ynabImport>YNAB import guide</ynabImport>.",
+        "p3": "If you use the export, note that YNAB only exports from its web version, as two CSV files, and leaves out targets and category notes."
+      }
+    },
+    "table": {
+      "title": "Budgeting apps for Canadians, compared",
+      "intro": "Prices and features from each app's own website, checked on 15 November 2026.",
+      "criterion": "Criterion",
+      "rows": [
+        {
+          "label": "Price",
+          "budgero": "{monthly}/month or {yearly}/year in USD. Free to self-host",
+          "ynab": "$14.99/month or $109/year in USD, plus tax",
+          "actual": "Free and open source. Hosting on PikaPods is about $1.50/month",
+          "monarch": "$14.99/month or $99.99/year, charged in USD",
+          "lunchmoney": "$10 CAD/month, or $60 to $150 CAD a year (you choose)",
+          "waypoint": "Free plan. Plus $7.99/month, Pro $12.99/month, in CAD for Canadians"
+        },
+        {
+          "label": "Free trial",
+          "budgero": "35 days, no card",
+          "ynab": "34 days, no card",
+          "actual": "Free",
+          "monarch": "7 days",
+          "lunchmoney": "30 days",
+          "waypoint": "7 days on paid plans"
+        },
+        {
+          "label": "Canadian bank sync",
+          "budgero": "SimpleFIN (beta), $1.50/month extra",
+          "ynab": "Plaid and MX, select Canadian banks",
+          "actual": "SimpleFIN, $1.50/month extra, needs the Actual server",
+          "monarch": "Plaid, Finicity and MX. Some Canadian banks are hard to connect, per its help center",
+          "lunchmoney": "Plaid",
+          "waypoint": "Plaid and Flinks. Plus includes one bank, Pro unlimited"
+        },
+        {
+          "label": "CAD and USD in one budget",
+          "budgero": "Yes, converted at daily rates",
+          "ynab": "One currency per plan",
+          "actual": "No. Docs describe a workaround with a fixed rate",
+          "monarch": "No conversion. CAD and USD balances are added as if equal",
+          "lunchmoney": "Yes, converted to your home currency",
+          "waypoint": "Listed as a feature on the pricing page"
+        }
+      ],
+      "note": "Lunch Money and Waypoint Budget bill Canadians in CAD. Budgero, YNAB and Monarch charge in US dollars."
+    },
+    "others": {
+      "title": "Other apps Canadians look at",
+      "items": {
+        "actual": {
+          "name": "Actual Budget",
+          "body": "Free and open source, with envelope budgeting. You run it yourself as a desktop app or on a server, or pay PikaPods about $1.50 a month to host it. Bank sync uses SimpleFIN, like Budgero, and needs the Actual server. Actual has no multi-currency support. Its docs describe a workaround with a fixed exchange rate. <actualAlt>Budgero vs Actual Budget</actualAlt>."
+        },
+        "monarch": {
+          "name": "Monarch Money",
+          "body": "Monarch is available in the US and Canada and connects banks through Plaid, Finicity and MX. Its help center says some Canadian banks may be difficult to connect or keep synced. It charges in USD, $14.99 a month or $99.99 a year, after a 7-day trial. It doesn't convert currencies. Its help center gives the example of 10,000 CAD and 10,000 USD showing as $20,000 of net worth."
+        },
+        "lunchmoney": {
+          "name": "Lunch Money",
+          "body": "Lunch Money is based in Toronto. It bills Canadians in CAD: $10 a month, or a yearly price you choose between $60 and $150. It connects Canadian banks and credit cards through Plaid and converts each transaction to your home currency at that day's rate. The trial is 30 days."
+        },
+        "waypoint": {
+          "name": "Waypoint Budget",
+          "body": "Waypoint's free plan has no bank sync. Plus is $7.99 a month with one bank connection, and Pro is $12.99 a month with unlimited connections, both in CAD for Canadians. It connects banks through Plaid and Flinks."
+        },
+        "hardbacon": {
+          "name": "Hardbacon",
+          "body": "Hardbacon announced in August 2024 that its operations were suspended. Its website now compares financial products and no longer offers a budgeting app."
+        }
+      }
+    },
+    "weak": {
+      "title": "Where Budgero falls short",
+      "items": {
+        "small": "Budgero is a small project. Its GitHub repository had 58 stars on 15 November 2026. Actual Budget's had more than 30,000.",
+        "sync": "Bank sync is in beta, and SimpleFIN misses some Canadian institutions, including Wealthsimple.",
+        "app": "There is no native iPhone or Android app. Budgero is a web app you can install to your home screen, and it works <offline>offline</offline>.",
+        "password": "If you forget your <masterPassword>master password</masterPassword>, resetting it deletes your budget data. Nobody can recover it, including us. Keep it in a password manager.",
+        "usd": "You pay in US dollars, the same as YNAB.",
+        "tax": "No Canadian tax features, such as contribution room for a TFSA or RRSP."
+      }
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "items": [
+        {
+          "q": "Does YNAB work in Canada?",
+          "a": "Yes. YNAB says its direct import supports select Canadian banks, through Plaid and MX. It is priced in US dollars, $14.99 a month or $109 a year, and each plan uses one currency."
+        },
+        {
+          "q": "Which Canadian banks work with Budgero's bank sync?",
+          "a": "Any bank SimpleFIN Bridge supports. On 15 November 2026 its search listed RBC, TD, Scotiabank, BMO, CIBC, National Bank, Desjardins, Tangerine, Simplii, EQ Bank, Koho and Meridian. Wealthsimple, PC Financial, Rogers Bank and Neo Financial weren't listed. For any other bank, import the CSV or OFX file from online banking."
+        },
+        {
+          "q": "What does SimpleFIN cost?",
+          "a": "$1.50 a month or $15 a year, plus tax, paid to SimpleFIN. One subscription covers up to 25 institutions. Budgero adds nothing on top."
+        },
+        {
+          "q": "Can I pay for Budgero in Canadian dollars?",
+          "a": "No. Budgero Cloud is {monthly} a month or {yearly} a year in US dollars, and Lemon Squeezy, which handles our payments, charges in USD. Your bank converts it to CAD. Self-hosting is free."
+        },
+        {
+          "q": "Can I budget in CAD and keep a USD account?",
+          "a": "Yes. Set CAD as the budget currency and add the USD account in USD. Each transaction keeps its USD amount and gets a CAD value at that day's rate. You can set the exact rate on a transaction to match your statement."
+        },
+        {
+          "q": "Can I track a TFSA or RRSP?",
+          "a": "Yes, as an Investment or Retirement account. It counts toward net worth and stays out of your budget. Budgero doesn't track contribution room or anything else tax-related."
+        },
+        {
+          "q": "Can I bring my YNAB history?",
+          "a": "Yes. Connect with a YNAB personal access token, or upload YNAB's export file. Budgero imports accounts, categories, transactions and monthly assignments."
+        },
+        {
+          "q": "Where is my data stored?",
+          "a": "Budgero Cloud is hosted in Finland. Your budget is encrypted on your device before it syncs, so our servers store only data they can't read. You can also self-host Budgero on your own hardware."
+        }
+      ]
+    },
+    "related": {
+      "title": "Related pages",
+      "items": {
+        "best": "<bestYnab>Best YNAB alternatives</bestYnab>: nine apps compared",
+        "vs": "<vsYnab>Budgero vs YNAB</vsYnab>: feature by feature",
+        "selfhosted": "<selfHosted>Best self-hosted budgeting apps</selfHosted>: if you'd rather run it yourself",
+        "monarch": "<monarchAlt>Monarch Money alternative</monarchAlt>",
+        "abroad": "YNAB alternatives for the <uk>UK</uk>, <europe>Europe</europe> and <australia>Australia</australia>"
+      }
+    },
+    "sources": {
+      "title": "Sources",
+      "intro": "Facts about each app come from its own website, docs or help center. Checked on",
+      "date": "15 November 2026",
+      "items": [
+        {
+          "label": "YNAB: pricing",
+          "href": "https://www.ynab.com/pricing"
+        },
+        {
+          "label": "YNAB: how direct import works",
+          "href": "https://support.ynab.com/en_us/how-direct-import-works-H1IGYLgnxl"
+        },
+        {
+          "label": "YNAB: using multiple currencies",
+          "href": "https://support.ynab.com/en_us/using-multiple-currencies-in-ynab-a-guide-SyBF6PHno"
+        },
+        {
+          "label": "YNAB: exporting plan data",
+          "href": "https://support.ynab.com/en_us/how-to-export-plan-data-Sy_CouWA9"
+        },
+        {
+          "label": "SimpleFIN Bridge: pricing",
+          "href": "https://beta-bridge.simplefin.org/"
+        },
+        {
+          "label": "SimpleFIN Bridge: institution search",
+          "href": "https://beta-bridge.simplefin.org/search-institutions"
+        },
+        {
+          "label": "SimpleFIN Bridge: developer guide (update frequency)",
+          "href": "https://beta-bridge.simplefin.org/info/developers"
+        },
+        {
+          "label": "Lemon Squeezy: currencies",
+          "href": "https://docs.lemonsqueezy.com/help/payments/currencies"
+        },
+        {
+          "label": "Actual Budget: bank sync",
+          "href": "https://actualbudget.org/docs/advanced/bank-sync"
+        },
+        {
+          "label": "Actual Budget: multi-currency",
+          "href": "https://actualbudget.org/docs/budgeting/multi-currency"
+        },
+        {
+          "label": "Actual Budget: PikaPods hosting",
+          "href": "https://actualbudget.org/docs/install/pikapods"
+        },
+        {
+          "label": "Monarch: FAQs",
+          "href": "https://help.monarch.com/hc/en-us/articles/19985735202068-Monarch-FAQs"
+        },
+        {
+          "label": "Monarch: data providers",
+          "href": "https://help.monarch.com/hc/en-us/articles/360048393352"
+        },
+        {
+          "label": "Monarch: international accounts and currency",
+          "href": "https://help.monarch.com/hc/en-us/articles/360048393552-International-Accounts-and-Currency"
+        },
+        {
+          "label": "Monarch: pricing",
+          "href": "https://www.monarch.com/pricing"
+        },
+        {
+          "label": "Lunch Money: Canada",
+          "href": "https://lunchmoney.app/canada"
+        },
+        {
+          "label": "Lunch Money: pricing",
+          "href": "https://lunchmoney.app/pricing"
+        },
+        {
+          "label": "Waypoint Budget: pricing",
+          "href": "https://waypointbudget.com/pricing"
+        },
+        {
+          "label": "Hardbacon: announcement",
+          "href": "https://hardbacon.ca/en/budget/its-time-to-say-goodbye/"
+        },
+        {
+          "label": "Budgero: bank sync with SimpleFIN",
+          "href": "https://budgero.app/docs/bank-sync-simplefin"
+        },
+        {
+          "label": "Budgero: multi-currency",
+          "href": "https://budgero.app/docs/multi-currency"
+        }
+      ]
+    },
+    "cta": {
+      "title": "Try Budgero with your own accounts",
+      "body": "35 days free, no card. Import your YNAB plan, add your CAD and USD accounts, and connect SimpleFIN if your bank is on its list.",
+      "primary": "Start the 35-day trial",
+      "secondary": "Self-host it for free"
+    }
   }
 }

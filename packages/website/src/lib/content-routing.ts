@@ -55,6 +55,7 @@ export const ENGLISH_ONLY_PATHS = new Set([
   '/actual-budget-alternative',
   '/best-self-hosted-budgeting-apps',
   '/maybe-finance-alternative',
+  '/ynab-alternative-canada',
 ]);
 
 export function localeSwitchPath(pathname: string, locale: string, search = '', hash = '') {

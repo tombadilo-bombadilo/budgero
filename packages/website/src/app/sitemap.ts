@@ -165,5 +165,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: 'monthly',
       priority: 0.8,
     },
+    {
+      url: `${base}/ynab-alternative-canada`,
+      lastModified: '2026-11-15',
+      changeFrequency: 'monthly',
+      priority: 0.8,
+    },
   ];
 }
