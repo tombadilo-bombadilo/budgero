@@ -125,6 +125,7 @@ export function valueAxis(palette: ChartPalette, format: (value: number) => stri
     axisLabel: { color: palette.axisText, fontSize: 11, formatter: format },
     splitLine: { lineStyle: { color: palette.grid, width: 1 } },
     axisLine: { show: false },
+    axisTick: { show: false },
   };
 }
 

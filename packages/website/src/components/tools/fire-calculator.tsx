@@ -1,9 +1,18 @@
 'use client';
 
-import { useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useCallback, useId, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import dynamic from 'next/dynamic';
 import { useTranslations } from 'next-intl';
+import type { EChartsCoreOption } from 'echarts/core';
 import { track } from '@/lib/analytics';
 import { cn } from '@/lib/utils';
+import {
+  BASE_GRID,
+  tooltipBase,
+  tooltipHtml,
+  useChartPalette,
+  valueAxis,
+} from '@/components/tools/chart-theme';
 import { parseAmount } from '@/lib/debt-payoff';
 import {
   MAX_YEARS,
@@ -15,6 +24,9 @@ import {
   type FireResult,
   type YearRow,
 } from '@/lib/fire';
+
+// The chart library loads after hydration; the chart box reserves its height.
+const EChart = dynamic(() => import('@/components/tools/echart'), { ssr: false });
 
 const EXAMPLE = {
   age: '35',
@@ -96,6 +108,13 @@ export function FireCalculator() {
     [locale]
   );
   const fmt = (value: number) => money.format(value);
+  // Stable between renders so the chart only redraws when its data changes.
+  const chartFmt = useCallback((value: number) => money.format(value), [money]);
+  const compactNumber = useMemo(
+    () => new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }),
+    [locale]
+  );
+  const chartCompact = useCallback((value: number) => compactNumber.format(value), [compactNumber]);
   const monthDate = (month: number) => {
     if (startMonth === null) return t('month_number', { month });
     const index = startMonth + month;
@@ -284,7 +303,10 @@ export function FireCalculator() {
                 plan={result.plan}
                 target={result.target}
                 inputs={parsed}
-                fmt={fmt}
+                fmt={chartFmt}
+                compact={chartCompact}
+                startYear={startMonth === null ? null : Math.floor(startMonth / 12)}
+                reachedDate={startMonth === null ? '' : monthDate(result.plan.months)}
                 t={t}
               />
             )}
@@ -533,101 +555,161 @@ function SavingsChart({
   target,
   inputs,
   fmt,
+  compact,
+  startYear,
+  reachedDate,
   t,
 }: {
   plan: Extract<FireResult, { status: 'ok' }>;
   target: number;
   inputs: Inputs;
   fmt: (n: number) => string;
+  compact: (n: number) => string;
+  /** Calendar year today, or null before the visitor's date is known. */
+  startYear: number | null;
+  reachedDate: string;
   t: T;
 }) {
+  const palette = useChartPalette();
   // A few years past the FIRE date, so the crossing isn't at the edge.
   const years = Math.min(MAX_YEARS, Math.max(10, Math.ceil(plan.months / 12) + 5));
-  const rows = project(inputs.savings, inputs.monthly, inputs.ret, years);
-  const points = [{ year: 0, balance: inputs.savings }, ...rows];
-  const top = Math.max(target, ...points.map((p) => p.balance)) * 1.08 || 1;
-
-  const width = 640;
-  const height = 240;
-  const pad = { top: 12, right: 12, bottom: 28, left: 12 };
-  const x = (year: number) => pad.left + (year / years) * (width - pad.left - pad.right);
-  const y = (balance: number) => pad.top + (1 - balance / top) * (height - pad.top - pad.bottom);
-  const line = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.year)},${y(p.balance)}`).join(' ');
-  const ticks = Array.from(new Set([0, Math.round(years / 2), years]));
-  const reachedAt = plan.months / 12;
+  const { savings, monthly, ret, age } = inputs;
+  const points = useMemo(
+    () => [{ year: 0, balance: savings }, ...project(savings, monthly, ret, years)],
+    [savings, monthly, ret, years]
+  );
+  const reachedAge = age + plan.months / 12;
   const last = points[points.length - 1];
+
+  const option = useMemo<EChartsCoreOption>(() => {
+    const from = age;
+    const to = age + years;
+    return {
+      grid: BASE_GRID,
+      xAxis: {
+        type: 'value' as const,
+        min: from,
+        max: to,
+        minInterval: 1,
+        axisLine: { lineStyle: { color: palette.axisLine } },
+        axisTick: { show: false },
+        axisLabel: { color: palette.axisText, fontSize: 11, hideOverlap: true },
+        splitLine: { show: false },
+      },
+      yAxis: { ...valueAxis(palette, compact), min: 0 },
+      tooltip: {
+        ...tooltipBase(palette),
+        trigger: 'axis' as const,
+        axisPointer: { type: 'line' as const, lineStyle: { color: palette.axisLine } },
+        formatter: (params: unknown) => {
+          const items = params as { seriesIndex: number; value: [number, number] }[];
+          const point = items.find((item) => item.seriesIndex === 0);
+          if (!point) return '';
+          const [pointAge, balance] = point.value;
+          const year = startYear === null ? null : startYear + (pointAge - from);
+          return tooltipHtml(
+            year === null
+              ? `${t('col_age')} ${pointAge}`
+              : t('chart_tooltip_age', { age: pointAge, year }),
+            [
+              { color: palette.blue, name: t('chart_savings'), value: fmt(balance) },
+              { color: palette.orange, name: t('result_number'), value: fmt(target) },
+            ]
+          );
+        },
+      },
+      series: [
+        {
+          name: t('chart_savings'),
+          type: 'line' as const,
+          data: points.map((p) => [from + p.year, p.balance]),
+          showSymbol: false,
+          symbol: 'circle',
+          symbolSize: 8,
+          lineStyle: { color: palette.blue, width: 2.5 },
+          itemStyle: { color: palette.blue, borderColor: palette.surface, borderWidth: 2 },
+          areaStyle: { color: palette.blue, opacity: 0.12 },
+          emphasis: { disabled: true },
+          z: 3,
+        },
+        {
+          name: 'fire-number',
+          type: 'line' as const,
+          data: [
+            [from, target],
+            [to, target],
+          ],
+          showSymbol: false,
+          silent: true,
+          tooltip: { show: false },
+          lineStyle: { color: palette.orange, width: 2, type: 'dashed' as const },
+          emphasis: { disabled: true },
+          z: 2,
+          markLine: {
+            silent: true,
+            symbol: 'none',
+            label: { show: false },
+            lineStyle: { color: palette.orange, type: 'dotted' as const, width: 1.5, opacity: 0.8 },
+            data: [{ xAxis: reachedAge }],
+          },
+          markPoint: {
+            silent: true,
+            symbol: 'circle',
+            symbolSize: 11,
+            itemStyle: { color: palette.orange, borderColor: palette.surface, borderWidth: 2 },
+            label: { show: false },
+            data: [{ coord: [reachedAge, target] }],
+          },
+        },
+      ],
+    };
+  }, [points, age, years, target, reachedAge, palette, fmt, compact, startYear, t]);
 
   return (
     <figure>
       <h3 className="mb-2 font-semibold text-foreground">{t('chart_heading')}</h3>
       <div className="rounded-xl border border-border/70 bg-card p-3 sm:p-4">
-        <svg
-          viewBox={`0 0 ${width} ${height}`}
-          className="h-auto w-full text-foreground"
-          role="img"
-          aria-label={t('chart_label', {
-            from: inputs.age,
-            to: inputs.age + years,
-            start: fmt(inputs.savings),
-            end: fmt(last.balance),
-            number: fmt(target),
-            age: inputs.age + Math.floor(plan.months / 12),
-          })}
-        >
-          <line
-            x1={pad.left}
-            x2={width - pad.right}
-            y1={height - pad.bottom}
-            y2={height - pad.bottom}
-            stroke="currentColor"
-            strokeOpacity={0.25}
+        <div className="h-[240px] sm:h-[300px]">
+          <EChart
+            option={option}
+            ariaLabel={t('chart_label', {
+              from: age,
+              to: age + years,
+              start: fmt(savings),
+              end: fmt(last.balance),
+              number: fmt(target),
+              age: age + Math.floor(plan.months / 12),
+            })}
           />
-          {ticks.map((tick) => (
-            <text
-              key={tick}
-              x={x(tick)}
-              y={height - 8}
-              fontSize={12}
-              fill="currentColor"
-              fillOpacity={0.6}
-              textAnchor={tick === 0 ? 'start' : tick === years ? 'end' : 'middle'}
-            >
-              {inputs.age + tick}
-            </text>
-          ))}
-          <line
-            x1={pad.left}
-            x2={width - pad.right}
-            y1={y(target)}
-            y2={y(target)}
-            stroke="currentColor"
-            strokeOpacity={0.55}
-            strokeWidth={1.5}
-            strokeDasharray="6 4"
-          />
-          <path d={line} fill="none" stroke="currentColor" strokeWidth={2.5} />
-          <circle cx={x(reachedAt)} cy={y(target)} r={4} fill="currentColor" />
-        </svg>
+        </div>
         <figcaption className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-foreground/70">
           <span className="inline-flex items-center gap-2">
-            <svg width="24" height="6" aria-hidden className="text-foreground">
-              <line x1="0" x2="24" y1="3" y2="3" stroke="currentColor" strokeWidth={2} />
+            <svg width="24" height="6" aria-hidden>
+              <line x1="0" x2="24" y1="3" y2="3" stroke={palette.blue} strokeWidth={2.5} />
             </svg>
-            {t('chart_savings')}
+            <span className="text-foreground">{t('chart_savings')}</span>
           </span>
           <span className="inline-flex items-center gap-2">
-            <svg width="24" height="6" aria-hidden className="text-foreground">
+            <svg width="24" height="6" aria-hidden>
               <line
                 x1="0"
                 x2="24"
                 y1="3"
                 y2="3"
-                stroke="currentColor"
-                strokeWidth={2}
+                stroke={palette.orange}
+                strokeWidth={2.5}
                 strokeDasharray="6 4"
               />
             </svg>
-            {t('chart_number', { number: fmt(target) })}
+            <span>
+              <span className="text-foreground">{t('chart_number', { number: fmt(target) })}</span>
+              {reachedDate && (
+                <>
+                  {', '}
+                  {t('chart_reached', { date: reachedDate })}
+                </>
+              )}
+            </span>
           </span>
           <span>{t('chart_axis')}</span>
         </figcaption>

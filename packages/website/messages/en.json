@@ -2701,6 +2701,8 @@
     "chart_savings": "Savings",
     "chart_number": "FIRE number ({number})",
     "chart_axis": "Age along the bottom",
+    "chart_reached": "reached {date}",
+    "chart_tooltip_age": "Age {age}, {year}",
     "table_summary": "Year-by-year table ({years, plural, one {# year} other {# years}})",
     "table_caption": "Each row is one year from today: what you invested that year, how much the savings grew, and the balance at the end of the year. The FIRE number is reached during the last row.",
     "col_age": "Age",
