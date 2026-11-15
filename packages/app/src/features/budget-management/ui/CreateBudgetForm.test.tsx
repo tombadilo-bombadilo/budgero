@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => {
     updateOnboarding: vi.fn(),
     setIsBudgetImporting: vi.fn(),
     invalidateQueries: vi.fn(),
+    track: vi.fn(),
   };
 });
 
@@ -64,6 +65,7 @@ vi.mock('@shared/runtime/budget-gate', () => ({
   getBudgetsQueryKey: () => ['budgets', 'space-test'],
   syncBudgetStateFromRuntime: mocks.syncBudgetState,
 }));
+vi.mock('@shared/lib/analytics/track', () => ({ track: mocks.track }));
 vi.mock('@shared/lib/analytics/analytics', () => ({
   trackBudgetCreated: vi.fn(),
   trackImportedFromYnab: vi.fn(),
@@ -135,6 +137,7 @@ vi.mock('@features/budget-management/ui/create-budget-form/YnabImportStatus', ()
     isFinalizing: boolean;
     onBack: () => void;
     onAcceptWarnings: () => void;
+    onCancelPending: () => void;
   }) => (
     <div>
       {props.error && (
@@ -147,6 +150,9 @@ vi.mock('@features/budget-management/ui/create-budget-form/YnabImportStatus', ()
         <button disabled={props.isFinalizing} onClick={props.onAcceptWarnings}>
           Import anyway
         </button>
+      )}
+      {props.verification?.status === 'warning' && (
+        <button onClick={props.onCancelPending}>Cancel and remove</button>
       )}
     </div>
   ),
@@ -357,6 +363,57 @@ describe('YNAB import lifecycle', () => {
       persisted.resolve();
     });
     await waitFor(() => expect(mocks.setIsBudgetImporting).toHaveBeenLastCalledWith(false));
+  });
+
+  describe('review analytics', () => {
+    const reviewEvents = () =>
+      mocks.track.mock.calls.filter(([name]) => String(name).startsWith('ynab_import_review_'));
+
+    it('reports the review shape and a keep decision from the app', async () => {
+      mocks.importSnapshot.mockResolvedValue(warned);
+      await startImport();
+      fireEvent.click(await screen.findByRole('button', { name: 'Import anyway' }));
+      await waitFor(() => expect(mocks.save).toHaveBeenCalled());
+      expect(reviewEvents()).toEqual([
+        [
+          'ynab_import_review_shown',
+          expect.objectContaining({ source: 'ynab_api', context: 'app', checks: 'category' }),
+        ],
+        [
+          'ynab_import_review_decided',
+          { source: 'ynab_api', context: 'app', decision: 'keep', duration_bucket: '<10s' },
+        ],
+      ]);
+    });
+
+    it('reports a remove decision once', async () => {
+      mocks.importSnapshot.mockResolvedValue(warned);
+      const view = await startImport();
+      fireEvent.click(await screen.findByRole('button', { name: 'Cancel and remove' }));
+      view.unmount();
+      expect(mocks.deleteBudget).toHaveBeenCalledWith(42);
+      expect(reviewEvents().map(([name, props]) => [name, props?.decision])).toEqual([
+        ['ynab_import_review_shown', undefined],
+        ['ynab_import_review_decided', 'remove'],
+      ]);
+    });
+
+    it('reports a review closed without a choice as left', async () => {
+      mocks.importSnapshot.mockResolvedValue(warned);
+      const view = await startImport();
+      await screen.findByRole('button', { name: 'Import anyway' });
+      view.unmount();
+      expect(reviewEvents().at(-1)).toEqual([
+        'ynab_import_review_decided',
+        expect.objectContaining({ context: 'app', decision: 'left' }),
+      ]);
+    });
+
+    it('sends nothing for an import without warnings', async () => {
+      await startImport();
+      await waitFor(() => expect(mocks.save).toHaveBeenCalled());
+      expect(reviewEvents()).toEqual([]);
+    });
   });
 
   it('does not publish or upload an import when local persistence rejects it', async () => {

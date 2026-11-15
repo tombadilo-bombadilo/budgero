@@ -480,11 +480,6 @@ msgstr "{0, plural, one {# Empfänger entfernen?} other {# Empfänger entfernen?
 
 #. placeholder {0}: run.transactionCount
 #: src/features/page-guides/ui/guide-visuals.tsx
-#~ msgid "{0, plural, one {Restore # transaction to its pre-run value.} other {Restore # transactions to their pre-run values.}}"
-#~ msgstr "{0, plural, one {# Transaktion auf ihren Wert vor der Ausführung zurücksetzen.} other {# Transaktionen auf ihre Werte vor der Ausführung zurücksetzen.}}"
-
-#. placeholder {0}: run.transactionCount
-#: src/features/page-guides/ui/guide-visuals.tsx
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "{0, plural, one {Restore # transaction to its pre-run values.} other {Restore # transactions to their pre-run values.}}"
 msgstr "{0, plural, one {Setze # Transaktion auf ihre Werte vor der Ausführung zurück.} other {Setze # Transaktionen auf ihre Werte vor der Ausführung zurück.}}"
@@ -885,10 +880,10 @@ msgstr "{0}Warteschlange leeren"
 msgid "{0}Generate API Token"
 msgstr "{0}API-Token generieren"
 
-#. placeholder {0}: isFinalizing ? ( <Loader2 className="h-4 w-4 animate-spin" /> ) : ( <AlertTriangle className="h-4 w-4" /> )
+#. placeholder {0}: isFinalizing ? ( <Loader2 className="h-4 w-4 animate-spin" /> ) : ( <CheckCircle2 className="h-4 w-4" /> )
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
-msgid "{0}Import anyway"
-msgstr "{0}Trotzdem importieren"
+msgid "{0}Keep this budget"
+msgstr "{0}Dieses Budget behalten"
 
 #. placeholder {0}: monthsCoverage.toFixed(1)
 #: src/widgets/dashboard/AtAGlance.tsx
@@ -1010,6 +1005,10 @@ msgstr "{base} ggü. Vorperiode"
 #: src/pages/onboarding/steps/DoneStep.tsx
 msgid "{categoryCount, plural, one {# category} other {# categories}}"
 msgstr "{categoryCount, plural, one {# Kategorie} other {# Kategorien}}"
+
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+msgid "{categoryValues, plural, one {# category value in your budget history differs from YNAB.} other {# category values in your budget history differ from YNAB.}}"
+msgstr "{categoryValues, plural, one {# Kategoriewert in deinem Budgetverlauf weicht von YNAB ab.} other {# Kategoriewerte in deinem Budgetverlauf weichen von YNAB ab.}}"
 
 #: src/features/budget-planning/ui/CCPaymentActivityDialog.tsx
 msgid "{ccCategoryName} payments"
@@ -1601,6 +1600,10 @@ msgstr "{rowsText} × {colsText}, angezeigt: {shownRowCount} × {shownColCount}"
 msgid "{rowsWithoutAccount, plural, one {One row has an empty \"{0}\" value. It goes into this account:} other {# rows have an empty \"{1}\" value. They go into this account:}}"
 msgstr "{rowsWithoutAccount, plural, one {Eine Zeile hat keinen Wert in „{0}“. Sie geht in dieses Konto:} other {# Zeilen haben keinen Wert in „{1}“. Sie gehen in dieses Konto:}}"
 
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+msgid "{rtaMonths, plural, one {In # month, Ready to Assign differs from what YNAB showed.} other {In # months, Ready to Assign differs from what YNAB showed.}}"
+msgstr "{rtaMonths, plural, one {In # Monat weicht Zu budgetieren von dem ab, was YNAB angezeigt hat.} other {In # Monaten weicht Zu budgetieren von dem ab, was YNAB angezeigt hat.}}"
+
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 msgid "{selectedCount, plural, one {# selected} other {# selected}}"
 msgstr "{selectedCount, plural, one {# ausgewählt} other {# ausgewählt}}"
@@ -1918,10 +1921,6 @@ msgstr "<0/>Kalender"
 #: src/features/chat/ui/ToolConfirmation.tsx
 msgid "<0/>Cancel"
 msgstr "<0/>Abbrechen"
-
-#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
-msgid "<0/>Cancel and remove"
-msgstr "<0/>Abbrechen und entfernen"
 
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "<0/>Cancel Subscription"
@@ -2390,6 +2389,10 @@ msgstr "<0/>Aktualisieren"
 #: src/pages/settings/push-api/TokenActions.tsx
 msgid "<0/>Regenerate Token"
 msgstr "<0/>Token neu generieren"
+
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+msgid "<0/>Remove this import"
+msgstr "<0/>Diesen Import entfernen"
 
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "<0/>Reset data flags"
@@ -3906,6 +3909,10 @@ msgstr "Alle Einnahmen und Zuweisungen werden über die gesamte Zeit aufsummiert
 msgid "All labels"
 msgstr "Alle Labels"
 
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+msgid "All of these differences are more than a year old."
+msgstr "Alle diese Abweichungen sind älter als ein Jahr."
+
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
 msgid "All on-budget accounts"
 msgstr "Alle Konten im Budget"
@@ -3976,14 +3983,6 @@ msgstr "Diesen Monat {monthlyNeeded} mehr zuweisen"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Allocate {stillNeeded} more to complete this month's target"
 msgstr "Noch {stillNeeded} zuweisen, um das Ziel dieses Monats zu erreichen"
-
-#: src/features/goal-management/ui/GoalForm.tsx
-#~ msgid "Allocate a total amount every few months, cycle after cycle"
-#~ msgstr "Alle paar Monate einen Gesamtbetrag zuweisen, Zyklus für Zyklus"
-
-#: src/features/goal-management/ui/GoalForm.tsx
-#~ msgid "Allocate a total amount over a period by a target date"
-#~ msgstr "Einen Gesamtbetrag über einen Zeitraum bis zu einem Zieldatum verteilen"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Allocate This Month"
@@ -4378,10 +4377,6 @@ msgstr "{needed} zuweisen, um dein Ziel zu erreichen"
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Assign a fixed amount every month"
 msgstr "Jeden Monat einen festen Betrag zuweisen"
-
-#: src/features/goal-management/ui/GoalForm.tsx
-#~ msgid "Assign a fixed amount every month, regardless of spending"
-#~ msgstr "Jeden Monat einen festen Betrag zuweisen, unabhängig von den Ausgaben"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Assign remaining"
@@ -5101,6 +5096,10 @@ msgstr "Budgero konnte den Start nicht abschließen"
 msgid "Budgero did not alter the ledger to force these values to match."
 msgstr "Budgero hat die Buchungen nicht verändert, um diese Werte zur Übereinstimmung zu zwingen."
 
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+msgid "Budgero didn’t change any transactions to force these numbers to match. The differences stay listed in Settings › Imports › Import History, and you can adjust your budget at any time."
+msgstr "Budgero hat keine Buchungen geändert, um diese Zahlen passend zu machen. Die Abweichungen bleiben unter Einstellungen › Importe › Importverlauf aufgeführt, und du kannst dein Budget jederzeit anpassen."
+
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Budgero encrypts everything on your device. Only you hold the key."
 msgstr "Budgero verschlüsselt alles auf deinem Gerät. Nur du hast den Schlüssel."
@@ -5350,20 +5349,12 @@ msgid "Build metadata for support or troubleshooting."
 msgstr "Erstelle Metadaten für Support oder Fehlerbehebung."
 
 #: src/features/goal-management/ui/GoalForm.tsx
-#~ msgid "Build up to an amount available, with no date and no repeat"
-#~ msgstr "Bis zu einem verfügbaren Betrag aufbauen, ohne Datum und ohne Wiederholung"
-
-#: src/features/goal-management/ui/GoalForm.tsx
 msgid "Build up to an amount, no date"
 msgstr "Auf einen Betrag ansparen, ohne Datum"
 
 #: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Build up to an amount, no date, like an emergency fund."
 msgstr "Auf einen Betrag ansparen, ohne Datum, z. B. ein Notgroschen."
-
-#: src/features/first-steps/ui/GoalWalkthroughHost.tsx
-#~ msgid "Build up to: an amount with no date, like an emergency fund."
-#~ msgstr "Aufbauen bis: ein Betrag ohne Datum, etwa ein Notgroschen."
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Building habits takes time - keep trying!"
@@ -5405,10 +5396,6 @@ msgstr "Nach"
 #: src/features/page-guides/ui/guide-visuals.tsx
 msgid "By a date, like a holiday or a yearly bill."
 msgstr "Bis zu einem Datum, z. B. Urlaub oder eine Jahresrechnung."
-
-#: src/features/first-steps/ui/GoalWalkthroughHost.tsx
-#~ msgid "By a date: save a total by a day, like a holiday."
-#~ msgstr "Bis zu einem Datum: eine Summe bis zu einem Tag ansparen, etwa für den Urlaub."
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "By amount"
@@ -8935,10 +8922,6 @@ msgstr "Gib die Mindestzahlung deiner Karte aus den Abrechnungen ein."
 msgid "Enter your current password and choose a new one. Your data stays encrypted; only the password that unlocks it changes."
 msgstr "Gib dein aktuelles Passwort ein und wähle ein neues. Deine Daten bleiben verschlüsselt; nur das Passwort, mit dem du sie entsperrst, ändert sich."
 
-#: src/pages/settings/SecurityPage.tsx
-#~ msgid "Enter your current password and choose a new one. Your data will be re-encrypted with the new password."
-#~ msgstr "Gib dein aktuelles Passwort ein und wähle ein neues. Deine Daten werden mit dem neuen Passwort neu verschlüsselt."
-
 #: src/pages/onboarding/onboarding-data.ts
 #: src/pages/onboarding/steps/InviteCodeStep.tsx
 msgid "Enter your invite code"
@@ -9039,21 +9022,17 @@ msgstr "Jeder Cent, den du verdienst, bekommt eine Aufgabe, bevor du ihn ausgibs
 msgid "Every few months, like a quarterly bill."
 msgstr "Alle paar Monate, z. B. eine Quartalsrechnung."
 
-#: src/features/first-steps/ui/GoalWalkthroughHost.tsx
-#~ msgid "Every few months: for bills that come quarterly or once a year."
-#~ msgstr "Alle paar Monate: für Rechnungen, die vierteljährlich oder einmal im Jahr kommen."
-
 #: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Every month, like rent or groceries."
 msgstr "Jeden Monat, z. B. Miete oder Lebensmittel."
 
-#: src/features/first-steps/ui/GoalWalkthroughHost.tsx
-#~ msgid "Every month: have an amount ready, like rent or groceries."
-#~ msgstr "Jeden Monat: einen Betrag bereithalten, etwa für Miete oder Lebensmittel."
-
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Every scheduled occurrence that hasn't been entered yet, by due date."
 msgstr "Jeder geplante Termin, der noch nicht erfasst wurde, nach Fälligkeitsdatum."
+
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+msgid "Every transaction came across."
+msgstr "Alle Buchungen wurden übernommen."
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Every transaction; split transactions count once per category."
@@ -10419,14 +10398,6 @@ msgid "Halve amount"
 msgstr "Betrag halbieren"
 
 #: src/features/goal-management/ui/GoalForm.tsx
-#~ msgid "Have a specific amount available by a target date"
-#~ msgstr "Einen bestimmten Betrag bis zu einem Zieldatum verfügbar haben"
-
-#: src/features/goal-management/ui/GoalForm.tsx
-#~ msgid "Have an amount available at the end of every period"
-#~ msgstr "Am Ende jedes Zeitraums einen Betrag verfügbar haben"
-
-#: src/features/goal-management/ui/GoalForm.tsx
 msgid "Have it ready every few months"
 msgstr "Alle paar Monate bereithalten"
 
@@ -10492,6 +10463,7 @@ msgstr "Archivierte ausblenden"
 msgid "Hide balance column"
 msgstr "Saldo-Spalte ausblenden"
 
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/pages/settings/automation-rules/RuleRow.tsx
 msgid "Hide details"
 msgstr "Details ausblenden"
@@ -10792,6 +10764,10 @@ msgstr "Import oder Wiederherstellung"
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Import pending transactions"
 msgstr "Ausstehende Transaktionen importieren"
+
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+msgid "Import summary"
+msgstr "Importübersicht"
 
 #: src/features/import/ui/steps/CompleteStep.tsx
 msgid "Import Summary"
@@ -11334,6 +11310,10 @@ msgstr "Sie ist mit einer Garantie verknüpft, und diese Verknüpfung ginge verl
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "It is waiting in a bank sync review, and that link would be lost."
 msgstr "Sie wartet in einer Banksync-Prüfung, und diese Verknüpfung ginge verloren."
+
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+msgid "It isn’t saved or synced until you choose below."
+msgstr "Es wird erst gespeichert und synchronisiert, wenn du unten entscheidest."
 
 #: src/pages/reports/question/QuestionPage.tsx
 msgid "It may have been deleted on another device."
@@ -16890,12 +16870,6 @@ msgstr "Spaltenbreite ändern"
 msgid "Restore"
 msgstr "Wiederherstellen"
 
-#. placeholder {0}: run.transactionCount
-#. placeholder {1}: run.transactionCount === 1 ? '' : 's'
-#: src/features/rules/ui/RuleHistoryDrawer.tsx
-#~ msgid "Restore {0} transaction{1} to their pre-run values."
-#~ msgstr "Stelle {0}Transaktion{1}auf ihre Werte vor der Ausführung zurück."
-
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Restore and keep later changes"
 msgstr "Wiederherstellen und spätere Änderungen behalten"
@@ -17081,10 +17055,6 @@ msgstr "Prüfe die Ergebnisse unten. Fehlgeschlagene Zeilen kannst du durch erne
 #: src/features/subscription/ui/SharedWorkspaceAccessRequired.tsx
 msgid "Review workspace status"
 msgstr "Arbeitsbereich-Status überprüfen"
-
-#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
-msgid "Review YNAB differences"
-msgstr "YNAB-Abweichungen prüfen"
 
 #: src/pages/admin/admin-users/ActionDialog.tsx
 msgid "Revoke Access"
@@ -18456,6 +18426,7 @@ msgstr "Kompakte Ansicht anzeigen"
 msgid "Show detailed view"
 msgstr "Detaillierte Ansicht anzeigen"
 
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/pages/settings/automation-rules/RuleRow.tsx
 msgid "Show details"
 msgstr "Details anzeigen"
@@ -18858,10 +18829,6 @@ msgstr "Balken sortieren: {sortLabel}"
 msgid "Source"
 msgstr "Quelle"
 
-#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
-msgid "Source rows and account balances reconcile. Review the reporting differences before deciding whether to keep this budget."
-msgstr "Quellzeilen und Kontostände stimmen überein. Prüfe die Abweichungen in den Berichten, bevor du entscheidest, ob du dieses Budget behalten möchtest."
-
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Souvenir shop"
 msgstr "Souvenirladen"
@@ -19144,10 +19111,6 @@ msgstr "Startdatum"
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Start Date"
 msgstr "Startdatum"
-
-#: src/features/goal-management/ui/GoalForm.tsx
-#~ msgid "Start each month with a certain amount available"
-#~ msgstr "Jeden Monat mit einem bestimmten verfügbaren Betrag beginnen"
 
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Start every month with this much"
@@ -21733,10 +21696,6 @@ msgstr "Aktualisiere die Details der Regel und speichere deine Änderungen, um A
 msgid "Update to the official rate when back online"
 msgstr "Auf offiziellen Kurs aktualisieren, wenn wieder online"
 
-#: src/pages/settings/SecurityPage.tsx
-#~ msgid "Update your master password to keep your data secure. This will re-encrypt all your data with the new password. Sign-in password, email and 2FA are managed in your Clerk profile."
-#~ msgstr "Aktualisiere dein Master-Passwort, um deine Daten sicher zu halten. Dadurch werden alle deine Daten mit dem neuen Passwort neu verschlüsselt. Anmeldepasswort, E-Mail und 2FA werden in deinem Clerk-Profil verwaltet."
-
 #: src/pages/reports/ReportsHomePage.tsx
 msgid "Updated {updated}"
 msgstr "Aktualisiert am {updated}"
@@ -22197,6 +22156,10 @@ msgstr "Wir konnten diese Regel nicht anwenden. Versuche es in einem Moment erne
 #: src/pages/settings/SecurityPage.tsx
 msgid "We keep your master password in volatile memory only. Refreshing or closing the tab will require it again."
 msgstr "Wir speichern dein Master-Passwort ausschließlich im flüchtigen Speicher. Beim Aktualisieren oder Schließen des Tabs musst du es erneut eingeben."
+
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+msgid "We recommend keeping this budget."
+msgstr "Wir empfehlen, dieses Budget zu behalten."
 
 #: src/pages/onboarding/steps/StartModeStep.tsx
 msgid "We show you how it works as you go"
@@ -23087,6 +23050,10 @@ msgstr "Du hast insgesamt {totalSaved} gespart"
 msgid "Your account balances become Ready to Assign: money that has no job yet. Next, you give every coin of it a job."
 msgstr "Deine Kontostände werden zu „Zu budgetieren“: Geld, das noch keine Aufgabe hat. Als Nächstes gibst du jedem Cent davon eine Aufgabe."
 
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+msgid "Your account balances match YNAB and every transaction came across."
+msgstr "Deine Kontostände stimmen mit YNAB überein und alle Buchungen wurden übernommen."
+
 #: src/features/budget-sharing/ui/WorkspaceSharingPanel.tsx
 msgid "Your account has reached the 5-person collaborator limit across owned workspaces. Remove a member or cancel a pending invite before creating another one."
 msgstr "Dein Konto hat das Limit von 5 Mitbearbeitern in deinen Arbeitsbereichen erreicht. Entferne ein Mitglied oder widerrufe eine ausstehende Einladung, bevor du eine weitere erstellst."
@@ -23300,6 +23267,10 @@ msgstr "Deine Transaktion liegt in der Zukunft"
 #: src/pages/settings/subscription/SubscriptionStatusCard.tsx
 msgid "your trial end date"
 msgstr "dein Testzeitraum-Enddatum"
+
+#: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
+msgid "Your YNAB budget is ready"
+msgstr "Dein YNAB-Budget ist bereit"
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "YouTube"

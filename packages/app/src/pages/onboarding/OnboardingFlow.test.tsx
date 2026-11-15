@@ -275,12 +275,15 @@ describe('OnboardingFlow YNAB import verification', () => {
 
     await act(async () => continueImport?.());
 
-    expect(await screen.findByText('Review YNAB differences')).toBeInTheDocument();
+    expect(await screen.findByText('Your YNAB budget is ready')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Keep this budget' })).toBeInTheDocument();
+    // The technical checks stay one click away.
+    expect(screen.queryByText('10 rows exact')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Show details' }));
     expect(screen.getByText('10 rows exact')).toBeInTheDocument();
     expect(screen.getByText('1 of 1 exact')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Import anyway' })).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel and remove' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Remove this import' }));
 
     await waitFor(() => expect(mockReviewDecision).toHaveBeenCalledWith('cancel'));
     expect(await screen.findByText('YNAB source selection')).toBeInTheDocument();

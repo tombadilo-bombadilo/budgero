@@ -32,7 +32,10 @@ const mocks = vi.hoisted(() => ({
   decryptInvite: vi.fn(),
   wrapSpaceKey: vi.fn(),
   clearPendingInvite: vi.fn(),
+  track: vi.fn(),
 }));
+
+vi.mock('@shared/lib/analytics/track', () => ({ track: mocks.track }));
 
 vi.mock('@shared/lib/crypto', () => ({
   MasterPasswordManager: { store: mocks.storeMasterPassword },
@@ -238,6 +241,106 @@ describe('runOnboardingApply YNAB completion gate', () => {
     });
     expect(mocks.writeIntroAcknowledged).toHaveBeenCalledWith('profile-1');
     expect(onComplete).toHaveBeenCalledOnce();
+  });
+});
+
+describe('runOnboardingApply YNAB review analytics', () => {
+  const warnedResult: YNABImportResult = {
+    ...passedResult,
+    verification: {
+      ...passedResult.verification!,
+      status: 'warning',
+      readyToAssign: {
+        checked: 60,
+        matched: 58,
+        mismatches: ['2018-03', '2018-04'].map((month) => ({
+          month,
+          expectedReadyToAssign: 0,
+          computedReadyToAssign: -5_000,
+          difference: -5_000,
+          breakdown: {
+            income: 0,
+            assignments: 0,
+            offBudgetTransfers: 0,
+            inBudgetTransfers: 0,
+            revaluations: 0,
+            priorCashOverspend: 5_000,
+          },
+          affectedCategories: [
+            {
+              categoryGroup: 'Bills',
+              category: 'Synthetic',
+              reason: 'cash_overspend' as const,
+              month: '2018-02',
+              amount: -5_000,
+            },
+          ],
+        })),
+      },
+    },
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.storeMasterPassword.mockResolvedValue(undefined);
+    mocks.createSpace.mockResolvedValue({ space_id: 'space-1' });
+    mocks.deleteSpace.mockResolvedValue(undefined);
+    mocks.setMasterPasswordStatus.mockResolvedValue(undefined);
+    mocks.importFromApi.mockResolvedValue(warnedResult);
+  });
+
+  it.each([
+    ['accept', 'keep'],
+    ['cancel', 'remove'],
+  ] as const)('reports the review and a %s as %s', async (choice, decision) => {
+    const runtime = {
+      isInitialized: () => true,
+      refreshSpaces: vi.fn().mockResolvedValue(undefined),
+      switchSpace: vi.fn().mockResolvedValue(undefined),
+      getActiveSpaceId: () => null,
+      getDatabase: () => ({}),
+      finalizeOutOfBandMutation: vi.fn().mockResolvedValue(undefined),
+      services: () => ({
+        budgets: { deleteBudget: vi.fn() },
+        importHistory: { recordImportRun: vi.fn() },
+      }),
+    } as unknown as AppRuntime;
+
+    await runOnboardingApply(ynabState, {
+      ...deps('ynab', runtime),
+      reviewYnabImport: vi.fn(async () => choice),
+    });
+
+    const reviewEvents = mocks.track.mock.calls.filter(([name]) =>
+      String(name).startsWith('ynab_import_review_')
+    );
+    expect(reviewEvents).toEqual([
+      [
+        'ynab_import_review_shown',
+        {
+          source: 'ynab_api',
+          context: 'onboarding',
+          checks: 'rta',
+          rta_months_bucket: '2',
+          months_checked_bucket: '10-100',
+          category_values_bucket: '0',
+          cause_cash_overspend: 'yes',
+          cause_assigned_diff: 'no',
+          cause_not_attributed: 'no',
+          category_assigned: 'no',
+          category_activity: 'no',
+          category_available: 'no',
+          debt_adjustments: 'no',
+          recency: 'older_only',
+        },
+      ],
+      [
+        'ynab_import_review_decided',
+        { source: 'ynab_api', context: 'onboarding', decision, duration_bucket: '<10s' },
+      ],
+    ]);
+    // Never a month, an amount or a name.
+    expect(JSON.stringify(reviewEvents)).not.toMatch(/2018|Synthetic|Bills|5000/);
   });
 });
 

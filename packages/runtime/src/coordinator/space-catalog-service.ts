@@ -4,6 +4,26 @@ import type { KeyVault } from '../key-vault';
 import { checkAbort, errorMessage, isDecryptionError } from '../utils/diagnostics';
 import { scopedLogger, type RuntimeLogFn } from '../logging';
 
+// FROZEN STRING: the app's StartupController matches on this exact message
+// (NO_ACCEPTED_SPACES_ERROR) to route to onboarding.
+const NO_ACCEPTED_SPACES_MESSAGE = 'No accepted budget spaces available for this account';
+
+/**
+ * The account has no workspace it can open. An expected state, not a failure:
+ * a new account, or one whose only workspace was just deleted (a cancelled
+ * onboarding import removes its temporary workspace).
+ */
+export class NoAcceptedSpacesError extends Error {
+  constructor() {
+    super(NO_ACCEPTED_SPACES_MESSAGE);
+    this.name = 'NoAcceptedSpacesError';
+  }
+}
+
+export function isNoAcceptedSpacesError(error: unknown): boolean {
+  return error instanceof NoAcceptedSpacesError;
+}
+
 interface SpaceCatalogServiceDeps {
   listSpaces?(): Promise<SpaceSummary[]>;
   getProfile?(): Promise<{ primary_space_id?: string } | null>;
@@ -52,7 +72,7 @@ export class SpaceCatalogService {
     activeStillAvailable: boolean;
     fallbackSpaceId: string | null;
   }> {
-    const acceptedSpaces = await this.loadAcceptedSpaces();
+    const acceptedSpaces = await this.loadAcceptedSpaces('refresh');
     const mp = this.deps.keyVault.getMasterPassword();
 
     if (mp) {
@@ -99,7 +119,7 @@ export class SpaceCatalogService {
     }
   }
 
-  private async loadAcceptedSpaces(): Promise<SpaceSummary[]> {
+  private async loadAcceptedSpaces(purpose: 'init' | 'refresh' = 'init'): Promise<SpaceSummary[]> {
     let spaces: SpaceSummary[] = [];
     try {
       const apiSpaces = await this.deps.listSpaces?.();
@@ -121,13 +141,13 @@ export class SpaceCatalogService {
       (s) => s.invitation_status === 'accepted' && s.is_accessible !== false
     );
     if (!acceptedSpaces.length) {
-      this.log('warn', 'No accepted spaces found', {
+      // A refresh right after the last workspace was deleted lands here on
+      // purpose; only startup keeps reporting it.
+      this.log(purpose === 'refresh' ? 'info' : 'warn', 'No accepted spaces found', {
         totalSpaces: spaces.length,
         statuses: spaces.map((s) => s.invitation_status),
       });
-      // FROZEN STRING: the app's StartupController matches on this exact
-      // message (NO_ACCEPTED_SPACES_ERROR) to route to onboarding.
-      throw new Error('No accepted budget spaces available for this account');
+      throw new NoAcceptedSpacesError();
     }
 
     this.deps.spaceRegistry.setAvailableSpaces(acceptedSpaces);

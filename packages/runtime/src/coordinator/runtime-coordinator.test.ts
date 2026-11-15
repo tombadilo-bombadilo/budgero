@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { NoAcceptedSpacesError } from './space-catalog-service';
 import { RuntimeCoordinator } from './runtime-coordinator';
 import { createStorageMock } from '../__tests__/storage-mock';
 import { CancellationError } from '../utils/diagnostics';
@@ -607,6 +608,50 @@ describe('RuntimeCoordinator', () => {
         }
       ).trySetState('Ready')
     ).toBe(false);
+
+    coordinator.destroy();
+  });
+
+  it('does not report a refresh that finds no workspace left', async () => {
+    vi.stubGlobal('localStorage', localStorageMock as unknown as Storage);
+    vi.stubGlobal('sessionStorage', sessionStorageMock as unknown as Storage);
+    const runtimeLog = vi.fn();
+    const { coordinator } = createCoordinator({ runtimeLog });
+    const lifecycle = (
+      coordinator as unknown as {
+        lifecycle: { refreshSpaces(cb: (spaceId: string) => Promise<void>): Promise<void> };
+      }
+    ).lifecycle;
+
+    // A cancelled onboarding import just deleted the account's only workspace.
+    lifecycle.refreshSpaces = vi.fn(async () => {
+      throw new NoAcceptedSpacesError();
+    });
+    await expect(coordinator.refreshSpaces()).resolves.toBeUndefined();
+    expect(runtimeLog).toHaveBeenCalledWith(
+      'info',
+      'RuntimeCoordinator',
+      'No workspaces left after refresh',
+      undefined
+    );
+    expect(runtimeLog).not.toHaveBeenCalledWith(
+      'warn',
+      'RuntimeCoordinator',
+      'Failed to refresh spaces',
+      expect.anything()
+    );
+
+    // A real failure is still reported.
+    lifecycle.refreshSpaces = vi.fn(async () => {
+      throw new Error('network down');
+    });
+    await coordinator.refreshSpaces();
+    expect(runtimeLog).toHaveBeenCalledWith(
+      'warn',
+      'RuntimeCoordinator',
+      'Failed to refresh spaces',
+      expect.any(Object)
+    );
 
     coordinator.destroy();
   });

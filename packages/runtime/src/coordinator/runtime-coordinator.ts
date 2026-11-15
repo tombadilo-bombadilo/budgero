@@ -21,7 +21,7 @@ import { RuntimeContextFactory, type RuntimeContext } from './runtime-context-fa
 import { SpaceActivationService } from './space-activation-service';
 import { MutationDispatchService } from './mutation-dispatch-service';
 import { RuntimeStateMachine } from './runtime-state-machine';
-import { SpaceCatalogService } from './space-catalog-service';
+import { isNoAcceptedSpacesError, SpaceCatalogService } from './space-catalog-service';
 import { ActiveSpaceSession } from './active-space-session';
 import { RuntimeStatePolicy, type RuntimeStateIntent } from './runtime-state-policy';
 import { RuntimeLifecycleService } from './runtime-lifecycle-service';
@@ -800,6 +800,12 @@ export class RuntimeCoordinator {
         await this.switchSpace(fallbackSpaceId);
       });
     } catch (error) {
+      if (isNoAcceptedSpacesError(error)) {
+        // No workspace left (e.g. a cancelled onboarding import deleted it):
+        // a state the app handles, not a failed refresh.
+        this.log('info', 'No workspaces left after refresh');
+        return;
+      }
       this.log('warn', 'Failed to refresh spaces', {
         error: errorMessage(error),
         originalError: error,

@@ -48,6 +48,14 @@ const defaultProps = {
 };
 
 describe('YnabImportStatus', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date('2026-11-15T12:00:00Z'));
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('shows stage progress and both API verification checks', () => {
     render(
       <YnabImportStatus
@@ -189,13 +197,96 @@ describe('YnabImportStatus', () => {
       />
     );
 
-    expect(screen.getByText('Review YNAB differences')).toBeInTheDocument();
+    expect(screen.getByText('Your YNAB budget is ready')).toBeInTheDocument();
+    expect(
+      screen.getByText('It isn’t saved or synced until you choose below.')
+    ).toBeInTheDocument();
+
+    // Plain-language summary first: what matched, then what differs.
+    expect(
+      screen.getByText('Your account balances match YNAB and every transaction came across.')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('In 1 month, Ready to Assign differs from what YNAB showed.')
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('1 category value in your budget history differs from YNAB.')
+    ).toBeInTheDocument();
+    expect(screen.getByText('We recommend keeping this budget.')).toBeInTheDocument();
+    expect(screen.getByText(/Settings › Imports › Import History/)).toBeInTheDocument();
+    // 2026-09 is within the last 12 months of the fixed test clock.
+    expect(screen.queryByText(/more than a year old/)).not.toBeInTheDocument();
+
+    // The technical tables are collapsed until asked for.
+    const toggle = screen.getByRole('button', { name: 'Show details' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByText('Ready to Assign differences')).not.toBeInTheDocument();
+    expect(screen.queryByText('Category-history differences')).not.toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    fireEvent.click(toggle);
+    expect(screen.getByRole('button', { name: 'Hide details' })).toHaveAttribute(
+      'aria-expanded',
+      'true'
+    );
     expect(screen.getByText('Ready to Assign differences')).toBeInTheDocument();
     expect(screen.getByText('Category-history differences')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Import anyway' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Cancel and remove' }));
+
+    // Keeping is the primary action and comes first; removing is secondary.
+    const keep = screen.getByRole('button', { name: 'Keep this budget' });
+    const remove = screen.getByRole('button', { name: 'Remove this import' });
+    expect(keep.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(keep.className).toMatch(/\bbg-primary\b/);
+    expect(remove.className).not.toMatch(/\bbg-primary\b/);
+    expect(screen.queryByRole('button', { name: 'Import anyway' })).not.toBeInTheDocument();
+    fireEvent.click(keep);
+    fireEvent.click(remove);
     expect(onAcceptWarnings).toHaveBeenCalledOnce();
     expect(onCancelPending).toHaveBeenCalledOnce();
+  });
+
+  it('says when every difference is more than a year old', () => {
+    const old: YNABReconciliationReport = {
+      ...verification,
+      status: 'warning',
+      readyToAssign: {
+        checked: 62,
+        matched: 59,
+        mismatches: ['2019-01', '2019-02', '2019-03'].map((month) => ({
+          month,
+          expectedReadyToAssign: 0,
+          computedReadyToAssign: 1_000,
+          difference: 1_000,
+          breakdown: {
+            income: 0,
+            assignments: 0,
+            offBudgetTransfers: 0,
+            inBudgetTransfers: 0,
+            revaluations: 0,
+            priorCashOverspend: 0,
+          },
+        })),
+      },
+    };
+    render(
+      <YnabImportStatus
+        sourceMode="api"
+        updates={runningUpdates}
+        error={null}
+        summary={summary}
+        {...defaultProps}
+        verification={old}
+        onBack={vi.fn()}
+        onContinue={vi.fn()}
+      />
+    );
+
+    expect(
+      screen.getByText('In 3 months, Ready to Assign differs from what YNAB showed.')
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/category value/)).not.toBeInTheDocument();
+    expect(
+      screen.getByText('All of these differences are more than a year old.')
+    ).toBeInTheDocument();
   });
 
   it('renders Ready to Assign mismatches table with the requested headers', () => {
@@ -249,6 +340,7 @@ describe('YnabImportStatus', () => {
       />
     );
 
+    fireEvent.click(screen.getByRole('button', { name: 'Show details' }));
     const headers = [
       'Month',
       'Difference',
@@ -358,6 +450,7 @@ describe('YnabImportStatus', () => {
       />
     );
 
+    fireEvent.click(screen.getByRole('button', { name: 'Show details' }));
     // Summary of possible contributors, worded as hints rather than causes
     expect(screen.getByText(/not an exact breakdown/)).toBeInTheDocument();
     expect(screen.queryByText(/originate from/)).not.toBeInTheDocument();
