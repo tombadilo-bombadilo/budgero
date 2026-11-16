@@ -33,7 +33,7 @@ async function setup() {
       transferId,
       payee
     );
-  return { services, accountId, other, add };
+  return { adapter, services, accountId, other, categoryId, add };
 }
 
 describe('TransactionService.findSimilarTransactions', () => {
@@ -89,6 +89,34 @@ describe('TransactionService.findSimilarTransactions', () => {
         amountNative: 0,
       })
     ).toEqual([]);
+  });
+
+  it('skips reconciled and split rows with plainOnly', async () => {
+    const { adapter, services, accountId, categoryId, add } = await setup();
+    const plain = await add('2026-09-26', 12_400, 'Plain');
+    const reconciled = await add('2026-09-26', 12_400, 'Reconciled');
+    const split = await add('2026-09-26', 12_400, 'Split');
+    adapter.exec(`UPDATE transactions SET Reconciled = 1, Cleared = 1 WHERE ID = ${reconciled}`);
+    await services.transactions.saveSplitTransaction(split, {
+      splits: [6_200, 6_200].map((outflow, OrderIndex) => ({
+        CategoryID: categoryId,
+        Memo: '',
+        InflowConverted: asMilli(0),
+        OutflowConverted: asMilli(outflow),
+        OrderIndex,
+      })),
+    });
+    const query = { accountId, date: '2026-09-26', amountNative: -12_400, limit: 10 };
+
+    expect(
+      services.transactions
+        .findSimilarTransactions(query)
+        .map((m) => m.ID)
+        .sort()
+    ).toEqual([plain, reconciled, split].sort());
+    expect(
+      services.transactions.findSimilarTransactions({ ...query, plainOnly: true }).map((m) => m.ID)
+    ).toEqual([plain]);
   });
 
   it('uses the configured amount tolerance, never tighter than 0.01', async () => {

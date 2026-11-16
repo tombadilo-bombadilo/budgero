@@ -164,10 +164,80 @@ export async function computeCounterpartAmount(params: {
 }
 
 /**
+ * Banks convert at their own rate (plus fees), so a cross-currency leg that already
+ * arrived can differ from the rate-based estimate by more than the duplicate tolerance.
+ */
+export const CROSS_CURRENCY_PAIR_MIN_TOLERANCE_BPS = 300;
+
+/**
+ * Where to look for the transfer's other leg when it is already in `counterpart` (both
+ * sides synced or imported): the opposite direction, about `counterpartAmount`, within
+ * the duplicate-transaction window and tolerance (Settings → Duplicate transactions).
+ * Between accounts of one currency the two sides of a transfer are the same amount, so
+ * the tolerance does not apply there (see canPairWith).
+ */
+export function buildPairCandidateQuery(params: {
+  transaction: ConvertibleTransaction;
+  ownAccount: Pick<Account, 'Currency'>;
+  counterpart: Pick<Account, 'ID' | 'Currency'>;
+  counterpartAmount: number;
+  settings: { toleranceBps: number; dayWindow: number };
+}) {
+  const { transaction, ownAccount, counterpart, counterpartAmount, settings } = params;
+  const flow = getTransactionFlow(transaction);
+  if (!flow || !counterpartAmount) return null;
+  const crossCurrency = ownAccount.Currency !== counterpart.Currency;
+  return {
+    accountId: counterpart.ID,
+    date: transaction.Date.slice(0, 10),
+    // An outflow here arrives there as an inflow, and the other way round.
+    amountNative: flow.isOutflow ? counterpartAmount : -counterpartAmount,
+    toleranceBps: crossCurrency
+      ? Math.max(settings.toleranceBps, CROSS_CURRENCY_PAIR_MIN_TOLERANCE_BPS)
+      : 0,
+    dayWindow: settings.dayWindow,
+    limit: 3,
+    plainOnly: true,
+  };
+}
+
+/**
+ * Whether `candidate` can become the other leg of `transaction`'s transfer: a plain,
+ * unreconciled row in the other account flowing the opposite way, with no link that
+ * deleting and re-adding it would lose. With `sameCurrency` the amounts must be equal:
+ * a same-currency transfer with two different sides would hide the difference.
+ */
+export function canPairWith(params: {
+  transaction: ConvertibleTransaction;
+  candidate: ConvertibleTransaction;
+  links?: TransactionLinkFlags | null;
+  sameCurrency?: boolean;
+}): boolean {
+  const { transaction, candidate, links, sameCurrency } = params;
+  const own = getTransactionFlow(transaction);
+  const other = getTransactionFlow(candidate);
+  return Boolean(
+    own &&
+    other &&
+    own.isOutflow !== other.isOutflow &&
+    (!sameCurrency || own.amount === other.amount) &&
+    candidate.ID !== transaction.ID &&
+    candidate.AccountID !== transaction.AccountID &&
+    !candidate.TransferID?.trim() &&
+    !candidate.Reconciled &&
+    !linkBlocker(links)
+  );
+}
+
+/**
  * `transactions.addTransfer` payload for converting `transaction` into a transfer with
  * `counterpart`. The converted row's leg keeps its ID, cleared state, exchange-rate
  * override and import provenance; the other leg is new. Categories, payees and memo come
  * from the same helpers the add form uses.
+ *
+ * With `pairWith` (a row already in `counterpart`, see canPairWith) that row becomes the
+ * other leg instead of a new one: it keeps its ID, date, amount, label, cleared state,
+ * rate override and import provenance, so the account still matches the bank.
  */
 export function buildConvertToTransferArgs(params: {
   transaction: ConvertibleTransaction;
@@ -180,11 +250,22 @@ export function buildConvertToTransferArgs(params: {
   /** Mirrored amount in the counterpart's currency (see computeCounterpartAmount). */
   counterpartAmount: number;
   importIdentities?: unknown[];
+  pairWith?: { transaction: ConvertibleTransaction; importIdentities?: unknown[] };
 }): AddTransferArgs {
-  const { transaction, ownAccount, counterpart, categories, transferId, counterpartAmount } =
-    params;
+  const { transaction, ownAccount, counterpart, categories, transferId, pairWith } = params;
   const flow = getTransactionFlow(transaction);
   if (!flow) throw new Error('Only transactions with a single non-zero amount can be converted.');
+  const pair = pairWith?.transaction;
+  const pairFlow = pair ? getTransactionFlow(pair) : null;
+  if (
+    pair &&
+    (!pairFlow || pairFlow.isOutflow === flow.isOutflow || pair.AccountID !== counterpart.ID)
+  ) {
+    throw new Error(
+      'The other transaction must be in the other account and flow the opposite way.'
+    );
+  }
+  const counterpartAmount = pairFlow ? pairFlow.amount : params.counterpartAmount;
 
   const source = flow.isOutflow ? ownAccount : counterpart;
   const destination = flow.isOutflow ? counterpart : ownAccount;
@@ -202,7 +283,7 @@ export function buildConvertToTransferArgs(params: {
   const memo = formatTransferMemo({
     fromAccountName: source.Name,
     toAccountName: destination.Name,
-    memo: transaction.Memo,
+    memo: transaction.Memo || pair?.Memo || '',
     amount: sourceAmount,
     convertedAmount: destinationAmount,
     fromCurrency: source.Currency,
@@ -216,21 +297,28 @@ export function buildConvertToTransferArgs(params: {
     amount: number,
     payee: string | null,
     category: string
-  ): TransferLegArgs => ({
-    ...(own ? { id: transaction.ID } : {}),
-    inflow: side === 'destination' ? amount : 0,
-    outflow: side === 'source' ? amount : 0,
-    accountId: (side === 'source' ? source : destination).ID,
-    categoryId: categoryId(category),
-    labelId: transaction.LabelID ?? null,
-    date: transaction.Date,
-    memo,
-    payee: payee ?? '',
-    exchangeRateOverride:
-      own && transaction.ExchangeRateOverride ? (transaction.ExchangeRate ?? null) : null,
-    cleared: own ? Boolean(transaction.Cleared) : false,
-    ...(own ? { importIdentities: params.importIdentities ?? [] } : {}),
-  });
+  ): TransferLegArgs => {
+    // The leg's own stored row: the converted transaction, or the paired one (if any).
+    const row = own ? transaction : pair;
+    return {
+      ...(row ? { id: row.ID } : {}),
+      inflow: side === 'destination' ? amount : 0,
+      outflow: side === 'source' ? amount : 0,
+      accountId: (side === 'source' ? source : destination).ID,
+      categoryId: categoryId(category),
+      labelId: (row ?? transaction).LabelID ?? null,
+      date: (row ?? transaction).Date,
+      memo,
+      payee: payee ?? '',
+      exchangeRateOverride: row?.ExchangeRateOverride ? (row.ExchangeRate ?? null) : null,
+      cleared: row ? Boolean(row.Cleared) : false,
+      ...(row
+        ? {
+            importIdentities: (own ? params.importIdentities : pairWith?.importIdentities) ?? [],
+          }
+        : {}),
+    };
+  };
 
   return {
     budgetId: transaction.BudgetID,
