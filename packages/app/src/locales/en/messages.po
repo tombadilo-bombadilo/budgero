@@ -20298,6 +20298,10 @@ msgstr "This change is part of a larger action. Use Undo (Ctrl+Z) to revert it."
 msgid "This change will cause negative Available in future months for this category:"
 msgstr "This change will cause negative Available in future months for this category:"
 
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "This changes an amount that is already reconciled. Saving marks it as uncleared, so you'll need to reconcile the account again."
+msgstr "This changes an amount that is already reconciled. Saving marks it as uncleared, so you'll need to reconcile the account again."
+
 #. placeholder {0}: inUse.length > 0 && ( <Trans> {' '} {inUse.length === 1 ? 'One of them is' : `${inUse.length} of them are`} still in use, affecting {affected.toLocaleString()}{' '} {affected === 1 ? 'transaction' : 'transactions'}. </Trans> )
 #: src/pages/settings/PayeesPage.tsx
 msgid "This clears the selected payees from your transactions in this budget.{0} You can add them back later if needed."
@@ -20531,10 +20535,6 @@ msgstr "This transaction has no single amount to transfer."
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "This transaction is already a transfer."
 msgstr "This transaction is already a transfer."
-
-#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
-msgid "This transaction is reconciled. Saving the new amount marks it as uncleared, so you'll need to reconcile the account again."
-msgstr "This transaction is reconciled. Saving the new amount marks it as uncleared, so you'll need to reconcile the account again."
 
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "This transaction is scheduled for a future date."

@@ -18,7 +18,7 @@ export function ReconciledEditConfirmHost() {
       description={
         pending?.kind === 'transfer'
           ? t`This transfer has a reconciled side. Saving marks each side whose amount changes as uncleared, so you'll need to reconcile that account again.`
-          : t`This transaction is reconciled. Saving the new amount marks it as uncleared, so you'll need to reconcile the account again.`
+          : t`This changes an amount that is already reconciled. Saving marks it as uncleared, so you'll need to reconcile the account again.`
       }
       confirmText={t`Save and mark uncleared`}
       cancelText={t`Cancel`}
