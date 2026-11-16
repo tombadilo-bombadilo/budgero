@@ -190,7 +190,16 @@ export function useTransferConversion({ rows, accounts }: UseTransferConversionO
           match.ID
         )) as ConvertibleTransaction;
         const candidateLinks = await services.transactions.getTransactionLinks(match.ID);
-        if (!canPairWith({ transaction, candidate, links: candidateLinks })) continue;
+        if (
+          !canPairWith({
+            transaction,
+            candidate,
+            links: candidateLinks,
+            sameCurrency: ownAccount.Currency === counterpart.Currency,
+          })
+        ) {
+          continue;
+        }
         const pairFlow = getTransactionFlow(candidate);
         if (!pairFlow) continue;
         pair = {

@@ -399,7 +399,7 @@ describe('pairing with an existing transaction in the other account', () => {
       accountId: 2,
       date: '2026-09-02',
       amountNative: 12_000,
-      toleranceBps: 100,
+      toleranceBps: 0,
       dayWindow: 7,
       limit: 3,
       plainOnly: true,
@@ -437,6 +437,15 @@ describe('pairing with an existing transaction in the other account', () => {
     expect(can({ AccountID: 1 })).toBe(false);
     expect(can({ TransferID: 'tr-9' })).toBe(false);
     expect(can({ Reconciled: true })).toBe(false);
+    // Same currency: the other side must be the exact amount.
+    const near = { InflowNative: 12_050, InflowConverted: 12_050 };
+    expect(canPairWith({ transaction: expense, candidate: { ...arrival, ...near } })).toBe(true);
+    expect(
+      canPairWith({ transaction: expense, candidate: { ...arrival, ...near }, sameCurrency: true })
+    ).toBe(false);
+    expect(canPairWith({ transaction: expense, candidate: arrival, sameCurrency: true })).toBe(
+      true
+    );
     expect(
       can({}, { warranty: false, recurringOccurrence: false, bankReview: true } as never)
     ).toBe(false);

@@ -173,6 +173,8 @@ export const CROSS_CURRENCY_PAIR_MIN_TOLERANCE_BPS = 300;
  * Where to look for the transfer's other leg when it is already in `counterpart` (both
  * sides synced or imported): the opposite direction, about `counterpartAmount`, within
  * the duplicate-transaction window and tolerance (Settings → Duplicate transactions).
+ * Between accounts of one currency the two sides of a transfer are the same amount, so
+ * the tolerance does not apply there (see canPairWith).
  */
 export function buildPairCandidateQuery(params: {
   transaction: ConvertibleTransaction;
@@ -192,7 +194,7 @@ export function buildPairCandidateQuery(params: {
     amountNative: flow.isOutflow ? counterpartAmount : -counterpartAmount,
     toleranceBps: crossCurrency
       ? Math.max(settings.toleranceBps, CROSS_CURRENCY_PAIR_MIN_TOLERANCE_BPS)
-      : settings.toleranceBps,
+      : 0,
     dayWindow: settings.dayWindow,
     limit: 3,
     plainOnly: true,
@@ -202,20 +204,23 @@ export function buildPairCandidateQuery(params: {
 /**
  * Whether `candidate` can become the other leg of `transaction`'s transfer: a plain,
  * unreconciled row in the other account flowing the opposite way, with no link that
- * deleting and re-adding it would lose.
+ * deleting and re-adding it would lose. With `sameCurrency` the amounts must be equal:
+ * a same-currency transfer with two different sides would hide the difference.
  */
 export function canPairWith(params: {
   transaction: ConvertibleTransaction;
   candidate: ConvertibleTransaction;
   links?: TransactionLinkFlags | null;
+  sameCurrency?: boolean;
 }): boolean {
-  const { transaction, candidate, links } = params;
+  const { transaction, candidate, links, sameCurrency } = params;
   const own = getTransactionFlow(transaction);
   const other = getTransactionFlow(candidate);
   return Boolean(
     own &&
     other &&
     own.isOutflow !== other.isOutflow &&
+    (!sameCurrency || own.amount === other.amount) &&
     candidate.ID !== transaction.ID &&
     candidate.AccountID !== transaction.AccountID &&
     !candidate.TransferID?.trim() &&
