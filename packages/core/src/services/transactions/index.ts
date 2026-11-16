@@ -47,6 +47,7 @@ import {
 import { getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
 import type { BalanceHistoryBucket, BalanceHistoryRow } from './types.js';
 import {
+  applyTransferAmounts as applyDirectTransferAmounts,
   applyTransferRate as applyDirectTransferRate,
   getTransferRateDetails as loadTransferRateDetails,
   type TransferRateDetails,
@@ -1008,6 +1009,7 @@ export class TransactionService {
         memo,
         normalizedPayee
       );
+      this.queries.unreconcileIfNativeChanged(id, oldTxn);
       // Running balances (converted and native) and the account balance.
       this.recalculateAfterRowEdit(id, oldTxn, accountId, date);
       for (const step of followUps) step();
@@ -1159,6 +1161,7 @@ export class TransactionService {
         memo,
         payee ?? null
       );
+      this.queries.unreconcileIfNativeChanged(id, previous);
       if (reprice && rate) this.queries.setExchangeRate(id, rate, Boolean(pinned));
       if (payee) this.queries.insertPayee(previous.BudgetID, payee);
       if (previous.AccountID === accountId) {
@@ -1710,16 +1713,87 @@ export class TransactionService {
   }
 
   /**
-   * Prepare the partner-leg update for a transfer leg edit (two-leg transfers
-   * only); `main` is the edited leg as it will be after the edit. The returned
-   * step runs in the edit's own DB transaction, so both legs change together.
-   * - Partner converted amounts are mirrored (inflow <-> outflow) in budget currency.
-   * - Partner originals are recalculated using the partner leg's own date and account currency.
-   * - Date, memo, payee, and label remain specific to each leg. Category
-   *   edits are synchronized separately by moveTransactionToNewCategory.
-   * - Recalculates partner account balances to keep running balances consistent.
-   * Skips if there are not exactly two transactions for the TransferID (e.g., split mirrors).
+   * Reconciled rows an `updateTransactionColumn(transactionId, columnName,
+   * newValue)` call would unlock because their bank amount changes (see
+   * TransactionQueries.unreconcileIfNativeChanged): the row itself, a
+   * same-currency transfer partner (it mirrors the amount), and split-transfer
+   * mirrors (they follow the parent's total). A preview for asking the user
+   * first: it does no rate lookups, so an edit that rounds to the same bank
+   * amount still counts as a change.
    */
+  reconciledRowsUnlockedByEdit(
+    transactionId: number,
+    columnName: string,
+    newValue: unknown
+  ): number[] {
+    const tx = this.queries.getTransactionByID(transactionId);
+    if (!tx) return [];
+    const column = columnName.toLowerCase().replace(/_/g, '');
+    const value = Number(newValue);
+    if (!Number.isFinite(value)) return [];
+    const stored: Record<string, number | null | undefined> = {
+      inflowconverted: tx.InflowConverted,
+      outflowconverted: tx.OutflowConverted,
+      inflownative: tx.InflowNative ?? tx.InflowConverted,
+      outflownative: tx.OutflowNative ?? tx.OutflowConverted,
+    };
+    stored.inflow = stored.inflowconverted;
+    stored.outflow = stored.outflowconverted;
+    stored.infloworiginal = stored.inflownative;
+    stored.outfloworiginal = stored.outflownative;
+
+    if (column === 'exchangerate') {
+      // Only a transfer leg re-derives its bank amount from a new rate.
+      return tx.TransferID && tx.Reconciled && value !== Number(tx.ExchangeRate) ? [tx.ID] : [];
+    }
+    if (!(column in stored) || value === Number(stored[column] ?? 0)) return [];
+
+    const unlocked = tx.Reconciled ? [tx.ID] : [];
+    if (tx.TransferID) {
+      const legs = this.queries.getTransactionsByTransferID(tx.TransferID);
+      const partner = legs.length === 2 ? legs.find((leg) => leg.ID !== tx.ID) : undefined;
+      if (partner?.Reconciled) {
+        const currency = (accountId: number) =>
+          this.queries.getAccountAndBudget(accountId).account?.Currency;
+        if (currency(partner.AccountID) === currency(tx.AccountID)) unlocked.push(partner.ID);
+      }
+    }
+    for (const mirror of this.queries.getSplitMirrorTransactions(tx.ID)) {
+      if (mirror.Reconciled) unlocked.push(mirror.ID);
+    }
+    return unlocked;
+  }
+
+  /**
+   * Store a cross-currency transfer's exact sent and received amounts; the
+   * direct rate follows from them (see applyTransferAmounts). Leg budget-rate
+   * overrides are kept unless given.
+   */
+  async updateTransferAmounts(
+    transferId: string,
+    sentAmount: number,
+    receivedAmount: number,
+    sourceRateOverride?: boolean,
+    destinationRateOverride?: boolean
+  ): Promise<TransferRateDetails> {
+    const current = loadTransferRateDetails(this.db, transferId);
+    if (!current) throw new ValidationError('A transfer rate requires exactly two linked legs');
+
+    return applyDirectTransferAmounts(
+      this.db,
+      transferId,
+      asMilli(sentAmount),
+      asMilli(receivedAmount),
+      (fromCurrency, toCurrency, date, budgetId) =>
+        this.currencyService.resolveRate(fromCurrency, toCurrency, date, budgetId),
+      {
+        sourceOverride: sourceRateOverride ?? current.source.rateOverride,
+        destinationOverride: destinationRateOverride ?? current.destination.rateOverride,
+        refreshBudgetRates: true,
+      }
+    );
+  }
+
   /**
    * Put a row's amounts and exchange rate back exactly as snapshotted (undo of
    * an amount edit, which re-resolves the rate and drops a manual override).
@@ -1757,6 +1831,21 @@ export class TransactionService {
     });
   }
 
+  /**
+   * Prepare the partner-leg update for a transfer leg edit (two-leg transfers
+   * only); `main` is the edited leg as it will be after the edit. The returned
+   * step runs in the edit's own DB transaction, so both legs change together.
+   * - Same currency: the partner mirrors the amount (inflow <-> outflow).
+   * - Different currencies: each leg holds its own bank amount, so the
+   *   partner's amounts stay as they are and the direct rate the two legs
+   *   imply changes instead (it now comes from amounts the user entered, so
+   *   it is marked as overridden on both legs).
+   * - A reconciled partner whose bank amount changes goes back to uncleared.
+   * - Date, memo, payee, and label remain specific to each leg. Category
+   *   edits are synchronized separately by moveTransactionToNewCategory.
+   * - Recalculates partner account balances to keep running balances consistent.
+   * Skips if there are not exactly two transactions for the TransferID (e.g., split mirrors).
+   */
   private async preparePartnerSync(main: Transaction): Promise<(() => void) | null> {
     if (!main.TransferID) return null;
     const group = this.getTransactionsByTransferID(main.TransferID);
@@ -1773,11 +1862,34 @@ export class TransactionService {
     if (!mainAcc || !partnerAcc || !budget) return null;
     const internalOnBudgetTransfer = isAccountOnBudget(mainAcc) && isAccountOnBudget(partnerAcc);
 
-    // Mirror converted (budget) amounts: partner inflow = main outflow; partner outflow = main inflow
+    if (mainAcc.Currency !== partnerAcc.Currency) {
+      const before = this.getTransactionByID(main.ID);
+      const amountChanged =
+        (before.InflowNative ?? before.InflowConverted) !==
+          (main.InflowNative ?? main.InflowConverted) ||
+        (before.OutflowNative ?? before.OutflowConverted) !==
+          (main.OutflowNative ?? main.OutflowConverted);
+      return () => {
+        if (amountChanged) {
+          run(
+            this.db,
+            `UPDATE transactions SET TransferRateOverride = 1 WHERE ID IN (?, ?)`,
+            main.ID,
+            partner.ID
+          );
+        }
+        if (internalOnBudgetTransfer) {
+          this.queries.updateTransactionPayee(main.ID, null);
+          this.queries.updateTransactionPayee(partner.ID, null);
+        }
+      };
+    }
+
+    // Same currency: mirror the amounts (inflow <-> outflow). Budget amounts
+    // mirror too; the partner's native amount follows its own rate.
     const pInflowConverted = main.OutflowConverted ?? ZERO_MILLI;
     const pOutflowConverted = main.InflowConverted ?? ZERO_MILLI;
 
-    // Compute originals for partner in partner account currency
     let pInflowOriginal = pInflowConverted;
     let pOutflowOriginal = pOutflowConverted;
     if (partnerAcc.Currency !== budget.DisplayCurrency) {
@@ -1833,6 +1945,7 @@ export class TransactionService {
         partner.Memo,
         internalOnBudgetTransfer ? null : (partner.Payee ?? null)
       );
+      this.queries.unreconcileIfNativeChanged(partner.ID, partner);
       if (internalOnBudgetTransfer) this.queries.updateTransactionPayee(main.ID, null);
       this.queries.recalculateBalancesFrom(partner.AccountID, partner.Date, partner.ID);
     };
@@ -2043,6 +2156,7 @@ export class TransactionService {
         memo ?? '',
         normalizedPayee ?? null
       );
+      this.queries.unreconcileIfNativeChanged(transactionId, existingTransaction);
 
       this.recalculateAfterRowEdit(transactionId, existingTransaction, accountId, date);
       for (const step of followUps) step();
@@ -2314,6 +2428,7 @@ export class TransactionService {
               overrideFlag,
               transactionId
             );
+            this.queries.unreconcileIfNativeChanged(transactionId, tx);
             if (!this.accountHasUnsafeTransactionAmounts(tx.AccountID)) {
               this.queries.recalculateBalancesFrom(tx.AccountID, tx.Date, tx.ID);
             }

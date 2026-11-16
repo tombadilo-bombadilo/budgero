@@ -89,6 +89,12 @@ Los tipos de cambio se resuelven en un orden definido:
 
 También puedes sobrescribir el tipo de cambio en cualquier transacción individual — la herramienta adecuada cuando el tipo de liquidación real de tu tarjeta difiere de la media del mercado y quieres que el importe convertido coincida con tu extracto hasta el céntimo.
 
+## Transferencias entre tus cuentas
+
+Para añadir una transferencia, elige **Transferencia: <cuenta>** como beneficiario. Budgero crea las dos partes, una en cada cuenta, enlazadas entre sí.
+
+Si las dos partes ya están (la sincronización bancaria o una importación de archivo trajo el dinero que sale de una cuenta y el que llega a la otra), cambia el beneficiario de una de ellas a **Transferencia: <cuenta>**. Budgero busca en la otra cuenta una transacción equivalente en sentido contrario (mismo importe, dentro del margen que fijes en **Ajustes → Transacciones duplicadas**) y ofrece usarla como la otra parte en lugar de añadir una nueva. Cada parte conserva su fecha y su importe, así que ambas cuentas siguen cuadrando con tu banco. Entre divisas, el importe recibido es el que tu banco registró realmente.
+
 ## Conciliación
 
 Conciliar es el hábito que mantiene fiable un presupuesto, tanto si introduces las transacciones a mano como si las sincronizas: confirmar que Budgero coincide con tu banco.
@@ -99,6 +105,8 @@ Cada transacción tiene un estado. Las transacciones nuevas que introduces empie
 2. Haz clic en **Conciliar** e introduce el saldo que muestra tu banco. Budgero lo compara con el saldo confirmado.
 3. Si no coinciden, busca la diferencia: normalmente una transacción olvidada, un duplicado o una que aún no está marcada como confirmada. Para una diferencia pequeña, Budgero puede añadir una transacción de ajuste.
 4. Confirma: Budgero bloquea como **conciliadas** las transacciones confirmadas hasta hoy y registra en la cuenta el momento de la conciliación. Las sin confirmar quedan abiertas para la próxima vez.
+
+Si cambias el importe de una transacción conciliada, Budgero te lo pregunta antes y luego la marca como sin confirmar para que vuelva a aparecer en tu próxima conciliación.
 
 Las transacciones conciliadas son tu historial verificado; la marca de tiempo indica lo reciente que es esa verificación. Conciliar cada semana lleva unos dos minutos por cuenta. Cada mes también funciona. «Nunca» es la forma en que mueren los presupuestos manuales: consulta [Por asignar](/docs/ready-to-assign) para ver cómo se refleja la desviación no conciliada en tus cifras.
 

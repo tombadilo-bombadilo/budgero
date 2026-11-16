@@ -2,8 +2,10 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import React from 'react';
 import { ArrowLeftRight } from 'lucide-react';
 import { toast } from 'sonner';
+import { convertScaled } from '@budgero/core/browser';
 import {
   useTransferRateDetails,
+  useUpdateTransferAmounts,
   useUpdateTransferRate,
 } from '@entities/transaction/api/useTransactions';
 import { formatNativeAmount } from '@entities/currency/lib/currency-utils';
@@ -12,62 +14,174 @@ import {
   isUnusualExchangeRateChange,
   validateExchangeRateConversions,
 } from '@entities/currency/lib/exchange-rate-format';
+import { usePlainNumberFormatter } from '@shared/hooks/useNumberFormatter';
+import { asMilli } from '@shared/lib/currency/milli';
+import { useUiStore } from '@shared/store/useUiStore';
 import { Button } from '@shared/ui/button';
+import { CalculatorCell } from '@shared/ui/calculator-cell';
 import { ConfirmDialog } from '@shared/ui/confirm-dialog';
 import { Input } from '@shared/ui/input';
 import { Label } from '@shared/ui/label';
 import { Spinner } from '@shared/ui/spinner';
+import { calculateImpliedTransferRate } from '../add-transaction/add-transaction.utils';
+import { confirmReconciledEdit } from '../reconciled-edit/reconciled-edit-confirm';
 
 interface TransferRateDialogProps {
   transferId: string;
   compact?: boolean;
 }
 
+/** Native amounts typed in the dialog (each in its account currency's scale). */
+interface EditedAmounts {
+  sent: number;
+  received: number;
+}
+
 export function TransferRateDialog({ transferId, compact = false }: TransferRateDialogProps) {
   const { t } = useLingui();
+  const globalLocalizer = useUiStore((state) => state.globalLocalizer);
+  const numberFormatter = usePlainNumberFormatter(globalLocalizer);
 
   const [open, setOpen] = React.useState(false);
   const [rateText, setRateText] = React.useState('');
   const [rateDirty, setRateDirty] = React.useState(false);
+  // Set once the user types a sent or received amount: saving then stores
+  // both amounts (updateTransferAmounts) instead of only the rate.
+  const [amounts, setAmounts] = React.useState<EditedAmounts | null>(null);
   const initializedTransfer = React.useRef<string | null>(null);
+  // A cancelled "reconciled" question keeps this dialog open with the edits.
+  const keepOpen = React.useRef(false);
   const { data: details, isLoading } = useTransferRateDetails(open ? transferId : null);
   const updateRate = useUpdateTransferRate();
+  const updateAmounts = useUpdateTransferAmounts();
 
+  const dirty = rateDirty || amounts !== null;
   React.useEffect(() => {
     if (!open) {
       initializedTransfer.current = null;
       setRateText('');
       setRateDirty(false);
-    } else if (details && (initializedTransfer.current !== details.transferId || !rateDirty)) {
+      setAmounts(null);
+    } else if (details && (initializedTransfer.current !== details.transferId || !dirty)) {
       initializedTransfer.current = details.transferId;
       setRateText(String(details.rate));
     }
-  }, [details, open, rateDirty]);
+  }, [details, open, dirty]);
 
+  const isCrossCurrency =
+    Boolean(details) && details?.source.currency !== details?.destination.currency;
+  const sentAmount = amounts?.sent ?? details?.source.amount ?? 0;
   const parsedRate = Number.parseFloat(rateText.replace(',', '.'));
+  const rateUsable = Number.isFinite(parsedRate) && parsedRate > 0;
+  // Received follows the rate once the rate is edited (the sent amount is the anchor).
+  const receivedAmount =
+    amounts?.received ??
+    (rateDirty && rateUsable && details
+      ? convertScaled(sentAmount, parsedRate, details.source.currency, details.destination.currency)
+      : (details?.destination.amount ?? 0));
+
   const rateSafetyError =
-    details && Number.isFinite(parsedRate) && parsedRate > 0
+    details && rateUsable
       ? validateExchangeRateConversions(parsedRate, [
           {
-            amount: details.source.amount,
+            amount: sentAmount,
             fromCurrency: details.source.currency,
             toCurrency: details.destination.currency,
           },
         ])
       : null;
-  const validRate = Number.isFinite(parsedRate) && parsedRate > 0 && !rateSafetyError;
+  const amountsValid = sentAmount > 0 && receivedAmount > 0;
+  const validRate = rateUsable && !rateSafetyError && amountsValid;
   const unusualRate =
     Boolean(details) && validRate && isUnusualExchangeRateChange(details?.rate ?? 0, parsedRate);
-  const isCrossCurrency =
-    Boolean(details) && details?.source.currency !== details?.destination.currency;
+
+  /** A typed amount: the rate shown follows the two amounts. */
+  const editAmount = (side: keyof EditedAmounts, value: number) => {
+    if (!details || value <= 0) return;
+    const next = { sent: sentAmount, received: receivedAmount, [side]: value };
+    setAmounts(next);
+    const implied = calculateImpliedTransferRate({
+      sourceAmount: next.sent,
+      receivedAmount: next.received,
+      sourceCurrency: details.source.currency,
+      destinationCurrency: details.destination.currency,
+    });
+    if (implied) setRateText(String(implied));
+    setRateDirty(false);
+  };
+
+  /** A typed rate: the received amount follows it (sent stays). */
+  const editRate = (text: string) => {
+    setRateDirty(true);
+    setRateText(text);
+    const rate = Number.parseFloat(text.replace(',', '.'));
+    if (amounts && details && Number.isFinite(rate) && rate > 0) {
+      setAmounts({
+        sent: amounts.sent,
+        received: convertScaled(
+          amounts.sent,
+          rate,
+          details.source.currency,
+          details.destination.currency
+        ),
+      });
+    }
+  };
 
   const handleConfirm = async () => {
     if (!details || !validRate) return;
+    // A reconciled side whose amount the save changes asks first (it becomes uncleared).
+    const unlocks =
+      (details.source.reconciled && sentAmount !== details.source.amount) ||
+      (details.destination.reconciled && receivedAmount !== details.destination.amount);
+    if (unlocks && !(await confirmReconciledEdit('transfer'))) {
+      keepOpen.current = true;
+      return;
+    }
+    if (amounts) {
+      await updateAmounts.mutateAsync({
+        transferId,
+        sentAmount: amounts.sent,
+        receivedAmount: amounts.received,
+      });
+      toast.success(t`Transfer amounts updated`, {
+        description: `${formatNativeAmount(amounts.sent, details.source.currency)} ${details.source.currency} → ${formatNativeAmount(amounts.received, details.destination.currency)} ${details.destination.currency}`,
+      });
+      return;
+    }
     await updateRate.mutateAsync({ transferId, rate: parsedRate });
     toast.success(t`Transfer rate updated`, {
       description: `1 ${details.source.currency} = ${formatExchangeRate(parsedRate)} ${details.destination.currency}`,
     });
   };
+
+  const amountCell = (
+    side: keyof EditedAmounts,
+    amount: number,
+    currency: string,
+    testId: string
+  ) =>
+    isCrossCurrency ? (
+      <CalculatorCell
+        value={asMilli(amount)}
+        currencyCode={currency}
+        onCommit={(value) => editAmount(side, value)}
+        formatter={numberFormatter.format}
+        localizer={numberFormatter}
+        inputAlign={side === 'sent' ? 'left' : 'right'}
+        inputClassName={side === 'sent' ? 'h-8 font-mono' : 'h-8 font-mono text-right'}
+        displayClassName={
+          side === 'sent'
+            ? 'rounded-md border bg-background px-2 py-1 text-left font-mono font-medium'
+            : 'rounded-md border bg-background px-2 py-1 text-right font-mono font-medium'
+        }
+        data-testid={testId}
+      />
+    ) : (
+      <p className="font-mono font-medium">
+        {formatNativeAmount(amount, currency)} {currency}
+      </p>
+    );
 
   return (
     <>
@@ -89,12 +203,18 @@ export function TransferRateDialog({ transferId, compact = false }: TransferRate
 
       <ConfirmDialog
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={(next) => {
+          if (!next && keepOpen.current) {
+            keepOpen.current = false;
+            return;
+          }
+          setOpen(next);
+        }}
         title={t`Transfer rate`}
         description={t`Inspect or edit the direct rate between the two accounts. Budget rates are shown separately below.`}
-        confirmText={t`Save rate`}
+        confirmText={amounts ? t`Save amounts` : t`Save rate`}
         loadingText="Saving..."
-        isLoading={updateRate.isPending}
+        isLoading={updateRate.isPending || updateAmounts.isPending}
         confirmDisabled={!details || !isCrossCurrency || !validRate || isLoading}
         onConfirm={handleConfirm}
       >
@@ -108,21 +228,22 @@ export function TransferRateDialog({ transferId, compact = false }: TransferRate
               <div>
                 <p className="text-xs text-muted-foreground">
                   <Trans>Sent from {details.source.accountName}</Trans>
+                  {isCrossCurrency && ` (${details.source.currency})`}
                 </p>
-                <p className="font-mono font-medium">
-                  {formatNativeAmount(details.source.amount, details.source.currency)}{' '}
-                  {details.source.currency}
-                </p>
+                {amountCell('sent', sentAmount, details.source.currency, 'transfer-sent-amount')}
               </div>
               <ArrowLeftRight className="h-4 w-4 text-muted-foreground" />
               <div className="text-right">
                 <p className="text-xs text-muted-foreground">
                   <Trans>Received in {details.destination.accountName}</Trans>
+                  {isCrossCurrency && ` (${details.destination.currency})`}
                 </p>
-                <p className="font-mono font-medium">
-                  {formatNativeAmount(details.destination.amount, details.destination.currency)}{' '}
-                  {details.destination.currency}
-                </p>
+                {amountCell(
+                  'received',
+                  receivedAmount,
+                  details.destination.currency,
+                  'transfer-received-amount'
+                )}
               </div>
             </div>
 
@@ -136,10 +257,7 @@ export function TransferRateDialog({ transferId, compact = false }: TransferRate
                   type="text"
                   inputMode="decimal"
                   value={rateText}
-                  onChange={(event) => {
-                    setRateDirty(true);
-                    setRateText(event.target.value);
-                  }}
+                  onChange={(event) => editRate(event.target.value)}
                   className="font-mono"
                   aria-invalid={!validRate}
                   disabled={!isCrossCurrency}
@@ -148,7 +266,7 @@ export function TransferRateDialog({ transferId, compact = false }: TransferRate
               </div>
               <p className="text-xs text-muted-foreground">
                 {isCrossCurrency
-                  ? t`The sent amount stays fixed. Saving recalculates the received amount and both budget valuations atomically.`
+                  ? t`Enter the amounts from your bank statements and the rate follows, or change the rate to recalculate the received amount. Saving updates both accounts and their budget valuations together.`
                   : t`Both accounts use the same currency, so this transfer has no conversion rate.`}
               </p>
               {rateSafetyError && <p className="text-xs text-destructive">{rateSafetyError}</p>}

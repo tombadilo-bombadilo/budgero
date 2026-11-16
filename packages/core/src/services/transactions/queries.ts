@@ -453,7 +453,8 @@ export class TransactionQueries {
    * Transactions in the same account that may be the same payment as a new
    * entry: same direction, amount within the tolerance, date within the window. Banks
    * often list a pending charge on one date and the settled one on another.
-   * Transfer legs are excluded; nearest date, then closest amount, first.
+   * Transfer legs are excluded (and, with `plainOnly`, reconciled and split rows);
+   * nearest date, then closest amount, first.
    */
   findSimilarTransactions({
     accountId,
@@ -462,6 +463,7 @@ export class TransactionQueries {
     dayWindow = 7,
     toleranceBps = 100,
     limit = 3,
+    plainOnly = false,
   }: SimilarTransactionQuery): SimilarTransaction[] {
     if (!amountNative) return [];
     // Never tighter than 0.01 (10 milliunits), so "exact" still absorbs rounding.
@@ -478,6 +480,7 @@ export class TransactionQueries {
         WHERE t.AccountID = ?
           AND t.Date >= date(?, ?) AND t.Date < date(?, ?)
           AND (t.TransferID IS NULL OR t.TransferID = '')
+          ${plainOnly ? `AND COALESCE(t.Reconciled, 0) = 0 ${NO_SPLITS_FILTER}` : ''}
       )
       WHERE ABS(AmountNative - ?) <= ? AND (AmountNative > 0) = (? > 0)
       ORDER BY ABS(julianday(Date) - julianday(?)), ABS(AmountNative - ?), ID DESC
@@ -2013,6 +2016,38 @@ export class TransactionQueries {
         ...chunk
       );
     }
+  }
+
+  /**
+   * A reconciled row whose bank (native) amount an edit changed no longer
+   * matches the statement it was reconciled against: it goes back to
+   * uncleared (Reconciled = 0, Cleared = 0) so it shows up for the next
+   * reconcile. `before` is the row's native amounts before the edit; rows
+   * whose native amounts are unchanged keep their status. Call after the write,
+   * in the same DB transaction. Returns whether the row was unlocked.
+   */
+  unreconcileIfNativeChanged(
+    id: number,
+    before: {
+      InflowNative?: number | null;
+      OutflowNative?: number | null;
+      InflowConverted?: number | null;
+      OutflowConverted?: number | null;
+    }
+  ): boolean {
+    const inflow = Number(before.InflowNative ?? before.InflowConverted ?? 0);
+    const outflow = Number(before.OutflowNative ?? before.OutflowConverted ?? 0);
+    const result = run(
+      this.db,
+      `UPDATE transactions SET Reconciled = FALSE, Cleared = FALSE
+        WHERE ID = ? AND Reconciled = TRUE
+          AND (COALESCE(InflowNative, InflowConverted, 0) != ?
+            OR COALESCE(OutflowNative, OutflowConverted, 0) != ?)`,
+      id,
+      inflow,
+      outflow
+    );
+    return result.changes > 0;
   }
 
   /**

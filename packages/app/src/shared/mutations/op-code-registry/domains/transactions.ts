@@ -458,6 +458,9 @@ function exactColumnRestore(
   if (restore.dependents.some((dependent) => dependent.table === 'transaction_splits')) {
     return restore;
   }
+  // The edit can unlock a reconciled row (or its partner / mirrors); the
+  // inverse edit would not lock it again.
+  if (restore.transactions.some((row) => Boolean(row.Reconciled))) return restore;
   if (column === 'exchangerate') return oldValue == null ? restore : null;
   // An amount edit re-resolves the rate of a foreign row (whose stored rate
   // may be a fallback or stale) and re-derives a transfer partner: editing the
@@ -862,16 +865,23 @@ export const transactionOps = {
     undo: {
       capture: async (args) => {
         const details = await S().transactions!.getTransferRateDetails(args.transferId as string);
-        return details
-          ? {
-              rate: details.rate,
-              transferRateOverride: details.transferRateOverride,
-              sourceRateOverride: details.source.rateOverride,
-              destinationRateOverride: details.destination.rateOverride,
-            }
-          : undefined;
+        if (!details) return undefined;
+        // A reconciled leg can be unlocked by the new rate: put both legs back exactly.
+        const restore =
+          details.source.reconciled || details.destination.reconciled
+            ? captureRestore([details.source.transactionId])
+            : null;
+        if (restore) return { restore };
+        return {
+          rate: details.rate,
+          transferRateOverride: details.transferRateOverride,
+          sourceRateOverride: details.source.rateOverride,
+          destinationRateOverride: details.destination.rateOverride,
+        };
       },
       build: (args, _result, before) => {
+        const exact = restoreUndo(before, true);
+        if (exact) return exact;
         const previous = before as
           | {
               rate?: number;
@@ -888,6 +898,63 @@ export const transactionOps = {
                   transferId: args.transferId,
                   rate: previous.rate,
                   transferRateOverride: previous.transferRateOverride ?? false,
+                  sourceRateOverride: previous.sourceRateOverride ?? false,
+                  destinationRateOverride: previous.destinationRateOverride ?? false,
+                },
+              },
+            ]
+          : [];
+      },
+    },
+  },
+
+  // Exact sent and received amounts of a cross-currency transfer (the rate
+  // follows from them). Undo puts both legs back exactly: amounts, budget
+  // values, rates, overrides and cleared / reconciled status.
+  'transactions.updateTransferAmounts': {
+    execute: async (args) => {
+      return await S().transactions!.updateTransferAmounts(
+        args.transferId as string,
+        asMilli(Number(args.sentAmount)),
+        asMilli(Number(args.receivedAmount)),
+        typeof args.sourceRateOverride === 'boolean' ? args.sourceRateOverride : undefined,
+        typeof args.destinationRateOverride === 'boolean' ? args.destinationRateOverride : undefined
+      );
+    },
+    invalidates: [...TRANSACTION_INVALIDATION_KEYS],
+    undo: {
+      capture: async (args) => {
+        const details = await S().transactions!.getTransferRateDetails(args.transferId as string);
+        if (!details) return undefined;
+        const restore = captureRestore([details.source.transactionId]);
+        if (restore) return { restore };
+        return {
+          sentAmount: details.source.amount,
+          receivedAmount: details.destination.amount,
+          sourceRateOverride: details.source.rateOverride,
+          destinationRateOverride: details.destination.rateOverride,
+        };
+      },
+      build: (args, _result, before) => {
+        const exact = restoreUndo(before, true);
+        if (exact) return exact;
+        const previous = before as
+          | {
+              sentAmount?: number;
+              receivedAmount?: number;
+              sourceRateOverride?: boolean;
+              destinationRateOverride?: boolean;
+            }
+          | undefined;
+        return typeof previous?.sentAmount === 'number' &&
+          typeof previous.receivedAmount === 'number'
+          ? [
+              {
+                op: 'transactions.updateTransferAmounts',
+                args: {
+                  transferId: args.transferId,
+                  sentAmount: previous.sentAmount,
+                  receivedAmount: previous.receivedAmount,
                   sourceRateOverride: previous.sourceRateOverride ?? false,
                   destinationRateOverride: previous.destinationRateOverride ?? false,
                 },

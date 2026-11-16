@@ -166,7 +166,7 @@ describe('Multi-currency updateTransactionColumn preserves amounts', () => {
 });
 
 describe('Transfer partner sync', () => {
-  it('keeps leg metadata independent while syncing multi-currency amounts', async () => {
+  it('keeps leg metadata and a cross-currency partner amount independent', async () => {
     const adapter = await NodeSqlJsAdapter.create();
     const sm = new ServiceManager();
     await sm.initialize(adapter);
@@ -272,24 +272,31 @@ describe('Transfer partner sync', () => {
     expect(b.LabelID).toBe(destinationLabelId);
     expect(b.Date).toBe(dateB);
 
-    // Amount edits remain linked, using the partner leg's own date for its valuation.
+    // Each leg of a cross-currency transfer holds its own bank amount: editing
+    // one leg leaves the partner's amounts alone and changes the implied
+    // direct rate instead, which is then marked as overridden (#138).
+    const partnerBefore = b;
     await services.transactions.updateTransactionColumn(usdTx, 'OutflowConverted', 150_000);
     a = services.transactions.getTransactionByID(usdTx);
     b = services.transactions.getTransactionByID(eurTx);
     expect(a.OutflowConverted).toBe(150_000);
-    expect(b.InflowConverted).toBe(150_000);
-    expect(b.InflowNative).toBe(150_000 / EURUSD_ON_DESTINATION_DATE);
+    expect(b.InflowConverted).toBe(partnerBefore.InflowConverted);
+    expect(b.InflowNative).toBe(partnerBefore.InflowNative);
     expect(b.Memo).toBe('xfer in');
     expect(b.Payee).toBe('USD account');
     expect(b.LabelID).toBe(destinationLabelId);
     expect(b.Date).toBe(dateB);
+    const details = services.transactions.getTransferRateDetails(transferId)!;
+    expect(details.transferRateOverride).toBe(true);
+    expect(details.rate).toBeCloseTo(Number(partnerBefore.InflowNative) / 150_000, 10);
 
-    // Editing the destination native amount still updates the linked source amount.
+    // Editing the destination native amount leaves the source amount alone.
     await services.transactions.updateTransactionColumn(eurTx, 'InflowNative', 200_000);
     a = services.transactions.getTransactionByID(usdTx);
     b = services.transactions.getTransactionByID(eurTx);
+    expect(b.InflowNative).toBe(200_000);
     expect(b.InflowConverted).toBe(200_000 * EURUSD_ON_DESTINATION_DATE);
-    expect(a.OutflowConverted).toBe(200_000 * EURUSD_ON_DESTINATION_DATE);
+    expect(a.OutflowConverted).toBe(150_000);
     expect(a.Memo).toBe('updated memo');
     expect(a.Payee).toBe('Updated payee');
     expect(a.LabelID).toBe(editedSourceLabelId);

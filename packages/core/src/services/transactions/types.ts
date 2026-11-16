@@ -135,6 +135,8 @@ export interface SimilarTransactionQuery {
   /** Amount tolerance in basis points (100 = 1%). Defaults to 100. */
   toleranceBps?: number;
   limit?: number;
+  /** Skip reconciled rows and split transactions (e.g. when looking for a transfer's other leg). */
+  plainOnly?: boolean;
 }
 
 /** Aggregate values needed by the account register without materializing every row. */

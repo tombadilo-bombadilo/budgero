@@ -42,6 +42,13 @@ const NEWER_THAN_V1_19 = 4;
 const NEWER_THAN_V1_20 = 5;
 
 /**
+ * Format 6: the first format v1.21 builds reject. Amount edits unlock a
+ * reconciled row whose bank amount changes, a cross-currency transfer leg
+ * edit keeps the partner's amount, and custom rates skip reconciled transfers.
+ */
+const NEWER_THAN_V1_21 = 6;
+
+/**
  * true: the call needs format 3 (v1.18 would apply it differently); a number:
  * the call needs that format; false: the base format will do.
  */
@@ -121,13 +128,31 @@ const parseArgsObject = (value: unknown): Args => {
   }
 };
 
-const customRateChange = (args: Args, checks: LegacyReplayService | null) =>
-  Boolean(
-    checks &&
-    id(args.budgetId) &&
-    (checks.hasForeignSplitParents(Number(args.budgetId)) ||
-      checks.budgetHasSplitLinesOutOfStep(Number(args.budgetId)))
+const customRateChange = (args: Args, checks: LegacyReplayService | null): boolean | number => {
+  if (!checks || !id(args.budgetId)) return false;
+  if (checks.budgetHasReconciledTransfers(Number(args.budgetId))) return NEWER_THAN_V1_21;
+  return (
+    checks.hasForeignSplitParents(Number(args.budgetId)) ||
+    checks.budgetHasSplitLinesOutOfStep(Number(args.budgetId))
   );
+};
+
+/** Columns whose edit can change a row's bank amount (or a transfer partner's). */
+const AMOUNT_EDIT_COLUMNS = new Set([
+  'inflowconverted',
+  'outflowconverted',
+  'inflownative',
+  'outflownative',
+  'inflow',
+  'outflow',
+  'infloworiginal',
+  'outfloworiginal',
+  'exchangerate',
+]);
+
+/** An amount edit of row `rowId` that v1.21 would apply differently (see amountEditDiffersFromLegacy). */
+const amountEditDiffers = (checks: LegacyReplayService | null, rowId: number | null) =>
+  Boolean(checks && rowId && checks.amountEditDiffersFromLegacy(rowId));
 
 const services = () => {
   try {
@@ -189,13 +214,21 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   // Amount / account actions on a split parent now move its lines and mirrors,
   // and a stored '' payee the rule leaves alone stays '' (v1.18 wrote NULL).
   'rules.execute': (args, checks) => {
-    if (ruleHasLabelAction(args.ruleId)) return NEWER_THAN_V1_19;
     const rule = checks ? services()?.rules?.getRule(Number(args.ruleId)) : undefined;
+    const options = (args.options ?? {}) as { transactionIds?: number[] };
+    if (
+      checks &&
+      rule &&
+      (rule.actions ?? []).some((action) => action.type.startsWith('amount.')) &&
+      checks.hasReconciledOrTransferRows(rule.budgetId, options.transactionIds)
+    ) {
+      return NEWER_THAN_V1_21;
+    }
+    if (ruleHasLabelAction(args.ruleId)) return NEWER_THAN_V1_19;
     if (!checks || !rule) return false;
     const structural = (rule.actions ?? []).some(
       (action) => action.type.startsWith('amount.') || action.type === 'account.set'
     );
-    const options = (args.options ?? {}) as { transactionIds?: number[] };
     return (
       (structural && checks.hasSplitParents(rule.budgetId, options.transactionIds)) ||
       checks.hasEmptyPayees(rule.budgetId, options.transactionIds)
@@ -206,9 +239,25 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
     const column =
       typeof args.columnName === 'string' ? args.columnName.toLowerCase().replace(/_/g, '') : '';
     const rowId = id(args.id);
+    if (AMOUNT_EDIT_COLUMNS.has(column) && amountEditDiffers(checks, rowId)) {
+      return NEWER_THAN_V1_21;
+    }
     return Boolean(
       checks && rowId && SPLIT_FOLLOW_COLUMNS.has(column) && checks.isSplitParent(rowId)
     );
+  },
+  // The undo of an amount edit on a row with a manual rate: a cross-currency
+  // transfer partner now keeps its amount.
+  'transactions.restoreAmounts': (args, checks) =>
+    amountEditDiffers(checks, id(args.id)) && NEWER_THAN_V1_21,
+  // Push API amount edits unlock a reconciled row whose amount changes.
+  'transactions.updateByRef': (args, checks) => {
+    const fields = (args.fields ?? {}) as Args;
+    if (!checks || !has(fields, 'inflow', 'outflow') || typeof args.messageId !== 'string') {
+      return false;
+    }
+    const rowId = services()?.importHistory?.duplicates.findOperation(`push:${args.messageId}`);
+    return amountEditDiffers(checks, rowId ?? null) && NEWER_THAN_V1_21;
   },
   'transactions.moveToNewAccount': (args, checks) => {
     const rowId = id(args.transactionId ?? args.id);
@@ -222,6 +271,7 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   'transactions.upsertSplits': (args, checks) => {
     const rowId = id(args.transactionId);
     if (!checks || !rowId) return false;
+    if (amountEditDiffers(checks, rowId)) return NEWER_THAN_V1_21;
     if (checks.splitSaveKeepsMirrors(rowId, transferTargets(args.splits))) return NEWER_THAN_V1_20;
     return (
       checks.hasSplitMirrors(rowId) || checks.accountsOutOfBalance(transferTargets(args.splits))
@@ -229,6 +279,7 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   },
   'transactions.saveSplits': (args, checks) => {
     const rowId = id(args.transactionId);
+    if (amountEditDiffers(checks, rowId)) return NEWER_THAN_V1_21;
     const keeps = Boolean(
       checks && rowId && checks.splitSaveKeepsMirrors(rowId, transferTargets(args.splits))
     );
@@ -267,9 +318,11 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
     return first !== undefined && checks.deleteDiffersFromLegacy([first.ID]);
   },
 
-  // Transfer rate edits now also re-sync split lines in both accounts.
+  // Transfer rate edits now also re-sync split lines in both accounts, and
+  // unlock a reconciled leg whose amount changes.
   'transactions.updateTransferRate': (args, checks) => {
     if (!checks || typeof args.transferId !== 'string') return false;
+    if (checks.transferHasReconciledLeg(args.transferId)) return NEWER_THAN_V1_21;
     const legs = services()?.transactions?.getTransactionsByTransferID(args.transferId) ?? [];
     return checks.hasSplitLinesOutOfStep(legs.map((leg) => leg.AccountID));
   },
@@ -277,16 +330,17 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   // Custom rate changes re-convert rows, and now their split lines too (A20);
   // the transfers they re-rate also re-sync lines that were already out of
   // step in both legs' accounts (any currency).
-  'currency.customRates.add': (args, checks) =>
-    Boolean(
-      checks &&
-      id(args.budgetId) &&
-      (checks.hasForeignSplitParents(Number(args.budgetId), [
+  // Custom rates now also skip transfers with a reconciled leg.
+  'currency.customRates.add': (args, checks) => {
+    if (!checks || !id(args.budgetId)) return false;
+    if (checks.budgetHasReconciledTransfers(Number(args.budgetId))) return NEWER_THAN_V1_21;
+    return (
+      checks.hasForeignSplitParents(Number(args.budgetId), [
         String(args.fromCurrency ?? ''),
         String(args.toCurrency ?? ''),
-      ]) ||
-        checks.budgetHasSplitLinesOutOfStep(Number(args.budgetId)))
-    ),
+      ]) || checks.budgetHasSplitLinesOutOfStep(Number(args.budgetId))
+    );
+  },
   'currency.customRates.update': (args, checks) => customRateChange(args, checks),
   'currency.customRates.delete': (args, checks) => customRateChange(args, checks),
 
@@ -312,6 +366,7 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
     const startsChanged = (['debt_total', 'paid_so_far'] as const).some(
       (key) => typeof next[key] === 'number' && next[key] !== stored[key]
     );
+    if (startsChanged && checks?.accountHasReconciledRows(accountId)) return NEWER_THAN_V1_21;
     if (startsChanged) return true;
     // A28: renaming a loan whose linked category is gone (a legacy group
     // delete removed it) now skips that category; v1.18 throws half-way.

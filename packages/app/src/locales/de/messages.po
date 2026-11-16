@@ -607,6 +607,11 @@ msgstr "{0} Konten"
 msgid "{0} active today / {1} active in last 30 days"
 msgstr "{0} heute aktiv / {1} aktiv in den letzten 30 Tagen"
 
+#. placeholder {0}: pending.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "{0} already has a transaction that looks like the other side."
+msgstr "Auf {0} gibt es bereits eine Transaktion, die wie die Gegenseite aussieht."
+
 #. placeholder {0}: account.Name
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 msgid "{0} balanced to zero and archived."
@@ -3522,6 +3527,10 @@ msgstr "Beschreibung hinzufügen…"
 msgid "Add a metric in Summarize first."
 msgstr "Füge zuerst unter Zusammenfassen eine Metrik hinzu."
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Add a new transaction"
+msgstr "Neue Transaktion hinzufügen"
+
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Add a new user to this deployment. Share the password securely."
 msgstr "Füge einen neuen Benutzer zu dieser Bereitstellung hinzu. Teile das Passwort sicher."
@@ -3726,6 +3735,11 @@ msgstr "Wird hinzugefügt…"
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "Adding…"
 msgstr "Wird hinzugefügt…"
+
+#. placeholder {0}: pending.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Adds another one to {0} and leaves the existing one as it is."
+msgstr "Fügt {0} eine weitere hinzu und lässt die vorhandene unverändert."
 
 #: src/pages/accounts/components/AccountDateRangeControls.tsx
 msgid "Adjust"
@@ -5478,6 +5492,7 @@ msgstr "Kanadischer Dollar"
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
 #: src/pages/admin/admin-users/ActionDialog.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
@@ -5728,6 +5743,10 @@ msgstr "Verknüpfe Bedingungen mit UND / ODER. UND wird vor ODER geprüft, daher
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Change"
 msgstr "Veränderung"
+
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "Change a reconciled amount?"
+msgstr "Abgeglichenen Betrag ändern?"
 
 #: src/features/account-management/ui/AccountCurrencyChangeDialog.tsx
 msgid "Change account currency?"
@@ -6746,6 +6765,11 @@ msgstr "In eine normale Transaktion zurückgewandelt"
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "Converted to a transfer with {0}"
 msgstr "In eine Umbuchung mit {0} umgewandelt"
+
+#. placeholder {0}: prepared.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Converted to a transfer with the existing transaction in {0}"
+msgstr "In eine Umbuchung mit der vorhandenen Transaktion auf {0} umgewandelt"
 
 #: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "Converted to SQL. Saving replaces the notebook version."
@@ -8893,6 +8917,10 @@ msgstr "Neues Passwort eingeben (min. 8 Zeichen)"
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Enter the amount sent from {0}"
 msgstr "Gib den von {0} gesendeten Betrag ein"
+
+#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
+msgid "Enter the amounts from your bank statements and the rate follows, or change the rate to recalculate the received amount. Saving updates both accounts and their budget valuations together."
+msgstr "Gib die Beträge von deinen Kontoauszügen ein, dann ergibt sich der Kurs daraus, oder ändere den Kurs, um den empfangenen Betrag neu zu berechnen. Beim Speichern werden beide Konten und ihre Bewertungen im Budget gemeinsam aktualisiert."
 
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Enter the balance your bank shows. It is compared with your cleared balance; cleared transactions are then locked, and uncleared ones stay open."
@@ -14699,6 +14727,10 @@ msgstr "Andere verfügbare Arbeitsbereiche"
 msgid "Other income"
 msgstr "Sonstige Einnahmen"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Other side of the transfer"
+msgstr "Gegenseite der Umbuchung"
+
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "Other spending"
 msgstr "Sonstige Ausgaben"
@@ -17344,6 +17376,10 @@ msgstr "17% sparen"
 msgid "Save a question under Reports first."
 msgstr "Speichere zuerst eine Frage unter Berichte."
 
+#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
+msgid "Save amounts"
+msgstr "Beträge speichern"
+
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Save and add another"
 msgstr "Speichern und weitere hinzufügen"
@@ -17351,6 +17387,10 @@ msgstr "Speichern und weitere hinzufügen"
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 msgid "Save and add to dashboard"
 msgstr "Speichern und zum Dashboard hinzufügen"
+
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "Save and mark uncleared"
+msgstr "Speichern und als nicht gebucht markieren"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Save by a date"
@@ -20051,10 +20091,6 @@ msgstr "Die ausgewählte Datumsspalte enthält kein Jahr (z. B. \"25. Okt.\"). A
 msgid "The selected transfer does not have one source and one destination. To repeat a split with a transfer line, make its split transaction recurring instead."
 msgstr "Die ausgewählte Umbuchung hat nicht genau ein Quell- und ein Zielkonto. Um eine Aufteilung mit einer Umbuchungs-Teilbuchung zu wiederholen, mach stattdessen die geteilte Transaktion wiederkehrend."
 
-#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
-msgid "The sent amount stays fixed. Saving recalculates the received amount and both budget valuations atomically."
-msgstr "Der gesendete Betrag bleibt unverändert. Beim Speichern werden der empfangene Betrag und beide Budgetbewertungen gemeinsam neu berechnet."
-
 #: src/features/sync-diagnostics/ui/PendingChangesCard.tsx
 msgid "The server has confirmed all changes from this device."
 msgstr "Der Server hat alle Änderungen dieses Geräts bestätigt."
@@ -20283,6 +20319,10 @@ msgstr "Diese Änderung gehört zu einer größeren Aktion. Verwende Rückgängi
 msgid "This change will cause negative Available in future months for this category:"
 msgstr "Diese Änderung führt in zukünftigen Monaten zu einem negativen Verfügbar für diese Kategorie:"
 
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "This changes an amount that is already reconciled. Saving marks it as uncleared, so you'll need to reconcile the account again."
+msgstr "Damit änderst du einen bereits abgeglichenen Betrag. Beim Speichern wird er als nicht gebucht markiert, und du musst das Konto erneut abgleichen."
+
 #. placeholder {0}: inUse.length > 0 && ( <Trans> {' '} {inUse.length === 1 ? 'One of them is' : `${inUse.length} of them are`} still in use, affecting {affected.toLocaleString()}{' '} {affected === 1 ? 'transaction' : 'transactions'}. </Trans> )
 #: src/pages/settings/PayeesPage.tsx
 msgid "This clears the selected payees from your transactions in this budget.{0} You can add them back later if needed."
@@ -20474,6 +20514,12 @@ msgstr "Dadurch wird nur der Verlaufseintrag entfernt. Deine Transaktionen bleib
 #. placeholder {0}: pending.categoryName
 #. placeholder {1}: pending.counterpartName
 #: src/features/transactions/api/useTransferConversion.tsx
+msgid "This replaces the category ({0}) with Transfers, so the amount no longer counts as spending. {1} already has a transaction that looks like the other side."
+msgstr "Dadurch wird die Kategorie ({0}) durch „Umbuchungen“ ersetzt, sodass der Betrag nicht mehr als Ausgabe zählt. Auf {1} gibt es bereits eine Transaktion, die wie die Gegenseite aussieht."
+
+#. placeholder {0}: pending.categoryName
+#. placeholder {1}: pending.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
 msgid "This replaces the category ({0}) with Transfers, so the amount no longer counts as spending. A matching transaction is added to {1}."
 msgstr "Dadurch wird die Kategorie ({0}) durch „Umbuchungen“ ersetzt, sodass der Betrag nicht mehr als Ausgabe zählt. Auf {1} wird eine passende Transaktion hinzugefügt."
 
@@ -20524,6 +20570,10 @@ msgstr "Diese Transaktion ist für ein zukünftiges Datum eingeplant."
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "This transfer does not have exactly two linked legs, so its direct rate cannot be edited."
 msgstr "Diese Umbuchung besteht nicht aus genau zwei verknüpften Buchungen. Ihr direkter Kurs kann daher nicht bearbeitet werden."
+
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "This transfer has a reconciled side. Saving marks each side whose amount changes as uncleared, so you'll need to reconcile that account again."
+msgstr "Diese Umbuchung hat eine abgeglichene Seite. Beim Speichern wird jede Seite, deren Betrag sich ändert, als nicht gebucht markiert, und du musst das betreffende Konto erneut abgleichen."
 
 #: src/pages/admin/admin-users/ActionDialog.tsx
 msgid "This user will be signed out immediately and prevented from logging back in until unblocked."
@@ -21019,6 +21069,10 @@ msgstr "Umbuchung Konto #{0}"
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Transfer added"
 msgstr "Umbuchung hinzugefügt"
+
+#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
+msgid "Transfer amounts updated"
+msgstr "Umbuchungsbeträge aktualisiert"
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Transfer created successfully."
@@ -21832,6 +21886,10 @@ msgstr "Vorschlag verwenden"
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Use the cleared balance as the actual balance"
 msgstr "Gebuchten Saldo als tatsächlichen Saldo verwenden"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Use the existing transaction"
+msgstr "Vorhandene Transaktion verwenden"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Use your phone, tablet, or computer"

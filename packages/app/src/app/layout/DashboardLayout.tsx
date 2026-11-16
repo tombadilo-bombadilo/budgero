@@ -11,6 +11,7 @@ import { cn } from '@shared/lib/utils';
 import { CommandPalette } from '@widgets/command-palette/CommandPalette';
 import { BankAutoSync } from '@features/bank-sync';
 import { SchedulingGuideDialog } from '@features/transactions/ui/SchedulingGuideDialog';
+import { ReconciledEditConfirmHost } from '@features/transactions/ui/reconciled-edit';
 import { PageGuideHost } from '@features/page-guides';
 
 export default function DashboardLayout() {
@@ -42,6 +43,8 @@ export default function DashboardLayout() {
 
       <BankAutoSync />
       <SchedulingGuideDialog />
+      {/* "Change a reconciled amount?" for every amount edit entry point */}
+      <ReconciledEditConfirmHost />
       {/* First-visit page guides and "How this works" */}
       <AppErrorBoundary name="page_guide" variant="hidden">
         <PageGuideHost />

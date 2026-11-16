@@ -11,7 +11,11 @@
  * (app v1.21): recurring templates with split lines, and recurring.markReady
  * calls that carry the payee to post or a split posting's mirror IDs (redo),
  * ask for it per call; adds the op codes pageGuides.markSeen, syncedState.set
- * and syncedState.merge.
+ * and syncedState.merge. Format 6 (app v1.22): amount and rate edits that
+ * unlock a reconciled row, or edit one leg of a cross-currency transfer
+ * (the partner keeps its amount), and custom rate changes that now skip
+ * reconciled transfers ask for it per call; adds the op code
+ * transactions.updateTransferAmounts.
  *
  * Each outgoing mutation is stamped with the LOWEST format that can express
  * it ({@link mutationFormatVersion}): ops every format-2 build knows stay
@@ -36,7 +40,7 @@
 export const MILLIUNIT_FORMAT_VERSION = 2;
 
 /** Highest mutation format this build reads (and the highest it writes). */
-export const MUTATION_FORMAT_VERSION = 5;
+export const MUTATION_FORMAT_VERSION = 6;
 
 /** Format of mutations whose op codes every milliunit build knows. */
 export const BASE_MUTATION_FORMAT_VERSION = MILLIUNIT_FORMAT_VERSION;
@@ -83,6 +87,7 @@ export const OP_CODE_FORMAT_VERSIONS: Readonly<Record<string, number>> = Object.
   'pageGuides.markSeen': 5,
   'syncedState.set': 5,
   'syncedState.merge': 5,
+  'transactions.updateTransferAmounts': 6,
 });
 
 /** Format that introduced `op` (BASE_MUTATION_FORMAT_VERSION if it predates format 3). */

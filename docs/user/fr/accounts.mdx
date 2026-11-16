@@ -89,6 +89,12 @@ Les taux sont résolus dans un ordre défini :
 
 Vous pouvez également remplacer le taux sur n'importe quelle transaction individuelle — l'outil idéal lorsque le taux de règlement réel de votre carte diffère de la moyenne du marché et que vous souhaitez que le montant converti corresponde à votre relevé au centime près.
 
+## Virements entre vos comptes
+
+Pour ajouter un virement, choisissez **Virement : <compte>** comme bénéficiaire. Budgero crée les deux côtés, un dans chaque compte, liés entre eux.
+
+Si les deux côtés sont déjà là (la synchronisation bancaire ou un import de fichier a apporté l’argent qui quitte un compte et celui qui arrive dans l’autre), changez le bénéficiaire de l’un d’eux en **Virement : <compte>**. Budgero cherche dans l’autre compte une transaction correspondante dans le sens inverse (même montant, dans la fenêtre réglée sous **Paramètres → Transactions en double**) et propose de l’utiliser comme autre côté au lieu d’en ajouter une nouvelle. Chaque côté garde sa date et son montant, donc les deux comptes correspondent toujours à votre banque. Entre devises, le montant reçu est celui que votre banque a réellement comptabilisé.
+
 ## Rapprochement
 
 Le rapprochement est l’habitude qui garde un budget fiable, que vous saisissiez vos transactions ou que vous les synchronisiez : vérifier que Budgero concorde avec votre banque.
@@ -99,6 +105,8 @@ Chaque transaction a un statut. Les nouvelles transactions saisies commencent **
 2. Cliquez sur **Rapprocher** et saisissez le solde affiché par votre banque. Budgero le compare au solde pointé.
 3. S’ils diffèrent, trouvez l’écart : en général une transaction oubliée, un doublon ou une transaction pas encore pointée. Pour un petit écart, Budgero peut ajouter une transaction d’ajustement.
 4. Confirmez : Budgero verrouille les transactions pointées jusqu’à aujourd’hui comme **rapprochées** et horodate le compte. Les transactions non pointées restent ouvertes pour la prochaine fois.
+
+Si vous modifiez le montant d’une transaction rapprochée, Budgero vous le demande d’abord, puis la marque comme non pointée pour qu’elle réapparaisse lors de votre prochain rapprochement.
 
 Les transactions rapprochées sont votre historique vérifié ; l’horodatage indique la fraîcheur de cette vérification. Un rapprochement hebdomadaire prend environ deux minutes par compte. Mensuel, ça marche aussi. « Jamais », c’est ainsi que meurent les budgets manuels : voir [À affecter](/docs/ready-to-assign) pour comprendre comment les écarts non rapprochés apparaissent dans vos chiffres.
 

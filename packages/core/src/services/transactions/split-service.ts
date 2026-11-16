@@ -352,8 +352,8 @@ export class SplitService {
    * ID, Cleared / Reconciled state, label, category and import provenance and
    * only gets the line's amount, date and key (and memo / payee with
    * `withText`). Like a normal transfer edit syncing its partner leg
-   * (TransactionService.preparePartnerSync), an amount change leaves the
-   * row's Cleared / Reconciled flags alone. Unmatched old mirrors (line
+   * (TransactionService.preparePartnerSync), a reconciled mirror whose bank
+   * amount changes goes back to uncleared; other flags stay. Unmatched old mirrors (line
    * removed or retargeted) are deleted; lines without a match get a new row,
    * under `mirrorIds[index]` when given (a redo) or the next ID otherwise, so
    * every device replaying the op assigns the same IDs.
@@ -411,6 +411,7 @@ export class SplitService {
           payee,
           mirror.ID
         );
+        this.queries.unreconcileIfNativeChanged(mirror.ID, mirror);
         changed = true;
         continue;
       }

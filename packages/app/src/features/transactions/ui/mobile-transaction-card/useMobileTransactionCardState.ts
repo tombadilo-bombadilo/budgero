@@ -6,7 +6,9 @@ import {
   useClearSplits,
   useUpdateTransactionColumn,
 } from '@entities/transaction/api/useTransactions';
+import { getRuntime } from '@shared/runtime/global';
 import { extractSplitFlows } from '../desktop-table/table-utils';
+import { confirmTotalEdit } from '../reconciled-edit/reconciled-edit-confirm';
 
 export interface SplitLine {
   id?: number;
@@ -188,6 +190,16 @@ export function useMobileTransactionCardState({
         : transaction.OutflowConverted || 0;
 
     if (currentParentInflow - currentParentOutflow !== splitTargetNet) {
+      const total = {
+        inflow: splitTargetNet >= 0 ? splitTargetNet : 0,
+        outflow: splitTargetNet >= 0 ? 0 : Math.abs(splitTargetNet),
+      };
+      // A reconciled parent asks first; cancelling keeps the editor open.
+      if (
+        !(await confirmTotalEdit(getRuntime()?.services(), transaction.ID, total, amountCurrency))
+      ) {
+        return;
+      }
       const accountId =
         (transaction as GetTransactionsByAccountRow & { AccountID?: number }).AccountID ?? 0;
       const inflowColumn = amountCurrency === 'native' ? 'InflowNative' : 'InflowConverted';

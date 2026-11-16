@@ -963,8 +963,9 @@ export class CurrencyService {
     for (const transferId of transferIds) {
       const details = getTransferRateDetails(this.db, transferId);
       // A manual override on either leg protects the linked transfer as one
-      // accounting operation. Custom rates only replace fetched rates.
-      if (!details || details.hasRateOverride) continue;
+      // accounting operation. Custom rates only replace fetched rates. A
+      // reconciled leg matches a bank statement: its amounts stay as they are.
+      if (!details || details.hasRateOverride || details.hasReconciledLeg) continue;
 
       const directRate = await this.resolveRate(
         details.source.currency,

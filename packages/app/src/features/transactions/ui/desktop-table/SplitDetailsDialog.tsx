@@ -24,6 +24,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
 import { asMilli, formatMilli } from '@shared/lib/currency/milli';
 import { withEditPrecision } from '@shared/lib/number-format';
+import { getRuntime } from '@shared/runtime/global';
 import {
   type SplitLike,
   type EditableSplit,
@@ -32,6 +33,7 @@ import {
   getSplitCategoryLabel,
 } from './table-utils';
 import { SplitMemoText } from './SplitMemoText';
+import { confirmTotalEdit } from '../reconciled-edit/reconciled-edit-confirm';
 
 interface SplitDetailsDialogProps {
   transaction: GetTransactionsByAccountRow | null;
@@ -238,6 +240,13 @@ export function SplitDetailsDialog({
             outflow: targetNet >= 0 ? 0 : Math.abs(targetNet),
           }
         : undefined;
+    // A reconciled parent asks first; cancelling keeps the editor open.
+    if (
+      total &&
+      !(await confirmTotalEdit(getRuntime()?.services(), transaction.ID, total, amountCurrency))
+    ) {
+      return;
+    }
 
     const prepared = editSplits.map((line, idx) => ({
       category_id: line.category_id ?? null,

@@ -139,6 +139,8 @@ describe('the rule list', () => {
       'rules.restoreDeleted',
       'transactions.batchEdit',
       'transactions.saveSplits',
+      // v1.21: a cross-currency transfer partner now keeps its amount.
+      'transactions.restoreAmounts',
     ]);
     for (const op of Object.keys(LEGACY_FORMAT_RULES)) {
       expect(KNOWN_OP_CODES.has(op), op).toBe(true);
@@ -800,5 +802,92 @@ describe('rules.execute and empty payees', () => {
     expect(await only([named, blank])).toBe(3);
     sql('UPDATE transactions SET Payee = NULL WHERE ID = ?', blank);
     expect(await only([blank])).toBe(2);
+  });
+});
+
+describe('format 6: reconciled amount edits and cross-currency transfer legs (v1.21 applies them differently)', () => {
+  const lock = (id: number) =>
+    sql('UPDATE transactions SET Reconciled = 1, Cleared = 1 WHERE ID = ?', id);
+
+  async function addTransfer(transferId: string, to: number, received: number) {
+    const source = await services.transactions.addTransaction(
+      asMilli(0),
+      asMilli(1000),
+      checking,
+      0,
+      budgetId,
+      '2026-09-10',
+      't',
+      transferId
+    );
+    const destination = await services.transactions.addTransaction(
+      asMilli(received),
+      asMilli(0),
+      to,
+      0,
+      budgetId,
+      '2026-09-10',
+      't',
+      transferId
+    );
+    return { source, destination };
+  }
+
+  it('transactions.updateColumn: amount edits of a reconciled row or a cross-currency leg', async () => {
+    const row = await addRow(checking, 1000);
+    const edit = (id: number, columnName = 'OutflowNative') =>
+      sentFormat('transactions.updateColumn', { id, columnName, newValue: 2000 });
+    expect(await edit(row)).toBe(2);
+    lock(row);
+    expect(await edit(row)).toBe(6);
+    expect(
+      await sentFormat('transactions.updateColumn', { id: row, columnName: 'Memo', newValue: 'x' })
+    ).toBe(2);
+
+    const same = await addTransfer('same', savings, 1000);
+    expect(await edit(same.source)).toBe(2);
+    lock(same.destination);
+    expect(await edit(same.source)).toBe(6);
+
+    await services.currency.saveRate('EUR', 'USD', 1.25, '2026-09-10', budgetId);
+    const euro = (
+      await services.accounts.createAccount('Euro', budgetId, 'checking', 'EUR', asMilli(0))
+    ).ID;
+    const cross = await addTransfer('cross', euro, 800);
+    expect(await edit(cross.source)).toBe(6);
+  });
+
+  it('transactions.updateTransferRate and custom rates: only with a reconciled leg', async () => {
+    await services.currency.saveRate('EUR', 'USD', 1.25, '2026-09-10', budgetId);
+    const euro = (
+      await services.accounts.createAccount('Euro', budgetId, 'checking', 'EUR', asMilli(0))
+    ).ID;
+    const { destination } = await addTransfer('fx', euro, 800);
+    const rate = { transferId: 'fx', rate: 0.9 };
+    const customRate = {
+      fromCurrency: 'EUR',
+      toCurrency: 'USD',
+      rate: 2,
+      startDate: '2026-09-01',
+      endDate: null,
+      budgetId,
+    };
+    expect(await sentFormat('transactions.updateTransferRate', rate)).toBe(2);
+    expect(await sentFormat('currency.customRates.add', customRate)).toBe(2);
+    lock(destination);
+    expect(await sentFormat('transactions.updateTransferRate', rate)).toBe(6);
+    expect(await sentFormat('currency.customRates.add', customRate)).toBe(6);
+  });
+
+  it('transactions.saveSplits: a reconciled parent', async () => {
+    const parent = await addCategorySplit();
+    const args = {
+      transactionId: parent,
+      amount: { inflow: 0, outflow: 12000, currency: 'native' },
+      splits: [line(12000, { CategoryID: groceries })],
+    };
+    expect(await sentFormat('transactions.saveSplits', args)).toBe(3);
+    lock(parent);
+    expect(await sentFormat('transactions.saveSplits', args)).toBe(6);
   });
 });

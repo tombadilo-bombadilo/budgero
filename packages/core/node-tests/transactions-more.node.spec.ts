@@ -648,7 +648,7 @@ describe('Transactions (additional coverage)', () => {
     expect(!!incoming.ExchangeRateOverride).toBe(false);
   });
 
-  it('syncing a transfer leg preserves a manual rate override on the partner leg', async () => {
+  it('editing a transfer leg keeps the partner leg, its amount and its manual rate override', async () => {
     const adapter: DatabaseAdapter = await NodeSqlJsAdapter.create();
     const sm = new ServiceManager();
     await sm.initialize(adapter);
@@ -696,16 +696,19 @@ describe('Transactions (additional coverage)', () => {
     let incoming = services.transactions.getTransactionByID(inLeg);
     expect(incoming.InflowNative).toBe(240000000 / 120); // EUR 2,000 in milliunits
 
-    // Editing the OUTGOING leg syncs the partner. The override must survive: the EUR original is
-    // re-derived from the user's 120 rate (236,000,000 / 120 ≈ 1,966,666.67, rounded to integer
-    // milliunits), not the market rate of 100.
+    // Editing the OUTGOING leg leaves the partner as it is: each leg of a cross-currency transfer
+    // holds its own bank amount, and the override survives. The direct rate the two legs imply
+    // changes instead (236,000 RSD for 2,000 EUR).
     await services.transactions.updateTransactionColumn(outLeg, 'OutflowConverted', 236000000);
 
     incoming = services.transactions.getTransactionByID(inLeg);
-    expect(incoming.InflowConverted).toBe(236000000); // mirrors the new outgoing value
+    expect(incoming.InflowNative).toBe(2000000); // bank amount kept
+    expect(incoming.InflowConverted).toBe(240000000);
     expect(incoming.ExchangeRate).toBeCloseTo(120, 6); // override rate preserved
     expect(!!incoming.ExchangeRateOverride).toBe(true);
-    expect(incoming.InflowNative).toBe(1966667); // ≈EUR 1,966.67, not market-rate 2,360,000
+    const details = services.transactions.getTransferRateDetails(transferId)!;
+    expect(details.rate).toBeCloseTo(2000 / 236000, 10);
+    expect(details.transferRateOverride).toBe(true);
   });
 
   it('bulk reassigns categories and supports transfer ID queries and unsupported column path', async () => {
