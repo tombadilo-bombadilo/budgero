@@ -21,11 +21,29 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.21.5',
+    date: 'November 16, 2026',
+    summary: 'The sign-in page links to pricing and our legal pages.',
+    isLatest: true,
+    items: [
+      {
+        type: 'improved',
+        title: 'Pricing and legal links on the sign-in page',
+        description:
+          'The sign-in and sign-up page now links to pricing, the Terms of Service, the Privacy Policy and the Refund Policy.',
+      },
+      {
+        type: 'improved',
+        title: 'Self-host: donate links removed',
+        description: 'The Donate links in the sidebar and on the About page are gone.',
+      },
+    ],
+  },
+  {
     version: 'v1.21.4',
     date: 'November 16, 2026',
     summary:
       'Turn two transactions your bank already brought in into one transfer without a duplicate, and correct the amounts of a transfer, also when one side is reconciled.',
-    isLatest: true,
     items: [
       {
         type: 'new',
