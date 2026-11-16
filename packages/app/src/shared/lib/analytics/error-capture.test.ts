@@ -25,7 +25,8 @@ const SECRET = 'Payee "Dr. Jane Smith" amount 1234.56 for account 9876';
 const ORIGIN = window.location.origin;
 
 function expectNoSecret(value: unknown): void {
-  const json = JSON.stringify(value);
+  // The session id is random hex and can contain the digit canaries by chance.
+  const json = JSON.stringify(value).replace(/"client_session":"[0-9a-f]{24}"/g, '');
   for (const part of ['Jane', 'Smith', '1234', '9876', 'Payee']) expect(json).not.toContain(part);
 }
 
