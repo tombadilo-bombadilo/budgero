@@ -2,7 +2,9 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Account } from '@budgero/core/browser';
 import {
   buildConvertToTransferArgs,
+  buildPairCandidateQuery,
   buildRevertToTransactionArgs,
+  canPairWith,
   computeCounterpartAmount,
   getConversionBlocker,
   getRevertBlocker,
@@ -363,5 +365,153 @@ describe('buildRevertToTransactionArgs', () => {
     });
 
     expect(args).toMatchObject({ inflow: 7_000, outflow: 0, memo: 'Rent' });
+  });
+});
+
+describe('pairing with an existing transaction in the other account', () => {
+  // The bank-synced arrival of `expense` in Savings, a day later.
+  const arrival: ConvertibleTransaction = {
+    ID: 77,
+    BudgetID: 1,
+    AccountID: 2,
+    Date: '2026-09-03',
+    Memo: 'From checking',
+    CategoryID: 10,
+    LabelID: null,
+    Cleared: true,
+    InflowNative: 12_000,
+    InflowConverted: 12_000,
+    OutflowNative: 0,
+    OutflowConverted: 0,
+  };
+  const settings = { toleranceBps: 100, dayWindow: 7 };
+
+  it('looks for the opposite direction in the other account within the duplicate settings', () => {
+    expect(
+      buildPairCandidateQuery({
+        transaction: expense,
+        ownAccount: checking,
+        counterpart: savings,
+        counterpartAmount: 12_000,
+        settings,
+      })
+    ).toEqual({
+      accountId: 2,
+      date: '2026-09-02',
+      amountNative: 12_000,
+      toleranceBps: 100,
+      dayWindow: 7,
+      limit: 3,
+      plainOnly: true,
+    });
+    expect(
+      buildPairCandidateQuery({
+        transaction: income,
+        ownAccount: checking,
+        counterpart: savings,
+        counterpartAmount: 7_000,
+        settings,
+      })?.amountNative
+    ).toBe(-7_000);
+  });
+
+  it('widens the tolerance across currencies, where banks use their own rate', () => {
+    const query = (toleranceBps: number) =>
+      buildPairCandidateQuery({
+        transaction: expense,
+        ownAccount: checking,
+        counterpart: euro,
+        counterpartAmount: 11_000,
+        settings: { ...settings, toleranceBps },
+      })?.toleranceBps;
+    expect(query(0)).toBe(300);
+    expect(query(500)).toBe(500);
+  });
+
+  it('only pairs a plain, unreconciled, opposite row in another account with no links', () => {
+    const can = (candidate: Partial<ConvertibleTransaction>, links = null as never) =>
+      canPairWith({ transaction: expense, candidate: { ...arrival, ...candidate }, links });
+
+    expect(can({})).toBe(true);
+    expect(can({ InflowNative: 0, InflowConverted: 0, OutflowNative: 12_000 })).toBe(false);
+    expect(can({ AccountID: 1 })).toBe(false);
+    expect(can({ TransferID: 'tr-9' })).toBe(false);
+    expect(can({ Reconciled: true })).toBe(false);
+    expect(
+      can({}, { warranty: false, recurringOccurrence: false, bankReview: true } as never)
+    ).toBe(false);
+  });
+
+  it('reuses the existing row as the other leg, keeping its own details', () => {
+    const args = buildConvertToTransferArgs({
+      transaction: expense,
+      category: 'Groceries',
+      ownAccount: checking,
+      counterpart: savings,
+      categories,
+      transferId: 'tr-1',
+      counterpartAmount: 12_000,
+      importIdentities: [{ operationId: 'own' }],
+      pairWith: { transaction: arrival, importIdentities: [{ operationId: 'bank' }] },
+    });
+
+    expect(args.source).toMatchObject({ id: 41, outflow: 12_000, date: '2026-09-02', labelId: 7 });
+    expect(args.destination).toMatchObject({
+      id: 77,
+      inflow: 12_000,
+      accountId: 2,
+      date: '2026-09-03',
+      labelId: null,
+      cleared: true,
+      categoryId: 9,
+      importIdentities: [{ operationId: 'bank' }],
+    });
+    expect(args.source.importIdentities).toEqual([{ operationId: 'own' }]);
+  });
+
+  it('takes the received amount from the existing row across currencies', () => {
+    const received = { ...arrival, AccountID: 4, InflowNative: 10_870, InflowConverted: 12_000 };
+    const args = buildConvertToTransferArgs({
+      transaction: expense,
+      ownAccount: checking,
+      counterpart: euro,
+      categories,
+      transferId: 'tr-1',
+      counterpartAmount: 11_000,
+      pairWith: { transaction: received },
+    });
+
+    expect(args.source.outflow).toBe(12_000);
+    expect(args.destination.inflow).toBe(10_870);
+  });
+
+  it('falls back to the paired memo when the converted row has none', () => {
+    const args = buildConvertToTransferArgs({
+      transaction: { ...expense, Memo: '' },
+      ownAccount: checking,
+      counterpart: savings,
+      categories,
+      transferId: 'tr-1',
+      counterpartAmount: 12_000,
+      pairWith: { transaction: arrival },
+    });
+    expect(args.source.memo).toBe('Checking → Savings: From checking');
+  });
+
+  it('refuses a row that flows the same way or sits in another account', () => {
+    const build = (pair: ConvertibleTransaction) => () =>
+      buildConvertToTransferArgs({
+        transaction: expense,
+        ownAccount: checking,
+        counterpart: savings,
+        categories,
+        transferId: 'tr-1',
+        counterpartAmount: 12_000,
+        pairWith: { transaction: pair },
+      });
+    expect(build({ ...arrival, AccountID: 3 })).toThrow();
+    expect(
+      build({ ...arrival, InflowNative: 0, InflowConverted: 0, OutflowNative: 12_000 })
+    ).toThrow();
   });
 });

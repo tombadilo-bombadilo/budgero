@@ -1,14 +1,17 @@
 import * as React from 'react';
-import { useLingui } from '@lingui/react/macro';
+import { parseISO } from 'date-fns';
+import { Trans, useLingui } from '@lingui/react/macro';
 import { toast } from 'sonner';
 import type { Account, GetTransactionsByAccountRow } from '@budgero/core/browser';
 import { useCategories } from '@entities/category/api/useCategories';
-import { getExchangeRate } from '@entities/currency/lib/currency-utils';
+import { formatNativeAmount, getExchangeRate } from '@entities/currency/lib/currency-utils';
+import { formatDate } from '@shared/lib/date-format';
 import { executeSpaceMutation } from '@shared/runtime/mutation-router';
 import { useRuntime } from '@shared/runtime/runtime-provider';
 import { useUiStore } from '@shared/store/useUiStore';
 import { runUndoGroup } from '@shared/mutations/UndoStore';
 import { ConfirmDialog } from '@shared/ui/confirm-dialog';
+import { RadioGroup, RadioGroupItem } from '@shared/ui/radio-group';
 import { generateTransferId } from '@features/transactions/ui/add-transaction/add-transaction.utils';
 import {
   conversionReplacesCategory,
@@ -16,7 +19,9 @@ import {
 } from '@features/transactions/lib/transfer-payee-options';
 import {
   buildConvertToTransferArgs,
+  buildPairCandidateQuery,
   buildRevertToTransactionArgs,
+  canPairWith,
   computeCounterpartAmount,
   getConversionBlocker,
   getRevertBlocker,
@@ -31,13 +36,29 @@ interface UseTransferConversionOptions {
   accounts: Account[];
 }
 
+/** A transaction already in the other account that can become the transfer's other leg. */
+interface PairOption {
+  id: number;
+  date: string;
+  label: string;
+  amount: number;
+  currency: string;
+  /** Payload that reuses it instead of adding a new leg. */
+  args: AddTransferArgs;
+}
+
 /** A conversion that passed every check and is waiting only for the user's confirmation. */
 interface PreparedConversion {
   transactionId: number;
   counterpartName: string;
   categoryName: string;
+  /** Whether the row's category gets replaced by Transfers (worth a confirmation). */
+  replacesCategory: boolean;
   args: AddTransferArgs;
+  pair: PairOption | null;
 }
+
+const DEFAULT_PAIR_SETTINGS = { toleranceBps: 100, dayWindow: 7 };
 
 /**
  * Converts a transaction into a transfer (picking "Transfer: Account" as its payee) and
@@ -60,6 +81,7 @@ export function useTransferConversion({ rows, accounts }: UseTransferConversionO
   );
   const { data: categories = [] } = useCategories(budgetId);
   const [pending, setPending] = React.useState<PreparedConversion | null>(null);
+  const [usePair, setUsePair] = React.useState(true);
   const [isPending, setIsPending] = React.useState(false);
 
   const blockerMessage = React.useCallback(
@@ -137,27 +159,72 @@ export function useTransferConversion({ rows, accounts }: UseTransferConversionO
         );
       }
 
+      const transferId = generateTransferId();
+      const importIdentities = services.importHistory?.duplicates.identities(transactionId) ?? [];
+      const baseArgs = {
+        transaction,
+        category: row.Category,
+        ownAccount,
+        counterpart,
+        categories,
+        transferId,
+        counterpartAmount,
+        importIdentities,
+      };
+
+      // Both sides may already be here (bank sync, file import): offer the existing
+      // row in the other account instead of adding a duplicate.
+      let pair: PairOption | null = null;
+      const settings =
+        (await services.userMeta?.getDuplicateHintSettings?.()) ?? DEFAULT_PAIR_SETTINGS;
+      const query = buildPairCandidateQuery({
+        transaction,
+        ownAccount,
+        counterpart,
+        counterpartAmount,
+        settings,
+      });
+      const matches = query ? await services.transactions.findSimilarTransactions(query) : [];
+      for (const match of matches) {
+        const candidate = (await services.transactions.getTransactionByID(
+          match.ID
+        )) as ConvertibleTransaction;
+        const candidateLinks = await services.transactions.getTransactionLinks(match.ID);
+        if (!canPairWith({ transaction, candidate, links: candidateLinks })) continue;
+        const pairFlow = getTransactionFlow(candidate);
+        if (!pairFlow) continue;
+        pair = {
+          id: candidate.ID,
+          date: candidate.Date,
+          label: match.Payee || match.Memo,
+          amount: pairFlow.amount,
+          currency: counterpart.Currency,
+          args: buildConvertToTransferArgs({
+            ...baseArgs,
+            pairWith: {
+              transaction: candidate,
+              importIdentities: services.importHistory?.duplicates.identities(candidate.ID) ?? [],
+            },
+          }),
+        };
+        break;
+      }
+
       return {
         transactionId,
         counterpartName: counterpart.Name,
         categoryName: row.Category,
-        args: buildConvertToTransferArgs({
-          transaction,
-          category: row.Category,
-          ownAccount,
-          counterpart,
-          categories,
-          transferId: generateTransferId(),
-          counterpartAmount,
-          importIdentities: services.importHistory?.duplicates.identities(transactionId) ?? [],
-        }),
+        replacesCategory: conversionReplacesCategory(row, Boolean(counterpart.OnBudget)),
+        args: buildConvertToTransferArgs(baseArgs),
+        pair,
       };
     },
     [accounts, blockerMessage, categories, rows, runtime, t]
   );
 
   const executeConversion = React.useCallback(
-    async (prepared: PreparedConversion) => {
+    async (prepared: PreparedConversion, withPair: boolean) => {
+      const pair = withPair ? prepared.pair : null;
       try {
         await runUndoGroup(t`Convert to transfer`, async () => {
           await executeSpaceMutation(runtime, {
@@ -165,13 +232,24 @@ export function useTransferConversion({ rows, accounts }: UseTransferConversionO
             payload: { id: prepared.transactionId },
             meta: { label: 'convertToTransfer.delete' },
           });
+          if (pair) {
+            await executeSpaceMutation(runtime, {
+              op: 'transactions.delete',
+              payload: { id: pair.id },
+              meta: { label: 'convertToTransfer.deletePair' },
+            });
+          }
           await executeSpaceMutation(runtime, {
             op: 'transactions.addTransfer',
-            payload: { ...prepared.args },
+            payload: { ...(pair ? pair.args : prepared.args) },
             meta: { label: 'convertToTransfer.addTransfer' },
           });
         });
-        toast.success(t`Converted to a transfer with ${prepared.counterpartName}`);
+        toast.success(
+          pair
+            ? t`Converted to a transfer with the existing transaction in ${prepared.counterpartName}`
+            : t`Converted to a transfer with ${prepared.counterpartName}`
+        );
       } catch (error) {
         toast.error(t`Couldn't convert to a transfer`, {
           description: error instanceof Error ? error.message : undefined,
@@ -191,11 +269,12 @@ export function useTransferConversion({ rows, accounts }: UseTransferConversionO
       try {
         const prepared = await prepareConversion(transactionId, counterpartAccountId);
         if (!prepared) return;
-        if (conversionReplacesCategory(row, Boolean(counterpart.OnBudget))) {
+        if (prepared.pair || prepared.replacesCategory) {
+          setUsePair(true);
           setPending(prepared);
           return;
         }
-        await executeConversion(prepared);
+        await executeConversion(prepared, false);
       } catch (error) {
         toast.error(t`Couldn't convert to a transfer`, {
           description: error instanceof Error ? error.message : undefined,
@@ -275,18 +354,69 @@ export function useTransferConversion({ rows, accounts }: UseTransferConversionO
       }}
       title={t`Convert to a transfer?`}
       description={
-        pending
-          ? t`This replaces the category (${pending.categoryName}) with Transfers, so the amount no longer counts as spending. A matching transaction is added to ${pending.counterpartName}.`
-          : undefined
+        !pending
+          ? undefined
+          : pending.pair
+            ? pending.replacesCategory
+              ? t`This replaces the category (${pending.categoryName}) with Transfers, so the amount no longer counts as spending. ${pending.counterpartName} already has a transaction that looks like the other side.`
+              : t`${pending.counterpartName} already has a transaction that looks like the other side.`
+            : t`This replaces the category (${pending.categoryName}) with Transfers, so the amount no longer counts as spending. A matching transaction is added to ${pending.counterpartName}.`
       }
       confirmText={t`Convert to transfer`}
       cancelText={t`Cancel`}
       onConfirm={() => {
         const prepared = pending;
         setPending(null);
-        if (prepared) void executeConversion(prepared);
+        if (prepared) void executeConversion(prepared, usePair);
       }}
-    />
+    >
+      {pending?.pair ? (
+        <RadioGroup
+          value={usePair ? 'pair' : 'new'}
+          onValueChange={(value) => setUsePair(value === 'pair')}
+          aria-label={t`Other side of the transfer`}
+        >
+          <label
+            htmlFor="transfer-pair-existing"
+            className="flex cursor-pointer items-start gap-3 rounded-md border p-3"
+          >
+            <RadioGroupItem id="transfer-pair-existing" value="pair" className="mt-0.5" />
+            <span className="min-w-0 space-y-1">
+              <span className="block text-sm font-medium">
+                <Trans>Use the existing transaction</Trans>
+              </span>
+              <span className="flex justify-between gap-2 text-xs text-muted-foreground">
+                <span className="min-w-0 truncate">
+                  {formatDate(parseISO(pending.pair.date.slice(0, 10)), 'MMM d')} ·{' '}
+                  {pending.pair.label || '—'}
+                </span>
+                <span className="shrink-0 font-mono">
+                  {formatNativeAmount(pending.pair.amount, pending.pair.currency)}{' '}
+                  {pending.pair.currency}
+                </span>
+              </span>
+            </span>
+          </label>
+          <label
+            htmlFor="transfer-pair-new"
+            className="flex cursor-pointer items-start gap-3 rounded-md border p-3"
+          >
+            <RadioGroupItem id="transfer-pair-new" value="new" className="mt-0.5" />
+            <span className="space-y-1">
+              <span className="block text-sm font-medium">
+                <Trans>Add a new transaction</Trans>
+              </span>
+              <span className="block text-xs text-muted-foreground">
+                <Trans>
+                  Adds another one to {pending.counterpartName} and leaves the existing one as it
+                  is.
+                </Trans>
+              </span>
+            </span>
+          </label>
+        </RadioGroup>
+      ) : null}
+    </ConfirmDialog>
   );
 
   return {

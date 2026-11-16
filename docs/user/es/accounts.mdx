@@ -89,6 +89,12 @@ Los tipos de cambio se resuelven en un orden definido:
 
 También puedes sobrescribir el tipo de cambio en cualquier transacción individual — la herramienta adecuada cuando el tipo de liquidación real de tu tarjeta difiere de la media del mercado y quieres que el importe convertido coincida con tu extracto hasta el céntimo.
 
+## Transferencias entre tus cuentas
+
+Para añadir una transferencia, elige **Transferencia: <cuenta>** como beneficiario. Budgero crea las dos partes, una en cada cuenta, enlazadas entre sí.
+
+Si las dos partes ya están (la sincronización bancaria o una importación de archivo trajo el dinero que sale de una cuenta y el que llega a la otra), cambia el beneficiario de una de ellas a **Transferencia: <cuenta>**. Budgero busca en la otra cuenta una transacción equivalente en sentido contrario (mismo importe, dentro del margen que fijes en **Ajustes → Transacciones duplicadas**) y ofrece usarla como la otra parte en lugar de añadir una nueva. Cada parte conserva su fecha y su importe, así que ambas cuentas siguen cuadrando con tu banco. Entre divisas, el importe recibido es el que tu banco registró realmente.
+
 ## Conciliación
 
 Conciliar es el hábito que mantiene fiable un presupuesto, tanto si introduces las transacciones a mano como si las sincronizas: confirmar que Budgero coincide con tu banco.

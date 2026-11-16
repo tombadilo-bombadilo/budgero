@@ -607,6 +607,11 @@ msgstr "{0} Konten"
 msgid "{0} active today / {1} active in last 30 days"
 msgstr "{0} heute aktiv / {1} aktiv in den letzten 30 Tagen"
 
+#. placeholder {0}: pending.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "{0} already has a transaction that looks like the other side."
+msgstr "Auf {0} gibt es bereits eine Transaktion, die wie die Gegenseite aussieht."
+
 #. placeholder {0}: account.Name
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 msgid "{0} balanced to zero and archived."
@@ -3522,6 +3527,10 @@ msgstr "Beschreibung hinzufügen…"
 msgid "Add a metric in Summarize first."
 msgstr "Füge zuerst unter Zusammenfassen eine Metrik hinzu."
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Add a new transaction"
+msgstr "Neue Transaktion hinzufügen"
+
 #: src/pages/admin/SelfHostAdminUsers.tsx
 msgid "Add a new user to this deployment. Share the password securely."
 msgstr "Füge einen neuen Benutzer zu dieser Bereitstellung hinzu. Teile das Passwort sicher."
@@ -3726,6 +3735,11 @@ msgstr "Wird hinzugefügt…"
 #: src/pages/settings/components/IncomeCategoriesCard.tsx
 msgid "Adding…"
 msgstr "Wird hinzugefügt…"
+
+#. placeholder {0}: pending.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Adds another one to {0} and leaves the existing one as it is."
+msgstr "Fügt {0} eine weitere hinzu und lässt die vorhandene unverändert."
 
 #: src/pages/accounts/components/AccountDateRangeControls.tsx
 msgid "Adjust"
@@ -6746,6 +6760,11 @@ msgstr "In eine normale Transaktion zurückgewandelt"
 #: src/features/transactions/api/useTransferConversion.tsx
 msgid "Converted to a transfer with {0}"
 msgstr "In eine Umbuchung mit {0} umgewandelt"
+
+#. placeholder {0}: prepared.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Converted to a transfer with the existing transaction in {0}"
+msgstr "In eine Umbuchung mit der vorhandenen Transaktion auf {0} umgewandelt"
 
 #: src/pages/explorer-page/SqlQuestionView.tsx
 msgid "Converted to SQL. Saving replaces the notebook version."
@@ -14699,6 +14718,10 @@ msgstr "Andere verfügbare Arbeitsbereiche"
 msgid "Other income"
 msgstr "Sonstige Einnahmen"
 
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Other side of the transfer"
+msgstr "Gegenseite der Umbuchung"
+
 #: src/pages/analytics/reports/FlowReport.tsx
 msgid "Other spending"
 msgstr "Sonstige Ausgaben"
@@ -20474,6 +20497,12 @@ msgstr "Dadurch wird nur der Verlaufseintrag entfernt. Deine Transaktionen bleib
 #. placeholder {0}: pending.categoryName
 #. placeholder {1}: pending.counterpartName
 #: src/features/transactions/api/useTransferConversion.tsx
+msgid "This replaces the category ({0}) with Transfers, so the amount no longer counts as spending. {1} already has a transaction that looks like the other side."
+msgstr "Dadurch wird die Kategorie ({0}) durch „Umbuchungen“ ersetzt, sodass der Betrag nicht mehr als Ausgabe zählt. Auf {1} gibt es bereits eine Transaktion, die wie die Gegenseite aussieht."
+
+#. placeholder {0}: pending.categoryName
+#. placeholder {1}: pending.counterpartName
+#: src/features/transactions/api/useTransferConversion.tsx
 msgid "This replaces the category ({0}) with Transfers, so the amount no longer counts as spending. A matching transaction is added to {1}."
 msgstr "Dadurch wird die Kategorie ({0}) durch „Umbuchungen“ ersetzt, sodass der Betrag nicht mehr als Ausgabe zählt. Auf {1} wird eine passende Transaktion hinzugefügt."
 
@@ -21832,6 +21861,10 @@ msgstr "Vorschlag verwenden"
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Use the cleared balance as the actual balance"
 msgstr "Gebuchten Saldo als tatsächlichen Saldo verwenden"
+
+#: src/features/transactions/api/useTransferConversion.tsx
+msgid "Use the existing transaction"
+msgstr "Vorhandene Transaktion verwenden"
 
 #: src/pages/auth/AuthPage.tsx
 msgid "Use your phone, tablet, or computer"
