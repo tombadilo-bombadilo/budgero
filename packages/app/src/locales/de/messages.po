@@ -6661,6 +6661,10 @@ msgstr "Verbindungsstatus"
 msgid "Consecutive months"
 msgstr "Monate in Folge"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Contact"
+msgstr "Kontakt"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Contains"
 msgstr "Enthält"
@@ -11792,6 +11796,10 @@ msgstr "Restguthaben wird in den nächsten Monat übertragen"
 msgid "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (decimal amounts, e.g. <1>25.50</1>) and upgraded on import. New integrations should send format 2."
 msgstr "Veraltete Nutzdaten ohne das <0>\"v\"</0>-Feld werden als Format 1 behandelt (Dezimalbeträge, z. B. <1>25.50</1>) und beim Import aktualisiert. Neue Integrationen sollten Format 2 senden."
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Legal"
+msgstr "Rechtliches"
+
 #: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Legend"
 msgstr "Legende"
@@ -15729,6 +15737,10 @@ msgstr "Vorheriges Jahr"
 msgid "Price"
 msgstr "Preis"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Pricing"
+msgstr "Preise"
+
 #: src/entities/account/model/accountTypes.ts
 msgid "Primary spending account for everyday transactions"
 msgstr "Primäres Ausgabenkonto für alltägliche Transaktionen"
@@ -15752,6 +15764,10 @@ msgstr "Datenschutz"
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Privacy mode"
 msgstr "Datenschutzmodus"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Privacy Policy"
+msgstr "Datenschutzerklärung"
 
 #: src/pages/settings/ai/PrivacyWarnings.tsx
 msgid "Privacy-First AI"
@@ -16484,6 +16500,10 @@ msgstr "Wird aktualisiert…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Refund"
 msgstr "Erstattung"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Refund Policy"
+msgstr "Rückerstattungsrichtlinie"
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Regenerate API Token?"
@@ -19772,6 +19792,10 @@ msgstr "Vorlagenname"
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Templates"
 msgstr "Vorlagen"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Terms of Service"
+msgstr "Nutzungsbedingungen"
 
 #: src/pages/settings/ai/ConnectionTestPanel.tsx
 msgid "Test"

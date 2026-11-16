@@ -6661,6 +6661,10 @@ msgstr "Estado de conexión"
 msgid "Consecutive months"
 msgstr "Meses consecutivos"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Contact"
+msgstr "Contacto"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Contains"
 msgstr "Contiene"
@@ -11792,6 +11796,10 @@ msgstr "El saldo restante pasa al mes siguiente"
 msgid "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (decimal amounts, e.g. <1>25.50</1>) and upgraded on import. New integrations should send format 2."
 msgstr "Los payloads heredados sin el campo <0>\"v\"</0> se tratan como formato 1 (importes decimales, p. ej. <1>25.50</1>) y se actualizan al importar. Las nuevas integraciones deberían enviar el formato 2."
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Legal"
+msgstr "Legal"
+
 #: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Legend"
 msgstr "Leyenda"
@@ -15729,6 +15737,10 @@ msgstr "Año anterior"
 msgid "Price"
 msgstr "Precio"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Pricing"
+msgstr "Precios"
+
 #: src/entities/account/model/accountTypes.ts
 msgid "Primary spending account for everyday transactions"
 msgstr "Cuenta principal de gastos para transacciones diarias"
@@ -15752,6 +15764,10 @@ msgstr "Privacidad"
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Privacy mode"
 msgstr "Modo privado"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Privacy Policy"
+msgstr "Política de privacidad"
 
 #: src/pages/settings/ai/PrivacyWarnings.tsx
 msgid "Privacy-First AI"
@@ -16484,6 +16500,10 @@ msgstr "Actualizando…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Refund"
 msgstr "Reembolso"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Refund Policy"
+msgstr "Política de reembolso"
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Regenerate API Token?"
@@ -19772,6 +19792,10 @@ msgstr "Nombre de plantilla"
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Templates"
 msgstr "Plantillas"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Terms of Service"
+msgstr "Términos del servicio"
 
 #: src/pages/settings/ai/ConnectionTestPanel.tsx
 msgid "Test"

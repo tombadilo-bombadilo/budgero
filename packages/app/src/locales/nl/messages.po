@@ -6661,6 +6661,10 @@ msgstr "Verbindingsstatus"
 msgid "Consecutive months"
 msgstr "Opeenvolgende maanden"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Contact"
+msgstr "Contact"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Contains"
 msgstr "Bevat"
@@ -11792,6 +11796,10 @@ msgstr "Restsaldo schuift door naar de volgende maand"
 msgid "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (decimal amounts, e.g. <1>25.50</1>) and upgraded on import. New integrations should send format 2."
 msgstr "Verouderde payloads zonder het <0>\"v\"</0>-veld worden behandeld als formaat 1 (decimale bedragen, bijv. <1>25.50</1>) en geüpgraded bij import. Nieuwe integraties moeten formaat 2 verzenden."
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Legal"
+msgstr "Juridisch"
+
 #: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Legend"
 msgstr "Legenda"
@@ -15729,6 +15737,10 @@ msgstr "Vorig jaar"
 msgid "Price"
 msgstr "Prijs"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Pricing"
+msgstr "Prijzen"
+
 #: src/entities/account/model/accountTypes.ts
 msgid "Primary spending account for everyday transactions"
 msgstr "Primaire uitgavenrekening voor dagelijkse transacties"
@@ -15752,6 +15764,10 @@ msgstr "Privacy"
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Privacy mode"
 msgstr "Privacymodus"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Privacy Policy"
+msgstr "Privacybeleid"
 
 #: src/pages/settings/ai/PrivacyWarnings.tsx
 msgid "Privacy-First AI"
@@ -16484,6 +16500,10 @@ msgstr "Vernieuwen…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Refund"
 msgstr "Terugbetaling"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Refund Policy"
+msgstr "Terugbetalingsbeleid"
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Regenerate API Token?"
@@ -19772,6 +19792,10 @@ msgstr "Sjabloonnaam"
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Templates"
 msgstr "Sjablonen"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Terms of Service"
+msgstr "Servicevoorwaarden"
 
 #: src/pages/settings/ai/ConnectionTestPanel.tsx
 msgid "Test"

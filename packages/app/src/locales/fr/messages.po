@@ -6661,6 +6661,10 @@ msgstr "État de la connectivité"
 msgid "Consecutive months"
 msgstr "Mois consécutifs"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Contact"
+msgstr "Contact"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Contains"
 msgstr "Contient"
@@ -11792,6 +11796,10 @@ msgstr "Le solde restant est reporté au mois suivant"
 msgid "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (decimal amounts, e.g. <1>25.50</1>) and upgraded on import. New integrations should send format 2."
 msgstr "Les anciennes charges utiles sans le champ <0>\"v\"</0> sont traitées comme le format 1 (montants décimaux, ex. <1>25.50</1>) et mises à niveau lors de l'import. Les nouvelles intégrations devraient envoyer le format 2."
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Legal"
+msgstr "Mentions légales"
+
 #: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Legend"
 msgstr "Légende"
@@ -15729,6 +15737,10 @@ msgstr "Année précédente"
 msgid "Price"
 msgstr "Prix"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Pricing"
+msgstr "Tarifs"
+
 #: src/entities/account/model/accountTypes.ts
 msgid "Primary spending account for everyday transactions"
 msgstr "Compte de dépenses principal pour les transactions du quotidien"
@@ -15752,6 +15764,10 @@ msgstr "Confidentialité"
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Privacy mode"
 msgstr "Mode confidentiel"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Privacy Policy"
+msgstr "Politique de confidentialité"
 
 #: src/pages/settings/ai/PrivacyWarnings.tsx
 msgid "Privacy-First AI"
@@ -16484,6 +16500,10 @@ msgstr "Actualisation…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Refund"
 msgstr "Remboursement"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Refund Policy"
+msgstr "Politique de remboursement"
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Regenerate API Token?"
@@ -19772,6 +19792,10 @@ msgstr "Nom du modèle"
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Templates"
 msgstr "Modèles"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Terms of Service"
+msgstr "Conditions d'utilisation"
 
 #: src/pages/settings/ai/ConnectionTestPanel.tsx
 msgid "Test"

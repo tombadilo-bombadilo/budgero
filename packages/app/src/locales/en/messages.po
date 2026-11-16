@@ -6663,6 +6663,10 @@ msgstr "Connectivity status"
 msgid "Consecutive months"
 msgstr "Consecutive months"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Contact"
+msgstr "Contact"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Contains"
 msgstr "Contains"
@@ -11794,6 +11798,10 @@ msgstr "Leftover balance rolls into next month"
 msgid "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (decimal amounts, e.g. <1>25.50</1>) and upgraded on import. New integrations should send format 2."
 msgstr "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (decimal amounts, e.g. <1>25.50</1>) and upgraded on import. New integrations should send format 2."
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Legal"
+msgstr "Legal"
+
 #: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Legend"
 msgstr "Legend"
@@ -15731,6 +15739,10 @@ msgstr "Previous year"
 msgid "Price"
 msgstr "Price"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Pricing"
+msgstr "Pricing"
+
 #: src/entities/account/model/accountTypes.ts
 msgid "Primary spending account for everyday transactions"
 msgstr "Primary spending account for everyday transactions"
@@ -15754,6 +15766,10 @@ msgstr "Privacy"
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Privacy mode"
 msgstr "Privacy mode"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Privacy Policy"
+msgstr "Privacy Policy"
 
 #: src/pages/settings/ai/PrivacyWarnings.tsx
 msgid "Privacy-First AI"
@@ -16486,6 +16502,10 @@ msgstr "Refreshing…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Refund"
 msgstr "Refund"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Refund Policy"
+msgstr "Refund Policy"
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Regenerate API Token?"
@@ -19774,6 +19794,10 @@ msgstr "Template name"
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Templates"
 msgstr "Templates"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Terms of Service"
+msgstr "Terms of Service"
 
 #: src/pages/settings/ai/ConnectionTestPanel.tsx
 msgid "Test"
