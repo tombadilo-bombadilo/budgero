@@ -21,11 +21,37 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.21.4',
+    date: 'November 16, 2026',
+    summary:
+      'Turn two transactions your bank already brought in into one transfer without a duplicate, and correct the amounts of a transfer, also when one side is reconciled.',
+    isLatest: true,
+    items: [
+      {
+        type: 'new',
+        title: 'Pair two existing transactions as a transfer',
+        description:
+          'When bank sync or an import brought in both sides of a transfer, change the payee of one of them to "Transfer: <account>". Budgero finds the matching transaction in the other account and offers to use it as the other side instead of adding a second copy. Each side keeps its own date and amount, so both accounts still match your bank.',
+      },
+      {
+        type: 'new',
+        title: 'Enter the exact amounts of a transfer between currencies',
+        description:
+          'The Transfer rate dialog now lets you type the amount that left one account and the amount that arrived in the other, straight from your statements, and works out the rate from them. Both amounts are kept exactly as entered, and later exchange rate changes leave the transfer alone.',
+      },
+      {
+        type: 'improved',
+        title: 'Changing the amount of a reconciled transaction',
+        description:
+          'You can now change the amount of a reconciled transaction or transfer. Budgero asks first, then marks it uncleared so it shows up again in your next reconciliation. Custom exchange rates no longer rewrite a transfer that has a reconciled side.',
+      },
+    ],
+  },
+  {
     version: 'v1.21.3',
     date: 'November 15, 2026',
     summary:
       'A clearer review step when a YNAB import differs from YNAB, and removing your only workspace now closes it cleanly.',
-    isLatest: true,
     items: [
       {
         type: 'improved',
