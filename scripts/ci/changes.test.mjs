@@ -14,17 +14,16 @@ import {
   treeOf,
 } from './changes.mjs';
 
-const none = { app: false, website: false, server: false };
-const all = { app: true, website: true, server: true };
+const none = { app: false, server: false };
+const all = { app: true, server: true };
 
 for (const [name, paths, expected] of [
-  ['published docs', ['packages/website/content/docs/push-api.mdx', 'packages/website/content/docs/de/push-api.mdx'], { ...none, website: true }],
-  ['website code and audit', ['packages/website/src/app/page.tsx', 'scripts/i18n/audit-website.mjs'], { ...none, website: true }],
+  ['user docs and changelog (checked by the changes job itself)', ['docs/user/push-api.mdx', 'docs/user/de/push-api.mdx', 'docs/changelog/changelog-data.ts'], none],
   ['app and shared libraries', ['packages/app/src/app.ts', 'packages/core/src/index.ts', 'packages/runtime/src/index.ts', 'packages/eslint-config/index.js'], { ...none, app: true }],
   ['app catalogs', ['scripts/i18n/check-catalogs.mjs', 'packages/app/src/locales/de/messages.po'], { ...none, app: true }],
   ['Go server', ['packages/server/internal/application/push.go', 'packages/server/go.sum'], { ...none, server: true }],
   ['server build script consumed by app build', ['packages/server/package.json'], { ...none, app: true, server: true }],
-  ['mixed changes', ['packages/server/go.mod', 'packages/website/package.json'], { ...none, server: true, website: true }],
+  ['mixed changes', ['packages/server/go.mod', 'packages/app/src/app.ts'], { ...none, server: true, app: true }],
   ['repository prose', ['README.md', 'CONTRIBUTING.md', 'SECURITY.md', 'docs/development.md', '.github/ISSUE_TEMPLATE/bug_report.yml'], none],
   ['repository metadata', ['LICENSE', '.github/FUNDING.yml'], none],
   ['other workflows, including deletions', ['.github/workflows/release.yml', '.github/workflows/dco.yml'], none],
@@ -38,7 +37,6 @@ for (const [name, paths, expected] of [
   ['app manifest without line info', ['packages/app/package.json'], { ...none, app: true }],
   ['shared lockfile', ['pnpm-lock.yaml'], all],
   ['workspace manifest', ['pnpm-workspace.yaml'], all],
-  ['dependency patches', ['packages/website/patches/@contentlayer2__utils@0.5.8.patch'], all],
   ['unknown consumer', ['new-package/build.sh'], all],
   ['empty diff', [], none],
 ]) {
@@ -47,7 +45,7 @@ for (const [name, paths, expected] of [
 
 const version = ['  "version": "1.20.4",', '  "version": "1.20.5",'];
 for (const [name, paths, lines, expected] of [
-  ['release version bump', ['package.json', 'packages/app/package.json', 'packages/server/package.json', 'packages/server/internal/appmeta/version.txt', 'packages/website/src/lib/changelog-data.ts'], version, { ...none, website: true }],
+  ['release version bump', ['package.json', 'packages/app/package.json', 'packages/server/package.json', 'packages/server/internal/appmeta/version.txt', 'docs/changelog/changelog-data.ts'], version, none],
   ['dependency next to a version bump', ['packages/app/package.json'], [...version, '    "react": "19.1.1",'], { ...none, app: true }],
   ['server manifest script change', ['packages/server/package.json'], ['    "build": "go build ./..."'], { ...none, app: true, server: true }],
 ]) {
@@ -73,7 +71,7 @@ test('the assistant knowledge base matches the docs it is generated from', () =>
     return new Function(`return ${literal}`)();
   };
   try {
-    for (const dir of ['packages/app/scripts', 'packages/website/content/docs']) {
+    for (const dir of ['packages/app/scripts', 'docs/user']) {
       cpSync(join(repo, dir), join(cwd, dir), { recursive: true });
     }
     const stub = join(cwd, 'packages/app/node_modules/prettier');
@@ -130,13 +128,13 @@ test('real git ranges include every PR commit, deletions, and both sides of rena
     mkdirSync(join(cwd, 'packages/app'), { recursive: true });
     writeFileSync(join(cwd, 'packages/app/old.ts'), 'export const old = 1;\n');
     const base = commit();
-    mkdirSync(join(cwd, 'packages/website'), { recursive: true });
-    git('mv', 'packages/app/old.ts', 'packages/website/new.ts');
+    mkdirSync(join(cwd, 'packages/core'), { recursive: true });
+    git('mv', 'packages/app/old.ts', 'packages/core/new.ts');
     commit();
     mkdirSync(join(cwd, 'packages/server'), { recursive: true });
     writeFileSync(join(cwd, 'packages/server/new.go'), 'package server\n');
     const head = commit();
-    const expected = ['packages/app/old.ts', 'packages/server/new.go', 'packages/website/new.ts'];
+    const expected = ['packages/app/old.ts', 'packages/core/new.ts', 'packages/server/new.go'];
     assert.deepEqual(changedPaths(base, head, true, cwd), expected);
     assert.deepEqual(changedPaths(base, head, false, cwd), expected);
     assert.deepEqual(planEvent({ pull_request: { base: { sha: base }, head: { sha: head } } }, cwd), all);

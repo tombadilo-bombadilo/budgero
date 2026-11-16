@@ -58,7 +58,6 @@ echo "========================================"
 echo
 echo "Start developing with:"
 echo "  pnpm run dev:selfhost  # Self-host mode (frontend + Go server) — works out of the box"
-echo "  pnpm run dev:website   # Marketing website"
 echo
 echo "Cloud (SaaS) flavor development:"
 echo "  pnpm run dev:cloud     # Requires VITE_CLERK_PUBLISHABLE_KEY in packages/app/.env.local"

@@ -11,8 +11,8 @@ Forgejo is not part of publishing. Its private historical branches remain intact
 2. Review changes since the latest release and agree on the version and user-facing
    changelog. Keep the root, app, and server package versions and
    `packages/server/internal/appmeta/version.txt` in sync.
-3. Add the approved entry to `packages/website/src/lib/changelog-data.ts` with exactly
-   one `isLatest` entry. GitHub notes use this same source. Future/coming-soon items
+3. Add the approved entry to `docs/changelog/changelog-data.ts` with exactly one
+   `isLatest` entry. GitHub notes use this same source. Future/coming-soon items
    are excluded; contributor acknowledgements are included.
 4. Run both `pnpm run security:deps` and `pnpm run security:go` after changing release
    metadata, before committing. Resolve actionable findings. Also run relevant tests.
@@ -51,6 +51,14 @@ The single **release** workflow runs dependency and Go vulnerability scans, then
 
 No new release is created merely by merging code. Do not republish an older version
 just to test the pipeline.
+
+## Website changelog and docs
+
+The budgero.app website is a separate repository. It reads `docs/changelog` and
+`docs/user` from this repository through a git submodule pinned to a commit. After a
+release PR is merged, bump that submodule in the website repository to the merged
+commit; the changelog page and docs update when the website deploys. Changelog and
+docs edits are always made here, never in the website repository.
 
 ## Verify without publishing
 

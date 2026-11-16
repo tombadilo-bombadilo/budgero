@@ -23,9 +23,6 @@ packages/server/*.exe*
 packages/server/*.exe~
 main
 
-# Content layer (generated at build time)
-packages/website/.contentlayer/
-
 .pytest_cache/
 # Test artifacts (Playwright/Vitest)
 packages/core/playwright-report/
@@ -97,9 +94,8 @@ AGENTS.md
 ynab_pat
 ynab_pat.txt
 
-# Local SEO reports and advertising exports
+# Local SEO reports
 /docs/seo/
-/packages/website/ads/
 
 # Python localization tooling
 __pycache__/

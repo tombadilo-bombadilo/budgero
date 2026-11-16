@@ -37,11 +37,12 @@ the relicense were published under FSL-1.1-ALv2.
 | `packages/core` | Shared TypeScript domain logic: SQLite schema, migrations, services |
 | `packages/runtime` | Local-first runtime: sync transport, mutation execution, encryption |
 | `packages/server` | Go API server (Echo, SQLite) |
-| `packages/website` | Marketing and documentation site (Next.js) |
 | `packages/sdk-python` | Python SDK for the Push API |
 | `packages/eslint-config` | Shared ESLint configuration |
 
-Each package has its own README with details.
+Each package has its own README with details. User documentation (`docs/user`)
+and the release changelog (`docs/changelog`) also live here; the budgero.app
+website that publishes them is kept in a separate repository.
 
 ## Builds
 
@@ -62,7 +63,6 @@ pnpm install
 pnpm run setup:dev        # one-time setup (package builds, Air for Go hot-reload)
 
 pnpm run dev:selfhost     # frontend + Go backend in self-host mode
-pnpm run dev:website      # marketing site (port 3000)
 ```
 
 The app is served at `http://localhost:5173`, the API at `http://localhost:3001`.

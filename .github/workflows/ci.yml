@@ -28,7 +28,6 @@ jobs:
       actions: read
     outputs:
       app: ${{ steps.paths.outputs.app }}
-      website: ${{ steps.paths.outputs.website }}
       server: ${{ steps.paths.outputs.server }}
       tree: ${{ steps.paths.outputs.tree }}
     steps:
@@ -38,8 +37,17 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Test change selection
-        run: node --test scripts/ci/changes.test.mjs scripts/ci/govulncheck.test.mjs
+      # 22.6+ runs the TypeScript changelog the release tooling imports.
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # The changelog and user docs are checked here on every event: the
+      # release tooling test imports the changelog, and changes.test.mjs
+      # checks that the assistant's knowledge base matches docs/user.
+      - name: Test change selection, release notes and knowledge base
+        run: node --experimental-strip-types --test scripts/ci/changes.test.mjs scripts/ci/govulncheck.test.mjs scripts/release.test.mjs
 
       - name: Select affected checks
         id: paths
@@ -49,7 +57,7 @@ jobs:
 
   web-checks:
     needs: changes
-    if: needs.changes.outputs.app == 'true' || needs.changes.outputs.website == 'true'
+    if: needs.changes.outputs.app == 'true'
     runs-on: ${{ fromJSON(github.event_name == 'push' && github.ref == 'refs/heads/master' && vars.DELL_RUNNER_ENABLED == 'true' && '["self-hosted","linux","x64","budgero-build"]' || '["ubuntu-latest"]') }}
     timeout-minutes: 30
     steps:
@@ -137,32 +145,6 @@ jobs:
         if: needs.changes.outputs.app == 'true'
         run: pnpm run build:app
 
-      - name: Check Contentlayer tracing compatibility
-        if: needs.changes.outputs.website == 'true'
-        run: pnpm --dir packages/website run test:tracing
-
-      - name: Build website
-        if: needs.changes.outputs.website == 'true'
-        run: pnpm run build:website
-
-      - name: Check changelog crawlability
-        if: needs.changes.outputs.website == 'true'
-        run: pnpm --dir packages/website run test:changelog
-
-      - name: Type-check website
-        if: needs.changes.outputs.website == 'true'
-        run: pnpm --dir packages/website exec tsc --noEmit
-
-      - name: Audit translated website pages
-        if: needs.changes.outputs.website == 'true'
-        run: node scripts/i18n/audit-website.mjs --max 0
-
-      - name: Validate generated app knowledge
-        if: needs.changes.outputs.website == 'true' && needs.changes.outputs.app != 'true'
-        run: |
-          node packages/app/scripts/build-knowledge.mjs
-          node --experimental-strip-types --check packages/app/src/features/ai/lib/knowledge/knowledge-base.generated.ts
-
   server-checks:
     needs: changes
     if: needs.changes.outputs.server == 'true'
@@ -209,7 +191,7 @@ jobs:
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
           CHECKS_RESULT: ${{ needs.web-checks.result }}
-          SELECTED: ${{ needs.changes.outputs.app == 'true' || needs.changes.outputs.website == 'true' }}
+          SELECTED: ${{ needs.changes.outputs.app == 'true' }}
         run: |
           test "$CHANGES_RESULT" = success
           if [ "$SELECTED" = true ]; then

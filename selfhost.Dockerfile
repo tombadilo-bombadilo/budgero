@@ -13,7 +13,6 @@ RUN npm install -g pnpm@11.1.2
 
 # Copy workspace manifests
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/website/patches ./packages/website/patches
 COPY packages/core/package.json packages/core/
 COPY packages/runtime/package.json packages/runtime/
 COPY packages/app/package.json packages/app/
