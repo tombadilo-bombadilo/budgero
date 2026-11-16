@@ -172,8 +172,38 @@ function CloudAuthPage({ isSignup }: { isSignup: boolean }) {
             )}
           </div>
         </main>
+        <AuthFooter />
       </div>
     </>
+  );
+}
+
+// Product, pricing and legal pages live on the marketing site. Linking them
+// here keeps them one click away for anyone who lands on the app first,
+// including payment-provider reviewers checking the domain.
+function AuthFooter() {
+  const { t } = useLingui();
+  const links = [
+    { href: 'https://budgero.app/#pricing', label: t`Pricing` },
+    { href: 'https://budgero.app/terms', label: t`Terms of Service` },
+    { href: 'https://budgero.app/privacy', label: t`Privacy Policy` },
+    { href: 'https://budgero.app/refund-policy', label: t`Refund Policy` },
+    { href: 'mailto:hello@budgero.app', label: t`Contact` },
+  ];
+  return (
+    <footer className="mx-auto max-w-5xl pb-6 text-center text-xs text-muted-foreground">
+      <nav aria-label={t`Legal`} className="flex flex-wrap justify-center gap-x-4 gap-y-2">
+        {links.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            className="underline-offset-4 hover:text-foreground hover:underline"
+          >
+            {link.label}
+          </a>
+        ))}
+      </nav>
+    </footer>
   );
 }
 

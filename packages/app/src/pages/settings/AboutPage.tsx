@@ -7,7 +7,6 @@ import { openQuackback } from '@features/feedback';
 import { toast } from 'sonner';
 import { useServiceWorkerUpdate } from '@shared/pwa/ServiceWorkerUpdateProvider';
 import { SettingsPageHeader } from '@pages/settings/SettingsPageHeader';
-import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 
 import packageJson from '../../../package.json?json';
 
@@ -97,30 +96,6 @@ export default function AboutPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3 text-sm">
-            {IS_SELF_HOSTABLE_BUILD && (
-              <div>
-                <p className="font-medium text-foreground">
-                  <Trans>Support Development</Trans>
-                </p>
-                <p className="text-muted-foreground mb-1">
-                  <Trans>
-                    Self-Host is free forever. If Budgero is useful to you, you can support its
-                    development with a one-time, pay-what-you-want donation.
-                  </Trans>
-                </p>
-                <a
-                  href="https://budgero.app/donate?utm_source=selfhost-app&utm_medium=about"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-primary hover:underline inline-flex items-center gap-2"
-                >
-                  <Trans>
-                    <span className={`${communityBadgeClass} bg-[#e05d5d]`}>♥</span>Donate to
-                    Budgero
-                  </Trans>
-                </a>
-              </div>
-            )}
             <div>
               <p className="font-medium text-foreground">
                 <Trans>Website</Trans>

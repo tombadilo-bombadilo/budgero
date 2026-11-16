@@ -2082,10 +2082,6 @@ msgstr "<0/>Gebruiker verwijderen"
 msgid "<0/>Design a rule"
 msgstr "<0/>Regel ontwerpen"
 
-#: src/app/layout/desktop-shell/SidebarFooterContent.tsx
-msgid "<0/>Donate to Budgero<1>(opens in a new tab)</1>"
-msgstr "<0/>Doneren aan Budgero<1>(opent in een nieuw tabblad)</1>"
-
 #: src/app/system/BackupReminderDialog.tsx
 msgid "<0/>Download backup"
 msgstr "<0/>Back-up downloaden"
@@ -2677,10 +2673,6 @@ msgstr "<0><1/></0>Vorige"
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 msgid "<0><1/></0>Underfunded goals{0}"
 msgstr "<0><1/></0>Onvoldoende gefinancierde doelen{0}"
-
-#: src/pages/settings/AboutPage.tsx
-msgid "<0>♥</0>Donate to Budgero"
-msgstr "<0>♥</0>Doneren aan Budgero"
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "<0>⚠ READ THIS</0>Your budget is encrypted with this password on your device. We never see it. If you forget it, <1>your ledger is unrecoverable</1> — there is no reset email, no support line, no backdoor."
@@ -6660,6 +6652,10 @@ msgstr "Verbindingsstatus"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Consecutive months"
 msgstr "Opeenvolgende maanden"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Contact"
+msgstr "Contact"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Contains"
@@ -11792,6 +11788,10 @@ msgstr "Restsaldo schuift door naar de volgende maand"
 msgid "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (decimal amounts, e.g. <1>25.50</1>) and upgraded on import. New integrations should send format 2."
 msgstr "Verouderde payloads zonder het <0>\"v\"</0>-veld worden behandeld als formaat 1 (decimale bedragen, bijv. <1>25.50</1>) en geüpgraded bij import. Nieuwe integraties moeten formaat 2 verzenden."
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Legal"
+msgstr "Juridisch"
+
 #: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Legend"
 msgstr "Legenda"
@@ -15729,6 +15729,10 @@ msgstr "Vorig jaar"
 msgid "Price"
 msgstr "Prijs"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Pricing"
+msgstr "Prijzen"
+
 #: src/entities/account/model/accountTypes.ts
 msgid "Primary spending account for everyday transactions"
 msgstr "Primaire uitgavenrekening voor dagelijkse transacties"
@@ -15752,6 +15756,10 @@ msgstr "Privacy"
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Privacy mode"
 msgstr "Privacymodus"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Privacy Policy"
+msgstr "Privacybeleid"
 
 #: src/pages/settings/ai/PrivacyWarnings.tsx
 msgid "Privacy-First AI"
@@ -16484,6 +16492,10 @@ msgstr "Vernieuwen…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Refund"
 msgstr "Terugbetaling"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Refund Policy"
+msgstr "Terugbetalingsbeleid"
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Regenerate API Token?"
@@ -18124,10 +18136,6 @@ msgstr "Zelf hosten"
 msgid "Self-host Control Center"
 msgstr "Zelf hosten-controlecentrum"
 
-#: src/pages/settings/AboutPage.tsx
-msgid "Self-Host is free forever. If Budgero is useful to you, you can support its development with a one-time, pay-what-you-want donation."
-msgstr "Zelf hosten is voor altijd gratis. Als Budgero nuttig voor je is, kun je de ontwikkeling steunen met een eenmalige donatie naar keuze."
-
 #: src/pages/settings/push-api/PushApiPage.tsx
 msgid "Send a JSON object with an encrypted payload:"
 msgstr "Stuur een JSON-object met een versleutelde payload:"
@@ -19490,10 +19498,6 @@ msgstr "Supermarkt"
 msgid "Support"
 msgstr "Ondersteuning"
 
-#: src/pages/settings/AboutPage.tsx
-msgid "Support Development"
-msgstr "Ontwikkeling steunen"
-
 #: src/features/import/ui/steps/UploadStep.tsx
 msgid "Supported formats: CSV, TSV, TXT, PDF (table data), OFX, QFX, QIF, CAMT.053 (XML)"
 msgstr "Ondersteunde formaten: CSV, TSV, TXT, PDF (tabelgegevens), OFX, QFX, QIF, CAMT.053 (XML)"
@@ -19772,6 +19776,10 @@ msgstr "Sjabloonnaam"
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Templates"
 msgstr "Sjablonen"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Terms of Service"
+msgstr "Servicevoorwaarden"
 
 #: src/pages/settings/ai/ConnectionTestPanel.tsx
 msgid "Test"

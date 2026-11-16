@@ -2084,10 +2084,6 @@ msgstr "<0/>Delete user"
 msgid "<0/>Design a rule"
 msgstr "<0/>Design a rule"
 
-#: src/app/layout/desktop-shell/SidebarFooterContent.tsx
-msgid "<0/>Donate to Budgero<1>(opens in a new tab)</1>"
-msgstr "<0/>Donate to Budgero<1>(opens in a new tab)</1>"
-
 #: src/app/system/BackupReminderDialog.tsx
 msgid "<0/>Download backup"
 msgstr "<0/>Download backup"
@@ -2679,10 +2675,6 @@ msgstr "<0><1/></0>Previous"
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 msgid "<0><1/></0>Underfunded goals{0}"
 msgstr "<0><1/></0>Underfunded goals{0}"
-
-#: src/pages/settings/AboutPage.tsx
-msgid "<0>♥</0>Donate to Budgero"
-msgstr "<0>♥</0>Donate to Budgero"
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "<0>⚠ READ THIS</0>Your budget is encrypted with this password on your device. We never see it. If you forget it, <1>your ledger is unrecoverable</1> — there is no reset email, no support line, no backdoor."
@@ -6662,6 +6654,10 @@ msgstr "Connectivity status"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Consecutive months"
 msgstr "Consecutive months"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Contact"
+msgstr "Contact"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Contains"
@@ -11794,6 +11790,10 @@ msgstr "Leftover balance rolls into next month"
 msgid "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (decimal amounts, e.g. <1>25.50</1>) and upgraded on import. New integrations should send format 2."
 msgstr "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (decimal amounts, e.g. <1>25.50</1>) and upgraded on import. New integrations should send format 2."
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Legal"
+msgstr "Legal"
+
 #: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Legend"
 msgstr "Legend"
@@ -15731,6 +15731,10 @@ msgstr "Previous year"
 msgid "Price"
 msgstr "Price"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Pricing"
+msgstr "Pricing"
+
 #: src/entities/account/model/accountTypes.ts
 msgid "Primary spending account for everyday transactions"
 msgstr "Primary spending account for everyday transactions"
@@ -15754,6 +15758,10 @@ msgstr "Privacy"
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Privacy mode"
 msgstr "Privacy mode"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Privacy Policy"
+msgstr "Privacy Policy"
 
 #: src/pages/settings/ai/PrivacyWarnings.tsx
 msgid "Privacy-First AI"
@@ -16486,6 +16494,10 @@ msgstr "Refreshing…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Refund"
 msgstr "Refund"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Refund Policy"
+msgstr "Refund Policy"
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Regenerate API Token?"
@@ -18126,10 +18138,6 @@ msgstr "Self-host"
 msgid "Self-host Control Center"
 msgstr "Self-host Control Center"
 
-#: src/pages/settings/AboutPage.tsx
-msgid "Self-Host is free forever. If Budgero is useful to you, you can support its development with a one-time, pay-what-you-want donation."
-msgstr "Self-Host is free forever. If Budgero is useful to you, you can support its development with a one-time, pay-what-you-want donation."
-
 #: src/pages/settings/push-api/PushApiPage.tsx
 msgid "Send a JSON object with an encrypted payload:"
 msgstr "Send a JSON object with an encrypted payload:"
@@ -19492,10 +19500,6 @@ msgstr "Supermarket"
 msgid "Support"
 msgstr "Support"
 
-#: src/pages/settings/AboutPage.tsx
-msgid "Support Development"
-msgstr "Support Development"
-
 #: src/features/import/ui/steps/UploadStep.tsx
 msgid "Supported formats: CSV, TSV, TXT, PDF (table data), OFX, QFX, QIF, CAMT.053 (XML)"
 msgstr "Supported formats: CSV, TSV, TXT, PDF (table data), OFX, QFX, QIF, CAMT.053 (XML)"
@@ -19774,6 +19778,10 @@ msgstr "Template name"
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Templates"
 msgstr "Templates"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Terms of Service"
+msgstr "Terms of Service"
 
 #: src/pages/settings/ai/ConnectionTestPanel.tsx
 msgid "Test"

@@ -2082,10 +2082,6 @@ msgstr "<0/>Eliminar usuario"
 msgid "<0/>Design a rule"
 msgstr "<0/>Diseñar una regla"
 
-#: src/app/layout/desktop-shell/SidebarFooterContent.tsx
-msgid "<0/>Donate to Budgero<1>(opens in a new tab)</1>"
-msgstr "<0/>Donar a Budgero<1>(se abre en una pestaña nueva)</1>"
-
 #: src/app/system/BackupReminderDialog.tsx
 msgid "<0/>Download backup"
 msgstr "<0/>Descargar copia de seguridad"
@@ -2677,10 +2673,6 @@ msgstr "<0><1/></0>Anterior"
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 msgid "<0><1/></0>Underfunded goals{0}"
 msgstr "<0><1/></0>Objetivos sin financiar por completo{0}"
-
-#: src/pages/settings/AboutPage.tsx
-msgid "<0>♥</0>Donate to Budgero"
-msgstr "<0>♥</0>Dona a Budgero"
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "<0>⚠ READ THIS</0>Your budget is encrypted with this password on your device. We never see it. If you forget it, <1>your ledger is unrecoverable</1> — there is no reset email, no support line, no backdoor."
@@ -6660,6 +6652,10 @@ msgstr "Estado de conexión"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Consecutive months"
 msgstr "Meses consecutivos"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Contact"
+msgstr "Contacto"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Contains"
@@ -11792,6 +11788,10 @@ msgstr "El saldo restante pasa al mes siguiente"
 msgid "Legacy payloads without the <0>\"v\"</0>field are treated as format 1 (decimal amounts, e.g. <1>25.50</1>) and upgraded on import. New integrations should send format 2."
 msgstr "Los payloads heredados sin el campo <0>\"v\"</0> se tratan como formato 1 (importes decimales, p. ej. <1>25.50</1>) y se actualizan al importar. Las nuevas integraciones deberían enviar el formato 2."
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Legal"
+msgstr "Legal"
+
 #: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Legend"
 msgstr "Leyenda"
@@ -15729,6 +15729,10 @@ msgstr "Año anterior"
 msgid "Price"
 msgstr "Precio"
 
+#: src/pages/auth/AuthPage.tsx
+msgid "Pricing"
+msgstr "Precios"
+
 #: src/entities/account/model/accountTypes.ts
 msgid "Primary spending account for everyday transactions"
 msgstr "Cuenta principal de gastos para transacciones diarias"
@@ -15752,6 +15756,10 @@ msgstr "Privacidad"
 #: src/widgets/navigation/MobileTopBar.tsx
 msgid "Privacy mode"
 msgstr "Modo privado"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Privacy Policy"
+msgstr "Política de privacidad"
 
 #: src/pages/settings/ai/PrivacyWarnings.tsx
 msgid "Privacy-First AI"
@@ -16484,6 +16492,10 @@ msgstr "Actualizando…"
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Refund"
 msgstr "Reembolso"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Refund Policy"
+msgstr "Política de reembolso"
 
 #: src/pages/settings/push-api/RegenerateDialog.tsx
 msgid "Regenerate API Token?"
@@ -18124,10 +18136,6 @@ msgstr "Autoalojamiento"
 msgid "Self-host Control Center"
 msgstr "Centro de control de autoalojamiento"
 
-#: src/pages/settings/AboutPage.tsx
-msgid "Self-Host is free forever. If Budgero is useful to you, you can support its development with a one-time, pay-what-you-want donation."
-msgstr "El autoalojamiento es gratis para siempre. Si Budgero te resulta útil, puedes apoyar su desarrollo con una donación única del importe que quieras."
-
 #: src/pages/settings/push-api/PushApiPage.tsx
 msgid "Send a JSON object with an encrypted payload:"
 msgstr "Envía un objeto JSON con una carga útil cifrada:"
@@ -19490,10 +19498,6 @@ msgstr "Supermercado"
 msgid "Support"
 msgstr "Soporte"
 
-#: src/pages/settings/AboutPage.tsx
-msgid "Support Development"
-msgstr "Apoya el desarrollo"
-
 #: src/features/import/ui/steps/UploadStep.tsx
 msgid "Supported formats: CSV, TSV, TXT, PDF (table data), OFX, QFX, QIF, CAMT.053 (XML)"
 msgstr "Formatos compatibles: CSV, TSV, TXT, PDF (datos tabulares), OFX, QFX, QIF, CAMT.053 (XML)"
@@ -19772,6 +19776,10 @@ msgstr "Nombre de plantilla"
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Templates"
 msgstr "Plantillas"
+
+#: src/pages/auth/AuthPage.tsx
+msgid "Terms of Service"
+msgstr "Términos del servicio"
 
 #: src/pages/settings/ai/ConnectionTestPanel.tsx
 msgid "Test"
