@@ -206,11 +206,12 @@ export const ACCOUNT_TRANSACTION_INVALIDATION_KEYS: [string, ...string[]][] = [
   ['similarTransactions', '*'],
   ['futureAccountTransactions', '*'],
   ['accountBalanceHistory', '*'],
+  // The Transfer rate dialog reads both sides' amounts and reconciled state.
+  ['transferRateDetails', '*'],
 ];
 
 export const TRANSACTION_INVALIDATION_KEYS: string[][] = [
   ...ACCOUNT_TRANSACTION_INVALIDATION_KEYS,
-  ['transferRateDetails', '*'],
   ['transactionsByCategoryAndMonth', '*'],
   ['allTransactions', '*'],
   ['allTransactionsDetailed', '*'],
