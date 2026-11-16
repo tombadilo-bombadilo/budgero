@@ -1,7 +1,12 @@
 import { t } from '@lingui/core/macro';
 import { toastError } from '@shared/lib/errors';
+import { getRuntime } from '@shared/runtime/global';
 import { useUpdateTransactionColumn } from '@entities/transaction/api/useTransactions';
 import { type TransactionColumnName as DbTransactionColumn } from '@entities/transaction/api/mutations';
+import {
+  columnEditUnlocksReconciled,
+  confirmReconciledEdit,
+} from '../ui/reconciled-edit/reconciled-edit-confirm';
 
 export interface CellCommitOptions {
   accountId: number;
@@ -96,9 +101,24 @@ function computeCellCommit(
   };
 }
 
+/** Whether this commit changes a reconciled row's bank amount (so the user is asked first). */
+function unlocksReconciled(transactionId: number, result: CellCommitResult): boolean {
+  try {
+    const services = getRuntime()?.services();
+    return columnEditUnlocksReconciled(services, transactionId, result.column, result.value);
+  } catch {
+    return false; // no runtime yet: nothing to check against
+  }
+}
+
 export function useTransactionCellCommit() {
   const updateColumn = useUpdateTransactionColumn();
 
+  /**
+   * Commit a cell edit. Returns the optimistic patch, or null when nothing is
+   * saved yet: an edit that would unlock a reconciled row first asks
+   * (confirmReconciledEdit) and is saved only if the user goes ahead.
+   */
   function mutate(
     transactionId: number,
     columnId: DbTransactionColumn,
@@ -108,20 +128,28 @@ export function useTransactionCellCommit() {
     const result = computeCellCommit(columnId, newVal, options);
     if (!result) return null;
 
-    updateColumn.mutate(
-      {
-        transactionId,
-        column: result.column,
-        value: result.value,
-        accountId: result.accountId,
-        skipInvalidate: options.skipInvalidate,
-      },
-      // A refused move (e.g. into an account a split line transfers to) says why.
-      result.column === 'AccountID'
-        ? { onError: (error) => toastError(t`Could not move the transaction`, error) }
-        : undefined
-    );
+    const save = () =>
+      updateColumn.mutate(
+        {
+          transactionId,
+          column: result.column,
+          value: result.value,
+          accountId: result.accountId,
+          skipInvalidate: options.skipInvalidate,
+        },
+        // A refused move (e.g. into an account a split line transfers to) says why.
+        result.column === 'AccountID'
+          ? { onError: (error) => toastError(t`Could not move the transaction`, error) }
+          : undefined
+      );
 
+    if (unlocksReconciled(transactionId, result)) {
+      void confirmReconciledEdit('row').then((confirmed) => {
+        if (confirmed) save();
+      });
+      return null;
+    }
+    save();
     return result.optimisticPatch;
   }
 
@@ -133,6 +161,7 @@ export function useTransactionCellCommit() {
   ): Promise<void> {
     const result = computeCellCommit(columnId, newVal, options);
     if (!result) return;
+    if (unlocksReconciled(transactionId, result) && !(await confirmReconciledEdit('row'))) return;
 
     await updateColumn.mutateAsync({
       transactionId,

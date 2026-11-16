@@ -20,6 +20,8 @@ interface TransferLegRow {
   ExchangeRate: number | null;
   ExchangeRateOverride: boolean | number;
   TransferRateOverride: boolean | number;
+  Reconciled: boolean | number;
+  Cleared: boolean | number;
 }
 
 export interface TransferRateDetails {
@@ -37,6 +39,9 @@ export interface TransferRateDetails {
     budgetAmount: number;
     budgetRate: number | null;
     rateOverride: boolean;
+    /** Locked by a reconcile; changing its amount unlocks it (see unreconcileIfNativeChanged). */
+    reconciled: boolean;
+    cleared: boolean;
   };
   destination: {
     transactionId: number;
@@ -48,12 +53,17 @@ export interface TransferRateDetails {
     budgetAmount: number;
     budgetRate: number | null;
     rateOverride: boolean;
+    /** Locked by a reconcile; changing its amount unlocks it (see unreconcileIfNativeChanged). */
+    reconciled: boolean;
+    cleared: boolean;
   };
   /** Direct source-to-destination rate implied by the two native legs. */
   rate: number;
   transferRateOverride: boolean;
   /** Any override that protects this linked transfer from automatic rate changes. */
   hasRateOverride: boolean;
+  /** Either leg is reconciled: automatic rate changes leave the transfer alone. */
+  hasReconciledLeg: boolean;
 }
 
 export type TransferRateResolver = (
@@ -82,7 +92,9 @@ function getTransferLegs(db: DatabaseAdapter, transferId: string): TransferLegRo
         t.OutflowConverted,
         t.ExchangeRate,
         t.ExchangeRateOverride,
-        t.TransferRateOverride
+        t.TransferRateOverride,
+        t.Reconciled,
+        t.Cleared
       FROM transactions t
       JOIN accounts a ON a.ID = t.AccountID
       JOIN budgets b ON b.ID = t.BudgetID
@@ -125,6 +137,8 @@ export function getTransferRateDetails(
       budgetAmount: Number(source.OutflowConverted || 0),
       budgetRate: source.ExchangeRate,
       rateOverride: Boolean(source.ExchangeRateOverride),
+      reconciled: Boolean(source.Reconciled),
+      cleared: Boolean(source.Cleared || source.Reconciled),
     },
     destination: {
       transactionId: destination.ID,
@@ -136,6 +150,8 @@ export function getTransferRateDetails(
       budgetAmount: Number(destination.InflowConverted || 0),
       budgetRate: destination.ExchangeRate,
       rateOverride: Boolean(destination.ExchangeRateOverride),
+      reconciled: Boolean(destination.Reconciled),
+      cleared: Boolean(destination.Cleared || destination.Reconciled),
     },
     rate: destinationDecimal / sourceDecimal,
     transferRateOverride: Boolean(source.TransferRateOverride || destination.TransferRateOverride),
@@ -145,6 +161,7 @@ export function getTransferRateDetails(
       source.ExchangeRateOverride ||
       destination.ExchangeRateOverride
     ),
+    hasReconciledLeg: Boolean(source.Reconciled || destination.Reconciled),
   };
 }
 
@@ -162,6 +179,13 @@ function rateFromAmounts(
   return toDecimal / fromDecimal;
 }
 
+interface TransferWriteOptions {
+  sourceOverride: boolean;
+  destinationOverride: boolean;
+  transferOverride: boolean;
+  refreshBudgetRates: boolean;
+}
+
 /**
  * Apply a direct source→destination transfer rate as one accounting operation.
  * The sent amount is the anchor and the received native amount is re-derived
@@ -174,23 +198,79 @@ export async function applyTransferRate(
   transferId: string,
   directRate: number,
   resolveRate: TransferRateResolver,
-  options: {
-    sourceOverride: boolean;
-    destinationOverride: boolean;
-    transferOverride: boolean;
-    refreshBudgetRates: boolean;
-  }
+  options: TransferWriteOptions
 ): Promise<TransferRateDetails> {
   if (!Number.isFinite(directRate) || directRate <= 0) {
     throw new ValidationError('Transfer rate must be greater than zero');
   }
 
+  const current = loadCrossCurrencyTransfer(db, transferId);
+  const destinationNativeAmount = convertScaled(
+    current.source.amount,
+    directRate,
+    current.source.currency,
+    current.destination.currency
+  );
+  return writeTransfer(
+    db,
+    current,
+    current.source.amount,
+    destinationNativeAmount,
+    resolveRate,
+    options
+  );
+}
+
+/**
+ * Store a cross-currency transfer's exact sent and received amounts (what the
+ * two bank statements show) as one accounting operation. The direct rate is
+ * implied by the two amounts, so it is marked as overridden: automatic rate
+ * changes leave it alone. Each leg is valued in the budget currency the same
+ * way applyTransferRate does.
+ */
+export async function applyTransferAmounts(
+  db: DatabaseAdapter,
+  transferId: string,
+  sentAmount: number,
+  receivedAmount: number,
+  resolveRate: TransferRateResolver,
+  options: Omit<TransferWriteOptions, 'transferOverride'>
+): Promise<TransferRateDetails> {
+  for (const amount of [sentAmount, receivedAmount]) {
+    if (!Number.isSafeInteger(amount) || amount <= 0) {
+      throw new ValidationError('Transfer amounts must be greater than zero');
+    }
+  }
+  const current = loadCrossCurrencyTransfer(db, transferId);
+  return writeTransfer(db, current, sentAmount, receivedAmount, resolveRate, {
+    ...options,
+    transferOverride: true,
+  });
+}
+
+function loadCrossCurrencyTransfer(db: DatabaseAdapter, transferId: string): TransferRateDetails {
   const current = getTransferRateDetails(db, transferId);
   if (!current) throw new ValidationError('A transfer rate requires exactly two linked legs');
   if (current.source.currency === current.destination.currency) {
     throw new ValidationError('A transfer rate only applies to different account currencies');
   }
+  return current;
+}
 
+/**
+ * Write both legs' native amounts, value each in the budget currency, and
+ * recalculate both accounts in one DB transaction. A reconciled leg whose
+ * native amount changes goes back to uncleared.
+ */
+async function writeTransfer(
+  db: DatabaseAdapter,
+  current: TransferRateDetails,
+  sourceNativeAmount: number,
+  destinationNativeAmount: number,
+  resolveRate: TransferRateResolver,
+  options: TransferWriteOptions
+): Promise<TransferRateDetails> {
+  const { transferId } = current;
   const resolveBudgetRate = async (
     currency: string,
     date: string,
@@ -208,12 +288,6 @@ export async function applyTransferRate(
     return rateFromAmounts(nativeAmount, budgetAmount, currency, current.budgetCurrency);
   };
 
-  const destinationNativeAmount = convertScaled(
-    current.source.amount,
-    directRate,
-    current.source.currency,
-    current.destination.currency
-  );
   const sourceBudgetRate = await resolveBudgetRate(
     current.source.currency,
     current.source.date,
@@ -231,7 +305,7 @@ export async function applyTransferRate(
     current.destination.rateOverride && options.destinationOverride
   );
   const sourceBudgetAmount = convertScaled(
-    current.source.amount,
+    sourceNativeAmount,
     sourceBudgetRate,
     current.source.currency,
     current.budgetCurrency
@@ -244,16 +318,20 @@ export async function applyTransferRate(
   );
   const sourceOverride = options.sourceOverride ? 1 : 0;
   const destinationOverride = options.destinationOverride ? 1 : 0;
+  const legsBefore = getTransferLegs(db, transferId);
 
   db.transaction(() => {
+    // The sent amount only moves when the caller gives a new one (applyTransferAmounts).
+    const sourceMoves = sourceNativeAmount !== current.source.amount;
     run(
       db,
       `
         UPDATE transactions
-        SET OutflowConverted = ?, ExchangeRate = ?, ExchangeRateOverride = ?,
-            TransferRateOverride = ?, ConversionPending = 0
+        SET ${sourceMoves ? 'OutflowNative = ?,' : ''} OutflowConverted = ?, ExchangeRate = ?,
+            ExchangeRateOverride = ?, TransferRateOverride = ?, ConversionPending = 0
         WHERE ID = ?
       `,
+      ...(sourceMoves ? [sourceNativeAmount] : []),
       sourceBudgetAmount,
       current.source.currency === current.budgetCurrency ? null : sourceBudgetRate,
       sourceOverride,
@@ -277,6 +355,7 @@ export async function applyTransferRate(
     );
 
     const transactionQueries = new TransactionQueries(db);
+    for (const leg of legsBefore) transactionQueries.unreconcileIfNativeChanged(leg.ID, leg);
     transactionQueries.recalculateBalances(current.source.accountId);
     transactionQueries.recalculateBalances(current.destination.accountId);
     transactionQueries.resyncSplitLinesForAccounts([

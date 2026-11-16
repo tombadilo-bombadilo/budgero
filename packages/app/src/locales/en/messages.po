@@ -5480,6 +5480,7 @@ msgstr "Canadian Dollar"
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
 #: src/pages/admin/admin-users/ActionDialog.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
@@ -5730,6 +5731,10 @@ msgstr "Chain conditions with AND / OR. AND is checked before OR, so each OR sta
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Change"
 msgstr "Change"
+
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "Change a reconciled amount?"
+msgstr "Change a reconciled amount?"
 
 #: src/features/account-management/ui/AccountCurrencyChangeDialog.tsx
 msgid "Change account currency?"
@@ -8895,6 +8900,10 @@ msgstr "Enter new password (min 8 characters)"
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Enter the amount sent from {0}"
 msgstr "Enter the amount sent from {0}"
+
+#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
+msgid "Enter the amounts from your bank statements and the rate follows, or change the rate to recalculate the received amount. Saving updates both accounts and their budget valuations together."
+msgstr "Enter the amounts from your bank statements and the rate follows, or change the rate to recalculate the received amount. Saving updates both accounts and their budget valuations together."
 
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Enter the balance your bank shows. It is compared with your cleared balance; cleared transactions are then locked, and uncleared ones stay open."
@@ -17346,6 +17355,10 @@ msgstr "Save 17%"
 msgid "Save a question under Reports first."
 msgstr "Save a question under Reports first."
 
+#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
+msgid "Save amounts"
+msgstr "Save amounts"
+
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Save and add another"
 msgstr "Save and add another"
@@ -17353,6 +17366,10 @@ msgstr "Save and add another"
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 msgid "Save and add to dashboard"
 msgstr "Save and add to dashboard"
+
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "Save and mark uncleared"
+msgstr "Save and mark uncleared"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Save by a date"
@@ -20053,10 +20070,6 @@ msgstr "The selected date column has no year (e.g. \"Oct 25\"). All transactions
 msgid "The selected transfer does not have one source and one destination. To repeat a split with a transfer line, make its split transaction recurring instead."
 msgstr "The selected transfer does not have one source and one destination. To repeat a split with a transfer line, make its split transaction recurring instead."
 
-#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
-msgid "The sent amount stays fixed. Saving recalculates the received amount and both budget valuations atomically."
-msgstr "The sent amount stays fixed. Saving recalculates the received amount and both budget valuations atomically."
-
 #: src/features/sync-diagnostics/ui/PendingChangesCard.tsx
 msgid "The server has confirmed all changes from this device."
 msgstr "The server has confirmed all changes from this device."
@@ -20519,6 +20532,10 @@ msgstr "This transaction has no single amount to transfer."
 msgid "This transaction is already a transfer."
 msgstr "This transaction is already a transfer."
 
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "This transaction is reconciled. Saving the new amount marks it as uncleared, so you'll need to reconcile the account again."
+msgstr "This transaction is reconciled. Saving the new amount marks it as uncleared, so you'll need to reconcile the account again."
+
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "This transaction is scheduled for a future date."
 msgstr "This transaction is scheduled for a future date."
@@ -20526,6 +20543,10 @@ msgstr "This transaction is scheduled for a future date."
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "This transfer does not have exactly two linked legs, so its direct rate cannot be edited."
 msgstr "This transfer does not have exactly two linked legs, so its direct rate cannot be edited."
+
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "This transfer has a reconciled side. Saving marks each side whose amount changes as uncleared, so you'll need to reconcile that account again."
+msgstr "This transfer has a reconciled side. Saving marks each side whose amount changes as uncleared, so you'll need to reconcile that account again."
 
 #: src/pages/admin/admin-users/ActionDialog.tsx
 msgid "This user will be signed out immediately and prevented from logging back in until unblocked."
@@ -21021,6 +21042,10 @@ msgstr "Transfer acct #{0}"
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Transfer added"
 msgstr "Transfer added"
+
+#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
+msgid "Transfer amounts updated"
+msgstr "Transfer amounts updated"
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Transfer created successfully."

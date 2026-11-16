@@ -218,6 +218,28 @@ export function useUpdateTransferRate() {
   });
 }
 
+export type UpdateTransferAmountsInput = {
+  transferId: string;
+  /** Native amount that left the source account (its currency's scale). */
+  sentAmount: number;
+  /** Native amount that arrived in the destination account (its currency's scale). */
+  receivedAmount: number;
+};
+
+/** Store a cross-currency transfer's exact sent and received amounts (the rate follows). */
+export function useUpdateTransferAmounts() {
+  const runtime = useRuntime();
+  return useMutation<void, Error, UpdateTransferAmountsInput>({
+    mutationFn: async ({ transferId, sentAmount, receivedAmount }) => {
+      await executeSpaceMutation<void>(runtime, {
+        op: 'transactions.updateTransferAmounts',
+        payload: { transferId, sentAmount, receivedAmount },
+        meta: { label: 'useUpdateTransferAmounts' },
+      });
+    },
+  });
+}
+
 /**
  * Update a transaction column.
  */

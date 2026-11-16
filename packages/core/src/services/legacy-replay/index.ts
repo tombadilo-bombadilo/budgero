@@ -264,6 +264,68 @@ export class LegacyReplayService {
     return this.budgetRowMatches(budgetId, transactionIds, "t.Payee = ''");
   }
 
+  /**
+   * An amount (or transfer-leg rate) edit of this row now unlocks a reconciled
+   * row whose bank amount changes, including the transfer partner and split
+   * mirrors the edit moves, and a cross-currency transfer leg edit keeps the
+   * partner's amount instead of re-deriving it at the market rate. v1.21 and
+   * older keep the flags and re-derive the partner.
+   */
+  amountEditDiffersFromLegacy(transactionId: number): boolean {
+    const row = this.queries.getTransactionByID(Number(transactionId));
+    if (!row) return false;
+    if (row.Reconciled) return true;
+    if (row.TransferID) {
+      const legs = this.queries.getTransactionsByTransferID(row.TransferID);
+      if (legs.length === 2) {
+        if (legs.some((leg) => leg.Reconciled)) return true;
+        const currencies = new Set(
+          legs.map((leg) => this.queries.getAccountAndBudget(leg.AccountID).account?.Currency)
+        );
+        if (currencies.size > 1) return true;
+      }
+    }
+    return this.queries
+      .getSplitMirrorTransactions(Number(transactionId))
+      .some((mirror) => mirror.Reconciled);
+  }
+
+  /** A rate edit of this transfer now unlocks a reconciled leg whose amount changes. */
+  transferHasReconciledLeg(transferId: string): boolean {
+    return this.queries
+      .getTransactionsByTransferID(String(transferId))
+      .some((leg) => Boolean(leg.Reconciled));
+  }
+
+  /** Liability start edits now unlock a reconciled start row whose amount changes. */
+  accountHasReconciledRows(accountId: number): boolean {
+    return Boolean(
+      getRow<{ Found: number }>(
+        this.db,
+        `SELECT 1 AS Found FROM transactions WHERE AccountID = ? AND Reconciled = TRUE LIMIT 1`,
+        Number(accountId)
+      )
+    );
+  }
+
+  /** Custom rate changes now skip transfers with a reconciled leg. */
+  budgetHasReconciledTransfers(budgetId: number): boolean {
+    return this.budgetRowMatches(budgetId, undefined, "t.Reconciled = TRUE AND t.TransferID != ''");
+  }
+
+  /**
+   * Amount actions on these rows (or, without ids, the budget's) now unlock
+   * reconciled rows and keep a cross-currency transfer partner's amount (see
+   * amountEditDiffersFromLegacy); checked loosely: any reconciled row or transfer leg.
+   */
+  hasReconciledOrTransferRows(budgetId: number, transactionIds?: number[]): boolean {
+    return this.budgetRowMatches(
+      budgetId,
+      transactionIds,
+      "(t.Reconciled = TRUE OR COALESCE(t.TransferID, '') != '')"
+    );
+  }
+
   /** Whether a row of the budget (limited to `transactionIds` when given) matches `condition`. */
   private budgetRowMatches(
     budgetId: number,

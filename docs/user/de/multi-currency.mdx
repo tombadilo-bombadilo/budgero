@@ -81,6 +81,8 @@ Marktkurse sind Durchschnittswerte; der Abrechnungskurs deiner Karte ist es nie 
 
 Das ist das Werkzeug für: Karteneinkäufe im Ausland (Banken schlagen ihre eigene Marge auf), Umbuchungen, bei denen die Quittung den genauen Kurs ausweist, und jede Zeile, die dein Buchhalter irgendwann mit einem Kontoauszug abgleichen wird.
 
+**Umbuchungen zwischen Währungen.** Um eine Umbuchung nachträglich zu korrigieren, öffne im Register ihren Dialog **Umbuchungskurs**. Gib den genauen Betrag ein, der das eine Konto verlassen hat, und den Betrag, der auf dem anderen angekommen ist, direkt von den beiden Kontoauszügen, und Budgero berechnet den Kurs (inklusive Bankgebühren und Marge); oder ändere den Kurs, dann folgt der empfangene Betrag. Beide Beträge bleiben genau so, wie du sie eingegeben hast, und der Kurs wird fixiert, sodass spätere Kursänderungen die Umbuchung nicht verändern; benutzerdefinierte Kurse schreiben eine Umbuchung mit einer abgeglichenen Seite nie um. Änderst du den Betrag einer Seite im Register, gilt dasselbe: Die andere Seite behält ihren Betrag, und der Kurs passt sich an.
+
 ## Manuelle Kurse: Budgetierung ohne Kurs-Feed
 
 Manuelle Kurse sind feste Kurse, die du selbst eingibst. Sie werden verwendet, wenn abgerufene Kurse nicht verfügbar sind — [offline](/docs/offline) oder auf einer [Self-Hosting](/docs/self-hosting-guide)-Instanz, die du nicht mit einer Kurs-API verbunden hast. Leg sie einmal für die Währungspaare fest, die du nutzt, und Multi-Währung funktioniert auch ohne Netzwerkverbindung. Einzelne Transaktionen kannst du später jederzeit mit Overrides korrigieren.

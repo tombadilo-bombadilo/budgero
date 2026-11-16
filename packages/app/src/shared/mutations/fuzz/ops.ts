@@ -320,6 +320,7 @@ const KINDS: [string, number][] = [
   ['transactions.import', 3],
   ['transactions.addTransfer', 4],
   ['transactions.updateTransferRate', 2],
+  ['transactions.updateTransferAmounts', 2],
   ['transactions.deleteTransfer', 2],
   ['transactions.updateColumn', 10],
   ['transactions.delete', 5],
@@ -632,6 +633,19 @@ export function realize(device: Device, intent: Intent): OpCall | null {
       const transferId = pick(transfers, a);
       return transferId
         ? { op: k, payload: { transferId, rate: 0.8 + (b % 40) / 100, transferRateOverride: true } }
+        : null;
+    }
+    case 'transactions.updateTransferAmounts': {
+      const transferId = pick(transfers, a);
+      return transferId
+        ? {
+            op: k,
+            payload: {
+              transferId,
+              sentAmount: 1_000 * (1 + (b % 50)),
+              receivedAmount: 1_000 * (1 + (c % 70)),
+            },
+          }
         : null;
     }
     case 'transactions.deleteTransfer': {

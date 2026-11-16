@@ -5478,6 +5478,7 @@ msgstr "Dólar canadiense"
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
 #: src/pages/admin/admin-users/ActionDialog.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
@@ -5728,6 +5729,10 @@ msgstr "Encadena condiciones con Y / O. Y se evalúa antes que O, así que cada 
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Change"
 msgstr "Cambio"
+
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "Change a reconciled amount?"
+msgstr "¿Cambiar un importe conciliado?"
 
 #: src/features/account-management/ui/AccountCurrencyChangeDialog.tsx
 msgid "Change account currency?"
@@ -8893,6 +8898,10 @@ msgstr "Introduce la nueva contraseña (mín. 8 caracteres)"
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Enter the amount sent from {0}"
 msgstr "Introduce el importe enviado desde {0}"
+
+#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
+msgid "Enter the amounts from your bank statements and the rate follows, or change the rate to recalculate the received amount. Saving updates both accounts and their budget valuations together."
+msgstr "Introduce los importes de tus extractos bancarios y el tipo de cambio se calcula a partir de ellos, o cambia el tipo de cambio para recalcular el importe recibido. Al guardar se actualizan a la vez ambas cuentas y sus valoraciones en el presupuesto."
 
 #: src/features/account-management/ui/ReconcileAccountDialog.tsx
 msgid "Enter the balance your bank shows. It is compared with your cleared balance; cleared transactions are then locked, and uncleared ones stay open."
@@ -17344,6 +17353,10 @@ msgstr "Ahorra 17%"
 msgid "Save a question under Reports first."
 msgstr "Primero guarda una pregunta en Informes."
 
+#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
+msgid "Save amounts"
+msgstr "Guardar importes"
+
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 msgid "Save and add another"
 msgstr "Guardar y añadir otra"
@@ -17351,6 +17364,10 @@ msgstr "Guardar y añadir otra"
 #: src/features/reports/ui/notebook/SaveQuestionDialog.tsx
 msgid "Save and add to dashboard"
 msgstr "Guardar y añadir al panel"
+
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "Save and mark uncleared"
+msgstr "Guardar y marcar como sin confirmar"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Save by a date"
@@ -20051,10 +20068,6 @@ msgstr "La columna de fecha seleccionada no tiene año (p. ej. \"25 oct\"). Toda
 msgid "The selected transfer does not have one source and one destination. To repeat a split with a transfer line, make its split transaction recurring instead."
 msgstr "La transferencia seleccionada no tiene un único origen y destino. Para repetir una división con una línea de transferencia, haz recurrente la transacción dividida."
 
-#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
-msgid "The sent amount stays fixed. Saving recalculates the received amount and both budget valuations atomically."
-msgstr "El importe enviado permanece fijo. Al guardar se recalculan conjuntamente el importe recibido y ambas valoraciones del presupuesto."
-
 #: src/features/sync-diagnostics/ui/PendingChangesCard.tsx
 msgid "The server has confirmed all changes from this device."
 msgstr "El servidor ha confirmado todos los cambios de este dispositivo."
@@ -20517,6 +20530,10 @@ msgstr "Esta transacción no tiene un único importe que transferir."
 msgid "This transaction is already a transfer."
 msgstr "Esta transacción ya es una transferencia."
 
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "This transaction is reconciled. Saving the new amount marks it as uncleared, so you'll need to reconcile the account again."
+msgstr "Esta transacción está conciliada. Al guardar el nuevo importe se marcará como sin confirmar y tendrás que volver a conciliar la cuenta."
+
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "This transaction is scheduled for a future date."
 msgstr "Esta transacción está programada para una fecha futura."
@@ -20524,6 +20541,10 @@ msgstr "Esta transacción está programada para una fecha futura."
 #: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
 msgid "This transfer does not have exactly two linked legs, so its direct rate cannot be edited."
 msgstr "Esta transferencia no tiene exactamente dos movimientos vinculados, por lo que no se puede editar su tipo de cambio directo."
+
+#: src/features/transactions/ui/reconciled-edit/ReconciledEditConfirmHost.tsx
+msgid "This transfer has a reconciled side. Saving marks each side whose amount changes as uncleared, so you'll need to reconcile that account again."
+msgstr "Esta transferencia tiene un lado conciliado. Al guardar, cada lado cuyo importe cambie se marcará como sin confirmar y tendrás que volver a conciliar esa cuenta."
 
 #: src/pages/admin/admin-users/ActionDialog.tsx
 msgid "This user will be signed out immediately and prevented from logging back in until unblocked."
@@ -21019,6 +21040,10 @@ msgstr "Cuenta de transferencia #{0}"
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Transfer added"
 msgstr "Transferencia añadida"
+
+#: src/features/transactions/ui/transfer-rate/TransferRateDialog.tsx
+msgid "Transfer amounts updated"
+msgstr "Importes de la transferencia actualizados"
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
 msgid "Transfer created successfully."

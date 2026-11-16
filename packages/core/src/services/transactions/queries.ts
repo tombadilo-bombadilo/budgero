@@ -2016,6 +2016,38 @@ export class TransactionQueries {
   }
 
   /**
+   * A reconciled row whose bank (native) amount an edit changed no longer
+   * matches the statement it was reconciled against: it goes back to
+   * uncleared (Reconciled = 0, Cleared = 0) so it shows up for the next
+   * reconcile. `before` is the row's native amounts before the edit; rows
+   * whose native amounts are unchanged keep their status. Call after the write,
+   * in the same DB transaction. Returns whether the row was unlocked.
+   */
+  unreconcileIfNativeChanged(
+    id: number,
+    before: {
+      InflowNative?: number | null;
+      OutflowNative?: number | null;
+      InflowConverted?: number | null;
+      OutflowConverted?: number | null;
+    }
+  ): boolean {
+    const inflow = Number(before.InflowNative ?? before.InflowConverted ?? 0);
+    const outflow = Number(before.OutflowNative ?? before.OutflowConverted ?? 0);
+    const result = run(
+      this.db,
+      `UPDATE transactions SET Reconciled = FALSE, Cleared = FALSE
+        WHERE ID = ? AND Reconciled = TRUE
+          AND (COALESCE(InflowNative, InflowConverted, 0) != ?
+            OR COALESCE(OutflowNative, OutflowConverted, 0) != ?)`,
+      id,
+      inflow,
+      outflow
+    );
+    return result.changes > 0;
+  }
+
+  /**
    * Mark transactions cleared or uncleared. Reconciled rows are locked and
    * left untouched. Returns the IDs whose status actually changed.
    */

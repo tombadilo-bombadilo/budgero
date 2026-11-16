@@ -40,6 +40,10 @@ describe('per-op mutation formats', () => {
     expect(mutationFormatVersion('syncedState.merge', {})).toBe(5);
   });
 
+  it('stamps transactions.updateTransferAmounts with format 6', () => {
+    expect(mutationFormatVersion('transactions.updateTransferAmounts', {})).toBe(6);
+  });
+
   it('never stamps a format this build cannot read', () => {
     for (const version of Object.values(OP_CODE_FORMAT_VERSIONS)) {
       expect(version).toBeGreaterThan(BASE_MUTATION_FORMAT_VERSION);

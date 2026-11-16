@@ -169,9 +169,9 @@ describe('split mirrors are reconciled in place', () => {
     expectLedgerConsistent();
   });
 
-  it('an amount change updates a reconciled mirror in place and keeps its status', async () => {
-    // A normal transfer edit syncs the partner leg's amount and leaves its
-    // Cleared / Reconciled flags alone (preparePartnerSync); mirrors do the same.
+  it('an amount change updates a reconciled mirror in place and marks it uncleared', async () => {
+    // Like a transfer partner whose amount an edit changes (preparePartnerSync),
+    // a reconciled mirror no longer matches its statement: it goes back to uncleared (#140).
     const id = await addParent(10_000);
     await s.splits.upsertSplits(id, [categoryLine(3_000), transferLine(savings, 7_000)]);
     const [before] = mirrorsOf(id);
@@ -182,8 +182,8 @@ describe('split mirrors are reconciled in place', () => {
     const [after] = mirrorsOf(id);
     expect(after.ID).toBe(before.ID);
     expect(after.InflowNative).toBe(4_000);
-    expect(after.Cleared).toBe(1);
-    expect(after.Reconciled).toBe(1);
+    expect(after.Cleared).toBe(0);
+    expect(after.Reconciled).toBe(0);
     expectLedgerConsistent();
   });
 
@@ -215,7 +215,8 @@ describe('split mirrors are reconciled in place', () => {
       [savingsC.ID, savings, 3_000, 'b'],
       [savingsC.ID + 1, card, 2_000, 'e'],
     ]);
-    expect(after.map((row) => row.Reconciled)).toEqual([1, 0, 1, 0]);
+    // savingsC kept its row but its amount changed (4,000 -> 3,000): unlocked.
+    expect(after.map((row) => row.Reconciled)).toEqual([1, 0, 0, 0]);
 
     // Dropping the Savings lines deletes both their rows; Other keeps its own.
     await s.splits.upsertSplits(id, [

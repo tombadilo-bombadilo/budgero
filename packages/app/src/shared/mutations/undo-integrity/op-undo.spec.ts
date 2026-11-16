@@ -116,6 +116,69 @@ describe('op undo specs', () => {
     expect(h.dump(['transactions', 'accounts'])).toEqual(after);
   });
 
+  it('undoing an amount edit locks a reconciled row (and its transfer partner) again', async () => {
+    const savings = (
+      await h.services.accounts.createAccount('Savings', h.budgetId, 'savings', 'USD', asMilli(0))
+    ).ID;
+    const plain = await add({ outflow: 5000 });
+    await h.run('transactions.addTransfer', {
+      budgetId: h.budgetId,
+      transferId: 'move',
+      source: { accountId: h.accountId, categoryId: 0, date: '2026-09-01', outflow: 3000 },
+      destination: { accountId: savings, categoryId: 0, date: '2026-09-01', inflow: 3000 },
+    });
+    h.adapter.prepare('UPDATE transactions SET Reconciled = 1, Cleared = 1').run();
+    const [source] = h.services.transactions
+      .getTransactionsByTransferID('move')
+      .filter((leg) => leg.AccountID === h.accountId);
+
+    for (const id of [plain, source.ID]) {
+      const before = h.dump(['transactions', 'accounts']);
+      await h.run('transactions.updateColumn', { id, columnName: 'OutflowNative', newValue: 7000 });
+      const after = h.dump(['transactions', 'accounts']);
+      expect(after.transactions.filter((tx) => tx.Reconciled === 0).length).toBeGreaterThan(0);
+
+      await useUndoStore.getState().undo();
+      expect(h.dump(['transactions', 'accounts'])).toEqual(before);
+      await useUndoStore.getState().redo();
+      expect(h.dump(['transactions', 'accounts'])).toEqual(after);
+      await useUndoStore.getState().undo();
+    }
+  });
+
+  it('undoing transfer amounts restores both legs exactly, status included', async () => {
+    await h.services.currency.saveRate('EUR', 'USD', 1.25, '2026-09-01', h.budgetId);
+    const euro = (
+      await h.services.accounts.createAccount('Euro', h.budgetId, 'checking', 'EUR', asMilli(0))
+    ).ID;
+    await h.run('transactions.addTransfer', {
+      budgetId: h.budgetId,
+      transferId: 'fx',
+      source: { accountId: h.accountId, categoryId: 0, date: '2026-09-01', outflow: 10000 },
+      destination: { accountId: euro, categoryId: 0, date: '2026-09-01', inflow: 8000 },
+    });
+    h.adapter.prepare('UPDATE transactions SET Reconciled = 1, Cleared = 1').run();
+    const before = h.dump(['transactions', 'accounts']);
+
+    await h.run('transactions.updateTransferAmounts', {
+      transferId: 'fx',
+      sentAmount: 12000,
+      receivedAmount: 9000,
+    });
+    const after = h.dump(['transactions', 'accounts']);
+    expect(h.services.transactions.getTransferRateDetails('fx')).toMatchObject({
+      rate: 0.75,
+      transferRateOverride: true,
+      source: { amount: 12000, reconciled: false },
+      destination: { amount: 9000, reconciled: false },
+    });
+
+    await useUndoStore.getState().undo();
+    expect(h.dump(['transactions', 'accounts'])).toEqual(before);
+    await useUndoStore.getState().redo();
+    expect(h.dump(['transactions', 'accounts'])).toEqual(after);
+  });
+
   it('undoing a recurring delete restores the template and its occurrences', async () => {
     const template = await h.run<RecurringTransaction>('recurring.create', {
       input: {
