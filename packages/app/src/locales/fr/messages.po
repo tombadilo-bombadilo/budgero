@@ -2082,10 +2082,6 @@ msgstr "<0/>Supprimer l'utilisateur"
 msgid "<0/>Design a rule"
 msgstr "<0/>Créer une règle"
 
-#: src/app/layout/desktop-shell/SidebarFooterContent.tsx
-msgid "<0/>Donate to Budgero<1>(opens in a new tab)</1>"
-msgstr "<0/>Faire un don à Budgero<1>(s'ouvre dans un nouvel onglet)</1>"
-
 #: src/app/system/BackupReminderDialog.tsx
 msgid "<0/>Download backup"
 msgstr "<0/>Télécharger la sauvegarde"
@@ -2677,10 +2673,6 @@ msgstr "<0><1/></0>Précédent"
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
 msgid "<0><1/></0>Underfunded goals{0}"
 msgstr "<0><1/></0>Objectifs sous-financés{0}"
-
-#: src/pages/settings/AboutPage.tsx
-msgid "<0>♥</0>Donate to Budgero"
-msgstr "<0>♥</0>Faire un don à Budgero"
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "<0>⚠ READ THIS</0>Your budget is encrypted with this password on your device. We never see it. If you forget it, <1>your ledger is unrecoverable</1> — there is no reset email, no support line, no backdoor."
@@ -18144,10 +18136,6 @@ msgstr "Auto-hébergement"
 msgid "Self-host Control Center"
 msgstr "Centre de contrôle d'auto-hébergement"
 
-#: src/pages/settings/AboutPage.tsx
-msgid "Self-Host is free forever. If Budgero is useful to you, you can support its development with a one-time, pay-what-you-want donation."
-msgstr "L'auto-hébergement est gratuit pour toujours. Si Budgero vous est utile, vous pouvez soutenir son développement avec un don unique à prix libre."
-
 #: src/pages/settings/push-api/PushApiPage.tsx
 msgid "Send a JSON object with an encrypted payload:"
 msgstr "Envoyez un objet JSON avec une charge utile chiffrée :"
@@ -19509,10 +19497,6 @@ msgstr "Supermarché"
 #: src/pages/settings/AboutPage.tsx
 msgid "Support"
 msgstr "Assistance"
-
-#: src/pages/settings/AboutPage.tsx
-msgid "Support Development"
-msgstr "Soutenir le développement"
 
 #: src/features/import/ui/steps/UploadStep.tsx
 msgid "Supported formats: CSV, TSV, TXT, PDF (table data), OFX, QFX, QIF, CAMT.053 (XML)"

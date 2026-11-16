@@ -2226,12 +2226,6 @@ export const changelogEntries: ChangelogEntry[] = [
           'The CC Payment category popover now shows the card balance, flags over-assignment with a warning badge, and offers a one-click reduction back to Ready to Assign.',
       },
       {
-        type: 'new',
-        title: 'Support Budgero with a donation',
-        description:
-          'A new donate page (pay-what-you-want) is linked from the website and from the About page on self-hosted builds.',
-      },
-      {
         type: 'improved',
         title: 'Imports reach all your devices instantly',
         description:
