@@ -2,6 +2,7 @@ import { t } from '@lingui/core/macro';
 import {
   ENABLE_BANKING_API_URL,
   fromDecimalString,
+  timeFromIsoDateTime,
   type BankTransaction,
   type EnableBankingSession,
   type EnableBankingSessionAccount,
@@ -386,6 +387,11 @@ export function toBankTransactions(rows: EnableBankingTransaction[]): BankTransa
     const valueDate = isoDay(row.value_date);
     const transactionDate = isoDay(row.transaction_date);
     const date = bookingDate ?? valueDate ?? transactionDate;
+    // Some banks send these as date-times; keep a real time with its date.
+    const bookingTime = bookingDate ? timeFromIsoDateTime(row.booking_date) : null;
+    const valueTime = valueDate ? timeFromIsoDateTime(row.value_date) : null;
+    const transactionTime = transactionDate ? timeFromIsoDateTime(row.transaction_date) : null;
+    const time = bookingDate ? bookingTime : valueDate ? valueTime : transactionTime;
     const rawAmount = row.transaction_amount?.amount?.trim() ?? '';
     if (!date || !/^[+-]?\d+(\.\d+)?$/.test(rawAmount)) continue;
 
@@ -416,6 +422,7 @@ export function toBankTransactions(rows: EnableBankingTransaction[]): BankTransa
     result.push({
       id,
       date,
+      ...(time ? { time } : {}),
       amount,
       payee: payee.slice(0, 200),
       memo: memo === payee ? '' : memo,
@@ -426,6 +433,9 @@ export function toBankTransactions(rows: EnableBankingTransaction[]): BankTransa
         bookingDate,
         transactionDate,
         valueDate,
+        ...(bookingTime ? { bookingTime } : {}),
+        ...(transactionTime ? { transactionTime } : {}),
+        ...(valueTime ? { valueTime } : {}),
       },
     });
   }

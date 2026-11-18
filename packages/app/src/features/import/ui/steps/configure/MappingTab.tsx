@@ -223,45 +223,53 @@ export function MappingTab({
             <strong>
               <Trans>Optional:</Trans>
             </strong>
-            Payee, Account, Category, Memo (will use account selection below if not mapped)
+            Time, Payee, Account, Category, Memo (will use account selection below if not mapped)
           </Trans>
         </AlertDescription>
       </Alert>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {['date', 'amount', 'inflow', 'outflow', 'payee', 'memo', 'account', 'category'].map(
-          (field) => (
-            <div key={field} className="space-y-2">
-              <Label htmlFor={field} className="capitalize">
-                {field}{' '}
-                {field === 'date'
-                  ? t`(Required)`
-                  : field === 'amount'
-                    ? t`(Required - or use InflowConverted/OutflowConverted)`
-                    : t`(Optional)`}
-              </Label>
-              <Select
-                value={columnMapping[field as keyof ColumnMapping] || 'none'}
-                onValueChange={(value) => handleColumnChange(field as keyof ColumnMapping, value)}
-              >
-                <SelectTrigger className="w-full min-w-0">
-                  <SelectValue placeholder={t`Select ${field} column`} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">
-                    <Trans>None</Trans>
-                  </SelectItem>
-                  {parsedData?.headers
-                    .filter((header) => header && header.trim())
-                    .map((header) => (
-                      <SelectItem key={header} value={header}>
-                        {header}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )
-        )}
+        {[
+          'date',
+          'time',
+          'amount',
+          'inflow',
+          'outflow',
+          'payee',
+          'memo',
+          'account',
+          'category',
+        ].map((field) => (
+          <div key={field} className="space-y-2">
+            <Label htmlFor={field} className="capitalize">
+              {field}{' '}
+              {field === 'date'
+                ? t`(Required)`
+                : field === 'amount'
+                  ? t`(Required - or use InflowConverted/OutflowConverted)`
+                  : t`(Optional)`}
+            </Label>
+            <Select
+              value={columnMapping[field as keyof ColumnMapping] || 'none'}
+              onValueChange={(value) => handleColumnChange(field as keyof ColumnMapping, value)}
+            >
+              <SelectTrigger className="w-full min-w-0">
+                <SelectValue placeholder={t`Select ${field} column`} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">
+                  <Trans>None</Trans>
+                </SelectItem>
+                {parsedData?.headers
+                  .filter((header) => header && header.trim())
+                  .map((header) => (
+                    <SelectItem key={header} value={header}>
+                      {header}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ))}
       </div>
 
       {/* Default year — shown when the mapped Date column contains

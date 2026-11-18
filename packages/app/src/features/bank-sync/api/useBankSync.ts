@@ -200,6 +200,7 @@ export function resolveBankReview(
           categoryId: 0,
           budgetId,
           date: identity.date,
+          ...(identity.time ? { time: identity.time } : {}),
           memo: identity.memo.substring(0, 255),
           payee: identity.payee,
           transferId: '',

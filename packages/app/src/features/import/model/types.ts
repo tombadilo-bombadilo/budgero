@@ -22,6 +22,8 @@ export interface ParsedData {
 
 export interface ColumnMapping {
   date?: string;
+  /** Optional time-of-day column (a timestamp in the date column is read too). */
+  time?: string;
   amount?: string;
   inflow?: string;
   outflow?: string;

@@ -940,6 +940,7 @@ export function useImportDialogState(): ImportDialogState {
               accountId: realAccountId(input.accountId),
               categoryId: 0,
               date: input.date,
+              ...(input.time ? { time: input.time } : {}),
               memo: input.memo.substring(0, 255),
               payee: input.payee,
               importIdentities: [withRealAccount(input)],
@@ -955,6 +956,7 @@ export function useImportDialogState(): ImportDialogState {
                   accountId: realAccountId(transfer.counterpartAccountId),
                   categoryId: 0,
                   date: plan.date,
+                  ...(plan.time ? { time: plan.time } : {}),
                   memo: plan.memo.substring(0, 255),
                   payee: plan.payee,
                 };
@@ -1013,6 +1015,7 @@ export function useImportDialogState(): ImportDialogState {
               categoryId,
               budgetId,
               date: plan.date,
+              ...(plan.time ? { time: plan.time } : {}),
               memo: plan.memo.substring(0, 255),
               payee: plan.payee,
               transferId: '',
