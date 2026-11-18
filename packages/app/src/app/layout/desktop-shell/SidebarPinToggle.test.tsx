@@ -1,6 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { SidebarProvider, useSidebar } from '@shared/ui/sidebar';
+import { SidebarProvider, sidebarPinMinWidth, useSidebar } from '@shared/ui/sidebar';
+import { TEXT_SIZE_SCALE } from '@shared/lib/text-size/text-size';
 import { SIDEBAR_PINNED_STORAGE_KEY, useUiStore } from '@shared/store/useUiStore';
 import { SidebarPinToggle } from './SidebarPinToggle';
 
@@ -22,8 +23,12 @@ function Probe() {
 
 function Shell() {
   const sidebarPinned = useUiStore((state) => state.sidebarPinned);
+  const textSize = useUiStore((state) => state.textSize);
   return (
-    <SidebarProvider pinned={sidebarPinned}>
+    <SidebarProvider
+      pinned={sidebarPinned}
+      pinMinWidth={sidebarPinMinWidth(TEXT_SIZE_SCALE[textSize])}
+    >
       <SidebarPinToggle />
       <Probe />
     </SidebarProvider>
@@ -40,7 +45,7 @@ const originalWidth = window.innerWidth;
 
 beforeEach(() => {
   localStorage.clear();
-  useUiStore.setState({ sidebarPinned: false });
+  useUiStore.setState({ sidebarPinned: false, textSize: 'default' });
 });
 
 afterEach(() => setWidth(originalWidth));
@@ -84,4 +89,24 @@ it('follows window resizes', () => {
     window.dispatchEvent(new Event('resize'));
   });
   expect(probe().sheet).toBe(true);
+});
+
+it('raises the pinning width with the text size, keeping the page at least 1024px', () => {
+  expect(sidebarPinMinWidth(TEXT_SIZE_SCALE.default)).toBe(1280);
+  expect(sidebarPinMinWidth(TEXT_SIZE_SCALE.large)).toBe(1440);
+  expect(sidebarPinMinWidth(TEXT_SIZE_SCALE.larger)).toBe(1600);
+  for (const scale of Object.values(TEXT_SIZE_SCALE)) {
+    // The pinned sidebar is 16rem at 16px × scale.
+    expect(sidebarPinMinWidth(scale) - 16 * 16 * scale).toBeGreaterThanOrEqual(1024);
+  }
+
+  useUiStore.setState({ sidebarPinned: true, textSize: 'large' });
+  setWidth(1400);
+  const { unmount } = render(<Shell />);
+  expect(probe()).toEqual({ sheet: true, pinned: false, canPin: false });
+  unmount();
+
+  setWidth(1440);
+  render(<Shell />);
+  expect(probe()).toEqual({ sheet: false, pinned: true, canPin: true });
 });

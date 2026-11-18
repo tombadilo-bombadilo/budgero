@@ -16,7 +16,8 @@ import {
   PanelLeft,
   Type,
 } from 'lucide-react';
-import type { TextSize } from '@shared/lib/text-size/text-size';
+import { TEXT_SIZE_SCALE, type TextSize } from '@shared/lib/text-size/text-size';
+import { useIsMobile } from '@shared/hooks/useIsMobile';
 import { Button } from '@shared/ui/button';
 import { usePWA } from '@shared/hooks/usePWA';
 import { RadioGroup, RadioGroupItem } from '@shared/ui/radio-group';
@@ -29,7 +30,7 @@ import {
 } from '@shared/store/useUiStore';
 import { Switch } from '@shared/ui/switch';
 import {
-  SIDEBAR_PIN_MIN_WIDTH,
+  sidebarPinMinWidth,
   SIDEBAR_TABLET_BREAKPOINT as SIDEBAR_TABLET_WIDTH,
 } from '@shared/ui/sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
@@ -59,6 +60,9 @@ export default function AppearancePage() {
   const textSize = useUiStore((state) => state.textSize);
   const setTextSize = useUiStore((state) => state.setTextSize);
   const sidebarPinned = useUiStore((state) => state.sidebarPinned);
+  // Same threshold as the sidebar's own pin: the card only shows where pinning works.
+  const pinMinWidth = sidebarPinMinWidth(TEXT_SIZE_SCALE[textSize]);
+  const canPinSidebar = !useIsMobile(pinMinWidth);
   const setSidebarPinned = useUiStore((state) => state.setSidebarPinned);
   const desktopBudgetLayout = useUiStore((state) => state.desktopBudgetLayout);
   const setDesktopBudgetLayout = useUiStore((state) => state.setDesktopBudgetLayout);
@@ -527,44 +531,46 @@ export default function AppearancePage() {
         </CardContent>
       </Card>
 
-      <Card className="hidden md:block">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trans>
-              <PanelLeft className="h-5 w-5" />
-              Sidebar
-            </Trans>
-          </CardTitle>
-          <CardDescription>
-            <Trans>Choose how the desktop sidebar behaves on narrower screens.</Trans>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between gap-4">
-            <div className="space-y-0.5">
-              <Label htmlFor="sidebar-pinned">
-                <Trans>Keep the sidebar open</Trans>
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                <Trans>
-                  On screens narrower than {SIDEBAR_TABLET_WIDTH}px the sidebar slides out to give
-                  pages more room. Turn this on to keep it pinned beside the page on screens from{' '}
-                  {SIDEBAR_PIN_MIN_WIDTH}px wide. You can also use the pin next to the Budgero logo.
-                  Applies to this device.
-                </Trans>
-              </p>
+      {canPinSidebar && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trans>
+                <PanelLeft className="h-5 w-5" />
+                Sidebar
+              </Trans>
+            </CardTitle>
+            <CardDescription>
+              <Trans>Choose how the desktop sidebar behaves on narrower screens.</Trans>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="sidebar-pinned">
+                  <Trans>Keep the sidebar open</Trans>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  <Trans>
+                    On screens narrower than {SIDEBAR_TABLET_WIDTH}px the sidebar slides out to give
+                    pages more room. Turn this on to keep it pinned beside the page on screens from{' '}
+                    {pinMinWidth}px wide. You can also use the pin next to the Budgero logo. Applies
+                    to this device.
+                  </Trans>
+                </p>
+              </div>
+              <Switch
+                id="sidebar-pinned"
+                checked={sidebarPinned}
+                onCheckedChange={(checked) => {
+                  trackSettingChanged('sidebar_pinned', checked ? 'on' : 'off');
+                  setSidebarPinned(checked);
+                }}
+              />
             </div>
-            <Switch
-              id="sidebar-pinned"
-              checked={sidebarPinned}
-              onCheckedChange={(checked) => {
-                trackSettingChanged('sidebar_pinned', checked ? 'on' : 'off');
-                setSidebarPinned(checked);
-              }}
-            />
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       <AccountOrderCard />
 

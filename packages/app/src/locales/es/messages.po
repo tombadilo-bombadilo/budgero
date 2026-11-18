@@ -14384,8 +14384,8 @@ msgid "On by default. Tells us which features you use, linked to your account ID
 msgstr "Activado por defecto. Nos dice qué funciones usas, vinculado al ID de tu cuenta, para que podamos mejorar Budgero. Al desactivarlo también se detienen los eventos que registra nuestro servidor."
 
 #: src/pages/settings/AppearancePage.tsx
-msgid "On screens narrower than {SIDEBAR_TABLET_WIDTH}px the sidebar slides out to give pages more room. Turn this on to keep it pinned beside the page on screens from {SIDEBAR_PIN_MIN_WIDTH}px wide. You can also use the pin next to the Budgero logo. Applies to this device."
-msgstr "En pantallas de menos de {SIDEBAR_TABLET_WIDTH}px, la barra lateral se oculta para dejar más espacio a las páginas. Actívalo para mantenerla fijada junto a la página en pantallas a partir de {SIDEBAR_PIN_MIN_WIDTH}px de ancho. También puedes usar la chincheta junto al logotipo de Budgero. Se aplica a este dispositivo."
+msgid "On screens narrower than {SIDEBAR_TABLET_WIDTH}px the sidebar slides out to give pages more room. Turn this on to keep it pinned beside the page on screens from {pinMinWidth}px wide. You can also use the pin next to the Budgero logo. Applies to this device."
+msgstr "En pantallas de menos de {SIDEBAR_TABLET_WIDTH}px, la barra lateral se oculta para dejar más espacio a las páginas. Actívalo para mantenerla fijada junto a la página en pantallas a partir de {pinMinWidth}px de ancho. También puedes usar la chincheta junto al logotipo de Budgero. Se aplica a este dispositivo."
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "On track"
@@ -19377,10 +19377,6 @@ msgstr "PASO {stepLabel} / {totalLabel}"
 msgid "Stickiness over time"
 msgstr "Retención a lo largo del tiempo"
 
-#: src/pages/analytics/reports/VsExpenseReport.tsx
-#~ msgid "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
-#~ msgstr "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
-
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "Still checking this account"
 msgstr "Aún se está comprobando esta cuenta"
@@ -23450,10 +23446,6 @@ msgstr "YYYY-MM-DD (2024-01-31)"
 #: src/features/import/model/types.ts
 msgid "YYYY/MM/DD (2024/01/31)"
 msgstr "YYYY/MM/DD (2024/01/31)"
-
-#: src/pages/analytics/reports/VsExpenseReport.tsx
-#~ msgid "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
-#~ msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
 
 #: src/app/startup/StartupLayout.tsx
 msgid "Zero-based budgeting. Zero-knowledge privacy."

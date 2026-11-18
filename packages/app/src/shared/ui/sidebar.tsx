@@ -33,6 +33,15 @@ export const SIDEBAR_TABLET_BREAKPOINT = 1600;
  */
 export const SIDEBAR_PIN_MIN_WIDTH = 1280;
 
+/**
+ * The pinning threshold at a text size scale: the pinned sidebar is 16rem, so
+ * it grows with the root font size and the threshold must too (1280px at
+ * 100%, 1440px at 112.5%, 1600px at 125%).
+ */
+export function sidebarPinMinWidth(textScale = 1): number {
+  return Math.round(SIDEBAR_PIN_MIN_WIDTH * textScale);
+}
+
 type SidebarContextProps = {
   state: 'expanded' | 'collapsed';
   open: boolean;
@@ -64,6 +73,7 @@ function SidebarProvider({
   open: openProp,
   onOpenChange: setOpenProp,
   pinned: pinnedProp = false,
+  pinMinWidth = SIDEBAR_PIN_MIN_WIDTH,
   className,
   style,
   children,
@@ -74,9 +84,11 @@ function SidebarProvider({
   onOpenChange?: (open: boolean) => void;
   /** Keep the sidebar inline below the tablet breakpoint (from SIDEBAR_PIN_MIN_WIDTH). */
   pinned?: boolean;
+  /** Narrowest window the sidebar can be pinned in (see sidebarPinMinWidth). */
+  pinMinWidth?: number;
 }) {
   const isNarrow = useIsMobile(SIDEBAR_TABLET_BREAKPOINT);
-  const isTooNarrowToPin = useIsMobile(SIDEBAR_PIN_MIN_WIDTH);
+  const isTooNarrowToPin = useIsMobile(pinMinWidth);
   const canPin = isNarrow && !isTooNarrowToPin;
   const pinned = canPin && pinnedProp;
   const isMobile = isNarrow && !pinned;

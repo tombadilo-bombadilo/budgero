@@ -8,7 +8,9 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarInset,
+  sidebarPinMinWidth,
 } from '@shared/ui/sidebar';
+import { TEXT_SIZE_SCALE } from '@shared/lib/text-size/text-size';
 import { BudgetSwitcher } from '@features/budget-management/ui/BudgetSwitcher';
 import logoImg from '/logo_144.png';
 import { useUiStore } from '@shared/store/useUiStore';
@@ -24,9 +26,13 @@ export function DesktopShell({ children }: DesktopShellProps) {
 
   const { breadcrumbs, logout } = useDesktopShellState();
   const sidebarPinned = useUiStore((state) => state.sidebarPinned);
+  const textSize = useUiStore((state) => state.textSize);
 
   return (
-    <SidebarProvider pinned={sidebarPinned}>
+    <SidebarProvider
+      pinned={sidebarPinned}
+      pinMinWidth={sidebarPinMinWidth(TEXT_SIZE_SCALE[textSize])}
+    >
       <Sidebar data-testid="sidebar">
         <SidebarHeader className="p-2">
           <div className="flex items-center justify-between gap-2 px-2">
