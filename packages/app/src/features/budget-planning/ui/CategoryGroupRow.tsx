@@ -150,7 +150,7 @@ export function CategoryGroupRow({
     <div className="mb-1 overflow-hidden rounded-xl border border-border/60 bg-background dark:border-white/10 dark:bg-white/[0.06] select-none">
       <div className="flex flex-col gap-2 bg-muted px-3 py-2 text-foreground dark:bg-white/12 dark:text-white">
         {layoutVariant === 'desktop-compact' ? (
-          <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(96px,120px)_minmax(96px,120px)_minmax(96px,120px)] items-center gap-2 text-xs lg:text-sm">
+          <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(6rem,7.5rem)_minmax(6rem,7.5rem)_minmax(6rem,7.5rem)] items-center gap-2 text-xs lg:text-sm">
             <div className="flex items-center gap-2">
               <button
                 onClick={onToggle}

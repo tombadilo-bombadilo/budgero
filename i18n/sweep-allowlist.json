@@ -208,7 +208,7 @@
     },
     {
       "file": "src/pages/analytics/reports/VsExpenseReport.tsx",
-      "text": "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3",
+      "text": "sticky left-0 z-10 max-w-[8.125rem] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3",
       "reason": "Tailwind classes for the Ledger's sticky columns, not user-visible copy (wrapping them in msg broke the sticky columns)."
     },
     {

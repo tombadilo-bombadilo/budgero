@@ -26,7 +26,7 @@ const MAX_PIVOT_MONTHS = 24;
 // viewport and leave no visible scroll area, so the Category column narrows
 // and the Total column only pins from `sm` up.
 const STICKY_LEFT =
-  'sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3';
+  'sticky left-0 z-10 max-w-[8.125rem] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3';
 const STICKY_RIGHT =
   'z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]';
 /** Total/Average cells that scroll with the months (Average at the end, both at the start). */

@@ -60,7 +60,7 @@ export function CategoryRowDesktopCompactGrid({
   };
 
   return (
-    <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(96px,120px)_minmax(96px,120px)_minmax(96px,120px)] items-center gap-2 text-xs md:text-[0.8125rem] lg:text-sm">
+    <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(6rem,7.5rem)_minmax(6rem,7.5rem)_minmax(6rem,7.5rem)] items-center gap-2 text-xs md:text-[0.8125rem] lg:text-sm">
       {/* Category name and actions */}
       <DesktopCompactHeader
         budgetId={selectedBudgetId}
