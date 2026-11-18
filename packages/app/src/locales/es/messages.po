@@ -4643,12 +4643,17 @@ msgid "Available: {0}"
 msgstr "Disponible: {0}"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
+#: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Average"
 msgstr "Media"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Average amount"
 msgstr "Importe medio"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Average column"
+msgstr "Columna Media"
 
 #. placeholder {0}: formatAmount(averageMonthlySpending)
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
@@ -19346,8 +19351,8 @@ msgid "Stickiness over time"
 msgstr "Retención a lo largo del tiempo"
 
 #: src/pages/analytics/reports/VsExpenseReport.tsx
-msgid "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
-msgstr "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
+#~ msgid "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
+#~ msgstr "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "Still checking this account"
@@ -20876,6 +20881,14 @@ msgstr "Total"
 msgid "Total amount borrowed at origination. Required."
 msgstr "Importe total prestado en la originación. Obligatorio."
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total and Average at the end"
+msgstr "Total y Media al final"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total and Average first"
+msgstr "Total y Media primero"
+
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Total Assets"
 msgstr "Total de activos"
@@ -20884,9 +20897,17 @@ msgstr "Total de activos"
 msgid "Total Assigned"
 msgstr "Total asignado"
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total at the end"
+msgstr "Total al final"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Total divided by the number of transactions."
 msgstr "Total dividido por el número de transacciones."
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total first"
+msgstr "Total primero"
 
 #. placeholder {0}: formatMilli(globalLocalizer, totalReduced)
 #: src/features/budget-planning/ui/assign-dropdown/useAssignDropdownState.tsx
@@ -22527,6 +22548,10 @@ msgstr "Adónde fue más dinero desde enero"
 msgid "Where the plan leaks"
 msgstr "Dónde se escapa el plan"
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Where the Total column goes"
+msgstr "Posición de la columna Total"
+
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Where they show up"
 msgstr "Dónde aparecen"
@@ -22534,6 +22559,10 @@ msgstr "Dónde aparecen"
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Where this debt came from"
 msgstr "De dónde proviene esta deuda"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Where Total and Average go"
+msgstr "Posición de Total y Media"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "Whether it worked, with our own error code. Crash reports contain the error type and code location, never the message."
@@ -23392,8 +23421,8 @@ msgid "YYYY/MM/DD (2024/01/31)"
 msgstr "YYYY/MM/DD (2024/01/31)"
 
 #: src/pages/analytics/reports/VsExpenseReport.tsx
-msgid "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
-msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
+#~ msgid "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
+#~ msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
 
 #: src/app/startup/StartupLayout.tsx
 msgid "Zero-based budgeting. Zero-knowledge privacy."

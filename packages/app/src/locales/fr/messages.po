@@ -4643,12 +4643,17 @@ msgid "Available: {0}"
 msgstr "Disponible : {0}"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
+#: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Average"
 msgstr "Moyenne"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Average amount"
 msgstr "Montant moyen"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Average column"
+msgstr "Colonne Moyenne"
 
 #. placeholder {0}: formatAmount(averageMonthlySpending)
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
@@ -19346,8 +19351,8 @@ msgid "Stickiness over time"
 msgstr "Rétention dans le temps"
 
 #: src/pages/analytics/reports/VsExpenseReport.tsx
-msgid "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
-msgstr "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
+#~ msgid "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
+#~ msgstr "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "Still checking this account"
@@ -20876,6 +20881,14 @@ msgstr "Total"
 msgid "Total amount borrowed at origination. Required."
 msgstr "Montant total emprunté à la souscription. Obligatoire."
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total and Average at the end"
+msgstr "Total et Moyenne à la fin"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total and Average first"
+msgstr "Total et Moyenne en premier"
+
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Total Assets"
 msgstr "Total des actifs"
@@ -20884,9 +20897,17 @@ msgstr "Total des actifs"
 msgid "Total Assigned"
 msgstr "Total affecté"
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total at the end"
+msgstr "Total à la fin"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Total divided by the number of transactions."
 msgstr "Total divisé par le nombre de transactions."
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total first"
+msgstr "Total en premier"
 
 #. placeholder {0}: formatMilli(globalLocalizer, totalReduced)
 #: src/features/budget-planning/ui/assign-dropdown/useAssignDropdownState.tsx
@@ -22527,6 +22548,10 @@ msgstr "Où est allé le plus d’argent depuis janvier"
 msgid "Where the plan leaks"
 msgstr "Où le plan fuit"
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Where the Total column goes"
+msgstr "Position de la colonne Total"
+
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Where they show up"
 msgstr "Où elles apparaissent"
@@ -22534,6 +22559,10 @@ msgstr "Où elles apparaissent"
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Where this debt came from"
 msgstr "D'où vient cette dette"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Where Total and Average go"
+msgstr "Position de Total et Moyenne"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "Whether it worked, with our own error code. Crash reports contain the error type and code location, never the message."
@@ -23392,8 +23421,8 @@ msgid "YYYY/MM/DD (2024/01/31)"
 msgstr "AAAA/MM/JJ (2024/01/31)"
 
 #: src/pages/analytics/reports/VsExpenseReport.tsx
-msgid "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
-msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
+#~ msgid "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
+#~ msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
 
 #: src/app/startup/StartupLayout.tsx
 msgid "Zero-based budgeting. Zero-knowledge privacy."

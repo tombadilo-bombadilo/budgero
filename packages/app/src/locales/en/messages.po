@@ -4645,12 +4645,17 @@ msgid "Available: {0}"
 msgstr "Available: {0}"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
+#: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Average"
 msgstr "Average"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Average amount"
 msgstr "Average amount"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Average column"
+msgstr "Average column"
 
 #. placeholder {0}: formatAmount(averageMonthlySpending)
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
@@ -19348,8 +19353,8 @@ msgid "Stickiness over time"
 msgstr "Stickiness over time"
 
 #: src/pages/analytics/reports/VsExpenseReport.tsx
-msgid "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
-msgstr "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
+#~ msgid "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
+#~ msgstr "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "Still checking this account"
@@ -20878,6 +20883,14 @@ msgstr "Total"
 msgid "Total amount borrowed at origination. Required."
 msgstr "Total amount borrowed at origination. Required."
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total and Average at the end"
+msgstr "Total and Average at the end"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total and Average first"
+msgstr "Total and Average first"
+
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Total Assets"
 msgstr "Total Assets"
@@ -20886,9 +20899,17 @@ msgstr "Total Assets"
 msgid "Total Assigned"
 msgstr "Total Assigned"
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total at the end"
+msgstr "Total at the end"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Total divided by the number of transactions."
 msgstr "Total divided by the number of transactions."
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total first"
+msgstr "Total first"
 
 #. placeholder {0}: formatMilli(globalLocalizer, totalReduced)
 #: src/features/budget-planning/ui/assign-dropdown/useAssignDropdownState.tsx
@@ -22529,6 +22550,10 @@ msgstr "Where the most money went since January"
 msgid "Where the plan leaks"
 msgstr "Where the plan leaks"
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Where the Total column goes"
+msgstr "Where the Total column goes"
+
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Where they show up"
 msgstr "Where they show up"
@@ -22536,6 +22561,10 @@ msgstr "Where they show up"
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Where this debt came from"
 msgstr "Where this debt came from"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Where Total and Average go"
+msgstr "Where Total and Average go"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "Whether it worked, with our own error code. Crash reports contain the error type and code location, never the message."
@@ -23394,8 +23423,8 @@ msgid "YYYY/MM/DD (2024/01/31)"
 msgstr "YYYY/MM/DD (2024/01/31)"
 
 #: src/pages/analytics/reports/VsExpenseReport.tsx
-msgid "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
-msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
+#~ msgid "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
+#~ msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
 
 #: src/app/startup/StartupLayout.tsx
 msgid "Zero-based budgeting. Zero-knowledge privacy."

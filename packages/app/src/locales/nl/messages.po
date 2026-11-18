@@ -4643,12 +4643,17 @@ msgid "Available: {0}"
 msgstr "Beschikbaar: {0}"
 
 #: src/features/reports/ui/SaveReportDialog.tsx
+#: src/pages/analytics/reports/VsExpenseReport.tsx
 msgid "Average"
 msgstr "Gemiddeld"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Average amount"
 msgstr "Gemiddeld bedrag"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Average column"
+msgstr "Kolom Gemiddeld"
 
 #. placeholder {0}: formatAmount(averageMonthlySpending)
 #: src/features/budgeting/ui/BudgetContextPanel.tsx
@@ -19346,8 +19351,8 @@ msgid "Stickiness over time"
 msgstr "Vasthoudendheid over tijd"
 
 #: src/pages/analytics/reports/VsExpenseReport.tsx
-msgid "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
-msgstr "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
+#~ msgid "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
+#~ msgstr "sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3"
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 msgid "Still checking this account"
@@ -20876,6 +20881,14 @@ msgstr "Totaal"
 msgid "Total amount borrowed at origination. Required."
 msgstr "Totaalbedrag geleend bij afsluiting. Vereist."
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total and Average at the end"
+msgstr "Totaal en Gemiddeld aan het eind"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total and Average first"
+msgstr "Totaal en Gemiddeld eerst"
+
 #: src/pages/accounts/AccountsPage.tsx
 msgid "Total Assets"
 msgstr "Totale bezittingen"
@@ -20884,9 +20897,17 @@ msgstr "Totale bezittingen"
 msgid "Total Assigned"
 msgstr "Totaal toegewezen"
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total at the end"
+msgstr "Totaal aan het eind"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Total divided by the number of transactions."
 msgstr "Totaal gedeeld door het aantal transacties."
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Total first"
+msgstr "Totaal eerst"
 
 #. placeholder {0}: formatMilli(globalLocalizer, totalReduced)
 #: src/features/budget-planning/ui/assign-dropdown/useAssignDropdownState.tsx
@@ -22527,6 +22548,10 @@ msgstr "Waar sinds januari het meeste geld heen ging"
 msgid "Where the plan leaks"
 msgstr "Waar het plan lekt"
 
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Where the Total column goes"
+msgstr "Plaats van de kolom Totaal"
+
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Where they show up"
 msgstr "Waar ze verschijnen"
@@ -22534,6 +22559,10 @@ msgstr "Waar ze verschijnen"
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "Where this debt came from"
 msgstr "Waar deze schuld vandaan komt"
+
+#: src/pages/analytics/reports/VsExpenseReport.tsx
+msgid "Where Total and Average go"
+msgstr "Plaats van Totaal en Gemiddeld"
 
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "Whether it worked, with our own error code. Crash reports contain the error type and code location, never the message."
@@ -23392,8 +23421,8 @@ msgid "YYYY/MM/DD (2024/01/31)"
 msgstr "YYYY/MM/DD (2024/01/31)"
 
 #: src/pages/analytics/reports/VsExpenseReport.tsx
-msgid "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
-msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
+#~ msgid "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
+#~ msgstr "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]"
 
 #: src/app/startup/StartupLayout.tsx
 msgid "Zero-based budgeting. Zero-knowledge privacy."
