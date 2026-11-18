@@ -1,8 +1,8 @@
 import { ImportDuplicateService, type ImportIdentity } from '../import/duplicate-planner.js';
 import { DatabaseAdapter } from '../../database/interface.js';
 import { allRows, atomically, getRow, run } from '../../database/sql.js';
-import { TransactionWriteBatch } from './write-batch.js';
-import { SplitService } from './split-service.js';
+import { TransactionWriteBatch, type PendingTransactionRow } from './write-batch.js';
+import { SplitService, type SplitInput } from './split-service.js';
 import {
   captureRestoreSnapshot,
   restoreTransactionSnapshot,
@@ -23,7 +23,6 @@ import {
   GetAllTransactions,
   GetTransactionsByCategoryAndMonthRow,
   TransactionAmountsSnapshot,
-  TransactionSplit,
   TransactionLinks,
 } from './types.js';
 import { NotFoundError, ValidationError } from '../../types';
@@ -62,6 +61,8 @@ export type {
   GetAllTransactions,
   GetTransactionsByCategoryAndMonthRow,
   TransactionSplit,
+  TransactionSplitWithMirror,
+  SplitMirrorAmounts,
   PayeeListItem,
   LabelListItem,
 } from './types.js';
@@ -78,6 +79,28 @@ export {
   transferInvolvesOffBudgetAccount,
 } from './transfer-payee.js';
 const debugLog = createLogger('services:transactions');
+
+/** What the split editor saves (TransactionService.saveSplitTransaction). */
+export interface SplitSaveInput {
+  amount?: { inflow: MilliUnits; outflow: MilliUnits; currency: 'native' | 'converted' };
+  exactAmount?: SplitParentAmounts;
+  splits: SplitInput[];
+}
+
+/** The fields split handling reads from a parent row. */
+const splitParentOf = (row: Transaction): PendingTransactionRow => ({
+  AccountID: row.AccountID,
+  BudgetID: row.BudgetID,
+  Date: row.Date,
+  Memo: row.Memo ?? '',
+  Payee: row.Payee ?? null,
+  LabelID: row.LabelID ?? null,
+  TransferID: row.TransferID || null,
+  InflowConverted: row.InflowConverted,
+  OutflowConverted: row.OutflowConverted,
+  InflowNative: row.InflowNative ?? row.InflowConverted,
+  OutflowNative: row.OutflowNative ?? row.OutflowConverted,
+});
 
 /** A split parent's stored amounts and rate, put back verbatim by an undo. */
 export interface SplitParentAmounts {
@@ -2165,22 +2188,15 @@ export class TransactionService {
   }
 
   /**
-   * Save a split transaction from the split editor in ONE DB transaction:
-   * optionally a new parent total (`amount`, in account or budget currency;
-   * `exactAmount` puts back stored values verbatim, for undo), then the lines
-   * (an empty list clears the split).
+   * The parent of a split-editor save as it will be after the save (see
+   * saveSplitTransaction), and the step that writes its new total. No writes.
    */
-  async saveSplitTransaction(
+  private async planSplitParent(
     transactionId: number,
-    input: {
-      amount?: { inflow: MilliUnits; outflow: MilliUnits; currency: 'native' | 'converted' };
-      exactAmount?: SplitParentAmounts;
-      splits: Omit<TransactionSplit, 'ID' | 'TransactionID'>[];
-    }
-  ): Promise<void> {
+    input: Pick<SplitSaveInput, 'amount' | 'exactAmount'>
+  ): Promise<{ after: Transaction; writeParent: () => void }> {
     const before = this.getTransactionByID(transactionId);
     if (before.TransferID) throw new ValidationError('Transfer transactions cannot be split.');
-    const batch = this.createWriteBatch();
     let after: Transaction = before;
     let writeParent: () => void = () => undefined;
 
@@ -2235,25 +2251,33 @@ export class TransactionService {
       }
     }
 
-    const parentRef = batch.queue(
-      () => {
-        writeParent();
-        return transactionId;
-      },
-      {
-        AccountID: after.AccountID,
-        BudgetID: after.BudgetID,
-        Date: after.Date,
-        Memo: after.Memo ?? '',
-        Payee: after.Payee ?? null,
-        LabelID: after.LabelID ?? null,
-        TransferID: after.TransferID || null,
-        InflowConverted: after.InflowConverted,
-        OutflowConverted: after.OutflowConverted,
-        InflowNative: after.InflowNative ?? after.InflowConverted,
-        OutflowNative: after.OutflowNative ?? after.OutflowConverted,
-      }
-    );
+    return { after, writeParent };
+  }
+
+  /**
+   * IDs of reconciled split mirrors a split-editor save would unlock (their
+   * bank amount changes, so they go back to uncleared), for the editor to ask
+   * first. The parent's own row is checked by reconciledRowsUnlockedByEdit.
+   */
+  async splitSaveUnlocksMirrors(transactionId: number, input: SplitSaveInput): Promise<number[]> {
+    if (!input.splits.length) return [];
+    const { after } = await this.planSplitParent(transactionId, input);
+    return this.splits.mirrorsUnlockedBySave(transactionId, splitParentOf(after), input.splits);
+  }
+
+  /**
+   * Save a split transaction from the split editor in ONE DB transaction:
+   * optionally a new parent total (`amount`, in account or budget currency;
+   * `exactAmount` puts back stored values verbatim, for undo), then the lines
+   * (an empty list clears the split).
+   */
+  async saveSplitTransaction(transactionId: number, input: SplitSaveInput): Promise<void> {
+    const { after, writeParent } = await this.planSplitParent(transactionId, input);
+    const batch = this.createWriteBatch();
+    const parentRef = batch.queue(() => {
+      writeParent();
+      return transactionId;
+    }, splitParentOf(after));
     if (input.splits.length) {
       await this.splits.upsertSplits({ batchIndex: parentRef }, input.splits, batch);
     } else {

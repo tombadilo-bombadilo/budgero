@@ -52,6 +52,20 @@ export class LegacyReplayService {
   }
 
   /**
+   * A split parent with a pinned mirror (a transfer line whose received
+   * amount was entered, TransferRateOverride): edits of the parent's amount,
+   * date, account or rate now keep that mirror's amounts, and copies take
+   * them over; v1.21 builds convert the mirror again at market rates.
+   */
+  hasPinnedSplitMirrors(transactionIds: readonly number[]): boolean {
+    return validIds(transactionIds).some((id) =>
+      this.queries
+        .getSplitMirrorTransactions(id)
+        .some((mirror) => Boolean(mirror.TransferRateOverride))
+    );
+  }
+
+  /**
    * Saving a split parent's lines now keeps the existing mirror row of each
    * transfer line whose target account is unchanged (same ID, status,
    * provenance) and updates it in place; v1.20 and older delete and re-insert

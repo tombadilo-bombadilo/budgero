@@ -49,6 +49,15 @@ const NEWER_THAN_V1_20 = 5;
 const NEWER_THAN_V1_21 = 6;
 
 /**
+ * Format 7: the first format v1.21.5 builds reject. Split transfer lines
+ * carry the exact amount their mirror received (and the mirror keeps it when
+ * the parent changes), and a line to an off-budget account can keep a
+ * category; v1.21.5 converts every mirror at market rates and refuses a line
+ * with both a category and a transfer account.
+ */
+const NEWER_THAN_V1_21_5 = 7;
+
+/**
  * true: the call needs format 3 (v1.18 would apply it differently); a number:
  * the call needs that format; false: the base format will do.
  */
@@ -97,6 +106,35 @@ const SPLIT_FOLLOW_COLUMNS = new Set([
   'accountid',
   'exchangerate',
 ]);
+
+/** Split lines in op args that carry their mirror's exact amounts (`mirror`). */
+const carriesMirrors = (splits: unknown): boolean =>
+  Array.isArray(splits) &&
+  splits.some((line) => {
+    const value = (line ?? {}) as Args;
+    return Boolean(value.mirror ?? value.Mirror);
+  });
+
+/** Split lines in op args with both a category and a transfer account. */
+const hasCategorizedTransferLines = (splits: unknown): boolean =>
+  Array.isArray(splits) &&
+  splits.some((line) => {
+    const value = (line ?? {}) as Args;
+    const category = value.categoryId ?? value.CategoryID ?? value.category_id;
+    const transfer =
+      value.transferAccountId ?? value.TransferAccountID ?? value.transfer_account_id;
+    return category != null && transfer != null;
+  });
+
+/** Split lines v1.21.5 would save differently (see NEWER_THAN_V1_21_5). */
+const newSplitLines = (splits: unknown): boolean =>
+  carriesMirrors(splits) || hasCategorizedTransferLines(splits);
+
+/** Split parents whose pinned mirrors an edit of theirs now keeps (see hasPinnedSplitMirrors). */
+const pinnedMirrors = (checks: LegacyReplayService | null, ids: (number | null)[]): boolean => {
+  const valid = ids.filter((value): value is number => value !== null);
+  return Boolean(checks && valid.length && checks.hasPinnedSplitMirrors(valid));
+};
 
 /** v1.18 resolves occurrences by their device-local ID only (A1). */
 const occurrenceKeyed = (ref: unknown) => {
@@ -206,16 +244,34 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   'rules.restoreDeleted': (args) => mentionsLabelAction(args) && NEWER_THAN_V1_19,
 
   // v1.19 builds ignore labelId and would apply the rest of the edit.
-  'transactions.batchEdit': (args) =>
-    Array.isArray(args.edits) &&
-    (args.edits as Args[]).some((edit) => edit?.labelId !== undefined) &&
-    NEWER_THAN_V1_19,
+  // Account moves of split parents with pinned mirrors keep those mirrors' amounts.
+  'transactions.batchEdit': (args, checks) => {
+    const edits = Array.isArray(args.edits) ? (args.edits as Args[]) : [];
+    const moved = edits.filter((edit) => edit?.accountId !== undefined).map((edit) => id(edit.id));
+    if (pinnedMirrors(checks, moved)) return NEWER_THAN_V1_21_5;
+    return edits.some((edit) => edit?.labelId !== undefined) && NEWER_THAN_V1_19;
+  },
 
   // Amount / account actions on a split parent now move its lines and mirrors,
   // and a stored '' payee the rule leaves alone stays '' (v1.18 wrote NULL).
   'rules.execute': (args, checks) => {
     const rule = checks ? services()?.rules?.getRule(Number(args.ruleId)) : undefined;
     const options = (args.options ?? {}) as { transactionIds?: number[] };
+    // Only the rows this run changes: a split parent with a pinned mirror
+    // whose amount or account the rule sets.
+    if (
+      checks &&
+      rule &&
+      (rule.actions ?? []).some(
+        (action) => action.type.startsWith('amount.') || action.type === 'account.set'
+      ) &&
+      pinnedMirrors(
+        checks,
+        services()?.rules?.matchingTransactionIds?.(rule.id, options.transactionIds) ?? []
+      )
+    ) {
+      return NEWER_THAN_V1_21_5;
+    }
     if (
       checks &&
       rule &&
@@ -239,6 +295,9 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
     const column =
       typeof args.columnName === 'string' ? args.columnName.toLowerCase().replace(/_/g, '') : '';
     const rowId = id(args.id);
+    if (SPLIT_FOLLOW_COLUMNS.has(column) && pinnedMirrors(checks, [rowId])) {
+      return NEWER_THAN_V1_21_5;
+    }
     if (AMOUNT_EDIT_COLUMNS.has(column) && amountEditDiffers(checks, rowId)) {
       return NEWER_THAN_V1_21;
     }
@@ -248,8 +307,10 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   },
   // The undo of an amount edit on a row with a manual rate: a cross-currency
   // transfer partner now keeps its amount.
-  'transactions.restoreAmounts': (args, checks) =>
-    amountEditDiffers(checks, id(args.id)) && NEWER_THAN_V1_21,
+  'transactions.restoreAmounts': (args, checks) => {
+    if (pinnedMirrors(checks, [id(args.id)])) return NEWER_THAN_V1_21_5;
+    return amountEditDiffers(checks, id(args.id)) && NEWER_THAN_V1_21;
+  },
   // Push API amount edits unlock a reconciled row whose amount changes.
   'transactions.updateByRef': (args, checks) => {
     const fields = (args.fields ?? {}) as Args;
@@ -257,10 +318,12 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
       return false;
     }
     const rowId = services()?.importHistory?.duplicates.findOperation(`push:${args.messageId}`);
+    if (pinnedMirrors(checks, [rowId ?? null])) return NEWER_THAN_V1_21_5;
     return amountEditDiffers(checks, rowId ?? null) && NEWER_THAN_V1_21;
   },
   'transactions.moveToNewAccount': (args, checks) => {
     const rowId = id(args.transactionId ?? args.id);
+    if (pinnedMirrors(checks, [rowId])) return NEWER_THAN_V1_21_5;
     return Boolean(checks && rowId && checks.isSplitParent(rowId));
   },
 
@@ -268,7 +331,9 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   // mirror accounts recalculated in full (repairs balances older builds left off).
   // Kept mirror rows are now updated in place (same ID and status); v1.20
   // re-inserts them under new IDs.
+  // Carried mirror amounts and categorized transfer lines (format 7).
   'transactions.upsertSplits': (args, checks) => {
+    if (newSplitLines(args.splits)) return NEWER_THAN_V1_21_5;
     const rowId = id(args.transactionId);
     if (!checks || !rowId) return false;
     if (amountEditDiffers(checks, rowId)) return NEWER_THAN_V1_21;
@@ -278,6 +343,7 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
     );
   },
   'transactions.saveSplits': (args, checks) => {
+    if (newSplitLines(args.splits)) return NEWER_THAN_V1_21_5;
     const rowId = id(args.transactionId);
     if (amountEditDiffers(checks, rowId)) return NEWER_THAN_V1_21;
     const keeps = Boolean(
@@ -291,10 +357,14 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   },
 
   // New split mirrors: their accounts are recalculated in full (see upsertSplits).
-  'transactions.add': (args, checks) =>
-    Boolean(checks && checks.accountsOutOfBalance(transferTargets(args.splits))),
+  'transactions.add': (args, checks) => {
+    if (newSplitLines(args.splits)) return NEWER_THAN_V1_21_5;
+    return Boolean(checks && checks.accountsOutOfBalance(transferTargets(args.splits)));
+  },
+  // Copies of a split with a pinned mirror take that mirror's amounts.
   'transactions.duplicate': (args, checks) => {
     if (!checks || !Array.isArray(args.ids)) return false;
+    if (pinnedMirrors(checks, args.ids.map(id))) return NEWER_THAN_V1_21_5;
     return checks.accountsOutOfBalance(checks.splitTransferTargets(args.ids.map(Number)));
   },
 

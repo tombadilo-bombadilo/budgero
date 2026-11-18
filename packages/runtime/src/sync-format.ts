@@ -15,7 +15,10 @@
  * unlock a reconciled row, or edit one leg of a cross-currency transfer
  * (the partner keeps its amount), and custom rate changes that now skip
  * reconciled transfers ask for it per call; adds the op code
- * transactions.updateTransferAmounts.
+ * transactions.updateTransferAmounts. Format 7 (app v1.21.6): split saves
+ * whose transfer lines carry their mirror's exact received amount or keep a
+ * category (lines to off-budget accounts), and parent edits or copies of a
+ * split whose mirror keeps an entered amount, ask for it per call.
  *
  * Each outgoing mutation is stamped with the LOWEST format that can express
  * it ({@link mutationFormatVersion}): ops every format-2 build knows stay
@@ -40,7 +43,7 @@
 export const MILLIUNIT_FORMAT_VERSION = 2;
 
 /** Highest mutation format this build reads (and the highest it writes). */
-export const MUTATION_FORMAT_VERSION = 6;
+export const MUTATION_FORMAT_VERSION = 7;
 
 /** Format of mutations whose op codes every milliunit build knows. */
 export const BASE_MUTATION_FORMAT_VERSION = MILLIUNIT_FORMAT_VERSION;

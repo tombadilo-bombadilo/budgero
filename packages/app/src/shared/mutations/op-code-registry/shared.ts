@@ -8,7 +8,9 @@
 
 import { getRuntime } from '@shared/runtime/global';
 import {
+  asMilli,
   isEmptyJournal,
+  type SplitMirrorAmounts,
   type CategoryCreationMark,
   type ImportIdentity,
   type RowJournal,
@@ -32,6 +34,51 @@ export interface NormalizedSplit {
   OutflowNative: MilliUnits | null;
   PairID: string | null;
   OrderIndex: number;
+  /** Exact amounts of a cross-currency transfer line's mirror, carried by the op (format 7). */
+  Mirror?: SplitMirrorAmounts | null;
+}
+
+/**
+ * Mirror amounts carried on a split line in op args (`mirror`), checked at
+ * the op boundary like the line's own amounts. Null when the line has none.
+ */
+export function readCarriedMirror(line: Record<string, unknown>): SplitMirrorAmounts | null {
+  const raw = (line.mirror ?? line.Mirror) as Record<string, unknown> | null | undefined;
+  if (!raw || typeof raw !== 'object') return null;
+  return {
+    InflowNative: asMilli(Number(raw.InflowNative ?? 0)),
+    OutflowNative: asMilli(Number(raw.OutflowNative ?? 0)),
+    InflowConverted: asMilli(Number(raw.InflowConverted ?? 0)),
+    OutflowConverted: asMilli(Number(raw.OutflowConverted ?? 0)),
+  };
+}
+
+/** An entered received (or sent) amount on a split line in UI args, in the target's currency. */
+export function readReceivedAmount(line: Record<string, unknown>): number | null {
+  const value = Number(line.received_amount ?? line.receivedAmount);
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+/**
+ * Op `prepare` step for split lines with an entered received amount: the
+ * originating device turns each into the exact mirror amounts (the budget
+ * value converted here, once) and carries them on the line as `mirror`, so
+ * every device writes the same mirror row. The UI-only field is dropped;
+ * lines without one stay as they are (and the op keeps its old format).
+ */
+export async function carryReceivedAmounts<T extends Record<string, unknown>>(
+  lines: T[],
+  quote: (received: (number | null)[]) => Promise<(SplitMirrorAmounts | null)[]>
+): Promise<T[]> {
+  const received = lines.map(readReceivedAmount);
+  const hasReceived = lines.some((line) => 'received_amount' in line || 'receivedAmount' in line);
+  if (!hasReceived) return lines;
+  const quotes = received.some((amount) => amount !== null) ? await quote(received) : [];
+  return lines.map((line, index) => {
+    const { received_amount: _snake, receivedAmount: _camel, ...rest } = line;
+    const mirror = quotes[index];
+    return (mirror ? { ...rest, mirror } : rest) as unknown as T;
+  });
 }
 
 /** Category type for local type safety (mirrors core Category) */
