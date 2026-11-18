@@ -50,6 +50,9 @@ export interface TransactionSnapshot {
   ID?: number;
   Date?: string;
   date?: string;
+  /** Optional time of day ('HH:MM'). */
+  Time?: string | null;
+  time?: string | null;
   Memo?: string;
   memo?: string;
   Payee?: string;
@@ -148,6 +151,7 @@ export function transactionSnapshotToAddOp(snapshot: TransactionSnapshot): OpCal
       labelId: snapshot.LabelID ?? snapshot.label_id ?? snapshot.labelId ?? null,
       budgetId: snapshot.BudgetID ?? snapshot.budget_id ?? snapshot.budgetId,
       date: snapshot.Date ?? snapshot.date,
+      ...((snapshot.Time ?? snapshot.time) ? { time: snapshot.Time ?? snapshot.time } : {}),
       memo: snapshot.Memo ?? snapshot.memo ?? '',
       payee: snapshot.Payee ?? snapshot.payee ?? '',
       transferId: snapshot.TransferID ?? snapshot.transfer_id ?? snapshot.transferId ?? undefined,

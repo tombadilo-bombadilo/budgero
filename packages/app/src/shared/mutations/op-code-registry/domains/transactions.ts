@@ -329,7 +329,7 @@ const TX_VALUE_COLUMNS = new Set([
 /**
  * What a `transactions.updateColumn` call can change, by column (normalized the
  * same way as TransactionService.updateTransactionColumn):
- * - memo: only the rows themselves;
+ * - memo, time: only the rows themselves;
  * - payee: the rows and the payee directory;
  * - label: the rows and the label directory / label analytics;
  * - amounts, date, category, account, rate: everything except the payee and
@@ -339,7 +339,8 @@ const TX_VALUE_COLUMNS = new Set([
 export function updateColumnInvalidations(args: Record<string, unknown>): string[][] {
   const column =
     typeof args.columnName === 'string' ? args.columnName.toLowerCase().replace(/_/g, '') : '';
-  if (column === 'memo') return TX_ROW_LIST_INVALIDATION_KEYS;
+  // A time edit changes only the rows (and their transfer partners / split mirrors).
+  if (column === 'memo' || column === 'time') return TX_ROW_LIST_INVALIDATION_KEYS;
   if (column === 'payee') return [...TX_ROW_LIST_INVALIDATION_KEYS, ...TX_COLUMN_PAYEE_KEYS];
   if (column === 'labelid') return [...TX_ROW_LIST_INVALIDATION_KEYS, ...TX_COLUMN_LABEL_KEYS];
   if (TX_VALUE_COLUMNS.has(column)) return TX_VALUE_UPDATE_INVALIDATION_KEYS;
@@ -557,8 +558,13 @@ async function addTransactionFromArgs(
     (args.importIdentities as ImportIdentity[] | undefined) ?? [],
     args.cleared === true,
     explicitId(args.id),
-    // With a batch the result is the queued step's index (see TransactionWriteBatch).
-    ...(batch ? [batch] : [])
+    // With a batch the result is the queued step's index (see TransactionWriteBatch),
+    // then the optional time of day ('HH:MM'; omitted or empty means none).
+    ...((typeof args.time === 'string' && args.time
+      ? [batch, args.time]
+      : batch
+        ? [batch]
+        : []) as [TransactionWriteBatch?, string?])
   );
 }
 
@@ -772,14 +778,15 @@ export const transactionOps = {
       const existing = await S().transactions!.getTransactionsByTransferID(transferId);
       if (existing.length) throw new Error('This transferId is already in use.');
 
+      // Both legs share one time of day: the call's, else the source leg's.
+      const time = args.time ?? source.time ?? destination.time ?? null;
+      const legArgs = (leg: Record<string, unknown>) => ({ ...leg, budgetId, transferId, time });
+
       const batch = writeBatch();
       if (batch) {
         // Both legs commit together.
-        const sourceStep = await addTransactionFromArgs({ ...source, budgetId, transferId }, batch);
-        const destinationStep = await addTransactionFromArgs(
-          { ...destination, budgetId, transferId },
-          batch
-        );
+        const sourceStep = await addTransactionFromArgs(legArgs(source), batch);
+        const destinationStep = await addTransactionFromArgs(legArgs(destination), batch);
         const ids = batch.commit();
         return {
           sourceId: ids[sourceStep] as number,
@@ -789,12 +796,8 @@ export const transactionOps = {
 
       let sourceId: number | null = null;
       try {
-        sourceId = await addTransactionFromArgs({ ...source, budgetId, transferId });
-        const destinationId = await addTransactionFromArgs({
-          ...destination,
-          budgetId,
-          transferId,
-        });
+        sourceId = await addTransactionFromArgs(legArgs(source));
+        const destinationId = await addTransactionFromArgs(legArgs(destination));
         return { sourceId, destinationId };
       } catch (error) {
         // addTransaction commits each leg independently. Compensate if the
