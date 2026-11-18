@@ -378,6 +378,25 @@ def test_cleared_is_opt_in_on_the_wire(key, b64_key):
     assert payloads[3]["args"]["destination"]["cleared"] is True
 
 
+def test_time_is_optional_on_the_wire(key, b64_key):
+    captured = []
+
+    def handler(request):
+        captured.append(json.loads(request.content))
+        return httpx.Response(200, json={"id": "q-time", "message": "queued"})
+
+    with make_client(b64_key, handler) as client:
+        plain = client.add_transaction(account_id=1, category_id=5, budget_id=1,
+                                       date="2026-09-19", outflow=10)
+        client.add_transaction(account_id=1, category_id=5, budget_id=1,
+                               date="2026-09-19", outflow=10, time="14:30")
+        client.update_transaction(plain.message_id, time=None)
+    payloads = [decrypt_payload(item["encrypted_payload"], key) for item in captured]
+    assert "time" not in payloads[0]["args"]
+    assert payloads[1]["args"]["time"] == "14:30"
+    assert payloads[2]["args"]["fields"] == {"time": None}
+
+
 @pytest.mark.parametrize("fields", [{}, {"bogus": 1}, {"outflow": -1}, {"cleared": "yes"}])
 def test_invalid_reference_updates_are_not_sent(b64_key, fields):
     def handler(request):

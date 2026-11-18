@@ -178,6 +178,8 @@ class TransactionInput:
             ignored and the lines must sum to ``inflow``/``outflow``.
         cleared: Whether the transaction has already cleared the bank.
             Defaults to False (added as uncleared).
+        time: Optional time of day, "HH:MM" (24-hour, local wall-clock, no
+            time zone). Display and same-day order only.
 
     Example:
         >>> tx = TransactionInput(
@@ -201,6 +203,7 @@ class TransactionInput:
     transfer_id: Optional[str] = None
     splits: Optional[list[SplitLine]] = None
     cleared: bool = False
+    time: Optional[str] = None
 
     def to_api_dict(self) -> dict[str, Any]:
         """
@@ -228,6 +231,8 @@ class TransactionInput:
             result["transferId"] = self.transfer_id
         if self.cleared:
             result["cleared"] = True
+        if self.time:
+            result["time"] = self.time
         if self.splits is not None:
             if not self.splits:
                 raise ValidationError("splits must contain at least one SplitLine")

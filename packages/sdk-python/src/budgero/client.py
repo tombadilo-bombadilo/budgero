@@ -252,6 +252,7 @@ class BudgeroClient:
         transfer_id: Optional[str] = None,
         splits: Optional[list[SplitLine]] = None,
         cleared: bool = False,
+        time: Optional[str] = None,
     ) -> PushResult:
         """
         Add a new transaction to your budget.
@@ -284,6 +285,8 @@ class BudgeroClient:
                 ignored and the lines must sum to outflow (or inflow).
             cleared: Whether the transaction has already cleared the bank.
                 Default is False (added as uncleared).
+            time: Optional time of day, "HH:MM" (24-hour, local, no time
+                zone). The date alone decides balances and budgets.
 
         Returns:
             PushResult with the queue ID and status.
@@ -354,6 +357,7 @@ class BudgeroClient:
             transfer_id=transfer_id,
             splits=splits,
             cleared=cleared,
+            time=time,
         )
 
         return self.push_transaction(tx)
@@ -429,8 +433,8 @@ class BudgeroClient:
         Accepted fields: ``inflow``, ``outflow`` (currency units, converted
         to milliunits), ``date`` (YYYY-MM-DD), ``memo``, ``payee``,
         ``category_id``, ``account_id``, ``cleared`` (bool; e.g. mark a
-        pending charge cleared once it settles). Only the fields you pass
-        change.
+        pending charge cleared once it settles), ``time`` ("HH:MM", or
+        None to clear it). Only the fields you pass change.
 
         Example:
             >>> result = client.add_transaction(..., outflow=50.00)
@@ -447,6 +451,7 @@ class BudgeroClient:
             "category_id": ("categoryId", False),
             "account_id": ("accountId", False),
             "cleared": ("cleared", False),
+            "time": ("time", False),
         }
         wire_fields: dict[str, Any] = {}
         for key, value in fields.items():
