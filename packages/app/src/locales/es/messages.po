@@ -2516,6 +2516,10 @@ msgstr "<0/>Sincronizar suscripciones"
 msgid "<0/>System category · always available"
 msgstr "<0/>Categoría del sistema · siempre disponible"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "<0/>Text"
+msgstr "<0/>Texto"
+
 #: src/pages/settings/ai/ModelSelectionSection.tsx
 msgid "<0/>Text Model"
 msgstr "<0/>Modelo de texto"
@@ -7860,6 +7864,11 @@ msgstr "Descifrando la clave del espacio de trabajo compartido y uniéndose…"
 msgid "Default"
 msgstr "Predeterminado"
 
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Default"
+msgstr "Predeterminado"
+
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Default Account for Import"
 msgstr "Cuenta predeterminada para importar"
@@ -11604,6 +11613,16 @@ msgstr "Se quitarán las etiquetas de las transacciones seleccionadas."
 msgid "Landlord"
 msgstr "Casero"
 
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Large"
+msgstr "Grande"
+
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Larger"
+msgstr "Más grande"
+
 #: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Largest first"
@@ -12206,6 +12225,10 @@ msgstr "Hazlo tuyo"
 #: src/features/transactions/ui/add-transaction/TransactionFormHeader.tsx
 msgid "Make recurring"
 msgstr "Hacer recurrente"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Make text easier to read on this device"
+msgstr "Haz que el texto sea más fácil de leer en este dispositivo"
 
 #: src/features/budget-planning/ui/assign-dropdown/AssignDropdown.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
@@ -17614,6 +17637,10 @@ msgstr "Tasa de ahorro a lo largo del tiempo"
 msgid "Savings Rate<0><1><2><3/></2></1><4>Percentage of on-budget income not spent this month: (Income - Outflows)/Income.</4></0>"
 msgstr "Tasa de ahorro<0><1><2><3/></2></1><4>Porcentaje de los ingresos en el presupuesto no gastados este mes: (Ingresos - Gastos)/Ingresos.</4></0>"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Scales text and the spacing around it across the app. Charts keep their size."
+msgstr "Amplía el texto y el espacio a su alrededor en toda la app. Los gráficos mantienen su tamaño."
+
 #: src/features/ai/ui/receipt-scanner/useReceiptScannerState.ts
 msgid "Scanning failed"
 msgstr "Error al escanear"
@@ -19830,6 +19857,10 @@ msgstr "Al texto le falta la comilla de cierre."
 #: src/pages/settings/ai/RecommendedModelsPanel.tsx
 msgid "Text Models (for categorization)"
 msgstr "Modelos de texto (para categorización)"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Text size"
+msgstr "Tamaño del texto"
 
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 msgid "Text to match"

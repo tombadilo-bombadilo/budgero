@@ -102,7 +102,7 @@ export function RuleRow({
               <span className="truncate text-sm font-medium">{rule.name}</span>
               <Badge
                 variant={rule.mode === 'one_time' ? 'secondary' : 'outline'}
-                className="px-1.5 py-0 text-[10px]"
+                className="px-1.5 py-0 text-[0.625rem]"
               >
                 {modeLabel}
               </Badge>

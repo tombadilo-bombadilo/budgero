@@ -50,12 +50,12 @@ export function CategoryAmountsSectionRegular({
   setIsEditingAllocated,
 }: CategoryAmountsSectionProps) {
   return (
-    <div className="mt-0 flex flex-col gap-2 border-t border-border/60 pt-2 text-[11px] text-muted-foreground sm:flex-row sm:items-start sm:gap-2">
+    <div className="mt-0 flex flex-col gap-2 border-t border-border/60 pt-2 text-[0.6875rem] text-muted-foreground sm:flex-row sm:items-start sm:gap-2">
       {/* Allocated */}
       <div className="flex flex-1 items-center justify-between gap-2 sm:min-w-[120px] sm:flex-col sm:items-center sm:gap-1 sm:border-l sm:border-border/60 sm:pl-2 sm:text-center first:sm:border-l-0 first:sm:pl-0">
         <div className="flex items-center gap-1 text-muted-foreground sm:justify-center">
           <Wallet className="h-4 w-4" />
-          <span className="uppercase tracking-wide text-[9px] lg:text-[10px] sm:text-center">
+          <span className="uppercase tracking-wide text-[0.5625rem] lg:text-[0.625rem] sm:text-center">
             <Trans>Assigned</Trans>
           </span>
         </div>
@@ -85,7 +85,7 @@ export function CategoryAmountsSectionRegular({
       <div className="flex flex-1 items-center justify-between gap-2 sm:min-w-[120px] sm:flex-col sm:items-center sm:gap-1 sm:border-l sm:border-border/60 sm:pl-2 sm:text-center first:sm:border-l-0 first:sm:pl-0">
         <div className="flex items-center gap-1 text-muted-foreground sm:justify-center">
           <RefreshCcw className="h-4 w-4" />
-          <span className="uppercase tracking-wide text-[9px] lg:text-[10px] sm:text-center">
+          <span className="uppercase tracking-wide text-[0.5625rem] lg:text-[0.625rem] sm:text-center">
             <Trans>Activity</Trans>
           </span>
         </div>
@@ -107,7 +107,7 @@ export function CategoryAmountsSectionRegular({
       <div className="flex flex-1 items-center justify-between gap-2 sm:min-w-[120px] sm:flex-col sm:items-center sm:gap-1 sm:border-l sm:border-border/60 sm:pl-2 sm:text-center first:sm:border-l-0 first:sm:pl-0">
         <div className="flex items-center gap-1 text-muted-foreground sm:justify-center">
           <CheckCircle2 className="h-4 w-4" />
-          <span className="uppercase tracking-wide text-[9px] lg:text-[10px] sm:text-center">
+          <span className="uppercase tracking-wide text-[0.5625rem] lg:text-[0.625rem] sm:text-center">
             <Trans>Available</Trans>
           </span>
         </div>
@@ -170,9 +170,9 @@ export function CategoryAmountsSectionCompact({
   | 'setIsEditingAllocated'
 >) {
   return (
-    <div className="mt-0 grid grid-cols-2 gap-x-1 border-t border-border/60 pt-1.5 text-[11px] text-muted-foreground overflow-hidden">
+    <div className="mt-0 grid grid-cols-2 gap-x-1 border-t border-border/60 pt-1.5 text-[0.6875rem] text-muted-foreground overflow-hidden">
       <div className="flex flex-col items-end gap-0 px-1 min-w-0">
-        <span className="uppercase tracking-wide text-[8px] text-muted-foreground self-start">
+        <span className="uppercase tracking-wide text-[0.5rem] text-muted-foreground self-start">
           <Trans>Assigned</Trans>
         </span>
         <div className="min-w-0 w-full">
@@ -195,7 +195,7 @@ export function CategoryAmountsSectionCompact({
         </div>
       </div>
       <div className="flex flex-col items-end gap-0 px-1 min-w-0">
-        <span className="uppercase tracking-wide text-[8px] text-muted-foreground self-start">
+        <span className="uppercase tracking-wide text-[0.5rem] text-muted-foreground self-start">
           <Trans>Avail.</Trans>
         </span>
         <AvailableCell
@@ -243,12 +243,12 @@ export function CategoryAmountsSectionDesktopCompactMobile({
   confirmMove,
 }: CategoryAmountsSectionProps) {
   return (
-    <div className="md:hidden mt-0 flex flex-col gap-1 border-t border-border/60 pt-1 text-[11px] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-1 sm:text-center">
+    <div className="md:hidden mt-0 flex flex-col gap-1 border-t border-border/60 pt-1 text-[0.6875rem] text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:gap-1 sm:text-center">
       {/* Allocated */}
       <div className="flex flex-1 items-center justify-between gap-1 sm:flex-1 sm:min-w-0 sm:border-l sm:border-border/60 sm:px-1 sm:first:pl-0 sm:first:border-l-0 sm:last:pr-0 sm:justify-center">
         <div className="flex items-center gap-1 sm:justify-center">
           <Wallet className="h-4 w-4 text-muted-foreground" />
-          <span className="uppercase tracking-wide text-[9px] lg:text-[10px]">
+          <span className="uppercase tracking-wide text-[0.5625rem] lg:text-[0.625rem]">
             <Trans>Assigned</Trans>
           </span>
         </div>
@@ -273,7 +273,7 @@ export function CategoryAmountsSectionDesktopCompactMobile({
       <div className="flex flex-1 items-center justify-between gap-1 sm:flex-1 sm:min-w-0 sm:border-l sm:border-border/60 sm:px-2 sm:first:pl-0 sm:last:pr-0 sm:justify-center">
         <div className="flex items-center gap-1 sm:justify-center">
           <RefreshCcw className="h-4 w-4 text-muted-foreground" />
-          <span className="uppercase tracking-wide text-[9px] lg:text-[10px]">
+          <span className="uppercase tracking-wide text-[0.5625rem] lg:text-[0.625rem]">
             <Trans>Activity</Trans>
           </span>
         </div>
@@ -293,7 +293,7 @@ export function CategoryAmountsSectionDesktopCompactMobile({
       <div className="flex flex-1 items-center justify-between gap-1 sm:flex-1 sm:min-w-0 sm:border-l sm:border-border/60 sm:px-2 sm:first:pl-0 sm:last:pr-0 sm:justify-center">
         <div className="flex items-center gap-1 sm:justify-center">
           <CheckCircle2 className="h-4 w-4 text-muted-foreground" />
-          <span className="uppercase tracking-wide text-[9px] lg:text-[10px]">
+          <span className="uppercase tracking-wide text-[0.5625rem] lg:text-[0.625rem]">
             <Trans>Available</Trans>
           </span>
         </div>

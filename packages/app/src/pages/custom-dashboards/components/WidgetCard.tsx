@@ -304,7 +304,7 @@ export function WidgetCard({
                 {subtitle}
               </CardDescription>
             )}
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.6875rem] text-muted-foreground">
               {updatedAt && (
                 <span>
                   <Trans>Updated {updatedAt}</Trans>

@@ -317,7 +317,7 @@ export function WorkspaceSharingPanel({ activeSpace, spaces }: WorkspaceSharingP
                   <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
                     <Badge
                       variant="outline"
-                      className="font-mono text-[11px] break-all !whitespace-pre-wrap !shrink text-muted-foreground"
+                      className="font-mono text-[0.6875rem] break-all !whitespace-pre-wrap !shrink text-muted-foreground"
                     >
                       ••••••••••••••••
                     </Badge>
@@ -405,7 +405,7 @@ export function WorkspaceSharingPanel({ activeSpace, spaces }: WorkspaceSharingP
                       <UserMinus className="h-4 w-4" />
                     </Button>
                   ) : (
-                    <Badge variant="outline" className="shrink-0 text-[11px]">
+                    <Badge variant="outline" className="shrink-0 text-[0.6875rem]">
                       {member.role === 'owner' ? t`Owner` : member.role}
                     </Badge>
                   )}

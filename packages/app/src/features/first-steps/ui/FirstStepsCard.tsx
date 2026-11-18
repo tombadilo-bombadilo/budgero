@@ -415,7 +415,7 @@ export function FirstStepsCard({
           ) : (
             // Label above the title, so long titles (German) still fit one row.
             <span className="flex min-w-0 flex-1 flex-col leading-tight">
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              <span className="text-[0.625rem] uppercase tracking-wide text-muted-foreground">
                 <Trans>Next:</Trans>
               </span>
               <span className="truncate text-sm font-medium">{next.title}</span>

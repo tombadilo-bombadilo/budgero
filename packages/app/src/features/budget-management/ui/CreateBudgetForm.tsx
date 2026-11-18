@@ -815,30 +815,30 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
           <TabsTrigger
             disabled={isWritingBudget}
             value="manual"
-            className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-1 px-2 sm:px-3 text-[11px] sm:text-xs"
+            className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-1 px-2 sm:px-3 text-[0.6875rem] sm:text-xs"
           >
             <Plus className="h-3 w-3" />
-            <span className="text-[11px] sm:text-xs">
+            <span className="text-[0.6875rem] sm:text-xs">
               <Trans>New</Trans>
             </span>
           </TabsTrigger>
           <TabsTrigger
             disabled={isWritingBudget}
             value="core"
-            className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-1 px-2 sm:px-3 text-[11px] sm:text-xs"
+            className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-1 px-2 sm:px-3 text-[0.6875rem] sm:text-xs"
           >
             <HardDrive className="h-3 w-3" />
-            <span className="text-[11px] sm:text-xs">
+            <span className="text-[0.6875rem] sm:text-xs">
               <Trans>Backup</Trans>
             </span>
           </TabsTrigger>
           <TabsTrigger
             disabled={isWritingBudget}
             value="import"
-            className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-1 px-2 sm:px-3 text-[11px] sm:text-xs"
+            className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-1 px-2 sm:px-3 text-[0.6875rem] sm:text-xs"
           >
             <Upload className="h-3 w-3" />
-            <span className="text-[11px] sm:text-xs">YNAB</span>
+            <span className="text-[0.6875rem] sm:text-xs">YNAB</span>
           </TabsTrigger>
         </TabsList>
 

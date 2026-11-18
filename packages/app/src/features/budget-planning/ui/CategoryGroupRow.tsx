@@ -95,7 +95,7 @@ export function CategoryGroupRow({
             </button>
 
             <GroupNameEditPopover {...editPopoverProps}>
-              <span className="flex cursor-pointer items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground truncate">
+              <span className="flex cursor-pointer items-center gap-1 text-[0.625rem] font-semibold uppercase tracking-wide text-muted-foreground truncate">
                 <span className="truncate">{item.name}</span>
                 {shareBadge}
               </span>
@@ -116,7 +116,7 @@ export function CategoryGroupRow({
           {/* Allocated total column */}
           <div
             className={cn(
-              'text-right text-[11px] font-semibold text-muted-foreground whitespace-nowrap tabular-nums',
+              'text-right text-[0.6875rem] font-semibold text-muted-foreground whitespace-nowrap tabular-nums',
               MOBILE_TABLE_ALLOCATED_CELL
             )}
           >
@@ -126,7 +126,7 @@ export function CategoryGroupRow({
           {/* Available total column */}
           <div
             className={cn(
-              'text-right text-[11px] font-semibold whitespace-nowrap tabular-nums',
+              'text-right text-[0.6875rem] font-semibold whitespace-nowrap tabular-nums',
               MOBILE_TABLE_AVAILABLE_CELL,
               item.available < 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
             )}
@@ -228,9 +228,9 @@ export function CategoryGroupRow({
         )}
 
         {layoutVariant === 'desktop-compact' ? null : (
-          <div className="hidden text-[11px] text-muted-foreground md:flex md:items-center md:justify-between md:gap-1 md:text-center lg:text-xs">
+          <div className="hidden text-[0.6875rem] text-muted-foreground md:flex md:items-center md:justify-between md:gap-1 md:text-center lg:text-xs">
             <div className="flex flex-1 items-center justify-between gap-1 md:flex-1 md:min-w-0 md:border-l md:border-white/20 md:px-1 md:first:border-l-0 md:first:pl-0 md:justify-center">
-              <span className="uppercase tracking-wide text-[9px] text-muted-foreground lg:text-[10px]">
+              <span className="uppercase tracking-wide text-[0.5625rem] text-muted-foreground lg:text-[0.625rem]">
                 <Trans>Assigned</Trans>
               </span>
               <span className="truncate text-xs font-semibold text-foreground dark:text-white text-right md:text-center lg:text-sm">
@@ -239,7 +239,7 @@ export function CategoryGroupRow({
             </div>
             {!isCompactLayout && (
               <div className="flex flex-1 items-center justify-between gap-1 md:flex-1 md:min-w-0 md:border-l md:border-white/20 md:px-1 md:justify-center">
-                <span className="uppercase tracking-wide text-[9px] text-muted-foreground lg:text-[10px]">
+                <span className="uppercase tracking-wide text-[0.5625rem] text-muted-foreground lg:text-[0.625rem]">
                   <Trans>Activity</Trans>
                 </span>
                 <span
@@ -260,7 +260,7 @@ export function CategoryGroupRow({
               </div>
             )}
             <div className="flex flex-1 items-center justify-between gap-1 md:flex-1 md:min-w-0 md:border-l md:border-white/20 md:px-1 md:justify-center">
-              <span className="uppercase tracking-wide text-[9px] text-muted-foreground lg:text-[10px]">
+              <span className="uppercase tracking-wide text-[0.5625rem] text-muted-foreground lg:text-[0.625rem]">
                 <Trans>Available</Trans>
               </span>
               <span
@@ -281,7 +281,7 @@ export function CategoryGroupRow({
       <div className="border-t border-border/60 bg-background px-1 py-3 text-center text-xs dark:border-white/12 dark:bg-white/[0.03] md:hidden">
         <div className="flex items-center justify-between gap-1 md:hidden">
           <div className="flex flex-col items-center gap-1 flex-1">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
               <Trans>Assigned</Trans>
             </span>
             <span className="text-sm font-semibold text-foreground">
@@ -290,7 +290,7 @@ export function CategoryGroupRow({
           </div>
           {!isCompactLayout && (
             <div className="flex flex-col items-center gap-1 flex-1">
-              <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              <span className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
                 <Trans>Activity</Trans>
               </span>
               <span
@@ -308,7 +308,7 @@ export function CategoryGroupRow({
             </div>
           )}
           <div className="flex flex-col items-center gap-1 flex-1">
-            <span className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            <span className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
               <Trans>Available</Trans>
             </span>
             <span

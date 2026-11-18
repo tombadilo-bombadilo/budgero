@@ -148,7 +148,7 @@ function AddBankForm({
         label: aspsp.name,
         icon: <BankLogo src={aspsp.logo} />,
         hint: aspsp.beta ? (
-          <Badge variant="outline" className="ml-auto text-[10px]">
+          <Badge variant="outline" className="ml-auto text-[0.625rem]">
             <Trans>Beta</Trans>
           </Badge>
         ) : undefined,
@@ -222,7 +222,7 @@ function AddBankForm({
           </Button>
         )}
       </div>
-      <p className="text-[11px] text-muted-foreground">
+      <p className="text-[0.6875rem] text-muted-foreground">
         <Trans>
           You'll log in at your bank and come back here. Banks grant access for up to 180 days, and
           Budgero reminds you a week before that access expires.
@@ -284,7 +284,7 @@ export function EnableBankingBanksCard({ connection }: { connection: BankConnect
                         {session.aspsp.country}
                       </span>
                       {expired && (
-                        <Badge variant="destructive" className="text-[10px]">
+                        <Badge variant="destructive" className="text-[0.625rem]">
                           <Trans>Expired</Trans>
                         </Badge>
                       )}

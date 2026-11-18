@@ -2518,6 +2518,10 @@ msgstr "<0/>Sync Subscriptions"
 msgid "<0/>System category · always available"
 msgstr "<0/>System category · always available"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "<0/>Text"
+msgstr "<0/>Text"
+
 #: src/pages/settings/ai/ModelSelectionSection.tsx
 msgid "<0/>Text Model"
 msgstr "<0/>Text Model"
@@ -7862,6 +7866,11 @@ msgstr "Decrypting shared workspace key and joining…"
 msgid "Default"
 msgstr "Default"
 
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Default"
+msgstr "Default"
+
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Default Account for Import"
 msgstr "Default Account for Import"
@@ -11606,6 +11615,16 @@ msgstr "Labels will be removed from the selected transactions."
 msgid "Landlord"
 msgstr "Landlord"
 
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Large"
+msgstr "Large"
+
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Larger"
+msgstr "Larger"
+
 #: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Largest first"
@@ -12208,6 +12227,10 @@ msgstr "Make it yours"
 #: src/features/transactions/ui/add-transaction/TransactionFormHeader.tsx
 msgid "Make recurring"
 msgstr "Make recurring"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Make text easier to read on this device"
+msgstr "Make text easier to read on this device"
 
 #: src/features/budget-planning/ui/assign-dropdown/AssignDropdown.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
@@ -17616,6 +17639,10 @@ msgstr "Savings rate over time"
 msgid "Savings Rate<0><1><2><3/></2></1><4>Percentage of on-budget income not spent this month: (Income - Outflows)/Income.</4></0>"
 msgstr "Savings Rate<0><1><2><3/></2></1><4>Percentage of on-budget income not spent this month: (Income - Outflows)/Income.</4></0>"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Scales text and the spacing around it across the app. Charts keep their size."
+msgstr "Scales text and the spacing around it across the app. Charts keep their size."
+
 #: src/features/ai/ui/receipt-scanner/useReceiptScannerState.ts
 msgid "Scanning failed"
 msgstr "Scanning failed"
@@ -19832,6 +19859,10 @@ msgstr "Text is missing its closing quote."
 #: src/pages/settings/ai/RecommendedModelsPanel.tsx
 msgid "Text Models (for categorization)"
 msgstr "Text Models (for categorization)"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Text size"
+msgstr "Text size"
 
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 msgid "Text to match"

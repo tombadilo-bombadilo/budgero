@@ -7,6 +7,12 @@ import { subDays } from 'date-fns';
 import { persistUserPreferencesPatch } from '@shared/lib/user-preferences-sync';
 import { saveSyncedPreference } from '@shared/lib/synced-state/synced-preferences';
 import { getMonthKey } from '@shared/lib/date-utils';
+import {
+  applyTextSize,
+  isTextSize,
+  TEXT_SIZE_STORAGE_KEY,
+  type TextSize,
+} from '@shared/lib/text-size/text-size';
 
 export function buildCurrencyLocalizer(
   currency: string,
@@ -212,6 +218,10 @@ interface UiState {
   classicFont: ClassicFontId;
   setClassicFont: (font: ClassicFontId) => void;
 
+  // App-wide text size (per device, see text-size.ts)
+  textSize: TextSize;
+  setTextSize: (size: TextSize) => void;
+
   // Desktop sidebar stays pinned below the slide-out breakpoint (per device)
   sidebarPinned: boolean;
   setSidebarPinned: (pinned: boolean) => void;
@@ -278,6 +288,20 @@ export const useUiStore = create<UiState>((set) => ({
     writeStoredPref(CLASSIC_FONT_STORAGE_KEY, font === 'poppins' ? null : font);
     persistUserPreferencesPatch({ classic_font: font });
     set({ classicFont: font });
+  },
+  textSize: (() => {
+    const size = readStoredPref<TextSize>(
+      TEXT_SIZE_STORAGE_KEY,
+      (stored) => (isTextSize(stored) ? stored : undefined),
+      'default'
+    );
+    applyTextSize(size);
+    return size;
+  })(),
+  setTextSize: (size) => {
+    applyTextSize(size);
+    writeStoredPref(TEXT_SIZE_STORAGE_KEY, size === 'default' ? null : size);
+    set({ textSize: size });
   },
   sidebarPinned: readStoredPref(SIDEBAR_PINNED_STORAGE_KEY, (stored) => stored === '1', false),
   setSidebarPinned: (pinned) => {

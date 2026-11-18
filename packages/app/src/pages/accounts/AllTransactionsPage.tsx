@@ -114,7 +114,7 @@ export default function AllTransactionsPage() {
               <h1 className="text-sm font-bold text-foreground">
                 <Trans>All Transactions</Trans>
               </h1>
-              <p className="text-[10px] text-muted-foreground">
+              <p className="text-[0.625rem] text-muted-foreground">
                 {mobilePageStats
                   ? t`Page ${mobilePageStats.pageNumber + 1}/${mobilePageStats.totalPages}`
                   : `${transactionStats.recentCount} transactions`}

@@ -26,7 +26,7 @@ export function PendingChangesCard() {
                 <span className="text-muted-foreground whitespace-nowrap">
                   {formatRelativeToNow(new Date(mutation.timestamp), { addSuffix: true })}
                 </span>
-                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4">
+                <Badge variant="outline" className="text-[0.625rem] px-1 py-0 h-4">
                   {mutation.sent ? <Trans>Sent</Trans> : <Trans>Queued</Trans>}
                 </Badge>
               </li>

@@ -2,6 +2,8 @@ import { Trans } from '@lingui/react/macro';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { GetTransactionsByAccountRow } from '@budgero/core/browser';
 import { Table } from '@shared/ui/table';
+import { TEXT_SIZE_SCALE } from '@shared/lib/text-size/text-size';
+import { useUiStore } from '@shared/store/useUiStore';
 import { useRegisterKeyboard } from '@features/transactions/api/useRegisterKeyboard';
 import { TransactionTableHeader } from './TransactionTableHeader';
 import { TransactionTableBody } from './TransactionTableBody';
@@ -98,6 +100,7 @@ export function DesktopTransactionTable({
   onClearSelection,
   inlineAdd,
 }: DesktopTransactionTableProps) {
+  const textSize = useUiStore((state) => state.textSize);
   const [splitDialogState, setSplitDialogState] = useState<{
     transaction: GetTransactionsByAccountRow;
     startEditing?: boolean;
@@ -133,7 +136,8 @@ export function DesktopTransactionTable({
     endIndex,
   } = useVirtualizedTransactionRows(
     transactions,
-    compact ? COMPACT_TRANSACTION_ROW_HEIGHT : TRANSACTION_ROW_HEIGHT
+    // Rows are h-16 / h-10 (rem), so they grow with the text size setting.
+    (compact ? COMPACT_TRANSACTION_ROW_HEIGHT : TRANSACTION_ROW_HEIGHT) * TEXT_SIZE_SCALE[textSize]
   );
 
   useTransactionViewportHeight(viewportRef, transactions.length > 0);

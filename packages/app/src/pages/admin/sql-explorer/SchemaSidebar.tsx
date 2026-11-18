@@ -60,13 +60,13 @@ export const SchemaSidebar = memo(
                           className="w-full text-left text-xs px-2 py-1 rounded hover:bg-muted/50 transition-colors flex items-center justify-between group"
                         >
                           <span>
-                            <span className="font-mono text-[11px]">{column.name}</span>
+                            <span className="font-mono text-[0.6875rem]">{column.name}</span>
                             <span className="text-muted-foreground ml-2 uppercase">
                               {column.type || 'TEXT'}
                             </span>
                           </span>
                           {column.primaryKey && (
-                            <Badge variant="secondary" className="text-[10px]">
+                            <Badge variant="secondary" className="text-[0.625rem]">
                               PK
                             </Badge>
                           )}

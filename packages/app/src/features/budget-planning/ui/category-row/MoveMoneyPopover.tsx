@@ -97,7 +97,7 @@ export function MoveMoneyPopover({
               displayClassName="h-9 flex items-center rounded-md border border-input bg-background px-3 text-sm"
               inputClassName="h-9"
             />
-            <div className="text-[10px] text-muted-foreground">
+            <div className="text-[0.625rem] text-muted-foreground">
               <Trans>Available: {formatAmount(Math.max(0, available || 0))}</Trans>
             </div>
           </div>

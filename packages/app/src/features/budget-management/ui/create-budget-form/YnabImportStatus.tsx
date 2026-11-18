@@ -145,7 +145,7 @@ function ReadyToAssignMismatchesTable({
     ([, a], [, b]) => a.month.localeCompare(b.month) || Math.abs(b.amount) - Math.abs(a.amount)
   );
 
-  const headClass = 'h-8 whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide';
+  const headClass = 'h-8 whitespace-nowrap text-[0.625rem] font-semibold uppercase tracking-wide';
 
   return (
     <div className="space-y-2">
@@ -154,7 +154,7 @@ function ReadyToAssignMismatchesTable({
           <p className="font-semibold text-foreground">
             <Trans>Possible contributors</Trans>
           </p>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[0.6875rem] text-muted-foreground">
             <Trans>
               Budgero-side amounts that may explain these differences. They are hints for comparing
               with YNAB, not an exact breakdown.
@@ -164,7 +164,7 @@ function ReadyToAssignMismatchesTable({
             {sortedCauses.map(([key, cause]) => (
               <div
                 key={key}
-                className="flex items-center justify-between gap-2 rounded border bg-muted/30 px-2 py-1 text-[11px]"
+                className="flex items-center justify-between gap-2 rounded border bg-muted/30 px-2 py-1 text-[0.6875rem]"
               >
                 <span className="min-w-0 truncate font-medium">
                   {cause.categoryGroup} › {cause.category}
@@ -173,7 +173,9 @@ function ReadyToAssignMismatchesTable({
                   <span className="font-mono font-medium text-amber-700 dark:text-amber-400">
                     {formatMilli(cause.amount, currency)}
                   </span>{' '}
-                  <span className="text-[10px] text-muted-foreground">({reasonLabel(cause)})</span>
+                  <span className="text-[0.625rem] text-muted-foreground">
+                    ({reasonLabel(cause)})
+                  </span>
                 </span>
               </div>
             ))}
@@ -183,7 +185,7 @@ function ReadyToAssignMismatchesTable({
 
       {scrollState.overflows && (
         <div className="flex items-center justify-between gap-2 px-0.5">
-          <span className="text-[11px] font-medium text-muted-foreground">
+          <span className="text-[0.6875rem] font-medium text-muted-foreground">
             <Trans>Scroll horizontally to view all columns</Trans>
           </span>
           <div className="flex items-center gap-1">
@@ -261,11 +263,11 @@ function ReadyToAssignMismatchesTable({
                   {m.affectedCategories && m.affectedCategories.length > 0 ? (
                     <div className="space-y-1">
                       {m.affectedCategories.map((cause) => (
-                        <div key={causeKey(cause)} className="text-[11px] leading-tight">
+                        <div key={causeKey(cause)} className="text-[0.6875rem] leading-tight">
                           <span className="font-medium">
                             {cause.categoryGroup} › {cause.category}
                           </span>
-                          <div className="text-[10px] text-muted-foreground">
+                          <div className="text-[0.625rem] text-muted-foreground">
                             <span className="font-mono font-medium text-amber-700 dark:text-amber-400">
                               {formatMilli(cause.amount, currency)}
                             </span>{' '}
@@ -511,12 +513,12 @@ export function YnabImportStatus({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-medium">{step.label}</span>
-                  <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <span className="text-[0.625rem] uppercase tracking-wide text-muted-foreground">
                     {status}
                   </span>
                 </div>
                 {update?.detail && (
-                  <p className="mt-0.5 break-words text-[11px] text-muted-foreground">
+                  <p className="mt-0.5 break-words text-[0.6875rem] text-muted-foreground">
                     {update.detail}
                   </p>
                 )}
@@ -532,7 +534,7 @@ export function YnabImportStatus({
       {verification && (
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-md border bg-emerald-50/70 p-3 dark:bg-emerald-950/20">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <p className="text-[0.625rem] uppercase tracking-wide text-muted-foreground">
               <Trans>Source</Trans>
             </p>
             <p className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
@@ -540,7 +542,7 @@ export function YnabImportStatus({
             </p>
           </div>
           <div className="rounded-md border bg-emerald-50/70 p-3 dark:bg-emerald-950/20">
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <p className="text-[0.625rem] uppercase tracking-wide text-muted-foreground">
               <Trans>Accounts</Trans>
             </p>
             <p className="mt-1 text-sm font-semibold text-emerald-700 dark:text-emerald-400">
@@ -556,7 +558,7 @@ export function YnabImportStatus({
                 : 'bg-amber-50/70 dark:bg-amber-950/20'
             }`}
           >
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <p className="text-[0.625rem] uppercase tracking-wide text-muted-foreground">
               <Trans>Categories</Trans>
             </p>
             <p className="mt-1 text-sm font-semibold">
@@ -572,7 +574,7 @@ export function YnabImportStatus({
                 : 'bg-amber-50/70 dark:bg-amber-950/20'
             }`}
           >
-            <p className="text-[10px] uppercase tracking-wide text-muted-foreground">
+            <p className="text-[0.625rem] uppercase tracking-wide text-muted-foreground">
               <Trans>Ready to Assign</Trans>
             </p>
             <p className="mt-1 text-sm font-semibold">
@@ -618,7 +620,7 @@ export function YnabImportStatus({
             <p className="text-xs font-semibold">
               <Trans>Ready to Assign differences</Trans>
             </p>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[0.6875rem] text-muted-foreground">
               <Trans>Budgero did not alter the ledger to force these values to match.</Trans>
             </p>
           </div>
@@ -637,7 +639,7 @@ export function YnabImportStatus({
             {verification.categories.mismatches.slice(0, 20).map((mismatch, index) => (
               <div
                 key={`${mismatch.month}-${mismatch.categoryGroup}-${mismatch.category}-${mismatch.field}-${index}`}
-                className="grid grid-cols-[1fr_auto] gap-2 rounded border bg-background/80 p-2 text-[11px]"
+                className="grid grid-cols-[1fr_auto] gap-2 rounded border bg-background/80 p-2 text-[0.6875rem]"
               >
                 <div className="min-w-0">
                   <p className="truncate font-medium">
@@ -658,7 +660,7 @@ export function YnabImportStatus({
             ))}
           </div>
           {verification.categories.checked - verification.categories.matched > 20 && (
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[0.6875rem] text-muted-foreground">
               <Trans>
                 Showing 20 of {verification.categories.checked - verification.categories.matched}{' '}
                 differences.

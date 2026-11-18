@@ -52,7 +52,7 @@ function LogRow({
         {!applied && (
           <Badge
             variant="outline"
-            className="text-[10px] px-1 py-0 h-4 text-amber-600 border-amber-600/40"
+            className="text-[0.625rem] px-1 py-0 h-4 text-amber-600 border-amber-600/40"
           >
             <Trans>Not applied</Trans>
           </Badge>
@@ -60,11 +60,11 @@ function LogRow({
       </button>
       {open && (
         <div className="px-4 pb-2 pl-9 space-y-1">
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-[0.6875rem] text-muted-foreground">
             <span className="sm:hidden">{author} · </span>
             {new Date(entry.timestamp).toLocaleString()} · {entry.id}
           </div>
-          <pre className="max-h-64 overflow-auto rounded bg-muted/50 p-2 text-[11px] leading-snug whitespace-pre-wrap break-all">
+          <pre className="max-h-64 overflow-auto rounded bg-muted/50 p-2 text-[0.6875rem] leading-snug whitespace-pre-wrap break-all">
             {entry.error ?? JSON.stringify(entry.args ?? {}, null, 2)}
           </pre>
         </div>

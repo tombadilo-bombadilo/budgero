@@ -30,7 +30,7 @@ export default function SyncStatusPage() {
       >
         <ArchiveRestore className="h-4 w-4" />
         <Trans>Earlier versions of this workspace</Trans>
-        <Badge variant="outline" className="text-[11px]">
+        <Badge variant="outline" className="text-[0.6875rem]">
           <Trans>Beta</Trans>
         </Badge>
       </Link>

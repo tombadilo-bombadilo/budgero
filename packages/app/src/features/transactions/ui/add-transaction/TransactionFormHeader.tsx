@@ -61,7 +61,7 @@ export const TransactionFormHeader = React.memo(function TransactionFormHeader({
             />
             <Label
               htmlFor="remember-last"
-              className="text-[11px] sm:text-xs font-normal text-muted-foreground"
+              className="text-[0.6875rem] sm:text-xs font-normal text-muted-foreground"
             >
               <Trans>Remember last category, payee, account</Trans>
             </Label>
@@ -78,7 +78,7 @@ export const TransactionFormHeader = React.memo(function TransactionFormHeader({
           />
           <Label
             htmlFor="make-recurring"
-            className="text-[11px] sm:text-xs font-normal text-muted-foreground"
+            className="text-[0.6875rem] sm:text-xs font-normal text-muted-foreground"
           >
             <Trans>Make recurring</Trans>
           </Label>

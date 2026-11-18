@@ -57,7 +57,7 @@ function ReviewItem({ review, account }: { review: BankReview; account: Account 
   return (
     <div className="rounded-md border p-2.5 space-y-1.5">
       {account && (
-        <div className="text-[11px] font-medium text-muted-foreground">{account.Name}</div>
+        <div className="text-[0.6875rem] font-medium text-muted-foreground">{account.Name}</div>
       )}
       <Row
         label={review.identity.sourceKey === 'push-api' ? t`Push API` : t`Bank`}

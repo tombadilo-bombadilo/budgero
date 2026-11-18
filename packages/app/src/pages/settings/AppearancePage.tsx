@@ -14,7 +14,9 @@ import {
   Languages,
   List,
   PanelLeft,
+  Type,
 } from 'lucide-react';
+import type { TextSize } from '@shared/lib/text-size/text-size';
 import { Button } from '@shared/ui/button';
 import { usePWA } from '@shared/hooks/usePWA';
 import { RadioGroup, RadioGroupItem } from '@shared/ui/radio-group';
@@ -54,6 +56,8 @@ export default function AppearancePage() {
   const classicFont = useUiStore((state) => state.classicFont);
   const setClassicFont = useUiStore((state) => state.setClassicFont);
   const { themeId } = useThemePreset();
+  const textSize = useUiStore((state) => state.textSize);
+  const setTextSize = useUiStore((state) => state.setTextSize);
   const sidebarPinned = useUiStore((state) => state.sidebarPinned);
   const setSidebarPinned = useUiStore((state) => state.setSidebarPinned);
   const desktopBudgetLayout = useUiStore((state) => state.desktopBudgetLayout);
@@ -190,6 +194,57 @@ export default function AppearancePage() {
               </p>
             </div>
             <LanguageSwitch id="language" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trans>
+              <Type className="h-5 w-5" />
+              Text
+            </Trans>
+          </CardTitle>
+          <CardDescription>
+            <Trans>Make text easier to read on this device</Trans>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="text-size">
+                <Trans>Text size</Trans>
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                <Trans>
+                  Scales text and the spacing around it across the app. Charts keep their size.
+                </Trans>
+              </p>
+            </div>
+            <Select
+              value={textSize}
+              onValueChange={(value) => {
+                const size = value as TextSize;
+                trackSettingChanged('text_size', size);
+                setTextSize(size);
+              }}
+            >
+              <SelectTrigger id="text-size" className="w-full sm:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">
+                  <Trans context="text size">Default</Trans>
+                </SelectItem>
+                <SelectItem value="large">
+                  <Trans context="text size">Large</Trans>
+                </SelectItem>
+                <SelectItem value="larger">
+                  <Trans context="text size">Larger</Trans>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>

@@ -79,7 +79,7 @@ export function ChartTypePicker({ spec, current, onPick }: ChartTypePickerProps)
         }}
         className={cn(
           'relative flex w-full flex-col items-center justify-center gap-1 rounded-md border px-1 text-center leading-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          large ? 'h-[4.5rem] text-xs' : 'h-14 text-[11px]',
+          large ? 'h-[4.5rem] text-xs' : 'h-14 text-[0.6875rem]',
           selected
             ? 'border-primary bg-primary/10 text-foreground'
             : large
@@ -122,7 +122,7 @@ export function ChartTypePicker({ spec, current, onPick }: ChartTypePickerProps)
         <div ref={gridRef} className="space-y-3" role="radiogroup" aria-label={t`Chart type`}>
           {recommended.length > 0 && (
             <section aria-label={t`Recommended`}>
-              <h3 className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              <h3 className="mb-1.5 text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
                 <Trans>Recommended</Trans>
               </h3>
               <div className="grid grid-cols-4 gap-1.5">
@@ -132,7 +132,7 @@ export function ChartTypePicker({ spec, current, onPick }: ChartTypePickerProps)
           )}
           {available.length > 0 && (
             <section aria-label={t`More chart types`}>
-              <h3 className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              <h3 className="mb-1.5 text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
                 <Trans>More</Trans>
               </h3>
               <div className="grid grid-cols-4 gap-1.5">
@@ -143,7 +143,7 @@ export function ChartTypePicker({ spec, current, onPick }: ChartTypePickerProps)
         </div>
         {unavailable.length > 0 && (
           <section aria-label={t`Not available for this question`}>
-            <h3 className="mb-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <h3 className="mb-1.5 text-[0.6875rem] font-medium uppercase tracking-wide text-muted-foreground">
               <Trans>Not available for this question</Trans>
             </h3>
             <ul className="space-y-1">

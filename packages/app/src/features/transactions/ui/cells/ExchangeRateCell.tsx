@@ -143,7 +143,7 @@ export function ExchangeRateCell({
             side="bottom"
             align="end"
             onOpenAutoFocus={(event) => event.preventDefault()}
-            className="w-56 p-2 text-left text-[11px] leading-tight text-destructive"
+            className="w-56 p-2 text-left text-[0.6875rem] leading-tight text-destructive"
           >
             <p>{error}</p>
             {pendingUnusualRate !== null && (

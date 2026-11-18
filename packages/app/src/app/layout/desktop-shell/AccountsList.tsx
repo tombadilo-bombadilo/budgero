@@ -120,7 +120,7 @@ const AccountItem = React.memo(function AccountItem({
           <span className="truncate flex-1 min-w-0">{account.Name}</span>
           <span
             className={cn(
-              'text-[11px] font-mono text-right tabular-nums flex-shrink-0',
+              'text-[0.6875rem] font-mono text-right tabular-nums flex-shrink-0',
               balanceValue < 0 ? 'text-destructive' : 'text-muted-foreground'
             )}
           >
@@ -189,7 +189,7 @@ const AccountSection = React.memo(function AccountSection({
         </div>
         <div
           className={cn(
-            'text-[11px] font-mono font-semibold tabular-nums',
+            'text-[0.6875rem] font-mono font-semibold tabular-nums',
             total < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}
         >

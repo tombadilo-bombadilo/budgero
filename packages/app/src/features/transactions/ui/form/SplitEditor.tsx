@@ -88,7 +88,7 @@ export function SplitEditor({
 
       {isSplit && (
         <div className="space-y-2 sm:space-y-3 border rounded-md p-2 sm:p-3">
-          <div className="flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-[0.6875rem] sm:text-xs text-muted-foreground">
             <span>
               <Trans>Remaining to assign</Trans>
             </span>
@@ -137,7 +137,7 @@ export function SplitEditor({
               </div>
               <div className="grid grid-cols-2 gap-2 sm:flex sm:items-end">
                 <div className="min-w-0 sm:flex-1">
-                  <div className="mb-1 text-[10px] text-muted-foreground">
+                  <div className="mb-1 text-[0.625rem] text-muted-foreground">
                     <Trans>Outflow</Trans>
                   </div>
                   <CalculatorCell
@@ -159,7 +159,7 @@ export function SplitEditor({
                   />
                 </div>
                 <div className="min-w-0 sm:flex-1">
-                  <div className="mb-1 text-[10px] text-muted-foreground">
+                  <div className="mb-1 text-[0.625rem] text-muted-foreground">
                     <Trans>Inflow</Trans>
                   </div>
                   <CalculatorCell

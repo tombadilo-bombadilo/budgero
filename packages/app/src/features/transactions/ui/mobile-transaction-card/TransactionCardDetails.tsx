@@ -489,7 +489,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                           const value = flows[flow];
                           return (
                             <div key={flow} className="space-y-1">
-                              <div className="text-[10px] capitalize text-muted-foreground">
+                              <div className="text-[0.625rem] capitalize text-muted-foreground">
                                 {flow}
                               </div>
                               {editSplits ? (
@@ -627,7 +627,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                     />
                   </div>
                   {!!transaction.ExchangeRateOverride && (
-                    <span className="text-[11px] text-primary flex-shrink-0">
+                    <span className="text-[0.6875rem] text-primary flex-shrink-0">
                       <Trans>manual</Trans>
                     </span>
                   )}

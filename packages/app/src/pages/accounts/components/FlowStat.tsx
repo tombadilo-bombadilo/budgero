@@ -28,7 +28,7 @@ const COLOR_CLASS: Record<FlowStatProps['color'], string> = {
  */
 export function FlowStat({ icon: Icon, label, value, color, size = 'md', tooltip }: FlowStatProps) {
   const colorClass = COLOR_CLASS[color];
-  const labelSize = size === 'sm' ? 'text-[10px]' : 'text-xs';
+  const labelSize = size === 'sm' ? 'text-[0.625rem]' : 'text-xs';
   const valueSize = size === 'sm' ? 'text-xs' : 'text-sm';
 
   const stat = (

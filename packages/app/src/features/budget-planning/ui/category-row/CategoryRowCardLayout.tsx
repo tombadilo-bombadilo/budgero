@@ -249,7 +249,7 @@ export function CategoryRowCardLayout({
             <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-border/40">
               <div className="flex items-center gap-1.5 text-muted-foreground">
                 <RefreshCcw className="h-3.5 w-3.5" />
-                <span className="uppercase tracking-wide text-[9px]">
+                <span className="uppercase tracking-wide text-[0.5625rem]">
                   <Trans>Activity</Trans>
                 </span>
               </div>

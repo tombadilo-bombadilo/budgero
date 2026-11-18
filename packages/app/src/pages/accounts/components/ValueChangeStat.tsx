@@ -104,7 +104,7 @@ export function ValueChangeStat({
           <span
             className={cn(
               'flex items-center gap-1 text-muted-foreground',
-              size === 'sm' ? 'text-[10px]' : 'text-xs'
+              size === 'sm' ? 'text-[0.625rem]' : 'text-xs'
             )}
           >
             <Trans>
@@ -139,7 +139,7 @@ export function ValueChangeStat({
         {history.length > 1 ? (
           <div className="space-y-1">
             <RevaluationBars rows={history} />
-            <div className="flex justify-between text-[10px] text-muted-foreground">
+            <div className="flex justify-between text-[0.625rem] text-muted-foreground">
               <span>{history[0].Date}</span>
               <span>{history[history.length - 1].Date}</span>
             </div>
@@ -186,7 +186,7 @@ export function ValueChangeStat({
           )}
         </div>
 
-        <p className="text-[11px] text-muted-foreground border-t border-border pt-2">
+        <p className="text-[0.6875rem] text-muted-foreground border-t border-border pt-2">
           {onBudget
             ? t`This account is on-budget: these changes are included in Ready to Assign.`
             : t`Tracking-only account: these changes affect net worth but not Ready to Assign.`}

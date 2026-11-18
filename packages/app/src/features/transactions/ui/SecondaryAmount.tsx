@@ -38,7 +38,7 @@ export function SecondaryAmount({
   globalLocalizer,
   approxPrefix,
   compare = 'tolerance',
-  className = 'text-[11px] text-muted-foreground',
+  className = 'text-[0.6875rem] text-muted-foreground',
 }: SecondaryAmountProps) {
   const privacyMaskNumbers = useUiStore((state) => state.privacyMaskNumbers);
   if (originalAmount === undefined) return null;

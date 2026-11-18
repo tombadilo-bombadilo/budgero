@@ -399,6 +399,7 @@ export const SETTING_VALUES = {
   number_animations: ['on', 'off'],
   dialog_blur: ['on', 'off'],
   sidebar_pinned: ['on', 'off'],
+  text_size: ['default', 'large', 'larger'],
   home_page: ['dashboard', 'planning', 'accounts', 'analytics'],
 } as const satisfies Record<string, readonly string[]>;
 export type SettingKey = keyof typeof SETTING_VALUES;

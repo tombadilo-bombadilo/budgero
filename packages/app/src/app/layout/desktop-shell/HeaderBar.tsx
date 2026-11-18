@@ -86,7 +86,7 @@ export const HeaderBar = React.memo(function HeaderBar({ breadcrumbs }: HeaderBa
             <span className="hidden lg:inline">
               <Trans>Add Transaction</Trans>
             </span>
-            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border border-primary-foreground/30 px-1.5 font-mono text-[10px] font-medium opacity-80 lg:flex">
+            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border border-primary-foreground/30 px-1.5 font-mono text-[0.625rem] font-medium opacity-80 lg:flex">
               {shortcuts.addTransaction}
             </kbd>
           </Button>
@@ -129,7 +129,7 @@ export const HeaderBar = React.memo(function HeaderBar({ breadcrumbs }: HeaderBa
             <span className="hidden lg:inline">
               <Trans>Search</Trans>
             </span>
-            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+            <kbd className="pointer-events-none hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[0.625rem] font-medium opacity-100 sm:flex">
               {shortcuts.search}
             </kbd>
           </Button>

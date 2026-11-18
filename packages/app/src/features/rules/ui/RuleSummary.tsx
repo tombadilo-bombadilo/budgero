@@ -98,13 +98,13 @@ export function RuleSummary({ rule, categoryNames, accountNames }: RuleSummaryPr
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       <div className="min-w-0 space-y-1">
-        <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
           <Trans>When</Trans>
         </div>
         {groupRuleConditions(rule.conditions).map((group, groupIndex) => (
           <div key={groupIndex} className="space-y-0.5">
             {groupIndex > 0 && (
-              <div className="py-0.5 text-[10px] font-semibold text-primary">{t`OR`}</div>
+              <div className="py-0.5 text-[0.625rem] font-semibold text-primary">{t`OR`}</div>
             )}
             <ul className="space-y-0.5">
               {group.map((condition, index) => (
@@ -119,7 +119,7 @@ export function RuleSummary({ rule, categoryNames, accountNames }: RuleSummaryPr
         ))}
       </div>
       <div className="min-w-0 space-y-1">
-        <div className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+        <div className="text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
           <Trans>Then</Trans>
         </div>
         <ol className="space-y-0.5">

@@ -43,13 +43,13 @@ const toLinkProps = (item: NavRouteItem): SidebarNavLinkProps => ({
     ? {
         label: <Trans>Beta</Trans>,
         variant: 'outline',
-        className: 'ml-auto text-[10px] px-1 py-0 h-4 text-amber-600 border-amber-600',
+        className: 'ml-auto text-[0.625rem] px-1 py-0 h-4 text-amber-600 border-amber-600',
       }
     : undefined,
 });
 
 const SETTINGS_SECTION_LABEL_CLASS =
-  'text-[10px] font-medium text-muted-foreground uppercase tracking-wider';
+  'text-[0.625rem] font-medium text-muted-foreground uppercase tracking-wider';
 
 export const SidebarNav = React.memo(function SidebarNav() {
   const { t } = useLingui();

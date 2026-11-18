@@ -208,7 +208,7 @@ export function ReconcileAccountDialog({ account, budgetId }: ReconcileAccountDi
                 <span className="block text-sm md:text-lg font-semibold break-words underline decoration-dotted decoration-muted-foreground/50 underline-offset-4 group-hover:decoration-foreground">
                   {formatMilli(accountLocalizer, currentBalance)}
                 </span>
-                <span className="mt-0.5 block text-[11px] leading-tight text-muted-foreground group-hover:text-foreground">
+                <span className="mt-0.5 block text-[0.6875rem] leading-tight text-muted-foreground group-hover:text-foreground">
                   <Trans>Matches your bank? Click to use it</Trans>
                 </span>
               </button>

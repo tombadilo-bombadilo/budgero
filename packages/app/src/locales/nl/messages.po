@@ -2516,6 +2516,10 @@ msgstr "<0/>Abonnementen synchroniseren"
 msgid "<0/>System category · always available"
 msgstr "<0/>Systeemcategorie · altijd beschikbaar"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "<0/>Text"
+msgstr "<0/>Tekst"
+
 #: src/pages/settings/ai/ModelSelectionSection.tsx
 msgid "<0/>Text Model"
 msgstr "<0/>Tekstmodel"
@@ -7860,6 +7864,11 @@ msgstr "Gedeelde werkruimtesleutel ontsleutelen en lid worden…"
 msgid "Default"
 msgstr "Standaard"
 
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Default"
+msgstr "Standaard"
+
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Default Account for Import"
 msgstr "Standaardrekening voor import"
@@ -11604,6 +11613,16 @@ msgstr "De labels worden van de geselecteerde transacties verwijderd."
 msgid "Landlord"
 msgstr "Verhuurder"
 
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Large"
+msgstr "Groot"
+
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Larger"
+msgstr "Groter"
+
 #: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Largest first"
@@ -12206,6 +12225,10 @@ msgstr "Maak het van jou"
 #: src/features/transactions/ui/add-transaction/TransactionFormHeader.tsx
 msgid "Make recurring"
 msgstr "Terugkerend maken"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Make text easier to read on this device"
+msgstr "Maak tekst beter leesbaar op dit apparaat"
 
 #: src/features/budget-planning/ui/assign-dropdown/AssignDropdown.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
@@ -17614,6 +17637,10 @@ msgstr "Spaarquote door de tijd"
 msgid "Savings Rate<0><1><2><3/></2></1><4>Percentage of on-budget income not spent this month: (Income - Outflows)/Income.</4></0>"
 msgstr "Spaarpercentage<0><1><2><3/></2></1><4>Percentage van het inkomen in budget dat deze maand niet is besteed: (Inkomen - Uitgaven)/Inkomen.</4></0>"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Scales text and the spacing around it across the app. Charts keep their size."
+msgstr "Vergroot tekst en de ruimte eromheen in de hele app. Grafieken houden hun grootte."
+
 #: src/features/ai/ui/receipt-scanner/useReceiptScannerState.ts
 msgid "Scanning failed"
 msgstr "Scannen mislukt"
@@ -19830,6 +19857,10 @@ msgstr "De tekst mist het sluitende aanhalingsteken."
 #: src/pages/settings/ai/RecommendedModelsPanel.tsx
 msgid "Text Models (for categorization)"
 msgstr "Tekstmodellen (voor categorisatie)"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Text size"
+msgstr "Tekstgrootte"
 
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 msgid "Text to match"

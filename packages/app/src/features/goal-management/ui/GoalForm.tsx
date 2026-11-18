@@ -379,7 +379,7 @@ export function GoalForm({
         <span className="block text-xs leading-snug text-muted-foreground">{preset.subtitle}</span>
         {isActive && (
           <span
-            className="mt-0.5 block text-[11px] italic leading-snug text-muted-foreground/70"
+            className="mt-0.5 block text-[0.6875rem] italic leading-snug text-muted-foreground/70"
             data-testid="goal-preset-example"
           >
             {example}

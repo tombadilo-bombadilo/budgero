@@ -94,14 +94,14 @@ export function YnabExportGuide() {
           <ol className="list-none space-y-2.5 text-muted-foreground">
             {YNAB_GUIDE_STEPS.map((step, index) => (
               <li key={index} className="flex items-start gap-2.5">
-                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[0.625rem] font-bold text-primary">
                   {index + 1}
                 </span>
                 <span>{step}</span>
               </li>
             ))}
           </ol>
-          <p className="mt-3 text-[11px] text-muted-foreground/70">
+          <p className="mt-3 text-[0.6875rem] text-muted-foreground/70">
             <Trans>
               Budgero tries to detect other format settings, but exports made with the settings
               above are the only ones that import losslessly.

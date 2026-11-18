@@ -186,7 +186,7 @@ export function LabelCombobox({
                   />
                   <span className="truncate flex-1">{label.Name}</span>
                   {label.UsageCount > 0 && (
-                    <span className="text-[11px] text-muted-foreground tabular-nums">
+                    <span className="text-[0.6875rem] text-muted-foreground tabular-nums">
                       {label.UsageCount}
                     </span>
                   )}

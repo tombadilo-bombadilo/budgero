@@ -507,7 +507,7 @@ export const YnabImportStep: React.FC<YnabStepProps> = ({
                 <div style={{ display: 'grid', gap: 5 }}>
                   <Label
                     htmlFor="onboarding-ynab-source-format"
-                    className="text-[11px] leading-normal font-bold"
+                    className="text-[0.6875rem] leading-normal font-bold"
                   >
                     <Trans>Number format in YNAB</Trans>
                   </Label>

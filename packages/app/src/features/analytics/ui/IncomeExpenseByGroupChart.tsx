@@ -427,7 +427,7 @@ export function IncomeExpenseByGroupChart() {
                   value={option.value}
                   className="px-2 py-1 text-xs"
                 >
-                  <span className="text-[11px] sm:text-xs">{option.label}</span>
+                  <span className="text-[0.6875rem] sm:text-xs">{option.label}</span>
                 </ToggleGroupItem>
               ))}
             </ToggleGroup>

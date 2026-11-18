@@ -39,7 +39,7 @@ function DeleteCategoryMenuButton({
       {blocked && (
         <p
           id={`delete-blocked-${item.categoryId}`}
-          className="px-3 pb-1 text-[11px] leading-snug text-muted-foreground"
+          className="px-3 pb-1 text-[0.6875rem] leading-snug text-muted-foreground"
         >
           {blocked}
         </p>
@@ -78,7 +78,7 @@ export function CategoryRowHeader({
 
   return (
     <div
-      className="flex min-w-0 items-center gap-2 text-xs font-semibold text-foreground md:text-[13px] lg:text-sm"
+      className="flex min-w-0 items-center gap-2 text-xs font-semibold text-foreground md:text-[0.8125rem] lg:text-sm"
       data-select-handle
     >
       {isCompactLayout && (

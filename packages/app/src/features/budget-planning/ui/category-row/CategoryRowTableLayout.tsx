@@ -134,7 +134,7 @@ export function CategoryRowTableLayout({
               getStatusDotClasses(statusColor)
             )}
           />
-          <span className="text-[11px] truncate" title={item.name}>
+          <span className="text-[0.6875rem] truncate" title={item.name}>
             {item.name}
           </span>
           <FundingPriorityBadge budgetId={selectedBudgetId} priority={item.fundingPriority} />
@@ -153,11 +153,11 @@ export function CategoryRowTableLayout({
             inputAlign="right"
             placeholder="0"
             displayClassName={cn(
-              'text-[11px] font-medium text-foreground tabular-nums',
+              'text-[0.6875rem] font-medium text-foreground tabular-nums',
               highlightAllocated && 'ring-1 ring-primary/60 bg-primary/10'
             )}
             inputClassName={cn(
-              'h-5 text-[11px] text-right w-full',
+              'h-5 text-[0.6875rem] text-right w-full',
               highlightAllocated && 'ring-1 ring-primary/60'
             )}
           />
@@ -180,9 +180,9 @@ export function CategoryRowTableLayout({
             initMovePopover={initMovePopover}
             onConfirmMove={confirmMove}
             className="flex items-center justify-end gap-0.5 whitespace-nowrap"
-            triggerClassName="text-[11px] font-medium tabular-nums"
+            triggerClassName="text-[0.6875rem] font-medium tabular-nums"
             fallbackClassName={cn(
-              'text-[11px] font-medium tabular-nums',
+              'text-[0.6875rem] font-medium tabular-nums',
               item.available < 0 ? 'text-red-600 dark:text-red-400' : 'text-foreground'
             )}
           />
@@ -193,7 +193,7 @@ export function CategoryRowTableLayout({
       {isExpanded && (
         <div
           className={cn(
-            'border-t border-border/30 bg-muted/20 px-2 py-1.5 text-[11px]',
+            'border-t border-border/30 bg-muted/20 px-2 py-1.5 text-[0.6875rem]',
             highlightGoalSection && 'ring-1 ring-primary/60 bg-primary/10'
           )}
         >
@@ -227,7 +227,7 @@ export function CategoryRowTableLayout({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 px-2 text-[11px]"
+                className="h-6 px-2 text-[0.6875rem]"
                 onClick={() => onEditCategory(item)}
               >
                 <Trans>
@@ -239,7 +239,7 @@ export function CategoryRowTableLayout({
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-[11px]"
+                  className="h-6 px-2 text-[0.6875rem]"
                   onClick={(e) => {
                     e.stopPropagation();
                     onHideCategory(item);
@@ -254,7 +254,7 @@ export function CategoryRowTableLayout({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 px-2 text-[11px] text-destructive hover:text-destructive"
+                className="h-6 px-2 text-[0.6875rem] text-destructive hover:text-destructive"
                 onClick={() => onDeleteCategory(item)}
               >
                 <Trans>

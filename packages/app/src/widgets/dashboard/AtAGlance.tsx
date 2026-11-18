@@ -175,7 +175,7 @@ export function AtAGlance() {
                       </span>
                     </div>
                     <div
-                      className="mt-1 block text-[11px] sm:text-sm text-foreground/90 truncate"
+                      className="mt-1 block text-[0.6875rem] sm:text-sm text-foreground/90 truncate"
                       title={txn.Memo || t`No memo`}
                     >
                       {txn.Memo || t`No memo`}

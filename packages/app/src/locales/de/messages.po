@@ -2516,6 +2516,10 @@ msgstr "<0/>Abonnements synchronisieren"
 msgid "<0/>System category · always available"
 msgstr "<0/>Systemkategorie · immer verfügbar"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "<0/>Text"
+msgstr "<0/>Text"
+
 #: src/pages/settings/ai/ModelSelectionSection.tsx
 msgid "<0/>Text Model"
 msgstr "<0/>Textmodell"
@@ -7860,6 +7864,11 @@ msgstr "Entschlüssele freigegebenen Arbeitsbereich-Schlüssel und trete bei…"
 msgid "Default"
 msgstr "Standard"
 
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Default"
+msgstr "Standard"
+
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Default Account for Import"
 msgstr "Standardkonto für Import"
@@ -11604,6 +11613,16 @@ msgstr "Die Labels werden von den ausgewählten Transaktionen entfernt."
 msgid "Landlord"
 msgstr "Vermieter"
 
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Large"
+msgstr "Groß"
+
+#: src/pages/settings/AppearancePage.tsx
+msgctxt "text size"
+msgid "Larger"
+msgstr "Größer"
+
 #: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Largest first"
@@ -12206,6 +12225,10 @@ msgstr "Mach es zu deinem"
 #: src/features/transactions/ui/add-transaction/TransactionFormHeader.tsx
 msgid "Make recurring"
 msgstr "Wiederkehrend machen"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Make text easier to read on this device"
+msgstr "Mach Text auf diesem Gerät besser lesbar"
 
 #: src/features/budget-planning/ui/assign-dropdown/AssignDropdown.tsx
 #: src/pages/admin/SelfHostAdminUsers.tsx
@@ -17614,6 +17637,10 @@ msgstr "Sparquote im Zeitverlauf"
 msgid "Savings Rate<0><1><2><3/></2></1><4>Percentage of on-budget income not spent this month: (Income - Outflows)/Income.</4></0>"
 msgstr "Sparquote<0><1><2><3/></2></1><4>Anteil des im Budget befindlichen Einkommens, der diesen Monat nicht ausgegeben wurde: (Einkommen - Ausgaben)/Einkommen.</4></0>"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Scales text and the spacing around it across the app. Charts keep their size."
+msgstr "Vergrößert Text und die Abstände darum in der ganzen App. Diagramme behalten ihre Größe."
+
 #: src/features/ai/ui/receipt-scanner/useReceiptScannerState.ts
 msgid "Scanning failed"
 msgstr "Scan fehlgeschlagen"
@@ -19830,6 +19857,10 @@ msgstr "Dem Text fehlt das schließende Anführungszeichen."
 #: src/pages/settings/ai/RecommendedModelsPanel.tsx
 msgid "Text Models (for categorization)"
 msgstr "Textmodelle (für die Kategorisierung)"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Text size"
+msgstr "Textgröße"
 
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 msgid "Text to match"

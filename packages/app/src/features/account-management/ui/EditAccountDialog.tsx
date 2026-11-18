@@ -444,7 +444,7 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
                 kind={accType === 'Crypto' ? 'crypto' : 'fiat'}
               />
               {isLiability && (
-                <div className="rounded-md bg-muted/20 border border-border/50 p-2 text-[11px] text-muted-foreground">
+                <div className="rounded-md bg-muted/20 border border-border/50 p-2 text-[0.6875rem] text-muted-foreground">
                   <Trans>
                     Paid So Far should be edited via transactions (inflows). Here you can adjust
                     metadata like Original Debt, APR and dates.

@@ -55,7 +55,7 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
           <div className="inline-flex flex-col justify-center rounded-lg border border-border/70 bg-muted/40 py-1 pl-2.5 pr-3 shadow-sm">
             <span className="flex items-center gap-1">
               <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
-              <span className="text-[10px] font-medium uppercase leading-none tracking-[0.08em] text-muted-foreground">
+              <span className="text-[0.625rem] font-medium uppercase leading-none tracking-[0.08em] text-muted-foreground">
                 <Trans>Ready to assign</Trans>
               </span>
             </span>
@@ -78,8 +78,8 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
         ),
         // The budget table's header and one category row (DesktopBudgetTableView, CategoryRowTableLayout).
         visual: (
-          <div className="rounded-md border text-[11px] tabular-nums">
-            <div className="grid grid-cols-[minmax(0,1fr)_repeat(3,4rem)] gap-x-2 border-b px-2 py-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          <div className="rounded-md border text-[0.6875rem] tabular-nums">
+            <div className="grid grid-cols-[minmax(0,1fr)_repeat(3,4rem)] gap-x-2 border-b px-2 py-1 text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
               <span />
               <span className="truncate text-right">
                 <Trans>Assigned</Trans>
@@ -131,7 +131,7 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
         ),
         visual: (
           // CoverOverspendingPopover's trigger: the red, dotted-underlined Available.
-          <div className="flex items-center justify-between rounded-md border px-3 py-2 text-[11px]">
+          <div className="flex items-center justify-between rounded-md border px-3 py-2 text-[0.6875rem]">
             <span className="font-medium">
               <Trans>Dining out</Trans>
             </span>

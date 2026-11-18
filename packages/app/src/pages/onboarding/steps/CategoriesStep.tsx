@@ -27,7 +27,7 @@ export const CategoriesStep: React.FC<StepProps> = ({ cur, state, set }) => {
                 className="size-2 rounded-full"
                 style={{ background: group.color }}
               />
-              <span className="text-[11px] font-semibold tracking-wider text-muted-foreground">
+              <span className="text-[0.6875rem] font-semibold tracking-wider text-muted-foreground">
                 {t(group.label)}
               </span>
             </div>

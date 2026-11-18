@@ -315,7 +315,7 @@ export const TransactionRow = React.memo(function TransactionRow({
             {transaction.Date < getTodayISO() && (
               <Badge
                 variant="destructive"
-                className="px-1.5 py-0 text-[9px] leading-tight uppercase"
+                className="px-1.5 py-0 text-[0.5625rem] leading-tight uppercase"
               >
                 <Trans>Overdue</Trans>
               </Badge>

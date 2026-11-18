@@ -213,7 +213,7 @@ export function BudgetToolbar({
               >
                 <div className="flex items-center gap-1">
                   <span className={cn('h-1.5 w-1.5 rounded-full', rtaTone.dot)} />
-                  <span className="text-[10px] font-medium uppercase tracking-[0.08em] leading-none text-muted-foreground">
+                  <span className="text-[0.625rem] font-medium uppercase tracking-[0.08em] leading-none text-muted-foreground">
                     <Trans>Ready to assign</Trans>
                   </span>
                   <ReadyToAssignHelpPopover

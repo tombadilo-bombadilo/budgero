@@ -274,7 +274,7 @@ export function MobileBottomNav() {
 
   const getTriggerLabelClassName = (isActive: boolean) =>
     cn(
-      'max-w-full whitespace-nowrap text-center text-[11px] font-medium leading-4 transition-colors',
+      'max-w-full whitespace-nowrap text-center text-[0.6875rem] font-medium leading-4 transition-colors',
       isActive ? 'text-foreground' : 'text-muted-foreground'
     );
 
@@ -323,7 +323,7 @@ export function MobileBottomNav() {
             <span className="truncate">{account.Name}</span>
           </span>
           {uncategorizedCount > 0 && (
-            <Badge variant="destructive" className="h-4 px-1 text-[10px]">
+            <Badge variant="destructive" className="h-4 px-1 text-[0.625rem]">
               {uncategorizedCount}
             </Badge>
           )}
@@ -359,7 +359,7 @@ export function MobileBottomNav() {
                     >
                       <item.icon className="h-6 w-6 text-foreground" />
                     </button>
-                    <span className="max-w-full whitespace-nowrap text-center text-[11px] leading-4 text-muted-foreground font-medium">
+                    <span className="max-w-full whitespace-nowrap text-center text-[0.6875rem] leading-4 text-muted-foreground font-medium">
                       {item.title}
                     </span>
                   </div>
@@ -625,7 +625,7 @@ export function MobileBottomNav() {
                   badge: uncategorizedData && uncategorizedData.total > 0 && (
                     <Badge
                       variant="destructive"
-                      className="absolute -top-1 -right-1 h-4 min-w-[1rem] px-1 text-[10px] font-semibold"
+                      className="absolute -top-1 -right-1 h-4 min-w-[1rem] px-1 text-[0.625rem] font-semibold"
                     >
                       {uncategorizedData.total}
                     </Badge>

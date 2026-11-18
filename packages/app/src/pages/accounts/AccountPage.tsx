@@ -380,11 +380,11 @@ export default function AccountPage() {
                     currency={selectedAccount.Currency}
                   />
                 )}
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+                <Badge variant="secondary" className="text-[0.625rem] px-1.5 py-0 shrink-0">
                   <AccountTypeLabel type={selectedAccount?.Type} />
                 </Badge>
               </div>
-              <p className="text-[10px] text-muted-foreground truncate">
+              <p className="text-[0.625rem] text-muted-foreground truncate">
                 {selectedAccount?.Currency}
                 {' · '}
                 {mobilePageStats
@@ -415,7 +415,7 @@ export default function AccountPage() {
 
           <div className="flex items-center gap-4 flex-wrap">
             <div>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[0.625rem] text-muted-foreground">
                 <Trans>Balance</Trans>
               </span>
               <p className="text-sm font-bold tabular-nums text-foreground">
@@ -423,7 +423,7 @@ export default function AccountPage() {
               </p>
             </div>
             <div>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-[0.625rem] text-muted-foreground">
                 <Trans>Cleared</Trans>
               </span>
               <p className="text-sm font-medium tabular-nums text-muted-foreground">
@@ -476,7 +476,7 @@ export default function AccountPage() {
                     <div className="text-xs font-medium text-success">
                       <Trans>Paid off!</Trans>
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
+                    <div className="text-[0.625rem] text-muted-foreground">
                       <Trans>This liability has a positive balance.</Trans>
                     </div>
                   </div>

@@ -90,8 +90,8 @@ export function ConnectionTestPanel({
         <p className="text-xs text-muted-foreground">
           <Trans>
             Leave empty for local servers (Ollama, LM Studio). Sent as a{' '}
-            <code className="rounded bg-muted px-1 py-0.5 text-[11px]">Bearer</code>token to your
-            chosen provider.
+            <code className="rounded bg-muted px-1 py-0.5 text-[0.6875rem]">Bearer</code>token to
+            your chosen provider.
           </Trans>
         </p>
       </div>
@@ -141,11 +141,11 @@ function ConnectionStatusMessage({
             <Trans>
               If you're accessing Budgero over HTTPS, Ollama needs to allow your origin. Start
               Ollama with{' '}
-              <code className="rounded bg-muted px-1 py-0.5 text-[11px]">
+              <code className="rounded bg-muted px-1 py-0.5 text-[0.6875rem]">
                 OLLAMA_ORIGINS=* ollama serve
               </code>{' '}
               or set the{' '}
-              <code className="rounded bg-muted px-1 py-0.5 text-[11px]">OLLAMA_ORIGINS</code>{' '}
+              <code className="rounded bg-muted px-1 py-0.5 text-[0.6875rem]">OLLAMA_ORIGINS</code>{' '}
               environment variable in your Ollama service config.
             </Trans>
           </p>

@@ -379,7 +379,7 @@ export function WealthReport({ data, months, accountIds }: WealthReportProps) {
               formatCurrency={(milli) => money.amount(milli)}
             />
             {accountIds.length > 0 && (
-              <p className="mt-2 text-[11px] text-muted-foreground">
+              <p className="mt-2 text-[0.6875rem] text-muted-foreground">
                 <Trans>
                   The by-type view always covers all accounts — the account filter doesn't apply
                   here.

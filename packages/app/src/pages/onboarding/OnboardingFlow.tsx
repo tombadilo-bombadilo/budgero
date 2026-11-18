@@ -558,7 +558,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
                 <span
                   aria-hidden
                   className={cn(
-                    'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border text-[10px]',
+                    'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border text-[0.625rem]',
                     status === 'done' && 'border-primary bg-primary text-primary-foreground',
                     status === 'current' && 'border-primary text-primary'
                   )}
@@ -593,7 +593,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
               <Trans>← Back to the demo</Trans>
             </Button>
           )}
-          <span className="ml-auto text-[11px] tracking-wider text-muted-foreground tabular-nums">
+          <span className="ml-auto text-[0.6875rem] tracking-wider text-muted-foreground tabular-nums">
             {stepCounter}
           </span>
           {mode !== 'from_demo' && (
@@ -602,7 +602,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, mode = 'int
               variant="ghost"
               size="sm"
               onClick={() => logout.mutate()}
-              className="-mr-2 h-auto px-2 py-1 text-[11px] font-normal tracking-wider text-muted-foreground hover:text-foreground"
+              className="-mr-2 h-auto px-2 py-1 text-[0.6875rem] font-normal tracking-wider text-muted-foreground hover:text-foreground"
             >
               <Trans>SIGN OUT</Trans>
             </Button>

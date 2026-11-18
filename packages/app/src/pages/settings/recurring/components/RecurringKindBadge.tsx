@@ -10,7 +10,7 @@ export function RecurringKindBadge({ template }: { template: RecurringTransactio
   return (
     <Badge
       variant={isInflow && !isTransfer ? 'default' : 'secondary'}
-      className="px-1.5 py-0 text-[10px]"
+      className="px-1.5 py-0 text-[0.625rem]"
     >
       {isTransfer ? t`Transfer` : isInflow ? t`Income` : t`Bill`}
     </Badge>

@@ -262,7 +262,7 @@ export const SwipeRow = memo(function SwipeRow({
                 <span className="inline-flex items-center justify-center rounded-full bg-white/25 p-1">
                   {leftAction.icon}
                 </span>
-                <span className="text-[11px] font-semibold tracking-wide uppercase">
+                <span className="text-[0.6875rem] font-semibold tracking-wide uppercase">
                   {leftLabelVisible ? leftAction.label : leftAction.hintLabel}
                 </span>
               </div>
@@ -283,7 +283,7 @@ export const SwipeRow = memo(function SwipeRow({
                   rightAction.pillClassName
                 )}
               >
-                <span className="text-[11px] font-semibold tracking-wide uppercase">
+                <span className="text-[0.6875rem] font-semibold tracking-wide uppercase">
                   {rightLabelVisible ? rightAction.label : rightAction.hintLabel}
                 </span>
                 <span className="inline-flex items-center justify-center rounded-full bg-white/25 p-1">

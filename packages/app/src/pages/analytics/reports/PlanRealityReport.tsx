@@ -197,7 +197,7 @@ export function PlanRealityReport({ data, months }: PlanRealityReportProps) {
                       <span className="flex min-w-0 items-center gap-1.5">
                         <span className="truncate">{row.name}</span>
                         {row.chronic ? (
-                          <span className="shrink-0 rounded-full border border-red-300 px-1.5 text-[10px] font-medium uppercase tracking-wide text-red-600 dark:border-red-800 dark:text-red-300">
+                          <span className="shrink-0 rounded-full border border-red-300 px-1.5 text-[0.625rem] font-medium uppercase tracking-wide text-red-600 dark:border-red-800 dark:text-red-300">
                             <Trans>chronic</Trans>
                           </span>
                         ) : null}

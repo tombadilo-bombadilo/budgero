@@ -58,7 +58,7 @@ export const TransactionCardHeader = React.memo(function TransactionCardHeader({
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-1.5">
           <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-          <div className="flex-1 min-w-0 max-w-[10rem] sm:max-w-[14rem] md:max-w-[18rem] min-[1900px]:max-w-[24rem] text-[11px] font-medium leading-tight text-current truncate sm:text-xs min-[1900px]:text-sm">
+          <div className="flex-1 min-w-0 max-w-[10rem] sm:max-w-[14rem] md:max-w-[18rem] min-[1900px]:max-w-[24rem] text-[0.6875rem] font-medium leading-tight text-current truncate sm:text-xs min-[1900px]:text-sm">
             {displayDate}
           </div>
           {transaction.Reconciled == true ? (

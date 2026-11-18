@@ -52,7 +52,7 @@ export const DoneStep: React.FC<Omit<StepProps, 'set'> & DoneStepExtraProps> = (
   // Summary of choices shown on the Done screen (fresh/ynab paths only).
   const summaryCard = (
     <div className="rounded-lg border bg-card p-3 md:p-4">
-      <div className="mb-2 text-[11px] font-semibold tracking-wider text-muted-foreground">
+      <div className="mb-2 text-[0.6875rem] font-semibold tracking-wider text-muted-foreground">
         <Trans>YOUR BUDGET SUMMARY</Trans>
       </div>
       <dl className="divide-y text-sm">
