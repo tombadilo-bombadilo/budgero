@@ -24,7 +24,7 @@ import {
   ZERO_MILLI,
   type MilliUnits,
 } from '../../money/index.js';
-import { parseAmountDetailed, parseDateDetailed } from './parsing.js';
+import { parseAmountDetailed, parseDateDetailed, parseImportTime } from './parsing.js';
 import type { ColumnMapping } from './types.js';
 
 export type ImportRowStatus =
@@ -48,6 +48,12 @@ export interface PlannedImportRow {
   index: number;
   status: ImportRowStatus;
   date: string;
+  /**
+   * Time of day ('HH:MM') from a mapped time column or a timestamp in the
+   * date cell; null when the row has none (or only a 00:00 / 12:00
+   * placeholder). Never part of duplicate detection.
+   */
+  time: string | null;
   inflow: MilliUnits;
   outflow: MilliUnits;
   payee: string;
@@ -186,6 +192,12 @@ export function planImportRow(
     );
   }
   const { date } = parsedDate;
+  const timeCell = columnMapping.time ? row[columnMapping.time] : undefined;
+  const time = timeCell?.trim()
+    ? parseImportTime(timeCell)
+    : parsedDate.ok
+      ? parseImportTime(dateStr, true)
+      : null;
 
   const amount = resolveAmounts(row, columnMapping, config, scale);
   errors.push(...amount.errors);
@@ -202,6 +214,7 @@ export function planImportRow(
     index,
     status: amount.status,
     date,
+    time,
     inflow: amount.inflow,
     outflow: amount.outflow,
     payee,

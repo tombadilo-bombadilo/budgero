@@ -6,6 +6,7 @@ import {
 } from '../import/duplicate-planner.js';
 import { fromDecimalString, subMilli, ZERO_MILLI, type MilliUnits } from '../../money/index.js';
 import { getLocalDateString } from '../../utils/date.js';
+import { capturedTimeOfDay } from '../../utils/time-of-day.js';
 import { applyBankFeedSettings, DEFAULT_BANK_FEED_SETTINGS } from './feed-settings.js';
 import { BankSyncQueries } from './queries.js';
 import type {
@@ -73,6 +74,19 @@ export function simpleFINDate(transaction: SimpleFINTransaction): string {
   return getLocalDateString(new Date((transaction.transacted_at || transaction.posted) * 1000));
 }
 
+/**
+ * Local time of a SimpleFIN timestamp, or undefined for a placeholder:
+ * date-only postings arrive at 00:00:00 or 12:00:00 UTC.
+ */
+function simpleFINTime(seconds: number | undefined): string | undefined {
+  if (!seconds) return undefined;
+  const at = new Date(seconds * 1000);
+  if (at.getUTCMinutes() === 0 && at.getUTCSeconds() === 0 && at.getUTCHours() % 12 === 0) {
+    return undefined;
+  }
+  return capturedTimeOfDay(at.getHours(), at.getMinutes(), at.getSeconds()) ?? undefined;
+}
+
 export function isPostedSimpleFINTransaction(transaction: SimpleFINTransaction): boolean {
   return !transaction.pending && transaction.posted > 0;
 }
@@ -82,15 +96,21 @@ export function fromSimpleFINTransaction(transaction: SimpleFINTransaction): Ban
   const payee = transaction.payee?.trim() || description;
   const day = (seconds: number | undefined) =>
     seconds ? getLocalDateString(new Date(seconds * 1000)) : undefined;
+  const bookingTime = simpleFINTime(transaction.posted);
+  const transactionTime = simpleFINTime(transaction.transacted_at);
+  const time = transaction.transacted_at ? transactionTime : bookingTime;
   return {
     fields: {
       counterparty: transaction.payee?.trim() || undefined,
       description: description || undefined,
       bookingDate: day(transaction.posted),
       transactionDate: day(transaction.transacted_at),
+      ...(bookingTime ? { bookingTime } : {}),
+      ...(transactionTime ? { transactionTime } : {}),
     },
     id: transaction.id,
     date: simpleFINDate(transaction),
+    ...(time ? { time } : {}),
     amount: fromDecimalString(transaction.amount.replace(/^\+/, '')),
     payee,
     memo: transaction.memo?.trim() || (payee === description ? '' : description),
@@ -308,6 +328,7 @@ export class BankSyncService {
         fileRowKey: sourceKey,
         sourceKey,
         date,
+        ...(transaction.time ? { time: transaction.time } : {}),
         inflow: amount > 0 ? (amount as MilliUnits) : ZERO_MILLI,
         outflow: amount < 0 ? subMilli(ZERO_MILLI, amount as MilliUnits) : ZERO_MILLI,
         payee: transaction.payee,

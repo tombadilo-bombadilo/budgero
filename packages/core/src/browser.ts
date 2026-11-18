@@ -255,6 +255,7 @@ export {
   parseAmount,
   parseDate,
   parseDateDetailed,
+  parseImportTime,
   type ParsedImportDate,
   dateStringLacksYear,
 } from './services/import/parsing.js';
@@ -298,3 +299,6 @@ export {
 
 // Clock seam (tests move "today")
 export { clock, runAtClock, setClock } from './utils/clock.js';
+
+// Optional transaction time of day ('HH:MM', local, no time zone)
+export { normalizeTimeOfDay, parseTimeOfDay, timeFromIsoDateTime } from './utils/time-of-day.js';

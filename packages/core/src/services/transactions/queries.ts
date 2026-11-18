@@ -33,6 +33,7 @@ import { moveSplitLinesOutOfCategories } from '../recurring/split-refs.js';
 const TX_ROW_COLUMNS = `
         t.ID,
         t.Date,
+        t.Time,
         t.CategoryID,
         CASE WHEN EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)
              THEN 'Split'
@@ -204,7 +205,8 @@ export class TransactionQueries {
     exchangeRateOverride = false,
     excludeFromReadyToAssign = false,
     cleared = false,
-    id?: number
+    id?: number,
+    time: string | null = null
   ): number {
     const result = run(
       this.db,
@@ -212,8 +214,8 @@ export class TransactionQueries {
       INSERT INTO transactions (
         ID, InflowConverted, OutflowConverted, InflowNative, OutflowNative, CategoryID, AccountID,
         Date, Memo, Payee, BudgetID, RunningBalanceConverted, RunningBalanceNative, TransferID,
-        ExchangeRate, LabelID, ExchangeRateOverride, ExcludeFromReadyToAssign, Cleared
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ExchangeRate, LabelID, ExchangeRateOverride, ExcludeFromReadyToAssign, Cleared, Time
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
       id ?? null,
       inflow,
@@ -233,7 +235,8 @@ export class TransactionQueries {
       labelId ?? null,
       exchangeRateOverride ? 1 : 0,
       excludeFromReadyToAssign ? 1 : 0,
-      cleared ? 1 : 0
+      cleared ? 1 : 0,
+      time
     );
     return Number(result.lastInsertRowid);
   }
@@ -254,6 +257,7 @@ export class TransactionQueries {
         t.AccountID as AccountId,
         a.Name as AccountName,
         t.Date,
+        t.Time,
         t.CategoryID,
         CASE WHEN EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)
              THEN 'Split'
@@ -1979,6 +1983,33 @@ export class TransactionQueries {
 
   updateTransactionPayee(transactionId: number, payee: string | null): void {
     run(this.db, `UPDATE transactions SET Payee = ? WHERE ID = ?`, payee, transactionId);
+  }
+
+  /**
+   * Set the time of day on rows: the row itself, its transfer partner (both
+   * legs share the time) and, for a split parent, its split-transfer mirrors.
+   */
+  updateTransactionTime(
+    transactionId: number,
+    transferId: string | null,
+    time: string | null
+  ): void {
+    run(this.db, `UPDATE transactions SET Time = ? WHERE ID = ?`, time, transactionId);
+    if (transferId && !transferId.startsWith('split_transfer_')) {
+      run(
+        this.db,
+        `UPDATE transactions SET Time = ? WHERE TransferID = ? AND TransferID != ''`,
+        time,
+        transferId
+      );
+    }
+    run(
+      this.db,
+      `UPDATE transactions SET Time = ?
+       WHERE TransferID != '' AND TransferID >= ? AND TransferID < ? AND TransferID GLOB ?`,
+      time,
+      ...splitMirrorRange(`split_transfer_${transactionId}_`)
+    );
   }
 
   updateTransactionDate(transactionId: number, date: string): void {
