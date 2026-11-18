@@ -27,7 +27,12 @@ import {
   MUTATION_FORMAT_VERSION,
   REQUIRES_FORMAT_ARG,
 } from '@budgero/runtime';
-import type { LegacyReplayService } from '@budgero/core/browser';
+import {
+  effectiveFromForStartDate,
+  goalEffectiveFrom,
+  goalEffectiveTo,
+  type LegacyReplayService,
+} from '@budgero/core/browser';
 import { getRuntime } from '@shared/runtime/global';
 
 type Args = Record<string, unknown>;
@@ -47,6 +52,38 @@ const NEWER_THAN_V1_20 = 5;
  * edit keeps the partner's amount, and custom rates skip reconciled transfers.
  */
 const NEWER_THAN_V1_21 = 6;
+
+/**
+ * Format 7: the first format v1.21.x builds reject. Goals became timeframes
+ * (several per category, migration 081); v1.21 keeps one goal per category
+ * that applies to every month.
+ */
+const GOAL_TIMEFRAMES = 7;
+
+/** The category's goal rows (all timeframes), or null when it can't be read. */
+const goalChain = (categoryId: unknown) => {
+  const categoryIdNum = id(categoryId);
+  if (!categoryIdNum) return null;
+  try {
+    return services()?.goals?.getGoalTimeframes?.(categoryIdNum) ?? null;
+  } catch {
+    return null;
+  }
+};
+
+const month = (value: unknown): string | null =>
+  typeof value === 'string' && value !== '' ? value : null;
+
+/**
+ * Undo data (row journals, raw rows) that holds goal rows with the timeframe
+ * columns: v1.21 restores refuse unknown columns, so such a call needs format 7.
+ */
+const carriesGoalTimeframeColumns = (args: Args): boolean =>
+  [args.journal, args.goal].some((value) => {
+    if (!value || typeof value !== 'object') return false;
+    const json = JSON.stringify(value);
+    return json.includes('"EffectiveFrom":') || json.includes('"EffectiveTo":');
+  });
 
 /**
  * true: the call needs format 3 (v1.18 would apply it differently); a number:
@@ -171,6 +208,28 @@ const categoryExists = (categoryId: number): boolean => {
 };
 
 export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
+  // v1.21 applies a create to every month: the same only when it is the
+  // category's first goal, ongoing, and starts in its StartDate's month (what
+  // migration 081 gives that row on the v1.21 device once it updates).
+  'goals.create': (args) => {
+    if (month(args.effectiveTo)) return GOAL_TIMEFRAMES;
+    const from = month(args.effectiveFrom);
+    if (from && from !== effectiveFromForStartDate(args.startDate)) return GOAL_TIMEFRAMES;
+    const chain = goalChain(args.categoryId);
+    return Boolean(chain && chain.length > 0) && GOAL_TIMEFRAMES;
+  },
+  // v1.21 updates the category's only goal: the same when there is exactly
+  // one ongoing timeframe that keeps starting in its StartDate's month.
+  'goals.update': (args) => {
+    const chain = goalChain(args.categoryId);
+    if (!chain) return false;
+    if (chain.length !== 1) return GOAL_TIMEFRAMES;
+    const [goal] = chain;
+    if (goalEffectiveTo(goal) !== null) return GOAL_TIMEFRAMES;
+    const startDate = month(args.startDate) ?? goal.StartDate;
+    return effectiveFromForStartDate(startDate) !== goalEffectiveFrom(goal) && GOAL_TIMEFRAMES;
+  },
+
   // Carried rates (A12): v1.18 ignores them and fetches its own, row by row.
   // A no-op (prepare marks it with fromCurrency === currency) is a no-op there too.
   'budgets.updateCurrency': (args) =>
@@ -417,15 +476,18 @@ export function withLegacyFormat(op: string, args: Args): Args {
       return { ...entry, args: withLegacyFormat(entry.op, entry.args as Args) };
     });
   }
-  const rule = LEGACY_FORMAT_RULES[op];
-  if (!rule) return Array.isArray(rest.ops) || REQUIRES_FORMAT_ARG in args ? rest : args;
+  const rule = LEGACY_FORMAT_RULES[op] as LegacyRule | undefined;
+  if (!rule && !carriesGoalTimeframeColumns(rest)) {
+    return Array.isArray(rest.ops) || REQUIRES_FORMAT_ARG in args ? rest : args;
+  }
   let needed: boolean | number = false;
   try {
-    needed = rule(rest, services()?.legacyReplay ?? null);
+    needed = rule ? rule(rest, services()?.legacyReplay ?? null) : false;
   } catch {
     needed = false;
   }
-  const wanted = needed === true ? NEWER_THAN_V1_18 : typeof needed === 'number' ? needed : 0;
+  let wanted = needed === true ? NEWER_THAN_V1_18 : typeof needed === 'number' ? needed : 0;
+  if (carriesGoalTimeframeColumns(rest)) wanted = Math.max(wanted, GOAL_TIMEFRAMES);
   const format = Math.min(wanted, MUTATION_FORMAT_VERSION);
   return format > BASE_MUTATION_FORMAT_VERSION
     ? { ...rest, [REQUIRES_FORMAT_ARG]: format }

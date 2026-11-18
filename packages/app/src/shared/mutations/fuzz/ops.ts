@@ -386,6 +386,8 @@ const KINDS: [string, number][] = [
   ['goals.create', 1],
   ['goals.update', 1],
   ['goals.delete', 1],
+  ['goals.setFrom', 1],
+  ['goals.endFrom', 1],
   // reports / dashboards / scenarios
   ['reports.create', 1],
   ['reports.update', 1],
@@ -1282,6 +1284,32 @@ export function realize(device: Device, intent: Intent): OpCall | null {
             },
           }
         : null;
+    }
+    case 'goals.setFrom': {
+      const categoryId = pick(userCats, a);
+      if (!categoryId) return null;
+      return {
+        op: k,
+        payload: {
+          categoryId,
+          fromMonth: monthOf(c),
+          toMonth: b % 3 === 0 ? monthOf(c) : null,
+          goalType: 'monthly',
+          target: amount * 10,
+          startDate: `${monthOf(c)}-01`,
+          endDate: '',
+          purpose: 'spending',
+          recurring: false,
+          cycleMonths: null,
+        },
+      };
+    }
+    case 'goals.endFrom': {
+      const goal = pick(
+        rows<{ CategoryID: number }>(device, 'SELECT DISTINCT CategoryID FROM goals ORDER BY 1'),
+        a
+      );
+      return goal ? { op: k, payload: { categoryId: goal.CategoryID, month: monthOf(c) } } : null;
     }
     case 'goals.delete': {
       const goal = pick(

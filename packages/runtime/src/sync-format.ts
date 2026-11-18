@@ -15,7 +15,11 @@
  * unlock a reconciled row, or edit one leg of a cross-currency transfer
  * (the partner keeps its amount), and custom rate changes that now skip
  * reconciled transfers ask for it per call; adds the op code
- * transactions.updateTransferAmounts.
+ * transactions.updateTransferAmounts. Format 7 (after v1.21.5): goal timeframes
+ * (several goals per category, each for a range of months): adds the op
+ * codes goals.setFrom and goals.endFrom; goal creates and edits older builds
+ * would apply to every month, and undo data carrying goal timeframe columns,
+ * ask for it per call.
  *
  * Each outgoing mutation is stamped with the LOWEST format that can express
  * it ({@link mutationFormatVersion}): ops every format-2 build knows stay
@@ -40,7 +44,7 @@
 export const MILLIUNIT_FORMAT_VERSION = 2;
 
 /** Highest mutation format this build reads (and the highest it writes). */
-export const MUTATION_FORMAT_VERSION = 6;
+export const MUTATION_FORMAT_VERSION = 7;
 
 /** Format of mutations whose op codes every milliunit build knows. */
 export const BASE_MUTATION_FORMAT_VERSION = MILLIUNIT_FORMAT_VERSION;
@@ -88,6 +92,8 @@ export const OP_CODE_FORMAT_VERSIONS: Readonly<Record<string, number>> = Object.
   'syncedState.set': 5,
   'syncedState.merge': 5,
   'transactions.updateTransferAmounts': 6,
+  'goals.setFrom': 7,
+  'goals.endFrom': 7,
 });
 
 /** Format that introduced `op` (BASE_MUTATION_FORMAT_VERSION if it predates format 3). */
