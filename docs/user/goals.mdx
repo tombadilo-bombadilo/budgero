@@ -153,6 +153,18 @@ Yearly, repeating, and target-date goals still use their existing monthly milest
 
 With **Allow over-assignment** disabled, funding uses at most positive Ready to Assign. When enabled, it covers the full eligible shortfall, even if Ready to Assign becomes negative. The Assign menu and budgeting side panel use the same rules; selecting categories in the panel limits funding to that selection, while no selection includes the whole budget. Each funding action saves as one batch with one-step undo.
 
+## Goals that change over time
+
+Most goals change as life does: groceries get more expensive, rent goes up, a loan gets paid off. A goal in Budgero has **timeframes**, so changing it in one month doesn't rewrite the others.
+
+- **Your first goal covers every month.** Set a goal once and it applies to every month of the budget, earlier ones included, until you change it. If you never need history, nothing else changes for you.
+- **Editing from a later month starts a new timeframe.** Open the goal while viewing a month after it started and **From this month onwards** is selected: the new amount applies from the month you're looking at, and earlier months keep the goal they had. Choose **Every month of this goal** to change the existing timeframe instead. Editing in the month a timeframe starts changes it in place.
+- **Pick the months yourself.** **Change months** lets you choose when the goal starts and, optionally, the month it **ends after** (a three-month adjustment, a loan that ends). After an end month there's no goal until a later timeframe starts.
+- **Later timeframes keep their place.** Setting a goal from an earlier month slots it in between: the timeframe before it now ends sooner, and an existing later one still takes over when it starts. The form tells you exactly what changes before you save.
+- **Deleting a goal ends it from the month you're viewing.** Months before keep their goal, and timeframes that start later are removed. Choose **Every month** to remove all of the category's goals.
+
+Goal changes and deletions sync to all your devices and can be undone in one step.
+
 ## When a goal stops fitting
 
 Goals are statements of intent, not contracts. If a target-date goal keeps showing red, you have exactly three honest options: assign more, move the date, or shrink the target. All three are better than ignoring a red bar until it becomes background noise — a budget you've stopped believing stops working.

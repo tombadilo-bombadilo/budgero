@@ -6167,7 +6167,7 @@ msgstr "Choisir où classer « {0} »."
 
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "Choose which months lose the goal. You can undo this."
-msgstr "Choisis les mois qui perdent l'objectif. Tu peux annuler cette action."
+msgstr "Choisissez les mois qui perdent l'objectif. Vous pouvez annuler cette action."
 
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
 msgid "Choose your bank"
@@ -9120,7 +9120,7 @@ msgstr "Chaque mois, comme le loyer ou les courses."
 
 #: src/features/goal-management/ui/GoalTimeframeFields.tsx
 msgid "Every month, until you change it"
-msgstr "Chaque mois, jusqu'à ce que tu le modifies"
+msgstr "Chaque mois, jusqu'à ce que vous le modifiiez"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Every scheduled occurrence that hasn't been entered yet, by due date."
