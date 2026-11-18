@@ -29,6 +29,7 @@ import {
   NAV_SETTINGS_PREFERENCES,
   type NavRouteItem,
 } from '@shared/model/nav-registry';
+import { useAccountShortList } from '@features/account-management/model/useAccountShortList';
 import { useSidebarNavState } from './useDesktopShellState';
 import { AccountsList } from './AccountsList';
 import { SidebarNavLink, type SidebarNavLinkProps } from './SidebarNavLink';
@@ -59,6 +60,7 @@ export const SidebarNav = React.memo(function SidebarNav() {
   const { data: uncategorizedData } = useUncategorizedTransactions(selectedBudget?.ID || 0);
 
   const { state, handlers, activeStates } = useSidebarNavState();
+  const shortList = useAccountShortList();
   const { accountsOpen, reportsOpen, settingsOpen, showAllAccounts } = state;
   const { handleAccountsToggle, handleReportsToggle, handleSettingsToggle, toggleShowAllAccounts } =
     handlers;
@@ -128,6 +130,8 @@ export const SidebarNav = React.memo(function SidebarNav() {
               showAllAccounts={showAllAccounts}
               onToggleShowAll={toggleShowAllAccounts}
               globalLocalizer={globalLocalizer}
+              pinnedIds={shortList.pinnedIds}
+              onTogglePinned={shortList.canEdit ? shortList.togglePinned : undefined}
             />
 
             {/* Add Account Modal */}

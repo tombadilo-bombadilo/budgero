@@ -11459,6 +11459,12 @@ msgstr "à l'instant"
 msgid "Just now"
 msgstr "À l'instant"
 
+#. placeholder {0}: account.Name
+#: src/app/layout/desktop-shell/AccountsList.tsx
+#: src/features/account-management/ui/AccountOrderCard.tsx
+msgid "Keep {0} in the short list"
+msgstr "Garder {0} dans la liste courte"
+
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 msgid "Keep an eye on regular paycheques, bills, and transfers. Budgero will remind you before they run."
 msgstr "Surveillez les salaires, factures et virements réguliers. Budgero vous rappellera avant qu'ils ne s'exécutent."
@@ -15350,6 +15356,10 @@ msgstr "Secteurs"
 msgid "Pie Chart"
 msgstr "Graphique circulaire"
 
+#: src/features/account-management/ui/AccountOrderCard.tsx
+msgid "Pin accounts to choose which ones a collapsed list shows (Show Less); a list with no pinned accounts picks them automatically."
+msgstr "Épinglez des comptes pour choisir ceux qu’une liste réduite (Afficher moins) affiche ; une liste sans compte épinglé les choisit automatiquement."
+
 #. placeholder {0}: data.days
 #: src/pages/admin/SelfHostInstallsSection.tsx
 msgid "Pings by version, last {0} days"
@@ -16619,6 +16629,12 @@ msgstr "Supprimer {0}"
 #: src/features/transactions/ui/SearchActiveFilters.tsx
 msgid "Remove {0} filter"
 msgstr "Supprimer le filtre {0}"
+
+#. placeholder {0}: account.Name
+#: src/app/layout/desktop-shell/AccountsList.tsx
+#: src/features/account-management/ui/AccountOrderCard.tsx
+msgid "Remove {0} from the short list"
+msgstr "Retirer {0} de la liste courte"
 
 #. placeholder {0}: removing?.aspsp.name ?? ''
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
