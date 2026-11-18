@@ -102,7 +102,7 @@ const TRANSACTION_OPS = new Set([
   'transactions.import',
 ]);
 /** Ops that give a category a goal (goals.restore is only undo). */
-const GOAL_OPS = new Set(['goals.create']);
+const GOAL_OPS = new Set(['goals.create', 'goals.setFrom']);
 /** Bookkeeping writes, not something the user did in the budget. */
 const NOT_ACTIONS = /^(syncedState|pageGuides)\./;
 
