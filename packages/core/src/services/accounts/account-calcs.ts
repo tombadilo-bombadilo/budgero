@@ -6,12 +6,28 @@
 import { getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
 import { isCreditAccountType, isLiabilityAccountType } from './types.js';
 import { clock } from '../../utils/clock.js';
+import {
+  hasInterestFrom,
+  isConstantFrom,
+  levelPayment,
+  monthlyRateFn,
+  monthsToPayoff,
+  nextRateChange,
+  rateOn,
+  readRateSchedule,
+  type InterestRateEntry,
+} from './interest-rate-schedule.js';
 
 export interface LiabilityInfo {
   originalDebt: number | undefined;
   outstanding: number;
   paidSoFar: number | undefined;
+  /** Annual rate in effect today (percent). */
   apr: number | undefined;
+  /** Every rate on the account, initial first, then by effective date. */
+  aprSchedule?: InterestRateEntry[];
+  /** The next scheduled rate change after today, if any. */
+  nextAprChange?: InterestRateEntry;
   minPayment: number | undefined;
   originalMinPayment: number | undefined;
   isPaymentRecalculated: boolean;
@@ -61,13 +77,26 @@ export function computeLiabilityInfo(
   const originalDebt = typeof md?.debt_total === 'number' ? md.debt_total : undefined;
   const paidSoFar =
     originalDebt !== undefined ? Math.max(0, originalDebt - outstanding) : undefined;
-  const apr =
-    typeof md?.interest_rate_annual === 'number'
-      ? md.interest_rate_annual
-      : typeof md?.interest_rate_annual === 'string'
-        ? parseFloat(md?.interest_rate_annual)
-        : undefined;
-  const monthlyRate = apr ? apr / 100 / 12 : undefined;
+  // Rates can change over time (interest_rate_schedule); every projection
+  // below starts today, so month i uses the rate in effect i months from now.
+  const today = getLocalDateString(clock.date());
+  const aprSchedule = readRateSchedule(md, today);
+  const apr = aprSchedule.length > 0 ? rateOn(aprSchedule, today) : undefined;
+  const nextAprChange = nextRateChange(aprSchedule, today);
+  // Same gate as the old single rate (a 0% or missing rate means no
+  // projection), except a scheduled future rate above 0% also counts.
+  const monthlyRate = hasInterestFrom(aprSchedule, today) ? (apr ?? 0) / 100 / 12 : undefined;
+  const constantRate = isConstantFrom(aprSchedule, today);
+  const rateAt = monthlyRateFn(aprSchedule, today);
+  /** Level payment over `months`; the closed form when one rate applies throughout. */
+  const amortize = (months: number): number => {
+    if (constantRate && monthlyRate !== undefined && monthlyRate > 0) {
+      const factor = (1 + monthlyRate) ** months;
+      return (outstanding * monthlyRate * factor) / (factor - 1);
+    }
+    if (constantRate) return outstanding / months;
+    return levelPayment(outstanding, months, rateAt);
+  };
 
   const originalMinPayment =
     typeof md?.min_payment_monthly === 'number' ? md.min_payment_monthly : undefined;
@@ -129,12 +158,7 @@ export function computeLiabilityInfo(
       );
       remainingMonths = Math.max(1, totalMonths - elapsed);
     }
-    if (monthlyRate > 0) {
-      const factor = (1 + monthlyRate) ** remainingMonths;
-      minPayment = (outstanding * monthlyRate * factor) / (factor - 1);
-    } else {
-      minPayment = outstanding / remainingMonths;
-    }
+    minPayment = amortize(remainingMonths);
     payoffMonths = remainingMonths;
   }
 
@@ -155,18 +179,12 @@ export function computeLiabilityInfo(
       );
       const remainingMonths = Math.max(1, originalLoanTerm - monthsElapsed);
 
-      // Calculate new minimum payment using loan formula: P = L[c(1 + c)^n]/[(1 + c)^n - 1]
-      // where P = payment, L = loan amount (outstanding), c = monthly rate, n = months
-      if (monthlyRate > 0) {
-        const factor = (1 + monthlyRate) ** remainingMonths;
-        minPayment = (outstanding * monthlyRate * factor) / (factor - 1);
-        payoffMonths = remainingMonths;
-      } else {
-        // If no interest, simple division
-        minPayment = outstanding / remainingMonths;
-        payoffMonths = remainingMonths;
-      }
-    } else {
+      // Loan formula P = L[c(1 + c)^n]/[(1 + c)^n - 1] (L = outstanding,
+      // c = monthly rate, n = months), or its piecewise form when the rate
+      // changes within the remaining term.
+      minPayment = amortize(remainingMonths);
+      payoffMonths = remainingMonths;
+    } else if (constantRate) {
       // Priority 3: Fallback - use the (derived or original) payment to calculate months remaining
       const interestPortion = outstanding * monthlyRate;
       if (minPayment > interestPortion) {
@@ -177,6 +195,10 @@ export function computeLiabilityInfo(
           payoffMonths = Math.ceil(n);
         }
       }
+    } else {
+      // Priority 3 with scheduled rate changes: step through the months.
+      payoffMonths = monthsToPayoff(outstanding, minPayment, rateAt);
+      if (payoffMonths === 0) payoffMonths = undefined;
     }
   }
 
@@ -208,6 +230,8 @@ export function computeLiabilityInfo(
     outstanding,
     paidSoFar,
     apr,
+    aprSchedule,
+    nextAprChange,
     minPayment,
     originalMinPayment,
     isPaymentRecalculated: minPayment !== originalMinPayment && originalMinPayment !== undefined,
