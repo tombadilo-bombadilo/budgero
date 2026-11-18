@@ -309,10 +309,10 @@ export function TransactionsTable({
       ? unclearedCountOverride
       : loadedUnclearedCount;
 
-  const { sameDayOrder, compactRows } = useRegisterDisplay();
+  const { sameDayOrder, compactRows, showTime } = useRegisterDisplay();
   const orderedData = React.useMemo(
-    () => orderWithinDays(rawData, sameDayOrder),
-    [rawData, sameDayOrder]
+    () => orderWithinDays(rawData, sameDayOrder, showTime),
+    [rawData, sameDayOrder, showTime]
   );
 
   const filteredData = React.useMemo(

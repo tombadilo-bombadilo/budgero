@@ -15,6 +15,7 @@ import { TransactionPayeeCell } from '@features/transactions/ui/cells/Transactio
 import { LabelSelectCell } from '@features/transactions/ui/cells/LabelSelectCell';
 import { Badge } from '@shared/ui/badge';
 import { useHideZeroAmountsEnabled } from '@shared/contexts/HideZeroAmountsContext';
+import { useRegisterDisplay } from '@shared/contexts/RegisterDisplayContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { ArrowLeftRight } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
@@ -144,6 +145,7 @@ export const TransactionRow = React.memo(function TransactionRow({
 
   const privacyMaskNumbers = useUiStore((state) => state.privacyMaskNumbers);
   const hideZeroAmounts = useHideZeroAmountsEnabled();
+  const { showTime } = useRegisterDisplay();
   const selectedAccount = useUiStore((state) => state.selectedAccount);
   const selectedBudget = useUiStore((state) => state.selectedBudget);
   // In account display mode the cell edits the NATIVE amount, whose storage
@@ -409,7 +411,7 @@ export const TransactionRow = React.memo(function TransactionRow({
         </div>
       </TableCell>
 
-      {/* Date */}
+      {/* Date (and the optional time of day under it) */}
       <TableCell>
         {editingColumn === 'date' ? (
           <DatePickerCell
@@ -420,6 +422,40 @@ export const TransactionRow = React.memo(function TransactionRow({
               if (!open) onDeactivateCell();
             }}
           />
+        ) : editingColumn === 'time' ? (
+          <EditableCell
+            type="time"
+            value={transaction.Time ?? ''}
+            onCommit={(newVal) => {
+              if (String(newVal) !== (transaction.Time ?? '')) {
+                onCellCommit(transaction.ID, 'Time', String(newVal));
+              }
+            }}
+            inputClassName="h-8 text-xs xl:text-sm"
+            autoFocus
+            onEditingChange={(editing) => {
+              if (!editing) onDeactivateCell();
+            }}
+          />
+        ) : showTime ? (
+          <div className="flex min-w-0 flex-col items-start">
+            <CellDisplayButton
+              value={transaction.Date}
+              title={t`Edit date`}
+              onClick={() => activateCell('date')}
+              className={compact ? 'h-5' : 'h-7'}
+            />
+            <CellDisplayButton
+              value={transaction.Time || '--:--'}
+              title={transaction.Time ? t`Edit time` : t`Add a time`}
+              onClick={() => activateCell('time')}
+              className={cn(
+                'text-[11px] text-muted-foreground xl:text-xs',
+                compact ? 'h-4 leading-none' : 'h-5',
+                !transaction.Time && 'opacity-60'
+              )}
+            />
+          </div>
         ) : (
           <CellDisplayButton
             value={transaction.Date}

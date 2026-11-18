@@ -32,6 +32,7 @@ interface UserMetaService {
   getCompactTransactionRows?(): Promise<boolean> | boolean;
   getCompactBudgetRows?(): Promise<boolean> | boolean;
   getSameDayTransactionOrder?(): Promise<SameDayTransactionOrder> | SameDayTransactionOrder;
+  getShowTransactionTime?(): Promise<boolean> | boolean;
 }
 
 /** Runtime services with userMeta */
@@ -678,5 +679,59 @@ export function useDuplicateHintSettingsPreference() {
     isError: query.isError,
     updateSettings: mutation.mutate,
     isUpdating: mutation.isPending,
+  };
+}
+
+/** Show transaction times in the register (and order a day by them). Off by default. */
+export function useShowTransactionTime() {
+  const runtime = useRuntime();
+  const runtimeInitialized = useRuntimeInitialized();
+  const spaceId = useActiveSpaceId();
+
+  return useQuery<boolean>({
+    queryKey: ['showTransactionTime', spaceId ?? 'global'],
+    queryFn: async () => {
+      const services = runtime.services() as ServicesWithUserMeta;
+      return (await services?.userMeta?.getShowTransactionTime?.()) ?? false;
+    },
+    enabled: runtimeInitialized,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+    retry: PREFERENCE_READ_RETRIES,
+  });
+}
+
+/** Query + mutation pair for the register's time display. */
+export function useShowTransactionTimePreference() {
+  const runtime = useRuntime();
+  const spaceId = useActiveSpaceId();
+  const queryClient = useQueryClient();
+  const queryKey = ['showTransactionTime', spaceId ?? 'global'] as const;
+  const { data: showTransactionTime = false, ...queryRest } = useShowTransactionTime();
+
+  const updateMutation = useMutation<void, Error, boolean, { previous: boolean | undefined }>({
+    mutationFn: async (value: boolean) => {
+      await executeSpaceMutation<void>(runtime, {
+        op: 'userPreferences.setShowTransactionTime',
+        payload: { value },
+        meta: { label: 'Update transaction time display setting' },
+      });
+    },
+    onMutate: async (value) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previous = queryClient.getQueryData<boolean>(queryKey);
+      queryClient.setQueryData(queryKey, value);
+      return { previous };
+    },
+    onError: (_error, _value, context) => {
+      queryClient.setQueryData(queryKey, context?.previous ?? false);
+    },
+  });
+
+  return {
+    showTransactionTime,
+    isLoading: queryRest.isLoading,
+    updateShowTransactionTime: updateMutation.mutate,
+    isUpdating: updateMutation.isPending,
   };
 }

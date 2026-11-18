@@ -18,6 +18,18 @@ function compareByAmount(a: GetTransactionsByAccountRow, b: GetTransactionsByAcc
 }
 
 /**
+ * Latest time first. A row without a time counts as the start of its day
+ * (below the timed rows); rows with the same time, or none, keep their
+ * stored newest-entry-first order (higher ID first).
+ */
+function compareByTime(a: GetTransactionsByAccountRow, b: GetTransactionsByAccountRow) {
+  const ta = a.Time ?? '';
+  const tb = b.Time ?? '';
+  if (ta !== tb) return ta < tb ? 1 : -1;
+  return b.ID - a.ID;
+}
+
+/**
  * Re-derive running balances for a reordered day. Stored balances follow the
  * (date, id) order, so each account's latest row holds its end-of-day balance;
  * walking down the new order subtracts each row's own amount from there.
@@ -53,13 +65,17 @@ function rebalance(day: GetTransactionsByAccountRow[], original: GetTransactions
 
 /**
  * Applies the same-day order preference to register rows already sorted by
- * date (newest first). 'newest' keeps the stored order.
+ * date (newest first). 'newest' keeps the stored order, unless `byTime` (the
+ * register shows times): then a day with timed rows runs latest time first.
+ * 'amount' ignores times.
  */
 export function orderWithinDays(
   rows: GetTransactionsByAccountRow[],
-  order: SameDayTransactionOrder
+  order: SameDayTransactionOrder,
+  byTime = false
 ): GetTransactionsByAccountRow[] {
-  if (order === 'newest' || rows.length < 2) return rows;
+  if ((order === 'newest' && !byTime) || rows.length < 2) return rows;
+  const compare = order === 'amount' ? compareByAmount : compareByTime;
   const result: GetTransactionsByAccountRow[] = [];
   let start = 0;
   while (start < rows.length) {
@@ -67,7 +83,8 @@ export function orderWithinDays(
     let end = start + 1;
     while (end < rows.length && extractDateKey(rows[end].Date) === key) end++;
     const day = rows.slice(start, end);
-    result.push(...(day.length > 1 ? rebalance([...day].sort(compareByAmount), day) : day));
+    const reorder = day.length > 1 && (order === 'amount' || day.some((row) => Boolean(row.Time)));
+    result.push(...(reorder ? rebalance([...day].sort(compare), day) : day));
     start = end;
   }
   return result;

@@ -70,6 +70,9 @@ interface TransactionDetailsSectionProps {
   dateOpen: boolean;
   onDateOpenChange: (open: boolean) => void;
   onDateChange: (date: Date | null) => void;
+  /** Optional time of day; the time input shows only with onTimeChange. */
+  transactionTime?: string;
+  onTimeChange?: (time: string) => void;
 
   // Accounts
   selectedFromAccount: string;
@@ -146,6 +149,8 @@ export const TransactionDetailsSection = React.memo(function TransactionDetailsS
   dateOpen,
   onDateOpenChange,
   onDateChange,
+  transactionTime,
+  onTimeChange,
   selectedFromAccount,
   selectedToAccount,
   onFromAccountChange,
@@ -239,6 +244,8 @@ export const TransactionDetailsSection = React.memo(function TransactionDetailsS
         open={dateOpen}
         onOpenChange={onDateOpenChange}
         onChange={onDateChange}
+        time={transactionTime}
+        onTimeChange={onTimeChange}
       />
 
       <FromAccountSelect

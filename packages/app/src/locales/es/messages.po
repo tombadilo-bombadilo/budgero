@@ -2786,8 +2786,8 @@ msgid "<0>R</0>r/budgero"
 msgstr "<0>R</0>r/budgero"
 
 #: src/features/import/ui/steps/configure/MappingTab.tsx
-msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Payee, Account, Category, Memo (will use account selection below if not mapped)"
-msgstr "<0>Obligatorio:</0>Columna de fecha + Columna de importe (o columnas de Ingreso/Gasto)<1/><2>Opcional:</2>Beneficiario, Cuenta, Categoría, Memo (usará la cuenta seleccionada abajo si no se mapea)"
+msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Time, Payee, Account, Category, Memo (will use account selection below if not mapped)"
+msgstr "<0>Obligatorio:</0>Columna de fecha + Columna de importe (o columnas de Ingreso/Gasto)<1/><2>Opcional:</2>Hora, Beneficiario, Cuenta, Categoría, Memo (usará la cuenta seleccionada abajo si no se mapea)"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "<0>Retroactive recalculation</0>— adding or changing a rate recalculates all affected transactions that don't have a manual override."
@@ -3538,6 +3538,10 @@ msgstr "Añadir una nota…"
 #: src/pages/custom-dashboards/useDashboardEditor.ts
 msgid "Add a question"
 msgstr "Añadir una pregunta"
+
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Add a time"
+msgstr "Añadir una hora"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/page-guides/ui/guide-content.tsx
@@ -8632,6 +8636,10 @@ msgstr "Editar filtro de resultados: {label}"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Edit splits"
 msgstr "Editar divisiones"
+
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Edit time"
+msgstr "Editar hora"
 
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Edit Warranty"
@@ -18557,6 +18565,10 @@ msgstr "Mostrar columna de objetivo"
 msgid "Show the next 30 days"
 msgstr "Mostrar los próximos 30 días"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last."
+msgstr "Muestra la hora opcional bajo la fecha en el registro, donde también puedes editarla. Con «Más reciente primero», un día se ordena por hora; las transacciones sin hora van al final."
+
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Show the top"
 msgstr "Mostrar los primeros"
@@ -18565,6 +18577,10 @@ msgstr "Mostrar los primeros"
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Show this question"
 msgstr "Mostrar esta pregunta"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show transaction times"
+msgstr "Mostrar la hora de las transacciones"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show uncategorized only"
@@ -20697,6 +20713,12 @@ msgstr "TikTok"
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Time"
 msgstr "Tiempo"
+
+#: src/features/transactions/ui/cells/TimeInputCell.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/form/DatePickerQuick.tsx
+msgid "Time (optional)"
+msgstr "Hora (opcional)"
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Time elapsed"

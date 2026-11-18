@@ -309,7 +309,10 @@ function BudgetTransactionForm({
           form.pendingAdd.accountId,
           form.pendingAdd.labelId,
           form.pendingAdd.transferId,
-          false
+          false,
+          undefined,
+          undefined,
+          form.pendingAdd.time
         );
         form.setPendingAdd(null);
         return;
@@ -416,6 +419,9 @@ function BudgetTransactionForm({
         dateOpen={form.dateOpen}
         onDateOpenChange={form.setDateOpen}
         onDateChange={form.setDate}
+        // Recurring templates have no time: each posted occurrence is date-only.
+        transactionTime={recurringEnabled ? undefined : form.transactionTime}
+        onTimeChange={recurringEnabled ? undefined : form.setTime}
         selectedFromAccount={form.selectedFromAccount}
         selectedToAccount={form.selectedToAccount}
         onFromAccountChange={form.setFromAccount}

@@ -2788,8 +2788,8 @@ msgid "<0>R</0>r/budgero"
 msgstr "<0>R</0>r/budgero"
 
 #: src/features/import/ui/steps/configure/MappingTab.tsx
-msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Payee, Account, Category, Memo (will use account selection below if not mapped)"
-msgstr "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Payee, Account, Category, Memo (will use account selection below if not mapped)"
+msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Time, Payee, Account, Category, Memo (will use account selection below if not mapped)"
+msgstr "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Time, Payee, Account, Category, Memo (will use account selection below if not mapped)"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "<0>Retroactive recalculation</0>— adding or changing a rate recalculates all affected transactions that don't have a manual override."
@@ -3540,6 +3540,10 @@ msgstr "Add a note…"
 #: src/pages/custom-dashboards/useDashboardEditor.ts
 msgid "Add a question"
 msgstr "Add a question"
+
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Add a time"
+msgstr "Add a time"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/page-guides/ui/guide-content.tsx
@@ -8634,6 +8638,10 @@ msgstr "Edit result filter: {label}"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Edit splits"
 msgstr "Edit splits"
+
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Edit time"
+msgstr "Edit time"
 
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Edit Warranty"
@@ -18559,6 +18567,10 @@ msgstr "Show target column"
 msgid "Show the next 30 days"
 msgstr "Show the next 30 days"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last."
+msgstr "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last."
+
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Show the top"
 msgstr "Show the top"
@@ -18567,6 +18579,10 @@ msgstr "Show the top"
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Show this question"
 msgstr "Show this question"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show transaction times"
+msgstr "Show transaction times"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show uncategorized only"
@@ -20699,6 +20715,12 @@ msgstr "TikTok"
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Time"
 msgstr "Time"
+
+#: src/features/transactions/ui/cells/TimeInputCell.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/form/DatePickerQuick.tsx
+msgid "Time (optional)"
+msgstr "Time (optional)"
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Time elapsed"

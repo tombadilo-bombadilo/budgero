@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { RegisterDisplayProvider } from '@shared/contexts/RegisterDisplayContext';
 import { InlineTransactionRow } from './InlineTransactionRow';
 import type { TransactionEditorDirectories } from './transaction-editor-types';
 
@@ -37,6 +38,8 @@ vi.mock('@features/transactions/ui/add-transaction/useAddTransactionForm', () =>
         setPayee: setter('payee'),
         setMemo: setter('memo'),
         setDate: vi.fn(),
+        setTime: setter('transactionTime'),
+        transactionTime: form.state.transactionTime ?? '',
         setCategory: vi.fn(),
         setLabelId: vi.fn(),
         convertedAmount: form.state.convertedAmount ?? null,
@@ -287,5 +290,33 @@ describe('InlineTransactionRow', () => {
       amount: 5000,
       receivedAmount: 2000000,
     });
+  });
+
+  it('offers a time input only when the register shows times', () => {
+    renderRow();
+    expect(screen.queryByLabelText('Time (optional)')).not.toBeInTheDocument();
+    render(
+      <RegisterDisplayProvider
+        value={{ compactRows: false, sameDayOrder: 'newest', showTime: true }}
+      >
+        <table>
+          <tbody>
+            <InlineTransactionRow
+              budgetId={1}
+              accountId={1}
+              hideAccountColumn
+              showLabelColumn={false}
+              showExchangeRateColumn={false}
+              showBalanceColumn={false}
+              columnCount={8}
+              editorDirectories={directories}
+              onClose={vi.fn()}
+            />
+          </tbody>
+        </table>
+      </RegisterDisplayProvider>
+    );
+    fireEvent.change(screen.getByLabelText('Time (optional)'), { target: { value: '16:20' } });
+    expect(form.state.transactionTime).toBe('16:20');
   });
 });

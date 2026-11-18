@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { CalculatorCell } from '@shared/ui/calculator-cell';
 import { DatePickerCell } from '@features/transactions/ui/cells/DatePickerCell';
+import { TimeInputCell } from '@features/transactions/ui/cells/TimeInputCell';
 import { CategorySelectCell } from '@features/transactions/ui/cells/CategorySelectCell';
 import { AccountSelectCell } from '@features/transactions/ui/cells/AccountSelectCell';
 import { SplitLinePayeeCell } from '@features/transactions/ui/cells/SplitLinePayeeCell';
@@ -256,6 +257,11 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                 />
               </div>
             </div>
+            <TimeInputCell
+              value={transaction.Time}
+              onCommit={(time) => onCellCommit(transaction.ID, 'Time', time)}
+              className="border-0 bg-muted/30 text-sm shadow-none"
+            />
           </div>
         </div>
 

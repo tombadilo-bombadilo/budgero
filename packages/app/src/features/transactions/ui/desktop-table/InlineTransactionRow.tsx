@@ -23,6 +23,7 @@ import { getCurrentDate } from '@features/transactions/ui/add-transaction/add-tr
 import { AccountSelectCell } from '@features/transactions/ui/cells/AccountSelectCell';
 import { CategorySelectCell } from '@features/transactions/ui/cells/CategorySelectCell';
 import { DatePickerCell } from '@features/transactions/ui/cells/DatePickerCell';
+import { useRegisterDisplay } from '@shared/contexts/RegisterDisplayContext';
 import { LabelSelectCell } from '@features/transactions/ui/cells/LabelSelectCell';
 import {
   assignRemainingToSplit,
@@ -71,6 +72,7 @@ export function InlineTransactionRow({
   onClose,
 }: InlineTransactionRowProps) {
   const { t } = useLingui();
+  const { showTime } = useRegisterDisplay();
   const { handleAddTransaction, handleAddTransfer } = useAddTransactionHandler({
     onDialogClose: onClose,
     entry: 'inline',
@@ -315,7 +317,10 @@ export function InlineTransactionRow({
       pending.accountId,
       pending.labelId,
       pending.transferId,
-      false
+      false,
+      undefined,
+      undefined,
+      pending.time
     );
   };
 
@@ -400,6 +405,17 @@ export function InlineTransactionRow({
             value={form.transactionDate ? format(form.transactionDate, 'yyyy-MM-dd') : null}
             onCommit={(next) => form.setDate(next ? parseISO(next) : null)}
           />
+          {/* The register shows times (Appearance setting): enter one here too. */}
+          {showTime && (
+            <Input
+              type="time"
+              value={form.transactionTime}
+              onChange={(e) => form.setTime(e.target.value)}
+              aria-label={t`Time (optional)`}
+              title={t`Time (optional)`}
+              className="mt-1 h-7 w-full px-2 text-xs"
+            />
+          )}
         </TableCell>
 
         <TableCell className="max-w-[220px]">

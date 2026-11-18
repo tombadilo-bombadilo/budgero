@@ -395,6 +395,7 @@ export const SETTING_VALUES = {
   language: ['en', 'de', 'fr', 'es', 'nl'],
   week_start: ['sunday', 'monday'],
   same_day_order: ['newest', 'amount'],
+  show_transaction_time: ['on', 'off'],
   hide_zero_amounts: ['on', 'off'],
   number_animations: ['on', 'off'],
   dialog_blur: ['on', 'off'],

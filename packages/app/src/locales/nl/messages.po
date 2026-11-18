@@ -2786,8 +2786,8 @@ msgid "<0>R</0>r/budgero"
 msgstr "<0>R</0>r/budgero"
 
 #: src/features/import/ui/steps/configure/MappingTab.tsx
-msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Payee, Account, Category, Memo (will use account selection below if not mapped)"
-msgstr "<0>Vereist:</0>Datumkolom + Bedragkolom (of Inkomsten/Uitgaven-kolommen)<1/><2>Optioneel:</2>Begunstigde, Rekening, Categorie, Memo (gebruikt de rekeningselectie hieronder indien niet gekoppeld)"
+msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Time, Payee, Account, Category, Memo (will use account selection below if not mapped)"
+msgstr "<0>Vereist:</0>Datumkolom + Bedragkolom (of Inkomsten/Uitgaven-kolommen)<1/><2>Optioneel:</2>Tijd, Begunstigde, Rekening, Categorie, Memo (gebruikt de rekeningselectie hieronder indien niet gekoppeld)"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "<0>Retroactive recalculation</0>— adding or changing a rate recalculates all affected transactions that don't have a manual override."
@@ -3538,6 +3538,10 @@ msgstr "Notitie toevoegen…"
 #: src/pages/custom-dashboards/useDashboardEditor.ts
 msgid "Add a question"
 msgstr "Vraag toevoegen"
+
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Add a time"
+msgstr "Tijd toevoegen"
 
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/page-guides/ui/guide-content.tsx
@@ -8632,6 +8636,10 @@ msgstr "Resultaatfilter bewerken: {label}"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Edit splits"
 msgstr "Splits bewerken"
+
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Edit time"
+msgstr "Tijd bewerken"
 
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Edit Warranty"
@@ -18557,6 +18565,10 @@ msgstr "Doelkolom tonen"
 msgid "Show the next 30 days"
 msgstr "Toon de komende 30 dagen"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last."
+msgstr "Toont de optionele tijd onder de datum in het register, waar je hem ook kunt bewerken. Bij 'Nieuwste eerst' wordt een dag op tijd gesorteerd; transacties zonder tijd komen als laatste."
+
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Show the top"
 msgstr "Toon de grootste"
@@ -18565,6 +18577,10 @@ msgstr "Toon de grootste"
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Show this question"
 msgstr "Deze vraag tonen"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show transaction times"
+msgstr "Tijden van transacties tonen"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show uncategorized only"
@@ -20697,6 +20713,12 @@ msgstr "TikTok"
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Time"
 msgstr "Tijd"
+
+#: src/features/transactions/ui/cells/TimeInputCell.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/form/DatePickerQuick.tsx
+msgid "Time (optional)"
+msgstr "Tijd (optioneel)"
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Time elapsed"
