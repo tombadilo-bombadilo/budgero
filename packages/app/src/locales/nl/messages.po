@@ -528,6 +528,12 @@ msgstr "{0, plural, one {waarde} other {waarden}}"
 msgid "{0, plural, one {Verified # account balance against YNAB.} other {Verified # account balances against YNAB.}}"
 msgstr "{0, plural, one {# rekeningsaldo met YNAB gecontroleerd.} other {# rekeningsaldi met YNAB gecontroleerd.}}"
 
+#. placeholder {0}: goalMonthLabel(from)
+#. placeholder {1}: goalMonthLabel(to)
+#: src/features/goal-management/lib/goal-timeframe-labels.ts
+msgid "{0} – {1}"
+msgstr "{0} – {1}"
+
 #. placeholder {0}: mismatch.month
 #. placeholder {1}: mismatch.field
 #. placeholder {2}: formatMilli(mismatch.expectedAmount, currency)
@@ -759,6 +765,11 @@ msgstr "{0} van het plan"
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "{0} of spending"
 msgstr "{0} van de uitgaven"
+
+#. placeholder {0}: goalMonthLabel(from)
+#: src/features/goal-management/lib/goal-timeframe-labels.ts
+msgid "{0} onwards"
+msgstr "vanaf {0}"
 
 #. placeholder {0}: v.pings
 #. placeholder {1}: v.days
@@ -4040,6 +4051,12 @@ msgstr "Ook banken uit de VS & Canada koppelen (SimpleFIN)"
 msgid "Also delete their Clerk accounts"
 msgstr "Ook hun Clerk-accounts verwijderen"
 
+#. placeholder {0}: amount(notice.goal)
+#. placeholder {1}: goalMonthLabel(goalEffectiveFrom(notice.goal))
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Also removes the later goal of {0} from {1}."
+msgstr "Verwijdert ook het latere doel van {0} vanaf {1}."
+
 #: src/pages/analytics/report-questions.ts
 msgid "Am I living within my means?"
 msgstr "Leef ik binnen mijn middelen?"
@@ -4239,6 +4256,18 @@ msgstr "{0} categorieën toegepast"
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "Applied only in the first month of the schedule."
 msgstr "Alleen toegepast in de eerste maand van het schema."
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Applies"
+msgstr "Geldt"
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Applies from"
+msgstr "Geldt vanaf"
+
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "Applies: {timeframeLabel}"
+msgstr "Geldt: {timeframeLabel}"
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/import/ui/steps/configure/TemplatesTab.tsx
@@ -5468,6 +5497,7 @@ msgstr "Canadese dollar"
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 #: src/features/currencies/ui/ManualRatePrompt.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
+#: src/features/goal-management/ui/GoalSection.tsx
 #: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/reports/ui/notebook/HavingEditor.tsx
@@ -5783,6 +5813,10 @@ msgstr "Maand wijzigen — momenteel {fullLabel}"
 #: src/shared/ui/date-range-picker.tsx
 msgid "Change month and year — currently {fullMonthLabel}"
 msgstr "Maand en jaar wijzigen — momenteel {fullMonthLabel}"
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Change months"
+msgstr "Maanden wijzigen"
 
 #: src/pages/settings/SecurityPage.tsx
 msgid "Change Password"
@@ -6130,6 +6164,10 @@ msgstr "Kies wat de assistent mag doen. Schakel tools uit die je model slecht af
 #: src/features/category-management/ui/CreateCategoryDialog.tsx
 msgid "Choose where to file “{0}”."
 msgstr "Kies waar je “{0}” wilt opslaan."
+
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "Choose which months lose the goal. You can undo this."
+msgstr "Kies in welke maanden het doel vervalt. Je kunt dit ongedaan maken."
 
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
 msgid "Choose your bank"
@@ -7952,8 +7990,13 @@ msgid "Delete failed"
 msgstr "Verwijderen mislukt"
 
 #: src/features/goal-management/ui/GoalForm.tsx
+#: src/features/goal-management/ui/GoalSection.tsx
 msgid "Delete Goal"
 msgstr "Doel verwijderen"
+
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "Delete goal for {categoryName}?"
+msgstr "Doel voor {categoryName} verwijderen?"
 
 #: src/pages/settings/ImportsPage.tsx
 msgid "Delete history entry?"
@@ -8037,6 +8080,7 @@ msgstr "Wordt verwijderd zodra je het jouwe opent"
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
+#: src/features/goal-management/ui/GoalSection.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "Deleting..."
 msgstr "Verwijderen..."
@@ -8235,6 +8279,7 @@ msgstr "Niet importeren"
 #: src/features/ai/ui/AICategorizeDialog.tsx
 #: src/features/ai/ui/receipt-scanner/ScanProgress.tsx
 #: src/features/first-steps/ui/GoalWalkthroughHost.tsx
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
 #: src/features/page-guides/ui/PageGuideDialog.tsx
 #: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
@@ -8498,6 +8543,11 @@ msgstr "Elke gesplitste regel moet een inkomsten- of uitgavenbedrag bevatten."
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Each upcoming one appears in its account’s register once the date range at the top reaches its due date: pick Next 30 days or Next 3 months there. The dashboard’s Upcoming transactions card lists them too."
 msgstr "Elke aankomende verschijnt in het register van de rekening zodra de periode bovenaan de vervaldatum bereikt: kies daar Komende 30 dagen of Komende 3 maanden. De dashboardkaart ‘Aankomende transacties’ toont ze ook."
+
+#: src/features/goal-management/ui/GoalSection.tsx
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Earlier months keep the goal they had."
+msgstr "Eerdere maanden houden hun doel."
 
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Earlier version restored"
@@ -8793,6 +8843,10 @@ msgstr "Eindigt {countLabel} of {dateLabel}"
 msgid "Ends {dateLabel}"
 msgstr "Eindigt {dateLabel}"
 
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Ends after"
+msgstr "Eindigt na"
+
 #: src/shared/ui/calculator-cell/CalculatorSheet.tsx
 msgid "Enter"
 msgstr "Enter"
@@ -9046,9 +9100,27 @@ msgstr "Elke munt die je verdient krijgt een taak voordat je hem uitgeeft. Hoe w
 msgid "Every few months, like a quarterly bill."
 msgstr "Om de paar maanden, zoals een kwartaalrekening."
 
+#: src/features/goal-management/lib/goal-timeframe-labels.ts
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "Every month"
+msgstr "Elke maand"
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Every month of this goal"
+msgstr "Alle maanden van dit doel"
+
+#. placeholder {0}: goalMonthLabel(to as string)
+#: src/features/goal-management/lib/goal-timeframe-labels.ts
+msgid "Every month until {0}"
+msgstr "Elke maand tot en met {0}"
+
 #: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Every month, like rent or groceries."
 msgstr "Elke maand, zoals huur of boodschappen."
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Every month, until you change it"
+msgstr "Elke maand, tot je het wijzigt"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Every scheduled occurrence that hasn't been entered yet, by due date."
@@ -10008,6 +10080,19 @@ msgstr "Vriend of collega"
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "From"
 msgstr "Van"
+
+#. placeholder {0}: goalMonthLabel(currentMonth)
+#. placeholder {0}: goalMonthLabel(viewedMonth)
+#: src/features/goal-management/ui/GoalSection.tsx
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "From {0} onwards"
+msgstr "Vanaf {0}"
+
+#. placeholder {0}: goalMonthLabel(notice.from)
+#. placeholder {1}: amount(notice.goal)
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "From {0}, the existing goal of {1} takes over."
+msgstr "Vanaf {0} neemt het bestaande doel van {1} het over."
 
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
 msgid "From account"
@@ -12719,6 +12804,11 @@ msgstr "Maandelijkse trend"
 msgid "months"
 msgstr "maanden"
 
+#. placeholder {0}: goalMonthLabel(currentMonth)
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "Months before {0} keep their goal."
+msgstr "Maanden vóór {0} houden hun doel."
+
 #: src/pages/analytics/components/TargetTable.tsx
 msgid "Months met"
 msgstr "Maanden gehaald"
@@ -13638,6 +13728,17 @@ msgstr "Geen actuele koers beschikbaar. Vooraf ingevuld met de dichtstbijzijnde 
 msgid "No Goal"
 msgstr "Geen doel"
 
+#. placeholder {0}: goalMonthLabel(notice.from)
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "No goal from {0} onwards."
+msgstr "Geen doel vanaf {0}."
+
+#. placeholder {0}: goalMonthLabel(notice.from)
+#. placeholder {1}: goalMonthLabel(notice.until)
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "No goal from {0} to {1}."
+msgstr "Geen doel van {0} tot en met {1}."
+
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "No goal set for {categoryName}"
 msgstr "Geen doel ingesteld voor {categoryName}"
@@ -14413,6 +14514,10 @@ msgstr "Eenmalige uitgaven"
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "One-time extra (this month)"
 msgstr "Eenmalige extra (deze maand)"
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Ongoing"
+msgstr "Doorlopend"
 
 #: src/widgets/sync-status/ConnectivityStatus.tsx
 msgid "Online"
@@ -16715,6 +16820,10 @@ msgstr "Deze begunstigde verwijderen?"
 msgid "Removed {0} transactions{1}{2}"
 msgstr "{0} transacties verwijderd{1}{2}"
 
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "Removes all of this category's goals, past ones too."
+msgstr "Verwijdert alle doelen van deze categorie, ook eerdere."
+
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/reports/question/QuestionHeader.tsx
 msgid "Rename"
@@ -16788,6 +16897,12 @@ msgstr "Herhalen elke"
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Repeats yearly. Current cycle: {0} · this cycle's target {1}. Cycles are counted from the target date; the goal amount applies to each cycle."
 msgstr "Herhaalt jaarlijks. Huidige cyclus: {0} · streefdatum van deze cyclus: {1}. Cycli worden berekend vanaf de streefdatum; het doelbedrag geldt voor elke cyclus."
+
+#. placeholder {0}: amount(notice.goal)
+#. placeholder {1}: goalMonthLabel(goalEffectiveFrom(notice.goal))
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Replaces the goal of {0} that starts in {1}."
+msgstr "Vervangt het doel van {0} dat begint in {1}."
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Report a Bug"
@@ -19959,6 +20074,10 @@ msgstr "De dalende trend is statistisch betrouwbaar (p {0}, R² = {1}): {2}/maan
 msgid "The end date must be on or after the start date."
 msgstr "De einddatum moet op of na de begindatum liggen."
 
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "The end month must not be before the start month."
+msgstr "De eindmaand mag niet vóór de beginmaand liggen."
+
 #: src/app/system/AppErrorBoundary.tsx
 msgid "The error has been recorded. Reload the page if it keeps happening."
 msgstr "De fout is vastgelegd. Laad de pagina opnieuw als het blijft gebeuren."
@@ -19980,8 +20099,18 @@ msgid "The goal counts as met (or on track) this month."
 msgstr "Het doel telt deze maand als gehaald (of op schema)."
 
 #: src/features/goal-management/ui/GoalSection.tsx
-msgid "The goal has been permanently removed."
-msgstr "Het doel is permanent verwijderd."
+#~ msgid "The goal has been permanently removed."
+#~ msgstr "Het doel is permanent verwijderd."
+
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "The goal has been removed from every month."
+msgstr "Het doel is uit alle maanden verwijderd."
+
+#. placeholder {0}: amount(notice.goal)
+#. placeholder {1}: goalMonthLabel(notice.to)
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "The goal of {0} will now end in {1}."
+msgstr "Het doel van {0} eindigt nu in {1}."
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "The goal's full target amount."
@@ -20283,6 +20412,17 @@ msgstr "Deze actie is mislukt, dus er valt niets ongedaan te maken."
 #: src/shared/mutations/useMutationHistory.ts
 msgid "This action has already been undone."
 msgstr "Deze actie is al ongedaan gemaakt."
+
+#. placeholder {0}: goalMonthLabel(notice.from)
+#. placeholder {1}: goalMonthLabel(notice.to)
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "This also changes the goal for {0} – {1}."
+msgstr "Dit wijzigt ook het doel voor {0} – {1}."
+
+#. placeholder {0}: goalMonthLabel(viewedMonth)
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "This also changes the goal in every month before {0}."
+msgstr "Dit wijzigt ook het doel in alle maanden vóór {0}."
 
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "This app"
