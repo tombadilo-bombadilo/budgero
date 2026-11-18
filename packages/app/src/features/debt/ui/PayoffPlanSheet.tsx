@@ -23,7 +23,7 @@ import {
   useChartPalette,
   BAR_MAX_WIDTH,
 } from '@shared/lib/charts/echarts-chrome';
-import { computePayoffDate } from '@shared/lib/date-utils';
+import { computePayoffDate, getTodayISO } from '@shared/lib/date-utils';
 import { roundMilli } from '@shared/lib/currency/round-amount';
 import {
   formatMilli,
@@ -34,6 +34,9 @@ import {
 } from '@shared/lib/currency/milli';
 import { buildPayoffSchedule } from '@shared/lib/debt/payoff-schedule';
 import { PayoffSummaryGrid } from '@features/debt/ui/PayoffSummaryGrid';
+import { RateChangeHint } from '@features/debt/ui/RateChangeHint';
+import { projectionMonthlyRate } from '@features/debt/lib/rate-schedule';
+import type { InterestRateEntry } from '@budgero/core/browser';
 
 // Money props are in milliunit space (possibly non-integer floats after
 // display-currency conversion); interest math stays float, results round back
@@ -41,7 +44,9 @@ import { PayoffSummaryGrid } from '@features/debt/ui/PayoffSummaryGrid';
 type PayoffPlanSheetProps = {
   trigger: React.ReactElement<{ onClick?: React.MouseEventHandler<HTMLElement> }>;
   outstanding: number; // milliunits
-  apr?: number;
+  apr?: number; // annual percent in effect today
+  aprSchedule?: InterestRateEntry[]; // dated rate changes; future ones feed the plan
+  nextAprChange?: InterestRateEntry;
   formatter: Intl.NumberFormat; // decimal currency formatter
   initialPayment: number; // milliunits
   onPaymentChange?: (n: number) => void; // milliunits
@@ -53,6 +58,8 @@ export function PayoffPlanSheet({
   trigger,
   outstanding,
   apr,
+  aprSchedule,
+  nextAprChange,
   formatter,
   initialPayment,
   onPaymentChange,
@@ -99,10 +106,26 @@ export function PayoffPlanSheet({
   }, [open, initialPayment, apr]);
 
   const rMonthly = localApr > 0 ? localApr / 100 / 12 : 0;
-  const sim = React.useMemo(
-    () => buildPayoffSchedule(outstanding, rMonthly, payment, extraMonthly, oneTimeExtra),
-    [outstanding, rMonthly, payment, extraMonthly, oneTimeExtra]
+  // Scheduled rate changes apply while the APR field shows the account's
+  // current rate; typing a different APR tries that one for the whole plan.
+  const usesSchedule = nextAprChange !== undefined && localApr === (apr ?? 0);
+  const projectionRate = React.useMemo(
+    () => (usesSchedule ? projectionMonthlyRate(apr, aprSchedule) : rMonthly),
+    [usesSchedule, apr, aprSchedule, rMonthly]
   );
+  const sim = React.useMemo(
+    () => buildPayoffSchedule(outstanding, projectionRate, payment, extraMonthly, oneTimeExtra),
+    [outstanding, projectionRate, payment, extraMonthly, oneTimeExtra]
+  );
+  // Highest monthly rate from today on: a payment above its interest always pays down.
+  const peakMonthlyRate = usesSchedule
+    ? Math.max(
+        rMonthly,
+        ...(aprSchedule ?? [])
+          .filter((e) => e.effective_date !== undefined && e.effective_date > getTodayISO())
+          .map((e) => e.rate_annual / 100 / 12)
+      )
+    : rMonthly;
 
   const payoffDate = React.useMemo(() => computePayoffDate(sim.months), [sim.months]);
 
@@ -255,6 +278,15 @@ export function PayoffPlanSheet({
                   displayClassName={calculatorDisplayClassName}
                   inputClassName={calculatorInputClassName}
                 />
+                {usesSchedule ? (
+                  <RateChangeHint next={nextAprChange} className="mt-1" />
+                ) : (
+                  nextAprChange && (
+                    <div className="mt-1 text-xs text-muted-foreground">
+                      <Trans>Scheduled rate changes are ignored while you try another APR.</Trans>
+                    </div>
+                  )
+                )}
               </div>
               <div>
                 <div className="flex items-center justify-between">
@@ -396,7 +428,7 @@ export function PayoffPlanSheet({
                 <Trans>
                   Payment too low to cover monthly interest. Increase payment above{' '}
                   <span className="font-mono">
-                    {formatMilli(formatter, roundMilli(outstanding * rMonthly))}
+                    {formatMilli(formatter, roundMilli(outstanding * peakMonthlyRate))}
                   </span>
                   .
                 </Trans>

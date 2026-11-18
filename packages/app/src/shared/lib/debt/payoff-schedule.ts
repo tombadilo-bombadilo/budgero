@@ -1,5 +1,15 @@
 import { formatDateISO } from '@shared/lib/date-utils';
 
+/**
+ * A monthly interest rate (fraction): one rate for the whole plan, or a
+ * function of the month index when the account has scheduled rate changes
+ * (see monthlyRateFn in core).
+ */
+export type MonthlyRate = number | ((monthIndex: number) => number);
+
+const rateFn = (r: MonthlyRate): ((monthIndex: number) => number) =>
+  typeof r === 'number' ? () => r : r;
+
 const MAX_PAYOFF_MONTHS = 360 * 5; // 30 years safety cap
 
 export interface PayoffSummary {
@@ -16,16 +26,18 @@ export interface PayoffSummary {
  */
 export function simulatePayoffSummary(
   Lstart: number,
-  rMonthly: number,
+  rMonthly: MonthlyRate,
   payment: number,
   epsilon = 1e-9
 ): PayoffSummary {
   let L = Lstart;
   if (L <= 0 || payment <= 0) return { months: 0, totalPaid: 0, interestPaid: 0 };
+  const rate = rateFn(rMonthly);
+  const r0 = rate(0);
   // If interest-only and payment can't reduce principal
-  if (rMonthly > 0 && payment <= L * rMonthly) return { months: null };
+  if (r0 > 0 && payment <= L * r0) return { months: null };
   // Zero interest simple case
-  if (rMonthly <= 0) {
+  if (typeof rMonthly === 'number' && rMonthly <= 0) {
     const months = Math.ceil(L / payment);
     const totalPaid = (months - 1) * payment + (L - (months - 1) * payment);
     return { months, totalPaid, interestPaid: 0 };
@@ -33,8 +45,8 @@ export function simulatePayoffSummary(
   let months = 0;
   let totalPaid = 0;
   while (L > 0 && months < MAX_PAYOFF_MONTHS) {
+    const interest = L * rate(months);
     months++;
-    const interest = L * rMonthly;
     const due = L + interest;
     const pay = Math.min(payment, due);
     totalPaid += pay;
@@ -67,7 +79,7 @@ export interface PayoffSchedule extends PayoffSummary {
  */
 export function buildPayoffSchedule(
   Lstart: number,
-  rMonthly: number,
+  rMonthly: MonthlyRate,
   basePayment: number,
   extraMonthly: number,
   oneTimeExtra: number,
@@ -76,7 +88,9 @@ export function buildPayoffSchedule(
   const rows: PayoffScheduleRow[] = [];
   let L = Lstart;
   if (L <= 0 || basePayment <= 0) return { rows, months: 0, totalPaid: 0, interestPaid: 0 };
-  if (rMonthly > 0 && basePayment + extraMonthly <= L * rMonthly) return { rows, months: null };
+  const rate = rateFn(rMonthly);
+  const r0 = rate(0);
+  if (r0 > 0 && basePayment + extraMonthly <= L * r0) return { rows, months: null };
 
   const start = new Date();
   let months = 0;
@@ -84,7 +98,7 @@ export function buildPayoffSchedule(
   while (L > 0 && months < MAX_PAYOFF_MONTHS) {
     const d = new Date(start);
     d.setMonth(d.getMonth() + months);
-    const interest = Math.max(0, L * rMonthly);
+    const interest = Math.max(0, L * rate(months));
     const planned = basePayment + extraMonthly + (months === 0 ? oneTimeExtra : 0);
     const due = L + interest;
     const pay = Math.min(planned, due);

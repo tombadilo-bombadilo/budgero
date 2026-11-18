@@ -3650,6 +3650,10 @@ msgstr "Voeg nieuwe begunstigden toe, hernoem bestaande, of verwijder ze uit je 
 msgid "Add New Transaction"
 msgstr "Nieuwe transactie toevoegen"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Add rate change"
+msgstr "Rentewijziging toevoegen"
+
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Add Rate sets a rate for a currency pair from a start date, with an end date if you want one; Also add the reverse rate fills in the other direction. Custom rates take priority over fetched ones."
 msgstr "‘Koers toevoegen’ stelt een koers in voor een valutapaar vanaf een startdatum, desgewenst met een einddatum; ‘Ook de omgekeerde wisselkoers toevoegen’ vult de andere richting in. Aangepaste koersen gaan voor opgehaalde."
@@ -4168,6 +4172,10 @@ msgstr "Jaarlijks percentage, bijv. 5 voor 5%."
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Annual service"
 msgstr "Jaarlijkse onderhoudsbeurt"
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Another rate already starts on this date."
+msgstr "Op deze datum begint al een andere rente."
 
 #: src/pages/settings/ai/ai-settings.constants.ts
 msgid "Any OpenAI-compatible API"
@@ -8837,6 +8845,11 @@ msgstr "Voer een positief bedrag in binnen de beschikbare middelen."
 msgid "Enter a positive whole number."
 msgstr "Voer een positief geheel getal in."
 
+#: src/features/account-management/ui/EditAccountDialog.tsx
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Enter a rate between 0 and {maxRate}%."
+msgstr "Voer een rente in tussen 0 en {maxRate}%."
+
 #. placeholder {0}: MAX_FAKE_TRANSACTIONS.toLocaleString()
 #: src/features/account-management/ui/DevSeedTransactionsButton.tsx
 msgid "Enter a transaction count from 1 to {0}"
@@ -9910,6 +9923,10 @@ msgstr "Voor het scannen van bonnetjes/afbeeldingen"
 msgid "For this month"
 msgstr "Voor deze maand"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "For variable or promotional rates, add the date each new rate starts. Future changes are included in payoff estimates."
+msgstr "Bij een variabele rente of actierente voeg je de datum toe waarop elke nieuwe rente ingaat. Toekomstige wijzigingen tellen mee in de aflossingsramingen."
+
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Forecast"
 msgstr "Voorspelling"
@@ -10894,6 +10911,10 @@ msgstr "Kies in een vraag een staaf, een segment of een waarde in de tabel om di
 msgid "In budget ({conversionTargetCurrency}), edit to use your own rate"
 msgstr "In budget ({conversionTargetCurrency}), wijzig voor je eigen koers"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "In effect today: {currentRate}%"
+msgstr "Vandaag geldig: {currentRate}%"
+
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "in progress"
 msgstr "bezig"
@@ -11097,6 +11118,10 @@ msgstr "Info"
 #: src/shared/mutations/op-code-registry/domains/accounts.ts
 msgid "Initial Balance"
 msgstr "Beginsaldo"
+
+#: src/features/account-management/ui/EditAccountDialog.tsx
+msgid "Initial interest % (APR)"
+msgstr "Beginrente % (APR)"
 
 #: src/shared/hooks/useWhisperVoiceInput.ts
 msgid "Initializing..."
@@ -15110,7 +15135,7 @@ msgstr "Betaling vereist"
 msgid "Payment too low"
 msgstr "Betaling te laag"
 
-#. placeholder {0}: formatMilli(formatter, roundMilli(outstanding * rMonthly))
+#. placeholder {0}: formatMilli(formatter, roundMilli(outstanding * peakMonthlyRate))
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "Payment too low to cover monthly interest. Increase payment above <0>{0}</0>."
 msgstr "Betaling te laag om de maandelijkse rente te dekken. Verhoog de betaling boven <0>{0}</0>."
@@ -15306,6 +15331,10 @@ msgstr "Kies de categorie waarvoor je een doel wilt. Huur of boodschappen zijn e
 #: src/pages/reports/question/usePinToDashboard.tsx
 msgid "Pick the dashboard to show this question on."
 msgstr "Kies het dashboard waarop deze vraag komt."
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Pick the date this rate starts."
+msgstr "Kies de datum waarop deze rente ingaat."
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Pick the dates"
@@ -16102,6 +16131,14 @@ msgstr "Koersencache en offline synchronisatie"
 msgid "Rate cache pruned"
 msgstr "Koerscache opgeschoond"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Rate changes"
+msgstr "Rentewijzigingen"
+
+#: src/features/debt/ui/RateChangeHint.tsx
+msgid "Rate changes to {rate}% on {date}"
+msgstr "Rente wordt {rate}% op {date}"
+
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Rate deleted"
 msgstr "Koers verwijderd"
@@ -16666,6 +16703,10 @@ msgstr "Eenmalige verwijderen"
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "Remove pattern from memo"
 msgstr "Patroon uit memo verwijderen"
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Remove rate change"
+msgstr "Rentewijziging verwijderen"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Remove result filter: {label}"
@@ -17600,6 +17641,10 @@ msgstr "Scenario"
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Scenario name"
 msgstr "Scenarionaam"
+
+#: src/features/debt/ui/PayoffPlanSheet.tsx
+msgid "Scheduled rate changes are ignored while you try another APR."
+msgstr "Geplande rentewijzigingen worden genegeerd zolang je een andere APR probeert."
 
 #: src/widgets/dashboard/UpcomingTransactionsCard.tsx
 msgid "Scheduled transaction"
@@ -19257,6 +19302,10 @@ msgstr "Budgero starten…"
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Starting funds"
 msgstr "Startsaldo"
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Starts on"
+msgstr "Gaat in op"
 
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
 msgid "Starts the day after your latest entry so nothing is imported twice. Entries close to the bank's will be offered as matches."

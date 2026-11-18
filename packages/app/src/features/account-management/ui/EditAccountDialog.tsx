@@ -15,8 +15,12 @@ import { Field } from '@shared/ui/field';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 
 import { Edit3 } from 'lucide-react';
-import type { Account } from '@budgero/core/browser';
-import { isCryptoCurrency } from '@budgero/core/browser';
+import type { Account, InterestRateEntry } from '@budgero/core/browser';
+import {
+  isCryptoCurrency,
+  MAX_INTEREST_RATE_ANNUAL,
+  validateRateSchedule,
+} from '@budgero/core/browser';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -36,15 +40,18 @@ import { getAccountTypesByBudgetType, isLiabilityType } from '@entities/account/
 import { useUiStore } from '@shared/store/useUiStore';
 import { usePlainNumberFormatter } from '@shared/hooks/useNumberFormatter';
 import { toastError } from '@shared/lib/errors';
+import { formatRatePercent } from '@features/debt/lib/rate-schedule';
 import { OnBudgetToggle } from './OnBudgetToggle';
 import { ArchiveAccountDialog } from './ArchiveAccountDialog';
 import { LiabilityNumberCell } from './LiabilityNumberCell';
 import { AccountCurrencyChangeDialog } from './AccountCurrencyChangeDialog';
+import { InitialRateCell, RateChangesEditor } from './InterestRateScheduleEditor';
 import {
   liabilityFormFromMetadata,
   mergeLiabilityMetadata,
   parseAccountMetadata,
   resolveMinPayment,
+  suggestedMonthlyPayment,
 } from '../lib/edit-account-metadata';
 
 interface EditAccountDialogProps {
@@ -97,7 +104,8 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
   );
   // Edited as a DECIMAL amount; stored metadata is milliunits (fromDecimal at submit).
   const [debtTotal, setDebtTotal] = useState<number>(initialForm.debtTotal);
-  const [interestRate, setInterestRate] = useState<number>(initialForm.interestRate);
+  // Row 0 is the initial rate, later rows dated changes (see InterestRateScheduleEditor).
+  const [rates, setRates] = useState<InterestRateEntry[]>(initialForm.rates);
   const [startDate, setStartDate] = useState(initialForm.startDate);
   const [targetDate, setTargetDate] = useState(initialForm.targetDate);
 
@@ -125,7 +133,7 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
       setOnBudget(selectedAccount?.OnBudget ?? true);
       setIsLiability(Boolean(initialMd.liability) || isLiabilityType(selectedAccount?.Type || ''));
       setDebtTotal(initialForm.debtTotal);
-      setInterestRate(initialForm.interestRate);
+      setRates(initialForm.rates);
       setStartDate(initialForm.startDate);
       setTargetDate(initialForm.targetDate);
     });
@@ -152,23 +160,20 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
       return null;
     }
     const outstanding = Math.abs(selectedAccount?.BalanceNative ?? 0);
-    const mRate = interestRate > 0 ? interestRate / 100 / 12 : 0;
     const months = targetDate
       ? Math.max(1, differenceInMonths(parseISO(targetDate), new Date()))
       : 0;
     if (outstanding > 0 && months > 0) {
-      let mp: number;
-      if (mRate > 0) {
-        mp = (outstanding * mRate) / (1 - (1 + mRate) ** -months);
-      } else {
-        mp = outstanding / months;
-      }
-      return roundMilli(mp);
+      // Each scheduled rate applies from its date; one rate is the plain annuity.
+      return roundMilli(suggestedMonthlyPayment(outstanding, rates, months));
     }
     return null;
-  }, [isLiability, selectedAccount?.BalanceNative, interestRate, targetDate]);
+  }, [isLiability, selectedAccount?.BalanceNative, rates, targetDate]);
 
-  const formFields = { debtTotal, interestRate, startDate, targetDate };
+  const formFields = { debtTotal, rates, startDate, targetDate };
+  const rateValidation = validateRateSchedule(rates);
+  const ratesInvalid = isLiability && !rateValidation.ok;
+  const maxRate = formatRatePercent(MAX_INTEREST_RATE_ANNUAL);
   // What the min-payment field shows is what Apply stores.
   const shownMinPayment = isLiability
     ? resolveMinPayment(initialMd, initialForm, formFields, computedMinPayment)
@@ -177,7 +182,7 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
   const handleEdit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!accType) {
+    if (!accType || ratesInvalid) {
       return;
     }
 
@@ -403,13 +408,21 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
                         localizer={plainNumberFormatter}
                       />
                     </Field>
-                    <Field label={t`Interest % (APR)`} htmlFor="interestRate" className="space-y-1">
-                      <LiabilityNumberCell
-                        value={interestRate}
-                        onCommit={setInterestRate}
-                        placeholder="e.g. 5.25"
+                    <Field
+                      label={rates.length > 1 ? t`Initial interest % (APR)` : t`Interest % (APR)`}
+                      htmlFor="interestRate"
+                      className="space-y-1"
+                    >
+                      <InitialRateCell
+                        rates={rates}
+                        onChange={setRates}
                         localizer={plainNumberFormatter}
                       />
+                      {rateValidation.badRates.includes(0) && (
+                        <p className="text-xs text-destructive">
+                          {t`Enter a rate between 0 and ${maxRate}%.`}
+                        </p>
+                      )}
                     </Field>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
@@ -434,6 +447,11 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
                   >
                     <DatePickerButton value={targetDate} onChange={setTargetDate} />
                   </Field>
+                  <RateChangesEditor
+                    rates={rates}
+                    onChange={setRates}
+                    localizer={plainNumberFormatter}
+                  />
                 </div>
               )}
 
@@ -514,7 +532,7 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
                   <Button
                     className="h-8 sm:h-9"
                     type="submit"
-                    disabled={editAccountMutation.isPending}
+                    disabled={editAccountMutation.isPending || ratesInvalid}
                   >
                     {editAccountMutation.isPending ? t`Saving...` : t`Apply`}
                   </Button>

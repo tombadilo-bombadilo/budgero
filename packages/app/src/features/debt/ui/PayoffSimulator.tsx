@@ -12,6 +12,9 @@ import { roundMilli } from '@shared/lib/currency/round-amount';
 import { formatMilli } from '@shared/lib/currency/milli';
 import { cn } from '@shared/lib/utils';
 import { activateOnEnterOrSpace } from '@shared/lib/a11y';
+import type { InterestRateEntry } from '@budgero/core/browser';
+import { projectionMonthlyRate } from '@features/debt/lib/rate-schedule';
+import { RateChangeHint } from '@features/debt/ui/RateChangeHint';
 
 const EXPANDED_STORAGE_KEY = 'payoff-simulator-expanded';
 
@@ -20,7 +23,9 @@ const EXPANDED_STORAGE_KEY = 'payoff-simulator-expanded';
 // back via roundMilli at the display/branding boundary.
 type PayoffSimulatorProps = {
   outstanding: number; // remaining principal in milliunits (positive)
-  apr?: number; // annual percent, optional
+  apr?: number; // annual percent in effect today, optional
+  aprSchedule?: InterestRateEntry[]; // dated rate changes; future ones feed the projection
+  nextAprChange?: InterestRateEntry; // the next scheduled change, for the hint
   minPayment?: number; // suggested minimum, milliunits
   formatter: Intl.NumberFormat; // decimal currency formatter
   initial?: number; // optional initial slider value, milliunits
@@ -30,6 +35,8 @@ type PayoffSimulatorProps = {
 export function PayoffSimulator({
   outstanding,
   apr,
+  aprSchedule,
+  nextAprChange,
   minPayment,
   formatter,
   initial,
@@ -38,6 +45,11 @@ export function PayoffSimulator({
   const { t } = useLingui();
 
   const rMonthly = apr ? apr / 100 / 12 : 0;
+  // Month-by-month rates when a change is scheduled; else the single rate.
+  const projectionRate = React.useMemo(
+    () => projectionMonthlyRate(apr, aprSchedule),
+    [apr, aprSchedule]
+  );
   const suggestedMin = (() => {
     const interestOnly = rMonthly > 0 ? outstanding * rMonthly : 0;
     // At least one currency unit (1_000 milliunits)
@@ -71,8 +83,8 @@ export function PayoffSimulator({
   }, []);
 
   const sim = React.useMemo(
-    () => simulatePayoffSummary(outstanding, rMonthly, payment),
-    [outstanding, rMonthly, payment]
+    () => simulatePayoffSummary(outstanding, projectionRate, payment),
+    [outstanding, projectionRate, payment]
   );
   const payoffDate = React.useMemo(() => computePayoffDate(sim.months), [sim.months]);
 
@@ -151,6 +163,8 @@ export function PayoffSimulator({
               }
               outstanding={outstanding}
               apr={apr}
+              aprSchedule={aprSchedule}
+              nextAprChange={nextAprChange}
               formatter={formatter}
               initialPayment={payment}
               onPaymentChange={setPayment}
@@ -182,6 +196,7 @@ export function PayoffSimulator({
             interestPaid={sim.interestPaid}
             formatter={formatter}
           />
+          <RateChangeHint next={nextAprChange} />
         </div>
       )}
     </div>
