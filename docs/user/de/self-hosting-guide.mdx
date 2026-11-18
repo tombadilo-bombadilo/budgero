@@ -14,11 +14,18 @@ Dieser Leitfaden führt dich durch die Bereitstellung von Budgero auf deiner eig
 
 ## Bereitstellungsoptionen
 
-Selbstgehostetes Budgero kann auf drei Arten bereitgestellt werden:
+Selbstgehostetes Budgero kann auf vier Arten bereitgestellt werden:
 
 - **Docker** - Empfohlen für die meisten Nutzer. Ein einzelner Befehl, funktioniert auf jeder Plattform mit Docker.
 - **Native Binärdatei** - Direkte Installation auf macOS, Linux oder Windows. Ideal für minimale Setups oder wenn Docker nicht verfügbar ist.
 - **Docker Compose** - Am besten für Produktionsbereitstellungen mit persistentem Speicher und einfachen Updates.
+- **Railway** - Bereitstellung mit einem Klick, falls du keinen eigenen Server hast. Das Hosting bei Railway ist kostenpflichtig.
+
+## Auf Railway bereitstellen
+
+[![Auf Railway bereitstellen](https://budgero.app/deploy-on-railway.svg)](https://railway.com/deploy/budgero)
+
+Die Vorlage richtet das Volume, die HTTPS-Domain und die Sync-Einstellungen ein. Öffne nach der Bereitstellung die Deploy-Logs und kopiere das Admin-Passwort (es wird nur einmal beim ersten Start ausgegeben). Melde dich dann auf deiner Railway-Domain als `admin` an. Wenn du eine eigene Domain hinzufügst, trage sie in `WEBSOCKET_ALLOWED_ORIGINS` ein (durch Kommas getrennt) und stelle neu bereit.
 
 ## Schnellstart mit Docker
 

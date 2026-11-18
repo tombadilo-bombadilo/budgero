@@ -9,6 +9,8 @@ This is Budgero's **primary repository**. Development, reviews, and merges happe
 here, and **issues and pull requests are welcome** — see
 [CONTRIBUTING.md](CONTRIBUTING.md).
 
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.com/deploy/budgero)
+
 ## Releases
 
 Find version notes and downloads on [GitHub Releases](https://github.com/tombadilo-bombadilo/budgero/releases).
