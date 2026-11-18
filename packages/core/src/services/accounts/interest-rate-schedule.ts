@@ -28,8 +28,11 @@ import { clock } from '../../utils/clock.js';
 export const INTEREST_RATE_SCHEDULE_KEY = 'interest_rate_schedule';
 export const INTEREST_RATE_SYNCED_KEY = 'interest_rate_annual_synced';
 
-/** Highest annual rate (percent) the editor accepts. */
-export const MAX_INTEREST_RATE_ANNUAL = 100;
+/** Longest projection, in months (the 30-year-times-5 cap the payoff views use). */
+export const MAX_PROJECTION_MONTHS = 360 * 5;
+
+/** A balance below half a milliunit counts as paid off. */
+const CLEARED_MILLI = 0.5;
 
 export interface InterestRateEntry {
   /** YYYY-MM-DD the rate applies from; absent on the initial rate. */
@@ -134,12 +137,21 @@ export function rateOn(schedule: readonly InterestRateEntry[], date: string): nu
   return rateEntryOn(schedule, date)?.rate_annual;
 }
 
-/** The first dated change after `today`, if one is scheduled. */
+/**
+ * The first dated entry after `today` that actually changes the rate (an
+ * entry repeating the rate before it is no change), if one is scheduled.
+ */
 export function nextRateChange(
   schedule: readonly InterestRateEntry[],
   today: string = getLocalDateString(clock.date())
 ): InterestRateEntry | undefined {
-  return schedule.find((e) => e.effective_date !== undefined && e.effective_date > today);
+  let previous = rateOn(schedule, today);
+  for (const entry of schedule) {
+    if (entry.effective_date === undefined || entry.effective_date <= today) continue;
+    if (entry.rate_annual !== previous) return entry;
+    previous = entry.rate_annual;
+  }
+  return undefined;
 }
 
 /** True when some period from `today` on accrues interest. */
@@ -200,7 +212,8 @@ export function isConstantFrom(schedule: readonly InterestRateEntry[], today: st
  * Equal to the annuity formula when the rate is constant.
  */
 export function levelPayment(principal: number, months: number, rate: MonthlyRateFn): number {
-  const n = Math.max(1, Math.round(months));
+  // Capped like every projection: a 100,000-year term would otherwise loop for seconds.
+  const n = Math.min(MAX_PROJECTION_MONTHS, Math.max(1, Math.round(months)));
   // principal = P * sum_k prod_{j<=k} 1/(1+r_j)
   let discount = 1;
   let sum = 0;
@@ -216,7 +229,7 @@ export function monthsToPayoff(
   principal: number,
   payment: number,
   rate: MonthlyRateFn,
-  maxMonths = 360 * 5
+  maxMonths = MAX_PROJECTION_MONTHS
 ): number | undefined {
   if (principal <= 0) return 0;
   if (payment <= 0) return undefined;
@@ -224,7 +237,7 @@ export function monthsToPayoff(
   for (let i = 0; i < maxMonths; i++) {
     balance += balance * rate(i);
     balance -= payment;
-    if (balance <= 1e-9) return i + 1;
+    if (balance < CLEARED_MILLI) return i + 1;
   }
   return undefined;
 }
@@ -235,7 +248,7 @@ export interface RateScheduleValidation {
   badDates: number[];
   /** Indices of entries whose date repeats an earlier one. */
   duplicateDates: number[];
-  /** Indices of entries with a rate outside 0..MAX_INTEREST_RATE_ANNUAL. */
+  /** Indices of entries with a negative or non-numeric rate. */
   badRates: number[];
 }
 
@@ -251,11 +264,8 @@ export function validateRateSchedule(
   const badRates: number[] = [];
   const seen = new Set<string>();
   rows.forEach((row, i) => {
-    if (
-      !Number.isFinite(row.rate_annual) ||
-      row.rate_annual < 0 ||
-      row.rate_annual > MAX_INTEREST_RATE_ANNUAL
-    ) {
+    // No upper bound: some debts carry rates above 100%, and older data may too.
+    if (!Number.isFinite(row.rate_annual) || row.rate_annual < 0) {
       badRates.push(i);
     }
     if (i === 0) return;

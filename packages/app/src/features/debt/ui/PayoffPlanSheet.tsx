@@ -108,6 +108,8 @@ export function PayoffPlanSheet({
   const rMonthly = localApr > 0 ? localApr / 100 / 12 : 0;
   // Scheduled rate changes apply while the APR field shows the account's
   // current rate; typing a different APR tries that one for the whole plan.
+  // nextAprChange (core nextRateChange) is set exactly when a future entry
+  // changes the rate, the same test projectionMonthlyRate uses.
   const usesSchedule = nextAprChange !== undefined && localApr === (apr ?? 0);
   const projectionRate = React.useMemo(
     () => (usesSchedule ? projectionMonthlyRate(apr, aprSchedule) : rMonthly),

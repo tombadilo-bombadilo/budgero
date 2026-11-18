@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asMilli } from '@budgero/core/browser';
+import { asMilli, validateRateSchedule } from '@budgero/core/browser';
 import {
   liabilityFormFromMetadata,
   mergeLiabilityMetadata,
@@ -231,5 +231,29 @@ describe('interest rate schedule edits', () => {
       TODAY
     );
     expect(stepUp).toBeGreaterThan(annuity);
+  });
+});
+
+describe('rates above 100%', () => {
+  it('an existing high rate passes validation, so a rename can still be saved', () => {
+    const md = { liability: true, liability_type: 'loan', interest_rate_annual: 150 };
+    const form = liabilityFormFromMetadata(md, TODAY);
+    expect(validateRateSchedule(form.rates).ok).toBe(true);
+    expect(mergeLiabilityMetadata(md, 'Loan', form, { ...form }, null, TODAY)).toMatchObject(md);
+  });
+
+  it('a high rate set by an older client on a scheduled account stays saveable', () => {
+    const md = {
+      liability: true,
+      interest_rate_annual: 150,
+      interest_rate_annual_synced: 5,
+      interest_rate_schedule: [
+        { rate_annual: 5 },
+        { effective_date: '2027-03-01', rate_annual: 6 },
+      ],
+    };
+    const form = liabilityFormFromMetadata(md, TODAY);
+    expect(form.rates).toContainEqual({ effective_date: TODAY, rate_annual: 150 });
+    expect(validateRateSchedule(form.rates).ok).toBe(true);
   });
 });

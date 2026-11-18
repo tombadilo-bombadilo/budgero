@@ -16,11 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 import { Edit3 } from 'lucide-react';
 import type { Account, InterestRateEntry } from '@budgero/core/browser';
-import {
-  isCryptoCurrency,
-  MAX_INTEREST_RATE_ANNUAL,
-  validateRateSchedule,
-} from '@budgero/core/browser';
+import { isCryptoCurrency, validateRateSchedule } from '@budgero/core/browser';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -40,7 +36,6 @@ import { getAccountTypesByBudgetType, isLiabilityType } from '@entities/account/
 import { useUiStore } from '@shared/store/useUiStore';
 import { usePlainNumberFormatter } from '@shared/hooks/useNumberFormatter';
 import { toastError } from '@shared/lib/errors';
-import { formatRatePercent } from '@features/debt/lib/rate-schedule';
 import { OnBudgetToggle } from './OnBudgetToggle';
 import { ArchiveAccountDialog } from './ArchiveAccountDialog';
 import { LiabilityNumberCell } from './LiabilityNumberCell';
@@ -173,7 +168,6 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
   const formFields = { debtTotal, rates, startDate, targetDate };
   const rateValidation = validateRateSchedule(rates);
   const ratesInvalid = isLiability && !rateValidation.ok;
-  const maxRate = formatRatePercent(MAX_INTEREST_RATE_ANNUAL);
   // What the min-payment field shows is what Apply stores.
   const shownMinPayment = isLiability
     ? resolveMinPayment(initialMd, initialForm, formFields, computedMinPayment)
@@ -419,9 +413,7 @@ export function EditAccountDialog({ selectedAccount, budgetId }: EditAccountDial
                         localizer={plainNumberFormatter}
                       />
                       {rateValidation.badRates.includes(0) && (
-                        <p className="text-xs text-destructive">
-                          {t`Enter a rate between 0 and ${maxRate}%.`}
-                        </p>
+                        <p className="text-xs text-destructive">{t`Enter a rate of 0% or more.`}</p>
                       )}
                     </Field>
                   </div>

@@ -248,7 +248,7 @@ export {
 export {
   INTEREST_RATE_SCHEDULE_KEY,
   INTEREST_RATE_SYNCED_KEY,
-  MAX_INTEREST_RATE_ANNUAL,
+  MAX_PROJECTION_MONTHS,
   addMonthsToDate,
   isConstantFrom,
   levelPayment,

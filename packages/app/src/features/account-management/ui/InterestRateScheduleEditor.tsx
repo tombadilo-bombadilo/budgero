@@ -1,7 +1,8 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { Plus, Trash2 } from 'lucide-react';
 import {
-  MAX_INTEREST_RATE_ANNUAL,
+  nextRateChange,
+  normalizeRateSchedule,
   validateRateSchedule,
   type InterestRateEntry,
 } from '@budgero/core/browser';
@@ -42,9 +43,7 @@ export function RateChangesEditor({ rates, onChange, localizer }: InterestRateSc
   const changes = rates.slice(1);
   const validation = validateRateSchedule(rates);
   const today = getTodayISO();
-  const nextChange = rates
-    .filter((r) => r.effective_date && r.effective_date > today)
-    .sort((a, b) => (a.effective_date! < b.effective_date! ? -1 : 1))[0];
+  const nextChange = nextRateChange(normalizeRateSchedule(rates), today);
 
   const update = (index: number, patch: Partial<InterestRateEntry>) => {
     onChange(rates.map((row, i) => (i === index ? { ...row, ...patch } : row)));
@@ -57,7 +56,6 @@ export function RateChangesEditor({ rates, onChange, localizer }: InterestRateSc
     ]);
 
   const currentRate = formatRatePercent(currentFormRate(rates, today));
-  const maxRate = formatRatePercent(MAX_INTEREST_RATE_ANNUAL);
 
   return (
     <div className="space-y-1.5">
@@ -87,7 +85,7 @@ export function RateChangesEditor({ rates, onChange, localizer }: InterestRateSc
                 ? t`Another rate already starts on this date.`
                 : null;
             const rateError = validation.badRates.includes(index)
-              ? t`Enter a rate between 0 and ${maxRate}%.`
+              ? t`Enter a rate of 0% or more.`
               : null;
             return (
               <li key={index} className="space-y-1">

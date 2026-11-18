@@ -8847,8 +8847,8 @@ msgstr "Introduce un número entero positivo."
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/account-management/ui/InterestRateScheduleEditor.tsx
-msgid "Enter a rate between 0 and {maxRate}%."
-msgstr "Introduce un tipo entre 0 y {maxRate} %."
+msgid "Enter a rate of 0% or more."
+msgstr "Introduce un tipo del 0 % o superior."
 
 #. placeholder {0}: MAX_FAKE_TRANSACTIONS.toLocaleString()
 #: src/features/account-management/ui/DevSeedTransactionsButton.tsx

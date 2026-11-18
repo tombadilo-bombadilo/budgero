@@ -135,21 +135,30 @@ describe('writeRateSchedule', () => {
 });
 
 describe('validateRateSchedule', () => {
-  it('flags missing and repeated dates and out-of-range rates', () => {
+  it('flags missing and repeated dates and negative rates', () => {
     expect(validateRateSchedule([{ rate_annual: 5 }]).ok).toBe(true);
     const result = validateRateSchedule([
       { rate_annual: 5 },
       { effective_date: '2027-01-01', rate_annual: 6 },
       { effective_date: '2027-01-01', rate_annual: 7 },
       { effective_date: '', rate_annual: 7 },
-      { effective_date: '2027-04-01', rate_annual: 150 },
+      { effective_date: '2027-04-01', rate_annual: -1 },
+      { effective_date: '2027-05-01', rate_annual: Number.NaN },
     ]);
     expect(result).toEqual({
       ok: false,
       badDates: [3],
       duplicateDates: [2],
-      badRates: [4],
+      badRates: [4, 5],
     });
+  });
+
+  it('has no upper limit, so an existing rate above 100% stays saveable', () => {
+    expect(validateRateSchedule([{ rate_annual: 150 }]).ok).toBe(true);
+    expect(
+      validateRateSchedule([{ rate_annual: 5 }, { effective_date: '2027-01-01', rate_annual: 390 }])
+        .ok
+    ).toBe(true);
   });
 });
 
@@ -163,6 +172,37 @@ describe('schedule math helpers', () => {
     const r = 0.06 / 12;
     const annuity = (10_000_000 * r) / (1 - (1 + r) ** -120);
     expect(levelPayment(10_000_000, 120, () => r)).toBeCloseTo(annuity, 6);
+  });
+
+  it('monthsToPayoff counts the exact level payment as clearing in n months', () => {
+    const rate = monthlyRateFn(
+      [{ rate_annual: 6 }, { effective_date: '2031-11-18', rate_annual: 8 }],
+      TODAY
+    );
+    for (const n of [12, 120, 360]) {
+      expect(monthsToPayoff(10_000_000, levelPayment(10_000_000, n, rate), rate)).toBe(n);
+    }
+  });
+
+  it('levelPayment caps absurd terms at the projection limit', () => {
+    const rate = () => 0.005;
+    const started = performance.now();
+    expect(levelPayment(10_000_000, 1_200_000, rate)).toBe(levelPayment(10_000_000, 1_800, rate));
+    expect(performance.now() - started).toBeLessThan(200);
+  });
+
+  it('nextRateChange skips entries that repeat the rate before them', () => {
+    const schedule = normalizeRateSchedule([
+      { rate_annual: 5 },
+      { effective_date: '2027-01-01', rate_annual: 5 },
+      { effective_date: '2027-06-01', rate_annual: 6 },
+      { effective_date: '2028-01-01', rate_annual: 6 },
+    ]);
+    expect(nextRateChange(schedule, TODAY)).toEqual({
+      effective_date: '2027-06-01',
+      rate_annual: 6,
+    });
+    expect(nextRateChange(schedule, '2027-06-01')).toBeUndefined();
   });
 
   it('monthsToPayoff walks a step-up', () => {
@@ -264,6 +304,28 @@ describe('computeLiabilityInfo with a rate schedule', () => {
     const legacy = computeLiabilityInfo({ Type: 'loan', Metadata: loanMd }, -10_000_000);
     expect(info?.minPayment).toBe(legacy?.minPayment);
     expect(info?.apr).toBe(6);
+  });
+
+  it('a schedule with a huge term stays fast', () => {
+    const md = writeRateSchedule(
+      { term_years: 100_000 },
+      [{ rate_annual: 6 }, { effective_date: '2031-11-18', rate_annual: 8 }],
+      TODAY
+    );
+    const started = performance.now();
+    const info = computeLiabilityInfo({ Type: 'loan', Metadata: md }, -10_000_000)!;
+    expect(performance.now() - started).toBeLessThan(200);
+    expect(info.minPayment).toBeGreaterThan(0);
+  });
+
+  it('no change hint when a future entry repeats the current rate', () => {
+    const md = writeRateSchedule(
+      { term_years: 10 },
+      [{ rate_annual: 6 }, { effective_date: '2027-06-01', rate_annual: 6 }],
+      TODAY
+    );
+    const info = computeLiabilityInfo({ Type: 'loan', Metadata: md }, -10_000_000);
+    expect(info?.nextAprChange).toBeUndefined();
   });
 
   it('projects months from a fixed payment across a future change', () => {

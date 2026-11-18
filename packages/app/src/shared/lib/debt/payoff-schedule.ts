@@ -10,6 +10,14 @@ export type MonthlyRate = number | ((monthIndex: number) => number);
 const rateFn = (r: MonthlyRate): ((monthIndex: number) => number) =>
   typeof r === 'number' ? () => r : r;
 
+/**
+ * A balance this many times the start one is treated as never paid off. With
+ * a per-month rate a payment that loses to one month's interest can still
+ * win once the rate falls, so the loop decides; this stops a losing plan
+ * long before the month cap (and before its rows reach absurd amounts).
+ */
+const DIVERGED_FACTOR = 10;
+
 const MAX_PAYOFF_MONTHS = 360 * 5; // 30 years safety cap
 
 export interface PayoffSummary {
@@ -33,9 +41,11 @@ export function simulatePayoffSummary(
   let L = Lstart;
   if (L <= 0 || payment <= 0) return { months: 0, totalPaid: 0, interestPaid: 0 };
   const rate = rateFn(rMonthly);
-  const r0 = rate(0);
-  // If interest-only and payment can't reduce principal
-  if (r0 > 0 && payment <= L * r0) return { months: null };
+  // If interest-only and payment can't reduce principal (one fixed rate only:
+  // a rate that changes later may still let the payment win)
+  if (typeof rMonthly === 'number' && rMonthly > 0 && payment <= L * rMonthly) {
+    return { months: null };
+  }
   // Zero interest simple case
   if (typeof rMonthly === 'number' && rMonthly <= 0) {
     const months = Math.ceil(L / payment);
@@ -52,6 +62,7 @@ export function simulatePayoffSummary(
     totalPaid += pay;
     L = due - pay;
     if (pay >= due - epsilon) break; // paid off this month
+    if (L > Lstart * DIVERGED_FACTOR) return { months: null };
   }
   if (months >= MAX_PAYOFF_MONTHS) return { months: null };
   const interestPaid = Math.max(0, totalPaid - Lstart);
@@ -89,8 +100,10 @@ export function buildPayoffSchedule(
   let L = Lstart;
   if (L <= 0 || basePayment <= 0) return { rows, months: 0, totalPaid: 0, interestPaid: 0 };
   const rate = rateFn(rMonthly);
-  const r0 = rate(0);
-  if (r0 > 0 && basePayment + extraMonthly <= L * r0) return { rows, months: null };
+  // Too low for one fixed rate; a changing rate is left to the loop (see simulatePayoffSummary).
+  if (typeof rMonthly === 'number' && rMonthly > 0 && basePayment + extraMonthly <= L * rMonthly) {
+    return { rows, months: null };
+  }
 
   const start = new Date();
   let months = 0;
@@ -119,8 +132,10 @@ export function buildPayoffSchedule(
     L = remaining;
     months++;
     if (remaining <= epsilon) break;
+    if (L > Lstart * DIVERGED_FACTOR) return { rows: [], months: null };
   }
-  if (months >= MAX_PAYOFF_MONTHS) return { rows, months: null };
+  // Never paid off: no rows, as when the payment is too low up front.
+  if (months >= MAX_PAYOFF_MONTHS) return { rows: [], months: null };
   const interestPaid = Math.max(0, totalPaid - Lstart);
   return { rows, months, totalPaid, interestPaid };
 }
