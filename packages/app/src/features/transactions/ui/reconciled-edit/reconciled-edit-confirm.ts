@@ -102,3 +102,44 @@ export async function confirmTotalEdit(
     columnEditUnlocksReconciled(services, transactionId, outflow, total.outflow);
   return unlocks ? confirmReconciledEdit('row') : true;
 }
+
+/** A split editor line as the mirror check reads it (see splitLinesUnlockMirrors). */
+export interface EditedMirrorLine {
+  /** The line's mirror was reconciled when the editor opened. */
+  mirror_reconciled?: boolean;
+  /** That mirror's amount, and the line amount it belonged to. */
+  mirror_received?: number | null;
+  received_base?: number | null;
+}
+
+/**
+ * Whether saving these split lines changes the bank amount of a reconciled
+ * transfer mirror (it then goes back to uncleared): its received amount
+ * changes (`received`, cross-currency lines), or the line amount it mirrors
+ * does (same currency). `lineAmount` is the line's magnitude in the editor.
+ */
+export function splitLinesUnlockMirrors(
+  lines: readonly { line: EditedMirrorLine; lineAmount: number; received: number | null }[]
+): boolean {
+  return lines.some(({ line, lineAmount, received }) => {
+    if (!line.mirror_reconciled) return false;
+    return received !== null
+      ? received !== line.mirror_received
+      : lineAmount !== line.received_base;
+  });
+}
+
+/**
+ * Ask once before a split-editor save that unlocks a reconciled row: the
+ * parent (a new total) or a transfer line's mirror (`mirrorsUnlock`).
+ */
+export async function confirmSplitSave(
+  services: ReconciledEditServices | null | undefined,
+  transactionId: number,
+  total: { inflow: number; outflow: number } | undefined,
+  currency: 'native' | 'converted',
+  mirrorsUnlock: boolean
+): Promise<boolean> {
+  if (mirrorsUnlock) return confirmReconciledEdit('row');
+  return total ? confirmTotalEdit(services, transactionId, total, currency) : true;
+}

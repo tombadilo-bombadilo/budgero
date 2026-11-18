@@ -5691,6 +5691,7 @@ msgstr "Categoriegroepen"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Category is set automatically for on-budget transfers"
 msgstr "De categorie wordt automatisch ingesteld voor overboekingen binnen het budget"
 
@@ -8908,6 +8909,10 @@ msgstr "Mijn code invoeren →"
 #: src/pages/settings/SecurityPage.tsx
 msgid "Enter new password (min 8 characters)"
 msgstr "Voer nieuw wachtwoord in (min. 8 tekens)"
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "Enter the amount received in {name}."
+msgstr "Voer het bedrag in dat op {name} is ontvangen."
 
 #. placeholder {0}: transferAccountRecord.Name
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
@@ -16242,9 +16247,12 @@ msgstr "Ontvangen bedrag ({toCurrency})"
 msgid "Received in {0}"
 msgstr "Ontvangen in {0}"
 
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
+#. placeholder {1}: target.Currency
 #. placeholder {1}: transferAccountRecord.Currency
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Received in {0} ({1})"
 msgstr "Ontvangen op {0} ({1})"
 
@@ -18174,9 +18182,12 @@ msgstr "{0} van {1} verzonden, {2}{3} mislukt."
 msgid "Sent from {0}"
 msgstr "Verzonden vanuit {0}"
 
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
+#. placeholder {1}: target.Currency
 #. placeholder {1}: transferAccountRecord.Currency
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Sent from {0} ({1})"
 msgstr "Verzonden vanaf {0} ({1})"
 
@@ -21123,6 +21134,7 @@ msgstr "Overboeking: {0}"
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Transfers"
 msgstr "Overboekingen"

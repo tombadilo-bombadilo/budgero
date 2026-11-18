@@ -9,6 +9,7 @@
 import * as React from 'react';
 
 import { SplitEditor, type SplitLine } from '../form';
+import type { SplitTransferAccount } from '../../lib/split-transfer';
 
 interface TransactionSplitSectionProps {
   budgetId: number;
@@ -20,7 +21,10 @@ interface TransactionSplitSectionProps {
   remaining: number;
   parentAmount: number;
   formatter: Intl.NumberFormat;
-  transferAccounts?: { ID: number; Name: string; OnBudget?: boolean | number }[];
+  transferAccounts?: SplitTransferAccount[];
+  parentAccount?: SplitTransferAccount;
+  date?: string;
+  templateLines?: boolean;
 }
 
 export const TransactionSplitSection = React.memo(function TransactionSplitSection({
@@ -34,6 +38,9 @@ export const TransactionSplitSection = React.memo(function TransactionSplitSecti
   parentAmount,
   formatter,
   transferAccounts,
+  parentAccount,
+  date,
+  templateLines,
 }: TransactionSplitSectionProps) {
   if (isTransfer) {
     return null;
@@ -50,6 +57,9 @@ export const TransactionSplitSection = React.memo(function TransactionSplitSecti
       parentAmount={parentAmount}
       formatter={formatter}
       transferAccounts={transferAccounts}
+      parentAccount={parentAccount}
+      date={date}
+      templateLines={templateLines}
     />
   );
 });

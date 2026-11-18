@@ -5691,6 +5691,7 @@ msgstr "Groupes de catégories"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Category is set automatically for on-budget transfers"
 msgstr "La catégorie est définie automatiquement pour les virements dans le budget"
 
@@ -8908,6 +8909,10 @@ msgstr "Saisir mon code →"
 #: src/pages/settings/SecurityPage.tsx
 msgid "Enter new password (min 8 characters)"
 msgstr "Saisissez le nouveau mot de passe (min. 8 caractères)"
+
+#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+msgid "Enter the amount received in {name}."
+msgstr "Saisissez le montant reçu sur {name}."
 
 #. placeholder {0}: transferAccountRecord.Name
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
@@ -16242,9 +16247,12 @@ msgstr "Montant reçu ({toCurrency})"
 msgid "Received in {0}"
 msgstr "Reçu en {0}"
 
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
+#. placeholder {1}: target.Currency
 #. placeholder {1}: transferAccountRecord.Currency
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Received in {0} ({1})"
 msgstr "Reçu sur {0} ({1})"
 
@@ -18174,9 +18182,12 @@ msgstr "{0} sur {1} envoyés, {2}{3} échoués."
 msgid "Sent from {0}"
 msgstr "Envoyé depuis {0}"
 
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
+#. placeholder {1}: target.Currency
 #. placeholder {1}: transferAccountRecord.Currency
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Sent from {0} ({1})"
 msgstr "Envoyé depuis {0} ({1})"
 
@@ -21123,6 +21134,7 @@ msgstr "Virement : {0}"
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Transfers"
 msgstr "Virements"

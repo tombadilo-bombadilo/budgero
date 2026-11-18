@@ -7,6 +7,7 @@ import {
   confirmReconciledEdit,
   confirmTotalEdit,
   useReconciledEditConfirmStore,
+  splitLinesUnlockMirrors,
 } from './reconciled-edit-confirm';
 import { ReconciledEditConfirmHost } from './ReconciledEditConfirmHost';
 
@@ -78,5 +79,19 @@ describe('reconciled edit confirm', () => {
     await expect(first).resolves.toBe(false);
     useReconciledEditConfirmStore.getState().settle(true);
     await expect(second).resolves.toBe(true);
+  });
+
+  it('split lines unlock a reconciled mirror only when its amount changes', () => {
+    const line = { mirror_reconciled: true, mirror_received: 900, received_base: 1000 };
+    expect(splitLinesUnlockMirrors([{ line, lineAmount: 1000, received: 900 }])).toBe(false);
+    expect(splitLinesUnlockMirrors([{ line, lineAmount: 1000, received: 850 }])).toBe(true);
+    // Same-currency line: the mirror follows the line amount.
+    expect(splitLinesUnlockMirrors([{ line, lineAmount: 1000, received: null }])).toBe(false);
+    expect(splitLinesUnlockMirrors([{ line, lineAmount: 1200, received: null }])).toBe(true);
+    expect(
+      splitLinesUnlockMirrors([
+        { line: { ...line, mirror_reconciled: false }, lineAmount: 1200, received: 1 },
+      ])
+    ).toBe(false);
   });
 });

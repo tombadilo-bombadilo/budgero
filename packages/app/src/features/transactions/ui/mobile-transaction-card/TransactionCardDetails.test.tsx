@@ -67,7 +67,10 @@ const transaction = {
   OutflowConverted: 10_000,
 } as unknown as GetTransactionsByAccountRow;
 
-function renderCard(editSplits: SplitLine[]) {
+function renderCard(
+  editSplits: SplitLine[],
+  extra: Partial<React.ComponentProps<typeof TransactionCardDetails>> = {}
+) {
   const onUpdateSplitLine = vi.fn();
   const formatter = new Intl.NumberFormat('en-US');
   render(
@@ -96,6 +99,7 @@ function renderCard(editSplits: SplitLine[]) {
       remainingAmount={0}
       splitTarget={10_000}
       onUpdateSplitLine={onUpdateSplitLine}
+      {...extra}
     />
   );
   return onUpdateSplitLine;
@@ -119,6 +123,8 @@ describe('TransactionCardDetails split lines', () => {
       payee: '',
       transfer_account_id: 2,
       category_id: null,
+      received_amount: null,
+      received_auto: true,
     });
   });
 
@@ -130,12 +136,41 @@ describe('TransactionCardDetails split lines', () => {
       payee: '',
       transfer_account_id: 3,
       category_id: null,
+      received_amount: null,
+      received_auto: true,
     });
   });
 
   it('a plain payee turns a transfer line back into a normal one', () => {
     const update = renderCard([{ ...plainLine, category_id: null, transfer_account_id: 2 }]);
     fireEvent.blur(screen.getByLabelText('payee'), { target: { value: 'Shop' } });
-    expect(update).toHaveBeenLastCalledWith(0, { payee: 'Shop', transfer_account_id: null });
+    expect(update).toHaveBeenLastCalledWith(0, {
+      payee: 'Shop',
+      transfer_account_id: null,
+      received_amount: null,
+      received_auto: true,
+    });
+  });
+
+  it('shows a locked category and the received amount the state hook asks for', () => {
+    const euro = { ID: 5, Name: 'Euro', Currency: 'EUR', OnBudget: true };
+    renderCard(
+      [{ ...plainLine, category_id: null, transfer_account_id: 5, received_amount: 8_800 }],
+      {
+        splitCategoryMode: () => 'transfer-locked',
+        splitReceivedTarget: () => euro,
+      }
+    );
+    expect(screen.getByTestId('split-transfer-category-locked')).toHaveTextContent('Transfers');
+    expect(screen.queryByRole('button', { name: 'Pick category' })).toBeNull();
+    expect(screen.getByText('Received in Euro (EUR)')).toBeInTheDocument();
+  });
+
+  it('a line to an off-budget account keeps its transfer when it gets a category', () => {
+    const update = renderCard([{ ...plainLine, category_id: null, transfer_account_id: 2 }], {
+      splitCategoryMode: () => 'transfer-optional',
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Pick category' }));
+    expect(update).toHaveBeenLastCalledWith(0, { category_id: 9 });
   });
 });

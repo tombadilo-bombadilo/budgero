@@ -61,6 +61,8 @@ export type AddTransactionSplitLine = {
   payee?: string;
   inflow: number;
   outflow: number;
+  /** Cross-currency transfer lines: what the other account received, in its currency. */
+  receivedAmount?: number;
 };
 
 export type AddTransferLegInput = Omit<AddTransactionInput, 'budgetId' | 'transferId'>;

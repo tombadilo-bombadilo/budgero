@@ -22,6 +22,17 @@ import { useAddTransactionForm } from '@features/transactions/ui/add-transaction
 import { getCurrentDate } from '@features/transactions/ui/add-transaction/add-transaction.utils';
 import { AccountSelectCell } from '@features/transactions/ui/cells/AccountSelectCell';
 import { CategorySelectCell } from '@features/transactions/ui/cells/CategorySelectCell';
+import {
+  needsReceivedAmount,
+  splitLineCategoryMode,
+  splitPayeeUpdate,
+  splitTransferUpdate,
+} from '@features/transactions/lib/split-transfer';
+import { useAutoReceivedAmounts } from '@features/transactions/ui/split-transfer/useAutoReceivedAmounts';
+import {
+  SplitReceivedAmount,
+  SplitTransferCategoryLocked,
+} from '@features/transactions/ui/split-transfer/SplitTransferFields';
 import { DatePickerCell } from '@features/transactions/ui/cells/DatePickerCell';
 import { LabelSelectCell } from '@features/transactions/ui/cells/LabelSelectCell';
 import {
@@ -31,7 +42,6 @@ import {
 } from '@features/transactions/ui/form';
 import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell';
 import { resolveCategoryId } from '@features/transactions/lib/category-selection';
-import { splitPayeeUpdate, splitTransferUpdate } from '@features/transactions/lib/split-transfer';
 import type { TransactionEditorDirectories } from './transaction-editor-types';
 
 interface InlineTransactionRowProps {
@@ -376,6 +386,35 @@ export function InlineTransactionRow({
   );
   const rowTint = 'bg-primary/[0.04] hover:bg-primary/[0.04]';
 
+  const splitTarget = (line: SplitLine) =>
+    line.transferAccountId ? accountById(String(line.transferAccountId)) : undefined;
+  const splitCategoryMode = (line: SplitLine) =>
+    splitLineCategoryMode(rowAccountRecord, splitTarget(line));
+  const splitReceivedTarget = (line: SplitLine) => {
+    const target = splitTarget(line);
+    return target && needsReceivedAmount(rowAccountRecord?.Currency, target) ? target : undefined;
+  };
+  useAutoReceivedAmounts({
+    lines: isSplit ? splitLines : null,
+    access: {
+      target: (line) => line.transferAccountId,
+      amount: (line) => line.inflow || line.outflow,
+      received: (line) => line.receivedAmount,
+      auto: (line) => line.receivedAuto !== false,
+    },
+    onEstimates: (estimates) =>
+      setSplitLines(
+        splitLines.map((line, i) =>
+          estimates.has(i) ? { ...line, receivedAmount: estimates.get(i) } : line
+        )
+      ),
+    accounts,
+    parentCurrency: rowAccountRecord?.Currency,
+    amountCurrency: rowAccountRecord?.Currency,
+    date: transactionDate,
+    budgetId,
+  });
+
   const updateSplitLine = (id: string, updates: Partial<SplitLine>) =>
     setSplitLines(splitLines.map((line) => (line.id === id ? { ...line, ...updates } : line)));
 
@@ -580,101 +619,132 @@ export function InlineTransactionRow({
 
       {isSplit &&
         splitLines.map((line) => (
-          <TableRow
-            key={line.id}
-            className={rowTint}
-            onKeyDown={handleKeyDown}
-            data-inline-entry
-            data-testid="inline-split-line"
-          >
-            <TableCell />
-            <TableCell className="py-1 text-right text-muted-foreground">
-              <CornerDownRight className="ml-auto h-4 w-4" />
-            </TableCell>
-            <TableCell className="max-w-[220px] py-1">
-              <Input
-                value={line.memo ?? ''}
-                onChange={(e) => updateSplitLine(line.id, { memo: e.target.value })}
-                placeholder={t`Memo`}
-                aria-label={t`Split memo`}
-                className="h-8 text-xs xl:text-sm"
-              />
-            </TableCell>
-            {!hideAccountColumn && <TableCell />}
-            <TableCell className="max-w-[200px] py-1">
-              <PayeeSelectCell
-                budgetId={budgetId}
-                value={line.payee ?? ''}
-                payees={editorDirectories.payees}
-                onCommit={(payee) =>
-                  updateSplitLine(line.id, splitPayeeUpdate(payee, transferTargets))
-                }
-                transferAccounts={transferTargets}
-                onSelectTransfer={(id) => updateSplitLine(line.id, splitTransferUpdate(id))}
-                selectedTransferAccountId={line.transferAccountId ?? null}
-                displayValue={
-                  line.transferAccountId
-                    ? t`Transfer: ${accountById(String(line.transferAccountId))?.Name ?? ''}`
-                    : undefined
-                }
-                triggerClassName={cellTrigger}
-              />
-            </TableCell>
-            {showLabelColumn && <TableCell />}
-            <TableCell className="max-w-[240px] overflow-hidden py-1">
-              <div className="min-w-0 text-xs [&>div]:w-full xl:text-sm">
-                <CategorySelectCell
+          <React.Fragment key={line.id}>
+            <TableRow
+              className={rowTint}
+              onKeyDown={handleKeyDown}
+              data-inline-entry
+              data-testid="inline-split-line"
+            >
+              <TableCell />
+              <TableCell className="py-1 text-right text-muted-foreground">
+                <CornerDownRight className="ml-auto h-4 w-4" />
+              </TableCell>
+              <TableCell className="max-w-[220px] py-1">
+                <Input
+                  value={line.memo ?? ''}
+                  onChange={(e) => updateSplitLine(line.id, { memo: e.target.value })}
+                  placeholder={t`Memo`}
+                  aria-label={t`Split memo`}
+                  className="h-8 text-xs xl:text-sm"
+                />
+              </TableCell>
+              {!hideAccountColumn && <TableCell />}
+              <TableCell className="max-w-[200px] py-1">
+                <PayeeSelectCell
                   budgetId={budgetId}
-                  categoryID={line.categoryId ?? 0}
-                  categories={editorDirectories.categories}
-                  categoryGroups={editorDirectories.categoryGroups}
-                  monthlyRows={editorDirectories.monthlyRows}
-                  readyToAssignAmount={editorDirectories.readyToAssignAmount}
-                  onCommit={(categoryId) =>
-                    updateSplitLine(line.id, { categoryId, transferAccountId: undefined })
+                  value={line.payee ?? ''}
+                  payees={editorDirectories.payees}
+                  onCommit={(payee) =>
+                    updateSplitLine(line.id, splitPayeeUpdate(payee, transferTargets))
+                  }
+                  transferAccounts={transferTargets}
+                  onSelectTransfer={(id) => updateSplitLine(line.id, splitTransferUpdate(id))}
+                  selectedTransferAccountId={line.transferAccountId ?? null}
+                  displayValue={
+                    line.transferAccountId
+                      ? t`Transfer: ${accountById(String(line.transferAccountId))?.Name ?? ''}`
+                      : undefined
                   }
                   triggerClassName={cellTrigger}
                 />
-              </div>
-            </TableCell>
-            <TableCell className="py-1 text-right font-mono text-xs">
-              {renderAmountCell(
-                'inflow',
-                line.inflow,
-                (val) =>
-                  updateSplitLine(line.id, {
-                    inflow: asMilli(Math.abs(val)),
-                    ...(val ? { outflow: ZERO_MILLI } : {}),
-                  }),
-                { cellKey: `${line.id}-inflow-${line.outflow}` }
-              )}
-            </TableCell>
-            <TableCell className="py-1 text-right font-mono text-xs">
-              {renderAmountCell(
-                'outflow',
-                line.outflow,
-                (val) =>
-                  updateSplitLine(line.id, {
-                    outflow: asMilli(Math.abs(val)),
-                    ...(val ? { inflow: ZERO_MILLI } : {}),
-                  }),
-                { cellKey: `${line.id}-outflow-${line.inflow}` }
-              )}
-            </TableCell>
-            {trailingCells}
-            <TableCell className="py-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7"
-                aria-label={t`Remove split line`}
-                onClick={() => setSplitLines(splitLines.filter((l) => l.id !== line.id))}
-              >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </TableCell>
-          </TableRow>
+              </TableCell>
+              {showLabelColumn && <TableCell />}
+              <TableCell className="max-w-[240px] overflow-hidden py-1">
+                <div className="min-w-0 text-xs [&>div]:w-full xl:text-sm">
+                  {splitCategoryMode(line) === 'transfer-locked' ? (
+                    <SplitTransferCategoryLocked className="text-xs xl:text-sm" />
+                  ) : (
+                    <CategorySelectCell
+                      budgetId={budgetId}
+                      categoryID={line.categoryId ?? 0}
+                      categories={editorDirectories.categories}
+                      categoryGroups={editorDirectories.categoryGroups}
+                      monthlyRows={editorDirectories.monthlyRows}
+                      readyToAssignAmount={editorDirectories.readyToAssignAmount}
+                      // A line to an off-budget account keeps its transfer (spending).
+                      onCommit={(categoryId) =>
+                        updateSplitLine(
+                          line.id,
+                          splitCategoryMode(line) === 'transfer-optional'
+                            ? { categoryId }
+                            : { categoryId, transferAccountId: undefined }
+                        )
+                      }
+                      includeTransfers={splitCategoryMode(line) === 'transfer-optional'}
+                      triggerClassName={cellTrigger}
+                    />
+                  )}
+                </div>
+              </TableCell>
+              <TableCell className="py-1 text-right font-mono text-xs">
+                {renderAmountCell(
+                  'inflow',
+                  line.inflow,
+                  (val) =>
+                    updateSplitLine(line.id, {
+                      inflow: asMilli(Math.abs(val)),
+                      ...(val ? { outflow: ZERO_MILLI } : {}),
+                    }),
+                  { cellKey: `${line.id}-inflow-${line.outflow}` }
+                )}
+              </TableCell>
+              <TableCell className="py-1 text-right font-mono text-xs">
+                {renderAmountCell(
+                  'outflow',
+                  line.outflow,
+                  (val) =>
+                    updateSplitLine(line.id, {
+                      outflow: asMilli(Math.abs(val)),
+                      ...(val ? { inflow: ZERO_MILLI } : {}),
+                    }),
+                  { cellKey: `${line.id}-outflow-${line.inflow}` }
+                )}
+              </TableCell>
+              {trailingCells}
+              <TableCell className="py-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  aria-label={t`Remove split line`}
+                  onClick={() => setSplitLines(splitLines.filter((l) => l.id !== line.id))}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </TableCell>
+            </TableRow>
+            {splitReceivedTarget(line) && (
+              <TableRow className={rowTint} onKeyDown={handleKeyDown} data-inline-entry>
+                <TableCell colSpan={leadingColumns + 2} className="py-1">
+                  <SplitReceivedAmount
+                    target={splitReceivedTarget(line)!}
+                    lineIsInflow={line.inflow > 0}
+                    value={line.receivedAmount}
+                    onCommit={(value) =>
+                      updateSplitLine(line.id, {
+                        receivedAmount: value || null,
+                        receivedAuto: false,
+                      })
+                    }
+                  />
+                </TableCell>
+                {trailingCells}
+                <TableCell />
+              </TableRow>
+            )}
+          </React.Fragment>
         ))}
 
       {isSplit && (
