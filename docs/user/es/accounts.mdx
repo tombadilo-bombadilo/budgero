@@ -95,6 +95,19 @@ Para añadir una transferencia, elige **Transferencia: &lt;cuenta&gt;** como ben
 
 Si las dos partes ya están (la sincronización bancaria o una importación de archivo trajo el dinero que sale de una cuenta y el que llega a la otra), cambia el beneficiario de una de ellas a **Transferencia: &lt;cuenta&gt;**. Budgero busca en la otra cuenta una transacción equivalente en sentido contrario (mismo importe, dentro del margen que fijes en **Ajustes → Transacciones duplicadas**) y ofrece usarla como la otra parte en lugar de añadir una nueva. Cada parte conserva su fecha y su importe, así que ambas cuentas siguen cuadrando con tu banco. Entre divisas, el importe recibido es el que tu banco registró realmente.
 
+## Hora
+
+Una transacción puede tener una hora opcional junto a su fecha. Está vacía hasta que la indiques y no cambia nada de saldos, presupuestos ni meses: esos solo dependen de la fecha.
+
+- **Indicar una hora.** El diálogo para añadir transacciones y los detalles de una transacción en el móvil tienen un campo de hora junto a la fecha. Déjalo vacío si las horas no te importan.
+- **Ver las horas en el registro.** Activa **Ajustes → Apariencia → Mostrar la hora de las transacciones** para ver la hora bajo cada fecha. Así la fila de entrada del registro también tiene un campo de hora, y puedes hacer clic en una hora del registro para editarla.
+- **Orden dentro de un día.** Con las horas visibles y **Orden dentro de un día** en «Más reciente primero», cada día empieza por la hora más tardía; las transacciones sin hora quedan al final de su día. El orden por importe ignora las horas.
+- **Las transferencias** tienen la misma hora en ambos lados, y las líneas de una división que mueven dinero a otra cuenta toman la hora de su transacción. Las transacciones recurrentes se registran sin hora.
+- **Las importaciones y la sincronización bancaria** conservan la hora cuando el archivo o el banco envían una real: una columna de hora o una fecha con hora en un CSV, las marcas de tiempo OFX, las fechas y horas de contabilización de CAMT.053 y los feeds bancarios que incluyen hora. Una hora exacta de 00:00:00 o 12:00:00 se trata como «sin hora», porque muchos bancos la ponen en cada fila sin hora. La detección de duplicados sigue comparando solo fecha e importe.
+- La **API Push** acepta un `time` opcional (`HH:MM`, formato de 24 horas) al añadir o actualizar una transacción.
+
+Las horas se guardan tal como las ves (`HH:MM`, tu hora local), sin conversión de zona horaria.
+
 ## Conciliación
 
 Conciliar es el hábito que mantiene fiable un presupuesto, tanto si introduces las transacciones a mano como si las sincronizas: confirmar que Budgero coincide con tu banco.
