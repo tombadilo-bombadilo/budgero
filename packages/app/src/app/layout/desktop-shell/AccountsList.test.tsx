@@ -112,3 +112,16 @@ it('has no pin buttons where pins cannot be changed', () => {
   expect(screen.queryByRole('button', { name: /short list/ })).toBeNull();
   expect(shown()).toEqual(['Account 2', 'Account 7', 'Account 8']);
 });
+
+it('keeps hidden pins untappable until hover or focus, and shows them on touch screens', async () => {
+  const user = userEvent.setup();
+  render(<List pinned={[2]} />);
+  await user.click(screen.getByRole('button', { name: 'Show All (8)' }));
+  const hidden = screen.getByRole('button', { name: 'Keep Account 1 in the short list' });
+  expect(hidden).toHaveClass('pointer-events-none', 'opacity-0');
+  expect(hidden.className).toContain('[@media(hover:none)]:opacity-100');
+  expect(hidden.className).toContain('[@media(hover:none)]:pointer-events-auto');
+  const shown = screen.getByRole('button', { name: 'Remove Account 2 from the short list' });
+  expect(shown).not.toHaveClass('pointer-events-none');
+  expect(shown).toHaveClass('opacity-100');
+});

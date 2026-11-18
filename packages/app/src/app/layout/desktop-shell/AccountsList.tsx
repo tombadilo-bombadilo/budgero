@@ -92,7 +92,9 @@ const AccountItem = React.memo(function AccountItem({
           className={cn(
             'flex items-center gap-2 px-3 py-2 transition-colors min-w-0',
             onTogglePinned &&
-              (pinVisible ? 'pr-8' : 'group-hover/account:pr-8 group-focus-within/account:pr-8')
+              (pinVisible
+                ? 'pr-8'
+                : 'group-hover/account:pr-8 group-focus-within/account:pr-8 [@media(hover:none)]:pr-8')
           )}
         >
           {uncategorizedCount > 0 ? (
@@ -140,7 +142,11 @@ const AccountItem = React.memo(function AccountItem({
               className={cn(
                 'absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md transition-opacity hover:bg-sidebar-accent focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-sidebar-ring outline-hidden',
                 pinned ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
-                pinVisible ? 'opacity-100' : 'opacity-0 group-hover/account:opacity-100'
+                // Unpinned: shown on hover or keyboard focus and not tappable while
+                // invisible; touch screens (no hover) always show it.
+                pinVisible
+                  ? 'opacity-100'
+                  : 'pointer-events-none opacity-0 group-hover/account:pointer-events-auto group-hover/account:opacity-100 group-focus-within/account:pointer-events-auto group-focus-within/account:opacity-100 [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100'
               )}
             >
               <Pin className={cn('h-3.5 w-3.5', pinned && 'fill-current')} />
