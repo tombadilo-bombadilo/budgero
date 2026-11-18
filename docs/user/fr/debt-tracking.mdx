@@ -186,6 +186,31 @@ Pour les prêts et hypothèques, Budgero plafonne les dépenses au montant réel
 
 Cela permet à vos rapports de dépenses de rester exacts lorsque vous remboursez vos dettes par anticipation.
 
+## Taux d'intérêt et estimations de remboursement
+
+Les cartes de crédit, les prêts et les prêts immobiliers peuvent enregistrer un taux d'intérêt annuel (TAEG). Budgero l'utilise sur la page du compte pour le **Simulateur de remboursement** et le **Plan de paiement**, et pour suggérer une mensualité lorsque vous définissez une date de remboursement cible. Les estimations partent du solde d'aujourd'hui. Les intérêts déjà payés font partie de vos transactions et ne sont jamais recalculés.
+
+### Des taux qui changent dans le temps
+
+Les prêts immobiliers à taux variable, les prêts avec une période à taux fixe et les cartes à taux promotionnel ne gardent pas le même taux pour toujours. Au lieu d'écraser le taux, enregistrez chaque changement :
+
+1. Ouvrez le compte et cliquez sur l'icône de modification (crayon).
+2. Dans **Détails du passif**, **Intérêt % (TAEG)** est le taux de départ de la dette.
+3. Sous **Changements de taux**, cliquez sur **Ajouter un changement de taux**, choisissez la date de début du nouveau taux et saisissez-le.
+4. Ajoutez autant de changements que nécessaire, y compris ceux à venir que vous connaissez déjà, puis cliquez sur **Appliquer**.
+
+Les changements passés restent comme historique de vos taux. Les changements à venir comptent à partir de leur date de début : la date de remboursement, le total des intérêts et la mensualité suggérée en tiennent compte. La page du compte utilise le taux en vigueur aujourd'hui et signale le prochain changement prévu.
+
+<Callout variant="note" title="Application des dates">
+Les estimations avancent par pas mensuels à partir d'aujourd'hui. Un nouveau taux s'applique à partir du premier pas mensuel qui commence à sa date ou après.
+</Callout>
+
+Dans le Plan de paiement, vous pouvez saisir un autre TAEG pour tester un scénario. Pendant ce temps, les changements prévus sont ignorés. Remettez le TAEG au taux actuel pour les inclure à nouveau.
+
+### Anciennes versions de l'application
+
+Si vous utilisez Budgero sur plusieurs appareils, mettez-les tous à jour. Un appareil dont la version est antérieure aux changements de taux ne voit que le taux en vigueur lors du dernier enregistrement du compte. Si vous y modifiez le taux, Budgero le traite comme un changement commençant ce jour-là et conserve vos autres entrées. Les versions antérieures à 1.19 suppriment la liste des changements de taux lorsqu'elles enregistrent le compte.
+
 ## Cycle de vie des comptes et des catégories
 
 ### Catégories de paiement par carte de crédit
