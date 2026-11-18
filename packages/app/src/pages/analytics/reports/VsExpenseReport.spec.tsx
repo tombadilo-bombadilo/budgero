@@ -107,10 +107,16 @@ it('moves Total and Average to the front and remembers it for the user', async (
   await user.click(await screen.findByRole('option', { name: 'Total and Average first' }));
   expect(headers()).toEqual(['Category', 'Total', 'Average', ...months]);
   expect(categoryRow().slice(0, 3)).toEqual(['Groceries', 'm-120000', 'm-40000']);
-  expect(syncedWrites(LEDGER_COLUMNS_KEY).at(-1)?.payload).toMatchObject({
-    scope: 'user:u1',
-    value: { average: true, summaryFirst: true },
+  // Only the changed field is written, so another device's change to the
+  // other field survives.
+  expect(syncedWrites(LEDGER_COLUMNS_KEY).at(-1)).toMatchObject({
+    op: 'syncedState.merge',
+    payload: { scope: 'user:u1', patch: { set: { summaryFirst: true } } },
   });
+
+  // A later change from another device still shows.
+  await receiveSyncedState('user:u1', LEDGER_COLUMNS_KEY, { average: true, summaryFirst: false });
+  expect(headers()).toEqual(['Category', ...months, 'Average', 'Total']);
 });
 
 it('hides the Average column when turned off, also from another device', async () => {
@@ -119,4 +125,18 @@ it('hides the Average column when turned off, also from another device', async (
   expect(headers()).toEqual(['Category', 'Total', ...months]);
   await userEvent.setup().click(screen.getByRole('switch', { name: 'Average column' }));
   expect(headers()).toEqual(['Category', 'Total', 'Average', ...months]);
+});
+
+it('closes the front summary block with a border whichever column is last', async () => {
+  await renderReport();
+  await receiveSyncedState('user:u1', LEDGER_COLUMNS_KEY, { average: false, summaryFirst: true });
+  const total = within(screen.getByRole('table'))
+    .getAllByRole('columnheader')
+    .find((cell) => cell.textContent === 'Total')!;
+  expect(total).toHaveClass('border-r');
+
+  await receiveSyncedState('user:u1', LEDGER_COLUMNS_KEY, { average: true, summaryFirst: true });
+  const [, totalHead, averageHead] = within(screen.getByRole('table')).getAllByRole('columnheader');
+  expect(totalHead).not.toHaveClass('border-r');
+  expect(averageHead).toHaveClass('border-r');
 });

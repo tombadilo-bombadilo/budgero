@@ -16,7 +16,7 @@ import { longMonthLabel, shortMonthLabel, useMoneyFormatters } from '../componen
 import { CategoryTransactionCell } from '../components/CategoryTransactionCell';
 import { reportMeta } from '../report-questions';
 import { ledgerAnswer } from '../report-answers';
-import { ledgerAverage } from './ledger-columns';
+import { ledgerAverage, ledgerAverageStep } from './ledger-columns';
 import { useLedgerColumns } from './useLedgerColumns';
 
 /** Keep the table renderable — beyond this many months, show the most recent. */
@@ -91,7 +91,9 @@ export function VsExpenseReport({
     value === 0 ? 'text-muted-foreground' : value < 0 ? 'text-rose-500' : 'text-emerald-600';
 
   const isEmpty = !data.isLoading && (!months.length || !pivot.hasActivity);
-  const average = (total: number) => ledgerAverage(total, months.length);
+  // Round averages to what the currency shows, so they never read "-0.00".
+  const averageStep = ledgerAverageStep(globalLocalizer.resolvedOptions().maximumFractionDigits);
+  const average = (total: number) => ledgerAverage(total, months.length, averageStep);
 
   /**
    * One row's Total and Average cells, placed after the months (Total pinned
@@ -116,7 +118,8 @@ export function VsExpenseReport({
           data-column={kind}
           className={cn(
             sticky ? STICKY_RIGHT : SUMMARY_CELL,
-            columns.summaryFirst && kind === 'average' && 'border-r',
+            // Close the summary block: the last of Total/Average before the months.
+            columns.summaryFirst && (kind === 'average' || !columns.average) && 'border-r',
             className
           )}
         >
