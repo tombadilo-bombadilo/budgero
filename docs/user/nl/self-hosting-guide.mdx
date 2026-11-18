@@ -14,11 +14,18 @@ Deze gids helpt je bij het uitrollen van Budgero op je eigen infrastructuur. Of 
 
 ## Uitrolopties
 
-Budgero zelf gehost kan op drie manieren worden uitgerold:
+Budgero zelf gehost kan op vier manieren worden uitgerold:
 
 - **Docker** - Aanbevolen voor de meeste gebruikers. Eén commando, werkt op elk platform met Docker.
 - **Native binary** - Directe installatie op macOS, Linux of Windows. Ideaal voor minimale setups of wanneer Docker niet beschikbaar is.
 - **Docker Compose** - Het beste voor productie-uitrol met permanente opslag en eenvoudige updates.
+- **Railway** - Uitrollen met één klik als je geen eigen server hebt. Railway rekent kosten voor de hosting.
+
+## Uitrollen op Railway
+
+[![Uitrollen op Railway](https://budgero.app/deploy-on-railway.svg)](https://railway.com/deploy/budgero)
+
+De template stelt het volume, het HTTPS-domein en de synchronisatie-instellingen in. Open na het uitrollen de deploy-logs en kopieer het beheerderswachtwoord (dit wordt maar één keer getoond, bij de eerste start). Log daarna in als `admin` op je Railway-domein. Voeg je een eigen domein toe, zet het dan in `WEBSOCKET_ALLOWED_ORIGINS` (gescheiden door komma's) en rol opnieuw uit.
 
 ## Snel aan de slag met Docker
 

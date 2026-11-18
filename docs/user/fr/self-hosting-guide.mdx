@@ -14,11 +14,18 @@ Ce guide vous accompagne dans le déploiement de Budgero sur votre propre infras
 
 ## Options de déploiement
 
-Budgero auto-hébergé peut être déployé de trois manières :
+Budgero auto-hébergé peut être déployé de quatre manières :
 
 - **Docker** - Recommandé pour la plupart des utilisateurs. Une seule commande, fonctionne sur toute plateforme avec Docker.
 - **Binaire natif** - Installation directe sur macOS, Linux ou Windows. Idéal pour les configurations minimales ou lorsque Docker n'est pas disponible.
 - **Docker Compose** - Le meilleur choix pour les déploiements en production avec stockage persistant et mises à jour faciles.
+- **Railway** - Déploiement en un clic si vous n'avez pas de serveur. L'hébergement sur Railway est payant.
+
+## Déployer sur Railway
+
+[![Déployer sur Railway](https://budgero.app/deploy-on-railway.svg)](https://railway.com/deploy/budgero)
+
+Le modèle configure le volume, le domaine HTTPS et les réglages de synchronisation. Une fois le déploiement terminé, ouvrez les journaux de déploiement et copiez le mot de passe administrateur (il n'est affiché qu'une fois, au premier démarrage). Connectez-vous ensuite en tant que `admin` sur votre domaine Railway. Si vous ajoutez un domaine personnalisé, ajoutez-le à `WEBSOCKET_ALLOWED_ORIGINS` (séparé par des virgules) puis redéployez.
 
 ## Démarrage rapide avec Docker
 

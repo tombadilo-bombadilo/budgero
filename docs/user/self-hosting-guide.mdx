@@ -14,11 +14,18 @@ This guide walks you through deploying Budgero on your own infrastructure. Wheth
 
 ## Deployment options
 
-Budgero self-hosted can be deployed three ways:
+Budgero self-hosted can be deployed four ways:
 
 - **Docker** - Recommended for most users. Single command, works on any platform with Docker.
 - **Native binary** - Direct install on macOS, Linux, or Windows. Ideal for minimal setups or when Docker isn't available.
 - **Docker Compose** - Best for production deployments with persistent storage and easy updates.
+- **Railway** - One-click deploy if you don't have a server. Railway charges for hosting.
+
+## Deploy on Railway
+
+[![Deploy on Railway](https://budgero.app/deploy-on-railway.svg)](https://railway.com/deploy/budgero)
+
+The template sets up the volume, the HTTPS domain, and the sync settings. When the deploy finishes, open the deploy logs and copy the admin password (it is printed once, on first start), then log in as `admin` at your Railway domain. If you add a custom domain, add it to `WEBSOCKET_ALLOWED_ORIGINS` (comma-separated) and redeploy.
 
 ## Quick start with Docker
 
