@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Dialog, DialogContent } from '@shared/ui/dialog';
 import { useUiStore } from '@shared/store/useUiStore';
@@ -8,9 +8,14 @@ import {
   useCreateGoal,
   useUpdateGoal,
   useDeleteGoal,
+  useSetGoalFrom,
   useGoalByCategory,
+  useGoalTimeframes,
   useCategoryFinancials,
 } from '@entities/goal/api/useGoals';
+import { ConfirmDialog } from '@shared/ui/confirm-dialog';
+import { RadioGroup, RadioGroupItem } from '@shared/ui/radio-group';
+import { Label } from '@shared/ui/label';
 import { GoalCard } from '@features/goal-management/ui/GoalCard';
 import { GoalForm } from '@features/goal-management/ui/GoalForm';
 import type { Goal } from '@budgero/core/browser';
@@ -18,7 +23,15 @@ import {
   dispatchGoalWalkthrough,
   useGoalWalkthroughFormHint,
 } from '@features/first-steps/model/goal-walkthrough';
-import { GoalPurpose, GoalType } from '@budgero/core/browser';
+import { GoalPurpose, GoalType, describeGoalTimeframeChange } from '@budgero/core/browser';
+import {
+  defaultGoalTimeframe,
+  goalSaveAction,
+  goalTimeframeRange,
+  type GoalTimeframeChoice,
+} from '../lib/goal-timeframe';
+import { goalMonthLabel, useGoalRangeLabel } from '../lib/goal-timeframe-labels';
+import { GoalTimeframeNotices } from './GoalTimeframeFields';
 
 interface GoalSectionProps {
   categoryId: number;
@@ -55,7 +68,12 @@ export function GoalSection({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const highlightGoalCategoryId = useUiStore((state) => state.highlightGoalCategoryId);
   const setHighlightGoalCategoryId = useUiStore((state) => state.setHighlightGoalCategoryId);
-  const { data: goal, isLoading } = useGoalByCategory(categoryId);
+  // The goal of the month on screen; a category can have one per timeframe.
+  const { data: goal, isLoading } = useGoalByCategory(categoryId, currentMonth);
+  const { data: timeframes = [] } = useGoalTimeframes(categoryId);
+  const rangeLabel = useGoalRangeLabel();
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteScope, setDeleteScope] = useState<'onwards' | 'all'>('onwards');
 
   // Fetch complete financials via GoalService — includes historical assignments,
   // historical activity, and planned assignments in one call
@@ -76,6 +94,7 @@ export function GoalSection({
 
   const createGoalMutation = useCreateGoal();
   const updateGoalMutation = useUpdateGoal();
+  const setGoalFromMutation = useSetGoalFrom();
   const deleteGoalMutation = useDeleteGoal();
 
   const currencyCode = formatter.resolvedOptions().currency;
@@ -83,34 +102,48 @@ export function GoalSection({
     ? { ...categoryFinancials, currencyCode }
     : { ...finances, currencyCode };
 
-  const handleSave = async (goalData: Partial<Goal>) => {
+  const handleSave = async (
+    goalData: Partial<Goal>,
+    timeframe: GoalTimeframeChoice = defaultGoalTimeframe(goal, timeframes, currentMonth)
+  ) => {
+    const fields = {
+      target: goalData.Target ?? 0,
+      type: goalData.Type ?? GoalType.MONTHLY_SAVINGS,
+      purpose: goalData.Purpose ?? GoalPurpose.SAVINGS,
+      targetDate: goalData.TargetDate || new Date().toISOString(),
+      recurring: goalData.Recurring,
+      cycleMonths: goalData.CycleMonths,
+    };
+    const action = goalSaveAction(goal, timeframes, timeframe, currentMonth);
     try {
-      if (goal) {
+      if (action.kind === 'update') {
         await updateGoalMutation.mutateAsync({
+          ...fields,
           categoryId,
-          target: goalData.Target ?? 0,
-          type: goalData.Type ?? GoalType.MONTHLY_SAVINGS,
-          purpose: goalData.Purpose ?? GoalPurpose.SAVINGS,
-          targetDate: goalData.TargetDate || new Date().toISOString(),
-          recurring: goalData.Recurring,
-          cycleMonths: goalData.CycleMonths,
           startDate: goalData.StartDate,
+          effectiveFrom: action.effectiveFrom,
+          budgetId,
+        });
+      } else if (action.kind === 'setFrom') {
+        await setGoalFromMutation.mutateAsync({
+          ...fields,
+          categoryId,
+          fromMonth: action.from,
+          toMonth: action.to,
+          startDate: goalData.StartDate ?? `${action.from}-01`,
           budgetId,
         });
       } else {
         await createGoalMutation.mutateAsync({
-          type: goalData.Type ?? GoalType.MONTHLY_SAVINGS,
-          purpose: goalData.Purpose ?? GoalPurpose.SAVINGS,
+          ...fields,
           categoryId,
-          target: goalData.Target ?? 0,
           startDate: goalData.StartDate ?? new Date().toISOString(),
-          targetDate: goalData.TargetDate || new Date().toISOString(),
-          recurring: goalData.Recurring,
-          cycleMonths: goalData.CycleMonths,
+          effectiveFrom: action.effectiveFrom,
+          effectiveTo: action.effectiveTo,
           budgetId,
         });
-        dispatchGoalWalkthrough({ type: 'goalSaved', categoryId });
       }
+      if (!goal) dispatchGoalWalkthrough({ type: 'goalSaved', categoryId });
 
       setHighlightGoalCategoryId(null);
       setIsFormOpen(false);
@@ -124,6 +157,18 @@ export function GoalSection({
     }
   };
 
+  const deleteNotices = useMemo(
+    () =>
+      goal ? describeGoalTimeframeChange(timeframes, { kind: 'endFrom', month: currentMonth }) : [],
+    [goal, timeframes, currentMonth]
+  );
+
+  const requestDelete = async () => {
+    if (!goal) return;
+    setDeleteScope('onwards');
+    setDeleteOpen(true);
+  };
+
   const handleDelete = async () => {
     if (!goal) return;
 
@@ -132,11 +177,16 @@ export function GoalSection({
         id: goal.ID,
         categoryId,
         budgetId,
+        ...(deleteScope === 'onwards' ? { fromMonth: currentMonth } : {}),
       });
 
+      setDeleteOpen(false);
       setIsFormOpen(false);
       toast.success(t`Goal deleted`, {
-        description: t`The goal has been permanently removed.`,
+        description:
+          deleteScope === 'onwards'
+            ? t`Months before ${goalMonthLabel(currentMonth)} keep their goal.`
+            : t`The goal has been removed from every month.`,
       });
     } catch {
       toast.error(t`Failed to delete goal`, {
@@ -144,6 +194,12 @@ export function GoalSection({
       });
     }
   };
+
+  const range = goal ? goalTimeframeRange(goal, timeframes) : null;
+  const timeframeLabel =
+    range && (range.from !== null || range.to !== null)
+      ? rangeLabel(range.from, range.to)
+      : undefined;
 
   if (isLoading || !categoryFinancials) {
     return (
@@ -168,7 +224,8 @@ export function GoalSection({
           setHighlightGoalCategoryId(null);
           setFormOpen(true);
         }}
-        onDelete={handleDelete}
+        onDelete={requestDelete}
+        timeframeLabel={timeframeLabel}
         compact={compact}
         className={className}
         highlightCreate={shouldHighlightCreate}
@@ -191,7 +248,10 @@ export function GoalSection({
                 </p>
               )
             }
+            // Remount per goal and month: the form's starting choices depend on both.
+            key={`${goal?.ID ?? 'new'}-${currentMonth}`}
             goal={goal}
+            timeframes={timeframes}
             categoryId={categoryId}
             categoryName={categoryName}
             budgetId={budgetId}
@@ -204,12 +264,63 @@ export function GoalSection({
                 setHighlightGoalCategoryId(categoryId);
               }
             }}
-            onDelete={goal ? handleDelete : undefined}
-            isSaving={createGoalMutation.isPending || updateGoalMutation.isPending}
+            onDelete={goal ? requestDelete : undefined}
+            isSaving={
+              createGoalMutation.isPending ||
+              updateGoalMutation.isPending ||
+              setGoalFromMutation.isPending
+            }
             isDeleting={deleteGoalMutation.isPending}
           />
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={t`Delete goal for ${categoryName}?`}
+        description={t`Choose which months lose the goal. You can undo this.`}
+        confirmText={t`Delete Goal`}
+        cancelText={t`Cancel`}
+        loadingText={t`Deleting...`}
+        variant="destructive"
+        isLoading={deleteGoalMutation.isPending}
+        onConfirm={handleDelete}
+      >
+        <div className="space-y-3" data-testid="goal-delete-scope">
+          <RadioGroup
+            value={deleteScope}
+            onValueChange={(value) => setDeleteScope(value as 'onwards' | 'all')}
+            className="gap-2"
+          >
+            <div className="flex items-start gap-2 text-sm">
+              <RadioGroupItem id="goal-delete-onwards" value="onwards" className="mt-0.5" />
+              <Label htmlFor="goal-delete-onwards" className="block font-normal leading-snug">
+                <Trans>From {goalMonthLabel(currentMonth)} onwards</Trans>
+                <span className="block text-xs text-muted-foreground">
+                  <Trans>Earlier months keep the goal they had.</Trans>
+                </span>
+              </Label>
+            </div>
+            <div className="flex items-start gap-2 text-sm">
+              <RadioGroupItem id="goal-delete-all" value="all" className="mt-0.5" />
+              <Label htmlFor="goal-delete-all" className="block font-normal leading-snug">
+                <Trans>Every month</Trans>
+                <span className="block text-xs text-muted-foreground">
+                  <Trans>Removes all of this category&apos;s goals, past ones too.</Trans>
+                </span>
+              </Label>
+            </div>
+          </RadioGroup>
+          {deleteScope === 'onwards' && (
+            <GoalTimeframeNotices
+              notices={deleteNotices}
+              formatter={formatter}
+              viewedMonth={currentMonth}
+            />
+          )}
+        </div>
+      </ConfirmDialog>
     </>
   );
 }

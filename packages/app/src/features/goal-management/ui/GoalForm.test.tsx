@@ -295,3 +295,115 @@ describe('GoalForm — compact type picker', () => {
     );
   });
 });
+
+describe('GoalForm — timeframes', () => {
+  beforeAll(() => {
+    // The end-month checkbox measures itself.
+    globalThis.ResizeObserver ??= class {
+      observe() {}
+
+      unobserve() {}
+
+      disconnect() {}
+    } as unknown as typeof ResizeObserver;
+  });
+
+  const monthly = (id: number, from: string, target: number, to: string | null = null): Goal => ({
+    ID: id,
+    Type: GoalType.MONTHLY,
+    Purpose: GoalPurpose.SPENDING,
+    CategoryID: 3,
+    Target: asMilli(target),
+    StartDate: `${from}-01`,
+    TargetDate: '',
+    EffectiveFrom: from,
+    EffectiveTo: to,
+  });
+
+  function renderChain(goal: Goal | null, timeframes: Goal[], currentMonth: string) {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <GoalForm
+        goal={goal}
+        timeframes={timeframes}
+        categoryId={3}
+        categoryName="Groceries"
+        budgetId={1}
+        currentMonth={currentMonth}
+        formatter={formatter}
+        onSave={onSave}
+        onCancel={() => {}}
+      />
+    );
+    return onSave;
+  }
+
+  it('a first goal needs no dates: it applies to every month', () => {
+    renderChain(null, [], '2026-08');
+    expect(screen.getByTestId('goal-timeframe-summary')).toHaveTextContent(
+      'Every month, until you change it'
+    );
+    expect(screen.queryByTestId('goal-timeframe-onwards')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('goal-timeframe-notices')).not.toBeInTheDocument();
+  });
+
+  it('editing from a later month defaults to "from this month onwards" and says what it splits', async () => {
+    const user = userEvent.setup();
+    const g200 = monthly(1, '2026-01', 200_000);
+    const onSave = renderChain(g200, [g200], '2026-08');
+    expect(screen.getByTestId('goal-timeframe-onwards')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('goal-timeframe-summary')).toHaveTextContent('Aug 2026 onwards');
+    expect(screen.getByTestId('goal-timeframe-notices')).toHaveTextContent(
+      'The goal of $200.00 will now end in Jul 2026.'
+    );
+    await submit(user);
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(onSave.mock.calls[0][1]).toEqual({ from: '2026-08', to: null });
+  });
+
+  it('can change the whole timeframe instead, with a notice about the earlier months', async () => {
+    const user = userEvent.setup();
+    const g200 = monthly(1, '2026-01', 200_000);
+    const onSave = renderChain(g200, [g200], '2026-08');
+    await user.click(screen.getByTestId('goal-timeframe-whole'));
+    expect(screen.getByTestId('goal-timeframe-notices')).toHaveTextContent(
+      'This also changes the goal in every month before Aug 2026.'
+    );
+    await submit(user);
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(onSave.mock.calls[0][1]).toEqual({ from: '2026-01', to: null });
+  });
+
+  it('editing in the start month updates in place without notices', () => {
+    const g200 = monthly(1, '2026-01', 200_000);
+    const g250 = monthly(2, '2026-06', 250_000);
+    renderChain(g250, [g200, g250], '2026-06');
+    expect(screen.queryByTestId('goal-timeframe-onwards')).not.toBeInTheDocument();
+    expect(screen.getByTestId('goal-timeframe-summary')).toHaveTextContent('Jun 2026 onwards');
+    expect(screen.queryByTestId('goal-timeframe-notices')).not.toBeInTheDocument();
+  });
+
+  it('warns when a later goal takes over from the new one', () => {
+    const g200 = monthly(1, '2026-01', 200_000);
+    const g250 = monthly(2, '2026-10', 250_000);
+    renderChain(g200, [g200, g250], '2026-05');
+    const notices = screen.getByTestId('goal-timeframe-notices');
+    expect(notices).toHaveTextContent('The goal of $200.00 will now end in Apr 2026.');
+    expect(notices).toHaveTextContent('From Oct 2026, the existing goal of $250.00 takes over.');
+  });
+
+  it('an end month leaves the months after it without a goal', async () => {
+    const user = userEvent.setup();
+    const g200 = monthly(1, '2026-01', 200_000);
+    const onSave = renderChain(g200, [g200], '2026-08');
+    await user.click(screen.getByTestId('goal-timeframe-toggle'));
+    await user.click(screen.getByTestId('goal-timeframe-ends'));
+    expect(screen.getByTestId('goal-timeframe-summary')).toHaveTextContent('Aug 2026 – Aug 2026');
+    expect(screen.getByTestId('goal-timeframe-notices')).toHaveTextContent(
+      'No goal from Sep 2026 onwards.'
+    );
+    await submit(user);
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(onSave.mock.calls[0][1]).toEqual({ from: '2026-08', to: '2026-08' });
+  });
+});

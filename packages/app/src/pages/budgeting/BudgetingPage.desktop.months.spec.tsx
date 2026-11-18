@@ -46,7 +46,10 @@ vi.mock('@features/budgeting/ui/ReadyToAssignHelpPopover', () => ({
 vi.mock('@features/budget-planning/ui/PlanningNumberAnimation', () => ({
   PlanningAnimatedNumber: () => null,
 }));
-vi.mock('@entities/goal/api/useGoals', () => ({ useGoals: () => ({ data: [] }) }));
+vi.mock('@entities/goal/api/useGoals', () => ({
+  useGoals: () => ({ data: [] }),
+  useGoalsForMonth: () => ({ data: [], allGoals: [] }),
+}));
 vi.mock('@features/budget-planning/lib/budget-transforms', () => ({
   transformBudgetRows: () => [],
 }));

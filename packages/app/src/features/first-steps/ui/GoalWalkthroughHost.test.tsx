@@ -23,6 +23,8 @@ vi.mock('@entities/goal/api/useGoals', () => {
     useCreateGoal: () => ({ mutateAsync: createGoal, isPending: false }),
     useUpdateGoal: () => other,
     useDeleteGoal: () => other,
+    useSetGoalFrom: () => other,
+    useGoalTimeframes: () => ({ data: savedGoal.current ? [savedGoal.current] : [] }),
   };
 });
 // The real form is big; these two buttons are all the walkthrough cares about.

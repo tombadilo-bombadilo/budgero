@@ -249,6 +249,8 @@ interface GoalCardProps {
   compact?: boolean;
   className?: string;
   highlightCreate?: boolean;
+  /** The months this goal applies to, when it doesn't apply to all of them. */
+  timeframeLabel?: string;
 }
 
 /**
@@ -267,6 +269,7 @@ export function GoalCard({
   compact = false,
   className,
   highlightCreate = false,
+  timeframeLabel,
 }: GoalCardProps) {
   const { t } = useLingui();
 
@@ -568,6 +571,15 @@ export function GoalCard({
                   )}
               </div>
             </div>
+          )}
+
+          {timeframeLabel && (
+            <p
+              className="pt-2 border-t text-xs text-muted-foreground"
+              data-testid="goal-timeframe-label"
+            >
+              <Trans>Applies: {timeframeLabel}</Trans>
+            </p>
           )}
 
           {/* Explanation */}

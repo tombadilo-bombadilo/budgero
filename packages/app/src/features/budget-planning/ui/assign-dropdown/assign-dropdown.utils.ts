@@ -1,5 +1,6 @@
 import {
   GoalCalculations,
+  resolveGoalsForMonth,
   type CategoryFinancials,
   GetMonthlyBudgetRow,
   GoalPurpose,
@@ -89,7 +90,8 @@ export function calculateUnderfundedGoals(
   currentMonth: string,
   cycleFinancials?: CycleFinancialsMap
 ): UnderfundedGoal[] {
-  return goals
+  // Every timeframe may be passed in: only the goals of currentMonth count.
+  return resolveGoalsForMonth(goals, currentMonth)
     .map((goal) => {
       const row = budgetData.find((r) => r.CategoryID === goal.CategoryID);
       if (!row) return null;
@@ -151,7 +153,8 @@ export function calculateOverfundedCategories(
   currentMonth: string,
   cycleFinancials?: CycleFinancialsMap
 ): OverfundedCategory[] {
-  return goals
+  // Every timeframe may be passed in: only the goals of currentMonth count.
+  return resolveGoalsForMonth(goals, currentMonth)
     .map((goal) => {
       const row = budgetData.find((r) => r.CategoryID === goal.CategoryID);
       if (!row) return null;

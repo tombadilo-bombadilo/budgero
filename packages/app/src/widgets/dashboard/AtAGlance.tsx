@@ -9,7 +9,7 @@ import {
   useTotalAssignedForBudgetPace,
   useReadyToAssign,
 } from '@entities/budget/api/useMonthlyBudget';
-import { useGoals, useCycleFinancialsForGoals } from '@entities/goal/api/useGoals';
+import { useGoalsForMonth, useCycleFinancialsForGoals } from '@entities/goal/api/useGoals';
 import { format, parseISO, startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 import { Progress } from '@shared/ui/progress';
 import { TrendingDown, Target, Calendar, PiggyBank, Info } from 'lucide-react';
@@ -41,7 +41,7 @@ export function AtAGlance() {
 
   const { data: monthTx = [] } = useAllAccountsMonthlyTransactions(budgetId, currentMonthString);
   const { data: budgetRows = [] } = useMonthlyBudget(currentMonthString, budgetId);
-  const { data: goals = [] } = useGoals(budgetId);
+  const { data: goals } = useGoalsForMonth(budgetId, currentMonthString);
   // Assignment history/planned amounts so recurring & target-date goals are
   // measured over their cycle, not just this month.
   const { data: cycleFinancials } = useCycleFinancialsForGoals(goals, currentMonthString);

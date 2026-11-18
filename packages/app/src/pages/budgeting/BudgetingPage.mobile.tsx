@@ -5,7 +5,7 @@ import { Button } from '@shared/ui/button';
 import MonthPickerPopover from '@shared/ui/MonthPickerPopover';
 import { useUiStore } from '@shared/store/useUiStore';
 import { useMonthlyBudget, useReadyToAssign } from '@entities/budget/api/useMonthlyBudget';
-import { useGoals } from '@entities/goal/api/useGoals';
+import { useGoalsForMonth } from '@entities/goal/api/useGoals';
 import { BudgetTable } from '@features/budget-planning/ui/BudgetTable';
 import { BudgetToolbar } from '@features/budgeting/ui/BudgetToolbar';
 import { BudgetContextPanel } from '@features/budgeting/ui/BudgetContextPanel';
@@ -50,7 +50,8 @@ export function BudgetingPageMobile() {
     isSuccess: budgetLoaded,
     isPlaceholderData: budgetIsPlaceholder,
   } = useMonthlyBudget(currentMonth, budgetId);
-  const { data: goalsData = [] } = useGoals(budgetId);
+  // The goal of this month per category (a category can have one per timeframe).
+  const { data: goalsData } = useGoalsForMonth(budgetId, currentMonth);
   const rta = useReadyToAssign(budgetId, currentMonth);
   const readyToAssign = rta.data ?? 0;
   // This month's real figures, not a loading default or last month's placeholder.
