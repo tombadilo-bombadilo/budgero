@@ -20,10 +20,18 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@share
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = '20rem';
+/** Width of a sidebar the user pinned on a screen below the tablet breakpoint. */
+const SIDEBAR_WIDTH_PINNED_NARROW = '16rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
 const SIDEBAR_WIDTH_ICON = '3rem';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
-const SIDEBAR_TABLET_BREAKPOINT = 1600;
+export const SIDEBAR_TABLET_BREAKPOINT = 1600;
+/**
+ * Below the tablet breakpoint the sidebar slides out, unless the user pinned
+ * it. Pinning works from this width up: with the narrow pinned sidebar the
+ * page keeps at least 1024px, which the desktop Planning layout needs.
+ */
+export const SIDEBAR_PIN_MIN_WIDTH = 1280;
 
 type SidebarContextProps = {
   state: 'expanded' | 'collapsed';
@@ -31,7 +39,12 @@ type SidebarContextProps = {
   setOpen: (open: boolean) => void;
   openMobile: boolean;
   setOpenMobile: (open: boolean) => void;
+  /** The sidebar is a slide-out sheet (narrow screen, not pinned). */
   isMobile: boolean;
+  /** The screen is narrow enough to slide out but wide enough to pin. */
+  canPin: boolean;
+  /** Pinned by the user and shown inline on a narrow screen. */
+  pinned: boolean;
   toggleSidebar: () => void;
 };
 
@@ -50,6 +63,7 @@ function SidebarProvider({
   defaultOpen = true,
   open: openProp,
   onOpenChange: setOpenProp,
+  pinned: pinnedProp = false,
   className,
   style,
   children,
@@ -58,9 +72,18 @@ function SidebarProvider({
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Keep the sidebar inline below the tablet breakpoint (from SIDEBAR_PIN_MIN_WIDTH). */
+  pinned?: boolean;
 }) {
-  const isMobile = useIsMobile(SIDEBAR_TABLET_BREAKPOINT);
+  const isNarrow = useIsMobile(SIDEBAR_TABLET_BREAKPOINT);
+  const isTooNarrowToPin = useIsMobile(SIDEBAR_PIN_MIN_WIDTH);
+  const canPin = isNarrow && !isTooNarrowToPin;
+  const pinned = canPin && pinnedProp;
+  const isMobile = isNarrow && !pinned;
   const [openMobile, setOpenMobile] = React.useState(false);
+  // Pinning (or widening the window) turns the sheet into the inline sidebar;
+  // don't leave it marked open for the next time it slides out.
+  if (!isMobile && openMobile) setOpenMobile(false);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -107,11 +130,13 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
+      canPin,
+      pinned,
       openMobile,
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, canPin, pinned, openMobile, setOpenMobile, toggleSidebar]
   );
 
   return (
@@ -121,7 +146,7 @@ function SidebarProvider({
           data-slot="sidebar-wrapper"
           style={
             {
-              '--sidebar-width': SIDEBAR_WIDTH,
+              '--sidebar-width': pinned ? SIDEBAR_WIDTH_PINNED_NARROW : SIDEBAR_WIDTH,
               '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
               ...style,
             } as React.CSSProperties

@@ -11,19 +11,22 @@ import {
 } from '@shared/ui/sidebar';
 import { BudgetSwitcher } from '@features/budget-management/ui/BudgetSwitcher';
 import logoImg from '/logo_144.png';
+import { useUiStore } from '@shared/store/useUiStore';
 import { useDesktopShellState } from './useDesktopShellState';
 import { SidebarNav } from './SidebarNav';
 import { SidebarFooterContent } from './SidebarFooterContent';
 import { HeaderBar } from './HeaderBar';
+import { SidebarPinToggle } from './SidebarPinToggle';
 import type { DesktopShellProps } from './types';
 
 export function DesktopShell({ children }: DesktopShellProps) {
   const { t } = useLingui();
 
   const { breadcrumbs, logout } = useDesktopShellState();
+  const sidebarPinned = useUiStore((state) => state.sidebarPinned);
 
   return (
-    <SidebarProvider>
+    <SidebarProvider pinned={sidebarPinned}>
       <Sidebar data-testid="sidebar">
         <SidebarHeader className="p-2">
           <div className="flex items-center justify-between gap-2 px-2">
@@ -33,6 +36,7 @@ export function DesktopShell({ children }: DesktopShellProps) {
                 <Trans>Budgero</Trans>
               </span>
             </Link>
+            <SidebarPinToggle />
           </div>
         </SidebarHeader>
         <SidebarContent className="overflow-y-auto overflow-x-hidden flex-1">

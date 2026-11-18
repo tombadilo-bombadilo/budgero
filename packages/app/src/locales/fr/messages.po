@@ -2488,6 +2488,10 @@ msgstr "<0/>Afficher la bulle de discussion"
 msgid "<0/>Show hidden"
 msgstr "<0/>Afficher les masqués"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "<0/>Sidebar"
+msgstr "<0/>Barre latérale"
+
 #: src/pages/admin/SignupsSection.tsx
 msgid "<0/>Signups"
 msgstr "<0/>Inscriptions"
@@ -6053,6 +6057,10 @@ msgstr "Choisissez comment traiter les montants existants de {accountName} lors 
 #: src/pages/settings/SecurityPage.tsx
 msgid "Choose how long Budgero keeps your master password after you unlock the app on this device."
 msgstr "Choisissez combien de temps Budgero conserve votre Mot de passe principal après le déverrouillage de l'application sur cet appareil."
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Choose how the desktop sidebar behaves on narrower screens."
+msgstr "Choisissez le comportement de la barre latérale sur ordinateur quand l’écran est plus étroit."
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Choose how this budget computes Ready to Assign. Switching is instant and non-destructive — it only changes the math, never your transactions or assignments."
@@ -11488,6 +11496,11 @@ msgstr "Conserver l'abonnement"
 msgid "Keep the numbers"
 msgstr "Conserver les nombres"
 
+#: src/app/layout/desktop-shell/SidebarPinToggle.tsx
+#: src/pages/settings/AppearancePage.tsx
+msgid "Keep the sidebar open"
+msgstr "Garder la barre latérale ouverte"
+
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "Kept in memory for this import and never saved to Budgero or browser storage."
 msgstr "Conservé en mémoire pour cet import uniquement, jamais enregistré dans Budgero ni dans le stockage du navigateur."
@@ -14335,6 +14348,10 @@ msgstr "Dans le budget ou suivi"
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "On by default. Tells us which features you use, linked to your account ID, so we can improve Budgero. Turning it off also stops the events our server records."
 msgstr "Activé par défaut. Nous indique les fonctionnalités que vous utilisez, liées à l’identifiant de votre compte, pour améliorer Budgero. Le désactiver arrête aussi les événements enregistrés par notre serveur."
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "On screens narrower than {SIDEBAR_TABLET_WIDTH}px the sidebar slides out to give pages more room. Turn this on to keep it pinned beside the page on screens from {SIDEBAR_PIN_MIN_WIDTH}px wide. You can also use the pin next to the Budgero logo. Applies to this device."
+msgstr "Sur les écrans de moins de {SIDEBAR_TABLET_WIDTH}px, la barre latérale se replie pour laisser plus de place aux pages. Activez cette option pour la garder épinglée à côté de la page sur les écrans d’au moins {SIDEBAR_PIN_MIN_WIDTH}px de large. Vous pouvez aussi utiliser l’épingle à côté du logo Budgero. S’applique à cet appareil."
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "On track"
@@ -21620,6 +21637,10 @@ msgstr "Compte sans nom"
 #: src/pages/settings/components/WorkspaceRow.tsx
 msgid "Unnamed workspace"
 msgstr "Espace de travail sans nom"
+
+#: src/app/layout/desktop-shell/SidebarPinToggle.tsx
+msgid "Unpin the sidebar"
+msgstr "Ne plus épingler la barre latérale"
 
 #: src/features/import/lib/import-display-text.ts
 msgid "Unreadable date \"{value}\" for format {format} — using today"

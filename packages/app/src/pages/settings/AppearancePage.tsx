@@ -5,7 +5,16 @@ import { Label } from '@shared/ui/label';
 import { ThemeSwitch } from '@shared/ui/theme-switch';
 import { LanguageSwitch } from '@shared/ui/language-switch';
 import { Separator } from '@shared/ui/separator';
-import { Palette, Download, Home, Smartphone, Activity, Languages, List } from 'lucide-react';
+import {
+  Palette,
+  Download,
+  Home,
+  Smartphone,
+  Activity,
+  Languages,
+  List,
+  PanelLeft,
+} from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { usePWA } from '@shared/hooks/usePWA';
 import { RadioGroup, RadioGroupItem } from '@shared/ui/radio-group';
@@ -17,6 +26,10 @@ import {
   type MobileBudgetLayout,
 } from '@shared/store/useUiStore';
 import { Switch } from '@shared/ui/switch';
+import {
+  SIDEBAR_PIN_MIN_WIDTH,
+  SIDEBAR_TABLET_BREAKPOINT as SIDEBAR_TABLET_WIDTH,
+} from '@shared/ui/sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { useThemePreset } from '@shared/contexts/ThemePresetContext';
 import { BudgetTableSkeleton } from '@features/budget-planning/ui/BudgetTableSkeleton';
@@ -41,6 +54,8 @@ export default function AppearancePage() {
   const classicFont = useUiStore((state) => state.classicFont);
   const setClassicFont = useUiStore((state) => state.setClassicFont);
   const { themeId } = useThemePreset();
+  const sidebarPinned = useUiStore((state) => state.sidebarPinned);
+  const setSidebarPinned = useUiStore((state) => state.setSidebarPinned);
   const desktopBudgetLayout = useUiStore((state) => state.desktopBudgetLayout);
   const setDesktopBudgetLayout = useUiStore((state) => state.setDesktopBudgetLayout);
   const {
@@ -452,6 +467,45 @@ export default function AppearancePage() {
                 updateHideZeroAmounts(checked);
               }}
               disabled={isUpdatingHideZeroAmounts}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="hidden md:block">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trans>
+              <PanelLeft className="h-5 w-5" />
+              Sidebar
+            </Trans>
+          </CardTitle>
+          <CardDescription>
+            <Trans>Choose how the desktop sidebar behaves on narrower screens.</Trans>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="sidebar-pinned">
+                <Trans>Keep the sidebar open</Trans>
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                <Trans>
+                  On screens narrower than {SIDEBAR_TABLET_WIDTH}px the sidebar slides out to give
+                  pages more room. Turn this on to keep it pinned beside the page on screens from{' '}
+                  {SIDEBAR_PIN_MIN_WIDTH}px wide. You can also use the pin next to the Budgero logo.
+                  Applies to this device.
+                </Trans>
+              </p>
+            </div>
+            <Switch
+              id="sidebar-pinned"
+              checked={sidebarPinned}
+              onCheckedChange={(checked) => {
+                trackSettingChanged('sidebar_pinned', checked ? 'on' : 'off');
+                setSidebarPinned(checked);
+              }}
             />
           </div>
         </CardContent>

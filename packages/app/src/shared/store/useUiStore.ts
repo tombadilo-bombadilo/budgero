@@ -91,6 +91,8 @@ const COMPACT_MOBILE_LAYOUT_KEY = 'budgero:compact-mobile-layout';
 const MOBILE_BUDGET_LAYOUT_KEY = 'budgero:mobile-budget-layout';
 const LEGACY_COMPACT_MOBILE_TABLE_KEY = 'budgero:compact-mobile-table';
 const HOME_PAGE_STORAGE_KEY = 'budgero:home-page';
+/** '1' = keep the desktop sidebar pinned on narrower screens (this device only). */
+export const SIDEBAR_PINNED_STORAGE_KEY = 'budgero:sidebar-pinned';
 /**
  * Cache of the synced `budgetTargetColumn` preference (user scope, see
  * synced-preferences.ts): '1' shown, '0' hidden by the user, absent = default
@@ -210,6 +212,10 @@ interface UiState {
   classicFont: ClassicFontId;
   setClassicFont: (font: ClassicFontId) => void;
 
+  // Desktop sidebar stays pinned below the slide-out breakpoint (per device)
+  sidebarPinned: boolean;
+  setSidebarPinned: (pinned: boolean) => void;
+
   desktopBudgetLayout: DesktopBudgetLayout;
   setDesktopBudgetLayout: (value: DesktopBudgetLayout) => void;
 
@@ -272,6 +278,11 @@ export const useUiStore = create<UiState>((set) => ({
     writeStoredPref(CLASSIC_FONT_STORAGE_KEY, font === 'poppins' ? null : font);
     persistUserPreferencesPatch({ classic_font: font });
     set({ classicFont: font });
+  },
+  sidebarPinned: readStoredPref(SIDEBAR_PINNED_STORAGE_KEY, (stored) => stored === '1', false),
+  setSidebarPinned: (pinned) => {
+    writeStoredPref(SIDEBAR_PINNED_STORAGE_KEY, pinned ? '1' : null);
+    set({ sidebarPinned: pinned });
   },
   desktopBudgetLayout: readStoredPref<DesktopBudgetLayout>(
     DESKTOP_LAYOUT_STORAGE_KEY,

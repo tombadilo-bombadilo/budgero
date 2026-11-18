@@ -2488,6 +2488,10 @@ msgstr "<0/>Chat-Blase anzeigen"
 msgid "<0/>Show hidden"
 msgstr "<0/>Versteckte anzeigen"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "<0/>Sidebar"
+msgstr "<0/>Seitenleiste"
+
 #: src/pages/admin/SignupsSection.tsx
 msgid "<0/>Signups"
 msgstr "<0/>Registrierungen"
@@ -6053,6 +6057,10 @@ msgstr "Wähle, wie bestehende Beträge in {accountName} beim Wechsel von {oldCu
 #: src/pages/settings/SecurityPage.tsx
 msgid "Choose how long Budgero keeps your master password after you unlock the app on this device."
 msgstr "Wähle, wie lange Budgero dein Master-Passwort auf diesem Gerät speichert, nachdem du die App entsperrt hast."
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Choose how the desktop sidebar behaves on narrower screens."
+msgstr "Lege fest, wie sich die Seitenleiste am Desktop auf schmaleren Bildschirmen verhält."
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Choose how this budget computes Ready to Assign. Switching is instant and non-destructive — it only changes the math, never your transactions or assignments."
@@ -11488,6 +11496,11 @@ msgstr "Abonnement behalten"
 msgid "Keep the numbers"
 msgstr "Zahlen beibehalten"
 
+#: src/app/layout/desktop-shell/SidebarPinToggle.tsx
+#: src/pages/settings/AppearancePage.tsx
+msgid "Keep the sidebar open"
+msgstr "Seitenleiste geöffnet lassen"
+
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "Kept in memory for this import and never saved to Budgero or browser storage."
 msgstr "Wird nur für diesen Import im Arbeitsspeicher gehalten und nie in Budgero oder im Browserspeicher gespeichert."
@@ -14335,6 +14348,10 @@ msgstr "Im Budget oder nur verfolgt"
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "On by default. Tells us which features you use, linked to your account ID, so we can improve Budgero. Turning it off also stops the events our server records."
 msgstr "Standardmäßig an. Zeigt uns, welche Funktionen du nutzt, verknüpft mit deiner Konto-ID, damit wir Budgero verbessern können. Wenn du es ausschaltest, stoppen auch die Ereignisse, die unser Server erfasst."
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "On screens narrower than {SIDEBAR_TABLET_WIDTH}px the sidebar slides out to give pages more room. Turn this on to keep it pinned beside the page on screens from {SIDEBAR_PIN_MIN_WIDTH}px wide. You can also use the pin next to the Budgero logo. Applies to this device."
+msgstr "Auf Bildschirmen unter {SIDEBAR_TABLET_WIDTH}px wird die Seitenleiste ausgeblendet und fährt bei Bedarf heraus, damit Seiten mehr Platz haben. Schalte dies ein, um sie ab {SIDEBAR_PIN_MIN_WIDTH}px Breite neben der Seite angeheftet zu lassen. Du kannst auch die Stecknadel neben dem Budgero-Logo verwenden. Gilt für dieses Gerät."
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "On track"
@@ -21620,6 +21637,10 @@ msgstr "Unbenanntes Konto"
 #: src/pages/settings/components/WorkspaceRow.tsx
 msgid "Unnamed workspace"
 msgstr "Unbenannter Arbeitsbereich"
+
+#: src/app/layout/desktop-shell/SidebarPinToggle.tsx
+msgid "Unpin the sidebar"
+msgstr "Seitenleiste nicht mehr anheften"
 
 #: src/features/import/lib/import-display-text.ts
 msgid "Unreadable date \"{value}\" for format {format} — using today"

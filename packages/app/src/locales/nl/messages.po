@@ -2488,6 +2488,10 @@ msgstr "<0/>Chatballon tonen"
 msgid "<0/>Show hidden"
 msgstr "<0/>Verborgen tonen"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "<0/>Sidebar"
+msgstr "<0/>Zijbalk"
+
 #: src/pages/admin/SignupsSection.tsx
 msgid "<0/>Signups"
 msgstr "<0/>Aanmeldingen"
@@ -6053,6 +6057,10 @@ msgstr "Kies hoe bestaande bedragen in {accountName} worden behandeld bij de wij
 #: src/pages/settings/SecurityPage.tsx
 msgid "Choose how long Budgero keeps your master password after you unlock the app on this device."
 msgstr "Kies hoe lang Budgero je hoofdwachtwoord bewaart nadat je de app op dit apparaat ontgrendelt."
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Choose how the desktop sidebar behaves on narrower screens."
+msgstr "Kies hoe de zijbalk op desktop zich gedraagt op smallere schermen."
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Choose how this budget computes Ready to Assign. Switching is instant and non-destructive — it only changes the math, never your transactions or assignments."
@@ -11488,6 +11496,11 @@ msgstr "Abonnement behouden"
 msgid "Keep the numbers"
 msgstr "Getallen behouden"
 
+#: src/app/layout/desktop-shell/SidebarPinToggle.tsx
+#: src/pages/settings/AppearancePage.tsx
+msgid "Keep the sidebar open"
+msgstr "Zijbalk open houden"
+
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "Kept in memory for this import and never saved to Budgero or browser storage."
 msgstr "Wordt alleen voor deze import in het geheugen bewaard en nooit opgeslagen in Budgero of in de browseropslag."
@@ -14335,6 +14348,10 @@ msgstr "In budget of alleen gevolgd"
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "On by default. Tells us which features you use, linked to your account ID, so we can improve Budgero. Turning it off also stops the events our server records."
 msgstr "Standaard aan. Laat ons zien welke functies je gebruikt, gekoppeld aan je account-ID, zodat we Budgero kunnen verbeteren. Uitzetten stopt ook de gebeurtenissen die onze server vastlegt."
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "On screens narrower than {SIDEBAR_TABLET_WIDTH}px the sidebar slides out to give pages more room. Turn this on to keep it pinned beside the page on screens from {SIDEBAR_PIN_MIN_WIDTH}px wide. You can also use the pin next to the Budgero logo. Applies to this device."
+msgstr "Op schermen smaller dan {SIDEBAR_TABLET_WIDTH}px schuift de zijbalk weg zodat pagina's meer ruimte krijgen. Zet dit aan om hem vastgezet naast de pagina te houden op schermen vanaf {SIDEBAR_PIN_MIN_WIDTH}px breed. Je kunt ook de punaise naast het Budgero-logo gebruiken. Geldt voor dit apparaat."
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "On track"
@@ -21620,6 +21637,10 @@ msgstr "Naamloze rekening"
 #: src/pages/settings/components/WorkspaceRow.tsx
 msgid "Unnamed workspace"
 msgstr "Naamloze werkruimte"
+
+#: src/app/layout/desktop-shell/SidebarPinToggle.tsx
+msgid "Unpin the sidebar"
+msgstr "Zijbalk niet meer vastzetten"
 
 #: src/features/import/lib/import-display-text.ts
 msgid "Unreadable date \"{value}\" for format {format} — using today"

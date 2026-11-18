@@ -2490,6 +2490,10 @@ msgstr "<0/>Show Chat Bubble"
 msgid "<0/>Show hidden"
 msgstr "<0/>Show hidden"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "<0/>Sidebar"
+msgstr "<0/>Sidebar"
+
 #: src/pages/admin/SignupsSection.tsx
 msgid "<0/>Signups"
 msgstr "<0/>Signups"
@@ -6055,6 +6059,10 @@ msgstr "Choose how existing amounts in {accountName} should be handled when chan
 #: src/pages/settings/SecurityPage.tsx
 msgid "Choose how long Budgero keeps your master password after you unlock the app on this device."
 msgstr "Choose how long Budgero keeps your master password after you unlock the app on this device."
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Choose how the desktop sidebar behaves on narrower screens."
+msgstr "Choose how the desktop sidebar behaves on narrower screens."
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 msgid "Choose how this budget computes Ready to Assign. Switching is instant and non-destructive — it only changes the math, never your transactions or assignments."
@@ -11490,6 +11498,11 @@ msgstr "Keep Subscription"
 msgid "Keep the numbers"
 msgstr "Keep the numbers"
 
+#: src/app/layout/desktop-shell/SidebarPinToggle.tsx
+#: src/pages/settings/AppearancePage.tsx
+msgid "Keep the sidebar open"
+msgstr "Keep the sidebar open"
+
 #: src/pages/onboarding/steps/YnabImportStep.tsx
 msgid "Kept in memory for this import and never saved to Budgero or browser storage."
 msgstr "Kept in memory for this import and never saved to Budgero or browser storage."
@@ -14337,6 +14350,10 @@ msgstr "On budget or tracked"
 #: src/pages/settings/components/PrivacySettingsCard.tsx
 msgid "On by default. Tells us which features you use, linked to your account ID, so we can improve Budgero. Turning it off also stops the events our server records."
 msgstr "On by default. Tells us which features you use, linked to your account ID, so we can improve Budgero. Turning it off also stops the events our server records."
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "On screens narrower than {SIDEBAR_TABLET_WIDTH}px the sidebar slides out to give pages more room. Turn this on to keep it pinned beside the page on screens from {SIDEBAR_PIN_MIN_WIDTH}px wide. You can also use the pin next to the Budgero logo. Applies to this device."
+msgstr "On screens narrower than {SIDEBAR_TABLET_WIDTH}px the sidebar slides out to give pages more room. Turn this on to keep it pinned beside the page on screens from {SIDEBAR_PIN_MIN_WIDTH}px wide. You can also use the pin next to the Budgero logo. Applies to this device."
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "On track"
@@ -21622,6 +21639,10 @@ msgstr "Unnamed account"
 #: src/pages/settings/components/WorkspaceRow.tsx
 msgid "Unnamed workspace"
 msgstr "Unnamed workspace"
+
+#: src/app/layout/desktop-shell/SidebarPinToggle.tsx
+msgid "Unpin the sidebar"
+msgstr "Unpin the sidebar"
 
 #: src/features/import/lib/import-display-text.ts
 msgid "Unreadable date \"{value}\" for format {format} — using today"
