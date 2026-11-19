@@ -3679,6 +3679,10 @@ msgstr "Add new payees, rename existing ones, or clear them from your transactio
 msgid "Add New Transaction"
 msgstr "Add New Transaction"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Add rate change"
+msgstr "Add rate change"
+
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Add Rate sets a rate for a currency pair from a start date, with an end date if you want one; Also add the reverse rate fills in the other direction. Custom rates take priority over fetched ones."
 msgstr "Add Rate sets a rate for a currency pair from a start date, with an end date if you want one; Also add the reverse rate fills in the other direction. Custom rates take priority over fetched ones."
@@ -4203,6 +4207,10 @@ msgstr "Annual percentage rate, e.g., 5 for 5%."
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Annual service"
 msgstr "Annual service"
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Another rate already starts on this date."
+msgstr "Another rate already starts on this date."
 
 #: src/pages/settings/ai/ai-settings.constants.ts
 msgid "Any OpenAI-compatible API"
@@ -8928,6 +8936,11 @@ msgstr "Enter a positive amount within available funds."
 msgid "Enter a positive whole number."
 msgstr "Enter a positive whole number."
 
+#: src/features/account-management/ui/EditAccountDialog.tsx
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Enter a rate of 0% or more."
+msgstr "Enter a rate of 0% or more."
+
 #. placeholder {0}: MAX_FAKE_TRANSACTIONS.toLocaleString()
 #: src/features/account-management/ui/DevSeedTransactionsButton.tsx
 msgid "Enter a transaction count from 1 to {0}"
@@ -10028,6 +10041,10 @@ msgstr "For receipt/image scanning"
 msgid "For this month"
 msgstr "For this month"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "For variable or promotional rates, add the date each new rate starts. Future changes are included in payoff estimates."
+msgstr "For variable or promotional rates, add the date each new rate starts. Future changes are included in payoff estimates."
+
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Forecast"
 msgstr "Forecast"
@@ -11025,6 +11042,10 @@ msgstr "In a question, select a bar, slice or table value to see those transacti
 msgid "In budget ({conversionTargetCurrency}), edit to use your own rate"
 msgstr "In budget ({conversionTargetCurrency}), edit to use your own rate"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "In effect today: {currentRate}%"
+msgstr "In effect today: {currentRate}%"
+
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "in progress"
 msgstr "in progress"
@@ -11228,6 +11249,10 @@ msgstr "Info"
 #: src/shared/mutations/op-code-registry/domains/accounts.ts
 msgid "Initial Balance"
 msgstr "Initial Balance"
+
+#: src/features/account-management/ui/EditAccountDialog.tsx
+msgid "Initial interest % (APR)"
+msgstr "Initial interest % (APR)"
 
 #: src/shared/hooks/useWhisperVoiceInput.ts
 msgid "Initializing..."
@@ -15294,7 +15319,7 @@ msgstr "Payment Required"
 msgid "Payment too low"
 msgstr "Payment too low"
 
-#. placeholder {0}: formatMilli(formatter, roundMilli(outstanding * rMonthly))
+#. placeholder {0}: formatMilli(formatter, roundMilli(outstanding * peakMonthlyRate))
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "Payment too low to cover monthly interest. Increase payment above <0>{0}</0>."
 msgstr "Payment too low to cover monthly interest. Increase payment above <0>{0}</0>."
@@ -15490,6 +15515,10 @@ msgstr "Pick the category you want a goal for. Rent or groceries are a good firs
 #: src/pages/reports/question/usePinToDashboard.tsx
 msgid "Pick the dashboard to show this question on."
 msgstr "Pick the dashboard to show this question on."
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Pick the date this rate starts."
+msgstr "Pick the date this rate starts."
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Pick the dates"
@@ -16290,6 +16319,14 @@ msgstr "Rate cache & offline sync"
 msgid "Rate cache pruned"
 msgstr "Rate cache pruned"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Rate changes"
+msgstr "Rate changes"
+
+#: src/features/debt/ui/RateChangeHint.tsx
+msgid "Rate changes to {rate}% on {date}"
+msgstr "Rate changes to {rate}% on {date}"
+
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Rate deleted"
 msgstr "Rate deleted"
@@ -16863,6 +16900,10 @@ msgstr "Remove one-off"
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "Remove pattern from memo"
 msgstr "Remove pattern from memo"
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Remove rate change"
+msgstr "Remove rate change"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Remove result filter: {label}"
@@ -17811,6 +17852,10 @@ msgstr "Scenario"
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Scenario name"
 msgstr "Scenario name"
+
+#: src/features/debt/ui/PayoffPlanSheet.tsx
+msgid "Scheduled rate changes are ignored while you try another APR."
+msgstr "Scheduled rate changes are ignored while you try another APR."
 
 #: src/widgets/dashboard/UpcomingTransactionsCard.tsx
 msgid "Scheduled transaction"
@@ -19479,6 +19524,10 @@ msgstr "Starting Budgero…"
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Starting funds"
 msgstr "Starting funds"
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Starts on"
+msgstr "Starts on"
 
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
 msgid "Starts the day after your latest entry so nothing is imported twice. Entries close to the bank's will be offered as matches."

@@ -275,6 +275,28 @@ export {
   type TransactionStats,
   type MobilePageStats,
 } from './services/accounts/account-calcs.js';
+export {
+  INTEREST_RATE_SCHEDULE_KEY,
+  INTEREST_RATE_SYNCED_KEY,
+  MAX_PROJECTION_MONTHS,
+  addMonthsToDate,
+  isConstantFrom,
+  levelPayment,
+  monthlyRateFn,
+  monthsToPayoff,
+  nextRateChange,
+  normalizeRateSchedule,
+  rateEntryOn,
+  rateOn,
+  rateSchedulesEqual,
+  readLegacyRate,
+  readRateSchedule,
+  validateRateSchedule,
+  writeRateSchedule,
+  type InterestRateEntry,
+  type MonthlyRateFn,
+  type RateScheduleValidation,
+} from './services/accounts/interest-rate-schedule.js';
 
 // CSV/PDF import pipeline (browser-safe)
 export {

@@ -101,6 +101,8 @@ export const AccountSummaryCards = React.memo(function AccountSummaryCards({
               <PayoffSimulator
                 outstanding={displayLiabilityInfo.outstanding}
                 apr={displayLiabilityInfo.apr}
+                aprSchedule={displayLiabilityInfo.aprSchedule}
+                nextAprChange={displayLiabilityInfo.nextAprChange}
                 minPayment={displayLiabilityInfo.minPayment}
                 formatter={formatter}
                 initial={displayLiabilityInfo.minPayment}

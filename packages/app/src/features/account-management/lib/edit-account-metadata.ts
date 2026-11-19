@@ -1,4 +1,17 @@
-import type { Account } from '@budgero/core/browser';
+import {
+  INTEREST_RATE_SCHEDULE_KEY,
+  isConstantFrom,
+  levelPayment,
+  monthlyRateFn,
+  normalizeRateSchedule,
+  rateOn,
+  rateSchedulesEqual,
+  readRateSchedule,
+  writeRateSchedule,
+  type Account,
+  type InterestRateEntry,
+} from '@budgero/core/browser';
+import { getTodayISO } from '@shared/lib/date-utils';
 import { fromDecimal, toDecimal, type MilliUnits } from '@shared/lib/currency/milli';
 
 /** Account.Metadata arrives as a JSON string from SQLite, or as an object. */
@@ -19,21 +32,77 @@ export function parseAccountMetadata(
   return { ...metadata };
 }
 
-/** The liability fields the edit form exposes; money is in DECIMAL form. */
+/**
+ * The liability fields the edit form exposes; money is in DECIMAL form.
+ * `rates[0]` is the initial rate (no date); later rows are dated changes.
+ */
 export interface LiabilityFormFields {
   debtTotal: number;
-  interestRate: number;
+  rates: InterestRateEntry[];
   startDate: string;
   targetDate: string;
 }
 
-export function liabilityFormFromMetadata(md: Record<string, unknown>): LiabilityFormFields {
+/**
+ * Editor rows for an account's rates: always an initial row first (0 when no
+ * rate is set), then each dated change. A schedule without an initial entry
+ * takes its earliest rate as the initial one, which is how it reads anyway.
+ */
+export function rateRowsFromMetadata(
+  md: Record<string, unknown>,
+  today: string = getTodayISO()
+): InterestRateEntry[] {
+  const schedule = readRateSchedule(md, today);
+  if (schedule.length === 0) return [{ rate_annual: 0 }];
+  if (schedule[0].effective_date === undefined) return schedule;
+  return [{ rate_annual: schedule[0].rate_annual }, ...schedule];
+}
+
+export function liabilityFormFromMetadata(
+  md: Record<string, unknown>,
+  today: string = getTodayISO()
+): LiabilityFormFields {
   return {
     debtTotal: typeof md.debt_total === 'number' ? toDecimal(md.debt_total as MilliUnits) : 0,
-    interestRate: typeof md.interest_rate_annual === 'number' ? md.interest_rate_annual : 0,
+    rates: rateRowsFromMetadata(md, today),
     startDate: typeof md.start_date === 'string' ? md.start_date : '',
     targetDate: typeof md.target_date === 'string' ? md.target_date : '',
   };
+}
+
+/** True when the edited rate rows differ from the ones the form started with. */
+export function ratesChanged(initial: LiabilityFormFields, form: LiabilityFormFields): boolean {
+  return !rateSchedulesEqual(
+    normalizeRateSchedule(initial.rates),
+    normalizeRateSchedule(form.rates)
+  );
+}
+
+/** The rate in effect today for the edited rows (0 when none). */
+export function currentFormRate(
+  rates: readonly InterestRateEntry[],
+  today: string = getTodayISO()
+): number {
+  return rateOn(normalizeRateSchedule(rates), today) ?? 0;
+}
+
+/**
+ * Level monthly payment (milliunit float) that clears `outstanding` over
+ * `months`, using each rate from its effective date. The plain annuity
+ * formula when one rate applies throughout, as before.
+ */
+export function suggestedMonthlyPayment(
+  outstanding: number,
+  rates: readonly InterestRateEntry[],
+  months: number,
+  today: string = getTodayISO()
+): number {
+  const schedule = normalizeRateSchedule(rates);
+  if (isConstantFrom(schedule, today)) {
+    const mRate = (rateOn(schedule, today) ?? 0) / 100 / 12;
+    return mRate > 0 ? (outstanding * mRate) / (1 - (1 + mRate) ** -months) : outstanding / months;
+  }
+  return levelPayment(outstanding, months, monthlyRateFn(schedule, today));
 }
 
 /**
@@ -49,8 +118,7 @@ export function resolveMinPayment(
 ): MilliUnits | undefined {
   const stored =
     typeof md.min_payment_monthly === 'number' ? (md.min_payment_monthly as MilliUnits) : undefined;
-  const inputsChanged =
-    form.interestRate !== initial.interestRate || form.targetDate !== initial.targetDate;
+  const inputsChanged = ratesChanged(initial, form) || form.targetDate !== initial.targetDate;
   if (computed !== null && (inputsChanged || stored === undefined)) return computed;
   return stored;
 }
@@ -65,7 +133,8 @@ export function mergeLiabilityMetadata(
   accType: string,
   initial: LiabilityFormFields,
   form: LiabilityFormFields,
-  computedMinPayment: MilliUnits | null
+  computedMinPayment: MilliUnits | null,
+  today: string = getTodayISO()
 ): Record<string, unknown> {
   const next: Record<string, unknown> = {
     ...md,
@@ -76,8 +145,12 @@ export function mergeLiabilityMetadata(
   if (form.debtTotal !== initial.debtTotal) {
     next.debt_total = form.debtTotal > 0 ? fromDecimal(form.debtTotal) : undefined;
   }
-  if (form.interestRate !== initial.interestRate) {
-    next.interest_rate_annual = form.interestRate > 0 ? form.interestRate : undefined;
+  // Rates: rewritten when edited, and on any save of an account that has a
+  // schedule, so interest_rate_annual (what older clients read) catches up
+  // with a change whose date has passed, and a rate an older client changed
+  // is folded into the schedule.
+  if (ratesChanged(initial, form) || Array.isArray(md[INTEREST_RATE_SCHEDULE_KEY])) {
+    Object.assign(next, writeRateSchedule(next, form.rates, today));
   }
   if (form.startDate !== initial.startDate) {
     next.start_date = form.startDate || undefined;

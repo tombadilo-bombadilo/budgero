@@ -3677,6 +3677,10 @@ msgstr "Ajoutez de nouveaux bénéficiaires, renommez ceux existants, ou supprim
 msgid "Add New Transaction"
 msgstr "Ajouter une transaction"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Add rate change"
+msgstr "Ajouter un changement de taux"
+
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Add Rate sets a rate for a currency pair from a start date, with an end date if you want one; Also add the reverse rate fills in the other direction. Custom rates take priority over fetched ones."
 msgstr "« Ajouter un taux » définit un taux pour une paire de devises à partir d’une date de début, avec une date de fin si vous le souhaitez ; « Ajouter également le taux inverse » remplit l’autre sens. Les taux personnalisés passent avant les taux récupérés."
@@ -4201,6 +4205,10 @@ msgstr "Taux annuel en pourcentage, par ex. 5 pour 5 %."
 #: src/features/demo-budget/lib/seed-demo-budget.ts
 msgid "Annual service"
 msgstr "Révision annuelle"
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Another rate already starts on this date."
+msgstr "Un autre taux commence déjà à cette date."
 
 #: src/pages/settings/ai/ai-settings.constants.ts
 msgid "Any OpenAI-compatible API"
@@ -8926,6 +8934,11 @@ msgstr "Saisissez un montant positif dans la limite des fonds disponibles."
 msgid "Enter a positive whole number."
 msgstr "Saisissez un nombre entier positif."
 
+#: src/features/account-management/ui/EditAccountDialog.tsx
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Enter a rate of 0% or more."
+msgstr "Saisissez un taux de 0 % ou plus."
+
 #. placeholder {0}: MAX_FAKE_TRANSACTIONS.toLocaleString()
 #: src/features/account-management/ui/DevSeedTransactionsButton.tsx
 msgid "Enter a transaction count from 1 to {0}"
@@ -10026,6 +10039,10 @@ msgstr "Pour la numérisation des reçus et images"
 msgid "For this month"
 msgstr "Pour ce mois-ci"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "For variable or promotional rates, add the date each new rate starts. Future changes are included in payoff estimates."
+msgstr "Pour un taux variable ou promotionnel, ajoutez la date de début de chaque nouveau taux. Les changements à venir sont pris en compte dans les estimations de remboursement."
+
 #: src/pages/analytics/reports/WealthReport.tsx
 msgid "Forecast"
 msgstr "Prévision"
@@ -11023,6 +11040,10 @@ msgstr "Dans une question, sélectionnez une barre, une part ou une valeur du ta
 msgid "In budget ({conversionTargetCurrency}), edit to use your own rate"
 msgstr "Dans le budget ({conversionTargetCurrency}), modifiez pour utiliser votre propre taux"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "In effect today: {currentRate}%"
+msgstr "En vigueur aujourd’hui : {currentRate} %"
+
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "in progress"
 msgstr "en cours"
@@ -11226,6 +11247,10 @@ msgstr "Infos"
 #: src/shared/mutations/op-code-registry/domains/accounts.ts
 msgid "Initial Balance"
 msgstr "Solde initial"
+
+#: src/features/account-management/ui/EditAccountDialog.tsx
+msgid "Initial interest % (APR)"
+msgstr "Intérêt initial % (TAEG)"
 
 #: src/shared/hooks/useWhisperVoiceInput.ts
 msgid "Initializing..."
@@ -15292,7 +15317,7 @@ msgstr "Paiement requis"
 msgid "Payment too low"
 msgstr "Paiement trop faible"
 
-#. placeholder {0}: formatMilli(formatter, roundMilli(outstanding * rMonthly))
+#. placeholder {0}: formatMilli(formatter, roundMilli(outstanding * peakMonthlyRate))
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "Payment too low to cover monthly interest. Increase payment above <0>{0}</0>."
 msgstr "Paiement trop faible pour couvrir les intérêts mensuels. Augmentez le paiement au-dessus de <0>{0}</0>."
@@ -15488,6 +15513,10 @@ msgstr "Choisissez la catégorie pour laquelle vous voulez un objectif. Le loyer
 #: src/pages/reports/question/usePinToDashboard.tsx
 msgid "Pick the dashboard to show this question on."
 msgstr "Choisissez le tableau de bord où afficher cette question."
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Pick the date this rate starts."
+msgstr "Choisissez la date de début de ce taux."
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Pick the dates"
@@ -16288,6 +16317,14 @@ msgstr "Cache des taux et synchronisation hors ligne"
 msgid "Rate cache pruned"
 msgstr "Cache des taux purgé"
 
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Rate changes"
+msgstr "Changements de taux"
+
+#: src/features/debt/ui/RateChangeHint.tsx
+msgid "Rate changes to {rate}% on {date}"
+msgstr "Le taux passe à {rate} % le {date}"
+
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "Rate deleted"
 msgstr "Taux supprimé"
@@ -16861,6 +16898,10 @@ msgstr "Supprimer l'occurrence unique"
 #: src/features/rules/ui/RuleSummary.tsx
 msgid "Remove pattern from memo"
 msgstr "Supprimer le motif du mémo"
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Remove rate change"
+msgstr "Supprimer le changement de taux"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Remove result filter: {label}"
@@ -17809,6 +17850,10 @@ msgstr "Scénario"
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Scenario name"
 msgstr "Nom du scénario"
+
+#: src/features/debt/ui/PayoffPlanSheet.tsx
+msgid "Scheduled rate changes are ignored while you try another APR."
+msgstr "Les changements de taux prévus sont ignorés tant que vous testez un autre TAEG."
 
 #: src/widgets/dashboard/UpcomingTransactionsCard.tsx
 msgid "Scheduled transaction"
@@ -19477,6 +19522,10 @@ msgstr "Démarrage de Budgero…"
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Starting funds"
 msgstr "Fonds de départ"
+
+#: src/features/account-management/ui/InterestRateScheduleEditor.tsx
+msgid "Starts on"
+msgstr "Début le"
 
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
 msgid "Starts the day after your latest entry so nothing is imported twice. Entries close to the bank's will be offered as matches."

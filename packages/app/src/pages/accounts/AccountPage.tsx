@@ -485,6 +485,8 @@ export default function AccountPage() {
                 <PayoffSimulator
                   outstanding={displayLiabilityInfo.outstanding}
                   apr={displayLiabilityInfo.apr}
+                  aprSchedule={displayLiabilityInfo.aprSchedule}
+                  nextAprChange={displayLiabilityInfo.nextAprChange}
                   minPayment={displayLiabilityInfo.minPayment}
                   formatter={maskedFormatter}
                   initial={displayLiabilityInfo.minPayment}
