@@ -3125,7 +3125,7 @@ msgstr "Een resultaatfilter kon niet worden gelezen en is weggelaten."
 msgid "A rule checks a transaction against conditions on memo, payee, amount or account, joined with AND or OR, then runs its actions, such as Set category or Set payee. Choose New rule to make one; when several rules match, the lower run order goes first."
 msgstr "Een regel toetst een transactie aan voorwaarden op memo, begunstigde, bedrag of rekening, verbonden met EN of OF, en voert dan zijn acties uit, zoals ‘Categorie instellen’ of ‘Begunstigde instellen’. Kies ‘Nieuwe regel’ om er een te maken; als meerdere regels passen, gaat de laagste uitvoervolgorde voor."
 
-#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/shared/mutations/op-code-registry/domains/transactions.ts
 msgid "A split line can have a category or a transfer account, not both."
 msgstr "Een splitregel kan een categorie of een overboekingsrekening hebben, niet allebei."
 
@@ -3495,6 +3495,10 @@ msgstr "Toevoegen"
 msgctxt "mobile nav"
 msgid "Add"
 msgstr "Nieuw"
+
+#: src/shared/mutations/op-code-registry/shared.ts
+msgid "Add a {from} to {to} exchange rate to save this received amount."
+msgstr "Voeg een wisselkoers van {from} naar {to} toe om dit ontvangen bedrag op te slaan."
 
 #: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
@@ -8910,12 +8914,15 @@ msgstr "Mijn code invoeren →"
 msgid "Enter new password (min 8 characters)"
 msgstr "Voer nieuw wachtwoord in (min. 8 tekens)"
 
-#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
-msgid "Enter the amount received in {name}."
-msgstr "Voer het bedrag in dat op {name} is ontvangen."
+#. placeholder {0}: target.Name
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
+msgid "Enter the amount received in {0}"
+msgstr "Voer het op {0} ontvangen bedrag in"
 
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Enter the amount sent from {0}"
 msgstr "Voer het bedrag in dat vanaf {0} is verzonden"
 
@@ -9617,6 +9624,8 @@ msgid "Failed to save recurring transaction"
 msgstr "Terugkerende transactie opslaan mislukt"
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/mobile-transaction-card/useMobileTransactionCardState.ts
 msgid "Failed to save split transaction"
 msgstr "Gesplitste transactie kon niet worden opgeslagen"
 

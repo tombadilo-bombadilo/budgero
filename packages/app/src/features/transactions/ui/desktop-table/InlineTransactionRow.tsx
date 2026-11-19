@@ -126,6 +126,7 @@ export function InlineTransactionRow({
     null
   );
   const [amountEditing, setAmountEditing] = React.useState(false);
+  const [saveAfterCommit, setSaveAfterCommit] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   // Remounts the amount cells after "Save and add another" so they start empty.
   const [resetKey, setResetKey] = React.useState(0);
@@ -305,9 +306,26 @@ export function InlineTransactionRow({
         );
       if (onControl && !e.ctrlKey && !e.metaKey) return;
       e.preventDefault();
+      // Ctrl/⌘+Enter in an amount field commits the field on the same key:
+      // save once that edit is in (next render), not with the old value.
+      if (target.tagName === 'INPUT' && (e.ctrlKey || e.metaKey)) {
+        setSaveAfterCommit(true);
+        return;
+      }
       void save(false);
     }
   };
+
+  // The latest save (it reads this render's lines), for the deferred save below.
+  const saveRef = React.useRef(save);
+  React.useEffect(() => {
+    saveRef.current = save;
+  });
+  React.useEffect(() => {
+    if (!saveAfterCommit || amountEditing) return;
+    setSaveAfterCommit(false);
+    void saveRef.current(false);
+  }, [saveAfterCommit, amountEditing]);
 
   const handleRatePromptConfirm = async (rate: number, base: string, quote: string) => {
     if (selectedBudget) await saveManualRate(base, quote, rate, selectedBudget.ID);

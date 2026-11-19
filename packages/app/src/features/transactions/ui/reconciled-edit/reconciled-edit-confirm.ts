@@ -1,4 +1,15 @@
 import { create } from 'zustand';
+import {
+  asMilli,
+  type SplitMirrorAmounts,
+  type Services,
+  type TransactionService,
+} from '@budgero/core/browser';
+import {
+  prepareSplitMutationLines,
+  type UpsertSplitLineInput,
+} from '@entities/transaction/api/splits';
+import { normalizeSplitLines, readReceivedAmount } from '@shared/mutations/op-code-registry/shared';
 
 /**
  * Ask before an edit that changes the bank amount of a reconciled
@@ -103,43 +114,67 @@ export async function confirmTotalEdit(
   return unlocks ? confirmReconciledEdit('row') : true;
 }
 
-/** A split editor line as the mirror check reads it (see splitLinesUnlockMirrors). */
-export interface EditedMirrorLine {
-  /** The line's mirror was reconciled when the editor opened. */
-  mirror_reconciled?: boolean;
-  /** That mirror's amount, and the line amount it belonged to. */
-  mirror_received?: number | null;
-  received_base?: number | null;
+/** The services a split-save check reads (core TransactionService / SplitService). */
+interface SplitSaveServices extends ReconciledEditServices {
+  transactions?: ReconciledEditServices['transactions'] &
+    Partial<Pick<TransactionService, 'getTransactionByID' | 'splitSaveUnlocksMirrors'>>;
+  splits?: Partial<Pick<Services['splits'], 'quoteMirrorAmounts'>>;
 }
 
 /**
- * Whether saving these split lines changes the bank amount of a reconciled
- * transfer mirror (it then goes back to uncleared): its received amount
- * changes (`received`, cross-currency lines), or the line amount it mirrors
- * does (same currency). `lineAmount` is the line's magnitude in the editor.
+ * IDs of reconciled transfer mirrors a split-editor save would unlock (their
+ * signed bank amount changes) or delete (their line is removed or
+ * retargeted), as the core computes them for the save's lines (each editor
+ * line as it is sent, `received_amount` included). None when it can't tell:
+ * the save then reports its own problem.
  */
-export function splitLinesUnlockMirrors(
-  lines: readonly { line: EditedMirrorLine; lineAmount: number; received: number | null }[]
-): boolean {
-  return lines.some(({ line, lineAmount, received }) => {
-    if (!line.mirror_reconciled) return false;
-    return received !== null
-      ? received !== line.mirror_received
-      : lineAmount !== line.received_base;
-  });
+async function mirrorsUnlockedBySplitSave(
+  services: SplitSaveServices | null | undefined,
+  transactionId: number,
+  total: { inflow: number; outflow: number } | undefined,
+  currency: 'native' | 'converted',
+  lines: readonly UpsertSplitLineInput[]
+): Promise<number[]> {
+  const transactions = services?.transactions;
+  if (!transactions?.splitSaveUnlocksMirrors || !transactions.getTransactionByID) return [];
+  try {
+    const prepared = prepareSplitMutationLines([...lines], undefined, currency);
+    const normalized = normalizeSplitLines(prepared);
+    const received = prepared.map((line) => readReceivedAmount(line));
+    const quotes: (SplitMirrorAmounts | null)[] =
+      received.some((amount) => amount !== null) && services?.splits?.quoteMirrorAmounts
+        ? await services.splits.quoteMirrorAmounts(
+            transactions.getTransactionByID.call(transactions, transactionId),
+            normalized,
+            received
+          )
+        : [];
+    return await transactions.splitSaveUnlocksMirrors.call(transactions, transactionId, {
+      ...(total
+        ? { amount: { inflow: asMilli(total.inflow), outflow: asMilli(total.outflow), currency } }
+        : {}),
+      splits: normalized.map((line, index) =>
+        quotes[index] ? { ...line, Mirror: quotes[index] } : line
+      ),
+    });
+  } catch {
+    return [];
+  }
 }
 
 /**
  * Ask once before a split-editor save that unlocks a reconciled row: the
- * parent (a new total) or a transfer line's mirror (`mirrorsUnlock`).
+ * parent (a new total) or a transfer line's mirror (changed, removed or
+ * retargeted). Resolves true when the save should go ahead.
  */
 export async function confirmSplitSave(
-  services: ReconciledEditServices | null | undefined,
+  services: SplitSaveServices | null | undefined,
   transactionId: number,
   total: { inflow: number; outflow: number } | undefined,
   currency: 'native' | 'converted',
-  mirrorsUnlock: boolean
+  lines: readonly UpsertSplitLineInput[]
 ): Promise<boolean> {
-  if (mirrorsUnlock) return confirmReconciledEdit('row');
+  const mirrors = await mirrorsUnlockedBySplitSave(services, transactionId, total, currency, lines);
+  if (mirrors.length) return confirmReconciledEdit('row');
   return total ? confirmTotalEdit(services, transactionId, total, currency) : true;
 }

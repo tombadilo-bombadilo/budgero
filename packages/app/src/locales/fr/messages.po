@@ -3125,7 +3125,7 @@ msgstr "Un filtre de résultats n’a pas pu être lu et a été ignoré."
 msgid "A rule checks a transaction against conditions on memo, payee, amount or account, joined with AND or OR, then runs its actions, such as Set category or Set payee. Choose New rule to make one; when several rules match, the lower run order goes first."
 msgstr "Une règle vérifie une transaction selon des conditions sur le mémo, le bénéficiaire, le montant ou le compte, reliées par ET ou OU, puis exécute ses actions, comme « Définir la catégorie » ou « Définir le bénéficiaire ». Choisissez « Nouvelle règle » pour en créer une ; si plusieurs règles correspondent, l’ordre d’exécution le plus bas passe en premier."
 
-#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/shared/mutations/op-code-registry/domains/transactions.ts
 msgid "A split line can have a category or a transfer account, not both."
 msgstr "Une ligne de ventilation peut avoir une catégorie ou un compte de virement, pas les deux."
 
@@ -3495,6 +3495,10 @@ msgstr "Ajouter"
 msgctxt "mobile nav"
 msgid "Add"
 msgstr "Ajouter"
+
+#: src/shared/mutations/op-code-registry/shared.ts
+msgid "Add a {from} to {to} exchange rate to save this received amount."
+msgstr "Ajoutez un taux de change de {from} vers {to} pour enregistrer ce montant reçu."
 
 #: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
@@ -8910,12 +8914,15 @@ msgstr "Saisir mon code →"
 msgid "Enter new password (min 8 characters)"
 msgstr "Saisissez le nouveau mot de passe (min. 8 caractères)"
 
-#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
-msgid "Enter the amount received in {name}."
-msgstr "Saisissez le montant reçu sur {name}."
+#. placeholder {0}: target.Name
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
+msgid "Enter the amount received in {0}"
+msgstr "Saisissez le montant reçu sur {0}"
 
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Enter the amount sent from {0}"
 msgstr "Saisissez le montant envoyé depuis {0}"
 
@@ -9617,6 +9624,8 @@ msgid "Failed to save recurring transaction"
 msgstr "Impossible d’enregistrer la transaction récurrente"
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/mobile-transaction-card/useMobileTransactionCardState.ts
 msgid "Failed to save split transaction"
 msgstr "Impossible d'enregistrer la transaction ventilée"
 

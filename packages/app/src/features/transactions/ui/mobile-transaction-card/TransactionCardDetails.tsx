@@ -113,6 +113,8 @@ interface TransactionCardDetailsProps {
   /** Cross-currency transfer lines: the account whose received amount the line asks for. */
   splitReceivedTarget?: (line: SplitLine) => SplitTransferAccount | undefined;
   splitCategoryMode?: (line: SplitLine) => SplitLineCategoryMode;
+  /** Why Save is disabled (a missing received amount), shown under the lines. */
+  splitSaveHint?: string | null;
 }
 
 export const TransactionCardDetails = React.memo(function TransactionCardDetails({
@@ -152,6 +154,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
   onSaveSplits,
   splitReceivedTarget,
   splitCategoryMode,
+  splitSaveHint,
 }: TransactionCardDetailsProps) {
   const { t } = useLingui();
 
@@ -580,6 +583,12 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                 <Button variant="outline" size="sm" onClick={onAddSplitLine}>
                   <Trans>+ Line</Trans>
                 </Button>
+              </div>
+            )}
+
+            {editSplits && splitSaveHint && (
+              <div className="px-2 text-xs text-destructive" data-testid="split-save-hint">
+                {splitSaveHint}
               </div>
             )}
 

@@ -28,7 +28,20 @@ vi.mock('@entities/account/api/useAccounts', () => ({
 vi.mock('@entities/currency/lib/currency-utils', () => ({
   getExchangeRate: vi.fn(async () => 0.9),
 }));
-vi.mock('@shared/runtime/global', () => ({ getRuntime: () => null }));
+const core = vi.hoisted(() => ({ unlocked: [] as number[] }));
+vi.mock('@shared/runtime/global', () => ({
+  getRuntime: () => ({
+    services: () => ({
+      transactions: {
+        getTransactionByID: () => ({ AccountID: 1, BudgetID: 1, Date: '2026-03-10' }),
+        splitSaveUnlocksMirrors: async () => core.unlocked,
+      },
+      splits: {
+        quoteMirrorAmounts: async (_p: unknown, lines: unknown[]) => lines.map(() => null),
+      },
+    }),
+  }),
+}));
 
 const transaction = {
   ID: 10,
@@ -110,6 +123,7 @@ describe('mobile split editor transfer lines', () => {
         MirrorReconciled: true,
       },
     ];
+    core.unlocked = [99];
     const { result } = setup();
     act(() => result.current.initEditSplitsFromExisting());
     act(() => result.current.updateSplitLine(0, { received_amount: 8_500, received_auto: false }));
@@ -122,6 +136,7 @@ describe('mobile split editor transfer lines', () => {
     await act(() => saving!);
     expect(state.upsert).not.toHaveBeenCalled();
     expect(result.current.editSplits).not.toBeNull();
+    core.unlocked = [];
   });
 
   it('estimates the received amount when the line amount changes', async () => {
@@ -143,5 +158,30 @@ describe('mobile split editor transfer lines', () => {
     expect(result.current.editSplits![0].received_amount).toBe(8_800);
     act(() => result.current.updateSplitLine(0, { outflow: 20_000 }));
     await waitFor(() => expect(result.current.editSplits![0].received_amount).toBe(18_000));
+  });
+
+  it('an untouched estimate is not sent, and a missing amount explains the disabled Save', async () => {
+    state.splits = [
+      {
+        ID: 1,
+        CategoryID: null,
+        TransferAccountID: 5,
+        Memo: '',
+        Payee: '',
+        InflowConverted: 0,
+        OutflowConverted: 10_000,
+        Mirror: mirror,
+        MirrorPinned: false,
+      },
+    ];
+    const { result } = setup();
+    act(() => result.current.initEditSplitsFromExisting());
+    await act(() => result.current.saveSplits());
+    expect(state.upsert.mock.calls[0][0].splits[0]).toMatchObject({ received_amount: null });
+
+    act(() => result.current.initEditSplitsFromExisting());
+    act(() => result.current.updateSplitLine(0, { received_amount: null, received_auto: false }));
+    expect(result.current.splitSaveHint).toBe('Enter the amount received in Euro');
+    expect(result.current.splitSaveDisabled).toBe(true);
   });
 });

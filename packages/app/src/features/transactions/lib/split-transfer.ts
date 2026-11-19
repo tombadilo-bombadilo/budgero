@@ -1,3 +1,4 @@
+import { t } from '@lingui/core/macro';
 /**
  * Split lines that move money to another of your accounts. A line is a
  * transfer when it carries transferAccountId; the core then writes the
@@ -94,4 +95,14 @@ export function mirrorMagnitude(
   if (!mirror) return null;
   const value = Math.abs(Number(mirror.InflowNative) - Number(mirror.OutflowNative));
   return value > 0 ? value : null;
+}
+
+/** Why a split can't be saved yet: a cross-currency transfer line has no amount for the other side. */
+export function missingReceivedMessage(
+  target: SplitTransferAccount,
+  lineIsInflow: boolean
+): string {
+  return lineIsInflow
+    ? t`Enter the amount sent from ${target.Name}`
+    : t`Enter the amount received in ${target.Name}`;
 }

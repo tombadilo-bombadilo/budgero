@@ -5,8 +5,6 @@ export {
   confirmReconciledEdit,
   confirmTotalEdit,
   confirmSplitSave,
-  splitLinesUnlockMirrors,
-  type EditedMirrorLine,
   useReconciledEditConfirmStore,
   type ReconciledEditKind,
   type ReconciledEditServices,

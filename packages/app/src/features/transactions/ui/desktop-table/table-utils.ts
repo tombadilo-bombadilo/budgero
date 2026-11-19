@@ -87,15 +87,12 @@ export const toEditableSplit = (
 /**
  * The received-amount fields of a line loaded with its mirror
  * (SplitService.getSplitsWithMirrors): the mirror's stored amount, entered
- * (not re-estimated) when the mirror is pinned, and whether it is reconciled.
+ * (not re-estimated) when the mirror is pinned.
  */
 export function receivedFromMirror(
   split: SplitLike,
   lineAmount: number
-): Pick<
-  EditableSplit,
-  'received_amount' | 'received_auto' | 'received_base' | 'mirror_received' | 'mirror_reconciled'
-> {
+): Pick<EditableSplit, 'received_amount' | 'received_auto' | 'received_base'> {
   const s = split as Record<string, unknown>;
   const mirror = s.Mirror as { InflowNative: number; OutflowNative: number } | undefined;
   const received = mirrorMagnitude(mirror);
@@ -104,8 +101,6 @@ export function receivedFromMirror(
     received_amount: received,
     received_auto: !s.MirrorPinned,
     received_base: lineAmount,
-    mirror_received: received,
-    mirror_reconciled: Boolean(s.MirrorReconciled),
   };
 }
 
@@ -126,9 +121,6 @@ export interface EditableSplit {
   received_auto?: boolean;
   /** The line amount a loaded received amount belongs to. */
   received_base?: number | null;
-  /** The stored mirror's amount and lock state when the editor opened. */
-  mirror_received?: number | null;
-  mirror_reconciled?: boolean;
 }
 
 /**

@@ -11,13 +11,12 @@ import {
 } from '@entities/transaction/api/useTransactions';
 import { getRuntime } from '@shared/runtime/global';
 import { useUiStore } from '@shared/store/useUiStore';
+import { toastError } from '@shared/lib/errors';
+import { t } from '@lingui/core/macro';
 import { extractSplitFlows, receivedFromMirror } from '../desktop-table/table-utils';
+import { confirmSplitSave } from '../reconciled-edit/reconciled-edit-confirm';
 import {
-  confirmSplitSave,
-  splitLinesUnlockMirrors,
-  type EditedMirrorLine,
-} from '../reconciled-edit/reconciled-edit-confirm';
-import {
+  missingReceivedMessage,
   needsReceivedAmount,
   splitLineCategoryMode,
   type SplitLineCategoryMode,
@@ -26,7 +25,7 @@ import {
 import { useSplitParentAccount } from '../split-transfer/useSplitParentAccount';
 import { useAutoReceivedAmounts } from '../split-transfer/useAutoReceivedAmounts';
 
-export interface SplitLine extends EditedMirrorLine {
+export interface SplitLine {
   id?: number;
   category_id: number | null;
   transfer_account_id?: number | null;
@@ -38,6 +37,8 @@ export interface SplitLine extends EditedMirrorLine {
   received_amount?: number | null;
   /** The received amount follows the line amount (estimated) until one is typed. */
   received_auto?: boolean;
+  /** The line amount a loaded received amount belongs to. */
+  received_base?: number | null;
 }
 
 interface UseMobileTransactionCardStateProps {
@@ -87,8 +88,12 @@ export function useMobileTransactionCardState({
   const splitCategoryMode = (line: SplitLine): SplitLineCategoryMode =>
     splitLineCategoryMode(ownAccount, accountById(line.transfer_account_id));
   const lineAmount = (line: SplitLine) => Number(line.inflow) || Number(line.outflow) || 0;
+  // Only an amount the user typed (or entered before) is sent and pinned; an
+  // estimate leaves the mirror to the usual conversion.
   const receivedOf = (line: SplitLine) =>
-    splitReceivedTarget(line) ? (line.received_amount ?? null) : null;
+    splitReceivedTarget(line) && line.received_auto === false
+      ? (line.received_amount ?? null)
+      : null;
 
   // Transfers move money between your own accounts and cannot be split.
   const isTransfer = !!transaction.TransferID && transaction.TransferID.trim() !== '';
@@ -123,6 +128,14 @@ export function useMobileTransactionCardState({
 
   const isClearingSplits = Boolean(editSplits && editSplits.length === 0 && hasExistingSplits);
 
+  // Why Save waits: a cross-currency transfer line has no amount for the other side.
+  const missingLine = editSplits?.find(
+    (line) => splitReceivedTarget(line) && !(Number(line.received_amount) > 0)
+  );
+  const splitSaveHint = missingLine
+    ? missingReceivedMessage(splitReceivedTarget(missingLine)!, Number(missingLine.inflow) > 0)
+    : null;
+
   const splitSaveDisabled =
     !editSplits ||
     upsertSplits.isPending ||
@@ -139,9 +152,7 @@ export function useMobileTransactionCardState({
             )
         ) ||
         // A transfer line to another currency needs what the other account received.
-        editSplits.some(
-          (line) => splitReceivedTarget(line) && !(Number(line.received_amount) > 0)
-        ) ||
+        Boolean(splitSaveHint) ||
         splitTargetNet !== draftSplitNet));
 
   useAutoReceivedAmounts({
@@ -236,7 +247,8 @@ export function useMobileTransactionCardState({
     }
 
     const prepared = editSplits.map((l, idx) => ({
-      category_id: l.category_id ?? null,
+      // A transfer between on-budget accounts never keeps a category.
+      category_id: splitCategoryMode(l) === 'transfer-locked' ? null : (l.category_id ?? null),
       transfer_account_id: l.transfer_account_id ?? null,
       memo: l.memo ?? '',
       payee: l.payee ?? '',
@@ -245,9 +257,6 @@ export function useMobileTransactionCardState({
       order_index: idx,
       received_amount: receivedOf(l),
     }));
-    const mirrorsUnlock = splitLinesUnlockMirrors(
-      editSplits.map((line) => ({ line, lineAmount: lineAmount(line), received: receivedOf(line) }))
-    );
 
     // Check if parent transaction amount needs updating (e.g., when viewing from filtered spending overview)
     // The parent transaction's inflow/outflow must match the split total for backend validation.
@@ -261,23 +270,27 @@ export function useMobileTransactionCardState({
         ? (transaction.OutflowNative ?? transaction.OutflowConverted ?? 0)
         : transaction.OutflowConverted || 0;
 
-    if (currentParentInflow - currentParentOutflow !== splitTargetNet) {
-      const total = {
-        inflow: splitTargetNet >= 0 ? splitTargetNet : 0,
-        outflow: splitTargetNet >= 0 ? 0 : Math.abs(splitTargetNet),
-      };
-      // A reconciled parent or transfer mirror asks first; cancelling keeps the editor open.
-      if (
-        !(await confirmSplitSave(
-          getRuntime()?.services(),
-          transaction.ID,
-          total,
-          amountCurrency,
-          mirrorsUnlock
-        ))
-      ) {
-        return;
-      }
+    const total =
+      currentParentInflow - currentParentOutflow !== splitTargetNet
+        ? {
+            inflow: splitTargetNet >= 0 ? splitTargetNet : 0,
+            outflow: splitTargetNet >= 0 ? 0 : Math.abs(splitTargetNet),
+          }
+        : undefined;
+    // A reconciled parent or transfer mirror asks first; cancelling keeps the editor open.
+    if (
+      !(await confirmSplitSave(
+        getRuntime()?.services(),
+        transaction.ID,
+        total,
+        amountCurrency,
+        prepared
+      ))
+    ) {
+      return;
+    }
+
+    if (total) {
       const accountId =
         (transaction as GetTransactionsByAccountRow & { AccountID?: number }).AccountID ?? 0;
       const inflowColumn = amountCurrency === 'native' ? 'InflowNative' : 'InflowConverted';
@@ -294,24 +307,19 @@ export function useMobileTransactionCardState({
         value: Math.abs(splitTargetNet),
         accountId,
       });
-    } else if (
-      mirrorsUnlock &&
-      !(await confirmSplitSave(
-        getRuntime()?.services(),
-        transaction.ID,
-        undefined,
-        amountCurrency,
-        true
-      ))
-    ) {
-      return;
     }
 
-    await upsertSplits.mutateAsync({
-      transactionId: transaction.ID,
-      splits: prepared,
-      amountCurrency,
-    });
+    try {
+      await upsertSplits.mutateAsync({
+        transactionId: transaction.ID,
+        splits: prepared,
+        amountCurrency,
+      });
+    } catch (error) {
+      // E.g. no exchange rate for an entered received amount: keep the editor open.
+      toastError(t`Failed to save split transaction`, error);
+      return;
+    }
     setEditTotal(null);
     setEditSplits(null);
   };
@@ -362,6 +370,7 @@ export function useMobileTransactionCardState({
 
     // Transfer lines
     splitReceivedTarget,
+    splitSaveHint,
     splitCategoryMode,
   };
 }

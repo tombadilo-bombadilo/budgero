@@ -21,8 +21,8 @@ export interface ReceivedLineAccess<L> {
 interface Options<L> {
   lines: readonly L[] | null;
   access: ReceivedLineAccess<L>;
-  /** Called with the auto lines whose estimate changed (line index → received amount). */
-  onEstimates: (estimates: ReadonlyMap<number, number>) => void;
+  /** Called with the auto lines whose estimate changed (line index → amount, null = none). */
+  onEstimates: (estimates: ReadonlyMap<number, number | null>) => void;
   accounts: readonly SplitTransferAccount[];
   /** The parent account's currency (decides which lines ask). */
   parentCurrency: string | null | undefined;
@@ -87,30 +87,41 @@ export function useAutoReceivedAmounts<L>({
     };
   }, [wantedKey, rates, budgetId]);
 
-  // Auto lines whose estimate differs from what they hold (none once in step).
-  const estimates = new Map<number, number>();
+  // Auto lines whose estimate differs from what they hold (none once in
+  // step). Without a rate (yet) an auto-filled amount is cleared rather than
+  // left stale: the editor then asks for one.
+  const estimates = new Map<number, number | null>();
   (lines ?? []).forEach((line, index) => {
     const target = targetOf(line);
     if (!amountCurrency || !target?.Currency || !access.auto(line)) return;
     const amount = access.amount(line);
-    if (!amount) return;
-    const stored = access.received(line);
-    if (stored && access.base?.(line) === amount) return;
+    const stored = access.received(line) ?? null;
+    if (stored && amount && access.base?.(line) === amount) return;
     const rate = rates[rateKey(target.Currency)];
-    if (!rate) return;
-    const estimate = convertScaled(amount, rate, amountCurrency, target.Currency);
-    if (estimate > 0 && estimate !== stored) estimates.set(index, estimate);
+    const estimate =
+      amount && rate ? convertScaled(amount, rate, amountCurrency, target.Currency) : null;
+    const next = estimate && estimate > 0 ? estimate : null;
+    if (next !== stored) estimates.set(index, next);
   });
-  const estimatesKey = [...estimates].map(([index, value]) => `${index}=${value}`).join(',');
+  const estimatesKey = [...estimates].map(([index, value]) => `${index}=${value ?? ''}`).join(',');
 
-  // Each set of estimates is applied once (the lines then hold them).
+  // Each set of estimates is applied once; once the lines hold them the key
+  // is empty again, so the same estimate later (a line retargeted and back,
+  // removed and re-added, a fresh form) applies again.
   const applied = React.useRef('');
   React.useEffect(() => {
-    if (!estimatesKey || applied.current === estimatesKey) return;
+    if (!estimatesKey) {
+      applied.current = '';
+      return;
+    }
+    if (applied.current === estimatesKey) return;
     applied.current = estimatesKey;
     onEstimates(
       new Map(
-        estimatesKey.split(',').map((entry) => entry.split('=').map(Number) as [number, number])
+        estimatesKey.split(',').map((entry) => {
+          const [index, value] = entry.split('=');
+          return [Number(index), value ? Number(value) : null] as [number, number | null];
+        })
       )
     );
   }, [estimatesKey, onEstimates]);

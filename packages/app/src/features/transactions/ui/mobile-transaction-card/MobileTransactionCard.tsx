@@ -113,6 +113,7 @@ export const MobileTransactionCard = React.memo(function MobileTransactionCard({
     saveSplits,
     splitReceivedTarget,
     splitCategoryMode,
+    splitSaveHint,
   } = useMobileTransactionCardState({
     transaction,
     budgetId,
@@ -286,6 +287,7 @@ export const MobileTransactionCard = React.memo(function MobileTransactionCard({
             onSaveSplits={saveSplits}
             splitReceivedTarget={splitReceivedTarget}
             splitCategoryMode={splitCategoryMode}
+            splitSaveHint={splitSaveHint}
           />
         )}
       </CardContentWrapper>

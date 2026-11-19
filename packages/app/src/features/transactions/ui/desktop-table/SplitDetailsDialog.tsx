@@ -26,6 +26,7 @@ import { asMilli, formatMilli } from '@shared/lib/currency/milli';
 import { withEditPrecision } from '@shared/lib/number-format';
 import { getRuntime } from '@shared/runtime/global';
 import { useUiStore } from '@shared/store/useUiStore';
+import { toastError } from '@shared/lib/errors';
 import {
   type SplitLike,
   type EditableSplit,
@@ -34,11 +35,12 @@ import {
   getSplitCategoryLabel,
 } from './table-utils';
 import { SplitMemoText } from './SplitMemoText';
+import { confirmSplitSave } from '../reconciled-edit/reconciled-edit-confirm';
 import {
-  confirmSplitSave,
-  splitLinesUnlockMirrors,
-} from '../reconciled-edit/reconciled-edit-confirm';
-import { needsReceivedAmount, splitLineCategoryMode } from '../../lib/split-transfer';
+  missingReceivedMessage,
+  needsReceivedAmount,
+  splitLineCategoryMode,
+} from '../../lib/split-transfer';
 import { useSplitParentAccount } from '../split-transfer/useSplitParentAccount';
 import { useAutoReceivedAmounts } from '../split-transfer/useAutoReceivedAmounts';
 import {
@@ -89,8 +91,16 @@ export function SplitDetailsDialog({
   const categoryMode = (line: unknown) =>
     splitLineCategoryMode(ownAccount, accountById((line as EditableSplit)?.transfer_account_id));
   const lineAmount = (line: EditableSplit) => Number(line.inflow) || Number(line.outflow) || 0;
+  // Only an amount the user typed (or entered before) is sent and pinned; an
+  // estimate leaves the mirror to the usual conversion.
   const receivedOf = (line: EditableSplit) =>
-    receivedTarget(line) ? (line.received_amount ?? null) : null;
+    receivedTarget(line) && line.received_auto === false ? (line.received_amount ?? null) : null;
+  const missingReceived = (lines: EditableSplit[] | null) => {
+    const line = lines?.find(
+      (candidate) => receivedTarget(candidate) && !(Number(candidate.received_amount) > 0)
+    );
+    return line ? missingReceivedMessage(receivedTarget(line)!, Number(line.inflow) > 0) : null;
+  };
 
   const createLineId = useCallback(
     () =>
@@ -209,7 +219,7 @@ export function SplitDetailsDialog({
           (Number(line.outflow) > 0 && Number(line.inflow) === 0)
       ) &&
       // A transfer line to another currency needs what the other account received.
-      editSplits.every((line) => !receivedTarget(line) || Number(line.received_amount) > 0) &&
+      !missingReceived(editSplits) &&
       remaining === 0) ||
       isClearing);
 
@@ -281,24 +291,9 @@ export function SplitDetailsDialog({
             outflow: targetNet >= 0 ? 0 : Math.abs(targetNet),
           }
         : undefined;
-    // A reconciled parent or transfer mirror asks first; cancelling keeps the editor open.
-    const mirrorsUnlock = splitLinesUnlockMirrors(
-      editSplits.map((line) => ({ line, lineAmount: lineAmount(line), received: receivedOf(line) }))
-    );
-    if (
-      !(await confirmSplitSave(
-        getRuntime()?.services(),
-        transaction.ID,
-        total,
-        amountCurrency,
-        mirrorsUnlock
-      ))
-    ) {
-      return;
-    }
-
     const prepared = editSplits.map((line, idx) => ({
-      category_id: line.category_id ?? null,
+      // A transfer between on-budget accounts never keeps a category.
+      category_id: categoryMode(line) === 'transfer-locked' ? null : (line.category_id ?? null),
       transfer_account_id: line.transfer_account_id ?? null,
       memo: line.memo ?? '',
       payee: line.payee ?? '',
@@ -307,12 +302,30 @@ export function SplitDetailsDialog({
       order_index: idx,
       received_amount: receivedOf(line),
     }));
-    await saveSplits.mutateAsync({
-      transactionId: transaction.ID,
-      splits: prepared,
-      amountCurrency,
-      total,
-    });
+    // A reconciled parent or transfer mirror asks first; cancelling keeps the editor open.
+    if (
+      !(await confirmSplitSave(
+        getRuntime()?.services(),
+        transaction.ID,
+        total,
+        amountCurrency,
+        prepared
+      ))
+    ) {
+      return;
+    }
+    try {
+      await saveSplits.mutateAsync({
+        transactionId: transaction.ID,
+        splits: prepared,
+        amountCurrency,
+        total,
+      });
+    } catch (error) {
+      // E.g. no exchange rate for an entered received amount: keep the editor open.
+      toastError(t`Failed to save split transaction`, error);
+      return;
+    }
     setEditSplits(null);
     setEditTotal(null);
   };
@@ -383,7 +396,12 @@ export function SplitDetailsDialog({
                     >
                       <Trans>Cancel</Trans>
                     </Button>
-                    <Button size="sm" onClick={handleSave} disabled={!canSave}>
+                    <Button
+                      size="sm"
+                      onClick={handleSave}
+                      disabled={!canSave}
+                      title={missingReceived(editSplits) ?? undefined}
+                    >
                       {isClearing ? t`Remove splits` : t`Save`}
                     </Button>
                   </>
@@ -414,6 +432,11 @@ export function SplitDetailsDialog({
                     {formatMilli(editFormatter, asMilli(targetTotal))}
                   </Trans>
                 </span>
+                {missingReceived(editSplits) && (
+                  <span className="w-full text-destructive" data-testid="split-save-hint">
+                    {missingReceived(editSplits)}
+                  </span>
+                )}
               </div>
             )}
             {isLoading ? (

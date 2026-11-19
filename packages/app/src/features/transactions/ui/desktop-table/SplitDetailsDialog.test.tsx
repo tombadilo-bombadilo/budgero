@@ -7,6 +7,36 @@ import { useReconciledEditConfirmStore } from '../reconciled-edit/reconciled-edi
 const state = vi.hoisted(() => ({
   splits: [] as Record<string, unknown>[],
   save: vi.fn(),
+  unlocked: [] as number[],
+  unlockCheck: vi.fn(),
+}));
+
+// The core's split-save check: which reconciled mirrors a save would unlock.
+vi.mock('@shared/runtime/global', () => ({
+  getRuntime: () => ({
+    services: () => ({
+      transactions: {
+        getTransactionByID: () => ({ AccountID: 1, BudgetID: 1, Date: '2026-03-10' }),
+        splitSaveUnlocksMirrors: async (...args: unknown[]) => {
+          state.unlockCheck(...args);
+          return state.unlocked;
+        },
+      },
+      splits: {
+        quoteMirrorAmounts: async (_parent: unknown, lines: unknown[], received: number[]) =>
+          lines.map((_line, index) =>
+            received[index]
+              ? {
+                  InflowNative: received[index],
+                  OutflowNative: 0,
+                  InflowConverted: 1,
+                  OutflowConverted: 0,
+                }
+              : null
+          ),
+      },
+    }),
+  }),
 }));
 
 const accounts = [
@@ -173,6 +203,7 @@ describe('SplitDetailsDialog transfer lines', () => {
     state.splits = [line({ TransferAccountID: 5, Mirror: mirror, MirrorPinned: true })];
     open();
     expect(screen.getByText('Received in Euro (EUR)')).toBeInTheDocument();
+    // An entered (pinned) amount is sent again, so it stays pinned.
     expect(await save()).toMatchObject({ transfer_account_id: 5, received_amount: 8_800 });
 
     state.save.mockClear();
@@ -184,7 +215,34 @@ describe('SplitDetailsDialog transfer lines', () => {
     expect(useReconciledEditConfirmStore.getState().pending).toBeNull();
   });
 
+  it('an estimate is shown but not sent: the mirror keeps the usual conversion', async () => {
+    const mirror = {
+      InflowNative: 8_800,
+      OutflowNative: 0,
+      InflowConverted: 9_700,
+      OutflowConverted: 0,
+    };
+    state.splits = [line({ TransferAccountID: 5, Mirror: mirror, MirrorPinned: false })];
+    open();
+    expect(screen.getByTestId('split-received-amount')).toHaveValue('8800');
+    expect(await save()).toMatchObject({ transfer_account_id: 5, received_amount: null });
+  });
+
+  it('explains why Save waits while a new cross-currency line has no amount', async () => {
+    const { getExchangeRate } = await import('@entities/currency/lib/currency-utils');
+    vi.mocked(getExchangeRate).mockResolvedValue(null);
+    state.splits = [line({ TransferAccountID: 2, TransferAccountName: 'Savings' })];
+    open();
+    fireEvent.click(screen.getByRole('button', { name: 'Transfer: Euro' }));
+    expect(await screen.findByTestId('split-save-hint')).toHaveTextContent(
+      'Enter the amount received in Euro'
+    );
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    vi.mocked(getExchangeRate).mockResolvedValue(0.9);
+  });
+
   it('asks before a new received amount unlocks a reconciled mirror', async () => {
+    state.unlocked = [99];
     const mirror = {
       InflowNative: 8_800,
       OutflowNative: 0,
@@ -203,6 +261,15 @@ describe('SplitDetailsDialog transfer lines', () => {
     useReconciledEditConfirmStore.getState().settle(false);
     await Promise.resolve();
     expect(state.save).not.toHaveBeenCalled();
+    expect(state.unlockCheck).toHaveBeenCalledWith(10, {
+      splits: [
+        expect.objectContaining({
+          TransferAccountID: 5,
+          Mirror: expect.objectContaining({ InflowNative: 8_500 }),
+        }),
+      ],
+    });
+    state.unlocked = [];
   });
 
   it('keeps a payee naming its own account as plain text', async () => {

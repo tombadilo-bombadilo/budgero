@@ -38,7 +38,11 @@ import type {
 import { useAutofillIntegration } from './useAutofillIntegration';
 
 import type { SplitLine } from '../form';
-import { needsReceivedAmount, splitLineCategoryMode } from '../../lib/split-transfer';
+import {
+  missingReceivedMessage,
+  needsReceivedAmount,
+  splitLineCategoryMode,
+} from '../../lib/split-transfer';
 import {
   convertAmountToFlow,
   validateTransaction,
@@ -495,13 +499,6 @@ export function useAddTransactionForm({
         !options.templateLines &&
         splitLineCategoryMode(parentAccount, accountOf(l.transferAccountId)) ===
           'transfer-optional';
-      // A line is either categorized or a transfer, never both.
-      if (splitLines.some((l) => l.categoryId && l.transferAccountId && !keepsCategory(l))) {
-        toast.error(t`Invalid split line`, {
-          description: t`A split line can have a category or a transfer account, not both.`,
-        });
-        return null;
-      }
       if (
         form.selectedFromAccount &&
         splitLines.some(
@@ -523,23 +520,30 @@ export function useAddTransactionForm({
         return null;
       }
 
-      // A transfer line to another currency needs what the other account received.
-      const receivedOf = (l: SplitLine) =>
+      // A transfer line to another currency needs an amount for the other
+      // side (typed, or the estimate shown); only a typed one is sent and
+      // pinned, an estimate leaves the mirror to the usual conversion.
+      const crossCurrency = (l: SplitLine) =>
         !options.templateLines &&
-        needsReceivedAmount(parentAccount?.Currency, accountOf(l.transferAccountId))
-          ? (l.receivedAmount ?? null)
-          : undefined;
-      const missingReceived = splitLines.find((l) => receivedOf(l) === null);
+        needsReceivedAmount(parentAccount?.Currency, accountOf(l.transferAccountId));
+      const missingReceived = splitLines.find(
+        (l) => crossCurrency(l) && !((l.receivedAmount ?? 0) > 0)
+      );
       if (missingReceived) {
-        const name = accountOf(missingReceived.transferAccountId)?.Name ?? '';
         toast.error(t`Invalid split line`, {
-          description: t`Enter the amount received in ${name}.`,
+          description: missingReceivedMessage(
+            accountOf(missingReceived.transferAccountId)!,
+            missingReceived.inflow > 0
+          ),
         });
         return null;
       }
 
+      // The payload's categories: a transfer line keeps one only to an
+      // off-budget account, so a stale hidden one never blocks the save.
       return splitLines.map((l) => {
-        const receivedAmount = receivedOf(l);
+        const receivedAmount =
+          crossCurrency(l) && l.receivedAuto === false ? l.receivedAmount : undefined;
         return {
           categoryId: l.transferAccountId
             ? keepsCategory(l)

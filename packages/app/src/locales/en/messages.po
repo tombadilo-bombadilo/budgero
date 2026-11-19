@@ -3127,7 +3127,7 @@ msgstr "A result filter couldn’t be read and was left out."
 msgid "A rule checks a transaction against conditions on memo, payee, amount or account, joined with AND or OR, then runs its actions, such as Set category or Set payee. Choose New rule to make one; when several rules match, the lower run order goes first."
 msgstr "A rule checks a transaction against conditions on memo, payee, amount or account, joined with AND or OR, then runs its actions, such as Set category or Set payee. Choose New rule to make one; when several rules match, the lower run order goes first."
 
-#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/shared/mutations/op-code-registry/domains/transactions.ts
 msgid "A split line can have a category or a transfer account, not both."
 msgstr "A split line can have a category or a transfer account, not both."
 
@@ -3497,6 +3497,10 @@ msgstr "Add"
 msgctxt "mobile nav"
 msgid "Add"
 msgstr "Add"
+
+#: src/shared/mutations/op-code-registry/shared.ts
+msgid "Add a {from} to {to} exchange rate to save this received amount."
+msgstr "Add a {from} to {to} exchange rate to save this received amount."
 
 #: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
@@ -8912,12 +8916,15 @@ msgstr "Enter my code →"
 msgid "Enter new password (min 8 characters)"
 msgstr "Enter new password (min 8 characters)"
 
-#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
-msgid "Enter the amount received in {name}."
-msgstr "Enter the amount received in {name}."
+#. placeholder {0}: target.Name
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
+msgid "Enter the amount received in {0}"
+msgstr "Enter the amount received in {0}"
 
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Enter the amount sent from {0}"
 msgstr "Enter the amount sent from {0}"
 
@@ -9619,6 +9626,8 @@ msgid "Failed to save recurring transaction"
 msgstr "Failed to save recurring transaction"
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/mobile-transaction-card/useMobileTransactionCardState.ts
 msgid "Failed to save split transaction"
 msgstr "Failed to save split transaction"
 

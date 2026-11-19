@@ -270,6 +270,16 @@ describe('InlineTransactionRow', () => {
     await vi.waitFor(() => expect(form.handleSubmit).toHaveBeenCalledTimes(1));
   });
 
+  it('Ctrl+Enter in an amount field saves once the field is committed', async () => {
+    const row = renderRow();
+    const outflow = screen.getByLabelText('outflow');
+    fireEvent.change(outflow, { target: { value: '25000' } });
+    row.rerender();
+    fireEvent.keyDown(outflow, { key: 'Enter', ctrlKey: true });
+    await vi.waitFor(() => expect(form.handleSubmit).toHaveBeenCalledTimes(1));
+    expect(form.state.amount).toBe(25000);
+  });
+
   it('lets a foreign-currency transaction type its budget-currency amount', () => {
     form.state.needsBudgetConversion = true;
     form.state.conversionTargetCurrency = 'HUF';
