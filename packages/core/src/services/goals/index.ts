@@ -119,8 +119,9 @@ export class GoalService {
    * CreateGoal - Creates a new savings or spending goal.
    *
    * Without `timeframe.from` the timeframe starts in StartDate's month, as
-   * for goals written by older builds. A category already having a timeframe
-   * starting in that month is an error (setGoalFrom replaces one).
+   * for goals written by older builds, and the category must have no goal yet
+   * (older builds' unique goal per category). A category already having a
+   * timeframe starting in that month is an error (setGoalFrom replaces one).
    */
   createGoal(
     goalType: GoalType,
@@ -137,7 +138,15 @@ export class GoalService {
     const to = timeframe.to ?? null;
     const invalid = validateGoalTimeframeChange({ kind: 'set', from, to });
     if (invalid) throw new ValidationError(invalid, 'EffectiveFrom');
-    if (this.queries.getTimeframes(categoryId).some((goal) => goalEffectiveFrom(goal) === from)) {
+    const chain = this.queries.getTimeframes(categoryId);
+    if (timeframe.from == null && timeframe.to == null && chain.length > 0) {
+      // A create without a timeframe is the shape v1.21 builds send and apply:
+      // there it hits UNIQUE(CategoryID) once the category has a goal (e.g. two
+      // devices creating the first goal offline). Fail the same way, so every
+      // device ends up with the one goal the first create made.
+      throw new Error('UNIQUE constraint failed: goals.CategoryID');
+    }
+    if (chain.some((goal) => goalEffectiveFrom(goal) === from)) {
       throw new ValidationError(`Category ${categoryId} already has a goal starting in ${from}`);
     }
     return this.queries.createGoal(
@@ -304,7 +313,8 @@ export class GoalService {
   /**
    * Ends the category's goal from `month` (YYYY-MM) onwards: timeframes
    * starting in or after it are removed and the one before ends the month
-   * before. Months before `month` keep the goal they had.
+   * before. Months before `month` keep the goal they had; when no timeframe
+   * starts before `month`, the goal is removed from every month.
    */
   endGoalFrom(categoryId: number, month: string): void {
     const change: GoalTimeframeChange = { kind: 'endFrom', month };

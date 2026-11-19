@@ -104,13 +104,23 @@ describe('migration 081: goal timeframes', () => {
       db,
       "SELECT name FROM sqlite_master WHERE type = 'trigger' AND tbl_name = 'goals' ORDER BY name"
     ).flat();
-    expect(triggers).toEqual(['guard_goals_safe_money_insert', 'guard_goals_safe_money_update']);
+    expect(triggers).toEqual([
+      'goals_default_effective_from',
+      'guard_goals_safe_money_insert',
+      'guard_goals_safe_money_update',
+    ]);
     expect(() => db.exec(`UPDATE goals SET Target = 1.5 WHERE ID = 3`)).toThrow(/money value/);
     const indexes = all(
       db,
       "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = 'goals' AND sql IS NOT NULL"
     ).flat();
     expect(indexes).toContain('idx_goals_category_effective_from');
+  });
+
+  it('fills EffectiveFrom from StartDate for rows inserted without it', () => {
+    db.exec(`INSERT INTO goals (ID, Type, CategoryID, Target, StartDate)
+             VALUES (50, 'monthly', 4, 1, '2024-09-30')`);
+    expect(all(db, 'SELECT EffectiveFrom FROM goals WHERE ID = 50')).toEqual([['2024-09']]);
   });
 
   it('still cascades goal deletes from their category', () => {

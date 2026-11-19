@@ -194,15 +194,39 @@ describe('goal timeframe spans and notices', () => {
     });
   });
 
-  it('ending before the first timeframe starts keeps it for the months before', () => {
+  it('ending before the first timeframe starts removes the goal everywhere (no history)', () => {
     const g200 = tf(200, '2020-01');
     const g250 = tf(250, '2021-06');
     expect(planGoalTimeframeChange([g200, g250], { kind: 'endFrom', month: '2019-06' })).toEqual({
-      delete: [250],
-      bounds: [{ id: 200, from: '2019-05', to: '2019-05' }],
+      delete: [200, 250],
+      bounds: [],
       overwrite: null,
       insert: null,
     });
+  });
+
+  it('a new earliest timeframe warns that it also covers the months before it', () => {
+    const g200 = tf(200, '2020-01');
+    expect(describeGoalTimeframeChange([g200], { kind: 'set', from: '2019-06', to: null })).toEqual(
+      [
+        { kind: 'supersededBy', goal: g200, from: '2020-01' },
+        { kind: 'rewritesEarlier', from: null, to: '2019-05' },
+      ]
+    );
+  });
+
+  it('two rows starting in one month: the first applies (the row setGoalFrom overwrites)', () => {
+    const a = tf(3, '2020-01');
+    const b = tf(5, '2020-01');
+    expect(resolveGoalForMonth([b, a], '2020-04')).toBe(a);
+    const spans = goalTimeframeSpans([a, b]);
+    expect(spans.map(({ goal, empty }) => [goal.ID, empty])).toEqual([
+      [3, false],
+      [5, true],
+    ]);
+    expect(
+      planGoalTimeframeChange([b, a], { kind: 'set', from: '2020-01', to: null }).overwrite
+    ).toBe(3);
   });
 });
 
@@ -268,11 +292,60 @@ describe('GoalService timeframes', () => {
     ]);
   });
 
-  it('a create in a month that already starts a timeframe fails, like the old unique goal', () => {
+  it('a create without a timeframe on a category with a goal fails like v1.21 (unique goal)', () => {
     s.goals.createGoal(GoalType.MONTHLY, groceries, asMilli(200_000), '2020-01-01', '');
     expect(() =>
-      s.goals.createGoal(GoalType.MONTHLY, groceries, asMilli(300_000), '2020-01-15', '')
+      s.goals.createGoal(GoalType.MONTHLY, groceries, asMilli(300_000), '2024-05-01', '')
+    ).toThrow(/UNIQUE constraint failed: goals.CategoryID/);
+    expect(rows()).toHaveLength(1);
+  });
+
+  it('a create with a timeframe adds one, but not in a month that already starts one', () => {
+    s.goals.createGoal(GoalType.MONTHLY, groceries, asMilli(200_000), '2020-01-01', '');
+    s.goals.createGoal(
+      GoalType.MONTHLY,
+      groceries,
+      asMilli(300_000),
+      '2024-05-01',
+      '',
+      undefined,
+      false,
+      null,
+      {
+        from: '2024-05',
+      }
+    );
+    expect(rows()).toHaveLength(2);
+    expect(() =>
+      s.goals.createGoal(
+        GoalType.MONTHLY,
+        groceries,
+        asMilli(1),
+        '2020-01-15',
+        '',
+        undefined,
+        false,
+        null,
+        {
+          from: '2020-01',
+        }
+      )
     ).toThrow(/already has a goal/);
+  });
+
+  it('a row restored without EffectiveFrom (v1.21 undo data) gets its StartDate month', () => {
+    s.goals.restoreGoal({
+      ID: 40,
+      Type: 'monthly',
+      CategoryID: groceries,
+      Target: 5000,
+      StartDate: '2023-04-12',
+      TargetDate: '',
+      Purpose: 'spending',
+      Recurring: 0,
+      CycleMonths: null,
+    });
+    expect(rows()).toEqual([{ ID: 40, Target: 5000, EffectiveFrom: '2023-04', EffectiveTo: null }]);
   });
 
   it('ending from a month keeps history and removes later timeframes', () => {
@@ -288,11 +361,12 @@ describe('GoalService timeframes', () => {
     ]);
   });
 
-  it('ending in the first timeframe start month keeps the goal for the months before', () => {
+  it('ending in the first timeframe start month removes the goal from every month', () => {
     s.goals.createGoal(GoalType.MONTHLY, groceries, asMilli(200_000), '2026-11-01', '');
     s.goals.endGoalFrom(groceries, '2026-11');
-    expect(amountIn('2026-10')).toBe(200);
+    expect(amountIn('2026-10')).toBeNull();
     expect(amountIn('2026-11')).toBeNull();
+    expect(rows()).toEqual([]);
   });
 
   it('an in-place update only touches the named timeframe', () => {

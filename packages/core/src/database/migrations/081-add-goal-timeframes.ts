@@ -16,9 +16,9 @@ const debugLog = createLogger('database:migrations');
  * timeframe applies back to the start of the budget and an open-ended one
  * forever, so every month keeps the goal it had.
  *
- * EffectiveFrom is nullable: rows re-inserted from an older build's undo
- * payload (which doesn't know the column) read as their StartDate's month,
- * the same value this migration derives (see goalEffectiveFrom).
+ * Rows inserted without EffectiveFrom (an older build's undo payload, which
+ * doesn't know the column) get their StartDate's month from a trigger: the
+ * same value this migration derives, so every device stores the same row.
  */
 const GOAL_COLUMNS = [
   'ID',
@@ -87,6 +87,15 @@ export const migration081: Migration = {
     db.exec(
       `CREATE UNIQUE INDEX IF NOT EXISTS idx_goals_category_effective_from ON goals(CategoryID, EffectiveFrom)`
     );
+    db.exec(`
+      CREATE TRIGGER IF NOT EXISTS goals_default_effective_from
+      AFTER INSERT ON goals
+      FOR EACH ROW WHEN NEW.EffectiveFrom IS NULL
+      BEGIN
+        UPDATE goals SET EffectiveFrom = ${EFFECTIVE_FROM_FOR_START_DATE.replace(/StartDate/g, 'NEW.StartDate')}
+        WHERE ID = NEW.ID;
+      END
+    `);
   },
   verify: (db: MigrationDatabase) => {
     try {
@@ -95,6 +104,10 @@ export const migration081: Migration = {
       if (!['EffectiveFrom', 'EffectiveTo', 'CycleMonths'].every((c) => columns.includes(c))) {
         return false;
       }
+      const trigger = db.exec(
+        `SELECT 1 FROM sqlite_master WHERE type = 'trigger' AND name = 'goals_default_effective_from'`
+      );
+      if (!trigger.length) return false;
       // No unique index on CategoryID alone may survive.
       const indexes = db.exec(`PRAGMA index_list(goals)`)?.[0]?.values ?? [];
       for (const [, name, unique] of indexes) {

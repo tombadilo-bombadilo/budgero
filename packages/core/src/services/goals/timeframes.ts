@@ -84,10 +84,13 @@ export function resolveGoalForMonth<T extends TimeframeFields>(
 ): T | null {
   if (timeframes.length === 0) return null;
   const chain = sortGoalTimeframes(timeframes);
+  // Two rows starting in one month (the unique index prevents it; defensive)
+  // resolve to the first, the same row setGoalFrom overwrites.
   let selected = chain[0];
   for (const goal of chain) {
-    if (goalEffectiveFrom(goal) <= month) selected = goal;
-    else break;
+    const from = goalEffectiveFrom(goal);
+    if (from > month) break;
+    if (from > goalEffectiveFrom(selected)) selected = goal;
   }
   const to = goalEffectiveTo(selected);
   return to !== null && to < month ? null : selected;
@@ -141,7 +144,11 @@ export function goalTimeframeSpans<T extends TimeframeFields>(
   const chain = sortGoalTimeframes(timeframes);
   return chain.map((goal, index) => {
     const start = goalEffectiveFrom(goal);
-    const next = chain[index + 1] ?? null;
+    // A row starting in the same month as an earlier one never applies.
+    if (index > 0 && goalEffectiveFrom(chain[index - 1]) === start) {
+      return { goal, from: start, to: start, endedBy: 'next' as const, next: null, empty: true };
+    }
+    const next = chain.slice(index + 1).find((entry) => goalEffectiveFrom(entry) > start) ?? null;
     const own = goalEffectiveTo(goal);
     const beforeNext = next ? previousGoalMonth(goalEffectiveFrom(next)) : null;
     let to: string | null = own;
@@ -227,12 +234,9 @@ export function planGoalTimeframeChange<T extends TimeframeFields & { ID: number
     if (to === null || to > last) plan.bounds.push({ id: prev.ID, to: last });
     return plan;
   }
-  if (after.length === 0) return plan;
-  // Every timeframe starts in or after `month`, yet the first one covers the
-  // months before it: keep that one for exactly those months.
-  const [first, ...rest] = after;
-  plan.delete = rest.map((goal) => goal.ID);
-  plan.bounds.push({ id: first.ID, from: last, to: last });
+  // Every timeframe starts in or after `month`: none was set for an earlier
+  // month, so there is no history to keep and the goal goes everywhere.
+  plan.delete = after.map((goal) => goal.ID);
   return plan;
 }
 
@@ -357,6 +361,12 @@ export function describeGoalTimeframeChange<T extends TimeframeFields & { ID: nu
     const viewed = options.viewedMonth;
     if (viewed && changed && plan.overwrite !== null && change.from < viewed) {
       notices.push({ kind: 'rewritesEarlier', from: changed.from, to: previousGoalMonth(viewed) });
+    }
+    // A new earliest timeframe also covers every month before it, which the
+    // old earliest one covered until now.
+    const earliest = beforeSpans[0]?.goal;
+    if (plan.insert && earliest && change.from < goalEffectiveFrom(earliest)) {
+      notices.push({ kind: 'rewritesEarlier', from: null, to: previousGoalMonth(change.from) });
     }
   }
   return notices;

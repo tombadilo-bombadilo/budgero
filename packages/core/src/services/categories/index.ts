@@ -474,7 +474,7 @@ export class CategoryService {
          (SELECT COUNT(*) FROM transaction_splits WHERE CategoryID IN (${ids})) AS transactions,
          (SELECT COUNT(*) FROM assignments WHERE CategoryID IN (${ids}) AND Amount <> 0) AS assignedMonths,
          (SELECT COALESCE(SUM(Amount), 0) FROM assignments WHERE CategoryID IN (${ids})) AS assignedTotal,
-         (SELECT COUNT(*) FROM goals WHERE CategoryID IN (${ids})) AS goals,
+         (SELECT COUNT(DISTINCT CategoryID) FROM goals WHERE CategoryID IN (${ids})) AS goals,
          (SELECT COUNT(*) FROM recurring_transactions WHERE CategoryID IN (${ids})) AS scheduled`,
       ...categoryIds,
       ...categoryIds,
