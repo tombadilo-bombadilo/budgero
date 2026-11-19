@@ -103,8 +103,9 @@ A transaction can carry an optional time next to its date. It's empty unless you
 - **Seeing times in the register.** Turn on **Settings → Appearance → Show transaction times** to show the time under each date. With it on, the inline entry row has a time field too, and you can click a time in the register to edit it.
 - **Order within a day.** With times shown and **Order within a day** set to newest first, each day runs latest time first; transactions without a time sit at the bottom of their day. Ordering by amount ignores times.
 - **Transfers** share one time on both sides, and split lines that move money to another account take the time of their transaction. Recurring transactions post without a time.
-- **Imports and bank sync** keep the time when the file or bank sends a real one: a time column or a date-time in a CSV, OFX timestamps, CAMT.053 booking date-times, and bank feeds that include a time. A time of exactly 00:00:00 or 12:00:00 is treated as "no time", since many banks put it on every date-only row. Duplicate detection still matches by date and amount only.
-- The **Push API** accepts an optional `time` (`HH:MM`, 24-hour) when adding or updating a transaction.
+- **Imports and bank sync** keep the time only while **Show transaction times** is on, on the device that runs the import or sync, and only when the file or bank sends a real one: a time column or a date-time in a CSV (the Time column can be mapped once the setting is on), OFX timestamps, CAMT.053 booking date-times, and bank feeds that include a time. A time of exactly 00:00:00 or 12:00:00, or one time shared by every row of a file or bank fetch, is treated as "no time". Rows imported while the setting was off keep no time. Duplicate detection still matches by date and amount only.
+- The **Push API** accepts an optional `time` (`HH:MM`, 24-hour) when adding or updating a transaction. An invalid time is dropped; the transaction is still added.
+- **Update every device.** A transaction that carries a time needs this version of Budgero on all your devices: an older app stops syncing with an "update required" message when it meets one, instead of losing the time. Transactions without a time keep syncing to older apps as before.
 
 Times are stored as you see them (`HH:MM`, your local clock), with no time zone conversion.
 
