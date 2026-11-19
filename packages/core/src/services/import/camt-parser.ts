@@ -146,8 +146,9 @@ function parseEntry(entry: string): ParsedCamtTransaction | null {
   if (!rawAmount) return null;
   const signedAmount = isDebit && !rawAmount.startsWith('-') ? `-${rawAmount}` : rawAmount;
 
-  const dateWrapper = firstBlock(entry, 'BookgDt') ? 'BookgDt' : 'ValDt';
-  const date = extractDate(entry, 'BookgDt') ?? extractDate(entry, 'ValDt') ?? '';
+  // Date and time come from the same element: booking date, else value date.
+  const dateWrapper = extractDate(entry, 'BookgDt') ? 'BookgDt' : 'ValDt';
+  const date = extractDate(entry, dateWrapper) ?? '';
   if (!date) return null;
   const time = extractTime(entry, dateWrapper);
 
@@ -195,7 +196,11 @@ function extractDate(entry: string, wrapperTag: string): string | undefined {
   return raw.slice(0, 10);
 }
 
-/** The time in a <DtTm> date ('HH:MM' as written), null for <Dt> and placeholder times. */
+/**
+ * The time in a <DtTm> date ('HH:MM' as written), null for <Dt> and
+ * placeholder times. Reads the same element extractDate takes the date from
+ * (<Dt> first), so the two never disagree.
+ */
 function extractTime(entry: string, wrapperTag: string): string | null {
   const wrapper = firstBlock(entry, wrapperTag);
   if (!wrapper || firstText(wrapper, 'Dt')) return null;

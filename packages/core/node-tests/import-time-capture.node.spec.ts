@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  asMilli,
+  NodeSqlJsAdapter,
+  ServiceManager,
   applyBankFeedSettings,
   camtToImportRows,
   DEFAULT_BANK_FEED_SETTINGS,
@@ -9,7 +12,12 @@ import {
   parseOfx,
   type BankTransaction,
 } from '../src';
-import { detectColumnMapping, parseImportTime } from '../src/services/import/parsing.js';
+import {
+  detectColumnMapping,
+  parseDateDetailed,
+  parseImportTime,
+} from '../src/services/import/parsing.js';
+import { dropBatchPlaceholderTimes } from '../src/utils/time-of-day.js';
 import { planImportRows, type ImportRowParseConfig } from '../src/services/import/row-planner.js';
 import { parseOfxTime } from '../src/services/import/ofx-parser.js';
 
@@ -56,7 +64,10 @@ describe('import time capture', () => {
       ['2026-03-05', ''],
       ['2026-03-06', ''],
     ]);
-    const plans = planImportRows(rows, detectColumnMapping([...headers]), ISO);
+    const plans = planImportRows(rows, detectColumnMapping([...headers]), ISO, undefined, {
+      captureTimes: true,
+    });
+    // One real time only: the batch rule needs two equal times to drop them.
     expect(plans.map((plan) => plan.time)).toEqual(['14:30', null, null]);
   });
 
@@ -87,7 +98,9 @@ describe('import time capture', () => {
         { Date: '2026-03-04', Time: '', Amount: '-1', Payee: 'B' },
       ],
       mapping,
-      ISO
+      ISO,
+      undefined,
+      { captureTimes: true }
     );
     expect(plans.map((plan) => [plan.date, plan.time])).toEqual([
       ['2026-03-04', '07:05'],
@@ -96,7 +109,9 @@ describe('import time capture', () => {
     const stamped = planImportRows(
       [{ When: '2026-03-04 21:40:10', Amount: '-1' }],
       { date: 'When', amount: 'Amount' },
-      ISO
+      ISO,
+      undefined,
+      { captureTimes: true }
     );
     expect([stamped[0].date, stamped[0].time]).toEqual(['2026-03-04', '21:40']);
   });
@@ -134,5 +149,121 @@ describe('import time capture', () => {
     expect(fromSimpleFINTransaction({ ...base, posted: midnight }).time).toBeUndefined();
     const real = Date.UTC(2026, 2, 4, 15, 42, 7) / 1000;
     expect(fromSimpleFINTransaction({ ...base, posted: real }).time).toMatch(/^\d{2}:42$/);
+  });
+
+  it('without captureTimes (times not shown) no row carries a time', () => {
+    const rows = [
+      { Date: '2026-03-04', Time: '07:05', Amount: '-1' },
+      { Date: '2026-03-04 08:10', Time: '', Amount: '-1' },
+    ];
+    const mapping = { date: 'Date', time: 'Time', amount: 'Amount' };
+    expect(planImportRows(rows, mapping, ISO).map((plan) => plan.time)).toEqual([null, null]);
+    expect(
+      planImportRows(rows, mapping, ISO, undefined, { captureTimes: true }).map((p) => p.time)
+    ).toEqual(['07:05', '08:10']);
+  });
+
+  it('a batch whose timed rows all share one time carries no times', () => {
+    expect(
+      dropBatchPlaceholderTimes([{ time: '09:00' }, { time: null }, { time: '09:00' }])
+    ).toEqual([{ time: null }, { time: null }, { time: null }]);
+    const one = [{ time: '09:00' }, { time: null }];
+    expect(dropBatchPlaceholderTimes(one)).toBe(one);
+    const mixed = [{ time: '09:00' }, { time: '09:01' }];
+    expect(dropBatchPlaceholderTimes(mixed)).toBe(mixed);
+    const plans = planImportRows(
+      [
+        { Date: '2026-03-04T23:59:00', Amount: '-1' },
+        { Date: '2026-03-05T23:59:00', Amount: '-2' },
+      ],
+      { date: 'Date', amount: 'Amount' },
+      ISO,
+      undefined,
+      { captureTimes: true }
+    );
+    expect(plans.map((plan) => plan.time)).toEqual([null, null]);
+  });
+
+  it('date and time come from the same reading of the cell', () => {
+    // Written date: the written time.
+    expect(parseDateDetailed('2026-03-04T23:30:00Z', 'DD/MM/YYYY')).toMatchObject({
+      date: '2026-03-04',
+      time: '23:30',
+    });
+    // JS Date fallback: date and time of the same local instant.
+    const instant = new Date('March 4, 2026 23:30');
+    const parsed = parseDateDetailed('March 4, 2026 23:30', 'DD/MM/YYYY');
+    expect(parsed.date).toBe(
+      `${instant.getFullYear()}-${String(instant.getMonth() + 1).padStart(2, '0')}-${String(instant.getDate()).padStart(2, '0')}`
+    );
+    expect(parsed.time).toBe('23:30');
+    expect(parseDateDetailed('March 4, 2026', 'DD/MM/YYYY').time).toBeUndefined();
+  });
+
+  it('CAMT takes the time from the element the date came from', () => {
+    const xml = `<Document xmlns="urn:iso:std:iso:20022:tech:xsd:camt.053.001.02"><BkToCstmrStmt><Stmt>
+      <Acct><Id><IBAN>DE1</IBAN></Id></Acct>
+      <Ntry><Amt Ccy="EUR">5.00</Amt><CdtDbtInd>DBIT</CdtDbtInd>
+        <BookgDt><DtTm></DtTm></BookgDt><ValDt><DtTm>2026-03-05T07:45:00</DtTm></ValDt></Ntry>
+    </Stmt></BkToCstmrStmt></Document>`;
+    expect(parseCamt(xml).statements[0].transactions[0]).toMatchObject({
+      date: '2026-03-05',
+      time: '07:45',
+    });
+  });
+
+  it('bank planning keeps times only with captureTimes, and drops a fixed stamp', async () => {
+    const manager = new ServiceManager();
+    await manager.initialize(await NodeSqlJsAdapter.create());
+    const services = manager.getServices();
+    const budgetId = await services.budgets.createBudget({
+      name: 'Bank',
+      display_currency: 'USD',
+      badge_icon: 'dollar',
+      number_format: '123,456.78',
+      create_default_categories: false,
+    });
+    const account = await services.accounts.createAccount(
+      'Checking',
+      budgetId,
+      'Checking',
+      'USD',
+      asMilli(0)
+    );
+    services.bankSync.saveConnection(budgetId, 'https://user:pass@bridge.example/simplefin');
+    services.bankSync.saveLink({
+      budgetId,
+      accountId: account.ID,
+      externalAccountId: 'ACT-1',
+      externalName: 'Everyday',
+      orgName: 'Bank',
+      importFrom: '2026-01-01',
+    });
+    const link = services.bankSync.listLinks(budgetId)[0];
+    const row = (id: string, time: string): BankTransaction => ({
+      id,
+      date: '2026-03-04',
+      time,
+      amount: -1000,
+      payee: `Shop ${id}`,
+      memo: '',
+      pending: false,
+    });
+    const plan = (transactions: BankTransaction[], captureTimes?: boolean) =>
+      services.bankSync
+        .planImport({
+          budgetId,
+          accountId: account.ID,
+          currency: 'USD',
+          link,
+          transactions,
+          captureTimes,
+          wasImported: () => false,
+        })
+        .imports.map((identity) => identity.time ?? null);
+    const real = [row('a', '08:15'), row('b', '17:40')];
+    expect(plan(real)).toEqual([null, null]);
+    expect(plan(real, true)).toEqual(['08:15', '17:40']);
+    expect(plan([row('a', '09:00'), row('b', '09:00')], true)).toEqual([null, null]);
   });
 });

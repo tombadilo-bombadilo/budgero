@@ -38,9 +38,13 @@ describe('migration 082: transaction time', () => {
     expect(db.exec(`SELECT ShowTransactionTime FROM user_meta WHERE ID = 1`)[0].values).toEqual([
       [0],
     ]);
-    // Re-running is a no-op.
+    // Re-running (applied twice) is a no-op and keeps the data.
+    db.exec(`UPDATE user_meta SET ShowTransactionTime = 1 WHERE ID = 1`);
     (m082.up as (d: typeof db) => void)(db);
     expect(m082.verify!(db)).toBe(true);
+    expect(db.exec(`SELECT ShowTransactionTime FROM user_meta WHERE ID = 1`)[0].values).toEqual([
+      [1],
+    ]);
   });
 
   it('fails on anything but an existing column', async () => {
@@ -221,6 +225,10 @@ describe('transaction time', () => {
     expect(time(parent)).toBe('09:15');
     await s.transactions.updateTransactionColumn(parent, 'Time', '16:40');
     expect(s.transactions.getTransactionsByAccount(savings)[0].Time).toBe('16:40');
+    // Editing the mirror sets the time on the parent (and so every mirror).
+    await s.transactions.updateTransactionColumn(mirror.ID, 'Time', '06:05');
+    expect(time(parent)).toBe('06:05');
+    expect(s.transactions.getTransactionsByAccount(savings)[0].Time).toBe('06:05');
   });
 
   it('is restored exactly by undo snapshots, and kept when an older snapshot has no Time key', async () => {

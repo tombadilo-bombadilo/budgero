@@ -209,6 +209,12 @@ export interface BankImportPlanInput {
   /** The link's feed settings; defaults when omitted. */
   settings?: BankFeedSettings;
   transactions: BankTransaction[];
+  /**
+   * Keep the bank's times of day (the user shows transaction times on this
+   * device). Without it imported rows carry no time, so their ops stay
+   * readable by builds without times.
+   */
+  captureTimes?: boolean;
   /** True when this bank row was imported before, even if the ledger copy was deleted since. */
   wasImported: (identity: ImportIdentity) => boolean;
 }

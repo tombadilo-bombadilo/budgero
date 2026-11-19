@@ -6,7 +6,7 @@ import {
 } from '../import/duplicate-planner.js';
 import { fromDecimalString, subMilli, ZERO_MILLI, type MilliUnits } from '../../money/index.js';
 import { getLocalDateString } from '../../utils/date.js';
-import { capturedTimeOfDay } from '../../utils/time-of-day.js';
+import { capturedTimeOfDay, dropBatchPlaceholderTimes } from '../../utils/time-of-day.js';
 import { applyBankFeedSettings, DEFAULT_BANK_FEED_SETTINGS } from './feed-settings.js';
 import { BankSyncQueries } from './queries.js';
 import type {
@@ -288,7 +288,12 @@ export class BankSyncService {
     const { budgetId, accountId, currency, link } = input;
     const provider = input.provider ?? 'simplefin';
     const settings = input.settings ?? DEFAULT_BANK_FEED_SETTINGS;
-    const transactions = input.transactions.map((tx) => applyBankFeedSettings(tx, settings));
+    const withSettings = input.transactions.map((tx) => applyBankFeedSettings(tx, settings));
+    // Times only when the user shows them; a fetch stamping one time on every
+    // row carries none.
+    const transactions: BankTransaction[] = (
+      input.captureTimes ? dropBatchPlaceholderTimes(withSettings) : withSettings
+    ).map(({ time, ...tx }) => (input.captureTimes && time ? { ...tx, time } : tx));
     const reviewed = this.queries.reviewedOperationIds(budgetId, accountId);
     const keyOf = (id: string) => bankSourceKey(provider, link.ExternalAccountID, id);
     const sourcePrefix = `${JSON.stringify([SOURCE_NAMESPACE[provider], link.ExternalAccountID]).slice(0, -1)},`;

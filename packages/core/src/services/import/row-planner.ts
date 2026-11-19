@@ -25,6 +25,7 @@ import {
   type MilliUnits,
 } from '../../money/index.js';
 import { parseAmountDetailed, parseDateDetailed, parseImportTime } from './parsing.js';
+import { dropBatchPlaceholderTimes } from '../../utils/time-of-day.js';
 import type { ColumnMapping } from './types.js';
 
 export type ImportRowStatus =
@@ -193,11 +194,7 @@ export function planImportRow(
   }
   const { date } = parsedDate;
   const timeCell = columnMapping.time ? row[columnMapping.time] : undefined;
-  const time = timeCell?.trim()
-    ? parseImportTime(timeCell)
-    : parsedDate.ok
-      ? parseImportTime(dateStr, true)
-      : null;
+  const time = timeCell?.trim() ? parseImportTime(timeCell) : (parsedDate.time ?? null);
 
   const amount = resolveAmounts(row, columnMapping, config, scale);
   errors.push(...amount.errors);
@@ -223,16 +220,24 @@ export function planImportRow(
   };
 }
 
-/** Plan every row, preserving order and original index. */
+/**
+ * Plan every row, preserving order and original index. Times are only kept
+ * with `captureTimes` (the user shows transaction times): without it every
+ * row's time is null, so imports stay readable by builds without times. A
+ * file whose timed rows all share one time gets no times (a fixed stamp).
+ */
 export function planImportRows(
   rows: Record<string, string>[],
   columnMapping: ColumnMapping,
   config: ImportRowParseConfig,
-  amountScale?: ImportAmountScale
+  amountScale?: ImportAmountScale,
+  options: { captureTimes?: boolean } = {}
 ): PlannedImportRow[] {
-  return rows.map((row, index) =>
+  const plans = rows.map((row, index) =>
     planImportRow(row, index, columnMapping, config, amountScale?.(row, index) ?? MILLIS_PER_UNIT)
   );
+  if (!options.captureTimes) return plans.map((plan) => ({ ...plan, time: null }));
+  return dropBatchPlaceholderTimes(plans);
 }
 
 export interface ImportPlanSummary {

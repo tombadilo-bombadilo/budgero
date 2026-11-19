@@ -2504,7 +2504,11 @@ export class TransactionService {
    */
   setTransactionTime(transactionId: number, value: unknown): void {
     const time = normalizeTimeOfDay(value);
-    const transaction = this.getTransactionByID(transactionId);
+    let transaction = this.getTransactionByID(transactionId);
+    // A split-transfer mirror belongs to its parent: set the time there, so
+    // the parent and all its mirrors keep one time.
+    const mirrorOf = /^split_transfer_(\d+)_/.exec(transaction.TransferID ?? '')?.[1];
+    if (mirrorOf) transaction = this.getTransactionByID(Number(mirrorOf));
     atomically(this.db, () =>
       this.queries.updateTransactionTime(transaction.ID, transaction.TransferID || null, time)
     );

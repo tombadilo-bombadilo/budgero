@@ -162,6 +162,12 @@ export interface ParsedImportDate {
   ok: boolean;
   /** True when the input was empty/whitespace (distinct from present-but-garbage). */
   empty: boolean;
+  /**
+   * Time of day the cell carried ('HH:MM'), read the same way as `date` so
+   * both describe the same day; null when there is none or it is a
+   * placeholder (see parseImportTime).
+   */
+  time?: string | null;
 }
 
 /**
@@ -197,7 +203,13 @@ export function parseDateDetailed(
   }
 
   const trimmed = dateStr.trim();
-  const found = (date: string): ParsedImportDate => ({ date, ok: true, empty: false });
+  // The written date: its trailing time is the written one too.
+  const found = (date: string, time = parseImportTime(trimmed, true)): ParsedImportDate => ({
+    date,
+    ok: true,
+    empty: false,
+    ...(time ? { time } : {}),
+  });
 
   // 1) Try the configured format first (requires a year).
   const formatted = parseWithFormat(trimmed, dateFormat);
@@ -232,7 +244,13 @@ export function parseDateDetailed(
   if (!/^\d+$/.test(trimmed)) {
     const date = new Date(trimmed);
     if (!isNaN(date.getTime())) {
-      return found(getLocalDateString(date));
+      // Date and time from the same local instant, so they can't land on
+      // different days (a "…Z" timestamp read in another zone).
+      const hasTime = /\d{1,2}:\d{2}/.test(trimmed);
+      return found(
+        getLocalDateString(date),
+        hasTime ? capturedTimeOfDay(date.getHours(), date.getMinutes(), date.getSeconds()) : null
+      );
     }
   }
 

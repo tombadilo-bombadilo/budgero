@@ -59,3 +59,14 @@ export function timeFromIsoDateTime(value: unknown): string | null {
   const match = /^\d{4}-\d{2}-\d{2}[T ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(value.trim());
   return match ? capturedTimeOfDay(match[1], match[2], match[3] ?? 0) : null;
 }
+
+/**
+ * A batch (one file, one bank fetch) whose timed rows all share one time is
+ * a source that stamps a fixed time on every row, not real times: clear them.
+ * Needs at least two timed rows; returns the rows unchanged otherwise.
+ */
+export function dropBatchPlaceholderTimes<T extends { time?: string | null }>(rows: T[]): T[] {
+  const times = rows.map((row) => row.time).filter((time): time is string => Boolean(time));
+  if (times.length < 2 || times.some((time) => time !== times[0])) return rows;
+  return rows.map((row) => (row.time ? { ...row, time: null } : row));
+}
