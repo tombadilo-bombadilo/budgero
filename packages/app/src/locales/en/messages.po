@@ -2788,8 +2788,8 @@ msgid "<0>R</0>r/budgero"
 msgstr "<0>R</0>r/budgero"
 
 #: src/features/import/ui/steps/configure/MappingTab.tsx
-msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Time, Payee, Account, Category, Memo (will use account selection below if not mapped)"
-msgstr "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Time, Payee, Account, Category, Memo (will use account selection below if not mapped)"
+msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Payee, Account, Category, Memo (will use account selection below if not mapped)"
+msgstr "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Payee, Account, Category, Memo (will use account selection below if not mapped)"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "<0>Retroactive recalculation</0>— adding or changing a rate recalculates all affected transactions that don't have a manual override."
@@ -18568,7 +18568,7 @@ msgid "Show the next 30 days"
 msgstr "Show the next 30 days"
 
 #: src/pages/settings/AppearancePage.tsx
-msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last."
+msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last. Imports and bank sync keep times only while this is on, and need every device on the latest version."
 msgstr "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last."
 
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx

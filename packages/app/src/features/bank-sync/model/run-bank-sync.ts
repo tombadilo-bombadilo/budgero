@@ -15,6 +15,7 @@ import {
 import type { AppRuntime } from '@shared/runtime/app-runtime';
 import { executeSpaceMutation } from '@shared/runtime/mutation-router';
 import { getErrorMessage } from '@shared/lib/errors';
+import { capturesTransactionTimes } from '@shared/lib/transaction-time';
 import {
   fetchRemoteTransactions,
   linkedExternalIds,
@@ -226,6 +227,7 @@ async function syncConnection(
         provider: connection.Provider,
         settings: parseBankFeedSettings(link),
         transactions,
+        captureTimes: capturesTransactionTimes(services),
         wasImported: (row: ImportIdentity) =>
           runtime.isMutationApplied(keys.get(row.operationId) ?? ''),
       });

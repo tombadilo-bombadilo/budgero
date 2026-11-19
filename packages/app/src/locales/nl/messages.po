@@ -2786,8 +2786,8 @@ msgid "<0>R</0>r/budgero"
 msgstr "<0>R</0>r/budgero"
 
 #: src/features/import/ui/steps/configure/MappingTab.tsx
-msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Time, Payee, Account, Category, Memo (will use account selection below if not mapped)"
-msgstr "<0>Vereist:</0>Datumkolom + Bedragkolom (of Inkomsten/Uitgaven-kolommen)<1/><2>Optioneel:</2>Tijd, Begunstigde, Rekening, Categorie, Memo (gebruikt de rekeningselectie hieronder indien niet gekoppeld)"
+msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Payee, Account, Category, Memo (will use account selection below if not mapped)"
+msgstr "<0>Vereist:</0>Datumkolom + Bedragkolom (of Inkomsten/Uitgaven-kolommen)<1/><2>Optioneel:</2>Begunstigde, Rekening, Categorie, Memo (gebruikt de rekeningselectie hieronder indien niet gekoppeld)"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "<0>Retroactive recalculation</0>— adding or changing a rate recalculates all affected transactions that don't have a manual override."
@@ -18566,8 +18566,8 @@ msgid "Show the next 30 days"
 msgstr "Toon de komende 30 dagen"
 
 #: src/pages/settings/AppearancePage.tsx
-msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last."
-msgstr "Toont de optionele tijd onder de datum in het register, waar je hem ook kunt bewerken. Bij 'Nieuwste eerst' wordt een dag op tijd gesorteerd; transacties zonder tijd komen als laatste."
+msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last. Imports and bank sync keep times only while this is on, and need every device on the latest version."
+msgstr "Toont de optionele tijd onder de datum in het register, waar je hem ook kunt bewerken. Bij 'Nieuwste eerst' wordt een dag op tijd gesorteerd; transacties zonder tijd komen als laatste. Imports en banksynchronisatie bewaren tijden alleen zolang dit aanstaat, en alle apparaten moeten de nieuwste versie hebben."
 
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Show the top"

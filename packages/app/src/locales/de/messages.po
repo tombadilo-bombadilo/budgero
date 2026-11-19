@@ -2786,8 +2786,8 @@ msgid "<0>R</0>r/budgero"
 msgstr "<0>R</0>r/budgero"
 
 #: src/features/import/ui/steps/configure/MappingTab.tsx
-msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Time, Payee, Account, Category, Memo (will use account selection below if not mapped)"
-msgstr "<0>Erforderlich:</0>Datumsspalte + Betragsspalte (oder Einnahme-/Ausgabespalten)<1/><2>Optional:</2>Uhrzeit, Empfänger, Konto, Kategorie, Memo (verwendet die unten ausgewählte Kontoauswahl, falls nicht zugeordnet)"
+msgid "<0>Required:</0>Date column + Amount column (or Inflow/Outflow columns)<1/><2>Optional:</2>Payee, Account, Category, Memo (will use account selection below if not mapped)"
+msgstr "<0>Erforderlich:</0>Datumsspalte + Betragsspalte (oder Einnahme-/Ausgabespalten)<1/><2>Optional:</2>Empfänger, Konto, Kategorie, Memo (verwendet die unten ausgewählte Kontoauswahl, falls nicht zugeordnet)"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "<0>Retroactive recalculation</0>— adding or changing a rate recalculates all affected transactions that don't have a manual override."
@@ -18566,8 +18566,8 @@ msgid "Show the next 30 days"
 msgstr "Die nächsten 30 Tage zeigen"
 
 #: src/pages/settings/AppearancePage.tsx
-msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last."
-msgstr "Zeigt die optionale Uhrzeit im Register unter dem Datum an, wo du sie auch bearbeiten kannst. Bei „Neueste zuerst“ wird ein Tag nach Uhrzeit sortiert; Transaktionen ohne Uhrzeit stehen am Ende."
+msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last. Imports and bank sync keep times only while this is on, and need every device on the latest version."
+msgstr "Zeigt die optionale Uhrzeit im Register unter dem Datum an, wo du sie auch bearbeiten kannst. Bei „Neueste zuerst“ wird ein Tag nach Uhrzeit sortiert; Transaktionen ohne Uhrzeit stehen am Ende. Importe und Bank-Sync übernehmen Uhrzeiten nur, solange dies aktiv ist, und alle Geräte müssen die neueste Version haben."
 
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Show the top"

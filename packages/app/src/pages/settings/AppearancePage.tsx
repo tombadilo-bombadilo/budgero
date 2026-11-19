@@ -447,6 +447,8 @@ export default function AppearancePage() {
                 <Trans>
                   Show the optional time of day under the date in the register, and edit it there.
                   With newest first, a day is ordered by time; transactions without one come last.
+                  Imports and bank sync keep times only while this is on, and need every device on
+                  the latest version.
                 </Trans>
               </p>
             </div>

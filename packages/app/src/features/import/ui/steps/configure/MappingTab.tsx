@@ -22,6 +22,7 @@ import type {
   RawTableData,
 } from '@features/import/model/types';
 import { dateStringLacksYear } from '@budgero/core/browser';
+import { useRegisterDisplay } from '@shared/contexts/RegisterDisplayContext';
 
 interface SkipRowCheckboxProps {
   skipped: boolean;
@@ -71,6 +72,20 @@ export function MappingTab({
   onHeaderSelect,
 }: MappingTabProps) {
   const { t } = useLingui();
+  // Times are imported only while the register shows them (Settings →
+  // Appearance), so the Time column is offered only then.
+  const { showTime } = useRegisterDisplay();
+  const mappingFields = [
+    'date',
+    ...(showTime ? ['time'] : []),
+    'amount',
+    'inflow',
+    'outflow',
+    'payee',
+    'memo',
+    'account',
+    'category',
+  ];
 
   const handleColumnChange = (field: keyof ColumnMapping, value: string) => {
     onColumnMappingChange({
@@ -223,22 +238,12 @@ export function MappingTab({
             <strong>
               <Trans>Optional:</Trans>
             </strong>
-            Time, Payee, Account, Category, Memo (will use account selection below if not mapped)
+            Payee, Account, Category, Memo (will use account selection below if not mapped)
           </Trans>
         </AlertDescription>
       </Alert>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[
-          'date',
-          'time',
-          'amount',
-          'inflow',
-          'outflow',
-          'payee',
-          'memo',
-          'account',
-          'category',
-        ].map((field) => (
+        {mappingFields.map((field) => (
           <div key={field} className="space-y-2">
             <Label htmlFor={field} className="capitalize">
               {field}{' '}
