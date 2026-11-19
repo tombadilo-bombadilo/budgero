@@ -63,7 +63,12 @@ import {
   noteFirstStepsMutation,
 } from '@shared/lib/first-steps/first-steps';
 import { track } from '@shared/lib/analytics/track';
-import { pushMatchReview, withoutInvalidPushTime, withPushIdentity } from './push-identity';
+import {
+  asPushedArgs,
+  pushMatchReview,
+  withoutInvalidPushTime,
+  withPushIdentity,
+} from './push-identity';
 
 /** Ops whose new rows the continuous rules run over (see applyContinuousRulesIfNeeded). */
 const CONTINUOUS_RULE_TRIGGERS = new Set([
@@ -678,6 +683,12 @@ export class AppRuntime {
               op = 'bankSync.addReviews';
               args = review;
             }
+            parsedArgs = args;
+          }
+
+          // Pushed split lines (any op): marked as pushed, no carried mirror amounts.
+          if (args && Array.isArray(args.splits)) {
+            args = asPushedArgs(args);
             parsedArgs = args;
           }
 

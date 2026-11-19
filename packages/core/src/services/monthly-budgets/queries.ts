@@ -126,7 +126,9 @@ export const CASH_ADVANCE_SPLIT = (s: string, t: string) => `(CASE
 // Split-transfer legs between an on-budget and an off-budget (non-debt)
 // account, which the TransferID-based off-budget sums cannot see: an on-budget
 // split line transferring to such an account (its mirror sits off budget), and
-// a mirror on an on-budget account whose split parent is off budget. Off = the
+// a mirror on an on-budget account whose split parent is off budget. A line
+// with a category (spending, e.g. a mortgage payment) counts in that category
+// instead, like a categorized non-split transfer leg. Off = the
 // money that left the budget, Inb = what came in. `bound(alias)` adds the
 // month / date filter on the on-budget row.
 export const SPLIT_OFF_BUDGET_LEGS = (bound: (alias: string) => string) => `
@@ -139,7 +141,7 @@ export const SPLIT_OFF_BUDGET_LEGS = (bound: (alias: string) => string) => `
   CROSS JOIN transaction_splits s ON s.TransactionID = t.ID
   JOIN accounts src ON src.ID = t.AccountID
   WHERE mirror.TransferID = 'split_transfer_' || t.ID || '_' || t.Date
-    AND s.TransferAccountID = mirror.AccountID
+    AND s.TransferAccountID = mirror.AccountID AND s.CategoryID IS NULL
     AND t.BudgetID = ?1 ${bound('t')} AND src.OnBudget = TRUE
     AND t.ExcludeFromReadyToAssign = FALSE
   UNION ALL
@@ -161,7 +163,7 @@ export const SPLIT_OFF_BUDGET_LEGS_IN = (months: string) => `
   JOIN accounts dst ON dst.ID = s.TransferAccountID
   WHERE t.Month ${months} AND t.BudgetID = ?1 AND src.OnBudget = TRUE
     AND dst.OnBudget = FALSE AND LOWER(dst.Type) NOT IN ${DEBT_TYPES}
-    AND t.ExcludeFromReadyToAssign = FALSE
+    AND t.ExcludeFromReadyToAssign = FALSE AND s.CategoryID IS NULL
     AND EXISTS (SELECT 1 FROM transactions m
       WHERE m.TransferID = 'split_transfer_' || t.ID || '_' || t.Date AND m.TransferID != ''
         AND m.AccountID = s.TransferAccountID)

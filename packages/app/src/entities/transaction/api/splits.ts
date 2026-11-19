@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useRuntime, useActiveSpaceId } from '@shared/runtime/runtime-provider';
 import { executeSpaceMutation } from '@shared/runtime/mutation-router';
 import { resolveSpaceKey } from '@shared/lib/query-utils';
-import type { TransactionSplit } from '@budgero/core/browser';
+import type { TransactionSplitWithMirror } from '@budgero/core/browser';
 
 // Invalidation for split upsert/clear is executor-driven from the
 // transactions.upsertSplits / clearSplits ops (SPLIT_INVALIDATION_KEYS).
@@ -20,6 +20,8 @@ export type UpsertSplitLineInput = {
   inflow?: number;
   outflow?: number;
   order_index?: number;
+  /** Cross-currency transfer lines: what the other account received, in its currency. */
+  received_amount?: number | null;
 };
 
 export type UpsertSplitsInput = {
@@ -58,6 +60,8 @@ export function prepareSplitMutationLines(
       inflow_original: amountCurrency === 'native' ? inflow : null,
       outflow_original: amountCurrency === 'native' ? outflow : null,
       order_index: s.order_index ?? idx,
+      // The op's prepare turns it into the mirror's exact amounts.
+      ...(s.received_amount ? { received_amount: s.received_amount } : {}),
     };
   });
 }
@@ -116,17 +120,19 @@ export function useClearSplits() {
   });
 }
 
-// Fetch splits for a given transaction id
+// Fetch splits for a given transaction id, with their transfer mirrors' stored state
 export function useTransactionSplits(transactionId: number | null) {
   const runtime = useRuntime();
   const spaceId = useActiveSpaceId();
   const spaceKey = resolveSpaceKey(spaceId);
-  return useQuery<TransactionSplit[]>({
+  return useQuery<TransactionSplitWithMirror[]>({
     queryKey: ['transactionSplits', spaceKey, transactionId],
     queryFn: async () => {
       if (!spaceId || !transactionId) return [];
       const services = runtime.services();
-      return services.splits.getSplits(transactionId);
+      return typeof services.splits.getSplitsWithMirrors === 'function'
+        ? services.splits.getSplitsWithMirrors(transactionId)
+        : services.splits.getSplits(transactionId);
     },
     enabled: Boolean(spaceId) && Boolean(transactionId),
     staleTime: 1000 * 60 * 5,

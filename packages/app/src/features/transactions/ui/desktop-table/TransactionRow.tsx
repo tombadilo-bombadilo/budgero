@@ -37,6 +37,7 @@ import {
 } from '@features/transactions/lib/transfer-category';
 import { formatExchangeRate } from '@entities/currency/lib/exchange-rate-format';
 import { TransferRateDialog } from '@features/transactions/ui/transfer-rate/TransferRateDialog';
+import { hasTransferRate } from '@features/transactions/lib/split-transfer';
 import { TransactionLabelBadge } from '@features/transactions/ui/TransactionLabelBadge';
 import { validateTransactionExchangeRate } from '@features/transactions/lib/exchange-rate-validation';
 import { hasUnsafeTransactionMoney } from '@entities/transaction/lib/money-integrity';
@@ -636,7 +637,7 @@ export const TransactionRow = React.memo(function TransactionRow({
                 <Trans>Split</Trans>
               </Button>
             )}
-            {isTransfer && transaction.TransferID && (
+            {isTransfer && hasTransferRate(transaction.TransferID) && (
               <TransferRateDialog transferId={transaction.TransferID} compact />
             )}
           </div>

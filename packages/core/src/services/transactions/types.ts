@@ -29,6 +29,12 @@ export interface Transaction {
   OutflowNative?: MilliUnits;
   ExchangeRate?: number | null;
   ExchangeRateOverride?: boolean;
+  /**
+   * Transfer legs: the amounts are set by hand (a cross-currency transfer, or
+   * a split line's mirror whose received amount was entered), so edits of the
+   * other side keep them. Absent when the source query omits it.
+   */
+  TransferRateOverride?: boolean | number;
   AccountOnBudget?: boolean;
   TransferAccountOnBudget?: boolean | null;
   /** The other leg's account, for transfers. */
@@ -267,6 +273,26 @@ export interface TransactionSplit {
   OrderIndex: number;
   CategoryName?: string;
   TransferAccountName?: string;
+}
+
+/**
+ * A transfer line's mirror row amounts, in the mirror's own direction:
+ * native = the target account's currency, converted = the budget currency.
+ */
+export interface SplitMirrorAmounts {
+  InflowNative: MilliUnits;
+  OutflowNative: MilliUnits;
+  InflowConverted: MilliUnits;
+  OutflowConverted: MilliUnits;
+}
+
+/** A split line with its transfer mirror's stored state (SplitService.getSplitsWithMirrors). */
+export interface TransactionSplitWithMirror extends TransactionSplit {
+  /** The matched mirror row's amounts (transfer lines that have one). */
+  Mirror?: SplitMirrorAmounts;
+  /** The mirror keeps its amounts when the parent changes (an entered received amount). */
+  MirrorPinned?: boolean;
+  MirrorReconciled?: boolean;
 }
 
 export interface PayeeListItem {

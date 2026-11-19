@@ -25,6 +25,8 @@ import { cn } from '@shared/lib/utils';
 import { asMilli, formatMilli } from '@shared/lib/currency/milli';
 import { withEditPrecision } from '@shared/lib/number-format';
 import { getRuntime } from '@shared/runtime/global';
+import { useUiStore } from '@shared/store/useUiStore';
+import { toastError } from '@shared/lib/errors';
 import {
   type SplitLike,
   type EditableSplit,
@@ -33,7 +35,18 @@ import {
   getSplitCategoryLabel,
 } from './table-utils';
 import { SplitMemoText } from './SplitMemoText';
-import { confirmTotalEdit } from '../reconciled-edit/reconciled-edit-confirm';
+import { confirmSplitSave } from '../reconciled-edit/reconciled-edit-confirm';
+import {
+  missingReceivedMessage,
+  needsReceivedAmount,
+  splitLineCategoryMode,
+} from '../../lib/split-transfer';
+import { useSplitParentAccount } from '../split-transfer/useSplitParentAccount';
+import { useAutoReceivedAmounts } from '../split-transfer/useAutoReceivedAmounts';
+import {
+  SplitReceivedAmount,
+  SplitTransferCategoryLocked,
+} from '../split-transfer/SplitTransferFields';
 
 interface SplitDetailsDialogProps {
   transaction: GetTransactionsByAccountRow | null;
@@ -66,6 +79,28 @@ export function SplitDetailsDialog({
   const { data: splits = [], isLoading } = useTransactionSplits(transactionId);
   const saveSplits = useSaveSplits();
   const clearSplits = useClearSplits();
+  const { accounts, ownAccount } = useSplitParentAccount(budgetId, transaction ?? {});
+  const budgetCurrency = useUiStore((state) => state.selectedBudget?.DisplayCurrency);
+  const accountById = (id: number | null | undefined) =>
+    id ? accounts.find((account) => account.ID === Number(id)) : undefined;
+  /** The account a cross-currency transfer line sends to (it asks what was received). */
+  const receivedTarget = (line: EditableSplit) => {
+    const target = accountById(line.transfer_account_id);
+    return target && needsReceivedAmount(ownAccount?.Currency, target) ? target : undefined;
+  };
+  const categoryMode = (line: unknown) =>
+    splitLineCategoryMode(ownAccount, accountById((line as EditableSplit)?.transfer_account_id));
+  const lineAmount = (line: EditableSplit) => Number(line.inflow) || Number(line.outflow) || 0;
+  // Only an amount the user typed (or entered before) is sent and pinned; an
+  // estimate leaves the mirror to the usual conversion.
+  const receivedOf = (line: EditableSplit) =>
+    receivedTarget(line) && line.received_auto === false ? (line.received_amount ?? null) : null;
+  const missingReceived = (lines: EditableSplit[] | null) => {
+    const line = lines?.find(
+      (candidate) => receivedTarget(candidate) && !(Number(candidate.received_amount) > 0)
+    );
+    return line ? missingReceivedMessage(receivedTarget(line)!, Number(line.inflow) > 0) : null;
+  };
 
   const createLineId = useCallback(
     () =>
@@ -135,6 +170,30 @@ export function SplitDetailsDialog({
 
   const displayedSplits = editSplits ?? splits;
 
+  useAutoReceivedAmounts({
+    lines: editSplits,
+    access: {
+      target: (line) => line.transfer_account_id,
+      amount: lineAmount,
+      received: (line) => line.received_amount,
+      auto: (line) => line.received_auto !== false,
+      base: (line) => line.received_base,
+    },
+    onEstimates: (estimates) =>
+      setEditSplits((prev) =>
+        prev
+          ? prev.map((line, i) =>
+              estimates.has(i) ? { ...line, received_amount: estimates.get(i) } : line
+            )
+          : prev
+      ),
+    accounts,
+    parentCurrency: ownAccount?.Currency,
+    amountCurrency: amountCurrency === 'native' ? ownAccount?.Currency : budgetCurrency,
+    date: transaction ? String(transaction.Date).slice(0, 10) : '',
+    budgetId,
+  });
+
   const parentTotal = Math.abs(parentNet);
   // The total the splits must add up to — editable while in edit mode.
   // All amounts here are exact integer milliunits.
@@ -159,6 +218,8 @@ export function SplitDetailsDialog({
           (Number(line.inflow) > 0 && Number(line.outflow) === 0) ||
           (Number(line.outflow) > 0 && Number(line.inflow) === 0)
       ) &&
+      // A transfer line to another currency needs what the other account received.
+      !missingReceived(editSplits) &&
       remaining === 0) ||
       isClearing);
 
@@ -190,17 +251,7 @@ export function SplitDetailsDialog({
     ]);
   };
 
-  const handleUpdateSplit = (
-    id: string,
-    patch: Partial<{
-      memo: string;
-      payee: string;
-      inflow: number;
-      outflow: number;
-      category_id: number | null;
-      transfer_account_id: number | null;
-    }>
-  ) => {
+  const handleUpdateSplit = (id: string, patch: Partial<Omit<EditableSplit, 'id'>>) => {
     setEditSplits(
       (prev) => prev?.map((line) => (line.id === id ? { ...line, ...patch } : line)) ?? null
     );
@@ -240,29 +291,46 @@ export function SplitDetailsDialog({
             outflow: targetNet >= 0 ? 0 : Math.abs(targetNet),
           }
         : undefined;
-    // A reconciled parent asks first; cancelling keeps the editor open.
-    if (
-      total &&
-      !(await confirmTotalEdit(getRuntime()?.services(), transaction.ID, total, amountCurrency))
-    ) {
-      return;
-    }
-
     const prepared = editSplits.map((line, idx) => ({
-      category_id: line.category_id ?? null,
+      // A transfer between on-budget accounts never keeps a category.
+      category_id: categoryMode(line) === 'transfer-locked' ? null : (line.category_id ?? null),
       transfer_account_id: line.transfer_account_id ?? null,
       memo: line.memo ?? '',
       payee: line.payee ?? '',
       inflow: Number(line.inflow) || 0,
       outflow: Number(line.outflow) || 0,
       order_index: idx,
+      received_amount: receivedOf(line),
     }));
-    await saveSplits.mutateAsync({
-      transactionId: transaction.ID,
-      splits: prepared,
-      amountCurrency,
-      total,
-    });
+    // A reconciled parent or transfer mirror asks first; cancelling keeps the
+    // editor open. A missing rate for an entered amount stops here, before
+    // anything is written.
+    let confirmed: boolean;
+    try {
+      confirmed = await confirmSplitSave(
+        getRuntime()?.services(),
+        transaction.ID,
+        total,
+        amountCurrency,
+        prepared
+      );
+    } catch (error) {
+      toastError(t`Failed to save split transaction`, error);
+      return;
+    }
+    if (!confirmed) return;
+    try {
+      await saveSplits.mutateAsync({
+        transactionId: transaction.ID,
+        splits: prepared,
+        amountCurrency,
+        total,
+      });
+    } catch (error) {
+      // E.g. no exchange rate for an entered received amount: keep the editor open.
+      toastError(t`Failed to save split transaction`, error);
+      return;
+    }
     setEditSplits(null);
     setEditTotal(null);
   };
@@ -333,7 +401,12 @@ export function SplitDetailsDialog({
                     >
                       <Trans>Cancel</Trans>
                     </Button>
-                    <Button size="sm" onClick={handleSave} disabled={!canSave}>
+                    <Button
+                      size="sm"
+                      onClick={handleSave}
+                      disabled={!canSave}
+                      title={missingReceived(editSplits) ?? undefined}
+                    >
                       {isClearing ? t`Remove splits` : t`Save`}
                     </Button>
                   </>
@@ -364,6 +437,11 @@ export function SplitDetailsDialog({
                     {formatMilli(editFormatter, asMilli(targetTotal))}
                   </Trans>
                 </span>
+                {missingReceived(editSplits) && (
+                  <span className="w-full text-destructive" data-testid="split-save-hint">
+                    {missingReceived(editSplits)}
+                  </span>
+                )}
               </div>
             )}
             {isLoading ? (
@@ -405,131 +483,161 @@ export function SplitDetailsDialog({
                       const editable =
                         editSplits?.find((line) => line.id === (s.id || s.ID || idx)) ||
                         (editSplits ? editSplits[idx] : split);
+                      const target = editSplits
+                        ? receivedTarget(editable as EditableSplit)
+                        : undefined;
                       return (
-                        <TableRow key={String(s.id || s.ID || idx)}>
-                          <TableCell className="text-sm">
-                            {editSplits ? (
-                              <SearchableCategorySelect
-                                budgetId={budgetId}
-                                selectedCategoryId={
-                                  (editable as EditableSplit)?.category_id ?? null
-                                }
-                                // A category makes a transfer line a normal one again.
-                                onCategorySelect={(categoryId) =>
-                                  handleUpdateSplit((editable as EditableSplit).id, {
-                                    category_id: categoryId,
-                                    transfer_account_id: null,
-                                  })
-                                }
-                                placeholder={
-                                  (editable as EditableSplit)?.transfer_account_id
-                                    ? t`No category (transfer)`
-                                    : t`Choose category`
-                                }
-                                triggerClassName="h-8 w-full text-left"
-                                popoverContentClassName="w-[320px]"
-                                includeReadyToAssign
-                                showAvailableForMonth
-                                month={
-                                  transaction?.Date
-                                    ? String(transaction.Date).slice(0, 7)
-                                    : undefined
-                                }
-                              />
-                            ) : (
-                              getSplitCategoryLabel(s)
-                            )}
-                          </TableCell>
-                          <TableCell className="min-w-0 whitespace-normal text-xs text-muted-foreground">
-                            {editSplits ? (
-                              <SplitLinePayeeCell
-                                budgetId={budgetId}
-                                parent={transaction}
-                                payee={(editable as EditableSplit)?.payee ?? ''}
-                                transferAccountId={(editable as EditableSplit)?.transfer_account_id}
-                                onChange={(patch) =>
-                                  handleUpdateSplit((editable as EditableSplit).id, patch)
-                                }
-                                triggerClassName="h-8 w-full"
-                              />
-                            ) : (
-                              String(s.payee || s.Payee || transaction?.Payee || '-')
-                            )}
-                          </TableCell>
-                          <TableCell className="text-xs text-muted-foreground">
-                            {editSplits ? (
-                              <Input
-                                value={(editable as EditableSplit)?.memo ?? ''}
-                                className="h-8"
-                                placeholder={t`Memo`}
-                                onChange={(e) =>
-                                  handleUpdateSplit((editable as EditableSplit).id, {
-                                    memo: e.target.value,
-                                  })
-                                }
-                              />
-                            ) : (
-                              <SplitMemoText memo={String(s.memo || s.Memo || '')} />
-                            )}
-                          </TableCell>
-                          {(['outflow', 'inflow'] as const).map((flow) => {
-                            const flows = extractSplitFlows(
-                              (editable ?? s) as SplitLike,
-                              amountCurrency
-                            );
-                            const value = flows[flow];
-                            return (
-                              <TableCell
-                                key={flow}
-                                className={cn(
-                                  'text-right font-mono text-sm',
-                                  flow === 'inflow'
-                                    ? 'text-green-600'
-                                    : 'text-red-600 dark:text-red-400'
-                                )}
-                              >
-                                {editSplits ? (
-                                  <CalculatorCell
-                                    value={asMilli(value)}
-                                    onCommit={(val) => {
-                                      const editableSplit = editable as EditableSplit | undefined;
-                                      if (!editableSplit?.id) return;
-                                      handleUpdateSplit(editableSplit.id, {
-                                        [flow]: Math.abs(val),
-                                        ...(val
-                                          ? { [flow === 'inflow' ? 'outflow' : 'inflow']: 0 }
-                                          : {}),
-                                      });
-                                    }}
-                                    formatter={(val) => editFormatter.format(val)}
-                                    localizer={currentFormatter}
-                                    inputAlign="right"
-                                    placeholder="0.00"
-                                    className="w-full"
-                                    displayClassName="text-sm"
-                                    inputClassName="text-right text-sm"
-                                    zeroAsEmpty
-                                  />
-                                ) : value ? (
-                                  formatMilli(currentFormatter, asMilli(value))
-                                ) : (
-                                  '—'
-                                )}
-                              </TableCell>
-                            );
-                          })}
-                          {editSplits && (
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleRemoveSplit((editable as EditableSplit).id)}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                        <React.Fragment key={String(s.id || s.ID || idx)}>
+                          <TableRow>
+                            <TableCell className="text-sm">
+                              {editSplits && categoryMode(editable) === 'transfer-locked' ? (
+                                <SplitTransferCategoryLocked />
+                              ) : editSplits ? (
+                                <SearchableCategorySelect
+                                  budgetId={budgetId}
+                                  selectedCategoryId={
+                                    (editable as EditableSplit)?.category_id ?? null
+                                  }
+                                  // A category makes a transfer line a normal one again,
+                                  // except a line to an off-budget account (spending).
+                                  onCategorySelect={(categoryId) =>
+                                    handleUpdateSplit((editable as EditableSplit).id, {
+                                      category_id: categoryId,
+                                      ...(categoryMode(editable) === 'transfer-optional'
+                                        ? {}
+                                        : { transfer_account_id: null }),
+                                    })
+                                  }
+                                  includeTransfers={categoryMode(editable) === 'transfer-optional'}
+                                  placeholder={
+                                    (editable as EditableSplit)?.transfer_account_id
+                                      ? t`No category (transfer)`
+                                      : t`Choose category`
+                                  }
+                                  triggerClassName="h-8 w-full text-left"
+                                  popoverContentClassName="w-[320px]"
+                                  includeReadyToAssign
+                                  showAvailableForMonth
+                                  month={
+                                    transaction?.Date
+                                      ? String(transaction.Date).slice(0, 7)
+                                      : undefined
+                                  }
+                                />
+                              ) : (
+                                getSplitCategoryLabel(s)
+                              )}
                             </TableCell>
+                            <TableCell className="min-w-0 whitespace-normal text-xs text-muted-foreground">
+                              {editSplits ? (
+                                <SplitLinePayeeCell
+                                  budgetId={budgetId}
+                                  parent={transaction}
+                                  payee={(editable as EditableSplit)?.payee ?? ''}
+                                  transferAccountId={
+                                    (editable as EditableSplit)?.transfer_account_id
+                                  }
+                                  onChange={(patch) =>
+                                    handleUpdateSplit((editable as EditableSplit).id, patch)
+                                  }
+                                  triggerClassName="h-8 w-full"
+                                />
+                              ) : (
+                                String(s.payee || s.Payee || transaction?.Payee || '-')
+                              )}
+                            </TableCell>
+                            <TableCell className="text-xs text-muted-foreground">
+                              {editSplits ? (
+                                <Input
+                                  value={(editable as EditableSplit)?.memo ?? ''}
+                                  className="h-8"
+                                  placeholder={t`Memo`}
+                                  onChange={(e) =>
+                                    handleUpdateSplit((editable as EditableSplit).id, {
+                                      memo: e.target.value,
+                                    })
+                                  }
+                                />
+                              ) : (
+                                <SplitMemoText memo={String(s.memo || s.Memo || '')} />
+                              )}
+                            </TableCell>
+                            {(['outflow', 'inflow'] as const).map((flow) => {
+                              const flows = extractSplitFlows(
+                                (editable ?? s) as SplitLike,
+                                amountCurrency
+                              );
+                              const value = flows[flow];
+                              return (
+                                <TableCell
+                                  key={flow}
+                                  className={cn(
+                                    'text-right font-mono text-sm',
+                                    flow === 'inflow'
+                                      ? 'text-green-600'
+                                      : 'text-red-600 dark:text-red-400'
+                                  )}
+                                >
+                                  {editSplits ? (
+                                    <CalculatorCell
+                                      value={asMilli(value)}
+                                      onCommit={(val) => {
+                                        const editableSplit = editable as EditableSplit | undefined;
+                                        if (!editableSplit?.id) return;
+                                        handleUpdateSplit(editableSplit.id, {
+                                          [flow]: Math.abs(val),
+                                          ...(val
+                                            ? { [flow === 'inflow' ? 'outflow' : 'inflow']: 0 }
+                                            : {}),
+                                        });
+                                      }}
+                                      formatter={(val) => editFormatter.format(val)}
+                                      localizer={currentFormatter}
+                                      inputAlign="right"
+                                      placeholder="0.00"
+                                      className="w-full"
+                                      displayClassName="text-sm"
+                                      inputClassName="text-right text-sm"
+                                      zeroAsEmpty
+                                    />
+                                  ) : value ? (
+                                    formatMilli(currentFormatter, asMilli(value))
+                                  ) : (
+                                    '—'
+                                  )}
+                                </TableCell>
+                              );
+                            })}
+                            {editSplits && (
+                              <TableCell className="text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleRemoveSplit((editable as EditableSplit).id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </TableCell>
+                            )}
+                          </TableRow>
+                          {target && (
+                            <TableRow className="border-t-0">
+                              <TableCell colSpan={6} className="pt-0">
+                                <SplitReceivedAmount
+                                  target={target}
+                                  lineIsInflow={Number((editable as EditableSplit).inflow) > 0}
+                                  value={(editable as EditableSplit).received_amount}
+                                  onCommit={(value) =>
+                                    handleUpdateSplit((editable as EditableSplit).id, {
+                                      received_amount: value || null,
+                                      received_auto: false,
+                                    })
+                                  }
+                                />
+                              </TableCell>
+                            </TableRow>
                           )}
-                        </TableRow>
+                        </React.Fragment>
                       );
                     })}
                   </TableBody>

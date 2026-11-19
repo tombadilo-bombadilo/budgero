@@ -70,6 +70,8 @@ With the Python SDK: `result = client.add_transaction(...)`, then `client.update
 
 Add an optional `splits` array to split the transaction across several categories. Each line carries its own `inflow`/`outflow` (integer milliunits in the account's currency) and `categoryId` (or `transferAccountId` for a transfer line); `memo` and `payee` are optional per line. The parent's `categoryId` becomes irrelevant — omit it — and the parent's `inflow`/`outflow` **must equal the sum of the lines**, or the item is rejected on apply with "Split amounts must sum to parent total".
 
+A transfer line to an **off-budget** account (for example a mortgage or another tracking account) may carry both `transferAccountId` and `categoryId`: the money still moves to that account, but it counts as spending in the category instead of leaving Ready to Assign. Without a `categoryId` it leaves Ready to Assign. A line to an on-budget account can't have a category; such an item is rejected. For a transfer line to an account in another currency you can add `receivedAmount` (integer milliunits in the other account's currency): that exact amount lands in the other account. Without it, or when no exchange rate for the budget currency is available, the amount is converted at the day's rate.
+
 ```json
 {
   "v": 2,

@@ -46,7 +46,13 @@ export {
   type TransactionRestoreSnapshot,
   type TransactionBatchEdit,
   type SplitParentAmounts,
+  type SplitSaveInput,
 } from './services/transactions/index.js';
+export {
+  type SplitInput,
+  SPLIT_MIRROR_RATE_MISSING,
+  SplitMirrorRateError,
+} from './services/transactions/split-service.js';
 export { GoalService } from './services/goals/index.js';
 export * from './services/goals/funding.js';
 export { MonthlyBudgetService } from './services/monthly-budgets/index.js';

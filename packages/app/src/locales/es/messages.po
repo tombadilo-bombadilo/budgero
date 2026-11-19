@@ -3144,7 +3144,7 @@ msgstr "Un filtro de resultados no se pudo leer y se omitió."
 msgid "A rule checks a transaction against conditions on memo, payee, amount or account, joined with AND or OR, then runs its actions, such as Set category or Set payee. Choose New rule to make one; when several rules match, the lower run order goes first."
 msgstr "Una regla comprueba una transacción con condiciones sobre nota, beneficiario, importe o cuenta, unidas con Y u O, y luego ejecuta sus acciones, como «Establecer categoría» o «Establecer beneficiario». Elige «Nueva regla» para crear una; si coinciden varias reglas, va primero la de menor orden de ejecución."
 
-#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/shared/mutations/op-code-registry/domains/transactions.ts
 msgid "A split line can have a category or a transfer account, not both."
 msgstr "Una línea dividida puede tener una categoría o una cuenta de transferencia, no ambas."
 
@@ -3514,6 +3514,10 @@ msgstr "Añadir"
 msgctxt "mobile nav"
 msgid "Add"
 msgstr "Añadir"
+
+#: src/shared/mutations/op-code-registry/shared.ts
+msgid "Add a {from} to {to} exchange rate to save this received amount."
+msgstr "Añade un tipo de cambio de {from} a {to} para guardar este importe recibido."
 
 #: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
@@ -5738,6 +5742,7 @@ msgstr "Grupos de categorías"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Category is set automatically for on-budget transfers"
 msgstr "La categoría se establece automáticamente para las transferencias dentro del presupuesto"
 
@@ -8993,8 +8998,15 @@ msgstr "Introducir mi código →"
 msgid "Enter new password (min 8 characters)"
 msgstr "Introduce la nueva contraseña (mín. 8 caracteres)"
 
+#. placeholder {0}: target.Name
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
+msgid "Enter the amount received in {0}"
+msgstr "Introduce el importe recibido en {0}"
+
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Enter the amount sent from {0}"
 msgstr "Introduce el importe enviado desde {0}"
 
@@ -9714,6 +9726,8 @@ msgid "Failed to save recurring transaction"
 msgstr "No se pudo guardar la transacción recurrente"
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/mobile-transaction-card/useMobileTransactionCardState.ts
 msgid "Failed to save split transaction"
 msgstr "No se ha podido guardar la transacción dividida"
 
@@ -16414,9 +16428,12 @@ msgstr "Importe recibido ({toCurrency})"
 msgid "Received in {0}"
 msgstr "Recibido en {0}"
 
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
+#. placeholder {1}: target.Currency
 #. placeholder {1}: transferAccountRecord.Currency
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Received in {0} ({1})"
 msgstr "Recibido en {0} ({1})"
 
@@ -18366,9 +18383,12 @@ msgstr "Enviados {0} de {1}, fallidos {2}{3}."
 msgid "Sent from {0}"
 msgstr "Enviado desde {0}"
 
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
+#. placeholder {1}: target.Currency
 #. placeholder {1}: transferAccountRecord.Currency
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Sent from {0} ({1})"
 msgstr "Enviado desde {0} ({1})"
 
@@ -21370,6 +21390,7 @@ msgstr "Transferencia: {0}"
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Transfers"
 msgstr "Transferencias"

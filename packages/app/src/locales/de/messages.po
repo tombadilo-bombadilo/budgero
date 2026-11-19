@@ -3144,7 +3144,7 @@ msgstr "Ein Ergebnisfilter konnte nicht gelesen werden und wurde weggelassen."
 msgid "A rule checks a transaction against conditions on memo, payee, amount or account, joined with AND or OR, then runs its actions, such as Set category or Set payee. Choose New rule to make one; when several rules match, the lower run order goes first."
 msgstr "Eine Regel prüft eine Transaktion auf Bedingungen zu Memo, Empfänger, Betrag oder Konto, verknüpft mit UND oder ODER, und führt dann ihre Aktionen aus, etwa „Kategorie festlegen“ oder „Empfänger festlegen“. Mit „Neue Regel“ legst du eine an; passen mehrere Regeln, läuft die mit der niedrigeren Ausführungsreihenfolge zuerst."
 
-#: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/shared/mutations/op-code-registry/domains/transactions.ts
 msgid "A split line can have a category or a transfer account, not both."
 msgstr "Eine Teilbuchung kann eine Kategorie oder ein Umbuchungskonto haben, nicht beides."
 
@@ -3514,6 +3514,10 @@ msgstr "Hinzufügen"
 msgctxt "mobile nav"
 msgid "Add"
 msgstr "Neu"
+
+#: src/shared/mutations/op-code-registry/shared.ts
+msgid "Add a {from} to {to} exchange rate to save this received amount."
+msgstr "Füge einen Wechselkurs von {from} nach {to} hinzu, um diesen empfangenen Betrag zu speichern."
 
 #: src/pages/custom-dashboards/components/DashboardEditBar.tsx
 #: src/pages/custom-dashboards/CustomDashboardsPage.tsx
@@ -5738,6 +5742,7 @@ msgstr "Kategoriengruppen"
 
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Category is set automatically for on-budget transfers"
 msgstr "Die Kategorie wird bei Umbuchungen innerhalb des Budgets automatisch festgelegt"
 
@@ -8993,8 +8998,15 @@ msgstr "Meinen Code eingeben →"
 msgid "Enter new password (min 8 characters)"
 msgstr "Neues Passwort eingeben (min. 8 Zeichen)"
 
+#. placeholder {0}: target.Name
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
+msgid "Enter the amount received in {0}"
+msgstr "Gib den auf {0} empfangenen Betrag ein"
+
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Enter the amount sent from {0}"
 msgstr "Gib den von {0} gesendeten Betrag ein"
 
@@ -9714,6 +9726,8 @@ msgid "Failed to save recurring transaction"
 msgstr "Wiederkehrende Transaktion konnte nicht gespeichert werden"
 
 #: src/features/transactions/ui/add-transaction/useAddTransactionForm.ts
+#: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/mobile-transaction-card/useMobileTransactionCardState.ts
 msgid "Failed to save split transaction"
 msgstr "Geteilte Transaktion konnte nicht gespeichert werden"
 
@@ -16414,9 +16428,12 @@ msgstr "Erhaltener Betrag ({toCurrency})"
 msgid "Received in {0}"
 msgstr "Erhalten in {0}"
 
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
+#. placeholder {1}: target.Currency
 #. placeholder {1}: transferAccountRecord.Currency
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Received in {0} ({1})"
 msgstr "Empfangen auf {0} ({1})"
 
@@ -18366,9 +18383,12 @@ msgstr "{0} von {1} gesendet, {2}{3} fehlgeschlagen."
 msgid "Sent from {0}"
 msgstr "Gesendet von {0}"
 
+#. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
+#. placeholder {1}: target.Currency
 #. placeholder {1}: transferAccountRecord.Currency
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Sent from {0} ({1})"
 msgstr "Gesendet von {0} ({1})"
 
@@ -21370,6 +21390,7 @@ msgstr "Umbuchung: {0}"
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Transfers"
 msgstr "Umbuchungen"

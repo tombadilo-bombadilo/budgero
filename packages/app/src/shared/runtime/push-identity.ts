@@ -88,3 +88,23 @@ export function withoutInvalidPushTime(
   }
   return args;
 }
+
+/** Arg marking a mutation that came in through the Push API (op prepare is lenient for it). */
+export const PUSH_ORIGIN_ARG = 'fromPush';
+
+/**
+ * Args of a pushed mutation with split lines (an add or a split save):
+ * marked as pushed, and with any `mirror` on its lines removed. Exact mirror amounts are only ever
+ * computed by the receiving device's own prepare step (from a
+ * `receivedAmount`), never taken from a third-party payload.
+ */
+export function asPushedArgs(args: Record<string, unknown>): Record<string, unknown> {
+  const splits = Array.isArray(args.splits)
+    ? (args.splits as unknown[]).map((line) => {
+        if (!line || typeof line !== 'object' || Array.isArray(line)) return line;
+        const { mirror: _mirror, Mirror: _pascal, ...rest } = line as Record<string, unknown>;
+        return rest;
+      })
+    : undefined;
+  return { ...args, ...(splits ? { splits } : {}), [PUSH_ORIGIN_ARG]: true };
+}

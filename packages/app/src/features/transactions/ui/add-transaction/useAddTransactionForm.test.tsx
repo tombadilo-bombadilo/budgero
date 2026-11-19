@@ -20,6 +20,8 @@ const fixtures = vi.hoisted(() => ({
   accounts: [
     { ID: 41, BudgetID: 4, Currency: 'USD', Type: 'checking', OnBudget: true },
     { ID: 42, BudgetID: 4, Currency: 'USD', Type: 'savings', OnBudget: true },
+    { ID: 43, BudgetID: 4, Currency: 'EUR', Type: 'checking', OnBudget: true },
+    { ID: 44, BudgetID: 4, Currency: 'USD', Type: 'savings', OnBudget: false },
     { ID: 51, BudgetID: 5, Currency: 'USD', Type: 'checking', OnBudget: true },
   ],
   labels: [{ ID: 8, BudgetID: 4, Name: 'Budget A label', Color: '#22AA44', UsageCount: 0 }],
@@ -286,12 +288,46 @@ describe('split lines the form refuses', () => {
     ]);
   });
 
-  it('refuses a line with both a category and a transfer account', async () => {
+  it('drops a stale category on a transfer between on-budget accounts instead of refusing', async () => {
     const form = await submitSplit([
       line('a', { categoryId: 1 }),
       line('b', { categoryId: 1, transferAccountId: 42 }),
     ]);
-    expect(form.save).not.toHaveBeenCalled();
+    expect(form.save.mock.calls[0][11][1]).toMatchObject({
+      categoryId: null,
+      transferAccountId: 42,
+    });
+  });
+
+  it('keeps the category of a line to an off-budget account', async () => {
+    const form = await submitSplit([
+      line('a', { categoryId: 1 }),
+      line('b', { categoryId: 1, transferAccountId: 44 }),
+    ]);
+    expect(form.save.mock.calls[0][11][1]).toMatchObject({ categoryId: 1, transferAccountId: 44 });
+  });
+
+  it('a line to another currency needs the received amount, and saves it', async () => {
+    const missing = await submitSplit([
+      line('a', { categoryId: 1 }),
+      line('b', { transferAccountId: 43 }),
+    ]);
+    expect(missing.save).not.toHaveBeenCalled();
+    const form = await submitSplit([
+      line('a', { categoryId: 1 }),
+      line('b', { transferAccountId: 43, receivedAmount: asMilli(450), receivedAuto: false }),
+    ]);
+    expect(form.save.mock.calls[0][11][1]).toMatchObject({
+      categoryId: null,
+      transferAccountId: 43,
+      receivedAmount: 450,
+    });
+    // An estimate (not typed) is checked but not sent: the mirror converts as usual.
+    const estimated = await submitSplit([
+      line('a', { categoryId: 1 }),
+      line('b', { transferAccountId: 43, receivedAmount: asMilli(450) }),
+    ]);
+    expect(estimated.save.mock.calls[0][11][1]).not.toHaveProperty('receivedAmount');
   });
 
   it("refuses a line that transfers to the transaction's own account", async () => {

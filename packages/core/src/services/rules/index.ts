@@ -1447,6 +1447,18 @@ export class RulesService {
     return rows.map((row) => this.mapRunChange(row));
   }
 
+  /**
+   * IDs of the transactions a run of `ruleId` (over `transactionIds`, or the
+   * whole budget) would apply its actions to, the way executeRule picks them.
+   * No writes.
+   */
+  matchingTransactionIds(ruleId: number, transactionIds?: number[]): number[] {
+    const rule = this.getRule(ruleId);
+    return this.getCandidateTransactions(rule.budgetId, transactionIds)
+      .filter((tx) => this.matchesRuleConditions(rule.conditions, tx))
+      .map((tx) => tx.ID);
+  }
+
   private getCandidateTransactions(budgetId: number, transactionIds?: number[]): Transaction[] {
     let rows: Transaction[];
     if (transactionIds && transactionIds.length > 0) {

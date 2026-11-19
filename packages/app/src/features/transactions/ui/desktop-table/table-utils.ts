@@ -1,5 +1,6 @@
 import { t } from '@lingui/core/macro';
 import type { TransactionSplit } from '@budgero/core/browser';
+import { mirrorMagnitude } from '../../lib/split-transfer';
 
 /**
  * Split data can come from different sources with different casing
@@ -69,25 +70,39 @@ export const toEditableSplit = (
   split: SplitLike,
   idx: number,
   amountCurrency: 'converted' | 'native' = 'converted'
-): {
-  id: string;
-  category_id: number | null;
-  transfer_account_id: number | null;
-  memo: string;
-  payee: string;
-  inflow: number;
-  outflow: number;
-} => {
+): EditableSplit => {
   const s = split as Record<string, unknown>;
+  const flows = extractSplitFlows(split, amountCurrency);
   return {
     id: String(s.id ?? s.ID ?? idx),
     category_id: (s.category_id ?? s.CategoryID ?? null) as number | null,
     transfer_account_id: (s.transfer_account_id ?? s.TransferAccountID ?? null) as number | null,
     memo: String(s.memo ?? s.Memo ?? ''),
     payee: String(s.payee ?? s.Payee ?? ''),
-    ...extractSplitFlows(split, amountCurrency),
+    ...flows,
+    ...receivedFromMirror(split, flows.inflow + flows.outflow),
   };
 };
+
+/**
+ * The received-amount fields of a line loaded with its mirror
+ * (SplitService.getSplitsWithMirrors): the mirror's stored amount, entered
+ * (not re-estimated) when the mirror is pinned.
+ */
+export function receivedFromMirror(
+  split: SplitLike,
+  lineAmount: number
+): Pick<EditableSplit, 'received_amount' | 'received_auto' | 'received_base'> {
+  const s = split as Record<string, unknown>;
+  const mirror = s.Mirror as { InflowNative: number; OutflowNative: number } | undefined;
+  const received = mirrorMagnitude(mirror);
+  if (received === null) return {};
+  return {
+    received_amount: received,
+    received_auto: !s.MirrorPinned,
+    received_base: lineAmount,
+  };
+}
 
 /**
  * Editable split type used in the split editor
@@ -100,6 +115,12 @@ export interface EditableSplit {
   payee: string;
   inflow: number;
   outflow: number;
+  /** Cross-currency transfer lines: what the other account received (its currency). */
+  received_amount?: number | null;
+  /** The received amount follows the line amount (estimated) until one is typed. */
+  received_auto?: boolean;
+  /** The line amount a loaded received amount belongs to. */
+  received_base?: number | null;
 }
 
 /**

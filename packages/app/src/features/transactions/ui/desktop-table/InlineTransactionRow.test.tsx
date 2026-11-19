@@ -69,9 +69,11 @@ vi.mock('@shared/ui/calculator-cell', () => ({
   CalculatorCell: ({
     onCommit,
     className,
+    onEditingChange,
   }: {
     onCommit: (v: number) => void;
     className: string;
+    onEditingChange?: (editing: boolean) => void;
   }) => (
     <input
       aria-label={
@@ -82,6 +84,8 @@ vi.mock('@shared/ui/calculator-cell', () => ({
             : 'other'
       }
       onChange={(e) => onCommit(Number(e.target.value))}
+      onFocus={() => onEditingChange?.(true)}
+      onBlur={() => onEditingChange?.(false)}
     />
   ),
 }));
@@ -270,6 +274,34 @@ describe('InlineTransactionRow', () => {
     fireEvent.keyDown(screen.getByRole('button', { name: 'Cancel' }), { key: 'Enter' });
     expect(form.handleSubmit).not.toHaveBeenCalled();
     fireEvent.keyDown(screen.getByLabelText('Memo'), { key: 'Enter' });
+    await vi.waitFor(() => expect(form.handleSubmit).toHaveBeenCalledTimes(1));
+  });
+
+  it('Ctrl+Enter in an amount field saves once the field is committed', async () => {
+    const row = renderRow();
+    const outflow = screen.getByLabelText('outflow');
+    fireEvent.change(outflow, { target: { value: '25000' } });
+    row.rerender();
+    fireEvent.keyDown(outflow, { key: 'Enter', ctrlKey: true });
+    await vi.waitFor(() => expect(form.handleSubmit).toHaveBeenCalledTimes(1));
+    expect(form.state.amount).toBe(25000);
+  });
+
+  it('a deferred Ctrl+Enter save waits for the edit to end, and any other key cancels it', async () => {
+    const row = renderRow();
+    const outflow = screen.getByLabelText('outflow');
+    fireEvent.focus(outflow);
+    fireEvent.change(outflow, { target: { value: '25000' } });
+    row.rerender();
+    fireEvent.keyDown(outflow, { key: 'Enter', ctrlKey: true });
+    expect(form.handleSubmit).not.toHaveBeenCalled();
+    fireEvent.keyDown(outflow, { key: '1' });
+    fireEvent.blur(outflow);
+    expect(form.handleSubmit).not.toHaveBeenCalled();
+
+    fireEvent.focus(outflow);
+    fireEvent.keyDown(outflow, { key: 'Enter', ctrlKey: true });
+    fireEvent.blur(outflow);
     await vi.waitFor(() => expect(form.handleSubmit).toHaveBeenCalledTimes(1));
   });
 

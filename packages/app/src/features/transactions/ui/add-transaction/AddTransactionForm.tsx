@@ -175,7 +175,7 @@ function BudgetTransactionForm({
       return;
     }
     // The lines carry the categories of a split template.
-    const splits = split ? prepareSplitLines() : null;
+    const splits = split ? prepareSplitLines({ templateLines: true }) : null;
     if (split && !splits) return;
 
     const categoryId = resolveCategoryId(
@@ -482,6 +482,9 @@ function BudgetTransactionForm({
         transferAccounts={accounts.filter(
           (account) => String(account.ID) !== form.selectedFromAccount && !account.Archived
         )}
+        parentAccount={accounts.find((account) => String(account.ID) === form.selectedFromAccount)}
+        date={getCurrentDate(form.transactionDate)}
+        templateLines={recurringEnabled}
       />
 
       {recurringEnabled && (

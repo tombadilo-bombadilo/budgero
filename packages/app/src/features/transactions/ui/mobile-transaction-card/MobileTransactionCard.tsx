@@ -111,8 +111,12 @@ export const MobileTransactionCard = React.memo(function MobileTransactionCard({
     removeSplitLine,
     updateSplitLine,
     saveSplits,
+    splitReceivedTarget,
+    splitCategoryMode,
+    splitSaveHint,
   } = useMobileTransactionCardState({
     transaction,
+    budgetId,
     getPrimaryInflow,
     getPrimaryOutflow,
     forceExpand,
@@ -281,6 +285,9 @@ export const MobileTransactionCard = React.memo(function MobileTransactionCard({
             onRemoveSplitLine={removeSplitLine}
             onUpdateSplitLine={updateSplitLine}
             onSaveSplits={saveSplits}
+            splitReceivedTarget={splitReceivedTarget}
+            splitCategoryMode={splitCategoryMode}
+            splitSaveHint={splitSaveHint}
           />
         )}
       </CardContentWrapper>

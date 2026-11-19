@@ -39,6 +39,11 @@ import { useAutofillIntegration } from './useAutofillIntegration';
 
 import type { SplitLine } from '../form';
 import {
+  missingReceivedMessage,
+  needsReceivedAmount,
+  splitLineCategoryMode,
+} from '../../lib/split-transfer';
+import {
   convertAmountToFlow,
   validateTransaction,
   validateSplitTotal,
@@ -463,66 +468,103 @@ export function useAddTransactionForm({
    * The split lines ready to save (account-currency amounts, like the
    * parent's), or null after telling the user what is wrong with them.
    */
-  const prepareSplitLines = React.useCallback((): RecurringSplitLine[] | null => {
-    const splitValidation = validateSplitTotal(remaining);
-    if (!splitValidation.isValid && splitValidation.error) {
-      toast.error(splitValidation.error.title, {
-        description: splitValidation.error.description,
-      });
-      return null;
-    }
+  const prepareSplitLines = React.useCallback(
+    (
+      options: { templateLines?: boolean } = {}
+    ): (RecurringSplitLine & { receivedAmount?: number })[] | null => {
+      const splitValidation = validateSplitTotal(remaining);
+      if (!splitValidation.isValid && splitValidation.error) {
+        toast.error(splitValidation.error.title, {
+          description: splitValidation.error.description,
+        });
+        return null;
+      }
 
-    const invalidAmounts = splitLines.some(
-      (line) =>
-        line.inflow < 0 ||
-        line.outflow < 0 ||
-        (line.inflow === 0 && line.outflow === 0) ||
-        (line.inflow > 0 && line.outflow > 0)
-    );
-    if (invalidAmounts) {
-      toast.error(t`Invalid split amount`, {
-        description: t`Each split line needs either an inflow or an outflow amount.`,
-      });
-      return null;
-    }
+      const invalidAmounts = splitLines.some(
+        (line) =>
+          line.inflow < 0 ||
+          line.outflow < 0 ||
+          (line.inflow === 0 && line.outflow === 0) ||
+          (line.inflow > 0 && line.outflow > 0)
+      );
+      if (invalidAmounts) {
+        toast.error(t`Invalid split amount`, {
+          description: t`Each split line needs either an inflow or an outflow amount.`,
+        });
+        return null;
+      }
 
-    // A line is either categorized or a transfer, never both.
-    if (splitLines.some((l) => l.categoryId && l.transferAccountId)) {
-      toast.error(t`Invalid split line`, {
-        description: t`A split line can have a category or a transfer account, not both.`,
-      });
-      return null;
-    }
-    if (
-      form.selectedFromAccount &&
-      splitLines.some(
-        (l) => l.transferAccountId && String(l.transferAccountId) === form.selectedFromAccount
-      )
-    ) {
-      toast.error(t`Invalid split line`, {
-        description: t`A split line can't transfer to the transaction's own account.`,
-      });
-      return null;
-    }
+      const parentAccount = accounts?.find((a) => a.ID.toString() === form.selectedFromAccount);
+      const accountOf = (id?: number | null) =>
+        id ? accounts?.find((a) => a.ID === id) : undefined;
+      // Only a transfer line to an off-budget account keeps a category
+      // (spending, e.g. a mortgage payment); template lines never do.
+      const keepsCategory = (l: SplitLine) =>
+        !options.templateLines &&
+        splitLineCategoryMode(parentAccount, accountOf(l.transferAccountId)) ===
+          'transfer-optional';
+      if (
+        form.selectedFromAccount &&
+        splitLines.some(
+          (l) => l.transferAccountId && String(l.transferAccountId) === form.selectedFromAccount
+        )
+      ) {
+        toast.error(t`Invalid split line`, {
+          description: t`A split line can't transfer to the transaction's own account.`,
+        });
+        return null;
+      }
 
-    const uncategorizedId = categories.find((c) => c.Name === 'Uncategorized')?.ID ?? null;
-    const missingAssignment = splitLines.some((l) => !l.categoryId && !l.transferAccountId);
-    if (missingAssignment && !uncategorizedId) {
-      toast.error(t`Split requires category`, {
-        description: t`Each split line needs a category. Please assign a category to every split.`,
-      });
-      return null;
-    }
+      const uncategorizedId = categories.find((c) => c.Name === 'Uncategorized')?.ID ?? null;
+      const missingAssignment = splitLines.some((l) => !l.categoryId && !l.transferAccountId);
+      if (missingAssignment && !uncategorizedId) {
+        toast.error(t`Split requires category`, {
+          description: t`Each split line needs a category. Please assign a category to every split.`,
+        });
+        return null;
+      }
 
-    return splitLines.map((l) => ({
-      categoryId: l.categoryId ?? (l.transferAccountId ? null : uncategorizedId),
-      transferAccountId: l.transferAccountId ?? null,
-      memo: l.memo ?? '',
-      payee: l.payee ?? '',
-      inflow: l.inflow,
-      outflow: l.outflow,
-    }));
-  }, [t, remaining, splitLines, categories, form.selectedFromAccount]);
+      // A transfer line to another currency needs an amount for the other
+      // side (typed, or the estimate shown); only a typed one is sent and
+      // pinned, an estimate leaves the mirror to the usual conversion.
+      const crossCurrency = (l: SplitLine) =>
+        !options.templateLines &&
+        needsReceivedAmount(parentAccount?.Currency, accountOf(l.transferAccountId));
+      const missingReceived = splitLines.find(
+        (l) => crossCurrency(l) && !((l.receivedAmount ?? 0) > 0)
+      );
+      if (missingReceived) {
+        toast.error(t`Invalid split line`, {
+          description: missingReceivedMessage(
+            accountOf(missingReceived.transferAccountId)!,
+            missingReceived.inflow > 0
+          ),
+        });
+        return null;
+      }
+
+      // The payload's categories: a transfer line keeps one only to an
+      // off-budget account, so a stale hidden one never blocks the save.
+      return splitLines.map((l) => {
+        const receivedAmount =
+          crossCurrency(l) && l.receivedAuto === false ? l.receivedAmount : undefined;
+        return {
+          categoryId: l.transferAccountId
+            ? keepsCategory(l)
+              ? (l.categoryId ?? null)
+              : null
+            : (l.categoryId ?? uncategorizedId),
+          transferAccountId: l.transferAccountId ?? null,
+          memo: l.memo ?? '',
+          payee: l.payee ?? '',
+          inflow: l.inflow,
+          outflow: l.outflow,
+          ...(receivedAmount ? { receivedAmount } : {}),
+        };
+      });
+    },
+    [t, remaining, splitLines, categories, accounts, form.selectedFromAccount]
+  );
 
   const handleSubmit = React.useCallback(
     async (addAnother = false) => {

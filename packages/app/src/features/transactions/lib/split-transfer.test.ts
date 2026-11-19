@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { splitPayeeUpdate, splitTransferUpdate, transferAccountFromPayee } from './split-transfer';
+import {
+  hasTransferRate,
+  mirrorMagnitude,
+  needsReceivedAmount,
+  splitLineCategoryMode,
+  splitPayeeUpdate,
+  splitTransferUpdate,
+  transferAccountFromPayee,
+} from './split-transfer';
 
 const accounts = [
   { ID: 1, Name: 'Account_A' },
@@ -25,11 +33,47 @@ describe('split transfer lines', () => {
       payee: '',
       transferAccountId: 2,
       categoryId: null,
+      receivedAmount: null,
+      receivedAuto: true,
     });
     expect(splitPayeeUpdate('Grocer', accounts, 1)).toEqual({
       payee: 'Grocer',
       transferAccountId: null,
+      receivedAmount: null,
+      receivedAuto: true,
     });
-    expect(splitTransferUpdate(3)).toEqual({ payee: '', transferAccountId: 3, categoryId: null });
+    expect(splitTransferUpdate(3)).toEqual({
+      payee: '',
+      transferAccountId: 3,
+      categoryId: null,
+      receivedAmount: null,
+      receivedAuto: true,
+    });
+  });
+
+  it('locks the category of on-budget transfer lines; off-budget targets may take one', () => {
+    const onBudget = { OnBudget: true };
+    const tracking = { OnBudget: 0 };
+    expect(splitLineCategoryMode(onBudget, undefined)).toBe('category');
+    expect(splitLineCategoryMode(onBudget, onBudget)).toBe('transfer-locked');
+    expect(splitLineCategoryMode(onBudget, tracking)).toBe('transfer-optional');
+    // An off-budget parent's lines never count in the budget.
+    expect(splitLineCategoryMode(tracking, tracking)).toBe('transfer-locked');
+    expect(splitLineCategoryMode(tracking, onBudget)).toBe('transfer-locked');
+  });
+
+  it('asks for a received amount only across currencies', () => {
+    expect(needsReceivedAmount('USD', { Currency: 'EUR' })).toBe(true);
+    expect(needsReceivedAmount('USD', { Currency: 'USD' })).toBe(false);
+    expect(needsReceivedAmount(undefined, { Currency: 'EUR' })).toBe(false);
+    expect(mirrorMagnitude({ InflowNative: 0, OutflowNative: 4_200 })).toBe(4_200);
+    expect(mirrorMagnitude({ InflowNative: 0, OutflowNative: 0 })).toBeNull();
+  });
+
+  it('a split mirror row has no transfer rate of its own', () => {
+    expect(hasTransferRate('tr-1')).toBe(true);
+    expect(hasTransferRate('split_transfer_7_2026-03-10')).toBe(false);
+    expect(hasTransferRate('')).toBe(false);
+    expect(hasTransferRate(null)).toBe(false);
   });
 });
