@@ -27,6 +27,7 @@ import {
   RECURRING_TEMPLATE_INVALIDATIONS,
   safeCapture,
   carryReceivedAmounts,
+  normalizeSplitLines,
   readCarriedMirror,
   type NormalizedSplit,
   type OpCall,
@@ -106,29 +107,6 @@ function restoreUndo(before: unknown, replace = false): OpCall[] | null {
   const snapshot = (before as { restore?: TransactionRestoreSnapshot } | null)?.restore;
   if (!snapshot) return null;
   return [{ op: 'transactions.restore', args: { snapshot, ...(replace ? { replace } : {}) } }];
-}
-
-/** Normalize split lines from an op payload (snake_case or PascalCase) to the core shape. */
-function normalizeSplitLines(splits: unknown): NormalizedSplit[] {
-  // asMilli doubles as the op-boundary guard: a decimal amount in a payload
-  // throws here instead of reaching an integer column.
-  return ((splits as Record<string, unknown>[]) || []).map((s, idx) => {
-    const inflowOriginal = s.InflowNative ?? s.InflowOriginal ?? s.inflow_original ?? null;
-    const outflowOriginal = s.OutflowNative ?? s.OutflowOriginal ?? s.outflow_original ?? null;
-    return {
-      CategoryID: (s.CategoryID ?? s.category_id ?? null) as number | null,
-      TransferAccountID: (s.TransferAccountID ?? s.transfer_account_id ?? null) as number | null,
-      Memo: String(s.Memo ?? s.memo ?? ''),
-      Payee: String(s.Payee ?? s.payee ?? ''),
-      InflowConverted: asMilli(Number(s.InflowConverted ?? s.Inflow ?? s.inflow ?? 0)),
-      OutflowConverted: asMilli(Number(s.OutflowConverted ?? s.Outflow ?? s.outflow ?? 0)),
-      InflowNative: inflowOriginal == null ? null : asMilli(Number(inflowOriginal)),
-      OutflowNative: outflowOriginal == null ? null : asMilli(Number(outflowOriginal)),
-      PairID: (s.PairID ?? s.pair_id ?? null) as string | null,
-      OrderIndex: Number(s.OrderIndex ?? s.order_index ?? idx),
-      Mirror: readCarriedMirror(s),
-    };
-  });
 }
 
 /**
@@ -216,6 +194,26 @@ function guardExistingParentLines(args: Record<string, unknown>): Record<string,
 }
 
 /**
+ * `prepare` guard: a split line keeps a category next to its transfer
+ * account only when it goes from an on-budget parent to an off-budget
+ * account (spending, e.g. a mortgage payment). Checked here, on the
+ * originating device only: execution drops such a category instead of
+ * failing, so an account switched on budget meanwhile can't split devices.
+ */
+function rejectCategorizedTransferLines(
+  parentAccountId: number,
+  lines: readonly { CategoryID?: number | null; TransferAccountID?: number | null }[]
+): void {
+  const splits = S().splits as Partial<Services['splits']>;
+  for (const line of lines) {
+    if (line.CategoryID == null || line.TransferAccountID == null) continue;
+    if (!splits.transferLineTakesCategory?.(parentAccountId, Number(line.TransferAccountID))) {
+      throw new Error(t`A split line can have a category or a transfer account, not both.`);
+    }
+  }
+}
+
+/**
  * `prepare` for split saves on an existing parent (`args.transactionId`):
  * lines with an entered received amount carry their exact mirror amounts
  * (see carryReceivedAmounts), converted at the parent's date.
@@ -231,6 +229,7 @@ async function carryReceivedForParent(
   } catch {
     return args; // the op fails on its own
   }
+  rejectCategorizedTransferLines(parent.AccountID, normalizeSplitLines(lines));
   const splits = await carryReceivedAmounts(lines, (received) =>
     S().splits.quoteMirrorAmounts(parent, normalizeSplitLines(lines), received)
   );
@@ -710,16 +709,22 @@ export const transactionOps = {
           }))
         );
         const lines = args.splits as Record<string, unknown>[];
-        const splits = await carryReceivedAmounts(lines, (received) =>
-          S().splits.quoteMirrorAmounts(
-            {
-              AccountID: Number(args.accountId),
-              BudgetID: Number(args.budgetId),
-              Date: String(args.date),
-            },
-            normalizePushSplits(lines) ?? [],
-            received
-          )
+        const normalized = normalizePushSplits(lines) ?? [];
+        rejectCategorizedTransferLines(Number(args.accountId), normalized);
+        const identities = (args.importIdentities ?? []) as ImportIdentity[];
+        const splits = await carryReceivedAmounts(
+          lines,
+          (received) =>
+            S().splits.quoteMirrorAmounts(
+              {
+                AccountID: Number(args.accountId),
+                BudgetID: Number(args.budgetId),
+                Date: String(args.date),
+              },
+              normalized,
+              received
+            ),
+          { lenient: identities.some((identity) => identity?.sourceKey === 'push-api') }
         );
         if (splits !== lines) return { ...args, splits };
       }
@@ -740,21 +745,6 @@ export const transactionOps = {
           0
         );
         if (splitNet !== parentNet) throw new Error('Split amounts must sum to parent total.');
-        // Category and transfer account together: only to an off-budget account.
-        const splitService = S().splits as Partial<Services['splits']>;
-        for (const line of splits) {
-          if (line.CategoryID === null || line.TransferAccountID === null) continue;
-          if (
-            !splitService.transferLineTakesCategory?.(
-              Number(args.accountId),
-              line.TransferAccountID
-            )
-          ) {
-            throw new Error(
-              'Each split must have either categoryId or transferAccountId exclusively.'
-            );
-          }
-        }
       }
       const batch = splits ? writeBatch() : null;
       if (splits && batch) {

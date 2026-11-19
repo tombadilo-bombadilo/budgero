@@ -1,6 +1,7 @@
 import { DatabaseAdapter } from '../../database/interface.js';
 import { allRows, getRow } from '../../database/sql.js';
 import { TransactionQueries } from '../transactions/queries.js';
+import { isPinnedMirror } from '../transactions/split-service.js';
 
 /** SQLite bind-parameter chunk (as in the transaction queries). */
 const CHUNK = 500;
@@ -59,9 +60,44 @@ export class LegacyReplayService {
    */
   hasPinnedSplitMirrors(transactionIds: readonly number[]): boolean {
     return validIds(transactionIds).some((id) =>
+      this.queries.getSplitMirrorTransactions(id).some(isPinnedMirror)
+    );
+  }
+
+  /**
+   * A split mirror whose parent has exactly one other mirror: older builds
+   * treat the two as a transfer pair when one is edited (payees cleared, the
+   * other's amount mirrored or its rate flag set); this build leaves the
+   * sibling alone.
+   */
+  isSplitMirrorPair(transactionId: number): boolean {
+    const row = this.queries.getTransactionByID(Number(transactionId));
+    const key = row?.TransferID ?? '';
+    if (!key.startsWith('split_transfer_')) return false;
+    return this.queries.getTransactionsByTransferID(key).length === 2;
+  }
+
+  /**
+   * Split lines with both a category and a transfer account (a line to an
+   * off-budget account): v1.21 builds refuse to save such lines.
+   */
+  hasCategorizedTransferLines(transactionIds: readonly number[]): boolean {
+    return validIds(transactionIds).some((id) =>
       this.queries
-        .getSplitMirrorTransactions(id)
-        .some((mirror) => Boolean(mirror.TransferRateOverride))
+        .getSplitsForTransaction(id)
+        .some((line) => line.CategoryID != null && line.TransferAccountID != null)
+    );
+  }
+
+  /** Categorized split lines transfer to this account (its on-budget switch now clears them). */
+  accountHasCategorizedTransferLines(accountId: number): boolean {
+    return Boolean(
+      getRow(
+        this.db,
+        `SELECT 1 AS Found FROM transaction_splits
+          WHERE TransferAccountID = ? AND CategoryID IS NOT NULL LIMIT 1`,
+        Number(accountId)
+      )
     );
   }
 

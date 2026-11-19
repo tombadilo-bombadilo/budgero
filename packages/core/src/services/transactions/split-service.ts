@@ -14,6 +14,7 @@ import {
 import { ensureTransferCategory } from './category-helpers.js';
 import { TransactionWriteBatch, isBatchRowRef, type BatchRowRef } from './write-batch.js';
 import { linesOutOfStep } from './split-amounts.js';
+import { convertScaled } from '../../currencies/index.js';
 import { isAccountOnBudget } from './transfer-payee.js';
 
 /** The parent fields split handling reads (an existing row or a queued one). */
@@ -53,6 +54,41 @@ interface PreparedMirror {
   outflowConverted: MilliUnits;
   /** Amounts entered for the line (carried or kept): the row is marked as pinned. */
   pinned: boolean;
+}
+
+/**
+ * TransferRateOverride value of a split mirror whose amounts were entered
+ * (a received amount, saved by a format-7 op). Older builds only ever write
+ * 0 or 1 there (transfer rate edits), so 2 is never mistaken for their data.
+ */
+export const SPLIT_MIRROR_PINNED = 2;
+
+/** Whether a mirror row keeps entered amounts (see SPLIT_MIRROR_PINNED). */
+export const isPinnedMirror = (mirror: { TransferRateOverride?: unknown }) =>
+  Number(mirror.TransferRateOverride) === SPLIT_MIRROR_PINNED;
+
+/** Error code: no rate converts a split line's received amount to the budget currency. */
+export const SPLIT_MIRROR_RATE_MISSING = 'SPLIT_MIRROR_RATE_MISSING';
+
+export class SplitMirrorRateError extends ValidationError {
+  constructor(
+    public readonly fromCurrency: string,
+    public readonly toCurrency: string
+  ) {
+    super(
+      `A ${fromCurrency} to ${toCurrency} rate is required for this split's transfer line.`,
+      'rate',
+      SPLIT_MIRROR_RATE_MISSING
+    );
+  }
+}
+
+/** `magnitude` scaled by |to| / |from| in exact integer arithmetic (half away from zero). */
+function scaleMagnitude(magnitude: number, from: number, to: number): number {
+  if (from === 0 || Math.abs(from) === Math.abs(to)) return magnitude;
+  const numerator = BigInt(Math.round(magnitude)) * BigInt(Math.abs(Math.round(to)));
+  const denominator = BigInt(Math.abs(Math.round(from)));
+  return Number((numerator * 2n + denominator) / (denominator * 2n));
 }
 
 /** The net of a pair of directional amounts. */
@@ -173,9 +209,10 @@ export class SplitService {
   }
 
   /**
-   * IDs of reconciled mirror rows of `parentId` whose bank (native) amount a
-   * save of `splits` under `parent` (the parent as it will be) would change,
-   * so they go back to uncleared. No writes.
+   * IDs of reconciled mirror rows of `parentId` a save of `splits` under
+   * `parent` (the parent as it will be) changes: their signed bank (native)
+   * amount moves, so they go back to uncleared, or their line is removed or
+   * retargeted, so they are deleted. No writes.
    */
   async mirrorsUnlockedBySave(
     parentId: number,
@@ -186,14 +223,20 @@ export class SplitService {
     if (!existing.some((mirror) => mirror.Reconciled)) return [];
     const prepared = await this.prepareMirrors(parent, this.prepareLines(parent, splits));
     const matched = matchMirrors(existing, prepared);
-    return prepared.flatMap((pm, index) => {
+    const kept = new Set(matched.flatMap((mirror) => (mirror ? [mirror.ID] : [])));
+    // Reconciled mirrors of removed or retargeted lines are deleted.
+    const removed = existing.filter((mirror) => mirror.Reconciled && !kept.has(mirror.ID));
+    const changed = prepared.flatMap((pm, index) => {
       const mirror = matched[index];
       if (!mirror?.Reconciled) return [];
-      const changed =
-        (mirror.InflowNative ?? mirror.InflowConverted) !== pm.inflowOriginal ||
-        (mirror.OutflowNative ?? mirror.OutflowConverted) !== pm.outflowOriginal;
-      return changed ? [mirror.ID] : [];
+      const moved =
+        netOf(
+          mirror.InflowNative ?? mirror.InflowConverted,
+          mirror.OutflowNative ?? mirror.OutflowConverted
+        ) !== netOf(pm.inflowOriginal, pm.outflowOriginal);
+      return moved ? [mirror.ID] : [];
     });
+    return [...changed, ...removed.map((mirror) => mirror.ID)];
   }
 
   /**
@@ -202,7 +245,8 @@ export class SplitService {
    * carry: `received[index]` is the magnitude in the target account's
    * currency; its budget-currency value is converted here, at the parent's
    * date. One entry per line; null for lines without one, lines that are no
-   * transfer or whose target shares the parent's currency.
+   * transfer or whose target shares the parent's currency. Throws
+   * SplitMirrorRateError when no rate gives the budget value.
    */
   async quoteMirrorAmounts(
     parent: Pick<SplitParent, 'AccountID' | 'BudgetID' | 'Date'>,
@@ -229,12 +273,16 @@ export class SplitService {
         const lineNet = lineNativeNet(line);
         if (lineNet === 0) return null;
         const native = asMilli(amount);
-        const converted = await this.currencyService.convertAmount(
-          native,
+        // Never a made-up budget value: without a rate the op cannot carry one.
+        const rate = await this.currencyService.resolveRate(
           target.Currency,
           budget.DisplayCurrency,
           parent.Date,
           parent.BudgetID
+        );
+        if (!rate) throw new SplitMirrorRateError(target.Currency, budget.DisplayCurrency);
+        const converted = asMilli(
+          convertScaled(native, rate, target.Currency, budget.DisplayCurrency)
         );
         return mirrorAmountsFor(lineNet, native, converted);
       })
@@ -298,12 +346,16 @@ export class SplitService {
       (parent.OutflowNative ?? parent.OutflowConverted ?? 0);
     let preparedSplits: SplitInput[] = splits.map((split) => {
       const line = { ...split, Payee: (split.Payee ?? '').trim() };
-      // A transfer line to an off-budget account may keep a category; the
-      // Transfers category there means none (the money leaves the budget).
+      // A transfer line keeps a category only while it goes from an on-budget
+      // parent to an off-budget account; the Transfers category means none.
+      // Anything else drops it instead of failing: the op's prepare checked
+      // it on the originating device, and an account that changed since
+      // (e.g. a concurrent on-budget switch) must not make devices disagree.
       if (
         line.CategoryID != null &&
         line.TransferAccountID != null &&
-        this.isTransfersCategory(line.CategoryID)
+        (this.isTransfersCategory(line.CategoryID) ||
+          !this.transferLineTakesCategory(parent.AccountID, Number(line.TransferAccountID)))
       ) {
         line.CategoryID = null;
       }
@@ -358,11 +410,7 @@ export class SplitService {
       // Basic validation: exactly one of CategoryID or TransferAccountID may be set
       const hasCat = s.CategoryID != null && s.CategoryID !== undefined;
       const hasTransfer = s.TransferAccountID != null && s.TransferAccountID !== undefined;
-      const categorizedTransfer =
-        hasCat &&
-        hasTransfer &&
-        this.transferLineTakesCategory(parent.AccountID, Number(s.TransferAccountID));
-      if ((hasCat && hasTransfer && !categorizedTransfer) || (!hasCat && !hasTransfer)) {
+      if (!hasCat && !hasTransfer) {
         throw new Error(
           'Each split must have either CategoryID or TransferAccountID (exclusively)'
         );
@@ -442,7 +490,7 @@ export class SplitService {
       (mirror.InflowConverted === 0 || mirror.OutflowConverted === 0) &&
       lineNet !== 0 &&
       Math.sign(nativeNet) === -Math.sign(lineNet) &&
-      convertedNet * nativeNet >= 0;
+      Math.sign(convertedNet) === Math.sign(nativeNet);
     if (!valid) {
       throw new ValidationError(
         'The amount received for a split transfer line must be greater than zero.',
@@ -626,15 +674,18 @@ export class SplitService {
           mirror.OutflowConverted === pm.outflowConverted &&
           mirror.Memo === memo &&
           (mirror.Payee ?? null) === payee &&
-          (!pm.pinned || Boolean(mirror.TransferRateOverride));
+          pm.pinned === isPinnedMirror(mirror);
         if (inStep) continue;
-        // Entered amounts pin the row; other writes leave the flag as it is.
+        // Entered amounts pin the row and other amounts unpin it; a flag older
+        // builds wrote (0 / 1, transfer rate edits) is left as it is.
         run(
           this.db,
           `UPDATE transactions
               SET Date = ?, TransferID = ?, InflowNative = ?, OutflowNative = ?,
-                  InflowConverted = ?, OutflowConverted = ?, Memo = ?, Payee = ?
-                  ${pm.pinned ? ', TransferRateOverride = 1' : ''}
+                  InflowConverted = ?, OutflowConverted = ?, Memo = ?, Payee = ?,
+                  TransferRateOverride = CASE WHEN ${pm.pinned ? 1 : 0} THEN ${SPLIT_MIRROR_PINNED}
+                    WHEN TransferRateOverride = ${SPLIT_MIRROR_PINNED} THEN 0
+                    ELSE TransferRateOverride END
             WHERE ID = ?`,
           parent.Date,
           transferId,
@@ -683,7 +734,12 @@ export class SplitService {
         options.mirrorIds?.[index]
       );
       if (pm.pinned) {
-        run(this.db, 'UPDATE transactions SET TransferRateOverride = 1 WHERE ID = ?', mirrorId);
+        run(
+          this.db,
+          'UPDATE transactions SET TransferRateOverride = ? WHERE ID = ?',
+          SPLIT_MIRROR_PINNED,
+          mirrorId
+        );
       }
 
       this.queries.bumpFutureBalances(pm.targetAccountId, parent.Date, mirrorId, deltaConverted);
@@ -728,7 +784,10 @@ export class SplitService {
     const hasTransferLines = nextLines.some((line) => line.TransferAccountID);
     const mirrorLines = [...nextLines].sort((a, b) => a.ID - b.ID);
     const preparedMirrors = hasTransferLines
-      ? await this.prepareMirrors(after, this.keepPinnedMirrors(parentId, after, mirrorLines))
+      ? await this.prepareMirrors(
+          after,
+          this.keepPinnedMirrors(parentId, after, mirrorLines, lines)
+        )
       : [];
 
     return () => {
@@ -738,20 +797,25 @@ export class SplitService {
   }
 
   /**
-   * `lines` (sorted by ID) with the stored amounts of their pinned mirrors
-   * (an entered received amount) attached, so a parent change keeps them the
-   * way a cross-currency transfer leg edit keeps the partner leg's amount:
-   * only the direction follows the line.
-   * Only rows still in another currency than the parent's stay pinned; the
-   * rest convert as before. Stored data only, so every device agrees.
+   * `lines` (sorted by ID) with the amounts their pinned mirrors (an entered
+   * received amount) keep through a parent change: unchanged while the line
+   * keeps its amount (a date or rate edit), scaled with the line when a new
+   * parent total rescales it (150 -> 300 doubles the received amount too),
+   * the direction following the line. A line that drops to zero leaves the
+   * mirror as it is, so its amount comes back with the line. Only mirrors
+   * still in another currency than the parent's stay pinned; the rest convert
+   * as before. Integer arithmetic on stored data only, so every device
+   * replaying the edit writes the same amounts.
    */
   private keepPinnedMirrors(
     parentId: number,
     after: SplitParent,
-    lines: readonly TransactionSplit[]
+    lines: readonly TransactionSplit[],
+    before: readonly TransactionSplit[]
   ): SplitInput[] {
     const mirrors = this.queries.getSplitMirrorTransactions(parentId);
-    if (!mirrors.some((mirror) => mirror.TransferRateOverride)) return [...lines];
+    if (!mirrors.some(isPinnedMirror)) return [...lines];
+    const beforeNet = new Map(before.map((line) => [line.ID, lineNativeNet(line)]));
     const source = this.accountOf(after.AccountID);
     const transfer = lines.filter(
       (line) => line.TransferAccountID && this.accountOf(Number(line.TransferAccountID))
@@ -763,7 +827,7 @@ export class SplitService {
     const kept = new Map<number, SplitMirrorAmounts>();
     transfer.forEach((line, index) => {
       const mirror = matched[index];
-      if (!mirror?.TransferRateOverride || !source) return;
+      if (!mirror || !isPinnedMirror(mirror) || !source) return;
       if (this.accountOf(mirror.AccountID)?.Currency === source.Currency) return;
       const stored = storedMirrorAmounts(mirror);
       const lineNet = lineNativeNet(line);
@@ -776,8 +840,16 @@ export class SplitService {
           ? stored
           : mirrorAmountsFor(
               lineNet,
-              Math.abs(netOf(stored.InflowNative, stored.OutflowNative)),
-              Math.abs(netOf(stored.InflowConverted, stored.OutflowConverted))
+              scaleMagnitude(
+                Math.abs(netOf(stored.InflowNative, stored.OutflowNative)),
+                beforeNet.get(line.ID) ?? lineNet,
+                lineNet
+              ),
+              scaleMagnitude(
+                Math.abs(netOf(stored.InflowConverted, stored.OutflowConverted)),
+                beforeNet.get(line.ID) ?? lineNet,
+                lineNet
+              )
             )
       );
     });
@@ -809,7 +881,7 @@ export class SplitService {
       return {
         ...line,
         Mirror: storedMirrorAmounts(mirror),
-        MirrorPinned: Boolean(mirror.TransferRateOverride),
+        MirrorPinned: isPinnedMirror(mirror),
         MirrorReconciled: Boolean(mirror.Reconciled),
       };
     });
@@ -817,9 +889,7 @@ export class SplitService {
 
   /** Whether any of these split parents has a pinned mirror (an entered received amount). */
   hasPinnedMirrors(parentIds: readonly number[]): boolean {
-    return parentIds.some((id) =>
-      this.queries.getSplitMirrorTransactions(id).some((mirror) => mirror.TransferRateOverride)
-    );
+    return parentIds.some((id) => this.queries.getSplitMirrorTransactions(id).some(isPinnedMirror));
   }
 
   /**

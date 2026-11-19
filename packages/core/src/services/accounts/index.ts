@@ -17,6 +17,7 @@ import {
 import { AccountQueries } from './queries.js';
 import { isCryptoCurrency } from '../../currencies/index.js';
 import { TransactionService, type TransactionConversion } from '../transactions/index.js';
+import { isAccountOnBudget } from '../transactions/transfer-payee.js';
 import { BankSyncQueries } from '../bank-sync/queries.js';
 import type { BankLinkInput } from '../bank-sync/types.js';
 import {
@@ -503,6 +504,17 @@ export class AccountService {
     const metadataJson =
       persistedMetadata !== undefined ? JSON.stringify(persistedMetadata) : undefined;
     this.queries.updateAccount(id, finalName, finalAccType, finalCurrency, metadataJson, onBudget);
+
+    // An account that joins the budget can no longer take spending from split
+    // lines transferring to it: their category goes (they become transfers).
+    if (onBudget === true && !isAccountOnBudget(originalAccount)) {
+      run(
+        this.db,
+        `UPDATE transaction_splits SET CategoryID = NULL
+          WHERE TransferAccountID = ? AND CategoryID IS NOT NULL`,
+        id
+      );
+    }
 
     // Working view of what's stored now; the type-change block may add to it.
     let effectiveMetadata: Record<string, unknown> =

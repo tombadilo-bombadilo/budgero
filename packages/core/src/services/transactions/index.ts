@@ -1871,6 +1871,9 @@ export class TransactionService {
    */
   private async preparePartnerSync(main: Transaction): Promise<(() => void) | null> {
     if (!main.TransferID) return null;
+    // Split mirrors share their parent's key, so two of them can look like a
+    // transfer pair; they are no partners of each other (the parent drives them).
+    if (main.TransferID.startsWith('split_transfer_')) return null;
     const group = this.getTransactionsByTransferID(main.TransferID);
     // Only sync simple two-leg transfers; avoid split-transfer groups
     if (!group || group.length !== 2) return null;

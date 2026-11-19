@@ -6,10 +6,12 @@
  * Each op code maps 1:1 with a mutation hook.
  */
 
+import { t } from '@lingui/core/macro';
 import { getRuntime } from '@shared/runtime/global';
 import {
   asMilli,
   isEmptyJournal,
+  SPLIT_MIRROR_RATE_MISSING,
   type SplitMirrorAmounts,
   type CategoryCreationMark,
   type ImportIdentity,
@@ -63,21 +65,74 @@ export function readReceivedAmount(line: Record<string, unknown>): number | null
  * Op `prepare` step for split lines with an entered received amount: the
  * originating device turns each into the exact mirror amounts (the budget
  * value converted here, once) and carries them on the line as `mirror`, so
- * every device writes the same mirror row. The UI-only field is dropped;
- * lines without one stay as they are (and the op keeps its old format).
+ * every device writes the same, pinned, mirror row. The UI-only field is
+ * dropped; lines without one stay as they are (and the op keeps its old
+ * format). Without a rate for the budget value the UI's save is refused
+ * (nothing made up is pinned); `lenient` calls (the Push API) fall back to
+ * the plain, converted mirror instead. Lenient calls never carry a `mirror`
+ * of their own either: only this step writes one.
  */
 export async function carryReceivedAmounts<T extends Record<string, unknown>>(
   lines: T[],
-  quote: (received: (number | null)[]) => Promise<(SplitMirrorAmounts | null)[]>
+  quote: (received: (number | null)[]) => Promise<(SplitMirrorAmounts | null)[]>,
+  options: { lenient?: boolean } = {}
 ): Promise<T[]> {
-  const received = lines.map(readReceivedAmount);
-  const hasReceived = lines.some((line) => 'received_amount' in line || 'receivedAmount' in line);
-  if (!hasReceived) return lines;
-  const quotes = received.some((amount) => amount !== null) ? await quote(received) : [];
-  return lines.map((line, index) => {
+  const strip = (line: T) => {
     const { received_amount: _snake, receivedAmount: _camel, ...rest } = line;
+    if (!options.lenient) return rest;
+    const { mirror: _mirror, Mirror: _pascal, ...plain } = rest;
+    return plain;
+  };
+  const hasReceived = lines.some(
+    (line) =>
+      'received_amount' in line ||
+      'receivedAmount' in line ||
+      (options.lenient && ('mirror' in line || 'Mirror' in line))
+  );
+  if (!hasReceived) return lines;
+  const received = lines.map(readReceivedAmount);
+  let quotes: (SplitMirrorAmounts | null)[] = [];
+  if (received.some((amount) => amount !== null)) {
+    try {
+      quotes = await quote(received);
+    } catch (error) {
+      const rate = error as { code?: unknown; fromCurrency?: string; toCurrency?: string };
+      if (rate?.code !== SPLIT_MIRROR_RATE_MISSING) throw error;
+      if (!options.lenient) {
+        const from = rate.fromCurrency ?? '';
+        const to = rate.toCurrency ?? '';
+        throw new Error(t`Add a ${from} to ${to} exchange rate to save this received amount.`);
+      }
+      quotes = [];
+    }
+  }
+  return lines.map((line, index) => {
     const mirror = quotes[index];
+    const rest = strip(line);
     return (mirror ? { ...rest, mirror } : rest) as unknown as T;
+  });
+}
+
+/** Normalize split lines from an op payload (snake_case or PascalCase) to the core shape. */
+export function normalizeSplitLines(splits: unknown): NormalizedSplit[] {
+  // asMilli doubles as the op-boundary guard: a decimal amount in a payload
+  // throws here instead of reaching an integer column.
+  return ((splits as Record<string, unknown>[]) || []).map((s, idx) => {
+    const inflowOriginal = s.InflowNative ?? s.InflowOriginal ?? s.inflow_original ?? null;
+    const outflowOriginal = s.OutflowNative ?? s.OutflowOriginal ?? s.outflow_original ?? null;
+    return {
+      CategoryID: (s.CategoryID ?? s.category_id ?? null) as number | null,
+      TransferAccountID: (s.TransferAccountID ?? s.transfer_account_id ?? null) as number | null,
+      Memo: String(s.Memo ?? s.memo ?? ''),
+      Payee: String(s.Payee ?? s.payee ?? ''),
+      InflowConverted: asMilli(Number(s.InflowConverted ?? s.Inflow ?? s.inflow ?? 0)),
+      OutflowConverted: asMilli(Number(s.OutflowConverted ?? s.Outflow ?? s.outflow ?? 0)),
+      InflowNative: inflowOriginal == null ? null : asMilli(Number(inflowOriginal)),
+      OutflowNative: outflowOriginal == null ? null : asMilli(Number(outflowOriginal)),
+      PairID: (s.PairID ?? s.pair_id ?? null) as string | null,
+      OrderIndex: Number(s.OrderIndex ?? s.order_index ?? idx),
+      Mirror: readCarriedMirror(s),
+    };
   });
 }
 

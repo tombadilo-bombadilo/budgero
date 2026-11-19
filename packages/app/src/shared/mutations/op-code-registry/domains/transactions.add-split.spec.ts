@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { executeMutationOp, getInvalidatesForOp } from '@shared/mutations/op-code-registry';
+import {
+  executeMutationOp,
+  getInvalidatesForOp,
+  prepareMutationArgs,
+} from '@shared/mutations/op-code-registry';
 
 const transactionMocks = vi.hoisted(() => ({
   addTransaction: vi.fn(),
@@ -112,7 +116,6 @@ describe('transactions.add with optional splits (Push API v2)', () => {
       [null],
       [42],
       [{ outflow: 1000 }],
-      [{ outflow: 1000, categoryId: 30, transferAccountId: 11 }],
       [{ outflow: 1000, categoryId: '30' }],
       [{ outflow: -1000, categoryId: 30 }],
       [{ outflow: 1000, inflow: 1, categoryId: 30 }],
@@ -161,5 +164,23 @@ describe('transactions.add with optional splits (Push API v2)', () => {
   it('the op invalidates split-scoped queries too', () => {
     const invalidates = getInvalidatesForOp('transactions.add');
     expect(invalidates?.some(([key]) => key === 'transactionSplits')).toBe(true);
+  });
+
+  it('checks a category next to a transfer account on the originating device only', async () => {
+    const args = {
+      outflow: 1000,
+      accountId: 10,
+      budgetId: 7,
+      date: '2026-09-19',
+      splits: [{ outflow: 1000, categoryId: 30, transferAccountId: 11 }],
+    };
+    // No off-budget target here (the double has no account data).
+    await expect(prepareMutationArgs('transactions.add', args)).rejects.toThrow(
+      /category or a transfer account/
+    );
+    expect(transactionMocks.addTransaction).not.toHaveBeenCalled();
+    // A logged op is applied as carried; the core drops a category it can't keep.
+    await executeMutationOp('transactions.add', args);
+    expect(splitsMocks.upsertSplits).toHaveBeenCalled();
   });
 });

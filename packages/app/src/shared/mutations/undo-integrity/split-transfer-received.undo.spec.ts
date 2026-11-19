@@ -120,7 +120,7 @@ describe('split transfer lines carry the received amount', () => {
     });
     expect(mutationFormatVersion('transactions.saveSplits', sent)).toBe(7);
     const [mirror] = mirrorsOf(a.h, a.parent);
-    expect(amounts(mirror)).toMatchObject({ InflowNative: 70_000, TransferRateOverride: 1 });
+    expect(amounts(mirror)).toMatchObject({ InflowNative: 70_000, TransferRateOverride: 2 });
 
     // A receiver with another cached rate replays the sent args.
     const b = await setup(0.5);
@@ -159,7 +159,7 @@ describe('split transfer lines carry the received amount', () => {
     await useUndoStore.getState().undo();
     expect(amounts(mirrorsOf(a.h, a.parent)[0])).toMatchObject({
       InflowNative: 70_000,
-      TransferRateOverride: 1,
+      TransferRateOverride: 2,
     });
     await useUndoStore.getState().redo();
     expect(mirrorsOf(a.h, a.parent)[0].InflowNative).toBe(65_000);
@@ -243,6 +243,152 @@ describe('split transfer lines carry the received amount', () => {
     const [line] = sent.splits as Record<string, unknown>[];
     expect(line).not.toHaveProperty('receivedAmount');
     const eurRows = a.h.rows('transactions').filter((row) => row.AccountID === a.eur);
-    expect(eurRows.at(-1)).toMatchObject({ InflowNative: 44_000, TransferRateOverride: 1 });
+    expect(eurRows.at(-1)).toMatchObject({ InflowNative: 44_000, TransferRateOverride: 2 });
+  });
+
+  it('without a rate for the budget value the save is refused; the Push API converts instead', async () => {
+    const gbp = (
+      await a.h.services.accounts.createAccount(
+        'Pound',
+        a.h.budgetId,
+        'checking',
+        'GBP',
+        asMilli(0)
+      )
+    ).ID;
+    const args = saveArgs(a, 70_000);
+    (args.splits[1] as Record<string, unknown>).transfer_account_id = gbp;
+    await expect(prepareMutationArgs('transactions.saveSplits', args)).rejects.toThrow(
+      /GBP to USD exchange rate/
+    );
+
+    const push = await prepareMutationArgs('transactions.add', {
+      budgetId: a.h.budgetId,
+      accountId: a.h.accountId,
+      date: DATE,
+      inflow: 0,
+      outflow: 50_000,
+      importIdentities: [{ operationId: 'push:1', sourceKey: 'push-api' }],
+      splits: [
+        {
+          categoryId: null,
+          transferAccountId: gbp,
+          inflow: 0,
+          outflow: 50_000,
+          receivedAmount: 40_000,
+          // A raw mirror in a pushed payload is never trusted.
+          mirror: { InflowNative: 1, OutflowNative: 0, InflowConverted: 1, OutflowConverted: 0 },
+        },
+      ],
+    });
+    const [line] = push.splits as Record<string, unknown>[];
+    expect(line).not.toHaveProperty('mirror');
+    expect(line).not.toHaveProperty('receivedAmount');
+  });
+
+  it('refuses a category on a line to an on-budget account before anything runs', async () => {
+    const args = saveArgs(a);
+    (args.splits[1] as Record<string, unknown>).category_id = a.h.categoryId;
+    await expect(prepareMutationArgs('transactions.saveSplits', args)).rejects.toThrow(
+      /category or a transfer account/
+    );
+  });
+
+  it('an unpinning save, a mirror-pair edit, a categorized copy and an on-budget switch ask for format 7', async () => {
+    await send(a.h, 'transactions.saveSplits', saveArgs(a, 70_000));
+    expect(
+      mutationFormatVersion(
+        'transactions.saveSplits',
+        await prepareMutationArgs('transactions.saveSplits', saveArgs(a))
+      )
+    ).toBe(7);
+
+    // Two mirrors under one parent: a direct edit of one.
+    const gbp = (
+      await a.h.services.accounts.createAccount(
+        'Pound',
+        a.h.budgetId,
+        'checking',
+        'GBP',
+        asMilli(0)
+      )
+    ).ID;
+    await a.h.services.currency.saveRate('USD', 'GBP', 0.8, DATE, a.h.budgetId);
+    const pair = saveArgs(a);
+    (pair.splits[0] as Record<string, unknown>).category_id = null;
+    (pair.splits[0] as Record<string, unknown>).transfer_account_id = gbp;
+    await send(a.h, 'transactions.saveSplits', pair);
+    const [mirror] = mirrorsOf(a.h, a.parent);
+    expect(
+      mutationFormatVersion(
+        'transactions.updateColumn',
+        await prepareMutationArgs('transactions.updateColumn', {
+          id: mirror.ID,
+          columnName: 'InflowNative',
+          newValue: 1_000,
+        })
+      )
+    ).toBe(7);
+
+    // A categorized line to an off-budget account.
+    await send(a.h, 'transactions.saveSplits', {
+      transactionId: a.parent,
+      splits: [
+        {
+          category_id: a.h.categoryId,
+          transfer_account_id: a.savings,
+          memo: '',
+          payee: '',
+          inflow: 0,
+          outflow: 100_000,
+        },
+      ],
+    });
+    expect(
+      mutationFormatVersion(
+        'transactions.duplicate',
+        await prepareMutationArgs('transactions.duplicate', { ids: [a.parent] })
+      )
+    ).toBe(7);
+    const savings = a.h.services.accounts.getAccount(a.savings);
+    const flip = await send(a.h, 'accounts.update', {
+      id: a.savings,
+      name: savings.Name,
+      type: savings.Type,
+      currency: savings.Currency,
+      onBudget: true,
+    });
+    expect(mutationFormatVersion('accounts.update', flip)).toBe(7);
+    expect(a.h.rows('transaction_splits')[0]).toMatchObject({
+      CategoryID: null,
+      TransferAccountID: a.savings,
+    });
+    // Undo of the switch puts the category back with the account.
+    await useUndoStore.getState().undo();
+    expect(a.h.rows('transaction_splits')[0]).toMatchObject({ CategoryID: a.h.categoryId });
+  });
+
+  it('a rule run changing a pinned parent, and its undo / redo, ask for format 7', async () => {
+    await send(a.h, 'transactions.saveSplits', saveArgs(a, 70_000));
+    const rule = await a.h.run<{ id: number }>('rules.create', {
+      input: {
+        budgetId: a.h.budgetId,
+        name: 'Double',
+        conditions: [{ field: 'memo', operator: 'contains', value: 'parent' }],
+        actions: [{ type: 'amount.set', payload: { amount: -200_000 } }],
+        mode: 'one_time',
+      },
+    });
+    const sent = await send(a.h, 'rules.execute', { ruleId: rule.id });
+    expect(mutationFormatVersion('rules.execute', sent)).toBe(7);
+    // The pinned amount doubled with the line (80 -> 160 USD).
+    expect(mirrorsOf(a.h, a.parent)[0]).toMatchObject({
+      InflowNative: 140_000,
+      TransferRateOverride: 2,
+    });
+    const run = a.h.services.rules.listRuns(rule.id)[0];
+    for (const op of ['rules.undoRun', 'rules.redoRun']) {
+      expect(mutationFormatVersion(op, await prepareMutationArgs(op, { runId: run.id }))).toBe(7);
+    }
   });
 });

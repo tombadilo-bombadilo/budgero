@@ -11,14 +11,17 @@
  * (app v1.21): recurring templates with split lines, and recurring.markReady
  * calls that carry the payee to post or a split posting's mirror IDs (redo),
  * ask for it per call; adds the op codes pageGuides.markSeen, syncedState.set
- * and syncedState.merge. Format 6 (app v1.22): amount and rate edits that
+ * and syncedState.merge. Format 6 (app v1.21.4): amount and rate edits that
  * unlock a reconciled row, or edit one leg of a cross-currency transfer
  * (the partner keeps its amount), and custom rate changes that now skip
  * reconciled transfers ask for it per call; adds the op code
- * transactions.updateTransferAmounts. Format 7 (app v1.21.6): split saves
- * whose transfer lines carry their mirror's exact received amount or keep a
- * category (lines to off-budget accounts), and parent edits or copies of a
- * split whose mirror keeps an entered amount, ask for it per call.
+ * transactions.updateTransferAmounts. Format 7: split saves whose transfer
+ * lines carry their mirror's exact received amount or keep a category (lines
+ * to off-budget accounts) or that unpin such a mirror, parent edits, copies
+ * and rule undo / redo of a split whose mirror keeps an entered amount,
+ * direct edits of one of a split's two mirrors, and an account joining the
+ * budget that clears categorized lines transferring to it, ask for it per
+ * call; no new op codes.
  *
  * Each outgoing mutation is stamped with the LOWEST format that can express
  * it ({@link mutationFormatVersion}): ops every format-2 build knows stay

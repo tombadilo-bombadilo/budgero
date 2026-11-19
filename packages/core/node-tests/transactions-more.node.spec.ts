@@ -248,12 +248,12 @@ describe('Transactions (additional coverage)', () => {
       'Parent'
     );
 
-    // Invalid: both category and transfer set
+    // Invalid: neither a category nor a transfer account. (Both on a line to
+    // an on-budget account drops the category instead: see
+    // split-transfer-received.node.spec.ts.)
     await expect(
       services.splits.upsertSplits(parentId, [
         {
-          CategoryID: cat,
-          TransferAccountID: acc2.ID,
           Memo: 'bad',
           InflowConverted: 0,
           OutflowConverted: 100,
