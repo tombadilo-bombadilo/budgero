@@ -61,6 +61,17 @@ function computeCellCommit(
     };
   }
 
+  if (columnId === 'Time') {
+    // 'HH:MM', or '' to clear it.
+    const time = typeof newVal === 'string' ? newVal.trim() : '';
+    return {
+      column: 'Time',
+      value: time,
+      accountId: options.accountId,
+      optimisticPatch: { Time: time || null },
+    };
+  }
+
   if (columnId === 'LabelID') {
     const parsed = newVal === null ? null : typeof newVal === 'number' ? newVal : Number(newVal);
     const nextLabelId = parsed !== null && Number.isFinite(parsed) && parsed > 0 ? parsed : null;

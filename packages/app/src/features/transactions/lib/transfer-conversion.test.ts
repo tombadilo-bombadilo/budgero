@@ -210,6 +210,22 @@ describe('buildConvertToTransferArgs', () => {
     expect(args.destination.importIdentities).toBeUndefined();
   });
 
+  it('gives both legs the converted row time, else the paired row time', () => {
+    expect(build().time).toBeUndefined();
+    expect(build({ transaction: { ...expense, Time: '14:05' } }).time).toBe('14:05');
+    const pair = {
+      ...expense,
+      ID: 77,
+      AccountID: 2,
+      OutflowNative: 0,
+      OutflowConverted: 0,
+      InflowNative: 12_000,
+      InflowConverted: 12_000,
+      Time: '09:30',
+    };
+    expect(build({ pairWith: { transaction: pair } }).time).toBe('09:30');
+  });
+
   it('uses Transfers and no payee between two on-budget accounts, like the add form', () => {
     const args = build();
 
@@ -323,6 +339,15 @@ describe('buildRevertToTransactionArgs', () => {
       importIdentities: [{ operationId: 'op-1' }],
     });
     expect(args).not.toHaveProperty('transferId');
+    expect(args).not.toHaveProperty('time');
+    expect(
+      buildRevertToTransactionArgs({
+        survivor: { ...survivor, Time: '18:20' },
+        ownAccount: checking,
+        partnerAccount: savings,
+        transfersCategoryId: 9,
+      }).time
+    ).toBe('18:20');
   });
 
   it('keeps the category on the on-budget leg of a transfer to an off-budget account', () => {

@@ -13,6 +13,8 @@ export type TransactionType = 'inflow' | 'outflow' | 'transfer';
 export interface TransactionFormInitialValues {
   transactionType?: TransactionType;
   transactionDate?: Date | null;
+  /** Optional time of day, 'HH:MM'; '' for none. */
+  transactionTime?: string;
   selectedCategory?: string;
   selectedCategoryId?: number | null;
   memo?: string;
@@ -39,6 +41,8 @@ export type LastUsedState = Record<TransactionType, LastUsedFields>;
 
 export interface PendingTransaction {
   date: Date | null;
+  /** 'HH:MM', or '' for none. */
+  time?: string;
   categoryId: number;
   memo: string;
   payee: string;
@@ -55,6 +59,8 @@ export interface TransactionFormState {
   // Form fields
   transactionType: TransactionType;
   transactionDate: Date | null;
+  /** Optional time of day, 'HH:MM'; '' (the default) for none. */
+  transactionTime: string;
   /** Display name of the picked category. */
   selectedCategory: string;
   /** The picked category; null when only a name is known. */
@@ -94,6 +100,7 @@ export interface TransactionFormState {
 type TransactionFormAction =
   | { type: 'SET_TRANSACTION_TYPE'; value: TransactionType }
   | { type: 'SET_DATE'; date: Date | null }
+  | { type: 'SET_TIME'; time: string }
   | { type: 'SET_DATE_OPEN'; open: boolean }
   | { type: 'SET_CATEGORY'; category: string; categoryId: number | null }
   | { type: 'SET_MEMO'; memo: string }
@@ -156,6 +163,7 @@ const createInitialState = ({
     initialValues && 'transactionDate' in initialValues
       ? (initialValues.transactionDate ?? null)
       : new Date(),
+  transactionTime: initialValues?.transactionTime ?? '',
   selectedCategory: initialValues?.selectedCategory ?? '',
   selectedCategoryId: initialValues?.selectedCategoryId ?? null,
   memo: initialValues?.memo ?? '',
@@ -194,6 +202,9 @@ function transactionFormReducer(
 
     case 'SET_DATE':
       return { ...state, transactionDate: action.date };
+
+    case 'SET_TIME':
+      return { ...state, transactionTime: action.time };
 
     case 'SET_DATE_OPEN':
       return { ...state, dateOpen: action.open };
@@ -347,6 +358,10 @@ export function useTransactionForm(options: UseTransactionFormOptions) {
     dispatch({ type: 'SET_DATE', date });
   }, []);
 
+  const setTime = useCallback((time: string) => {
+    dispatch({ type: 'SET_TIME', time });
+  }, []);
+
   const setDateOpen = useCallback((open: boolean) => {
     dispatch({ type: 'SET_DATE_OPEN', open });
   }, []);
@@ -484,6 +499,7 @@ export function useTransactionForm(options: UseTransactionFormOptions) {
     // Actions
     setTransactionType,
     setDate,
+    setTime,
     setDateOpen,
     setCategory,
     setMemo,

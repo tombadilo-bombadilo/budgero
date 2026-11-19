@@ -45,6 +45,8 @@ export interface BankTransaction {
   id: string;
   /** YYYY-MM-DD in the user's local calendar. */
   date: string;
+  /** 'HH:MM' of `date`, only when the bank gives a real time (not a 00:00/12:00 placeholder). */
+  time?: string;
   /** Signed milli-units: positive is an inflow. */
   amount: number;
   payee: string;
@@ -68,6 +70,10 @@ export interface BankTransactionFields {
   transactionDate?: string;
   /** YYYY-MM-DD the money moved (Enable Banking). */
   valueDate?: string;
+  /** 'HH:MM' that goes with each date above, when the bank sends a real time. */
+  bookingTime?: string;
+  transactionTime?: string;
+  valueTime?: string;
 }
 
 /** Which bank field becomes a transaction's date. `auto` is the provider's default. */
@@ -203,6 +209,12 @@ export interface BankImportPlanInput {
   /** The link's feed settings; defaults when omitted. */
   settings?: BankFeedSettings;
   transactions: BankTransaction[];
+  /**
+   * Keep the bank's times of day (the user shows transaction times on this
+   * device). Without it imported rows carry no time, so their ops stay
+   * readable by builds without times.
+   */
+  captureTimes?: boolean;
   /** True when this bank row was imported before, even if the ledger copy was deleted since. */
   wasImported: (identity: ImportIdentity) => boolean;
 }

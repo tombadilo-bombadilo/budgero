@@ -29,7 +29,8 @@ export type TransactionColumnName =
   | 'InflowNative'
   | 'OutflowNative'
   | 'Payee'
-  | 'ExchangeRate';
+  | 'ExchangeRate'
+  | 'Time';
 
 /**
  * Add a new transaction.
@@ -42,6 +43,8 @@ export type AddTransactionInput = {
   labelId?: number | null;
   budgetId: number;
   date: string;
+  /** Optional time of day, 'HH:MM' local; omitted or empty means none. */
+  time?: string | null;
   memo: string;
   payee?: string;
   transferId: string;
@@ -97,6 +100,7 @@ export function useAddTransaction(entry: TransactionEntry = 'other') {
           labelId: input.labelId ?? null,
           budgetId: input.budgetId,
           date: input.date,
+          ...(input.time ? { time: input.time } : {}),
           memo: input.memo,
           payee: input.payee,
           transferId: input.transferId,

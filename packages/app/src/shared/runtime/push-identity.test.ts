@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { pushMatchReview, withPushIdentity } from './push-identity';
+import { pushMatchReview, withoutInvalidPushTime, withPushIdentity } from './push-identity';
 
 const args = { budgetId: 1, accountId: 2, categoryId: 9, date: '2026-09-03', outflow: 12500 };
 
@@ -36,5 +36,34 @@ describe('Push API matching', () => {
       pushMatchReview(always, withPushIdentity({ ...args, splits: [{ outflow: 1 }] }, 'm4'))
     ).toBeNull();
     expect(always.bankSync.reviewForPushed).not.toHaveBeenCalled();
+  });
+});
+
+describe('withoutInvalidPushTime', () => {
+  it('drops only a time that is not HH:MM, keeping the push', () => {
+    expect(withoutInvalidPushTime('transactions.add', { memo: 'x', time: '7pm' })).toEqual({
+      memo: 'x',
+    });
+    expect(withoutInvalidPushTime('transactions.add', { memo: 'x', time: '9:05' })).toEqual({
+      memo: 'x',
+      time: '9:05',
+    });
+    expect(
+      withoutInvalidPushTime('transactions.addTransfer', {
+        time: 'soon',
+        source: { time: '25:00', memo: 'a' },
+        destination: { time: '10:00' },
+      })
+    ).toEqual({ source: { memo: 'a' }, destination: { time: '10:00' } });
+    expect(
+      withoutInvalidPushTime('transactions.updateByRef', {
+        messageId: 'm',
+        fields: { memo: 'y', time: 1430 },
+      })
+    ).toEqual({ messageId: 'm', fields: { memo: 'y' } });
+    // null clears a time on update: kept.
+    expect(
+      withoutInvalidPushTime('transactions.updateByRef', { messageId: 'm', fields: { time: null } })
+    ).toEqual({ messageId: 'm', fields: { time: null } });
   });
 });

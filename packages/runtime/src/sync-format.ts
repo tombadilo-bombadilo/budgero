@@ -20,6 +20,10 @@
  * codes goals.setFrom and goals.endFrom; goal creates and edits older builds
  * would apply to every month, and undo data carrying goal timeframe columns,
  * ask for it per call.
+ * transactions.updateTransferAmounts. Format 7 (app v1.22): transaction
+ * time of day; calls that write a time (adds, imports, transfers, duplicates,
+ * restores and split saves of timed rows, time edits) ask for it per call;
+ * adds the op code userPreferences.setShowTransactionTime.
  *
  * Each outgoing mutation is stamped with the LOWEST format that can express
  * it ({@link mutationFormatVersion}): ops every format-2 build knows stay
@@ -94,6 +98,7 @@ export const OP_CODE_FORMAT_VERSIONS: Readonly<Record<string, number>> = Object.
   'transactions.updateTransferAmounts': 6,
   'goals.setFrom': 7,
   'goals.endFrom': 7,
+  'userPreferences.setShowTransactionTime': 7,
 });
 
 /** Format that introduced `op` (BASE_MUTATION_FORMAT_VERSION if it predates format 3). */

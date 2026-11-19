@@ -15,6 +15,7 @@ export interface SplitParent {
   AccountID: number;
   BudgetID: number;
   Date: string;
+  Time?: string | null;
   Memo?: string | null;
   Payee?: string | null;
   LabelID?: number | null;
@@ -445,7 +446,9 @@ export class SplitService {
         false,
         false,
         false,
-        options.mirrorIds?.[index]
+        options.mirrorIds?.[index],
+        // Mirrors share the parent's time, like a transfer's two legs.
+        parent.Time ?? null
       );
 
       this.queries.bumpFutureBalances(pm.targetAccountId, parent.Date, mirrorId, deltaConverted);

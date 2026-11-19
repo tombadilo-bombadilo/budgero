@@ -135,9 +135,11 @@ export function restoreTransactionSnapshot(
 
   return atomically(db, () => {
     const queries = new TransactionQueries(db);
+    const transactionColumns = columnsOf(db, 'transactions');
+    const hasTime = transactionColumns.has('Time');
     const replaced = selectIn(
       db,
-      (p) => `SELECT ID, AccountID FROM transactions WHERE ID IN (${p})`,
+      (p) => `SELECT ID, AccountID${hasTime ? ', Time' : ''} FROM transactions WHERE ID IN (${p})`,
       [...new Set(replaceIds)]
     );
     queries.deleteTransactions(replaced.map((row) => Number(row.ID)));
@@ -145,8 +147,19 @@ export function restoreTransactionSnapshot(
     if (taken.length) {
       throw new ValidationError(`Transaction ${taken[0].ID} already exists; nothing restored.`);
     }
-    const transactionColumns = columnsOf(db, 'transactions');
-    for (const row of snapshot.transactions) insertRow(db, 'transactions', transactionColumns, row);
+    // A snapshot taken by a build without the Time column (an older device's
+    // undo of an edit) has no Time key: keep the replaced row's time instead
+    // of clearing it. A snapshot with the key (even null) restores it exactly.
+    const replacedTimes = new Map(replaced.map((row) => [Number(row.ID), row.Time ?? null]));
+    for (const row of snapshot.transactions) {
+      const keepTime = hasTime && !('Time' in row) && replacedTimes.get(Number(row.ID));
+      insertRow(
+        db,
+        'transactions',
+        transactionColumns,
+        keepTime ? { ...row, Time: keepTime } : row
+      );
+    }
 
     for (const dependent of snapshot.dependents ?? []) {
       if (!cascaded.has(dependent.table)) {

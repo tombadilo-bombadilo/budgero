@@ -3558,6 +3558,10 @@ msgstr "Notitie toevoegen…"
 msgid "Add a question"
 msgstr "Vraag toevoegen"
 
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Add a time"
+msgstr "Tijd toevoegen"
+
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Add a transaction"
@@ -8704,6 +8708,10 @@ msgstr "Resultaatfilter bewerken: {label}"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Edit splits"
 msgstr "Splits bewerken"
+
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Edit time"
+msgstr "Tijd bewerken"
 
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Edit Warranty"
@@ -18741,6 +18749,10 @@ msgstr "Doelkolom tonen"
 msgid "Show the next 30 days"
 msgstr "Toon de komende 30 dagen"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last. Imports and bank sync keep times only while this is on, and need every device on the latest version."
+msgstr "Toont de optionele tijd onder de datum in het register, waar je hem ook kunt bewerken. Bij 'Nieuwste eerst' wordt een dag op tijd gesorteerd; transacties zonder tijd komen als laatste. Imports en banksynchronisatie bewaren tijden alleen zolang dit aanstaat, en alle apparaten moeten de nieuwste versie hebben."
+
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Show the top"
 msgstr "Toon de grootste"
@@ -18749,6 +18761,10 @@ msgstr "Toon de grootste"
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Show this question"
 msgstr "Deze vraag tonen"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show transaction times"
+msgstr "Tijden van transacties tonen"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show uncategorized only"
@@ -20906,6 +20922,12 @@ msgstr "TikTok"
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Time"
 msgstr "Tijd"
+
+#: src/features/transactions/ui/cells/TimeInputCell.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/form/DatePickerQuick.tsx
+msgid "Time (optional)"
+msgstr "Tijd (optioneel)"
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Time elapsed"

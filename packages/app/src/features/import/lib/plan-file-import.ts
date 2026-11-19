@@ -53,6 +53,8 @@ interface FilePreviewOptions {
    * the budget's. Defaults to importConfig.accountCurrency.
    */
   newCurrency?: string;
+  /** Keep the file's times of day (the user shows transaction times). */
+  captureTimes?: boolean;
 }
 
 interface Destination {
@@ -79,6 +81,7 @@ export async function buildFileImportPreview({
   tolerance,
   rememberedRoutes,
   newCurrency,
+  captureTimes = false,
 }: FilePreviewOptions): Promise<PreviewRow[]> {
   const bytes = await parsedData.source.file.arrayBuffer();
   const digest = await crypto.subtle.digest('SHA-256', bytes);
@@ -129,8 +132,12 @@ export async function buildFileImportPreview({
     };
   };
   const destinations = parsedData.rows.map(destinationOf);
-  const plans = planImportRows(parsedData.rows, columnMapping, importConfig, (_row, index) =>
-    getCurrencyScale(destinations[index].currency)
+  const plans = planImportRows(
+    parsedData.rows,
+    columnMapping,
+    importConfig,
+    (_row, index) => getCurrencyScale(destinations[index].currency),
+    { captureTimes }
   );
   const accountLabel = (accountId: number, destination: Destination) => {
     const existing = accounts.find((a) => a.ID === accountId)?.Name;

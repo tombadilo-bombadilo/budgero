@@ -3558,6 +3558,10 @@ msgstr "Ajouter une note…"
 msgid "Add a question"
 msgstr "Ajouter une question"
 
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Add a time"
+msgstr "Ajouter une heure"
+
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Add a transaction"
@@ -8704,6 +8708,10 @@ msgstr "Modifier le filtre de résultats : {label}"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Edit splits"
 msgstr "Modifier les ventilations"
+
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Edit time"
+msgstr "Modifier l'heure"
 
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Edit Warranty"
@@ -18741,6 +18749,10 @@ msgstr "Afficher la colonne objectif"
 msgid "Show the next 30 days"
 msgstr "Afficher les 30 prochains jours"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last. Imports and bank sync keep times only while this is on, and need every device on the latest version."
+msgstr "Affiche l'heure facultative sous la date dans le registre, où vous pouvez aussi la modifier. Avec « Plus récente d’abord », une journée est triée par heure ; les transactions sans heure viennent en dernier. Les imports et la synchronisation bancaire ne gardent les heures que si ce réglage est activé, et tous les appareils doivent être à jour."
+
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Show the top"
 msgstr "Afficher les premiers"
@@ -18749,6 +18761,10 @@ msgstr "Afficher les premiers"
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Show this question"
 msgstr "Afficher cette question"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show transaction times"
+msgstr "Afficher l'heure des transactions"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show uncategorized only"
@@ -20906,6 +20922,12 @@ msgstr "TikTok"
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Time"
 msgstr "Temps"
+
+#: src/features/transactions/ui/cells/TimeInputCell.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/form/DatePickerQuick.tsx
+msgid "Time (optional)"
+msgstr "Heure (facultatif)"
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Time elapsed"

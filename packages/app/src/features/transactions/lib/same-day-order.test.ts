@@ -34,4 +34,41 @@ describe('orderWithinDays', () => {
     // End of Oct 2 stays 1290; each row below subtracts the row above it.
     expect(ordered.map((r) => r.RunningBalanceConverted)).toEqual([1290, 1490, 1500, 1000]);
   });
+
+  describe('with times shown', () => {
+    const timed = (r: GetTransactionsByAccountRow, Time: string | null) => ({ ...r, Time });
+    // Oct 2: #4 at 08:00, #3 untimed, #2 at 19:30.
+    const withTimes = [
+      timed(rows[0], '08:00'),
+      timed(rows[1], null),
+      timed(rows[2], '19:30'),
+      rows[3],
+    ];
+
+    it('orders a day latest time first, untimed rows at the start of the day', () => {
+      const ordered = orderWithinDays(withTimes, 'newest', true);
+      expect(ordered.map((r) => r.ID)).toEqual([2, 4, 3, 1]);
+      expect(ordered.map((r) => r.RunningBalanceConverted)).toEqual([1290, 1490, 1500, 1000]);
+    });
+
+    it('keeps the stored order when times are hidden or a day has none', () => {
+      expect(orderWithinDays(withTimes, 'newest')).toBe(withTimes);
+      expect(orderWithinDays(rows, 'newest', true)).toEqual(rows);
+    });
+
+    it('ties on the same time keep newest entry first', () => {
+      const same = [timed(rows[0], '10:00'), timed(rows[1], '10:00'), timed(rows[2], '11:00')];
+      expect(orderWithinDays(same, 'newest', true).map((r) => r.ID)).toEqual([2, 4, 3]);
+    });
+
+    it('amount order ignores times', () => {
+      expect(orderWithinDays(withTimes, 'amount', true).map((r) => r.ID)).toEqual([2, 4, 3, 1]);
+      const ordered = orderWithinDays(
+        [timed(rows[0], '23:00'), timed(rows[1], '01:00'), timed(rows[2], '12:30')],
+        'amount',
+        true
+      );
+      expect(ordered.map((r) => r.ID)).toEqual([2, 4, 3]);
+    });
+  });
 });

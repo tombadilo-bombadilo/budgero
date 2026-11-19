@@ -34,6 +34,7 @@ from budgero.models import (
     PushResult,
     SplitLine,
     TransactionInput,
+    normalize_time,
     to_milliunits,
 )
 
@@ -45,6 +46,11 @@ DEFAULT_TIMEOUT = 30.0
 #: field, the X-Budgero-Protocol header on every request, and the
 #: X-Data-Format-Version header on encrypted data uploads.
 PROTOCOL_VERSION = 2
+
+#: Payload "v" for mutations that carry a transaction time of day. App
+#: builds without times (v1.21 and older) refuse such an item ("update
+#: required") instead of adding the transaction without its time.
+TIME_FORMAT_VERSION = 7
 
 
 class BudgeroClient:
@@ -223,7 +229,9 @@ class BudgeroClient:
         except Exception:
             return {"raw": response.text}
 
-    def _encrypt_mutation(self, op: str, args: dict[str, Any]) -> tuple[str, str]:
+    def _encrypt_mutation(
+        self, op: str, args: dict[str, Any], version: int = PROTOCOL_VERSION
+    ) -> tuple[str, str]:
         """
         Encrypt a mutation payload and produce a deterministic message ID.
 
@@ -231,7 +239,7 @@ class BudgeroClient:
         ``{"v": 2, "op": ..., "args": {...}}`` and all monetary values in
         ``args`` must already be integer milliunits.
         """
-        payload: dict[str, Any] = {"v": PROTOCOL_VERSION, "op": op, "args": args}
+        payload: dict[str, Any] = {"v": version, "op": op, "args": args}
         canonical = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")
         message_id = hashlib.sha512(canonical).hexdigest()
         payload["message_id"] = message_id
@@ -252,6 +260,7 @@ class BudgeroClient:
         transfer_id: Optional[str] = None,
         splits: Optional[list[SplitLine]] = None,
         cleared: bool = False,
+        time: Optional[str] = None,
     ) -> PushResult:
         """
         Add a new transaction to your budget.
@@ -284,6 +293,13 @@ class BudgeroClient:
                 ignored and the lines must sum to outflow (or inflow).
             cleared: Whether the transaction has already cleared the bank.
                 Default is False (added as uncleared).
+            time: Optional time of day, "HH:MM" (24-hour, local, no time
+                zone). The date alone decides balances and budgets. A push
+                with a time is format 7: an app older than the one that
+                added times (v1.21 and earlier) refuses it with "update
+                required" and marks the queue item failed instead of adding
+                it without the time. Make sure every device that opens the
+                budget is updated, or resend after updating.
 
         Returns:
             PushResult with the queue ID and status.
@@ -354,6 +370,7 @@ class BudgeroClient:
             transfer_id=transfer_id,
             splits=splits,
             cleared=cleared,
+            time=time,
         )
 
         return self.push_transaction(tx)
@@ -388,10 +405,12 @@ class BudgeroClient:
             ... )
             >>> result = client.push_transaction(tx)
         """
-        # Encrypt the mutation
+        # Encrypt the mutation. A time needs the format that introduced it.
+        args = transaction.to_api_dict()
         message_id, encrypted = self._encrypt_mutation(
             "transactions.add",
-            transaction.to_api_dict(),
+            args,
+            TIME_FORMAT_VERSION if "time" in args else PROTOCOL_VERSION,
         )
 
         # Send to API. Encrypted data uploads must declare the data format
@@ -429,8 +448,8 @@ class BudgeroClient:
         Accepted fields: ``inflow``, ``outflow`` (currency units, converted
         to milliunits), ``date`` (YYYY-MM-DD), ``memo``, ``payee``,
         ``category_id``, ``account_id``, ``cleared`` (bool; e.g. mark a
-        pending charge cleared once it settles). Only the fields you pass
-        change.
+        pending charge cleared once it settles), ``time`` ("HH:MM", or
+        None to clear it). Only the fields you pass change.
 
         Example:
             >>> result = client.add_transaction(..., outflow=50.00)
@@ -447,6 +466,7 @@ class BudgeroClient:
             "category_id": ("categoryId", False),
             "account_id": ("accountId", False),
             "cleared": ("cleared", False),
+            "time": ("time", False),
         }
         wire_fields: dict[str, Any] = {}
         for key, value in fields.items():
@@ -459,6 +479,8 @@ class BudgeroClient:
                 value = value.isoformat()
             if key == "cleared" and not isinstance(value, bool):
                 raise ValidationError("cleared must be True or False")
+            if key == "time":
+                value = normalize_time(value)
             wire_fields[wire_key] = to_milliunits(value) if is_money else value
             if is_money and wire_fields[wire_key] < 0:
                 raise ValidationError(f"{key} must be non-negative")
@@ -468,6 +490,7 @@ class BudgeroClient:
         ref_id, encrypted = self._encrypt_mutation(
             "transactions.updateByRef",
             {"messageId": message_id, "fields": wire_fields},
+            TIME_FORMAT_VERSION if "time" in wire_fields else PROTOCOL_VERSION,
         )
         response = self._make_request(
             "POST",

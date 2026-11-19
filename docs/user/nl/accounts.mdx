@@ -95,6 +95,20 @@ Een overboeking voeg je toe door **Overboeking: &lt;rekening&gt;** als begunstig
 
 Staan beide kanten er al (banksynchronisatie of een bestandsimport heeft het geld dat de ene rekening verlaat en in de andere aankomt binnengehaald), verander dan de begunstigde van een van de twee in **Overboeking: &lt;rekening&gt;**. Budgero zoekt in de andere rekening naar een passende transactie in tegengestelde richting (zelfde bedrag, binnen het venster dat je instelt onder **Instellingen → Dubbele transacties**) en biedt aan die als andere kant te gebruiken in plaats van een nieuwe toe te voegen. Elke kant houdt zijn eigen datum en bedrag, zodat beide rekeningen blijven kloppen met je bank. Tussen valuta's telt het bedrag dat je bank echt heeft geboekt.
 
+## Tijdstip
+
+Een transactie kan naast de datum een optionele tijd hebben. Die blijft leeg tot je hem invult en verandert niets aan saldi, budgetten of maanden: die volgen alleen de datum.
+
+- **Een tijd invullen.** Het venster om een transactie toe te voegen en de transactiedetails op mobiel hebben naast de datum een tijdveld. Laat het leeg als tijden je niet interesseren.
+- **Tijden in het register.** Zet **Instellingen → Weergave → Tijden van transacties tonen** aan om de tijd onder elke datum te zien. Dan heeft ook de invoerregel in het register een tijdveld, en klik je op een tijd in het register om hem te bewerken.
+- **Volgorde binnen een dag.** Met tijden zichtbaar en **Volgorde binnen een dag** op 'Nieuwste eerst' begint elke dag met de laatste tijd; transacties zonder tijd staan onderaan hun dag. Sorteren op bedrag negeert tijden.
+- **Overboekingen** hebben aan beide kanten dezelfde tijd, en gesplitste regels die geld naar een andere rekening boeken krijgen de tijd van hun transactie. Terugkerende transacties worden zonder tijd geboekt.
+- **Imports en banksynchronisatie** houden de tijd alleen zolang **Tijden van transacties tonen** aanstaat op het apparaat dat importeert of synchroniseert, en alleen als het bestand of de bank een echte tijd meestuurt: een tijdkolom of een datum met tijd in een CSV (de tijdkolom is te koppelen zodra de instelling aanstaat), OFX-tijdstempels, boekingstijden in CAMT.053 en bankfeeds met een tijd. Precies 00:00:00 of 12:00:00, of één tijd voor alle regels van een bestand of bankophaling, geldt als 'geen tijd'. Regels die zijn geïmporteerd terwijl de instelling uit stond, hebben geen tijd. Dubbele transacties worden nog steeds alleen op datum en bedrag herkend.
+- De **Push API** accepteert een optionele `time` (`HH:MM`, 24-uurs) bij het toevoegen of bijwerken van een transactie. Een ongeldige tijd wordt genegeerd; de transactie wordt toch toegevoegd.
+- **Werk alle apparaten bij.** Een transactie met een tijd heeft deze versie van Budgero op al je apparaten nodig: een oudere app stopt met synchroniseren met de melding 'update vereist' in plaats van de tijd kwijt te raken. Transacties zonder tijd blijven gewoon synchroniseren met oudere apps.
+
+Tijden worden opgeslagen zoals je ze ziet (`HH:MM`, je lokale klok), zonder omrekening van tijdzones.
+
 ## Afstemmen
 
 Afstemmen is de gewoonte die een budget betrouwbaar houdt, of je transacties nu zelf invoert of synchroniseert: bevestigen dat Budgero overeenkomt met je bank.

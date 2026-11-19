@@ -68,7 +68,9 @@ export interface UseAddTransactionFormOptions {
     keepDialogOpen?: boolean,
     exchangeRateOverride?: number | null,
     /** Split lines: the parent and its lines are added as one op. */
-    splits?: AddTransactionSplitLine[]
+    splits?: AddTransactionSplitLine[],
+    /** Optional time of day ('HH:MM'); '' for none. */
+    time?: string
   ) => Promise<number>;
   onAddTransfer: (request: AddTransferRequest) => Promise<AddTransferResult>;
   onCancel: () => void;
@@ -438,6 +440,8 @@ export function useAddTransactionForm({
   // Reset form for "Add Another"
   const resetFormFields = React.useCallback(() => {
     form.setCategory('');
+    // "Add another" keeps the date; a time belongs to one transaction.
+    form.setTime('');
     form.setMemo('');
     form.setPayee('');
     form.setLabelId(null);
@@ -637,6 +641,7 @@ export function useAddTransactionForm({
 
             await onAddTransfer({
               date: form.transactionDate,
+              time: form.transactionTime,
               transferId,
               memo: transferMemo,
               labelId,
@@ -709,6 +714,7 @@ export function useAddTransactionForm({
               form.setPendingRatePair({ from: selectedAccount.Currency, to: budgetCurrency });
               form.setPendingAdd({
                 date: form.transactionDate,
+                time: form.transactionTime,
                 categoryId: finalCategoryId,
                 memo: form.memo,
                 payee: form.payee,
@@ -735,7 +741,9 @@ export function useAddTransactionForm({
           labelId,
           null,
           addAnother,
-          budgetRateOverride
+          budgetRateOverride,
+          undefined,
+          form.transactionTime
         );
 
         logAutofillApplications(transactionId, autofillAppliedSuggestions);
@@ -775,7 +783,8 @@ export function useAddTransactionForm({
           null,
           true,
           null,
-          prepared
+          prepared,
+          form.transactionTime
         );
 
         // Log autofill rule applications (if any were applied before split mode)

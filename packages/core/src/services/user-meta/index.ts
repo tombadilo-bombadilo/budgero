@@ -93,6 +93,14 @@ export class UserMetaService {
     this.queries.setCompactBudgetRows(value);
   }
 
+  getShowTransactionTime(): boolean {
+    return this.queries.getShowTransactionTime();
+  }
+
+  setShowTransactionTime(value: boolean): void {
+    this.queries.setShowTransactionTime(value);
+  }
+
   getSameDayTransactionOrder(): SameDayTransactionOrder {
     return this.queries.getSameDayTransactionOrder();
   }

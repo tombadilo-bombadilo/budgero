@@ -3558,6 +3558,10 @@ msgstr "Notiz hinzufügen…"
 msgid "Add a question"
 msgstr "Frage hinzufügen"
 
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Add a time"
+msgstr "Uhrzeit hinzufügen"
+
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Add a transaction"
@@ -8704,6 +8708,10 @@ msgstr "Ergebnisfilter bearbeiten: {label}"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Edit splits"
 msgstr "Teilungen bearbeiten"
+
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Edit time"
+msgstr "Uhrzeit bearbeiten"
 
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Edit Warranty"
@@ -18741,6 +18749,10 @@ msgstr "Zielspalte anzeigen"
 msgid "Show the next 30 days"
 msgstr "Die nächsten 30 Tage zeigen"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last. Imports and bank sync keep times only while this is on, and need every device on the latest version."
+msgstr "Zeigt die optionale Uhrzeit im Register unter dem Datum an, wo du sie auch bearbeiten kannst. Bei „Neueste zuerst“ wird ein Tag nach Uhrzeit sortiert; Transaktionen ohne Uhrzeit stehen am Ende. Importe und Bank-Sync übernehmen Uhrzeiten nur, solange dies aktiv ist, und alle Geräte müssen die neueste Version haben."
+
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Show the top"
 msgstr "Nur die größten zeigen"
@@ -18749,6 +18761,10 @@ msgstr "Nur die größten zeigen"
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Show this question"
 msgstr "Diese Frage zeigen"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show transaction times"
+msgstr "Uhrzeiten von Transaktionen anzeigen"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show uncategorized only"
@@ -20906,6 +20922,12 @@ msgstr "TikTok"
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Time"
 msgstr "Zeit"
+
+#: src/features/transactions/ui/cells/TimeInputCell.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/form/DatePickerQuick.tsx
+msgid "Time (optional)"
+msgstr "Uhrzeit (optional)"
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Time elapsed"

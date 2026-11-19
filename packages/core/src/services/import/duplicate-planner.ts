@@ -9,6 +9,8 @@ export interface ImportIdentity {
   fileRowKey: string;
   sourceKey?: string;
   date: string;
+  /** Time of day the source gave ('HH:MM'); stored on the row, never used for matching. */
+  time?: string | null;
   inflow: number;
   outflow: number;
   payee: string;

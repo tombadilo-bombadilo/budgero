@@ -13,3 +13,4 @@ export {
   type BudgetSnapshotOptions,
 } from './services/monthly-budgets/snapshot/store.js';
 export { clock, runAtClock, setClock } from './utils/clock.js';
+export { normalizeTimeOfDay, parseTimeOfDay, timeFromIsoDateTime } from './utils/time-of-day.js';

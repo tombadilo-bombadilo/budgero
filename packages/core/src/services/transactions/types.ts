@@ -16,6 +16,8 @@ export interface Transaction {
   LabelID?: number | null;
   TransferID?: string;
   Date: string;
+  /** Optional time of day, 'HH:MM' local wall-clock (no time zone); null when not set. */
+  Time?: string | null;
   Month: string;
   Memo: string;
   Reconciled: boolean;
@@ -51,6 +53,8 @@ export interface Transaction {
 export interface GetTransactionsByAccountRow {
   ID: number;
   Date: string;
+  /** Optional time of day, 'HH:MM' local wall-clock (no time zone); null when not set. */
+  Time?: string | null;
   CategoryID: number;
   Category: string;
   LabelID?: number | null;
@@ -176,6 +180,8 @@ export interface AccountBalanceHistoryTransaction {
 export interface GetTransactionsByAccountAndMonthRow {
   ID: number;
   Date: string;
+  /** Optional time of day, 'HH:MM' local wall-clock (no time zone); null when not set. */
+  Time?: string | null;
   CategoryID?: number;
   Category: string;
   LabelID?: number | null;
@@ -207,6 +213,8 @@ export interface GetAllTransactions {
   AccountId: number;
   AccountName: string;
   Date: string;
+  /** Optional time of day, 'HH:MM' local wall-clock (no time zone); null when not set. */
+  Time?: string | null;
   CategoryID: number;
   Category: string;
   LabelID?: number | null;

@@ -3560,6 +3560,10 @@ msgstr "Add a note…"
 msgid "Add a question"
 msgstr "Add a question"
 
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Add a time"
+msgstr "Add a time"
+
 #: src/features/first-steps/ui/FirstStepsCard.tsx
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Add a transaction"
@@ -8706,6 +8710,10 @@ msgstr "Edit result filter: {label}"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 msgid "Edit splits"
 msgstr "Edit splits"
+
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Edit time"
+msgstr "Edit time"
 
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Edit Warranty"
@@ -18743,6 +18751,10 @@ msgstr "Show target column"
 msgid "Show the next 30 days"
 msgstr "Show the next 30 days"
 
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last. Imports and bank sync keep times only while this is on, and need every device on the latest version."
+msgstr "Show the optional time of day under the date in the register, and edit it there. With newest first, a day is ordered by time; transactions without one come last."
+
 #: src/features/reports/ui/notebook/viz/ChartSettings.tsx
 msgid "Show the top"
 msgstr "Show the top"
@@ -18751,6 +18763,10 @@ msgstr "Show the top"
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Show this question"
 msgstr "Show this question"
+
+#: src/pages/settings/AppearancePage.tsx
+msgid "Show transaction times"
+msgstr "Show transaction times"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Show uncategorized only"
@@ -20908,6 +20924,12 @@ msgstr "TikTok"
 #: src/pages/settings/AuditLogPage.tsx
 msgid "Time"
 msgstr "Time"
+
+#: src/features/transactions/ui/cells/TimeInputCell.tsx
+#: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
+#: src/features/transactions/ui/form/DatePickerQuick.tsx
+msgid "Time (optional)"
+msgstr "Time (optional)"
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Time elapsed"

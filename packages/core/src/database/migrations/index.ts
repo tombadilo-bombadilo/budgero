@@ -18,6 +18,7 @@ import { migration078 } from './078-repair-home-copies.js';
 import { migration079 } from './079-add-page-guides-seen.js';
 import { migration080 } from './080-add-synced-state.js';
 import { migration081 } from './081-add-goal-timeframes.js';
+import { migration082 } from './082-add-transaction-time.js';
 import { migration001 } from './001-initial-schema.js';
 import { migration002 } from './002-add-exclude-from-budget-pace-to-categories.js';
 import { migration003 } from './003-add-metadata-column-to-accounts-for-liability-tr.js';
@@ -161,4 +162,5 @@ export const migrations: Migration[] = [
   migration079,
   migration080,
   migration081,
+  migration082,
 ];

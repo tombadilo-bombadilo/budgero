@@ -95,6 +95,20 @@ Eine Umbuchung legst du an, indem du **Umbuchung: &lt;Konto&gt;** als Empfänger
 
 Sind beide Seiten schon da (Bank-Sync oder ein Datei-Import hat das Geld beim Abgang aus dem einen und beim Eingang im anderen Konto erfasst), ändere den Empfänger einer der beiden auf **Umbuchung: &lt;Konto&gt;**. Budgero sucht im anderen Konto nach einer passenden Transaktion in Gegenrichtung (gleicher Betrag, im Zeitfenster aus **Einstellungen → Doppelte Transaktionen**) und bietet an, sie als Gegenseite zu verwenden, statt eine neue hinzuzufügen. Jede Seite behält ihr eigenes Datum und ihren Betrag, sodass beide Konten weiter zu deiner Bank passen. Bei verschiedenen Währungen gilt der Betrag, den deine Bank tatsächlich gebucht hat.
 
+## Uhrzeit
+
+Eine Transaktion kann neben dem Datum eine optionale Uhrzeit haben. Sie bleibt leer, bis du sie setzt, und ändert nichts an Salden, Budgets oder Monaten: Die richten sich nur nach dem Datum.
+
+- **Uhrzeit eingeben.** Der Dialog zum Hinzufügen von Transaktionen und die Transaktionsdetails auf dem Handy haben neben dem Datum ein Uhrzeitfeld. Lass es leer, wenn dir Uhrzeiten egal sind.
+- **Uhrzeiten im Register.** Schalte **Einstellungen → Erscheinungsbild → Uhrzeiten von Transaktionen anzeigen** ein, um die Uhrzeit unter jedem Datum zu sehen. Dann hat auch die Eingabezeile im Register ein Uhrzeitfeld, und du kannst eine Uhrzeit im Register anklicken, um sie zu bearbeiten.
+- **Reihenfolge innerhalb eines Tages.** Mit angezeigten Uhrzeiten und **Reihenfolge innerhalb eines Tages** auf „Neueste zuerst“ steht die späteste Uhrzeit oben; Transaktionen ohne Uhrzeit stehen am Ende ihres Tages. Die Sortierung nach Betrag ignoriert Uhrzeiten.
+- **Umbuchungen** haben auf beiden Seiten dieselbe Uhrzeit, und Teilungszeilen, die Geld auf ein anderes Konto buchen, übernehmen die Uhrzeit ihrer Transaktion. Wiederkehrende Transaktionen werden ohne Uhrzeit gebucht.
+- **Importe und Bank-Sync** übernehmen die Uhrzeit nur, solange **Uhrzeiten von Transaktionen anzeigen** auf dem Gerät aktiv ist, das importiert oder synchronisiert, und nur wenn die Datei oder Bank eine echte liefert: eine Uhrzeitspalte oder ein Datum mit Uhrzeit in einer CSV (die Uhrzeitspalte lässt sich zuordnen, sobald die Einstellung aktiv ist), OFX-Zeitstempel, Buchungszeitpunkte in CAMT.053 und Bank-Feeds mit Uhrzeit. Genau 00:00:00 oder 12:00:00, oder eine einzige Uhrzeit für alle Zeilen einer Datei oder eines Bankabrufs, gilt als „keine Uhrzeit“. Zeilen, die bei ausgeschalteter Einstellung importiert wurden, haben keine Uhrzeit. Die Duplikaterkennung vergleicht weiterhin nur Datum und Betrag.
+- Die **Push-API** akzeptiert beim Hinzufügen oder Ändern einer Transaktion ein optionales `time` (`HH:MM`, 24 Stunden). Eine ungültige Uhrzeit wird verworfen; die Transaktion wird trotzdem hinzugefügt.
+- **Alle Geräte aktualisieren.** Eine Transaktion mit Uhrzeit braucht diese Budgero-Version auf all deinen Geräten: Eine ältere App hält die Synchronisierung mit dem Hinweis „Update erforderlich“ an, statt die Uhrzeit zu verlieren. Transaktionen ohne Uhrzeit synchronisieren wie bisher auch mit älteren Apps.
+
+Uhrzeiten werden so gespeichert, wie du sie siehst (`HH:MM`, deine Ortszeit), ohne Umrechnung von Zeitzonen.
+
 ## Abgleichen
 
 Abgleichen ist die Gewohnheit, die ein Budget verlässlich hält, egal ob du Transaktionen eintippst oder synchronisierst: Du bestätigst, dass Budgero mit deiner Bank übereinstimmt.

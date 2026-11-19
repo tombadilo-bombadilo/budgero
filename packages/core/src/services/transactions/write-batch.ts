@@ -6,6 +6,7 @@ export interface PendingTransactionRow {
   AccountID: number;
   BudgetID: number;
   Date: string;
+  Time?: string | null;
   Memo: string;
   Payee: string | null;
   LabelID: number | null;

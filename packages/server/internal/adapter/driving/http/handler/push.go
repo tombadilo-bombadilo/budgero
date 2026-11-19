@@ -365,7 +365,7 @@ func (h *Handlers) GetPushAPISpec(c echo.Context) error {
 			"schema": map[string]interface{}{
 				"v": map[string]string{
 					"type":        "integer",
-					"description": "Data format version; send 2. Payloads without this field are treated as legacy format 1 (decimal amounts) and upgraded on import.",
+					"description": "Data format version; send 2, or 7 when the payload carries a transaction time (app builds without times then refuse the item instead of dropping the time). Payloads without this field are treated as legacy format 1 (decimal amounts) and upgraded on import.",
 				},
 				"op": map[string]string{
 					"type":        "string",
@@ -390,6 +390,7 @@ func (h *Handlers) GetPushAPISpec(c echo.Context) error {
 					"memo":       map[string]string{"type": "string", "description": "Transaction description/memo"},
 					"payee":      map[string]string{"type": "string", "description": "Payee name (optional)"},
 					"cleared":    map[string]string{"type": "boolean", "description": "Whether the transaction has cleared the bank (optional, default false)"},
+					"time":       map[string]string{"type": "string", "format": "HH:MM", "description": "Optional time of day, 24-hour local time with no time zone; an invalid value is dropped. Send v 7 with it"},
 					"splits":     map[string]string{"type": "array", "description": "Optional split lines (multi-category): each with inflow/outflow (integer milliunits) and categoryId; lines must sum to the parent amount"},
 				},
 			},
@@ -397,7 +398,7 @@ func (h *Handlers) GetPushAPISpec(c echo.Context) error {
 				"description": "Update a transaction previously created via the Push API, referenced by the message_id of the original push",
 				"args": map[string]interface{}{
 					"messageId": map[string]string{"type": "string", "description": "The message_id sent with the original transactions.add push"},
-					"fields":    map[string]string{"type": "object", "description": "Fields to change: inflow, outflow (integer milliunits), date, memo, payee, categoryId, accountId, cleared (boolean; ignored once reconciled)"},
+					"fields":    map[string]string{"type": "object", "description": "Fields to change: inflow, outflow (integer milliunits), date, memo, payee, categoryId, accountId, cleared (boolean; ignored once reconciled), time (HH:MM or null to clear; send v 7)"},
 				},
 			},
 			"transactions.deleteByRef": map[string]interface{}{
@@ -411,7 +412,7 @@ func (h *Handlers) GetPushAPISpec(c echo.Context) error {
 				"args": map[string]interface{}{
 					"budgetId":    map[string]string{"type": "integer", "description": "Budget ID"},
 					"transferId":  map[string]string{"type": "string", "description": "Client-generated unique id linking the two legs; store it to delete the transfer later"},
-					"source":      map[string]string{"type": "object", "description": "Outflow leg: inflow=0, outflow=<source-account milliunits>, accountId, categoryId (0 = auto Transfers), date, memo, payee, cleared (optional, default false)"},
+					"source":      map[string]string{"type": "object", "description": "Outflow leg: inflow=0, outflow=<source-account milliunits>, accountId, categoryId (0 = auto Transfers), date, time (optional HH:MM, shared by both legs; send v 7), memo, payee, cleared (optional, default false)"},
 					"destination": map[string]string{"type": "object", "description": "Inflow leg: inflow=<destination-account milliunits>, outflow=0, accountId, categoryId (0 = auto Transfers), date, memo, payee, cleared (optional, default false)"},
 				},
 			},

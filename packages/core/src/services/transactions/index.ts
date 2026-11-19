@@ -54,6 +54,7 @@ import {
 } from './transfer-rate.js';
 import { isAccountOnBudget } from './transfer-payee.js';
 import { clock } from '../../utils/clock.js';
+import { normalizeTimeOfDay, parseTimeOfDay } from '../../utils/time-of-day.js';
 
 export type {
   Transaction,
@@ -135,6 +136,8 @@ export interface NewTransactionRow {
   importIdentities?: ImportIdentity[];
   cleared?: boolean;
   explicitId?: number;
+  /** Optional time of day ('HH:MM', local, no time zone). */
+  time?: string | null;
 }
 
 export class TransactionService {
@@ -202,8 +205,11 @@ export class TransactionService {
     explicitId?: number,
     // With a batch the row is only queued (the result is its batch step index);
     // batch.commit() writes it together with the batch's other steps.
-    batch?: TransactionWriteBatch
+    batch?: TransactionWriteBatch,
+    // Optional time of day ('HH:MM', local wall-clock, no time zone).
+    time?: string | null
   ): Promise<number> {
+    const normalizedTime = normalizeTimeOfDay(time);
     debugLog('🔵 TransactionService.addTransaction called with:', {
       inflowOriginal,
       outflowOriginal,
@@ -243,12 +249,14 @@ export class TransactionService {
       importIdentities,
       cleared,
       explicitId,
+      time: normalizedTime,
     };
     if (batch) {
       return batch.queue(() => this.insertTransaction(input, conversion), {
         AccountID: accountId,
         BudgetID: budgetId,
         Date: date,
+        Time: normalizedTime,
         Memo: memo,
         Payee: payee?.trim() || null,
         LabelID: this.normalizeLabelId(labelId),
@@ -381,6 +389,7 @@ export class TransactionService {
       importIdentities = [],
       cleared = false,
       explicitId,
+      time = null,
     } = input;
     let { categoryId } = input;
     const { account } = this.queries.getAccountAndBudget(accountId, budgetId);
@@ -683,7 +692,8 @@ export class TransactionService {
         usesPinnedExchangeRate,
         excludeFromReadyToAssign,
         cleared,
-        explicitId
+        explicitId,
+        normalizeTimeOfDay(time)
       );
 
       // If rate was manual/adjacent/1:1, mark pending for later recalc
@@ -1063,6 +1073,7 @@ export class TransactionService {
       'categoryId',
       'accountId',
       'cleared',
+      'time',
     ];
     const keys = Object.keys(fields);
     if (!keys.length || keys.some((key) => !allowed.includes(key))) {
@@ -1073,10 +1084,15 @@ export class TransactionService {
     const previous = this.getTransactionByID(id);
     if (fields.cleared !== undefined && typeof fields.cleared !== 'boolean')
       throw new ValidationError('cleared must be true or false.');
-    const structural = keys.some((key) => !['memo', 'payee', 'cleared'].includes(key));
+    const structural = keys.some((key) => !['memo', 'payee', 'cleared', 'time'].includes(key));
+    let time: string | null | undefined;
+    if (fields.time !== undefined) {
+      time = parseTimeOfDay(fields.time);
+      if (time === undefined) throw new ValidationError('time must be "HH:MM" (24-hour) or null.');
+    }
     if (previous.TransferID || (structural && this.queries.getSplitsForTransaction(id).length)) {
       throw new ValidationError(
-        'Transfer transactions cannot be patched; split transactions only support memo and payee.'
+        'Transfer transactions cannot be patched; split transactions only support memo, payee, cleared and time.'
       );
     }
     const amount = (key: string, fallback: number) => {
@@ -1172,6 +1188,7 @@ export class TransactionService {
       if (typeof fields.cleared === 'boolean') {
         this.queries.setTransactionsCleared([id], fields.cleared);
       }
+      if (time !== undefined) this.queries.updateTransactionTime(id, null, time);
     });
     return keys;
   }
@@ -2373,6 +2390,9 @@ export class TransactionService {
       case 'memo':
         this.queries.updateTransactionMemo(transactionId, newValue as string);
         break;
+      case 'time':
+        this.setTransactionTime(transactionId, newValue);
+        break;
       case 'payee':
         this.setTransactionPayee(transaction, newValue);
         break;
@@ -2474,6 +2494,24 @@ export class TransactionService {
       default:
         throw new ValidationError(`Unsupported column: ${columnName}`);
     }
+  }
+
+  /**
+   * Set or clear a row's time of day ('HH:MM'; empty clears it). Display and
+   * same-day order only: balances, budgets and duplicate checks use the date.
+   * A transfer's legs share the time, and a split parent's transfer mirrors
+   * follow it.
+   */
+  setTransactionTime(transactionId: number, value: unknown): void {
+    const time = normalizeTimeOfDay(value);
+    let transaction = this.getTransactionByID(transactionId);
+    // A split-transfer mirror belongs to its parent: set the time there, so
+    // the parent and all its mirrors keep one time.
+    const mirrorOf = /^split_transfer_(\d+)_/.exec(transaction.TransferID ?? '')?.[1];
+    if (mirrorOf) transaction = this.getTransactionByID(Number(mirrorOf));
+    atomically(this.db, () =>
+      this.queries.updateTransactionTime(transaction.ID, transaction.TransferID || null, time)
+    );
   }
 
   /** Payee edit; a transfer entirely inside the budget keeps no payee on either leg. */

@@ -22,6 +22,8 @@ interface UseAddTransactionHandlerOptions {
 
 export interface AddTransferRequest {
   date: Date | null;
+  /** Optional time of day ('HH:MM'), shared by both legs. */
+  time?: string;
   transferId: string;
   memo: string;
   labelId: number | null;
@@ -70,7 +72,9 @@ export function useAddTransactionHandler({
       transferId: string | null,
       keepDialogOpen?: boolean,
       exchangeRateOverride?: number | null,
-      splits?: AddTransactionSplitLine[]
+      splits?: AddTransactionSplitLine[],
+      /** Optional time of day ('HH:MM'); '' or omitted for none. */
+      time?: string
     ): Promise<number> => {
       // Don't perform optimistic update - let React Query handle the data flow
       // This prevents the data from getting out of sync
@@ -89,6 +93,7 @@ export function useAddTransactionHandler({
         labelId,
         budgetId: selectedBudget?.ID || selectedAccount?.BudgetID || 0,
         date: transactionDate,
+        ...(time ? { time } : {}),
         memo,
         payee,
         transferId,
@@ -122,6 +127,7 @@ export function useAddTransactionHandler({
           categoryId: request.source.categoryId,
           labelId: request.labelId,
           date: transactionDate,
+          ...(request.time ? { time: request.time } : {}),
           memo: request.memo,
           payee: request.source.payee,
           exchangeRateOverride: request.source.exchangeRateOverride,
@@ -133,6 +139,7 @@ export function useAddTransactionHandler({
           categoryId: request.destination.categoryId,
           labelId: request.labelId,
           date: transactionDate,
+          ...(request.time ? { time: request.time } : {}),
           memo: request.memo,
           payee: request.destination.payee,
           exchangeRateOverride: request.destination.exchangeRateOverride,

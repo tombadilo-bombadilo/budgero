@@ -95,6 +95,20 @@ Pour ajouter un virement, choisissez **Virement : &lt;compte&gt;** comme bénéf
 
 Si les deux côtés sont déjà là (la synchronisation bancaire ou un import de fichier a apporté l’argent qui quitte un compte et celui qui arrive dans l’autre), changez le bénéficiaire de l’un d’eux en **Virement : &lt;compte&gt;**. Budgero cherche dans l’autre compte une transaction correspondante dans le sens inverse (même montant, dans la fenêtre réglée sous **Paramètres → Transactions en double**) et propose de l’utiliser comme autre côté au lieu d’en ajouter une nouvelle. Chaque côté garde sa date et son montant, donc les deux comptes correspondent toujours à votre banque. Entre devises, le montant reçu est celui que votre banque a réellement comptabilisé.
 
+## Heure
+
+Une transaction peut avoir une heure facultative à côté de sa date. Elle reste vide tant que vous ne la renseignez pas, et ne change rien aux soldes, aux budgets ni aux mois : ceux-ci ne dépendent que de la date.
+
+- **Saisir une heure.** La fenêtre d'ajout de transaction et le détail d'une transaction sur mobile ont un champ heure à côté de la date. Laissez-le vide si les heures ne vous intéressent pas.
+- **Voir les heures dans le registre.** Activez **Paramètres → Apparence → Afficher l'heure des transactions** pour afficher l'heure sous chaque date. La ligne de saisie du registre a alors aussi un champ heure, et vous pouvez cliquer sur une heure dans le registre pour la modifier.
+- **Ordre au sein d’une journée.** Avec les heures affichées et **Ordre au sein d’une journée** sur « Plus récente d’abord », chaque journée commence par l'heure la plus tardive ; les transactions sans heure se placent en bas de leur journée. Le tri par montant ignore les heures.
+- **Les virements** ont la même heure des deux côtés, et les lignes de ventilation qui envoient de l'argent vers un autre compte prennent l'heure de leur transaction. Les transactions récurrentes sont enregistrées sans heure.
+- **Les imports et la synchronisation bancaire** ne gardent l'heure que si **Afficher l'heure des transactions** est activé sur l'appareil qui importe ou synchronise, et seulement quand le fichier ou la banque en fournit une vraie : une colonne heure ou une date avec heure dans un CSV (la colonne Heure peut être associée une fois le réglage activé), les horodatages OFX, les dates-heures de comptabilisation CAMT.053 et les flux bancaires qui incluent une heure. Une heure d'exactement 00:00:00 ou 12:00:00, ou une même heure pour toutes les lignes d'un fichier ou d'une récupération bancaire, est considérée comme « pas d'heure ». Les lignes importées réglage désactivé n'ont pas d'heure. La détection des doublons compare toujours uniquement la date et le montant.
+- L'**API Push** accepte un `time` facultatif (`HH:MM`, sur 24 heures) lors de l'ajout ou de la modification d'une transaction. Une heure invalide est ignorée ; la transaction est quand même ajoutée.
+- **Mettez à jour tous vos appareils.** Une transaction avec une heure nécessite cette version de Budgero sur tous vos appareils : une application plus ancienne arrête la synchronisation avec le message « mise à jour requise » au lieu de perdre l'heure. Les transactions sans heure continuent de se synchroniser avec les anciennes versions.
+
+Les heures sont enregistrées telles que vous les voyez (`HH:MM`, votre heure locale), sans conversion de fuseau horaire.
+
 ## Rapprochement
 
 Le rapprochement est l’habitude qui garde un budget fiable, que vous saisissiez vos transactions ou que vous les synchronisiez : vérifier que Budgero concorde avec votre banque.

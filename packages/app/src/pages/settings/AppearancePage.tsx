@@ -46,6 +46,7 @@ import {
   useInlineTransactionEntryPreference,
   usePlanningNumberAnimationsPreference,
   useSameDayTransactionOrderPreference,
+  useShowTransactionTimePreference,
 } from '@shared/hooks/useUserPreferences';
 
 export default function AppearancePage() {
@@ -105,6 +106,11 @@ export default function AppearancePage() {
     updateSameDayTransactionOrder,
     isUpdating: isUpdatingSameDayTransactionOrder,
   } = useSameDayTransactionOrderPreference();
+  const {
+    showTransactionTime,
+    updateShowTransactionTime,
+    isUpdating: isUpdatingShowTransactionTime,
+  } = useShowTransactionTimePreference();
 
   const handleHomePageChange = (value: string) => {
     const page = value as HomePageOption;
@@ -504,6 +510,31 @@ export default function AppearancePage() {
                 </SelectItem>
               </SelectContent>
             </Select>
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
+              <Label htmlFor="show-transaction-time">
+                <Trans>Show transaction times</Trans>
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                <Trans>
+                  Show the optional time of day under the date in the register, and edit it there.
+                  With newest first, a day is ordered by time; transactions without one come last.
+                  Imports and bank sync keep times only while this is on, and need every device on
+                  the latest version.
+                </Trans>
+              </p>
+            </div>
+            <Switch
+              id="show-transaction-time"
+              checked={showTransactionTime}
+              onCheckedChange={(checked) => {
+                trackSettingChanged('show_transaction_time', checked ? 'on' : 'off');
+                updateShowTransactionTime(checked);
+              }}
+              disabled={isUpdatingShowTransactionTime}
+            />
           </div>
           <Separator />
           <div className="flex items-center justify-between gap-4">

@@ -86,6 +86,12 @@ const carriesGoalTimeframeColumns = (args: Args): boolean =>
   });
 
 /**
+ * Format 7: the first format builds without transaction times (v1.21.x)
+ * reject. Only calls that write a time of day need it (see TIME_FORMAT_RULES).
+ */
+const NEWER_THAN_V1_22 = 7;
+
+/**
  * true: the call needs format 3 (v1.18 would apply it differently); a number:
  * the call needs that format; false: the base format will do.
  */
@@ -456,6 +462,54 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   },
 };
 
+const hasTime = (value: unknown) => typeof value === 'string' && value.trim() !== '';
+
+const rowHasTime = (rowId: number | null): boolean => {
+  if (!rowId) return false;
+  try {
+    return hasTime(services()?.transactions?.getTransactionByID(rowId)?.Time);
+  } catch {
+    return false;
+  }
+};
+
+/** Restore snapshots: raw rows (Time) or legacy add-op snapshots (time). */
+const snapshotRowsHaveTime = (rows: unknown): boolean =>
+  Array.isArray(rows) &&
+  rows.some((row) => hasTime((row as Args | null)?.Time) || hasTime((row as Args | null)?.time));
+
+/**
+ * Calls that carry a transaction time of day. Builds before format 7 have no
+ * Time column: they would add the row without its time (or fail on a time
+ * edit) and stay out of step, so these ask for format 7 and older devices
+ * show "update required" instead. Calls without a time keep their format, so
+ * ordinary edits still reach v1.21 devices.
+ */
+const TIME_FORMAT_RULES: Readonly<Record<string, (args: Args) => boolean>> = {
+  'transactions.add': (args) => hasTime(args.time),
+  'transactions.import': (args) => hasTime(args.time),
+  'transactions.addTransfer': (args) =>
+    hasTime(args.time) ||
+    hasTime((args.source as Args | undefined)?.time) ||
+    hasTime((args.destination as Args | undefined)?.time),
+  'transactions.updateColumn': (args) =>
+    typeof args.columnName === 'string' &&
+    args.columnName.toLowerCase().replace(/_/g, '') === 'time',
+  'transactions.updateByRef': (args) => ((args.fields ?? {}) as Args).time !== undefined,
+  'transactions.restore': (args) =>
+    snapshotRowsHaveTime((args.snapshot as { transactions?: unknown } | undefined)?.transactions),
+  'transactions.restoreBatch': (args) => snapshotRowsHaveTime(args.snapshots),
+  // Copies keep the source rows' time.
+  'transactions.duplicate': (args) =>
+    Array.isArray(args.ids) && args.ids.some((rowId) => rowHasTime(id(rowId))),
+  // New split-transfer mirrors take the parent's time.
+  'transactions.upsertSplits': (args) =>
+    transferTargets(args.splits).length > 0 && rowHasTime(id(args.transactionId)),
+  'transactions.saveSplits': (args) =>
+    transferTargets(args.splits).length > 0 && rowHasTime(id(args.transactionId)),
+  'transactions.reconcileCleared': (args) => hasTime((args.adjustment as Args | undefined)?.time),
+};
+
 /**
  * `args` with REQUIRES_FORMAT_ARG set when older builds would apply this call
  * differently (and without it otherwise: a redo copies the first run's args,
@@ -477,7 +531,8 @@ export function withLegacyFormat(op: string, args: Args): Args {
     });
   }
   const rule = LEGACY_FORMAT_RULES[op] as LegacyRule | undefined;
-  if (!rule && !carriesGoalTimeframeColumns(rest)) {
+  const timeRule = TIME_FORMAT_RULES[op];
+  if (!rule && !timeRule && !carriesGoalTimeframeColumns(rest)) {
     return Array.isArray(rest.ops) || REQUIRES_FORMAT_ARG in args ? rest : args;
   }
   let needed: boolean | number = false;
@@ -488,6 +543,11 @@ export function withLegacyFormat(op: string, args: Args): Args {
   }
   let wanted = needed === true ? NEWER_THAN_V1_18 : typeof needed === 'number' ? needed : 0;
   if (carriesGoalTimeframeColumns(rest)) wanted = Math.max(wanted, GOAL_TIMEFRAMES);
+  try {
+    if (timeRule?.(rest)) wanted = Math.max(wanted, NEWER_THAN_V1_22);
+  } catch {
+    // Leave the call at the format its other rule chose.
+  }
   const format = Math.min(wanted, MUTATION_FORMAT_VERSION);
   return format > BASE_MUTATION_FORMAT_VERSION
     ? { ...rest, [REQUIRES_FORMAT_ARG]: format }

@@ -188,6 +188,21 @@ export class UserMetaQueries {
     run(this.db, `UPDATE user_meta SET CompactBudgetRows = ? WHERE ID = 1`, value ? 1 : 0);
   }
 
+  /** Show transaction times in the register (and order a day by them). Off by default. */
+  getShowTransactionTime(): boolean {
+    this.ensureRow();
+    const row = getRow<{ ShowTransactionTime: boolean | number | null }>(
+      this.db,
+      `SELECT ShowTransactionTime FROM user_meta WHERE ID = 1`
+    );
+    return row?.ShowTransactionTime === true || row?.ShowTransactionTime === 1;
+  }
+
+  setShowTransactionTime(value: boolean): void {
+    this.ensureRow();
+    run(this.db, `UPDATE user_meta SET ShowTransactionTime = ? WHERE ID = 1`, value ? 1 : 0);
+  }
+
   /** Order of transactions within one day: newest entry first, or by amount. */
   getSameDayTransactionOrder(): SameDayTransactionOrder {
     this.ensureRow();

@@ -10,6 +10,7 @@ import { StatusIndicatorPopover } from '@features/transactions/ui/StatusIndicato
 import { ClearedToggle } from '@features/transactions/ui/ClearedToggle';
 import { TransactionLabelBadge } from '@features/transactions/ui/TransactionLabelBadge';
 import { transferPayeeLabel } from '@features/transactions/lib/transfer-category';
+import { useRegisterDisplay } from '@shared/contexts/RegisterDisplayContext';
 
 interface TransactionCardHeaderProps {
   transaction: GetTransactionsByAccountRow;
@@ -31,6 +32,7 @@ export const TransactionCardHeader = React.memo(function TransactionCardHeader({
   onSelectionChange,
 }: TransactionCardHeaderProps) {
   const { t } = useLingui();
+  const { showTime } = useRegisterDisplay();
 
   const displayDate = useMemo(() => {
     const rawDate = transaction.Date;
@@ -60,6 +62,9 @@ export const TransactionCardHeader = React.memo(function TransactionCardHeader({
           <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
           <div className="flex-1 min-w-0 max-w-[10rem] sm:max-w-[14rem] md:max-w-[18rem] min-[1900px]:max-w-[24rem] text-[0.6875rem] font-medium leading-tight text-current truncate sm:text-xs min-[1900px]:text-sm">
             {displayDate}
+            {showTime && transaction.Time ? (
+              <span className="ml-1 text-muted-foreground">{transaction.Time}</span>
+            ) : null}
           </div>
           {transaction.Reconciled == true ? (
             <StatusIndicatorPopover
