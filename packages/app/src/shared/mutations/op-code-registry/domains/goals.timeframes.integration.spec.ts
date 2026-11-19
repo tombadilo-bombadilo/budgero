@@ -242,4 +242,193 @@ describe('goal timeframe ops on two devices', () => {
     expect(goalRows(a)).toEqual(before);
     expect(goalRows(b)).toEqual(before);
   });
+
+  it('two devices creating the first goal offline end up as v1.21 would: one goal each, no second timeframe', async () => {
+    const createOn = async (device: Device, target: number, startDate: string) => {
+      runtime.services = device.services;
+      const args = await prepareMutationArgs('goals.create', {
+        ...monthly(target),
+        startDate,
+        categoryId: groceries,
+        budgetId,
+      });
+      await executeMutationOp('goals.create', args, {
+        mutationId: `c-${target}`,
+        isReceiver: false,
+      });
+      return args;
+    };
+    const fromA = await createOn(a, 200, '2026-01-01');
+    const fromB = await createOn(b, 300, '2026-04-01');
+    // Both are base-format creates: v1.21 devices apply them too.
+    expect([
+      mutationFormatVersion('goals.create', fromA),
+      mutationFormatVersion('goals.create', fromB),
+    ]).toEqual([2, 2]);
+
+    // The server orders A's first: B's create then fails on A, exactly like
+    // UNIQUE(CategoryID) on v1.21, instead of adding a second timeframe.
+    runtime.services = a.services;
+    await expect(
+      executeMutationOp('goals.create', JSON.parse(JSON.stringify(fromB)), {
+        mutationId: 'c-300',
+        isReceiver: true,
+      })
+    ).rejects.toThrow(/UNIQUE constraint failed: goals.CategoryID/);
+    expect(goalRows(a)).toHaveLength(1);
+
+    // A fresh device replaying the log tail (A's create, then B's) keeps A's goal only.
+    const c = await openDevice();
+    runtime.services = c.services;
+    const cBudget = await c.services.budgets.createBudget({
+      name: 'Two devices',
+      display_currency: 'USD',
+      badge_icon: 'dollar',
+      number_format: '123,456.78',
+      create_default_categories: false,
+    });
+    const group = c.services.categories.addCategoryGroup('Spending', cBudget);
+    c.services.categories.addCategory(group, cBudget, 'Groceries', '');
+    await executeMutationOp('goals.create', JSON.parse(JSON.stringify(fromA)), {
+      mutationId: 'c-200',
+      isReceiver: true,
+    });
+    await expect(
+      executeMutationOp('goals.create', JSON.parse(JSON.stringify(fromB)), {
+        mutationId: 'c-300',
+        isReceiver: true,
+      })
+    ).rejects.toThrow(/UNIQUE/);
+    expect(goalRows(c)).toEqual(goalRows(a));
+  });
+
+  it('a v1.21-shaped goals.restore (no timeframe columns) stores the same row as the migration would', async () => {
+    const legacyRow = {
+      ID: 21,
+      Type: 'monthly',
+      CategoryID: groceries,
+      Target: 150_000,
+      StartDate: '2025-09-01',
+      TargetDate: '',
+      Purpose: 'spending',
+      Recurring: 0,
+      CycleMonths: null,
+    };
+    for (const device of [a, b]) {
+      runtime.services = device.services;
+      await executeMutationOp(
+        'goals.restore',
+        { goal: legacyRow },
+        { mutationId: 'r', isReceiver: true }
+      );
+    }
+    expect(goalRows(a)).toEqual(goalRows(b));
+    expect(goalRows(a)).toEqual([
+      expect.objectContaining({ ID: 21, EffectiveFrom: '2025-09', EffectiveTo: null }),
+    ]);
+  });
+
+  it('deleting a goal that has no earlier timeframe is a plain delete everywhere', async () => {
+    await originate(a, b, 'goals.create', { ...monthly(200), categoryId: groceries, budgetId });
+    const { format } = await originate(a, b, 'goals.delete', { categoryId: groceries, budgetId });
+    expect(format).toBe(2);
+    expect(goalRows(a)).toEqual([]);
+    expect(goalRows(b)).toEqual([]);
+  });
+});
+
+describe('legacy format stamping of goal ops', () => {
+  let device: Device;
+  let budgetId: number;
+  let groceries: number;
+
+  const format = async (op: string, args: Record<string, unknown>) => {
+    runtime.services = device.services;
+    return mutationFormatVersion(op, await prepareMutationArgs(op, args));
+  };
+
+  beforeEach(async () => {
+    device = await openDevice();
+    runtime.services = device.services;
+    budgetId = await device.services.budgets.createBudget({
+      name: 'Formats',
+      display_currency: 'USD',
+      badge_icon: 'dollar',
+      number_format: '123,456.78',
+      create_default_categories: false,
+    });
+    const group = device.services.categories.addCategoryGroup('Spending', budgetId);
+    groceries = device.services.categories.addCategory(group, budgetId, 'Groceries', '');
+  });
+
+  const create = (extra: Record<string, unknown> = {}) => ({
+    ...monthly(200),
+    categoryId: groceries,
+    budgetId,
+    ...extra,
+  });
+
+  it('goals.create: base format only for a first, ongoing goal starting in its StartDate month', async () => {
+    expect(await format('goals.create', create())).toBe(2);
+    expect(await format('goals.create', create({ effectiveFrom: '2020-01' }))).toBe(2);
+    expect(await format('goals.create', create({ effectiveTo: '2020-06' }))).toBe(7);
+    expect(await format('goals.create', create({ effectiveFrom: '2020-03' }))).toBe(7);
+    device.services.goals.createGoal(GoalType.MONTHLY, groceries, 1000 as never, '2020-01-01', '');
+    expect(
+      await format('goals.create', create({ effectiveFrom: '2024-01', startDate: '2024-01-01' }))
+    ).toBe(7);
+  });
+
+  it('goals.update: base format only for the single ongoing timeframe that keeps its StartDate month', async () => {
+    device.services.goals.createGoal(GoalType.MONTHLY, groceries, 1000 as never, '2020-01-01', '');
+    const update = (extra: Record<string, unknown> = {}) => ({
+      ...monthly(210),
+      categoryId: groceries,
+      budgetId,
+      effectiveFrom: '2020-01',
+      ...extra,
+    });
+    expect(await format('goals.update', update())).toBe(2);
+    expect(await format('goals.update', update({ startDate: '2020-01-20' }))).toBe(2);
+    expect(await format('goals.update', update({ startDate: '2021-02-01' }))).toBe(7);
+
+    device.services.goals.setGoalFrom(groceries, '2020-01', '2020-12', {
+      type: GoalType.MONTHLY,
+      target: 1000 as never,
+      startDate: '2020-01-01',
+      targetDate: '',
+    });
+    expect(await format('goals.update', update())).toBe(7);
+
+    device.services.goals.setGoalFrom(groceries, '2020-01', null, {
+      type: GoalType.MONTHLY,
+      target: 1000 as never,
+      startDate: '2020-01-01',
+      targetDate: '',
+    });
+    device.services.goals.setGoalFrom(groceries, '2022-01', null, {
+      type: GoalType.MONTHLY,
+      target: 1000 as never,
+      startDate: '2020-01-01',
+      targetDate: '',
+    });
+    expect(await format('goals.update', update())).toBe(7);
+  });
+
+  it('undo data with goal timeframe columns needs format 7; other journals keep theirs', async () => {
+    const journal = {
+      v: 1,
+      deleted: [{ table: 'goals', rows: [{ ID: 1, EffectiveFrom: '2020-01' }] }],
+      changed: [],
+      inserted: [],
+    };
+    expect(await format('history.restoreRows', { budgetId, journal })).toBe(7);
+    expect(await format('categories.restoreDeleted', { budgetId, journal })).toBe(7);
+    expect(
+      await format('history.restoreRows', {
+        budgetId,
+        journal: { ...journal, deleted: [{ table: 'goals', rows: [{ ID: 1, Target: 5 }] }] },
+      })
+    ).toBe(3);
+  });
 });
