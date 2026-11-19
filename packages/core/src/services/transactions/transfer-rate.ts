@@ -109,6 +109,9 @@ export function getTransferRateDetails(
   db: DatabaseAdapter,
   transferId: string
 ): TransferRateDetails | null {
+  // A split's mirrors share their parent's key; two of them are no transfer
+  // pair with a direct rate (the parent and its lines drive their amounts).
+  if (String(transferId).startsWith('split_transfer_')) return null;
   const legs = getTransferLegs(db, transferId);
   if (legs.length !== 2) return null;
 
@@ -393,6 +396,7 @@ export function getTransferIdsForCurrencyPair(
         ${endClause}
         AND t.TransferID IS NOT NULL
         AND t.TransferID != ''
+        AND t.TransferID NOT GLOB 'split_transfer_*'
       GROUP BY t.TransferID
       HAVING COUNT(*) = 2
         AND (

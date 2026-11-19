@@ -37,6 +37,13 @@ function transactionReferences(db: DatabaseAdapter): ForeignKeyRef[] {
   ).map((ref) => ({ table: ref.tbl, column: ref.from, onDelete: ref.on_delete.toUpperCase() }));
 }
 
+const chunked = (values: readonly number[]): number[][] => {
+  const chunks: number[][] = [];
+  for (let index = 0; index < values.length; index += 500)
+    chunks.push(values.slice(index, index + 500));
+  return chunks;
+};
+
 function columnsOf(db: DatabaseAdapter, table: string): Set<string> {
   return new Set(
     allRows<{ name: string }>(db, 'SELECT name FROM pragma_table_info(?)', table).map(
@@ -154,6 +161,25 @@ export function restoreTransactionSnapshot(
       }
       const columns = columnsOf(db, dependent.table);
       for (const row of dependent.rows) insertRow(db, dependent.table, columns, row);
+    }
+
+    // A restored transfer line keeps a category only while it still goes from
+    // an on-budget parent to an off-budget account (the target may have
+    // joined the budget since the rows were captured), as a save would.
+    for (const chunk of chunked(ids)) {
+      run(
+        db,
+        `UPDATE transaction_splits SET CategoryID = NULL
+          WHERE TransactionID IN (${chunk.map(() => '?').join(', ')})
+            AND CategoryID IS NOT NULL AND TransferAccountID IS NOT NULL
+            AND NOT EXISTS (
+              SELECT 1 FROM transactions p
+              JOIN accounts pa ON pa.ID = p.AccountID
+              JOIN accounts ta ON ta.ID = transaction_splits.TransferAccountID
+              WHERE p.ID = transaction_splits.TransactionID
+                AND pa.OnBudget = TRUE AND ta.OnBudget = FALSE)`,
+        ...chunk
+      );
     }
 
     for (const link of snapshot.links ?? []) {

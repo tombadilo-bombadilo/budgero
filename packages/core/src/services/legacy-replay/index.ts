@@ -64,6 +64,39 @@ export class LegacyReplayService {
     );
   }
 
+  /** A split mirror row with an entered (pinned) amount: rate edits now keep its native amount. */
+  isPinnedSplitMirror(transactionId: number): boolean {
+    const row = this.queries.getTransactionByID(Number(transactionId));
+    return Boolean(row?.TransferID?.startsWith('split_transfer_') && isPinnedMirror(row));
+  }
+
+  /**
+   * Split mirror groups of exactly two rows in different currencies in the
+   * budget: older builds take them for a cross-currency transfer pair, so
+   * custom-rate changes re-rate them as one; this build skips them.
+   */
+  budgetHasSplitMirrorPairs(budgetId: number): boolean {
+    return Boolean(
+      getRow(
+        this.db,
+        `SELECT 1 AS Found FROM transactions t JOIN accounts a ON a.ID = t.AccountID
+          WHERE t.BudgetID = ? AND t.TransferID GLOB 'split_transfer_*'
+          GROUP BY t.TransferID
+          HAVING COUNT(*) = 2 AND MIN(a.Currency) != MAX(a.Currency)
+          LIMIT 1`,
+        Number(budgetId)
+      )
+    );
+  }
+
+  /** A transfer ID naming a split's two-mirror group (older builds rate it as a transfer). */
+  isSplitMirrorPairKey(transferId: string): boolean {
+    return (
+      String(transferId).startsWith('split_transfer_') &&
+      this.queries.getTransactionsByTransferID(String(transferId)).length === 2
+    );
+  }
+
   /**
    * A split mirror whose parent has exactly one other mirror: older builds
    * treat the two as a transfer pair when one is edited (payees cleared, the

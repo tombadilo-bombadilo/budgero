@@ -141,6 +141,10 @@ describe('the rule list', () => {
       'transactions.saveSplits',
       // v1.21: a cross-currency transfer partner now keeps its amount.
       'transactions.restoreAmounts',
+      // Format 7: restores drop a category a transfer line can't keep, and a
+      // split's two mirrors are no transfer pair for exact amounts.
+      'transactions.restore',
+      'transactions.updateTransferAmounts',
     ]);
     for (const op of Object.keys(LEGACY_FORMAT_RULES)) {
       expect(KNOWN_OP_CODES.has(op), op).toBe(true);

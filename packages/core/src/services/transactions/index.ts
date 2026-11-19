@@ -2,7 +2,7 @@ import { ImportDuplicateService, type ImportIdentity } from '../import/duplicate
 import { DatabaseAdapter } from '../../database/interface.js';
 import { allRows, atomically, getRow, run } from '../../database/sql.js';
 import { TransactionWriteBatch, type PendingTransactionRow } from './write-batch.js';
-import { SplitService, type SplitInput } from './split-service.js';
+import { SplitService, isPinnedMirror, type SplitInput } from './split-service.js';
 import {
   captureRestoreSnapshot,
   restoreTransactionSnapshot,
@@ -2418,7 +2418,9 @@ export class TransactionService {
         const accountCurrency = rateAccount?.Currency ?? rateBudget?.DisplayCurrency ?? '';
         const budgetCurrency = rateBudget?.DisplayCurrency ?? accountCurrency;
 
-        if (tx.TransferID) {
+        // A split mirror with an entered received amount keeps that (native)
+        // amount like a regular row: the rate re-derives its budget value.
+        if (tx.TransferID && !isPinnedMirror(tx)) {
           // Transfer leg: the budget-currency (converted) amount is the anchor — it is the
           // value moved between the two legs and must stay put. Overriding the rate only
           // changes how much account-currency that value corresponds to, so we hold

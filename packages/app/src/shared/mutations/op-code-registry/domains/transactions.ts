@@ -230,8 +230,11 @@ async function carryReceivedForParent(
     return args; // the op fails on its own
   }
   rejectCategorizedTransferLines(parent.AccountID, normalizeSplitLines(lines));
-  const splits = await carryReceivedAmounts(lines, (received) =>
-    S().splits.quoteMirrorAmounts(parent, normalizeSplitLines(lines), received)
+  // Pushed saves never carry their own mirror and fall back without a rate.
+  const splits = await carryReceivedAmounts(
+    lines,
+    (received) => S().splits.quoteMirrorAmounts(parent, normalizeSplitLines(lines), received),
+    { lenient: args.fromPush === true }
   );
   return splits === lines ? args : { ...args, splits };
 }
@@ -724,7 +727,11 @@ export const transactionOps = {
               normalized,
               received
             ),
-          { lenient: identities.some((identity) => identity?.sourceKey === 'push-api') }
+          {
+            lenient:
+              args.fromPush === true ||
+              identities.some((identity) => identity?.sourceKey === 'push-api'),
+          }
         );
         if (splits !== lines) return { ...args, splits };
       }

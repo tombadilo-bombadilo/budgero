@@ -391,4 +391,110 @@ describe('split transfer lines carry the received amount', () => {
       expect(mutationFormatVersion(op, await prepareMutationArgs(op, { runId: run.id }))).toBe(7);
     }
   });
+
+  it('rules, rate edits and custom rates on a two-mirror split, a pinned mirror rate edit and a categorized restore ask for format 7', async () => {
+    const gbp = (
+      await a.h.services.accounts.createAccount(
+        'Pound',
+        a.h.budgetId,
+        'checking',
+        'GBP',
+        asMilli(0)
+      )
+    ).ID;
+    await a.h.services.currency.saveRate('USD', 'GBP', 0.8, DATE, a.h.budgetId);
+    await a.h.services.currency.saveRate('EUR', 'USD', 1 / 0.9, DATE, a.h.budgetId);
+    const pair = saveArgs(a, 70_000);
+    Object.assign(pair.splits[0] as Record<string, unknown>, {
+      category_id: null,
+      transfer_account_id: gbp,
+      memo: 'mirror memo',
+    });
+    await send(a.h, 'transactions.saveSplits', pair);
+    const [eurMirror] = mirrorsOf(a.h, a.parent).filter((row) => row.AccountID === a.eur);
+    const key = String(eurMirror.TransferID);
+
+    const rule = await a.h.run<{ id: number }>('rules.create', {
+      input: {
+        budgetId: a.h.budgetId,
+        name: 'Memo',
+        conditions: [{ field: 'memo', operator: 'contains', value: 'mirror memo' }],
+        actions: [{ type: 'memo.set', payload: { memo: 'renamed' } }],
+        mode: 'one_time',
+      },
+    });
+    const ruleArgs = await prepareMutationArgs('rules.execute', { ruleId: rule.id });
+    expect(mutationFormatVersion('rules.execute', ruleArgs)).toBe(7);
+
+    for (const [op, args] of [
+      ['transactions.updateTransferRate', { transferId: key, rate: 1.2 }],
+      ['transactions.updateTransferAmounts', { transferId: key, sentAmount: 1, receivedAmount: 1 }],
+      [
+        'currency.customRates.add',
+        { budgetId: a.h.budgetId, fromCurrency: 'EUR', toCurrency: 'GBP' },
+      ],
+      [
+        'transactions.updateColumn',
+        { id: eurMirror.ID, columnName: 'ExchangeRate', newValue: 1.2 },
+      ],
+    ] as const) {
+      expect(mutationFormatVersion(op, await prepareMutationArgs(op, args)), op).toBe(7);
+    }
+    await expect(
+      a.h.run('transactions.updateTransferRate', { transferId: key, rate: 1.2 })
+    ).rejects.toThrow();
+
+    // A restore holding a categorized transfer line.
+    const snapshot = a.h.services.transactions.captureRestoreSnapshot([a.parent]);
+    (snapshot.dependents ?? []).push({
+      table: 'transaction_splits',
+      rows: [{ ID: 999, TransactionID: a.parent, CategoryID: 1, TransferAccountID: a.savings }],
+    } as never);
+    expect(
+      mutationFormatVersion(
+        'transactions.restore',
+        await prepareMutationArgs('transactions.restore', { snapshot })
+      )
+    ).toBe(7);
+  });
+
+  it('pushed split saves and adds never carry their own mirror amounts', async () => {
+    const { asPushedArgs } = await import('@shared/runtime/push-identity');
+    const raw = { InflowNative: 1, OutflowNative: 0, InflowConverted: 1, OutflowConverted: 0 };
+    const pushed = asPushedArgs({
+      transactionId: a.parent,
+      splits: [
+        { category_id: a.h.categoryId, inflow: 0, outflow: 20_000 },
+        { transfer_account_id: a.eur, inflow: 0, outflow: 80_000, mirror: raw },
+      ],
+    });
+    expect((pushed.splits as Record<string, unknown>[])[1]).not.toHaveProperty('mirror');
+    // Even if a payload sneaks one past, a pushed save drops it in prepare.
+    const sneaky = await prepareMutationArgs('transactions.saveSplits', {
+      ...pushed,
+      splits: [
+        { category_id: a.h.categoryId, inflow: 0, outflow: 20_000 },
+        { transfer_account_id: a.eur, inflow: 0, outflow: 80_000, mirror: raw },
+      ],
+    });
+    expect((sneaky.splits as Record<string, unknown>[])[1]).not.toHaveProperty('mirror');
+    await a.h.run('transactions.saveSplits', sneaky);
+    expect(mirrorsOf(a.h, a.parent)[0]).toMatchObject({
+      InflowNative: 72_000,
+      TransferRateOverride: 0,
+    });
+  });
+
+  it('a rate edit on a lone pinned mirror asks for format 7 and keeps its amount', async () => {
+    await send(a.h, 'transactions.saveSplits', saveArgs(a, 70_000));
+    const [mirror] = mirrorsOf(a.h, a.parent);
+    const edit = { id: mirror.ID, columnName: 'ExchangeRate', newValue: 1.2 };
+    const sent = await send(a.h, 'transactions.updateColumn', edit);
+    expect(mutationFormatVersion('transactions.updateColumn', sent)).toBe(7);
+    expect(mirrorsOf(a.h, a.parent)[0]).toMatchObject({
+      InflowNative: 70_000,
+      InflowConverted: 84_000,
+      TransferRateOverride: 2,
+    });
+  });
 });

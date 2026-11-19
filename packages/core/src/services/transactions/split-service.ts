@@ -60,6 +60,13 @@ interface PreparedMirror {
  * TransferRateOverride value of a split mirror whose amounts were entered
  * (a received amount, saved by a format-7 op). Older builds only ever write
  * 0 or 1 there (transfer rate edits), so 2 is never mistaken for their data.
+ *
+ * The pin is on the NATIVE amount (what the other account received). Its
+ * budget-currency value still follows rates like any row in that account:
+ * custom-rate and budget-currency re-conversions rewrite InflowConverted /
+ * OutflowConverted (from the kept native), and a direct exchange-rate edit
+ * of the mirror re-derives it too. Each leg is valued on its own, as for a
+ * non-split cross-currency transfer.
  */
 export const SPLIT_MIRROR_PINNED = 2;
 
@@ -802,9 +809,12 @@ export class SplitService {
    * keeps its amount (a date or rate edit), scaled with the line when a new
    * parent total rescales it (150 -> 300 doubles the received amount too),
    * the direction following the line. A line that drops to zero leaves the
-   * mirror as it is, so its amount comes back with the line. Only mirrors
-   * still in another currency than the parent's stay pinned; the rest convert
-   * as before. Integer arithmetic on stored data only, so every device
+   * mirror as it is, so its amount comes back with the line. A move of the
+   * parent to an account in another currency keeps the amounts as they are
+   * (only the direction follows). Only mirrors still in another currency
+   * than the parent's stay pinned: a move into the mirror's own currency
+   * unpins it and it then mirrors the line exactly (same currency, no rate),
+   * like any same-currency transfer line. Integer arithmetic on stored data only, so every device
    * replaying the edit writes the same amounts.
    */
   private keepPinnedMirrors(
@@ -817,6 +827,17 @@ export class SplitService {
     if (!mirrors.some(isPinnedMirror)) return [...lines];
     const beforeNet = new Map(before.map((line) => [line.ID, lineNativeNet(line)]));
     const source = this.accountOf(after.AccountID);
+    // Line amounts compare only in one currency: a move to an account in
+    // another currency converts them, and the received amount must not
+    // follow that rate (the parent row is still unwritten here).
+    const previous = this.queries.getTransactionByID(parentId);
+    const sameCurrency =
+      Boolean(previous && source) &&
+      this.accountOf(previous!.AccountID)?.Currency === source!.Currency;
+    const scale = (magnitude: number, line: TransactionSplit, lineNet: number) =>
+      sameCurrency
+        ? scaleMagnitude(magnitude, beforeNet.get(line.ID) ?? lineNet, lineNet)
+        : magnitude;
     const transfer = lines.filter(
       (line) => line.TransferAccountID && this.accountOf(Number(line.TransferAccountID))
     );
@@ -840,16 +861,8 @@ export class SplitService {
           ? stored
           : mirrorAmountsFor(
               lineNet,
-              scaleMagnitude(
-                Math.abs(netOf(stored.InflowNative, stored.OutflowNative)),
-                beforeNet.get(line.ID) ?? lineNet,
-                lineNet
-              ),
-              scaleMagnitude(
-                Math.abs(netOf(stored.InflowConverted, stored.OutflowConverted)),
-                beforeNet.get(line.ID) ?? lineNet,
-                lineNet
-              )
+              scale(Math.abs(netOf(stored.InflowNative, stored.OutflowNative)), line, lineNet),
+              scale(Math.abs(netOf(stored.InflowConverted, stored.OutflowConverted)), line, lineNet)
             )
       );
     });

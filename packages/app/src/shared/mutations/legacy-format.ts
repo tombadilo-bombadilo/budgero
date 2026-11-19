@@ -140,6 +140,14 @@ const pinnedMirrors = (checks: LegacyReplayService | null, ids: (number | null)[
 const mirrorPair = (checks: LegacyReplayService | null, rowId: number | null): boolean =>
   Boolean(checks && rowId && checks.isSplitMirrorPair(rowId));
 
+/** A restore snapshot holding a split line with both a category and a transfer account. */
+const restoresCategorizedTransferLines = (snapshot: unknown): boolean =>
+  (((snapshot as Args | null)?.dependents ?? []) as { table?: string; rows?: Args[] }[]).some(
+    (dependent) =>
+      dependent.table === 'transaction_splits' &&
+      (dependent.rows ?? []).some((row) => row.CategoryID != null && row.TransferAccountID != null)
+  );
+
 /** Parents a rule run's logged changes touch. */
 const runTransactionIds = (runId: unknown): number[] => {
   const runIdNum = id(runId);
@@ -179,6 +187,7 @@ const parseArgsObject = (value: unknown): Args => {
 
 const customRateChange = (args: Args, checks: LegacyReplayService | null): boolean | number => {
   if (!checks || !id(args.budgetId)) return false;
+  if (checks.budgetHasSplitMirrorPairs(Number(args.budgetId))) return NEWER_THAN_V1_21_5;
   if (checks.budgetHasReconciledTransfers(Number(args.budgetId))) return NEWER_THAN_V1_21;
   return (
     checks.hasForeignSplitParents(Number(args.budgetId)) ||
@@ -249,11 +258,17 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   // run bookkeeping back from ruleState, and split parents follow amount edits.
   // Amounts a run put back or re-applies move pinned mirrors with their parents.
   'rules.undoRun': (args, checks) => {
-    if (pinnedMirrors(checks, runTransactionIds(args.runId))) return NEWER_THAN_V1_21_5;
+    const rows = runTransactionIds(args.runId);
+    if (pinnedMirrors(checks, rows) || rows.some((row) => mirrorPair(checks, row))) {
+      return NEWER_THAN_V1_21_5;
+    }
     return runChangedLabels(args.runId) ? NEWER_THAN_V1_19 : true;
   },
   'rules.redoRun': (args, checks) => {
-    if (pinnedMirrors(checks, runTransactionIds(args.runId))) return NEWER_THAN_V1_21_5;
+    const rows = runTransactionIds(args.runId);
+    if (pinnedMirrors(checks, rows) || rows.some((row) => mirrorPair(checks, row))) {
+      return NEWER_THAN_V1_21_5;
+    }
     return runChangedLabels(args.runId) && NEWER_THAN_V1_19;
   },
   'rules.create': (args) => mentionsLabelAction(args) && NEWER_THAN_V1_19,
@@ -277,6 +292,13 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   'rules.execute': (args, checks) => {
     const rule = checks ? services()?.rules?.getRule(Number(args.ruleId)) : undefined;
     const options = (args.options ?? {}) as { transactionIds?: number[] };
+    // A split mirror of a two-mirror split among the matched rows: older
+    // builds treat its sibling as its transfer partner.
+    const matched =
+      checks && rule
+        ? (services()?.rules?.matchingTransactionIds?.(rule.id, options.transactionIds) ?? [])
+        : [];
+    if (matched.some((row) => mirrorPair(checks, row))) return NEWER_THAN_V1_21_5;
     // Only the rows this run changes: a split parent with a pinned mirror
     // whose amount or account the rule sets.
     if (
@@ -285,10 +307,7 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
       (rule.actions ?? []).some(
         (action) => action.type.startsWith('amount.') || action.type === 'account.set'
       ) &&
-      pinnedMirrors(
-        checks,
-        services()?.rules?.matchingTransactionIds?.(rule.id, options.transactionIds) ?? []
-      )
+      pinnedMirrors(checks, matched)
     ) {
       return NEWER_THAN_V1_21_5;
     }
@@ -318,6 +337,10 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
     if (SPLIT_FOLLOW_COLUMNS.has(column) && pinnedMirrors(checks, [rowId])) {
       return NEWER_THAN_V1_21_5;
     }
+    // A rate edit of a pinned mirror now keeps its entered native amount.
+    if (column === 'exchangerate' && checks && rowId && checks.isPinnedSplitMirror(rowId)) {
+      return NEWER_THAN_V1_21_5;
+    }
     // An amount, date or account edit of one of two split mirrors: older
     // builds also touch the other one (as if it were the transfer partner).
     if (SPLIT_FOLLOW_COLUMNS.has(column) && mirrorPair(checks, rowId)) return NEWER_THAN_V1_21_5;
@@ -336,6 +359,14 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
     }
     return amountEditDiffers(checks, id(args.id)) && NEWER_THAN_V1_21;
   },
+  // Format 6 already; a split's two mirrors are refused now (v1.21.5 rates them).
+  'transactions.updateTransferAmounts': (args, checks) =>
+    Boolean(
+      checks && typeof args.transferId === 'string' && checks.isSplitMirrorPairKey(args.transferId)
+    ) && NEWER_THAN_V1_21_5,
+  // Exact restores now drop a category a transfer line can't keep any more.
+  'transactions.restore': (args) =>
+    restoresCategorizedTransferLines(args.snapshot) && NEWER_THAN_V1_21_5,
   // Push API amount edits unlock a reconciled row whose amount changes.
   'transactions.updateByRef': (args, checks) => {
     const fields = (args.fields ?? {}) as Args;
@@ -426,8 +457,10 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
 
   // Transfer rate edits now also re-sync split lines in both accounts, and
   // unlock a reconciled leg whose amount changes.
+  // A split's two mirrors are no transfer pair any more (refused here).
   'transactions.updateTransferRate': (args, checks) => {
     if (!checks || typeof args.transferId !== 'string') return false;
+    if (checks.isSplitMirrorPairKey(args.transferId)) return NEWER_THAN_V1_21_5;
     if (checks.transferHasReconciledLeg(args.transferId)) return NEWER_THAN_V1_21;
     const legs = services()?.transactions?.getTransactionsByTransferID(args.transferId) ?? [];
     return checks.hasSplitLinesOutOfStep(legs.map((leg) => leg.AccountID));
@@ -439,6 +472,8 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   // Custom rates now also skip transfers with a reconciled leg.
   'currency.customRates.add': (args, checks) => {
     if (!checks || !id(args.budgetId)) return false;
+    // A split's two mirrors are no longer re-rated as a transfer pair.
+    if (checks.budgetHasSplitMirrorPairs(Number(args.budgetId))) return NEWER_THAN_V1_21_5;
     if (checks.budgetHasReconciledTransfers(Number(args.budgetId))) return NEWER_THAN_V1_21;
     return (
       checks.hasForeignSplitParents(Number(args.budgetId), [

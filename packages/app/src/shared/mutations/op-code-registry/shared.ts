@@ -62,6 +62,18 @@ export function readReceivedAmount(line: Record<string, unknown>): number | null
 }
 
 /**
+ * The message for a missing rate when quoting a received amount
+ * (SplitMirrorRateError), or null for any other error.
+ */
+export function splitMirrorRateMessage(error: unknown): string | null {
+  const rate = error as { code?: unknown; fromCurrency?: string; toCurrency?: string } | null;
+  if (rate?.code !== SPLIT_MIRROR_RATE_MISSING) return null;
+  const from = rate.fromCurrency ?? '';
+  const to = rate.toCurrency ?? '';
+  return t`Add a ${from} to ${to} exchange rate to save this received amount.`;
+}
+
+/**
  * Op `prepare` step for split lines with an entered received amount: the
  * originating device turns each into the exact mirror amounts (the budget
  * value converted here, once) and carries them on the line as `mirror`, so
@@ -96,13 +108,9 @@ export async function carryReceivedAmounts<T extends Record<string, unknown>>(
     try {
       quotes = await quote(received);
     } catch (error) {
-      const rate = error as { code?: unknown; fromCurrency?: string; toCurrency?: string };
-      if (rate?.code !== SPLIT_MIRROR_RATE_MISSING) throw error;
-      if (!options.lenient) {
-        const from = rate.fromCurrency ?? '';
-        const to = rate.toCurrency ?? '';
-        throw new Error(t`Add a ${from} to ${to} exchange rate to save this received amount.`);
-      }
+      const message = splitMirrorRateMessage(error);
+      if (message === null) throw error;
+      if (!options.lenient) throw new Error(message);
       quotes = [];
     }
   }
