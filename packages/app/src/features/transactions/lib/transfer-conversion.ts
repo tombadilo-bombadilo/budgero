@@ -23,6 +23,8 @@ export interface ConvertibleTransaction {
   BudgetID: number;
   AccountID: number;
   Date: string;
+  /** Optional time of day ('HH:MM'). */
+  Time?: string | null;
   Memo: string;
   CategoryID: number;
   LabelID?: number | null;
@@ -69,6 +71,8 @@ export interface TransferLegArgs {
   categoryId: number;
   labelId: number | null;
   date: string;
+  /** Optional time of day ('HH:MM'). */
+  time?: string;
   memo: string;
   payee: string;
   exchangeRateOverride: number | null;
@@ -79,6 +83,8 @@ export interface TransferLegArgs {
 export interface AddTransferArgs {
   budgetId: number;
   transferId: string;
+  /** Time of day both legs share ('HH:MM'). */
+  time?: string;
   source: TransferLegArgs;
   destination: TransferLegArgs;
 }
@@ -320,9 +326,12 @@ export function buildConvertToTransferArgs(params: {
     };
   };
 
+  // Both legs share one time: the converted row's, else the paired row's.
+  const time = transaction.Time || pair?.Time || '';
   return {
     budgetId: transaction.BudgetID,
     transferId,
+    ...(time ? { time } : {}),
     source: leg('source', flow.isOutflow, sourceAmount, sourcePayee, sourceCategory),
     destination: leg(
       'destination',
@@ -391,6 +400,7 @@ export function buildRevertToTransactionArgs(params: {
     categoryId: keepsCategory ? survivor.CategoryID : 0,
     labelId: survivor.LabelID ?? null,
     date: survivor.Date,
+    ...(survivor.Time ? { time: survivor.Time } : {}),
     memo: stripTransferMemo(
       survivor.Memo,
       source.Name,
