@@ -14,7 +14,7 @@ vi.mock('@entities/transaction/api/useTransactions', () => ({
   useTransactionSplits: () => ({ data: state.splits, isLoading: false }),
   useUpsertSplits: () => ({ mutateAsync: state.upsert, isPending: false }),
   useClearSplits: () => ({ mutateAsync: vi.fn(), isPending: false }),
-  useUpdateTransactionColumn: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useUpdateTransactionColumn: () => ({ mutateAsync: core.updateColumn, isPending: false }),
 }));
 vi.mock('@entities/account/api/useAccounts', () => ({
   useAccounts: () => ({
@@ -28,7 +28,11 @@ vi.mock('@entities/account/api/useAccounts', () => ({
 vi.mock('@entities/currency/lib/currency-utils', () => ({
   getExchangeRate: vi.fn(async () => 0.9),
 }));
-const core = vi.hoisted(() => ({ unlocked: [] as number[] }));
+const core = vi.hoisted(() => ({
+  unlocked: [] as number[],
+  noRate: false,
+  updateColumn: vi.fn(),
+}));
 vi.mock('@shared/runtime/global', () => ({
   getRuntime: () => ({
     services: () => ({
@@ -37,7 +41,16 @@ vi.mock('@shared/runtime/global', () => ({
         splitSaveUnlocksMirrors: async () => core.unlocked,
       },
       splits: {
-        quoteMirrorAmounts: async (_p: unknown, lines: unknown[]) => lines.map(() => null),
+        quoteMirrorAmounts: async (_p: unknown, lines: unknown[]) => {
+          if (core.noRate) {
+            throw Object.assign(new Error('no rate'), {
+              code: 'SPLIT_MIRROR_RATE_MISSING',
+              fromCurrency: 'EUR',
+              toCurrency: 'USD',
+            });
+          }
+          return lines.map(() => null);
+        },
       },
     }),
   }),
@@ -183,5 +196,32 @@ describe('mobile split editor transfer lines', () => {
     act(() => result.current.updateSplitLine(0, { received_amount: null, received_auto: false }));
     expect(result.current.splitSaveHint).toBe('Enter the amount received in Euro');
     expect(result.current.splitSaveDisabled).toBe(true);
+  });
+
+  it('a missing rate stops the save before the new total is written', async () => {
+    state.splits = [
+      {
+        ID: 1,
+        CategoryID: null,
+        TransferAccountID: 5,
+        Memo: '',
+        Payee: '',
+        InflowConverted: 0,
+        OutflowConverted: 10_000,
+        Mirror: mirror,
+        MirrorPinned: true,
+      },
+    ];
+    core.noRate = true;
+    core.updateColumn.mockReset();
+    const { result } = setup();
+    act(() => result.current.initEditSplitsFromExisting());
+    act(() => result.current.setSplitTarget(12_000));
+    act(() => result.current.updateSplitLine(0, { outflow: 12_000 }));
+    await act(() => result.current.saveSplits());
+    expect(core.updateColumn).not.toHaveBeenCalled();
+    expect(state.upsert).not.toHaveBeenCalled();
+    expect(result.current.editSplits).not.toBeNull();
+    core.noRate = false;
   });
 });

@@ -9,7 +9,11 @@ import {
   prepareSplitMutationLines,
   type UpsertSplitLineInput,
 } from '@entities/transaction/api/splits';
-import { normalizeSplitLines, readReceivedAmount } from '@shared/mutations/op-code-registry/shared';
+import {
+  normalizeSplitLines,
+  readReceivedAmount,
+  splitMirrorRateMessage,
+} from '@shared/mutations/op-code-registry/shared';
 
 /**
  * Ask before an edit that changes the bank amount of a reconciled
@@ -126,7 +130,8 @@ interface SplitSaveServices extends ReconciledEditServices {
  * signed bank amount changes) or delete (their line is removed or
  * retargeted), as the core computes them for the save's lines (each editor
  * line as it is sent, `received_amount` included). None when it can't tell:
- * the save then reports its own problem.
+ * the save then reports its own problem. Throws when an entered amount has
+ * no rate for its budget value (the save would be refused).
  */
 async function mirrorsUnlockedBySplitSave(
   services: SplitSaveServices | null | undefined,
@@ -157,7 +162,11 @@ async function mirrorsUnlockedBySplitSave(
         quotes[index] ? { ...line, Mirror: quotes[index] } : line
       ),
     });
-  } catch {
+  } catch (error) {
+    // No rate for an entered amount: the save would fail, so say so now,
+    // before an editor writes anything (the mobile one saves a new total first).
+    const message = splitMirrorRateMessage(error);
+    if (message !== null) throw new Error(message);
     return [];
   }
 }

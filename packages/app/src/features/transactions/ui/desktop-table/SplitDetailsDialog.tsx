@@ -302,18 +302,23 @@ export function SplitDetailsDialog({
       order_index: idx,
       received_amount: receivedOf(line),
     }));
-    // A reconciled parent or transfer mirror asks first; cancelling keeps the editor open.
-    if (
-      !(await confirmSplitSave(
+    // A reconciled parent or transfer mirror asks first; cancelling keeps the
+    // editor open. A missing rate for an entered amount stops here, before
+    // anything is written.
+    let confirmed: boolean;
+    try {
+      confirmed = await confirmSplitSave(
         getRuntime()?.services(),
         transaction.ID,
         total,
         amountCurrency,
         prepared
-      ))
-    ) {
+      );
+    } catch (error) {
+      toastError(t`Failed to save split transaction`, error);
       return;
     }
+    if (!confirmed) return;
     try {
       await saveSplits.mutateAsync({
         transactionId: transaction.ID,

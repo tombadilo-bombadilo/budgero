@@ -117,4 +117,26 @@ describe('reconciled edit confirm', () => {
     splitSaveUnlocksMirrors.mockResolvedValueOnce([]);
     await expect(confirmSplitSave(services, 7, undefined, 'converted', lines)).resolves.toBe(true);
   });
+
+  it('a missing rate for an entered amount fails the check before anything is written', async () => {
+    const services = {
+      transactions: {
+        getTransactionByID: () => ({ AccountID: 1, BudgetID: 1, Date: '2026-03-10' }),
+        splitSaveUnlocksMirrors: vi.fn(async () => []),
+      },
+      splits: {
+        quoteMirrorAmounts: vi.fn(async () => {
+          throw Object.assign(new Error('no rate'), {
+            code: 'SPLIT_MIRROR_RATE_MISSING',
+            fromCurrency: 'GBP',
+            toCurrency: 'USD',
+          });
+        }),
+      },
+    } as never;
+    const lines = [{ transfer_account_id: 5, inflow: 0, outflow: 1000, received_amount: 900 }];
+    await expect(confirmSplitSave(services, 7, undefined, 'converted', lines)).rejects.toThrow(
+      'Add a GBP to USD exchange rate to save this received amount.'
+    );
+  });
 });

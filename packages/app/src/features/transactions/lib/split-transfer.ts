@@ -106,3 +106,12 @@ export function missingReceivedMessage(
     ? t`Enter the amount sent from ${target.Name}`
     : t`Enter the amount received in ${target.Name}`;
 }
+
+/**
+ * Whether a row's TransferID makes it a transfer with its own direct rate. A
+ * split's mirror rows share their parent's key (`split_transfer_...`): the
+ * parent's lines drive them, so they have no transfer rate to edit.
+ */
+export function hasTransferRate(transferId: string | null | undefined): transferId is string {
+  return Boolean(transferId?.trim()) && !transferId!.startsWith('split_transfer_');
+}

@@ -293,6 +293,11 @@ export function InlineTransactionRow({
     // pressed inside the row itself, not inside an open picker.
     const target = e.target as HTMLElement;
     if (!target.closest?.('[data-inline-entry]')) return;
+    // Any other key cancels a deferred Ctrl/⌘+Enter save (its commit failed,
+    // e.g. an invalid expression), so it can't fire on a later blur.
+    if (saveAfterCommit && !(e.key === 'Enter' && (e.ctrlKey || e.metaKey))) {
+      setSaveAfterCommit(false);
+    }
     if (e.key === 'Escape') {
       e.preventDefault();
       onClose();

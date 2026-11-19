@@ -277,18 +277,23 @@ export function useMobileTransactionCardState({
             outflow: splitTargetNet >= 0 ? 0 : Math.abs(splitTargetNet),
           }
         : undefined;
-    // A reconciled parent or transfer mirror asks first; cancelling keeps the editor open.
-    if (
-      !(await confirmSplitSave(
+    // A reconciled parent or transfer mirror asks first; cancelling keeps the
+    // editor open. A missing rate for an entered amount stops here, before
+    // anything is written.
+    let confirmed: boolean;
+    try {
+      confirmed = await confirmSplitSave(
         getRuntime()?.services(),
         transaction.ID,
         total,
         amountCurrency,
         prepared
-      ))
-    ) {
+      );
+    } catch (error) {
+      toastError(t`Failed to save split transaction`, error);
       return;
     }
+    if (!confirmed) return;
 
     if (total) {
       const accountId =

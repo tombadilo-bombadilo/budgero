@@ -34,9 +34,10 @@ import { withEditPrecision } from '@shared/lib/number-format';
 import { TransferRateDialog } from '@features/transactions/ui/transfer-rate/TransferRateDialog';
 import { validateTransactionExchangeRate } from '@features/transactions/lib/exchange-rate-validation';
 import { transferHasOffBudgetLeg } from '@features/transactions/lib/transfer-category';
-import type {
-  SplitLineCategoryMode,
-  SplitTransferAccount,
+import {
+  hasTransferRate,
+  type SplitLineCategoryMode,
+  type SplitTransferAccount,
 } from '@features/transactions/lib/split-transfer';
 import type { SplitLine } from './useMobileTransactionCardState';
 import { extractSplitFlows, type SplitLike } from '../desktop-table/table-utils';
@@ -638,7 +639,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
           </div>
         </div>
 
-        {transaction.TransferID && (
+        {hasTransferRate(transaction.TransferID) && (
           <div>
             <TransferRateDialog transferId={transaction.TransferID} />
           </div>

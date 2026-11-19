@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  hasTransferRate,
   mirrorMagnitude,
   needsReceivedAmount,
   splitLineCategoryMode,
@@ -67,5 +68,12 @@ describe('split transfer lines', () => {
     expect(needsReceivedAmount(undefined, { Currency: 'EUR' })).toBe(false);
     expect(mirrorMagnitude({ InflowNative: 0, OutflowNative: 4_200 })).toBe(4_200);
     expect(mirrorMagnitude({ InflowNative: 0, OutflowNative: 0 })).toBeNull();
+  });
+
+  it('a split mirror row has no transfer rate of its own', () => {
+    expect(hasTransferRate('tr-1')).toBe(true);
+    expect(hasTransferRate('split_transfer_7_2026-03-10')).toBe(false);
+    expect(hasTransferRate('')).toBe(false);
+    expect(hasTransferRate(null)).toBe(false);
   });
 });
