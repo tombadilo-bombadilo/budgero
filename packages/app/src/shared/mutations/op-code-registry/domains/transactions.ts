@@ -779,7 +779,10 @@ export const transactionOps = {
       if (existing.length) throw new Error('This transferId is already in use.');
 
       // Both legs share one time of day: the call's, else the source leg's.
-      const time = args.time ?? source.time ?? destination.time ?? null;
+      const time =
+        [args.time, source.time, destination.time].find(
+          (value) => typeof value === 'string' && value.trim() !== ''
+        ) ?? null;
       const legArgs = (leg: Record<string, unknown>) => ({ ...leg, budgetId, transferId, time });
 
       const batch = writeBatch();

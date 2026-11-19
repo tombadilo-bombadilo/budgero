@@ -414,8 +414,10 @@ const rowHasTime = (rowId: number | null): boolean => {
   }
 };
 
+/** Restore snapshots: raw rows (Time) or legacy add-op snapshots (time). */
 const snapshotRowsHaveTime = (rows: unknown): boolean =>
-  Array.isArray(rows) && rows.some((row) => hasTime((row as Args | null)?.Time));
+  Array.isArray(rows) &&
+  rows.some((row) => hasTime((row as Args | null)?.Time) || hasTime((row as Args | null)?.time));
 
 /**
  * Calls that carry a transaction time of day. Builds before format 7 have no

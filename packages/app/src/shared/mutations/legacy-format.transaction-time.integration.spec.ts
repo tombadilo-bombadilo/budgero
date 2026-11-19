@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // eslint-disable-next-line no-restricted-imports
 import { asMilli, NodeSqlJsAdapter, ServiceManager, type Services } from '@budgero/core';
 import { BASE_MUTATION_FORMAT_VERSION, mutationFormatVersion } from '@budgero/runtime';
-import { executeMutationOp, prepareMutationArgs } from './op-code-registry';
+import { executeMutationOp, getUndoSpec, prepareMutationArgs } from './op-code-registry';
 
 const runtime = vi.hoisted(() => ({ services: undefined as Services | undefined }));
 vi.mock('@shared/runtime/global', () => ({
@@ -113,6 +113,78 @@ describe('format of time-bearing calls', () => {
     const untimed = services.transactions.captureRestoreSnapshot([plain]);
     // transactions.restore is a format-3 op code; without a time it stays there.
     expect(await sentFormat('transactions.restore', { snapshot: untimed })).toBe(3);
+  });
+});
+
+describe('more time-bearing calls', () => {
+  it('addTransfer: an empty time stays at the base format', async () => {
+    const transfer = (time: unknown) => ({
+      budgetId,
+      transferId: 't2',
+      time,
+      source: { ...addArgs(), time },
+      destination: addArgs({ accountId: savings, inflow: 3500, outflow: 0 }),
+    });
+    expect(await sentFormat('transactions.addTransfer', transfer(''))).toBe(
+      BASE_MUTATION_FORMAT_VERSION
+    );
+    expect(await sentFormat('transactions.addTransfer', transfer('07:00'))).toBe(7);
+  });
+
+  it('updateByRef with a time field, restoreBatch with Time or time, timed split saves', async () => {
+    expect(
+      await sentFormat('transactions.updateByRef', { messageId: 'm', fields: { memo: 'x' } })
+    ).toBe(BASE_MUTATION_FORMAT_VERSION);
+    expect(
+      await sentFormat('transactions.updateByRef', { messageId: 'm', fields: { time: null } })
+    ).toBe(7);
+    expect(await sentFormat('transactions.restoreBatch', { snapshots: [{ Time: '08:00' }] })).toBe(
+      7
+    );
+    expect(await sentFormat('transactions.restoreBatch', { snapshots: [{ time: '08:00' }] })).toBe(
+      7
+    );
+    expect(await sentFormat('transactions.restoreBatch', { snapshots: [{ Memo: 'x' }] })).toBe(
+      BASE_MUTATION_FORMAT_VERSION
+    );
+
+    const timed = (await executeMutationOp(
+      'transactions.add',
+      addArgs({ time: '08:30' })
+    )) as number;
+    const plain = (await executeMutationOp('transactions.add', addArgs())) as number;
+    const splits = (transactionId: number) => ({
+      transactionId,
+      splits: [
+        { CategoryID: groceries, OutflowConverted: 2000, Memo: 'a' },
+        { TransferAccountID: savings, OutflowConverted: 1500, Memo: 'b' },
+      ],
+    });
+    // A timed parent's new transfer mirror takes its time.
+    expect(await sentFormat('transactions.saveSplits', splits(timed))).toBe(7);
+    expect(await sentFormat('transactions.saveSplits', splits(plain))).toBeLessThan(7);
+  });
+
+  it('undo of a time edit puts the old time back', async () => {
+    const id = (await executeMutationOp('transactions.add', addArgs({ time: '08:30' }))) as number;
+    const args = { id, columnName: 'Time', newValue: '21:15' };
+    const undo = getUndoSpec('transactions.updateColumn');
+    const before = await undo?.capture?.(args);
+    await executeMutationOp('transactions.updateColumn', args);
+    expect(time(id)).toBe('21:15');
+    const inverse = undo?.build(args, undefined, before) ?? [];
+    for (const call of inverse) await executeMutationOp(call.op, call.args);
+    expect(time(id)).toBe('08:30');
+
+    // From no time: undo clears it again.
+    const plain = (await executeMutationOp('transactions.add', addArgs())) as number;
+    const set = { id: plain, columnName: 'Time', newValue: '10:00' };
+    const captured = await undo?.capture?.(set);
+    await executeMutationOp('transactions.updateColumn', set);
+    for (const call of undo?.build(set, undefined, captured) ?? []) {
+      await executeMutationOp(call.op, call.args);
+    }
+    expect(time(plain)).toBeNull();
   });
 });
 
