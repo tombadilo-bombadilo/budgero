@@ -46,6 +46,7 @@ export interface CategoryDeletionImpact {
   assignedMonths: number;
   /** Sum of every assignment, all months. */
   assignedTotal: number;
+  /** Categories with a goal (each counted once, whatever its timeframes). */
   goals: number;
   /** Scheduled (recurring) transactions using the categories. */
   scheduled: number;

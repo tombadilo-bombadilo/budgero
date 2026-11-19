@@ -26,7 +26,7 @@ import {
 import { useSpendingTotalsByPeriod } from '@features/analytics/api/useAnalyticsQueries';
 import { useTransactionsByCategoryAndMonth } from '@entities/transaction/api/useTransactions';
 import {
-  useGoals,
+  useGoalsForMonth,
   useGoalsByCategories,
   useCycleFinancialsForGoals,
 } from '@entities/goal/api/useGoals';
@@ -205,7 +205,8 @@ export function BudgetContextPanel({
   );
 
   const categoryGoalsQuery = useGoalsByCategories(
-    selectedCategory ? [selectedCategory.categoryId] : []
+    selectedCategory ? [selectedCategory.categoryId] : [],
+    currentMonth
   );
 
   const categoryGoals = categoryGoalsQuery.data;
@@ -213,9 +214,9 @@ export function BudgetContextPanel({
     (g) => g.CategoryID === selectedCategory?.categoryId && g.Type === 'monthly'
   )?.Target;
 
-  // All goals of the budget, for the underfunded total in the Summary card.
-  const goalsQuery = useGoals(budgetId);
-  const allGoals = useMemo(() => goalsQuery.data ?? [], [goalsQuery.data]);
+  // Every category's goal for this month, for the underfunded total in the Summary card.
+  const goalsQuery = useGoalsForMonth(budgetId, currentMonth);
+  const allGoals = goalsQuery.data;
   const settings = useGoalFundingSettings(budgetId);
 
   // Yearly/target-date goals need assignment history for cycle-aware progress

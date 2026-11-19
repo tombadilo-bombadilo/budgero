@@ -34,7 +34,10 @@ export function useSpendingDrawerState(
 
   const { data: accounts } = useAccounts(selectedBudget?.ID || 0);
   const { data: categories } = useCategories(selectedBudget?.ID || 0);
-  const { data: goalsData } = useGoalsByCategories(selectedCategory ? [selectedCategory.id] : []);
+  const { data: goalsData } = useGoalsByCategories(
+    selectedCategory ? [selectedCategory.id] : [],
+    currentMonth
+  );
   const { data: transactions = [], isLoading: loading } = useTransactionsByCategoryAndMonth(
     selectedBudget?.ID || 0,
     selectedCategory?.name || '',

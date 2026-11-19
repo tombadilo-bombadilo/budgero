@@ -261,6 +261,8 @@ export function formatOpCode(op: string): string {
     'goals.create': 'Create Goal',
     'goals.update': 'Update Goal',
     'goals.delete': 'Delete Goal',
+    'goals.setFrom': 'Update Goal',
+    'goals.endFrom': 'End Goal',
     'rules.create': 'Create Rule',
     'rules.update': 'Update Rule',
     'rules.delete': 'Delete Rule',

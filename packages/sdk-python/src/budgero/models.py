@@ -469,6 +469,9 @@ class Goal:
         start_date: Start date for the goal.
         target_date: Target completion date (for target-date and yearly goals).
         budget_id: ID of the budget.
+        effective_from: First month (YYYY-MM) of this goal's timeframe. A
+            category can have several goals, one per range of months.
+        effective_to: Last month (YYYY-MM) of an ended goal, or None.
 
     Example:
         >>> goal = Goal(
@@ -490,6 +493,8 @@ class Goal:
     start_date: str
     target_date: Optional[str] = None
     budget_id: Optional[int] = None
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
 
     @classmethod
     def from_api_dict(cls, data: dict[str, Any]) -> "Goal":
@@ -503,6 +508,8 @@ class Goal:
             start_date=data["StartDate"],
             target_date=data.get("TargetDate"),
             budget_id=data.get("BudgetID"),
+            effective_from=data.get("EffectiveFrom"),
+            effective_to=data.get("EffectiveTo"),
         )
 
 

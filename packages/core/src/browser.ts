@@ -208,6 +208,30 @@ export {
   GOAL_CYCLE_MONTHS_ERROR,
   GoalCalculations,
 } from './services/goals/index.js';
+export {
+  FALLBACK_EFFECTIVE_FROM,
+  isGoalMonth,
+  effectiveFromForStartDate,
+  goalEffectiveFrom,
+  goalEffectiveTo,
+  previousGoalMonth,
+  nextGoalMonth,
+  sortGoalTimeframes,
+  resolveGoalForMonth,
+  resolveGoalsForMonth,
+  goalsByCategoryForMonth,
+  goalTimeframeSpans,
+  goalTimeframeSpan,
+  validateGoalTimeframeChange,
+  planGoalTimeframeChange,
+  applyGoalTimeframePlan,
+  describeGoalTimeframeChange,
+  type GoalTimeframeSpan,
+  type GoalTimeframeChange,
+  type GoalTimeframePlan,
+  type GoalTimeframeNotice,
+} from './services/goals/timeframes.js';
+export type { GoalFields } from './services/goals/index.js';
 export type {
   GoalProgress,
   GoalStatus,

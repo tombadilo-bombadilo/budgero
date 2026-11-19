@@ -22,7 +22,7 @@ interface RecurringLike {
 
 /** The few service reads the mapping needs (structural, for tests). */
 export interface MutationAnalyticsServices {
-  goals?: { getGoalByCategoryID(categoryId: number): GoalLike | null | undefined };
+  goals?: { getGoalByCategoryID(categoryId: number, month?: string): GoalLike | null | undefined };
   rules?: { getRule(id: number): RuleLike | null | undefined };
   recurring?: {
     getRecurringTransaction(
@@ -113,8 +113,16 @@ export function readBeforeState(
   const args = asArgs(spec.payload);
   switch (spec.op) {
     case 'goals.delete':
+    case 'goals.endFrom':
+      // The goal of the op's month when it names one (endFrom), else this month's.
       return {
-        goalType: safe(() => services.goals?.getGoalByCategoryID(num(args.categoryId))?.Type),
+        goalType: safe(
+          () =>
+            services.goals?.getGoalByCategoryID(
+              num(args.categoryId),
+              typeof args.month === 'string' ? args.month : undefined
+            )?.Type
+        ),
       };
     case 'rules.delete':
       return { rule: safe(() => services.rules?.getRule(num(args.id))) };
@@ -226,7 +234,8 @@ export function reportMutationAnalytics(
       track('Assignment Upserted');
       return;
     case 'goals.create':
-    case 'goals.update': {
+    case 'goals.update':
+    case 'goals.setFrom': {
       const type = String(args.goalType ?? '');
       track(spec.op === 'goals.create' ? 'goal_created' : 'goal_edited', { type } as never);
       if (spec.op === 'goals.create')
@@ -234,6 +243,7 @@ export function reportMutationAnalytics(
       return;
     }
     case 'goals.delete':
+    case 'goals.endFrom':
       if (before?.goalType) track('goal_deleted', { type: before.goalType } as never);
       return;
     case 'rules.create':

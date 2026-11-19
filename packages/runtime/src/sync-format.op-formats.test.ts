@@ -44,6 +44,12 @@ describe('per-op mutation formats', () => {
     expect(mutationFormatVersion('transactions.updateTransferAmounts', {})).toBe(6);
   });
 
+  it('stamps the goal timeframe ops with format 7', () => {
+    expect(mutationFormatVersion('goals.setFrom', {})).toBe(7);
+    expect(mutationFormatVersion('goals.endFrom', {})).toBe(7);
+    expect(mutationFormatVersion('goals.update', { categoryId: 1 })).toBe(2);
+  });
+
   it('never stamps a format this build cannot read', () => {
     for (const version of Object.values(OP_CODE_FORMAT_VERSIONS)) {
       expect(version).toBeGreaterThan(BASE_MUTATION_FORMAT_VERSION);

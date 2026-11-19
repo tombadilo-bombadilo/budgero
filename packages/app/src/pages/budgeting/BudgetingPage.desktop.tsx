@@ -7,7 +7,7 @@ import { BudgetToolbar } from '@features/budgeting/ui/BudgetToolbar';
 import { BudgetContextPanel } from '@features/budgeting/ui/BudgetContextPanel';
 import { useUiStore } from '@shared/store/useUiStore';
 import { useMonthlyBudget, useReadyToAssign } from '@entities/budget/api/useMonthlyBudget';
-import { useGoals } from '@entities/goal/api/useGoals';
+import { useGoalsForMonth } from '@entities/goal/api/useGoals';
 import { transformBudgetRows } from '@features/budget-planning/lib/budget-transforms';
 import { useHideCategory } from '@features/category-management/api/useHideCategory';
 import { addMonths, parse } from 'date-fns';
@@ -51,7 +51,8 @@ export function BudgetingPageDesktop() {
     isSuccess: budgetLoaded,
     isPlaceholderData: budgetIsPlaceholder,
   } = useMonthlyBudget(currentMonth, budgetId);
-  const { data: goalsData = [] } = useGoals(budgetId);
+  // This month's goal per category; allGoals holds every timeframe (other months).
+  const { data: goalsData, allGoals } = useGoalsForMonth(budgetId, currentMonth);
   const rta = useReadyToAssign(budgetId, currentMonth);
   const readyToAssign = rta.data ?? 0;
   // This month's real figures, not a loading default or last month's placeholder.
@@ -210,7 +211,7 @@ export function BudgetingPageDesktop() {
         const collapsed = new Set<string>();
         allBudgetData.forEach((md) => {
           if (!md?.data) return;
-          const rows = transformBudgetRows(md.data, goalsData || [], md.month);
+          const rows = transformBudgetRows(md.data, allGoals, md.month);
           rows.filter((row) => row.isGroup).forEach((row) => collapsed.add(row.id));
         });
         setSharedCollapsedGroups(collapsed);
@@ -466,7 +467,7 @@ export function BudgetingPageDesktop() {
                       ) : (
                         <BudgetTable
                           rawRows={monthData.data || []}
-                          goals={goalsData || []}
+                          goals={allGoals}
                           globalLocalizer={globalLocalizer}
                           budgetId={budgetId}
                           monthOverride={monthData.month}

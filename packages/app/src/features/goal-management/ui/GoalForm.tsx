@@ -32,18 +32,33 @@ import {
   MIN_GOAL_CYCLE_MONTHS,
   MAX_GOAL_CYCLE_MONTHS,
   GOAL_CYCLE_MONTHS_ERROR,
+  applyGoalTimeframePlan,
+  describeGoalTimeframeChange,
+  goalTimeframeSpan,
+  planGoalTimeframeChange,
+  validateGoalTimeframeChange,
 } from '@budgero/core/browser';
 import { cn } from '@shared/lib/utils';
 import { describeLocalizedGoalCycle } from '../lib/goal-cycle-label';
+import {
+  defaultGoalTimeframe,
+  goalSaveAction,
+  timeframeChangeOf,
+  type GoalTimeframeChoice,
+} from '../lib/goal-timeframe';
+import { GoalTimeframeFields, GoalTimeframeNotices } from './GoalTimeframeFields';
 
 interface GoalFormProps {
+  /** The goal of the viewed month (currentMonth), when editing. */
   goal?: Goal | null;
+  /** Every timeframe of the category's goal (for the months the save affects). */
+  timeframes?: readonly Goal[];
   categoryId: number;
   categoryName: string;
   budgetId: number;
   currentMonth: string;
   formatter: Intl.NumberFormat;
-  onSave: (goalData: Partial<Goal>) => Promise<void>;
+  onSave: (goalData: Partial<Goal>, timeframe: GoalTimeframeChoice) => Promise<void>;
   onCancel: () => void;
   onDelete?: () => Promise<void>;
   isSaving?: boolean;
@@ -102,8 +117,11 @@ function endOfPeriod(start: Date, months: number): Date {
   return new Date(start.getFullYear(), start.getMonth() + months, 0);
 }
 
+const NO_TIMEFRAMES: readonly Goal[] = [];
+
 export function GoalForm({
   goal,
+  timeframes = NO_TIMEFRAMES,
   categoryId,
   categoryName,
   budgetId,
@@ -238,6 +256,9 @@ export function GoalForm({
       : ''
   );
   const [errors, setErrors] = useState<string[]>([]);
+  const [timeframe, setTimeframe] = useState<GoalTimeframeChoice>(() =>
+    defaultGoalTimeframe(goal, timeframes, currentMonth)
+  );
 
   const activePreset = GOAL_PRESETS.find((p) => p.key === selectedPreset) ?? GOAL_PRESETS[0];
   const isPeriodic = !!activePreset.periodic;
@@ -297,6 +318,27 @@ export function GoalForm({
     categoryId,
   ]);
 
+  // The months the save covers, and what it does to the goal's other months.
+  const saveAction = goalSaveAction(goal, timeframes, timeframe, currentMonth);
+  const timeframeChange = timeframeChangeOf(saveAction, goal, effectiveStartDate);
+  const timeframeError = validateGoalTimeframeChange(timeframeChange);
+  // A handful of rows: recomputed on every render.
+  const timeframeNotices = timeframeError
+    ? []
+    : describeGoalTimeframeChange(timeframes, timeframeChange, {
+        editing: goal,
+        viewedMonth: currentMonth,
+      });
+  const savedRange = (() => {
+    if (timeframeError) return { from: null, to: null };
+    const plan = planGoalTimeframeChange(timeframes, timeframeChange);
+    const marker = { ...(goal ?? {}), ID: plan.overwrite ?? -1 } as Goal;
+    const after = applyGoalTimeframePlan(timeframes, plan, timeframeChange, marker);
+    const own = after.find((entry) => entry.ID === marker.ID);
+    const span = own ? goalTimeframeSpan(after, own) : null;
+    return span ? { from: span.from, to: span.to } : { from: null, to: null };
+  })();
+
   const handlePresetChange = (key: GoalPreset) => {
     setSelectedPreset(key);
     setErrors([]);
@@ -319,6 +361,7 @@ export function GoalForm({
     if (recurring && !cycleMonthsValid && !allErrors.includes(GOAL_CYCLE_MONTHS_ERROR)) {
       allErrors.push(GOAL_CYCLE_MONTHS_ERROR);
     }
+    if (timeframeError) allErrors.push(t`The end month must not be before the start month.`);
     setErrors(allErrors);
     return allErrors.length === 0;
   };
@@ -348,7 +391,7 @@ export function GoalForm({
       goalData.CycleMonths = null;
     }
 
-    await onSave(goalData);
+    await onSave(goalData, timeframe);
   };
 
   const example = activePreset.buildExample(
@@ -651,6 +694,17 @@ export function GoalForm({
               )}
             </div>
           )}
+
+          {/* ── When it applies ── */}
+          <GoalTimeframeFields
+            goal={goal}
+            timeframes={timeframes}
+            viewedMonth={currentMonth}
+            value={timeframe}
+            onChange={setTimeframe}
+            range={savedRange}
+          />
+          <GoalTimeframeNotices notices={timeframeNotices} formatter={formatter} />
 
           {/* ── Validation Errors ── */}
           {errors.length > 0 && (

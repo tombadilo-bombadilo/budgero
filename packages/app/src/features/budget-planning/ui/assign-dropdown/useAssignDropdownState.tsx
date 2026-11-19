@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useBatchUpsertAssignments } from '@entities/budget/api/useMonthlyBudget';
 import { useGoalFundingSettings } from '@entities/budget/api/useGoalFundingSettings';
 import { useGoals, useCycleFinancialsForGoals } from '@entities/goal/api/useGoals';
-import type { GetMonthlyBudgetRow, Goal } from '@budgero/core/browser';
+import { resolveGoalsForMonth, type GetMonthlyBudgetRow, type Goal } from '@budgero/core/browser';
 import { asMilli, formatMilli, type MilliUnits } from '@shared/lib/currency/milli';
 import {
   calculateUnderfundedGoals,
@@ -60,10 +60,14 @@ export function useAssignDropdownState({
   currentMonth,
   budgetId,
   budgetData,
-  goals,
+  goals: goalRows,
   globalLocalizer,
   allowOverAssignment = false,
 }: UseAssignDropdownStateProps): UseAssignDropdownStateReturn {
+  const goals = useMemo(
+    () => resolveGoalsForMonth(goalRows, currentMonth),
+    [goalRows, currentMonth]
+  );
   const { t } = useLingui();
 
   const batchUpsertAssignments = useBatchUpsertAssignments();

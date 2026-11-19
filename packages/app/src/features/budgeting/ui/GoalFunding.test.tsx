@@ -40,6 +40,7 @@ vi.mock('@entities/budget/api/useMonthlyBudget', () => ({
 }));
 vi.mock('@entities/goal/api/useGoals', () => ({
   useGoals: () => ({ data: mock.goals, isSuccess: mock.goalsReady }),
+  useGoalsForMonth: () => ({ data: mock.goals, allGoals: mock.goals, isSuccess: mock.goalsReady }),
   useGoalsByCategories: (ids: number[]) => ({
     data: mock.goals.filter((g) => ids.includes(g.CategoryID)),
     isSuccess: mock.goalsReady,

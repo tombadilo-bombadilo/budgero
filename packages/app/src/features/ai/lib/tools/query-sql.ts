@@ -71,7 +71,7 @@ BALANCES / NET WORTH: account_balances_daily (one row per account per day, first
 BUDGET (what the budget screen shows): budget_months (one row per category per month, Income/Transfers groups left out)
 - budget_id, month (TEXT 'YYYY-MM-01'), category_id, category_name, category_group_id, category_group_name
 - assigned, activity, available (rollover and overspending rules of the budget's Ready to Assign mode included)
-- goal_type (monthly | yearly | target-date | monthly-savings | target-balance, NULL = no goal), goal_target, goal_monthly_target (this month's target), goal_needed (still needed), goal_progress (0-100), goal_funded (bool)
+- goal_type (the goal that applies in that month: monthly | yearly | target-date | monthly-savings | target-balance, NULL = no goal), goal_target, goal_monthly_target (this month's target), goal_needed (still needed), goal_progress (0-100), goal_funded (bool)
 
 SCHEDULED (recurring) TRANSACTIONS: scheduled_transactions (one row per recurring template) and scheduled_occurrences (one row per due date)
 - budget_id, recurring_id, payee, memo, account_id, account_name, to_account_id/to_account_name (transfers), category_id, category_name, category_group_name, direction, currency, amount_native, amount (budget currency, inflow positive / outflow negative), inflow, outflow, interval_unit, interval_count, frequency ('month', '2-week', ...), is_transfer, is_split, paused

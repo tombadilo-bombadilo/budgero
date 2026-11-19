@@ -1,6 +1,7 @@
 import { DatabaseAdapter } from '../../database/interface.js';
-import { getRow, allRows, run } from '../../database/sql.js';
+import { allRows, run } from '../../database/sql.js';
 import { Goal, GoalType, GoalPurpose } from './types.js';
+import { sortGoalTimeframes } from './timeframes.js';
 import type { MonthlyAssignment, MonthlyActivity } from './calculations.js';
 
 /**
@@ -11,7 +12,7 @@ export class GoalQueries {
   constructor(private db: DatabaseAdapter) {}
 
   /**
-   * CreateGoal - Creates a new goal
+   * CreateGoal - Creates a goal row (one timeframe of the category's chain)
    */
   createGoal(
     type: GoalType,
@@ -21,13 +22,16 @@ export class GoalQueries {
     targetDate: string,
     purpose: GoalPurpose = GoalPurpose.SPENDING,
     recurring = false,
-    cycleMonths: number | null = null
+    cycleMonths: number | null = null,
+    effectiveFrom: string | null = null,
+    effectiveTo: string | null = null
   ): number {
     const result = run(
       this.db,
       `
-      INSERT INTO goals (Type, Purpose, CategoryID, Target, StartDate, TargetDate, Recurring, CycleMonths)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO goals (Type, Purpose, CategoryID, Target, StartDate, TargetDate, Recurring, CycleMonths,
+                         EffectiveFrom, EffectiveTo)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
       type,
       purpose,
@@ -37,94 +41,90 @@ export class GoalQueries {
       targetDate,
       recurring ? 1 : 0,
       // Never bind undefined — sql.js throws on unknown bind types.
-      cycleMonths ?? null
+      cycleMonths ?? null,
+      effectiveFrom ?? null,
+      effectiveTo ?? null
     );
     return Number(result.lastInsertRowid);
   }
 
-  /**
-   * GetGoalsForCategory - Gets goal for a specific category
-   * SQL: SELECT * FROM goals WHERE category_id = ?
-   */
-  getGoalsForCategory(categoryId: number): Goal | undefined {
-    return getRow<Goal>(this.db, 'SELECT * FROM goals WHERE CategoryID = ?', categoryId);
+  /** Every timeframe of a category's goal, in chain order. */
+  getTimeframes(categoryId: number): Goal[] {
+    return sortGoalTimeframes(
+      allRows<Goal>(this.db, 'SELECT * FROM goals WHERE CategoryID = ?', categoryId)
+    );
   }
 
-  /**
-   * GetGoalsByCategoryIDs - Gets goals for multiple categories
-   * SQL: SELECT * FROM goals WHERE category_id IN (...)
-   */
-  getGoalsByCategoryIDs(categoryIds: number[]): Goal[] {
-    if (categoryIds.length === 0) {
-      return [];
-    }
-
-    const validCategoryIds = categoryIds.filter(
-      (id) => typeof id === 'number' && !isNaN(id) && id > 0
-    );
-    if (validCategoryIds.length === 0) {
-      return [];
-    }
-
-    // Use individual queries approach (safe fallback for sql.js IN clause issues)
+  /** Every timeframe of these categories' goals. */
+  getTimeframesForCategories(categoryIds: number[]): Goal[] {
+    const valid = categoryIds.filter((id) => typeof id === 'number' && !isNaN(id) && id > 0);
     const results: Goal[] = [];
-    for (const categoryId of validCategoryIds) {
-      const goal = this.getGoalsForCategory(categoryId);
-      if (goal) {
-        results.push(goal);
-      }
-    }
+    // Individual queries (safe fallback for sql.js IN clause issues)
+    for (const categoryId of valid) results.push(...this.getTimeframes(categoryId));
     return results;
   }
 
   /**
-   * DeleteGoal - Deletes a goal by ID
+   * DeleteGoal - Deletes a goal row by ID
    * SQL: DELETE FROM goals WHERE id = ?
    */
   deleteGoal(id: number): void {
     run(this.db, 'DELETE FROM goals WHERE ID = ?', id);
   }
 
-  /**
-   * UpdateGoal - Updates a goal
-   *
-   * Note: Parameter order matches the SQL query exactly
-   */
-  updateGoal(
-    type: GoalType,
-    target: number,
-    targetDate: string,
-    categoryId: number,
-    purpose: GoalPurpose = GoalPurpose.SPENDING,
-    recurring = false,
-    cycleMonths: number | null = null,
-    startDate: string | null = null
+  /** Deletes every timeframe of a category's goal. */
+  deleteGoalsForCategory(categoryId: number): void {
+    run(this.db, 'DELETE FROM goals WHERE CategoryID = ?', categoryId);
+  }
+
+  /** Replaces a goal row's fields (and its timeframe bounds). */
+  updateGoalRow(
+    id: number,
+    fields: {
+      type: GoalType;
+      purpose: GoalPurpose;
+      target: number;
+      targetDate: string;
+      recurring: boolean;
+      cycleMonths: number | null;
+      startDate: string;
+      effectiveFrom: string | null;
+      effectiveTo: string | null;
+    }
   ): void {
     run(
       this.db,
       `
       UPDATE goals
       SET Type = ?, Purpose = ?, Target = ?, TargetDate = ?, Recurring = ?, CycleMonths = ?,
-          StartDate = COALESCE(?, StartDate)
-      WHERE CategoryID = ?
+          StartDate = ?, EffectiveFrom = ?, EffectiveTo = ?
+      WHERE ID = ?
     `,
-      type,
-      purpose,
-      target,
-      targetDate,
-      recurring ? 1 : 0,
-      cycleMonths ?? null,
-      startDate ?? null,
-      categoryId
+      fields.type,
+      fields.purpose,
+      fields.target,
+      fields.targetDate,
+      fields.recurring ? 1 : 0,
+      fields.cycleMonths ?? null,
+      fields.startDate,
+      fields.effectiveFrom ?? null,
+      fields.effectiveTo ?? null,
+      id
     );
   }
 
+  /** Moves a goal row's timeframe bounds; undefined keeps a bound. */
+  setTimeframeBounds(id: number, from: string | undefined, to: string | null | undefined): void {
+    if (from !== undefined)
+      run(this.db, 'UPDATE goals SET EffectiveFrom = ? WHERE ID = ?', from, id);
+    if (to !== undefined) run(this.db, 'UPDATE goals SET EffectiveTo = ? WHERE ID = ?', to, id);
+  }
+
   /**
-   * GetAllGoals - Gets all goals
-   * This is not in the Go service but exists in current TS implementation
+   * GetAllGoals - Every goal row: all timeframes of every category.
    */
   getAllGoals(): Goal[] {
-    return allRows<Goal>(this.db, 'SELECT * FROM goals ORDER BY StartDate');
+    return allRows<Goal>(this.db, 'SELECT * FROM goals ORDER BY StartDate, ID');
   }
 
   /**

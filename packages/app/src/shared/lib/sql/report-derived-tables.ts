@@ -13,7 +13,13 @@
  * Pure builders (services in, rows out) so tests run them against a real
  * core database; the DuckDB engine loads them when a query names the table.
  */
-import { GoalCalculations, GoalType, type Goal, type Services } from '@budgero/core/browser';
+import {
+  GoalCalculations,
+  GoalType,
+  goalsByCategoryForMonth,
+  type Goal,
+  type Services,
+} from '@budgero/core/browser';
 
 export type DerivedColumnType = 'VARCHAR' | 'BIGINT' | 'DOUBLE' | 'BOOLEAN' | 'DECIMAL(18, 3)';
 
@@ -167,9 +173,8 @@ export function buildBudgetMonthRows(
   budgetId: number
 ): Record<string, unknown>[] {
   const { services, db, today } = context;
-  const goals = new Map<number, Goal>(
-    services.goals.getAllGoals().map((goal) => [goal.CategoryID, goal])
-  );
+  // Every timeframe; each month row gets the goal of that month.
+  const allGoals = services.goals.getAllGoals();
   const histories = new Map<number, ReturnType<typeof cycleHistory>>();
   const history = (categoryId: number) => {
     let entry = histories.get(categoryId);
@@ -181,6 +186,7 @@ export function buildBudgetMonthRows(
   };
   const rows: Record<string, unknown>[] = [];
   for (const month of budgetMonths(db, budgetId, today)) {
+    const goals = goalsByCategoryForMonth(allGoals, month);
     for (const row of services.monthlyBudgets.getMonthlyBudget(month, budgetId)) {
       if (EXCLUDED_GROUPS.has(row.CategoryGroup)) continue;
       const goal = goals.get(row.CategoryID);

@@ -528,6 +528,12 @@ msgstr "{0, plural, one {valeur} other {valeurs}}"
 msgid "{0, plural, one {Verified # account balance against YNAB.} other {Verified # account balances against YNAB.}}"
 msgstr "{0, plural, one {# solde de compte vérifié avec YNAB.} other {# soldes de comptes vérifiés avec YNAB.}}"
 
+#. placeholder {0}: goalMonthLabel(from)
+#. placeholder {1}: goalMonthLabel(to)
+#: src/features/goal-management/lib/goal-timeframe-labels.ts
+msgid "{0} – {1}"
+msgstr "{0} – {1}"
+
 #. placeholder {0}: mismatch.month
 #. placeholder {1}: mismatch.field
 #. placeholder {2}: formatMilli(mismatch.expectedAmount, currency)
@@ -759,6 +765,11 @@ msgstr "{0} du plan"
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "{0} of spending"
 msgstr "{0} des dépenses"
+
+#. placeholder {0}: goalMonthLabel(from)
+#: src/features/goal-management/lib/goal-timeframe-labels.ts
+msgid "{0} onwards"
+msgstr "à partir de {0}"
 
 #. placeholder {0}: v.pings
 #. placeholder {1}: v.days
@@ -4048,6 +4059,12 @@ msgstr "Connecter aussi des banques des États-Unis et du Canada (SimpleFIN)"
 msgid "Also delete their Clerk accounts"
 msgstr "Supprimer aussi leurs comptes Clerk"
 
+#. placeholder {0}: amount(notice.goal)
+#. placeholder {1}: goalMonthLabel(goalEffectiveFrom(notice.goal))
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Also removes the later goal of {0} from {1}."
+msgstr "Supprime aussi l'objectif suivant de {0} à partir de {1}."
+
 #: src/pages/analytics/report-questions.ts
 msgid "Am I living within my means?"
 msgstr "Est-ce que je vis selon mes moyens ?"
@@ -4247,6 +4264,18 @@ msgstr "{0} catégories appliquées"
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "Applied only in the first month of the schedule."
 msgstr "Appliqué uniquement le premier mois de l'échéancier."
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Applies"
+msgstr "S'applique"
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Applies from"
+msgstr "S'applique à partir de"
+
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "Applies: {timeframeLabel}"
+msgstr "S'applique : {timeframeLabel}"
 
 #: src/features/account-management/ui/EditAccountDialog.tsx
 #: src/features/import/ui/steps/configure/TemplatesTab.tsx
@@ -5481,6 +5510,7 @@ msgstr "Dollar canadien"
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 #: src/features/currencies/ui/ManualRatePrompt.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
+#: src/features/goal-management/ui/GoalSection.tsx
 #: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/reports/ui/notebook/HavingEditor.tsx
@@ -5796,6 +5826,10 @@ msgstr "Changer de mois — actuellement {fullLabel}"
 #: src/shared/ui/date-range-picker.tsx
 msgid "Change month and year — currently {fullMonthLabel}"
 msgstr "Changer le mois et l’année — actuellement {fullMonthLabel}"
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Change months"
+msgstr "Modifier les mois"
 
 #: src/pages/settings/SecurityPage.tsx
 msgid "Change Password"
@@ -6147,6 +6181,10 @@ msgstr "Choisissez ce que l'assistant est autorisé à faire. Désactivez les ou
 #: src/features/category-management/ui/CreateCategoryDialog.tsx
 msgid "Choose where to file “{0}”."
 msgstr "Choisir où classer « {0} »."
+
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "Choose which months lose the goal. You can undo this."
+msgstr "Choisissez les mois qui perdent l'objectif. Vous pouvez annuler cette action."
 
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
 msgid "Choose your bank"
@@ -7974,8 +8012,13 @@ msgid "Delete failed"
 msgstr "Échec de la suppression"
 
 #: src/features/goal-management/ui/GoalForm.tsx
+#: src/features/goal-management/ui/GoalSection.tsx
 msgid "Delete Goal"
 msgstr "Supprimer l'objectif"
+
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "Delete goal for {categoryName}?"
+msgstr "Supprimer l'objectif de {categoryName} ?"
 
 #: src/pages/settings/ImportsPage.tsx
 msgid "Delete history entry?"
@@ -8059,6 +8102,7 @@ msgstr "Supprimé dès que vous ouvrez le vôtre"
 #: src/features/budget-planning/ui/GroupNameEditPopover.tsx
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
+#: src/features/goal-management/ui/GoalSection.tsx
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 msgid "Deleting..."
 msgstr "Suppression..."
@@ -8257,6 +8301,7 @@ msgstr "Ne pas importer"
 #: src/features/ai/ui/AICategorizeDialog.tsx
 #: src/features/ai/ui/receipt-scanner/ScanProgress.tsx
 #: src/features/first-steps/ui/GoalWalkthroughHost.tsx
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
 #: src/features/page-guides/ui/PageGuideDialog.tsx
 #: src/features/reports/ui/notebook/ExpressionEditor.tsx
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
@@ -8520,6 +8565,11 @@ msgstr "Chaque ligne de ventilation doit comporter un montant d'entrée ou de so
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Each upcoming one appears in its account’s register once the date range at the top reaches its due date: pick Next 30 days or Next 3 months there. The dashboard’s Upcoming transactions card lists them too."
 msgstr "Chaque occurrence à venir apparaît dans le registre de son compte dès que la période en haut atteint son échéance : choisissez 30 prochains jours ou 3 prochains mois. La carte « Transactions à venir » du tableau de bord les liste aussi."
+
+#: src/features/goal-management/ui/GoalSection.tsx
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Earlier months keep the goal they had."
+msgstr "Les mois précédents gardent leur objectif."
 
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Earlier version restored"
@@ -8815,6 +8865,10 @@ msgstr "Fin {countLabel} ou {dateLabel}"
 msgid "Ends {dateLabel}"
 msgstr "Fin {dateLabel}"
 
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Ends after"
+msgstr "Se termine après"
+
 #: src/shared/ui/calculator-cell/CalculatorSheet.tsx
 msgid "Enter"
 msgstr "Saisir"
@@ -9068,9 +9122,27 @@ msgstr "Chaque centime gagné reçoit un rôle avant d’être dépensé. Commen
 msgid "Every few months, like a quarterly bill."
 msgstr "Tous les quelques mois, comme une facture trimestrielle."
 
+#: src/features/goal-management/lib/goal-timeframe-labels.ts
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "Every month"
+msgstr "Chaque mois"
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Every month of this goal"
+msgstr "Tous les mois de cet objectif"
+
+#. placeholder {0}: goalMonthLabel(to as string)
+#: src/features/goal-management/lib/goal-timeframe-labels.ts
+msgid "Every month until {0}"
+msgstr "Chaque mois jusqu'à {0}"
+
 #: src/features/page-guides/ui/guide-visuals.tsx
 msgid "Every month, like rent or groceries."
 msgstr "Chaque mois, comme le loyer ou les courses."
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Every month, until you change it"
+msgstr "Chaque mois, jusqu'à ce que vous le modifiiez"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Every scheduled occurrence that hasn't been entered yet, by due date."
@@ -10030,6 +10102,19 @@ msgstr "Ami ou collègue"
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "From"
 msgstr "De"
+
+#. placeholder {0}: goalMonthLabel(currentMonth)
+#. placeholder {0}: goalMonthLabel(viewedMonth)
+#: src/features/goal-management/ui/GoalSection.tsx
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "From {0} onwards"
+msgstr "À partir de {0}"
+
+#. placeholder {0}: goalMonthLabel(notice.from)
+#. placeholder {1}: amount(notice.goal)
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "From {0}, the existing goal of {1} takes over."
+msgstr "À partir de {0}, l'objectif existant de {1} prend le relais."
 
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
 msgid "From account"
@@ -12766,6 +12851,11 @@ msgstr "Tendance mensuelle"
 msgid "months"
 msgstr "mois"
 
+#. placeholder {0}: goalMonthLabel(currentMonth)
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "Months before {0} keep their goal."
+msgstr "Les mois avant {0} gardent leur objectif."
+
 #: src/pages/analytics/components/TargetTable.tsx
 msgid "Months met"
 msgstr "Mois atteints"
@@ -13645,6 +13735,10 @@ msgstr "Aucune date trouvée — date du jour utilisée"
 msgid "No description"
 msgstr "Aucune description"
 
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "No earlier month has its own goal, so it is removed from every month. You can undo this."
+msgstr "Aucun mois précédent n'a son propre objectif : il est donc supprimé de tous les mois. Vous pouvez annuler cette action."
+
 #: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
 msgid "No earlier period to compare with."
 msgstr "Aucune période antérieure à comparer."
@@ -13684,6 +13778,17 @@ msgstr "Aucun taux récent disponible. Pré-rempli avec le taux en cache le plus
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "No Goal"
 msgstr "Aucun objectif"
+
+#. placeholder {0}: goalMonthLabel(notice.from)
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "No goal from {0} onwards."
+msgstr "Aucun objectif à partir de {0}."
+
+#. placeholder {0}: goalMonthLabel(notice.from)
+#. placeholder {1}: goalMonthLabel(notice.until)
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "No goal from {0} to {1}."
+msgstr "Aucun objectif de {0} à {1}."
 
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "No goal set for {categoryName}"
@@ -14464,6 +14569,10 @@ msgstr "Sortie ponctuelle"
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "One-time extra (this month)"
 msgstr "Extra exceptionnel (ce mois-ci)"
+
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Ongoing"
+msgstr "Sans fin"
 
 #: src/widgets/sync-status/ConnectivityStatus.tsx
 msgid "Online"
@@ -16776,6 +16885,10 @@ msgstr "Supprimer ce bénéficiaire ?"
 msgid "Removed {0} transactions{1}{2}"
 msgstr "{0} transactions supprimées{1}{2}"
 
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "Removes all of this category's goals, past ones too."
+msgstr "Supprime tous les objectifs de cette catégorie, y compris les anciens."
+
 #: src/pages/custom-dashboards/components/DashboardSwitcher.tsx
 #: src/pages/reports/question/QuestionHeader.tsx
 msgid "Rename"
@@ -16849,6 +16962,12 @@ msgstr "Répéter tous les"
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Repeats yearly. Current cycle: {0} · this cycle's target {1}. Cycles are counted from the target date; the goal amount applies to each cycle."
 msgstr "Se répète chaque année. Cycle actuel : {0} · date cible de ce cycle : {1}. Les cycles sont calculés à partir de la date cible ; le montant de l'objectif s'applique à chaque cycle."
+
+#. placeholder {0}: amount(notice.goal)
+#. placeholder {1}: goalMonthLabel(goalEffectiveFrom(notice.goal))
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "Replaces the goal of {0} that starts in {1}."
+msgstr "Remplace l'objectif de {0} qui commence en {1}."
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Report a Bug"
@@ -20024,6 +20143,10 @@ msgstr "La tendance à la baisse est statistiquement fiable (p {0}, R² = {1}) :
 msgid "The end date must be on or after the start date."
 msgstr "La date de fin doit être identique ou postérieure à la date de début."
 
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "The end month must not be before the start month."
+msgstr "Le mois de fin ne peut pas précéder le mois de début."
+
 #: src/app/system/AppErrorBoundary.tsx
 msgid "The error has been recorded. Reload the page if it keeps happening."
 msgstr "L'erreur a été enregistrée. Rechargez la page si cela se reproduit."
@@ -20045,8 +20168,18 @@ msgid "The goal counts as met (or on track) this month."
 msgstr "L’objectif est atteint (ou en bonne voie) ce mois-ci."
 
 #: src/features/goal-management/ui/GoalSection.tsx
-msgid "The goal has been permanently removed."
-msgstr "L'objectif a été définitivement supprimé."
+#~ msgid "The goal has been permanently removed."
+#~ msgstr "L'objectif a été définitivement supprimé."
+
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "The goal has been removed from every month."
+msgstr "L'objectif a été supprimé de tous les mois."
+
+#. placeholder {0}: amount(notice.goal)
+#. placeholder {1}: goalMonthLabel(notice.to)
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "The goal of {0} will now end in {1}."
+msgstr "L'objectif de {0} se terminera désormais en {1}."
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "The goal's full target amount."
@@ -20348,6 +20481,17 @@ msgstr "Cette action a échoué, il n'y a donc rien à annuler."
 #: src/shared/mutations/useMutationHistory.ts
 msgid "This action has already been undone."
 msgstr "Cette action a déjà été annulée."
+
+#. placeholder {0}: goalMonthLabel(notice.from)
+#. placeholder {1}: goalMonthLabel(notice.to)
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "This also changes the goal for {0} – {1}."
+msgstr "Cela modifie aussi l'objectif pour {0} – {1}."
+
+#. placeholder {0}: goalMonthLabel(nextGoalMonth(notice.to))
+#: src/features/goal-management/ui/GoalTimeframeFields.tsx
+msgid "This also changes the goal in every month before {0}."
+msgstr "Cela modifie aussi l'objectif de tous les mois avant {0}."
 
 #: src/features/sync-diagnostics/ui/SyncOverviewCards.tsx
 msgid "This app"

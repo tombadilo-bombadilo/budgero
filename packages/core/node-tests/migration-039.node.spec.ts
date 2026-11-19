@@ -145,13 +145,17 @@ describe('migration 039: REAL money -> INTEGER milliunits', () => {
       )[0]?.values ?? []
     ).map(([name]) => String(name));
     // Migration 61 deliberately supersedes the account/date prefix index with
-    // the exact account/date/id register order.
+    // the exact account/date/id register order, and migration 81 the goal
+    // category index with the category/timeframe one.
     expect(postIndexNames).toEqual(
       expect.arrayContaining(
-        preIndexNames.filter((name) => name !== 'idx_transactions_account_date')
+        preIndexNames.filter(
+          (name) => name !== 'idx_transactions_account_date' && name !== 'idx_goals_category_id'
+        )
       )
     );
     expect(postIndexNames).toContain('idx_transactions_account_date_id');
+    expect(postIndexNames).toContain('idx_goals_category_effective_from');
   });
 
   it('keeps AUTOINCREMENT working after the rebuild', () => {
