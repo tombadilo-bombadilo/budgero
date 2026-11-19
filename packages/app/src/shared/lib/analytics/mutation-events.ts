@@ -114,11 +114,14 @@ export function readBeforeState(
   switch (spec.op) {
     case 'goals.delete':
     case 'goals.endFrom':
+      // The goal of the op's month when it names one (endFrom), else this month's.
       return {
-        goalType: safe(() =>
-          spec.op === 'goals.endFrom'
-            ? services.goals?.getGoalByCategoryID(num(args.categoryId), String(args.month))?.Type
-            : services.goals?.getGoalByCategoryID(num(args.categoryId))?.Type
+        goalType: safe(
+          () =>
+            services.goals?.getGoalByCategoryID(
+              num(args.categoryId),
+              typeof args.month === 'string' ? args.month : undefined
+            )?.Type
         ),
       };
     case 'rules.delete':

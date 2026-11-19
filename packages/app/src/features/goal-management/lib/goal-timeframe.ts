@@ -97,3 +97,12 @@ export function goalTimeframeRange(
   const span = goalTimeframeSpan(chain, own);
   return span ? { from: span.from, to: span.to } : { from: null, to: null };
 }
+
+/**
+ * Whether deleting from `month` keeps anything: only when some timeframe was
+ * set for an earlier month. Otherwise the delete removes the goal everywhere
+ * (plain goals.delete, which older builds apply the same way).
+ */
+export function goalDeleteKeepsHistory(timeframes: readonly Goal[], month: string): boolean {
+  return timeframes.some((goal) => goalEffectiveFrom(goal) < month);
+}

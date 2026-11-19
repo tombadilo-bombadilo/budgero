@@ -26,6 +26,7 @@ import {
 import { GoalPurpose, GoalType, describeGoalTimeframeChange } from '@budgero/core/browser';
 import {
   defaultGoalTimeframe,
+  goalDeleteKeepsHistory,
   goalSaveAction,
   goalTimeframeRange,
   type GoalTimeframeChoice,
@@ -157,6 +158,8 @@ export function GoalSection({
     }
   };
 
+  const keepsHistory = goalDeleteKeepsHistory(timeframes, currentMonth);
+  const scope = keepsHistory ? deleteScope : 'all';
   const deleteNotices = useMemo(
     () =>
       goal ? describeGoalTimeframeChange(timeframes, { kind: 'endFrom', month: currentMonth }) : [],
@@ -177,14 +180,14 @@ export function GoalSection({
         id: goal.ID,
         categoryId,
         budgetId,
-        ...(deleteScope === 'onwards' ? { fromMonth: currentMonth } : {}),
+        ...(scope === 'onwards' ? { fromMonth: currentMonth } : {}),
       });
 
       setDeleteOpen(false);
       setIsFormOpen(false);
       toast.success(t`Goal deleted`, {
         description:
-          deleteScope === 'onwards'
+          scope === 'onwards'
             ? t`Months before ${goalMonthLabel(currentMonth)} keep their goal.`
             : t`The goal has been removed from every month.`,
       });
@@ -279,7 +282,11 @@ export function GoalSection({
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
         title={t`Delete goal for ${categoryName}?`}
-        description={t`Choose which months lose the goal. You can undo this.`}
+        description={
+          keepsHistory
+            ? t`Choose which months lose the goal. You can undo this.`
+            : t`No earlier month has its own goal, so it is removed from every month. You can undo this.`
+        }
         confirmText={t`Delete Goal`}
         cancelText={t`Cancel`}
         loadingText={t`Deleting...`}
@@ -287,39 +294,37 @@ export function GoalSection({
         isLoading={deleteGoalMutation.isPending}
         onConfirm={handleDelete}
       >
-        <div className="space-y-3" data-testid="goal-delete-scope">
-          <RadioGroup
-            value={deleteScope}
-            onValueChange={(value) => setDeleteScope(value as 'onwards' | 'all')}
-            className="gap-2"
-          >
-            <div className="flex items-start gap-2 text-sm">
-              <RadioGroupItem id="goal-delete-onwards" value="onwards" className="mt-0.5" />
-              <Label htmlFor="goal-delete-onwards" className="block font-normal leading-snug">
-                <Trans>From {goalMonthLabel(currentMonth)} onwards</Trans>
-                <span className="block text-xs text-muted-foreground">
-                  <Trans>Earlier months keep the goal they had.</Trans>
-                </span>
-              </Label>
-            </div>
-            <div className="flex items-start gap-2 text-sm">
-              <RadioGroupItem id="goal-delete-all" value="all" className="mt-0.5" />
-              <Label htmlFor="goal-delete-all" className="block font-normal leading-snug">
-                <Trans>Every month</Trans>
-                <span className="block text-xs text-muted-foreground">
-                  <Trans>Removes all of this category&apos;s goals, past ones too.</Trans>
-                </span>
-              </Label>
-            </div>
-          </RadioGroup>
-          {deleteScope === 'onwards' && (
-            <GoalTimeframeNotices
-              notices={deleteNotices}
-              formatter={formatter}
-              viewedMonth={currentMonth}
-            />
-          )}
-        </div>
+        {keepsHistory && (
+          <div className="space-y-3" data-testid="goal-delete-scope">
+            <RadioGroup
+              value={deleteScope}
+              onValueChange={(value) => setDeleteScope(value as 'onwards' | 'all')}
+              className="gap-2"
+            >
+              <div className="flex items-start gap-2 text-sm">
+                <RadioGroupItem id="goal-delete-onwards" value="onwards" className="mt-0.5" />
+                <Label htmlFor="goal-delete-onwards" className="block font-normal leading-snug">
+                  <Trans>From {goalMonthLabel(currentMonth)} onwards</Trans>
+                  <span className="block text-xs text-muted-foreground">
+                    <Trans>Earlier months keep the goal they had.</Trans>
+                  </span>
+                </Label>
+              </div>
+              <div className="flex items-start gap-2 text-sm">
+                <RadioGroupItem id="goal-delete-all" value="all" className="mt-0.5" />
+                <Label htmlFor="goal-delete-all" className="block font-normal leading-snug">
+                  <Trans>Every month</Trans>
+                  <span className="block text-xs text-muted-foreground">
+                    <Trans>Removes all of this category&apos;s goals, past ones too.</Trans>
+                  </span>
+                </Label>
+              </div>
+            </RadioGroup>
+            {deleteScope === 'onwards' && (
+              <GoalTimeframeNotices notices={deleteNotices} formatter={formatter} />
+            )}
+          </div>
+        )}
       </ConfirmDialog>
     </>
   );

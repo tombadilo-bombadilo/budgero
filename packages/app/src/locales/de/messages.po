@@ -13688,6 +13688,10 @@ msgstr "Kein Datum gefunden — heute wird verwendet"
 msgid "No description"
 msgstr "Keine Beschreibung"
 
+#: src/features/goal-management/ui/GoalSection.tsx
+msgid "No earlier month has its own goal, so it is removed from every month. You can undo this."
+msgstr "Kein früherer Monat hat ein eigenes Ziel, daher wird es aus allen Monaten entfernt. Du kannst das rückgängig machen."
+
 #: src/features/reports/ui/notebook/viz/TrendNumberView.tsx
 msgid "No earlier period to compare with."
 msgstr "Kein früherer Zeitraum zum Vergleichen."
@@ -20419,7 +20423,7 @@ msgstr "Diese Aktion wurde bereits rückgängig gemacht."
 msgid "This also changes the goal for {0} – {1}."
 msgstr "Das ändert auch das Ziel für {0} – {1}."
 
-#. placeholder {0}: goalMonthLabel(viewedMonth)
+#. placeholder {0}: goalMonthLabel(nextGoalMonth(notice.to))
 #: src/features/goal-management/ui/GoalTimeframeFields.tsx
 msgid "This also changes the goal in every month before {0}."
 msgstr "Das ändert auch das Ziel in allen Monaten vor {0}."

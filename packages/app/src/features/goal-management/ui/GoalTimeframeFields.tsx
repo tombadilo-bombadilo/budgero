@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { AlertTriangle, CalendarRange } from 'lucide-react';
 import {
   goalEffectiveFrom,
+  nextGoalMonth,
   toDecimal,
   type Goal,
   type GoalTimeframeNotice,
@@ -18,15 +19,10 @@ import { goalMonthLabel, useGoalRangeLabel } from '../lib/goal-timeframe-labels'
 interface GoalTimeframeNoticesProps {
   notices: GoalTimeframeNotice<Goal>[];
   formatter: Intl.NumberFormat;
-  viewedMonth: string;
 }
 
 /** What a save or delete does to the goal's other months, shown before it happens. */
-export function GoalTimeframeNotices({
-  notices,
-  formatter,
-  viewedMonth,
-}: GoalTimeframeNoticesProps) {
+export function GoalTimeframeNotices({ notices, formatter }: GoalTimeframeNoticesProps) {
   const { t } = useLingui();
   if (notices.length === 0) return null;
   const amount = (goal: Goal) => formatter.format(toDecimal(goal.Target));
@@ -46,7 +42,7 @@ export function GoalTimeframeNotices({
           : t`No goal from ${goalMonthLabel(notice.from)} onwards.`;
       case 'rewritesEarlier':
         return notice.from === null
-          ? t`This also changes the goal in every month before ${goalMonthLabel(viewedMonth)}.`
+          ? t`This also changes the goal in every month before ${goalMonthLabel(nextGoalMonth(notice.to))}.`
           : t`This also changes the goal for ${goalMonthLabel(notice.from)} – ${goalMonthLabel(notice.to)}.`;
       default:
         return '';

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GoalPurpose, GoalType, type Goal } from '@budgero/core/browser';
-import { defaultGoalTimeframe, goalSaveAction } from './goal-timeframe';
+import { defaultGoalTimeframe, goalDeleteKeepsHistory, goalSaveAction } from './goal-timeframe';
 
 const tf = (id: number, from: string, to: string | null = null): Goal => ({
   ID: id,
@@ -66,5 +66,13 @@ describe('goal form timeframe choices', () => {
       from: '2026-01',
       to: '2026-05',
     });
+  });
+});
+
+describe('goal delete scope', () => {
+  it('keeps history only when a timeframe started before the viewed month', () => {
+    expect(goalDeleteKeepsHistory([tf(1, '2026-11')], '2026-11')).toBe(false);
+    expect(goalDeleteKeepsHistory([tf(1, '2026-11'), tf(2, '2027-02')], '2026-11')).toBe(false);
+    expect(goalDeleteKeepsHistory([tf(1, '2026-01')], '2026-11')).toBe(true);
   });
 });

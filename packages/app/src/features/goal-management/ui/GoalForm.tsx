@@ -704,11 +704,7 @@ export function GoalForm({
             onChange={setTimeframe}
             range={savedRange}
           />
-          <GoalTimeframeNotices
-            notices={timeframeNotices}
-            formatter={formatter}
-            viewedMonth={currentMonth}
-          />
+          <GoalTimeframeNotices notices={timeframeNotices} formatter={formatter} />
 
           {/* ── Validation Errors ── */}
           {errors.length > 0 && (
