@@ -393,8 +393,39 @@ def test_time_is_optional_on_the_wire(key, b64_key):
         client.update_transaction(plain.message_id, time=None)
     payloads = [decrypt_payload(item["encrypted_payload"], key) for item in captured]
     assert "time" not in payloads[0]["args"]
+    assert payloads[0]["v"] == 2
     assert payloads[1]["args"]["time"] == "14:30"
+    # A time needs format 7: older apps refuse the item instead of dropping it.
+    assert payloads[1]["v"] == 7
     assert payloads[2]["args"]["fields"] == {"time": None}
+    assert payloads[2]["v"] == 7
+
+
+@pytest.mark.parametrize("value, expected", [("9:05", "09:05"), ("23:59:59", "23:59"), ("", None)])
+def test_time_is_normalized_like_the_app(key, b64_key, value, expected):
+    captured = []
+
+    def handler(request):
+        captured.append(json.loads(request.content))
+        return httpx.Response(200, json={"id": "q", "message": "queued"})
+
+    with make_client(b64_key, handler) as client:
+        client.add_transaction(account_id=1, category_id=5, budget_id=1,
+                               date="2026-09-19", outflow=10, time=value)
+    args = decrypt_payload(captured[0]["encrypted_payload"], key)["args"]
+    assert args.get("time") == expected
+
+
+@pytest.mark.parametrize("value", ["7pm", "24:00", "12:60", "1430", 1430])
+def test_invalid_times_are_not_sent(b64_key, value):
+    def handler(request):
+        pytest.fail("Invalid time must not be sent")
+    with make_client(b64_key, handler) as client:
+        with pytest.raises(ValidationError, match="time"):
+            client.add_transaction(account_id=1, category_id=5, budget_id=1,
+                                   date="2026-09-19", outflow=10, time=value)
+        with pytest.raises(ValidationError, match="time"):
+            client.update_transaction("original", time=value)
 
 
 @pytest.mark.parametrize("fields", [{}, {"bogus": 1}, {"outflow": -1}, {"cleared": "yes"}])
