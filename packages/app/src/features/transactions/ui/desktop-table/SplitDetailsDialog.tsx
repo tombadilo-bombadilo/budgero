@@ -30,6 +30,7 @@ import { toastError } from '@shared/lib/errors';
 import {
   type SplitLike,
   type EditableSplit,
+  editableSplitReceived,
   extractSplitFlows,
   toEditableSplit,
   getSplitCategoryLabel,
@@ -37,6 +38,7 @@ import {
 import { SplitMemoText } from './SplitMemoText';
 import { confirmSplitSave } from '../reconciled-edit/reconciled-edit-confirm';
 import {
+  followEnteredReceived,
   missingReceivedMessage,
   needsReceivedAmount,
   splitLineCategoryMode,
@@ -251,9 +253,15 @@ export function SplitDetailsDialog({
     ]);
   };
 
+  // An entered received amount scales with its line's amount.
   const handleUpdateSplit = (id: string, patch: Partial<Omit<EditableSplit, 'id'>>) => {
     setEditSplits(
-      (prev) => prev?.map((line) => (line.id === id ? { ...line, ...patch } : line)) ?? null
+      (prev) =>
+        prev?.map((line) =>
+          line.id === id
+            ? followEnteredReceived(line, { ...line, ...patch }, editableSplitReceived())
+            : line
+        ) ?? null
     );
   };
 

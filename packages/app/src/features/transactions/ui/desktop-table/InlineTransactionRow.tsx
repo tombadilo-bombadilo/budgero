@@ -23,7 +23,10 @@ import { getCurrentDate } from '@features/transactions/ui/add-transaction/add-tr
 import { AccountSelectCell } from '@features/transactions/ui/cells/AccountSelectCell';
 import { CategorySelectCell } from '@features/transactions/ui/cells/CategorySelectCell';
 import {
+  followEnteredReceived,
+  followEnteredReceivedLines,
   needsReceivedAmount,
+  SPLIT_LINE_RECEIVED,
   splitLineCategoryMode,
   splitPayeeUpdate,
   splitTransferUpdate,
@@ -438,8 +441,15 @@ export function InlineTransactionRow({
     budgetId,
   });
 
+  // An entered received amount scales with its line's amount.
   const updateSplitLine = (id: string, updates: Partial<SplitLine>) =>
-    setSplitLines(splitLines.map((line) => (line.id === id ? { ...line, ...updates } : line)));
+    setSplitLines(
+      splitLines.map((line) =>
+        line.id === id
+          ? followEnteredReceived(line, { ...line, ...updates }, SPLIT_LINE_RECEIVED)
+          : line
+      )
+    );
 
   const startSplit = () => {
     toggleSplit();
@@ -790,7 +800,13 @@ export function InlineTransactionRow({
                 size="sm"
                 className="h-7"
                 onClick={() =>
-                  setSplitLines(assignRemainingToSplit(splitLines, remaining, parentSigned))
+                  setSplitLines(
+                    followEnteredReceivedLines(
+                      splitLines,
+                      assignRemainingToSplit(splitLines, remaining, parentSigned),
+                      SPLIT_LINE_RECEIVED
+                    )
+                  )
                 }
               >
                 <Trans>Assign remaining</Trans>
