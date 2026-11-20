@@ -7,6 +7,7 @@ import { asMilli, convertScaled } from '@budgero/core/browser';
 import { Badge } from '@shared/ui/badge';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
+import { TimeInput } from '@shared/ui/time-input';
 import { TableCell, TableRow } from '@shared/ui/table';
 import { CalculatorCell } from '@shared/ui/calculator-cell';
 import { formatDate as format } from '@shared/lib/date-format';
@@ -469,10 +470,9 @@ export function InlineTransactionRow({
           />
           {/* The register shows times (Appearance setting): enter one here too. */}
           {showTime && (
-            <Input
-              type="time"
+            <TimeInput
               value={form.transactionTime}
-              onChange={(e) => form.setTime(e.target.value)}
+              onValueChange={form.setTime}
               aria-label={t`Time (optional)`}
               title={t`Time (optional)`}
               className="mt-1 h-7 w-full px-2 text-xs"

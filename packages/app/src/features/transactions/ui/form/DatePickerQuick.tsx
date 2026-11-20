@@ -8,7 +8,7 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback } from 'react';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@shared/ui/button';
-import { Input } from '@shared/ui/input';
+import { TimeInput } from '@shared/ui/time-input';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { MonthYearCalendar } from '@shared/ui/MonthYearCalendar';
 
@@ -79,10 +79,9 @@ export function DatePickerQuick({
             </Popover>
           </div>
           {onTimeChange && (
-            <Input
-              type="time"
-              value={time}
-              onChange={(e) => onTimeChange(e.target.value)}
+            <TimeInput
+              value={time ?? ''}
+              onValueChange={onTimeChange}
               aria-label={t`Time (optional)`}
               title={t`Time (optional)`}
               className="h-8 w-28 shrink-0 sm:h-10"
