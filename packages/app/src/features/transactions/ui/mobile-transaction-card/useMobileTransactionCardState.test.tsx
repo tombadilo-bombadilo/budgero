@@ -152,6 +152,32 @@ describe('mobile split editor transfer lines', () => {
     core.unlocked = [];
   });
 
+  it('an entered received amount scales with its line and is sent as entered', async () => {
+    state.splits = [
+      {
+        ID: 1,
+        CategoryID: null,
+        TransferAccountID: 5,
+        Memo: '',
+        Payee: '',
+        InflowConverted: 0,
+        OutflowConverted: 10_000,
+        Mirror: mirror,
+        MirrorPinned: true,
+      },
+    ];
+    const { result } = setup();
+    act(() => result.current.initEditSplitsFromExisting());
+    act(() => result.current.updateSplitLine(0, { outflow: 12_500 }));
+    expect(result.current.editSplits![0]).toMatchObject({
+      received_amount: 11_000,
+      received_auto: false,
+    });
+    act(() => result.current.setSplitTarget(12_500));
+    await act(() => result.current.saveSplits());
+    expect(state.upsert.mock.calls[0][0].splits[0]).toMatchObject({ received_amount: 11_000 });
+  });
+
   it('estimates the received amount when the line amount changes', async () => {
     state.splits = [
       {

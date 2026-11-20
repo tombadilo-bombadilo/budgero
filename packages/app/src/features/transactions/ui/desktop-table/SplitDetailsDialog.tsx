@@ -30,13 +30,16 @@ import { toastError } from '@shared/lib/errors';
 import {
   type SplitLike,
   type EditableSplit,
+  editableSplitReceived,
   extractSplitFlows,
   toEditableSplit,
   getSplitCategoryLabel,
 } from './table-utils';
 import { SplitMemoText } from './SplitMemoText';
+import { splitLinePayeeLabel } from '../../lib/transfer-category';
 import { confirmSplitSave } from '../reconciled-edit/reconciled-edit-confirm';
 import {
+  followEnteredReceived,
   missingReceivedMessage,
   needsReceivedAmount,
   splitLineCategoryMode,
@@ -251,9 +254,15 @@ export function SplitDetailsDialog({
     ]);
   };
 
+  // An entered received amount scales with its line's amount.
   const handleUpdateSplit = (id: string, patch: Partial<Omit<EditableSplit, 'id'>>) => {
     setEditSplits(
-      (prev) => prev?.map((line) => (line.id === id ? { ...line, ...patch } : line)) ?? null
+      (prev) =>
+        prev?.map((line) =>
+          line.id === id
+            ? followEnteredReceived(line, { ...line, ...patch }, editableSplitReceived())
+            : line
+        ) ?? null
     );
   };
 
@@ -543,7 +552,7 @@ export function SplitDetailsDialog({
                                   triggerClassName="h-8 w-full"
                                 />
                               ) : (
-                                String(s.payee || s.Payee || transaction?.Payee || '-')
+                                (splitLinePayeeLabel(s, transaction?.Payee) ?? '-')
                               )}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">

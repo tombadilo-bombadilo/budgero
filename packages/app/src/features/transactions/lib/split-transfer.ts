@@ -1,4 +1,5 @@
 import { t } from '@lingui/core/macro';
+import { scaleMagnitude } from '@budgero/core/browser';
 /**
  * Split lines that move money to another of your accounts. A line is a
  * transfer when it carries transferAccountId; the core then writes the
@@ -96,6 +97,57 @@ export function mirrorMagnitude(
   const value = Math.abs(Number(mirror.InflowNative) - Number(mirror.OutflowNative));
   return value > 0 ? value : null;
 }
+
+/** How followEnteredReceived reads and writes a split editor's line (each keeps its own shape). */
+export interface EnteredReceivedAccess<L> {
+  target: (line: L) => number | null | undefined;
+  /** The line's amount (magnitude). */
+  amount: (line: L) => number;
+  received: (line: L) => number | null | undefined;
+  /** false once the user typed a received amount (or it was entered before). */
+  auto: (line: L) => boolean;
+  withReceived: (line: L, received: number) => L;
+}
+
+/**
+ * `after` (a line edit of `before`) with an entered received amount scaled in
+ * proportion to the line's new amount (received * new / old, exact integer
+ * arithmetic, as the core scales a pinned mirror when its parent changes):
+ * the line keeps the rate the amount was entered at, and it stays entered.
+ * Left as it is when the edit also changes the target or the received amount
+ * (typing one sets it exactly), or when either amount is zero. An auto
+ * (estimated) amount follows the rate instead (useAutoReceivedAmounts).
+ */
+export function followEnteredReceived<L>(before: L, after: L, access: EnteredReceivedAccess<L>): L {
+  const received = Number(access.received(after));
+  if (access.auto(before) || access.auto(after) || !(received > 0)) return after;
+  if (Number(access.received(before)) !== received) return after;
+  if (access.target(before) !== access.target(after)) return after;
+  const from = access.amount(before);
+  const to = access.amount(after);
+  if (!(from > 0) || !(to > 0) || from === to) return after;
+  return access.withReceived(after, scaleMagnitude(received, from, to));
+}
+
+/** followEnteredReceived for lines edited in place (same order, e.g. "assign remaining"). */
+export function followEnteredReceivedLines<L>(
+  before: readonly L[],
+  after: L[],
+  access: EnteredReceivedAccess<L>
+): L[] {
+  return after.map((line, index) =>
+    index < before.length ? followEnteredReceived(before[index], line, access) : line
+  );
+}
+
+/** EnteredReceivedAccess for the add form's and the inline row's lines. */
+export const SPLIT_LINE_RECEIVED: EnteredReceivedAccess<SplitLine> = {
+  target: (line) => line.transferAccountId,
+  amount: (line) => line.inflow || line.outflow,
+  received: (line) => line.receivedAmount,
+  auto: (line) => line.receivedAuto !== false,
+  withReceived: (line, receivedAmount) => ({ ...line, receivedAmount }),
+};
 
 /** Why a split can't be saved yet: a cross-currency transfer line has no amount for the other side. */
 export function missingReceivedMessage(

@@ -34,6 +34,7 @@ import { getRunningBalance } from '@features/transactions/lib/running-balance';
 import {
   hasReadOnlyTransferCategory,
   transferHasOffBudgetLeg,
+  splitPayeesLabel,
   transferPayeeLabel,
 } from '@features/transactions/lib/transfer-category';
 import { formatExchangeRate } from '@entities/currency/lib/exchange-rate-format';
@@ -165,7 +166,8 @@ export const TransactionRow = React.memo(function TransactionRow({
   const isTransfer = !!transaction.TransferID && transaction.TransferID.trim() !== '';
   const isTransferCategoryReadOnly = hasReadOnlyTransferCategory(transaction);
   const includeTransfersInCategoryPicker = transferHasOffBudgetLeg(transaction);
-  const transferLabel = transferPayeeLabel(transaction);
+  // A transfer's other account, or a split's line payees, when it has no payee.
+  const transferLabel = transferPayeeLabel(transaction) ?? splitPayeesLabel(transaction);
   const hasUnsafeMoney = hasUnsafeTransactionMoney(transaction);
   const activateCell = (column: TransactionEditableColumn) =>
     onActivateCell(transaction.ID, column);
@@ -340,9 +342,7 @@ export const TransactionRow = React.memo(function TransactionRow({
           </TableCell>
         )}
         <TableCell className="max-w-[200px]">
-          <span className="px-2 text-xs xl:text-sm">
-            {transaction.Payee || transferPayeeLabel(transaction)}
-          </span>
+          <span className="px-2 text-xs xl:text-sm">{transaction.Payee || transferLabel}</span>
         </TableCell>
         {showLabelColumn && (
           <TableCell className="max-w-[180px]">

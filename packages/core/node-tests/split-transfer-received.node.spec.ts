@@ -6,9 +6,10 @@ import type { SplitInput } from '../src/services/transactions/split-service';
 /**
  * Split transfer lines to an account in another currency carry the exact
  * amount the other account received (issue #148). The mirror is written with
- * exactly those amounts on every device (whatever rate it has cached), is
- * pinned, and keeps them when the parent changes, like a cross-currency
- * transfer leg edit keeps the partner leg. Lines to off-budget accounts may
+ * exactly that amount on every device (whatever rate it has cached), is
+ * pinned, and keeps it when the parent changes (scaled with its line when the
+ * line's amount changes). Like the received leg of a transfer with typed
+ * amounts, it is worth its line's budget value, at the rate the two imply. Lines to off-budget accounts may
  * keep a category (spending instead of leaving Ready to Assign).
  */
 
@@ -107,13 +108,15 @@ const line = (fields: Partial<SplitInput>, outflow: number): SplitInput => ({
   ...fields,
 });
 
-/** 100.00 USD sent, 91.23 EUR received, worth 99.50 USD in the budget. */
+/** 100.00 USD sent, 91.23 EUR received, quoted at 99.50 USD in the budget. */
 const RECEIVED = {
   InflowNative: m(91_230),
   OutflowNative: m(0),
   InflowConverted: m(99_500),
   OutflowConverted: m(0),
 };
+/** RECEIVED as a 100.00 USD line's mirror stores it: worth what the line sent. */
+const VALUED = { ...RECEIVED, InflowConverted: m(100_000) };
 
 describe('split transfer lines with an entered received amount', () => {
   let d: Device;
@@ -122,7 +125,7 @@ describe('split transfer lines with an entered received amount', () => {
     d = await device(0.9);
   });
 
-  it('writes the carried amounts exactly and pins the mirror, on every device', async () => {
+  it('writes the carried amount exactly, valued at its line, and pins it, on every device', async () => {
     const other = await device(0.5);
     for (const dev of [d, other]) {
       const id = await addParent(dev, 150_000);
@@ -131,7 +134,12 @@ describe('split transfer lines with an entered received amount', () => {
         line({ TransferAccountID: dev.eur, Mirror: RECEIVED }, 100_000),
       ]);
       const [mirror] = mirrorsOf(dev, id);
-      expect(mirror).toMatchObject({ ...RECEIVED, AccountID: dev.eur, TransferRateOverride: 2 });
+      expect(mirror).toMatchObject({
+        ...VALUED,
+        AccountID: dev.eur,
+        TransferRateOverride: 2,
+        ExchangeRateOverride: 1,
+      });
     }
   });
 
@@ -183,11 +191,11 @@ describe('split transfer lines with an entered received amount', () => {
       await d.s.transactions.updateTransactionColumn(id, 'Date', '2026-03-12');
       await d.s.transactions.updateTransactionColumn(id, 'OutflowConverted', m(120_000));
     }
-    // 100 -> 120 USD: 91.23 EUR -> 109.476 EUR, 99.50 -> 119.40 USD in the budget.
+    // 100 -> 120 USD: 91.23 EUR -> 109.476 EUR, worth the line's 120 USD.
     const [kept] = mirrorsOf(d, pinned);
     expect(kept).toMatchObject({
       InflowNative: 109_476,
-      InflowConverted: 119_400,
+      InflowConverted: 120_000,
       Date: '2026-03-12',
       TransferRateOverride: 2,
     });
@@ -203,11 +211,11 @@ describe('split transfer lines with an entered received amount', () => {
       line({ TransferAccountID: d.eur, Mirror: RECEIVED }, 100_000),
     ]);
     await d.s.transactions.updateTransactionColumn(id, 'Date', '2026-03-12');
-    expect(mirrorsOf(d, id)[0]).toMatchObject(RECEIVED);
+    expect(mirrorsOf(d, id)[0]).toMatchObject(VALUED);
     await d.s.transactions.updateTransactionColumn(id, 'OutflowConverted', m(300_000));
     expect(mirrorsOf(d, id)[0]).toMatchObject({
       InflowNative: 182_460,
-      InflowConverted: 199_000,
+      InflowConverted: 200_000,
       TransferRateOverride: 2,
     });
   });
@@ -218,7 +226,11 @@ describe('split transfer lines with an entered received amount', () => {
       line({ TransferAccountID: d.eur, Mirror: RECEIVED }, 100_000),
     ]);
     await d.s.splits.upsertSplits(id, [line({ TransferAccountID: d.eur }, 100_000)]);
-    expect(mirrorsOf(d, id)[0]).toMatchObject({ InflowNative: 90_000, TransferRateOverride: 0 });
+    expect(mirrorsOf(d, id)[0]).toMatchObject({
+      InflowNative: 90_000,
+      TransferRateOverride: 0,
+      ExchangeRateOverride: 0,
+    });
     // Now a parent change converts it again.
     await d.s.currency.saveRate('USD', 'EUR', 0.8, '2026-03-12', d.budgetId);
     await d.s.transactions.updateTransactionColumn(id, 'Date', '2026-03-12');
@@ -261,7 +273,7 @@ describe('split transfer lines with an entered received amount', () => {
       InflowNative: 0,
       OutflowNative: 91_230,
       InflowConverted: 0,
-      OutflowConverted: 99_500,
+      OutflowConverted: 100_000,
     });
   });
 
@@ -289,7 +301,7 @@ describe('split transfer lines with an entered received amount', () => {
       line({ TransferAccountID: d.eur, Mirror: RECEIVED }, 100_000),
     ]);
     const [stored] = d.s.splits.getSplitsWithMirrors(id);
-    expect(stored).toMatchObject({ Mirror: RECEIVED, MirrorPinned: true, MirrorReconciled: false });
+    expect(stored).toMatchObject({ Mirror: VALUED, MirrorPinned: true, MirrorReconciled: false });
 
     const [mirror] = mirrorsOf(d, id);
     d.adapter
@@ -318,7 +330,7 @@ describe('split transfer lines with an entered received amount', () => {
     });
   });
 
-  it('refuses to quote a budget value without a rate', async () => {
+  it("needs no rate to quote: the budget value is the line's", async () => {
     const gbp = (
       await d.s.accounts.createAccount(
         'Pound',
@@ -331,13 +343,21 @@ describe('split transfer lines with an entered received amount', () => {
       )
     ).ID;
     const id = await addParent(d, 100_000);
-    await expect(
-      d.s.splits.quoteMirrorAmounts(
-        d.s.transactions.getTransactionByID(id),
-        [line({ TransferAccountID: gbp }, 100_000)],
-        [80_000]
-      )
-    ).rejects.toMatchObject({ code: 'SPLIT_MIRROR_RATE_MISSING' });
+    const [quote] = await d.s.splits.quoteMirrorAmounts(
+      d.s.transactions.getTransactionByID(id),
+      [line({ TransferAccountID: gbp }, 100_000)],
+      [80_000]
+    );
+    expect(quote).toEqual({
+      InflowNative: 80_000,
+      OutflowNative: 0,
+      InflowConverted: 100_000,
+      OutflowConverted: 0,
+    });
+    await d.s.splits.upsertSplits(id, [line({ TransferAccountID: gbp, Mirror: quote }, 100_000)]);
+    const [mirror] = mirrorsOf(d, id);
+    expect(mirror).toMatchObject({ ...quote, TransferRateOverride: 2 });
+    expect(d.s.transactions.getTransactionByID(mirror.ID).ExchangeRate).toBe(1.25);
   });
 
   it('three currencies: a EUR parent, a GBP target and a USD budget', async () => {
@@ -376,17 +396,56 @@ describe('split transfer lines with an entered received amount', () => {
       ),
     ];
     const [quote] = await d.s.splits.quoteMirrorAmounts(parent, lines, [85_000]);
+    // The line's own budget value.
     expect(quote).toEqual({
       InflowNative: 85_000,
       OutflowNative: 0,
-      InflowConverted: 106_250,
+      InflowConverted: parent.OutflowConverted,
       OutflowConverted: 0,
     });
     await d.s.splits.upsertSplits(id, [{ ...lines[0], Mirror: quote }]);
     expect(mirrorsOf(d, id)[0]).toMatchObject({ ...quote, TransferRateOverride: 2 });
-    // The parent's own budget rate changes: the pinned mirror is untouched.
+    // The parent's own budget rate changes: the received amount is untouched,
+    // its budget value follows the line's (100 EUR at 1.5 = 150 USD).
     await d.s.transactions.updateTransactionColumn(id, 'ExchangeRate', 1.5);
-    expect(mirrorsOf(d, id)[0]).toMatchObject(quote!);
+    expect(mirrorsOf(d, id)[0]).toMatchObject({
+      InflowNative: 85_000,
+      InflowConverted: 150_000,
+      TransferRateOverride: 2,
+    });
+  });
+
+  it('a mirror in the budget currency is worth what it received (a EUR parent)', async () => {
+    const usd = (
+      await d.s.accounts.createAccount('Cash', d.budgetId, 'cash', 'USD', m(0), undefined, true)
+    ).ID;
+    const id = await d.s.transactions.addTransaction(
+      m(0),
+      m(100_000),
+      d.eur,
+      d.rent,
+      d.budgetId,
+      DATE,
+      '',
+      '',
+      'Shop'
+    );
+    const sent = { InflowNative: m(105_000), OutflowNative: m(0) };
+    await d.s.splits.upsertSplits(id, [
+      line(
+        {
+          TransferAccountID: usd,
+          Mirror: { ...sent, InflowConverted: m(105_000), OutflowConverted: m(0) },
+        },
+        100_000
+      ),
+    ]);
+    expect(mirrorsOf(d, id)[0]).toMatchObject({
+      ...sent,
+      InflowConverted: 105_000,
+      TransferRateOverride: 2,
+      ExchangeRateOverride: 0,
+    });
   });
 
   it('a direct edit of one mirror of a two-mirror split leaves the other alone', async () => {
@@ -413,7 +472,7 @@ describe('split transfer lines with an entered received amount', () => {
     await d.s.transactions.updateTransactionColumn(second.ID, 'Memo', 'note');
     await d.s.transactions.updateTransactionColumn(second.ID, 'InflowNative', m(70_000));
     const [after] = mirrorsOf(d, id);
-    expect(after).toMatchObject({ ...RECEIVED, TransferRateOverride: 2 });
+    expect(after).toMatchObject({ ...VALUED, TransferRateOverride: 2 });
     expect(d.s.legacyReplay.hasPinnedSplitMirrors([id])).toBe(true);
   });
 
@@ -454,7 +513,7 @@ describe('split transfer lines with an entered received amount', () => {
     await d.s.transactions.moveTransactionToNewAccount(id, gbp);
     // The line is now 80 GBP; the EUR the other account received is unchanged.
     expect(d.s.splits.getSplits(id)[0].OutflowNative).toBe(80_000);
-    expect(mirrorsOf(d, id)[0]).toMatchObject({ ...RECEIVED, TransferRateOverride: 2 });
+    expect(mirrorsOf(d, id)[0]).toMatchObject({ InflowNative: 91_230, TransferRateOverride: 2 });
   });
 
   it("a move into the mirror's own currency unpins it: it mirrors the line exactly", async () => {
@@ -478,16 +537,17 @@ describe('split transfer lines with an entered received amount', () => {
     expect(mirrorsOf(d, id)[0]).toMatchObject({ InflowNative: native, TransferRateOverride: 0 });
   });
 
-  it('a rate edit on a pinned mirror keeps its entered amount; custom rates re-value it', async () => {
+  it('custom rates leave a pinned mirror alone; a rate edit keeps its entered amount', async () => {
     const id = await addParent(d, 100_000);
     await d.s.splits.upsertSplits(id, [
       line({ TransferAccountID: d.eur, Mirror: RECEIVED }, 100_000),
     ]);
-    // The pin is on the native amount; the budget value follows a custom rate.
+    // Its rate is implied by the entered amounts, like a transfer leg's
+    // with typed amounts: a custom rate does not re-value it.
     await d.s.currency.addCustomRate('EUR', 'USD', 1.5, '2026-01-01', null, d.budgetId);
     expect(mirrorsOf(d, id)[0]).toMatchObject({
       InflowNative: 91_230,
-      InflowConverted: 136_845,
+      InflowConverted: 100_000,
       TransferRateOverride: 2,
     });
     // A manual rate on the mirror re-values it and keeps the entered amount.
@@ -694,8 +754,8 @@ describe('split mirror rows in the register', () => {
       .filter((row) => row.TransferID?.startsWith('split_transfer_'));
     // Not "Savings", the account of the first sibling mirror.
     expect(inEur.TransferAccountName).toBe('Checking');
-    // 99.50 USD for 91.23 EUR, the amounts entered.
-    expect(inEur.ExchangeRate).toBeCloseTo(99.5 / 91.23, 8);
+    // The line's 50.00 USD for the 91.23 EUR entered.
+    expect(inEur.ExchangeRate).toBeCloseTo(50 / 91.23, 8);
     const [inMortgage] = d.s.transactions
       .getTransactionsByAccount(d.mortgage)
       .filter((row) => row.TransferID?.startsWith('split_transfer_'));
@@ -706,5 +766,46 @@ describe('split mirror rows in the register', () => {
       .filter((row) => row.TransferID?.startsWith('split_transfer_'));
     expect(inSavings.TransferAccountName).toBe('Checking');
     expect(inSavings.ExchangeRate).toBeNull();
+  });
+});
+
+describe('split parents in the register', () => {
+  it("list their lines' payees when they have none of their own", async () => {
+    const d = await device(0.9);
+    const id = await d.s.transactions.addTransaction(
+      m(0),
+      m(300_000),
+      d.checking,
+      d.rent,
+      d.budgetId,
+      DATE,
+      'parent',
+      ''
+    );
+    await d.s.splits.upsertSplits(id, [
+      line({ TransferAccountID: d.eur }, 100_000),
+      line({ CategoryID: d.rent, Payee: 'Walmart' }, 100_000),
+      line({ CategoryID: d.rent, Payee: 'Walmart' }, 150_000),
+      {
+        ...line({ TransferAccountID: d.savings }, 0),
+        InflowNative: m(50_000),
+        InflowConverted: m(50_000),
+      },
+    ]);
+    const row = () =>
+      d.s.transactions.getTransactionsByAccount(d.checking).find((r) => r.ID === id)!;
+    expect(JSON.parse(row().SplitPayees!)).toEqual([
+      ['', 'Euro', 1],
+      ['Walmart', null, 1],
+      ['Walmart', null, 1],
+      ['', 'Savings', 0],
+    ]);
+    // A payee of its own wins; plain rows carry none.
+    await d.s.transactions.updateTransactionColumn(id, 'Payee', 'Shop');
+    expect(row().SplitPayees).toBeNull();
+    const plain = await addParent(d, 10_000);
+    expect(
+      d.s.transactions.getTransactionsByAccount(d.checking).find((r) => r.ID === plain)!.SplitPayees
+    ).toBeNull();
   });
 });

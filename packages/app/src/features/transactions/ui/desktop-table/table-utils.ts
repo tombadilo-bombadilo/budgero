@@ -1,6 +1,6 @@
 import { t } from '@lingui/core/macro';
 import type { TransactionSplit } from '@budgero/core/browser';
-import { mirrorMagnitude } from '../../lib/split-transfer';
+import { mirrorMagnitude, type EnteredReceivedAccess } from '../../lib/split-transfer';
 
 /**
  * Split data can come from different sources with different casing
@@ -101,6 +101,25 @@ export function receivedFromMirror(
     received_amount: received,
     received_auto: !s.MirrorPinned,
     received_base: lineAmount,
+  };
+}
+
+/** The fields of an edited line followEnteredReceived reads (split dialog, mobile card). */
+type ReceivedLine = Pick<
+  EditableSplit,
+  'inflow' | 'outflow' | 'received_amount' | 'received_auto'
+> & {
+  transfer_account_id?: number | null;
+};
+
+/** EnteredReceivedAccess for the split dialog's and the mobile card's lines. */
+export function editableSplitReceived<L extends ReceivedLine>(): EnteredReceivedAccess<L> {
+  return {
+    target: (line) => line.transfer_account_id,
+    amount: (line) => Number(line.inflow) || Number(line.outflow) || 0,
+    received: (line) => line.received_amount,
+    auto: (line) => line.received_auto !== false,
+    withReceived: (line, received) => ({ ...line, received_amount: received }),
   };
 }
 

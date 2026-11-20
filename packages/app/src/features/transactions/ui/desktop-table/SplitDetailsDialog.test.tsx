@@ -272,6 +272,26 @@ describe('SplitDetailsDialog transfer lines', () => {
     state.unlocked = [];
   });
 
+  it("shows each line's payee when not editing, and a transfer line's target", () => {
+    state.splits = [
+      line({ ID: 1, CategoryID: 7, CategoryName: 'Food', Payee: 'Walmart' }),
+      line({ ID: 2, TransferAccountID: 5, TransferAccountName: 'Euro' }),
+    ];
+    render(
+      <SplitDetailsDialog
+        transaction={transaction}
+        onClose={vi.fn()}
+        currentFormatter={new Intl.NumberFormat('en-US')}
+        transactionCurrencyDisplay="budget"
+        getPrimaryInflow={(row) => row.InflowConverted}
+        getPrimaryOutflow={(row) => row.OutflowConverted}
+        budgetId={1}
+      />
+    );
+    expect(screen.getByText('Walmart')).toBeInTheDocument();
+    expect(screen.getByText('→ Euro')).toBeInTheDocument();
+  });
+
   it('keeps a payee naming its own account as plain text', async () => {
     state.splits = [line({ CategoryID: 7 })];
     open();

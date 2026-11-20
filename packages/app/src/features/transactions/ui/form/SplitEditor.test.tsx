@@ -141,6 +141,31 @@ describe('SplitEditor transfer lines', () => {
     ]);
   });
 
+  it('an entered received amount scales with the line amount and stays entered', async () => {
+    const onChange = vi.fn();
+    render(
+      <Harness
+        initial={[line({ transferAccountId: 3, receivedAmount: 80_000, receivedAuto: false })]}
+        onChange={onChange}
+      />
+    );
+    const outflow = screen
+      .getAllByTestId('amount')
+      .find((input) => (input as HTMLInputElement).value === '100000')!;
+    fireEvent.change(outflow, { target: { value: '150000' } });
+    fireEvent.blur(outflow);
+    expect(onChange).toHaveBeenLastCalledWith([
+      expect.objectContaining({ outflow: 150_000, receivedAmount: 120_000, receivedAuto: false }),
+    ]);
+    // Typing one afterwards sets it exactly.
+    const input = screen.getByTestId('split-received-amount');
+    fireEvent.change(input, { target: { value: '110000' } });
+    fireEvent.blur(input);
+    expect(onChange).toHaveBeenLastCalledWith([
+      expect.objectContaining({ receivedAmount: 110_000, receivedAuto: false }),
+    ]);
+  });
+
   it('shows "Sent from" for an inflow line', () => {
     render(
       <Harness

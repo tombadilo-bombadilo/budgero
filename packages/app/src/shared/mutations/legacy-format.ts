@@ -96,7 +96,9 @@ const NEWER_THAN_V1_22 = 7;
  * carry the exact amount their mirror received (and the mirror keeps it when
  * the parent changes), and a line to an off-budget account can keep a
  * category; v1.21.5 converts every mirror at market rates and refuses a line
- * with both a category and a transfer account.
+ * with both a category and a transfer account. An amount edit of a
+ * cross-currency transfer's sent leg scales the received leg in proportion;
+ * v1.21.5 keeps the received amount.
  */
 const NEWER_THAN_V1_21_5 = 7;
 
@@ -177,6 +179,12 @@ const newSplitLines = (splits: unknown): boolean =>
 const pinnedMirrors = (checks: LegacyReplayService | null, ids: (number | null)[]): boolean => {
   const valid = ids.filter((value): value is number => value !== null);
   return Boolean(checks && valid.length && checks.hasPinnedSplitMirrors(valid));
+};
+
+/** Sent legs of cross-currency transfers among these rows (see scalesTransferPartners). */
+const scalesPartner = (checks: LegacyReplayService | null, ids: (number | null)[]): boolean => {
+  const valid = ids.filter((value): value is number => value !== null);
+  return Boolean(checks && valid.length && checks.scalesTransferPartners(valid));
 };
 
 /** A direct edit of a split mirror whose parent has one other mirror (see isSplitMirrorPair). */
@@ -324,14 +332,22 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   // Amounts a run put back or re-applies move pinned mirrors with their parents.
   'rules.undoRun': (args, checks) => {
     const rows = runTransactionIds(args.runId);
-    if (pinnedMirrors(checks, rows) || rows.some((row) => mirrorPair(checks, row))) {
+    if (
+      pinnedMirrors(checks, rows) ||
+      scalesPartner(checks, rows) ||
+      rows.some((row) => mirrorPair(checks, row))
+    ) {
       return NEWER_THAN_V1_21_5;
     }
     return runChangedLabels(args.runId) ? NEWER_THAN_V1_19 : true;
   },
   'rules.redoRun': (args, checks) => {
     const rows = runTransactionIds(args.runId);
-    if (pinnedMirrors(checks, rows) || rows.some((row) => mirrorPair(checks, row))) {
+    if (
+      pinnedMirrors(checks, rows) ||
+      scalesPartner(checks, rows) ||
+      rows.some((row) => mirrorPair(checks, row))
+    ) {
       return NEWER_THAN_V1_21_5;
     }
     return runChangedLabels(args.runId) && NEWER_THAN_V1_19;
@@ -364,6 +380,9 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
         ? (services()?.rules?.matchingTransactionIds?.(rule.id, options.transactionIds) ?? [])
         : [];
     if (matched.some((row) => mirrorPair(checks, row))) return NEWER_THAN_V1_21_5;
+    // Any rule rewrites a transfer leg's amounts (updateTransaction), so a
+    // cross-currency sent leg among the matched rows may scale its partner.
+    if (scalesPartner(checks, matched)) return NEWER_THAN_V1_21_5;
     // Only the rows this run changes: a split parent with a pinned mirror
     // whose amount or account the rule sets.
     if (
@@ -409,6 +428,14 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
     // An amount, date or account edit of one of two split mirrors: older
     // builds also touch the other one (as if it were the transfer partner).
     if (SPLIT_FOLLOW_COLUMNS.has(column) && mirrorPair(checks, rowId)) return NEWER_THAN_V1_21_5;
+    // An amount edit of a cross-currency transfer's sent leg scales the received leg.
+    if (
+      AMOUNT_EDIT_COLUMNS.has(column) &&
+      column !== 'exchangerate' &&
+      scalesPartner(checks, [rowId])
+    ) {
+      return NEWER_THAN_V1_21_5;
+    }
     if (AMOUNT_EDIT_COLUMNS.has(column) && amountEditDiffers(checks, rowId)) {
       return NEWER_THAN_V1_21;
     }
@@ -419,7 +446,11 @@ export const LEGACY_FORMAT_RULES: Readonly<Record<string, LegacyRule>> = {
   // The undo of an amount edit on a row with a manual rate: a cross-currency
   // transfer partner now keeps its amount.
   'transactions.restoreAmounts': (args, checks) => {
-    if (pinnedMirrors(checks, [id(args.id)]) || mirrorPair(checks, id(args.id))) {
+    if (
+      pinnedMirrors(checks, [id(args.id)]) ||
+      scalesPartner(checks, [id(args.id)]) ||
+      mirrorPair(checks, id(args.id))
+    ) {
       return NEWER_THAN_V1_21_5;
     }
     return amountEditDiffers(checks, id(args.id)) && NEWER_THAN_V1_21;

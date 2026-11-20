@@ -14,7 +14,10 @@ import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell
 import { asMilli, formatMilli, ZERO_MILLI, type MilliUnits } from '@shared/lib/currency/milli';
 import { assignRemainingToSplit, newSplitLine } from './split-lines';
 import {
+  followEnteredReceived,
+  followEnteredReceivedLines,
   needsReceivedAmount,
+  SPLIT_LINE_RECEIVED,
   splitLineCategoryMode,
   splitPayeeUpdate,
   splitTransferUpdate,
@@ -115,8 +118,13 @@ export function SplitEditor({
     budgetId,
   });
 
+  // An entered received amount scales with its line's amount.
   const updateLine = (id: string, updates: Partial<SplitLine>) => {
-    onSplitLinesChange(splitLines.map((l) => (l.id === id ? { ...l, ...updates } : l)));
+    onSplitLinesChange(
+      splitLines.map((l) =>
+        l.id === id ? followEnteredReceived(l, { ...l, ...updates }, SPLIT_LINE_RECEIVED) : l
+      )
+    );
   };
 
   const deleteLine = (id: string) => {
@@ -128,7 +136,13 @@ export function SplitEditor({
   };
 
   const splitRemaining = () => {
-    onSplitLinesChange(assignRemainingToSplit(splitLines, remaining, parentAmount));
+    onSplitLinesChange(
+      followEnteredReceivedLines(
+        splitLines,
+        assignRemainingToSplit(splitLines, remaining, parentAmount),
+        SPLIT_LINE_RECEIVED
+      )
+    );
   };
 
   return (

@@ -373,6 +373,38 @@ export class LegacyReplayService {
       .some((mirror) => mirror.Reconciled);
   }
 
+  /**
+   * Whether any of these rows is the sent (outflow) leg of a two-leg transfer
+   * between accounts in different currencies: an amount edit of it now
+   * scales the received leg in proportion (see preparePartnerSync); v1.21.5
+   * and older keep the received amount. Checked on the stored row, before
+   * the edit.
+   */
+  scalesTransferPartners(transactionIds: readonly number[]): boolean {
+    const ids = validIds(transactionIds);
+    for (let index = 0; index < ids.length; index += CHUNK) {
+      const chunk = ids.slice(index, index + CHUNK);
+      const found = getRow<{ Found: number }>(
+        this.db,
+        `SELECT 1 AS Found
+           FROM transactions t
+           JOIN accounts a ON a.ID = t.AccountID
+           JOIN transactions p ON p.TransferID = t.TransferID AND p.ID != t.ID
+           JOIN accounts pa ON pa.ID = p.AccountID
+          WHERE t.ID IN (${placeholders(chunk)})
+            AND COALESCE(t.TransferID, '') != ''
+            AND t.TransferID NOT GLOB 'split_transfer_*'
+            AND COALESCE(t.OutflowNative, t.OutflowConverted, 0) > 0
+            AND a.Currency != pa.Currency
+            AND (SELECT COUNT(*) FROM transactions x WHERE x.TransferID = t.TransferID) = 2
+          LIMIT 1`,
+        ...chunk
+      );
+      if (found) return true;
+    }
+    return false;
+  }
+
   /** A rate edit of this transfer now unlocks a reconciled leg whose amount changes. */
   transferHasReconciledLeg(transferId: string): boolean {
     return this.queries

@@ -50,6 +50,7 @@ export {
 } from './services/transactions/index.js';
 export {
   type SplitInput,
+  scaleMagnitude,
   SPLIT_MIRROR_RATE_MISSING,
   SplitMirrorRateError,
 } from './services/transactions/split-service.js';

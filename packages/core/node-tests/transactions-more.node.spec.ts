@@ -648,7 +648,7 @@ describe('Transactions (additional coverage)', () => {
     expect(!!incoming.ExchangeRateOverride).toBe(false);
   });
 
-  it('editing a transfer leg keeps the partner leg, its amount and its manual rate override', async () => {
+  it('editing the sent leg scales the received leg at its manual rate override', async () => {
     const adapter: DatabaseAdapter = await NodeSqlJsAdapter.create();
     const sm = new ServiceManager();
     await sm.initialize(adapter);
@@ -696,19 +696,18 @@ describe('Transactions (additional coverage)', () => {
     let incoming = services.transactions.getTransactionByID(inLeg);
     expect(incoming.InflowNative).toBe(240000000 / 120); // EUR 2,000 in milliunits
 
-    // Editing the OUTGOING leg leaves the partner as it is: each leg of a cross-currency transfer
-    // holds its own bank amount, and the override survives. The direct rate the two legs imply
-    // changes instead (236,000 RSD for 2,000 EUR).
+    // Editing the OUTGOING leg scales the received amount in proportion, so the transfer keeps
+    // its direct rate (2,000 EUR for 240,000 RSD); the incoming leg keeps its override rate.
+    const rateBefore = services.transactions.getTransferRateDetails(transferId)!.rate;
     await services.transactions.updateTransactionColumn(outLeg, 'OutflowConverted', 236000000);
 
     incoming = services.transactions.getTransactionByID(inLeg);
-    expect(incoming.InflowNative).toBe(2000000); // bank amount kept
-    expect(incoming.InflowConverted).toBe(240000000);
+    expect(incoming.InflowNative).toBe(1966667); // EUR 2,000 * 236 / 240
+    expect(incoming.InflowConverted).toBe(1966667 * 120);
     expect(incoming.ExchangeRate).toBeCloseTo(120, 6); // override rate preserved
     expect(!!incoming.ExchangeRateOverride).toBe(true);
     const details = services.transactions.getTransferRateDetails(transferId)!;
-    expect(details.rate).toBeCloseTo(2000 / 236000, 10);
-    expect(details.transferRateOverride).toBe(true);
+    expect(details.rate).toBeCloseTo(rateBefore, 8);
   });
 
   it('bulk reassigns categories and supports transfer ID queries and unsupported column path', async () => {

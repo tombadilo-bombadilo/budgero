@@ -2,7 +2,7 @@ import { ImportDuplicateService, type ImportIdentity } from '../import/duplicate
 import { DatabaseAdapter } from '../../database/interface.js';
 import { allRows, atomically, getRow, run } from '../../database/sql.js';
 import { TransactionWriteBatch, type PendingTransactionRow } from './write-batch.js';
-import { SplitService, isPinnedMirror, type SplitInput } from './split-service.js';
+import { SplitService, isPinnedMirror, scaleMagnitude, type SplitInput } from './split-service.js';
 import {
   captureRestoreSnapshot,
   restoreTransactionSnapshot,
@@ -1876,10 +1876,17 @@ export class TransactionService {
    * only); `main` is the edited leg as it will be after the edit. The returned
    * step runs in the edit's own DB transaction, so both legs change together.
    * - Same currency: the partner mirrors the amount (inflow <-> outflow).
-   * - Different currencies: each leg holds its own bank amount, so the
-   *   partner's amounts stay as they are and the direct rate the two legs
-   *   imply changes instead (it now comes from amounts the user entered, so
-   *   it is marked as overridden on both legs).
+   * - Different currencies, the sent (outflow) leg's amount edited in place:
+   *   the received amount scales in proportion, so the transfer keeps the
+   *   direct rate it had (120 -> 150 sent turns 80 received into 100). See
+   *   scaledPartner for how the partner is valued.
+   * - Different currencies, any other amount edit (the received leg, a sent
+   *   amount from or to zero, a direction flip or an account move): each leg
+   *   holds its own bank amount, so the partner's amounts stay as they are
+   *   and the direct rate the two legs imply changes instead (it now comes
+   *   from amounts the user entered, so it is marked as overridden on both
+   *   legs). Editing the received leg is how a user records what the bank
+   *   actually delivered.
    * - A reconciled partner whose bank amount changes goes back to uncleared.
    * - Date, memo, payee, and label remain specific to each leg. Category
    *   edits are synchronized separately by moveTransactionToNewCategory.
@@ -1912,8 +1919,27 @@ export class TransactionService {
           (main.InflowNative ?? main.InflowConverted) ||
         (before.OutflowNative ?? before.OutflowConverted) !==
           (main.OutflowNative ?? main.OutflowConverted);
+      const scaled = amountChanged
+        ? await this.scaledPartner(before, main, partner, partnerAcc.Currency, budget)
+        : null;
       return () => {
-        if (amountChanged) {
+        if (scaled) {
+          if (scaled.rate !== null) this.queries.setExchangeRate(partner.ID, scaled.rate, false);
+          this.queries.updateTransactionWithOriginal(
+            partner.ID,
+            scaled.native,
+            ZERO_MILLI,
+            scaled.converted,
+            ZERO_MILLI,
+            partner.CategoryID,
+            partner.AccountID,
+            partner.Date,
+            partner.Memo,
+            internalOnBudgetTransfer ? null : (partner.Payee ?? null)
+          );
+          this.queries.unreconcileIfNativeChanged(partner.ID, partner);
+          this.queries.recalculateBalancesFrom(partner.AccountID, partner.Date, partner.ID);
+        } else if (amountChanged) {
           run(
             this.db,
             `UPDATE transactions SET TransferRateOverride = 1 WHERE ID IN (?, ?)`,
@@ -1992,6 +2018,65 @@ export class TransactionService {
       if (internalOnBudgetTransfer) this.queries.updateTransactionPayee(main.ID, null);
       this.queries.recalculateBalancesFrom(partner.AccountID, partner.Date, partner.ID);
     };
+  }
+
+  /**
+   * The received leg of a cross-currency transfer whose sent leg `before`
+   * becomes `main` (same account, outflow before and after, neither zero):
+   * its native amount scaled by new / old sent in exact integer arithmetic.
+   * Its budget value follows the way the row was valued: a leg with a rate
+   * override keeps that rate (as a transfer with typed amounts has), a leg in
+   * the budget currency is its native amount, any other converts at the
+   * resolved rate for its date, like an amount edit of that row (`rate`: the
+   * rate to store, null to keep the row's). Null for any other edit (the
+   * partner then keeps its amount, see preparePartnerSync).
+   */
+  private async scaledPartner(
+    before: Transaction,
+    main: Transaction,
+    partner: Transaction,
+    partnerCurrency: string,
+    budget: { DisplayCurrency: string }
+  ): Promise<{ native: MilliUnits; converted: MilliUnits; rate: number | null } | null> {
+    const oldSent = Number(before.OutflowNative ?? before.OutflowConverted ?? 0);
+    const newSent = Number(main.OutflowNative ?? main.OutflowConverted ?? 0);
+    const received = Number(partner.InflowNative ?? partner.InflowConverted ?? 0);
+    const sentOnly = (row: Transaction) =>
+      Number(row.InflowNative ?? row.InflowConverted ?? 0) === 0;
+    if (
+      main.AccountID !== before.AccountID ||
+      !(oldSent > 0) ||
+      !(newSent > 0) ||
+      !sentOnly(before) ||
+      !sentOnly(main) ||
+      !(received > 0) ||
+      Number(partner.OutflowNative ?? partner.OutflowConverted ?? 0) !== 0
+    ) {
+      return null;
+    }
+    const native = asMilli(scaleMagnitude(received, oldSent, newSent));
+    if (partnerCurrency === budget.DisplayCurrency)
+      return { native, converted: native, rate: null };
+    if (partner.ExchangeRateOverride && partner.ExchangeRate) {
+      const converted = asMilli(
+        convertScaled(native, partner.ExchangeRate, partnerCurrency, budget.DisplayCurrency)
+      );
+      return { native, converted, rate: null };
+    }
+    const converted = await this.currencyService.convertAmount(
+      native,
+      partnerCurrency,
+      budget.DisplayCurrency,
+      partner.Date,
+      partner.BudgetID
+    );
+    const rate = await this.currencyService.resolveRate(
+      partnerCurrency,
+      budget.DisplayCurrency,
+      partner.Date,
+      partner.BudgetID
+    );
+    return { native, converted, rate: rate || null };
   }
 
   /**

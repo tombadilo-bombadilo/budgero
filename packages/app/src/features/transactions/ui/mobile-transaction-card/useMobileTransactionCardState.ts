@@ -13,9 +13,14 @@ import { getRuntime } from '@shared/runtime/global';
 import { useUiStore } from '@shared/store/useUiStore';
 import { toastError } from '@shared/lib/errors';
 import { t } from '@lingui/core/macro';
-import { extractSplitFlows, receivedFromMirror } from '../desktop-table/table-utils';
+import {
+  editableSplitReceived,
+  extractSplitFlows,
+  receivedFromMirror,
+} from '../desktop-table/table-utils';
 import { confirmSplitSave } from '../reconciled-edit/reconciled-edit-confirm';
 import {
+  followEnteredReceived,
   missingReceivedMessage,
   needsReceivedAmount,
   splitLineCategoryMode,
@@ -228,9 +233,14 @@ export function useMobileTransactionCardState({
     setEditSplits((prev) => (prev ?? []).filter((_, i) => i !== idx));
   };
 
+  // An entered received amount scales with its line's amount.
   const updateSplitLine = (idx: number, updates: Partial<SplitLine>) => {
     setEditSplits((prev) =>
-      (prev ?? []).map((line, i) => (i === idx ? { ...line, ...updates } : line))
+      (prev ?? []).map((line, i) =>
+        i === idx
+          ? followEnteredReceived(line, { ...line, ...updates }, editableSplitReceived())
+          : line
+      )
     );
   };
 
