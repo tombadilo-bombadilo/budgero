@@ -679,3 +679,32 @@ describe('split transfer lines and categories', () => {
     expect(await run(true)).toEqual(await run(false));
   });
 });
+
+describe('split mirror rows in the register', () => {
+  it('name the parent account as the other side and carry their budget rate', async () => {
+    const d = await device(0.9);
+    const id = await addParent(d, 200_000);
+    await d.s.splits.upsertSplits(id, [
+      line({ TransferAccountID: d.savings, CategoryID: d.rent }, 100_000),
+      line({ TransferAccountID: d.eur, Mirror: RECEIVED }, 50_000),
+      line({ TransferAccountID: d.mortgage, CategoryID: d.rent }, 50_000),
+    ]);
+    const [inEur] = d.s.transactions
+      .getTransactionsByAccount(d.eur)
+      .filter((row) => row.TransferID?.startsWith('split_transfer_'));
+    // Not "Savings", the account of the first sibling mirror.
+    expect(inEur.TransferAccountName).toBe('Checking');
+    // 99.50 USD for 91.23 EUR, the amounts entered.
+    expect(inEur.ExchangeRate).toBeCloseTo(99.5 / 91.23, 8);
+    const [inMortgage] = d.s.transactions
+      .getTransactionsByAccount(d.mortgage)
+      .filter((row) => row.TransferID?.startsWith('split_transfer_'));
+    expect(inMortgage.TransferAccountName).toBe('Checking');
+    expect(inMortgage.ExchangeRate).toBeCloseTo(1 / 0.9, 8);
+    const [inSavings] = d.s.transactions
+      .getTransactionsByAccount(d.savings)
+      .filter((row) => row.TransferID?.startsWith('split_transfer_'));
+    expect(inSavings.TransferAccountName).toBe('Checking');
+    expect(inSavings.ExchangeRate).toBeNull();
+  });
+});
