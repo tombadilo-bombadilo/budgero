@@ -768,3 +768,44 @@ describe('split mirror rows in the register', () => {
     expect(inSavings.ExchangeRate).toBeNull();
   });
 });
+
+describe('split parents in the register', () => {
+  it("list their lines' payees when they have none of their own", async () => {
+    const d = await device(0.9);
+    const id = await d.s.transactions.addTransaction(
+      m(0),
+      m(300_000),
+      d.checking,
+      d.rent,
+      d.budgetId,
+      DATE,
+      'parent',
+      ''
+    );
+    await d.s.splits.upsertSplits(id, [
+      line({ TransferAccountID: d.eur }, 100_000),
+      line({ CategoryID: d.rent, Payee: 'Walmart' }, 100_000),
+      line({ CategoryID: d.rent, Payee: 'Walmart' }, 150_000),
+      {
+        ...line({ TransferAccountID: d.savings }, 0),
+        InflowNative: m(50_000),
+        InflowConverted: m(50_000),
+      },
+    ]);
+    const row = () =>
+      d.s.transactions.getTransactionsByAccount(d.checking).find((r) => r.ID === id)!;
+    expect(JSON.parse(row().SplitPayees!)).toEqual([
+      ['', 'Euro', 1],
+      ['Walmart', null, 1],
+      ['Walmart', null, 1],
+      ['', 'Savings', 0],
+    ]);
+    // A payee of its own wins; plain rows carry none.
+    await d.s.transactions.updateTransactionColumn(id, 'Payee', 'Shop');
+    expect(row().SplitPayees).toBeNull();
+    const plain = await addParent(d, 10_000);
+    expect(
+      d.s.transactions.getTransactionsByAccount(d.checking).find((r) => r.ID === plain)!.SplitPayees
+    ).toBeNull();
+  });
+});

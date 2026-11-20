@@ -76,6 +76,12 @@ export interface GetTransactionsByAccountRow {
   TransferAccountOnBudget?: boolean | null;
   /** The other leg's account, for transfers. */
   TransferAccountName?: string | null;
+  /**
+   * A split parent without a payee of its own: its lines' payees as JSON,
+   * `[payee, transfer account name, sent]` per line in line order (see
+   * TX_ROW_COLUMNS). Null otherwise.
+   */
+  SplitPayees?: string | null;
   RunningBalanceConverted: MilliUnits | null;
   RunningBalanceNative?: MilliUnits | null;
   TransferID?: string;
@@ -201,6 +207,12 @@ export interface GetTransactionsByAccountAndMonthRow {
   TransferAccountOnBudget?: boolean | null;
   /** The other leg's account, for transfers. */
   TransferAccountName?: string | null;
+  /**
+   * A split parent without a payee of its own: its lines' payees as JSON,
+   * `[payee, transfer account name, sent]` per line in line order (see
+   * TX_ROW_COLUMNS). Null otherwise.
+   */
+  SplitPayees?: string | null;
   RunningBalanceConverted: MilliUnits | null;
   RunningBalanceNative?: MilliUnits | null;
   TransferID?: string;

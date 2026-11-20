@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { asMilli } from '@budgero/core/browser';
 import {
   hasReadOnlyTransferCategory,
+  splitLinePayeeLabel,
+  splitPayeesLabel,
   transferHasOffBudgetLeg,
   transferPayeeLabel,
 } from './transfer-category';
@@ -77,5 +79,49 @@ describe('transferPayeeLabel', () => {
     expect(transferPayeeLabel({ ...leg, Payee: 'Bank' })).toBeNull();
     expect(transferPayeeLabel({ ...leg, TransferID: '' })).toBeNull();
     expect(transferPayeeLabel({ ...leg, TransferAccountName: null })).toBeNull();
+  });
+});
+
+describe('splitPayeesLabel', () => {
+  const lines = (...values: unknown[][]) => JSON.stringify(values);
+
+  it("lists a payee-less split's line payees and transfer targets once, in line order", () => {
+    expect(
+      splitPayeesLabel({
+        Payee: undefined,
+        SplitPayees: lines(
+          ['', 'Checking EUR', 1],
+          ['Walmart', null, 1],
+          ['Walmart', null, 1],
+          ['', 'Savings', 0],
+          ['', null, 1]
+        ),
+      })
+    ).toBe('→ Checking EUR, Walmart, ← Savings');
+  });
+
+  it('is null for a split with its own payee, without line payees, or for other rows', () => {
+    expect(splitPayeesLabel({ Payee: 'Shop', SplitPayees: lines(['Walmart', null, 1]) })).toBe(
+      null
+    );
+    expect(splitPayeesLabel({ Payee: '', SplitPayees: lines(['', null, 1]) })).toBeNull();
+    expect(splitPayeesLabel({ Payee: '', SplitPayees: null })).toBeNull();
+    expect(splitPayeesLabel({ Payee: '', SplitPayees: 'not json' })).toBeNull();
+  });
+});
+
+describe('splitLinePayeeLabel', () => {
+  it("shows a line's payee, else its transfer target, else the parent's payee", () => {
+    expect(splitLinePayeeLabel({ Payee: 'Walmart', TransferAccountName: 'Euro' }, 'Shop')).toBe(
+      'Walmart'
+    );
+    expect(
+      splitLinePayeeLabel({ Payee: '', TransferAccountName: 'Euro', OutflowConverted: 5 })
+    ).toBe('→ Euro');
+    expect(splitLinePayeeLabel({ payee: '', transfer_account_name: 'Euro', outflow: 0 })).toBe(
+      '← Euro'
+    );
+    expect(splitLinePayeeLabel({ Payee: '' }, 'Shop')).toBe('Shop');
+    expect(splitLinePayeeLabel({ Payee: '' })).toBeNull();
   });
 });

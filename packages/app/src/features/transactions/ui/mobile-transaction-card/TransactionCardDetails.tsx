@@ -33,7 +33,10 @@ import { asMilli } from '@shared/lib/currency/milli';
 import { withEditPrecision } from '@shared/lib/number-format';
 import { TransferRateDialog } from '@features/transactions/ui/transfer-rate/TransferRateDialog';
 import { validateTransactionExchangeRate } from '@features/transactions/lib/exchange-rate-validation';
-import { transferHasOffBudgetLeg } from '@features/transactions/lib/transfer-category';
+import {
+  splitLinePayeeLabel,
+  transferHasOffBudgetLeg,
+} from '@features/transactions/lib/transfer-category';
 import {
   hasTransferRate,
   type SplitLineCategoryMode,
@@ -486,7 +489,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                           />
                         ) : (
                           <span className="text-xs text-muted-foreground block truncate">
-                            {s.payee || s.Payee || transaction.Payee || t`No payee`}
+                            {splitLinePayeeLabel(s, transaction.Payee) ?? t`No payee`}
                           </span>
                         )}
                       </div>

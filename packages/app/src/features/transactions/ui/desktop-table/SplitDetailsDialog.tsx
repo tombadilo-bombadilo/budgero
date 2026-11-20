@@ -36,6 +36,7 @@ import {
   getSplitCategoryLabel,
 } from './table-utils';
 import { SplitMemoText } from './SplitMemoText';
+import { splitLinePayeeLabel } from '../../lib/transfer-category';
 import { confirmSplitSave } from '../reconciled-edit/reconciled-edit-confirm';
 import {
   followEnteredReceived,
@@ -551,7 +552,7 @@ export function SplitDetailsDialog({
                                   triggerClassName="h-8 w-full"
                                 />
                               ) : (
-                                String(s.payee || s.Payee || transaction?.Payee || '-')
+                                (splitLinePayeeLabel(s, transaction?.Payee) ?? '-')
                               )}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">

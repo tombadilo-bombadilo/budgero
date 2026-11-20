@@ -9,7 +9,7 @@ import { asMilli, formatMilli } from '@shared/lib/currency/milli';
 import { StatusIndicatorPopover } from '@features/transactions/ui/StatusIndicatorPopover';
 import { ClearedToggle } from '@features/transactions/ui/ClearedToggle';
 import { TransactionLabelBadge } from '@features/transactions/ui/TransactionLabelBadge';
-import { transferPayeeLabel } from '@features/transactions/lib/transfer-category';
+import { splitPayeesLabel, transferPayeeLabel } from '@features/transactions/lib/transfer-category';
 
 interface TransactionCardHeaderProps {
   transaction: GetTransactionsByAccountRow;
@@ -41,7 +41,8 @@ export const TransactionCardHeader = React.memo(function TransactionCardHeader({
   }, [transaction, t]);
 
   const categoryDisplay = displayCategoryOverride || transaction.Category || '';
-  const transferLabel = transferPayeeLabel(transaction);
+  // A transfer's other account, or a split's line payees, when it has no payee.
+  const transferLabel = transferPayeeLabel(transaction) ?? splitPayeesLabel(transaction);
   return (
     <div className="flex flex-1 items-center gap-2 min-w-0">
       {!hideSelection && (
