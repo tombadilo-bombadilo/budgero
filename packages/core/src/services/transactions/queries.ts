@@ -62,12 +62,17 @@ const TX_ROW_COLUMNS = `
  * Joins the first other leg (lowest ID) of a linked transfer and its account,
  * as `transfer_partner_account`, for TX_ROW_COLUMNS. One indexed lookup per row:
  * the `!= ''` term lets SQLite use the partial idx_transactions_transfer_id.
+ * A split's mirror rows (`split_transfer_<parent ID>_<date>`) share their key
+ * with each other, not with the parent, so their partner is the parent itself.
  */
 const TX_ROW_JOINS = `
       LEFT JOIN categories c ON t.CategoryID = c.ID
       LEFT JOIN labels l ON t.LabelID = l.ID
       LEFT JOIN accounts a ON t.AccountID = a.ID
-      LEFT JOIN transactions transfer_partner ON transfer_partner.ID = (
+      LEFT JOIN transactions transfer_partner ON transfer_partner.ID = CASE
+        WHEN t.TransferID GLOB 'split_transfer_[0-9]*'
+        THEN CAST(substr(t.TransferID, 16) AS INTEGER)
+        ELSE (
         SELECT p.ID
           FROM transactions p
           JOIN accounts pa ON pa.ID = p.AccountID
@@ -75,7 +80,7 @@ const TX_ROW_JOINS = `
            AND p.TransferID != ''
            AND p.ID != t.ID
          ORDER BY p.ID
-         LIMIT 1)
+         LIMIT 1) END
       LEFT JOIN accounts transfer_partner_account ON transfer_partner_account.ID = transfer_partner.AccountID`;
 
 const SQLITE_BIND_CHUNK_SIZE = 500;

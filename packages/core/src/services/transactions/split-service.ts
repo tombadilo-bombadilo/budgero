@@ -14,7 +14,7 @@ import {
 import { ensureTransferCategory } from './category-helpers.js';
 import { TransactionWriteBatch, isBatchRowRef, type BatchRowRef } from './write-batch.js';
 import { linesOutOfStep } from './split-amounts.js';
-import { convertScaled } from '../../currencies/index.js';
+import { convertScaled, getCurrencyScale } from '../../currencies/index.js';
 import { isAccountOnBudget } from './transfer-payee.js';
 
 /** The parent fields split handling reads (an existing row or a queued one). */
@@ -53,6 +53,8 @@ interface PreparedMirror {
   outflowOriginal: MilliUnits;
   inflowConverted: MilliUnits;
   outflowConverted: MilliUnits;
+  /** Budget rate of the row (1 target currency in the budget currency); null in the budget currency. */
+  exchangeRate: number | null;
   /** Amounts entered for the line (carried or kept): the row is marked as pinned. */
   pinned: boolean;
 }
@@ -132,6 +134,24 @@ function mirrorAmountsFor(
     InflowConverted: asMilli(inflow ? convertedMagnitude : 0),
     OutflowConverted: asMilli(outflow ? convertedMagnitude : 0),
   };
+}
+
+/**
+ * Budget rate entered amounts imply (budget value per unit of the account
+ * currency), as the rate column shows it. Null in the budget currency.
+ */
+function impliedBudgetRate(
+  amounts: SplitMirrorAmounts,
+  currency: string,
+  budgetCurrency: string
+): number | null {
+  if (currency === budgetCurrency) return null;
+  const native = Number(amounts.InflowNative) + Number(amounts.OutflowNative);
+  const converted = Number(amounts.InflowConverted) + Number(amounts.OutflowConverted);
+  if (!(native > 0) || !(converted > 0)) return null;
+  const rate =
+    (converted / native) * (getCurrencyScale(currency) / getCurrencyScale(budgetCurrency));
+  return Number(rate.toFixed(8));
 }
 
 /** Mirror rows are keyed by their parent and its current date. */
@@ -551,6 +571,7 @@ export class SplitService {
           outflowOriginal: asMilli(s.Mirror.OutflowNative),
           inflowConverted: asMilli(s.Mirror.InflowConverted),
           outflowConverted: asMilli(s.Mirror.OutflowConverted),
+          exchangeRate: impliedBudgetRate(s.Mirror, targetAccount.Currency, budget.DisplayCurrency),
           pinned: true,
         });
         continue;
@@ -593,6 +614,15 @@ export class SplitService {
         outflowOriginal: mirrorOutflowOriginal,
         inflowConverted: mirrorInflowConverted,
         outflowConverted: mirrorOutflowConverted,
+        exchangeRate:
+          targetAccount.Currency === budget.DisplayCurrency
+            ? null
+            : await this.currencyService.resolveRate(
+                targetAccount.Currency,
+                budget.DisplayCurrency,
+                parent.Date,
+                parent.BudgetID
+              ),
         pinned: false,
       });
     }
@@ -682,6 +712,7 @@ export class SplitService {
           mirror.OutflowConverted === pm.outflowConverted &&
           mirror.Memo === memo &&
           (mirror.Payee ?? null) === payee &&
+          (mirror.ExchangeRate ?? null) === pm.exchangeRate &&
           pm.pinned === isPinnedMirror(mirror);
         if (inStep) continue;
         // Entered amounts pin the row and other amounts unpin it; a flag older
@@ -690,7 +721,7 @@ export class SplitService {
           this.db,
           `UPDATE transactions
               SET Date = ?, TransferID = ?, InflowNative = ?, OutflowNative = ?,
-                  InflowConverted = ?, OutflowConverted = ?, Memo = ?, Payee = ?,
+                  InflowConverted = ?, OutflowConverted = ?, Memo = ?, Payee = ?, ExchangeRate = ?,
                   TransferRateOverride = CASE WHEN ${pm.pinned ? 1 : 0} THEN ${SPLIT_MIRROR_PINNED}
                     WHEN TransferRateOverride = ${SPLIT_MIRROR_PINNED} THEN 0
                     ELSE TransferRateOverride END
@@ -703,6 +734,7 @@ export class SplitService {
           pm.outflowConverted,
           memo,
           payee,
+          pm.exchangeRate,
           mirror.ID
         );
         this.queries.unreconcileIfNativeChanged(mirror.ID, mirror);
@@ -734,7 +766,7 @@ export class SplitService {
         newBalanceConverted,
         newBalanceOriginal,
         transferId,
-        undefined,
+        pm.exchangeRate,
         parent.LabelID ?? null,
         false,
         false,
