@@ -75,14 +75,14 @@ export function splitMirrorRateMessage(error: unknown): string | null {
 
 /**
  * Op `prepare` step for split lines with an entered received amount: the
- * originating device turns each into the exact mirror amounts (the budget
- * value converted here, once) and carries them on the line as `mirror`, so
- * every device writes the same, pinned, mirror row. The UI-only field is
- * dropped; lines without one stay as they are (and the op keeps its old
- * format). Without a rate for the budget value the UI's save is refused
- * (nothing made up is pinned); `lenient` calls (the Push API) fall back to
- * the plain, converted mirror instead. Lenient calls never carry a `mirror`
- * of their own either: only this step writes one.
+ * originating device turns each into the exact mirror amounts and carries
+ * them on the line as `mirror`, so every device writes the same, pinned,
+ * mirror row (valued at its line, see SPLIT_MIRROR_PINNED in core). The
+ * UI-only field is dropped; lines without one stay as they are (and the op
+ * keeps its old format). A quote that fails with a missing rate refuses the
+ * UI's save; `lenient` calls (the Push API) fall back to the plain, converted
+ * mirror instead. Lenient calls never carry a `mirror` of their own either:
+ * only this step writes one.
  */
 export async function carryReceivedAmounts<T extends Record<string, unknown>>(
   lines: T[],

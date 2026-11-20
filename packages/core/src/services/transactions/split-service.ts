@@ -36,8 +36,10 @@ export type SplitInput = Omit<TransactionSplit, 'ID' | 'TransactionID'> & {
   /**
    * Exact amounts for this line's mirror row (a transfer line to an account in
    * another currency than the parent's): what the target account received or
-   * sent, as the op carries it. The mirror is written with exactly these and
-   * keeps them when the parent changes later (it is pinned). Ignored on other
+   * sent, as the op carries it. The mirror is written with exactly this native
+   * amount and keeps it when the parent changes later (it is pinned); its
+   * budget value is the line's (see SPLIT_MIRROR_PINNED), the carried
+   * converted amounts only stand in for a line without one. Ignored on other
    * lines; without it the mirror is converted at the parent's date.
    */
   Mirror?: SplitMirrorAmounts | null;
@@ -56,6 +58,8 @@ interface PreparedMirror {
   exchangeRate: number | null;
   /** Amounts entered for the line (carried or kept): the row is marked as pinned. */
   pinned: boolean;
+  /** The rate is implied by entered amounts: ExchangeRateOverride (pinned rows only). */
+  rateOverride: boolean;
 }
 
 /**
@@ -64,11 +68,16 @@ interface PreparedMirror {
  * 0 or 1 there (transfer rate edits), so 2 is never mistaken for their data.
  *
  * The pin is on the NATIVE amount (what the other account received). Its
- * budget-currency value still follows rates like any row in that account:
- * custom-rate and budget-currency re-conversions rewrite InflowConverted /
- * OutflowConverted (from the kept native), and a direct exchange-rate edit
- * of the mirror re-derives it too. Each leg is valued on its own, as for a
- * non-split cross-currency transfer.
+ * budget-currency value is its line's, like the received leg of a non-split
+ * transfer with typed amounts: the mirror is worth exactly what left the
+ * parent for it (in a target account in the budget currency it is simply its
+ * native amount). ExchangeRate is the rate the two imply and is marked as
+ * overridden (ExchangeRateOverride = 1), so custom-rate and pending-rate
+ * re-conversions leave it alone, as they leave such a transfer leg alone.
+ * Re-conversions that rewrite every row from native (a budget or account
+ * currency change) value it at market like that leg too, until its parent
+ * changes again. A direct exchange-rate edit of the mirror re-derives its
+ * budget value from the kept native amount.
  */
 export const SPLIT_MIRROR_PINNED = 2;
 
@@ -93,7 +102,7 @@ export class SplitMirrorRateError extends ValidationError {
 }
 
 /** `magnitude` scaled by |to| / |from| in exact integer arithmetic (half away from zero). */
-function scaleMagnitude(magnitude: number, from: number, to: number): number {
+export function scaleMagnitude(magnitude: number, from: number, to: number): number {
   if (from === 0 || Math.abs(from) === Math.abs(to)) return magnitude;
   const numerator = BigInt(Math.round(magnitude)) * BigInt(Math.abs(Math.round(to)));
   const denominator = BigInt(Math.abs(Math.round(from)));
@@ -151,6 +160,26 @@ function impliedBudgetRate(
   const rate =
     (converted / native) * (getCurrencyScale(currency) / getCurrencyScale(budgetCurrency));
   return Number(rate.toFixed(8));
+}
+
+/**
+ * A pinned mirror's amounts: `mirror`'s native amount, valued at its line's
+ * budget-currency magnitude (`mirror`'s own converted amounts stand in for a
+ * line without one), or at the native amount itself when the target account
+ * is in the budget currency.
+ */
+function pinnedMirrorAmounts(
+  line: Pick<SplitInput, 'InflowConverted' | 'OutflowConverted'>,
+  mirror: SplitMirrorAmounts,
+  targetInBudgetCurrency: boolean
+): SplitMirrorAmounts {
+  const nativeNet = netOf(mirror.InflowNative, mirror.OutflowNative);
+  const native = Math.abs(nativeNet);
+  const lineConverted = Math.abs(netOf(line.InflowConverted, line.OutflowConverted));
+  const converted = targetInBudgetCurrency
+    ? native
+    : lineConverted || Math.abs(netOf(mirror.InflowConverted, mirror.OutflowConverted));
+  return mirrorAmountsFor(-nativeNet, native, converted);
 }
 
 /** Mirror rows are keyed by their parent and its current date. */
@@ -270,10 +299,12 @@ export class SplitService {
    * Exact mirror amounts for the lines that come with an entered received
    * (or sent) amount, as the originating device quotes them for an op to
    * carry: `received[index]` is the magnitude in the target account's
-   * currency; its budget-currency value is converted here, at the parent's
-   * date. One entry per line; null for lines without one, lines that are no
-   * transfer or whose target shares the parent's currency. Throws
-   * SplitMirrorRateError when no rate gives the budget value.
+   * currency. One entry per line; null for lines without one, lines that are
+   * no transfer or whose target shares the parent's currency. The mirror's
+   * budget value is its line's when it is written (see SPLIT_MIRROR_PINNED),
+   * so no rate is needed: the converted amounts quoted here are only an
+   * estimate (the line's own value when it has one, else the market rate at
+   * the parent's date, else the native amount) for a line saved without one.
    */
   async quoteMirrorAmounts(
     parent: Pick<SplitParent, 'AccountID' | 'BudgetID' | 'Date'>,
@@ -300,17 +331,23 @@ export class SplitService {
         const lineNet = lineNativeNet(line);
         if (lineNet === 0) return null;
         const native = asMilli(amount);
-        // Never a made-up budget value: without a rate the op cannot carry one.
+        if (target.Currency === budget.DisplayCurrency) {
+          return mirrorAmountsFor(lineNet, native, native);
+        }
+        if (source.Currency === budget.DisplayCurrency) {
+          return mirrorAmountsFor(lineNet, native, Math.abs(lineNet));
+        }
+        const lineConverted = Math.abs(netOf(line.InflowConverted, line.OutflowConverted));
+        if (lineConverted > 0) return mirrorAmountsFor(lineNet, native, lineConverted);
         const rate = await this.currencyService.resolveRate(
           target.Currency,
           budget.DisplayCurrency,
           parent.Date,
           parent.BudgetID
         );
-        if (!rate) throw new SplitMirrorRateError(target.Currency, budget.DisplayCurrency);
-        const converted = asMilli(
-          convertScaled(native, rate, target.Currency, budget.DisplayCurrency)
-        );
+        const converted = rate
+          ? asMilli(convertScaled(native, rate, target.Currency, budget.DisplayCurrency))
+          : native;
         return mirrorAmountsFor(lineNet, native, converted);
       })
     );
@@ -560,18 +597,30 @@ export class SplitService {
       if (!targetAccount) continue;
 
       // Entered amounts (carried by the op, or kept by a parent change) win,
-      // so every device writes the same mirror. The rest convert here.
+      // so every device writes the same mirror, valued at its line (see
+      // SPLIT_MIRROR_PINNED). The rest convert here.
       if (s.Mirror && targetAccount.Currency !== sourceAcc.Currency) {
+        const amounts = pinnedMirrorAmounts(
+          s,
+          s.Mirror,
+          targetAccount.Currency === budget.DisplayCurrency
+        );
+        const exchangeRate = impliedBudgetRate(
+          amounts,
+          targetAccount.Currency,
+          budget.DisplayCurrency
+        );
         preparedMirrors.push({
           targetAccountId: targetAccount.ID,
           memo: s.Memo ?? parent.Memo ?? '',
           payee: s.Payee || parent.Payee || '',
-          inflowOriginal: asMilli(s.Mirror.InflowNative),
-          outflowOriginal: asMilli(s.Mirror.OutflowNative),
-          inflowConverted: asMilli(s.Mirror.InflowConverted),
-          outflowConverted: asMilli(s.Mirror.OutflowConverted),
-          exchangeRate: impliedBudgetRate(s.Mirror, targetAccount.Currency, budget.DisplayCurrency),
+          inflowOriginal: amounts.InflowNative,
+          outflowOriginal: amounts.OutflowNative,
+          inflowConverted: amounts.InflowConverted,
+          outflowConverted: amounts.OutflowConverted,
+          exchangeRate,
           pinned: true,
+          rateOverride: exchangeRate !== null,
         });
         continue;
       }
@@ -623,6 +672,7 @@ export class SplitService {
                 parent.BudgetID
               ),
         pinned: false,
+        rateOverride: false,
       });
     }
     return preparedMirrors;
@@ -712,15 +762,22 @@ export class SplitService {
           mirror.Memo === memo &&
           (mirror.Payee ?? null) === payee &&
           (mirror.ExchangeRate ?? null) === pm.exchangeRate &&
-          pm.pinned === isPinnedMirror(mirror);
+          pm.pinned === isPinnedMirror(mirror) &&
+          (!pm.pinned || Boolean(mirror.ExchangeRateOverride) === pm.rateOverride);
         if (inStep) continue;
-        // Entered amounts pin the row and other amounts unpin it; a flag older
-        // builds wrote (0 / 1, transfer rate edits) is left as it is.
+        // Entered amounts pin the row (and the rate they imply) and other
+        // amounts unpin it; a flag older builds wrote (0 / 1, transfer rate
+        // edits) is left as it is, and so is a rate override on a row that was
+        // no pin. (SET expressions read the row's old TransferRateOverride.)
         run(
           this.db,
           `UPDATE transactions
               SET Date = ?, TransferID = ?, InflowNative = ?, OutflowNative = ?,
                   InflowConverted = ?, OutflowConverted = ?, Memo = ?, Payee = ?, ExchangeRate = ?,
+                  ExchangeRateOverride = CASE WHEN ${pm.pinned ? 1 : 0}
+                    THEN ${pm.rateOverride ? 1 : 0}
+                    WHEN TransferRateOverride = ${SPLIT_MIRROR_PINNED} THEN 0
+                    ELSE ExchangeRateOverride END,
                   TransferRateOverride = CASE WHEN ${pm.pinned ? 1 : 0} THEN ${SPLIT_MIRROR_PINNED}
                     WHEN TransferRateOverride = ${SPLIT_MIRROR_PINNED} THEN 0
                     ELSE TransferRateOverride END
@@ -767,7 +824,7 @@ export class SplitService {
         transferId,
         pm.exchangeRate,
         parent.LabelID ?? null,
-        false,
+        pm.rateOverride,
         false,
         false,
         options.mirrorIds?.[index]
@@ -839,7 +896,8 @@ export class SplitService {
    * `lines` (sorted by ID) with the amounts their pinned mirrors (an entered
    * received amount) keep through a parent change: unchanged while the line
    * keeps its amount (a date or rate edit), scaled with the line when a new
-   * parent total rescales it (150 -> 300 doubles the received amount too),
+   * parent total rescales it (150 -> 300 doubles the received amount too;
+   * the budget value is the line's anyway, see SPLIT_MIRROR_PINNED),
    * the direction following the line. A line that drops to zero leaves the
    * mirror as it is, so its amount comes back with the line. A move of the
    * parent to an account in another currency keeps the amounts as they are

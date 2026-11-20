@@ -111,11 +111,11 @@ describe('split transfer lines carry the received amount', () => {
     const sent = await send(a.h, 'transactions.saveSplits', saveArgs(a, 70_000));
     const line = (sent.splits as Record<string, unknown>[])[1];
     expect(line.received_amount).toBeUndefined();
-    // 70.00 EUR at 1 / 0.9 = 77.778 USD in the budget.
+    // 70.00 EUR, worth the line's 80.00 USD in the budget.
     expect(line.mirror).toEqual({
       InflowNative: 70_000,
       OutflowNative: 0,
-      InflowConverted: 77_778,
+      InflowConverted: 80_000,
       OutflowConverted: 0,
     });
     expect(mutationFormatVersion('transactions.saveSplits', sent)).toBe(7);
@@ -246,7 +246,7 @@ describe('split transfer lines carry the received amount', () => {
     expect(eurRows.at(-1)).toMatchObject({ InflowNative: 44_000, TransferRateOverride: 2 });
   });
 
-  it('without a rate for the budget value the save is refused; the Push API converts instead', async () => {
+  it('needs no rate for the budget value; a pushed payload never carries its own mirror', async () => {
     const gbp = (
       await a.h.services.accounts.createAccount(
         'Pound',
@@ -258,9 +258,13 @@ describe('split transfer lines carry the received amount', () => {
     ).ID;
     const args = saveArgs(a, 70_000);
     (args.splits[1] as Record<string, unknown>).transfer_account_id = gbp;
-    await expect(prepareMutationArgs('transactions.saveSplits', args)).rejects.toThrow(
-      /GBP to USD exchange rate/
-    );
+    const sent = await prepareMutationArgs('transactions.saveSplits', args);
+    expect((sent.splits as Record<string, unknown>[])[1].mirror).toEqual({
+      InflowNative: 70_000,
+      OutflowNative: 0,
+      InflowConverted: 80_000,
+      OutflowConverted: 0,
+    });
 
     const push = await prepareMutationArgs('transactions.add', {
       budgetId: a.h.budgetId,
@@ -282,7 +286,13 @@ describe('split transfer lines carry the received amount', () => {
       ],
     });
     const [line] = push.splits as Record<string, unknown>[];
-    expect(line).not.toHaveProperty('mirror');
+    // The device's own quote, not the pushed one.
+    expect(line.mirror).toEqual({
+      InflowNative: 40_000,
+      OutflowNative: 0,
+      InflowConverted: 50_000,
+      OutflowConverted: 0,
+    });
     expect(line).not.toHaveProperty('receivedAmount');
   });
 
