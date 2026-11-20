@@ -10,6 +10,7 @@ import { DatePickerCell } from '@features/transactions/ui/cells/DatePickerCell';
 import { CategorySelectCell } from '@features/transactions/ui/cells/CategorySelectCell';
 import { AccountSelectCell } from '@features/transactions/ui/cells/AccountSelectCell';
 import { EditableCell } from '@features/transactions/ui/cells/EditableCell';
+import { TimeInputCell } from '@features/transactions/ui/cells/TimeInputCell';
 import { ExchangeRateCell } from '@features/transactions/ui/cells/ExchangeRateCell';
 import { TransactionPayeeCell } from '@features/transactions/ui/cells/TransactionPayeeCell';
 import { LabelSelectCell } from '@features/transactions/ui/cells/LabelSelectCell';
@@ -423,19 +424,12 @@ export const TransactionRow = React.memo(function TransactionRow({
             }}
           />
         ) : editingColumn === 'time' ? (
-          <EditableCell
-            type="time"
-            value={transaction.Time ?? ''}
-            onCommit={(newVal) => {
-              if (String(newVal) !== (transaction.Time ?? '')) {
-                onCellCommit(transaction.ID, 'Time', String(newVal));
-              }
-            }}
-            inputClassName="h-8 text-xs xl:text-sm"
+          <TimeInputCell
+            value={transaction.Time}
+            onCommit={(newVal) => onCellCommit(transaction.ID, 'Time', newVal)}
+            className="h-8 w-full text-xs xl:text-sm"
             autoFocus
-            onEditingChange={(editing) => {
-              if (!editing) onDeactivateCell();
-            }}
+            onDone={onDeactivateCell}
           />
         ) : showTime ? (
           <div className="flex min-w-0 flex-col items-start">

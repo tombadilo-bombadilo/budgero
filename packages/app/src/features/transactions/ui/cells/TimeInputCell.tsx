@@ -1,6 +1,6 @@
 import { useLingui } from '@lingui/react/macro';
 import * as React from 'react';
-import { Input } from '@shared/ui/input';
+import { TimeInput } from '@shared/ui/time-input';
 import { cn } from '@shared/lib/utils';
 
 interface TimeInputCellProps {
@@ -9,35 +9,55 @@ interface TimeInputCellProps {
   /** Called with 'HH:MM' or '' (cleared), only when the value changed. */
   onCommit: (time: string) => void;
   className?: string;
+  autoFocus?: boolean;
+  /** Editing ended (blur, Enter or Escape). */
+  onDone?: () => void;
 }
 
 /**
  * An optional time of day for an existing transaction. Saves when the input
  * loses focus or on Enter; Escape puts the stored value back.
  */
-export function TimeInputCell({ value, onCommit, className }: TimeInputCellProps) {
+export function TimeInputCell({
+  value,
+  onCommit,
+  className,
+  autoFocus,
+  onDone,
+}: TimeInputCellProps) {
   const { t } = useLingui();
   const stored = value ?? '';
   const [draft, setDraft] = React.useState(stored);
+  const cancelled = React.useRef(false);
 
   React.useEffect(() => setDraft(stored), [stored]);
 
   const commit = () => {
-    if (draft !== stored) onCommit(draft);
+    if (!cancelled.current && draft !== stored) onCommit(draft);
+    cancelled.current = false;
   };
 
   return (
-    <Input
-      type="time"
+    <TimeInput
       value={draft}
-      onChange={(e) => setDraft(e.target.value)}
-      onBlur={commit}
+      onValueChange={setDraft}
+      autoFocus={autoFocus}
+      onFocus={(e) => e.currentTarget.select()}
+      onBlur={() => {
+        commit();
+        onDone?.();
+      }}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          commit();
+          if (onDone) e.currentTarget.blur();
+          else commit();
         } else if (e.key === 'Escape') {
           setDraft(stored);
+          if (onDone) {
+            cancelled.current = true;
+            e.currentTarget.blur();
+          }
         }
       }}
       aria-label={t`Time (optional)`}
