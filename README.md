@@ -102,5 +102,5 @@ pnpm run security         # osv-scanner + govulncheck
 ## Supporting the project
 
 Self-hosting Budgero is free, with the full feature set, and always will be. If it
-saves you money, you can [donate](https://budgero.app/donate) — pay what you want — or
-simply star this repository. Both genuinely help.
+saves you money, you can [sponsor it on GitHub](https://github.com/sponsors/tombadilo-bombadilo)
+or simply star this repository. Both genuinely help.
