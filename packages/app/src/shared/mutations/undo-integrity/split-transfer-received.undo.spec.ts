@@ -508,3 +508,47 @@ describe('split transfer lines carry the received amount', () => {
     });
   });
 });
+
+describe('a cross-currency transfer: editing the sent amount', () => {
+  beforeEach(() => resetUndoStore());
+
+  it('scales the received leg (format 7); undo puts both legs back exactly', async () => {
+    const { h, eur } = await setup(0.9);
+    const transfer = 'tr_scale';
+    const sentLeg = await h.services.transactions.addTransaction(
+      asMilli(0),
+      asMilli(120_000),
+      h.accountId,
+      h.categoryId,
+      h.budgetId,
+      DATE,
+      'out',
+      transfer
+    );
+    const receivedLeg = await h.services.transactions.addTransaction(
+      asMilli(80_000),
+      asMilli(0),
+      eur,
+      h.categoryId,
+      h.budgetId,
+      DATE,
+      'in',
+      transfer
+    );
+    const row = (id: number) => h.rows('transactions').find((r) => r.ID === id)!;
+    const before = [row(sentLeg), row(receivedLeg)];
+
+    const sent = await send(h, 'transactions.updateColumn', {
+      id: sentLeg,
+      columnName: 'OutflowNative',
+      newValue: 150_000,
+    });
+    expect(mutationFormatVersion('transactions.updateColumn', sent)).toBe(7);
+    expect(row(receivedLeg)).toMatchObject({ InflowNative: 100_000 });
+
+    await useUndoStore.getState().undo();
+    expect([row(sentLeg), row(receivedLeg)]).toEqual(before);
+    await useUndoStore.getState().redo();
+    expect(row(receivedLeg)).toMatchObject({ InflowNative: 100_000 });
+  });
+});

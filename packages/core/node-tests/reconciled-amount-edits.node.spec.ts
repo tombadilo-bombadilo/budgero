@@ -214,21 +214,36 @@ describe('reconciled rows and transfer amounts', () => {
   });
 
   describe('rule 9: editing one leg of a cross-currency transfer', () => {
-    it('keeps the partner amount (and its reconciled status); the implied rate changes', async () => {
+    it('the sent leg: the received amount scales, so the partner unlocks; the rate stays', async () => {
       const { source, destination } = await addTransfer('t-cross', checking, 10_000, euro, 8_000);
       lock(source, destination);
-      const partnerBefore = row(destination);
 
       await s.transactions.updateTransactionColumn(source, 'OutflowNative', 11_000);
 
       expect(row(source).OutflowNative).toBe(11_000);
       expect(flags(source)).toEqual(OPEN);
-      const partner = row(destination);
-      expect(partner.InflowNative).toBe(partnerBefore.InflowNative);
-      expect(partner.InflowConverted).toBe(partnerBefore.InflowConverted);
-      expect(flags(destination)).toEqual(LOCKED);
+      expect(row(destination).InflowNative).toBe(8_800);
+      expect(flags(destination)).toEqual(OPEN);
       const details = s.transactions.getTransferRateDetails('t-cross')!;
-      expect(details.rate).toBeCloseTo(8 / 11, 10);
+      expect(details.rate).toBeCloseTo(0.8, 10);
+      expectLedgerConsistent();
+    });
+
+    it('the received leg: keeps the sent amount (and its reconciled status); the implied rate changes', async () => {
+      const { source, destination } = await addTransfer('t-cross', checking, 10_000, euro, 8_000);
+      lock(source, destination);
+      const partnerBefore = row(source);
+
+      await s.transactions.updateTransactionColumn(destination, 'InflowNative', 8_800);
+
+      expect(row(destination).InflowNative).toBe(8_800);
+      expect(flags(destination)).toEqual(OPEN);
+      const partner = row(source);
+      expect(partner.OutflowNative).toBe(partnerBefore.OutflowNative);
+      expect(partner.OutflowConverted).toBe(partnerBefore.OutflowConverted);
+      expect(flags(source)).toEqual(LOCKED);
+      const details = s.transactions.getTransferRateDetails('t-cross')!;
+      expect(details.rate).toBeCloseTo(0.88, 10);
       expect(details.transferRateOverride).toBe(true);
       expectLedgerConsistent();
     });
