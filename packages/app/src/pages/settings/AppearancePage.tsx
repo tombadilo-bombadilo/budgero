@@ -35,7 +35,10 @@ import {
 } from '@shared/ui/sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { useThemePreset } from '@shared/contexts/ThemePresetContext';
+import { PLANNING_DESKTOP_BREAKPOINT } from '@features/budget-planning/lib/layout-breakpoint';
 import { BudgetTableSkeleton } from '@features/budget-planning/ui/BudgetTableSkeleton';
+import { useIsMobile } from '@shared/hooks/useIsMobile';
+import { cn } from '@shared/lib/utils';
 import { AccountOrderCard } from '@features/account-management/ui/AccountOrderCard';
 import { SettingsPageHeader } from '@pages/settings/SettingsPageHeader';
 import {
@@ -51,6 +54,9 @@ import {
 
 export default function AppearancePage() {
   const { t } = useLingui();
+  // Follow the Planning page's own breakpoint, not the app shell's: show the
+  // options for the layout this screen actually gets.
+  const planningIsMobile = useIsMobile(PLANNING_DESKTOP_BREAKPOINT);
 
   const { installApp, installSupport, installInstructions, canInstall } = usePWA();
   const homePage = useUiStore((state) => state.homePage);
@@ -605,7 +611,7 @@ export default function AppearancePage() {
 
       <AccountOrderCard />
 
-      <Card className="hidden md:block">
+      <Card className={cn(planningIsMobile && 'hidden')}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trans>
@@ -697,7 +703,7 @@ export default function AppearancePage() {
         </CardContent>
       </Card>
 
-      <Card className="md:hidden">
+      <Card className={cn(!planningIsMobile && 'hidden')}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trans>
