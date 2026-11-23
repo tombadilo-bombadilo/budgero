@@ -5214,6 +5214,7 @@ msgstr "Cuenta presupuestaria"
 msgid "Budget accounts"
 msgstr "Cuentas del presupuesto"
 
+#: src/pages/budgeting/BudgetingPage.desktop.tsx
 #: src/pages/budgeting/BudgetingPage.mobile.tsx
 msgid "Budget Context"
 msgstr "Contexto del presupuesto"
@@ -10511,6 +10512,10 @@ msgstr "Ocultar columna de etiquetas"
 #: src/shared/ui/password-input.tsx
 msgid "Hide password"
 msgstr "Ocultar contraseña"
+
+#: src/pages/budgeting/BudgetingPage.desktop.tsx
+msgid "Hide side panel"
+msgstr "Ocultar panel lateral"
 
 #: src/features/chat/ui/chat-panel/ChatHeader.tsx
 msgid "Hide sidebar"
@@ -18544,6 +18549,10 @@ msgstr "Mostrar el porcentaje asignado en las filas de grupo"
 #: src/pages/settings/components/GoalFundingSettingsCard.tsx
 msgid "Show priority badges"
 msgstr "Mostrar insignias de prioridad"
+
+#: src/pages/budgeting/BudgetingPage.desktop.tsx
+msgid "Show side panel"
+msgstr "Mostrar panel lateral"
 
 #: src/features/chat/ui/chat-panel/ChatHeader.tsx
 msgid "Show sidebar"

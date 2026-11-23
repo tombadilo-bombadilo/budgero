@@ -5216,6 +5216,7 @@ msgstr "Budget Account"
 msgid "Budget accounts"
 msgstr "Budget accounts"
 
+#: src/pages/budgeting/BudgetingPage.desktop.tsx
 #: src/pages/budgeting/BudgetingPage.mobile.tsx
 msgid "Budget Context"
 msgstr "Budget Context"
@@ -10513,6 +10514,10 @@ msgstr "Hide label column"
 #: src/shared/ui/password-input.tsx
 msgid "Hide password"
 msgstr "Hide password"
+
+#: src/pages/budgeting/BudgetingPage.desktop.tsx
+msgid "Hide side panel"
+msgstr "Hide side panel"
 
 #: src/features/chat/ui/chat-panel/ChatHeader.tsx
 msgid "Hide sidebar"
@@ -18546,6 +18551,10 @@ msgstr "Show percentage of assigned on group rows"
 #: src/pages/settings/components/GoalFundingSettingsCard.tsx
 msgid "Show priority badges"
 msgstr "Show priority badges"
+
+#: src/pages/budgeting/BudgetingPage.desktop.tsx
+msgid "Show side panel"
+msgstr "Show side panel"
 
 #: src/features/chat/ui/chat-panel/ChatHeader.tsx
 msgid "Show sidebar"
