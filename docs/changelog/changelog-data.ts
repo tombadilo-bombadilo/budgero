@@ -31,7 +31,7 @@ export const changelogEntries: ChangelogEntry[] = [
         type: 'fixed',
         title: 'A transaction can no longer lose its date',
         description:
-          'Clicking the already selected day in a transaction\'s date picker cleared the date. The transaction then disappeared from the account while still counting in balances, which could throw off Ready to Assign. The date now stays.',
+          "Clicking the already selected day in a transaction's date picker cleared the date. The transaction then disappeared from the account while still counting in balances, which could throw off Ready to Assign. The date now stays.",
       },
       {
         type: 'improved',
