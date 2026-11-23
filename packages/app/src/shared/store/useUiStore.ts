@@ -106,6 +106,8 @@ export const SIDEBAR_PINNED_STORAGE_KEY = 'budgero:sidebar-pinned';
  */
 export const BUDGET_TARGET_COLUMN_KEY = 'budgero:budget-target-column';
 export const BUDGET_TARGET_COLUMN_PREFERENCE = 'budgetTargetColumn';
+/** Planning side panel beside the table: '1' shown (default), '0' hidden. Per device. */
+const PLANNING_PANEL_KEY = 'budgero:planning-panel-open';
 
 /**
  * Read a persisted UI preference. `validate` maps the raw stored string to a
@@ -263,6 +265,10 @@ interface UiState {
   toggleBudgetTargetColumn: () => void;
   /** Applies the synced value: cache only, no write back. */
   setShowBudgetTargetColumn: (show: boolean) => void;
+
+  // Side panel beside the desktop planning table
+  planningPanelOpen: boolean;
+  setPlanningPanelOpen: (open: boolean) => void;
 
   // Privacy mode - masks visible numeric digits across the UI
   privacyMaskNumbers: boolean;
@@ -509,6 +515,12 @@ export const useUiStore = create<UiState>((set) => ({
   setShowBudgetTargetColumn: (show) => {
     writeStoredPref(BUDGET_TARGET_COLUMN_KEY, show ? '1' : '0');
     set({ showBudgetTargetColumn: show });
+  },
+
+  planningPanelOpen: readStoredPref(PLANNING_PANEL_KEY, (stored) => stored !== '0', true),
+  setPlanningPanelOpen: (open) => {
+    writeStoredPref(PLANNING_PANEL_KEY, open ? '1' : '0');
+    set({ planningPanelOpen: open });
   },
 
   // Privacy mode (session-only, non-persistent)
