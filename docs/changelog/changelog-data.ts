@@ -21,11 +21,32 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.22.1',
+    date: 'November 23, 2026',
+    summary:
+      'Fixes a transaction losing its date, which hid it from the account and threw off Ready to Assign, and helps you put the date back.',
+    isLatest: true,
+    items: [
+      {
+        type: 'fixed',
+        title: 'A transaction can no longer lose its date',
+        description:
+          'Clicking the already selected day in a transaction\'s date picker cleared the date. The transaction then disappeared from the account while still counting in balances, which could throw off Ready to Assign. The date now stays.',
+      },
+      {
+        type: 'improved',
+        title: 'Finding transactions without a date',
+        description:
+          'When Budgero starts it checks once for transactions that were saved without a date and asks you to pick one for each. Where it can, it fills in the date the transaction had before.',
+      },
+    ],
+  },
+  {
     version: 'v1.22.0',
     date: 'November 23, 2026',
     summary:
       'Goals that change over time, an optional time of day on transactions, interest rates that change, split lines that transfer to another account, a text size setting and a roomier planning page. Update all your devices: this version changes the sync format.',
-    isLatest: true,
+    isLatest: false,
     items: [
       {
         type: 'new',
