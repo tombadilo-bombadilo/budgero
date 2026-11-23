@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, type ReactNode } from 'react';
 import { Card, CardContent } from '@shared/ui/card';
 import { ScrollArea } from '@shared/ui/scroll-area';
 import { BudgetTable } from '@features/budget-planning/ui/BudgetTable';
@@ -59,11 +59,11 @@ export function BudgetingPageDesktop() {
   // Side panel: beside the table on a wide screen (remembered), over it on a
   // narrow one (tablet, unfolded foldable), where it starts closed.
   const panelDocks = !useIsMobile(PLANNING_PANEL_DOCK_BREAKPOINT);
-  const dockedPanelOpen = useUiStore((state) => state.planningPanelOpen);
-  const setDockedPanelOpen = useUiStore((state) => state.setPlanningPanelOpen);
-  const [overlayPanelOpen, setOverlayPanelOpen] = useState(false);
-  const panelOpen = panelDocks ? dockedPanelOpen : overlayPanelOpen;
-  const setPanelOpen = panelDocks ? setDockedPanelOpen : setOverlayPanelOpen;
+  // Only the docked state changes the page layout. The overlay state lives in
+  // the toggle and the panel, so opening it does not re-render the table.
+  const panelDocked = useUiStore((state) => state.planningPanelOpen) && panelDocks;
+  const setOverlayPanelOpen = useUiStore((state) => state.setPlanningOverlayPanelOpen);
+  useEffect(() => () => setOverlayPanelOpen(false), [setOverlayPanelOpen]);
 
   useClearCategorySelectionOnMount();
 
@@ -223,19 +223,7 @@ export function BudgetingPageDesktop() {
         </Trans>
       </Button>
       {monthSwitcher}
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={() => setPanelOpen(!panelOpen)}
-        aria-label={panelOpen ? t`Hide side panel` : t`Show side panel`}
-        aria-expanded={panelOpen}
-        aria-controls="planning-side-panel"
-        title={panelOpen ? t`Hide side panel` : t`Show side panel`}
-        data-testid="planning-panel-toggle"
-        className="h-8 w-8 shrink-0 rounded-lg border-border/70 bg-card/50 text-muted-foreground shadow-none hover:bg-muted/60 hover:text-foreground"
-      >
-        {panelOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
-      </Button>
+      <PlanningPanelToggle docks={panelDocks} />
     </div>
   );
 
@@ -295,12 +283,12 @@ export function BudgetingPageDesktop() {
       <div
         className={cn(
           'relative grid h-[calc(100dvh-var(--app-topbar-height,6.5rem))] items-stretch gap-4',
-          panelOpen && 'min-[1020px]:grid-cols-[1fr_340px]'
+          panelDocked && 'min-[1020px]:grid-cols-[1fr_340px]'
         )}
       >
         <div className="flex min-h-0 min-w-0 flex-col gap-3">
           {/* The panel holds the first steps; without it they sit above the table. */}
-          {!(panelDocks && panelOpen) && (
+          {!panelDocked && (
             <FirstStepsCard className="shrink-0" {...firstStepsProps} variant="bar" />
           )}
           <Card className="min-w-0 flex flex-col min-h-0 flex-1 overflow-hidden pt-0 pb-2">
@@ -350,52 +338,17 @@ export function BudgetingPageDesktop() {
           </Card>
         </div>
 
-        {panelOpen && (
-          <aside
-            id="planning-side-panel"
-            data-testid="planning-side-panel"
-            aria-label={t`Budget Context`}
-            className={cn(
-              'flex min-h-0 min-w-0 flex-col overflow-hidden',
-              panelDocks
-                ? 'h-full'
-                : 'absolute inset-y-0 right-0 z-20 w-[340px] max-w-full rounded-xl border bg-background p-3 shadow-xl animate-in fade-in-0 slide-in-from-right-4 duration-200'
-            )}
-          >
-            {!panelDocks && (
-              <div className="flex shrink-0 items-center justify-between gap-2 pb-2 pl-1">
-                <h2 className="text-sm font-semibold">
-                  <Trans>Budget Context</Trans>
-                </h2>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 text-muted-foreground"
-                  aria-label={t`Hide side panel`}
-                  onClick={() => setPanelOpen(false)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-            {/* Radix lays the viewport content out as a table, so one unwrappable
-                element (a long translated label) widened the whole panel and cut
-                its right edge off. Block layout keeps it at the panel width. */}
-            <ScrollArea className="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]>div]:!block">
-              <div className="px-1 pb-4">
-                {panelDocks && <FirstStepsCard className="mb-4" {...firstStepsProps} />}
-                <BudgetContextPanel
-                  budgetId={budgetId}
-                  currentMonth={currentMonth}
-                  readyToAssign={readyToAssign}
-                  globalLocalizer={globalLocalizer}
-                  selectedCategoryIds={selectedCategoryIds}
-                  transformedRows={transformedRows}
-                />
-              </div>
-            </ScrollArea>
-          </aside>
-        )}
+        <PlanningSidePanel docks={panelDocks}>
+          {panelDocks && <FirstStepsCard className="mb-4" {...firstStepsProps} />}
+          <BudgetContextPanel
+            budgetId={budgetId}
+            currentMonth={currentMonth}
+            readyToAssign={readyToAssign}
+            globalLocalizer={globalLocalizer}
+            selectedCategoryIds={selectedCategoryIds}
+            transformedRows={transformedRows}
+          />
+        </PlanningSidePanel>
       </div>
 
       {/* Places itself beside what it points at, wherever the panel is. */}
@@ -572,5 +525,80 @@ export function BudgetingPageDesktop() {
         </DrawerContent>
       </Drawer>
     </div>
+  );
+}
+
+function usePlanningPanelState(docks: boolean) {
+  const dockedOpen = useUiStore((state) => state.planningPanelOpen);
+  const setDockedOpen = useUiStore((state) => state.setPlanningPanelOpen);
+  const overlayOpen = useUiStore((state) => state.planningOverlayPanelOpen);
+  const setOverlayOpen = useUiStore((state) => state.setPlanningOverlayPanelOpen);
+  return docks ? ([dockedOpen, setDockedOpen] as const) : ([overlayOpen, setOverlayOpen] as const);
+}
+
+function PlanningPanelToggle({ docks }: { docks: boolean }) {
+  const { t } = useLingui();
+  const [open, setOpen] = usePlanningPanelState(docks);
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={() => setOpen(!open)}
+      aria-label={open ? t`Hide side panel` : t`Show side panel`}
+      aria-expanded={open}
+      aria-controls="planning-side-panel"
+      title={open ? t`Hide side panel` : t`Show side panel`}
+      data-testid="planning-panel-toggle"
+      className="h-8 w-8 shrink-0 rounded-lg border-border/70 bg-card/50 text-muted-foreground shadow-none hover:bg-muted/60 hover:text-foreground"
+    >
+      {open ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
+    </Button>
+  );
+}
+
+/**
+ * Beside the table when it docks, over it otherwise. The overlay stays mounted
+ * while closed, so opening it only has to show it.
+ */
+function PlanningSidePanel({ docks, children }: { docks: boolean; children: ReactNode }) {
+  const { t } = useLingui();
+  const [open, setOpen] = usePlanningPanelState(docks);
+  if (docks && !open) return null;
+  return (
+    <aside
+      id="planning-side-panel"
+      data-testid="planning-side-panel"
+      aria-label={t`Budget Context`}
+      className={cn(
+        'flex min-h-0 min-w-0 flex-col overflow-hidden',
+        docks
+          ? 'h-full'
+          : 'absolute inset-y-0 right-0 z-20 w-[340px] max-w-full rounded-xl border bg-background p-3 shadow-xl',
+        !docks && (open ? 'animate-in fade-in-0 slide-in-from-right-4 duration-200' : 'hidden')
+      )}
+    >
+      {!docks && (
+        <div className="flex shrink-0 items-center justify-between gap-2 pb-2 pl-1">
+          <h2 className="text-sm font-semibold">
+            <Trans>Budget Context</Trans>
+          </h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground"
+            aria-label={t`Hide side panel`}
+            onClick={() => setOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      {/* Radix lays the viewport content out as a table, so one unwrappable
+          element (a long translated label) widened the whole panel and cut
+          its right edge off. Block layout keeps it at the panel width. */}
+      <ScrollArea className="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]>div]:!block">
+        <div className="px-1 pb-4">{children}</div>
+      </ScrollArea>
+    </aside>
   );
 }
