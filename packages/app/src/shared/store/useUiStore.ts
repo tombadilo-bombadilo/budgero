@@ -253,6 +253,9 @@ interface UiState {
   // Side panel beside the desktop planning table
   planningPanelOpen: boolean;
   setPlanningPanelOpen: (open: boolean) => void;
+  // Same panel on a narrow screen, where it opens over the table (not remembered)
+  planningOverlayPanelOpen: boolean;
+  setPlanningOverlayPanelOpen: (open: boolean) => void;
 
   // Privacy mode - masks visible numeric digits across the UI
   privacyMaskNumbers: boolean;
@@ -487,6 +490,8 @@ export const useUiStore = create<UiState>((set) => ({
     writeStoredPref(PLANNING_PANEL_KEY, open ? '1' : '0');
     set({ planningPanelOpen: open });
   },
+  planningOverlayPanelOpen: false,
+  setPlanningOverlayPanelOpen: (open) => set({ planningOverlayPanelOpen: open }),
 
   // Privacy mode (session-only, non-persistent)
   privacyMaskNumbers: false,
