@@ -1,6 +1,7 @@
 import { DatabaseAdapter } from '../../database/interface.js';
 import { allRows, getRow } from '../../database/sql.js';
 import { TransactionQueries } from '../transactions/queries.js';
+import { isPinnedMirror } from '../transactions/split-service.js';
 
 /** SQLite bind-parameter chunk (as in the transaction queries). */
 const CHUNK = 500;
@@ -49,6 +50,88 @@ export class LegacyReplayService {
    */
   hasSplitMirrors(transactionId: number): boolean {
     return this.queries.getSplitMirrorTransactions(Number(transactionId)).length > 0;
+  }
+
+  /**
+   * A split parent with a pinned mirror (a transfer line whose received
+   * amount was entered, TransferRateOverride): edits of the parent's amount,
+   * date, account or rate now keep that mirror's amounts, and copies take
+   * them over; v1.21 builds convert the mirror again at market rates.
+   */
+  hasPinnedSplitMirrors(transactionIds: readonly number[]): boolean {
+    return validIds(transactionIds).some((id) =>
+      this.queries.getSplitMirrorTransactions(id).some(isPinnedMirror)
+    );
+  }
+
+  /** A split mirror row with an entered (pinned) amount: rate edits now keep its native amount. */
+  isPinnedSplitMirror(transactionId: number): boolean {
+    const row = this.queries.getTransactionByID(Number(transactionId));
+    return Boolean(row?.TransferID?.startsWith('split_transfer_') && isPinnedMirror(row));
+  }
+
+  /**
+   * Split mirror groups of exactly two rows in different currencies in the
+   * budget: older builds take them for a cross-currency transfer pair, so
+   * custom-rate changes re-rate them as one; this build skips them.
+   */
+  budgetHasSplitMirrorPairs(budgetId: number): boolean {
+    return Boolean(
+      getRow(
+        this.db,
+        `SELECT 1 AS Found FROM transactions t JOIN accounts a ON a.ID = t.AccountID
+          WHERE t.BudgetID = ? AND t.TransferID GLOB 'split_transfer_*'
+          GROUP BY t.TransferID
+          HAVING COUNT(*) = 2 AND MIN(a.Currency) != MAX(a.Currency)
+          LIMIT 1`,
+        Number(budgetId)
+      )
+    );
+  }
+
+  /** A transfer ID naming a split's two-mirror group (older builds rate it as a transfer). */
+  isSplitMirrorPairKey(transferId: string): boolean {
+    return (
+      String(transferId).startsWith('split_transfer_') &&
+      this.queries.getTransactionsByTransferID(String(transferId)).length === 2
+    );
+  }
+
+  /**
+   * A split mirror whose parent has exactly one other mirror: older builds
+   * treat the two as a transfer pair when one is edited (payees cleared, the
+   * other's amount mirrored or its rate flag set); this build leaves the
+   * sibling alone.
+   */
+  isSplitMirrorPair(transactionId: number): boolean {
+    const row = this.queries.getTransactionByID(Number(transactionId));
+    const key = row?.TransferID ?? '';
+    if (!key.startsWith('split_transfer_')) return false;
+    return this.queries.getTransactionsByTransferID(key).length === 2;
+  }
+
+  /**
+   * Split lines with both a category and a transfer account (a line to an
+   * off-budget account): v1.21 builds refuse to save such lines.
+   */
+  hasCategorizedTransferLines(transactionIds: readonly number[]): boolean {
+    return validIds(transactionIds).some((id) =>
+      this.queries
+        .getSplitsForTransaction(id)
+        .some((line) => line.CategoryID != null && line.TransferAccountID != null)
+    );
+  }
+
+  /** Categorized split lines transfer to this account (its on-budget switch now clears them). */
+  accountHasCategorizedTransferLines(accountId: number): boolean {
+    return Boolean(
+      getRow(
+        this.db,
+        `SELECT 1 AS Found FROM transaction_splits
+          WHERE TransferAccountID = ? AND CategoryID IS NOT NULL LIMIT 1`,
+        Number(accountId)
+      )
+    );
   }
 
   /**
@@ -288,6 +371,38 @@ export class LegacyReplayService {
     return this.queries
       .getSplitMirrorTransactions(Number(transactionId))
       .some((mirror) => mirror.Reconciled);
+  }
+
+  /**
+   * Whether any of these rows is the sent (outflow) leg of a two-leg transfer
+   * between accounts in different currencies: an amount edit of it now
+   * scales the received leg in proportion (see preparePartnerSync); v1.21.5
+   * and older keep the received amount. Checked on the stored row, before
+   * the edit.
+   */
+  scalesTransferPartners(transactionIds: readonly number[]): boolean {
+    const ids = validIds(transactionIds);
+    for (let index = 0; index < ids.length; index += CHUNK) {
+      const chunk = ids.slice(index, index + CHUNK);
+      const found = getRow<{ Found: number }>(
+        this.db,
+        `SELECT 1 AS Found
+           FROM transactions t
+           JOIN accounts a ON a.ID = t.AccountID
+           JOIN transactions p ON p.TransferID = t.TransferID AND p.ID != t.ID
+           JOIN accounts pa ON pa.ID = p.AccountID
+          WHERE t.ID IN (${placeholders(chunk)})
+            AND COALESCE(t.TransferID, '') != ''
+            AND t.TransferID NOT GLOB 'split_transfer_*'
+            AND COALESCE(t.OutflowNative, t.OutflowConverted, 0) > 0
+            AND a.Currency != pa.Currency
+            AND (SELECT COUNT(*) FROM transactions x WHERE x.TransferID = t.TransferID) = 2
+          LIMIT 1`,
+        ...chunk
+      );
+      if (found) return true;
+    }
+    return false;
   }
 
   /** A rate edit of this transfer now unlocks a reconciled leg whose amount changes. */

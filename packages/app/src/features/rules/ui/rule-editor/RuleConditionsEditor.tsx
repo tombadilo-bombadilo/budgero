@@ -82,7 +82,7 @@ function ConditionJoinToggle({
             aria-checked={value === option.join}
             onClick={() => onChange(option.join)}
             className={cn(
-              'rounded px-2 py-0.5 text-[11px] font-medium transition-colors',
+              'rounded px-2 py-0.5 text-[0.6875rem] font-medium transition-colors',
               value === option.join
                 ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:text-foreground'

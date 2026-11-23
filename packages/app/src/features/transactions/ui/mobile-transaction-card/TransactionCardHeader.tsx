@@ -9,7 +9,8 @@ import { asMilli, formatMilli } from '@shared/lib/currency/milli';
 import { StatusIndicatorPopover } from '@features/transactions/ui/StatusIndicatorPopover';
 import { ClearedToggle } from '@features/transactions/ui/ClearedToggle';
 import { TransactionLabelBadge } from '@features/transactions/ui/TransactionLabelBadge';
-import { transferPayeeLabel } from '@features/transactions/lib/transfer-category';
+import { splitPayeesLabel, transferPayeeLabel } from '@features/transactions/lib/transfer-category';
+import { useRegisterDisplay } from '@shared/contexts/RegisterDisplayContext';
 
 interface TransactionCardHeaderProps {
   transaction: GetTransactionsByAccountRow;
@@ -31,6 +32,7 @@ export const TransactionCardHeader = React.memo(function TransactionCardHeader({
   onSelectionChange,
 }: TransactionCardHeaderProps) {
   const { t } = useLingui();
+  const { showTime } = useRegisterDisplay();
 
   const displayDate = useMemo(() => {
     const rawDate = transaction.Date;
@@ -41,7 +43,8 @@ export const TransactionCardHeader = React.memo(function TransactionCardHeader({
   }, [transaction, t]);
 
   const categoryDisplay = displayCategoryOverride || transaction.Category || '';
-  const transferLabel = transferPayeeLabel(transaction);
+  // A transfer's other account, or a split's line payees, when it has no payee.
+  const transferLabel = transferPayeeLabel(transaction) ?? splitPayeesLabel(transaction);
   return (
     <div className="flex flex-1 items-center gap-2 min-w-0">
       {!hideSelection && (
@@ -58,8 +61,11 @@ export const TransactionCardHeader = React.memo(function TransactionCardHeader({
       <div className="flex-1 min-w-0">
         <div className="flex items-start gap-1.5">
           <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-          <div className="flex-1 min-w-0 max-w-[10rem] sm:max-w-[14rem] md:max-w-[18rem] min-[1900px]:max-w-[24rem] text-[11px] font-medium leading-tight text-current truncate sm:text-xs min-[1900px]:text-sm">
+          <div className="flex-1 min-w-0 max-w-[10rem] sm:max-w-[14rem] md:max-w-[18rem] min-[1900px]:max-w-[24rem] text-[0.6875rem] font-medium leading-tight text-current truncate sm:text-xs min-[1900px]:text-sm">
             {displayDate}
+            {showTime && transaction.Time ? (
+              <span className="ml-1 text-muted-foreground">{transaction.Time}</span>
+            ) : null}
           </div>
           {transaction.Reconciled == true ? (
             <StatusIndicatorPopover

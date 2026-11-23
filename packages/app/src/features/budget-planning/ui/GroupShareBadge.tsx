@@ -19,7 +19,7 @@ export function GroupShareBadge({ share, className }: GroupShareBadgeProps) {
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center rounded px-1 text-[10px] font-medium tabular-nums leading-4',
+        'inline-flex shrink-0 items-center rounded px-1 text-[0.625rem] font-medium tabular-nums leading-4',
         'bg-primary/10 text-primary dark:bg-white/15 dark:text-white',
         className
       )}

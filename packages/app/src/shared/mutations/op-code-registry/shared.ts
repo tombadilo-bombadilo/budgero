@@ -6,9 +6,13 @@
  * Each op code maps 1:1 with a mutation hook.
  */
 
+import { t } from '@lingui/core/macro';
 import { getRuntime } from '@shared/runtime/global';
 import {
+  asMilli,
   isEmptyJournal,
+  SPLIT_MIRROR_RATE_MISSING,
+  type SplitMirrorAmounts,
   type CategoryCreationMark,
   type ImportIdentity,
   type RowJournal,
@@ -32,6 +36,112 @@ export interface NormalizedSplit {
   OutflowNative: MilliUnits | null;
   PairID: string | null;
   OrderIndex: number;
+  /** Exact amounts of a cross-currency transfer line's mirror, carried by the op (format 7). */
+  Mirror?: SplitMirrorAmounts | null;
+}
+
+/**
+ * Mirror amounts carried on a split line in op args (`mirror`), checked at
+ * the op boundary like the line's own amounts. Null when the line has none.
+ */
+export function readCarriedMirror(line: Record<string, unknown>): SplitMirrorAmounts | null {
+  const raw = (line.mirror ?? line.Mirror) as Record<string, unknown> | null | undefined;
+  if (!raw || typeof raw !== 'object') return null;
+  return {
+    InflowNative: asMilli(Number(raw.InflowNative ?? 0)),
+    OutflowNative: asMilli(Number(raw.OutflowNative ?? 0)),
+    InflowConverted: asMilli(Number(raw.InflowConverted ?? 0)),
+    OutflowConverted: asMilli(Number(raw.OutflowConverted ?? 0)),
+  };
+}
+
+/** An entered received (or sent) amount on a split line in UI args, in the target's currency. */
+export function readReceivedAmount(line: Record<string, unknown>): number | null {
+  const value = Number(line.received_amount ?? line.receivedAmount);
+  return Number.isSafeInteger(value) && value > 0 ? value : null;
+}
+
+/**
+ * The message for a missing rate when quoting a received amount
+ * (SplitMirrorRateError), or null for any other error.
+ */
+export function splitMirrorRateMessage(error: unknown): string | null {
+  const rate = error as { code?: unknown; fromCurrency?: string; toCurrency?: string } | null;
+  if (rate?.code !== SPLIT_MIRROR_RATE_MISSING) return null;
+  const from = rate.fromCurrency ?? '';
+  const to = rate.toCurrency ?? '';
+  return t`Add a ${from} to ${to} exchange rate to save this received amount.`;
+}
+
+/**
+ * Op `prepare` step for split lines with an entered received amount: the
+ * originating device turns each into the exact mirror amounts and carries
+ * them on the line as `mirror`, so every device writes the same, pinned,
+ * mirror row (valued at its line, see SPLIT_MIRROR_PINNED in core). The
+ * UI-only field is dropped; lines without one stay as they are (and the op
+ * keeps its old format). A quote that fails with a missing rate refuses the
+ * UI's save; `lenient` calls (the Push API) fall back to the plain, converted
+ * mirror instead. Lenient calls never carry a `mirror` of their own either:
+ * only this step writes one.
+ */
+export async function carryReceivedAmounts<T extends Record<string, unknown>>(
+  lines: T[],
+  quote: (received: (number | null)[]) => Promise<(SplitMirrorAmounts | null)[]>,
+  options: { lenient?: boolean } = {}
+): Promise<T[]> {
+  const strip = (line: T) => {
+    const { received_amount: _snake, receivedAmount: _camel, ...rest } = line;
+    if (!options.lenient) return rest;
+    const { mirror: _mirror, Mirror: _pascal, ...plain } = rest;
+    return plain;
+  };
+  const hasReceived = lines.some(
+    (line) =>
+      'received_amount' in line ||
+      'receivedAmount' in line ||
+      (options.lenient && ('mirror' in line || 'Mirror' in line))
+  );
+  if (!hasReceived) return lines;
+  const received = lines.map(readReceivedAmount);
+  let quotes: (SplitMirrorAmounts | null)[] = [];
+  if (received.some((amount) => amount !== null)) {
+    try {
+      quotes = await quote(received);
+    } catch (error) {
+      const message = splitMirrorRateMessage(error);
+      if (message === null) throw error;
+      if (!options.lenient) throw new Error(message);
+      quotes = [];
+    }
+  }
+  return lines.map((line, index) => {
+    const mirror = quotes[index];
+    const rest = strip(line);
+    return (mirror ? { ...rest, mirror } : rest) as unknown as T;
+  });
+}
+
+/** Normalize split lines from an op payload (snake_case or PascalCase) to the core shape. */
+export function normalizeSplitLines(splits: unknown): NormalizedSplit[] {
+  // asMilli doubles as the op-boundary guard: a decimal amount in a payload
+  // throws here instead of reaching an integer column.
+  return ((splits as Record<string, unknown>[]) || []).map((s, idx) => {
+    const inflowOriginal = s.InflowNative ?? s.InflowOriginal ?? s.inflow_original ?? null;
+    const outflowOriginal = s.OutflowNative ?? s.OutflowOriginal ?? s.outflow_original ?? null;
+    return {
+      CategoryID: (s.CategoryID ?? s.category_id ?? null) as number | null,
+      TransferAccountID: (s.TransferAccountID ?? s.transfer_account_id ?? null) as number | null,
+      Memo: String(s.Memo ?? s.memo ?? ''),
+      Payee: String(s.Payee ?? s.payee ?? ''),
+      InflowConverted: asMilli(Number(s.InflowConverted ?? s.Inflow ?? s.inflow ?? 0)),
+      OutflowConverted: asMilli(Number(s.OutflowConverted ?? s.Outflow ?? s.outflow ?? 0)),
+      InflowNative: inflowOriginal == null ? null : asMilli(Number(inflowOriginal)),
+      OutflowNative: outflowOriginal == null ? null : asMilli(Number(outflowOriginal)),
+      PairID: (s.PairID ?? s.pair_id ?? null) as string | null,
+      OrderIndex: Number(s.OrderIndex ?? s.order_index ?? idx),
+      Mirror: readCarriedMirror(s),
+    };
+  });
 }
 
 /** Category type for local type safety (mirrors core Category) */
@@ -50,6 +160,9 @@ export interface TransactionSnapshot {
   ID?: number;
   Date?: string;
   date?: string;
+  /** Optional time of day ('HH:MM'). */
+  Time?: string | null;
+  time?: string | null;
   Memo?: string;
   memo?: string;
   Payee?: string;
@@ -148,6 +261,7 @@ export function transactionSnapshotToAddOp(snapshot: TransactionSnapshot): OpCal
       labelId: snapshot.LabelID ?? snapshot.label_id ?? snapshot.labelId ?? null,
       budgetId: snapshot.BudgetID ?? snapshot.budget_id ?? snapshot.budgetId,
       date: snapshot.Date ?? snapshot.date,
+      ...((snapshot.Time ?? snapshot.time) ? { time: snapshot.Time ?? snapshot.time } : {}),
       memo: snapshot.Memo ?? snapshot.memo ?? '',
       payee: snapshot.Payee ?? snapshot.payee ?? '',
       transferId: snapshot.TransferID ?? snapshot.transfer_id ?? snapshot.transferId ?? undefined,

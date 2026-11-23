@@ -14,7 +14,7 @@ export function FundingPriorityBadge({
   if (!settings.isReady || !settings.ShowCategoryPriorities || priority === 3) return null;
   return (
     <span
-      className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground tabular-nums"
+      className="shrink-0 rounded bg-muted px-1 py-0.5 text-[0.625rem] font-medium text-muted-foreground tabular-nums"
       title={t`Funding priority ${priority}`}
       aria-label={t`Funding priority ${priority}`}
     >

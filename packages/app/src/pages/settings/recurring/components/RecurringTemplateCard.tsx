@@ -162,7 +162,7 @@ export function RecurringTemplateCard({
               <span className="truncate text-sm font-medium">{template.name}</span>
               <RecurringKindBadge template={template} />
               {!template.active && (
-                <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+                <Badge variant="outline" className="px-1.5 py-0 text-[0.625rem]">
                   <Trans>Paused</Trans>
                 </Badge>
               )}

@@ -16,6 +16,8 @@ export interface Transaction {
   LabelID?: number | null;
   TransferID?: string;
   Date: string;
+  /** Optional time of day, 'HH:MM' local wall-clock (no time zone); null when not set. */
+  Time?: string | null;
   Month: string;
   Memo: string;
   Reconciled: boolean;
@@ -27,6 +29,12 @@ export interface Transaction {
   OutflowNative?: MilliUnits;
   ExchangeRate?: number | null;
   ExchangeRateOverride?: boolean;
+  /**
+   * Transfer legs: the amounts are set by hand (a cross-currency transfer, or
+   * a split line's mirror whose received amount was entered), so edits of the
+   * other side keep them. Absent when the source query omits it.
+   */
+  TransferRateOverride?: boolean | number;
   AccountOnBudget?: boolean;
   TransferAccountOnBudget?: boolean | null;
   /** The other leg's account, for transfers. */
@@ -51,6 +59,8 @@ export interface Transaction {
 export interface GetTransactionsByAccountRow {
   ID: number;
   Date: string;
+  /** Optional time of day, 'HH:MM' local wall-clock (no time zone); null when not set. */
+  Time?: string | null;
   CategoryID: number;
   Category: string;
   LabelID?: number | null;
@@ -70,6 +80,12 @@ export interface GetTransactionsByAccountRow {
   TransferAccountOnBudget?: boolean | null;
   /** The other leg's account, for transfers. */
   TransferAccountName?: string | null;
+  /**
+   * A split parent without a payee of its own: its lines' payees as JSON,
+   * `[payee, transfer account name, sent]` per line in line order (see
+   * TX_ROW_COLUMNS). Null otherwise.
+   */
+  SplitPayees?: string | null;
   RunningBalanceConverted: MilliUnits | null;
   RunningBalanceNative?: MilliUnits | null;
   TransferID?: string;
@@ -176,6 +192,8 @@ export interface AccountBalanceHistoryTransaction {
 export interface GetTransactionsByAccountAndMonthRow {
   ID: number;
   Date: string;
+  /** Optional time of day, 'HH:MM' local wall-clock (no time zone); null when not set. */
+  Time?: string | null;
   CategoryID?: number;
   Category: string;
   LabelID?: number | null;
@@ -195,6 +213,12 @@ export interface GetTransactionsByAccountAndMonthRow {
   TransferAccountOnBudget?: boolean | null;
   /** The other leg's account, for transfers. */
   TransferAccountName?: string | null;
+  /**
+   * A split parent without a payee of its own: its lines' payees as JSON,
+   * `[payee, transfer account name, sent]` per line in line order (see
+   * TX_ROW_COLUMNS). Null otherwise.
+   */
+  SplitPayees?: string | null;
   RunningBalanceConverted: MilliUnits | null;
   RunningBalanceNative?: MilliUnits | null;
   TransferID?: string;
@@ -207,6 +231,8 @@ export interface GetAllTransactions {
   AccountId: number;
   AccountName: string;
   Date: string;
+  /** Optional time of day, 'HH:MM' local wall-clock (no time zone); null when not set. */
+  Time?: string | null;
   CategoryID: number;
   Category: string;
   LabelID?: number | null;
@@ -259,6 +285,26 @@ export interface TransactionSplit {
   OrderIndex: number;
   CategoryName?: string;
   TransferAccountName?: string;
+}
+
+/**
+ * A transfer line's mirror row amounts, in the mirror's own direction:
+ * native = the target account's currency, converted = the budget currency.
+ */
+export interface SplitMirrorAmounts {
+  InflowNative: MilliUnits;
+  OutflowNative: MilliUnits;
+  InflowConverted: MilliUnits;
+  OutflowConverted: MilliUnits;
+}
+
+/** A split line with its transfer mirror's stored state (SplitService.getSplitsWithMirrors). */
+export interface TransactionSplitWithMirror extends TransactionSplit {
+  /** The matched mirror row's amounts (transfer lines that have one). */
+  Mirror?: SplitMirrorAmounts;
+  /** The mirror keeps its amounts when the parent changes (an entered received amount). */
+  MirrorPinned?: boolean;
+  MirrorReconciled?: boolean;
 }
 
 export interface PayeeListItem {

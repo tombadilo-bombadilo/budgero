@@ -5,7 +5,19 @@ import { Label } from '@shared/ui/label';
 import { ThemeSwitch } from '@shared/ui/theme-switch';
 import { LanguageSwitch } from '@shared/ui/language-switch';
 import { Separator } from '@shared/ui/separator';
-import { Palette, Download, Home, Smartphone, Activity, Languages, List } from 'lucide-react';
+import {
+  Palette,
+  Download,
+  Home,
+  Smartphone,
+  Activity,
+  Languages,
+  List,
+  PanelLeft,
+  Type,
+} from 'lucide-react';
+import { TEXT_SIZE_SCALE, type TextSize } from '@shared/lib/text-size/text-size';
+import { useIsMobile } from '@shared/hooks/useIsMobile';
 import { Button } from '@shared/ui/button';
 import { usePWA } from '@shared/hooks/usePWA';
 import { RadioGroup, RadioGroupItem } from '@shared/ui/radio-group';
@@ -17,9 +29,15 @@ import {
   type MobileBudgetLayout,
 } from '@shared/store/useUiStore';
 import { Switch } from '@shared/ui/switch';
+import {
+  sidebarPinMinWidth,
+  SIDEBAR_TABLET_BREAKPOINT as SIDEBAR_TABLET_WIDTH,
+} from '@shared/ui/sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { useThemePreset } from '@shared/contexts/ThemePresetContext';
+import { PLANNING_DESKTOP_BREAKPOINT } from '@features/budget-planning/lib/layout-breakpoint';
 import { BudgetTableSkeleton } from '@features/budget-planning/ui/BudgetTableSkeleton';
+import { cn } from '@shared/lib/utils';
 import { AccountOrderCard } from '@features/account-management/ui/AccountOrderCard';
 import { SettingsPageHeader } from '@pages/settings/SettingsPageHeader';
 import {
@@ -30,10 +48,14 @@ import {
   useInlineTransactionEntryPreference,
   usePlanningNumberAnimationsPreference,
   useSameDayTransactionOrderPreference,
+  useShowTransactionTimePreference,
 } from '@shared/hooks/useUserPreferences';
 
 export default function AppearancePage() {
   const { t } = useLingui();
+  // Follow the Planning page's own breakpoint, not the app shell's: show the
+  // options for the layout this screen actually gets.
+  const planningIsMobile = useIsMobile(PLANNING_DESKTOP_BREAKPOINT);
 
   const { installApp, installSupport, installInstructions, canInstall } = usePWA();
   const homePage = useUiStore((state) => state.homePage);
@@ -41,6 +63,13 @@ export default function AppearancePage() {
   const classicFont = useUiStore((state) => state.classicFont);
   const setClassicFont = useUiStore((state) => state.setClassicFont);
   const { themeId } = useThemePreset();
+  const textSize = useUiStore((state) => state.textSize);
+  const setTextSize = useUiStore((state) => state.setTextSize);
+  const sidebarPinned = useUiStore((state) => state.sidebarPinned);
+  // Same threshold as the sidebar's own pin: the card only shows where pinning works.
+  const pinMinWidth = sidebarPinMinWidth(TEXT_SIZE_SCALE[textSize]);
+  const canPinSidebar = !useIsMobile(pinMinWidth);
+  const setSidebarPinned = useUiStore((state) => state.setSidebarPinned);
   const desktopBudgetLayout = useUiStore((state) => state.desktopBudgetLayout);
   const setDesktopBudgetLayout = useUiStore((state) => state.setDesktopBudgetLayout);
   const {
@@ -82,6 +111,11 @@ export default function AppearancePage() {
     updateSameDayTransactionOrder,
     isUpdating: isUpdatingSameDayTransactionOrder,
   } = useSameDayTransactionOrderPreference();
+  const {
+    showTransactionTime,
+    updateShowTransactionTime,
+    isUpdating: isUpdatingShowTransactionTime,
+  } = useShowTransactionTimePreference();
 
   const handleHomePageChange = (value: string) => {
     const page = value as HomePageOption;
@@ -175,6 +209,57 @@ export default function AppearancePage() {
               </p>
             </div>
             <LanguageSwitch id="language" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trans>
+              <Type className="h-5 w-5" />
+              Text
+            </Trans>
+          </CardTitle>
+          <CardDescription>
+            <Trans>Make text easier to read on this device</Trans>
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="text-size">
+                <Trans>Text size</Trans>
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                <Trans>
+                  Scales text and the spacing around it across the app. Charts keep their size.
+                </Trans>
+              </p>
+            </div>
+            <Select
+              value={textSize}
+              onValueChange={(value) => {
+                const size = value as TextSize;
+                trackSettingChanged('text_size', size);
+                setTextSize(size);
+              }}
+            >
+              <SelectTrigger id="text-size" className="w-full sm:w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">
+                  <Trans context="text size">Default</Trans>
+                </SelectItem>
+                <SelectItem value="large">
+                  <Trans context="text size">Large</Trans>
+                </SelectItem>
+                <SelectItem value="larger">
+                  <Trans context="text size">Larger</Trans>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardContent>
       </Card>
@@ -434,6 +519,31 @@ export default function AppearancePage() {
           <Separator />
           <div className="flex items-center justify-between gap-4">
             <div className="space-y-0.5">
+              <Label htmlFor="show-transaction-time">
+                <Trans>Show transaction times</Trans>
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                <Trans>
+                  Show the optional time of day under the date in the register, and edit it there.
+                  With newest first, a day is ordered by time; transactions without one come last.
+                  Imports and bank sync keep times only while this is on, and need every device on
+                  the latest version.
+                </Trans>
+              </p>
+            </div>
+            <Switch
+              id="show-transaction-time"
+              checked={showTransactionTime}
+              onCheckedChange={(checked) => {
+                trackSettingChanged('show_transaction_time', checked ? 'on' : 'off');
+                updateShowTransactionTime(checked);
+              }}
+              disabled={isUpdatingShowTransactionTime}
+            />
+          </div>
+          <Separator />
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-0.5">
               <Label htmlFor="hide-zero-amounts">
                 <Trans>Leave zero amounts empty</Trans>
               </Label>
@@ -457,9 +567,50 @@ export default function AppearancePage() {
         </CardContent>
       </Card>
 
+      {canPinSidebar && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Trans>
+                <PanelLeft className="h-5 w-5" />
+                Sidebar
+              </Trans>
+            </CardTitle>
+            <CardDescription>
+              <Trans>Choose how the desktop sidebar behaves on narrower screens.</Trans>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between gap-4">
+              <div className="space-y-0.5">
+                <Label htmlFor="sidebar-pinned">
+                  <Trans>Keep the sidebar open</Trans>
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  <Trans>
+                    On screens narrower than {SIDEBAR_TABLET_WIDTH}px the sidebar slides out to give
+                    pages more room. Turn this on to keep it pinned beside the page on screens from{' '}
+                    {pinMinWidth}px wide. You can also use the pin next to the Budgero logo. Applies
+                    to this device.
+                  </Trans>
+                </p>
+              </div>
+              <Switch
+                id="sidebar-pinned"
+                checked={sidebarPinned}
+                onCheckedChange={(checked) => {
+                  trackSettingChanged('sidebar_pinned', checked ? 'on' : 'off');
+                  setSidebarPinned(checked);
+                }}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <AccountOrderCard />
 
-      <Card className="hidden md:block">
+      <Card className={cn(planningIsMobile && 'hidden')}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trans>
@@ -551,7 +702,7 @@ export default function AppearancePage() {
         </CardContent>
       </Card>
 
-      <Card className="md:hidden">
+      <Card className={cn(!planningIsMobile && 'hidden')}>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Trans>

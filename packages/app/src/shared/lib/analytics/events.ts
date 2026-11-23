@@ -395,9 +395,12 @@ export const SETTING_VALUES = {
   language: ['en', 'de', 'fr', 'es', 'nl'],
   week_start: ['sunday', 'monday'],
   same_day_order: ['newest', 'amount'],
+  show_transaction_time: ['on', 'off'],
   hide_zero_amounts: ['on', 'off'],
   number_animations: ['on', 'off'],
   dialog_blur: ['on', 'off'],
+  sidebar_pinned: ['on', 'off'],
+  text_size: ['default', 'large', 'larger'],
   home_page: ['dashboard', 'planning', 'accounts', 'analytics'],
 } as const satisfies Record<string, readonly string[]>;
 export type SettingKey = keyof typeof SETTING_VALUES;

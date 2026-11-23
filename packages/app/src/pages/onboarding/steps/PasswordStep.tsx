@@ -77,7 +77,7 @@ export const PasswordStep: React.FC<StepProps & { forDemo?: boolean; forJoin?: b
                 ))}
               </div>
               <span
-                className="text-[10px] font-semibold tracking-wider"
+                className="text-[0.625rem] font-semibold tracking-wider"
                 style={{ color: strengthColor }}
               >
                 {strengthLabel}
@@ -101,7 +101,7 @@ export const PasswordStep: React.FC<StepProps & { forDemo?: boolean; forJoin?: b
           {state.passwordConfirm.length > 0 && (
             <div
               className={cn(
-                'mt-1.5 text-[10px] font-semibold tracking-wider',
+                'mt-1.5 text-[0.625rem] font-semibold tracking-wider',
                 matches ? 'text-emerald-600' : 'text-destructive'
               )}
             >

@@ -175,7 +175,7 @@ function BudgetTransactionForm({
       return;
     }
     // The lines carry the categories of a split template.
-    const splits = split ? prepareSplitLines() : null;
+    const splits = split ? prepareSplitLines({ templateLines: true }) : null;
     if (split && !splits) return;
 
     const categoryId = resolveCategoryId(
@@ -309,7 +309,10 @@ function BudgetTransactionForm({
           form.pendingAdd.accountId,
           form.pendingAdd.labelId,
           form.pendingAdd.transferId,
-          false
+          false,
+          undefined,
+          undefined,
+          form.pendingAdd.time
         );
         form.setPendingAdd(null);
         return;
@@ -416,6 +419,9 @@ function BudgetTransactionForm({
         dateOpen={form.dateOpen}
         onDateOpenChange={form.setDateOpen}
         onDateChange={form.setDate}
+        // Recurring templates have no time: each posted occurrence is date-only.
+        transactionTime={recurringEnabled ? undefined : form.transactionTime}
+        onTimeChange={recurringEnabled ? undefined : form.setTime}
         selectedFromAccount={form.selectedFromAccount}
         selectedToAccount={form.selectedToAccount}
         onFromAccountChange={form.setFromAccount}
@@ -476,6 +482,9 @@ function BudgetTransactionForm({
         transferAccounts={accounts.filter(
           (account) => String(account.ID) !== form.selectedFromAccount && !account.Archived
         )}
+        parentAccount={accounts.find((account) => String(account.ID) === form.selectedFromAccount)}
+        date={getCurrentDate(form.transactionDate)}
+        templateLines={recurringEnabled}
       />
 
       {recurringEnabled && (

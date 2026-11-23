@@ -12,6 +12,19 @@ import {
 } from './types.js';
 import { GoalQueries } from './queries.js';
 import {
+  describeGoalTimeframeChange,
+  effectiveFromForStartDate,
+  goalEffectiveFrom,
+  goalEffectiveTo,
+  planGoalTimeframeChange,
+  resolveGoalForMonth,
+  resolveGoalsForMonth,
+  validateGoalTimeframeChange,
+  type GoalTimeframeChange,
+  type GoalTimeframeNotice,
+} from './timeframes.js';
+import { atomically } from '../../database/sql.js';
+import {
   GoalCalculations,
   GoalProgress,
   CategoryFinancials,
@@ -52,6 +65,25 @@ export type {
   MonthlyActivity,
 } from './calculations.js';
 
+export * from './timeframes.js';
+
+/** Goal fields of one timeframe (setGoalFrom). */
+export interface GoalFields {
+  type: GoalType;
+  purpose?: GoalPurpose;
+  target: MilliUnits;
+  /** Cycle anchor (YYYY-MM-DD) for target-date and repeating goals. */
+  startDate: string;
+  targetDate: string;
+  recurring?: boolean;
+  cycleMonths?: number | null;
+}
+
+/** This month (YYYY-MM) by the services' clock. */
+function currentMonth(): string {
+  return getLocalDateString().slice(0, 7);
+}
+
 // Export GoalCalculations for pure calculations without database access
 export { GoalCalculations } from './calculations.js';
 
@@ -84,7 +116,12 @@ export class GoalService {
   }
 
   /**
-   * CreateGoal - Creates a new savings or spending goal
+   * CreateGoal - Creates a new savings or spending goal.
+   *
+   * Without `timeframe.from` the timeframe starts in StartDate's month, as
+   * for goals written by older builds, and the category must have no goal yet
+   * (older builds' unique goal per category). A category already having a
+   * timeframe starting in that month is an error (setGoalFrom replaces one).
    */
   createGoal(
     goalType: GoalType,
@@ -94,8 +131,24 @@ export class GoalService {
     targetDate: string,
     purpose: GoalPurpose = GoalPurpose.SPENDING,
     recurring = false,
-    cycleMonths?: number | null
+    cycleMonths?: number | null,
+    timeframe: { from?: string | null; to?: string | null } = {}
   ): number {
+    const from = timeframe.from ?? effectiveFromForStartDate(startDate);
+    const to = timeframe.to ?? null;
+    const invalid = validateGoalTimeframeChange({ kind: 'set', from, to });
+    if (invalid) throw new ValidationError(invalid, 'EffectiveFrom');
+    const chain = this.queries.getTimeframes(categoryId);
+    if (timeframe.from == null && timeframe.to == null && chain.length > 0) {
+      // A create without a timeframe is the shape v1.21 builds send and apply:
+      // there it hits UNIQUE(CategoryID) once the category has a goal (e.g. two
+      // devices creating the first goal offline). Fail the same way, so every
+      // device ends up with the one goal the first create made.
+      throw new Error('UNIQUE constraint failed: goals.CategoryID');
+    }
+    if (chain.some((goal) => goalEffectiveFrom(goal) === from)) {
+      throw new ValidationError(`Category ${categoryId} already has a goal starting in ${from}`);
+    }
     return this.queries.createGoal(
       goalType,
       categoryId,
@@ -104,33 +157,49 @@ export class GoalService {
       targetDate,
       purpose,
       recurring,
-      normalizeCycleMonths(recurring, cycleMonths, null)
+      normalizeCycleMonths(recurring, cycleMonths, null),
+      from,
+      to
     );
   }
 
+  /** Every timeframe of a category's goal, in chain order. */
+  getGoalTimeframes(categoryId: number): Goal[] {
+    return this.queries.getTimeframes(categoryId);
+  }
+
   /**
-   * GetGoalByCategoryID - Gets goal for a specific category
+   * GetGoalByCategoryID - The category's goal that applies in `month`
+   * (YYYY-MM; default: this month). Throws NotFoundError when none does.
    */
-  getGoalByCategoryID(categoryId: number): Goal {
-    const goal = this.queries.getGoalsForCategory(categoryId);
+  getGoalByCategoryID(categoryId: number, month: string = currentMonth()): Goal {
+    const goal = resolveGoalForMonth(this.queries.getTimeframes(categoryId), month);
     if (!goal) {
       throw new NotFoundError(`Goal for category ${categoryId} not found`);
     }
     return goal;
   }
 
-  /**
-   * GetGoalsByCategoryIDs - Gets goals for multiple categories
-   */
-  getGoalsByCategoryIDs(categoryIds: number[]): Goal[] {
-    return this.queries.getGoalsByCategoryIDs(categoryIds);
+  /** GetGoalsByCategoryIDs - These categories' goals that apply in `month` (default: this month). */
+  getGoalsByCategoryIDs(categoryIds: number[], month: string = currentMonth()): Goal[] {
+    return resolveGoalsForMonth(this.queries.getTimeframesForCategories(categoryIds), month);
+  }
+
+  /** Every category's goal that applies in `month` (YYYY-MM). */
+  getGoalsForMonth(month: string): Goal[] {
+    return resolveGoalsForMonth(this.queries.getAllGoals(), month);
   }
 
   /**
-   * DeleteGoal - Deletes a goal by ID
+   * DeleteGoal - Deletes one goal row (one timeframe) by ID
    */
   deleteGoal(goalId: number): void {
     this.queries.deleteGoal(goalId);
+  }
+
+  /** Removes the category's goal from every month (all timeframes). */
+  deleteGoalsForCategory(categoryId: number): void {
+    this.queries.deleteGoalsForCategory(categoryId);
   }
 
   /** Undo of a goal delete: the row as it was, under its own ID. */
@@ -142,12 +211,13 @@ export class GoalService {
   }
 
   /**
-   * UpdateGoal - Updates a goal with conditional field updates
+   * UpdateGoal - Updates one timeframe of the category's goal in place.
    *
-   * IMPORTANT: The Go implementation has a specific behavior:
-   * 1. Gets the current goal
-   * 2. Only updates fields that are different from current values
-   * 3. Parameters order in Go: categoryID, target, goalType, endDate
+   * `effectiveFrom` names the timeframe. Without it (payloads from older
+   * builds, which know one goal per category) the latest timeframe is
+   * updated; a category with a single timeframe then starts it in the new
+   * StartDate's month, the value older builds' devices get from migration
+   * 081, so both end up with the same row.
    */
   updateGoal(
     categoryId: number,
@@ -158,30 +228,119 @@ export class GoalService {
     recurring?: boolean,
     cycleMonths?: number | null,
     /** New start date (YYYY-MM-DD); omitted/null keeps the stored one. */
-    startDate?: string | null
+    startDate?: string | null,
+    effectiveFrom?: string | null
   ): void {
-    // Get current goal
-    const currentGoal = this.getGoalByCategoryID(categoryId);
+    const chain = this.queries.getTimeframes(categoryId);
+    const currentGoal =
+      effectiveFrom != null
+        ? chain.find((goal) => goalEffectiveFrom(goal) === effectiveFrom)
+        : chain[chain.length - 1];
+    if (!currentGoal) {
+      throw new NotFoundError(`Goal for category ${categoryId} not found`);
+    }
     const nextRecurring = recurring ?? !!currentGoal.Recurring;
-
-    // Call update with SQL parameter order: type, purpose, target, target_date, recurring, cycle, start, category_id
-    this.queries.updateGoal(
-      goalType,
+    const nextStartDate = startDate ?? currentGoal.StartDate;
+    const legacySingle = effectiveFrom == null && chain.length === 1;
+    this.queries.updateGoalRow(currentGoal.ID, {
+      type: goalType,
+      purpose: purpose ?? currentGoal.Purpose,
       target,
       targetDate,
-      categoryId,
-      purpose ?? currentGoal.Purpose,
-      nextRecurring,
-      normalizeCycleMonths(nextRecurring, cycleMonths, currentGoal.CycleMonths ?? null),
-      startDate ?? null
-    );
+      recurring: nextRecurring,
+      cycleMonths: normalizeCycleMonths(
+        nextRecurring,
+        cycleMonths,
+        currentGoal.CycleMonths ?? null
+      ),
+      startDate: nextStartDate,
+      effectiveFrom: legacySingle
+        ? effectiveFromForStartDate(nextStartDate)
+        : goalEffectiveFrom(currentGoal),
+      effectiveTo: goalEffectiveTo(currentGoal),
+    });
   }
 
   /**
-   * GetAllGoals - Gets all goals
-   *
-   * Note: This method is NOT in the original Go service but was added in the TypeScript version
-   * It's kept for backward compatibility
+   * The category's goal from `from` (YYYY-MM) to `to` (inclusive; null =
+   * until the next timeframe starts). A timeframe starting in `from` is
+   * replaced in place; otherwise a new one is added and the one before keeps
+   * the earlier months. Returns the row's ID.
+   */
+  setGoalFrom(categoryId: number, from: string, to: string | null, fields: GoalFields): number {
+    const change: GoalTimeframeChange = { kind: 'set', from, to: to ?? null };
+    const invalid = validateGoalTimeframeChange(change);
+    if (invalid) throw new ValidationError(invalid, 'EffectiveFrom');
+    return atomically(this.db, () => {
+      const chain = this.queries.getTimeframes(categoryId);
+      const plan = planGoalTimeframeChange(chain, change);
+      const recurring = fields.recurring ?? false;
+      const purpose = fields.purpose ?? GoalPurpose.SPENDING;
+      if (plan.overwrite !== null) {
+        const stored = chain.find((goal) => goal.ID === plan.overwrite)!;
+        this.queries.updateGoalRow(plan.overwrite, {
+          type: fields.type,
+          purpose,
+          target: fields.target,
+          targetDate: fields.targetDate,
+          recurring,
+          cycleMonths: normalizeCycleMonths(
+            recurring,
+            fields.cycleMonths,
+            stored.CycleMonths ?? null
+          ),
+          startDate: fields.startDate,
+          effectiveFrom: from,
+          effectiveTo: to ?? null,
+        });
+        return plan.overwrite;
+      }
+      return this.queries.createGoal(
+        fields.type,
+        categoryId,
+        fields.target,
+        fields.startDate,
+        fields.targetDate,
+        purpose,
+        recurring,
+        normalizeCycleMonths(recurring, fields.cycleMonths, null),
+        from,
+        to ?? null
+      );
+    });
+  }
+
+  /**
+   * Ends the category's goal from `month` (YYYY-MM) onwards: timeframes
+   * starting in or after it are removed and the one before ends the month
+   * before. Months before `month` keep the goal they had; when no timeframe
+   * starts before `month`, the goal is removed from every month.
+   */
+  endGoalFrom(categoryId: number, month: string): void {
+    const change: GoalTimeframeChange = { kind: 'endFrom', month };
+    const invalid = validateGoalTimeframeChange(change);
+    if (invalid) throw new ValidationError(invalid, 'EffectiveTo');
+    atomically(this.db, () => {
+      const plan = planGoalTimeframeChange(this.queries.getTimeframes(categoryId), change);
+      for (const id of plan.delete) this.queries.deleteGoal(id);
+      for (const bounds of plan.bounds) {
+        this.queries.setTimeframeBounds(bounds.id, bounds.from, bounds.to);
+      }
+    });
+  }
+
+  /** Notices for a change to the category's chain (see describeGoalTimeframeChange). */
+  describeTimeframeChange(
+    categoryId: number,
+    change: GoalTimeframeChange,
+    options: { editing?: Goal | null; viewedMonth?: string } = {}
+  ): GoalTimeframeNotice<Goal>[] {
+    return describeGoalTimeframeChange(this.queries.getTimeframes(categoryId), change, options);
+  }
+
+  /**
+   * GetAllGoals - Every goal row: all timeframes of every category. Use
+   * getGoalsForMonth (or resolveGoalsForMonth) for the goals of a month.
    */
   getAllGoals(): Goal[] {
     return this.queries.getAllGoals();
@@ -215,7 +374,7 @@ export class GoalService {
     currentMonth: string
   ): GoalProgress {
     try {
-      const goal = this.getGoalByCategoryID(categoryId);
+      const goal = this.getGoalByCategoryID(categoryId, currentMonth);
       return this.calculateGoalProgress(goal, finances, currentMonth);
     } catch {
       // No goal found, return empty progress

@@ -213,7 +213,7 @@ export function BudgetToolbar({
               >
                 <div className="flex items-center gap-1">
                   <span className={cn('h-1.5 w-1.5 rounded-full', rtaTone.dot)} />
-                  <span className="text-[10px] font-medium uppercase tracking-[0.08em] leading-none text-muted-foreground">
+                  <span className="text-[0.625rem] font-medium uppercase tracking-[0.08em] leading-none text-muted-foreground">
                     <Trans>Ready to assign</Trans>
                   </span>
                   <ReadyToAssignHelpPopover
@@ -302,20 +302,17 @@ export function BudgetToolbar({
                     title={
                       showHiddenCategories ? t`Hide hidden categories` : t`Show hidden categories`
                     }
+                    aria-pressed={showHiddenCategories}
                   >
                     {showHiddenCategories ? (
                       <>
                         <EyeOff className="h-3.5 w-3.5" />
-                        <span className="hidden xl:inline">
-                          <Trans>Hide hidden</Trans>
-                        </span>
+                        <Trans>Hide hidden</Trans>
                       </>
                     ) : (
                       <>
                         <Eye className="h-3.5 w-3.5" />
-                        <span className="hidden xl:inline">
-                          <Trans>Show hidden</Trans>
-                        </span>
+                        <Trans>Show hidden</Trans>
                       </>
                     )}
                   </Button>

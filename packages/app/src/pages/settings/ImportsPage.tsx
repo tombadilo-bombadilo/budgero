@@ -181,7 +181,7 @@ export default function ImportsPage() {
                       <TableCell className="capitalize">
                         <div>{run.sourceName || run.sourceType}</div>
                         {run.summary.acceptedWithWarnings && run.summary.verification && (
-                          <div className="mt-1 text-[11px] normal-case text-amber-700 dark:text-amber-400">
+                          <div className="mt-1 text-[0.6875rem] normal-case text-amber-700 dark:text-amber-400">
                             <Trans>
                               {run.summary.verification.readyToAssign.mismatchCount} RTA ·{' '}
                               {run.summary.verification.categories.checked -

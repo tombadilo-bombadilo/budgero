@@ -112,7 +112,7 @@ export function CategoryTransactionCell({
                       <span>{format(parseISO(transaction.Date), 'MMM d, yyyy')}</span>
                       <span className={cn('font-semibold', netClass)}>{netLabel}</span>
                     </div>
-                    <div className="mt-1 flex flex-col gap-1 text-[11px] text-muted-foreground">
+                    <div className="mt-1 flex flex-col gap-1 text-[0.6875rem] text-muted-foreground">
                       <span className="truncate font-medium text-foreground">
                         {transaction.Account}
                       </span>

@@ -272,23 +272,28 @@ describe('Transfer partner sync', () => {
     expect(b.LabelID).toBe(destinationLabelId);
     expect(b.Date).toBe(dateB);
 
-    // Each leg of a cross-currency transfer holds its own bank amount: editing
-    // one leg leaves the partner's amounts alone and changes the implied
-    // direct rate instead, which is then marked as overridden (#138).
-    const partnerBefore = b;
+    // Editing the sent leg scales the received leg in proportion: the
+    // transfer keeps its direct rate. 83.333 EUR * 150 / 100 = 124.9995,
+    // rounded half away from zero; valued at the destination date's rate.
+    const rateBefore = services.transactions.getTransferRateDetails(transferId)!;
     await services.transactions.updateTransactionColumn(usdTx, 'OutflowConverted', 150_000);
     a = services.transactions.getTransactionByID(usdTx);
     b = services.transactions.getTransactionByID(eurTx);
     expect(a.OutflowConverted).toBe(150_000);
-    expect(b.InflowConverted).toBe(partnerBefore.InflowConverted);
-    expect(b.InflowNative).toBe(partnerBefore.InflowNative);
+    expect(b.InflowNative).toBe(125_000);
+    expect(b.InflowConverted).toBe(125_000 * EURUSD_ON_DESTINATION_DATE);
+    expect(b.ExchangeRate).toBe(EURUSD_ON_DESTINATION_DATE);
     expect(b.Memo).toBe('xfer in');
     expect(b.Payee).toBe('USD account');
     expect(b.LabelID).toBe(destinationLabelId);
     expect(b.Date).toBe(dateB);
     const details = services.transactions.getTransferRateDetails(transferId)!;
-    expect(details.transferRateOverride).toBe(true);
-    expect(details.rate).toBeCloseTo(Number(partnerBefore.InflowNative) / 150_000, 10);
+    expect(details.transferRateOverride).toBe(rateBefore.transferRateOverride);
+    expect(details.rate).toBeCloseTo(rateBefore.rate, 5);
+
+    // Each leg of a cross-currency transfer holds its own bank amount: editing
+    // the received leg leaves the sent amount alone and changes the implied
+    // direct rate instead, which is then marked as overridden (#138).
 
     // Editing the destination native amount leaves the source amount alone.
     await services.transactions.updateTransactionColumn(eurTx, 'InflowNative', 200_000);
@@ -301,5 +306,140 @@ describe('Transfer partner sync', () => {
     expect(a.Payee).toBe('Updated payee');
     expect(a.LabelID).toBe(editedSourceLabelId);
     expect(a.Date).toBe(dateA);
+    expect(services.transactions.getTransferRateDetails(transferId)!.transferRateOverride).toBe(
+      true
+    );
+  });
+});
+
+describe('Cross-currency transfer: editing the sent amount', () => {
+  const DATE = '2026-03-10';
+
+  async function setup() {
+    const adapter = await NodeSqlJsAdapter.create();
+    const sm = new ServiceManager();
+    await sm.initialize(adapter);
+    const s: Services = sm.getServices();
+    const budgetId = await s.budgets.createBudget({
+      name: 'Scale',
+      display_currency: 'USD',
+      badge_icon: 'dollar',
+      number_format: 'dollar',
+      create_default_categories: true,
+    });
+    const usd = (await s.accounts.createAccount('USD', budgetId, 'checking', 'USD', 0)).ID;
+    const eur = (await s.accounts.createAccount('EUR', budgetId, 'checking', 'EUR', 0, {}, false))
+      .ID;
+    await s.currency.saveRate('EUR', 'USD', 1.2, DATE, budgetId);
+    await s.currency.saveRate('USD', 'EUR', 1 / 1.2, DATE, budgetId);
+    const cat = s.categories.getAllCategories(budgetId).find((c: Category) => c.Name !== 'Income')!;
+    /** 120 USD sent, 80 EUR received (a made-up rate); `destinationRate` pins the EUR leg's rate. */
+    const transfer = async (destinationRate: number | null = null) => {
+      const id = `tr_${Math.random()}`;
+      const sent = await s.transactions.addTransaction(
+        0,
+        120_000,
+        usd,
+        cat.ID,
+        budgetId,
+        DATE,
+        'out',
+        id
+      );
+      const received = await s.transactions.addTransaction(
+        80_000,
+        0,
+        eur,
+        cat.ID,
+        budgetId,
+        DATE,
+        'in',
+        id,
+        undefined,
+        null,
+        destinationRate
+      );
+      return { id, sent, received };
+    };
+    return { adapter, s, budgetId, usd, eur, transfer };
+  }
+
+  it('120 -> 150 USD turns 80 EUR received into 100, at the same direct rate', async () => {
+    const { s, eur, transfer } = await setup();
+    const t = await transfer();
+    const before = s.transactions.getTransferRateDetails(t.id)!;
+    await s.transactions.updateTransactionColumn(t.sent, 'OutflowConverted', 150_000);
+    const received = s.transactions.getTransactionByID(t.received);
+    expect(received).toMatchObject({ InflowNative: 100_000, InflowConverted: 120_000 });
+    const after = s.transactions.getTransferRateDetails(t.id)!;
+    expect(after.rate).toBeCloseTo(before.rate, 10);
+    expect(after.transferRateOverride).toBe(false);
+    // The EUR account's balances follow.
+    expect(s.accounts.getAccount(eur)).toMatchObject({
+      BalanceNative: 100_000,
+      BalanceConverted: 120_000,
+    });
+    expect(received.RunningBalanceNative).toBe(100_000);
+  });
+
+  it('a received leg with a rate override keeps that rate (typed amounts)', async () => {
+    const { s, transfer } = await setup();
+    // Valued at what was sent: 120 USD for 80 EUR.
+    const t = await transfer(1.5);
+    expect(s.transactions.getTransactionByID(t.received).InflowConverted).toBe(120_000);
+    await s.transactions.updateTransactionColumn(t.sent, 'OutflowNative', 150_000);
+    expect(s.transactions.getTransactionByID(t.received)).toMatchObject({
+      InflowNative: 100_000,
+      InflowConverted: 150_000,
+      ExchangeRate: 1.5,
+      ExchangeRateOverride: 1,
+    });
+  });
+
+  it('editing the received leg keeps the sent amount; the rate changes', async () => {
+    const { s, transfer } = await setup();
+    const t = await transfer();
+    await s.transactions.updateTransactionColumn(t.received, 'InflowNative', 90_000);
+    expect(s.transactions.getTransactionByID(t.sent).OutflowNative).toBe(120_000);
+    const details = s.transactions.getTransferRateDetails(t.id)!;
+    expect(details.rate).toBeCloseTo(0.75, 10);
+    expect(details.transferRateOverride).toBe(true);
+  });
+
+  it('a reconciled received leg whose amount changes goes back to uncleared', async () => {
+    const { adapter, s, transfer } = await setup();
+    const t = await transfer();
+    adapter
+      .prepare('UPDATE transactions SET Cleared = 1, Reconciled = 1 WHERE ID = ?')
+      .run(t.received);
+    await s.transactions.updateTransactionColumn(t.sent, 'OutflowConverted', 60_000);
+    expect(s.transactions.getTransactionByID(t.received)).toMatchObject({
+      InflowNative: 40_000,
+      Reconciled: 0,
+    });
+  });
+
+  it('a sent amount from or to zero keeps the received amount', async () => {
+    const { s, transfer } = await setup();
+    const t = await transfer();
+    await s.transactions.updateTransactionColumn(t.sent, 'OutflowConverted', 0);
+    expect(s.transactions.getTransactionByID(t.received).InflowNative).toBe(80_000);
+    await s.transactions.updateTransactionColumn(t.sent, 'OutflowConverted', 90_000);
+    expect(s.transactions.getTransactionByID(t.received).InflowNative).toBe(80_000);
+  });
+
+  it('the transfer rate dialog still sets both amounts exactly', async () => {
+    const { s, transfer } = await setup();
+    const t = await transfer();
+    await s.transactions.updateTransferAmounts(t.id, 150_000, 95_000);
+    expect(s.transactions.getTransactionByID(t.sent).OutflowNative).toBe(150_000);
+    expect(s.transactions.getTransactionByID(t.received).InflowNative).toBe(95_000);
+  });
+
+  it('flags only the sent leg for the sync format check', async () => {
+    const { s, transfer } = await setup();
+    const t = await transfer();
+    expect(s.legacyReplay.scalesTransferPartners([t.sent])).toBe(true);
+    expect(s.legacyReplay.scalesTransferPartners([t.received])).toBe(false);
   });
 });

@@ -313,7 +313,7 @@ export function DesktopBudgetCategoryRow({
           />
         </div>
       </TableCell>
-      <TableCell className="hidden align-middle text-right py-1.5 min-[1250px]:table-cell">
+      <TableCell className="hidden align-middle text-right py-1.5 @[700px]/budget-table:table-cell">
         <button
           type="button"
           data-testid={`activity-${row.name.toLowerCase().replace(/\s+/g, '-')}`}
@@ -395,7 +395,7 @@ export function DesktopBudgetCategoryRow({
                     min="0"
                     max={String(toDecimal(row.available > 0 ? row.available : ZERO_MILLI))}
                   />
-                  <div className="text-[11px] text-muted-foreground">
+                  <div className="text-[0.6875rem] text-muted-foreground">
                     <Trans>Available: {formatAmount(Math.max(0, row.available || 0))}</Trans>
                   </div>
                 </div>

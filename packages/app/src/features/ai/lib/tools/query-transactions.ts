@@ -56,6 +56,8 @@ export type QueryTransactionsArgs = z.infer<typeof queryTransactionsSchema>;
 interface Transaction {
   ID: number;
   Date: string;
+  /** Optional time of day ('HH:MM', local). */
+  Time?: string | null;
   Payee?: string;
   Memo?: string;
   Category?: string;
@@ -207,7 +209,8 @@ export async function executeQueryTransactions(
               : `+${formatMilliCurrency(tx.InflowConverted || 0)}`;
             const desc = tx.Payee || tx.Memo || 'No description';
             // Include id so the model can target this row with edit_transaction.
-            return `#${tx.ID} | ${tx.Date} | ${desc} | ${tx.Category || 'Uncategorized'} | ${tx.Account} | ${amount}`;
+            const when = tx.Time ? `${tx.Date} ${tx.Time}` : tx.Date;
+            return `#${tx.ID} | ${when} | ${desc} | ${tx.Category || 'Uncategorized'} | ${tx.Account} | ${amount}`;
           })
           .join('\n');
 

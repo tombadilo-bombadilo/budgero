@@ -55,6 +55,7 @@ Monetary values are integer milliunits (1/1000 of a currency unit), so 42.50 is 
 ### Supported operations today
 
 - `transactions.add` — send an income or expense. Use `inflow` for income and `outflow` for expenses (only one should be non-zero). Supply your existing budget, account, and category IDs. Set `"cleared": true` if the transaction has already cleared the bank; when omitted it is added as uncleared.
+- **Time of day (optional):** add `"time": "HH:MM"` (24-hour, local, no time zone) to `transactions.add`, an `addTransfer` call or `updateByRef` fields (`null` clears it). An invalid time is dropped and the transaction is still added. Send such payloads with `"v": 7`: older Budgero apps then refuse the item with "update required" (it is marked failed, resend it after updating) instead of adding it without the time.
 - **Matching hand-entered transactions:** a pushed `transactions.add` that looks like a transaction you typed in yourself (same account and direction, amount and date within **Settings → Duplicate transactions**, 1% and ±7 days by default) isn't added twice. It waits on the account's **to review** list, where **Match** keeps your entry and marks it cleared, and **Add as new** adds exactly what was pushed. Transfers and split transactions are always added directly.
 - `transactions.updateByRef` — change fields of a transaction previously created via the Push API, referenced by the `message_id` of the original push: `{"messageId": "...", "fields": {"outflow": 45000, "memo": "corrected"}}`. Accepted fields: `inflow`, `outflow` (integer milliunits), `date`, `memo`, `payee`, `categoryId`, `accountId`, `cleared` (`true`/`false`; for example, push a pending charge and mark it cleared once it settles).
 - `transactions.deleteByRef` — permanently delete a transaction previously created via the Push API: `{"messageId": "..."}`. Missing references are successful no-ops, including when the transaction is already gone.
@@ -68,6 +69,8 @@ With the Python SDK: `result = client.add_transaction(...)`, then `client.update
 #### Split transactions (multi-category)
 
 Add an optional `splits` array to split the transaction across several categories. Each line carries its own `inflow`/`outflow` (integer milliunits in the account's currency) and `categoryId` (or `transferAccountId` for a transfer line); `memo` and `payee` are optional per line. The parent's `categoryId` becomes irrelevant — omit it — and the parent's `inflow`/`outflow` **must equal the sum of the lines**, or the item is rejected on apply with "Split amounts must sum to parent total".
+
+A transfer line to an **off-budget** account (for example a mortgage or another tracking account) may carry both `transferAccountId` and `categoryId`: the money still moves to that account, but it counts as spending in the category instead of leaving Ready to Assign. Without a `categoryId` it leaves Ready to Assign. A line to an on-budget account can't have a category; such an item is rejected. For a transfer line to an account in another currency you can add `receivedAmount` (integer milliunits in the other account's currency): that exact amount lands in the other account. Without it, or when no exchange rate for the budget currency is available, the amount is converted at the day's rate.
 
 ```json
 {

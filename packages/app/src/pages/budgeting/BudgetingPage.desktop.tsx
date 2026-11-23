@@ -1,5 +1,5 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, type ReactNode } from 'react';
 import { Card, CardContent } from '@shared/ui/card';
 import { ScrollArea } from '@shared/ui/scroll-area';
 import { BudgetTable } from '@features/budget-planning/ui/BudgetTable';
@@ -7,13 +7,23 @@ import { BudgetToolbar } from '@features/budgeting/ui/BudgetToolbar';
 import { BudgetContextPanel } from '@features/budgeting/ui/BudgetContextPanel';
 import { useUiStore } from '@shared/store/useUiStore';
 import { useMonthlyBudget, useReadyToAssign } from '@entities/budget/api/useMonthlyBudget';
-import { useGoals } from '@entities/goal/api/useGoals';
+import { useGoalsForMonth } from '@entities/goal/api/useGoals';
 import { transformBudgetRows } from '@features/budget-planning/lib/budget-transforms';
 import { useHideCategory } from '@features/category-management/api/useHideCategory';
 import { addMonths, parse } from 'date-fns';
 import { formatDate as format } from '@shared/lib/date-format';
 import { Button } from '@shared/ui/button';
-import { Calendar, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Search } from 'lucide-react';
+import {
+  Calendar,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  PanelRight,
+  PanelRightClose,
+  Search,
+  X,
+} from 'lucide-react';
 import { Drawer, DrawerContent } from '@shared/ui/drawer';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { Input } from '@shared/ui/input';
@@ -26,6 +36,9 @@ import { useClearCategorySelectionOnMount } from '@shared/hooks/useClearCategory
 import { useNavigateMonth } from '@shared/hooks/useNavigateMonth';
 import { FirstStepsCard } from '@features/first-steps/ui/FirstStepsCard';
 import { GoalWalkthroughHost } from '@features/first-steps/ui/GoalWalkthroughHost';
+import { PLANNING_PANEL_DOCK_BREAKPOINT } from '@features/budget-planning/lib/layout-breakpoint';
+import { useIsMobile } from '@shared/hooks/useIsMobile';
+import { cn } from '@shared/lib/utils';
 
 export function BudgetingPageDesktop() {
   const { t } = useLingui();
@@ -38,10 +51,28 @@ export function BudgetingPageDesktop() {
   const desktopBudgetLayout = useUiStore((state) => state.desktopBudgetLayout);
   const showHiddenCategories = useUiStore((state) => state.showHiddenCategories);
   const setShowHiddenCategories = useUiStore((state) => state.setShowHiddenCategories);
+  // Hidden categories sit at the end of the list: bring them into view when shown.
+  const toggleHiddenCategories = useCallback(() => {
+    setShowHiddenCategories(!showHiddenCategories);
+    if (showHiddenCategories) return;
+    window.setTimeout(() => {
+      const rows = document.querySelectorAll('[data-category-id]');
+      rows[rows.length - 1]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }, 100);
+  }, [showHiddenCategories, setShowHiddenCategories]);
   const showTargetColumn = useUiStore((state) => state.showBudgetTargetColumn);
   const toggleTargetColumn = useUiStore((state) => state.toggleBudgetTargetColumn);
 
   const focusCategoryId = useFocusCategoryFromNavState();
+
+  // Side panel: beside the table on a wide screen (remembered), over it on a
+  // narrow one (tablet, unfolded foldable), where it starts closed.
+  const panelDocks = !useIsMobile(PLANNING_PANEL_DOCK_BREAKPOINT);
+  // Only the docked state changes the page layout. The overlay state lives in
+  // the toggle and the panel, so opening it does not re-render the table.
+  const panelDocked = useUiStore((state) => state.planningPanelOpen) && panelDocks;
+  const setOverlayPanelOpen = useUiStore((state) => state.setPlanningOverlayPanelOpen);
+  useEffect(() => () => setOverlayPanelOpen(false), [setOverlayPanelOpen]);
 
   useClearCategorySelectionOnMount();
 
@@ -51,7 +82,8 @@ export function BudgetingPageDesktop() {
     isSuccess: budgetLoaded,
     isPlaceholderData: budgetIsPlaceholder,
   } = useMonthlyBudget(currentMonth, budgetId);
-  const { data: goalsData = [] } = useGoals(budgetId);
+  // This month's goal per category; allGoals holds every timeframe (other months).
+  const { data: goalsData, allGoals } = useGoalsForMonth(budgetId, currentMonth);
   const rta = useReadyToAssign(budgetId, currentMonth);
   const readyToAssign = rta.data ?? 0;
   // This month's real figures, not a loading default or last month's placeholder.
@@ -200,6 +232,7 @@ export function BudgetingPageDesktop() {
         </Trans>
       </Button>
       {monthSwitcher}
+      <PlanningPanelToggle docks={panelDocks} />
     </div>
   );
 
@@ -210,7 +243,7 @@ export function BudgetingPageDesktop() {
         const collapsed = new Set<string>();
         allBudgetData.forEach((md) => {
           if (!md?.data) return;
-          const rows = transformBudgetRows(md.data, goalsData || [], md.month);
+          const rows = transformBudgetRows(md.data, allGoals, md.month);
           rows.filter((row) => row.isGroup).forEach((row) => collapsed.add(row.id));
         });
         setSharedCollapsedGroups(collapsed);
@@ -231,6 +264,17 @@ export function BudgetingPageDesktop() {
     setSharedExpandedCategories(new Set(next));
   }, []);
 
+  const firstStepsProps = {
+    budgetId,
+    readyToAssign,
+    readyToAssignLabel: formatMilliAmount(readyToAssign),
+    rows: budgetData || [],
+    goals: goalsData,
+    currentMonth,
+    formatAmount: formatMilliAmount,
+    settled: figuresSettled,
+  };
+
   if (!selectedBudget) {
     return (
       <div className="p-6">
@@ -245,86 +289,82 @@ export function BudgetingPageDesktop() {
 
   return (
     <div className="p-6">
-      <div className="grid gap-4 min-[1020px]:grid-cols-[1fr_340px] min-[1020px]:items-stretch min-[1020px]:h-[calc(100dvh-var(--app-topbar-height,6.5rem))]">
-        <Card className="min-w-0 flex flex-col min-h-0 h-full overflow-hidden pt-0 pb-2">
-          <CardContent className="px-0 flex-1 min-h-0 h-full overflow-hidden">
-            <ScrollArea className="h-full">
-              <BudgetTable
-                rawRows={budgetData || []}
-                goals={goalsData || []}
-                globalLocalizer={globalLocalizer}
-                budgetId={budgetId}
-                layoutVariant={
-                  desktopBudgetLayout === 'cards'
-                    ? 'default'
-                    : desktopBudgetLayout === 'compact'
-                      ? 'desktop-compact'
-                      : 'desktop-table'
-                }
-                focusCategoryId={focusCategoryId}
-                onHideCategory={(item) => hideCategory(item.categoryId)}
-                showHiddenCategories={showHiddenCategories}
-                renderToolbar={(controls) => (
-                  <BudgetToolbar
-                    readyToAssign={readyToAssign}
-                    readyToAssignSettled={figuresSettled}
-                    globalLocalizer={globalLocalizer}
-                    currentMonth={currentMonth}
-                    budgetId={budgetId}
-                    budgetRows={budgetData || []}
-                    goals={goalsData || []}
-                    controls={controls}
-                    extraContent={toolbarExtra}
-                    hideResetOrder
-                    showHiddenCategories={showHiddenCategories}
-                    onToggleHiddenCategories={() => setShowHiddenCategories(!showHiddenCategories)}
-                    hasHiddenCategories={hasHiddenCategories}
-                    showTargetColumn={showTargetColumn}
-                    onToggleTargetColumn={
-                      desktopBudgetLayout === 'table' ? toggleTargetColumn : undefined
-                    }
-                  />
-                )}
-              />
-            </ScrollArea>
-          </CardContent>
-        </Card>
-
-        <div className="min-w-0 flex flex-col min-h-0 h-full overflow-hidden">
-          {/* Radix lays the viewport content out as a table, so one unwrappable
-              element (a long translated label) widened the whole panel and cut
-              its right edge off. Block layout keeps it at the panel width. */}
-          <ScrollArea className="h-full [&_[data-slot=scroll-area-viewport]>div]:!block">
-            <div className="px-1 pb-4">
-              <FirstStepsCard
-                className="mb-4"
-                budgetId={budgetId}
-                readyToAssign={readyToAssign}
-                readyToAssignLabel={formatMilliAmount(readyToAssign)}
-                rows={budgetData || []}
-                goals={goalsData}
-                currentMonth={currentMonth}
-                formatAmount={formatMilliAmount}
-                settled={figuresSettled}
-              />
-              <GoalWalkthroughHost
-                rows={budgetData || []}
-                goals={goalsData}
-                currentMonth={currentMonth}
-                formatAmount={formatMilliAmount}
-              />
-              <BudgetContextPanel
-                budgetId={budgetId}
-                currentMonth={currentMonth}
-                readyToAssign={readyToAssign}
-                globalLocalizer={globalLocalizer}
-                selectedCategoryIds={selectedCategoryIds}
-                transformedRows={transformedRows}
-              />
-            </div>
-          </ScrollArea>
+      <div
+        className={cn(
+          'relative grid h-[calc(100dvh-var(--app-topbar-height,6.5rem))] items-stretch gap-4',
+          panelDocked && 'min-[1020px]:grid-cols-[1fr_340px]'
+        )}
+      >
+        <div className="flex min-h-0 min-w-0 flex-col gap-3">
+          {/* The panel holds the first steps; without it they sit above the table. */}
+          {!panelDocked && (
+            <FirstStepsCard className="shrink-0" {...firstStepsProps} variant="bar" />
+          )}
+          <Card className="min-w-0 flex flex-col min-h-0 flex-1 overflow-hidden pt-0 pb-2">
+            <CardContent className="px-0 flex-1 min-h-0 h-full overflow-hidden">
+              <ScrollArea className="h-full">
+                <BudgetTable
+                  rawRows={budgetData || []}
+                  goals={goalsData || []}
+                  globalLocalizer={globalLocalizer}
+                  budgetId={budgetId}
+                  layoutVariant={
+                    desktopBudgetLayout === 'cards'
+                      ? 'default'
+                      : desktopBudgetLayout === 'compact'
+                        ? 'desktop-compact'
+                        : 'desktop-table'
+                  }
+                  focusCategoryId={focusCategoryId}
+                  onHideCategory={(item) => hideCategory(item.categoryId)}
+                  showHiddenCategories={showHiddenCategories}
+                  renderToolbar={(controls) => (
+                    <BudgetToolbar
+                      readyToAssign={readyToAssign}
+                      readyToAssignSettled={figuresSettled}
+                      globalLocalizer={globalLocalizer}
+                      currentMonth={currentMonth}
+                      budgetId={budgetId}
+                      budgetRows={budgetData || []}
+                      goals={goalsData || []}
+                      controls={controls}
+                      extraContent={toolbarExtra}
+                      hideResetOrder
+                      showHiddenCategories={showHiddenCategories}
+                      onToggleHiddenCategories={toggleHiddenCategories}
+                      hasHiddenCategories={hasHiddenCategories}
+                      showTargetColumn={showTargetColumn}
+                      onToggleTargetColumn={
+                        desktopBudgetLayout === 'table' ? toggleTargetColumn : undefined
+                      }
+                    />
+                  )}
+                />
+              </ScrollArea>
+            </CardContent>
+          </Card>
         </div>
+
+        <PlanningSidePanel docks={panelDocks}>
+          {panelDocks && <FirstStepsCard className="mb-4" {...firstStepsProps} />}
+          <BudgetContextPanel
+            budgetId={budgetId}
+            currentMonth={currentMonth}
+            readyToAssign={readyToAssign}
+            globalLocalizer={globalLocalizer}
+            selectedCategoryIds={selectedCategoryIds}
+            transformedRows={transformedRows}
+          />
+        </PlanningSidePanel>
       </div>
+
+      {/* Places itself beside what it points at, wherever the panel is. */}
+      <GoalWalkthroughHost
+        rows={budgetData || []}
+        goals={goalsData}
+        currentMonth={currentMonth}
+        formatAmount={formatMilliAmount}
+      />
 
       <Drawer open={multiMonthOpen} onOpenChange={setMultiMonthOpen}>
         <DrawerContent className="h-[90vh] w-screen max-w-none data-[vaul-drawer-direction=bottom]:max-h-[100vh] data-[vaul-drawer-direction=bottom]:mt-0 data-[vaul-drawer-direction=bottom]:rounded-t-none p-0">
@@ -466,7 +506,7 @@ export function BudgetingPageDesktop() {
                       ) : (
                         <BudgetTable
                           rawRows={monthData.data || []}
-                          goals={goalsData || []}
+                          goals={allGoals}
                           globalLocalizer={globalLocalizer}
                           budgetId={budgetId}
                           monthOverride={monthData.month}
@@ -492,5 +532,80 @@ export function BudgetingPageDesktop() {
         </DrawerContent>
       </Drawer>
     </div>
+  );
+}
+
+function usePlanningPanelState(docks: boolean) {
+  const dockedOpen = useUiStore((state) => state.planningPanelOpen);
+  const setDockedOpen = useUiStore((state) => state.setPlanningPanelOpen);
+  const overlayOpen = useUiStore((state) => state.planningOverlayPanelOpen);
+  const setOverlayOpen = useUiStore((state) => state.setPlanningOverlayPanelOpen);
+  return docks ? ([dockedOpen, setDockedOpen] as const) : ([overlayOpen, setOverlayOpen] as const);
+}
+
+function PlanningPanelToggle({ docks }: { docks: boolean }) {
+  const { t } = useLingui();
+  const [open, setOpen] = usePlanningPanelState(docks);
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      onClick={() => setOpen(!open)}
+      aria-label={open ? t`Hide side panel` : t`Show side panel`}
+      aria-expanded={open}
+      aria-controls="planning-side-panel"
+      title={open ? t`Hide side panel` : t`Show side panel`}
+      data-testid="planning-panel-toggle"
+      className="h-8 w-8 shrink-0 rounded-lg border-border/70 bg-card/50 text-muted-foreground shadow-none hover:bg-muted/60 hover:text-foreground"
+    >
+      {open ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
+    </Button>
+  );
+}
+
+/**
+ * Beside the table when it docks, over it otherwise. The overlay stays mounted
+ * while closed, so opening it only has to show it.
+ */
+function PlanningSidePanel({ docks, children }: { docks: boolean; children: ReactNode }) {
+  const { t } = useLingui();
+  const [open, setOpen] = usePlanningPanelState(docks);
+  if (docks && !open) return null;
+  return (
+    <aside
+      id="planning-side-panel"
+      data-testid="planning-side-panel"
+      aria-label={t`Budget Context`}
+      className={cn(
+        'flex min-h-0 min-w-0 flex-col overflow-hidden',
+        docks
+          ? 'h-full'
+          : 'absolute inset-y-0 right-0 z-20 w-[340px] max-w-full rounded-xl border bg-background p-3 shadow-xl',
+        !docks && (open ? 'animate-in fade-in-0 slide-in-from-right-4 duration-200' : 'hidden')
+      )}
+    >
+      {!docks && (
+        <div className="flex shrink-0 items-center justify-between gap-2 pb-2 pl-1">
+          <h2 className="text-sm font-semibold">
+            <Trans>Budget Context</Trans>
+          </h2>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground"
+            aria-label={t`Hide side panel`}
+            onClick={() => setOpen(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+      {/* Radix lays the viewport content out as a table, so one unwrappable
+          element (a long translated label) widened the whole panel and cut
+          its right edge off. Block layout keeps it at the panel width. */}
+      <ScrollArea className="min-h-0 flex-1 [&_[data-slot=scroll-area-viewport]>div]:!block">
+        <div className="px-1 pb-4">{children}</div>
+      </ScrollArea>
+    </aside>
   );
 }

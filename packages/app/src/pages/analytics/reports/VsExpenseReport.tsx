@@ -1,10 +1,12 @@
-import { msg } from '@lingui/core/macro';
-import { Trans } from '@lingui/react/macro';
-import { Fragment, useMemo, useState } from 'react';
+import { Trans, useLingui } from '@lingui/react/macro';
+import { Fragment, useMemo, useState, type ReactNode } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Card } from '@shared/ui/card';
 import { Button } from '@shared/ui/button';
 import { Skeleton } from '@shared/ui/skeleton';
+import { Label } from '@shared/ui/label';
+import { Switch } from '@shared/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { cn } from '@shared/lib/utils';
 import { useUiStore } from '@shared/store/useUiStore';
 import { buildCategoryPivot } from '../analytics-model';
@@ -14,6 +16,8 @@ import { longMonthLabel, shortMonthLabel, useMoneyFormatters } from '../componen
 import { CategoryTransactionCell } from '../components/CategoryTransactionCell';
 import { reportMeta } from '../report-questions';
 import { ledgerAnswer } from '../report-answers';
+import { ledgerAverage, ledgerAverageStep } from './ledger-columns';
+import { useLedgerColumns } from './useLedgerColumns';
 
 /** Keep the table renderable — beyond this many months, show the most recent. */
 const MAX_PIVOT_MONTHS = 24;
@@ -21,8 +25,12 @@ const MAX_PIVOT_MONTHS = 24;
 // On phones the sticky Category+Total pair would cover almost the whole
 // viewport and leave no visible scroll area, so the Category column narrows
 // and the Total column only pins from `sm` up.
-const STICKY_LEFT = msg`sticky left-0 z-10 max-w-[130px] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3`;
-const STICKY_RIGHT = msg`z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]`;
+const STICKY_LEFT =
+  'sticky left-0 z-10 max-w-[8.125rem] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3';
+const STICKY_RIGHT =
+  'z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]';
+/** Total/Average cells that scroll with the months (Average at the end, both at the start). */
+const SUMMARY_CELL = 'whitespace-nowrap px-2 py-2 text-right sm:px-3';
 
 interface VsExpenseReportProps {
   data: AnalyticsData;
@@ -41,7 +49,9 @@ export function VsExpenseReport({
   accountIds,
   categoryIds,
 }: VsExpenseReportProps) {
+  const { t } = useLingui();
   const money = useMoneyFormatters();
+  const { columns, update: updateColumns } = useLedgerColumns();
   const globalLocalizer = useUiStore((state) => state.globalLocalizer);
   const privacyMaskNumbers = useUiStore((state) => state.privacyMaskNumbers);
 
@@ -81,6 +91,60 @@ export function VsExpenseReport({
     value === 0 ? 'text-muted-foreground' : value < 0 ? 'text-rose-500' : 'text-emerald-600';
 
   const isEmpty = !data.isLoading && (!months.length || !pivot.hasActivity);
+  // Round averages to what the currency shows, so they never read "-0.00".
+  const averageStep = ledgerAverageStep(globalLocalizer.resolvedOptions().maximumFractionDigits);
+  const average = (total: number) => ledgerAverage(total, months.length, averageStep);
+
+  /**
+   * One row's Total and Average cells, placed after the months (Total pinned
+   * to the right edge, Average just before it) or right after Category.
+   * `className` styles both cells (background, weight, colour).
+   */
+  const summaryCells = (
+    key: string,
+    total: number,
+    renderCell: (
+      kind: 'total' | 'average',
+      value: number
+    ) => { className: string; content: ReactNode },
+    Cell: 'td' | 'th' = 'td'
+  ) => {
+    const cell = (kind: 'total' | 'average', value: number) => {
+      const { className, content } = renderCell(kind, value);
+      const sticky = kind === 'total' && !columns.summaryFirst;
+      return (
+        <Cell
+          key={`${key}-${kind}`}
+          data-column={kind}
+          className={cn(
+            sticky ? STICKY_RIGHT : SUMMARY_CELL,
+            // Close the summary block: the last of Total/Average before the months.
+            columns.summaryFirst && (kind === 'average' || !columns.average) && 'border-r',
+            className
+          )}
+        >
+          {content}
+        </Cell>
+      );
+    };
+    const totalCell = cell('total', total);
+    const averageCell = columns.average ? cell('average', average(total)) : null;
+    return columns.summaryFirst ? [totalCell, averageCell] : [averageCell, totalCell];
+  };
+
+  const headerCells = summaryCells(
+    'head',
+    0,
+    (kind) => ({
+      className: 'z-30 min-w-[100px] bg-muted font-medium text-muted-foreground',
+      content: kind === 'total' ? <Trans>Total</Trans> : <Trans>Average</Trans>,
+    }),
+    'th'
+  );
+  const totalsCells = summaryCells('totals', pivot.grandTotal, (_, value) => ({
+    className: 'z-30 bg-muted',
+    content: money.amount(value),
+  }));
 
   return (
     <section aria-labelledby="ledger-report-heading" className="space-y-4">
@@ -116,6 +180,37 @@ export function VsExpenseReport({
         >
           <Trans>Collapse all</Trans>
         </Button>
+        <div className="flex items-center gap-2">
+          <Switch
+            id="ledger-average-column"
+            checked={columns.average}
+            onCheckedChange={(checked) => updateColumns({ average: checked })}
+          />
+          <Label htmlFor="ledger-average-column" className="text-sm font-normal">
+            <Trans>Average column</Trans>
+          </Label>
+        </div>
+        <Select
+          value={columns.summaryFirst ? 'first' : 'last'}
+          onValueChange={(value) => updateColumns({ summaryFirst: value === 'first' })}
+        >
+          <SelectTrigger
+            className="h-8 w-auto gap-2 text-sm"
+            aria-label={
+              columns.average ? t`Where Total and Average go` : t`Where the Total column goes`
+            }
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="last">
+              {columns.average ? t`Total and Average at the end` : t`Total at the end`}
+            </SelectItem>
+            <SelectItem value="first">
+              {columns.average ? t`Total and Average first` : t`Total first`}
+            </SelectItem>
+          </SelectContent>
+        </Select>
         <span className="text-xs text-muted-foreground">
           <Trans>Click any amount to see its transactions.</Trans>
         </span>
@@ -156,6 +251,7 @@ export function VsExpenseReport({
                         >
                           <Trans>Category</Trans>
                         </th>
+                        {columns.summaryFirst && headerCells}
                         {months.map((monthKey) => (
                           <th
                             key={monthKey}
@@ -164,19 +260,13 @@ export function VsExpenseReport({
                             {shortMonthLabel(monthKey)}
                           </th>
                         ))}
-                        <th
-                          className={cn(
-                            STICKY_RIGHT,
-                            'z-30 min-w-[100px] bg-muted font-medium text-muted-foreground'
-                          )}
-                        >
-                          <Trans>Total</Trans>
-                        </th>
+                        {!columns.summaryFirst && headerCells}
                       </tr>
                       <tr className="border-b border-border/40 text-sm font-semibold text-primary">
                         <td className={cn(STICKY_LEFT, 'z-30 bg-muted')}>
                           <Trans>Totals</Trans>
                         </td>
+                        {columns.summaryFirst && totalsCells}
                         {pivot.columnTotals.map((value, index) => (
                           <td
                             key={months[index]}
@@ -185,9 +275,7 @@ export function VsExpenseReport({
                             {money.amount(value)}
                           </td>
                         ))}
-                        <td className={cn(STICKY_RIGHT, 'z-30 bg-muted')}>
-                          {money.amount(pivot.grandTotal)}
-                        </td>
+                        {!columns.summaryFirst && totalsCells}
                       </tr>
                     </thead>
                     <tbody>
@@ -196,6 +284,19 @@ export function VsExpenseReport({
                         const groupBg = group.isIncome
                           ? 'bg-emerald-50 dark:bg-emerald-950'
                           : 'bg-muted';
+                        const groupCells = summaryCells(
+                          `g${group.id}`,
+                          group.total,
+                          (_, value) => ({
+                            className: cn(groupBg, 'font-semibold'),
+                            content: money.amount(value),
+                          })
+                        );
+                        const rowCells = (total: number) =>
+                          summaryCells('row', total, (_, value) => ({
+                            className: cn('bg-card text-xs font-medium', cellClass(value)),
+                            content: money.amount(value),
+                          }));
                         return (
                           <Fragment key={group.id}>
                             <tr
@@ -220,6 +321,7 @@ export function VsExpenseReport({
                                   <span className="whitespace-nowrap">{group.name}</span>
                                 </button>
                               </td>
+                              {columns.summaryFirst && groupCells}
                               {group.monthTotals.map((value, index) => (
                                 <td
                                   key={months[index]}
@@ -230,9 +332,7 @@ export function VsExpenseReport({
                                   </span>
                                 </td>
                               ))}
-                              <td className={cn(STICKY_RIGHT, groupBg, 'font-semibold')}>
-                                {money.amount(group.total)}
-                              </td>
+                              {!columns.summaryFirst && groupCells}
                             </tr>
                             {isExpanded &&
                               group.categories.map((row) => (
@@ -243,6 +343,7 @@ export function VsExpenseReport({
                                   <td className={cn(STICKY_LEFT, 'bg-card pl-6 sm:pl-9')}>
                                     <span className="whitespace-nowrap">{row.name}</span>
                                   </td>
+                                  {columns.summaryFirst && rowCells(row.total)}
                                   {row.values.map((value, index) => (
                                     <CategoryTransactionCell
                                       key={months[index]}
@@ -258,15 +359,7 @@ export function VsExpenseReport({
                                       label={shortMonthLabel(months[index])}
                                     />
                                   ))}
-                                  <td
-                                    className={cn(
-                                      STICKY_RIGHT,
-                                      'bg-card text-xs font-medium',
-                                      cellClass(row.total)
-                                    )}
-                                  >
-                                    {money.amount(row.total)}
-                                  </td>
+                                  {!columns.summaryFirst && rowCells(row.total)}
                                 </tr>
                               ))}
                           </Fragment>

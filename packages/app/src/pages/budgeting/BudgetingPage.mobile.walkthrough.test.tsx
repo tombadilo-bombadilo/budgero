@@ -40,7 +40,10 @@ vi.mock('@features/first-steps/ui/FirstStepsCard', () => ({ FirstStepsCard: () =
 vi.mock('@features/first-steps/ui/GoalWalkthroughHost', () => ({
   GoalWalkthroughHost: () => null,
 }));
-vi.mock('@entities/goal/api/useGoals', () => ({ useGoals: () => ({ data: [] }) }));
+vi.mock('@entities/goal/api/useGoals', () => ({
+  useGoals: () => ({ data: [] }),
+  useGoalsForMonth: () => ({ data: [], allGoals: [] }),
+}));
 vi.mock('@features/category-management/api/useHideCategory', () => ({
   useHideCategory: () => ({ hideCategory: () => {}, hasHiddenCategories: false }),
 }));

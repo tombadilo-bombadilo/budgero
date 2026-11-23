@@ -7,6 +7,12 @@ import { subDays } from 'date-fns';
 import { persistUserPreferencesPatch } from '@shared/lib/user-preferences-sync';
 import { saveSyncedPreference } from '@shared/lib/synced-state/synced-preferences';
 import { getMonthKey } from '@shared/lib/date-utils';
+import {
+  applyTextSize,
+  isTextSize,
+  TEXT_SIZE_STORAGE_KEY,
+  type TextSize,
+} from '@shared/lib/text-size/text-size';
 
 export function buildCurrencyLocalizer(
   currency: string,
@@ -91,6 +97,8 @@ const COMPACT_MOBILE_LAYOUT_KEY = 'budgero:compact-mobile-layout';
 const MOBILE_BUDGET_LAYOUT_KEY = 'budgero:mobile-budget-layout';
 const LEGACY_COMPACT_MOBILE_TABLE_KEY = 'budgero:compact-mobile-table';
 const HOME_PAGE_STORAGE_KEY = 'budgero:home-page';
+/** '1' = keep the desktop sidebar pinned on narrower screens (this device only). */
+export const SIDEBAR_PINNED_STORAGE_KEY = 'budgero:sidebar-pinned';
 /**
  * Cache of the synced `budgetTargetColumn` preference (user scope, see
  * synced-preferences.ts): '1' shown, '0' hidden by the user, absent = default
@@ -98,6 +106,8 @@ const HOME_PAGE_STORAGE_KEY = 'budgero:home-page';
  */
 export const BUDGET_TARGET_COLUMN_KEY = 'budgero:budget-target-column';
 export const BUDGET_TARGET_COLUMN_PREFERENCE = 'budgetTargetColumn';
+/** Planning side panel beside the table: '1' shown (default), '0' hidden. Per device. */
+const PLANNING_PANEL_KEY = 'budgero:planning-panel-open';
 
 /**
  * Read a persisted UI preference. `validate` maps the raw stored string to a
@@ -210,6 +220,14 @@ interface UiState {
   classicFont: ClassicFontId;
   setClassicFont: (font: ClassicFontId) => void;
 
+  // App-wide text size (per device, see text-size.ts)
+  textSize: TextSize;
+  setTextSize: (size: TextSize) => void;
+
+  // Desktop sidebar stays pinned below the slide-out breakpoint (per device)
+  sidebarPinned: boolean;
+  setSidebarPinned: (pinned: boolean) => void;
+
   desktopBudgetLayout: DesktopBudgetLayout;
   setDesktopBudgetLayout: (value: DesktopBudgetLayout) => void;
 
@@ -248,6 +266,13 @@ interface UiState {
   /** Applies the synced value: cache only, no write back. */
   setShowBudgetTargetColumn: (show: boolean) => void;
 
+  // Side panel beside the desktop planning table
+  planningPanelOpen: boolean;
+  setPlanningPanelOpen: (open: boolean) => void;
+  // Same panel on a narrow screen, where it opens over the table (not remembered)
+  planningOverlayPanelOpen: boolean;
+  setPlanningOverlayPanelOpen: (open: boolean) => void;
+
   // Privacy mode - masks visible numeric digits across the UI
   privacyMaskNumbers: boolean;
   setPrivacyMaskNumbers: (enabled: boolean) => void;
@@ -272,6 +297,25 @@ export const useUiStore = create<UiState>((set) => ({
     writeStoredPref(CLASSIC_FONT_STORAGE_KEY, font === 'poppins' ? null : font);
     persistUserPreferencesPatch({ classic_font: font });
     set({ classicFont: font });
+  },
+  textSize: (() => {
+    const size = readStoredPref<TextSize>(
+      TEXT_SIZE_STORAGE_KEY,
+      (stored) => (isTextSize(stored) ? stored : undefined),
+      'default'
+    );
+    applyTextSize(size);
+    return size;
+  })(),
+  setTextSize: (size) => {
+    applyTextSize(size);
+    writeStoredPref(TEXT_SIZE_STORAGE_KEY, size === 'default' ? null : size);
+    set({ textSize: size });
+  },
+  sidebarPinned: readStoredPref(SIDEBAR_PINNED_STORAGE_KEY, (stored) => stored === '1', false),
+  setSidebarPinned: (pinned) => {
+    writeStoredPref(SIDEBAR_PINNED_STORAGE_KEY, pinned ? '1' : null);
+    set({ sidebarPinned: pinned });
   },
   desktopBudgetLayout: readStoredPref<DesktopBudgetLayout>(
     DESKTOP_LAYOUT_STORAGE_KEY,
@@ -475,6 +519,14 @@ export const useUiStore = create<UiState>((set) => ({
     writeStoredPref(BUDGET_TARGET_COLUMN_KEY, show ? '1' : '0');
     set({ showBudgetTargetColumn: show });
   },
+
+  planningPanelOpen: readStoredPref(PLANNING_PANEL_KEY, (stored) => stored !== '0', true),
+  setPlanningPanelOpen: (open) => {
+    writeStoredPref(PLANNING_PANEL_KEY, open ? '1' : '0');
+    set({ planningPanelOpen: open });
+  },
+  planningOverlayPanelOpen: false,
+  setPlanningOverlayPanelOpen: (open) => set({ planningOverlayPanelOpen: open }),
 
   // Privacy mode (session-only, non-persistent)
   privacyMaskNumbers: false,

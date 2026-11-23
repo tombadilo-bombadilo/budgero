@@ -29,7 +29,7 @@ export function YnabPatHelpSteps({ linkClassName, onLinkClick }: YnabPatHelpStep
           <Trans>Copy the token when it appears and paste it here.</Trans>
         </li>
       </ol>
-      <p className="text-[11px]">
+      <p className="text-[0.6875rem]">
         <Trans>
           YNAB shows the full token only once. Treat it like a password; you can revoke it later
           from the same screen.

@@ -16,6 +16,7 @@ import { useUndoStore } from '@shared/mutations/UndoStore';
 import { useRecordImportRun } from '@features/import/api/useImportHistory';
 import { useQueryClient } from '@tanstack/react-query';
 import { useUiStore } from '@shared/store/useUiStore';
+import { capturesTransactionTimes } from '@shared/lib/transaction-time';
 import { getErrorMessage } from '@shared/lib/errors';
 import { applyOpInvalidations, invalidateRoots } from '@shared/lib/query-utils';
 import { useRuntime } from '@shared/runtime/runtime-provider';
@@ -413,6 +414,7 @@ export function useImportDialogState(): ImportDialogState {
       tolerance: importTolerance(runtime.services()),
       rememberedRoutes: rememberedRoutes ?? {},
       newCurrency: newAccountCurrency,
+      captureTimes: capturesTransactionTimes(runtime.services()),
     });
   }, [
     parsedData,
@@ -940,6 +942,7 @@ export function useImportDialogState(): ImportDialogState {
               accountId: realAccountId(input.accountId),
               categoryId: 0,
               date: input.date,
+              ...(input.time ? { time: input.time } : {}),
               memo: input.memo.substring(0, 255),
               payee: input.payee,
               importIdentities: [withRealAccount(input)],
@@ -955,6 +958,7 @@ export function useImportDialogState(): ImportDialogState {
                   accountId: realAccountId(transfer.counterpartAccountId),
                   categoryId: 0,
                   date: plan.date,
+                  ...(plan.time ? { time: plan.time } : {}),
                   memo: plan.memo.substring(0, 255),
                   payee: plan.payee,
                 };
@@ -1013,6 +1017,7 @@ export function useImportDialogState(): ImportDialogState {
               categoryId,
               budgetId,
               date: plan.date,
+              ...(plan.time ? { time: plan.time } : {}),
               memo: plan.memo.substring(0, 255),
               payee: plan.payee,
               transferId: '',

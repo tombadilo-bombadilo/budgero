@@ -58,14 +58,17 @@ export function applyBankFeedSettings(
   settings: BankFeedSettings
 ): BankTransaction {
   const fields = transaction.fields ?? {};
-  const date =
+  const chosen =
     settings.date === 'booking'
-      ? pick(fields.bookingDate, transaction.date)
+      ? { date: fields.bookingDate, time: fields.bookingTime }
       : settings.date === 'transaction'
-        ? pick(fields.transactionDate, transaction.date)
+        ? { date: fields.transactionDate, time: fields.transactionTime }
         : settings.date === 'value'
-          ? pick(fields.valueDate, transaction.date)
-          : transaction.date;
+          ? { date: fields.valueDate, time: fields.valueTime }
+          : null;
+  const date = chosen ? pick(chosen.date, transaction.date) : transaction.date;
+  // The time goes with the date it came from.
+  const time = chosen?.date?.trim() ? chosen.time : transaction.time;
   let { payee } = transaction;
   if (settings.payee === 'counterparty') payee = pick(fields.counterparty, payee);
   if (settings.payee === 'description') payee = pick(fields.description, payee);
@@ -74,5 +77,6 @@ export function applyBankFeedSettings(
   if (settings.memo === 'counterparty') memo = fields.counterparty?.trim() ?? '';
   if (settings.memo === 'none') memo = '';
   if (settings.tidyPayees) payee = tidyPayeeName(payee);
-  return { ...transaction, date, payee, memo: memo === payee ? '' : memo };
+  const { time: _time, ...rest } = transaction;
+  return { ...rest, date, ...(time ? { time } : {}), payee, memo: memo === payee ? '' : memo };
 }

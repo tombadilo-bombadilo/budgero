@@ -45,11 +45,11 @@ export function ToolCallLog({ events, defaultOpen = false }: ToolCallLogProps) {
             <div className="font-medium text-foreground">
               {TOOL_LABELS[event.toolName] ?? event.toolName}
             </div>
-            <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-background/60 p-1.5 text-[11px] leading-snug">
+            <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-background/60 p-1.5 text-[0.6875rem] leading-snug">
               {describeArgs(event)}
             </pre>
             {event.resultPreview && (
-              <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-background/40 p-1.5 text-[11px] leading-snug text-muted-foreground">
+              <pre className="overflow-x-auto whitespace-pre-wrap rounded bg-background/40 p-1.5 text-[0.6875rem] leading-snug text-muted-foreground">
                 {event.resultPreview}
               </pre>
             )}

@@ -121,7 +121,7 @@ export function KeyboardShortcutsDialog() {
                     className="flex items-center justify-between gap-4 text-sm"
                   >
                     <span>{item.label}</span>
-                    <kbd className="shrink-0 rounded border bg-muted px-1.5 py-0.5 font-mono text-[11px] font-medium">
+                    <kbd className="shrink-0 rounded border bg-muted px-1.5 py-0.5 font-mono text-[0.6875rem] font-medium">
                       {item.keys}
                     </kbd>
                   </li>

@@ -7,6 +7,7 @@ automatic serialization support.
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -54,6 +55,32 @@ def to_milliunits(amount: AmountLike) -> int:
             f"Amount must be an int, float, or Decimal, got {type(amount).__name__}"
         )
     return round(amount * MILLIUNITS_PER_UNIT)
+
+
+_TIME_PATTERN = re.compile(r"^(\d{1,2}):([0-5]\d)(?::[0-5]\d(?:\.\d+)?)?$")
+
+
+def normalize_time(value: Optional[str]) -> Optional[str]:
+    """
+    Normalize a transaction time of day to ``"HH:MM"`` (24-hour).
+
+    Accepts what the app accepts: ``"9:05"``, ``"09:05"``, ``"09:05:30"``
+    (seconds are dropped). ``None`` or an empty string means no time.
+
+    Raises:
+        ValidationError: For anything else (``"7pm"``, ``"24:00"``, non-strings).
+    """
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValidationError("time must be a string like 'HH:MM' (24-hour)")
+    text = value.strip()
+    if not text:
+        return None
+    match = _TIME_PATTERN.match(text)
+    if not match or int(match.group(1)) > 23:
+        raise ValidationError(f"Invalid time {value!r}: use 'HH:MM' (24-hour)")
+    return f"{int(match.group(1)):02d}:{match.group(2)}"
 
 
 def from_milliunits(milliunits: int) -> Decimal:
@@ -178,6 +205,8 @@ class TransactionInput:
             ignored and the lines must sum to ``inflow``/``outflow``.
         cleared: Whether the transaction has already cleared the bank.
             Defaults to False (added as uncleared).
+        time: Optional time of day, "HH:MM" (24-hour, local wall-clock, no
+            time zone). Display and same-day order only.
 
     Example:
         >>> tx = TransactionInput(
@@ -201,6 +230,7 @@ class TransactionInput:
     transfer_id: Optional[str] = None
     splits: Optional[list[SplitLine]] = None
     cleared: bool = False
+    time: Optional[str] = None
 
     def to_api_dict(self) -> dict[str, Any]:
         """
@@ -228,6 +258,9 @@ class TransactionInput:
             result["transferId"] = self.transfer_id
         if self.cleared:
             result["cleared"] = True
+        time = normalize_time(self.time)
+        if time:
+            result["time"] = time
         if self.splits is not None:
             if not self.splits:
                 raise ValidationError("splits must contain at least one SplitLine")
@@ -469,6 +502,9 @@ class Goal:
         start_date: Start date for the goal.
         target_date: Target completion date (for target-date and yearly goals).
         budget_id: ID of the budget.
+        effective_from: First month (YYYY-MM) of this goal's timeframe. A
+            category can have several goals, one per range of months.
+        effective_to: Last month (YYYY-MM) of an ended goal, or None.
 
     Example:
         >>> goal = Goal(
@@ -490,6 +526,8 @@ class Goal:
     start_date: str
     target_date: Optional[str] = None
     budget_id: Optional[int] = None
+    effective_from: Optional[str] = None
+    effective_to: Optional[str] = None
 
     @classmethod
     def from_api_dict(cls, data: dict[str, Any]) -> "Goal":
@@ -503,6 +541,8 @@ class Goal:
             start_date=data["StartDate"],
             target_date=data.get("TargetDate"),
             budget_id=data.get("BudgetID"),
+            effective_from=data.get("EffectiveFrom"),
+            effective_to=data.get("EffectiveTo"),
         )
 
 

@@ -4,6 +4,7 @@ export {
   confirmColumnEdit,
   confirmReconciledEdit,
   confirmTotalEdit,
+  confirmSplitSave,
   useReconciledEditConfirmStore,
   type ReconciledEditKind,
   type ReconciledEditServices,

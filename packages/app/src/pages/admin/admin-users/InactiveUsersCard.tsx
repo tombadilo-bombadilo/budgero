@@ -245,17 +245,17 @@ export function InactiveUsersCard({ onPurged }: { onPurged?: () => void }) {
                     <div className="font-medium">{user.email}</div>
                     <div className="flex flex-wrap gap-1 pt-0.5">
                       {user.protected_reason && (
-                        <Badge variant="secondary" className="text-[10px]">
+                        <Badge variant="secondary" className="text-[0.625rem]">
                           <Trans>Protected: {user.protected_reason}</Trans>
                         </Badge>
                       )}
                       {user.in_clerk === false && (
-                        <Badge variant="outline" className="text-[10px] text-amber-600">
+                        <Badge variant="outline" className="text-[0.625rem] text-amber-600">
                           <Trans>Not in Clerk</Trans>
                         </Badge>
                       )}
                       {user.is_blocked && (
-                        <Badge variant="outline" className="text-[10px]">
+                        <Badge variant="outline" className="text-[0.625rem]">
                           <Trans>Blocked</Trans>
                         </Badge>
                       )}

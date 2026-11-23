@@ -3,7 +3,11 @@ import { ZERO_MILLI, type MilliUnits } from '@shared/lib/currency/milli';
 import { roundMilli } from '@shared/lib/currency/round-amount';
 import { transformBudgetRows } from '@features/budget-planning/lib/budget-transforms';
 import { GetMonthlyBudgetRow, Goal } from '@budgero/core/browser';
-import { GoalCalculations, type CategoryFinancials } from '@budgero/core/browser';
+import {
+  GoalCalculations,
+  resolveGoalsForMonth,
+  type CategoryFinancials,
+} from '@budgero/core/browser';
 import { useCycleFinancialsForGoals } from '@entities/goal/api/useGoals';
 import { FilterType } from '@features/budget-planning/ui/SearchAndFilterControls';
 import { HIDDEN_CATEGORIES_GROUP_NAME } from '@features/category-management/api/useHideCategory';
@@ -27,7 +31,7 @@ interface UseBudgetTableStateProps {
 
 export function useBudgetTableState({
   rawRows,
-  goals,
+  goals: goalRows,
   currentMonth,
   currencyCode,
   sharedCollapsedGroups,
@@ -41,6 +45,11 @@ export function useBudgetTableState({
   budgetId,
   showHiddenCategories = false,
 }: UseBudgetTableStateProps) {
+  // The goals of this month (callers may pass every timeframe, e.g. the multi-month view).
+  const goals = useMemo(
+    () => resolveGoalsForMonth(goalRows ?? [], currentMonth),
+    [goalRows, currentMonth]
+  );
   const [internalCollapsedGroups, setInternalCollapsedGroups] = useState<Set<string>>(new Set());
   const [internalExpandedCategories, setInternalExpandedCategories] = useState<Set<string>>(
     new Set()

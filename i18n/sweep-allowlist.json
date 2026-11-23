@@ -205,6 +205,16 @@
       "file": "src/shared/lib/sql/analytics-views.ts",
       "text": "*",
       "reason": "DuckDB analytics view definitions: SQL only, no user-visible copy (exact entries would break on every query edit)."
+    },
+    {
+      "file": "src/pages/analytics/reports/VsExpenseReport.tsx",
+      "text": "sticky left-0 z-10 max-w-[8.125rem] truncate border-r px-2 py-2 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)] sm:max-w-none sm:px-3",
+      "reason": "Tailwind classes for the Ledger's sticky columns, not user-visible copy (wrapping them in msg broke the sticky columns)."
+    },
+    {
+      "file": "src/pages/analytics/reports/VsExpenseReport.tsx",
+      "text": "z-10 whitespace-nowrap border-l px-2 py-2 text-right sm:sticky sm:right-0 sm:px-3 sm:shadow-[-2px_0_4px_-2px_rgba(0,0,0,0.15)]",
+      "reason": "Tailwind classes for the Ledger's sticky columns, not user-visible copy (wrapping them in msg broke the sticky columns)."
     }
   ]
 }

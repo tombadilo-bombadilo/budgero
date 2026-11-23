@@ -40,7 +40,7 @@ export const CurrencyStep: React.FC<StepProps> = ({ cur, state, set }) => {
               </span>
               <span className="min-w-0">
                 <span className="block text-sm font-semibold leading-tight">{c.code}</span>
-                <span className="block truncate text-[11px] text-muted-foreground md:whitespace-normal md:leading-tight">
+                <span className="block truncate text-[0.6875rem] text-muted-foreground md:whitespace-normal md:leading-tight">
                   {t(c.name)}
                 </span>
               </span>

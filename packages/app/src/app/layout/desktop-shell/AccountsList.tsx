@@ -2,7 +2,7 @@ import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 import React, { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Pin, Search } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
 import { Badge } from '@shared/ui/badge';
 import { Input } from '@shared/ui/input';
@@ -12,6 +12,7 @@ import { getAccountTypeDefinition } from '@entities/account/model/accountTypes';
 import { AccountGlyph } from '@entities/account/ui/AccountGlyph';
 import { useUiStore } from '@shared/store/useUiStore';
 import { formatMaskedMilli } from '@shared/lib/privacy/mask-numbers';
+import { pickShortList } from '@features/account-management/model/account-short-list';
 import { MAX_ACCOUNTS_PER_SECTION, ACCOUNT_SEARCH_THRESHOLD } from './constants';
 
 interface Account {
@@ -38,7 +39,13 @@ interface AccountsListProps {
   showAllAccounts: boolean;
   onToggleShowAll: () => void;
   globalLocalizer: { format: (value: number) => string };
+  /** Accounts pinned to the collapsed list (see account-short-list.ts). */
+  pinnedIds?: ReadonlySet<number>;
+  /** Pins/unpins an account; omitted where pins can't be changed. */
+  onTogglePinned?: (accountId: number) => void;
 }
+
+const NO_PINS: ReadonlySet<number> = new Set();
 
 // Realized as-of-today balance: future-dated scheduled transactions are
 // excluded so the sidebar always reflects actual funds.
@@ -58,19 +65,37 @@ const AccountItem = React.memo(function AccountItem({
   formattedBalance,
   balanceValue,
   isActive,
+  pinned,
+  showPin,
+  onTogglePinned,
 }: {
   account: Account;
   uncategorizedCount: number;
   formattedBalance: string;
   balanceValue: number;
   isActive: boolean;
+  pinned: boolean;
+  /** Keep the pin visible without hover (the full list is open). */
+  showPin: boolean;
+  onTogglePinned?: (accountId: number) => void;
 }) {
+  const { t } = useLingui();
+  const pinVisible = Boolean(onTogglePinned) && pinned && showPin;
+  const pinLabel = pinned
+    ? t`Remove ${account.Name} from the short list`
+    : t`Keep ${account.Name} in the short list`;
   return (
-    <div className="mx-2">
+    <div className="group/account relative mx-2">
       <SidebarMenuButton asChild isActive={isActive}>
         <NavLink
           to={`/accounts/${account.ID}`}
-          className="flex items-center gap-2 px-3 py-2 transition-colors min-w-0"
+          className={cn(
+            'flex items-center gap-2 px-3 py-2 transition-colors min-w-0',
+            onTogglePinned &&
+              (pinVisible
+                ? 'pr-8'
+                : 'group-hover/account:pr-8 group-focus-within/account:pr-8 [@media(hover:none)]:pr-8')
+          )}
         >
           {uncategorizedCount > 0 ? (
             <Tooltip>
@@ -97,7 +122,7 @@ const AccountItem = React.memo(function AccountItem({
           <span className="truncate flex-1 min-w-0">{account.Name}</span>
           <span
             className={cn(
-              'text-[11px] font-mono text-right tabular-nums flex-shrink-0',
+              'text-[0.6875rem] font-mono text-right tabular-nums flex-shrink-0',
               balanceValue < 0 ? 'text-destructive' : 'text-muted-foreground'
             )}
           >
@@ -105,6 +130,31 @@ const AccountItem = React.memo(function AccountItem({
           </span>
         </NavLink>
       </SidebarMenuButton>
+      {onTogglePinned && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              aria-label={pinLabel}
+              aria-pressed={pinned}
+              data-testid={`account-pin-${account.ID}`}
+              onClick={() => onTogglePinned(account.ID)}
+              className={cn(
+                'absolute right-1.5 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md transition-opacity hover:bg-sidebar-accent focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-sidebar-ring outline-hidden',
+                pinned ? 'text-foreground' : 'text-muted-foreground hover:text-foreground',
+                // Unpinned: shown on hover or keyboard focus and not tappable while
+                // invisible; touch screens (no hover) always show it.
+                pinVisible
+                  ? 'opacity-100'
+                  : 'pointer-events-none opacity-0 group-hover/account:pointer-events-auto group-hover/account:opacity-100 group-focus-within/account:pointer-events-auto group-focus-within/account:opacity-100 [@media(hover:none)]:pointer-events-auto [@media(hover:none)]:opacity-100'
+              )}
+            >
+              <Pin className={cn('h-3.5 w-3.5', pinned && 'fill-current')} />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="right">{pinLabel}</TooltipContent>
+        </Tooltip>
+      )}
     </div>
   );
 });
@@ -117,6 +167,9 @@ const AccountSection = React.memo(function AccountSection({
   uncategorizedData,
   globalLocalizer,
   pathname,
+  pinnedIds,
+  showPins,
+  onTogglePinned,
 }: {
   title: string;
   accounts: Account[];
@@ -126,6 +179,9 @@ const AccountSection = React.memo(function AccountSection({
   uncategorizedData: UncategorizedData | undefined;
   globalLocalizer: { format: (value: number) => string };
   pathname: string;
+  pinnedIds: ReadonlySet<number>;
+  showPins: boolean;
+  onTogglePinned?: (accountId: number) => void;
 }) {
   const privacyMaskNumbers = useUiStore((state) => state.privacyMaskNumbers);
 
@@ -139,7 +195,7 @@ const AccountSection = React.memo(function AccountSection({
         </div>
         <div
           className={cn(
-            'text-[11px] font-mono font-semibold tabular-nums',
+            'text-[0.6875rem] font-mono font-semibold tabular-nums',
             total < 0 ? 'text-destructive' : 'text-muted-foreground'
           )}
         >
@@ -163,6 +219,9 @@ const AccountSection = React.memo(function AccountSection({
             formattedBalance={formattedBalance}
             balanceValue={balanceValue}
             isActive={pathname === `/accounts/${account.ID}`}
+            pinned={pinnedIds.has(account.ID)}
+            showPin={showPins}
+            onTogglePinned={onTogglePinned}
           />
         );
       })}
@@ -176,6 +235,8 @@ export const AccountsList = React.memo(function AccountsList({
   showAllAccounts,
   onToggleShowAll,
   globalLocalizer,
+  pinnedIds = NO_PINS,
+  onTogglePinned,
 }: AccountsListProps) {
   const { t } = useLingui();
 
@@ -207,10 +268,11 @@ export const AccountsList = React.memo(function AccountsList({
   const matchedOnBudget = isSearching ? onBudgetAccounts.filter(matchesQuery) : onBudgetAccounts;
   const matchedOffBudget = isSearching ? offBudgetAccounts.filter(matchesQuery) : offBudgetAccounts;
 
-  // While searching, show every match. Otherwise cap each section and offer
-  // "Show All". Truncation hides zero-balance accounts first: active accounts
-  // (positive or negative balance) claim the slots, zeroed ones fill what's
-  // left, and the picks keep their original order.
+  // While searching, show every match. Otherwise collapse each section to a
+  // short list with "Show All": the accounts pinned to it, or, in a section
+  // with no pins, a capped pick that hides zero-balance accounts first
+  // (active accounts claim the slots, zeroed ones fill what's left, and the
+  // picks keep their original order).
   const truncatePreferringActive = (list: Account[]): Account[] => {
     if (list.length <= MAX_ACCOUNTS_PER_SECTION) return list;
     const active = list.filter((account) => realizedBalance(account) !== 0);
@@ -218,15 +280,17 @@ export const AccountsList = React.memo(function AccountsList({
     const picked = new Set([...active, ...zeroed].slice(0, MAX_ACCOUNTS_PER_SECTION));
     return list.filter((account) => picked.has(account));
   };
+  const shortList = (list: Account[]) => pickShortList(list, pinnedIds, truncatePreferringActive);
 
-  const displayOnBudget =
-    isSearching || showAllAccounts ? matchedOnBudget : truncatePreferringActive(matchedOnBudget);
-  const displayOffBudget =
-    isSearching || showAllAccounts ? matchedOffBudget : truncatePreferringActive(matchedOffBudget);
+  const shortOnBudget = shortList(onBudgetAccounts);
+  const shortOffBudget = shortList(offBudgetAccounts);
+  const showFullLists = isSearching || showAllAccounts;
+  const displayOnBudget = showFullLists ? matchedOnBudget : shortOnBudget;
+  const displayOffBudget = showFullLists ? matchedOffBudget : shortOffBudget;
   const hasMoreAccounts =
     !isSearching &&
-    (onBudgetAccounts.length > MAX_ACCOUNTS_PER_SECTION ||
-      offBudgetAccounts.length > MAX_ACCOUNTS_PER_SECTION);
+    (shortOnBudget.length < onBudgetAccounts.length ||
+      shortOffBudget.length < offBudgetAccounts.length);
   const noMatches = isSearching && matchedOnBudget.length === 0 && matchedOffBudget.length === 0;
 
   return (
@@ -250,6 +314,9 @@ export const AccountsList = React.memo(function AccountsList({
         uncategorizedData={uncategorizedData}
         globalLocalizer={globalLocalizer}
         pathname={location.pathname}
+        pinnedIds={pinnedIds}
+        showPins={showFullLists}
+        onTogglePinned={onTogglePinned}
       />
       <AccountSection
         title={t`Off Budget`}
@@ -259,6 +326,9 @@ export const AccountsList = React.memo(function AccountsList({
         uncategorizedData={uncategorizedData}
         globalLocalizer={globalLocalizer}
         pathname={location.pathname}
+        pinnedIds={pinnedIds}
+        showPins={showFullLists}
+        onTogglePinned={onTogglePinned}
       />
       {noMatches && (
         <div className="mx-2 px-3 py-2 text-xs text-muted-foreground">

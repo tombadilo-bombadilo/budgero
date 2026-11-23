@@ -107,7 +107,7 @@ export function CurrencyConversionNotice({
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-[11px] text-sky-700 hover:text-sky-900 dark:text-sky-300"
+                  className="h-6 px-2 text-[0.6875rem] text-sky-700 hover:text-sky-900 dark:text-sky-300"
                   onClick={() => onReceivedAmountChange(null)}
                 >
                   <Trans>Use suggested</Trans>
@@ -129,7 +129,7 @@ export function CurrencyConversionNotice({
               onEditingChange={onEditingChange}
               data-testid={isBudget ? 'budget-converted-amount' : 'transfer-received-amount'}
             />
-            <p className="text-[11px] text-sky-700 dark:text-sky-300">
+            <p className="text-[0.6875rem] text-sky-700 dark:text-sky-300">
               {isBudget
                 ? receivedAmount === null
                   ? t`Optional — type what you actually got, e.g. after a rounded cash swap.`

@@ -157,7 +157,7 @@ export function AccountGroupSection({
                         <div className="font-medium text-xs sm:text-base truncate">
                           {account.Name}
                         </div>
-                        <div className="text-[10px] sm:text-sm text-muted-foreground capitalize">
+                        <div className="text-[0.625rem] sm:text-sm text-muted-foreground capitalize">
                           <AccountTypeLabel type={account.Type} />
                         </div>
                       </div>

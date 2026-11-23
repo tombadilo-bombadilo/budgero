@@ -86,7 +86,7 @@ export function GoalKind({
       <span className="min-w-0">
         <span className="block text-xs font-semibold leading-tight text-foreground">{label}</span>
         {description && (
-          <span className="block text-[11px] leading-snug text-muted-foreground">
+          <span className="block text-[0.6875rem] leading-snug text-muted-foreground">
             {description}
           </span>
         )}
@@ -123,7 +123,7 @@ export function GoalTypesVisual() {
         label={t`Target Balance`}
         description={t`Build up to an amount, no date, like an emergency fund.`}
       />
-      <p className="text-[11px] leading-snug text-muted-foreground">
+      <p className="text-[0.6875rem] leading-snug text-muted-foreground">
         <Trans>
           The first three come in two kinds. Available: have the amount ready. Allocation: put a set
           amount aside.
@@ -150,7 +150,7 @@ export function ReportTile({
       </span>
       <span className="min-w-0">
         <span className="block text-xs font-medium leading-snug">{question}</span>
-        <span className="block text-[11px] leading-tight text-muted-foreground">{label}</span>
+        <span className="block text-[0.6875rem] leading-tight text-muted-foreground">{label}</span>
       </span>
     </span>
   );
@@ -244,7 +244,7 @@ export function AccountRouteVisual() {
 /** Import row statuses as coloured pills (shared/ui/import-status-chip.tsx). */
 export function ImportStatusVisual() {
   return (
-    <div className="flex flex-wrap gap-1 text-[11px]">
+    <div className="flex flex-wrap gap-1 text-[0.6875rem]">
       <ImportStatusChip status="new">
         <Trans>New</Trans>
       </ImportStatusChip>
@@ -282,7 +282,7 @@ export function ImportHistoryVisual() {
 export function BudgetAccountsVisual() {
   const section = (title: React.ReactNode, names: React.ReactNode[]) => (
     <div className="min-w-0">
-      <div className="px-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+      <div className="px-1 text-[0.625rem] font-semibold uppercase tracking-wider text-muted-foreground">
         {title}
       </div>
       {names.map((name, i) => (
@@ -342,7 +342,7 @@ export function RuleVisual() {
         <span className="truncate text-sm font-medium">
           Lidl → <Trans>Groceries</Trans>
         </span>
-        <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+        <Badge variant="outline" className="px-1.5 py-0 text-[0.625rem]">
           <Trans>Continuous</Trans>
         </Badge>
       </div>
@@ -367,13 +367,13 @@ export function RuleVisual() {
 export function RuleTriggersVisual() {
   return (
     <div className="flex flex-wrap gap-1.5" aria-hidden>
-      <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+      <Badge variant="outline" className="px-1.5 py-0 text-[0.625rem]">
         <Trans>Continuous</Trans>
       </Badge>
-      <Badge variant="outline" className="px-1.5 py-0 text-[10px]">
+      <Badge variant="outline" className="px-1.5 py-0 text-[0.625rem]">
         <Trans>Autofill</Trans>
       </Badge>
-      <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+      <Badge variant="secondary" className="px-1.5 py-0 text-[0.625rem]">
         <Trans>One time</Trans>
       </Badge>
     </div>
@@ -515,7 +515,7 @@ export function InviteReadyVisual() {
         <Check className="h-3.5 w-3.5 text-primary" />
         <Trans>Invite ready — share the link below</Trans>
       </div>
-      <div className="truncate rounded bg-background px-2 py-1 font-mono text-[11px]">
+      <div className="truncate rounded bg-background px-2 py-1 font-mono text-[0.6875rem]">
         https://my.budgero.app/join#code=••••••••
       </div>
       <div className="flex flex-wrap gap-1.5">

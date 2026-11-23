@@ -78,35 +78,36 @@ export const AccountSummaryCards = React.memo(function AccountSummaryCards({
       </div>
 
       {displayLiabilityInfo && (
-        <Card>
-          <CardContent className="p-4">
-            {balanceAccountToday > 0 ? (
-              <div className="flex items-start gap-2">
-                <div className="mt-0.5 text-success">
-                  <CheckCircle2 className="w-5 h-5" />
+        <Card className="gap-0 py-0">
+          {balanceAccountToday > 0 ? (
+            <CardContent className="flex items-start gap-2 px-3 py-2">
+              <div className="mt-0.5 text-success">
+                <CheckCircle2 className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="text-sm font-medium text-success">
+                  <Trans>Paid off - congratulations!</Trans>
                 </div>
-                <div>
-                  <div className="font-medium text-success">
-                    <Trans>Paid off - congratulations!</Trans>
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    <Trans>
-                      This liability now has a positive balance. There's nothing to pay off right
-                      now.
-                    </Trans>
-                  </div>
+                <div className="text-xs text-muted-foreground">
+                  <Trans>
+                    This liability now has a positive balance. There's nothing to pay off right now.
+                  </Trans>
                 </div>
               </div>
-            ) : (
-              <PayoffSimulator
-                outstanding={displayLiabilityInfo.outstanding}
-                apr={displayLiabilityInfo.apr}
-                minPayment={displayLiabilityInfo.minPayment}
-                formatter={formatter}
-                initial={displayLiabilityInfo.minPayment}
-              />
-            )}
-          </CardContent>
+            </CardContent>
+          ) : (
+            // The row button owns the padding so the whole card surface opens the plan.
+            <PayoffSimulator
+              outstanding={displayLiabilityInfo.outstanding}
+              apr={displayLiabilityInfo.apr}
+              aprSchedule={displayLiabilityInfo.aprSchedule}
+              nextAprChange={displayLiabilityInfo.nextAprChange}
+              minPayment={displayLiabilityInfo.minPayment}
+              formatter={formatter}
+              initial={displayLiabilityInfo.minPayment}
+              className="rounded-[inherit] px-3 py-2"
+            />
+          )}
         </Card>
       )}
     </div>

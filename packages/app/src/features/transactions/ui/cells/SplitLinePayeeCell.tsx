@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { useLingui } from '@lingui/react/macro';
-import { useAccounts } from '@entities/account/api/useAccounts';
-import { useUiStore } from '@shared/store/useUiStore';
+import { useSplitParentAccount } from '../split-transfer/useSplitParentAccount';
 import { PayeeSelectCell } from './PayeeSelectCell';
 import { splitPayeeUpdate, splitTransferUpdate } from '../../lib/split-transfer';
 
@@ -10,6 +9,9 @@ export interface SplitLinePayeePatch {
   payee: string;
   transfer_account_id: number | null;
   category_id?: null;
+  /** A new target starts without a received amount. */
+  received_amount?: null;
+  received_auto?: true;
 }
 
 interface SplitLinePayeeCellProps {
@@ -38,13 +40,8 @@ export function SplitLinePayeeCell({
   triggerClassName,
 }: SplitLinePayeeCellProps) {
   const { t } = useLingui();
-  const { data: accounts = [] } = useAccounts(budgetId);
-  const selectedAccountId = useUiStore((state) => state.selectedAccount?.ID ?? null);
-  // Register rows carry no AccountID; there the open account is the parent's.
-  const ownAccountId =
-    parent.AccountID ??
-    accounts.find((account) => parent.Account && account.Name === parent.Account)?.ID ??
-    selectedAccountId;
+  const { accounts, ownAccount } = useSplitParentAccount(budgetId, parent);
+  const ownAccountId = ownAccount?.ID ?? null;
   const transferAccounts = React.useMemo(
     () => accounts.filter((account) => account.ID !== ownAccountId && !account.Archived),
     [accounts, ownAccountId]
@@ -56,6 +53,9 @@ export function SplitLinePayeeCell({
       payee: update.payee ?? '',
       transfer_account_id: update.transferAccountId ?? null,
       ...(update.transferAccountId ? { category_id: null } : {}),
+      ...(update.transferAccountId !== transferAccountId
+        ? { received_amount: null, received_auto: true as const }
+        : {}),
     });
 
   return (

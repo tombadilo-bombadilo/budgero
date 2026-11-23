@@ -8,6 +8,7 @@ import type {
 
 export type TransactionEditableColumn =
   | 'date'
+  | 'time'
   | 'memo'
   | 'account'
   | 'payee'

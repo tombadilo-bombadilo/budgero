@@ -10,11 +10,13 @@ import { DatePickerCell } from '@features/transactions/ui/cells/DatePickerCell';
 import { CategorySelectCell } from '@features/transactions/ui/cells/CategorySelectCell';
 import { AccountSelectCell } from '@features/transactions/ui/cells/AccountSelectCell';
 import { EditableCell } from '@features/transactions/ui/cells/EditableCell';
+import { TimeInputCell } from '@features/transactions/ui/cells/TimeInputCell';
 import { ExchangeRateCell } from '@features/transactions/ui/cells/ExchangeRateCell';
 import { TransactionPayeeCell } from '@features/transactions/ui/cells/TransactionPayeeCell';
 import { LabelSelectCell } from '@features/transactions/ui/cells/LabelSelectCell';
 import { Badge } from '@shared/ui/badge';
 import { useHideZeroAmountsEnabled } from '@shared/contexts/HideZeroAmountsContext';
+import { useRegisterDisplay } from '@shared/contexts/RegisterDisplayContext';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { ArrowLeftRight } from 'lucide-react';
 import { cn } from '@shared/lib/utils';
@@ -32,10 +34,12 @@ import { getRunningBalance } from '@features/transactions/lib/running-balance';
 import {
   hasReadOnlyTransferCategory,
   transferHasOffBudgetLeg,
+  splitPayeesLabel,
   transferPayeeLabel,
 } from '@features/transactions/lib/transfer-category';
 import { formatExchangeRate } from '@entities/currency/lib/exchange-rate-format';
 import { TransferRateDialog } from '@features/transactions/ui/transfer-rate/TransferRateDialog';
+import { hasTransferRate } from '@features/transactions/lib/split-transfer';
 import { TransactionLabelBadge } from '@features/transactions/ui/TransactionLabelBadge';
 import { validateTransactionExchangeRate } from '@features/transactions/lib/exchange-rate-validation';
 import { hasUnsafeTransactionMoney } from '@entities/transaction/lib/money-integrity';
@@ -144,6 +148,7 @@ export const TransactionRow = React.memo(function TransactionRow({
 
   const privacyMaskNumbers = useUiStore((state) => state.privacyMaskNumbers);
   const hideZeroAmounts = useHideZeroAmountsEnabled();
+  const { showTime } = useRegisterDisplay();
   const selectedAccount = useUiStore((state) => state.selectedAccount);
   const selectedBudget = useUiStore((state) => state.selectedBudget);
   // In account display mode the cell edits the NATIVE amount, whose storage
@@ -161,7 +166,8 @@ export const TransactionRow = React.memo(function TransactionRow({
   const isTransfer = !!transaction.TransferID && transaction.TransferID.trim() !== '';
   const isTransferCategoryReadOnly = hasReadOnlyTransferCategory(transaction);
   const includeTransfersInCategoryPicker = transferHasOffBudgetLeg(transaction);
-  const transferLabel = transferPayeeLabel(transaction);
+  // A transfer's other account, or a split's line payees, when it has no payee.
+  const transferLabel = transferPayeeLabel(transaction) ?? splitPayeesLabel(transaction);
   const hasUnsafeMoney = hasUnsafeTransactionMoney(transaction);
   const activateCell = (column: TransactionEditableColumn) =>
     onActivateCell(transaction.ID, column);
@@ -315,7 +321,7 @@ export const TransactionRow = React.memo(function TransactionRow({
             {transaction.Date < getTodayISO() && (
               <Badge
                 variant="destructive"
-                className="px-1.5 py-0 text-[9px] leading-tight uppercase"
+                className="px-1.5 py-0 text-[0.5625rem] leading-tight uppercase"
               >
                 <Trans>Overdue</Trans>
               </Badge>
@@ -336,9 +342,7 @@ export const TransactionRow = React.memo(function TransactionRow({
           </TableCell>
         )}
         <TableCell className="max-w-[200px]">
-          <span className="px-2 text-xs xl:text-sm">
-            {transaction.Payee || transferPayeeLabel(transaction)}
-          </span>
+          <span className="px-2 text-xs xl:text-sm">{transaction.Payee || transferLabel}</span>
         </TableCell>
         {showLabelColumn && (
           <TableCell className="max-w-[180px]">
@@ -409,7 +413,7 @@ export const TransactionRow = React.memo(function TransactionRow({
         </div>
       </TableCell>
 
-      {/* Date */}
+      {/* Date (and the optional time of day under it) */}
       <TableCell>
         {editingColumn === 'date' ? (
           <DatePickerCell
@@ -420,6 +424,33 @@ export const TransactionRow = React.memo(function TransactionRow({
               if (!open) onDeactivateCell();
             }}
           />
+        ) : editingColumn === 'time' ? (
+          <TimeInputCell
+            value={transaction.Time}
+            onCommit={(newVal) => onCellCommit(transaction.ID, 'Time', newVal)}
+            className="h-8 w-full text-xs xl:text-sm"
+            autoFocus
+            onDone={onDeactivateCell}
+          />
+        ) : showTime ? (
+          <div className="flex min-w-0 flex-col items-start">
+            <CellDisplayButton
+              value={transaction.Date}
+              title={t`Edit date`}
+              onClick={() => activateCell('date')}
+              className={compact ? 'h-5' : 'h-7'}
+            />
+            <CellDisplayButton
+              value={transaction.Time || '--:--'}
+              title={transaction.Time ? t`Edit time` : t`Add a time`}
+              onClick={() => activateCell('time')}
+              className={cn(
+                'text-[11px] text-muted-foreground xl:text-xs',
+                compact ? 'h-4 leading-none' : 'h-5',
+                !transaction.Time && 'opacity-60'
+              )}
+            />
+          </div>
         ) : (
           <CellDisplayButton
             value={transaction.Date}
@@ -600,7 +631,7 @@ export const TransactionRow = React.memo(function TransactionRow({
                 <Trans>Split</Trans>
               </Button>
             )}
-            {isTransfer && transaction.TransferID && (
+            {isTransfer && hasTransferRate(transaction.TransferID) && (
               <TransferRateDialog transferId={transaction.TransferID} compact />
             )}
           </div>

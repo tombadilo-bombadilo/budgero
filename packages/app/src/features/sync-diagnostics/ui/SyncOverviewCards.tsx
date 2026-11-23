@@ -23,9 +23,9 @@ function Stat({
 }) {
   return (
     <div className="min-w-0">
-      <div className="text-[11px] text-muted-foreground">{label}</div>
+      <div className="text-[0.6875rem] text-muted-foreground">{label}</div>
       <div className="text-sm font-semibold tabular-nums truncate">{value}</div>
-      {hint && <div className="text-[11px] text-muted-foreground truncate">{hint}</div>}
+      {hint && <div className="text-[0.6875rem] text-muted-foreground truncate">{hint}</div>}
     </div>
   );
 }
@@ -59,7 +59,7 @@ export function SyncPositionCard() {
         <CardTitle className="text-base">
           <Trans>Sync position</Trans>
         </CardTitle>
-        <Badge variant="outline" className={cn('text-[11px]', statusBadge.className)}>
+        <Badge variant="outline" className={cn('text-[0.6875rem]', statusBadge.className)}>
           {statusBadge.label}
         </Badge>
       </CardHeader>

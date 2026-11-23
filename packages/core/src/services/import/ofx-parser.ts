@@ -11,11 +11,15 @@
  * out of scope. Bank (BANKMSGSRSV1) and credit card (CREDITCARDMSGSRSV1)
  * statements are supported.
  */
+import { capturedTimeOfDay } from '../../utils/time-of-day.js';
+
 export type OfxAccountKind = 'bank' | 'creditcard';
 
 export interface ParsedOfxTransaction {
-  /** ISO date YYYY-MM-DD (time + TZ in the source are dropped). */
+  /** ISO date YYYY-MM-DD (the TZ in the source is dropped). */
   date: string;
+  /** DTPOSTED's time of day as written ('HH:MM'), when it carries a real one. */
+  time?: string;
   /** Signed amount as written in the file, e.g. "-5.50". OFX is dot-decimal. */
   amount: string;
   /** OFX TRNTYPE: CREDIT / DEBIT / CHECK / POS / etc. Lower-cased here. */
@@ -78,8 +82,10 @@ export function parseOfx(text: string): ParsedOfx {
       const amount = first(txnFields, 'TRNAMT');
       if (!dateRaw || amount === undefined) continue;
 
+      const time = parseOfxTime(dateRaw);
       transactions.push({
         date: parseOfxDate(dateRaw),
+        ...(time ? { time } : {}),
         amount: amount.trim(),
         type: lower(first(txnFields, 'TRNTYPE')),
         payee: first(txnFields, 'NAME') || first(txnFields, 'PAYEE'),
@@ -163,6 +169,16 @@ export function parseOfxDate(raw: string): string {
 }
 
 /**
+ * The time of day in an OFX date ('HH:MM' as written, the [±N:TZ] offset is
+ * not applied), or null for a date-only value and for the 000000 / 120000
+ * placeholders many banks send on date-only postings.
+ */
+export function parseOfxTime(raw: string): string | null {
+  const match = /^\s*\d{8}(\d{2})(\d{2})(\d{2})?/.exec(raw);
+  return match ? capturedTimeOfDay(match[1], match[2], match[3] ?? 0) : null;
+}
+
+/**
  * Flatten parsed OFX into the row shape the import wizard consumes.
  *
  * We use a fixed canonical header set so the configure step can auto-map
@@ -172,6 +188,7 @@ export function parseOfxDate(raw: string): string {
  */
 export const OFX_HEADERS = [
   'Date',
+  'Time',
   'Amount',
   'Payee',
   'Memo',
@@ -202,6 +219,7 @@ export function ofxToImportRows(parsed: ParsedOfx): OfxImportRows {
     for (const t of stmt.transactions) {
       rows.push({
         Date: t.date,
+        Time: t.time ?? '',
         Amount: t.amount,
         Payee: t.payee ?? '',
         Memo: t.memo ?? '',

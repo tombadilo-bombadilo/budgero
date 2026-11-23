@@ -11,11 +11,26 @@
  * (app v1.21): recurring templates with split lines, and recurring.markReady
  * calls that carry the payee to post or a split posting's mirror IDs (redo),
  * ask for it per call; adds the op codes pageGuides.markSeen, syncedState.set
- * and syncedState.merge. Format 6 (app v1.22): amount and rate edits that
+ * and syncedState.merge. Format 6 (app v1.21.4): amount and rate edits that
  * unlock a reconciled row, or edit one leg of a cross-currency transfer
  * (the partner keeps its amount), and custom rate changes that now skip
  * reconciled transfers ask for it per call; adds the op code
- * transactions.updateTransferAmounts.
+ * transactions.updateTransferAmounts. Format 7 (after v1.21.5): goal timeframes
+ * (several goals per category, each for a range of months): adds the op
+ * codes goals.setFrom and goals.endFrom; goal creates and edits older builds
+ * would apply to every month, and undo data carrying goal timeframe columns,
+ * ask for it per call.
+ * Format 7 also covers transaction
+ * time of day; calls that write a time (adds, imports, transfers, duplicates,
+ * restores and split saves of timed rows, time edits) ask for it per call;
+ * adds the op code userPreferences.setShowTransactionTime.
+ * Format 7 also covers split saves whose transfer
+ * lines carry their mirror's exact received amount or keep a category (lines
+ * to off-budget accounts) or that unpin such a mirror, parent edits, copies
+ * and rule undo / redo of a split whose mirror keeps an entered amount,
+ * direct edits of one of a split's two mirrors, and an account joining the
+ * budget that clears categorized lines transferring to it, ask for it per
+ * call; no new op codes.
  *
  * Each outgoing mutation is stamped with the LOWEST format that can express
  * it ({@link mutationFormatVersion}): ops every format-2 build knows stay
@@ -40,7 +55,7 @@
 export const MILLIUNIT_FORMAT_VERSION = 2;
 
 /** Highest mutation format this build reads (and the highest it writes). */
-export const MUTATION_FORMAT_VERSION = 6;
+export const MUTATION_FORMAT_VERSION = 7;
 
 /** Format of mutations whose op codes every milliunit build knows. */
 export const BASE_MUTATION_FORMAT_VERSION = MILLIUNIT_FORMAT_VERSION;
@@ -88,6 +103,9 @@ export const OP_CODE_FORMAT_VERSIONS: Readonly<Record<string, number>> = Object.
   'syncedState.set': 5,
   'syncedState.merge': 5,
   'transactions.updateTransferAmounts': 6,
+  'goals.setFrom': 7,
+  'goals.endFrom': 7,
+  'userPreferences.setShowTransactionTime': 7,
 });
 
 /** Format that introduced `op` (BASE_MUTATION_FORMAT_VERSION if it predates format 3). */

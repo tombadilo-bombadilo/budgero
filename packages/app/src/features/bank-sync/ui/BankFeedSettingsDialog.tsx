@@ -191,7 +191,7 @@ export function BankFeedSettingsDialog({
             </Select>
           </div>
 
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-[0.6875rem] text-muted-foreground">
             <Trans>
               Changes apply to transactions imported from now on. If a field you pick is missing for
               a transaction, Budgero uses the automatic choice.

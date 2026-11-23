@@ -307,10 +307,12 @@ export function UpcomingTransactionsCard({
                 {formattedAmount}
               </span>
               {formattedBudgetAmount ? (
-                <span className="text-[11px] text-muted-foreground">≈ {formattedBudgetAmount}</span>
+                <span className="text-[0.6875rem] text-muted-foreground">
+                  ≈ {formattedBudgetAmount}
+                </span>
               ) : null}
               <Badge variant={item.badgeVariant}>{item.badgeLabel}</Badge>
-              <span className="text-[11px] text-muted-foreground">
+              <span className="text-[0.6875rem] text-muted-foreground">
                 {daysUntil <= 0
                   ? t`Due today`
                   : plural(daysUntil, {

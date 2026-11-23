@@ -46,7 +46,14 @@ export {
   type TransactionRestoreSnapshot,
   type TransactionBatchEdit,
   type SplitParentAmounts,
+  type SplitSaveInput,
 } from './services/transactions/index.js';
+export {
+  type SplitInput,
+  scaleMagnitude,
+  SPLIT_MIRROR_RATE_MISSING,
+  SplitMirrorRateError,
+} from './services/transactions/split-service.js';
 export { GoalService } from './services/goals/index.js';
 export * from './services/goals/funding.js';
 export { MonthlyBudgetService } from './services/monthly-budgets/index.js';
@@ -208,6 +215,30 @@ export {
   GOAL_CYCLE_MONTHS_ERROR,
   GoalCalculations,
 } from './services/goals/index.js';
+export {
+  FALLBACK_EFFECTIVE_FROM,
+  isGoalMonth,
+  effectiveFromForStartDate,
+  goalEffectiveFrom,
+  goalEffectiveTo,
+  previousGoalMonth,
+  nextGoalMonth,
+  sortGoalTimeframes,
+  resolveGoalForMonth,
+  resolveGoalsForMonth,
+  goalsByCategoryForMonth,
+  goalTimeframeSpans,
+  goalTimeframeSpan,
+  validateGoalTimeframeChange,
+  planGoalTimeframeChange,
+  applyGoalTimeframePlan,
+  describeGoalTimeframeChange,
+  type GoalTimeframeSpan,
+  type GoalTimeframeChange,
+  type GoalTimeframePlan,
+  type GoalTimeframeNotice,
+} from './services/goals/timeframes.js';
+export type { GoalFields } from './services/goals/index.js';
 export type {
   GoalProgress,
   GoalStatus,
@@ -245,6 +276,28 @@ export {
   type TransactionStats,
   type MobilePageStats,
 } from './services/accounts/account-calcs.js';
+export {
+  INTEREST_RATE_SCHEDULE_KEY,
+  INTEREST_RATE_SYNCED_KEY,
+  MAX_PROJECTION_MONTHS,
+  addMonthsToDate,
+  isConstantFrom,
+  levelPayment,
+  monthlyRateFn,
+  monthsToPayoff,
+  nextRateChange,
+  normalizeRateSchedule,
+  rateEntryOn,
+  rateOn,
+  rateSchedulesEqual,
+  readLegacyRate,
+  readRateSchedule,
+  validateRateSchedule,
+  writeRateSchedule,
+  type InterestRateEntry,
+  type MonthlyRateFn,
+  type RateScheduleValidation,
+} from './services/accounts/interest-rate-schedule.js';
 
 // CSV/PDF import pipeline (browser-safe)
 export {
@@ -255,6 +308,7 @@ export {
   parseAmount,
   parseDate,
   parseDateDetailed,
+  parseImportTime,
   type ParsedImportDate,
   dateStringLacksYear,
 } from './services/import/parsing.js';
@@ -298,3 +352,6 @@ export {
 
 // Clock seam (tests move "today")
 export { clock, runAtClock, setClock } from './utils/clock.js';
+
+// Optional transaction time of day ('HH:MM', local, no time zone)
+export { normalizeTimeOfDay, parseTimeOfDay, timeFromIsoDateTime } from './utils/time-of-day.js';

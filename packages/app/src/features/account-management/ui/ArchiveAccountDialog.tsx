@@ -180,7 +180,7 @@ export function ArchiveAccountDialog({
               htmlFor="archive-category"
               className="space-y-1"
               hint={
-                <span className="text-[11px]">
+                <span className="text-[0.6875rem]">
                   <Trans>
                     Defaults to Income. Pick a different category if this adjustment represents
                     something else (e.g. debt forgiveness, write-off).

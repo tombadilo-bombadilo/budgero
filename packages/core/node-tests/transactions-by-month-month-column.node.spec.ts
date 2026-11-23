@@ -10,6 +10,7 @@ import { asMilli } from '../src/money/index.js';
 const OLD_SQL_COLUMNS = `
         t.ID,
         t.Date,
+        t.Time,
         t.CategoryID,
         CASE WHEN EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)
              THEN 'Split'
@@ -32,7 +33,18 @@ const OLD_SQL_COLUMNS = `
         t.TransferID,
         a.OnBudget AS AccountOnBudget,
         transfer_partner_account.OnBudget AS TransferAccountOnBudget,
-        transfer_partner_account.Name AS TransferAccountName`;
+        transfer_partner_account.Name AS TransferAccountName,
+        CASE WHEN COALESCE(t.Payee, '') = ''
+              AND EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)
+             THEN (
+               SELECT json_group_array(json_array(line.Payee, line.TransferAccountName, line.Sent))
+                 FROM (SELECT s.Payee, sa.Name AS TransferAccountName,
+                              COALESCE(s.OutflowNative, s.OutflowConverted, 0) > 0 AS Sent
+                         FROM transaction_splits s
+                         LEFT JOIN accounts sa ON sa.ID = s.TransferAccountID
+                        WHERE s.TransactionID = t.ID
+                        ORDER BY s.OrderIndex, s.ID) line)
+             END AS SplitPayees`;
 
 const OLD_SQL = `
       SELECT${OLD_SQL_COLUMNS},

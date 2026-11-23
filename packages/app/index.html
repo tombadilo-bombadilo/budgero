@@ -35,6 +35,20 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon.png" />
 
+    <script>
+      // Text size (Settings → Appearance) before the first paint; see
+      // src/shared/lib/text-size/text-size.ts.
+      (function () {
+        try {
+          var size = window.localStorage.getItem('budgero:text-size');
+          if (size === 'large' || size === 'larger') {
+            document.documentElement.setAttribute('data-text-size', size);
+          }
+        } catch (e) {
+          // storage blocked: default size
+        }
+      })();
+    </script>
     <style>
       :root {
         color-scheme: dark light;

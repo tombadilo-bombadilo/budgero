@@ -75,7 +75,9 @@ export function DesktopBudgetTableView({
         <TableHead className={cn(headClass, 'w-[140px] text-right')}>
           <Trans>Assigned</Trans>
         </TableHead>
-        <TableHead className={cn(headClass, 'hidden w-[140px] text-right min-[1250px]:table-cell')}>
+        <TableHead
+          className={cn(headClass, 'hidden w-[140px] text-right @[700px]/budget-table:table-cell')}
+        >
           <Trans>Activity</Trans>
         </TableHead>
         <TableHead className={cn(headClass, 'w-[160px] text-right', !showTarget && 'pr-6')}>
@@ -108,7 +110,7 @@ export function DesktopBudgetTableView({
       className="overflow-clip rounded-lg border border-border/60 bg-background"
       data-row-density={compact ? 'compact' : 'comfortable'}
     >
-      <Table className="w-full" containerClassName="overflow-x-visible">
+      <Table className="w-full" containerClassName="@container/budget-table overflow-x-visible">
         {tableHeader}
         <TableBody>
           {filteredData.map((item) => {

@@ -7,11 +7,14 @@ export interface RegisterDisplay {
   compactRows: boolean;
   /** Order of transactions that share a date. */
   sameDayOrder: SameDayTransactionOrder;
+  /** Show each transaction's time of day next to its date (and order a day by it). */
+  showTime: boolean;
 }
 
 const RegisterDisplayContext = createContext<RegisterDisplay>({
   compactRows: false,
   sameDayOrder: 'newest',
+  showTime: false,
 });
 
 export function RegisterDisplayProvider({

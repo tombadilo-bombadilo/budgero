@@ -33,7 +33,7 @@ export const AccountHeader = React.memo(function AccountHeader({
       <div className="min-w-0">
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-bold text-foreground truncate">{accountName}</h1>
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 shrink-0">
+          <Badge variant="secondary" className="text-[0.625rem] px-1.5 py-0 shrink-0">
             <AccountTypeLabel type={accountType} />
           </Badge>
         </div>

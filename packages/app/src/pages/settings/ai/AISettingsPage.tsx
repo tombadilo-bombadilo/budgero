@@ -496,7 +496,7 @@ export default function AISettingsPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">{toolDef.label}</span>
                         {toolDef.mutating && (
-                          <Badge variant="secondary" className="text-[10px]">
+                          <Badge variant="secondary" className="text-[0.625rem]">
                             <Trans>writes data</Trans>
                           </Badge>
                         )}

@@ -142,7 +142,7 @@ export function DesktopBudgetGroupRow({
       </TableCell>
       <TableCell
         className={cn(
-          'hidden text-right font-mono text-sm font-semibold min-[1250px]:table-cell',
+          'hidden text-right font-mono text-sm font-semibold @[700px]/budget-table:table-cell',
           totalsActivity < 0
             ? 'text-red-600'
             : totalsActivity > 0

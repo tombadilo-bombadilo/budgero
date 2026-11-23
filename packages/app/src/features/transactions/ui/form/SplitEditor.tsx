@@ -13,7 +13,21 @@ import { SearchableCategorySelect } from '@features/category-management/ui/Searc
 import { PayeeSelectCell } from '@features/transactions/ui/cells/PayeeSelectCell';
 import { asMilli, formatMilli, ZERO_MILLI, type MilliUnits } from '@shared/lib/currency/milli';
 import { assignRemainingToSplit, newSplitLine } from './split-lines';
-import { splitPayeeUpdate, splitTransferUpdate } from '../../lib/split-transfer';
+import {
+  followEnteredReceived,
+  followEnteredReceivedLines,
+  needsReceivedAmount,
+  SPLIT_LINE_RECEIVED,
+  splitLineCategoryMode,
+  splitPayeeUpdate,
+  splitTransferUpdate,
+  type SplitTransferAccount,
+} from '../../lib/split-transfer';
+import { useAutoReceivedAmounts } from '../split-transfer/useAutoReceivedAmounts';
+import {
+  SplitReceivedAmount,
+  SplitTransferCategoryLocked,
+} from '../split-transfer/SplitTransferFields';
 
 export interface SplitLine {
   id: string;
@@ -24,6 +38,10 @@ export interface SplitLine {
   inflow: MilliUnits;
   outflow: MilliUnits;
   transferAccountId?: number | null;
+  /** Cross-currency transfer lines: what the other account received (its currency). */
+  receivedAmount?: number | null;
+  /** The received amount follows the line amount (estimated) until one is typed. */
+  receivedAuto?: boolean;
 }
 
 interface SplitEditorProps {
@@ -38,7 +56,16 @@ interface SplitEditorProps {
   parentAmount: number;
   formatter: Intl.NumberFormat;
   /** Accounts a line can transfer to (the parent's own account excluded). */
-  transferAccounts?: { ID: number; Name: string; OnBudget?: boolean | number }[];
+  transferAccounts?: SplitTransferAccount[];
+  /** The parent's account: transfer lines to another currency ask what was received. */
+  parentAccount?: SplitTransferAccount;
+  /** The parent's date (YYYY-MM-DD), for the received amount's estimate. */
+  date?: string;
+  /**
+   * Lines of a recurring template: a transfer line never takes a category
+   * or a received amount there (each posting converts its own).
+   */
+  templateLines?: boolean;
 }
 
 export function SplitEditor({
@@ -51,12 +78,53 @@ export function SplitEditor({
   parentAmount,
   formatter,
   transferAccounts = [],
+  parentAccount,
+  date = '',
+  templateLines = false,
 }: SplitEditorProps) {
   const { t } = useLingui();
   const transferName = (id?: number | null) => transferAccounts.find((a) => a.ID === id)?.Name;
+  const transferTarget = (id?: number | null) =>
+    id ? transferAccounts.find((a) => a.ID === id) : undefined;
+  const receivedTarget = (line: SplitLine) => {
+    const target = transferTarget(line.transferAccountId);
+    return !templateLines && target && needsReceivedAmount(parentAccount?.Currency, target)
+      ? target
+      : undefined;
+  };
+  const categoryMode = (line: SplitLine) =>
+    templateLines && line.transferAccountId
+      ? 'transfer-locked'
+      : splitLineCategoryMode(parentAccount, transferTarget(line.transferAccountId));
 
+  useAutoReceivedAmounts({
+    lines: isSplit && !templateLines ? splitLines : null,
+    access: {
+      target: (line) => line.transferAccountId,
+      amount: (line) => line.inflow || line.outflow,
+      received: (line) => line.receivedAmount,
+      auto: (line) => line.receivedAuto !== false,
+    },
+    onEstimates: (estimates) =>
+      onSplitLinesChange(
+        splitLines.map((line, i) =>
+          estimates.has(i) ? { ...line, receivedAmount: estimates.get(i) } : line
+        )
+      ),
+    accounts: transferAccounts,
+    parentCurrency: parentAccount?.Currency,
+    amountCurrency: parentAccount?.Currency,
+    date,
+    budgetId,
+  });
+
+  // An entered received amount scales with its line's amount.
   const updateLine = (id: string, updates: Partial<SplitLine>) => {
-    onSplitLinesChange(splitLines.map((l) => (l.id === id ? { ...l, ...updates } : l)));
+    onSplitLinesChange(
+      splitLines.map((l) =>
+        l.id === id ? followEnteredReceived(l, { ...l, ...updates }, SPLIT_LINE_RECEIVED) : l
+      )
+    );
   };
 
   const deleteLine = (id: string) => {
@@ -68,7 +136,13 @@ export function SplitEditor({
   };
 
   const splitRemaining = () => {
-    onSplitLinesChange(assignRemainingToSplit(splitLines, remaining, parentAmount));
+    onSplitLinesChange(
+      followEnteredReceivedLines(
+        splitLines,
+        assignRemainingToSplit(splitLines, remaining, parentAmount),
+        SPLIT_LINE_RECEIVED
+      )
+    );
   };
 
   return (
@@ -88,7 +162,7 @@ export function SplitEditor({
 
       {isSplit && (
         <div className="space-y-2 sm:space-y-3 border rounded-md p-2 sm:p-3">
-          <div className="flex items-center justify-between text-[11px] sm:text-xs text-muted-foreground">
+          <div className="flex items-center justify-between text-[0.6875rem] sm:text-xs text-muted-foreground">
             <span>
               <Trans>Remaining to assign</Trans>
             </span>
@@ -98,16 +172,27 @@ export function SplitEditor({
           {splitLines.map((line) => (
             <div key={line.id} className="grid grid-cols-1 gap-2 items-center">
               <div>
-                <SearchableCategorySelect
-                  budgetId={budgetId}
-                  selectedCategoryId={line.categoryId || null}
-                  onCategorySelect={(categoryId) => {
-                    updateLine(line.id, { categoryId, transferAccountId: undefined });
-                  }}
-                  placeholder={line.transferAccountId ? t`No category (transfer)` : t`Category`}
-                  triggerClassName="w-full h-8 sm:h-9"
-                  popoverContentClassName="w-[320px] max-w-[90vw]"
-                />
+                {categoryMode(line) === 'transfer-locked' ? (
+                  <SplitTransferCategoryLocked className="sm:h-9" />
+                ) : (
+                  <SearchableCategorySelect
+                    budgetId={budgetId}
+                    selectedCategoryId={line.categoryId || null}
+                    // A line to an off-budget account keeps its transfer (spending).
+                    onCategorySelect={(categoryId) => {
+                      updateLine(
+                        line.id,
+                        categoryMode(line) === 'transfer-optional'
+                          ? { categoryId }
+                          : { categoryId, transferAccountId: undefined }
+                      );
+                    }}
+                    placeholder={line.transferAccountId ? t`No category (transfer)` : t`Category`}
+                    includeTransfers={categoryMode(line) === 'transfer-optional'}
+                    triggerClassName="w-full h-8 sm:h-9"
+                    popoverContentClassName="w-[320px] max-w-[90vw]"
+                  />
+                )}
               </div>
               <div>
                 <PayeeSelectCell
@@ -137,7 +222,7 @@ export function SplitEditor({
               </div>
               <div className="grid grid-cols-2 gap-2 sm:flex sm:items-end">
                 <div className="min-w-0 sm:flex-1">
-                  <div className="mb-1 text-[10px] text-muted-foreground">
+                  <div className="mb-1 text-[0.625rem] text-muted-foreground">
                     <Trans>Outflow</Trans>
                   </div>
                   <CalculatorCell
@@ -159,7 +244,7 @@ export function SplitEditor({
                   />
                 </div>
                 <div className="min-w-0 sm:flex-1">
-                  <div className="mb-1 text-[10px] text-muted-foreground">
+                  <div className="mb-1 text-[0.625rem] text-muted-foreground">
                     <Trans>Inflow</Trans>
                   </div>
                   <CalculatorCell
@@ -195,6 +280,16 @@ export function SplitEditor({
                   </span>
                 </Button>
               </div>
+              {receivedTarget(line) && (
+                <SplitReceivedAmount
+                  target={receivedTarget(line)!}
+                  lineIsInflow={line.inflow > 0}
+                  value={line.receivedAmount}
+                  onCommit={(value) =>
+                    updateLine(line.id, { receivedAmount: value || null, receivedAuto: false })
+                  }
+                />
+              )}
             </div>
           ))}
 

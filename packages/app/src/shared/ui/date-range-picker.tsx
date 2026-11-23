@@ -210,7 +210,7 @@ export function DateRangePicker({
                         : 'border-border/70 text-muted-foreground hover:bg-muted'
                     )}
                   >
-                    <span className="block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    <span className="block text-[0.625rem] font-medium uppercase tracking-wide text-muted-foreground">
                       {label}
                     </span>
                     <span className="whitespace-nowrap">

@@ -61,6 +61,15 @@ export interface Goal {
    * Rows are read raw from SQLite, so always go through getCycleMonths().
    */
   CycleMonths?: number | null;
+  /**
+   * First month (YYYY-MM) of this goal's timeframe. A category can have
+   * several goals, one per timeframe; see timeframes.ts for which one
+   * applies in a month. Null on rows written by older builds: read it with
+   * goalEffectiveFrom(). Not the same as StartDate (the cycle anchor).
+   */
+  EffectiveFrom?: string | null;
+  /** Last month (YYYY-MM, inclusive) of an ended goal; null = until the next timeframe. */
+  EffectiveTo?: string | null;
   BudgetID?: number;
 }
 

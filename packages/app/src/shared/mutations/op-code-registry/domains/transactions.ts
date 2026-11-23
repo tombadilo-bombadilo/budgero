@@ -3,6 +3,7 @@ import {
   type AccountService,
   type ImportIdentity,
   type ReconcileResult,
+  type Services,
   type TransactionAmountsSnapshot,
   type SplitParentAmounts,
   type TransactionBatchEdit,
@@ -25,6 +26,9 @@ import {
   RECURRING_OCCURRENCE_INVALIDATIONS,
   RECURRING_TEMPLATE_INVALIDATIONS,
   safeCapture,
+  carryReceivedAmounts,
+  normalizeSplitLines,
+  readCarriedMirror,
   type NormalizedSplit,
   type OpCall,
   type OpCodeEntry,
@@ -105,26 +109,19 @@ function restoreUndo(before: unknown, replace = false): OpCall[] | null {
   return [{ op: 'transactions.restore', args: { snapshot, ...(replace ? { replace } : {}) } }];
 }
 
-/** Normalize split lines from an op payload (snake_case or PascalCase) to the core shape. */
-function normalizeSplitLines(splits: unknown): NormalizedSplit[] {
-  // asMilli doubles as the op-boundary guard: a decimal amount in a payload
-  // throws here instead of reaching an integer column.
-  return ((splits as Record<string, unknown>[]) || []).map((s, idx) => {
-    const inflowOriginal = s.InflowNative ?? s.InflowOriginal ?? s.inflow_original ?? null;
-    const outflowOriginal = s.OutflowNative ?? s.OutflowOriginal ?? s.outflow_original ?? null;
-    return {
-      CategoryID: (s.CategoryID ?? s.category_id ?? null) as number | null,
-      TransferAccountID: (s.TransferAccountID ?? s.transfer_account_id ?? null) as number | null,
-      Memo: String(s.Memo ?? s.memo ?? ''),
-      Payee: String(s.Payee ?? s.payee ?? ''),
-      InflowConverted: asMilli(Number(s.InflowConverted ?? s.Inflow ?? s.inflow ?? 0)),
-      OutflowConverted: asMilli(Number(s.OutflowConverted ?? s.Outflow ?? s.outflow ?? 0)),
-      InflowNative: inflowOriginal == null ? null : asMilli(Number(inflowOriginal)),
-      OutflowNative: outflowOriginal == null ? null : asMilli(Number(outflowOriginal)),
-      PairID: (s.PairID ?? s.pair_id ?? null) as string | null,
-      OrderIndex: Number(s.OrderIndex ?? s.order_index ?? idx),
-    };
-  });
+/**
+ * A parent's lines, each transfer line whose mirror is pinned (an entered
+ * received amount) carrying that mirror's amounts, so re-saving them (an
+ * undo, a copy) writes the same mirror again. Other lines convert as before.
+ */
+function pinnedMirrorLines(parentId: number): TransactionSplit[] {
+  const splits = S().splits as Partial<Services['splits']>;
+  if (typeof splits.getSplitsWithMirrors !== 'function') return S().splits.getSplits(parentId);
+  return splits
+    .getSplitsWithMirrors(parentId)
+    .map(({ Mirror, MirrorPinned, MirrorReconciled: _r, ...line }) =>
+      MirrorPinned && Mirror ? { ...line, Mirror } : line
+    );
 }
 
 /** Undo for split edits: put back the previous lines, or clear if there were none. */
@@ -134,7 +131,8 @@ const splitsUndo: NonNullable<OpCodeEntry['undo']> = {
   capture: async (args) => {
     const restore = captureRestore([args.transactionId as number]);
     if (restore) return { restore };
-    return safeCapture(() => S().splits.getSplits(args.transactionId as number));
+    // Pinned mirrors' amounts go back with their lines (see pinnedMirrorLines).
+    return safeCapture(() => pinnedMirrorLines(args.transactionId as number));
   },
   build: (args, _result, before) => {
     const exact = restoreUndo(before, true);
@@ -193,6 +191,52 @@ function guardExistingParentLines(args: Record<string, unknown>): Record<string,
     S().splits.getSplits(transactionId)
   );
   return args;
+}
+
+/**
+ * `prepare` guard: a split line keeps a category next to its transfer
+ * account only when it goes from an on-budget parent to an off-budget
+ * account (spending, e.g. a mortgage payment). Checked here, on the
+ * originating device only: execution drops such a category instead of
+ * failing, so an account switched on budget meanwhile can't split devices.
+ */
+function rejectCategorizedTransferLines(
+  parentAccountId: number,
+  lines: readonly { CategoryID?: number | null; TransferAccountID?: number | null }[]
+): void {
+  const splits = S().splits as Partial<Services['splits']>;
+  for (const line of lines) {
+    if (line.CategoryID == null || line.TransferAccountID == null) continue;
+    if (!splits.transferLineTakesCategory?.(parentAccountId, Number(line.TransferAccountID))) {
+      throw new Error(t`A split line can have a category or a transfer account, not both.`);
+    }
+  }
+}
+
+/**
+ * `prepare` for split saves on an existing parent (`args.transactionId`):
+ * lines with an entered received amount carry their exact mirror amounts
+ * (see carryReceivedAmounts), converted at the parent's date.
+ */
+async function carryReceivedForParent(
+  args: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  if (!Array.isArray(args.splits) || !args.splits.length) return args;
+  const lines = args.splits as Record<string, unknown>[];
+  let parent: Parameters<Services['splits']['quoteMirrorAmounts']>[0];
+  try {
+    parent = S().transactions!.getTransactionByID(Number(args.transactionId));
+  } catch {
+    return args; // the op fails on its own
+  }
+  rejectCategorizedTransferLines(parent.AccountID, normalizeSplitLines(lines));
+  // Pushed saves never carry their own mirror and fall back without a rate.
+  const splits = await carryReceivedAmounts(
+    lines,
+    (received) => S().splits.quoteMirrorAmounts(parent, normalizeSplitLines(lines), received),
+    { lenient: args.fromPush === true }
+  );
+  return splits === lines ? args : { ...args, splits };
 }
 
 /**
@@ -329,7 +373,7 @@ const TX_VALUE_COLUMNS = new Set([
 /**
  * What a `transactions.updateColumn` call can change, by column (normalized the
  * same way as TransactionService.updateTransactionColumn):
- * - memo: only the rows themselves;
+ * - memo, time: only the rows themselves;
  * - payee: the rows and the payee directory;
  * - label: the rows and the label directory / label analytics;
  * - amounts, date, category, account, rate: everything except the payee and
@@ -339,7 +383,8 @@ const TX_VALUE_COLUMNS = new Set([
 export function updateColumnInvalidations(args: Record<string, unknown>): string[][] {
   const column =
     typeof args.columnName === 'string' ? args.columnName.toLowerCase().replace(/_/g, '') : '';
-  if (column === 'memo') return TX_ROW_LIST_INVALIDATION_KEYS;
+  // A time edit changes only the rows (and their transfer partners / split mirrors).
+  if (column === 'memo' || column === 'time') return TX_ROW_LIST_INVALIDATION_KEYS;
   if (column === 'payee') return [...TX_ROW_LIST_INVALIDATION_KEYS, ...TX_COLUMN_PAYEE_KEYS];
   if (column === 'labelid') return [...TX_ROW_LIST_INVALIDATION_KEYS, ...TX_COLUMN_LABEL_KEYS];
   if (TX_VALUE_COLUMNS.has(column)) return TX_VALUE_UPDATE_INVALIDATION_KEYS;
@@ -557,8 +602,13 @@ async function addTransactionFromArgs(
     (args.importIdentities as ImportIdentity[] | undefined) ?? [],
     args.cleared === true,
     explicitId(args.id),
-    // With a batch the result is the queued step's index (see TransactionWriteBatch).
-    ...(batch ? [batch] : [])
+    // With a batch the result is the queued step's index (see TransactionWriteBatch),
+    // then the optional time of day ('HH:MM'; omitted or empty means none).
+    ...((typeof args.time === 'string' && args.time
+      ? [batch, args.time]
+      : batch
+        ? [batch]
+        : []) as [TransactionWriteBatch?, string?])
   );
 }
 
@@ -587,12 +637,16 @@ function normalizePushSplits(raw: unknown): NormalizedSplit[] | undefined {
     }
     const categoryId = entry.categoryId ?? null;
     const transferAccountId = entry.transferAccountId ?? null;
-    if ((categoryId === null) === (transferAccountId === null)) {
+    // Both only on a transfer line to an off-budget account (the core checks
+    // that): money leaving the budget as spending in a category.
+    if (categoryId === null && transferAccountId === null) {
       throw new Error('Each split must have either categoryId or transferAccountId exclusively.');
     }
-    const targetId = categoryId ?? transferAccountId;
-    if (typeof targetId !== 'number' || !Number.isSafeInteger(targetId) || targetId <= 0) {
-      throw new Error('Split categoryId or transferAccountId must be a positive integer.');
+    for (const targetId of [categoryId, transferAccountId]) {
+      if (targetId === null) continue;
+      if (typeof targetId !== 'number' || !Number.isSafeInteger(targetId) || targetId <= 0) {
+        throw new Error('Split categoryId or transferAccountId must be a positive integer.');
+      }
     }
     return {
       CategoryID: categoryId as number | null,
@@ -607,6 +661,7 @@ function normalizePushSplits(raw: unknown): NormalizedSplit[] | undefined {
       OutflowNative: outflow,
       PairID: null,
       OrderIndex: idx,
+      Mirror: readCarriedMirror(entry),
     };
   });
 }
@@ -654,7 +709,7 @@ export const transactionOps = {
     },
   },
   'transactions.add': {
-    prepare: (args) => {
+    prepare: async (args) => {
       if (Array.isArray(args.splits)) {
         rejectOwnAccountLines(
           Number(args.accountId),
@@ -662,6 +717,29 @@ export const transactionOps = {
             TransferAccountID: line?.transferAccountId ?? null,
           }))
         );
+        const lines = args.splits as Record<string, unknown>[];
+        const normalized = normalizePushSplits(lines) ?? [];
+        rejectCategorizedTransferLines(Number(args.accountId), normalized);
+        const identities = (args.importIdentities ?? []) as ImportIdentity[];
+        const splits = await carryReceivedAmounts(
+          lines,
+          (received) =>
+            S().splits.quoteMirrorAmounts(
+              {
+                AccountID: Number(args.accountId),
+                BudgetID: Number(args.budgetId),
+                Date: String(args.date),
+              },
+              normalized,
+              received
+            ),
+          {
+            lenient:
+              args.fromPush === true ||
+              identities.some((identity) => identity?.sourceKey === 'push-api'),
+          }
+        );
+        if (splits !== lines) return { ...args, splits };
       }
       return args;
     },
@@ -772,14 +850,18 @@ export const transactionOps = {
       const existing = await S().transactions!.getTransactionsByTransferID(transferId);
       if (existing.length) throw new Error('This transferId is already in use.');
 
+      // Both legs share one time of day: the call's, else the source leg's.
+      const time =
+        [args.time, source.time, destination.time].find(
+          (value) => typeof value === 'string' && value.trim() !== ''
+        ) ?? null;
+      const legArgs = (leg: Record<string, unknown>) => ({ ...leg, budgetId, transferId, time });
+
       const batch = writeBatch();
       if (batch) {
         // Both legs commit together.
-        const sourceStep = await addTransactionFromArgs({ ...source, budgetId, transferId }, batch);
-        const destinationStep = await addTransactionFromArgs(
-          { ...destination, budgetId, transferId },
-          batch
-        );
+        const sourceStep = await addTransactionFromArgs(legArgs(source), batch);
+        const destinationStep = await addTransactionFromArgs(legArgs(destination), batch);
         const ids = batch.commit();
         return {
           sourceId: ids[sourceStep] as number,
@@ -789,12 +871,8 @@ export const transactionOps = {
 
       let sourceId: number | null = null;
       try {
-        sourceId = await addTransactionFromArgs({ ...source, budgetId, transferId });
-        const destinationId = await addTransactionFromArgs({
-          ...destination,
-          budgetId,
-          transferId,
-        });
+        sourceId = await addTransactionFromArgs(legArgs(source));
+        const destinationId = await addTransactionFromArgs(legArgs(destination));
         return { sourceId, destinationId };
       } catch (error) {
         // addTransaction commits each leg independently. Compensate if the
@@ -1247,7 +1325,7 @@ export const transactionOps = {
 
   // The split editor's save: parent total and lines in one op and one write.
   'transactions.saveSplits': {
-    prepare: guardExistingParentLines,
+    prepare: (args) => carryReceivedForParent(guardExistingParentLines(args)),
     execute: async (args) => {
       const amount = args.amount as
         { inflow?: unknown; outflow?: unknown; currency?: unknown } | undefined;
@@ -1587,7 +1665,8 @@ export const transactionOps = {
           continue;
         }
 
-        const splits = S().splits.getSplits(id);
+        // A pinned mirror's amounts are copied, not converted again.
+        const splits = pinnedMirrorLines(id);
         const newId = await copy(row);
         if (splits.length) {
           await S().splits.upsertSplits(
@@ -1603,6 +1682,7 @@ export const transactionOps = {
               OutflowNative: line.OutflowNative ?? null,
               PairID: null,
               OrderIndex: line.OrderIndex ?? index,
+              Mirror: (line as { Mirror?: NormalizedSplit['Mirror'] }).Mirror ?? null,
             })),
             ...(batch ? [batch] : [])
           );
@@ -1635,7 +1715,7 @@ export const transactionOps = {
 
   // upsert split transaction
   'transactions.upsertSplits': {
-    prepare: guardExistingParentLines,
+    prepare: (args) => carryReceivedForParent(guardExistingParentLines(args)),
     execute: async (args) => {
       // Normalize client payload (snake_case) to core service shape (PascalCase).
       const normalized = normalizeSplitLines(args.splits);

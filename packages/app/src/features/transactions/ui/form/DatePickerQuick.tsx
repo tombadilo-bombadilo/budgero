@@ -8,6 +8,7 @@ import { Trans, useLingui } from '@lingui/react/macro';
 import { useCallback } from 'react';
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@shared/ui/button';
+import { TimeInput } from '@shared/ui/time-input';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { MonthYearCalendar } from '@shared/ui/MonthYearCalendar';
 
@@ -16,9 +17,19 @@ interface DatePickerQuickProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onChange: (date: Date | null) => void;
+  /** Optional time of day ('HH:MM', '' for none); the time input shows only with onTimeChange. */
+  time?: string;
+  onTimeChange?: (time: string) => void;
 }
 
-export function DatePickerQuick({ value, open, onOpenChange, onChange }: DatePickerQuickProps) {
+export function DatePickerQuick({
+  value,
+  open,
+  onOpenChange,
+  onChange,
+  time = '',
+  onTimeChange,
+}: DatePickerQuickProps) {
   const { t, i18n } = useLingui();
 
   const handleDateSelect = useCallback(
@@ -67,6 +78,15 @@ export function DatePickerQuick({ value, open, onOpenChange, onChange }: DatePic
               </PopoverContent>
             </Popover>
           </div>
+          {onTimeChange && (
+            <TimeInput
+              value={time ?? ''}
+              onValueChange={onTimeChange}
+              aria-label={t`Time (optional)`}
+              title={t`Time (optional)`}
+              className="h-8 w-28 shrink-0 sm:h-10"
+            />
+          )}
         </div>
       </div>
 

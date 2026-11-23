@@ -108,7 +108,7 @@ export function SnapshotHistoryList() {
         <CardTitle className="text-base flex items-center gap-2">
           <History className="h-4 w-4" />
           <Trans>Earlier versions</Trans>
-          <Badge variant="outline" className="text-[11px]">
+          <Badge variant="outline" className="text-[0.6875rem]">
             <Trans>Beta</Trans>
           </Badge>
         </CardTitle>

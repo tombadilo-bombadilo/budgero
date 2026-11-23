@@ -141,6 +141,10 @@ describe('the rule list', () => {
       'transactions.saveSplits',
       // v1.21: a cross-currency transfer partner now keeps its amount.
       'transactions.restoreAmounts',
+      // Format 7: restores drop a category a transfer line can't keep, and a
+      // split's two mirrors are no transfer pair for exact amounts.
+      'transactions.restore',
+      'transactions.updateTransferAmounts',
     ]);
     for (const op of Object.keys(LEGACY_FORMAT_RULES)) {
       expect(KNOWN_OP_CODES.has(op), op).toBe(true);
@@ -854,7 +858,42 @@ describe('format 6: reconciled amount edits and cross-currency transfer legs (v1
       await services.accounts.createAccount('Euro', budgetId, 'checking', 'EUR', asMilli(0))
     ).ID;
     const cross = await addTransfer('cross', euro, 800);
-    expect(await edit(cross.source)).toBe(6);
+    // The sent leg now scales the received leg (format 7); the received leg
+    // keeps the sent amount as in v1.21.5 (format 6 for the kept partner).
+    expect(await edit(cross.source)).toBe(7);
+    expect(await edit(cross.destination, 'InflowNative')).toBe(6);
+    expect(await edit(cross.source, 'ExchangeRate')).toBe(6);
+    expect(
+      await sentFormat('transactions.restoreAmounts', {
+        id: cross.source,
+        amounts: {
+          InflowNative: 0,
+          OutflowNative: 1000,
+          InflowConverted: 0,
+          OutflowConverted: 1000,
+          ExchangeRate: null,
+          ExchangeRateOverride: false,
+        },
+      })
+    ).toBe(7);
+  });
+
+  it('rules.execute: a cross-currency sent leg among the matched rows (format 7)', async () => {
+    await services.currency.saveRate('EUR', 'USD', 1.25, '2026-09-10', budgetId);
+    const euro = (
+      await services.accounts.createAccount('Euro', budgetId, 'checking', 'EUR', asMilli(0))
+    ).ID;
+    const memoRule = services.rules.createRule({
+      budgetId,
+      name: 'memo',
+      conditions: [],
+      actions: [{ type: 'memo.set', payload: { memo: 'x' } }],
+    });
+    const cross = await addTransfer('fx-rule', euro, 800);
+    const only = (ids: number[]) =>
+      sentFormat('rules.execute', { ruleId: memoRule.id, options: { transactionIds: ids } });
+    expect(await only([cross.destination])).toBe(2);
+    expect(await only([cross.source])).toBe(7);
   });
 
   it('transactions.updateTransferRate and custom rates: only with a reconciled leg', async () => {

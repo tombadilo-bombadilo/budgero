@@ -1,4 +1,4 @@
-import { plural } from "@lingui/core/macro";
+import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
 /**
  * "YNAB" tab of CreateBudgetForm: import a YNAB ZIP export as a new budget.
@@ -161,7 +161,7 @@ export function YnabImportTab({
                 {isConnecting ? t`Connecting…` : t`Connect`}
               </Button>
             </div>
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-[0.6875rem] text-muted-foreground">
               <Trans>
                 Used in memory for this import and never saved to Budgero or browser storage.
               </Trans>
@@ -295,7 +295,14 @@ export function YnabImportTab({
                 <Trans>Detected in this export</Trans>
               </p>
               <p className="text-muted-foreground">
-                {plural(preview.accountCount, { one: "# account", other: "# accounts" })}{' · '}{plural(preview.categoryCount, { one: '# category', other: '# categories' })}{' · '}{plural(preview.registerRowCount, { one: '# register row', other: '# register rows' })}
+                {plural(preview.accountCount, { one: '# account', other: '# accounts' })}
+                {' · '}
+                {plural(preview.categoryCount, { one: '# category', other: '# categories' })}
+                {' · '}
+                {plural(preview.registerRowCount, {
+                  one: '# register row',
+                  other: '# register rows',
+                })}
               </p>
 
               {preview.dateOrderAmbiguous && (
@@ -312,7 +319,7 @@ export function YnabImportTab({
                   <p className="font-medium">
                     <Trans>Review account types after import</Trans>
                   </p>
-                  <p className="mt-0.5 text-[11px] opacity-90">
+                  <p className="mt-0.5 text-[0.6875rem] opacity-90">
                     <Trans>
                       YNAB does not reliably export account types. Budgero recognizes credit cards
                       where possible and imports other accounts as Checking, so verify every account
@@ -325,9 +332,12 @@ export function YnabImportTab({
               {preview.missingCategories.length > 0 && (
                 <div className="rounded-md border border-amber-300/70 bg-amber-50 p-2.5 text-amber-950 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-100">
                   <p className="font-medium">
-                    {plural(preview.missingCategories.length, { one: '# register category is missing from Plan.csv', other: '# register categories are missing from Plan.csv' })}
+                    {plural(preview.missingCategories.length, {
+                      one: '# register category is missing from Plan.csv',
+                      other: '# register categories are missing from Plan.csv',
+                    })}
                   </p>
-                  <p className="mt-1 text-[11px] opacity-90">
+                  <p className="mt-1 text-[0.6875rem] opacity-90">
                     <Trans>
                       Budgero will create{' '}
                       {preview.missingCategories
@@ -342,9 +352,12 @@ export function YnabImportTab({
               {preview.splitTransactions.length > 0 && (
                 <div className="rounded-md border p-2.5">
                   <p className="font-medium text-foreground">
-                    {plural(preview.splitTransactions.length, { one: '# split transaction detected', other: '# split transactions detected' })}
+                    {plural(preview.splitTransactions.length, {
+                      one: '# split transaction detected',
+                      other: '# split transactions detected',
+                    })}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  <p className="mt-0.5 text-[0.6875rem] text-muted-foreground">
                     <Trans>
                       Budgero will import complete Split (1/n)…Split (n/n) sequences as split
                       transactions automatically.
@@ -374,7 +387,14 @@ export function YnabImportTab({
                 <Trans>Detected through the YNAB API</Trans>
               </p>
               <p className="text-muted-foreground">
-                {plural(preview.accountCount, { one: "# account", other: "# accounts" })}{' · '}{plural(preview.categoryCount, { one: '# category', other: '# categories' })}{' · '}{plural(preview.registerRowCount, { one: '# register row', other: '# register rows' })}
+                {plural(preview.accountCount, { one: '# account', other: '# accounts' })}
+                {' · '}
+                {plural(preview.categoryCount, { one: '# category', other: '# categories' })}
+                {' · '}
+                {plural(preview.registerRowCount, {
+                  one: '# register row',
+                  other: '# register rows',
+                })}
               </p>
               {preview.creditPaymentMatching && (
                 <YnabCreditPaymentMatching
@@ -385,7 +405,7 @@ export function YnabImportTab({
                   disabled={isImporting || isConnecting}
                 />
               )}
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-[0.6875rem] text-muted-foreground">
                 <Trans>Account types and on-budget status will be preserved from YNAB.</Trans>
               </p>
             </>

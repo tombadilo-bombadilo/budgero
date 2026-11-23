@@ -1,4 +1,4 @@
-import type { BankReviewInput, ImportIdentity } from '@budgero/core/browser';
+import { parseTimeOfDay, type BankReviewInput, type ImportIdentity } from '@budgero/core/browser';
 
 /** Persist the queue reference in the replicated add payload, before execution. */
 export function withPushIdentity(
@@ -50,4 +50,61 @@ export function pushMatchReview(
     identity: { ...identity, pushArgs },
   });
   return review ? { budgetId, reviews: [review] } : null;
+}
+
+const validTime = (value: unknown) => typeof parseTimeOfDay(value) === 'string';
+
+/**
+ * Pushed args with an unusable `time` removed: an integration's bad time
+ * (not HH:MM) drops just the time, never the pushed transaction. Covers
+ * transactions.add, both transactions.addTransfer legs (and the call's own
+ * time) and transactions.updateByRef fields.
+ */
+export function withoutInvalidPushTime(
+  op: string,
+  args: Record<string, unknown>
+): Record<string, unknown> {
+  const clean = (value: Record<string, unknown>) => {
+    if (!('time' in value) || validTime(value.time) || value.time === null) return value;
+    const { time: _time, ...rest } = value;
+    return rest;
+  };
+  if (op === 'transactions.add') return clean(args);
+  if (op === 'transactions.addTransfer') {
+    const legs = ['source', 'destination'] as const;
+    const out = clean(args);
+    for (const leg of legs) {
+      const value = out[leg];
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        out[leg] = clean(value as Record<string, unknown>);
+      }
+    }
+    return out;
+  }
+  if (op === 'transactions.updateByRef') {
+    const { fields } = args;
+    if (!fields || typeof fields !== 'object' || Array.isArray(fields)) return args;
+    return { ...args, fields: clean(fields as Record<string, unknown>) };
+  }
+  return args;
+}
+
+/** Arg marking a mutation that came in through the Push API (op prepare is lenient for it). */
+export const PUSH_ORIGIN_ARG = 'fromPush';
+
+/**
+ * Args of a pushed mutation with split lines (an add or a split save):
+ * marked as pushed, and with any `mirror` on its lines removed. Exact mirror amounts are only ever
+ * computed by the receiving device's own prepare step (from a
+ * `receivedAmount`), never taken from a third-party payload.
+ */
+export function asPushedArgs(args: Record<string, unknown>): Record<string, unknown> {
+  const splits = Array.isArray(args.splits)
+    ? (args.splits as unknown[]).map((line) => {
+        if (!line || typeof line !== 'object' || Array.isArray(line)) return line;
+        const { mirror: _mirror, Mirror: _pascal, ...rest } = line as Record<string, unknown>;
+        return rest;
+      })
+    : undefined;
+  return { ...args, ...(splits ? { splits } : {}), [PUSH_ORIGIN_ARG]: true };
 }

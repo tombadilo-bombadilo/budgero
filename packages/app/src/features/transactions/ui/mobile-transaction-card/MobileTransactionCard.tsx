@@ -111,8 +111,12 @@ export const MobileTransactionCard = React.memo(function MobileTransactionCard({
     removeSplitLine,
     updateSplitLine,
     saveSplits,
+    splitReceivedTarget,
+    splitCategoryMode,
+    splitSaveHint,
   } = useMobileTransactionCardState({
     transaction,
+    budgetId,
     getPrimaryInflow,
     getPrimaryOutflow,
     forceExpand,
@@ -147,20 +151,20 @@ export const MobileTransactionCard = React.memo(function MobileTransactionCard({
                 {transaction.Date < getTodayISO() ? (
                   <Badge
                     variant="destructive"
-                    className="shrink-0 text-[9px] uppercase tracking-wide"
+                    className="shrink-0 text-[0.5625rem] uppercase tracking-wide"
                   >
                     <Trans>Overdue</Trans>
                   </Badge>
                 ) : (
                   <Badge
                     variant="secondary"
-                    className="shrink-0 text-[9px] uppercase tracking-wide"
+                    className="shrink-0 text-[0.5625rem] uppercase tracking-wide"
                   >
                     <Trans>Projected</Trans>
                   </Badge>
                 )}
               </div>
-              <div className="truncate text-[11px] text-muted-foreground">
+              <div className="truncate text-[0.6875rem] text-muted-foreground">
                 {transaction.Date} ·{' '}
                 {transaction.Category === 'Split' ? <Trans>Split</Trans> : transaction.Category}
               </div>
@@ -281,6 +285,9 @@ export const MobileTransactionCard = React.memo(function MobileTransactionCard({
             onRemoveSplitLine={removeSplitLine}
             onUpdateSplitLine={updateSplitLine}
             onSaveSplits={saveSplits}
+            splitReceivedTarget={splitReceivedTarget}
+            splitCategoryMode={splitCategoryMode}
+            splitSaveHint={splitSaveHint}
           />
         )}
       </CardContentWrapper>

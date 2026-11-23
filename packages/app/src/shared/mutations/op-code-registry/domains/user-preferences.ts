@@ -12,7 +12,8 @@ type UserMetaGetter =
   | 'getInlineTransactionEntry'
   | 'getCompactTransactionRows'
   | 'getCompactBudgetRows'
-  | 'getSameDayTransactionOrder';
+  | 'getSameDayTransactionOrder'
+  | 'getShowTransactionTime';
 
 /** Undo for single-value preference setters: re-issue the op with the old value. */
 function preferenceUndo(op: string, getter: UserMetaGetter): NonNullable<OpCodeEntry['undo']> {
@@ -199,5 +200,19 @@ export const userPreferenceOps = {
       'userPreferences.setSameDayTransactionOrder',
       'getSameDayTransactionOrder'
     ),
+  },
+  'userPreferences.setShowTransactionTime': {
+    execute: async (args) => {
+      const services = S() as {
+        userMeta?: { setShowTransactionTime(value: boolean): void };
+      };
+      if (!services.userMeta) {
+        throw new Error('userMeta service not available');
+      }
+      services.userMeta.setShowTransactionTime(args.value as boolean);
+      return { success: true };
+    },
+    invalidates: [['showTransactionTime'], ['userPreferences']],
+    undo: preferenceUndo('userPreferences.setShowTransactionTime', 'getShowTransactionTime'),
   },
 } satisfies Record<string, OpCodeEntry>;

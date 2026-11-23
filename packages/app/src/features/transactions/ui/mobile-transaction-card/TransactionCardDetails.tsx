@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { CalculatorCell } from '@shared/ui/calculator-cell';
 import { DatePickerCell } from '@features/transactions/ui/cells/DatePickerCell';
+import { TimeInputCell } from '@features/transactions/ui/cells/TimeInputCell';
 import { CategorySelectCell } from '@features/transactions/ui/cells/CategorySelectCell';
 import { AccountSelectCell } from '@features/transactions/ui/cells/AccountSelectCell';
 import { SplitLinePayeeCell } from '@features/transactions/ui/cells/SplitLinePayeeCell';
@@ -33,9 +34,21 @@ import { asMilli } from '@shared/lib/currency/milli';
 import { withEditPrecision } from '@shared/lib/number-format';
 import { TransferRateDialog } from '@features/transactions/ui/transfer-rate/TransferRateDialog';
 import { validateTransactionExchangeRate } from '@features/transactions/lib/exchange-rate-validation';
-import { transferHasOffBudgetLeg } from '@features/transactions/lib/transfer-category';
+import {
+  splitLinePayeeLabel,
+  transferHasOffBudgetLeg,
+} from '@features/transactions/lib/transfer-category';
+import {
+  hasTransferRate,
+  type SplitLineCategoryMode,
+  type SplitTransferAccount,
+} from '@features/transactions/lib/split-transfer';
 import type { SplitLine } from './useMobileTransactionCardState';
 import { extractSplitFlows, type SplitLike } from '../desktop-table/table-utils';
+import {
+  SplitReceivedAmount,
+  SplitTransferCategoryLocked,
+} from '../split-transfer/SplitTransferFields';
 
 /** Combined split type supporting both TransactionSplit and SplitLine properties */
 interface SplitDisplayItem {
@@ -102,6 +115,11 @@ interface TransactionCardDetailsProps {
   onRemoveSplitLine: (idx: number) => void;
   onUpdateSplitLine: (idx: number, updates: Partial<SplitLine>) => void;
   onSaveSplits: () => void;
+  /** Cross-currency transfer lines: the account whose received amount the line asks for. */
+  splitReceivedTarget?: (line: SplitLine) => SplitTransferAccount | undefined;
+  splitCategoryMode?: (line: SplitLine) => SplitLineCategoryMode;
+  /** Why Save is disabled (a missing received amount), shown under the lines. */
+  splitSaveHint?: string | null;
 }
 
 export const TransactionCardDetails = React.memo(function TransactionCardDetails({
@@ -139,6 +157,9 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
   onRemoveSplitLine,
   onUpdateSplitLine,
   onSaveSplits,
+  splitReceivedTarget,
+  splitCategoryMode,
+  splitSaveHint,
 }: TransactionCardDetailsProps) {
   const { t } = useLingui();
 
@@ -256,6 +277,11 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                 />
               </div>
             </div>
+            <TimeInputCell
+              value={transaction.Time}
+              onCommit={(time) => onCellCommit(transaction.ID, 'Time', time)}
+              className="border-0 bg-muted/30 text-sm shadow-none"
+            />
           </div>
         </div>
 
@@ -402,15 +428,24 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                     <div key={s.id ?? s.ID ?? idx} className="p-2 space-y-2">
                       <div className="flex items-start gap-2">
                         <div className="flex-1">
-                          {editSplits ? (
+                          {editSplits &&
+                          splitCategoryMode?.(s as SplitLine) === 'transfer-locked' ? (
+                            <SplitTransferCategoryLocked />
+                          ) : editSplits ? (
                             <SearchableCategorySelect
                               budgetId={selectedBudgetId || 0}
                               selectedCategoryId={s.category_id ?? s.CategoryID ?? null}
+                              // A line to an off-budget account keeps its transfer (spending).
                               onCategorySelect={(categoryId) =>
                                 onUpdateSplitLine(idx, {
                                   category_id: categoryId,
-                                  transfer_account_id: undefined,
+                                  ...(splitCategoryMode?.(s as SplitLine) === 'transfer-optional'
+                                    ? {}
+                                    : { transfer_account_id: undefined }),
                                 })
+                              }
+                              includeTransfers={
+                                splitCategoryMode?.(s as SplitLine) === 'transfer-optional'
                               }
                               placeholder={
                                 (s.transfer_account_id ?? s.TransferAccountID)
@@ -460,7 +495,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                           />
                         ) : (
                           <span className="text-xs text-muted-foreground block truncate">
-                            {s.payee || s.Payee || transaction.Payee || t`No payee`}
+                            {splitLinePayeeLabel(s, transaction.Payee) ?? t`No payee`}
                           </span>
                         )}
                       </div>
@@ -489,7 +524,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                           const value = flows[flow];
                           return (
                             <div key={flow} className="space-y-1">
-                              <div className="text-[10px] capitalize text-muted-foreground">
+                              <div className="text-[0.625rem] capitalize text-muted-foreground">
                                 {flow}
                               </div>
                               {editSplits ? (
@@ -529,6 +564,24 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                           );
                         })}
                       </div>
+                      {(() => {
+                        const target = editSplits
+                          ? splitReceivedTarget?.(s as SplitLine)
+                          : undefined;
+                        return target ? (
+                          <SplitReceivedAmount
+                            target={target}
+                            lineIsInflow={Number(s.inflow) > 0}
+                            value={(s as SplitLine).received_amount}
+                            onCommit={(value) =>
+                              onUpdateSplitLine(idx, {
+                                received_amount: value || null,
+                                received_auto: false,
+                              })
+                            }
+                          />
+                        ) : null;
+                      })()}
                     </div>
                   )
                 )
@@ -540,6 +593,12 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                 <Button variant="outline" size="sm" onClick={onAddSplitLine}>
                   <Trans>+ Line</Trans>
                 </Button>
+              </div>
+            )}
+
+            {editSplits && splitSaveHint && (
+              <div className="px-2 text-xs text-destructive" data-testid="split-save-hint">
+                {splitSaveHint}
               </div>
             )}
 
@@ -589,7 +648,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
           </div>
         </div>
 
-        {transaction.TransferID && (
+        {hasTransferRate(transaction.TransferID) && (
           <div>
             <TransferRateDialog transferId={transaction.TransferID} />
           </div>
@@ -627,7 +686,7 @@ export const TransactionCardDetails = React.memo(function TransactionCardDetails
                     />
                   </div>
                   {!!transaction.ExchangeRateOverride && (
-                    <span className="text-[11px] text-primary flex-shrink-0">
+                    <span className="text-[0.6875rem] text-primary flex-shrink-0">
                       <Trans>manual</Trans>
                     </span>
                   )}

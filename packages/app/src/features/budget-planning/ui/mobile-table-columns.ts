@@ -25,7 +25,7 @@ export const MOBILE_TABLE_GRID = 'grid grid-cols-[minmax(0,1fr)_auto_auto] gap-x
 // before: the label, styled like the header; after: the widest amount,
 // styled like the boldest amount cell (group totals).
 const SIZER_LINES =
-  'before:block before:h-0 before:overflow-hidden before:invisible before:whitespace-nowrap before:text-[9px] before:font-medium before:uppercase before:tracking-wider after:block after:h-0 after:overflow-hidden after:invisible after:whitespace-nowrap after:text-[11px] after:font-semibold after:normal-case after:tracking-normal after:tabular-nums';
+  'before:block before:h-0 before:overflow-hidden before:invisible before:whitespace-nowrap before:text-[0.5625rem] before:font-medium before:uppercase before:tracking-wider after:block after:h-0 after:overflow-hidden after:invisible after:whitespace-nowrap after:text-[0.6875rem] after:font-semibold after:normal-case after:tracking-normal after:tabular-nums';
 
 export const MOBILE_TABLE_ALLOCATED_CELL = `${SIZER_LINES} before:content-[var(--budget-col-allocated-label)] after:content-[var(--budget-col-allocated-value)]`;
 

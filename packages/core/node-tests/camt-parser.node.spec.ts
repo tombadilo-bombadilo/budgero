@@ -26,6 +26,8 @@ describe('parseCamt', () => {
 
     expect(stmt.transactions[0]).toEqual({
       date: '2010-10-18',
+      // The booking date is a <DtTm> with a real time.
+      time: '13:15',
       amount: '105678.50',
       currency: 'SEK',
       payee: 'MUELLER',
@@ -39,6 +41,7 @@ describe('parseCamt', () => {
     // negative because of CdtDbtInd=DBIT.
     expect(stmt.transactions[1]).toEqual({
       date: '2010-10-18',
+      time: '10:15',
       amount: '-200000',
       currency: 'SEK',
       payee: undefined,

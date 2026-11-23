@@ -9,6 +9,7 @@
 import type { ColumnMapping } from './types.js';
 import { getLocalDateString } from '../../utils/date.js';
 import { clock } from '../../utils/clock.js';
+import { capturedTimeOfDay } from '../../utils/time-of-day.js';
 
 const DELIMITER_CANDIDATES = [',', ';', '\t', '|'] as const;
 type SupportedDelimiter = (typeof DELIMITER_CANDIDATES)[number];
@@ -161,6 +162,12 @@ export interface ParsedImportDate {
   ok: boolean;
   /** True when the input was empty/whitespace (distinct from present-but-garbage). */
   empty: boolean;
+  /**
+   * Time of day the cell carried ('HH:MM'), read the same way as `date` so
+   * both describe the same day; null when there is none or it is a
+   * placeholder (see parseImportTime).
+   */
+  time?: string | null;
 }
 
 /**
@@ -196,7 +203,13 @@ export function parseDateDetailed(
   }
 
   const trimmed = dateStr.trim();
-  const found = (date: string): ParsedImportDate => ({ date, ok: true, empty: false });
+  // The written date: its trailing time is the written one too.
+  const found = (date: string, time = parseImportTime(trimmed, true)): ParsedImportDate => ({
+    date,
+    ok: true,
+    empty: false,
+    ...(time ? { time } : {}),
+  });
 
   // 1) Try the configured format first (requires a year).
   const formatted = parseWithFormat(trimmed, dateFormat);
@@ -231,7 +244,13 @@ export function parseDateDetailed(
   if (!/^\d+$/.test(trimmed)) {
     const date = new Date(trimmed);
     if (!isNaN(date.getTime())) {
-      return found(getLocalDateString(date));
+      // Date and time from the same local instant, so they can't land on
+      // different days (a "…Z" timestamp read in another zone).
+      const hasTime = /\d{1,2}:\d{2}/.test(trimmed);
+      return found(
+        getLocalDateString(date),
+        hasTime ? capturedTimeOfDay(date.getHours(), date.getMinutes(), date.getSeconds()) : null
+      );
     }
   }
 
@@ -342,6 +361,33 @@ export function dateStringLacksYear(dateStr: string): boolean {
  */
 const TRAILING_TIME_RE =
   /[T\s]+\d{1,2}:\d{2}(?::\d{2})?(?:[.,]\d+)?\s*(?:[AP]\.?M\.?)?\s*(?:Z|GMT|UTC|[+-]\d{2}:?\d{2})?$/i;
+
+const TIME_PART = String.raw`(\d{1,2}):(\d{2})(?::(\d{2}))?(?:[.,]\d+)?\s*([AP])?\.?(?:M\.?)?\s*(?:Z|GMT|UTC|[+-]\d{2}:?\d{2})?`;
+const TIME_CELL_RE = new RegExp(`^${TIME_PART}$`, 'i');
+const TRAILING_TIME_PART_RE = new RegExp(`[T\\s]+${TIME_PART}$`, 'i');
+
+/**
+ * The time of day in an import cell, as 'HH:MM': a time cell ("14:30",
+ * "2:30 PM", "14:30:15") or a date cell with a trailing time ("31/01/2024
+ * 14:30", "2024-01-31T14:30:00Z"). The time is taken as written (no time-zone
+ * conversion). Null when there is none, or when it is a placeholder
+ * (00:00:00 or 12:00:00, which exports put on date-only rows).
+ */
+export function parseImportTime(cell: string | undefined, dateCell = false): string | null {
+  const trimmed = (cell ?? '').trim();
+  if (!trimmed) return null;
+  const match =
+    (dateCell ? TRAILING_TIME_PART_RE : TIME_CELL_RE).exec(trimmed) ??
+    (dateCell ? null : TRAILING_TIME_PART_RE.exec(trimmed));
+  if (!match) return null;
+  let hours = Number(match[1]);
+  const meridiem = match[4]?.toUpperCase();
+  if (meridiem) {
+    if (hours < 1 || hours > 12) return null;
+    hours = (hours % 12) + (meridiem === 'P' ? 12 : 0);
+  }
+  return capturedTimeOfDay(hours, match[2], match[3] ?? 0);
+}
 
 /**
  * Turn the separated fields of a date into three numbers, in the same order
@@ -515,6 +561,20 @@ export function detectColumnMapping(headers: string[]): Partial<ColumnMapping> {
   const accountHeaders = ['account', 'account name', 'konto', 'compte', 'cuenta', 'rekening'];
   const accountIndex = lowerHeaders.findIndex((h) => accountHeaders.includes(h.trim()));
   if (accountIndex !== -1) mapping.account = headers[accountIndex];
+
+  // Exact names: a "Date/Time" column is the date column (its time is read from it).
+  const timeHeaders = [
+    'time',
+    'transaction time',
+    'booking time',
+    'uhrzeit',
+    'zeit',
+    'heure',
+    'hora',
+    'tijd',
+  ];
+  const timeIndex = lowerHeaders.findIndex((h) => timeHeaders.includes(h.trim()));
+  if (timeIndex !== -1 && headers[timeIndex] !== mapping.date) mapping.time = headers[timeIndex];
 
   return mapping;
 }

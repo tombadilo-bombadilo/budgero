@@ -236,7 +236,7 @@ export function UncategorizedTransactionsCard({
                           <Tag className="h-3 w-3 sm:h-4 sm:w-4 shrink-0 text-muted-foreground" />
                           <span className="truncate">{memo}</span>
                         </div>
-                        <div className="truncate text-[10px] sm:text-xs text-muted-foreground">
+                        <div className="truncate text-[0.625rem] sm:text-xs text-muted-foreground">
                           {dateLabel} • {accountName}
                         </div>
                       </div>
@@ -251,7 +251,7 @@ export function UncategorizedTransactionsCard({
                         </span>
                         <Badge
                           variant="outline"
-                          className="text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0 sm:py-0.5"
+                          className="text-[0.625rem] sm:text-xs px-1.5 sm:px-2.5 py-0 sm:py-0.5"
                         >
                           <Trans>Uncategorised</Trans>
                         </Badge>

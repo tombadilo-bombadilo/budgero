@@ -386,6 +386,8 @@ const KINDS: [string, number][] = [
   ['goals.create', 1],
   ['goals.update', 1],
   ['goals.delete', 1],
+  ['goals.setFrom', 1],
+  ['goals.endFrom', 1],
   // reports / dashboards / scenarios
   ['reports.create', 1],
   ['reports.update', 1],
@@ -430,6 +432,7 @@ const KINDS: [string, number][] = [
   ['userPreferences.setCompactTransactionRows', 1],
   ['userPreferences.setCompactBudgetRows', 1],
   ['userPreferences.setSameDayTransactionOrder', 1],
+  ['userPreferences.setShowTransactionTime', 1],
   ['budgets.updateGoalFundingSettings', 1],
   ['budgets.updateName', 1],
   ['budgets.updateIcon', 1],
@@ -537,6 +540,9 @@ export function realize(device: Device, intent: Intent): OpCall | null {
           outflow: d % 5 === 0 ? 0 : amount,
           labelId: d % 7 === 0 ? (ids(device, 'SELECT ID FROM labels')[0] ?? null) : null,
           ...(acc.Currency !== 'USD' && f ? { exchangeRateOverride: 1 + (a % 20) / 100 } : {}),
+          ...(a % 3 === 0
+            ? { time: `${String(a % 24).padStart(2, '0')}:${String(d % 60).padStart(2, '0')}` }
+            : {}),
         },
       };
     }
@@ -666,6 +672,7 @@ export function realize(device: Device, intent: Intent): OpCall | null {
           'LabelID',
           'AccountID',
           'ExchangeRate',
+          'Time',
         ],
         b
       )!;
@@ -679,6 +686,7 @@ export function realize(device: Device, intent: Intent): OpCall | null {
         LabelID: f ? (ids(device, 'SELECT ID FROM labels')[0] ?? null) : null,
         AccountID: pick(accountIds, c),
         ExchangeRate: 0.9 + (c % 30) / 100,
+        Time: f ? '' : `${String(c % 24).padStart(2, '0')}:${String(a % 60).padStart(2, '0')}`,
       };
       if (column === 'ExchangeRate') {
         // The rate cell is only editable on foreign-currency rows.
@@ -1283,6 +1291,32 @@ export function realize(device: Device, intent: Intent): OpCall | null {
           }
         : null;
     }
+    case 'goals.setFrom': {
+      const categoryId = pick(userCats, a);
+      if (!categoryId) return null;
+      return {
+        op: k,
+        payload: {
+          categoryId,
+          fromMonth: monthOf(c),
+          toMonth: b % 3 === 0 ? monthOf(c) : null,
+          goalType: 'monthly',
+          target: amount * 10,
+          startDate: `${monthOf(c)}-01`,
+          endDate: '',
+          purpose: 'spending',
+          recurring: false,
+          cycleMonths: null,
+        },
+      };
+    }
+    case 'goals.endFrom': {
+      const goal = pick(
+        rows<{ CategoryID: number }>(device, 'SELECT DISTINCT CategoryID FROM goals ORDER BY 1'),
+        a
+      );
+      return goal ? { op: k, payload: { categoryId: goal.CategoryID, month: monthOf(c) } } : null;
+    }
     case 'goals.delete': {
       const goal = pick(
         rows<{ ID: number; CategoryID: number }>(
@@ -1582,6 +1616,7 @@ export function realize(device: Device, intent: Intent): OpCall | null {
     case 'userPreferences.setInlineTransactionEntry':
     case 'userPreferences.setCompactTransactionRows':
     case 'userPreferences.setCompactBudgetRows':
+    case 'userPreferences.setShowTransactionTime':
       return { op: k, payload: { value: f } };
     case 'budgets.updateGoalFundingSettings':
       return {

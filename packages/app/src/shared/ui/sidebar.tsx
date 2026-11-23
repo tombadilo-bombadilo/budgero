@@ -13,17 +13,41 @@ import { cn } from '@shared/lib/utils';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Separator } from '@shared/ui/separator';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@shared/ui/sheet';
+import {
+  Sheet,
+  SheetBackdrop,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@shared/ui/sheet';
 import { Skeleton } from '@shared/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/ui/tooltip';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = '20rem';
+/** Width of a sidebar the user pinned on a screen below the tablet breakpoint. */
+const SIDEBAR_WIDTH_PINNED_NARROW = '16rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
 const SIDEBAR_WIDTH_ICON = '3rem';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
-const SIDEBAR_TABLET_BREAKPOINT = 1600;
+export const SIDEBAR_TABLET_BREAKPOINT = 1600;
+/**
+ * Below the tablet breakpoint the sidebar slides out, unless the user pinned
+ * it. Pinning works from this width up: with the narrow pinned sidebar the
+ * page keeps at least 1024px, which the desktop Planning layout needs.
+ */
+export const SIDEBAR_PIN_MIN_WIDTH = 1280;
+
+/**
+ * The pinning threshold at a text size scale: the pinned sidebar is 16rem, so
+ * it grows with the root font size and the threshold must too (1280px at
+ * 100%, 1440px at 112.5%, 1600px at 125%).
+ */
+export function sidebarPinMinWidth(textScale = 1): number {
+  return Math.round(SIDEBAR_PIN_MIN_WIDTH * textScale);
+}
 
 type SidebarContextProps = {
   state: 'expanded' | 'collapsed';
@@ -31,7 +55,12 @@ type SidebarContextProps = {
   setOpen: (open: boolean) => void;
   openMobile: boolean;
   setOpenMobile: (open: boolean) => void;
+  /** The sidebar is a slide-out sheet (narrow screen, not pinned). */
   isMobile: boolean;
+  /** The screen is narrow enough to slide out but wide enough to pin. */
+  canPin: boolean;
+  /** Pinned by the user and shown inline on a narrow screen. */
+  pinned: boolean;
   toggleSidebar: () => void;
 };
 
@@ -50,6 +79,8 @@ function SidebarProvider({
   defaultOpen = true,
   open: openProp,
   onOpenChange: setOpenProp,
+  pinned: pinnedProp = false,
+  pinMinWidth = SIDEBAR_PIN_MIN_WIDTH,
   className,
   style,
   children,
@@ -58,9 +89,20 @@ function SidebarProvider({
   defaultOpen?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Keep the sidebar inline below the tablet breakpoint (from SIDEBAR_PIN_MIN_WIDTH). */
+  pinned?: boolean;
+  /** Narrowest window the sidebar can be pinned in (see sidebarPinMinWidth). */
+  pinMinWidth?: number;
 }) {
-  const isMobile = useIsMobile(SIDEBAR_TABLET_BREAKPOINT);
+  const isNarrow = useIsMobile(SIDEBAR_TABLET_BREAKPOINT);
+  const isTooNarrowToPin = useIsMobile(pinMinWidth);
+  const canPin = isNarrow && !isTooNarrowToPin;
+  const pinned = canPin && pinnedProp;
+  const isMobile = isNarrow && !pinned;
   const [openMobile, setOpenMobile] = React.useState(false);
+  // Pinning (or widening the window) turns the sheet into the inline sidebar;
+  // don't leave it marked open for the next time it slides out.
+  if (!isMobile && openMobile) setOpenMobile(false);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
@@ -107,11 +149,13 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
+      canPin,
+      pinned,
       openMobile,
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar]
+    [state, open, setOpen, isMobile, canPin, pinned, openMobile, setOpenMobile, toggleSidebar]
   );
 
   return (
@@ -121,7 +165,7 @@ function SidebarProvider({
           data-slot="sidebar-wrapper"
           style={
             {
-              '--sidebar-width': SIDEBAR_WIDTH,
+              '--sidebar-width': pinned ? SIDEBAR_WIDTH_PINNED_NARROW : SIDEBAR_WIDTH,
               '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
               ...style,
             } as React.CSSProperties
@@ -152,6 +196,7 @@ function Sidebar({
   collapsible?: 'offcanvas' | 'icon' | 'none';
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const returnFocusRef = React.useRef<HTMLElement | null>(null);
 
   if (collapsible === 'none') {
     return (
@@ -170,18 +215,37 @@ function Sidebar({
 
   if (isMobile) {
     return (
-      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+      // Not modal: a modal sheet locks page scroll and hides the page from assistive
+      // tech by restyling the whole document, which made opening it visibly lag on
+      // large pages. It still closes on Escape, an outside press or focus leaving it.
+      <Sheet open={openMobile} onOpenChange={setOpenMobile} modal={false} {...props}>
         <SheetContent
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) overscroll-contain p-0 ease-out data-[state=closed]:duration-150 data-[state=open]:duration-200 [&>button]:hidden"
+          withOverlay={false}
+          backdrop={
+            <SheetBackdrop
+              open={openMobile}
+              className="data-[state=closed]:duration-150 data-[state=open]:duration-200"
+            />
+          }
           style={
             {
               '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
             } as React.CSSProperties
           }
           side={side}
+          onOpenAutoFocus={() => {
+            returnFocusRef.current =
+              document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          }}
+          onCloseAutoFocus={(event) => {
+            // A non-modal sheet only hands focus back to a Radix trigger, and ours isn't one.
+            event.preventDefault();
+            if (document.activeElement === document.body) returnFocusRef.current?.focus();
+          }}
         >
           <SheetHeader className="sr-only">
             <SheetTitle>

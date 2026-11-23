@@ -184,7 +184,7 @@ export function EnableBankingSetupCard({ budgetId }: { budgetId: number }) {
           </Button>
         </div>
 
-        <p className="flex items-start gap-1.5 text-[11px] text-muted-foreground">
+        <p className="flex items-start gap-1.5 text-[0.6875rem] text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5 shrink-0 mt-px" />
           <Trans>
             The key is stored encrypted inside this budget and is never sent anywhere else. Requests

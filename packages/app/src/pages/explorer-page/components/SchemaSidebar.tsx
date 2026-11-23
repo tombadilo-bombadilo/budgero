@@ -116,16 +116,16 @@ export const SchemaSidebar = memo(
                     {table.name}
                   </span>
                   {table.name.toLowerCase() === 'transactions_analytics' ? (
-                    <Badge variant="outline" className="text-[9px] px-1 py-0 uppercase">
+                    <Badge variant="outline" className="text-[0.5625rem] px-1 py-0 uppercase">
                       <Trans>Analytics</Trans>
                     </Badge>
                   ) : table.objectType === 'view' ? (
-                    <Badge variant="outline" className="text-[9px] px-1 py-0 uppercase">
+                    <Badge variant="outline" className="text-[0.5625rem] px-1 py-0 uppercase">
                       <Trans>View</Trans>
                     </Badge>
                   ) : null}
                   {table.rowCount !== null && (
-                    <Badge variant="secondary" className="ml-auto text-[10px] px-1">
+                    <Badge variant="secondary" className="ml-auto text-[0.625rem] px-1">
                       {table.rowCount}
                     </Badge>
                   )}
@@ -147,7 +147,7 @@ export const SchemaSidebar = memo(
                         <span className="font-mono">{column.name}</span>
                         <span className="text-muted-foreground ml-auto">{column.type}</span>
                         {column.primaryKey && (
-                          <Badge variant="outline" className="text-[9px] px-1 py-0">
+                          <Badge variant="outline" className="text-[0.5625rem] px-1 py-0">
                             PK
                           </Badge>
                         )}

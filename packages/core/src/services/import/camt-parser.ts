@@ -23,9 +23,13 @@
  * notifications, balance-summary-only reports (handled — produces a
  * statement with zero transactions, the upload step rejects it).
  */
+import { timeFromIsoDateTime } from '../../utils/time-of-day.js';
+
 export interface ParsedCamtTransaction {
   /** Booking date (preferred) or value date, ISO YYYY-MM-DD. */
   date: string;
+  /** Time of day ('HH:MM' as written) when that date is a <DtTm> with a real time. */
+  time?: string;
   /** Signed amount string. Negative when CdtDbtInd=DBIT. */
   amount: string;
   /** Per-entry currency from <Amt Ccy="..."> attribute. */
@@ -142,8 +146,11 @@ function parseEntry(entry: string): ParsedCamtTransaction | null {
   if (!rawAmount) return null;
   const signedAmount = isDebit && !rawAmount.startsWith('-') ? `-${rawAmount}` : rawAmount;
 
-  const date = extractDate(entry, 'BookgDt') ?? extractDate(entry, 'ValDt') ?? '';
+  // Date and time come from the same element: booking date, else value date.
+  const dateWrapper = extractDate(entry, 'BookgDt') ? 'BookgDt' : 'ValDt';
+  const date = extractDate(entry, dateWrapper) ?? '';
   if (!date) return null;
+  const time = extractTime(entry, dateWrapper);
 
   // Memo + payee + reference live inside NtryDtls/TxDtls. Look across
   // the whole entry — first non-empty wins. For batched entries with
@@ -164,6 +171,7 @@ function parseEntry(entry: string): ParsedCamtTransaction | null {
 
   return {
     date,
+    ...(time ? { time } : {}),
     amount: signedAmount,
     currency: amtAttr.attr,
     payee,
@@ -186,6 +194,17 @@ function extractDate(entry: string, wrapperTag: string): string | undefined {
   // Strip time portion. CAMT dates are ISO-8601 calendar order so the
   // first 10 chars are always YYYY-MM-DD.
   return raw.slice(0, 10);
+}
+
+/**
+ * The time in a <DtTm> date ('HH:MM' as written), null for <Dt> and
+ * placeholder times. Reads the same element extractDate takes the date from
+ * (<Dt> first), so the two never disagree.
+ */
+function extractTime(entry: string, wrapperTag: string): string | null {
+  const wrapper = firstBlock(entry, wrapperTag);
+  if (!wrapper || firstText(wrapper, 'Dt')) return null;
+  return timeFromIsoDateTime(firstText(wrapper, 'DtTm'));
 }
 
 function firstBlock(xml: string, tag: string): string | undefined {
@@ -230,6 +249,7 @@ function findFirstNonEmpty(xml: string, tag: string): string | undefined {
 
 export const CAMT_HEADERS = [
   'Date',
+  'Time',
   'Amount',
   'Payee',
   'Memo',
@@ -263,6 +283,7 @@ export function camtToImportRows(parsed: ParsedCamt): CamtImportRows {
       if (!currency && t.currency) currency = t.currency;
       rows.push({
         Date: t.date,
+        Time: t.time ?? '',
         Amount: t.amount,
         Payee: t.payee ?? '',
         Memo: t.memo ?? '',

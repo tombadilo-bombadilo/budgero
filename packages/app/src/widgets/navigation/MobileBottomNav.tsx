@@ -37,6 +37,8 @@ import {
   DropdownMenuTrigger,
 } from '@shared/ui/dropdown-menu';
 import { AddAccountDialog } from '@features/account-management/ui/AddAccountDialog';
+import { pickShortList } from '@features/account-management/model/account-short-list';
+import { useAccountShortList } from '@features/account-management/model/useAccountShortList';
 import { Badge } from '@shared/ui/badge';
 import { useUncategorizedTransactions } from '@entities/transaction/api/useUncategorizedTransactions';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
@@ -60,6 +62,7 @@ export function MobileBottomNav() {
   const lastUsedStorageKey = getLastUsedTransactionStorageKey(spaceId, selectedBudget?.ID);
   const { data: accountsData = [] } = useAccounts(selectedBudget?.ID || 0);
   const { data: uncategorizedData } = useUncategorizedTransactions(selectedBudget?.ID || 0);
+  const { pinnedIds: pinnedAccountIds } = useAccountShortList();
   const [addTransactionOpen, setAddTransactionOpen] = useState(false);
   const { handleAddTransaction, handleAddTransfer } = useAddTransactionHandler({
     onDialogClose: () => setAddTransactionOpen(false),
@@ -184,12 +187,15 @@ export function MobileBottomNav() {
 
   // The mobile accounts dropdown is a quick-jump, not a browser: cap each section
   // and point to the searchable All Accounts page when there are more than fit.
+  // Accounts pinned to the short list (Settings → Appearance → Account order)
+  // replace a section's automatic pick, as in the desktop sidebar.
   const MOBILE_ACCOUNTS_PER_SECTION = 4;
-  const displayedOnBudget = onBudgetAccounts.slice(0, MOBILE_ACCOUNTS_PER_SECTION);
-  const displayedOffBudget = offBudgetAccounts.slice(0, MOBILE_ACCOUNTS_PER_SECTION);
+  const firstAccounts = <T,>(list: T[]) => list.slice(0, MOBILE_ACCOUNTS_PER_SECTION);
+  const displayedOnBudget = pickShortList(onBudgetAccounts, pinnedAccountIds, firstAccounts);
+  const displayedOffBudget = pickShortList(offBudgetAccounts, pinnedAccountIds, firstAccounts);
   const accountsTruncated =
-    onBudgetAccounts.length > MOBILE_ACCOUNTS_PER_SECTION ||
-    offBudgetAccounts.length > MOBILE_ACCOUNTS_PER_SECTION;
+    displayedOnBudget.length < onBudgetAccounts.length ||
+    displayedOffBudget.length < offBudgetAccounts.length;
   const totalAccountsCount = onBudgetAccounts.length + offBudgetAccounts.length;
 
   const defaultAccountId =
@@ -268,7 +274,7 @@ export function MobileBottomNav() {
 
   const getTriggerLabelClassName = (isActive: boolean) =>
     cn(
-      'max-w-full whitespace-nowrap text-center text-[11px] font-medium leading-4 transition-colors',
+      'max-w-full whitespace-nowrap text-center text-[0.6875rem] font-medium leading-4 transition-colors',
       isActive ? 'text-foreground' : 'text-muted-foreground'
     );
 
@@ -317,7 +323,7 @@ export function MobileBottomNav() {
             <span className="truncate">{account.Name}</span>
           </span>
           {uncategorizedCount > 0 && (
-            <Badge variant="destructive" className="h-4 px-1 text-[10px]">
+            <Badge variant="destructive" className="h-4 px-1 text-[0.625rem]">
               {uncategorizedCount}
             </Badge>
           )}
@@ -353,7 +359,7 @@ export function MobileBottomNav() {
                     >
                       <item.icon className="h-6 w-6 text-foreground" />
                     </button>
-                    <span className="max-w-full whitespace-nowrap text-center text-[11px] leading-4 text-muted-foreground font-medium">
+                    <span className="max-w-full whitespace-nowrap text-center text-[0.6875rem] leading-4 text-muted-foreground font-medium">
                       {item.title}
                     </span>
                   </div>
@@ -619,7 +625,7 @@ export function MobileBottomNav() {
                   badge: uncategorizedData && uncategorizedData.total > 0 && (
                     <Badge
                       variant="destructive"
-                      className="absolute -top-1 -right-1 h-4 min-w-[1rem] px-1 text-[10px] font-semibold"
+                      className="absolute -top-1 -right-1 h-4 min-w-[1rem] px-1 text-[0.625rem] font-semibold"
                     >
                       {uncategorizedData.total}
                     </Badge>

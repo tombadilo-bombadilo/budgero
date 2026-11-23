@@ -33,6 +33,7 @@ import { moveSplitLinesOutOfCategories } from '../recurring/split-refs.js';
 const TX_ROW_COLUMNS = `
         t.ID,
         t.Date,
+        t.Time,
         t.CategoryID,
         CASE WHEN EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)
              THEN 'Split'
@@ -55,18 +56,34 @@ const TX_ROW_COLUMNS = `
         t.TransferID,
         a.OnBudget AS AccountOnBudget,
         transfer_partner_account.OnBudget AS TransferAccountOnBudget,
-        transfer_partner_account.Name AS TransferAccountName`;
+        transfer_partner_account.Name AS TransferAccountName,
+        CASE WHEN COALESCE(t.Payee, '') = ''
+              AND EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)
+             THEN (
+               SELECT json_group_array(json_array(line.Payee, line.TransferAccountName, line.Sent))
+                 FROM (SELECT s.Payee, sa.Name AS TransferAccountName,
+                              COALESCE(s.OutflowNative, s.OutflowConverted, 0) > 0 AS Sent
+                         FROM transaction_splits s
+                         LEFT JOIN accounts sa ON sa.ID = s.TransferAccountID
+                        WHERE s.TransactionID = t.ID
+                        ORDER BY s.OrderIndex, s.ID) line)
+             END AS SplitPayees`;
 
 /**
  * Joins the first other leg (lowest ID) of a linked transfer and its account,
  * as `transfer_partner_account`, for TX_ROW_COLUMNS. One indexed lookup per row:
  * the `!= ''` term lets SQLite use the partial idx_transactions_transfer_id.
+ * A split's mirror rows (`split_transfer_<parent ID>_<date>`) share their key
+ * with each other, not with the parent, so their partner is the parent itself.
  */
 const TX_ROW_JOINS = `
       LEFT JOIN categories c ON t.CategoryID = c.ID
       LEFT JOIN labels l ON t.LabelID = l.ID
       LEFT JOIN accounts a ON t.AccountID = a.ID
-      LEFT JOIN transactions transfer_partner ON transfer_partner.ID = (
+      LEFT JOIN transactions transfer_partner ON transfer_partner.ID = CASE
+        WHEN t.TransferID GLOB 'split_transfer_[0-9]*'
+        THEN CAST(substr(t.TransferID, 16) AS INTEGER)
+        ELSE (
         SELECT p.ID
           FROM transactions p
           JOIN accounts pa ON pa.ID = p.AccountID
@@ -74,7 +91,7 @@ const TX_ROW_JOINS = `
            AND p.TransferID != ''
            AND p.ID != t.ID
          ORDER BY p.ID
-         LIMIT 1)
+         LIMIT 1) END
       LEFT JOIN accounts transfer_partner_account ON transfer_partner_account.ID = transfer_partner.AccountID`;
 
 const SQLITE_BIND_CHUNK_SIZE = 500;
@@ -204,7 +221,8 @@ export class TransactionQueries {
     exchangeRateOverride = false,
     excludeFromReadyToAssign = false,
     cleared = false,
-    id?: number
+    id?: number,
+    time: string | null = null
   ): number {
     const result = run(
       this.db,
@@ -212,8 +230,8 @@ export class TransactionQueries {
       INSERT INTO transactions (
         ID, InflowConverted, OutflowConverted, InflowNative, OutflowNative, CategoryID, AccountID,
         Date, Memo, Payee, BudgetID, RunningBalanceConverted, RunningBalanceNative, TransferID,
-        ExchangeRate, LabelID, ExchangeRateOverride, ExcludeFromReadyToAssign, Cleared
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ExchangeRate, LabelID, ExchangeRateOverride, ExcludeFromReadyToAssign, Cleared, Time
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
       id ?? null,
       inflow,
@@ -233,7 +251,8 @@ export class TransactionQueries {
       labelId ?? null,
       exchangeRateOverride ? 1 : 0,
       excludeFromReadyToAssign ? 1 : 0,
-      cleared ? 1 : 0
+      cleared ? 1 : 0,
+      time
     );
     return Number(result.lastInsertRowid);
   }
@@ -254,6 +273,7 @@ export class TransactionQueries {
         t.AccountID as AccountId,
         a.Name as AccountName,
         t.Date,
+        t.Time,
         t.CategoryID,
         CASE WHEN EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)
              THEN 'Split'
@@ -1981,6 +2001,33 @@ export class TransactionQueries {
     run(this.db, `UPDATE transactions SET Payee = ? WHERE ID = ?`, payee, transactionId);
   }
 
+  /**
+   * Set the time of day on rows: the row itself, its transfer partner (both
+   * legs share the time) and, for a split parent, its split-transfer mirrors.
+   */
+  updateTransactionTime(
+    transactionId: number,
+    transferId: string | null,
+    time: string | null
+  ): void {
+    run(this.db, `UPDATE transactions SET Time = ? WHERE ID = ?`, time, transactionId);
+    if (transferId && !transferId.startsWith('split_transfer_')) {
+      run(
+        this.db,
+        `UPDATE transactions SET Time = ? WHERE TransferID = ? AND TransferID != ''`,
+        time,
+        transferId
+      );
+    }
+    run(
+      this.db,
+      `UPDATE transactions SET Time = ?
+       WHERE TransferID != '' AND TransferID >= ? AND TransferID < ? AND TransferID GLOB ?`,
+      time,
+      ...splitMirrorRange(`split_transfer_${transactionId}_`)
+    );
+  }
+
   updateTransactionDate(transactionId: number, date: string): void {
     run(this.db, `UPDATE transactions SET Date = ? WHERE ID = ?`, date, transactionId);
   }
@@ -2320,6 +2367,7 @@ export class TransactionQueries {
         t.AccountID as AccountId,
         a.Name as AccountName,
         t.Date,
+        t.Time,
         t.CategoryID,
         c.Name as Category,
         t.LabelID,

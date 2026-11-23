@@ -136,7 +136,7 @@ const DateCard = memo(function DateCard({
               {format(parseISO(dateKey), 'EEE, MMM d')}
             </div>
             {dateKey > getTodayISO() && (
-              <Badge variant="outline" className="h-4 px-1 py-0 text-[10px] font-normal">
+              <Badge variant="outline" className="h-4 px-1 py-0 text-[0.625rem] font-normal">
                 <Trans>Upcoming</Trans>
               </Badge>
             )}
@@ -211,7 +211,7 @@ const TransactionRow = memo(function TransactionRow({
     >
       <div className="flex items-center justify-between py-2 px-2 rounded-md hover:bg-muted/40 cursor-pointer transition-colors group max-w-full overflow-hidden">
         <div className="flex-1 min-w-0 pr-2">
-          <div className="block max-w-[10rem] sm:max-w-[14rem] md:max-w-[18rem] lg:max-w-[22rem] text-[11px] leading-tight text-current truncate">
+          <div className="block max-w-[10rem] sm:max-w-[14rem] md:max-w-[18rem] lg:max-w-[22rem] text-[0.6875rem] leading-tight text-current truncate">
             {transaction.Memo || t`No memo`}
           </div>
           <div className="text-xs text-muted-foreground truncate">{transaction.Account}</div>

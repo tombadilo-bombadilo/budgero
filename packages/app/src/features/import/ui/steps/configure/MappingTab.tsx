@@ -22,6 +22,7 @@ import type {
   RawTableData,
 } from '@features/import/model/types';
 import { dateStringLacksYear } from '@budgero/core/browser';
+import { useRegisterDisplay } from '@shared/contexts/RegisterDisplayContext';
 
 interface SkipRowCheckboxProps {
   skipped: boolean;
@@ -71,6 +72,20 @@ export function MappingTab({
   onHeaderSelect,
 }: MappingTabProps) {
   const { t } = useLingui();
+  // Times are imported only while the register shows them (Settings →
+  // Appearance), so the Time column is offered only then.
+  const { showTime } = useRegisterDisplay();
+  const mappingFields = [
+    'date',
+    ...(showTime ? ['time'] : []),
+    'amount',
+    'inflow',
+    'outflow',
+    'payee',
+    'memo',
+    'account',
+    'category',
+  ];
 
   const handleColumnChange = (field: keyof ColumnMapping, value: string) => {
     onColumnMappingChange({
@@ -228,40 +243,38 @@ export function MappingTab({
         </AlertDescription>
       </Alert>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {['date', 'amount', 'inflow', 'outflow', 'payee', 'memo', 'account', 'category'].map(
-          (field) => (
-            <div key={field} className="space-y-2">
-              <Label htmlFor={field} className="capitalize">
-                {field}{' '}
-                {field === 'date'
-                  ? t`(Required)`
-                  : field === 'amount'
-                    ? t`(Required - or use InflowConverted/OutflowConverted)`
-                    : t`(Optional)`}
-              </Label>
-              <Select
-                value={columnMapping[field as keyof ColumnMapping] || 'none'}
-                onValueChange={(value) => handleColumnChange(field as keyof ColumnMapping, value)}
-              >
-                <SelectTrigger className="w-full min-w-0">
-                  <SelectValue placeholder={t`Select ${field} column`} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">
-                    <Trans>None</Trans>
-                  </SelectItem>
-                  {parsedData?.headers
-                    .filter((header) => header && header.trim())
-                    .map((header) => (
-                      <SelectItem key={header} value={header}>
-                        {header}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )
-        )}
+        {mappingFields.map((field) => (
+          <div key={field} className="space-y-2">
+            <Label htmlFor={field} className="capitalize">
+              {field}{' '}
+              {field === 'date'
+                ? t`(Required)`
+                : field === 'amount'
+                  ? t`(Required - or use InflowConverted/OutflowConverted)`
+                  : t`(Optional)`}
+            </Label>
+            <Select
+              value={columnMapping[field as keyof ColumnMapping] || 'none'}
+              onValueChange={(value) => handleColumnChange(field as keyof ColumnMapping, value)}
+            >
+              <SelectTrigger className="w-full min-w-0">
+                <SelectValue placeholder={t`Select ${field} column`} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">
+                  <Trans>None</Trans>
+                </SelectItem>
+                {parsedData?.headers
+                  .filter((header) => header && header.trim())
+                  .map((header) => (
+                    <SelectItem key={header} value={header}>
+                      {header}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ))}
       </div>
 
       {/* Default year — shown when the mapped Date column contains

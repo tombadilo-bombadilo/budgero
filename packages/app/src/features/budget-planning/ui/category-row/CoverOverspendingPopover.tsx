@@ -233,7 +233,7 @@ function CoverOverspendingEditor({
           disabled={sourceCategoryId === null}
         />
         {sourceCategoryId !== null && (
-          <div className="text-[11px] text-muted-foreground">
+          <div className="text-[0.6875rem] text-muted-foreground">
             <Trans>Max {formatAmount(maxCover)} — covering never puts the source in the red</Trans>
           </div>
         )}

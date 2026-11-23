@@ -28,6 +28,10 @@ vi.mock('@shared/store/useUiStore', () => ({
       desktopBudgetLayout: 'table',
       showHiddenCategories: false,
       setShowHiddenCategories: () => {},
+      planningPanelOpen: true,
+      setPlanningPanelOpen: () => {},
+      planningOverlayPanelOpen: false,
+      setPlanningOverlayPanelOpen: () => {},
     }),
 }));
 vi.mock('@features/budget-planning/ui/BudgetTable', () => ({
@@ -46,7 +50,10 @@ vi.mock('@features/budgeting/ui/ReadyToAssignHelpPopover', () => ({
 vi.mock('@features/budget-planning/ui/PlanningNumberAnimation', () => ({
   PlanningAnimatedNumber: () => null,
 }));
-vi.mock('@entities/goal/api/useGoals', () => ({ useGoals: () => ({ data: [] }) }));
+vi.mock('@entities/goal/api/useGoals', () => ({
+  useGoals: () => ({ data: [] }),
+  useGoalsForMonth: () => ({ data: [], allGoals: [] }),
+}));
 vi.mock('@features/budget-planning/lib/budget-transforms', () => ({
   transformBudgetRows: () => [],
 }));

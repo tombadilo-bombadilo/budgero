@@ -79,7 +79,7 @@ function GoalStatusBadge({ progress, formatter, className = '' }: GoalStatusBadg
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium shadow-sm',
+        'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[0.6875rem] font-medium shadow-sm',
         getStatusColor(progress.status),
         className
       )}
@@ -249,6 +249,8 @@ interface GoalCardProps {
   compact?: boolean;
   className?: string;
   highlightCreate?: boolean;
+  /** The months this goal applies to, when it doesn't apply to all of them. */
+  timeframeLabel?: string;
 }
 
 /**
@@ -267,6 +269,7 @@ export function GoalCard({
   compact = false,
   className,
   highlightCreate = false,
+  timeframeLabel,
 }: GoalCardProps) {
   const { t } = useLingui();
 
@@ -353,13 +356,13 @@ export function GoalCard({
         )}
       >
         <div className="flex flex-wrap items-center gap-0 text-foreground">
-          <div className="flex items-center gap-1 text-[11px] leading-tight font-medium md:text-xs md:flex-grow md:min-w-0 md:order-1">
+          <div className="flex items-center gap-1 text-[0.6875rem] leading-tight font-medium md:text-xs md:flex-grow md:min-w-0 md:order-1">
             {getGoalTypeIcon()}
             <span className="truncate">{getGoalTypeLabel()}</span>
             {cadenceLabel && (
               <Badge
                 variant="outline"
-                className="hidden text-[9px] uppercase tracking-wide md:inline-flex"
+                className="hidden text-[0.5625rem] uppercase tracking-wide md:inline-flex"
                 title={t`Repeats ${cadenceLabel}`}
               >
                 {cadenceLabel}
@@ -389,7 +392,7 @@ export function GoalCard({
             />
           </div>
 
-          <div className="hidden md:flex md:flex-wrap md:items-center md:gap-2 md:order-3 lg:order-2 md:text-[11px] leading-tight font-semibold text-muted-foreground dark:text-white md:basis-full lg:basis-auto">
+          <div className="hidden md:flex md:flex-wrap md:items-center md:gap-2 md:order-3 lg:order-2 md:text-[0.6875rem] leading-tight font-semibold text-muted-foreground dark:text-white md:basis-full lg:basis-auto">
             <span className="leading-tight">{roundedPercentage}%</span>
             <GoalStatusBadge
               progress={progress}
@@ -424,7 +427,7 @@ export function GoalCard({
               {cadenceLabel && (
                 <Badge
                   variant="outline"
-                  className="max-w-full shrink whitespace-normal text-left text-[9px] uppercase tracking-wide"
+                  className="max-w-full shrink whitespace-normal text-left text-[0.5625rem] uppercase tracking-wide"
                 >
                   <Trans>Repeats {cadenceLabel}</Trans>
                 </Badge>
@@ -568,6 +571,15 @@ export function GoalCard({
                   )}
               </div>
             </div>
+          )}
+
+          {timeframeLabel && (
+            <p
+              className="pt-2 border-t text-xs text-muted-foreground"
+              data-testid="goal-timeframe-label"
+            >
+              <Trans>Applies: {timeframeLabel}</Trans>
+            </p>
           )}
 
           {/* Explanation */}

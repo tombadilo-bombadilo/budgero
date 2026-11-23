@@ -1,6 +1,7 @@
 import { t } from '@lingui/core/macro';
 import {
   GoalCalculations,
+  goalsByCategoryForMonth,
   type GetMonthlyBudgetRow,
   type FundingSource,
   type DebtSource,
@@ -117,8 +118,9 @@ export function transformBudgetRows(
     return [];
   }
 
-  const goals = goalsData ?? [];
-  const goalMap = new Map(goals.map((g) => [g.CategoryID, g]));
+  // Every timeframe may be passed in (several per category): each row gets
+  // the goal of `currentMonth`.
+  const goalMap = goalsByCategoryForMonth(goalsData ?? [], currentMonth);
 
   const grouped = new Map<string, GetMonthlyBudgetRow[]>();
   for (const row of rows) {

@@ -9,7 +9,8 @@ import type {
   SimpleFINAccount,
   SimpleFINAccountSet,
 } from '@budgero/core/browser';
-import { executeMutationOp } from '@shared/mutations/op-code-registry';
+import { executeMutationOp, prepareMutationArgs } from '@shared/mutations/op-code-registry';
+import { BASE_MUTATION_FORMAT_VERSION, mutationFormatVersion } from '@budgero/runtime';
 import type { AppRuntime } from '@shared/runtime/app-runtime';
 import type { EnableBankingTransaction } from '../lib/enable-banking/client';
 import { fromSimpleFINAccount } from '../lib/provider';
@@ -19,6 +20,7 @@ import { isSyncDue, runBankSync, syncStart } from './run-bank-sync';
 const state = vi.hoisted(() => ({
   services: undefined as Services | undefined,
   applied: new Set<string>(),
+  sent: [] as { op: string; payload: Record<string, unknown> }[],
   remote: { errors: [], accounts: [] } as SimpleFINAccountSet,
   fetches: 0,
   failSimpleFIN: false,
@@ -37,6 +39,7 @@ vi.mock('@shared/runtime/mutation-router', () => ({
     spec: { op: string; payload: Record<string, unknown>; idempotencyKey?: string }
   ) => {
     if (spec.idempotencyKey) state.applied.add(spec.idempotencyKey);
+    state.sent.push({ op: spec.op, payload: spec.payload });
     return executeMutationOp(spec.op, spec.payload);
   },
 }));
@@ -108,6 +111,7 @@ describe('bank sync engine', () => {
     services = manager.getServices();
     state.services = services;
     state.applied.clear();
+    state.sent = [];
     state.fetches = 0;
     state.failSimpleFIN = false;
     state.eb = { rows: [], balance: '0.00', calls: [] };
@@ -170,6 +174,60 @@ describe('bank sync engine', () => {
     const coffee = rows.find((row) => row.OutflowNative === 4000)!;
     services.transactions.deleteTransaction(coffee.ID);
     expect((await runBankSync(runtime, budgetId)).imported).toBe(0);
+  });
+
+  it('keeps bank times only while times are shown, and only then needs format 7', async () => {
+    const accountId = await link();
+    const at = (time: string) => {
+      const [h, m, sec] = time.split(':').map(Number);
+      return Math.floor(new Date(2026, 8, 2, h, m, sec).getTime() / 1000);
+    };
+    state.remote = {
+      errors: [],
+      accounts: [
+        remoteAccount([
+          { id: 'm', posted: at('08:15:20'), amount: '-25.50', description: 'Grocer' },
+          { id: 'e', posted: at('19:42:05'), amount: '-4.00', description: 'Coffee' },
+        ]),
+      ],
+    };
+    const imports = async () => {
+      const ops = state.sent.filter((call) => call.op === 'transactions.import');
+      return Promise.all(
+        ops.map(async (call) => ({
+          time: call.payload.time,
+          format: mutationFormatVersion(call.op, await prepareMutationArgs(call.op, call.payload)),
+        }))
+      );
+    };
+
+    // Times hidden (the default): no time, the old format.
+    expect((await runBankSync(runtime, budgetId)).imported).toBe(2);
+    expect(await imports()).toEqual([
+      { time: undefined, format: BASE_MUTATION_FORMAT_VERSION },
+      { time: undefined, format: BASE_MUTATION_FORMAT_VERSION },
+    ]);
+    expect(services.transactions.getTransactionsByAccount(accountId).map((r) => r.Time)).toEqual([
+      null,
+      null,
+    ]);
+
+    // Times shown: a fresh account's rows come in with their times, format 7.
+    for (const row of services.transactions.getTransactionsByAccount(accountId)) {
+      services.transactions.deleteTransaction(row.ID);
+    }
+    services.userMeta.setShowTransactionTime(true);
+    state.sent = [];
+    state.applied.clear();
+    state.remote.accounts[0].transactions = [
+      { id: 'm2', posted: at('08:15:20'), amount: '-25.50', description: 'Grocer' },
+      { id: 'e2', posted: at('19:42:05'), amount: '-4.00', description: 'Coffee' },
+    ];
+    expect((await runBankSync(runtime, budgetId)).imported).toBe(2);
+    expect(await imports()).toEqual([
+      { time: '08:15', format: 7 },
+      { time: '19:42', format: 7 },
+    ]);
   });
 
   it('survives a bank that re-issues every transaction ID on each fetch', async () => {

@@ -212,7 +212,7 @@ export function PreviewStep({
                     <ImportStatusChip
                       status={row.duplicate.status}
                       data-status={row.duplicate.status}
-                      className="w-fit text-[11px] font-medium"
+                      className="w-fit text-[0.6875rem] font-medium"
                     >
                       {labels[row.duplicate.status]}
                     </ImportStatusChip>

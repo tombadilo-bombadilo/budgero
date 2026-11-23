@@ -9,6 +9,7 @@ import {
   useCompactTransactionRows,
   useInlineTransactionEntry,
   useSameDayTransactionOrder,
+  useShowTransactionTime,
 } from '@shared/hooks/useUserPreferences';
 
 export function PersistedAppearanceProvider({ children }: { children: ReactNode }) {
@@ -17,9 +18,10 @@ export function PersistedAppearanceProvider({ children }: { children: ReactNode 
   const { data: inlineTransactionEntry = false } = useInlineTransactionEntry();
   const { data: compactRows = false } = useCompactTransactionRows();
   const { data: sameDayOrder = 'newest' } = useSameDayTransactionOrder();
+  const { data: showTime = false } = useShowTransactionTime();
   const registerDisplay = useMemo(
-    () => ({ compactRows, sameDayOrder }),
-    [compactRows, sameDayOrder]
+    () => ({ compactRows, sameDayOrder, showTime }),
+    [compactRows, sameDayOrder, showTime]
   );
 
   return (
