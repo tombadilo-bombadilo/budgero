@@ -37,7 +37,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useThemePreset } from '@shared/contexts/ThemePresetContext';
 import { PLANNING_DESKTOP_BREAKPOINT } from '@features/budget-planning/lib/layout-breakpoint';
 import { BudgetTableSkeleton } from '@features/budget-planning/ui/BudgetTableSkeleton';
-import { useIsMobile } from '@shared/hooks/useIsMobile';
 import { cn } from '@shared/lib/utils';
 import { AccountOrderCard } from '@features/account-management/ui/AccountOrderCard';
 import { SettingsPageHeader } from '@pages/settings/SettingsPageHeader';
