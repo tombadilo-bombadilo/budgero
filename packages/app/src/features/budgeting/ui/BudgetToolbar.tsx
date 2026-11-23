@@ -302,20 +302,17 @@ export function BudgetToolbar({
                     title={
                       showHiddenCategories ? t`Hide hidden categories` : t`Show hidden categories`
                     }
+                    aria-pressed={showHiddenCategories}
                   >
                     {showHiddenCategories ? (
                       <>
                         <EyeOff className="h-3.5 w-3.5" />
-                        <span className="hidden xl:inline">
-                          <Trans>Hide hidden</Trans>
-                        </span>
+                        <Trans>Hide hidden</Trans>
                       </>
                     ) : (
                       <>
                         <Eye className="h-3.5 w-3.5" />
-                        <span className="hidden xl:inline">
-                          <Trans>Show hidden</Trans>
-                        </span>
+                        <Trans>Show hidden</Trans>
                       </>
                     )}
                   </Button>
