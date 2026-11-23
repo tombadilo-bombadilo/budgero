@@ -9015,14 +9015,14 @@ msgid "Enter new password (min 8 characters)"
 msgstr "Voer nieuw wachtwoord in (min. 8 tekens)"
 
 #. placeholder {0}: target.Name
-#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
+#: src/features/transactions/lib/split-transfer.ts
 msgid "Enter the amount received in {0}"
 msgstr "Voer het op {0} ontvangen bedrag in"
 
 #. placeholder {0}: target.Name
 #. placeholder {0}: transferAccountRecord.Name
+#: src/features/transactions/lib/split-transfer.ts
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
-#: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
 msgid "Enter the amount sent from {0}"
 msgstr "Voer het bedrag in dat vanaf {0} is verzonden"
 
@@ -20263,10 +20263,6 @@ msgstr "De eerste drie zijn er in twee soorten. Beschikbaarheid: het bedrag klaa
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "The goal counts as met (or on track) this month."
 msgstr "Het doel telt deze maand als gehaald (of op schema)."
-
-#: src/features/goal-management/ui/GoalSection.tsx
-#~ msgid "The goal has been permanently removed."
-#~ msgstr "Het doel is permanent verwijderd."
 
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "The goal has been removed from every month."
