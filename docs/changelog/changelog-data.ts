@@ -21,7 +21,7 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
-    version: 'v1.22.1',
+    version: 'v1.22.2',
     date: 'November 23, 2026',
     summary:
       'Fixes a transaction losing its date, which hid it from the account and threw off Ready to Assign, and helps you put the date back.',
