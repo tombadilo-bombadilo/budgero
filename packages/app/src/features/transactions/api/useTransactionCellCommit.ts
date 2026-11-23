@@ -1,4 +1,5 @@
 import { t } from '@lingui/core/macro';
+import { isValid, parseISO } from 'date-fns';
 import { toastError } from '@shared/lib/errors';
 import { getRuntime } from '@shared/runtime/global';
 import { useUpdateTransactionColumn } from '@entities/transaction/api/useTransactions';
@@ -58,6 +59,17 @@ function computeCellCommit(
       value: rate !== null && Number.isFinite(rate) ? rate : null,
       accountId: options.accountId,
       optimisticPatch: { ExchangeRate: rate },
+    };
+  }
+
+  if (columnId === 'Date') {
+    // A transaction always has a date: an empty or malformed one is not saved.
+    if (typeof newVal !== 'string' || !isValid(parseISO(newVal))) return null;
+    return {
+      column: 'Date',
+      value: newVal,
+      accountId: options.accountId,
+      optimisticPatch: { Date: newVal },
     };
   }
 

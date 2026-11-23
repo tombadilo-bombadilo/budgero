@@ -43,7 +43,7 @@ import {
   convertScaled,
   isCryptoCurrency,
 } from '../../currencies/index.js';
-import { getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
+import { assertTransactionDate, getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
 import type { BalanceHistoryBucket, BalanceHistoryRow } from './types.js';
 import {
   applyTransferAmounts as applyDirectTransferAmounts,
@@ -232,6 +232,7 @@ export class TransactionService {
     // Optional time of day ('HH:MM', local wall-clock, no time zone).
     time?: string | null
   ): Promise<number> {
+    assertTransactionDate(date);
     const normalizedTime = normalizeTimeOfDay(time);
     debugLog('🔵 TransactionService.addTransaction called with:', {
       inflowOriginal,
@@ -971,6 +972,7 @@ export class TransactionService {
     memo: string,
     payee?: string
   ): Promise<void> {
+    this.queries.assertDateEdit(id, date);
     const transaction = this.getTransactionByID(id);
     const budgetId = transaction.BudgetID;
 
@@ -2479,6 +2481,7 @@ export class TransactionService {
         break;
       }
       case 'date':
+        assertTransactionDate(newValue);
         if (transaction.TransferID) {
           this.queries.updateTransactionDate(transactionId, newValue as string);
           this.recalculateAfterRowEdit(

@@ -32,6 +32,20 @@ describe('useTransactionCellCommit', () => {
     expect(mocks.toastError).toHaveBeenCalledWith('Could not move the transaction', error);
   });
 
+  it('saves a date and drops an empty or malformed one', () => {
+    mocks.mutate.mockClear();
+    const { result } = renderHook(() => useTransactionCellCommit());
+    for (const bad of ['', 'Invalid Date', '2026-02-30', null]) {
+      expect(result.current.mutate(10, 'Date', bad, { accountId: 1 })).toBeNull();
+    }
+    expect(mocks.mutate).not.toHaveBeenCalled();
+
+    expect(result.current.mutate(10, 'Date', '2026-11-12', { accountId: 1 })).toEqual({
+      Date: '2026-11-12',
+    });
+    expect(mocks.mutate.mock.calls[0][0]).toMatchObject({ column: 'Date', value: '2026-11-12' });
+  });
+
   it('leaves other columns to their callers', () => {
     const { result } = renderHook(() => useTransactionCellCommit());
     result.current.mutate(10, 'Memo', 'x', { accountId: 1 });

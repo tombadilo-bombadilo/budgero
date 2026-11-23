@@ -23,6 +23,7 @@ import type { Budget } from '../budgets/types.js';
 import { asMilli, ZERO_MILLI } from '../../money/index.js';
 import type { BalanceHistoryBucket, BalanceHistoryRow } from './types.js';
 import { linesOutOfStep } from './split-amounts.js';
+import { assertTransactionDate, isCalendarDate } from '../../utils/date.js';
 import { moveSplitLinesOutOfCategories } from '../recurring/split-refs.js';
 
 /**
@@ -224,6 +225,7 @@ export class TransactionQueries {
     id?: number,
     time: string | null = null
   ): number {
+    assertTransactionDate(date);
     const result = run(
       this.db,
       `
@@ -1007,6 +1009,7 @@ export class TransactionQueries {
     memo: string,
     payee: string | null
   ): void {
+    this.assertDateEdit(id, date);
     run(
       this.db,
       `
@@ -1044,6 +1047,7 @@ export class TransactionQueries {
     memo: string,
     payee: string | null
   ): void {
+    this.assertDateEdit(id, date);
     run(
       this.db,
       `
@@ -2028,7 +2032,24 @@ export class TransactionQueries {
     );
   }
 
+  /**
+   * Guard for row edits that carry a date: a new date must be a calendar date.
+   * A row that already holds a bad date (written before the guard existed) can
+   * still be edited as long as the edit leaves that date alone.
+   */
+  assertDateEdit(transactionId: number, date: unknown): void {
+    if (isCalendarDate(date)) return;
+    const stored = getRow<{ Date: string | null }>(
+      this.db,
+      `SELECT Date FROM transactions WHERE ID = ?`,
+      transactionId
+    );
+    if (stored && stored.Date === date) return;
+    assertTransactionDate(date);
+  }
+
   updateTransactionDate(transactionId: number, date: string): void {
+    assertTransactionDate(date);
     run(this.db, `UPDATE transactions SET Date = ? WHERE ID = ?`, date, transactionId);
   }
 
