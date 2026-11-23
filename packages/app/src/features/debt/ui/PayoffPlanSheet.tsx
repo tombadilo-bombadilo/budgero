@@ -251,6 +251,13 @@ export function PayoffPlanSheet({
               how they affect timeline and interest.
             </Trans>
           </DrawerDescription>
+          <p className="text-xs text-muted-foreground">
+            <Trans>Estimates assume fixed payments and no new charges.</Trans>{' '}
+            <Trans>
+              For credit cards, this approximates a fixed payment schedule. Actual card minimums
+              typically decline as balance drops.
+            </Trans>
+          </p>
           <DrawerClose
             aria-label={t`Close payment plan`}
             className="absolute right-4 top-4 inline-flex h-6 w-6 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"

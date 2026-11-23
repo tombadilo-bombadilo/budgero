@@ -16,8 +16,9 @@ export function RateChangeHint({
   const rate = formatRatePercent(next.rate_annual);
   const date = formatRateDate(next.effective_date);
   return (
-    <div className={cn('text-xs text-muted-foreground', className)}>
+    // A block span, not a div: the payoff row renders it inside its <button>.
+    <span className={cn('block text-xs text-muted-foreground', className)}>
       {t`Rate changes to ${rate}% on ${date}`}
-    </div>
+    </span>
   );
 }

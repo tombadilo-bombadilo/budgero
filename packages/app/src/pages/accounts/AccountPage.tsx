@@ -490,6 +490,7 @@ export default function AccountPage() {
                   minPayment={displayLiabilityInfo.minPayment}
                   formatter={maskedFormatter}
                   initial={displayLiabilityInfo.minPayment}
+                  className="-mx-2 w-auto px-2 py-1.5"
                 />
               )}
             </div>

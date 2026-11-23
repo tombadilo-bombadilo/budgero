@@ -1220,6 +1220,10 @@ msgstr "{first}s Budget-Bereich"
 msgid "{firstGroup} and {secondGroup}"
 msgstr "{firstGroup} und {secondGroup}"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
+msgid "{formattedPayment}/mo"
+msgstr "{formattedPayment}/Mon."
+
 #: src/pages/analytics/components/GoalFundingList.tsx
 msgid "{funded} of {target}"
 msgstr "{funded} von {target}"
@@ -1373,6 +1377,7 @@ msgstr "{metricName} im {period}: {value}."
 msgid "{metrics} by {by}"
 msgstr "{metrics} nach {by}"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/accounts/AccountsPage.tsx
 msgid "{months, plural, one {# month} other {# months}}"
 msgstr "{months, plural, one {# Monat} other {# Monate}}"
@@ -3764,6 +3769,7 @@ msgstr "Wird hinzugefügt…"
 msgid "Adds another one to {0} and leaves the existing one as it is."
 msgstr "Fügt {0} eine weitere hinzu und lässt die vorhandene unverändert."
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/accounts/components/AccountDateRangeControls.tsx
 msgid "Adjust"
 msgstr "Anpassen"
@@ -8394,10 +8400,6 @@ msgstr "Heruntergeladen. Neuere Änderungen werden übernommen, sobald du wieder
 msgid "Downloading…"
 msgstr "Herunterladen…"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Drag the slider to test a monthly payment. We estimate the payoff date and total interest assuming fixed payments and no new charges."
-msgstr "Ziehe den Schieberegler, um eine monatliche Zahlung zu testen. Wir schätzen das Tilgungsdatum und die Gesamtzinsen bei festen Zahlungen und ohne neue Belastungen."
-
 #. placeholder {0}: t(SUPPORTED_IMPORT_FORMATS_LABEL)
 #: src/features/import/ui/GlobalImportDropHandler.tsx
 msgid "Drop a {0} file to import transactions."
@@ -9099,6 +9101,10 @@ msgstr "Fehler beim Laden der Daten"
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Estimated months"
 msgstr "Geschätzte Monate"
+
+#: src/features/debt/ui/PayoffPlanSheet.tsx
+msgid "Estimates assume fixed payments and no new charges."
+msgstr "Die Schätzungen gehen von festen Zahlungen und keinen neuen Belastungen aus."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Euro"
@@ -10027,7 +10033,7 @@ msgstr "Für Kategorisierung und Analyse"
 msgid "For credit cards, enter the amount you currently owe — the card will open with that balance as debt."
 msgstr "Gib bei Kreditkarten den Betrag ein, den du aktuell schuldest – die Karte wird mit diesem Saldo als Schulden eröffnet."
 
-#: src/features/debt/ui/PayoffSimulator.tsx
+#: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "For credit cards, this approximates a fixed payment schedule. Actual card minimums typically decline as balance drops."
 msgstr "Bei Kreditkarten entspricht dies näherungsweise einem festen Zahlungsplan. Tatsächliche Mindestbeträge der Karte sinken in der Regel, wenn der Saldo sinkt."
 
@@ -11240,10 +11246,6 @@ msgstr "Eingänge minus Ausgänge."
 msgid "Inflows to income categories"
 msgstr "Eingänge in Einkommenskategorien"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Info"
-msgstr "Info"
-
 #: src/shared/mutations/op-code-registry/domains/accounts.ts
 msgid "Initial Balance"
 msgstr "Anfangssaldo"
@@ -11314,6 +11316,7 @@ msgstr "Inter"
 msgid "Interest"
 msgstr "Zinsen"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Interest (from now)"
 msgstr "Zinsen (ab sofort)"
@@ -15330,13 +15333,14 @@ msgstr "Zahlung:"
 msgid "Payments made:"
 msgstr "Geleistete Zahlungen:"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Payoff date"
 msgstr "Tilgungsdatum"
 
 #: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Payoff Simulator"
-msgstr "Tilgungssimulator"
+msgid "Payoff plan"
+msgstr "Tilgungsplan"
 
 #: src/pages/settings/push-api/QueueStatsPanel.tsx
 msgid "Pending"
@@ -15569,7 +15573,6 @@ msgstr "Pivot-Tabelle"
 msgid "Pizza place"
 msgstr "Pizzeria"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 msgid "Plan"

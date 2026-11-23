@@ -1220,6 +1220,10 @@ msgstr "{first}'s Budgetruimte"
 msgid "{firstGroup} and {secondGroup}"
 msgstr "{firstGroup} en {secondGroup}"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
+msgid "{formattedPayment}/mo"
+msgstr "{formattedPayment}/mnd"
+
 #: src/pages/analytics/components/GoalFundingList.tsx
 msgid "{funded} of {target}"
 msgstr "{funded} van {target}"
@@ -1373,6 +1377,7 @@ msgstr "{metricName} in {period}: {value}."
 msgid "{metrics} by {by}"
 msgstr "{metrics} per {by}"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/accounts/AccountsPage.tsx
 msgid "{months, plural, one {# month} other {# months}}"
 msgstr "{months, plural, one {# maand} other {# maanden}}"
@@ -3764,6 +3769,7 @@ msgstr "Toevoegen…"
 msgid "Adds another one to {0} and leaves the existing one as it is."
 msgstr "Voegt er nog een toe aan {0} en laat de bestaande zoals hij is."
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/accounts/components/AccountDateRangeControls.tsx
 msgid "Adjust"
 msgstr "Aanpassen"
@@ -8394,10 +8400,6 @@ msgstr "Gedownload. Nieuwere wijzigingen worden toegepast zodra je weer online b
 msgid "Downloading…"
 msgstr "Downloaden…"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Drag the slider to test a monthly payment. We estimate the payoff date and total interest assuming fixed payments and no new charges."
-msgstr "Sleep de schuifregelaar om een maandelijkse betaling te testen. We schatten de afbetaaldatum en de totale rente, uitgaande van vaste betalingen en geen nieuwe afschrijvingen."
-
 #. placeholder {0}: t(SUPPORTED_IMPORT_FORMATS_LABEL)
 #: src/features/import/ui/GlobalImportDropHandler.tsx
 msgid "Drop a {0} file to import transactions."
@@ -9099,6 +9101,10 @@ msgstr "Fout bij laden van gegevens"
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Estimated months"
 msgstr "Geschatte maanden"
+
+#: src/features/debt/ui/PayoffPlanSheet.tsx
+msgid "Estimates assume fixed payments and no new charges."
+msgstr "Schattingen gaan uit van vaste betalingen en geen nieuwe afschrijvingen."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Euro"
@@ -10027,7 +10033,7 @@ msgstr "Voor categorisatie en analyse"
 msgid "For credit cards, enter the amount you currently owe — the card will open with that balance as debt."
 msgstr "Voer bij creditcards het bedrag in dat je momenteel verschuldigd bent — de kaart wordt geopend met dat saldo als schuld."
 
-#: src/features/debt/ui/PayoffSimulator.tsx
+#: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "For credit cards, this approximates a fixed payment schedule. Actual card minimums typically decline as balance drops."
 msgstr "Voor creditcards benadert dit een vast betalingsschema. De werkelijke minimumbedragen van de kaart nemen meestal af naarmate het saldo daalt."
 
@@ -11240,10 +11246,6 @@ msgstr "Inkomsten min uitgaven."
 msgid "Inflows to income categories"
 msgstr "Inkomsten in inkomenscategorieën"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Info"
-msgstr "Info"
-
 #: src/shared/mutations/op-code-registry/domains/accounts.ts
 msgid "Initial Balance"
 msgstr "Beginsaldo"
@@ -11314,6 +11316,7 @@ msgstr "Inter"
 msgid "Interest"
 msgstr "Rente"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Interest (from now)"
 msgstr "Rente (vanaf nu)"
@@ -15330,13 +15333,14 @@ msgstr "Betaling:"
 msgid "Payments made:"
 msgstr "Gedane betalingen:"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Payoff date"
 msgstr "Aflossingsdatum"
 
 #: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Payoff Simulator"
-msgstr "Aflossingssimulator"
+msgid "Payoff plan"
+msgstr "Afbetaalplan"
 
 #: src/pages/settings/push-api/QueueStatsPanel.tsx
 msgid "Pending"
@@ -15569,7 +15573,6 @@ msgstr "Draaitabel"
 msgid "Pizza place"
 msgstr "Pizzeria"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 msgid "Plan"
