@@ -38,6 +38,15 @@ export function BudgetingPageDesktop() {
   const desktopBudgetLayout = useUiStore((state) => state.desktopBudgetLayout);
   const showHiddenCategories = useUiStore((state) => state.showHiddenCategories);
   const setShowHiddenCategories = useUiStore((state) => state.setShowHiddenCategories);
+  // Hidden categories sit at the end of the list: bring them into view when shown.
+  const toggleHiddenCategories = useCallback(() => {
+    setShowHiddenCategories(!showHiddenCategories);
+    if (showHiddenCategories) return;
+    window.setTimeout(() => {
+      const rows = document.querySelectorAll('[data-category-id]');
+      rows[rows.length - 1]?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }, 100);
+  }, [showHiddenCategories, setShowHiddenCategories]);
   const showTargetColumn = useUiStore((state) => state.showBudgetTargetColumn);
   const toggleTargetColumn = useUiStore((state) => state.toggleBudgetTargetColumn);
 
@@ -277,7 +286,7 @@ export function BudgetingPageDesktop() {
                     extraContent={toolbarExtra}
                     hideResetOrder
                     showHiddenCategories={showHiddenCategories}
-                    onToggleHiddenCategories={() => setShowHiddenCategories(!showHiddenCategories)}
+                    onToggleHiddenCategories={toggleHiddenCategories}
                     hasHiddenCategories={hasHiddenCategories}
                     showTargetColumn={showTargetColumn}
                     onToggleTargetColumn={
