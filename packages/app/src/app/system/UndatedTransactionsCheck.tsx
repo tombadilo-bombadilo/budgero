@@ -6,6 +6,8 @@ import { getRuntime } from '@shared/runtime/global';
 import { useUiStore } from '@shared/store/useUiStore';
 import { useUpdateTransactionColumn } from '@entities/transaction/api/mutations';
 import { getErrorMessage } from '@shared/lib/errors';
+import { smallCountBucket } from '@shared/lib/analytics/events';
+import { track } from '@shared/lib/analytics/track';
 import { Button } from '@shared/ui/button';
 import { DatePickerButton } from '@shared/ui/DatePickerButton';
 import {
@@ -73,7 +75,12 @@ export function UndatedTransactionsCheck() {
     }
     try {
       const found = check(spaceId);
-      if (!found || found.length === 0) return;
+      if (!found) return;
+      track('undated_transactions_checked', {
+        found_bucket: smallCountBucket(found.length),
+        suggested: found.some((row) => row.suggestedDate) ? 'yes' : 'no',
+      });
+      if (found.length === 0) return;
       setRows(found);
       setDates(Object.fromEntries(found.map((row) => [row.id, row.suggestedDate ?? ''])));
       setOpen(true);
@@ -92,6 +99,9 @@ export function UndatedTransactionsCheck() {
         column: 'Date',
         value: date,
         accountId: row.accountId,
+      });
+      track('undated_transaction_dated', {
+        kept_suggestion: date === row.suggestedDate ? 'yes' : 'no',
       });
       const left = check(spaceId) ?? rows.filter((other) => other.id !== row.id);
       setRows(left);

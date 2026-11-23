@@ -8,7 +8,9 @@ import { UndatedTransactionsCheck } from './UndatedTransactionsCheck';
 const mocks = vi.hoisted(() => ({
   listUndatedTransactions: vi.fn(),
   mutateAsync: vi.fn(),
+  track: vi.fn(),
 }));
+vi.mock('@shared/lib/analytics/track', () => ({ track: mocks.track }));
 vi.mock('@shared/runtime/global', () => ({
   getRuntime: () => ({
     services: () => ({ transactions: mocks }),
@@ -68,6 +70,9 @@ it('remembers a clean result and does not check again', () => {
   expect(mocks.listUndatedTransactions).toHaveBeenCalledOnce();
   expect(window.localStorage.getItem(CLEAN_KEY)).toBe('1');
   expect(screen.queryByRole('dialog')).toBeNull();
+  expect(mocks.track.mock.calls).toEqual([
+    ['undated_transactions_checked', { found_bucket: '0', suggested: 'no' }],
+  ]);
   first.unmount();
 
   renderCheck();
@@ -92,6 +97,10 @@ it('asks for a date, saves it and only then marks the space clean', async () => 
   );
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   expect(window.localStorage.getItem(CLEAN_KEY)).toBe('1');
+  expect(mocks.track.mock.calls).toEqual([
+    ['undated_transactions_checked', { found_bucket: '1', suggested: 'yes' }],
+    ['undated_transaction_dated', { kept_suggestion: 'yes' }],
+  ]);
 });
 
 it('cannot save without a date and asks again next start after Later', async () => {
