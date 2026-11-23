@@ -142,4 +142,55 @@ describe('transaction date guard', () => {
       id,
     ]);
   });
+
+  it('lists rows without a calendar date and suggests the date they had', async () => {
+    const c = await setup();
+    const cleared = await c.add('2026-11-03');
+    const unknown = await c.add('2026-11-04');
+    await c.add('2026-11-05');
+    expect(c.s.transactions.listUndatedTransactions()).toEqual([]);
+
+    c.adapter.exec(`UPDATE transactions SET Date = '' WHERE ID = ${cleared}`);
+    c.adapter.exec(`UPDATE transactions SET Date = 'Invalid Date' WHERE ID = ${unknown}`);
+    const history = c.adapter.prepare(
+      `INSERT INTO mutation_history (BudgetID, SpaceID, MutationID, UserID, Op, Payload, Origin, UndoOps)
+       VALUES (?, 'space', ?, 'user', 'transactions.updateColumn', ?, 'local', ?)`
+    );
+    history.run(
+      c.b,
+      'm1',
+      JSON.stringify({ id: cleared, columnName: 'Date', newValue: '' }),
+      JSON.stringify([
+        {
+          op: 'transactions.updateColumn',
+          args: { id: cleared, columnName: 'Date', newValue: '2026-11-03' },
+        },
+      ])
+    );
+    history.run(
+      c.b,
+      'm2',
+      JSON.stringify({ id: unknown, columnName: 'Memo', newValue: 'x' }),
+      null
+    );
+    history.finalize();
+
+    const found = c.s.transactions.listUndatedTransactions();
+    expect(found.map((row) => [row.id, row.suggestedDate])).toEqual([
+      [cleared, '2026-11-03'],
+      [unknown, null],
+    ]);
+    expect(found[0]).toMatchObject({
+      budgetId: c.b,
+      budgetName: 'Dates',
+      accountId: c.checking.ID,
+      accountName: 'Checking',
+      currency: 'USD',
+      inflow: 50_000,
+      outflow: 0,
+    });
+
+    await c.s.transactions.updateTransactionColumn(cleared, 'Date', '2026-11-03');
+    expect(c.s.transactions.listUndatedTransactions().map((row) => row.id)).toEqual([unknown]);
+  });
 });

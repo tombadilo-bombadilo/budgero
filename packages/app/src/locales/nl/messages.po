@@ -3994,6 +3994,10 @@ msgstr "Alle transacties"
 msgid "All transactions and assignments were moved to the selected category."
 msgstr "Alle transacties en toewijzingen zijn verplaatst naar de geselecteerde categorie."
 
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "All transactions have a date again"
+msgstr "Alle transacties hebben weer een datum"
+
 #. placeholder {0}: currentCategoryTotalTransactions !== undefined && ` (${currentCategoryTotalTransactions})`
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 msgid "All transactions{0}, including split lines"
@@ -4157,6 +4161,10 @@ msgstr "Er bestaat al een rekening met de naam \"{newName}\". Kies die in Config
 #: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
 msgid "An account with this name already exists. Choose it from the list, or use another name."
 msgstr "Er bestaat al een rekening met deze naam. Kies die uit de lijst of gebruik een andere naam."
+
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "An earlier version could clear a transaction's date by mistake. These transactions still count in your balances, but they are in no month, so they are hidden from your accounts and can throw off Ready to Assign. Pick a date for each one to bring it back."
+msgstr "Een eerdere versie kon de datum van een transactie per ongeluk wissen. Deze transacties tellen nog mee in je saldi, maar horen bij geen enkele maand. Daardoor zijn ze verborgen in je rekeningen en kunnen ze Te verdelen verstoren. Kies voor elke transactie een datum om haar terug te halen."
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "An error occurred while deleting the rate."
@@ -7030,6 +7038,10 @@ msgstr "Het dashboard kon niet worden opgeslagen"
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Could not save the dashboard filters"
 msgstr "De dashboardfilters konden niet worden opgeslagen"
+
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "Could not save the date"
+msgstr "De datum kon niet worden opgeslagen"
 
 #: src/pages/settings/components/CalendarSettingsCard.tsx
 msgid "Could not save the first day of the week"
@@ -11897,6 +11909,10 @@ msgstr "Vorige week"
 msgid "Last year"
 msgstr "Vorig jaar"
 
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "Later"
+msgstr "Later"
+
 #: src/features/sync-diagnostics/ui/MutationLogCard.tsx
 msgid "Latest changes stored on the server, decrypted on this device. Click a change to see its details."
 msgstr "De nieuwste wijzigingen op de server, ontsleuteld op dit apparaat. Klik op een wijziging om de details te zien."
@@ -14006,6 +14022,7 @@ msgstr "Geen overschrijdingen — goed bezig!"
 msgid "No password"
 msgstr "Geen wachtwoord"
 
+#: src/app/system/UndatedTransactionsCheck.tsx
 #: src/features/budget-management/ui/create-budget-form/YnabCreditPaymentMatching.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
@@ -15453,6 +15470,7 @@ msgstr "Kies een categorie voor de categorie-actie."
 msgid "Pick a column to sort by"
 msgstr "Kies een kolom om op te sorteren"
 
+#: src/app/system/UndatedTransactionsCheck.tsx
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 #: src/features/transactions/ui/cells/DatePickerCell.tsx
 #: src/shared/ui/date-range-picker.tsx
@@ -17678,6 +17696,10 @@ msgstr "Chatinstellingen opslaan"
 msgid "Save current settings as template"
 msgstr "Huidige instellingen opslaan als sjabloon"
 
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "Save date"
+msgstr "Datum opslaan"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Save each month"
@@ -19092,6 +19114,10 @@ msgstr "De pagina achter dialoogvensters vervagen. Schakel dit uit om rekeningna
 #: src/app/startup/StartupController.tsx
 msgid "Some queued changes still need retry."
 msgstr "Sommige wijzigingen in de wachtrij moeten nog opnieuw worden geprobeerd."
+
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "Some transactions have no date"
+msgstr "Sommige transacties hebben geen datum"
 
 #: src/pages/onboarding/steps/InviteCodeStep.tsx
 msgid "Someone shared their Budgero budget with you. Paste the code or the whole link from their invite — you’ll join their budget instead of setting up your own."
@@ -22547,6 +22573,10 @@ msgstr "Watervaldiagram"
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "We could not apply this rule. Try again in a moment."
 msgstr "We konden deze regel niet toepassen. Probeer het zo nog eens."
+
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "We filled in the date it had before. Change it if it is wrong."
+msgstr "We hebben de datum ingevuld die het eerder had. Pas die aan als hij niet klopt."
 
 #: src/pages/settings/SecurityPage.tsx
 msgid "We keep your master password in volatile memory only. Refreshing or closing the tab will require it again."

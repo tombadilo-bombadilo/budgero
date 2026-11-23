@@ -24,6 +24,7 @@ import {
   GetTransactionsByCategoryAndMonthRow,
   TransactionAmountsSnapshot,
   TransactionLinks,
+  UndatedTransaction,
 } from './types.js';
 import { NotFoundError, ValidationError } from '../../types';
 import { TransactionQueries } from './queries.js';
@@ -43,7 +44,12 @@ import {
   convertScaled,
   isCryptoCurrency,
 } from '../../currencies/index.js';
-import { assertTransactionDate, getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
+import {
+  assertTransactionDate,
+  getLocalDateString,
+  isCalendarDate,
+  parseDateOnlyLocal,
+} from '../../utils/date.js';
 import type { BalanceHistoryBucket, BalanceHistoryRow } from './types.js';
 import {
   applyTransferAmounts as applyDirectTransferAmounts,
@@ -828,6 +834,33 @@ export class TransactionService {
    */
   getAllTransactionsAnalytics(budgetId: number): GetTransactionsByAccountRow[] {
     return this.queries.getAllTransactionsAnalytics(budgetId);
+  }
+
+  /**
+   * Transactions without a usable date (see the date guard). Each comes with
+   * the date it had before it was cleared when this device's history still
+   * holds that edit; history is per device, so the suggestion is only a hint
+   * for the person choosing the date.
+   */
+  listUndatedTransactions(): UndatedTransaction[] {
+    const rows = this.queries.listUndatedTransactions();
+    if (rows.length === 0) return [];
+    const previous = new Map<number, string>();
+    for (const entry of this.queries.listDateEditHistory()) {
+      try {
+        const payload = JSON.parse(entry.Payload) as { id?: unknown; columnName?: unknown };
+        const { id } = payload;
+        if (typeof id !== 'number' || payload.columnName !== 'Date' || previous.has(id)) continue;
+        const undo = JSON.parse(entry.UndoOps ?? '[]') as { args?: { newValue?: unknown } }[];
+        const before = undo[0]?.args?.newValue;
+        if (typeof before === 'string' && isCalendarDate(before)) {
+          previous.set(id, before.slice(0, 10));
+        }
+      } catch {
+        // An unreadable history entry only costs the suggestion.
+      }
+    }
+    return rows.map((row) => ({ ...row, suggestedDate: previous.get(row.id) ?? null }));
   }
 
   /**

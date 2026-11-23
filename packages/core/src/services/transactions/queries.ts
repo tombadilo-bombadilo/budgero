@@ -17,6 +17,7 @@ import {
   SimilarTransaction,
   SimilarTransactionQuery,
   TransactionLinks,
+  UndatedTransaction,
 } from './types.js';
 import type { Account } from '../accounts/types.js';
 import type { Budget } from '../budgets/types.js';
@@ -2029,6 +2030,42 @@ export class TransactionQueries {
        WHERE TransferID != '' AND TransferID >= ? AND TransferID < ? AND TransferID GLOB ?`,
       time,
       ...splitMirrorRange(`split_transfer_${transactionId}_`)
+    );
+  }
+
+  /**
+   * Transactions whose date is missing or is not a calendar date. Builds
+   * before the date guard could store these; every date-based view skips them.
+   */
+  listUndatedTransactions(): Omit<UndatedTransaction, 'suggestedDate'>[] {
+    return allRows<Omit<UndatedTransaction, 'suggestedDate'>>(
+      this.db,
+      `
+      SELECT t.ID as id, t.BudgetID as budgetId, b.Name as budgetName,
+             t.AccountID as accountId, a.Name as accountName, a.Currency as currency,
+             t.Payee as payee, t.Memo as memo,
+             COALESCE(t.InflowNative, t.InflowConverted, 0) as inflow,
+             COALESCE(t.OutflowNative, t.OutflowConverted, 0) as outflow
+      FROM transactions t
+      JOIN accounts a ON a.ID = t.AccountID
+      JOIN budgets b ON b.ID = t.BudgetID
+      WHERE t.Date IS NULL
+         OR t.Date NOT GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*'
+         OR date(substr(t.Date, 1, 10)) IS NOT substr(t.Date, 1, 10)
+      ORDER BY t.BudgetID, a.Name, t.ID
+    `
+    );
+  }
+
+  /** Date edits still in this device's history, newest first. */
+  listDateEditHistory(): { Payload: string; UndoOps: string | null }[] {
+    return allRows<{ Payload: string; UndoOps: string | null }>(
+      this.db,
+      `
+      SELECT Payload, UndoOps FROM mutation_history
+      WHERE Op = 'transactions.updateColumn' AND Payload LIKE '%"Date"%'
+      ORDER BY Timestamp DESC, ID DESC
+    `
     );
   }
 
