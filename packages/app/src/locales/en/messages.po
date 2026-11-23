@@ -1211,6 +1211,10 @@ msgstr "{first}'s Budget Space"
 msgid "{firstGroup} and {secondGroup}"
 msgstr "{firstGroup} and {secondGroup}"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
+msgid "{formattedPayment}/mo"
+msgstr "{formattedPayment}/mo"
+
 #: src/pages/analytics/components/GoalFundingList.tsx
 msgid "{funded} of {target}"
 msgstr "{funded} of {target}"
@@ -1364,6 +1368,7 @@ msgstr "{metricName} in {period}: {value}."
 msgid "{metrics} by {by}"
 msgstr "{metrics} by {by}"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/accounts/AccountsPage.tsx
 msgid "{months, plural, one {# month} other {# months}}"
 msgstr "{months, plural, one {# month} other {# months}}"
@@ -3739,6 +3744,7 @@ msgstr "Adding…"
 msgid "Adds another one to {0} and leaves the existing one as it is."
 msgstr "Adds another one to {0} and leaves the existing one as it is."
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/accounts/components/AccountDateRangeControls.tsx
 msgid "Adjust"
 msgstr "Adjust"
@@ -8320,10 +8326,6 @@ msgstr "Downloaded. Newer changes will apply when you're back online."
 msgid "Downloading…"
 msgstr "Downloading…"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Drag the slider to test a monthly payment. We estimate the payoff date and total interest assuming fixed payments and no new charges."
-msgstr "Drag the slider to test a monthly payment. We estimate the payoff date and total interest assuming fixed payments and no new charges."
-
 #. placeholder {0}: t(SUPPORTED_IMPORT_FORMATS_LABEL)
 #: src/features/import/ui/GlobalImportDropHandler.tsx
 msgid "Drop a {0} file to import transactions."
@@ -9005,6 +9007,10 @@ msgstr "Error loading data"
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Estimated months"
 msgstr "Estimated months"
+
+#: src/features/debt/ui/PayoffPlanSheet.tsx
+msgid "Estimates assume fixed payments and no new charges."
+msgstr "Estimates assume fixed payments and no new charges."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Euro"
@@ -9913,7 +9919,7 @@ msgstr "For categorization and analysis"
 msgid "For credit cards, enter the amount you currently owe — the card will open with that balance as debt."
 msgstr "For credit cards, enter the amount you currently owe — the card will open with that balance as debt."
 
-#: src/features/debt/ui/PayoffSimulator.tsx
+#: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "For credit cards, this approximates a fixed payment schedule. Actual card minimums typically decline as balance drops."
 msgstr "For credit cards, this approximates a fixed payment schedule. Actual card minimums typically decline as balance drops."
 
@@ -11113,10 +11119,6 @@ msgstr "Inflows minus outflows."
 msgid "Inflows to income categories"
 msgstr "Inflows to income categories"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Info"
-msgstr "Info"
-
 #: src/shared/mutations/op-code-registry/domains/accounts.ts
 msgid "Initial Balance"
 msgstr "Initial Balance"
@@ -11187,6 +11189,7 @@ msgstr "Inter"
 msgid "Interest"
 msgstr "Interest"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Interest (from now)"
 msgstr "Interest (from now)"
@@ -15150,13 +15153,14 @@ msgstr "Payment:"
 msgid "Payments made:"
 msgstr "Payments made:"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Payoff date"
 msgstr "Payoff date"
 
 #: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Payoff Simulator"
-msgstr "Payoff Simulator"
+msgid "Payoff plan"
+msgstr "Payoff plan"
 
 #: src/pages/settings/push-api/QueueStatsPanel.tsx
 msgid "Pending"
@@ -15385,7 +15389,6 @@ msgstr "Pivot table"
 msgid "Pizza place"
 msgstr "Pizza place"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 msgid "Plan"

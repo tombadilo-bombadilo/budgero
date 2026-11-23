@@ -1209,6 +1209,10 @@ msgstr "Espace budgétaire de {first}"
 msgid "{firstGroup} and {secondGroup}"
 msgstr "{firstGroup} et {secondGroup}"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
+msgid "{formattedPayment}/mo"
+msgstr "{formattedPayment}/mois"
+
 #: src/pages/analytics/components/GoalFundingList.tsx
 msgid "{funded} of {target}"
 msgstr "{funded} sur {target}"
@@ -1362,6 +1366,7 @@ msgstr "{metricName} en {period} : {value}."
 msgid "{metrics} by {by}"
 msgstr "{metrics} par {by}"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/accounts/AccountsPage.tsx
 msgid "{months, plural, one {# month} other {# months}}"
 msgstr "{months, plural, one {# mois} other {# mois}}"
@@ -3737,6 +3742,7 @@ msgstr "Ajout…"
 msgid "Adds another one to {0} and leaves the existing one as it is."
 msgstr "En ajoute une autre à {0} et laisse l’existante inchangée."
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/accounts/components/AccountDateRangeControls.tsx
 msgid "Adjust"
 msgstr "Ajuster"
@@ -8318,10 +8324,6 @@ msgstr "Téléchargé. Les modifications plus récentes seront appliquées dès 
 msgid "Downloading…"
 msgstr "Téléchargement…"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Drag the slider to test a monthly payment. We estimate the payoff date and total interest assuming fixed payments and no new charges."
-msgstr "Faites glisser le curseur pour tester un paiement mensuel. Nous estimons la date de remboursement et les intérêts totaux en supposant des paiements fixes et aucun nouveau frais."
-
 #. placeholder {0}: t(SUPPORTED_IMPORT_FORMATS_LABEL)
 #: src/features/import/ui/GlobalImportDropHandler.tsx
 msgid "Drop a {0} file to import transactions."
@@ -9003,6 +9005,10 @@ msgstr "Erreur lors du chargement des données"
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Estimated months"
 msgstr "Mois estimés"
+
+#: src/features/debt/ui/PayoffPlanSheet.tsx
+msgid "Estimates assume fixed payments and no new charges."
+msgstr "Les estimations supposent des paiements fixes et aucun nouveau frais."
 
 #: src/pages/onboarding/onboarding-data.ts
 msgid "Euro"
@@ -9911,7 +9917,7 @@ msgstr "Pour la catégorisation et l'analyse"
 msgid "For credit cards, enter the amount you currently owe — the card will open with that balance as debt."
 msgstr "Pour les cartes de crédit, saisissez le montant que vous devez actuellement — la carte s'ouvrira avec ce solde comme dette."
 
-#: src/features/debt/ui/PayoffSimulator.tsx
+#: src/features/debt/ui/PayoffPlanSheet.tsx
 msgid "For credit cards, this approximates a fixed payment schedule. Actual card minimums typically decline as balance drops."
 msgstr "Pour les cartes de crédit, cela correspond approximativement à un calendrier de paiement fixe. Les minimums réels de la carte diminuent généralement à mesure que le solde baisse."
 
@@ -11111,10 +11117,6 @@ msgstr "Entrées moins sorties."
 msgid "Inflows to income categories"
 msgstr "Entrées dans les catégories de revenus"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Info"
-msgstr "Infos"
-
 #: src/shared/mutations/op-code-registry/domains/accounts.ts
 msgid "Initial Balance"
 msgstr "Solde initial"
@@ -11185,6 +11187,7 @@ msgstr "Inter"
 msgid "Interest"
 msgstr "Intérêts"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Interest (from now)"
 msgstr "Intérêts (à partir de maintenant)"
@@ -15148,13 +15151,14 @@ msgstr "Paiement :"
 msgid "Payments made:"
 msgstr "Paiements effectués :"
 
+#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/features/debt/ui/PayoffSummaryGrid.tsx
 msgid "Payoff date"
 msgstr "Date de remboursement"
 
 #: src/features/debt/ui/PayoffSimulator.tsx
-msgid "Payoff Simulator"
-msgstr "Simulateur de remboursement"
+msgid "Payoff plan"
+msgstr "Plan de remboursement"
 
 #: src/pages/settings/push-api/QueueStatsPanel.tsx
 msgid "Pending"
@@ -15383,7 +15387,6 @@ msgstr "Tableau croisé"
 msgid "Pizza place"
 msgstr "Pizzeria"
 
-#: src/features/debt/ui/PayoffSimulator.tsx
 #: src/pages/admin/admin-users/InactiveUsersCard.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 msgid "Plan"
