@@ -387,3 +387,19 @@ export interface TransactionLinks {
   recurringOccurrence: boolean;
   bankReview: boolean;
 }
+
+/** A transaction whose stored date is missing or is not a calendar date. */
+export interface UndatedTransaction {
+  id: number;
+  budgetId: number;
+  budgetName: string;
+  accountId: number;
+  accountName: string;
+  currency: string;
+  payee: string | null;
+  memo: string | null;
+  inflow: number;
+  outflow: number;
+  /** The date the row had before it was cleared, when this device's history still holds it. */
+  suggestedDate: string | null;
+}

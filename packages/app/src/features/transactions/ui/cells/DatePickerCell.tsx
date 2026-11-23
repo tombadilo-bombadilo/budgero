@@ -47,15 +47,12 @@ export function DatePickerCell({
   }, [value]);
 
   function handleSelect(selectedDate: Date | undefined) {
-    setDate(selectedDate ?? null);
     setOpen(false);
-
-    if (selectedDate) {
-      const formatted = format(selectedDate, 'yyyy-MM-dd');
-      onCommit(formatted);
-    } else {
-      onCommit('');
-    }
+    // Clicking the day that is already selected deselects it (undefined). A
+    // transaction always has a date, so that click only closes the picker.
+    if (!selectedDate) return;
+    setDate(selectedDate);
+    onCommit(format(selectedDate, 'yyyy-MM-dd'));
   }
 
   return (

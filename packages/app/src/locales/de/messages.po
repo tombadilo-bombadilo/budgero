@@ -3994,6 +3994,10 @@ msgstr "Alle Transaktionen"
 msgid "All transactions and assignments were moved to the selected category."
 msgstr "Alle Transaktionen und Zuweisungen wurden in die ausgewählte Kategorie verschoben."
 
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "All transactions have a date again"
+msgstr "Alle Transaktionen haben wieder ein Datum"
+
 #. placeholder {0}: currentCategoryTotalTransactions !== undefined && ` (${currentCategoryTotalTransactions})`
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 msgid "All transactions{0}, including split lines"
@@ -4157,6 +4161,10 @@ msgstr "Ein Konto namens „{newName}“ gibt es bereits. Wähle es unter Konfig
 #: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
 msgid "An account with this name already exists. Choose it from the list, or use another name."
 msgstr "Ein Konto mit diesem Namen gibt es bereits. Wähle es aus der Liste oder nimm einen anderen Namen."
+
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "An earlier version could clear a transaction's date by mistake. These transactions still count in your balances, but they are in no month, so they are hidden from your accounts and can throw off Ready to Assign. Pick a date for each one to bring it back."
+msgstr "Eine frühere Version konnte das Datum einer Transaktion versehentlich löschen. Diese Transaktionen zählen weiterhin in deinen Salden, gehören aber zu keinem Monat. Deshalb sind sie in deinen Konten nicht sichtbar und können Zu budgetieren verfälschen. Wähle für jede ein Datum, um sie zurückzuholen."
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "An error occurred while deleting the rate."
@@ -7030,6 +7038,10 @@ msgstr "Das Dashboard konnte nicht gespeichert werden"
 #: src/pages/dashboard/HomeDashboard.tsx
 msgid "Could not save the dashboard filters"
 msgstr "Die Dashboard-Filter konnten nicht gespeichert werden"
+
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "Could not save the date"
+msgstr "Das Datum konnte nicht gespeichert werden"
 
 #: src/pages/settings/components/CalendarSettingsCard.tsx
 msgid "Could not save the first day of the week"
@@ -11897,6 +11909,10 @@ msgstr "Letzte Woche"
 msgid "Last year"
 msgstr "Letztes Jahr"
 
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "Later"
+msgstr "Später"
+
 #: src/features/sync-diagnostics/ui/MutationLogCard.tsx
 msgid "Latest changes stored on the server, decrypted on this device. Click a change to see its details."
 msgstr "Die neuesten auf dem Server gespeicherten Änderungen, auf diesem Gerät entschlüsselt. Klicke auf eine Änderung, um Details zu sehen."
@@ -14006,6 +14022,7 @@ msgstr "Keine Überziehungen — gut gemacht!"
 msgid "No password"
 msgstr "Kein Passwort"
 
+#: src/app/system/UndatedTransactionsCheck.tsx
 #: src/features/budget-management/ui/create-budget-form/YnabCreditPaymentMatching.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
@@ -15453,6 +15470,7 @@ msgstr "Wähle eine Kategorie für die Kategorie-Aktion."
 msgid "Pick a column to sort by"
 msgstr "Spalte zum Sortieren wählen"
 
+#: src/app/system/UndatedTransactionsCheck.tsx
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 #: src/features/transactions/ui/cells/DatePickerCell.tsx
 #: src/shared/ui/date-range-picker.tsx
@@ -17678,6 +17696,10 @@ msgstr "Chat-Einstellungen speichern"
 msgid "Save current settings as template"
 msgstr "Aktuelle Einstellungen als Vorlage speichern"
 
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "Save date"
+msgstr "Datum speichern"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Save each month"
@@ -19092,6 +19114,10 @@ msgstr "Die Seite hinter Dialogen weichzeichnen. Deaktiviere dies, damit Kontona
 #: src/app/startup/StartupController.tsx
 msgid "Some queued changes still need retry."
 msgstr "Einige ausstehende Änderungen müssen noch erneut versucht werden."
+
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "Some transactions have no date"
+msgstr "Einige Transaktionen haben kein Datum"
 
 #: src/pages/onboarding/steps/InviteCodeStep.tsx
 msgid "Someone shared their Budgero budget with you. Paste the code or the whole link from their invite — you’ll join their budget instead of setting up your own."
@@ -22547,6 +22573,10 @@ msgstr "Wasserfalldiagramm"
 #: src/features/rules/ui/RuleRunOverlay.tsx
 msgid "We could not apply this rule. Try again in a moment."
 msgstr "Wir konnten diese Regel nicht anwenden. Versuche es in einem Moment erneut."
+
+#: src/app/system/UndatedTransactionsCheck.tsx
+msgid "We filled in the date it had before. Change it if it is wrong."
+msgstr "Wir haben das frühere Datum eingetragen. Ändere es, falls es nicht stimmt."
 
 #: src/pages/settings/SecurityPage.tsx
 msgid "We keep your master password in volatile memory only. Refreshing or closing the tab will require it again."

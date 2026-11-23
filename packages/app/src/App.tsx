@@ -39,6 +39,7 @@ import { UserPreferencesSync } from '@app/system/UserPreferencesSync';
 import { SyncedPreferencesSync } from '@app/system/SyncedPreferencesSync';
 import { ActivityHeartbeat } from '@app/system/ActivityHeartbeat';
 import { RateResync } from '@app/system/RateResync';
+import { UndatedTransactionsCheck } from '@app/system/UndatedTransactionsCheck';
 import { STARTUP_INTENT_KEY } from '@shared/lib/pwa-constants';
 import { PersistedCalendarPreferencesProvider } from '@app/system/PersistedCalendarPreferencesProvider';
 import { PersistedAppearanceProvider } from '@app/system/PersistedAppearanceProvider';
@@ -313,6 +314,7 @@ function AppContentBase({ topSlot }: { topSlot?: React.ReactNode }) {
       {topSlot}
       <UserPreferencesSync />
       <SyncedPreferencesSync />
+      <UndatedTransactionsCheck />
       <ThemeColorController />
       <SonnerToaster position="bottom-right" />
       {/* SW update prompts handled via ServiceWorkerUpdateProvider */}

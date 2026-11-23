@@ -17,12 +17,14 @@ import {
   SimilarTransaction,
   SimilarTransactionQuery,
   TransactionLinks,
+  UndatedTransaction,
 } from './types.js';
 import type { Account } from '../accounts/types.js';
 import type { Budget } from '../budgets/types.js';
 import { asMilli, ZERO_MILLI } from '../../money/index.js';
 import type { BalanceHistoryBucket, BalanceHistoryRow } from './types.js';
 import { linesOutOfStep } from './split-amounts.js';
+import { assertTransactionDate, isCalendarDate } from '../../utils/date.js';
 import { moveSplitLinesOutOfCategories } from '../recurring/split-refs.js';
 
 /**
@@ -224,6 +226,7 @@ export class TransactionQueries {
     id?: number,
     time: string | null = null
   ): number {
+    assertTransactionDate(date);
     const result = run(
       this.db,
       `
@@ -1007,6 +1010,7 @@ export class TransactionQueries {
     memo: string,
     payee: string | null
   ): void {
+    this.assertDateEdit(id, date);
     run(
       this.db,
       `
@@ -1044,6 +1048,7 @@ export class TransactionQueries {
     memo: string,
     payee: string | null
   ): void {
+    this.assertDateEdit(id, date);
     run(
       this.db,
       `
@@ -2028,7 +2033,60 @@ export class TransactionQueries {
     );
   }
 
+  /**
+   * Transactions whose date is missing or is not a calendar date. Builds
+   * before the date guard could store these; every date-based view skips them.
+   */
+  listUndatedTransactions(): Omit<UndatedTransaction, 'suggestedDate'>[] {
+    return allRows<Omit<UndatedTransaction, 'suggestedDate'>>(
+      this.db,
+      `
+      SELECT t.ID as id, t.BudgetID as budgetId, b.Name as budgetName,
+             t.AccountID as accountId, a.Name as accountName, a.Currency as currency,
+             t.Payee as payee, t.Memo as memo,
+             COALESCE(t.InflowNative, t.InflowConverted, 0) as inflow,
+             COALESCE(t.OutflowNative, t.OutflowConverted, 0) as outflow
+      FROM transactions t
+      JOIN accounts a ON a.ID = t.AccountID
+      JOIN budgets b ON b.ID = t.BudgetID
+      WHERE t.Date IS NULL
+         OR t.Date NOT GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]*'
+         OR date(substr(t.Date, 1, 10)) IS NOT substr(t.Date, 1, 10)
+      ORDER BY t.BudgetID, a.Name, t.ID
+    `
+    );
+  }
+
+  /** Date edits still in this device's history, newest first. */
+  listDateEditHistory(): { Payload: string; UndoOps: string | null }[] {
+    return allRows<{ Payload: string; UndoOps: string | null }>(
+      this.db,
+      `
+      SELECT Payload, UndoOps FROM mutation_history
+      WHERE Op = 'transactions.updateColumn' AND Payload LIKE '%"Date"%'
+      ORDER BY Timestamp DESC, ID DESC
+    `
+    );
+  }
+
+  /**
+   * Guard for row edits that carry a date: a new date must be a calendar date.
+   * A row that already holds a bad date (written before the guard existed) can
+   * still be edited as long as the edit leaves that date alone.
+   */
+  assertDateEdit(transactionId: number, date: unknown): void {
+    if (isCalendarDate(date)) return;
+    const stored = getRow<{ Date: string | null }>(
+      this.db,
+      `SELECT Date FROM transactions WHERE ID = ?`,
+      transactionId
+    );
+    if (stored && stored.Date === date) return;
+    assertTransactionDate(date);
+  }
+
   updateTransactionDate(transactionId: number, date: string): void {
+    assertTransactionDate(date);
     run(this.db, `UPDATE transactions SET Date = ? WHERE ID = ?`, date, transactionId);
   }
 

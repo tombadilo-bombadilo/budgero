@@ -577,6 +577,12 @@ export const EVENT_SCHEMA = {
   reconcile_completed: NONE,
   setting_changed: { setting: SETTING_KEYS, value: ALL_SETTING_VALUES },
 
+  // Start-up check for transactions an older build saved without a date:
+  // how many it found (0 = clean, sent once per space and browser) and each
+  // one the user gave a date to.
+  undated_transactions_checked: { found_bucket: SMALL_COUNT_BUCKETS, suggested: YES_NO },
+  undated_transaction_dated: { kept_suggestion: YES_NO },
+
   // Export
   export_done: { format: EXPORT_FORMATS },
   backup_downloaded: { format: EXPORT_FORMATS },

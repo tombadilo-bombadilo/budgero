@@ -1,4 +1,5 @@
 import { clock } from './clock.js';
+import { ValidationError } from '../types/index.js';
 
 /**
  * Converts a Date to a YYYY-MM-DD string using local time (no timezone drift).
@@ -43,4 +44,39 @@ export function getUTCDateString(date: Date): string {
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
   const day = String(date.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+/**
+ * True for a real calendar date written as `YYYY-MM-DD`. A time part after it
+ * (`2026-10-03T08:30:00`) is accepted: some stored rows carry one and every
+ * reader takes the first ten characters.
+ */
+export function isCalendarDate(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?)?$/.exec(
+      value
+    );
+  if (!match) return false;
+  const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return (
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+  );
+}
+
+/**
+ * Guard for every write of a transaction date. A row with an empty or malformed
+ * date drops out of the registers and the date-based totals but still counts in
+ * the account balance, so it must never reach the table.
+ */
+export function assertTransactionDate(value: unknown): asserts value is string {
+  if (!isCalendarDate(value)) {
+    throw new ValidationError(
+      `Transaction date must be a calendar date (YYYY-MM-DD), got ${JSON.stringify(value) ?? String(value)}.`,
+      'date'
+    );
+  }
 }
