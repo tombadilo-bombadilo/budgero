@@ -10,6 +10,7 @@ import { asMilli } from '../src/money/index.js';
 const OLD_SQL_COLUMNS = `
         t.ID,
         t.Date,
+        t.Time,
         t.CategoryID,
         CASE WHEN EXISTS (SELECT 1 FROM transaction_splits s WHERE s.TransactionID = t.ID)
              THEN 'Split'

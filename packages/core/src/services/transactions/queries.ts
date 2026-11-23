@@ -2367,6 +2367,7 @@ export class TransactionQueries {
         t.AccountID as AccountId,
         a.Name as AccountName,
         t.Date,
+        t.Time,
         t.CategoryID,
         c.Name as Category,
         t.LabelID,
