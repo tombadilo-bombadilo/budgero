@@ -21,10 +21,101 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.22.0',
+    date: 'November 23, 2026',
+    summary:
+      'Goals that change over time, an optional time of day on transactions, interest rates that change, split lines that transfer to another account, a text size setting and a roomier planning page. Update all your devices: this version changes the sync format.',
+    isLatest: true,
+    items: [
+      {
+        type: 'new',
+        title: 'Goals that change over time',
+        description:
+          'A goal now has timeframes. Edit it from a later month and the new amount applies from that month onwards, while earlier months keep the goal they had. You can also pick the start month yourself and an optional month the goal ends after. Deleting a goal ends it from the month you are viewing.',
+      },
+      {
+        type: 'new',
+        title: 'Time of day on transactions',
+        description:
+          'A transaction can carry an optional time next to its date. Turn on Settings → Appearance → Show transaction times to see times in the register, sort each day by time, and keep real times from imports and bank sync. Off by default, and balances and budgets still follow the date alone.',
+      },
+      {
+        type: 'new',
+        title: 'Interest rates that change',
+        description:
+          'Credit cards, loans and mortgages can record dated rate changes, including future ones, under Rate changes when you edit the account. The payoff date, total interest and suggested monthly payment include them.',
+      },
+      {
+        type: 'new',
+        title: 'Split lines that transfer',
+        description:
+          'A split line with a "Transfer: <account>" payee moves that part of the transaction into the other account. A line to an off-budget account can keep a category, for example a mortgage payment. For an account in another currency you enter the amount received there, and it stays as entered.',
+      },
+      {
+        type: 'new',
+        title: 'Text size',
+        description:
+          'Settings → Appearance → Text has a Text size option with Large and Larger. It scales text and spacing across the app, per device.',
+      },
+      {
+        type: 'new',
+        title: 'Keep the sidebar open, and pin accounts',
+        description:
+          'Pin the desktop sidebar so it stays beside the page on screens from 1280px wide. Pin accounts to choose which ones a sidebar section shows before Show All.',
+      },
+      {
+        type: 'new',
+        title: 'Average column in the Ledger report',
+        description:
+          'The Ledger report can show an Average column, and Total and Average can sit first instead of last.',
+      },
+      {
+        type: 'improved',
+        title: 'Payoff plan row on debt accounts',
+        description:
+          'The account page shows the monthly payment, payoff date and interest still to come in one compact row. Click it to open the Payment Plan.',
+      },
+      {
+        type: 'improved',
+        title: 'Planning on smaller screens',
+        description:
+          'The desktop planning layout now starts at 768px. The side panel collapses like a sidebar, the Activity column shows whenever the table is wide enough, and the hidden categories toggle keeps its label and scrolls to the categories it reveals.',
+      },
+      {
+        type: 'improved',
+        title: 'Push API',
+        description:
+          'Pushed transactions accept an optional time, goals accept timeframe fields, and split transfer lines accept a category for off-budget accounts and a receivedAmount for other currencies.',
+      },
+      {
+        type: 'improved',
+        title: 'Update every device',
+        description:
+          'Goal timeframes and transaction times use a new sync format. A device on an older version shows "update required" when it meets one of these changes, instead of losing it.',
+      },
+      {
+        type: 'fixed',
+        title: 'Sidebar opens without lag',
+        description:
+          'Opening the navigation sidebar on phones and narrow screens no longer stutters, and opening the planning side panel no longer re-renders the table.',
+      },
+      {
+        type: 'fixed',
+        title: 'Planning layout options match the layout in use',
+        description:
+          'Settings → Appearance shows the planning options for the layout your screen is actually using.',
+      },
+      {
+        type: 'fixed',
+        title: 'Editing the sent amount of a transfer between currencies',
+        description: 'Changing the sent amount now scales the received amount with it.',
+      },
+    ],
+  },
+  {
     version: 'v1.21.5',
     date: 'November 16, 2026',
     summary: 'The sign-in page links to pricing and our legal pages.',
-    isLatest: true,
     items: [
       {
         type: 'improved',
