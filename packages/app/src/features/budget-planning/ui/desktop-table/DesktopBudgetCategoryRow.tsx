@@ -313,7 +313,7 @@ export function DesktopBudgetCategoryRow({
           />
         </div>
       </TableCell>
-      <TableCell className="hidden align-middle text-right py-1.5 min-[1250px]:table-cell">
+      <TableCell className="hidden align-middle text-right py-1.5 @[700px]/budget-table:table-cell">
         <button
           type="button"
           data-testid={`activity-${row.name.toLowerCase().replace(/\s+/g, '-')}`}
