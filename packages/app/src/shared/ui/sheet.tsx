@@ -37,21 +37,48 @@ function SheetOverlay({
   );
 }
 
+/**
+ * Dimmed backdrop for a non-modal sheet (`<Sheet modal={false}>`), which gets no
+ * SheetOverlay. It only covers the page; the sheet closes itself on an outside press.
+ */
+function SheetBackdrop({
+  open,
+  className,
+  ...props
+}: React.ComponentProps<'div'> & { open: boolean }) {
+  return (
+    <div
+      data-slot="sheet-backdrop"
+      data-state={open ? 'open' : 'closed'}
+      aria-hidden="true"
+      className={cn(
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-50 touch-none bg-black/5 dark:bg-black/50',
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
 function SheetContent({
   className,
   children,
   side = 'right',
   withOverlay = true,
   overlayClassName,
+  backdrop,
   ...props
 }: React.ComponentProps<typeof SheetPrimitive.Content> & {
   side?: 'top' | 'right' | 'bottom' | 'left';
   withOverlay?: boolean;
   overlayClassName?: string;
+  /** A SheetBackdrop, for a non-modal sheet. */
+  backdrop?: React.ReactElement;
 }) {
   return (
     <SheetPortal>
       {withOverlay ? <SheetOverlay className={overlayClassName} /> : null}
+      {backdrop}
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
@@ -127,6 +154,7 @@ export {
   Sheet,
   SheetTrigger,
   SheetClose,
+  SheetBackdrop,
   SheetContent,
   SheetHeader,
   SheetFooter,

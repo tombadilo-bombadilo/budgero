@@ -13,7 +13,14 @@ import { cn } from '@shared/lib/utils';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Separator } from '@shared/ui/separator';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@shared/ui/sheet';
+import {
+  Sheet,
+  SheetBackdrop,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@shared/ui/sheet';
 import { Skeleton } from '@shared/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@shared/ui/tooltip';
 
@@ -152,6 +159,7 @@ function Sidebar({
   collapsible?: 'offcanvas' | 'icon' | 'none';
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar();
+  const returnFocusRef = React.useRef<HTMLElement | null>(null);
 
   if (collapsible === 'none') {
     return (
@@ -170,18 +178,37 @@ function Sidebar({
 
   if (isMobile) {
     return (
-      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+      // Not modal: a modal sheet locks page scroll and hides the page from assistive
+      // tech by restyling the whole document, which made opening it visibly lag on
+      // large pages. It still closes on Escape, an outside press or focus leaving it.
+      <Sheet open={openMobile} onOpenChange={setOpenMobile} modal={false} {...props}>
         <SheetContent
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden"
+          className="bg-sidebar text-sidebar-foreground w-(--sidebar-width) overscroll-contain p-0 ease-out data-[state=closed]:duration-150 data-[state=open]:duration-200 [&>button]:hidden"
+          withOverlay={false}
+          backdrop={
+            <SheetBackdrop
+              open={openMobile}
+              className="data-[state=closed]:duration-150 data-[state=open]:duration-200"
+            />
+          }
           style={
             {
               '--sidebar-width': SIDEBAR_WIDTH_MOBILE,
             } as React.CSSProperties
           }
           side={side}
+          onOpenAutoFocus={() => {
+            returnFocusRef.current =
+              document.activeElement instanceof HTMLElement ? document.activeElement : null;
+          }}
+          onCloseAutoFocus={(event) => {
+            // A non-modal sheet only hands focus back to a Radix trigger, and ours isn't one.
+            event.preventDefault();
+            if (document.activeElement === document.body) returnFocusRef.current?.focus();
+          }}
         >
           <SheetHeader className="sr-only">
             <SheetTitle>
