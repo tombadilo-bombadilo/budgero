@@ -28,6 +28,10 @@ vi.mock('@shared/store/useUiStore', () => ({
       desktopBudgetLayout: 'table',
       showHiddenCategories: false,
       setShowHiddenCategories: () => {},
+      planningPanelOpen: true,
+      setPlanningPanelOpen: () => {},
+      planningOverlayPanelOpen: false,
+      setPlanningOverlayPanelOpen: () => {},
     }),
 }));
 vi.mock('@features/budget-planning/ui/BudgetTable', () => ({
