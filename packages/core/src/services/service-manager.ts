@@ -84,6 +84,17 @@ export interface Services {
   legacyReplay: LegacyReplayService;
 }
 
+/**
+ * Services are not bound to the active database yet (startup, or a workspace
+ * switch in flight). Callers can retry once the runtime is ready.
+ */
+export class ServicesNotReadyError extends Error {
+  constructor() {
+    super('Services not initialized');
+    this.name = 'ServicesNotReadyError';
+  }
+}
+
 export class ServiceManager {
   private db: DatabaseAdapter | null = null;
 
@@ -180,7 +191,7 @@ export class ServiceManager {
    */
   getServices(): Services {
     if (!this.services) {
-      throw new Error('Services not initialized');
+      throw new ServicesNotReadyError();
     }
     return this.services;
   }
