@@ -10,6 +10,7 @@ import {
 } from '@tanstack/react-query';
 import { captureAppError } from '@shared/lib/analytics/error-capture';
 import { toErrorCode } from '@shared/lib/analytics/error-codes';
+import { queryRetry, queryRetryDelay } from '@shared/api/query-retry';
 import { AppErrorBoundary } from '@app/system/AppErrorBoundary';
 import { ThemeProvider } from 'next-themes';
 import { RuntimeProvider } from '@shared/runtime/runtime-provider';
@@ -131,7 +132,8 @@ const queryClient = new QueryClient({
   }),
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: queryRetry,
+      retryDelay: queryRetryDelay,
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
       networkMode: 'offlineFirst', // Offline-first

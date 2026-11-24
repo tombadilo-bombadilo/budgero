@@ -12,6 +12,13 @@ class DatabaseError extends Error {
   }
 }
 
+class ServicesNotReadyError extends Error {
+  constructor() {
+    super('Services not initialized');
+    this.name = 'ServicesNotReadyError';
+  }
+}
+
 describe('toErrorCode', () => {
   it('maps the SQLite failure class of a DatabaseError, never its text', () => {
     expect(
@@ -21,6 +28,10 @@ describe('toErrorCode', () => {
     expect(toErrorCode(new DatabaseError('malformed', 'corrupt'))).toBe('db_corrupt');
     expect(toErrorCode(new DatabaseError('readonly', 'readonly'))).toBe('db_readonly');
     expect(toErrorCode(new DatabaseError('full', 'full'))).toBe('db_full');
+    expect(toErrorCode(new DatabaseError('closed', 'closed'))).toBe('db_closed');
+    expect(toErrorCode(new DatabaseError('schema', 'schema'))).toBe('db_schema');
+    expect(toErrorCode(new DatabaseError('oom', 'out_of_memory'))).toBe('db_out_of_memory');
+    expect(toErrorCode(new ServicesNotReadyError())).toBe('services_not_ready');
     expect(toErrorCode(new DatabaseError('anything else'))).toBe('db_error');
   });
 

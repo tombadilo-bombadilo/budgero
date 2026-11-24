@@ -188,7 +188,15 @@ export class DatabaseError extends Error {
 
 /** Failure classes a DatabaseError can carry in `code` (besides adapter-specific ones). */
 export type SqliteFailureClass =
-  'constraint' | 'locked' | 'corrupt' | 'readonly' | 'full' | 'error';
+  | 'constraint'
+  | 'locked'
+  | 'corrupt'
+  | 'readonly'
+  | 'full'
+  | 'closed'
+  | 'schema'
+  | 'out_of_memory'
+  | 'error';
 
 /**
  * Classify a SQLite error message into a fixed failure class. The message is
@@ -202,5 +210,10 @@ export function classifySqliteError(message: string): SqliteFailureClass {
   if (/malformed|not a database|SQLITE_CORRUPT|SQLITE_NOTADB/i.test(message)) return 'corrupt';
   if (/readonly database|SQLITE_READONLY/i.test(message)) return 'readonly';
   if (/database or disk is full|SQLITE_FULL/i.test(message)) return 'full';
+  // sql.js throws these as bare strings once its handle was closed.
+  if (/^(Database|Statement) closed$/.test(message)) return 'closed';
+  if (/no such (table|column)|has no column named|SQLITE_SCHEMA/i.test(message)) return 'schema';
+  if (/out of memory|SQLITE_NOMEM|memory access out of bounds|Cannot enlarge memory/i.test(message))
+    return 'out_of_memory';
   return 'error';
 }

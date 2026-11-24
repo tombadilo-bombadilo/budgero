@@ -34,6 +34,7 @@ import { countBucket, durationBucket, ageBucket } from '@shared/lib/analytics/ev
 import { runtimeErrorBridge } from '@shared/runtime/runtime-error-bridge';
 import {
   ServiceManager,
+  ServicesNotReadyError,
   type Services,
   type DatabaseAdapter as CoreDatabaseAdapter,
   TransactionRule,
@@ -197,7 +198,24 @@ export class AppRuntime {
   }
 
   servicesReady(): boolean {
-    return this.serviceManager.isInitialized();
+    return this.serviceManager.isInitialized() && this.servicesMatchActiveDatabase();
+  }
+
+  /**
+   * A workspace switch closes the old database when it starts, but the new
+   * services are only bound once the new one is loaded (download, decrypt,
+   * migrations). Services still bound to the old instance would fail every
+   * query with sql.js "Database closed"; treat them as not ready instead.
+   */
+  private servicesMatchActiveDatabase(): boolean {
+    try {
+      return (
+        this.serviceManager.getDatabase() ===
+        (this.coordinator.getDatabase() as unknown as CoreDatabaseAdapter | null)
+      );
+    } catch {
+      return false;
+    }
   }
 
   state(): RuntimeState {
@@ -219,7 +237,9 @@ export class AppRuntime {
   }
 
   services(): Services {
-    return this.serviceManager.getServices();
+    const services = this.serviceManager.getServices();
+    if (!this.servicesMatchActiveDatabase()) throw new ServicesNotReadyError();
+    return services;
   }
 
   mutationsRouter(): MutationRouter {

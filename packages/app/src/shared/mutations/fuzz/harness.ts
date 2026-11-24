@@ -273,7 +273,7 @@ export interface OutboundMessage {
 
 const CORE_DIR = resolve(process.cwd(), '../core');
 
-async function openServices(bytes?: Uint8Array) {
+export async function openServices(bytes?: Uint8Array) {
   const cwd = vi.spyOn(process, 'cwd').mockReturnValue(CORE_DIR);
   try {
     const adapter = await NodeSqlJsAdapter.create(bytes);
@@ -345,6 +345,7 @@ export class Device {
       executeMutation: (spec: MutationSpec) => this.dispatch(spec),
       isMutationApplied: () => false,
       getActiveSpaceId: () => SPACE_ID,
+      getDatabase: () => manager.getDatabase(),
     };
   }
 

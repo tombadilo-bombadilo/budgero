@@ -83,7 +83,12 @@ export const ERROR_CODES = [
   'db_corrupt',
   'db_readonly',
   'db_full',
+  'db_closed',
+  'db_schema',
+  'db_out_of_memory',
   'db_error',
+  // runtime services not bound to the active database (startup, workspace switch)
+  'services_not_ready',
   // rendering and loading
   'render_error',
   'chunk_load_failed',

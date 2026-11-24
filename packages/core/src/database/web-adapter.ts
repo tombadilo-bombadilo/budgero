@@ -4,6 +4,7 @@ import {
   DatabaseOptions,
   DatabaseError,
   classifySqliteError,
+  type SqliteFailureClass,
   LocalPersistenceCipher,
   SqlFunctionValue,
 } from './interface.js';
@@ -416,7 +417,7 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
           const errorMsg = error instanceof Error ? error.message : String(error);
           throw new DatabaseError(
             `Query execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}] [Params: ${JSON.stringify(params)}]`,
-            classifySqliteError(errorMsg)
+            this.failureClass(errorMsg)
           );
         }
       },
@@ -433,7 +434,7 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
           const errorMsg = error instanceof Error ? error.message : String(error);
           throw new DatabaseError(
             `Query execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}] [Params: ${JSON.stringify(params)}]`,
-            classifySqliteError(errorMsg)
+            this.failureClass(errorMsg)
           );
         }
       },
@@ -457,7 +458,7 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
           const errorMsg = error instanceof Error ? error.message : String(error);
           throw new DatabaseError(
             `Query execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}] [Params: ${JSON.stringify(params)}]`,
-            classifySqliteError(errorMsg)
+            this.failureClass(errorMsg)
           );
         }
       },
@@ -466,6 +467,16 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
         // No-op for sql.js since we free statements immediately
       },
     };
+  }
+
+  /**
+   * Failure class for a query error. On a closed handle sql.js reports
+   * "Database closed" from exec but SQLite's "out of memory" from prepare
+   * (errmsg of a null handle), so check the handle instead of the text.
+   */
+  private failureClass(errorMsg: string): SqliteFailureClass {
+    if ((this.db as unknown as { db: unknown }).db === null) return 'closed';
+    return classifySqliteError(errorMsg);
   }
 
   exec(sql: string): SqlJsExecResult[] {
@@ -478,7 +489,7 @@ export class WebDatabaseAdapter extends BaseDatabaseAdapter {
       const errorMsg = error instanceof Error ? error.message : String(error);
       throw new DatabaseError(
         `SQL execution failed: ${errorMsg} [SQL: ${sql.substring(0, 100)}]`,
-        classifySqliteError(errorMsg)
+        this.failureClass(errorMsg)
       );
     }
   }

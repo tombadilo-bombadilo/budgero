@@ -83,7 +83,11 @@ export {
   seededWidgetId,
 } from './services/custom-dashboards/index.js';
 
-export { ServiceManager, type Services } from './services/service-manager.js';
+export {
+  ServiceManager,
+  ServicesNotReadyError,
+  type Services,
+} from './services/service-manager.js';
 export { LegacyReplayService } from './services/legacy-replay/index.js';
 
 // File-format parsers (pure, browser-safe). We re-export from the specific

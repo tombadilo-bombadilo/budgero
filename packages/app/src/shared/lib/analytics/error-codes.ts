@@ -41,6 +41,12 @@ function databaseErrorCode(code: unknown): ErrorCode {
       return 'db_readonly';
     case 'full':
       return 'db_full';
+    case 'closed':
+      return 'db_closed';
+    case 'schema':
+      return 'db_schema';
+    case 'out_of_memory':
+      return 'db_out_of_memory';
     default:
       return 'db_error';
   }
@@ -79,6 +85,7 @@ export function toErrorCode(error: unknown, area: ErrorArea = 'app'): ErrorCode 
   }
   if (name === 'FormatTooNewError') return 'format_too_new';
   if (name === 'DatabaseError') return databaseErrorCode(e.code);
+  if (name === 'ServicesNotReadyError') return 'services_not_ready';
   if (name === 'ApiError' && e.status === 0) {
     // api-client uses status 0 for its own failures: an aborted timeout or a fetch that never got a response.
     return (e as { response?: unknown }).response === 'timeout' ? 'timeout' : 'network';

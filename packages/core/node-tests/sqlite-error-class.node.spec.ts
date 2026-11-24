@@ -10,6 +10,12 @@ describe('classifySqliteError', () => {
     expect(classifySqliteError('file is not a database')).toBe('corrupt');
     expect(classifySqliteError('attempt to write a readonly database')).toBe('readonly');
     expect(classifySqliteError('database or disk is full')).toBe('full');
-    expect(classifySqliteError('no such table: nope')).toBe('error');
+    expect(classifySqliteError('Database closed')).toBe('closed');
+    expect(classifySqliteError('Statement closed')).toBe('closed');
+    expect(classifySqliteError('no such table: nope')).toBe('schema');
+    expect(classifySqliteError('table payees has no column named X')).toBe('schema');
+    expect(classifySqliteError('out of memory')).toBe('out_of_memory');
+    expect(classifySqliteError('memory access out of bounds')).toBe('out_of_memory');
+    expect(classifySqliteError('near "SELEC": syntax error')).toBe('error');
   });
 });
