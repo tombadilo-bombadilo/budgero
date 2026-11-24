@@ -302,4 +302,33 @@ describe('SplitDetailsDialog transfer lines', () => {
       payee: 'Transfer : Checking',
     });
   });
+
+  it('wraps an extremely long transaction memo without expanding the dialog grid', () => {
+    const longMemo = 'A transaction with an extremely long memo breaks the layout - '.repeat(20);
+    state.splits = [];
+    render(
+      <SplitDetailsDialog
+        transaction={{ ...transaction, Memo: longMemo }}
+        onClose={vi.fn()}
+        currentFormatter={new Intl.NumberFormat('en-US')}
+        transactionCurrencyDisplay="budget"
+        getPrimaryInflow={(row) => row.InflowConverted}
+        getPrimaryOutflow={(row) => row.OutflowConverted}
+        budgetId={1}
+      />
+    );
+    const content = document.querySelector('[data-slot="dialog-content"]');
+    const header = document.querySelector('[data-slot="dialog-header"]');
+    const description = document.querySelector('[data-slot="dialog-description"]');
+    expect(content).toHaveClass('grid-cols-1');
+    expect(header).toHaveClass('min-w-0');
+    expect(description).toHaveClass(
+      'min-w-0',
+      'whitespace-normal',
+      'break-words',
+      '[overflow-wrap:anywhere]'
+    );
+    expect(description).not.toHaveClass('truncate');
+    expect(description).toHaveTextContent(longMemo.trim());
+  });
 });
