@@ -22,9 +22,11 @@ function stubRuntime(
   const ops: MutationSpec[] = [];
   const internals = runtime as unknown as {
     coordinator: Record<string, unknown>;
-    serviceManager: { getServices(): unknown };
+    serviceManager: { getServices(): unknown; getDatabase(): unknown };
   };
+  const db = {};
   internals.coordinator = {
+    getDatabase: () => db,
     executeMutation: vi.fn(async (spec: MutationSpec) => {
       ops.push(spec);
       return { result: 42, synced: true, queued: false };
@@ -41,6 +43,7 @@ function stubRuntime(
       mutationHistory: { record: () => {} },
       budgets: { getAllBudgets: () => [{ ID: 1 }] },
     }),
+    getDatabase: () => db,
   };
   const ruleRuns = () => ops.filter((spec) => spec.op === 'rules.execute').length;
   return { runtime, ops, ruleRuns };

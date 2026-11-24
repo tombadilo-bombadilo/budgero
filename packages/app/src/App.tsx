@@ -121,6 +121,18 @@ function reportCacheError(
   });
 }
 
+/**
+ * Services are briefly unbound during startup and workspace switches (the
+ * old DB is closed before the new one is loaded). Queries landing there wait
+ * it out with short retries, up to ~15 s, instead of failing after one retry.
+ */
+const SERVICES_NOT_READY_RETRIES = 30;
+const SERVICES_NOT_READY_DELAY_MS = 500;
+
+function isServicesNotReady(error: unknown): boolean {
+  return (error as { name?: unknown } | null)?.name === 'ServicesNotReadyError';
+}
+
 const queryClient = new QueryClient({
   queryCache: new QueryCache({
     onError: (error, query) => reportCacheError(error, 'query', query.queryKey[0], query.meta),
@@ -131,7 +143,12 @@ const queryClient = new QueryClient({
   }),
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: (failureCount, error) =>
+        failureCount < (isServicesNotReady(error) ? SERVICES_NOT_READY_RETRIES : 1),
+      retryDelay: (attempt, error) =>
+        isServicesNotReady(error)
+          ? SERVICES_NOT_READY_DELAY_MS
+          : Math.min(1000 * 2 ** attempt, 30_000),
       refetchOnWindowFocus: false,
       staleTime: 5 * 60 * 1000, // 5 minutes
       networkMode: 'offlineFirst', // Offline-first

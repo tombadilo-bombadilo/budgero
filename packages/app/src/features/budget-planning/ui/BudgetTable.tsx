@@ -49,7 +49,9 @@ function readDeleteBlocks(
 ): Map<number, CategoryDeleteBlock> {
   void inputs;
   const blocks = new Map<number, CategoryDeleteBlock>();
-  if (!budgetId) return blocks;
+  // Mid workspace switch there is nothing to read; the accounts refetch that
+  // follows recomputes this.
+  if (!budgetId || !runtime.servicesReady()) return blocks;
   try {
     for (const block of runtime.services().categories.getDeleteBlocks(budgetId)) {
       blocks.set(block.categoryId, block);
