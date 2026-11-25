@@ -22,6 +22,14 @@ import {
   isUncleared,
 } from '@features/transactions/api/useTransactionSearch';
 import { makeAmountAccessors } from '@features/transactions/lib/amount-accessors';
+import {
+  nextTransactionSort,
+  sortTransactions,
+  type TransactionSortColumn,
+  type TransactionSortState,
+} from '@features/transactions/lib/transaction-sort';
+import { useTransactionSort } from '@features/transactions/api/useTransactionSort';
+import { MobileTransactionSortControl } from '@features/transactions/ui/MobileTransactionSortControl';
 import { MobileTransactionList } from '@features/transactions/ui/MobileTransactionList';
 import { DesktopTransactionTable } from '@features/transactions/ui/desktop-table';
 import { useUiStore } from '@shared/store/useUiStore';
@@ -116,7 +124,7 @@ export function TransactionsTable({
   headerActions,
   dataLoading = false,
 }: TransactionsTableProps) {
-  const { t } = useLingui();
+  const { t, i18n } = useLingui();
 
   const isMobile = useIsMobile();
   // Pagination state (search state lives in useTransactionSearch, below)
@@ -296,9 +304,30 @@ export function TransactionsTable({
 
   const isFilterModeActive =
     searchQuery.trim().length > 0 || showOnlyUncategorized || showOnlyUncleared;
+
+  // Column sort, remembered per register (an account, or All Transactions of a budget).
+  const registerSortKey = preselectedAccountId
+    ? `account:${preselectedAccountId}`
+    : `all:${budgetId}`;
+  const { sort, setSort } = useTransactionSort(registerSortKey);
+  const handleSortChange = React.useCallback(
+    (next: TransactionSortState) => {
+      setSort(next);
+      setPage(0);
+    },
+    [setSort]
+  );
+  const handleHeaderSort = React.useCallback(
+    (column: TransactionSortColumn) => handleSortChange(nextTransactionSort(sort, column)),
+    [handleSortChange, sort]
+  );
+
+  // A sort orders the whole selected range, so a partially loaded account
+  // register loads all of it, as for a search.
+  const needsCompleteData = isFilterModeActive || sort !== null;
   React.useEffect(() => {
-    onFilterModeChange?.(isFilterModeActive);
-  }, [isFilterModeActive, onFilterModeChange]);
+    onFilterModeChange?.(needsCompleteData);
+  }, [needsCompleteData, onFilterModeChange]);
 
   const uncategorizedCount =
     !isFilterModeActive && uncategorizedCountOverride !== undefined
@@ -334,6 +363,23 @@ export function TransactionsTable({
     ]
   );
 
+  const sortContext = React.useMemo(
+    () => ({
+      signedAmount: (tx: GetTransactionsByAccountRow) =>
+        (getPrimaryInflow(tx) || 0) - (getPrimaryOutflow(tx) || 0),
+      splitLabel: t`Split`,
+      transfersLabel: t`Transfers`,
+      locale: i18n.locale,
+    }),
+    [getPrimaryInflow, getPrimaryOutflow, t, i18n.locale]
+  );
+  // Sorted once per change of rows, sort or currency; pagination and the
+  // virtualized rows only slice this.
+  const sortedData = React.useMemo(
+    () => sortTransactions(filteredData, sort, sortContext),
+    [filteredData, sort, sortContext]
+  );
+
   // An empty register, not one a search or quick filter emptied.
   useEmptyStateViewed(
     'transactions',
@@ -341,15 +387,15 @@ export function TransactionsTable({
   );
 
   const effectiveTransactionCount =
-    !isFilterModeActive && totalTransactionCount !== undefined
+    !needsCompleteData && totalTransactionCount !== undefined
       ? totalTransactionCount
       : filteredData.length;
 
   const paginatedData = React.useMemo(() => {
     const startIndex = page * pageSize;
     const endIndex = startIndex + pageSize;
-    return filteredData.slice(startIndex, endIndex);
-  }, [filteredData, page, pageSize]);
+    return sortedData.slice(startIndex, endIndex);
+  }, [sortedData, page, pageSize]);
 
   // Report filtered stats to parent when filtered data changes
   const lastFilteredStatsRef = React.useRef<FilteredStats | null>(null);
@@ -384,13 +430,13 @@ export function TransactionsTable({
     if (!raw) return;
     const id = parseInt(raw);
     if (!id || Number.isNaN(id)) return;
-    const idx = filteredData.findIndex((tx) => tx.ID === id);
+    const idx = sortedData.findIndex((tx) => tx.ID === id);
     if (idx >= 0) {
       const targetPage = Math.floor(idx / pageSize);
       if (targetPage !== page) setPage(targetPage);
       // Once page aligns, let AccountPage handle the scroll/highlight removal
     }
-  }, [filteredData, isMobile, page, pageSize]);
+  }, [sortedData, isMobile, page, pageSize]);
 
   // Calculate stats for current mobile page and notify parent
   const lastMobileStatsRef = React.useRef<{
@@ -521,6 +567,13 @@ export function TransactionsTable({
             handleToggleLabelColumn={handleToggleLabelColumn}
             pageSize={pageSize}
             handlePageSizeChange={handlePageSizeChange}
+            mobileSortControl={
+              <MobileTransactionSortControl
+                sort={sort}
+                onSortChange={handleSortChange}
+                showAccountOption={!hideAccountColumn}
+              />
+            }
             hideAccountColumn={hideAccountColumn}
             uncategorizedCount={uncategorizedCount}
             showOnlyUncategorized={showOnlyUncategorized}
@@ -544,7 +597,8 @@ export function TransactionsTable({
         <div>
           {isMobile ? (
             <MobileTransactionList
-              transactions={filteredData}
+              transactions={sortedData}
+              sorted={sort !== null}
               rowSelection={rowSelection}
               page={page}
               pageSize={pageSize}
@@ -572,8 +626,8 @@ export function TransactionsTable({
                 if (!hasNextPage) return;
                 const nextPage = page + 1;
                 if (
-                  !isFilterModeActive &&
-                  (nextPage + 1) * pageSize > filteredData.length &&
+                  !needsCompleteData &&
+                  (nextPage + 1) * pageSize > sortedData.length &&
                   hasMoreTransactions
                 ) {
                   await onLoadMoreTransactions?.();
@@ -591,7 +645,9 @@ export function TransactionsTable({
             />
           ) : (
             <DesktopTransactionTable
-              transactions={filteredData}
+              transactions={sortedData}
+              sort={sort}
+              onSortChange={handleHeaderSort}
               rowSelection={rowSelection}
               isPending={updateTransactionColumnMutation.isPending}
               pendingId={updateTransactionColumnMutation.variables?.transactionId}
@@ -626,8 +682,8 @@ export function TransactionsTable({
                   ? { accountId: selectedAccountIdForForm, onClose: () => setInlineAddOpen(false) }
                   : undefined
               }
-              scrollResetKey={`${searchQuery}:${showOnlyUncategorized}:${showOnlyUncleared}`}
-              canLoadMore={!isFilterModeActive && hasMoreTransactions}
+              scrollResetKey={`${searchQuery}:${showOnlyUncategorized}:${showOnlyUncleared}:${sort?.column ?? ''}:${sort?.direction ?? ''}`}
+              canLoadMore={!needsCompleteData && hasMoreTransactions}
               isLoadingMore={isLoadingMoreTransactions}
               onLoadMore={onLoadMoreTransactions}
               compact={compactRows}

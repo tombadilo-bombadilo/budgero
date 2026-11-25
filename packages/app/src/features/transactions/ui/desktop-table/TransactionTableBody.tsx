@@ -22,6 +22,8 @@ interface TransactionTableBodyProps {
   hideAccountColumn: boolean;
   hideSecondaryAmounts?: boolean;
   showBalanceColumn?: boolean;
+  /** A column sort is active: running balances read as nonsense out of date order. */
+  hideRunningBalance?: boolean;
   showLabelColumn?: boolean;
   showExchangeRateColumn?: boolean;
   editorDirectories: TransactionEditorDirectories;
@@ -70,6 +72,7 @@ export const TransactionTableBody = React.memo(function TransactionTableBody({
   hideAccountColumn,
   hideSecondaryAmounts = false,
   showBalanceColumn = false,
+  hideRunningBalance = false,
   showLabelColumn = true,
   showExchangeRateColumn = false,
   editorDirectories,
@@ -162,6 +165,7 @@ export const TransactionTableBody = React.memo(function TransactionTableBody({
             hideAccountColumn={hideAccountColumn}
             hideSecondaryAmounts={hideSecondaryAmounts}
             showBalanceColumn={showBalanceColumn}
+            hideRunningBalance={hideRunningBalance}
             showLabelColumn={showLabelColumn}
             showExchangeRateColumn={showExchangeRateColumn}
             editorDirectories={editorDirectories}

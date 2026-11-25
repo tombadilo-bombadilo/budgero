@@ -1,6 +1,12 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import React, { useMemo, useState } from 'react';
-import { isFutureDate, groupTransactionsByDateKey, formatShortDate } from '@shared/lib/date-utils';
+import {
+  extractDateKey,
+  isFutureDate,
+  groupTransactionsByDateKey,
+  formatShortDate,
+  parseDateKey,
+} from '@shared/lib/date-utils';
 import { toast } from 'sonner';
 import { MobileTransactionCard } from '@features/transactions/ui/mobile-transaction-card';
 import { Button } from '@shared/ui/button';
@@ -53,6 +59,28 @@ interface MobileTransactionListProps {
   isLoadingMore?: boolean;
   footerSize?: 'default' | 'compact';
   stickyFooter?: boolean;
+  /** A column sort is active: keep the given order and hide running balances. */
+  sorted?: boolean;
+}
+
+/** Date headers over runs of same-day rows, keeping the rows' (sorted) order. */
+function groupConsecutiveByDate(items: GetTransactionsByAccountRow[]) {
+  const groups: { key: string; date: Date | null; transactions: GetTransactionsByAccountRow[] }[] =
+    [];
+  for (const item of items) {
+    const dateKey = extractDateKey(item.Date);
+    const last = groups[groups.length - 1];
+    if (last && last.key.startsWith(`${dateKey}#`)) {
+      last.transactions.push(item);
+    } else {
+      groups.push({
+        key: `${dateKey}#${groups.length}`,
+        date: dateKey === 'unknown' ? null : parseDateKey(dateKey),
+        transactions: [item],
+      });
+    }
+  }
+  return groups;
 }
 
 export const MobileTransactionList = React.memo(function MobileTransactionList({
@@ -84,6 +112,7 @@ export const MobileTransactionList = React.memo(function MobileTransactionList({
   isLoadingMore = false,
   footerSize = 'default',
   stickyFooter = true,
+  sorted = false,
 }: MobileTransactionListProps) {
   const { t } = useLingui();
 
@@ -121,9 +150,11 @@ export const MobileTransactionList = React.memo(function MobileTransactionList({
   }, [transactions, page, pageSize]);
 
   // Group transactions by date, timezone-agnostic, newest first
+  // While sorted by another column, a header starts each run of same-day rows.
   const groupedTransactions = useMemo(() => {
+    if (sorted) return groupConsecutiveByDate(paginatedTransactions);
     return groupTransactionsByDateKey(paginatedTransactions, (transaction) => transaction.Date);
-  }, [paginatedTransactions]);
+  }, [paginatedTransactions, sorted]);
 
   if (paginatedTransactions.length === 0) {
     return (
@@ -223,6 +254,7 @@ export const MobileTransactionList = React.memo(function MobileTransactionList({
                         budgetId={effectiveBudgetId}
                         forceExpand={forceExpand}
                         isFutureTransaction={Boolean(isFutureTransaction)}
+                        hideRunningBalance={sorted}
                       />
                     </SwipeRow>
                   );

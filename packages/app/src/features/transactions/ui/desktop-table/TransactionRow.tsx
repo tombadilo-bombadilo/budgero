@@ -83,6 +83,8 @@ interface TransactionRowProps {
   hideAccountColumn: boolean;
   hideSecondaryAmounts?: boolean;
   showBalanceColumn?: boolean;
+  /** A column sort is active: show a dash instead of the running balance. */
+  hideRunningBalance?: boolean;
   showLabelColumn?: boolean;
   showExchangeRateColumn?: boolean;
   editorDirectories: TransactionEditorDirectories;
@@ -123,6 +125,7 @@ export const TransactionRow = React.memo(function TransactionRow({
   hideAccountColumn,
   hideSecondaryAmounts = false,
   showBalanceColumn = false,
+  hideRunningBalance = false,
   showLabelColumn = true,
   showExchangeRateColumn = false,
   editorDirectories,
@@ -173,6 +176,16 @@ export const TransactionRow = React.memo(function TransactionRow({
     onActivateCell(transaction.ID, column);
 
   const renderBalanceCell = () => {
+    if (hideRunningBalance) {
+      return (
+        <span
+          className="text-muted-foreground cursor-help"
+          title={t`Running balance is shown only in the default date order`}
+        >
+          —
+        </span>
+      );
+    }
     const numValue = getRunningBalance(transaction, transactionCurrencyDisplay);
     if (numValue === null) {
       return <span className="text-muted-foreground">—</span>;

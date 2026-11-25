@@ -3259,6 +3259,8 @@ msgstr "Access until:"
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 msgid "Account"
 msgstr "Account"
 
@@ -3361,8 +3363,8 @@ msgid "Account:"
 msgstr "Account:"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Account<0/>"
-msgstr "Account<0/>"
+#~ msgid "Account<0/>"
+#~ msgstr "Account<0/>"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/layout/desktop-shell/SidebarNav.tsx
@@ -4107,6 +4109,7 @@ msgstr "Amortization Table"
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 #: src/pages/analytics/components/LedgerTable.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
 #: src/pages/settings/components/DuplicateHintSettingsCard.tsx
@@ -4404,8 +4407,13 @@ msgid "Area Chart"
 msgstr "Area Chart"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 msgid "Ascending"
 msgstr "Ascending"
+
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+msgid "Ascending. Tap for descending."
+msgstr "Ascending. Tap for descending."
 
 #: src/features/chat/ui/chat-panel/ChatComposer.tsx
 msgid "Ask about your budget...  (Shift+Enter for a new line)"
@@ -4810,6 +4818,7 @@ msgid "Bakery"
 msgstr "Bakery"
 
 #: src/features/reports/ui/notebook/question-labels.ts
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/pages/accounts/AccountPage.tsx
 #: src/pages/accounts/components/AccountSummaryCards.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -4843,8 +4852,8 @@ msgid "Balance: {0}"
 msgstr "Balance: {0}"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Balance<0/>"
-msgstr "Balance<0/>"
+#~ msgid "Balance<0/>"
+#~ msgstr "Balance<0/>"
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Balances and net worth"
@@ -5342,13 +5351,14 @@ msgstr "Budget Pacing"
 msgid "Budget Planning"
 msgstr "Budget Planning"
 
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Budget rate"
 msgstr "Budget rate"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Budget rate<0/>"
-msgstr "Budget rate<0/>"
+#~ msgid "Budget rate<0/>"
+#~ msgstr "Budget rate<0/>"
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 #: src/shared/model/nav-registry.ts
@@ -5730,7 +5740,9 @@ msgstr "Categories that spent more than they have this month."
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 #: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
@@ -5797,8 +5809,8 @@ msgid "Category:"
 msgstr "Category:"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Category<0/>"
-msgstr "Category<0/>"
+#~ msgid "Category<0/>"
+#~ msgstr "Category<0/>"
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "CC Payment Calculation"
@@ -6375,6 +6387,10 @@ msgstr "Click to edit"
 #: src/shared/ui/calculator-cell/CalculatorDisplay.tsx
 msgid "Click to edit - Calculator: 100 + 50, 1000 * 0.3"
 msgstr "Click to edit - Calculator: 100 + 50, 1000 * 0.3"
+
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+msgid "Click to sort by this column."
+msgstr "Click to sort by this column."
 
 #: src/features/chat/ui/VoiceInputButton.tsx
 msgid "Click to speak"
@@ -7788,6 +7804,8 @@ msgstr "Database statistics"
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 #: src/pages/settings/subscription/InvoicesTable.tsx
 msgid "Date"
@@ -7820,8 +7838,8 @@ msgid "date_trunc time_bucket strftime epoch list array_agg string_agg approx_co
 msgstr "date_trunc time_bucket strftime epoch list array_agg string_agg approx_count_distinct arg_max arg_min"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Date<0/>"
-msgstr "Date<0/>"
+#~ msgid "Date<0/>"
+#~ msgstr "Date<0/>"
 
 #: src/features/budget-management/ui/create-budget-form/YnabDateOrderChoice.tsx
 msgid "Dates in this export"
@@ -7944,6 +7962,10 @@ msgstr "Default"
 msgctxt "text size"
 msgid "Default"
 msgstr "Default"
+
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+msgid "Default (date)"
+msgstr "Default (date)"
 
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Default Account for Import"
@@ -8169,8 +8191,13 @@ msgid "Deployment details for this binary."
 msgstr "Deployment details for this binary."
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 msgid "Descending"
 msgstr "Descending"
+
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+msgid "Descending. Tap for ascending."
+msgstr "Descending. Tap for ascending."
 
 #: src/features/rules/ui/rule-editor/useRuleEditorState.ts
 msgid "Describe the conditions and actions you want Budgero to apply automatically."
@@ -11233,6 +11260,7 @@ msgstr "Indian Rupee"
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/pages/accounts/AccountPage.tsx
 #: src/pages/accounts/AllTransactionsPage.tsx
@@ -11250,8 +11278,8 @@ msgid "Inflow vs Outflow"
 msgstr "Inflow vs Outflow"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Inflow<0/>"
-msgstr "Inflow<0/>"
+#~ msgid "Inflow<0/>"
+#~ msgstr "Inflow<0/>"
 
 #: src/shared/lib/search-query-parser.ts
 msgid "Inflows"
@@ -11697,6 +11725,8 @@ msgstr "Know what you can spend. Keep your budget private. Create your account t
 
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 msgid "Label"
 msgstr "Label"
 
@@ -11745,8 +11775,8 @@ msgid "Label: {raw}"
 msgstr "Label: {raw}"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Label<0/>"
-msgstr "Label<0/>"
+#~ msgid "Label<0/>"
+#~ msgstr "Label<0/>"
 
 #: src/features/labels/ui/LabelCombobox.tsx
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
@@ -12645,8 +12675,10 @@ msgstr "Membership records"
 #: src/features/rules/ui/RuleSummary.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 msgid "Memo"
 msgstr "Memo"
 
@@ -12659,8 +12691,8 @@ msgid "Memo:"
 msgstr "Memo:"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Memo<0/>"
-msgstr "Memo<0/>"
+#~ msgid "Memo<0/>"
+#~ msgstr "Memo<0/>"
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Merchant or counterparty name"
@@ -14992,6 +15024,7 @@ msgstr "out of {0} budgeted"
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/pages/accounts/AccountPage.tsx
 #: src/pages/accounts/AllTransactionsPage.tsx
@@ -15001,8 +15034,8 @@ msgid "Outflow"
 msgstr "Outflow"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Outflow<0/>"
-msgstr "Outflow<0/>"
+#~ msgid "Outflow<0/>"
+#~ msgstr "Outflow<0/>"
 
 #: src/shared/lib/search-query-parser.ts
 msgid "Outflows"
@@ -15257,6 +15290,8 @@ msgstr "Pay"
 #: src/features/rules/ui/RuleSummary.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 msgid "Payee"
 msgstr "Payee"
 
@@ -15289,8 +15324,8 @@ msgid "Payee:"
 msgstr "Payee:"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Payee<0/>"
-msgstr "Payee<0/>"
+#~ msgid "Payee<0/>"
+#~ msgstr "Payee<0/>"
 
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
@@ -17586,6 +17621,10 @@ msgstr "Running"
 msgid "Running automation rule"
 msgstr "Running automation rule"
 
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Running balance is shown only in the default date order"
+msgstr "Running balance is shown only in the default date order"
+
 #: src/features/reports/ui/notebook/QuestionResult.tsx
 msgid "Running question…"
 msgstr "Running question…"
@@ -19176,6 +19215,22 @@ msgstr "Sort bars by value"
 msgid "Sort bars: {sortLabel}"
 msgstr "Sort bars: {sortLabel}"
 
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+msgid "Sort by"
+msgstr "Sort by"
+
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+msgid "Sort by:"
+msgstr "Sort by:"
+
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+msgid "Sorted ascending. Click to sort descending."
+msgstr "Sorted ascending. Click to sort descending."
+
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+msgid "Sorted descending. Click to go back to date order."
+msgstr "Sorted descending. Click to go back to date order."
+
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/pages/onboarding/steps/DoneStep.tsx
 #: src/pages/settings/ImportsPage.tsx
@@ -19352,6 +19407,7 @@ msgstr "Spent too much? Move money"
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
 #: src/features/transactions/ui/mobile-transaction-card/MobileTransactionCard.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/features/transactions/ui/TransactionsTable.tsx
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
 msgid "Split"
 msgstr "Split"
@@ -19582,6 +19638,7 @@ msgstr "Stat"
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 #: src/pages/admin/admin-users/user-details/WorkspacesTab.tsx
 #: src/pages/admin/admin-users/UsersTable.tsx
@@ -21476,6 +21533,7 @@ msgstr "Transfer: {0}"
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
 #: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
+#: src/features/transactions/ui/TransactionsTable.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Transfers"
 msgstr "Transfers"
