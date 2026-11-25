@@ -141,6 +141,101 @@ describe('SyncTransport auth and visibility handling', () => {
     transport.destroy();
   });
 
+  describe('error reports for a missing session', () => {
+    const warnings = (log: ReturnType<typeof vi.fn>) =>
+      log.mock.calls.filter(([level]) => level === 'warn' || level === 'error');
+
+    it('only logs a short wait that recovers (startup, token refresh, wake from sleep)', async () => {
+      const log = vi.fn();
+      const getToken = vi.fn(async (): Promise<string | null> => null);
+      const { transport } = createTransport({ getToken, log });
+
+      await transport.connect();
+      // Attempts at 0, 2 and 6 s: the "session expired" status shows, but
+      // nothing is reported as an error yet.
+      await vi.advanceTimersByTimeAsync(10_000);
+      expect(getToken.mock.calls.length).toBe(3);
+      expect(warnings(log)).toEqual([]);
+      expect(log).toHaveBeenCalledWith(
+        'info',
+        'Sync connection waiting for a valid session',
+        expect.objectContaining({ reason: 'no auth token', attempts: 1 })
+      );
+
+      getToken.mockResolvedValue('fresh');
+      transport.retryNow();
+      await vi.advanceTimersByTimeAsync(0);
+      FakeWebSocket.instances[0]!.emitOpen();
+      expect(transport.isConnected()).toBe(true);
+      expect(warnings(log)).toEqual([]);
+      transport.destroy();
+    });
+
+    it('reports once when sync stays without a session for minutes', async () => {
+      const log = vi.fn();
+      const getToken = vi.fn(async (): Promise<string | null> => null);
+      const { transport } = createTransport({ getToken, log });
+
+      await transport.connect();
+      // Attempts at 0, 2, 6, 14, 30, 62 s: still under two minutes.
+      await vi.advanceTimersByTimeAsync(100_000);
+      expect(warnings(log)).toEqual([]);
+      // 126 s: stuck. Reported once, not on every later attempt.
+      await vi.advanceTimersByTimeAsync(30 * 60_000);
+      expect(warnings(log)).toEqual([
+        [
+          'warn',
+          'Sync still waiting for a valid session',
+          expect.objectContaining({ reason: 'no auth token', attempts: 7 }),
+        ],
+      ]);
+
+      // A working session ends the run; the next stuck run is reported again.
+      getToken.mockResolvedValue('fresh');
+      transport.retryNow();
+      await vi.advanceTimersByTimeAsync(0);
+      FakeWebSocket.instances[0]!.emitOpen();
+      getToken.mockResolvedValue(null);
+      FakeWebSocket.instances[0]!.emitClose();
+      await vi.advanceTimersByTimeAsync(30 * 60_000);
+      expect(warnings(log)).toHaveLength(2);
+      transport.destroy();
+    });
+
+    it('reports a handshake the server keeps refusing', async () => {
+      const log = vi.fn();
+      const { transport } = createTransport({ checkApiHealth: async () => true, log });
+      await transport.connect();
+      FakeWebSocket.instances[0]!.emitClose();
+      await socketTimes(60_000, (ws) => ws.emitClose());
+      expect(warnings(log)).toEqual([]);
+      await socketTimes(5 * 60_000, (ws) => ws.emitClose());
+      expect(warnings(log)).toEqual([
+        [
+          'warn',
+          'Sync still waiting for a valid session',
+          expect.objectContaining({ reason: 'handshake rejected' }),
+        ],
+      ]);
+      transport.destroy();
+    });
+
+    it('does not count time spent hidden or asleep as being stuck', async () => {
+      const log = vi.fn();
+      const getToken = vi.fn(async (): Promise<string | null> => null);
+      const { transport } = createTransport({ getToken, log });
+      await transport.connect();
+      await vi.advanceTimersByTimeAsync(10_000);
+      setVisibility('hidden');
+      await vi.advanceTimersByTimeAsync(8 * 60 * 60_000);
+      setVisibility('visible');
+      // Back after a night: the first retries after waking are not "stuck".
+      await vi.advanceTimersByTimeAsync(0);
+      expect(warnings(log)).toEqual([]);
+      transport.destroy();
+    });
+  });
+
   it('treats a throwing token getter like a missing token', async () => {
     const getToken = vi.fn(async (): Promise<string | null> => {
       throw new Error('clerk not loaded');
