@@ -165,6 +165,19 @@ Most goals change as life does: groceries get more expensive, rent goes up, a lo
 
 Goal changes and deletions sync to all your devices and can be undone in one step.
 
+## Goals in another currency
+
+Saving for something priced in another currency, like a trip paid in dollars or a school fee in francs? Pick a **Goal currency** under the target amount when you create or edit the goal. It starts as your budget currency, which is what every goal used before.
+
+- **The target stays in its currency.** A $3,000 goal remains $3,000; the goal card shows it with the budget-currency amount next to it ("of $3,000.00 (≈ €2,760.00)"), and the editor previews the conversion while you type.
+- **Everything else works in the budget currency.** The money in the category, "needed this month", progress, status, **Fund Goals** and **Reduce Overfunding** all use the target converted at the **current rate**, from the same sources as transactions (see [Multi-currency](/docs/multi-currency)): a custom rate covering today, then the daily fetched rate, then your manual rate. Without a recent rate the last known one is used, and with none at all the target counts one to one until a rate arrives; the goal card says which.
+- **Rates move, so the monthly ask moves.** If the dollar rises, a dollar goal needs more euros. Past months are shown at today's rate too.
+- **Every goal type supports it**, including repeating and periodic goals and goals with several timeframes; each timeframe keeps its own currency.
+- **Changing the budget currency** converts budget-currency goals as before. Goals in another currency keep their amount, and a goal in the new budget currency simply becomes a normal goal.
+- Crypto currencies aren't offered for goals; goal targets are fiat amounts.
+
+Goals in another currency sync like any other goal. Devices on an older app version ask for an update before they sync one.
+
 ## When a goal stops fitting
 
 Goals are statements of intent, not contracts. If a target-date goal keeps showing red, you have exactly three honest options: assign more, move the date, or shrink the target. All three are better than ignoring a red bar until it becomes background noise — a budget you've stopped believing stops working.

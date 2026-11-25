@@ -18,7 +18,7 @@ Every transaction on a foreign-currency account stores two values:
 - the **original amount** — what actually happened, in the account's currency. This is the ground truth and never changes.
 - the **converted amount** — the same transaction expressed in your budget currency, which is what categories, [Ready to Assign](/docs/ready-to-assign), and reports consume.
 
-Alongside them, Budgero records the **exchange rate** used and whether you overrode it. Your CHF account's history stays in francs; your budget reads in euros; nothing is lost in between. Account balances work the same way — each foreign account knows both its native balance and its converted contribution to your net worth.
+Alongside them, Budgero records the **exchange rate** used and whether you overrode it. Your CHF account's history stays in francs; your budget reads in euros; nothing is lost in between. Account balances work the same way — each foreign account knows both its native balance and its converted contribution to your net worth. On the **Accounts** page, a foreign account shows its own balance first, in its currency's format, with the budget-currency value below it; group totals and net worth stay in the budget currency.
 
 ## Where rates come from
 
@@ -96,6 +96,10 @@ Manual rates are standing rates you enter yourself, used when fetched rates aren
 **Travel.** Spend on your home card abroad and the transaction arrives in the account's currency as usual — enter what the terminal showed in the foreign currency or what your bank app shows settled, whichever you have; an override reconciles the difference when the statement lands.
 
 **Reconciling foreign accounts.** [Reconciliation](/docs/accounts) compares *original* amounts against your bank — francs against francs. Conversion never interferes with whether your account balance is right; it only determines how that balance reads in your budget currency.
+
+## Goals in another currency
+
+A category goal can have its target in another currency, for example a trip priced in dollars. The target stays in that currency, and funding and progress convert it at the current rate with the same rate sources as above. See [Goals](/docs/goals) for the details.
 
 ## What conversion never touches
 
