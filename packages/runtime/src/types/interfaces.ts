@@ -232,6 +232,14 @@ export interface DatabaseSyncDeps {
    */
   /** Our own mutation was acked past the cursor (a gap is being caught up). */
   isCursorBehindAcks?(): boolean;
+  /**
+   * A catch-up replay or its snapshot recovery is running. Out-of-band
+   * uploads (rate refresh at startup) used to capture the DB right then: a
+   * DB the replay had just found inconsistent (remote edit of a row it does
+   * not have) was published as an out-of-band snapshot that every other
+   * device then had to download, racing the restore that was replacing it.
+   */
+  isReplayingLog?(): boolean;
   hasUnackedMutations?(): boolean;
   /**
    * False until this device has caught up with the server's mutation log for

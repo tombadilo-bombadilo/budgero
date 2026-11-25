@@ -417,6 +417,23 @@ export interface OpCodeEntry {
    * guides); no row in the mutation history (audit log). Such ops have no undo.
    */
   history?: false;
+  /**
+   * For ops that change existing transactions: the IDs they change. When a
+   * synced op arrives for transactions an earlier op in the log deleted (one
+   * device deleted a row while another, not having seen that yet, edited
+   * it), the edit is dropped instead of failing the replay: every device
+   * applies the log in the same order, so the delete wins everywhere. IDs
+   * this device never had are not "deleted" and still fail (the local DB
+   * diverged; the replay falls back to a snapshot restore).
+   */
+  editsTransactions?: {
+    ids: (args: Record<string, unknown>) => unknown[];
+    /**
+     * The args without the deleted IDs, for ops that change several rows.
+     * Omitted: the op is dropped only when every ID it changes is deleted.
+     */
+    without?: (args: Record<string, unknown>, deleted: Set<number>) => Record<string, unknown>;
+  };
   // Optional redo customization (defaults to re-applying the original op)
   redo?: {
     build: (args: Record<string, unknown>, result: unknown, before: unknown) => OpCall[];

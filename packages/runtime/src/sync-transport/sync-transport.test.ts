@@ -320,6 +320,35 @@ describe('SyncTransport', () => {
     }
   );
 
+  it('reports a log replay, and the snapshot recovery after a failed one, as replaying', async () => {
+    const recovered = deferred<{ mutationVersion: number; blobVersion: number }>();
+    const onCatchUpUnsafe = vi.fn(() => recovered.promise);
+    const onRemoteMutation = vi.fn(async () => {
+      throw new Error('Transaction with id 9 not found');
+    });
+    const { transport } = createTransport({ onCatchUpUnsafe, onRemoteMutation });
+    expect(transport.isReplayingLog()).toBe(false);
+    await transport.connect();
+    const ws = FakeWebSocket.instances[0]!;
+    ws.emitOpen();
+    // The catch-up request is out: replaying until the last page lands.
+    expect(transport.isReplayingLog()).toBe(true);
+    ws.emitMessage({
+      type: 'catch_up_response',
+      hasMore: false,
+      mutations: [{ id: 'edit', version: 1, op: 'x', args: {} }],
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(onCatchUpUnsafe).toHaveBeenCalledTimes(1);
+    expect(transport.isCatchUpInProgress()).toBe(false);
+    // The restore is still running: not a DB to publish.
+    expect(transport.isReplayingLog()).toBe(true);
+    recovered.resolve({ mutationVersion: 1, blobVersion: 2 });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(transport.isReplayingLog()).toBe(transport.isCatchUpInProgress());
+    transport.destroy();
+  });
+
   it('finishes an accepted mutation across a temporary suspend and reconnect', async () => {
     const decrypted = deferred<{ op: string; args: Record<string, unknown> }>();
     const persistLocalDatabase = vi.fn(async () => true);

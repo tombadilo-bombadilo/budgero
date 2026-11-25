@@ -71,11 +71,45 @@ describe('runtimeMessageCode', () => {
     expect(runtimeMessageCode('HTTP 503', 'blob_upload_failed')).toBe('server_error');
     expect(runtimeMessageCode('Failed to fetch', 'catch_up_request_failed')).toBe('network');
     expect(runtimeMessageCode(undefined, 'catch_up_snapshot_recovery_failed')).toBe(
-      'snapshot_upload_failed'
+      'snapshot_download_failed'
     );
     expect(
       runtimeMessageCode('UNIQUE constraint failed: x.y', 'failed_to_apply_catch_up_mutation')
     ).toBe('db_constraint');
     expect(runtimeMessageCode('something odd', 'mystery_event')).toBe('unknown');
+  });
+
+  it('names a catch-up snapshot fallback as such, not as a failed upload', () => {
+    // The event name contains "snapshot"; nothing is uploaded on this path.
+    expect(runtimeMessageCode('apply_failed', 'catch_up_fallback_snapshot')).toBe(
+      'snapshot_fallback'
+    );
+    expect(runtimeMessageCode('mutation_log_gap', 'catch_up_fallback_snapshot')).toBe(
+      'snapshot_fallback'
+    );
+    expect(
+      runtimeMessageCode(
+        undefined,
+        'local_replay_startup_unavailable_falling_back_to_full_snapshot'
+      )
+    ).toBe('snapshot_fallback');
+    expect(runtimeMessageCode(undefined, 'blob_upload_failed_retry_armed')).toBe(
+      'snapshot_upload_failed'
+    );
+    expect(runtimeMessageCode(undefined, 'out_of_band_blob_download_failed_retry_armed')).toBe(
+      'snapshot_download_failed'
+    );
+    expect(runtimeMessageCode(undefined, 'queue_re_apply_after_snapshot_bootstrap_failed')).toBe(
+      'mutation_error'
+    );
+  });
+
+  it('codes a session wait as unauthorized', () => {
+    expect(runtimeMessageCode('no auth token', 'sync_still_waiting_for_a_valid_session')).toBe(
+      'unauthorized'
+    );
+    expect(runtimeMessageCode('handshake rejected', 'sync_still_waiting_for_a_valid_session')).toBe(
+      'unauthorized'
+    );
   });
 });

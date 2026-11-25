@@ -76,6 +76,9 @@ export const ERROR_CODES = [
   'mutation_quarantined',
   'snapshot_unavailable',
   'snapshot_upload_failed',
+  'snapshot_download_failed',
+  // a catch-up replay fell back to restoring a server snapshot
+  'snapshot_fallback',
   'queue_persist_failed',
   // local database (SQLite failure class, never the message)
   'db_constraint',
