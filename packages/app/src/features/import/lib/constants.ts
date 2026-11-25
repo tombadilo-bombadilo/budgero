@@ -16,6 +16,17 @@ export function isSupportedImportFileName(name: string): boolean {
   return SUPPORTED_IMPORT_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
+/**
+ * The picked file isn't a format the importer reads. An expected user mistake
+ * with its own message, not an app failure, so callers don't log it as one.
+ */
+export class UnsupportedImportFileError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'UnsupportedImportFileError';
+  }
+}
+
 export function isSupportedImportFile(file: File): boolean {
   return isSupportedImportFileName(file.name);
 }

@@ -20187,10 +20187,9 @@ msgstr "The balance you want to build up in this category. Spending lowers it ag
 msgid "The bank didn't authorize access: {description}"
 msgstr "The bank didn't authorize access: {description}"
 
-#. placeholder {0}: missing[0].remote.name
 #: src/features/bank-sync/model/link-accounts.ts
-msgid "The bank didn't return {0}."
-msgstr "The bank didn't return {0}."
+msgid "The bank didn't return {name}, so it wasn't linked. Reconnect {bank} in Settings › Bank sync and make sure this account is selected when you authorise access, then link it again."
+msgstr "The bank didn't return {name}, so it wasn't linked. Reconnect {bank} in Settings › Bank sync and make sure this account is selected when you authorise access, then link it again."
 
 #: src/features/bank-sync/model/link-accounts.ts
 msgid "The bank didn't send a balance for {name}, so Budgero can't set its opening balance. Link it to an existing account, or try again later."
@@ -23504,6 +23503,10 @@ msgstr "Your app version, language, and whether you use the web or the installed
 #: src/pages/settings/AutomationRulesPage.tsx
 msgid "Your automation rule is ready to run."
 msgstr "Your automation rule is ready to run."
+
+#: src/features/bank-sync/model/link-accounts.ts
+msgid "your bank"
+msgstr "your bank"
 
 #: src/features/bank-sync/lib/enable-banking/client.ts
 msgid "Your bank limits how often its data can be read. Try again in a few hours."

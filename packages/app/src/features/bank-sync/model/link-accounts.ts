@@ -102,13 +102,21 @@ export async function linkAccounts(
     requested
   );
   const fetched = new Map(set.accounts.map((account) => [account.id, account]));
-  const missing = requests.filter((r) => !fetched.has(r.remote.id));
-  if (connection.Provider === 'enablebanking' && missing.length) {
-    throw new Error(set.errors.join('\n') || t`The bank didn't return ${missing[0].remote.name}.`);
+  // Enable Banking accounts are listed from the session without balances or
+  // history, so an account the bank didn't return can't get a correct opening
+  // balance. Skip it, link the rest, and say which one is missing.
+  const skipped =
+    connection.Provider === 'enablebanking'
+      ? requests.filter((r) => !fetched.has(r.remote.id))
+      : [];
+  const linkable = requests.filter((r) => !skipped.includes(r));
+  const skippedErrors = skipped.map(({ remote }) => missingAccountMessage(remote));
+  if (!linkable.length) {
+    throw new Error([...skippedErrors, ...set.errors].join('\n'));
   }
   // A new account's opening balance comes from the bank's balance; without one
   // it would silently start at zero and never match the bank. Link nothing.
-  const noBalance = requests.find(
+  const noBalance = linkable.find(
     (r) => r.target.kind === 'new' && (fetched.get(r.remote.id) ?? r.remote).balance === null
   );
   if (noBalance) {
@@ -118,7 +126,7 @@ export async function linkAccounts(
     );
   }
 
-  for (const request of requests) {
+  for (const request of linkable) {
     const remote = fetched.get(request.remote.id) ?? request.remote;
     const link = {
       provider: connection.Provider,
@@ -159,9 +167,16 @@ export async function linkAccounts(
     });
   }
 
-  return runBankSync(runtime, budgetId, {
+  const result = await runBankSync(runtime, budgetId, {
     providers: [connection.Provider],
     prefetched: { provider: connection.Provider, set },
     trigger: 'link',
   });
+  return { ...result, errors: [...skippedErrors, ...result.errors] };
+}
+
+function missingAccountMessage(remote: RemoteBankAccount): string {
+  const { name } = remote;
+  const bank = remote.orgName || t`your bank`;
+  return t`The bank didn't return ${name}, so it wasn't linked. Reconnect ${bank} in Settings › Bank sync and make sure this account is selected when you authorise access, then link it again.`;
 }

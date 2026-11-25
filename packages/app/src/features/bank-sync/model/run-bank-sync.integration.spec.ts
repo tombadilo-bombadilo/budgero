@@ -478,6 +478,50 @@ describe('bank sync engine', () => {
       expect(services.bankSync.listLinks(budgetId, 'enablebanking')).toEqual([]);
     });
 
+    const ebRequest = (id: string, name: string) => ({
+      remote: { id, name, orgName: 'Nordea', currency: 'EUR', balance: null, balanceDate: null },
+      importFrom: '2026-09-01',
+      target: { kind: 'new' as const, name, type: 'Checking' as never },
+    });
+
+    it("links the accounts the bank returned and names the one it didn't", async () => {
+      services.bankSync.saveEnableBankingConnection(budgetId, {
+        appId: 'app',
+        privateKeyPem: 'PEM',
+      });
+      services.bankSync.saveEnableBankingSession(budgetId, session('s1', 'uid-1'));
+      state.eb.balance = '100.00';
+      state.eb.rows = [ebRow('e1', '2026-09-02', '25.50')];
+      const connection = services.bankSync.getConnection(budgetId, 'enablebanking')!;
+      const result = await linkAccounts(runtime, connection, [
+        ebRequest('HASH-1', 'Käyttötili'),
+        ebRequest('HASH-2', 'Säästötili'),
+      ]);
+      expect(result.imported).toBe(1);
+      expect(result.errors).toHaveLength(1);
+      expect(result.errors[0]).toMatch(/didn't return Säästötili.*Reconnect Nordea/);
+      const links = services.bankSync.listLinks(budgetId, 'enablebanking');
+      expect(links.map((link) => link.ExternalAccountID)).toEqual(['HASH-1']);
+      expect(services.accounts.listAccounts(budgetId).map((a) => a.Name)).not.toContain(
+        'Säästötili'
+      );
+    });
+
+    it('links nothing and says why when the bank returned none of the accounts', async () => {
+      services.bankSync.saveEnableBankingConnection(budgetId, {
+        appId: 'app',
+        privateKeyPem: 'PEM',
+      });
+      services.bankSync.saveEnableBankingSession(budgetId, session('s1', 'uid-1'));
+      const before = services.accounts.listAccounts(budgetId).length;
+      const connection = services.bankSync.getConnection(budgetId, 'enablebanking')!;
+      await expect(
+        linkAccounts(runtime, connection, [ebRequest('HASH-2', 'Säästötili')])
+      ).rejects.toThrow(/didn't return Säästötili, so it wasn't linked/);
+      expect(services.accounts.listAccounts(budgetId)).toHaveLength(before);
+      expect(services.bankSync.listLinks(budgetId, 'enablebanking')).toEqual([]);
+    });
+
     it('imports pending rows uncleared, then settles or removes them as the bank decides', async () => {
       const accountId = await linkEnableBanking();
       services.bankSync.updateLinkSettings(accountId, {
