@@ -4,7 +4,6 @@ import { AlertTriangle, CalendarRange } from 'lucide-react';
 import {
   goalEffectiveFrom,
   nextGoalMonth,
-  toDecimal,
   type Goal,
   type GoalTimeframeNotice,
 } from '@budgero/core/browser';
@@ -13,8 +12,10 @@ import { Label } from '@shared/ui/label';
 import { Checkbox } from '@shared/ui/checkbox';
 import { cn } from '@shared/lib/utils';
 import MonthPickerPopover from '@shared/ui/MonthPickerPopover';
+import { useUiStore } from '@shared/store/useUiStore';
 import { goalTimeframeRange, type GoalTimeframeChoice } from '../lib/goal-timeframe';
 import { goalMonthLabel, useGoalRangeLabel } from '../lib/goal-timeframe-labels';
+import { describeGoalTarget } from '../lib/goal-currency';
 
 interface GoalTimeframeNoticesProps {
   notices: GoalTimeframeNotice<Goal>[];
@@ -24,8 +25,10 @@ interface GoalTimeframeNoticesProps {
 /** What a save or delete does to the goal's other months, shown before it happens. */
 export function GoalTimeframeNotices({ notices, formatter }: GoalTimeframeNoticesProps) {
   const { t } = useLingui();
+  const numberFormat = useUiStore((state) => state.selectedBudget?.NumberFormat);
   if (notices.length === 0) return null;
-  const amount = (goal: Goal) => formatter.format(toDecimal(goal.Target));
+  // In the goal's own currency (a timeframe can be set in another one).
+  const amount = (goal: Goal) => describeGoalTarget(goal, formatter, numberFormat).target;
   const text = (notice: GoalTimeframeNotice<Goal>): string => {
     switch (notice.kind) {
       case 'shortened':

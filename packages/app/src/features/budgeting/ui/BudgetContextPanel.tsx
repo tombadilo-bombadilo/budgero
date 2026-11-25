@@ -51,7 +51,7 @@ import {
   prepareUnderfundedAssignments,
   prepareOverspentAssignments,
 } from '@features/budget-planning/ui/assign-dropdown/assign-dropdown.utils';
-import type { GetMonthlyBudgetRow } from '@budgero/core/browser';
+import { goalTargetInBudgetCurrency, type GetMonthlyBudgetRow } from '@budgero/core/browser';
 import { asMilli, sumMilli, ZERO_MILLI } from '@shared/lib/currency/milli';
 import { roundMilli } from '@shared/lib/currency/round-amount';
 import { GoalSection } from '@features/goal-management/ui/GoalSection';
@@ -210,9 +210,11 @@ export function BudgetContextPanel({
   );
 
   const categoryGoals = categoryGoalsQuery.data;
-  const monthlyGoal = categoryGoals?.find(
+  const monthlyGoalRow = categoryGoals?.find(
     (g) => g.CategoryID === selectedCategory?.categoryId && g.Type === 'monthly'
-  )?.Target;
+  );
+  // In the budget currency (a goal can be set in another one).
+  const monthlyGoal = monthlyGoalRow ? goalTargetInBudgetCurrency(monthlyGoalRow) : undefined;
 
   // Every category's goal for this month, for the underfunded total in the Summary card.
   const goalsQuery = useGoalsForMonth(budgetId, currentMonth);
