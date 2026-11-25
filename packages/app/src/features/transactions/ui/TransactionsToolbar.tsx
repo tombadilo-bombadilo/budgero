@@ -74,6 +74,8 @@ interface TransactionsToolbarProps {
   // Page size
   pageSize: number;
   handlePageSizeChange: (value: string) => void;
+  /** Mobile only: the "Sort by" control (desktop sorts from the column headers). */
+  mobileSortControl?: React.ReactNode;
   // Uncategorized filter
   hideAccountColumn: boolean;
   uncategorizedCount: number;
@@ -113,6 +115,7 @@ export function TransactionsToolbar({
   handleToggleLabelColumn,
   pageSize,
   handlePageSizeChange,
+  mobileSortControl,
   hideAccountColumn,
   uncategorizedCount,
   showOnlyUncategorized,
@@ -322,6 +325,7 @@ export function TransactionsToolbar({
             </Select>
           </div>
         )}
+        {isMobile && mobileSortControl}
 
         {/* Quick filter toggles: only on account pages, and only while there is something to
             show (or an active, now-empty filter still needs clearing) */}

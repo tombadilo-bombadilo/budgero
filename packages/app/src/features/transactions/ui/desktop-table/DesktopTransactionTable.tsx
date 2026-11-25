@@ -5,6 +5,10 @@ import { Table } from '@shared/ui/table';
 import { TEXT_SIZE_SCALE } from '@shared/lib/text-size/text-size';
 import { useUiStore } from '@shared/store/useUiStore';
 import { useRegisterKeyboard } from '@features/transactions/api/useRegisterKeyboard';
+import type {
+  TransactionSortColumn,
+  TransactionSortState,
+} from '@features/transactions/lib/transaction-sort';
 import { TransactionTableHeader } from './TransactionTableHeader';
 import { TransactionTableBody } from './TransactionTableBody';
 import { SplitDetailsDialog } from './SplitDetailsDialog';
@@ -68,6 +72,9 @@ export interface DesktopTransactionTableProps {
     accountId?: number;
     onClose: () => void;
   };
+  /** Active column sort; null = default (date) order. */
+  sort?: TransactionSortState;
+  onSortChange?: (column: TransactionSortColumn) => void;
 }
 
 export function DesktopTransactionTable({
@@ -99,6 +106,8 @@ export function DesktopTransactionTable({
   compact = false,
   onClearSelection,
   inlineAdd,
+  sort = null,
+  onSortChange,
 }: DesktopTransactionTableProps) {
   const textSize = useUiStore((state) => state.textSize);
   const [splitDialogState, setSplitDialogState] = useState<{
@@ -272,6 +281,8 @@ export function DesktopTransactionTable({
               onToggleSelectPage={handleToggleSelectAll}
               columnWidths={columnWidths}
               onResize={handleResize}
+              sort={sort}
+              onSortChange={onSortChange}
             />
             <TransactionTableBody
               transactions={visibleItems}
@@ -287,6 +298,7 @@ export function DesktopTransactionTable({
               hideAccountColumn={hideAccountColumn}
               hideSecondaryAmounts={hideSecondaryAmounts}
               showBalanceColumn={showBalanceColumn}
+              hideRunningBalance={sort !== null}
               showLabelColumn={showLabelColumn}
               showExchangeRateColumn={showExchangeRateColumn}
               editorDirectories={editorDirectories}
