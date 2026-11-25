@@ -125,7 +125,7 @@ describe('first-month analytics', () => {
       outcome: 'ok',
       error_code: 'none',
       rows_bucket: '10-100',
-      duration_bucket: '<10s',
+      duration_bucket: '<1s',
     });
     window.dispatchEvent(new Event('pagehide'));
     window.dispatchEvent(new Event('pagehide'));

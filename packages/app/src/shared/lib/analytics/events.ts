@@ -20,6 +20,15 @@ export type CountBucket = (typeof COUNT_BUCKETS)[number];
 export const DURATION_BUCKETS = ['<10s', '10-60s', '1-5m', '5-15m', '15m+'] as const;
 export type DurationBucket = (typeof DURATION_BUCKETS)[number];
 
+/**
+ * DURATION_BUCKETS with '<10s' split into '<1s', '1-3s' and '3-10s', for
+ * things that usually take seconds (workspace open, imports, startup). The
+ * three add up to the old '<10s', so charts across the switch (v1.23) still
+ * compare: events before it only have '<10s'.
+ */
+export const TIMING_BUCKETS = ['<1s', '1-3s', '3-10s', '10-60s', '1-5m', '5-15m', '15m+'] as const;
+export type TimingBucket = (typeof TIMING_BUCKETS)[number];
+
 export const AGE_BUCKETS = ['<1h', '1-24h', '1d+'] as const;
 export type AgeBucket = (typeof AGE_BUCKETS)[number];
 
@@ -498,7 +507,7 @@ export const EVENT_SCHEMA = {
     outcome: OUTCOMES,
     error_code: ERROR_CODES,
     rows_bucket: COUNT_BUCKETS,
-    duration_bucket: DURATION_BUCKETS,
+    duration_bucket: TIMING_BUCKETS,
   },
 
   // A YNAB import whose verification found differences: the review screen's
@@ -626,7 +635,7 @@ export const EVENT_SCHEMA = {
     outcome: OK_ERROR,
     path: ACTIVATION_PATHS,
     error_code: ERROR_CODES,
-    duration_bucket: DURATION_BUCKETS,
+    duration_bucket: TIMING_BUCKETS,
   },
   update_required_shown: NONE,
   money_integrity_warning_shown: { kind: MONEY_INTEGRITY_KINDS },
@@ -702,6 +711,14 @@ export function durationBucket(ms: number): DurationBucket {
   if (s < 300) return '1-5m';
   if (s < 900) return '5-15m';
   return '15m+';
+}
+
+export function timingBucket(ms: number): TimingBucket {
+  const s = Number.isFinite(ms) ? ms / 1000 : 0;
+  if (s < 1) return '<1s';
+  if (s < 3) return '1-3s';
+  if (s < 10) return '3-10s';
+  return durationBucket(ms) as Exclude<DurationBucket, '<10s'>;
 }
 
 export function ageBucket(ms: number): AgeBucket {
