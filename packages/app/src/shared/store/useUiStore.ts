@@ -1,5 +1,10 @@
 import { create } from 'zustand';
-import { getFormatOptionFromLabel, currencyDisplayFor } from '@shared/lib/number-format';
+import {
+  currencyDisplayFor,
+  getFormatOptionFromLabel,
+  numberFormatForSettings,
+  type FormatSettings,
+} from '@shared/lib/number-format';
 import type { Account, Budget, Category } from '@budgero/core/browser';
 import { getCurrencyInfo, isCryptoCurrency, MILLIS_PER_UNIT } from '@budgero/core/browser';
 import { DateRange } from 'react-day-picker';
@@ -23,10 +28,10 @@ export function buildCurrencyLocalizer(
     return null;
   }
   if (isCryptoCurrency(currency)) {
-    return buildCryptoLocalizer(currency, settings.locale, settings.useGrouping);
+    return buildCryptoLocalizer(currency, settings);
   }
   try {
-    return Intl.NumberFormat(settings.locale, {
+    return numberFormatForSettings(settings, {
       style: 'currency',
       currency,
       currencyDisplay: currencyDisplayFor(currency),
@@ -36,7 +41,7 @@ export function buildCurrencyLocalizer(
     });
   } catch {
     // Non-ISO code Intl refuses: plain decimal formatting with a code suffix.
-    const base = Intl.NumberFormat(settings.locale, {
+    const base = numberFormatForSettings(settings, {
       minimumFractionDigits: settings.fractionDigits,
       maximumFractionDigits: settings.fractionDigits,
       useGrouping: settings.useGrouping,
@@ -55,17 +60,13 @@ export function buildCurrencyLocalizer(
  * the localizer. This localizer absorbs the residual scale factor so all existing
  * native-amount call sites render crypto correctly without changes.
  */
-function buildCryptoLocalizer(
-  currency: string,
-  locale: string,
-  useGrouping: boolean
-): Intl.NumberFormat {
+function buildCryptoLocalizer(currency: string, settings: FormatSettings): Intl.NumberFormat {
   const info = getCurrencyInfo(currency);
   const residualScale = info.scale / MILLIS_PER_UNIT;
-  const base = Intl.NumberFormat(locale, {
+  const base = numberFormatForSettings(settings, {
     minimumFractionDigits: 0,
     maximumFractionDigits: info.displayDecimals,
-    useGrouping,
+    useGrouping: settings.useGrouping,
   });
   return {
     format: (value: number) => `${base.format(value / residualScale)} ${info.code}`,

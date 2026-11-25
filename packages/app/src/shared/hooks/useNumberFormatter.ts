@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { numberFormatLike } from '@shared/lib/number-format';
 
 /**
  * Returns a memoized plain number formatter for non-currency fields.
@@ -9,7 +10,7 @@ import { useMemo } from 'react';
 export function usePlainNumberFormatter(globalLocalizer: Intl.NumberFormat): Intl.NumberFormat {
   return useMemo(() => {
     const resolvedOptions = globalLocalizer.resolvedOptions();
-    return new Intl.NumberFormat(resolvedOptions.locale, {
+    return numberFormatLike(globalLocalizer, {
       minimumFractionDigits: 0,
       maximumFractionDigits: 6,
       useGrouping: resolvedOptions.useGrouping,

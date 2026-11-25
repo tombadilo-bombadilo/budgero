@@ -39,7 +39,7 @@ export function CashflowTrendCard({
 }: CashflowTrendCardProps) {
   const { t } = useLingui();
 
-  const compactFormatter = useCompactNumberFormat(globalLocalizer.resolvedOptions().locale);
+  const compactFormatter = useCompactNumberFormat(globalLocalizer);
   const today = new Date();
   const effectiveEndDate = endDate && endDate.length > 0 ? endDate : format(today, 'yyyy-MM-dd');
   const effectiveStartDate =
