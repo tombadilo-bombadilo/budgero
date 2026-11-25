@@ -180,7 +180,8 @@ export function CalculatorInput({
       e.preventDefault();
       e.stopPropagation();
       onCancel();
-    } else if (shortcuts && (e.ctrlKey || e.metaKey)) {
+    } else if (shortcuts && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      // Letters can't be part of an amount, so plain H/D/Z/T are free to use.
       const shortcut = applyShortcut(e.key?.toLowerCase() ?? '', value);
       if (shortcut) {
         e.preventDefault();

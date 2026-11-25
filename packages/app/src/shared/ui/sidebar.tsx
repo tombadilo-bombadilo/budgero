@@ -10,6 +10,7 @@ import { PanelLeftIcon } from 'lucide-react';
 
 import { useIsMobile } from '@shared/hooks/useIsMobile';
 import { cn } from '@shared/lib/utils';
+import { isTypingTarget, SIDEBAR_SHORTCUT_KEY } from '@shared/lib/keyboard-shortcuts';
 import { Button } from '@shared/ui/button';
 import { Input } from '@shared/ui/input';
 import { Separator } from '@shared/ui/separator';
@@ -31,7 +32,6 @@ const SIDEBAR_WIDTH = '20rem';
 const SIDEBAR_WIDTH_PINNED_NARROW = '16rem';
 const SIDEBAR_WIDTH_MOBILE = '18rem';
 const SIDEBAR_WIDTH_ICON = '3rem';
-const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
 export const SIDEBAR_TABLET_BREAKPOINT = 1600;
 /**
  * Below the tablet breakpoint the sidebar slides out, unless the user pinned
@@ -129,10 +129,13 @@ function SidebarProvider({
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === SIDEBAR_KEYBOARD_SHORTCUT && (event.metaKey || event.ctrlKey)) {
-        event.preventDefault();
-        toggleSidebar();
-      }
+      // Matched on the typed character, so layouts that need AltGr (Ctrl+Alt
+      // on Windows) or Option on a Mac to type "[" still work.
+      if (event.key !== SIDEBAR_SHORTCUT_KEY || event.repeat || event.metaKey) return;
+      if (event.ctrlKey && !event.altKey) return;
+      if (isTypingTarget(event.target)) return;
+      event.preventDefault();
+      toggleSidebar();
     };
 
     window.addEventListener('keydown', handleKeyDown);

@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { useUndoStore } from '@shared/mutations/UndoStore';
 import { toast } from 'sonner';
 import { getErrorMessage, toastError } from '@shared/lib/errors';
+import { isApplePlatform } from '@shared/lib/keyboard-shortcuts';
 
 export function GlobalUndoHotkeys() {
   const { t } = useLingui();
@@ -61,7 +62,8 @@ export function GlobalUndoHotkeys() {
               });
             });
         }
-      } else if ((k === 'z' && e.shiftKey) || k === 'y') {
+      } else if ((k === 'z' && e.shiftKey) || (k === 'y' && !e.shiftKey && !isApplePlatform())) {
+        // ⌘Y opens History in Safari and Chrome on a Mac, so redo there is ⇧⌘Z only.
         if (canRedo()) {
           e.preventDefault();
           redo()

@@ -1,4 +1,4 @@
-import { currencyDisplayFor } from '@shared/lib/number-format';
+import { currencyDisplayFor, numberFormatLike } from '@shared/lib/number-format';
 import { useMemo } from 'react';
 import { useUiStore } from '@shared/store/useUiStore';
 import { formatMaskedMilli } from '@shared/lib/privacy/mask-numbers';
@@ -36,14 +36,14 @@ export function useMoneyFormatters(): MoneyFormatters {
   const masked = useUiStore((state) => state.privacyMaskNumbers);
   return useMemo(() => {
     const resolved = localizer.resolvedOptions();
-    const compactFormat = new Intl.NumberFormat(resolved.locale, {
+    const compactFormat = numberFormatLike(localizer, {
       style: 'currency',
       currency: resolved.currency ?? 'USD',
       currencyDisplay: currencyDisplayFor(resolved.currency ?? 'USD'),
       notation: 'compact',
       maximumFractionDigits: 1,
     });
-    const tileFormat = new Intl.NumberFormat(resolved.locale, {
+    const tileFormat = numberFormatLike(localizer, {
       style: 'currency',
       currency: resolved.currency ?? 'USD',
       currencyDisplay: currencyDisplayFor(resolved.currency ?? 'USD'),

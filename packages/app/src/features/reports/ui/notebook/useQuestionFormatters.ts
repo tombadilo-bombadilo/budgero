@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { getField, type QuestionColumn, type QuestionSource } from '@features/reports/lib/question';
 import type { QueryResult } from '@shared/lib/sql/report-query-executor';
-import { currencyDisplayFor } from '@shared/lib/number-format';
+import { currencyDisplayFor, numberFormatLike } from '@shared/lib/number-format';
 import { formatMaskedMilli, maskFormattedIfEnabled } from '@shared/lib/privacy/mask-numbers';
 import { useUiStore } from '@shared/store/useUiStore';
 import {
@@ -60,22 +60,22 @@ export function useQuestionFormatters(
   return useMemo(() => {
     const resolved = localizer.resolvedOptions();
     const currency = resolved.currency ?? 'USD';
-    const compactMoney = new Intl.NumberFormat(resolved.locale, {
+    const compactMoney = numberFormatLike(localizer, {
       style: 'currency',
       currency,
       currencyDisplay: currencyDisplayFor(currency),
       notation: 'compact',
       maximumFractionDigits: 1,
     });
-    const plain = new Intl.NumberFormat(resolved.locale, { maximumFractionDigits: 2 });
+    const plain = numberFormatLike(localizer, { maximumFractionDigits: 2 });
     // Range bounds like 200 or 1,000 read without cents.
-    const wholeMoney = new Intl.NumberFormat(resolved.locale, {
+    const wholeMoney = numberFormatLike(localizer, {
       style: 'currency',
       currency,
       currencyDisplay: currencyDisplayFor(currency),
       maximumFractionDigits: 0,
     });
-    const compactPlain = new Intl.NumberFormat(resolved.locale, {
+    const compactPlain = numberFormatLike(localizer, {
       notation: 'compact',
       maximumFractionDigits: 1,
     });
@@ -84,7 +84,7 @@ export function useQuestionFormatters(
     const percent: QuestionFormatters['percent'] = (ratio, fractionDigits = 0) => {
       let formatter = percentFormats.get(fractionDigits);
       if (!formatter) {
-        formatter = new Intl.NumberFormat(resolved.locale, {
+        formatter = numberFormatLike(localizer, {
           style: 'percent',
           maximumFractionDigits: fractionDigits,
         });

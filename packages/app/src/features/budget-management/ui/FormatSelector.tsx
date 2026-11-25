@@ -4,7 +4,11 @@ import { useLingui } from '@lingui/react/macro';
 
 import React, { useId } from 'react';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@shared/ui/select';
-import { formatOptions, currencyDisplayFor } from '@shared/lib/number-format';
+import {
+  currencyDisplayFor,
+  formatOptions,
+  numberFormatForSettings,
+} from '@shared/lib/number-format';
 
 interface FormatSelectorProps {
   value: string;
@@ -24,7 +28,7 @@ export const FormatSelector: React.FC<FormatSelectorProps> = ({
   const triggerId = useId();
   // Let React Compiler handle this optimization automatically
   const formattedOptions = formatOptions.map((option) => {
-    const formatter = new Intl.NumberFormat(option.settings.locale, {
+    const formatter = numberFormatForSettings(option.settings, {
       style: 'currency',
       currency,
       currencyDisplay: currencyDisplayFor(currency),
