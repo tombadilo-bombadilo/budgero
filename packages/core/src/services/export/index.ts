@@ -2,6 +2,7 @@ import type { ServiceManager } from '../service-manager.js';
 import { allRows } from '../../database/sql.js';
 import { MONEY_COLUMNS_BY_TABLE } from '../../database/money-columns.js';
 import { FIAT_SCALE, getCurrencyScale } from '../../currencies/index.js';
+import { goalRow } from '../goals/types.js';
 
 /** Native-side columns are stored at the account currency's scale; everything
  * else is budget-currency milliunits. */
@@ -137,7 +138,8 @@ export class DatabaseExportService implements ExportService {
       );
       csvFiles['assignments.csv'] = arrayToCSV(moneyColumnsToDecimal(assignments, 'assignments'));
 
-      const goals = services.goals.getAllGoals();
+      // Stored columns only (no computed budget-currency conversions).
+      const goals = services.goals.getAllGoals().map(goalRow);
 
       csvFiles['goals.csv'] = arrayToCSV(
         moneyColumnsToDecimal(goals as unknown as Record<string, unknown>[], 'goals')

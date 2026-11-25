@@ -1,6 +1,8 @@
 import { DatabaseAdapter } from '../../database/interface.js';
 import { insertRawRow, type RawRow } from '../../database/restore-rows.js';
-import type { MilliUnits } from '../../money/index.js';
+import { asMilli, type MilliUnits } from '../../money/index.js';
+import { convertScaled, isCryptoCurrency } from '../../currencies/index.js';
+import { lookupStoredRate } from '../currency/display-rate.js';
 import { getLocalDateString } from '../../utils/date.js';
 import { NotFoundError, ValidationError } from '../../types/index.js';
 import {
@@ -9,6 +11,9 @@ import {
   GoalPurpose,
   GOAL_CYCLE_MONTHS_ERROR,
   isValidCycleMonths,
+  isValidGoalCurrencyCode,
+  goalRow,
+  type GoalRateSource,
 } from './types.js';
 import { GoalQueries } from './queries.js';
 import {
@@ -23,7 +28,7 @@ import {
   type GoalTimeframeChange,
   type GoalTimeframeNotice,
 } from './timeframes.js';
-import { atomically } from '../../database/sql.js';
+import { allRows, atomically } from '../../database/sql.js';
 import {
   GoalCalculations,
   GoalProgress,
@@ -53,6 +58,13 @@ export {
   MIN_GOAL_CYCLE_MONTHS,
   MAX_GOAL_CYCLE_MONTHS,
   GOAL_CYCLE_MONTHS_ERROR,
+  COMPUTED_GOAL_FIELDS,
+  goalRow,
+  isValidGoalCurrencyCode,
+  goalTargetCurrency,
+  goalTargetInBudgetCurrency,
+  goalInBudgetCurrency,
+  type GoalRateSource,
 } from './types.js';
 
 export type {
@@ -77,6 +89,8 @@ export interface GoalFields {
   targetDate: string;
   recurring?: boolean;
   cycleMonths?: number | null;
+  /** Currency of `target`; null/omitted = the budget currency. */
+  targetCurrency?: string | null;
 }
 
 /** This month (YYYY-MM) by the services' clock. */
@@ -108,11 +122,96 @@ function normalizeCycleMonths(
   return cycleMonths;
 }
 
+export const GOAL_CURRENCY_ERROR =
+  'Goal currency must be a three-letter fiat currency code (crypto goals are not supported)';
+
 export class GoalService {
   private queries: GoalQueries;
 
   constructor(private db: DatabaseAdapter) {
     this.queries = new GoalQueries(db);
+  }
+
+  /** The budget (ID and currency) a category belongs to, or null. */
+  private budgetOfCategory(categoryId: number): { id: number; currency: string } | null {
+    const row = allRows<{ ID: number; DisplayCurrency: string }>(
+      this.db,
+      `SELECT b.ID, b.DisplayCurrency FROM categories c JOIN budgets b ON b.ID = c.BudgetID
+       WHERE c.ID = ?`,
+      categoryId
+    )[0];
+    return row ? { id: row.ID, currency: row.DisplayCurrency } : null;
+  }
+
+  /**
+   * The TargetCurrency to store: null for the budget currency (also when the
+   * arg is absent, which is how older builds' payloads mean it), else an
+   * upper-case fiat code. Crypto is refused: goal targets are fiat amounts.
+   */
+  private normalizeTargetCurrency(categoryId: number, value: unknown): string | null {
+    if (value === undefined || value === null || value === '') return null;
+    const code = typeof value === 'string' ? value.trim().toUpperCase() : value;
+    if (!isValidGoalCurrencyCode(code) || isCryptoCurrency(code)) {
+      throw new ValidationError(GOAL_CURRENCY_ERROR, 'TargetCurrency');
+    }
+    const budgetCurrency = this.budgetOfCategory(categoryId)?.currency;
+    return budgetCurrency && budgetCurrency.toUpperCase() === code ? null : code;
+  }
+
+  /**
+   * Adds TargetConverted / TargetRateSource to goals whose target is in
+   * another currency than their budget's: the target at today's rate, from
+   * this device's rates (custom, official, manual, then the newest cached;
+   * 1:1 with source 'missing' when there is none yet). Pure read.
+   */
+  withBudgetCurrencyTargets(goals: Goal[]): Goal[] {
+    if (!goals.some((goal) => typeof goal.TargetCurrency === 'string' && goal.TargetCurrency)) {
+      return goals;
+    }
+    const today = getLocalDateString();
+    const budgets = new Map<number, { id: number; currency: string } | null>();
+    const rates = new Map<string, { rate: number; source: GoalRateSource }>();
+    return goals.map((goal) => {
+      const raw = goal.TargetCurrency;
+      if (typeof raw !== 'string' || raw === '') return goal;
+      if (!budgets.has(goal.CategoryID)) {
+        budgets.set(goal.CategoryID, this.budgetOfCategory(goal.CategoryID));
+      }
+      const budget = budgets.get(goal.CategoryID);
+      const currency = raw.toUpperCase();
+      if (!budget || currency === budget.currency.toUpperCase()) return goal;
+      const key = `${budget.id}:${currency}`;
+      let found = rates.get(key);
+      if (!found) {
+        const stored = lookupStoredRate(this.db, currency, budget.currency, today, budget.id);
+        found = stored ?? { rate: 1, source: 'missing' };
+        rates.set(key, found);
+      }
+      let converted: MilliUnits;
+      try {
+        converted = asMilli(convertScaled(goal.Target, found.rate, currency, budget.currency));
+      } catch {
+        // An out-of-range product: count the target as is rather than fail the read.
+        converted = goal.Target;
+        found = { rate: 1, source: 'missing' };
+      }
+      return { ...goal, TargetConverted: converted, TargetRateSource: found.source };
+    });
+  }
+
+  /**
+   * Distinct foreign target currencies of the goals and their budget, for
+   * callers that want fresh rates before reading (see the app's useGoals).
+   */
+  getForeignGoalCurrencies(): { budgetId: number; budgetCurrency: string; currency: string }[] {
+    return allRows<{ budgetId: number; budgetCurrency: string; currency: string }>(
+      this.db,
+      `SELECT DISTINCT b.ID AS budgetId, b.DisplayCurrency AS budgetCurrency,
+              UPPER(g.TargetCurrency) AS currency
+       FROM goals g JOIN categories c ON c.ID = g.CategoryID JOIN budgets b ON b.ID = c.BudgetID
+       WHERE g.TargetCurrency IS NOT NULL AND g.TargetCurrency != ''
+         AND UPPER(g.TargetCurrency) != UPPER(b.DisplayCurrency)`
+    );
   }
 
   /**
@@ -132,7 +231,9 @@ export class GoalService {
     purpose: GoalPurpose = GoalPurpose.SPENDING,
     recurring = false,
     cycleMonths?: number | null,
-    timeframe: { from?: string | null; to?: string | null } = {}
+    timeframe: { from?: string | null; to?: string | null } = {},
+    /** Currency of `target`; null/omitted = the budget currency. */
+    targetCurrency?: string | null
   ): number {
     const from = timeframe.from ?? effectiveFromForStartDate(startDate);
     const to = timeframe.to ?? null;
@@ -149,6 +250,7 @@ export class GoalService {
     if (chain.some((goal) => goalEffectiveFrom(goal) === from)) {
       throw new ValidationError(`Category ${categoryId} already has a goal starting in ${from}`);
     }
+    const currency = this.normalizeTargetCurrency(categoryId, targetCurrency);
     return this.queries.createGoal(
       goalType,
       categoryId,
@@ -159,13 +261,14 @@ export class GoalService {
       recurring,
       normalizeCycleMonths(recurring, cycleMonths, null),
       from,
-      to
+      to,
+      currency
     );
   }
 
   /** Every timeframe of a category's goal, in chain order. */
   getGoalTimeframes(categoryId: number): Goal[] {
-    return this.queries.getTimeframes(categoryId);
+    return this.withBudgetCurrencyTargets(this.queries.getTimeframes(categoryId));
   }
 
   /**
@@ -177,17 +280,19 @@ export class GoalService {
     if (!goal) {
       throw new NotFoundError(`Goal for category ${categoryId} not found`);
     }
-    return goal;
+    return this.withBudgetCurrencyTargets([goal])[0];
   }
 
   /** GetGoalsByCategoryIDs - These categories' goals that apply in `month` (default: this month). */
   getGoalsByCategoryIDs(categoryIds: number[], month: string = currentMonth()): Goal[] {
-    return resolveGoalsForMonth(this.queries.getTimeframesForCategories(categoryIds), month);
+    return this.withBudgetCurrencyTargets(
+      resolveGoalsForMonth(this.queries.getTimeframesForCategories(categoryIds), month)
+    );
   }
 
   /** Every category's goal that applies in `month` (YYYY-MM). */
   getGoalsForMonth(month: string): Goal[] {
-    return resolveGoalsForMonth(this.queries.getAllGoals(), month);
+    return this.withBudgetCurrencyTargets(resolveGoalsForMonth(this.queries.getAllGoals(), month));
   }
 
   /**
@@ -207,7 +312,7 @@ export class GoalService {
     if (!Number.isSafeInteger(Number(goal?.ID)) || Number(goal.ID) <= 0) {
       throw new ValidationError('A restored goal needs its original ID');
     }
-    insertRawRow(this.db, 'goals', goal);
+    insertRawRow(this.db, 'goals', goalRow(goal as Partial<Goal>) as RawRow);
   }
 
   /**
@@ -229,7 +334,9 @@ export class GoalService {
     cycleMonths?: number | null,
     /** New start date (YYYY-MM-DD); omitted/null keeps the stored one. */
     startDate?: string | null,
-    effectiveFrom?: string | null
+    effectiveFrom?: string | null,
+    /** Currency of `target`; null/omitted = the budget currency (older builds' payloads). */
+    targetCurrency?: string | null
   ): void {
     const chain = this.queries.getTimeframes(categoryId);
     const currentGoal =
@@ -258,6 +365,7 @@ export class GoalService {
         ? effectiveFromForStartDate(nextStartDate)
         : goalEffectiveFrom(currentGoal),
       effectiveTo: goalEffectiveTo(currentGoal),
+      targetCurrency: this.normalizeTargetCurrency(categoryId, targetCurrency),
     });
   }
 
@@ -276,6 +384,7 @@ export class GoalService {
       const plan = planGoalTimeframeChange(chain, change);
       const recurring = fields.recurring ?? false;
       const purpose = fields.purpose ?? GoalPurpose.SPENDING;
+      const currency = this.normalizeTargetCurrency(categoryId, fields.targetCurrency);
       if (plan.overwrite !== null) {
         const stored = chain.find((goal) => goal.ID === plan.overwrite)!;
         this.queries.updateGoalRow(plan.overwrite, {
@@ -292,6 +401,7 @@ export class GoalService {
           startDate: fields.startDate,
           effectiveFrom: from,
           effectiveTo: to ?? null,
+          targetCurrency: currency,
         });
         return plan.overwrite;
       }
@@ -305,7 +415,8 @@ export class GoalService {
         recurring,
         normalizeCycleMonths(recurring, fields.cycleMonths, null),
         from,
-        to ?? null
+        to ?? null,
+        currency
       );
     });
   }
@@ -343,7 +454,7 @@ export class GoalService {
    * getGoalsForMonth (or resolveGoalsForMonth) for the goals of a month.
    */
   getAllGoals(): Goal[] {
-    return this.queries.getAllGoals();
+    return this.withBudgetCurrencyTargets(this.queries.getAllGoals());
   }
 
   /**

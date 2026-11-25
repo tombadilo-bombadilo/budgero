@@ -59,6 +59,24 @@ const NATURAL_KEYS: Record<string, string[]> = {
  */
 const UNJOURNALED_TABLES = new Set(['mutation_history', 'currency_rates', 'schema_migrations']);
 
+/**
+ * Columns a newer schema added whose NULL is also the column default, per
+ * table. A deleted row leaves them out while they are NULL: restoring it puts
+ * back the same NULL, and builds that don't have the column yet (which refuse
+ * unknown columns) can still restore the journal.
+ */
+const UNSET_WHEN_NULL: Record<string, readonly string[]> = {
+  goals: ['TargetCurrency'],
+};
+
+function dropUnsetColumns(table: string, row: JournalRow): JournalRow {
+  const columns = UNSET_WHEN_NULL[table];
+  if (!columns?.some((column) => column in row && row[column] === null)) return row;
+  const copy = { ...row };
+  for (const column of columns) if (copy[column] === null) delete copy[column];
+  return copy;
+}
+
 export interface ForeignKey {
   child: string;
   column: string;
@@ -344,7 +362,10 @@ export class RowCapture {
       for (const group of groups.values()) journal.changed.push({ table: name, ...group });
     }
     for (const name of insertOrder(this.schema, [...deletedByTable.keys()])) {
-      journal.deleted.push({ table: name, rows: deletedByTable.get(name)! });
+      journal.deleted.push({
+        table: name,
+        rows: deletedByTable.get(name)!.map((row) => dropUnsetColumns(name, row)),
+      });
     }
     for (const [name, watch] of this.watched) {
       const table = this.table(name);
@@ -523,7 +544,10 @@ class ChangeRecorder {
       }
     }
     for (const name of insertOrder(this.schema, [...deletedByTable.keys()])) {
-      journal.deleted.push({ table: name, rows: deletedByTable.get(name)! });
+      journal.deleted.push({
+        table: name,
+        rows: deletedByTable.get(name)!.map((row) => dropUnsetColumns(name, row)),
+      });
     }
     for (const name of insertOrder(this.schema, [...insertedByTable.keys()])) {
       journal.inserted.push(insertedByTable.get(name)!);
