@@ -47,11 +47,7 @@ export const PAGE_GUIDE_CARDS = Object.fromEntries(
 export type PageGuideCardKey<G extends PageGuideId = PageGuideId> =
   (typeof PAGE_GUIDES)[G]['cards'][number];
 
-/** budgero.app docs page; English is unprefixed, the other locales are not. */
-export function docsUrl(slug: string, locale: string): string {
-  const prefix = ['de', 'fr', 'es', 'nl'].includes(locale) ? `/${locale}` : '';
-  return `https://budgero.app${prefix}/docs/${slug}`;
-}
+export { docsUrl } from '@shared/lib/docs-url';
 
 /** The guide for a route, if the page has one. */
 export function pageGuideForPath(pathname: string): PageGuideId | null {
