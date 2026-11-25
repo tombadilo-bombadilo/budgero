@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { webcrypto } from 'node:crypto';
+import { UnsupportedImportFileError } from '@features/import/lib/constants';
 import { useImportDialogState } from './useImportDialogState';
 
 const mocks = vi.hoisted(() => {
@@ -648,5 +649,35 @@ describe('import wizard execution', () => {
     });
     expect(hook.result.current.importConfig.accountRoutes).toBeUndefined();
     expect(hook.result.current.importConfig.defaultAccountId).toBe(10);
+  });
+});
+
+describe('picking a file', () => {
+  async function pick() {
+    const hook = renderHook(() => useImportDialogState());
+    await act(async () => {
+      await hook.result.current.handleFileChange({ target: { files: [{}] } } as never);
+    });
+    return hook.result;
+  }
+
+  it('shows an unsupported file type to the user without logging it as an error', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    mocks.parse.mockRejectedValue(new UnsupportedImportFileError('Please upload a CSV file.'));
+    const result = await pick();
+    expect(result.current.error).toBe('Please upload a CSV file.');
+    expect(result.current.currentStep).toBe('upload');
+    expect(consoleError).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
+  it('still logs a file that fails to parse', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    const failure = new Error('No transactions found');
+    mocks.parse.mockRejectedValue(failure);
+    const result = await pick();
+    expect(result.current.error).toBe('No transactions found');
+    expect(consoleError).toHaveBeenCalledWith('File parsing error:', failure);
+    consoleError.mockRestore();
   });
 });

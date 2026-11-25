@@ -14,6 +14,7 @@ import { extractTablesFromPDF, mergeExtractedTables } from '@features/import/lib
 import {
   isSupportedImportFile,
   SUPPORTED_IMPORT_FORMATS_LABEL,
+  UnsupportedImportFileError,
 } from '@features/import/lib/constants';
 import type { ImportConfig, ParsedData, RawTableData } from '@features/import/model/types';
 
@@ -65,7 +66,7 @@ export async function parseImportFile(
 
   if (!isSupportedImportFile(file)) {
     const formats = t(SUPPORTED_IMPORT_FORMATS_LABEL);
-    throw new Error(t`Please upload a ${formats} file.`);
+    throw new UnsupportedImportFileError(t`Please upload a ${formats} file.`);
   }
 
   const fileType = file.name.toLowerCase();

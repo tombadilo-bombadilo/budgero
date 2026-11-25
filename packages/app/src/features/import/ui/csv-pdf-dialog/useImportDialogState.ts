@@ -54,6 +54,7 @@ import { buildFileImportPreview, importTolerance } from '@features/import/lib/pl
 import { trackImportedCsvPdf } from '@shared/lib/analytics/analytics';
 import { startImportRun, trackAccountsMapped } from '@shared/lib/analytics/import-tracking';
 import { parseImportFile } from '@features/import/lib/parse-import-file';
+import { UnsupportedImportFileError } from '@features/import/lib/constants';
 import { useImportTemplates } from './useImportTemplates';
 
 /** Run record batch size (rows) and maximum age (ms) between saves. */
@@ -284,7 +285,8 @@ export function useImportDialogState(): ImportDialogState {
         setColumnMapping(detectColumnMapping(result.data.headers));
         setCurrentStep('configure');
       } catch (err) {
-        console.error('File parsing error:', err);
+        // A wrong file type is the user's pick, shown inline; only real parse failures are errors.
+        if (!(err instanceof UnsupportedImportFileError)) console.error('File parsing error:', err);
         setError(getErrorMessage(err, t`Failed to parse file`));
       }
     },
