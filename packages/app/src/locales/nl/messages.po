@@ -3372,10 +3372,6 @@ msgstr "Rekening:"
 msgid "Account: {shown}"
 msgstr "Rekening: {shown}"
 
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#~ msgid "Account<0/>"
-#~ msgstr "Rekening<0/>"
-
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/layout/desktop-shell/SidebarNav.tsx
 #: src/features/analytics/ui/IncomeExpenseByGroupChart.tsx
@@ -4866,10 +4862,6 @@ msgstr "Te bereiken saldo"
 msgid "Balance: {0}"
 msgstr "Saldo: {0}"
 
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#~ msgid "Balance<0/>"
-#~ msgstr "Saldo<0/>"
-
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Balances and net worth"
 msgstr "Saldi en nettovermogen"
@@ -5380,10 +5372,6 @@ msgstr "Budgetplanning"
 msgid "Budget rate"
 msgstr "Budgetkoers"
 
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#~ msgid "Budget rate<0/>"
-#~ msgstr "Budgetkoers<0/>"
-
 #: src/pages/settings/BudgetSettingsPage.tsx
 #: src/shared/model/nav-registry.ts
 msgid "Budget Settings"
@@ -5839,10 +5827,6 @@ msgstr "Categorie:"
 #: src/shared/lib/search-query-parser.ts
 msgid "Category: {shown}"
 msgstr "Categorie: {shown}"
-
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#~ msgid "Category<0/>"
-#~ msgstr "Categorie<0/>"
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "CC Payment Calculation"
@@ -7868,10 +7852,6 @@ msgstr "Datum waarop de lening begon of werd uitbetaald."
 #: src/pages/explorer-page/hooks/useExplorerState.ts
 msgid "date_trunc time_bucket strftime epoch list array_agg string_agg approx_count_distinct arg_max arg_min"
 msgstr "date_trunc time_bucket strftime epoch list array_agg string_agg approx_count_distinct arg_max arg_min"
-
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#~ msgid "Date<0/>"
-#~ msgstr "Datum<0/>"
 
 #: src/features/budget-management/ui/create-budget-form/YnabDateOrderChoice.tsx
 msgid "Dates in this export"
@@ -11357,10 +11337,6 @@ msgstr "Instroom van schuldrekeningen"
 msgid "Inflow vs Outflow"
 msgstr "Inkomsten vs Uitgaven"
 
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#~ msgid "Inflow<0/>"
-#~ msgstr "Inkomsten<0/>"
-
 #: src/shared/lib/search-query-parser.ts
 msgid "Inflows"
 msgstr "Inkomsten"
@@ -11853,10 +11829,6 @@ msgstr "Label: {name}"
 #: src/shared/lib/search-query-parser.ts
 msgid "Label: {shown}"
 msgstr "Label: {shown}"
-
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#~ msgid "Label<0/>"
-#~ msgstr "Label<0/>"
 
 #: src/features/labels/ui/LabelCombobox.tsx
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
@@ -12777,10 +12749,6 @@ msgstr "Memo:"
 #: src/shared/lib/search-query-parser.ts
 msgid "Memo: {shown}"
 msgstr "Memo: {shown}"
-
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#~ msgid "Memo<0/>"
-#~ msgstr "Memo<0/>"
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Merchant or counterparty name"
@@ -15157,10 +15125,6 @@ msgstr "van de {0}begroot"
 msgid "Outflow"
 msgstr "Uitgaven"
 
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#~ msgid "Outflow<0/>"
-#~ msgstr "Uitgaven<0/>"
-
 #: src/shared/lib/search-query-parser.ts
 msgid "Outflows"
 msgstr "Uitgaven"
@@ -15450,10 +15414,6 @@ msgstr "Begunstigde:"
 #: src/shared/lib/search-query-parser.ts
 msgid "Payee: {shown}"
 msgstr "Begunstigde: {shown}"
-
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-#~ msgid "Payee<0/>"
-#~ msgstr "Begunstigde<0/>"
 
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
