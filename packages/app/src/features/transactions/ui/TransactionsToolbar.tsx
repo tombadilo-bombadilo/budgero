@@ -16,6 +16,7 @@ import { CountryFlag } from '@shared/ui/country-flag';
 import { CryptoIcon } from '@entities/currency/ui/CryptoIcon';
 import { isCryptoCurrency } from '@budgero/core/browser';
 import { SearchActiveFilters } from '@features/transactions/ui/SearchActiveFilters';
+import { SearchHelpPopover } from '@features/transactions/ui/SearchHelpPopover';
 import { currencies } from '@features/currencies/model/currency-data';
 import type { ParsedSearchQuery, MatchedToken } from '@shared/lib/search-query-parser';
 import type { Account, Budget } from '@budgero/core/browser';
@@ -175,8 +176,10 @@ export function TransactionsToolbar({
                 }
               }
             }}
-            className="pl-8"
+            className="pl-8 pr-9"
+            aria-label={t`Search transactions`}
           />
+          <SearchHelpPopover onPickExample={setSearchQuery} />
           {/* Category Suggestions Dropdown */}
           {categorySuggestions.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-popover border border-border rounded-md shadow-md overflow-hidden">

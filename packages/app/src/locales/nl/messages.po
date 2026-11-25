@@ -1137,6 +1137,10 @@ msgstr "{days, plural, one {±# dag} other {±# dagen}}"
 msgid "{days, plural, one {Last # day} other {Last # days}}"
 msgstr "{days, plural, one {Laatste # dag} other {Laatste # dagen}}"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "{days, plural, one {Next # day} other {Next # days}}"
+msgstr "{days, plural, one {Komende # dag} other {Komende # dagen}}"
+
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "{days} days"
 msgstr "{days} dagen"
@@ -3358,6 +3362,10 @@ msgstr "Rekening bijgewerkt"
 msgid "Account:"
 msgstr "Rekening:"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Account: {shown}"
+msgstr "Rekening: {shown}"
+
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 msgid "Account<0/>"
 msgstr "Rekening<0/>"
@@ -3823,6 +3831,11 @@ msgstr "Beheerders"
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "After"
 msgstr "Na"
+
+#. placeholder {0}: period.label
+#: src/shared/lib/search-query-parser.ts
+msgid "After {0}"
+msgstr "Na {0}"
 
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 msgid "After N occurrences"
@@ -4947,6 +4960,11 @@ msgstr "Strandrestaurant"
 msgid "Before"
 msgstr "Voor"
 
+#. placeholder {0}: period.label
+#: src/shared/lib/search-query-parser.ts
+msgid "Before {0}"
+msgstr "Vóór {0}"
+
 #. placeholder {0}: (currentCategoryTotalTransactions ?? 0) > 0 && (currentCategoryAssigned ?? 0) !== 0 ? t` transactions and assignments` : (currentCategoryTotalTransactions ?? 0) > 0 ? ' transactions' : ' assignments'
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 msgid "Before you can delete the category, you need to reassign all{0} to a new category."
@@ -4976,6 +4994,10 @@ msgstr "Bètatesters"
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Between"
 msgstr "Tussen"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Between {formattedAmount} and {formattedMax}"
+msgstr "Tussen {formattedAmount} en {formattedMax}"
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "beyond charted window"
@@ -5721,6 +5743,10 @@ msgstr "Categorieën die overeenkomen met \"{0}\""
 msgid "Categories that spent more than they have this month."
 msgstr "Categorieën die deze maand meer hebben uitgegeven dan ze hebben."
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Categorized"
+msgstr "Gecategoriseerd"
+
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
@@ -5793,6 +5819,10 @@ msgstr "Verschillen in categoriegeschiedenis"
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "Category:"
 msgstr "Categorie:"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Category: {shown}"
+msgstr "Categorie: {shown}"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 msgid "Category<0/>"
@@ -7824,6 +7854,10 @@ msgstr "Datum<0/>"
 #: src/features/budget-management/ui/create-budget-form/YnabDateOrderChoice.tsx
 msgid "Dates in this export"
 msgstr "Datums in deze export"
+
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "Dates, amounts, categories, labels and words like outflows or uncleared become filters. Other words must all appear in the payee, memo, category, label or account. Use quotes for an exact phrase, a minus to leave something out, and payee:, memo:, account:, category: or label: to search one field."
+msgstr "Datums, bedragen, categorieën, labels en woorden als outflows of uncleared worden filters. Alle andere woorden moeten voorkomen in de begunstigde, memo, categorie, het label of de rekening. Gebruik aanhalingstekens voor een exacte zin, een minteken om iets uit te sluiten, en payee:, memo:, account:, category: of label: om in één veld te zoeken."
 
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "DAU/MAU"
@@ -9926,6 +9960,10 @@ msgstr "Importrijen filteren"
 msgid "Filter results"
 msgstr "Resultaten filteren"
 
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "Filter words are English in every language."
+msgstr "Filterwoorden zijn in elke taal Engels."
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Filters the transactions a payee's totals count."
 msgstr "Filtert de transacties die meetellen in de totalen van een begunstigde."
@@ -10586,6 +10624,18 @@ msgstr "Halverwege! Spaar deze maand nog {needed}"
 msgid "Halve amount"
 msgstr "Bedrag halveren"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Has label"
+msgstr "Met label"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Has memo"
+msgstr "Met memo"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Has payee"
+msgstr "Met begunstigde"
+
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Have it ready every few months"
 msgstr "Om de paar maanden klaar hebben"
@@ -10798,6 +10848,10 @@ msgstr "Hoeveel je elke maand aan deze categorie wilt toewijzen."
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
 msgid "How numbers and decimals are displayed throughout the app."
 msgstr "Hoe getallen en decimalen worden weergegeven in de hele app."
+
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "How search works"
+msgstr "Zo werkt zoeken"
 
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "How should the assistant handle actions like adding transactions?"
@@ -11734,13 +11788,13 @@ msgstr "Label:"
 msgid "Label: {label}"
 msgstr "Label: {label}"
 
-#: src/features/transactions/ui/SearchActiveFilters.tsx
-msgid "Label: {matchedLabel}"
-msgstr "Label: {matchedLabel}"
+#: src/shared/lib/search-query-parser.ts
+msgid "Label: {name}"
+msgstr "Label: {name}"
 
-#: src/features/transactions/ui/SearchActiveFilters.tsx
-msgid "Label: {raw}"
-msgstr "Label: {raw}"
+#: src/shared/lib/search-query-parser.ts
+msgid "Label: {shown}"
+msgstr "Label: {shown}"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 msgid "Label<0/>"
@@ -11942,6 +11996,10 @@ msgstr "Laatste gebruikers aangemaakt op deze installatie."
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "Latest workspace information has been loaded."
 msgstr "Laatste werkruimte-informatie is geladen."
+
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "Learn more"
+msgstr "Meer informatie"
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Learn more about Budgero or get in touch with the team."
@@ -12655,6 +12713,10 @@ msgstr "Memo-voorwaarden mogen niet leeg zijn."
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "Memo:"
 msgstr "Memo:"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Memo: {shown}"
+msgstr "Memo: {shown}"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 msgid "Memo<0/>"
@@ -13517,9 +13579,15 @@ msgid "Next date"
 msgstr "Volgende datum"
 
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "Next month"
 msgstr "Volgende maand"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Next week"
+msgstr "Volgende week"
+
+#: src/shared/lib/search-query-parser.ts
 #: src/shared/ui/date-range-picker.tsx
 #: src/shared/ui/MonthPickerPopover.tsx
 msgid "Next year"
@@ -13915,6 +13983,7 @@ msgstr "Nog geen facturen. Facturen verschijnen hier na je eerste betaling."
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "No label"
 msgstr "Geen label"
 
@@ -13970,6 +14039,7 @@ msgstr "Nog geen leden."
 
 #: src/features/budget-planning/ui/spending-drawer-mobile/TransactionList.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/shared/lib/search-query-parser.ts
 #: src/widgets/command-palette/CommandPalette.tsx
 #: src/widgets/dashboard/AtAGlance.tsx
 #: src/widgets/dashboard/UncategorizedTransactionsCard.tsx
@@ -14027,6 +14097,7 @@ msgstr "Geen wachtwoord"
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 #: src/pages/analytics/analytics-model.ts
+#: src/shared/lib/search-query-parser.ts
 msgid "No payee"
 msgstr "Geen begunstigde"
 
@@ -14264,6 +14335,10 @@ msgstr "Geen"
 msgid "Noodle bar"
 msgstr "Noedelbar"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Not {label}"
+msgstr "Niet {label}"
+
 #: src/features/transactions/ui/form/DuplicateTransactionHint.tsx
 msgid "Not a duplicate"
 msgstr "Geen duplicaat"
@@ -14325,6 +14400,10 @@ msgstr "Niet helemaal — je gaf {over} meer uit dan de {incomeText} die binnenk
 msgid "Not set"
 msgstr "Niet ingesteld"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Not split"
+msgstr "Niet gesplitst"
+
 #: src/features/bank-sync/ui/BankSyncButton.tsx
 msgid "Not synced yet"
 msgstr "Nog niet gesynchroniseerd"
@@ -14332,6 +14411,10 @@ msgstr "Nog niet gesynchroniseerd"
 #: src/features/bank-sync/ui/BankConnectionPanel.tsx
 msgid "Not synced yet."
 msgstr "Nog niet gesynchroniseerd."
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Not upcoming"
+msgstr "Niet gepland"
 
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 msgid "Not used yet"
@@ -15285,6 +15368,10 @@ msgstr "Begunstigde bijgewerkt"
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 msgid "Payee:"
 msgstr "Begunstigde:"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Payee: {shown}"
+msgstr "Begunstigde: {shown}"
 
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 msgid "Payee<0/>"
@@ -16850,11 +16937,6 @@ msgstr "Verwijderen"
 msgid "Remove {0}"
 msgstr "{0} verwijderen"
 
-#. placeholder {0}: getTokenLabel(token)
-#: src/features/transactions/ui/SearchActiveFilters.tsx
-msgid "Remove {0} filter"
-msgstr "{0}-filter verwijderen"
-
 #. placeholder {0}: account.Name
 #: src/app/layout/desktop-shell/AccountsList.tsx
 #: src/features/account-management/ui/AccountOrderCard.tsx
@@ -16865,6 +16947,10 @@ msgstr "{0} uit de korte lijst halen"
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
 msgid "Remove {0}?"
 msgstr "{0} verwijderen?"
+
+#: src/features/transactions/ui/SearchActiveFilters.tsx
+msgid "Remove {label} filter"
+msgstr "{label}-filter verwijderen"
 
 #: src/pages/custom-dashboards/components/BuiltinWidget.tsx
 msgid "Remove {name} from dashboard"
@@ -18001,6 +18087,7 @@ msgid "Search engine (Google, etc.)"
 msgstr "Zoekmachine (Google, enz.)"
 
 #: src/features/page-guides/ui/guide-content.tsx
+#: src/features/transactions/ui/SearchHelpPopover.tsx
 msgid "Search in plain words"
 msgstr "Zoeken in gewone woorden"
 
@@ -18045,6 +18132,10 @@ msgstr "Zoek in tabellen, weergaven, kolommen..."
 #: src/pages/onboarding/steps/CurrencyStep.tsx
 msgid "Search the full list — Budgero supports {0} currencies."
 msgstr "Zoek in de volledige lijst — Budgero ondersteunt {0} valuta."
+
+#: src/features/transactions/ui/TransactionsToolbar.tsx
+msgid "Search transactions"
+msgstr "Transacties zoeken"
 
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Search transactions..."
@@ -19049,6 +19140,11 @@ msgstr "Wisselkoersbeweging simuleren"
 msgid "Simulated a market move"
 msgstr "Marktbeweging gesimuleerd"
 
+#. placeholder {0}: period.label
+#: src/shared/lib/search-query-parser.ts
+msgid "Since {0}"
+msgstr "Sinds {0}"
+
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Since no account column is mapped, transactions will be imported into the selected account:"
 msgstr "Omdat er geen rekeningkolom is gekoppeld, worden transacties geïmporteerd naar de geselecteerde rekening:"
@@ -19351,6 +19447,7 @@ msgstr "Te veel uitgegeven? Verschuif geld"
 #: src/features/transactions/ui/mobile-transaction-card/MobileTransactionCard.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "Split"
 msgstr "Splitsen"
 
@@ -21086,6 +21183,7 @@ msgid "To stay on pace"
 msgstr "Om op schema te blijven"
 
 #: src/features/transactions/ui/form/DatePickerQuick.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "Today"
 msgstr "Vandaag"
 
@@ -21116,6 +21214,10 @@ msgstr "Schakel in om de regel te pauzeren zonder deze te verwijderen."
 #: src/pages/settings/push-api/usePushApiState.ts
 msgid "Token copied to clipboard"
 msgstr "Token gekopieerd naar klembord"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Tomorrow"
+msgstr "Morgen"
 
 #: src/pages/settings/subscription/subscription.constants.ts
 msgid "Too expensive"
@@ -21582,6 +21684,10 @@ msgstr "Opnieuw proberen →"
 msgid "Try cancelling and re-creating the invite if this warning persists."
 msgstr "Probeer de uitnodiging te annuleren en opnieuw aan te maken als deze waarschuwing aanhoudt."
 
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "Try one:"
+msgstr "Probeer er een:"
+
 #: src/pages/auth/AuthPage.tsx
 msgid "Try private budgeting with Budgero Cloud free for 35 days. No credit card required. Then {monthly}/month or {yearly}/year, tax included."
 msgstr "Probeer 35 dagen gratis privé te budgetteren met Budgero Cloud. Geen creditcard nodig. Daarna {monthly}/maand of {yearly}/jaar, inclusief belasting."
@@ -21621,8 +21727,8 @@ msgid "Type a command or search..."
 msgstr "Typ een opdracht of zoek..."
 
 #: src/features/page-guides/ui/guide-content.tsx
-msgid "Type in the search box above the list. Words like last month, outflows, uncleared or over 50 and a category name become filters (these words are English); anything else is looked up in payee, memo, category, label and account."
-msgstr "Typ in het zoekveld boven de lijst. Woorden als last month, outflows, uncleared of over 50 en een categorienaam worden filters (deze woorden zijn Engels); de rest wordt gezocht in begunstigde, memo, categorie, label en rekening."
+msgid "Type in the search box above the list. Words like last month, march, outflows, uncleared or over 50 and a category name become filters (these words are English). Other words must all appear in the payee, memo, category, label or account; put a minus in front to leave something out. The (i) in the search box has examples."
+msgstr "Typ in het zoekveld boven de lijst. Woorden als last month, march, outflows, uncleared of over 50 en een categorienaam worden filters (deze woorden zijn Engels). Alle andere woorden moeten voorkomen in de begunstigde, memo, categorie, het label of de rekening; zet er een minteken voor om iets uit te sluiten. De (i) in het zoekveld geeft voorbeelden."
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "type it once more"
@@ -21779,6 +21885,7 @@ msgstr "Zonder categorie"
 #: src/features/analytics/ui/SpendingBreakdownContent.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/analytics/analytics-model.ts
+#: src/shared/lib/search-query-parser.ts
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Uncategorized"
 msgstr "Niet-gecategoriseerd"
@@ -22008,6 +22115,7 @@ msgid "Up to date"
 msgstr "Bijgewerkt"
 
 #: src/features/budget-planning/ui/spending-drawer-mobile/TransactionList.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "Upcoming"
 msgstr "Gepland"
 
@@ -23099,6 +23207,10 @@ msgstr "Ja — je gaf {spentText} uit van de {assignedText} die je toewees, en {
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Yes, Replace All Data"
 msgstr "Ja, alle gegevens vervangen"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Yesterday"
+msgstr "Gisteren"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 msgid "YNAB applies loan interest to balances without exporting a separate transaction. Budgero added visible ledger adjustments so these balances remain exact."
