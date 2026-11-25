@@ -15,6 +15,7 @@ import { SchedulingGuideDialog } from '@features/transactions/ui/SchedulingGuide
 import { ReconciledEditConfirmHost } from '@features/transactions/ui/reconciled-edit';
 import { PageGuideHost } from '@features/page-guides';
 import { CenteredLoader } from '@shared/ui/CenteredLoader';
+import { UsableMarker } from '@/app/layout/UsableMarker';
 
 export default function DashboardLayout() {
   const isMobile = useIsMobile();
@@ -24,6 +25,7 @@ export default function DashboardLayout() {
       {/* Pages are lazy chunks (router.tsx); the shell stays while one loads. */}
       <Suspense fallback={<CenteredLoader className="min-h-[60vh]" />}>
         <Outlet />
+        <UsableMarker />
       </Suspense>
     </AppErrorBoundary>
   );

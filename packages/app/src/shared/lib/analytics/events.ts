@@ -29,6 +29,21 @@ export type DurationBucket = (typeof DURATION_BUCKETS)[number];
 export const TIMING_BUCKETS = ['<1s', '1-3s', '3-10s', '10-60s', '1-5m', '5-15m', '15m+'] as const;
 export type TimingBucket = (typeof TIMING_BUCKETS)[number];
 
+/**
+ * app_opened's time until the app is usable (startup-timing.ts): a
+ * TIMING_BUCKETS value, or why there is none. 'prompted': a screen waited on
+ * the person first (sign-in, onboarding, master password, workspace/budget
+ * choice, error); 'already_open': not this page load's first app_opened;
+ * 'left_before': hidden or closed before it was usable.
+ */
+export const USABLE_BUCKETS = [
+  ...TIMING_BUCKETS,
+  'prompted',
+  'already_open',
+  'left_before',
+] as const;
+export type UsableBucket = (typeof USABLE_BUCKETS)[number];
+
 export const AGE_BUCKETS = ['<1h', '1-24h', '1d+'] as const;
 export type AgeBucket = (typeof AGE_BUCKETS)[number];
 
@@ -474,7 +489,9 @@ export const EVENT_SCHEMA = {
   demo_start_own_clicked: NONE,
 
   // First month (first-month.ts)
-  app_opened: { day: SIGNUP_DAY_BUCKETS },
+  // usable_bucket: time from navigation start until the first screen's data
+  // is shown (see USABLE_BUCKETS), since v1.23.
+  app_opened: { day: SIGNUP_DAY_BUCKETS, usable_bucket: USABLE_BUCKETS },
   activation_milestone: { milestone: ACTIVATION_MILESTONES, day: SIGNUP_DAY_BUCKETS },
   session_summary: {
     day: SIGNUP_DAY_BUCKETS,

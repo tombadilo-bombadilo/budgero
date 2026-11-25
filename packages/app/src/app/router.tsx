@@ -10,6 +10,7 @@ import { hideStartupPreload } from '@/app/startup/preload';
 import { trackPageView } from '@shared/lib/analytics/analytics';
 import { addBreadcrumb } from '@shared/lib/analytics/error-capture';
 import { trackFeatureRoute } from '@shared/lib/analytics/feature-usage';
+import { noteStartupPrompt } from '@shared/lib/analytics/startup-timing';
 import { CenteredLoader } from '@shared/ui/CenteredLoader';
 import { lazyPage } from '@/app/lazy-page';
 
@@ -111,6 +112,9 @@ function PreloadRouteBridge() {
       location.pathname.startsWith('/admin')
     ) {
       hideStartupPreload();
+      // Sign-in, invite and admin screens: the time until the budget is
+      // usable would include the person's own steps.
+      noteStartupPrompt();
     }
   }, [location.pathname]);
 
