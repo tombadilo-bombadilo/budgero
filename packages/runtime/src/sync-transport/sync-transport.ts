@@ -285,6 +285,16 @@ export class SyncTransport {
     return this.catchUpInProgress;
   }
 
+  /**
+   * Replaying the log or recovering from a replay that failed (snapshot
+   * restore running). The local DB is mid-way between two log positions, or
+   * known to be inconsistent and about to be replaced: not something to
+   * publish as a snapshot.
+   */
+  isReplayingLog(): boolean {
+    return this.catchUpInProgress || this.catchUpRecoveryInProgress;
+  }
+
   hasInitialCatchUpSettled(): boolean {
     return this.initialCatchUpSettled;
   }
