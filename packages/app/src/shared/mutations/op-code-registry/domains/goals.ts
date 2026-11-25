@@ -1,6 +1,7 @@
 import {
   GoalPurpose,
   goalEffectiveFrom,
+  goalRow,
   type Goal,
   type GoalService,
   type GoalType,
@@ -22,6 +23,15 @@ function readCycleMonths(value: unknown): number | null | undefined {
   // A garbled value in a replayed payload must not fail the whole mutation:
   // treat it as "not specified" and let the service keep/default.
   return Number.isFinite(n) ? n : undefined;
+}
+
+/**
+ * The goal target's currency arg: a code, or null for the budget currency.
+ * Absent (payloads from builds before goal currencies) also means the budget
+ * currency: those builds' targets are always budget-currency amounts.
+ */
+function readTargetCurrency(value: unknown): string | null {
+  return typeof value === 'string' && value !== '' ? value : null;
 }
 
 /** A YYYY-MM month arg, or null when absent. */
@@ -59,6 +69,7 @@ function recreateGoalOp(goal: Goal): OpCall {
       cycleMonths: goal.CycleMonths ?? null,
       ...(goal.EffectiveFrom ? { effectiveFrom: goal.EffectiveFrom } : {}),
       ...(goal.EffectiveTo ? { effectiveTo: goal.EffectiveTo } : {}),
+      ...(goal.TargetCurrency ? { targetCurrency: goal.TargetCurrency } : {}),
     },
   };
 }
@@ -81,7 +92,9 @@ const GOAL_INVALIDATIONS: string[][] = [
  * goals.create / goals.update / goals.delete are the ops v1.21 builds know;
  * calls they would apply differently (a second timeframe, an end month, a
  * start month that isn't the StartDate's) ask for mutation format 7 (see
- * legacy-format.ts). goals.setFrom and goals.endFrom are format 7.
+ * legacy-format.ts). goals.setFrom and goals.endFrom are format 7. A target
+ * in another currency (`targetCurrency`) asks for format 8: older builds
+ * would store the amount as budget currency.
  */
 export const goalOps = {
   'goals.create': {
@@ -98,7 +111,8 @@ export const goalOps = {
           // undefined = not specified (older payloads); null = explicit default.
           // Never Number() this: Number(null) === 0 would fail validation.
           readCycleMonths(args.cycleMonths),
-          { from: readMonth(args.effectiveFrom), to: readMonth(args.effectiveTo) }
+          { from: readMonth(args.effectiveFrom), to: readMonth(args.effectiveTo) },
+          readTargetCurrency(args.targetCurrency)
         )
       ),
     invalidates: GOAL_INVALIDATIONS,
@@ -121,7 +135,8 @@ export const goalOps = {
           args.recurring as boolean | undefined,
           readCycleMonths(args.cycleMonths),
           (args.startDate as string | null | undefined) ?? null,
-          readMonth(args.effectiveFrom)
+          readMonth(args.effectiveFrom),
+          readTargetCurrency(args.targetCurrency)
         )
       ),
     invalidates: GOAL_INVALIDATIONS,
@@ -156,6 +171,7 @@ export const goalOps = {
             targetDate: (args.endDate as string | undefined) ?? '',
             recurring: (args.recurring as boolean | undefined) ?? false,
             cycleMonths: readCycleMonths(args.cycleMonths),
+            targetCurrency: readTargetCurrency(args.targetCurrency),
           }
         )
       ),
@@ -201,9 +217,10 @@ export const goalOps = {
         const goals = (before as Goal[] | null | undefined) ?? [];
         if (!goals.length) return [];
         // The rows as they were, under their own IDs; services without restore recreate them.
+        // Stored columns only: reads add computed currency conversions.
         return goals.map((goal) =>
           typeof (S().goals as Partial<GoalService>).restoreGoal === 'function'
-            ? { op: 'goals.restore', args: { goal } }
+            ? { op: 'goals.restore', args: { goal: goalRow(goal) } }
             : recreateGoalOp(goal)
         );
       },

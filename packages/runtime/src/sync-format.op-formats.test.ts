@@ -50,6 +50,11 @@ describe('per-op mutation formats', () => {
     expect(mutationFormatVersion('goals.update', { categoryId: 1 })).toBe(2);
   });
 
+  it('reads format 8 (goals in another currency), asked for per call', () => {
+    expect(MUTATION_FORMAT_VERSION).toBe(8);
+    expect(mutationFormatVersion('goals.update', { categoryId: 1, requiresFormat: 8 })).toBe(8);
+  });
+
   it('never stamps a format this build cannot read', () => {
     for (const version of Object.values(OP_CODE_FORMAT_VERSIONS)) {
       expect(version).toBeGreaterThan(BASE_MUTATION_FORMAT_VERSION);
