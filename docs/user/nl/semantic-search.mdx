@@ -1,19 +1,63 @@
 ---
 title: "Transacties zoeken"
-summary: "Vind elke transactie door te typen wat je bedoelt. De zoekfunctie in het register begrijpt datums, geld dat binnenkomt of uitgaat, bevestigingsstatus, categorieën, labels en bedragen — en doorzoekt al het andere als gewone tekst."
+summary: "Vind elke transactie door te typen wat je bedoelt. De zoekfunctie in het register begrijpt datums, geld dat binnenkomt of uitgaat, bevestigingsstatus, categorieën, labels, bedragen en toestanden zoals gesplitst of gepland, laat je in één veld zoeken of iets uitsluiten, en vergelijkt al het andere woord voor woord."
 section: getting-started
 topicId: semantic-search
 takeaways:
   - "Welke woorden het zoekvak omzet in filters, en hoe ze worden gecombineerd."
-  - "Transacties op bedrag vinden met over, under en exactly (of >, <, =)."
-  - "Hoe vrije tekst, categorieën en labels worden gematcht, plus de snelfilters Niet bevestigd en Niet-gecategoriseerd."
+  - "Datums bij naam (march, 2025, since 2026-10-01, between march and may) en bedragen (over 50, between 20 and 50)."
+  - "In één veld zoeken met payee:, memo:, account:, category: en label:, exacte zinnen tussen aanhalingstekens, en iets uitsluiten met een minteken of not."
 ---
 
-Elk rekeningregister en **Alle transacties** heeft een zoekvak boven de tabel. Typ wat je zoekt — `groceries last month`, `outflows over 100`, `uncleared` — en Budgero zet de woorden die het herkent om in filters. Elk herkend filter verschijnt als chip onder het vak; klik op de **×** om het te verwijderen. Wat overblijft, wordt doorzocht als gewone tekst.
+Elk rekeningregister en **Alle transacties** heeft een zoekvak boven de tabel. Typ wat je zoekt — `groceries last month`, `outflows over 100`, `uncleared` — en Budgero zet de woorden die het herkent om in filters. Elk herkend filter verschijnt als chip onder het vak; klik op de **×** om het te verwijderen. De woorden die overblijven, worden doorzocht als gewone tekst.
 
-Alle filters worden gecombineerd: `Dining out last month over 30` toont transacties in Dining out van vorige maand boven de 30.
+Weet je niet wat je moet typen? Kies de **(i)** rechts in het zoekvak. Die legt het zoeken in een paar regels uit en heeft voorbeelden die je met één klik kunt proberen, plus een link naar deze pagina.
 
-De filterwoorden zijn Engelse trefwoorden, in welke taal de app ook staat.
+Alle filters worden gecombineerd en elk ervan moet kloppen: `Dining out last month over 30` toont transacties in Dining out van vorige maand boven de 30.
+
+De filterwoorden zijn voorlopig Engels, in welke taal de app ook staat.
+
+## Gewone tekst
+
+Woorden die de zoekfunctie niet herkent, worden vergeleken met de **begunstigde, memo, categorie, het label en de rekening** van elke transactie, zonder op hoofdletters te letten. Elk woord wordt los gezocht en **elk woord moet ergens voorkomen**: `corner shop` vindt "Corner Shop" en ook "Shop on the corner", maar geen transactie waarin alleen "shop" staat.
+
+- **Exacte zin:** zet woorden tussen dubbele aanhalingstekens om ze samen en in die volgorde te vinden: `"corner shop"`.
+- **Begunstigden van overboekingen en splitsingen:** een overboeking wordt ook gevonden via de rekening aan de andere kant (`savings`), en een gesplitste transactie via de begunstigden van haar regels.
+
+## Eén veld
+
+Zet een veldnaam en een dubbele punt voor een woord om alleen in dat veld te zoeken:
+
+<table>
+  <thead>
+    <tr>
+      <th>Typ</th>
+      <th>Vindt</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>payee:amazon</code></td><td>"amazon" in de begunstigde</td></tr>
+    <tr><td><code>memo:refund</code></td><td>"refund" in de memo</td></tr>
+    <tr><td><code>account:visa</code></td><td>Transacties in een rekening waarvan de naam "visa" bevat (in Alle transacties)</td></tr>
+    <tr><td><code>category:groceries</code></td><td>Die categorie; een deel van de naam (<code>category:groc</code>) vindt elke categorie die het bevat</td></tr>
+    <tr><td><code>label:trip</code></td><td>Dat label; een deel van de naam vindt elk label dat het bevat</td></tr>
+  </tbody>
+</table>
+
+Waarden met spaties zet je tussen aanhalingstekens: `payee:"Whole Foods"`, `label:"Work trip"`.
+
+## Iets uitsluiten
+
+Zet een minteken voor iets om het uit te sluiten, of schrijf er `not` voor:
+
+- `-amazon` verbergt transacties waarin ergens "amazon" staat; `-"gift card"` verbergt een exacte zin.
+- `-payee:amazon`, `-memo:refund`, `-category:rent`, `-label:trip` sluiten de treffers in één veld uit.
+- `-groceries` of `not groceries` (een categorienaam) verbergt die categorie.
+- Het werkt ook met trefwoorden: `-transfers`, `not uncleared`, `-split`, `not upcoming`.
+
+`groceries -payee:costco` toont boodschappen overal behalve bij Costco.
+
+Een minteken voor een getal is geen ontkenning: `-5` wordt als tekst gezocht.
 
 ## Datums
 
@@ -25,21 +69,35 @@ De filterwoorden zijn Engelse trefwoorden, in welke taal de app ook staat.
     </tr>
   </thead>
   <tbody>
-    <tr><td><code>today</code>, <code>yesterday</code></td><td>Die dag</td></tr>
-    <tr><td><code>this week</code>, <code>last week</code></td><td>De week tot nu toe, of de hele vorige week</td></tr>
-    <tr><td><code>this month</code>, <code>last month</code></td><td>De maand tot nu toe, of de hele vorige maand</td></tr>
-    <tr><td><code>this year</code>, <code>last year</code></td><td>Het jaar tot nu toe, of het hele vorige jaar</td></tr>
-    <tr><td><code>last 30 days</code> (elk getal)</td><td>De laatste N dagen tot en met vandaag</td></tr>
+    <tr><td><code>today</code>, <code>yesterday</code>, <code>tomorrow</code></td><td>Die dag</td></tr>
+    <tr><td><code>this week</code>, <code>last week</code>, <code>next week</code></td><td>De week tot nu toe, heel vorige week of heel volgende week</td></tr>
+    <tr><td><code>this month</code>, <code>last month</code>, <code>next month</code></td><td>De maand tot nu toe, of heel vorige of volgende maand</td></tr>
+    <tr><td><code>this year</code>, <code>last year</code>, <code>next year</code></td><td>Het jaar tot nu toe, of heel vorig of volgend jaar</td></tr>
+    <tr><td><code>last 30 days</code>, <code>next 30 days</code> (elk getal)</td><td>De laatste N dagen tot vandaag, of vandaag en de komende N dagen</td></tr>
+    <tr><td><code>march</code>, <code>mar</code>, <code>sept</code></td><td>Die maand: de laatste die al begonnen is (dit jaar, of vorig jaar als hij nog moet komen)</td></tr>
+    <tr><td><code>march 2025</code></td><td>Die maand in dat jaar</td></tr>
+    <tr><td><code>2025</code></td><td>Het hele jaar</td></tr>
+    <tr><td><code>2026-10-01</code>, <code>2026-10</code></td><td>Die dag, of die maand</td></tr>
+    <tr><td><code>since march</code>, <code>since 2026-10-01</code></td><td>Vanaf die datum tot vandaag</td></tr>
+    <tr><td><code>after 2026-10-01</code></td><td>Vanaf de dag erna tot vandaag</td></tr>
+    <tr><td><code>before 2025</code>, <code>before 2026-10-01</code></td><td>Alles vóór die datum</td></tr>
+    <tr><td><code>between march and may</code>, <code>between 2026-01-15 and 2026-02-10</code></td><td>Van het begin van de eerste tot het einde van de tweede</td></tr>
   </tbody>
 </table>
 
-Een datumwoord verschuift ook het datumbereik van het register bovenaan de pagina, zodat de tabel de juiste periode laadt. Weken beginnen op de dag die is ingesteld bij **Instellingen → Budgetinstellingen → Eerste dag van de week**.
+`since`, `after` en `before` werken met elk van de datums hierboven, en ze beperken elkaar: `since 2026 before june` is januari tot en met mei. Typ je twee gewone datums, dan telt de laatste.
+
+Een datum verschuift ook het datumbereik van het register bovenaan de pagina, zodat de tabel de juiste periode laadt. Verwijder je de datumchip, dan blijft dat bereik staan; wijzig het met de datumkiezer. Weken beginnen op de dag die is ingesteld bij **Instellingen → Budgetinstellingen → Eerste dag van de week**.
+
+### Woorden die op een datum lijken
+
+Maandnamen (ook korte zoals `mar` of `may`) en jaartallen van vier cijfers van 1970 tot 2099 worden altijd als datum gelezen. Wil je ze als tekst zoeken, bijvoorbeeld een begunstigde die "May" heet of "2025" in een memo, zet ze dan tussen aanhalingstekens: `"may"`, `"2025"`, of gebruik een veld: `payee:may`. Wat tussen aanhalingstekens staat, wordt nooit als datum, bedrag of trefwoord gelezen.
 
 ## Geld in, geld uit, overboekingen
 
 - `inflows`, `inflow` of `income` — geld dat binnenkomt (zonder overboekingen).
 - `outflows`, `outflow`, `expenses`, `expense` of `spending` — geld dat uitgaat (zonder overboekingen).
-- `transfers` of `transfer` — alleen overboekingen tussen je eigen rekeningen.
+- `transfers` of `transfer` — alleen overboekingen tussen je rekeningen.
 
 ## Bevestigingsstatus
 
@@ -47,11 +105,32 @@ Een datumwoord verschuift ook het datumbereik van het register bovenaan de pagin
 - `uncleared` — transacties die je nog niet hebt bevestigd.
 - `reconciled` — alleen afgestemde transacties.
 
-Je kunt ze ook schrijven als `is:cleared`, `is:uncleared` en `is:reconciled`. Geplande terugkerende rijen (de geprojecteerde) komen nooit overeen met een status.
+Je kunt ze ook schrijven als `is:cleared`, `is:uncleared` en `is:reconciled`. Geplande terugkerende regels (de geprojecteerde) passen nooit bij een status, ook niet bij `not uncleared`.
+
+## Andere toestanden
+
+<table>
+  <thead>
+    <tr>
+      <th>Typ</th>
+      <th>Toont</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>uncategorized</code> (of <code>no:category</code>)</td><td>Transacties zonder categorie</td></tr>
+    <tr><td><code>split</code></td><td>Gesplitste transacties</td></tr>
+    <tr><td><code>upcoming</code> (of <code>scheduled</code>)</td><td>Geplande terugkerende regels die nog niet hebben plaatsgevonden</td></tr>
+    <tr><td><code>has:memo</code>, <code>no:memo</code></td><td>Transacties met een memo, of zonder</td></tr>
+    <tr><td><code>has:label</code>, <code>no:label</code></td><td>Transacties met een label, of zonder</td></tr>
+    <tr><td><code>has:payee</code>, <code>no:payee</code></td><td>Transacties met een begunstigde, of zonder</td></tr>
+  </tbody>
+</table>
+
+`is:split`, `is:upcoming` en `is:uncategorized` werken ook. Geplande regels verschijnen alleen in het register van een rekening, en alleen als het datumbereik hun datum bereikt. Daarom zet `upcoming` op zichzelf het bereik ook op vandaag en de komende 30 dagen. Voeg een datum toe om verder te kijken: `upcoming next month`.
 
 ## Bedragen
 
-Zoek op bedrag met een vergelijkingswoord of -symbool voor het getal:
+Zoek op bedrag met een vergelijkingswoord of -teken voor het getal:
 
 <table>
   <thead>
@@ -61,26 +140,24 @@ Zoek op bedrag met een vergelijkingswoord of -symbool voor het getal:
     </tr>
   </thead>
   <tbody>
-    <tr><td><code>over 50</code>, <code>above 50</code>, <code>&gt;50</code></td><td>Groter dan 50</td></tr>
-    <tr><td><code>under 20</code>, <code>below 20</code>, <code>&lt;20</code></td><td>Kleiner dan 20</td></tr>
-    <tr><td><code>exactly 42.50</code>, <code>equal 42.50</code>, <code>=42.50</code></td><td>42.50 (tot op de cent)</td></tr>
+    <tr><td><code>over 50</code>, <code>above 50</code>, <code>more than 50</code>, <code>&gt;50</code></td><td>Groter dan 50</td></tr>
+    <tr><td><code>under 20</code>, <code>below 20</code>, <code>less than 20</code>, <code>&lt;20</code></td><td>Kleiner dan 20</td></tr>
+    <tr><td><code>exactly 42.50</code>, <code>equal 42.50</code>, <code>=42.50</code></td><td>42,50 (op de cent)</td></tr>
+    <tr><td><code>between 20 and 50</code></td><td>Van 20 tot en met 50</td></tr>
   </tbody>
 </table>
 
-- **Bereiken:** combineer beide grenzen — `over 20 under 50`.
-- **Richting maakt niet uit:** een bedragfilter vergelijkt de grootte van de transactie, of het nu om geld gaat dat binnenkomt of uitgaat. Voeg `outflows` of `inflows` toe om verder te verfijnen.
-- **Valuta:** bedragen worden vergeleken in de valuta die het register toont (rekeningvaluta of budgetvaluta, via de schakelaar boven de tabel). Een `$`, `€` of `£` vooraan is toegestaan: `over €100`.
-- **Getalnotatie:** gebruik een punt voor decimalen en geen scheidingstekens voor duizendtallen — `=1250.50`, niet `=1.250,50` of `=1,250.50`.
+- **Bereiken:** `between 20 and 50`, of combineer beide grenzen: `over 20 under 50`.
+- **Richting maakt niet uit:** een bedragfilter vergelijkt de grootte van de transactie, of het geld nu binnenkomt of uitgaat. Voeg `outflows` of `inflows` toe om te verfijnen.
+- **Valuta:** bedragen worden vergeleken in de valuta die het register toont (rekening- of budgetvaluta, via de schakelaar boven de tabel). Een valutateken voor of na het getal mag: `over €100`, `over 100 €`.
+- **Getalnotatie:** voor decimalen werkt een punt of een komma, voor duizendtallen punten, komma's, spaties of apostrofs: `=1250.50`, `=1.250,50`, `=1,250.50` en `=1 250,50` vinden allemaal 1.250,50. Heeft een getal één scheidingsteken gevolgd door precies drie cijfers (`1.000` of `1,000`), dan leest Budgero het zoals de getalnotatie van je budget: als decimalen als dat het decimaalteken is, anders als duizendtallen.
 - **Een los getal is tekst,** geen bedrag: `42.50` zoekt naar "42.50" in memo's en begunstigden. Gebruik `=42.50` om het bedrag te vinden.
+- **Jaartallen en bedragen:** `between 2020 and 2025` wordt als jaren gelezen. Voor bedragen die op jaartallen lijken, voeg je een valutateken toe: `between $2020 and $2025`.
 
 ## Categorieën en labels
 
-- Typ een **categorienaam** om alleen die categorie te tonen. Namen met spaties zet je tussen aanhalingstekens: `"Dining out"`. Terwijl je typt, stelt Budgero overeenkomende categorieën voor; kies er een om hem toe te voegen. Voeg meerdere categorieën toe om transacties uit elk daarvan te zien.
-- Gebruik `label:` voor **labels**: `label:Vacation`, of `label:"Work trip"` voor namen met spaties.
-
-## Gewone tekst
-
-Alles wat de zoekfunctie niet herkent, wordt vergeleken met de **memo, begunstigde, categorie, label en rekening** van elke transactie, zonder onderscheid tussen hoofdletters en kleine letters. `pharmacy` vindt "City Pharmacy" als begunstigde of in een memo.
+- Typ een **categorienaam** om alleen die categorie te tonen. Namen met spaties zet je tussen aanhalingstekens: `"Dining out"`. Terwijl je typt, stelt Budgero passende categorieën voor; kies er een om die toe te voegen. Voeg meerdere categorieën toe om transacties uit elk ervan te zien.
+- Gebruik `label:` voor **labels**: `label:Vacation`, of `label:"Work trip"` voor namen met spaties. Meerdere labels tonen transacties met elk ervan.
 
 ## Snelfilters
 

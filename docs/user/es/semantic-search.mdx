@@ -1,19 +1,63 @@
 ---
 title: "Buscar transacciones"
-summary: "Encuentra cualquier transacción escribiendo lo que buscas. La búsqueda del registro entiende fechas, entradas y salidas de dinero, el estado de confirmación, categorías, etiquetas e importes — y busca todo lo demás como texto normal."
+summary: "Encuentra cualquier transacción escribiendo lo que buscas. La búsqueda del registro entiende fechas, entradas y salidas de dinero, el estado de confirmación, categorías, etiquetas, importes y estados como dividida o programada, te deja buscar en un solo campo o excluir cosas, y compara todo lo demás palabra por palabra."
 section: getting-started
 topicId: semantic-search
 takeaways:
   - "Qué palabras convierte el cuadro de búsqueda en filtros y cómo se combinan."
-  - "Encontrar transacciones por importe con over, under y exactly (o >, <, =)."
-  - "Cómo se buscan el texto libre, las categorías y las etiquetas, además de los filtros rápidos Sin confirmar y Sin categorizar."
+  - "Fechas por nombre (march, 2025, since 2026-10-01, between march and may) e importes (over 50, between 20 and 50)."
+  - "Buscar en un solo campo con payee:, memo:, account:, category: y label:, frases exactas entre comillas y excluir cosas con un signo menos o not."
 ---
 
-Cada registro de cuenta y **Todas las transacciones** tienen un cuadro de búsqueda encima de la tabla. Escribe lo que buscas — `groceries last month`, `outflows over 100`, `uncleared` — y Budgero convierte las palabras que reconoce en filtros. Cada filtro reconocido aparece como una ficha bajo el cuadro; haz clic en su **×** para quitarlo. Todo lo que sobra se busca como texto normal.
+Cada registro de cuenta y **Todas las transacciones** tienen un cuadro de búsqueda encima de la tabla. Escribe lo que buscas — `groceries last month`, `outflows over 100`, `uncleared` — y Budgero convierte las palabras que reconoce en filtros. Cada filtro reconocido aparece como una ficha bajo el cuadro; haz clic en su **×** para quitarlo. Las palabras que sobran se buscan como texto normal.
 
-Todos los filtros se combinan: `Dining out last month over 30` muestra las transacciones de la categoría Dining out del mes pasado por encima de 30.
+¿No sabes qué escribir? Selecciona la **(i)** a la derecha del cuadro de búsqueda. Explica la búsqueda en pocas líneas y trae ejemplos que puedes probar con un clic, además de un enlace a esta página.
 
-Las palabras de filtro son palabras clave en inglés, sea cual sea el idioma de la aplicación.
+Todos los filtros se combinan y cada uno tiene que cumplirse: `Dining out last month over 30` muestra las transacciones de la categoría Dining out del mes pasado por encima de 30.
+
+Por ahora las palabras de filtro van en inglés, sea cual sea el idioma de la aplicación.
+
+## Texto normal
+
+Las palabras que la búsqueda no reconoce se comparan con el **beneficiario, la nota, la categoría, la etiqueta y la cuenta** de cada transacción, sin distinguir mayúsculas de minúsculas. Cada palabra se busca por separado y **todas tienen que aparecer** en algún sitio: `corner shop` encuentra «Corner Shop» y también «Shop on the corner», pero no una transacción que solo diga «shop».
+
+- **Frase exacta:** pon las palabras entre comillas dobles para encontrarlas juntas y en ese orden: `"corner shop"`.
+- **Beneficiarios de transferencias y divisiones:** una transferencia también se encuentra por la cuenta del otro lado (`savings`), y una transacción dividida por los beneficiarios de sus líneas.
+
+## Un solo campo
+
+Pon el nombre de un campo y dos puntos delante de una palabra para buscar solo en ese campo:
+
+<table>
+  <thead>
+    <tr>
+      <th>Escribe</th>
+      <th>Encuentra</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>payee:amazon</code></td><td>«amazon» en el beneficiario</td></tr>
+    <tr><td><code>memo:refund</code></td><td>«refund» en la nota</td></tr>
+    <tr><td><code>account:visa</code></td><td>Transacciones de una cuenta cuyo nombre contiene «visa» (en Todas las transacciones)</td></tr>
+    <tr><td><code>category:groceries</code></td><td>Esa categoría; una parte del nombre (<code>category:groc</code>) encuentra todas las categorías que la contienen</td></tr>
+    <tr><td><code>label:trip</code></td><td>Esa etiqueta; una parte del nombre encuentra todas las etiquetas que la contienen</td></tr>
+  </tbody>
+</table>
+
+Los valores con espacios van entre comillas: `payee:"Whole Foods"`, `label:"Work trip"`.
+
+## Excluir cosas
+
+Pon un signo menos delante de algo para excluirlo, o escribe `not` delante:
+
+- `-amazon` oculta las transacciones que mencionan «amazon» en cualquier campo; `-"gift card"` oculta una frase exacta.
+- `-payee:amazon`, `-memo:refund`, `-category:rent`, `-label:trip` excluyen las coincidencias de un campo.
+- `-groceries` o `not groceries` (un nombre de categoría) oculta esa categoría.
+- También funciona con palabras clave: `-transfers`, `not uncleared`, `-split`, `not upcoming`.
+
+`groceries -payee:costco` muestra las compras de comida en cualquier sitio menos en Costco.
+
+Un signo menos delante de un número no es una negación: `-5` se busca como texto.
 
 ## Fechas
 
@@ -25,21 +69,35 @@ Las palabras de filtro son palabras clave en inglés, sea cual sea el idioma de 
     </tr>
   </thead>
   <tbody>
-    <tr><td><code>today</code>, <code>yesterday</code></td><td>Ese día</td></tr>
-    <tr><td><code>this week</code>, <code>last week</code></td><td>La semana en curso hasta hoy, o toda la semana pasada</td></tr>
-    <tr><td><code>this month</code>, <code>last month</code></td><td>El mes en curso hasta hoy, o todo el mes pasado</td></tr>
-    <tr><td><code>this year</code>, <code>last year</code></td><td>El año en curso hasta hoy, o todo el año pasado</td></tr>
-    <tr><td><code>last 30 days</code> (cualquier número)</td><td>Los últimos N días hasta hoy</td></tr>
+    <tr><td><code>today</code>, <code>yesterday</code>, <code>tomorrow</code></td><td>Ese día</td></tr>
+    <tr><td><code>this week</code>, <code>last week</code>, <code>next week</code></td><td>La semana hasta hoy, toda la semana pasada o toda la próxima</td></tr>
+    <tr><td><code>this month</code>, <code>last month</code>, <code>next month</code></td><td>El mes hasta hoy, o todo el mes pasado o el próximo</td></tr>
+    <tr><td><code>this year</code>, <code>last year</code>, <code>next year</code></td><td>El año hasta hoy, o todo el año pasado o el próximo</td></tr>
+    <tr><td><code>last 30 days</code>, <code>next 30 days</code> (cualquier número)</td><td>Los últimos N días hasta hoy, o hoy y los próximos N días</td></tr>
+    <tr><td><code>march</code>, <code>mar</code>, <code>sept</code></td><td>Ese mes: el último que ya ha empezado (este año, o el año pasado si todavía no ha llegado)</td></tr>
+    <tr><td><code>march 2025</code></td><td>Ese mes de ese año</td></tr>
+    <tr><td><code>2025</code></td><td>El año entero</td></tr>
+    <tr><td><code>2026-10-01</code>, <code>2026-10</code></td><td>Ese día, o ese mes</td></tr>
+    <tr><td><code>since march</code>, <code>since 2026-10-01</code></td><td>Desde esa fecha hasta hoy</td></tr>
+    <tr><td><code>after 2026-10-01</code></td><td>Desde el día siguiente hasta hoy</td></tr>
+    <tr><td><code>before 2025</code>, <code>before 2026-10-01</code></td><td>Todo lo anterior a esa fecha</td></tr>
+    <tr><td><code>between march and may</code>, <code>between 2026-01-15 and 2026-02-10</code></td><td>Desde el inicio de la primera hasta el final de la segunda</td></tr>
   </tbody>
 </table>
 
-Una palabra de fecha también ajusta el rango de fechas del registro en la parte superior de la página, para que la tabla cargue el periodo correcto. Las semanas empiezan el día fijado en **Ajustes → Ajustes del presupuesto → Primer día de la semana**.
+`since`, `after` y `before` aceptan cualquiera de las fechas de arriba y se acotan entre sí: `since 2026 before june` va de enero a mayo. Si escribes dos fechas simples, vale la última.
+
+Una fecha también ajusta el rango de fechas del registro en la parte superior de la página, para que la tabla cargue el periodo correcto. Si quitas la ficha de fecha, ese rango se mantiene; cámbialo con el selector de fechas. Las semanas empiezan el día fijado en **Ajustes → Ajustes del presupuesto → Primer día de la semana**.
+
+### Palabras que parecen fechas
+
+Los nombres de meses (también los cortos como `mar` o `may`) y los años de cuatro cifras de 1970 a 2099 siempre se leen como fechas. Para buscarlos como texto, por ejemplo un beneficiario llamado «May» o «2025» en una nota, ponlos entre comillas: `"may"`, `"2025"`, o usa un campo: `payee:may`. Lo que va entre comillas nunca se lee como fecha, importe ni palabra clave.
 
 ## Entradas, salidas y transferencias
 
-- `inflows`, `inflow` o `income` — dinero que entra (sin incluir transferencias).
-- `outflows`, `outflow`, `expenses`, `expense` o `spending` — dinero que sale (sin incluir transferencias).
-- `transfers` o `transfer` — solo las transferencias entre tus cuentas.
+- `inflows`, `inflow` o `income` — dinero que entra (sin transferencias).
+- `outflows`, `outflow`, `expenses`, `expense` o `spending` — dinero que sale (sin transferencias).
+- `transfers` o `transfer` — solo transferencias entre tus cuentas.
 
 ## Estado de confirmación
 
@@ -47,7 +105,28 @@ Una palabra de fecha también ajusta el rango de fechas del registro en la parte
 - `uncleared` — transacciones que aún no has confirmado.
 - `reconciled` — solo transacciones conciliadas.
 
-También puedes escribirlas como `is:cleared`, `is:uncleared` e `is:reconciled`. Las filas recurrentes programadas (las proyectadas) nunca coinciden con ningún estado.
+También puedes escribirlas como `is:cleared`, `is:uncleared` e `is:reconciled`. Las filas recurrentes programadas (las proyectadas) nunca coinciden con un estado, ni siquiera con `not uncleared`.
+
+## Otros estados
+
+<table>
+  <thead>
+    <tr>
+      <th>Escribe</th>
+      <th>Muestra</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>uncategorized</code> (o <code>no:category</code>)</td><td>Transacciones sin categoría</td></tr>
+    <tr><td><code>split</code></td><td>Transacciones divididas</td></tr>
+    <tr><td><code>upcoming</code> (o <code>scheduled</code>)</td><td>Filas recurrentes programadas que aún no han ocurrido</td></tr>
+    <tr><td><code>has:memo</code>, <code>no:memo</code></td><td>Transacciones con nota, o sin ella</td></tr>
+    <tr><td><code>has:label</code>, <code>no:label</code></td><td>Transacciones con etiqueta, o sin ella</td></tr>
+    <tr><td><code>has:payee</code>, <code>no:payee</code></td><td>Transacciones con beneficiario, o sin él</td></tr>
+  </tbody>
+</table>
+
+`is:split`, `is:upcoming` e `is:uncategorized` también funcionan. Las filas programadas solo aparecen en el registro de una cuenta, y solo cuando el rango de fechas llega a su fecha, así que `upcoming` por sí solo también fija el rango en hoy y los próximos 30 días. Añade una fecha para mirar más lejos: `upcoming next month`.
 
 ## Importes
 
@@ -61,26 +140,24 @@ Busca por importe con una palabra o un símbolo de comparación delante del núm
     </tr>
   </thead>
   <tbody>
-    <tr><td><code>over 50</code>, <code>above 50</code>, <code>&gt;50</code></td><td>Mayores que 50</td></tr>
-    <tr><td><code>under 20</code>, <code>below 20</code>, <code>&lt;20</code></td><td>Menores que 20</td></tr>
-    <tr><td><code>exactly 42.50</code>, <code>equal 42.50</code>, <code>=42.50</code></td><td>42.50 (al céntimo)</td></tr>
+    <tr><td><code>over 50</code>, <code>above 50</code>, <code>more than 50</code>, <code>&gt;50</code></td><td>Mayores que 50</td></tr>
+    <tr><td><code>under 20</code>, <code>below 20</code>, <code>less than 20</code>, <code>&lt;20</code></td><td>Menores que 20</td></tr>
+    <tr><td><code>exactly 42.50</code>, <code>equal 42.50</code>, <code>=42.50</code></td><td>42,50 (al céntimo)</td></tr>
+    <tr><td><code>between 20 and 50</code></td><td>De 20 a 50, ambos incluidos</td></tr>
   </tbody>
 </table>
 
-- **Rangos:** combina los dos extremos — `over 20 under 50`.
-- **La dirección no importa:** un filtro de importe compara el tamaño de la transacción, tanto si es dinero que entra como si sale. Añade `outflows` o `inflows` para acotarlo.
-- **Moneda:** los importes se comparan en la moneda que muestra el registro (Moneda de la cuenta o Moneda del presupuesto, según el selector encima de la tabla). Se admite un `$`, `€` o `£` delante: `over €100`.
-- **Formato de número:** usa un punto para los decimales y no uses separadores de miles — `=1250.50`, no `=1.250,50` ni `=1,250.50`.
-- **Un número solo es texto,** no un importe: `42.50` busca "42.50" en notas y beneficiarios. Usa `=42.50` para encontrar el importe.
+- **Rangos:** `between 20 and 50`, o combina los dos extremos: `over 20 under 50`.
+- **La dirección no importa:** un filtro de importe compara el tamaño de la transacción, tanto si el dinero entra como si sale. Añade `outflows` o `inflows` para acotar.
+- **Moneda:** los importes se comparan en la moneda que muestra el registro (la de la cuenta o la del presupuesto, según el selector encima de la tabla). Se admite un símbolo de moneda antes o después del número: `over €100`, `over 100 €`.
+- **Formato de número:** para los decimales vale un punto o una coma, y para los miles puntos, comas, espacios o apóstrofos: `=1250.50`, `=1.250,50`, `=1,250.50` y `=1 250,50` encuentran todos 1250,50. Cuando un número tiene un solo separador seguido de exactamente tres cifras (`1.000` o `1,000`), Budgero lo lee como lo hace el formato de número de tu presupuesto: como decimales si ese es su separador decimal, como miles en caso contrario.
+- **Un número solo es texto,** no un importe: `42.50` busca «42.50» en notas y beneficiarios. Usa `=42.50` para encontrar el importe.
+- **Años e importes:** `between 2020 and 2025` se lee como años. Para importes que parecen años, añade un símbolo de moneda: `between $2020 and $2025`.
 
 ## Categorías y etiquetas
 
-- Escribe el **nombre de una categoría** para ver solo esa categoría. Los nombres con espacios van entre comillas: `"Dining out"`. Mientras escribes, Budgero sugiere categorías que coinciden; elige una para añadirla. Añade varias categorías para ver cualquiera de ellas.
-- Usa `label:` para las **etiquetas**: `label:Vacation`, o `label:"Work trip"` para nombres con espacios.
-
-## Texto normal
-
-Todo lo que la búsqueda no reconoce se compara con la **nota, el beneficiario, la categoría, la etiqueta y la cuenta** de cada transacción, sin distinguir mayúsculas de minúsculas. `pharmacy` encuentra "City Pharmacy" como beneficiario o en una nota.
+- Escribe un **nombre de categoría** para mostrar solo esa categoría. Los nombres con espacios van entre comillas: `"Dining out"`. Mientras escribes, Budgero sugiere categorías que coinciden; elige una para añadirla. Añade varias categorías para ver cualquiera de ellas.
+- Usa `label:` para las **etiquetas**: `label:Vacation`, o `label:"Work trip"` para nombres con espacios. Varias etiquetas muestran cualquiera de ellas.
 
 ## Filtros rápidos
 

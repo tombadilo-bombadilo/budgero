@@ -1,19 +1,63 @@
 ---
 title: Searching transactions
-summary: Find any transaction by typing what you mean. The register search understands dates, money in or out, cleared status, categories, labels, and amounts — and searches everything else as plain text.
+summary: Find any transaction by typing what you mean. The register search understands dates, money in or out, cleared status, categories, labels, amounts and states like split or upcoming, lets you search one field or leave things out, and matches everything else word by word.
 section: getting-started
 topicId: semantic-search
 takeaways:
   - Which words the search box turns into filters, and how they combine.
-  - Finding transactions by amount with over, under, and exactly (or >, <, =).
-  - How free text, categories, and labels are matched, plus the Uncleared and Uncategorized quick filters.
+  - Dates by name (march, 2025, since 2026-10-01, between march and may) and amounts (over 50, between 20 and 50).
+  - Searching one field with payee:, memo:, account:, category: and label:, exact phrases in quotes, and leaving things out with a minus or not.
 ---
 
-Every account register and **All Transactions** has a search box above the table. Type what you're looking for — `groceries last month`, `outflows over 100`, `uncleared` — and Budgero turns the words it recognises into filters. Each recognised filter shows up as a chip under the box; click its **×** to drop it. Whatever is left over is searched as plain text.
+Every account register and **All Transactions** has a search box above the table. Type what you're looking for — `groceries last month`, `outflows over 100`, `uncleared` — and Budgero turns the words it recognises into filters. Each recognised filter shows up as a chip under the box; click its **×** to drop it. The words left over are searched as plain text.
 
-All filters combine: `Dining out last month over 30` shows Dining out transactions from last month above 30.
+Not sure what to type? Select the **(i)** at the right of the search box. It explains the search in a few lines and has examples you can try with one click, plus a link to this page.
 
-The filter words are English keywords, whatever language the app is in.
+All filters combine, and every one of them has to match: `Dining out last month over 30` shows Dining out transactions from last month above 30.
+
+The filter words are English for now, whatever language the app is in.
+
+## Plain text
+
+Words the search doesn't recognise are matched against the **payee, memo, category, label, and account** of each transaction, ignoring upper and lower case. Each word is matched on its own and **every word has to appear** somewhere: `corner shop` finds "Corner Shop" and also "Shop on the corner", but not a transaction that only says "shop".
+
+- **Exact phrase:** put words in double quotes to find them together, in that order: `"corner shop"`.
+- **Payees of transfers and splits:** a transfer is also found by the account on the other side (`savings`), and a split by the payees of its lines.
+
+## One field only
+
+Put a field name and a colon in front of a word to search just that field:
+
+<table>
+  <thead>
+    <tr>
+      <th>You type</th>
+      <th>Finds</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>payee:amazon</code></td><td>"amazon" in the payee</td></tr>
+    <tr><td><code>memo:refund</code></td><td>"refund" in the memo</td></tr>
+    <tr><td><code>account:visa</code></td><td>Transactions in an account whose name contains "visa" (on All Transactions)</td></tr>
+    <tr><td><code>category:groceries</code></td><td>That category; a partial name (<code>category:groc</code>) finds every category containing it</td></tr>
+    <tr><td><code>label:trip</code></td><td>That label; a partial name finds every label containing it</td></tr>
+  </tbody>
+</table>
+
+Values with spaces go in quotes: `payee:"Whole Foods"`, `label:"Work trip"`.
+
+## Leaving things out
+
+Put a minus in front of anything to leave it out, or write `not` before it:
+
+- `-amazon` hides transactions that mention "amazon" anywhere; `-"gift card"` hides an exact phrase.
+- `-payee:amazon`, `-memo:refund`, `-category:rent`, `-label:trip` leave out one field's matches.
+- `-groceries` or `not groceries` (a category name) hides that category.
+- Keywords work too: `-transfers`, `not uncleared`, `-split`, `not upcoming`.
+
+`groceries -payee:costco` shows groceries bought anywhere except Costco.
+
+A minus in front of a number isn't a negation: `-5` is searched as text.
 
 ## Dates
 
@@ -25,15 +69,29 @@ The filter words are English keywords, whatever language the app is in.
     </tr>
   </thead>
   <tbody>
-    <tr><td><code>today</code>, <code>yesterday</code></td><td>That day</td></tr>
-    <tr><td><code>this week</code>, <code>last week</code></td><td>The week so far, or all of last week</td></tr>
-    <tr><td><code>this month</code>, <code>last month</code></td><td>The month so far, or all of last month</td></tr>
-    <tr><td><code>this year</code>, <code>last year</code></td><td>The year so far, or all of last year</td></tr>
-    <tr><td><code>last 30 days</code> (any number)</td><td>The last N days up to today</td></tr>
+    <tr><td><code>today</code>, <code>yesterday</code>, <code>tomorrow</code></td><td>That day</td></tr>
+    <tr><td><code>this week</code>, <code>last week</code>, <code>next week</code></td><td>The week so far, all of last week, or all of next week</td></tr>
+    <tr><td><code>this month</code>, <code>last month</code>, <code>next month</code></td><td>The month so far, or all of last or next month</td></tr>
+    <tr><td><code>this year</code>, <code>last year</code>, <code>next year</code></td><td>The year so far, or all of last or next year</td></tr>
+    <tr><td><code>last 30 days</code>, <code>next 30 days</code> (any number)</td><td>The last N days up to today, or today and the next N days</td></tr>
+    <tr><td><code>march</code>, <code>mar</code>, <code>sept</code></td><td>That month: the latest one that has started (this year, or last year if it's still ahead)</td></tr>
+    <tr><td><code>march 2025</code></td><td>That month of that year</td></tr>
+    <tr><td><code>2025</code></td><td>The whole year</td></tr>
+    <tr><td><code>2026-10-01</code>, <code>2026-10</code></td><td>That day, or that month</td></tr>
+    <tr><td><code>since march</code>, <code>since 2026-10-01</code></td><td>From that date up to today</td></tr>
+    <tr><td><code>after 2026-10-01</code></td><td>From the next day up to today</td></tr>
+    <tr><td><code>before 2025</code>, <code>before 2026-10-01</code></td><td>Everything before that date</td></tr>
+    <tr><td><code>between march and may</code>, <code>between 2026-01-15 and 2026-02-10</code></td><td>From the start of the first to the end of the second</td></tr>
   </tbody>
 </table>
 
-A date word also moves the register's date range at the top of the page, so the table loads the right period. Weeks start on the day set in **Settings → Budget Settings → First day of the week**.
+`since`, `after`, and `before` take any of the dates above, and they narrow each other: `since 2026 before june` is January to May. If you type two plain dates, the last one wins.
+
+A date also moves the register's date range at the top of the page, so the table loads the right period. Removing the date chip keeps that range; change it with the date picker. Weeks start on the day set in **Settings → Budget Settings → First day of the week**.
+
+### Words that look like dates
+
+Month names (including short ones like `mar` or `may`) and four-digit years from 1970 to 2099 are always read as dates. To search for them as text, for example a payee called "May" or "2025" in a memo, put them in quotes: `"may"`, `"2025"`, or use a field: `payee:may`. Anything in quotes is never read as a date, amount, or keyword.
 
 ## Money in, money out, transfers
 
@@ -47,7 +105,28 @@ A date word also moves the register's date range at the top of the page, so the 
 - `uncleared` — transactions you haven't cleared yet.
 - `reconciled` — only reconciled transactions.
 
-You can also write them as `is:cleared`, `is:uncleared`, and `is:reconciled`. Scheduled recurring rows (the projected ones) never match a status.
+You can also write them as `is:cleared`, `is:uncleared`, and `is:reconciled`. Scheduled recurring rows (the projected ones) never match a status, and they don't match `not uncleared` either.
+
+## Other states
+
+<table>
+  <thead>
+    <tr>
+      <th>You type</th>
+      <th>Shows</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>uncategorized</code> (or <code>no:category</code>)</td><td>Transactions without a category</td></tr>
+    <tr><td><code>split</code></td><td>Split transactions</td></tr>
+    <tr><td><code>upcoming</code> (or <code>scheduled</code>)</td><td>Scheduled recurring rows that haven't happened yet</td></tr>
+    <tr><td><code>has:memo</code>, <code>no:memo</code></td><td>Transactions with a memo, or without one</td></tr>
+    <tr><td><code>has:label</code>, <code>no:label</code></td><td>Transactions with a label, or without one</td></tr>
+    <tr><td><code>has:payee</code>, <code>no:payee</code></td><td>Transactions with a payee, or without one</td></tr>
+  </tbody>
+</table>
+
+`is:split`, `is:upcoming`, and `is:uncategorized` work too. Upcoming rows only show in an account's register, and only when the date range reaches their date, so `upcoming` on its own also sets the range to today and the next 30 days. Add a date to look further: `upcoming next month`.
 
 ## Amounts
 
@@ -61,26 +140,24 @@ Search by amount with a comparison word or symbol in front of the number:
     </tr>
   </thead>
   <tbody>
-    <tr><td><code>over 50</code>, <code>above 50</code>, <code>&gt;50</code></td><td>Greater than 50</td></tr>
-    <tr><td><code>under 20</code>, <code>below 20</code>, <code>&lt;20</code></td><td>Less than 20</td></tr>
+    <tr><td><code>over 50</code>, <code>above 50</code>, <code>more than 50</code>, <code>&gt;50</code></td><td>Greater than 50</td></tr>
+    <tr><td><code>under 20</code>, <code>below 20</code>, <code>less than 20</code>, <code>&lt;20</code></td><td>Less than 20</td></tr>
     <tr><td><code>exactly 42.50</code>, <code>equal 42.50</code>, <code>=42.50</code></td><td>42.50 (to the cent)</td></tr>
+    <tr><td><code>between 20 and 50</code></td><td>From 20 to 50, both included</td></tr>
   </tbody>
 </table>
 
-- **Ranges:** combine both ends — `over 20 under 50`.
+- **Ranges:** `between 20 and 50`, or combine both ends: `over 20 under 50`.
 - **Direction doesn't matter:** an amount filter compares the size of the transaction, whether it's money in or out. Add `outflows` or `inflows` to narrow it down.
-- **Currency:** amounts are compared in the currency the register shows (account or budget currency, from the toggle above the table). A leading `$`, `€`, or `£` is allowed: `over €100`.
-- **Number format:** use a dot for decimals and no thousands separators — `=1250.50`, not `=1.250,50` or `=1,250.50`.
+- **Currency:** amounts are compared in the currency the register shows (account or budget currency, from the toggle above the table). A currency sign before or after the number is fine: `over €100`, `over 100 €`.
+- **Number format:** a dot or a comma works for decimals, and dots, commas, spaces or apostrophes for thousands: `=1250.50`, `=1.250,50`, `=1,250.50`, and `=1 250,50` all find 1,250.50. When a number has a single separator followed by exactly three digits (`1.000` or `1,000`), Budgero reads it the way your budget's number format does: as a decimal if that's its decimal mark, as thousands otherwise.
 - **A number on its own is text,** not an amount: `42.50` looks for "42.50" in memos and payees. Use `=42.50` to find the amount.
+- **Years and amounts:** `between 2020 and 2025` is read as years. For amounts that look like years, add a currency sign: `between $2020 and $2025`.
 
 ## Categories and labels
 
 - Type a **category name** to show only that category. Names with spaces go in quotes: `"Dining out"`. While you type, Budgero suggests matching categories; pick one to add it. Add several categories to see any of them.
-- Use `label:` for **labels**: `label:Vacation`, or `label:"Work trip"` for names with spaces.
-
-## Plain text
-
-Anything the search doesn't recognise is matched against the **memo, payee, category, label, and account** of each transaction, ignoring upper and lower case. `pharmacy` finds "City Pharmacy" as a payee or a memo.
+- Use `label:` for **labels**: `label:Vacation`, or `label:"Work trip"` for names with spaces. Several labels show any of them.
 
 ## Quick filters
 
