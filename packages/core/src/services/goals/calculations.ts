@@ -6,6 +6,7 @@ import {
   describeGoalCycle,
   isValidCycleMonths,
   GOAL_CYCLE_MONTHS_ERROR,
+  goalInBudgetCurrency,
 } from './types.js';
 import { getLocalDateString, parseDateOnlyLocal } from '../../utils/date.js';
 import { MILLIS_PER_CENT } from '../../money/index.js';
@@ -175,10 +176,13 @@ export class GoalCalculations {
       return this.getEmptyProgress();
     }
 
-    if (goal.Purpose === GoalPurpose.SAVINGS) {
-      return this.calculateSavingsProgress(goal, finances, currentMonth, currencyCode);
+    // Every goal type works in the budget currency: a goal in another
+    // currency is measured against its target at the current rate.
+    const budgetGoal = goalInBudgetCurrency(goal);
+    if (budgetGoal.Purpose === GoalPurpose.SAVINGS) {
+      return this.calculateSavingsProgress(budgetGoal, finances, currentMonth, currencyCode);
     }
-    return this.calculateSpendingProgress(goal, finances, currentMonth, currencyCode);
+    return this.calculateSpendingProgress(budgetGoal, finances, currentMonth, currencyCode);
   }
 
   /**

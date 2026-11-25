@@ -13,6 +13,7 @@ import { useCategories } from '@entities/category/api/useCategories';
 import { toast } from 'sonner';
 import { ZERO_MILLI } from '@shared/lib/currency/milli';
 import { calculateDailyAllowance } from '@shared/lib/budget-pacing';
+import { goalTargetInBudgetCurrency } from '@budgero/core/browser';
 import {
   calculateCumulativeData,
   calculateGoalStatus,
@@ -44,9 +45,11 @@ export function useSpendingDrawerState(
     currentMonth
   );
 
-  const monthlyGoal = goalsData?.find(
+  const monthlyGoalRow = goalsData?.find(
     (g) => g.CategoryID === selectedCategory?.id && g.Type === 'monthly'
-  )?.Target;
+  );
+  // In the budget currency (a goal can be set in another one).
+  const monthlyGoal = monthlyGoalRow ? goalTargetInBudgetCurrency(monthlyGoalRow) : undefined;
   const selectedCategoryData = categories?.find((c) => c.ID === selectedCategory?.id);
 
   const [page, setPage] = useState(0);

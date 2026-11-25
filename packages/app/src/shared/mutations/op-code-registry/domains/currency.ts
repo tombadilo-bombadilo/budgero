@@ -23,6 +23,11 @@ const CURRENCY_INVALIDATION_KEYS: string[][] = [
   // Custom-rate changes revalue account balances (pinned-rate true-up).
   ['revaluationSummary'],
   ['revaluationSummary', '*'],
+  // Goals set in another currency convert with these rates.
+  ['goals', '*'],
+  ['goal', '*'],
+  ['goalTimeframes', '*'],
+  ['goalTargetPreview', '*'],
   ...TRANSACTION_INVALIDATION_KEYS,
 ];
 

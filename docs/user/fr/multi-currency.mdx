@@ -18,7 +18,7 @@ Chaque transaction sur un compte en devise étrangère stocke deux valeurs :
 - le **montant d'origine** — ce qui s'est réellement passé, dans la devise du compte. C'est la source de vérité et cela ne change jamais.
 - le **montant converti** — la même transaction exprimée dans la devise de votre budget, ce que les catégories, [À affecter](/docs/ready-to-assign) et les rapports utilisent.
 
-Parallèlement, Budgero enregistre le **taux de change** utilisé et indique si vous l'avez remplacé. L'historique de votre compte en CHF reste en francs ; votre budget s'affiche en euros ; rien ne se perd en chemin. Les soldes des comptes fonctionnent de la même manière — chaque compte étranger connaît à la fois son solde d'origine et sa contribution convertie à votre patrimoine net.
+Parallèlement, Budgero enregistre le **taux de change** utilisé et indique si vous l'avez remplacé. L'historique de votre compte en CHF reste en francs ; votre budget s'affiche en euros ; rien ne se perd en chemin. Les soldes des comptes fonctionnent de la même manière — chaque compte étranger connaît à la fois son solde d'origine et sa contribution convertie à votre patrimoine net. Sur la page **Comptes**, un compte étranger affiche d'abord son propre solde, au format de sa devise, avec la valeur dans la devise du budget en dessous ; les totaux de groupe et le patrimoine net restent dans la devise du budget.
 
 ## D'où proviennent les taux
 
@@ -96,6 +96,10 @@ Les taux manuels sont des taux fixes que vous saisissez vous-même, utilisés lo
 **Voyage.** Payez avec votre carte locale à l'étranger et la transaction arrive dans la devise du compte comme d'habitude — saisissez ce que le terminal a affiché dans la devise étrangère ou ce que l'application de votre banque indique comme réglé, selon ce dont vous disposez ; un remplacement rapprochera la différence à l'arrivée du relevé.
 
 **Rapprochement des comptes étrangers.** Le [rapprochement](/docs/accounts) compare les montants *originaux* à votre banque — des francs contre des francs. La conversion n'interfère jamais avec l'exactitude du solde de votre compte ; elle détermine seulement comment ce solde se lit dans la devise de votre budget.
+
+## Objectifs dans une autre devise
+
+Le montant cible d'un objectif de catégorie peut être dans une autre devise, par exemple un voyage payé en dollars. Le montant reste dans cette devise, et le financement et la progression le convertissent au taux actuel avec les mêmes sources que ci-dessus. Voir [Objectifs](/docs/goals) pour les détails.
 
 ## Ce que la conversion ne touche jamais
 

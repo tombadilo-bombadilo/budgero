@@ -2867,6 +2867,10 @@ msgstr "~75 MB, am schnellsten"
 msgid "− Already set aside"
 msgstr "− Bereits zurückgelegt"
 
+#: src/features/goal-management/ui/GoalConversionPreview.tsx
+msgid "≈ {amount} today"
+msgstr "≈ {amount} heute"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "⚠️ Target date passed - need {needed} more"
 msgstr "⚠️ Zieldatum überschritten – {needed} mehr nötig"
@@ -10251,6 +10255,10 @@ msgstr "Finanziert aus budgetierten Ausgaben"
 msgid "Funded from spending:"
 msgstr "Finanziert aus Ausgaben:"
 
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Funding and progress use this amount in {budgetCurrency}, at the current rate."
+msgstr "Finanzierung und Fortschritt nutzen diesen Betrag in {budgetCurrency}, zum aktuellen Kurs."
+
 #: src/features/category-management/ui/FundingPriorityInput.tsx
 msgid "Funding priority"
 msgstr "Finanzierungspriorität"
@@ -10380,6 +10388,10 @@ msgstr "Zielbetrag"
 msgid "Goal created"
 msgstr "Ziel erstellt"
 
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Goal currency"
+msgstr "Zielwährung"
+
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "Goal deleted"
 msgstr "Ziel gelöscht"
@@ -10411,6 +10423,22 @@ msgstr "Zielfortschritt"
 #: src/features/first-steps/ui/GoalWalkthroughHost.tsx
 msgid "Goal set"
 msgstr "Ziel gesetzt"
+
+#. placeholder {0}: targetDisplay.currency
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "Goal set in {0}, converted at the last known rate (no recent rate available)."
+msgstr "Ziel in {0} festgelegt, umgerechnet zum letzten bekannten Kurs (kein aktueller Kurs verfügbar)."
+
+#. placeholder {0}: targetDisplay.currency
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "Goal set in {0}, converted at today's rate."
+msgstr "Ziel in {0} festgelegt, umgerechnet zum heutigen Kurs."
+
+#. placeholder {0}: targetDisplay.currency
+#. placeholder {1}: targetDisplay.target
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "Goal set in {0}: {1}"
+msgstr "Ziel in {0}: {1}"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Goal target"
@@ -13543,6 +13571,15 @@ msgstr "Weiter<0><1/></0>"
 msgid "No"
 msgstr "Nein"
 
+#. placeholder {0}: targetDisplay.currency
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "No {0} exchange rate yet, so the target counts one to one until one is available."
+msgstr "Noch kein Wechselkurs für {0}, daher zählt das Ziel eins zu eins, bis einer verfügbar ist."
+
+#: src/features/goal-management/ui/GoalConversionPreview.tsx
+msgid "No {currency} → {budgetCurrency} rate yet: counted as {amount} until one is available."
+msgstr "Noch kein Kurs {currency} → {budgetCurrency}: zählt als {amount}, bis einer verfügbar ist."
+
 #: src/shared/model/access.ts
 msgid "No Access"
 msgstr "Kein Zugriff"
@@ -14484,6 +14521,12 @@ msgstr "Vorkommen übersprungen"
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "of {0}"
 msgstr "von {0}"
+
+#. placeholder {0}: targetDisplay.target
+#. placeholder {1}: targetDisplay.converted
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "of {0} (≈ {1})"
+msgstr "von {0} (≈ {1})"
 
 #: src/features/reports/ui/notebook/viz/ProgressView.tsx
 msgid "of {goalText}"
@@ -17783,6 +17826,10 @@ msgstr "Gespeicherte Vorlagen"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Saved This Month"
 msgstr "Diesen Monat gespart"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Saving for something priced in another currency? Pick it here."
+msgstr "Sparen Sie für etwas in einer anderen Währung? Wählen Sie sie hier."
 
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 #: src/pages/onboarding/apply-onboarding.ts
@@ -22204,6 +22251,10 @@ msgstr "Die Nutzungsanalyse ist deaktiviert und in Self-Hosting-Builds nicht ent
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
 msgid "Use 'Transfers' to deduct from Ready to Assign, or select a category to treat as spending"
 msgstr "Verwende 'Umbuchungen', um von 'Zu budgetieren' abzuziehen, oder wähle eine Kategorie, um sie als Ausgabe zu behandeln"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Use {budgetCurrency}"
+msgstr "{budgetCurrency} verwenden"
 
 #: src/pages/settings/LabelsPage.tsx
 msgid "Use a valid color"

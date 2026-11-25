@@ -37,7 +37,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { AnimatedNumber } from '@shared/ui/animated-number';
 import { GoalMessageFormatter } from '@features/goal-management/ui/GoalMessageFormatter';
 import { translateGoalText } from '@features/goal-management/lib/core-goal-text';
+import { useUiStore } from '@shared/store/useUiStore';
 import { describeLocalizedGoalCycle } from '../lib/goal-cycle-label';
+import { describeGoalTarget } from '../lib/goal-currency';
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -274,9 +276,12 @@ export function GoalCard({
   const { t } = useLingui();
 
   const [localExpanded, setLocalExpanded] = useState(false);
+  const numberFormat = useUiStore((state) => state.selectedBudget?.NumberFormat);
 
   // Use GoalCalculations for pure calculations without database access
   const progress = GoalCalculations.calculateProgress(goal, finances, currentMonth);
+  // A goal in another currency: its own amount, plus what it is in the budget currency.
+  const targetDisplay = goal ? describeGoalTarget(goal, formatter, numberFormat) : null;
   const cycleMonths = goal ? getCycleMonths(goal) : null;
   const cadenceLabel = cycleMonths === null ? null : describeLocalizedGoalCycle(cycleMonths);
   const roundedPercentage = Math.round(progress.percentage);
@@ -366,6 +371,16 @@ export function GoalCard({
                 title={t`Repeats ${cadenceLabel}`}
               >
                 {cadenceLabel}
+              </Badge>
+            )}
+            {targetDisplay?.currency && (
+              <Badge
+                variant="outline"
+                className="text-[0.5625rem] uppercase tracking-wide"
+                title={t`Goal set in ${targetDisplay.currency}: ${targetDisplay.target}`}
+                data-testid="goal-card-currency-badge"
+              >
+                {targetDisplay.currency}
               </Badge>
             )}
           </div>
@@ -483,10 +498,33 @@ export function GoalCard({
               formatter={(v) => formatter.format(toDecimal(roundMilli(v)))}
               className="tabular-nums"
             />
-            <span className="text-muted-foreground">
-              <Trans>of {formatMilli(formatter, goal.Target)}</Trans>
+            <span className="text-muted-foreground" data-testid="goal-card-target">
+              {targetDisplay?.currency && targetDisplay.converted ? (
+                <Trans>
+                  of {targetDisplay.target} (≈ {targetDisplay.converted})
+                </Trans>
+              ) : (
+                <Trans>of {formatMilli(formatter, goal.Target)}</Trans>
+              )}
             </span>
           </div>
+          {targetDisplay?.currency && (
+            <p className="text-xs text-muted-foreground" data-testid="goal-card-currency-note">
+              {targetDisplay.rateSource === 'missing' ? (
+                <Trans>
+                  No {targetDisplay.currency} exchange rate yet, so the target counts one to one
+                  until one is available.
+                </Trans>
+              ) : targetDisplay.rateSource === 'stale' ? (
+                <Trans>
+                  Goal set in {targetDisplay.currency}, converted at the last known rate (no recent
+                  rate available).
+                </Trans>
+              ) : (
+                <Trans>Goal set in {targetDisplay.currency}, converted at today&apos;s rate.</Trans>
+              )}
+            </p>
+          )}
         </div>
 
         {/* Status Message & Recommendation */}

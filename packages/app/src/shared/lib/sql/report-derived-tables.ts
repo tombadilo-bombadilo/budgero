@@ -17,6 +17,7 @@ import {
   GoalCalculations,
   GoalType,
   goalsByCategoryForMonth,
+  goalTargetInBudgetCurrency,
   type Goal,
   type Services,
 } from '@budgero/core/browser';
@@ -214,7 +215,8 @@ export function buildBudgetMonthRows(
         activity: units(row.Activity),
         available: units(row.Available),
         goal_type: goal ? goal.Type : null,
-        goal_target: goal ? units(goal.Target) : null,
+        // Budget currency, like every other amount here (converted for goals in another one).
+        goal_target: goal ? units(goalTargetInBudgetCurrency(goal)) : null,
         goal_monthly_target: progress ? units(progress.monthlyTarget) : null,
         goal_needed: progress ? units(progress.amountNeeded) : null,
         goal_progress: progress ? Math.round(progress.percentage * 100) / 100 : null,

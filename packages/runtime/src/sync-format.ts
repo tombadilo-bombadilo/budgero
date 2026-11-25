@@ -31,6 +31,10 @@
  * direct edits of one of a split's two mirrors, and an account joining the
  * budget that clears categorized lines transferring to it, ask for it per
  * call; no new op codes.
+ * Format 8 (app v1.23): goals with a target in another currency than the
+ * budget's (goals.TargetCurrency, migration 083). Goal creates and edits that
+ * set such a currency, restores of such a goal, and undo data that carries
+ * the column ask for it per call; no new op codes.
  *
  * Each outgoing mutation is stamped with the LOWEST format that can express
  * it ({@link mutationFormatVersion}): ops every format-2 build knows stay
@@ -55,7 +59,7 @@
 export const MILLIUNIT_FORMAT_VERSION = 2;
 
 /** Highest mutation format this build reads (and the highest it writes). */
-export const MUTATION_FORMAT_VERSION = 7;
+export const MUTATION_FORMAT_VERSION = 8;
 
 /** Format of mutations whose op codes every milliunit build knows. */
 export const BASE_MUTATION_FORMAT_VERSION = MILLIUNIT_FORMAT_VERSION;

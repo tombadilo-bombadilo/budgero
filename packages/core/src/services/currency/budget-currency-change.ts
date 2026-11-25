@@ -174,10 +174,14 @@ function assignmentMonths(db: DatabaseAdapter, budgetId: number): string[] {
   ).map((r) => r.Month);
 }
 
+/** Goals whose target is in the budget currency (TargetCurrency unset); others keep theirs. */
+const BUDGET_CURRENCY_GOAL = `(g.TargetCurrency IS NULL OR g.TargetCurrency = '')`;
+
 function hasGoals(db: DatabaseAdapter, budgetId: number): boolean {
   return !!getRow(
     db,
-    `SELECT 1 AS x FROM goals g JOIN categories c ON c.ID = g.CategoryID WHERE c.BudgetID = ? LIMIT 1`,
+    `SELECT 1 AS x FROM goals g JOIN categories c ON c.ID = g.CategoryID
+     WHERE c.BudgetID = ? AND ${BUDGET_CURRENCY_GOAL} LIMIT 1`,
     budgetId
   );
 }
@@ -389,10 +393,12 @@ export function applyBudgetCurrencyChange(
   }
 
   // Goal targets use the planning day's rate (one consistent baseline).
+  // Goals set in another currency keep their target; ones in the new budget
+  // currency become budget-currency goals (below).
   const goals = allRows<{ ID: number; Target: number }>(
     db,
     `SELECT g.ID, g.Target FROM goals g JOIN categories c ON c.ID = g.CategoryID
-     WHERE c.BudgetID = ?`,
+     WHERE c.BudgetID = ? AND ${BUDGET_CURRENCY_GOAL}`,
     budgetId
   );
   if (goals.length > 0) {
@@ -406,6 +412,16 @@ export function applyBudgetCurrencyChange(
       );
     }
   }
+  // After the conversion above, which must not touch them: their target is
+  // already in the new budget currency.
+  run(
+    db,
+    `UPDATE goals SET TargetCurrency = NULL
+     WHERE UPPER(TargetCurrency) = UPPER(?)
+       AND CategoryID IN (SELECT ID FROM categories WHERE BudgetID = ?)`,
+    toCurrency,
+    budgetId
+  );
 }
 
 /**

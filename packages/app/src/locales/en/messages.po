@@ -2869,6 +2869,10 @@ msgstr "~75MB, fastest"
 msgid "− Already set aside"
 msgstr "− Already set aside"
 
+#: src/features/goal-management/ui/GoalConversionPreview.tsx
+msgid "≈ {amount} today"
+msgstr "≈ {amount} today"
+
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "⚠️ Target date passed - need {needed} more"
 msgstr "⚠️ Target date passed - need {needed} more"
@@ -10253,6 +10257,10 @@ msgstr "Funded from budgeted spending"
 msgid "Funded from spending:"
 msgstr "Funded from spending:"
 
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Funding and progress use this amount in {budgetCurrency}, at the current rate."
+msgstr "Funding and progress use this amount in {budgetCurrency}, at the current rate."
+
 #: src/features/category-management/ui/FundingPriorityInput.tsx
 msgid "Funding priority"
 msgstr "Funding priority"
@@ -10382,6 +10390,10 @@ msgstr "Goal Amount"
 msgid "Goal created"
 msgstr "Goal created"
 
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Goal currency"
+msgstr "Goal currency"
+
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "Goal deleted"
 msgstr "Goal deleted"
@@ -10413,6 +10425,22 @@ msgstr "Goal progress"
 #: src/features/first-steps/ui/GoalWalkthroughHost.tsx
 msgid "Goal set"
 msgstr "Goal set"
+
+#. placeholder {0}: targetDisplay.currency
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "Goal set in {0}, converted at the last known rate (no recent rate available)."
+msgstr "Goal set in {0}, converted at the last known rate (no recent rate available)."
+
+#. placeholder {0}: targetDisplay.currency
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "Goal set in {0}, converted at today's rate."
+msgstr "Goal set in {0}, converted at today's rate."
+
+#. placeholder {0}: targetDisplay.currency
+#. placeholder {1}: targetDisplay.target
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "Goal set in {0}: {1}"
+msgstr "Goal set in {0}: {1}"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Goal target"
@@ -13545,6 +13573,15 @@ msgstr "Next<0><1/></0>"
 msgid "No"
 msgstr "No"
 
+#. placeholder {0}: targetDisplay.currency
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "No {0} exchange rate yet, so the target counts one to one until one is available."
+msgstr "No {0} exchange rate yet, so the target counts one to one until one is available."
+
+#: src/features/goal-management/ui/GoalConversionPreview.tsx
+msgid "No {currency} → {budgetCurrency} rate yet: counted as {amount} until one is available."
+msgstr "No {currency} → {budgetCurrency} rate yet: counted as {amount} until one is available."
+
 #: src/shared/model/access.ts
 msgid "No Access"
 msgstr "No Access"
@@ -14486,6 +14523,12 @@ msgstr "Occurrence skipped"
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "of {0}"
 msgstr "of {0}"
+
+#. placeholder {0}: targetDisplay.target
+#. placeholder {1}: targetDisplay.converted
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "of {0} (≈ {1})"
+msgstr "of {0} (≈ {1})"
 
 #: src/features/reports/ui/notebook/viz/ProgressView.tsx
 msgid "of {goalText}"
@@ -17785,6 +17828,10 @@ msgstr "Saved Templates"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Saved This Month"
 msgstr "Saved This Month"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Saving for something priced in another currency? Pick it here."
+msgstr "Saving for something priced in another currency? Pick it here."
 
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 #: src/pages/onboarding/apply-onboarding.ts
@@ -22206,6 +22253,10 @@ msgstr "Usage analytics is disabled and not included in self-hosted builds. No t
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
 msgid "Use 'Transfers' to deduct from Ready to Assign, or select a category to treat as spending"
 msgstr "Use 'Transfers' to deduct from Ready to Assign, or select a category to treat as spending"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Use {budgetCurrency}"
+msgstr "Use {budgetCurrency}"
 
 #: src/pages/settings/LabelsPage.tsx
 msgid "Use a valid color"

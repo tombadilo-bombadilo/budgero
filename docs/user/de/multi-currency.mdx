@@ -18,7 +18,7 @@ Jede Transaktion auf einem Fremdwährungskonto speichert zwei Werte:
 - der **Originalbetrag** — was tatsächlich passiert ist, in der Währung des Kontos. Das ist die tatsächliche Grundlage und ändert sich nie.
 - der **umgerechnete Betrag** — dieselbe Transaktion, ausgedrückt in deiner Budgetwährung. Das ist es, was Kategorien, [Zu budgetieren](/docs/ready-to-assign) und Berichte verwenden.
 
-Zusätzlich speichert Budgero den verwendeten **Wechselkurs** und ob du ihn überschrieben hast. Die Historie deines CHF-Kontos bleibt in Franken; dein Budget wird in Euro geführt; dazwischen geht nichts verloren. Kontostände funktionieren genauso — jedes Fremdwährungskonto kennt sowohl seinen ursprünglichen Saldo als auch seinen umgerechneten Beitrag zu deinem Nettovermögen.
+Zusätzlich speichert Budgero den verwendeten **Wechselkurs** und ob du ihn überschrieben hast. Die Historie deines CHF-Kontos bleibt in Franken; dein Budget wird in Euro geführt; dazwischen geht nichts verloren. Kontostände funktionieren genauso — jedes Fremdwährungskonto kennt sowohl seinen ursprünglichen Saldo als auch seinen umgerechneten Beitrag zu deinem Nettovermögen. Auf der Seite **Konten** zeigt ein Fremdwährungskonto zuerst seinen eigenen Saldo im Format seiner Währung und darunter den Wert in der Budget-Währung; Gruppensummen und Nettovermögen bleiben in der Budget-Währung.
 
 ## Woher die Kurse kommen
 
@@ -96,6 +96,10 @@ Manuelle Kurse sind feste Kurse, die du selbst eingibst. Sie werden verwendet, w
 **Reisen.** Zahle mit deiner heimischen Karte im Ausland und die Transaktion kommt wie gewohnt in der Währung des Kontos an — gib ein, was das Terminal in der Fremdwährung angezeigt hat, oder was deine Banking-App als abgerechnet zeigt, je nachdem, was du zur Hand hast; ein Override gleicht die Differenz ab, wenn der Kontoauszug eintrifft.
 
 **Fremde Konten abgleichen.** Der [Abgleich](/docs/accounts) vergleicht *ursprüngliche* Beträge mit deiner Bank — Franken gegen Franken. Die Umrechnung beeinflusst nie, ob dein Kontostand stimmt; sie bestimmt nur, wie dieser Kontostand in deiner Budget-Währung angezeigt wird.
+
+## Ziele in einer anderen Währung
+
+Der Zielbetrag eines Kategorie-Ziels kann in einer anderen Währung liegen, zum Beispiel für eine Reise in Dollar. Der Betrag bleibt in dieser Währung; Finanzierung und Fortschritt rechnen ihn zum aktuellen Kurs aus denselben Quellen wie oben um. Details unter [Ziele](/docs/goals).
 
 ## Was die Umrechnung unangetastet lässt
 

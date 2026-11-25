@@ -70,7 +70,81 @@ export interface Goal {
   EffectiveFrom?: string | null;
   /** Last month (YYYY-MM, inclusive) of an ended goal; null = until the next timeframe. */
   EffectiveTo?: string | null;
+  /**
+   * Currency of Target when it isn't the budget's (ISO code, fiat only).
+   * Null/absent = the budget currency: every goal written before migration
+   * 083, and any goal set in the budget currency. Read it with
+   * goalTargetCurrency().
+   */
+  TargetCurrency?: string | null;
+  /**
+   * Computed on read, never stored: Target in the budget currency at the
+   * current rate. Set only on goals whose TargetCurrency differs from the
+   * budget's (see GoalService reads). Calculations use it via
+   * goalInBudgetCurrency().
+   */
+  TargetConverted?: MilliUnits;
+  /** Computed on read, never stored: where TargetConverted's rate came from. */
+  TargetRateSource?: GoalRateSource;
   BudgetID?: number;
+}
+
+/**
+ * Where a foreign-currency goal's conversion rate came from: the same
+ * hierarchy as transactions (custom > official > manual), then the newest
+ * cached official rate however old ('stale'), then none at all ('missing':
+ * the target is counted 1:1 until a rate arrives, like a transaction with
+ * no known rate).
+ */
+export type GoalRateSource = 'custom' | 'official' | 'manual' | 'stale' | 'missing';
+
+/** Goal fields that exist only on read (never written to the goals table). */
+export const COMPUTED_GOAL_FIELDS = ['TargetConverted', 'TargetRateSource'] as const;
+
+/** A goal object without its computed fields: the stored row. */
+export function goalRow<T extends Partial<Goal>>(goal: T): T {
+  const row = { ...goal };
+  for (const field of COMPUTED_GOAL_FIELDS) delete row[field];
+  return row;
+}
+
+/** A valid currency code for a goal target (ISO-style, three letters). */
+export function isValidGoalCurrencyCode(code: unknown): code is string {
+  return typeof code === 'string' && /^[A-Z]{3}$/.test(code);
+}
+
+/**
+ * The goal's target currency when it differs from the budget's, else null
+ * (budget currency). `budgetCurrency` omitted: any stored currency counts.
+ */
+export function goalTargetCurrency(
+  goal: Pick<Goal, 'TargetCurrency'> | null | undefined,
+  budgetCurrency?: string | null
+): string | null {
+  const code = goal?.TargetCurrency;
+  if (typeof code !== 'string' || code === '') return null;
+  const upper = code.toUpperCase();
+  return budgetCurrency && upper === budgetCurrency.toUpperCase() ? null : upper;
+}
+
+/**
+ * The goal's target in the budget currency: TargetConverted for a goal in
+ * another currency, Target otherwise. A foreign goal without a computed
+ * conversion (built outside a service read) counts its Target as is.
+ */
+export function goalTargetInBudgetCurrency(
+  goal: Pick<Goal, 'Target' | 'TargetCurrency' | 'TargetConverted'>
+): MilliUnits {
+  if (goalTargetCurrency(goal) && typeof goal.TargetConverted === 'number') {
+    return goal.TargetConverted;
+  }
+  return goal.Target;
+}
+
+/** The goal with Target in the budget currency (what every calculation works with). */
+export function goalInBudgetCurrency<T extends Goal>(goal: T): T {
+  const target = goalTargetInBudgetCurrency(goal);
+  return target === goal.Target ? goal : { ...goal, Target: target };
 }
 
 export const DEFAULT_GOAL_CYCLE_MONTHS = 12;
