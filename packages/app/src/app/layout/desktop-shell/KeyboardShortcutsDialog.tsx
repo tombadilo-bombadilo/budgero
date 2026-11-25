@@ -9,7 +9,11 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@shared/ui/dialog';
-import { getKeyboardShortcutLabels } from '@shared/lib/keyboard-shortcuts';
+import {
+  AMOUNT_SHORTCUT_KEYS,
+  getKeyboardShortcutLabels,
+  SIDEBAR_SHORTCUT_KEY,
+} from '@shared/lib/keyboard-shortcuts';
 import { CLEARED_SHORTCUT_KEY } from '@features/transactions/api/useClearedShortcut';
 import {
   CATEGORIZE_SHORTCUT_KEY,
@@ -38,7 +42,7 @@ export function KeyboardShortcutsDialog() {
       items: [
         { keys: shortcuts.search, label: t`Search and commands` },
         { keys: shortcuts.addTransaction, label: t`Add transaction` },
-        { keys: shortcuts.mod('B'), label: t`Toggle sidebar` },
+        { keys: SIDEBAR_SHORTCUT_KEY, label: t`Toggle sidebar` },
         { keys: shortcuts.mod('Z'), label: t`Undo` },
         { keys: shortcuts.redo, label: t`Redo` },
       ],
@@ -76,10 +80,10 @@ export function KeyboardShortcutsDialog() {
     {
       title: t`Amount fields`,
       items: [
-        { keys: shortcuts.mod('H'), label: t`Halve amount` },
-        { keys: shortcuts.mod('D'), label: t`Double amount` },
-        { keys: shortcuts.mod('Z'), label: t`Set to zero` },
-        { keys: shortcuts.mod('T'), label: t`Take 10%` },
+        { keys: AMOUNT_SHORTCUT_KEYS.half, label: t`Halve amount` },
+        { keys: AMOUNT_SHORTCUT_KEYS.double, label: t`Double amount` },
+        { keys: AMOUNT_SHORTCUT_KEYS.zero, label: t`Set to zero` },
+        { keys: AMOUNT_SHORTCUT_KEYS.tenPercent, label: t`Take 10%` },
         { keys: 'Enter', label: t`Save` },
         { keys: 'Esc', label: t`Cancel` },
       ],

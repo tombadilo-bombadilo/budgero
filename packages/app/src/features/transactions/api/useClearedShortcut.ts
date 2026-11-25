@@ -1,6 +1,7 @@
 import { plural } from '@lingui/core/macro';
 import { useLingui } from '@lingui/react/macro';
 import { useEffect } from 'react';
+import { isTypingTarget } from '@shared/lib/keyboard-shortcuts';
 import { toast } from 'sonner';
 import type { GetTransactionsByAccountRow } from '@budgero/core/browser';
 import { useSetTransactionsCleared } from '@entities/transaction/api/useTransactions';
@@ -8,17 +9,7 @@ import { useSetTransactionsCleared } from '@entities/transaction/api/useTransact
 /** Key that toggles cleared status on the selected register rows. */
 export const CLEARED_SHORTCUT_KEY = 'C';
 
-export function isTypingTarget(target: EventTarget | null): boolean {
-  const element = target instanceof HTMLElement ? target : null;
-  if (!element) return false;
-  return (
-    element.tagName === 'INPUT' ||
-    element.tagName === 'TEXTAREA' ||
-    element.tagName === 'SELECT' ||
-    element.isContentEditable ||
-    Boolean(element.closest('.cm-editor, [role="dialog"], [role="menu"], [role="listbox"]'))
-  );
-}
+export { isTypingTarget } from '@shared/lib/keyboard-shortcuts';
 
 /**
  * Press C with rows selected: marks them cleared, or uncleared when every

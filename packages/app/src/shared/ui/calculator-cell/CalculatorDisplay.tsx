@@ -2,7 +2,7 @@ import { useLingui } from '@lingui/react/macro';
 import { cn } from '@shared/lib/utils';
 import { maskFormattedIfEnabled } from '@shared/lib/privacy/mask-numbers';
 import { useUiStore } from '@shared/store/useUiStore';
-import { getKeyboardShortcutLabels } from '@shared/lib/keyboard-shortcuts';
+import { AMOUNT_SHORTCUT_KEYS } from '@shared/lib/keyboard-shortcuts';
 
 export interface CalculatorDisplayProps {
   value: number;
@@ -30,11 +30,7 @@ export function CalculatorDisplay({
   const { t } = useLingui();
   const editHint = t`Click to edit - Calculator: 100 + 50, 1000 * 0.3`;
   const shortcutHint = () => {
-    const { mod } = getKeyboardShortcutLabels();
-    const half = mod('H');
-    const double = mod('D');
-    const zero = mod('Z');
-    const tenPercent = mod('T');
+    const { half, double, zero, tenPercent } = AMOUNT_SHORTCUT_KEYS;
     return t`Shortcuts: ${half} (half), ${double} (double), ${zero} (zero), ${tenPercent} (10%)`;
   };
 

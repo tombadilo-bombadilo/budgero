@@ -48,8 +48,9 @@ export function isExpression(str: string): boolean {
 }
 
 /**
- * Apply keyboard shortcuts for common calculations.
- * Shortcuts (Ctrl or Cmd): H half, D double, Z zero, T 10%
+ * Apply keyboard shortcuts for common calculations (plain keys while editing an
+ * amount): H half, D double, Z zero, T 10%. Ctrl/Cmd versions are left to the
+ * browser (history, bookmark, new tab) and to text undo.
  */
 export function applyShortcut(key: string, currentValue: number): string | null {
   switch (key) {
