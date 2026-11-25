@@ -14815,6 +14815,7 @@ msgstr "Abriendo el pago..."
 msgid "Opening your bank…"
 msgstr "Abriendo tu banco…"
 
+#: src/app/startup/screens.tsx
 #: src/app/startup/StartupController.tsx
 msgid "Opening your budget…"
 msgstr "Abriendo tu presupuesto…"
