@@ -1,5 +1,5 @@
 import type { MessageDescriptor } from '@lingui/core';
-import { t } from '@lingui/core/macro';
+import { msg, t } from '@lingui/core/macro';
 import { i18n } from '@lingui/core';
 import { Trans, useLingui } from '@lingui/react/macro';
 import React from 'react';
@@ -28,7 +28,6 @@ import {
 } from '@shared/ui/dialog';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@shared/ui/accordion';
 import SharedWorkspaceAccessRequired from '@features/subscription/ui/SharedWorkspaceAccessRequired';
-import BudgetWizard from '@features/budget-management';
 import {
   Loader2,
   ShieldCheck,
@@ -54,9 +53,14 @@ import { toast } from 'sonner';
 import { AccessLevel, type AccessStatus } from '@shared/model/access';
 import type { User } from '@shared/model/auth';
 import type { BudgetSpaceSummary } from '@shared/model/budget-spaces';
-import OnboardingFlow from '@pages/onboarding/OnboardingFlow';
+import { lazyPage } from '@/app/lazy-page';
 import type { MasterPasswordStartupSnapshot, WorkspaceStartupSnapshot } from './hooks';
 import { StartupLayout } from './StartupLayout';
+
+// Only new users see onboarding, and only a workspace without a budget sees
+// the budget wizard: both load on demand instead of with every app start.
+const OnboardingFlow = lazyPage(() => import('@pages/onboarding/OnboardingFlow'));
+const BudgetWizard = lazyPage(() => import('@features/budget-management/ui/BudgetWizard'));
 
 interface StartupSplashScreenProps {
   message?: MessageDescriptor;
@@ -83,7 +87,11 @@ export function AccessBlockedScreen({ mode }: { mode: 'shared-locked' | 'subscri
 }
 
 export function IntroRequiredScreen({ acknowledgeIntro }: { acknowledgeIntro: () => void }) {
-  return <OnboardingFlow onComplete={acknowledgeIntro} />;
+  return (
+    <React.Suspense fallback={<StartupSplashScreen message={msg`Opening your budget…`} />}>
+      <OnboardingFlow onComplete={acknowledgeIntro} />
+    </React.Suspense>
+  );
 }
 
 function PasswordRequirement({ met, label }: { met: boolean; label: string }) {
@@ -878,13 +886,15 @@ export function BudgetRequiredScreen({
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
-          <BudgetWizard
-            onCreated={handleBudgetCreated}
-            onModeChange={handleBudgetModeChange}
-            onWideLayoutChange={setIsWideLayout}
-            defaultTab={selectedSource}
-            hideHeader
-          />
+          <React.Suspense fallback={<Loader2 className="mx-auto h-6 w-6 animate-spin" />}>
+            <BudgetWizard
+              onCreated={handleBudgetCreated}
+              onModeChange={handleBudgetModeChange}
+              onWideLayoutChange={setIsWideLayout}
+              defaultTab={selectedSource}
+              hideHeader
+            />
+          </React.Suspense>
           {isBudgetImporting ? (
             <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
               <Trans>

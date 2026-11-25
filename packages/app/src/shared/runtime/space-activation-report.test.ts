@@ -24,7 +24,7 @@ describe('reportSpaceActivation', () => {
       outcome: 'ok',
       path: 'local',
       error_code: 'none',
-      duration_bucket: '<10s',
+      duration_bucket: '1-3s',
     });
     expect(captureAppError).not.toHaveBeenCalled();
   });

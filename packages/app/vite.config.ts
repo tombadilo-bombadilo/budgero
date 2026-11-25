@@ -320,6 +320,22 @@ export default defineConfig(({ mode, isPreview }) => {
       // built (app.Dockerfile). They are never served.
       sourcemap: env.APP_SOURCEMAPS === 'hidden' ? 'hidden' : false,
       emptyOutDir: true,
+      rollupOptions: {
+        output: {
+          // Pages and heavy features are lazy chunks (src/app/router.tsx).
+          // Big vendors that rarely change get their own chunk so a release
+          // doesn't make every installed app download them again.
+          manualChunks(id) {
+            if (
+              /\/node_modules\/(react|react-dom|scheduler|react-router|react-router-dom)\//.test(id)
+            ) {
+              return 'react-vendor';
+            }
+            if (/\/node_modules\/(echarts|zrender)\//.test(id)) return 'echarts';
+            return undefined;
+          },
+        },
+      },
     },
     optimizeDeps: {
       // Lingui macros are compile-time only — the babel plugin removes them.

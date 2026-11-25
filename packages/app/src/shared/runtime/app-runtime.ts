@@ -30,7 +30,7 @@ import {
 } from '@budgero/runtime';
 import { captureAppError, setErrorContext } from '@shared/lib/analytics/error-capture';
 import { toErrorCode } from '@shared/lib/analytics/error-codes';
-import { countBucket, durationBucket, ageBucket } from '@shared/lib/analytics/events';
+import { countBucket, timingBucket, ageBucket } from '@shared/lib/analytics/events';
 import { runtimeErrorBridge } from '@shared/runtime/runtime-error-bridge';
 import {
   ServiceManager,
@@ -94,7 +94,7 @@ export function reportSpaceActivation(outcome: SpaceActivationOutcome): void {
     outcome: outcome.ok ? 'ok' : 'error',
     path: outcome.path,
     error_code: code === 'unknown' && cause === undefined ? 'none' : code,
-    duration_bucket: durationBucket(outcome.durationMs),
+    duration_bucket: timingBucket(outcome.durationMs),
   });
   if (cause !== undefined) {
     captureAppError(typeof cause === 'object' && cause !== null ? cause : { name: 'NonError' }, {

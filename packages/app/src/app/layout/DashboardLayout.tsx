@@ -1,5 +1,6 @@
 import { MobileBottomNav } from '@widgets/navigation/MobileBottomNav';
 import { MobileTopBar } from '@widgets/navigation/MobileTopBar';
+import { Suspense } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { AppErrorBoundary } from '@app/system/AppErrorBoundary';
 import { useIsMobile } from '@shared/hooks/useIsMobile';
@@ -13,13 +14,19 @@ import { BankAutoSync } from '@features/bank-sync';
 import { SchedulingGuideDialog } from '@features/transactions/ui/SchedulingGuideDialog';
 import { ReconciledEditConfirmHost } from '@features/transactions/ui/reconciled-edit';
 import { PageGuideHost } from '@features/page-guides';
+import { CenteredLoader } from '@shared/ui/CenteredLoader';
+import { UsableMarker } from '@/app/layout/UsableMarker';
 
 export default function DashboardLayout() {
   const isMobile = useIsMobile();
   const { pathname } = useLocation();
   const page = (
     <AppErrorBoundary name="route" variant="section" resetKey={pathname}>
-      <Outlet />
+      {/* Pages are lazy chunks (router.tsx); the shell stays while one loads. */}
+      <Suspense fallback={<CenteredLoader className="min-h-[60vh]" />}>
+        <Outlet />
+        <UsableMarker />
+      </Suspense>
     </AppErrorBoundary>
   );
 

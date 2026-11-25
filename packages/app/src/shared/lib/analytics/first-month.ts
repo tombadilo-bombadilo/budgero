@@ -3,7 +3,10 @@
  * any budget data. Everything here is derived from events the app already
  * tracks (observeTrackedEvents) plus the signup date from the profile.
  *
- * - app_opened: once per calendar day per device, with days since signup.
+ * - app_opened: once per calendar day per device, with days since signup and
+ *   how long this page load took to become usable (startup-timing.ts). The
+ *   page load's first app_opened waits for that moment, or goes out as
+ *   'left_before' if the tab is hidden or closed first.
  * - activation_milestone: the first transaction, assignment, import and
  *   Ready to Assign reaching zero, once each per user: the milestones sent are
  *   kept in the workspace's synced state too (user scope, merged set), so a
@@ -39,6 +42,7 @@ import {
   type SignupDayBucket,
 } from './events';
 import { observeTrackedEvents, track, trackOnUnload } from './track';
+import { onAppUsable, takeUsableBucket, usableTimingPending } from './startup-timing';
 
 const DAY_MS = 86_400_000;
 const LAST_DAYS = 30;
@@ -72,6 +76,8 @@ let summarySent = false;
 let hiddenAt: number | null = null;
 let started = false;
 let stopObserving: (() => void) | null = null;
+/** The page load's first app_opened, waiting for the app to become usable. */
+let stopWaitingForUsable: (() => void) | null = null;
 const emptyStatesSeen = new Set<EmptyStateScreen>();
 /** workspace|user|milestone already in the synced set: skips re-reading it on every assign. */
 const syncedMilestones = new Set<string>();
@@ -116,14 +122,46 @@ function writeJson(key: string, value: unknown): void {
   }
 }
 
-function reportAppOpened(): void {
+/** Today's app_opened for the current user, or null when it is not due. */
+function appOpenedDay(): SignupDayBucket | null {
   const days = daysSinceSignup();
-  if (days === null || !userId) return;
+  if (days === null || !userId) return null;
   const seen = readJson<Record<string, string>>(OPENED_KEY, {});
-  const today = localDay(Date.now());
-  if (seen[userId] === today) return;
-  writeJson(OPENED_KEY, { ...seen, [userId]: today });
-  track('app_opened', { day: signupDayBucket(days) });
+  return seen[userId] === localDay(Date.now()) ? null : signupDayBucket(days);
+}
+
+function sendAppOpened(unloading = false): void {
+  stopWaitingForUsable?.();
+  stopWaitingForUsable = null;
+  const day = appOpenedDay();
+  if (day === null || !userId) return;
+  const seen = readJson<Record<string, string>>(OPENED_KEY, {});
+  writeJson(OPENED_KEY, { ...seen, [userId]: localDay(Date.now()) });
+  const props = { day, usable_bucket: takeUsableBucket() };
+  if (unloading) trackOnUnload('app_opened', props);
+  else track('app_opened', props);
+}
+
+function reportAppOpened(): void {
+  if (stopWaitingForUsable || appOpenedDay() === null) return;
+  if (!usableTimingPending()) {
+    sendAppOpened();
+    return;
+  }
+  // The page load's first open: send it once the first screen is usable.
+  let waiting = true;
+  const stop = onAppUsable(() => {
+    if (!waiting) return;
+    waiting = false;
+    stopWaitingForUsable = null;
+    sendAppOpened();
+  });
+  if (waiting) stopWaitingForUsable = stop;
+}
+
+/** The tab is going away before the app was usable: send app_opened now. */
+function flushWaitingAppOpened(unloading: boolean): void {
+  if (stopWaitingForUsable) sendAppOpened(unloading);
 }
 
 function activeSpaceId(): string | null {
@@ -254,6 +292,7 @@ function startVisit(): void {
 }
 
 function onPageHide(): void {
+  flushWaitingAppOpened(true);
   if (summarySent) return;
   // The visit ended when the tab was hidden, if it was.
   const props = summaryProps(hiddenAt ?? Date.now());
@@ -276,6 +315,7 @@ function onVisibilityChange(): void {
     // A hidden tab may never run code again (mobile browsers skip pagehide),
     // so the visit so far is parked in storage. Coming back soon drops it;
     // otherwise it is sent when the tab returns or the app is next opened.
+    flushWaitingAppOpened(false);
     hiddenAt = Date.now();
     const props = summarySent ? null : summaryProps(hiddenAt);
     if (props && userId) writeJson(PENDING_SUMMARY_KEY, { user: userId, props });
@@ -319,6 +359,8 @@ export function setFirstMonthUser(id: string | null, createdAt: string | null | 
 export function resetFirstMonthForTests(): void {
   stopObserving?.();
   stopObserving = null;
+  stopWaitingForUsable?.();
+  stopWaitingForUsable = null;
   if (started && typeof window !== 'undefined') {
     window.removeEventListener('pagehide', onPageHide);
     window.removeEventListener('pageshow', onPageShow);

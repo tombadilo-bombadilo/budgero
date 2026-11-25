@@ -4,6 +4,7 @@ import {
   countBucket,
   durationBucket,
   smallCountBucket,
+  timingBucket,
   type AnalyticsEventProps,
   type ImportSource,
   type YnabReviewDecision,
@@ -36,7 +37,7 @@ export function startImportRun(source: ImportSource, context: ImportContext): Im
       outcome,
       error_code: errorCode,
       rows_bucket: countBucket(rows),
-      duration_bucket: durationBucket(Date.now() - startedAt),
+      duration_bucket: timingBucket(Date.now() - startedAt),
     });
   };
   return {
