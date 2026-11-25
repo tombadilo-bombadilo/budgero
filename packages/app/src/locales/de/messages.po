@@ -20185,10 +20185,9 @@ msgstr "Der Saldo, den du in dieser Kategorie aufbauen möchtest. Ausgaben senke
 msgid "The bank didn't authorize access: {description}"
 msgstr "Die Bank hat den Zugriff nicht autorisiert: {description}"
 
-#. placeholder {0}: missing[0].remote.name
 #: src/features/bank-sync/model/link-accounts.ts
-msgid "The bank didn't return {0}."
-msgstr "Die Bank hat {0} nicht zurückgegeben."
+msgid "The bank didn't return {name}, so it wasn't linked. Reconnect {bank} in Settings › Bank sync and make sure this account is selected when you authorise access, then link it again."
+msgstr "Die Bank hat {name} nicht zurückgegeben, daher wurde das Konto nicht verknüpft. Verbinde {bank} unter Einstellungen › Banksync erneut, wähle dieses Konto bei der Autorisierung aus und verknüpfe es dann noch einmal."
 
 #: src/features/bank-sync/model/link-accounts.ts
 msgid "The bank didn't send a balance for {name}, so Budgero can't set its opening balance. Link it to an existing account, or try again later."
@@ -23502,6 +23501,10 @@ msgstr "Deine App-Version, Sprache und ob du die Web-App oder die installierte A
 #: src/pages/settings/AutomationRulesPage.tsx
 msgid "Your automation rule is ready to run."
 msgstr "Deine Automatisierungsregel ist einsatzbereit."
+
+#: src/features/bank-sync/model/link-accounts.ts
+msgid "your bank"
+msgstr "deine Bank"
 
 #: src/features/bank-sync/lib/enable-banking/client.ts
 msgid "Your bank limits how often its data can be read. Try again in a few hours."
