@@ -728,11 +728,6 @@ msgstr "{0} en tête avec {1} des dépenses ({2})."
 msgid "{0} left"
 msgstr "{0}restant"
 
-#. placeholder {0}: progress.timeMetrics.currentStreak
-#: src/features/goal-management/ui/GoalCard.tsx
-msgid "{0} months"
-msgstr "{0} mois"
-
 #. placeholder {0}: t(type.name)
 #: src/pages/onboarding/steps/AccountsStep.tsx
 msgid "{0} name"
@@ -2551,10 +2546,6 @@ msgstr "<0/>Paramètres de thème"
 #: src/features/chat/ui/chat-panel/ChatMessageList.tsx
 msgid "<0/>Thinking..."
 msgstr "<0/>Réflexion..."
-
-#: src/features/goal-management/ui/GoalCard.tsx
-msgid "<0/>Timeline"
-msgstr "<0/>Chronologie"
 
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "<0/>Tool Execution Mode"
@@ -7584,10 +7575,6 @@ msgstr "Progression actuelle"
 msgid "Current Streak"
 msgstr "Série actuelle"
 
-#: src/features/goal-management/ui/GoalCard.tsx
-msgid "Current Streak:"
-msgstr "Série actuelle :"
-
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Current version"
 msgstr "Version actuelle"
@@ -8737,6 +8724,7 @@ msgstr "Modifier le taux de change"
 msgid "Edit filter: {label}"
 msgstr "Modifier le filtre : {label}"
 
+#: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Edit Goal"
 msgstr "Modifier l'objectif"
@@ -10461,6 +10449,7 @@ msgstr "Ligne d’objectif"
 msgid "Goal met"
 msgstr "Objectif atteint"
 
+#: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Goal progress"
 msgstr "Progression de l’objectif"
@@ -13030,8 +13019,8 @@ msgid "Months over"
 msgstr "Mois en dépassement"
 
 #: src/features/goal-management/ui/GoalCard.tsx
-msgid "Months Remaining:"
-msgstr "Mois restants :"
+msgid "Months Remaining"
+msgstr "Mois restants"
 
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
 msgid "months starting from:"
@@ -14601,15 +14590,10 @@ msgid "Occurrence skipped"
 msgstr "Occurrence ignorée"
 
 #. placeholder {0}: formatMilli(formatter, goal.Target)
+#. placeholder {0}: targetDisplay.target
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "of {0}"
 msgstr "sur {0}"
-
-#. placeholder {0}: targetDisplay.target
-#. placeholder {1}: targetDisplay.converted
-#: src/features/goal-management/ui/GoalCard.tsx
-msgid "of {0} (≈ {1})"
-msgstr "sur {0} (≈ {1})"
 
 #: src/features/reports/ui/notebook/viz/ProgressView.tsx
 msgid "of {goalText}"
@@ -16166,7 +16150,6 @@ msgstr "Commentaires sur le produit"
 msgid "Product Hunt"
 msgstr "Product Hunt"
 
-#: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Progress"
 msgstr "Progression"
@@ -20177,6 +20160,7 @@ msgstr "Solde cible"
 msgid "Target Balance"
 msgstr "Solde cible"
 
+#: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Target Date"
 msgstr "Date cible"
@@ -20184,10 +20168,6 @@ msgstr "Date cible"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Target date has passed"
 msgstr "La date cible est dépassée"
-
-#: src/features/goal-management/ui/GoalCard.tsx
-msgid "Target Date:"
-msgstr "Date cible :"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Target met — category is fully funded"

@@ -1,4 +1,4 @@
-import { act, cleanup, render } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { GoalPurpose, GoalType, type Goal } from '@budgero/core/browser';
 import { activateLocale, SUPPORTED_LOCALES } from '@shared/i18n';
 import { asMilli } from '@shared/lib/currency/milli';
@@ -27,16 +27,21 @@ afterEach(async () => {
 });
 
 it.each(SUPPORTED_LOCALES)(
-  'renders the actual missing amount in %s goal status and recommendations',
+  'renders the actual missing amount in %s goal status and explanation',
   async (locale) => {
     await activateLocale(locale, false);
     const view = render(<GoalCard {...props} />);
     expect(view.container.textContent).not.toMatch(/[{}]/);
-    // Status, recommendation, and the detailed amount all retain the $43 shortfall.
-    expect(view.container.textContent?.match(/\$43\.00/g)?.length).toBeGreaterThanOrEqual(3);
+    // The status line carries the $43 shortfall. The recommendation ("Assign
+    // $43…") and the "Still Needed" row would only repeat it, so they're hidden.
+    expect(view.container.textContent?.match(/\$43\.00/g)?.length).toBe(1);
+    // The explanation opens on demand and is localized too.
+    fireEvent.click(screen.getByTestId('goal-card-how-it-works'));
+    expect(view.container.textContent).not.toMatch(/[{}]/);
     if (locale === 'en') {
       expect(view.container).toHaveTextContent('Need $43.00 more available');
-      expect(view.container).toHaveTextContent('Assign $43.00 to reach your target');
+      expect(view.container).not.toHaveTextContent('Assign $43.00 to reach your target');
+      expect(view.container).toHaveTextContent('Leftover balance rolls into next month');
     }
   }
 );
