@@ -15,6 +15,7 @@ import {
   sanitizeEvent,
   SETTING_VALUES,
   smallCountBucket,
+  timingBucket,
 } from './events';
 
 const posthog = {
@@ -211,6 +212,17 @@ describe('event registry', () => {
       '1-5m',
       '5-15m',
       '15m+',
+    ]);
+    expect([0, 999, 1_000, 2_999, 3_000, 9_999, 10_000, 60_000, NaN].map(timingBucket)).toEqual([
+      '<1s',
+      '<1s',
+      '1-3s',
+      '1-3s',
+      '3-10s',
+      '3-10s',
+      '10-60s',
+      '1-5m',
+      '<1s',
     ]);
   });
 

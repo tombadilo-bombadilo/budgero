@@ -11,12 +11,12 @@ import {
   PiggyBank,
   Repeat,
   RefreshCw,
-  Calendar,
   AlertCircle,
   CheckCircle2,
   Clock,
   Info,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Wallet,
   ArrowUpFromLine,
@@ -34,10 +34,21 @@ import {
   getCycleMonths,
 } from '@budgero/core/browser';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
+import { Progress } from '@shared/ui/progress';
+import { HelpTooltip } from '@shared/ui/HelpTooltip';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@shared/ui/collapsible';
 import { AnimatedNumber } from '@shared/ui/animated-number';
 import { GoalMessageFormatter } from '@features/goal-management/ui/GoalMessageFormatter';
 import { translateGoalText } from '@features/goal-management/lib/core-goal-text';
+import { useUiStore } from '@shared/store/useUiStore';
 import { describeLocalizedGoalCycle } from '../lib/goal-cycle-label';
+import { describeGoalTarget } from '../lib/goal-currency';
+import { formatGoalText } from '../lib/format-goal-text';
+import {
+  goalCardDetailItems,
+  goalCardHeadline,
+  goalRecommendationAddsInfo,
+} from '../lib/goal-card-view';
 
 function getStatusColor(status: string) {
   switch (status) {
@@ -98,7 +109,7 @@ interface BreakdownItemsListProps {
   items: GoalProgress['breakdown']['items'];
   values?: GoalProgress['breakdown']['values'];
   formatter: Intl.NumberFormat;
-  /** Full-view variant: larger rows, muted labels, optional per-item descriptions. */
+  /** Full-view variant: larger rows, muted labels, descriptions as hover hints. */
   showDescriptions?: boolean;
 }
 
@@ -127,23 +138,20 @@ function BreakdownItemsList({
           />
         );
         return showDescriptions ? (
-          // Label and value on one line, the helper under the label.
-          <div key={idx} className="text-sm">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="min-w-0 text-muted-foreground">
-                {translateGoalText(item.label)}:
-              </span>
-              <span className="shrink-0 text-right">{animatedValue}</span>
-            </div>
-            {item.description && (
-              <div className="text-xs text-muted-foreground/80">
-                <GoalMessageFormatter
-                  message={translateGoalText(item.description)}
-                  values={values}
-                  formatter={formatter}
-                />
-              </div>
-            )}
+          // Card variant: label and value on one line. The helper text is a
+          // hover hint, not a second line under every row.
+          <div key={idx} className="flex items-baseline justify-between gap-3 text-sm">
+            <span
+              className="min-w-0 text-muted-foreground"
+              title={
+                item.description
+                  ? formatGoalText(translateGoalText(item.description), values, formatter)
+                  : undefined
+              }
+            >
+              {translateGoalText(item.label)}
+            </span>
+            <span className="shrink-0 text-right">{animatedValue}</span>
           </div>
         ) : (
           <div key={idx} className="flex justify-between">
@@ -274,9 +282,13 @@ export function GoalCard({
   const { t } = useLingui();
 
   const [localExpanded, setLocalExpanded] = useState(false);
+  const [howOpen, setHowOpen] = useState(false);
+  const numberFormat = useUiStore((state) => state.selectedBudget?.NumberFormat);
 
   // Use GoalCalculations for pure calculations without database access
   const progress = GoalCalculations.calculateProgress(goal, finances, currentMonth);
+  // A goal in another currency: its own amount, plus what it is in the budget currency.
+  const targetDisplay = goal ? describeGoalTarget(goal, formatter, numberFormat) : null;
   const cycleMonths = goal ? getCycleMonths(goal) : null;
   const cadenceLabel = cycleMonths === null ? null : describeLocalizedGoalCycle(cycleMonths);
   const roundedPercentage = Math.round(progress.percentage);
@@ -368,6 +380,16 @@ export function GoalCard({
                 {cadenceLabel}
               </Badge>
             )}
+            {targetDisplay?.currency && (
+              <Badge
+                variant="outline"
+                className="text-[0.5625rem] uppercase tracking-wide"
+                title={t`Goal set in ${targetDisplay.currency}: ${targetDisplay.target}`}
+                data-testid="goal-card-currency-badge"
+              >
+                {targetDisplay.currency}
+              </Badge>
+            )}
           </div>
 
           <div className="ml-auto md:hidden">
@@ -408,106 +430,152 @@ export function GoalCard({
   // Full view (no card wrapper). Embedded (opened from the compact row inside a
   // category card): the category card's type scale, one-line title.
   const embedded = compact;
+  const headline = goalCardHeadline(goal, progress, finances);
+  const detailItems = goalCardDetailItems(progress, headline.amount);
+  const showRecommendation = goalRecommendationAddsInfo(progress);
+  const { timeMetrics } = progress;
+  const hasTimeline = !!timeMetrics?.targetDate || timeMetrics?.monthsRemaining !== undefined;
+  const currencyNote = targetDisplay?.currency
+    ? targetDisplay.rateSource === 'missing'
+      ? t`No ${targetDisplay.currency} exchange rate yet, so the target counts one to one until one is available.`
+      : targetDisplay.rateSource === 'stale'
+        ? t`Goal set in ${targetDisplay.currency}, converted at the last known rate (no recent rate available).`
+        : t`Goal set in ${targetDisplay.currency}, converted at today's rate.`
+    : null;
+  // A missing or old rate changes what the numbers mean: say it out loud.
+  // Today's rate is the normal case: a hint on hover is enough.
+  const currencyWarning =
+    targetDisplay?.rateSource === 'missing' || targetDisplay?.rateSource === 'stale';
+
   return (
     <div className={className}>
-      <div className={embedded ? 'pb-2' : 'pb-3'}>
-        {/* min-w-0 + wrapping: in a narrow panel (or a long translation, e.g.
-            "Wiederholt sich alle 6 Monate") the title row must wrap instead of
-            pushing the edit button out of view. */}
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <CardTitle
-              className={cn(
-                'flex flex-wrap items-center gap-x-2 gap-y-1 break-words',
-                embedded ? 'text-sm' : 'text-lg'
-              )}
+      {/* Title row. The category name is not repeated: the panel or row
+          around the card already names it. min-w-0 + wrapping: in a narrow
+          panel (or a long translation) the title must wrap instead of pushing
+          the buttons out of view. */}
+      <div className={cn('flex items-start justify-between gap-2', embedded ? 'pb-2' : 'pb-3')}>
+        <CardTitle
+          className={cn(
+            'flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 break-words',
+            embedded ? 'text-sm' : 'text-base'
+          )}
+        >
+          {/* Icon and label wrap as one unit: the icon never sits alone on a line. */}
+          <span className="flex min-w-0 items-start gap-2">
+            <span className="mt-[0.15em] shrink-0">{getGoalTypeIcon()}</span>
+            <span className={cn('min-w-0', embedded && 'truncate')}>{getGoalTypeLabel()}</span>
+          </span>
+          {cadenceLabel && (
+            <Badge
+              variant="outline"
+              className="max-w-full shrink whitespace-normal text-left text-[0.5625rem] uppercase tracking-wide"
             >
-              {getGoalTypeIcon()}
-              <span className={cn(embedded && 'min-w-0 truncate')}>{getGoalTypeLabel()}</span>
-              {cadenceLabel && (
-                <Badge
-                  variant="outline"
-                  className="max-w-full shrink whitespace-normal text-left text-[0.5625rem] uppercase tracking-wide"
-                >
-                  <Trans>Repeats {cadenceLabel}</Trans>
-                </Badge>
-              )}
-            </CardTitle>
-            <p className={cn('mt-1 text-muted-foreground', embedded ? 'text-xs' : 'text-sm')}>
-              {categoryName}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            {(compact || localExpanded) && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={embedded ? 'h-7 w-7' : 'h-8 w-8'}
-                onClick={() => setLocalExpanded(false)}
-                title={t`Show compact view`}
-              >
-                <ChevronUp className="h-4 w-4" />
-              </Button>
-            )}
-            {onEdit && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className={embedded ? 'h-7 w-7' : 'h-8 w-8'}
-                onClick={onEdit}
-              >
-                <Edit3 className={embedded ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
-              </Button>
-            )}
-          </div>
+              <Trans>Repeats {cadenceLabel}</Trans>
+            </Badge>
+          )}
+        </CardTitle>
+        <div className="-mt-1 flex shrink-0 items-center gap-1">
+          {(compact || localExpanded) && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setLocalExpanded(false)}
+              title={t`Show compact view`}
+            >
+              <ChevronUp className="h-4 w-4" />
+            </Button>
+          )}
+          {onEdit && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={onEdit}
+              title={t`Edit Goal`}
+            >
+              <Edit3 className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
       </div>
 
       <div className={embedded ? 'space-y-3' : 'space-y-4'}>
-        {/* Main Progress */}
-        <div className={embedded ? 'space-y-1' : 'space-y-2'}>
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">
-              <Trans>Progress</Trans>
-            </span>
+        {/* Headline: how far along, against what. */}
+        <div className="space-y-1.5" data-testid="goal-card-headline">
+          <div className="flex items-baseline justify-between gap-3">
             <AnimatedNumber
-              value={progress.percentage}
+              value={headline.amount}
+              formatter={(v) => formatter.format(toDecimal(roundMilli(v)))}
+              className={cn(
+                'min-w-0 font-mono font-semibold tabular-nums',
+                embedded ? 'text-sm' : 'text-lg'
+              )}
+            />
+            <AnimatedNumber
+              value={headline.percentage}
               formatter={(v) => `${Math.round(v)}%`}
               rounding="integer"
-              className="font-semibold tabular-nums"
+              className="shrink-0 text-sm font-medium tabular-nums text-muted-foreground"
             />
           </div>
-          <div className="flex justify-between text-sm">
-            <AnimatedNumber
-              value={progress.amountSaved}
-              formatter={(v) => formatter.format(toDecimal(roundMilli(v)))}
-              className="tabular-nums"
-            />
-            <span className="text-muted-foreground">
-              <Trans>of {formatMilli(formatter, goal.Target)}</Trans>
-            </span>
+          <Progress value={headline.percentage} className="h-1.5" aria-label={t`Goal progress`} />
+          <div
+            className="flex flex-wrap items-center gap-x-1 text-xs text-muted-foreground"
+            data-testid="goal-card-target"
+          >
+            {targetDisplay?.currency ? (
+              <>
+                <span className="whitespace-nowrap">
+                  <Trans>of {targetDisplay.target}</Trans>
+                </span>
+                {targetDisplay.converted && (
+                  <span className="whitespace-nowrap font-mono">≈ {targetDisplay.converted}</span>
+                )}
+                {!currencyWarning && (
+                  <>
+                    <HelpTooltip contentClassName="max-w-60" iconClassName="h-3 w-3">
+                      {currencyNote}
+                    </HelpTooltip>
+                    <span className="sr-only" data-testid="goal-card-currency-note">
+                      {currencyNote}
+                    </span>
+                  </>
+                )}
+              </>
+            ) : (
+              <span className="whitespace-nowrap">
+                <Trans>of {formatMilli(formatter, goal.Target)}</Trans>
+              </span>
+            )}
           </div>
+          {currencyWarning && (
+            <p
+              className="flex items-start gap-1 text-xs text-amber-700 dark:text-amber-300"
+              data-testid="goal-card-currency-note"
+            >
+              <AlertCircle className="mt-0.5 h-3 w-3 shrink-0" />
+              <span>{currencyNote}</span>
+            </p>
+          )}
         </div>
 
-        {/* Status Message & Recommendation */}
-        <div className="space-y-2">
-          <div
-            className={cn(
-              'rounded-lg text-sm',
-              embedded ? 'p-2.5' : 'p-3',
-              getStatusColor(progress.status)
-            )}
-          >
-            <div className="flex items-start gap-2">
-              <span className="mt-0.5 shrink-0">{getStatusIcon(progress.status)}</span>
-              <div className="min-w-0 space-y-1">
-                <div className="font-medium">
-                  <GoalMessageFormatter
-                    message={translateGoalText(progress.statusMessage)}
-                    values={progress.statusValues}
-                    formatter={formatter}
-                  />
-                </div>
+        {/* The one thing to do (or the good news). */}
+        <div
+          className={cn('rounded-md px-3 py-2 text-sm', getStatusColor(progress.status))}
+          data-testid="goal-card-status"
+        >
+          <div className="flex items-start gap-2">
+            <span className="mt-0.5 shrink-0">{getStatusIcon(progress.status)}</span>
+            <div className="min-w-0 space-y-0.5">
+              <div className="font-medium">
+                <GoalMessageFormatter
+                  message={translateGoalText(progress.statusMessage)}
+                  values={progress.statusValues}
+                  formatter={formatter}
+                />
+              </div>
+              {showRecommendation && (
                 <div className="text-xs opacity-90">
                   <GoalMessageFormatter
                     message={translateGoalText(progress.recommendation)}
@@ -515,79 +583,76 @@ export function GoalCard({
                     formatter={formatter}
                   />
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Breakdown Details - Always show when expanded */}
-        <div className="space-y-3 pt-2 border-t">
-          {/* No heading: the title above already names the goal type. */}
-          <div className="space-y-2">
+        {/* Details: only rows the headline and status line don't already show. */}
+        {(detailItems.length > 0 || hasTimeline) && (
+          <div className="space-y-1" data-testid="goal-card-details">
             <BreakdownItemsList
-              items={progress.breakdown.items}
+              items={detailItems}
               values={progress.breakdown.values}
               formatter={formatter}
               showDescriptions
             />
-          </div>
-
-          {/* Time Metrics */}
-          {progress.timeMetrics && (
-            <div className="space-y-2 pt-2 border-t">
-              <h4 className="text-sm font-medium flex items-center gap-1">
-                <Trans>
-                  <Calendar className="h-4 w-4" />
-                  Timeline
-                </Trans>
-              </h4>
-              <div className="space-y-1 text-sm">
-                {progress.timeMetrics.targetDate && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      <Trans>Target Date:</Trans>
-                    </span>
-                    <span>{progress.timeMetrics.targetDate.toLocaleDateString()}</span>
-                  </div>
-                )}
-                {progress.timeMetrics.monthsRemaining !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      <Trans>Months Remaining:</Trans>
-                    </span>
-                    <span>{progress.timeMetrics.monthsRemaining}</span>
-                  </div>
-                )}
-                {progress.timeMetrics.currentStreak !== undefined &&
-                  progress.timeMetrics.currentStreak > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">
-                        <Trans>Current Streak:</Trans>
-                      </span>
-                      <span>
-                        <Trans>{progress.timeMetrics.currentStreak} months</Trans>
-                      </span>
-                    </div>
-                  )}
+            {timeMetrics?.targetDate && (
+              <div className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">
+                  <Trans>Target Date</Trans>
+                </span>
+                <span>{timeMetrics.targetDate.toLocaleDateString()}</span>
               </div>
-            </div>
-          )}
+            )}
+            {timeMetrics?.monthsRemaining !== undefined && (
+              <div className="flex items-baseline justify-between gap-3 text-sm">
+                <span className="text-muted-foreground">
+                  <Trans>Months Remaining</Trans>
+                </span>
+                <span className="tabular-nums">{timeMetrics.monthsRemaining}</span>
+              </div>
+            )}
+          </div>
+        )}
 
-          {timeframeLabel && (
-            <p
-              className="pt-2 border-t text-xs text-muted-foreground"
-              data-testid="goal-timeframe-label"
-            >
-              <Trans>Applies: {timeframeLabel}</Trans>
-            </p>
-          )}
+        {timeframeLabel && (
+          <p className="text-xs text-muted-foreground" data-testid="goal-timeframe-label">
+            <Trans>Applies: {timeframeLabel}</Trans>
+          </p>
+        )}
 
-          {/* Explanation */}
-          <div className="space-y-2 pt-2 border-t">
-            <h4 className="text-sm font-medium">
-              <Trans>How it works</Trans>
-            </h4>
-            <ul className="space-y-1 text-xs text-muted-foreground">
+        {/* Footer: the explanation on demand, and delete. */}
+        <Collapsible open={howOpen} onOpenChange={setHowOpen}>
+          <div className="flex items-center justify-between gap-2 border-t pt-2">
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="-ml-1 inline-flex items-center gap-1 rounded px-1 py-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                data-testid="goal-card-how-it-works"
+              >
+                <ChevronRight
+                  className={cn('h-3.5 w-3.5 transition-transform', howOpen && 'rotate-90')}
+                />
+                <Trans>How it works</Trans>
+              </button>
+            </CollapsibleTrigger>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                onClick={onDelete}
+              >
+                <Trans>
+                  <Trash2 className="mr-1 h-3.5 w-3.5" />
+                  Delete
+                </Trans>
+              </Button>
+            )}
+          </div>
+          <CollapsibleContent>
+            <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
               {progress.breakdown.explanation.map((item, idx) => (
                 <li key={idx}>
                   •{' '}
@@ -599,22 +664,8 @@ export function GoalCard({
                 </li>
               ))}
             </ul>
-          </div>
-        </div>
-
-        {/* Action Buttons */}
-        {(onEdit || onDelete) && (
-          <div className="flex justify-end gap-2 pt-2 border-t">
-            {onDelete && (
-              <Button variant="outline" size="sm" onClick={onDelete}>
-                <Trans>
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete
-                </Trans>
-              </Button>
-            )}
-          </div>
-        )}
+          </CollapsibleContent>
+        </Collapsible>
       </div>
     </div>
   );

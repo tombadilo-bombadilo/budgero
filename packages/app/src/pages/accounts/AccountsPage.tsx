@@ -1,6 +1,6 @@
 import { plural } from '@lingui/core/macro';
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useUiStore } from '@shared/store/useUiStore';
+import { buildCurrencyLocalizer, useUiStore } from '@shared/store/useUiStore';
 import { useAccounts } from '@entities/account/api/useAccounts';
 import { useNetWorthHistory } from '@entities/account/api/useNetWorthHistory';
 import {
@@ -32,6 +32,9 @@ import {
   NetWorthCard,
 } from './components';
 import { useFutureBalanceAdjustments } from './hooks/useFutureBalanceAdjustments';
+
+/** Number format used when the budget has none (same default as the register rows). */
+const DEFAULT_NUMBER_FORMAT = '$1,096.56';
 
 const CHART_COLORS = {
   cash: 'var(--color-chart-1)',
@@ -86,6 +89,22 @@ export default function AccountsPage() {
     if (months >= 12) return t`Year to date`;
     return plural(months, { one: '# month', other: '# months' });
   }, [dateRange, t]);
+
+  const numberFormat = selectedBudget?.NumberFormat ?? '';
+  // One localizer per currency, rebuilt when the budget's number format changes.
+  const localizerFor = useMemo(() => {
+    const cache = new Map<string, Intl.NumberFormat | null>();
+    return (currency: string) => {
+      if (!cache.has(currency)) {
+        cache.set(
+          currency,
+          buildCurrencyLocalizer(currency, numberFormat) ??
+            buildCurrencyLocalizer(currency, DEFAULT_NUMBER_FORMAT)
+        );
+      }
+      return cache.get(currency) ?? null;
+    };
+  }, [numberFormat]);
 
   const { data: allAccountsData = [], isLoading } = useAccounts(budgetId);
   const [showArchived, setShowArchived] = useState(false);
@@ -245,6 +264,18 @@ export default function AccountsPage() {
   // Milli-in: every balance/total on this page is an integer milliunit amount.
   const formatCurrency = (value: number) =>
     formatMaskedMilli(globalLocalizer, value, privacyMaskNumbers);
+  // Foreign-currency accounts show their own balance in their currency's
+  // format (the localizer the register uses for the account currency).
+  const formatInCurrency = (currency: string, value: number) => {
+    const localizer = localizerFor(currency);
+    return localizer
+      ? formatMaskedMilli(localizer, value, privacyMaskNumbers)
+      : formatCurrency(value);
+  };
+  const currencyProps = {
+    budgetCurrency: selectedBudget?.DisplayCurrency,
+    formatInCurrency,
+  };
 
   if (isLoading) {
     return (
@@ -340,6 +371,7 @@ export default function AccountsPage() {
               trend={groupTrends.cash}
               periodLabel={periodLabel}
               periodMonths={periodMonths}
+              {...currencyProps}
               chartColor={CHART_COLORS.cash}
               formatCurrency={formatCurrency}
             />
@@ -352,6 +384,7 @@ export default function AccountsPage() {
               trend={groupTrends.credit}
               periodLabel={periodLabel}
               periodMonths={periodMonths}
+              {...currencyProps}
               chartColor={CHART_COLORS.credit}
               isLiability
               formatCurrency={formatCurrency}
@@ -365,6 +398,7 @@ export default function AccountsPage() {
               trend={groupTrends.investments}
               periodLabel={periodLabel}
               periodMonths={periodMonths}
+              {...currencyProps}
               chartColor={CHART_COLORS.investments}
               formatCurrency={formatCurrency}
             />
@@ -377,6 +411,7 @@ export default function AccountsPage() {
               trend={groupTrends.crypto}
               periodLabel={periodLabel}
               periodMonths={periodMonths}
+              {...currencyProps}
               chartColor={CHART_COLORS.crypto}
               formatCurrency={formatCurrency}
             />
@@ -389,6 +424,7 @@ export default function AccountsPage() {
               trend={groupTrends.retirement}
               periodLabel={periodLabel}
               periodMonths={periodMonths}
+              {...currencyProps}
               chartColor={CHART_COLORS.retirement}
               formatCurrency={formatCurrency}
             />
@@ -401,6 +437,7 @@ export default function AccountsPage() {
               trend={groupTrends.loans}
               periodLabel={periodLabel}
               periodMonths={periodMonths}
+              {...currencyProps}
               chartColor={CHART_COLORS.loans}
               isLiability
               formatCurrency={formatCurrency}
@@ -414,6 +451,7 @@ export default function AccountsPage() {
               trend={groupTrends.realEstate}
               periodLabel={periodLabel}
               periodMonths={periodMonths}
+              {...currencyProps}
               chartColor={CHART_COLORS.realEstate}
               formatCurrency={formatCurrency}
             />
@@ -426,6 +464,7 @@ export default function AccountsPage() {
               trend={groupTrends.otherAssets}
               periodLabel={periodLabel}
               periodMonths={periodMonths}
+              {...currencyProps}
               chartColor={CHART_COLORS.otherAssets}
               formatCurrency={formatCurrency}
             />
@@ -439,6 +478,7 @@ export default function AccountsPage() {
                 trend={{ change: 0, percentage: 0 }}
                 periodLabel={periodLabel}
                 periodMonths={periodMonths}
+                {...currencyProps}
                 chartColor={CHART_COLORS.otherAssets}
                 formatCurrency={formatCurrency}
               />

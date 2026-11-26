@@ -11,14 +11,22 @@ import { DialogTrigger } from '@shared/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { Input } from '@shared/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
-import { PlusCircle, Search, Filter, Columns, Tag } from 'lucide-react';
+import { PlusCircle, Search, Filter, Tag, Folder, Store, Wallet } from 'lucide-react';
 import { CountryFlag } from '@shared/ui/country-flag';
 import { CryptoIcon } from '@entities/currency/ui/CryptoIcon';
 import { isCryptoCurrency } from '@budgero/core/browser';
 import { SearchActiveFilters } from '@features/transactions/ui/SearchActiveFilters';
+import { SearchHelpPopover } from '@features/transactions/ui/SearchHelpPopover';
 import { currencies } from '@features/currencies/model/currency-data';
-import type { ParsedSearchQuery, MatchedToken } from '@shared/lib/search-query-parser';
+import type {
+  ParsedSearchQuery,
+  MatchedToken,
+  SearchSuggestion,
+  SearchSuggestionKind,
+} from '@shared/lib/search-query-parser';
 import type { Account, Budget } from '@budgero/core/browser';
+import type { TransactionTableColumns } from '@features/transactions/lib/table-columns';
+import { TransactionColumnsMenu } from '@features/transactions/ui/TransactionColumnsMenu';
 
 // Currency → flag country code, derived from the canonical currency list.
 const currencyCountryMap: Record<string, string> = Object.fromEntries(
@@ -37,6 +45,13 @@ function CurrencyFlagLabel({ currency }: { currency: string | undefined }) {
   return <span className="font-mono text-xs">{currency || '?'}</span>;
 }
 
+const SUGGESTION_ICONS: Record<SearchSuggestionKind, typeof Tag> = {
+  category: Folder,
+  label: Tag,
+  payee: Store,
+  account: Wallet,
+};
+
 const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 interface TransactionsToolbarProps {
@@ -46,16 +61,22 @@ interface TransactionsToolbarProps {
   onInlineAdd?: () => void;
   // Search
   searchQuery: string;
-  setSearchQuery: (value: string) => void;
+  setSearchQuery: (value: string, caret?: number) => void;
+  /** Caret position in the search box (suggestions follow the term at the caret). */
+  setCaret: (caret: number) => void;
   setIsSearchFocused: (value: boolean) => void;
-  categorySuggestions: string[];
+  suggestions: SearchSuggestion[];
+  /** The term being typed starts with "-": a picked name is excluded. */
+  suggestionsNegated: boolean;
   highlightedIndex: number;
   setHighlightedIndex: React.Dispatch<React.SetStateAction<number>>;
-  handleSelectCategory: (categoryName: string) => void;
+  /** Inserts a picked suggestion; returns the caret position after it. */
+  handleSelectSuggestion: (suggestion: SearchSuggestion) => number | null;
   parsedQuery: ParsedSearchQuery;
   handleRemoveToken: (token: MatchedToken) => void;
   handleClearAll: () => void;
-  globalLocalizer: Intl.NumberFormat;
+  /** Formatter of the currency the table shows (amount chips). */
+  amountFormatter: Intl.NumberFormat;
   // Currency display
   forceBudgetCurrency: boolean;
   selectedBudget: Budget | null;
@@ -70,9 +91,14 @@ interface TransactionsToolbarProps {
   handleToggleBalanceColumn: () => void;
   showLabelColumn: boolean;
   handleToggleLabelColumn: () => void;
+  /** Desktop column options (Memo, Payee, memo wrapping). */
+  tableColumns: TransactionTableColumns;
+  onTableColumnsChange: (patch: Partial<TransactionTableColumns>) => void;
   // Page size
   pageSize: number;
   handlePageSizeChange: (value: string) => void;
+  /** Mobile only: the "Sort by" control (desktop sorts from the column headers). */
+  mobileSortControl?: React.ReactNode;
   // Uncategorized filter
   hideAccountColumn: boolean;
   uncategorizedCount: number;
@@ -89,15 +115,17 @@ export function TransactionsToolbar({
   onInlineAdd,
   searchQuery,
   setSearchQuery,
+  setCaret,
   setIsSearchFocused,
-  categorySuggestions,
+  suggestions,
+  suggestionsNegated,
   highlightedIndex,
   setHighlightedIndex,
-  handleSelectCategory,
+  handleSelectSuggestion,
   parsedQuery,
   handleRemoveToken,
   handleClearAll,
-  globalLocalizer,
+  amountFormatter,
   forceBudgetCurrency,
   selectedBudget,
   selectedAccount,
@@ -110,8 +138,11 @@ export function TransactionsToolbar({
   handleToggleBalanceColumn,
   showLabelColumn,
   handleToggleLabelColumn,
+  tableColumns,
+  onTableColumnsChange,
   pageSize,
   handlePageSizeChange,
+  mobileSortControl,
   hideAccountColumn,
   uncategorizedCount,
   showOnlyUncategorized,
@@ -122,6 +153,33 @@ export function TransactionsToolbar({
 }: TransactionsToolbarProps) {
   const { t } = useLingui();
   const { shift } = getKeyboardShortcutLabels();
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const suggestionKindLabel = (kind: SearchSuggestionKind) => {
+    switch (kind) {
+      case 'category':
+        return t`Category`;
+      case 'label':
+        return t`Label`;
+      case 'payee':
+        return t`Payee`;
+      case 'account':
+        return t`Account`;
+    }
+  };
+
+  const pickSuggestion = (suggestion: SearchSuggestion) => {
+    const caret = handleSelectSuggestion(suggestion);
+    if (caret === null) return;
+    // Keep typing right after the inserted name.
+    requestAnimationFrame(() => {
+      const input = searchInputRef.current;
+      if (!input) return;
+      input.focus();
+      input.setSelectionRange(caret, caret);
+    });
+  };
+  const trackCaret = (input: HTMLInputElement) =>
+    setCaret(input.selectionStart ?? input.value.length);
 
   return (
     <div className="space-y-4 mb-4">
@@ -151,55 +209,81 @@ export function TransactionsToolbar({
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
+            ref={searchInputRef}
             placeholder={t`Search: groceries, last 30 days, outflows...`}
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value, e.target.selectionStart ?? undefined);
+              setIsSearchFocused(true);
+            }}
+            onSelect={(e) => trackCaret(e.currentTarget)}
             onFocus={() => setIsSearchFocused(true)}
             onBlur={() => {
               // Delay to allow click on suggestion
               setTimeout(() => setIsSearchFocused(false), 150);
             }}
             onKeyDown={(e) => {
-              if (categorySuggestions.length > 0) {
+              if (suggestions.length > 0) {
                 if (e.key === 'ArrowDown') {
                   e.preventDefault();
-                  setHighlightedIndex((i) => Math.min(i + 1, categorySuggestions.length - 1));
+                  setHighlightedIndex((i) => Math.min(i + 1, suggestions.length - 1));
                 } else if (e.key === 'ArrowUp') {
                   e.preventDefault();
                   setHighlightedIndex((i) => Math.max(i - 1, 0));
-                } else if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSelectCategory(categorySuggestions[highlightedIndex]);
+                } else if (e.key === 'Enter' || e.key === 'Tab') {
+                  const picked = suggestions[highlightedIndex];
+                  if (picked) {
+                    e.preventDefault();
+                    pickSuggestion(picked);
+                  }
                 } else if (e.key === 'Escape') {
                   setIsSearchFocused(false);
                 }
               }
             }}
-            className="pl-8"
+            className="pl-8 pr-9"
+            aria-label={t`Search transactions`}
           />
-          {/* Category Suggestions Dropdown */}
-          {categorySuggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-popover border border-border rounded-md shadow-md overflow-hidden">
+          <SearchHelpPopover onPickExample={setSearchQuery} />
+          {/* Suggestions for the term being typed */}
+          {suggestions.length > 0 && (
+            <div
+              role="listbox"
+              aria-label={t`Search suggestions`}
+              className="absolute top-full left-0 right-0 mt-1 z-50 bg-popover border border-border rounded-md shadow-md overflow-hidden"
+            >
               <div className="px-2 py-1.5 text-xs text-muted-foreground border-b border-border">
-                <Trans>Categories matching "{parsedQuery.textQuery}"</Trans>
+                {suggestionsNegated ? (
+                  <Trans>Pick one to hide its transactions</Trans>
+                ) : (
+                  <Trans>Pick one to show only its transactions</Trans>
+                )}
               </div>
-              {categorySuggestions.map((suggestion, index) => (
-                <button
-                  key={suggestion}
-                  type="button"
-                  className={`w-full px-3 py-2 text-sm text-left transition-colors flex items-center gap-2 ${
-                    index === highlightedIndex ? 'bg-muted' : 'hover:bg-muted/50'
-                  }`}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    handleSelectCategory(suggestion);
-                  }}
-                  onMouseEnter={() => setHighlightedIndex(index)}
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/50" />
-                  {suggestion}
-                </button>
-              ))}
+              {suggestions.map((suggestion, index) => {
+                const Icon = SUGGESTION_ICONS[suggestion.kind];
+                return (
+                  <button
+                    key={`${suggestion.kind}:${suggestion.name}`}
+                    type="button"
+                    role="option"
+                    aria-selected={index === highlightedIndex}
+                    className={`w-full px-3 py-2 text-sm text-left transition-colors flex items-center gap-2 ${
+                      index === highlightedIndex ? 'bg-muted' : 'hover:bg-muted/50'
+                    }`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      pickSuggestion(suggestion);
+                    }}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                  >
+                    <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    <span className="truncate">{suggestion.name}</span>
+                    <span className="ml-auto shrink-0 text-xs text-muted-foreground">
+                      {suggestionKindLabel(suggestion.kind)}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
         </div>
@@ -208,7 +292,7 @@ export function TransactionsToolbar({
           parsed={parsedQuery}
           onRemoveToken={handleRemoveToken}
           onClearAll={handleClearAll}
-          currencyFormatter={globalLocalizer}
+          currencyFormatter={amountFormatter}
         />
       </div>
 
@@ -263,36 +347,16 @@ export function TransactionsToolbar({
           <Trans>Showing amounts in {currencyLabel}</Trans>
         </span>
 
-        {/* Balance column toggle - desktop only */}
+        {/* Column visibility and memo wrapping - desktop only */}
         {!isMobile && (
-          <Button
-            variant={showBalanceColumn ? 'default' : 'outline'}
-            size="sm"
-            onClick={handleToggleBalanceColumn}
-            className="flex items-center gap-1.5 text-xs"
-            title={showBalanceColumn ? t`Hide balance column` : t`Show balance column`}
-          >
-            <Trans>
-              <Columns className="h-4 w-4" />
-              Balance
-            </Trans>
-          </Button>
-        )}
-
-        {/* Label column toggle - desktop only */}
-        {!isMobile && (
-          <Button
-            variant={showLabelColumn ? 'default' : 'outline'}
-            size="sm"
-            onClick={handleToggleLabelColumn}
-            className="flex items-center gap-1.5 text-xs"
-            title={showLabelColumn ? t`Hide label column` : t`Show label column`}
-          >
-            <Trans>
-              <Tag className="h-4 w-4" />
-              Label
-            </Trans>
-          </Button>
+          <TransactionColumnsMenu
+            columns={tableColumns}
+            onChange={onTableColumnsChange}
+            showLabelColumn={showLabelColumn}
+            onToggleLabelColumn={handleToggleLabelColumn}
+            showBalanceColumn={showBalanceColumn}
+            onToggleBalanceColumn={handleToggleBalanceColumn}
+          />
         )}
 
         {/* Mobile cards retain paging; the desktop register is virtualized. */}
@@ -319,6 +383,7 @@ export function TransactionsToolbar({
             </Select>
           </div>
         )}
+        {isMobile && mobileSortControl}
 
         {/* Quick filter toggles: only on account pages, and only while there is something to
             show (or an active, now-empty filter still needs clearing) */}

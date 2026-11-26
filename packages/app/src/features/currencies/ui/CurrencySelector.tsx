@@ -48,24 +48,30 @@ interface CurrencySelectorProps {
    * fiat accounts and the budget display currency from fiat only; rate
    * settings mix both. */
   kind?: 'fiat' | 'crypto' | 'all';
+  /**
+   * Whether picking needs the rate API (account currencies do: the opening
+   * balance is converted right away). False: always pickable, no runtime
+   * needed (e.g. a goal's currency, converted later from any known rate).
+   */
+  needsConnection?: boolean;
   'data-testid'?: string;
 }
 
-export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
+const CurrencySelectorBody: React.FC<
+  Omit<CurrencySelectorProps, 'needsConnection'> & { canUseCurrencyApi: boolean }
+> = ({
   value,
   onValueChange,
   label,
   disabled = false,
   compact = false,
   kind = 'fiat',
+  canUseCurrencyApi,
   'data-testid': testId,
 }) => {
   const { t } = useLingui();
 
   const [open, setOpen] = useState(false);
-  const { clerkToken, apiReachable } = useConnectivity();
-
-  const canUseCurrencyApi = apiReachable && clerkToken;
   const isDisabled = disabled || !canUseCurrencyApi;
 
   const groupedCurrencies = useMemo(() => {
@@ -193,3 +199,21 @@ export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
     </div>
   );
 };
+
+/** The connection-gated picker (reads connectivity from the runtime). */
+const ConnectedCurrencySelector: React.FC<CurrencySelectorProps> = (props) => {
+  const { clerkToken, apiReachable } = useConnectivity();
+  return (
+    <CurrencySelectorBody {...props} canUseCurrencyApi={Boolean(apiReachable && clerkToken)} />
+  );
+};
+
+export const CurrencySelector: React.FC<CurrencySelectorProps> = ({
+  needsConnection = true,
+  ...props
+}) =>
+  needsConnection ? (
+    <ConnectedCurrencySelector {...props} />
+  ) : (
+    <CurrencySelectorBody {...props} canUseCurrencyApi />
+  );

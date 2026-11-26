@@ -728,11 +728,6 @@ msgstr "{0} lidera con el {1} del gasto ({2})."
 msgid "{0} left"
 msgstr "{0}restante"
 
-#. placeholder {0}: progress.timeMetrics.currentStreak
-#: src/features/goal-management/ui/GoalCard.tsx
-msgid "{0} months"
-msgstr "{0} meses"
-
 #. placeholder {0}: t(type.name)
 #: src/pages/onboarding/steps/AccountsStep.tsx
 msgid "{0} name"
@@ -1136,6 +1131,10 @@ msgstr "{days, plural, one {±# día} other {±# días}}"
 #: src/shared/lib/search-query-parser.ts
 msgid "{days, plural, one {Last # day} other {Last # days}}"
 msgstr "{days, plural, one {Último # día} other {Últimos # días}}"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "{days, plural, one {Next # day} other {Next # days}}"
+msgstr "{days, plural, one {Próximo # día} other {Próximos # días}}"
 
 #: src/pages/settings/CurrencySettingsPage.tsx
 msgid "{days} days"
@@ -1903,8 +1902,8 @@ msgid "<0/>Backup Reminders"
 msgstr "<0/>Recordatorios de copia de seguridad"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "<0/>Balance"
-msgstr "<0/>Saldo"
+#~ msgid "<0/>Balance"
+#~ msgstr "<0/>Saldo"
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "<0/>Biggest Transactions"
@@ -2246,8 +2245,8 @@ msgid "<0/>Joining…"
 msgstr "<0/>Uniéndose…"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "<0/>Label"
-msgstr "<0/>Etiqueta"
+#~ msgid "<0/>Label"
+#~ msgstr "<0/>Etiqueta"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "<0/>Language"
@@ -2547,10 +2546,6 @@ msgstr "<0/>Ajustes de tema"
 #: src/features/chat/ui/chat-panel/ChatMessageList.tsx
 msgid "<0/>Thinking..."
 msgstr "<0/>Pensando..."
-
-#: src/features/goal-management/ui/GoalCard.tsx
-msgid "<0/>Timeline"
-msgstr "<0/>Línea de tiempo"
 
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "<0/>Tool Execution Mode"
@@ -2866,6 +2861,10 @@ msgstr "~75MB, más rápido"
 #: src/features/budget-planning/ui/category-row/CCUnderfundedDetails.tsx
 msgid "− Already set aside"
 msgstr "− Ya reservado"
+
+#: src/features/goal-management/ui/GoalConversionPreview.tsx
+msgid "≈ {amount} today"
+msgstr "≈ {amount} hoy"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "⚠️ Target date passed - need {needed} more"
@@ -3257,6 +3256,9 @@ msgstr "Acceso hasta:"
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Account"
 msgstr "Cuenta"
 
@@ -3358,9 +3360,9 @@ msgstr "Cuenta actualizada"
 msgid "Account:"
 msgstr "Cuenta:"
 
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Account<0/>"
-msgstr "Cuenta<0/>"
+#: src/shared/lib/search-query-parser.ts
+msgid "Account: {shown}"
+msgstr "Cuenta: {shown}"
 
 #: src/app/layout/desktop-shell/constants.ts
 #: src/app/layout/desktop-shell/SidebarNav.tsx
@@ -3824,6 +3826,11 @@ msgstr "Administradores"
 msgid "After"
 msgstr "Después de"
 
+#. placeholder {0}: period.label
+#: src/shared/lib/search-query-parser.ts
+msgid "After {0}"
+msgstr "Después de {0}"
+
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 msgid "After N occurrences"
 msgstr "Después de N repeticiones"
@@ -4105,6 +4112,7 @@ msgstr "Cuadro de amortización"
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/rules/ui/rule-editor/RuleConditionRow.tsx
 #: src/features/rules/ui/RuleSummary.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 #: src/pages/analytics/components/LedgerTable.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
 #: src/pages/settings/components/DuplicateHintSettingsCard.tsx
@@ -4402,8 +4410,13 @@ msgid "Area Chart"
 msgstr "Gráfico de áreas"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 msgid "Ascending"
 msgstr "Ascendente"
+
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+msgid "Ascending. Tap for descending."
+msgstr "Ascendente. Toca para descendente."
 
 #: src/features/chat/ui/chat-panel/ChatComposer.tsx
 msgid "Ask about your budget...  (Shift+Enter for a new line)"
@@ -4790,6 +4803,10 @@ msgstr "Volver a la pregunta anterior"
 msgid "Backup"
 msgstr "Copia de seguridad"
 
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Backup downloaded"
+msgstr "{'de': 'Backup heruntergeladen', 'es': 'Copia descargada', 'fr': 'Sauvegarde téléchargée', 'nl': 'Back-up gedownload'}"
+
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Backup reminder updated"
 msgstr "Recordatorio de copia de seguridad actualizado"
@@ -4808,6 +4825,8 @@ msgid "Bakery"
 msgstr "Panadería"
 
 #: src/features/reports/ui/notebook/question-labels.ts
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
 #: src/pages/accounts/AccountPage.tsx
 #: src/pages/accounts/components/AccountSummaryCards.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -4839,10 +4858,6 @@ msgstr "Saldo a alcanzar"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardAmounts.tsx
 msgid "Balance: {0}"
 msgstr "Saldo: {0}"
-
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Balance<0/>"
-msgstr "Saldo<0/>"
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Balances and net worth"
@@ -4947,6 +4962,11 @@ msgstr "Restaurante de playa"
 msgid "Before"
 msgstr "Antes de"
 
+#. placeholder {0}: period.label
+#: src/shared/lib/search-query-parser.ts
+msgid "Before {0}"
+msgstr "Antes de {0}"
+
 #. placeholder {0}: (currentCategoryTotalTransactions ?? 0) > 0 && (currentCategoryAssigned ?? 0) !== 0 ? t` transactions and assignments` : (currentCategoryTotalTransactions ?? 0) > 0 ? ' transactions' : ' assignments'
 #: src/features/category-management/ui/DeleteCategoryDialog.tsx
 msgid "Before you can delete the category, you need to reassign all{0} to a new category."
@@ -4976,6 +4996,10 @@ msgstr "Beta testers"
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Between"
 msgstr "Entre"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Between {formattedAmount} and {formattedMax}"
+msgstr "Entre {formattedAmount} y {formattedMax}"
 
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "beyond charted window"
@@ -5340,13 +5364,10 @@ msgstr "Ritmo del presupuesto"
 msgid "Budget Planning"
 msgstr "Planificación del presupuesto"
 
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Budget rate"
 msgstr "Tipo de cambio del presupuesto"
-
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Budget rate<0/>"
-msgstr "Tipo de cambio del presupuesto<0/>"
 
 #: src/pages/settings/BudgetSettingsPage.tsx
 #: src/shared/model/nav-registry.ts
@@ -5527,6 +5548,7 @@ msgstr "Dólar canadiense"
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 #: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
 #: src/features/budget-planning/ui/category-row/CoverOverspendingPopover.tsx
@@ -5712,14 +5734,13 @@ msgstr "Categorías de <0>{budgetName}</0>"
 msgid "Categories managed per split line"
 msgstr "Categorías gestionadas por línea dividida"
 
-#. placeholder {0}: parsedQuery.textQuery
-#: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "Categories matching \"{0}\""
-msgstr "Categorías que coinciden con \"{0}\""
-
 #: src/widgets/dashboard/builtin/builtin-cards.ts
 msgid "Categories that spent more than they have this month."
 msgstr "Categorías que han gastado más de lo que tienen este mes."
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Categorized"
+msgstr "Categorizadas"
 
 #: src/features/account-management/ui/ArchiveAccountDialog.tsx
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
@@ -5728,7 +5749,10 @@ msgstr "Categorías que han gastado más de lo que tienen este mes."
 #: src/features/budget-planning/ui/DraggableBudgetTable.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 #: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
@@ -5745,6 +5769,10 @@ msgstr "Categoría / Transferencia"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Category #{0}"
 msgstr "Categoría #{0}"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Category contains {shown}"
+msgstr "Categoría contiene {shown}"
 
 #: src/features/budget-planning/ui/budget-table/useCategoryOperations.ts
 msgid "Category deleted"
@@ -5794,9 +5822,9 @@ msgstr "Diferencias en el historial de categorías"
 msgid "Category:"
 msgstr "Categoría:"
 
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Category<0/>"
-msgstr "Categoría<0/>"
+#: src/shared/lib/search-query-parser.ts
+msgid "Category: {shown}"
+msgstr "Categoría: {shown}"
 
 #: src/features/budget-planning/ui/AvailableInfoPopover.tsx
 msgid "CC Payment Calculation"
@@ -5836,6 +5864,7 @@ msgid "Change category, account, payee or label"
 msgstr "Cambiar categoría, cuenta, beneficiario o etiqueta"
 
 #: src/features/account-management/ui/AccountCurrencyChangeDialog.tsx
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 msgid "Change currency"
 msgstr "Cambiar moneda"
 
@@ -5874,6 +5903,10 @@ msgstr "Cambiar plan"
 #: src/pages/settings/subscription/PlanChangeDialog.tsx
 msgid "Change Subscription Plan"
 msgstr "Cambiar plan de suscripción"
+
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Change the budget currency from {fromCurrency} to {toCurrency}?"
+msgstr "{'de': 'Budgetwährung von {fromCurrency} auf {toCurrency} ändern?', 'es': '¿Cambiar la moneda del presupuesto de {fromCurrency} a {toCurrency}?', 'fr': 'Changer la devise du budget de {fromCurrency} à {toCurrency} ?', 'nl': 'Budgetvaluta wijzigen van {fromCurrency} naar {toCurrency}?'}"
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Change the master password"
@@ -6116,6 +6149,10 @@ msgstr "Elige categoría"
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Choose Change Master Password and enter the current and the new one (at least 8 characters). Your other devices then ask for the new one; people you share a workspace with keep their own."
 msgstr "Elige «Cambiar contraseña maestra» e introduce la actual y la nueva (al menos 8 caracteres). Tus otros dispositivos pedirán la nueva; quienes comparten un espacio de trabajo contigo mantienen la suya."
+
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
+msgid "Choose columns and memo wrapping"
+msgstr "Elegir columnas y ajuste de notas"
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Choose Customize to add, move, resize or remove cards; Reset to default in the ⋯ menu brings the original back. To open Budgero on another page, change Default Home in Settings → Appearance."
@@ -6374,6 +6411,10 @@ msgstr "Haz clic para editar"
 msgid "Click to edit - Calculator: 100 + 50, 1000 * 0.3"
 msgstr "Haz clic para editar - Calculadora: 100 + 50, 1000 * 0.3"
 
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+msgid "Click to sort by this column."
+msgstr "Haz clic para ordenar por esta columna."
+
 #: src/features/chat/ui/VoiceInputButton.tsx
 msgid "Click to speak"
 msgstr "Haz clic para hablar"
@@ -6505,6 +6546,7 @@ msgstr "Columna {0}"
 msgid "Column Mapping"
 msgstr "Asignación de columnas"
 
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Columns"
 msgstr "Columnas"
@@ -7550,10 +7592,6 @@ msgstr "Progreso actual"
 msgid "Current Streak"
 msgstr "Racha actual"
 
-#: src/features/goal-management/ui/GoalCard.tsx
-msgid "Current Streak:"
-msgstr "Racha actual:"
-
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Current version"
 msgstr "Versión actual"
@@ -7743,6 +7781,7 @@ msgid "Database"
 msgstr "Base de datos"
 
 #: src/app/system/BackupReminderDialog.tsx
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 msgid "Database backup downloaded"
 msgstr "Copia de seguridad de la base de datos descargada"
 
@@ -7786,6 +7825,8 @@ msgstr "Estadísticas de la base de datos"
 #: src/features/debt/ui/PayoffPlanSheet.tsx
 #: src/features/reports/ui/notebook/FilterEditor.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 #: src/pages/settings/subscription/InvoicesTable.tsx
 msgid "Date"
@@ -7817,13 +7858,13 @@ msgstr "Fecha en la que empezó el préstamo o se desembolsó."
 msgid "date_trunc time_bucket strftime epoch list array_agg string_agg approx_count_distinct arg_max arg_min"
 msgstr "date_trunc time_bucket strftime epoch list array_agg string_agg approx_count_distinct arg_max arg_min"
 
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Date<0/>"
-msgstr "Fecha<0/>"
-
 #: src/features/budget-management/ui/create-budget-form/YnabDateOrderChoice.tsx
 msgid "Dates in this export"
 msgstr "Fechas de esta exportación"
+
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "Dates, amounts, categories, labels and words like outflows or uncleared become filters. Other words must all appear in the payee, memo, category, label or account. Use quotes for an exact phrase, a minus to leave something out, and payee:, memo:, account:, category: or label: to search one field."
+msgstr "Las fechas, los importes, las categorías, las etiquetas y palabras como outflows o uncleared se convierten en filtros. Las demás palabras deben aparecer todas en el beneficiario, la nota, la categoría, la etiqueta o la cuenta. Usa comillas para una frase exacta, un signo menos para excluir algo, y payee:, memo:, account:, category: o label: para buscar en un solo campo."
 
 #: src/pages/admin/StickinessAnalyticsSection.tsx
 msgid "DAU/MAU"
@@ -7942,6 +7983,10 @@ msgstr "Predeterminado"
 msgctxt "text size"
 msgid "Default"
 msgstr "Predeterminado"
+
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+msgid "Default (date)"
+msgstr "Predeterminado (fecha)"
 
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Default Account for Import"
@@ -8167,8 +8212,13 @@ msgid "Deployment details for this binary."
 msgstr "Detalles de despliegue para este binario."
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 msgid "Descending"
 msgstr "Descendente"
+
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+msgid "Descending. Tap for ascending."
+msgstr "Descendente. Toca para ascendente."
 
 #: src/features/rules/ui/rule-editor/useRuleEditorState.ts
 msgid "Describe the conditions and actions you want Budgero to apply automatically."
@@ -8364,6 +8414,10 @@ msgstr "Descargar"
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Download a backup first if you are unsure."
 msgstr "Descarga antes una copia de seguridad si no estás seguro."
+
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Download backup"
+msgstr "{'de': 'Backup herunterladen', 'es': 'Descargar copia de seguridad', 'fr': 'Télécharger une sauvegarde', 'nl': 'Back-up downloaden'}"
 
 #: src/features/reports/ui/notebook/viz/ExportMenu.tsx
 msgid "Download CSV"
@@ -8692,6 +8746,7 @@ msgstr "Editar tipo de cambio"
 msgid "Edit filter: {label}"
 msgstr "Editar filtro: {label}"
 
+#: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Edit Goal"
 msgstr "Editar objetivo"
@@ -9204,6 +9259,10 @@ msgstr "Cada vencimiento programado que aún no se ha registrado, por fecha de v
 msgid "Every transaction came across."
 msgstr "Se trajeron todas las transacciones."
 
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Every transaction, account balance, assigned amount and goal target in this budget is converted to {toCurrency}, using the exchange rate of each transaction's date. Amounts in each account's own currency stay the same."
+msgstr "{'de': 'Jede Transaktion, jeder Kontostand, jeder zugewiesene Betrag und jeder Zielbetrag in diesem Budget wird in {toCurrency} umgerechnet, mit dem Wechselkurs des jeweiligen Transaktionsdatums. Beträge in der eigenen Währung jedes Kontos bleiben gleich.', 'es': 'Cada transacción, saldo de cuenta, importe asignado y objetivo de meta de este presupuesto se convierte a {toCurrency}, con el tipo de cambio de la fecha de cada transacción. Los importes en la moneda propia de cada cuenta no cambian.', 'fr': 'Chaque transaction, solde de compte, montant attribué et objectif de ce budget est converti en {toCurrency}, au taux de change de la date de chaque transaction. Les montants dans la devise propre de chaque compte restent les mêmes.', 'nl': 'Elke transactie, elk rekeningsaldo, elk toegewezen bedrag en elk doelbedrag in dit budget wordt omgerekend naar {toCurrency}, met de wisselkoers van de datum van elke transactie. Bedragen in de eigen valuta van elke rekening blijven gelijk.'}"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Every transaction; split transactions count once per category."
 msgstr "Cada transacción; las transacciones divididas cuentan una vez por categoría."
@@ -9605,6 +9664,7 @@ msgstr "No se pudo ejecutar la consulta"
 msgid "Failed to export CSV files"
 msgstr "No se han podido exportar los archivos CSV"
 
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Failed to export database"
 msgstr "No se ha podido exportar la base de datos"
@@ -9925,6 +9985,10 @@ msgstr "Filtrar filas de importación"
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Filter results"
 msgstr "Filtrar resultados"
+
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "Filter words are English in every language."
+msgstr "Las palabras de filtro van en inglés en todos los idiomas."
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Filters the transactions a payee's totals count."
@@ -10251,6 +10315,10 @@ msgstr "Financiado por gasto presupuestado"
 msgid "Funded from spending:"
 msgstr "Financiado por gasto:"
 
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Funding and progress use this amount in {budgetCurrency}, at the current rate."
+msgstr "La financiación y el progreso usan este importe en {budgetCurrency}, al tipo de cambio actual."
+
 #: src/features/category-management/ui/FundingPriorityInput.tsx
 msgid "Funding priority"
 msgstr "Prioridad de financiación"
@@ -10380,6 +10448,10 @@ msgstr "Importe del objetivo"
 msgid "Goal created"
 msgstr "Objetivo creado"
 
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Goal currency"
+msgstr "Moneda del objetivo"
+
 #: src/features/goal-management/ui/GoalSection.tsx
 msgid "Goal deleted"
 msgstr "Objetivo eliminado"
@@ -10404,6 +10476,7 @@ msgstr "Línea de objetivo"
 msgid "Goal met"
 msgstr "Objetivo cumplido"
 
+#: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Goal progress"
 msgstr "Progreso del objetivo"
@@ -10411,6 +10484,22 @@ msgstr "Progreso del objetivo"
 #: src/features/first-steps/ui/GoalWalkthroughHost.tsx
 msgid "Goal set"
 msgstr "Objetivo creado"
+
+#. placeholder {0}: targetDisplay.currency
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "Goal set in {0}, converted at the last known rate (no recent rate available)."
+msgstr "Objetivo en {0}, convertido al último tipo de cambio conocido (no hay uno reciente)."
+
+#. placeholder {0}: targetDisplay.currency
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "Goal set in {0}, converted at today's rate."
+msgstr "Objetivo en {0}, convertido al tipo de cambio de hoy."
+
+#. placeholder {0}: targetDisplay.currency
+#. placeholder {1}: targetDisplay.target
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "Goal set in {0}: {1}"
+msgstr "Objetivo en {0}: {1}"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Goal target"
@@ -10586,6 +10675,18 @@ msgstr "¡Por la mitad! Ahorra {needed} más este mes"
 msgid "Halve amount"
 msgstr "Dividir importe a la mitad"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Has label"
+msgstr "Con etiqueta"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Has memo"
+msgstr "Con nota"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Has payee"
+msgstr "Con beneficiario"
+
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Have it ready every few months"
 msgstr "Tenerlo listo cada pocos meses"
@@ -10649,8 +10750,8 @@ msgid "Hide Archived"
 msgstr "Ocultar archivados"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "Hide balance column"
-msgstr "Ocultar columna de saldo"
+#~ msgid "Hide balance column"
+#~ msgstr "Ocultar columna de saldo"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/pages/settings/automation-rules/RuleRow.tsx
@@ -10670,8 +10771,8 @@ msgid "Hide hidden categories"
 msgstr "Ocultar categorías ocultas"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "Hide label column"
-msgstr "Ocultar columna de etiquetas"
+#~ msgid "Hide label column"
+#~ msgstr "Ocultar columna de etiquetas"
 
 #: src/shared/ui/password-input.tsx
 msgid "Hide password"
@@ -10798,6 +10899,10 @@ msgstr "Cuánto quieres asignar a esta categoría cada mes."
 #: src/features/budget-management/ui/create-budget-form/YnabImportTab.tsx
 msgid "How numbers and decimals are displayed throughout the app."
 msgstr "Cómo se muestran los números y decimales en toda la aplicación."
+
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "How search works"
+msgstr "Cómo funciona la búsqueda"
 
 #: src/pages/settings/ai/AISettingsPage.tsx
 msgid "How should the assistant handle actions like adding transactions?"
@@ -11231,6 +11336,7 @@ msgstr "Rupia india"
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/pages/accounts/AccountPage.tsx
 #: src/pages/accounts/AllTransactionsPage.tsx
@@ -11246,10 +11352,6 @@ msgstr "Entradas de cuentas de deuda"
 #: src/pages/analytics/reports/InOutReport.tsx
 msgid "Inflow vs Outflow"
 msgstr "Ingreso vs Gasto"
-
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Inflow<0/>"
-msgstr "Ingreso<0/>"
 
 #: src/shared/lib/search-query-parser.ts
 msgid "Inflows"
@@ -11695,6 +11797,10 @@ msgstr "Ten claro cuánto puedes gastar. Mantén tu presupuesto privado. Crea tu
 
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Label"
 msgstr "Etiqueta"
 
@@ -11713,6 +11819,10 @@ msgstr "Color de la etiqueta"
 #: src/pages/settings/LabelsPage.tsx
 msgid "Label color hex"
 msgstr "Color hex de la etiqueta"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Label contains {shown}"
+msgstr "Etiqueta contiene {shown}"
 
 #: src/pages/settings/LabelsPage.tsx
 msgid "Label name cannot be empty."
@@ -11734,17 +11844,9 @@ msgstr "Etiqueta:"
 msgid "Label: {label}"
 msgstr "Etiqueta: {label}"
 
-#: src/features/transactions/ui/SearchActiveFilters.tsx
-msgid "Label: {matchedLabel}"
-msgstr "Etiqueta: {matchedLabel}"
-
-#: src/features/transactions/ui/SearchActiveFilters.tsx
-msgid "Label: {raw}"
-msgstr "Etiqueta: {raw}"
-
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Label<0/>"
-msgstr "Etiqueta<0/>"
+#: src/shared/lib/search-query-parser.ts
+msgid "Label: {shown}"
+msgstr "Etiqueta: {shown}"
 
 #: src/features/labels/ui/LabelCombobox.tsx
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
@@ -11942,6 +12044,10 @@ msgstr "Últimos usuarios creados en este despliegue."
 #: src/pages/settings/WorkspaceSettingsPage.tsx
 msgid "Latest workspace information has been loaded."
 msgstr "Se ha cargado la información más reciente del espacio de trabajo."
+
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "Learn more"
+msgstr "Más información"
 
 #: src/pages/settings/AboutPage.tsx
 msgid "Learn more about Budgero or get in touch with the team."
@@ -12643,8 +12749,11 @@ msgstr "Registros de membresía"
 #: src/features/rules/ui/RuleSummary.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
 msgid "Memo"
 msgstr "Nota"
 
@@ -12656,9 +12765,9 @@ msgstr "Las condiciones de memo no pueden estar vacías."
 msgid "Memo:"
 msgstr "Nota:"
 
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Memo<0/>"
-msgstr "Nota<0/>"
+#: src/shared/lib/search-query-parser.ts
+msgid "Memo: {shown}"
+msgstr "Nota: {shown}"
 
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 msgid "Merchant or counterparty name"
@@ -12940,8 +13049,8 @@ msgid "Months over"
 msgstr "Meses excedidos"
 
 #: src/features/goal-management/ui/GoalCard.tsx
-msgid "Months Remaining:"
-msgstr "Meses restantes:"
+msgid "Months Remaining"
+msgstr "Meses restantes"
 
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
 msgid "months starting from:"
@@ -13517,9 +13626,15 @@ msgid "Next date"
 msgstr "Próxima fecha"
 
 #: src/pages/budgeting/BudgetingPage.desktop.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "Next month"
 msgstr "Mes siguiente"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Next week"
+msgstr "La próxima semana"
+
+#: src/shared/lib/search-query-parser.ts
 #: src/shared/ui/date-range-picker.tsx
 #: src/shared/ui/MonthPickerPopover.tsx
 msgid "Next year"
@@ -13542,6 +13657,15 @@ msgstr "Siguiente<0><1/></0>"
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "No"
 msgstr "No"
+
+#. placeholder {0}: targetDisplay.currency
+#: src/features/goal-management/ui/GoalCard.tsx
+msgid "No {0} exchange rate yet, so the target counts one to one until one is available."
+msgstr "Aún no hay tipo de cambio para {0}, así que el objetivo cuenta uno a uno hasta que haya uno."
+
+#: src/features/goal-management/ui/GoalConversionPreview.tsx
+msgid "No {currency} → {budgetCurrency} rate yet: counted as {amount} until one is available."
+msgstr "Aún no hay tipo {currency} → {budgetCurrency}: cuenta como {amount} hasta que haya uno."
 
 #: src/shared/model/access.ts
 msgid "No Access"
@@ -13915,6 +14039,7 @@ msgstr "Aún no hay facturas. Las facturas aparecerán aquí después de tu prim
 #: src/features/rules/ui/RuleHistoryDrawer.tsx
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
 #: src/features/transactions/ui/TransactionsBatchToolbar.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "No label"
 msgstr "Sin etiqueta"
 
@@ -13970,6 +14095,7 @@ msgstr "Aún no hay miembros."
 
 #: src/features/budget-planning/ui/spending-drawer-mobile/TransactionList.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/shared/lib/search-query-parser.ts
 #: src/widgets/command-palette/CommandPalette.tsx
 #: src/widgets/dashboard/AtAGlance.tsx
 #: src/widgets/dashboard/UncategorizedTransactionsCard.tsx
@@ -14027,6 +14153,7 @@ msgstr "Sin contraseña"
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 #: src/pages/analytics/analytics-model.ts
+#: src/shared/lib/search-query-parser.ts
 msgid "No payee"
 msgstr "Sin beneficiario"
 
@@ -14264,6 +14391,10 @@ msgstr "Ninguno"
 msgid "Noodle bar"
 msgstr "Bar de fideos"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Not {label}"
+msgstr "No {label}"
+
 #: src/features/transactions/ui/form/DuplicateTransactionHint.tsx
 msgid "Not a duplicate"
 msgstr "No es un duplicado"
@@ -14325,6 +14456,10 @@ msgstr "No del todo: gastaste {over} más que los {incomeText} que entraron ({ra
 msgid "Not set"
 msgstr "Sin establecer"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Not split"
+msgstr "No divididas"
+
 #: src/features/bank-sync/ui/BankSyncButton.tsx
 msgid "Not synced yet"
 msgstr "Aún sin sincronizar"
@@ -14332,6 +14467,10 @@ msgstr "Aún sin sincronizar"
 #: src/features/bank-sync/ui/BankConnectionPanel.tsx
 msgid "Not synced yet."
 msgstr "Aún sin sincronizar."
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Not upcoming"
+msgstr "No próximas"
 
 #: src/features/settings/directory-manager/DirectoryTable.tsx
 msgid "Not used yet"
@@ -14481,6 +14620,7 @@ msgid "Occurrence skipped"
 msgstr "Repetición omitida"
 
 #. placeholder {0}: formatMilli(formatter, goal.Target)
+#. placeholder {0}: targetDisplay.target
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "of {0}"
 msgstr "de {0}"
@@ -14815,6 +14955,7 @@ msgstr "Abriendo el pago..."
 msgid "Opening your bank…"
 msgstr "Abriendo tu banco…"
 
+#: src/app/startup/screens.tsx
 #: src/app/startup/StartupController.tsx
 msgid "Opening your budget…"
 msgstr "Abriendo tu presupuesto…"
@@ -14990,6 +15131,7 @@ msgstr "de {0}presupuestado"
 #: src/features/ai/ui/receipt-scanner/LineItemsTable.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/pages/accounts/AccountPage.tsx
 #: src/pages/accounts/AllTransactionsPage.tsx
@@ -14997,10 +15139,6 @@ msgstr "de {0}presupuestado"
 #: src/pages/analytics/reports/ScenarioReport.tsx
 msgid "Outflow"
 msgstr "Gasto"
-
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Outflow<0/>"
-msgstr "Gasto<0/>"
 
 #: src/shared/lib/search-query-parser.ts
 msgid "Outflows"
@@ -15017,7 +15155,7 @@ msgstr "Pendiente"
 #: src/features/page-guides/ui/guide-visuals.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Over"
-msgstr "Superado"
+msgstr "Más de"
 
 #. placeholder {0}: formatMilli(globalLocalizer, asMilli(0 - goalStatus.remaining))
 #: src/features/budget-planning/ui/spending-drawer-mobile/CategoryHeader.tsx
@@ -15255,6 +15393,10 @@ msgstr "Pagar"
 #: src/features/rules/ui/RuleSummary.tsx
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Payee"
 msgstr "Beneficiario"
 
@@ -15286,9 +15428,9 @@ msgstr "Beneficiario actualizado"
 msgid "Payee:"
 msgstr "Beneficiario:"
 
-#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
-msgid "Payee<0/>"
-msgstr "Beneficiario<0/>"
+#: src/shared/lib/search-query-parser.ts
+msgid "Payee: {shown}"
+msgstr "Beneficiario: {shown}"
 
 #: src/features/payees/ui/PayeeCombobox.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
@@ -15524,6 +15666,14 @@ msgstr "Elige cómo empezar"
 #: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
 msgid "Pick an account"
 msgstr "Elige una cuenta"
+
+#: src/features/transactions/ui/TransactionsToolbar.tsx
+msgid "Pick one to hide its transactions"
+msgstr "Elige uno para ocultar sus transacciones"
+
+#: src/features/transactions/ui/TransactionsToolbar.tsx
+msgid "Pick one to show only its transactions"
+msgstr "Elige uno para mostrar solo sus transacciones"
 
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "Pick range"
@@ -16040,7 +16190,6 @@ msgstr "Comentarios del producto"
 msgid "Product Hunt"
 msgstr "Product Hunt"
 
-#: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Progress"
 msgstr "Progreso"
@@ -16850,11 +16999,6 @@ msgstr "Eliminar"
 msgid "Remove {0}"
 msgstr "Eliminar {0}"
 
-#. placeholder {0}: getTokenLabel(token)
-#: src/features/transactions/ui/SearchActiveFilters.tsx
-msgid "Remove {0} filter"
-msgstr "Quitar filtro {0}"
-
 #. placeholder {0}: account.Name
 #: src/app/layout/desktop-shell/AccountsList.tsx
 #: src/features/account-management/ui/AccountOrderCard.tsx
@@ -16865,6 +17009,10 @@ msgstr "Quitar {0} de la lista corta"
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
 msgid "Remove {0}?"
 msgstr "¿Eliminar {0}?"
+
+#: src/features/transactions/ui/SearchActiveFilters.tsx
+msgid "Remove {label} filter"
+msgstr "Quitar filtro {label}"
 
 #: src/pages/custom-dashboards/components/BuiltinWidget.tsx
 msgid "Remove {name} from dashboard"
@@ -17584,6 +17732,10 @@ msgstr "En curso"
 msgid "Running automation rule"
 msgstr "Ejecutando regla de automatización"
 
+#: src/features/transactions/ui/desktop-table/TransactionRow.tsx
+msgid "Running balance is shown only in the default date order"
+msgstr "El saldo acumulado solo se muestra en el orden predeterminado por fecha"
+
 #: src/features/reports/ui/notebook/QuestionResult.tsx
 msgid "Running question…"
 msgstr "Ejecutando pregunta…"
@@ -17783,6 +17935,10 @@ msgstr "Plantillas guardadas"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Saved This Month"
 msgstr "Ahorrado este mes"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Saving for something priced in another currency? Pick it here."
+msgstr "¿Ahorras para algo con precio en otra moneda? Elígela aquí."
 
 #: src/features/budget-management/ui/CreateBudgetForm.tsx
 #: src/pages/onboarding/apply-onboarding.ts
@@ -18001,6 +18157,7 @@ msgid "Search engine (Google, etc.)"
 msgstr "Motor de búsqueda (Google, etc.)"
 
 #: src/features/page-guides/ui/guide-content.tsx
+#: src/features/transactions/ui/SearchHelpPopover.tsx
 msgid "Search in plain words"
 msgstr "Busca con palabras sencillas"
 
@@ -18037,6 +18194,10 @@ msgstr "Buscar informes"
 msgid "Search reports…"
 msgstr "Buscar informes…"
 
+#: src/features/transactions/ui/TransactionsToolbar.tsx
+msgid "Search suggestions"
+msgstr "Sugerencias de búsqueda"
+
 #: src/pages/explorer-page/components/SchemaSidebar.tsx
 msgid "Search tables, views, columns..."
 msgstr "Buscar tablas, vistas, columnas..."
@@ -18045,6 +18206,10 @@ msgstr "Buscar tablas, vistas, columnas..."
 #: src/pages/onboarding/steps/CurrencyStep.tsx
 msgid "Search the full list — Budgero supports {0} currencies."
 msgstr "Busca en la lista completa — Budgero admite {0} monedas."
+
+#: src/features/transactions/ui/TransactionsToolbar.tsx
+msgid "Search transactions"
+msgstr "Buscar transacciones"
 
 #: src/pages/warranties/components/WarrantyFormDialog.tsx
 msgid "Search transactions..."
@@ -18746,12 +18911,16 @@ msgid "Show as"
 msgstr "Mostrar como"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "Show balance column"
-msgstr "Mostrar columna de saldo"
+#~ msgid "Show balance column"
+#~ msgstr "Mostrar columna de saldo"
 
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 msgid "Show Budget, Account, Category & Payee IDs"
 msgstr "Mostrar IDs de Presupuesto, Cuenta, Categoría y Beneficiario"
+
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
+msgid "Show columns"
+msgstr "Mostrar columnas"
 
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "Show compact view"
@@ -18784,8 +18953,8 @@ msgid "Show hidden categories"
 msgstr "Mostrar categorías ocultas"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "Show label column"
-msgstr "Mostrar columna de etiqueta"
+#~ msgid "Show label column"
+#~ msgstr "Mostrar columna de etiqueta"
 
 #: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Show less"
@@ -19049,6 +19218,11 @@ msgstr "Simular una variación de los tipos de cambio"
 msgid "Simulated a market move"
 msgstr "Se ha simulado un movimiento de mercado"
 
+#. placeholder {0}: period.label
+#: src/shared/lib/search-query-parser.ts
+msgid "Since {0}"
+msgstr "Desde {0}"
+
 #: src/features/import/ui/steps/ConfigureStep.tsx
 msgid "Since no account column is mapped, transactions will be imported into the selected account:"
 msgstr "Como no se ha mapeado ninguna columna de cuenta, las transacciones se importarán en la cuenta seleccionada:"
@@ -19173,6 +19347,22 @@ msgstr "Ordenar barras por valor"
 #: src/features/reports/ui/notebook/viz/ChartQuickBar.tsx
 msgid "Sort bars: {sortLabel}"
 msgstr "Ordenar barras: {sortLabel}"
+
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+msgid "Sort by"
+msgstr "Ordenar por"
+
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
+msgid "Sort by:"
+msgstr "Ordenar por:"
+
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+msgid "Sorted ascending. Click to sort descending."
+msgstr "Orden ascendente. Haz clic para ordenar de forma descendente."
+
+#: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+msgid "Sorted descending. Click to go back to date order."
+msgstr "Orden descendente. Haz clic para volver al orden por fecha."
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/pages/onboarding/steps/DoneStep.tsx
@@ -19350,7 +19540,9 @@ msgstr "¿Gastaste de más? Mueve dinero"
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
 #: src/features/transactions/ui/mobile-transaction-card/MobileTransactionCard.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
+#: src/features/transactions/ui/TransactionsTable.tsx
 #: src/pages/settings/recurring/RecurringTransactionsSection.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "Split"
 msgstr "Dividir"
 
@@ -19500,6 +19692,10 @@ msgstr "Empieza a ahorrar {monthlyTarget} este mes"
 msgid "Start this month's savings - aim for {target}"
 msgstr "Empieza el ahorro de este mes: objetivo {target}"
 
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "Start typing a category, label, payee or account name, also after a minus, and pick it from the list. Budgero adds the field and the quotes for you."
+msgstr "Empieza a escribir el nombre de una categoría, etiqueta, beneficiario o cuenta, también después de un signo menos, y elígelo en la lista. Budgero añade el campo y las comillas por ti."
+
 #: src/features/subscription/ui/SubscriptionSuccess.tsx
 msgid "Start Using Budgero"
 msgstr "Empezar a usar Budgero"
@@ -19580,6 +19776,7 @@ msgstr "Estadística"
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/add-transaction/RecurringOptionsSection.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/MobileTransactionSortControl.tsx
 #: src/pages/admin/admin-users/user-details/BillingTab.tsx
 #: src/pages/admin/admin-users/user-details/WorkspacesTab.tsx
 #: src/pages/admin/admin-users/UsersTable.tsx
@@ -20015,6 +20212,7 @@ msgstr "Saldo objetivo"
 msgid "Target Balance"
 msgstr "Saldo objetivo"
 
+#: src/features/goal-management/ui/GoalCard.tsx
 #: src/features/goal-management/ui/GoalForm.tsx
 msgid "Target Date"
 msgstr "Fecha objetivo"
@@ -20022,10 +20220,6 @@ msgstr "Fecha objetivo"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Target date has passed"
 msgstr "Fecha objetivo superada"
-
-#: src/features/goal-management/ui/GoalCard.tsx
-msgid "Target Date:"
-msgstr "Fecha objetivo:"
 
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Target met — category is fully funded"
@@ -20185,10 +20379,9 @@ msgstr "El saldo que quieres acumular en esta categoría. El gasto lo vuelve a r
 msgid "The bank didn't authorize access: {description}"
 msgstr "El banco no autorizó el acceso: {description}"
 
-#. placeholder {0}: missing[0].remote.name
 #: src/features/bank-sync/model/link-accounts.ts
-msgid "The bank didn't return {0}."
-msgstr "El banco no devolvió {0}."
+msgid "The bank didn't return {name}, so it wasn't linked. Reconnect {bank} in Settings › Bank sync and make sure this account is selected when you authorise access, then link it again."
+msgstr "El banco no devolvió {name}, así que no se vinculó. Vuelve a conectar {bank} en Ajustes › Sincronización bancaria, asegúrate de seleccionar esta cuenta al autorizar el acceso y vuelve a vincularla."
 
 #: src/features/bank-sync/model/link-accounts.ts
 msgid "The bank didn't send a balance for {name}, so Budgero can't set its opening balance. Link it to an existing account, or try again later."
@@ -20887,6 +21080,10 @@ msgstr "Este espacio de trabajo compartido está bloqueado hasta que el propieta
 msgid "This SQL question has no chart: the dashboard shows its rows as a table."
 msgstr "Esta pregunta SQL no tiene gráfico: el panel muestra sus filas como tabla."
 
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "This touches the whole budget and syncs to your other devices. Download a backup first, so you can restore it if something looks wrong."
+msgstr "{'de': 'Das betrifft das ganze Budget und wird mit deinen anderen Geräten synchronisiert. Lade zuerst ein Backup herunter, damit du es wiederherstellen kannst, falls etwas nicht stimmt.', 'es': 'Esto afecta a todo el presupuesto y se sincroniza con tus otros dispositivos. Descarga antes una copia de seguridad para poder restaurarla si algo no se ve bien.', 'fr': 'Cela touche tout le budget et se synchronise avec vos autres appareils. Téléchargez d’abord une sauvegarde pour pouvoir la restaurer si quelque chose semble incorrect.', 'nl': 'Dit raakt het hele budget en wordt gesynchroniseerd naar je andere apparaten. Download eerst een back-up, zodat je die kunt terugzetten als er iets niet klopt.'}"
+
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "This transaction has been reconciled and is locked as cleared."
 msgstr "Esta transacción está conciliada y bloqueada como confirmada."
@@ -21086,6 +21283,7 @@ msgid "To stay on pace"
 msgstr "Para mantener el ritmo"
 
 #: src/features/transactions/ui/form/DatePickerQuick.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "Today"
 msgstr "Hoy"
 
@@ -21116,6 +21314,10 @@ msgstr "Activa para pausar la regla sin eliminarla."
 #: src/pages/settings/push-api/usePushApiState.ts
 msgid "Token copied to clipboard"
 msgstr "Token copiado al portapapeles"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Tomorrow"
+msgstr "Mañana"
 
 #: src/pages/settings/subscription/subscription.constants.ts
 msgid "Too expensive"
@@ -21474,6 +21676,7 @@ msgstr "Transferencia: {0}"
 #: src/features/transactions/ui/desktop-table/InlineTransactionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionRow.tsx
 #: src/features/transactions/ui/split-transfer/SplitTransferFields.tsx
+#: src/features/transactions/ui/TransactionsTable.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Transfers"
 msgstr "Transferencias"
@@ -21582,6 +21785,10 @@ msgstr "Reintentar →"
 msgid "Try cancelling and re-creating the invite if this warning persists."
 msgstr "Prueba a cancelar y volver a crear la invitación si esta advertencia persiste."
 
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "Try one:"
+msgstr "Prueba uno:"
+
 #: src/pages/auth/AuthPage.tsx
 msgid "Try private budgeting with Budgero Cloud free for 35 days. No credit card required. Then {monthly}/month or {yearly}/year, tax included."
 msgstr "Prueba una gestión privada de tu presupuesto con Budgero Cloud gratis durante 35 días. Sin tarjeta de crédito. Después, {monthly}/mes o {yearly}/año, impuestos incluidos."
@@ -21621,8 +21828,8 @@ msgid "Type a command or search..."
 msgstr "Escribe un comando o busca..."
 
 #: src/features/page-guides/ui/guide-content.tsx
-msgid "Type in the search box above the list. Words like last month, outflows, uncleared or over 50 and a category name become filters (these words are English); anything else is looked up in payee, memo, category, label and account."
-msgstr "Escribe en el cuadro de búsqueda sobre la lista. Palabras como last month, outflows, uncleared u over 50 y un nombre de categoría se convierten en filtros (estas palabras van en inglés); lo demás se busca en beneficiario, nota, categoría, etiqueta y cuenta."
+msgid "Type in the search box above the list. Words like last month, march, outflows, uncleared or over 50 and a category name become filters (these words are English). Other words must all appear in the payee, memo, category, label or account; put a minus in front to leave something out. The (i) in the search box has examples."
+msgstr "Escribe en el cuadro de búsqueda sobre la lista. Palabras como last month, march, outflows, uncleared u over 50 y un nombre de categoría se convierten en filtros (estas palabras van en inglés). Las demás palabras deben aparecer todas en el beneficiario, la nota, la categoría, la etiqueta o la cuenta; pon un signo menos delante para excluir algo. La (i) del cuadro de búsqueda tiene ejemplos."
 
 #: src/pages/onboarding/steps/PasswordStep.tsx
 msgid "type it once more"
@@ -21779,6 +21986,7 @@ msgstr "Sin categorizar"
 #: src/features/analytics/ui/SpendingBreakdownContent.tsx
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/pages/analytics/analytics-model.ts
+#: src/shared/lib/search-query-parser.ts
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "Uncategorized"
 msgstr "Sin categorizar"
@@ -22008,6 +22216,7 @@ msgid "Up to date"
 msgstr "Al día"
 
 #: src/features/budget-planning/ui/spending-drawer-mobile/TransactionList.tsx
+#: src/shared/lib/search-query-parser.ts
 msgid "Upcoming"
 msgstr "Próximo"
 
@@ -22205,6 +22414,10 @@ msgstr "La analítica de uso está desactivada y no se incluye en las compilacio
 #: src/features/transactions/ui/add-transaction/TransactionDetailsSection.tsx
 msgid "Use 'Transfers' to deduct from Ready to Assign, or select a category to treat as spending"
 msgstr "Usa 'Transferencias' para deducir de Por asignar, o selecciona una categoría para tratarla como gasto"
+
+#: src/features/goal-management/ui/GoalForm.tsx
+msgid "Use {budgetCurrency}"
+msgstr "Usar {budgetCurrency}"
 
 #: src/pages/settings/LabelsPage.tsx
 msgid "Use a valid color"
@@ -22931,6 +23144,10 @@ msgstr "Con tu configuración actual:"
 msgid "Within {tolerance}"
 msgstr "Hasta {tolerance}"
 
+#: src/shared/lib/search-query-parser.ts
+msgid "Without {shown}"
+msgstr "Sin {shown}"
+
 #: src/app/startup/StartupController.tsx
 msgid "Working from local data while sync reconnects."
 msgstr "Se trabaja con los datos locales mientras se restablece la sincronización."
@@ -23022,6 +23239,10 @@ msgstr "Espacios de trabajo y compartir"
 msgid "Workspaces hold budgets"
 msgstr "Los espacios de trabajo contienen presupuestos"
 
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
+msgid "Wrap long memos"
+msgstr "Ajustar notas largas"
+
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Write a formula, e.g. Spending / Income * 100"
 msgstr "Escribe una fórmula, p. ej. Gastos / Ingresos * 100"
@@ -23099,6 +23320,10 @@ msgstr "Sí: gastaste {spentText} de los {assignedText} que asignaste, y {left} 
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Yes, Replace All Data"
 msgstr "Sí, reemplazar todos los datos"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Yesterday"
+msgstr "Ayer"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 msgid "YNAB applies loan interest to balances without exporting a separate transaction. Budgero added visible ledger adjustments so these balances remain exact."
@@ -23502,6 +23727,10 @@ msgstr "Tu versión de la app, el idioma y si usas la web o la app instalada."
 #: src/pages/settings/AutomationRulesPage.tsx
 msgid "Your automation rule is ready to run."
 msgstr "Tu regla de automatización está lista para ejecutarse."
+
+#: src/features/bank-sync/model/link-accounts.ts
+msgid "your bank"
+msgstr "tu banco"
 
 #: src/features/bank-sync/lib/enable-banking/client.ts
 msgid "Your bank limits how often its data can be read. Try again in a few hours."

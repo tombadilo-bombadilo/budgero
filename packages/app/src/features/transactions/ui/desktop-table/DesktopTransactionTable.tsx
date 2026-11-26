@@ -5,6 +5,10 @@ import { Table } from '@shared/ui/table';
 import { TEXT_SIZE_SCALE } from '@shared/lib/text-size/text-size';
 import { useUiStore } from '@shared/store/useUiStore';
 import { useRegisterKeyboard } from '@features/transactions/api/useRegisterKeyboard';
+import type {
+  TransactionSortColumn,
+  TransactionSortState,
+} from '@features/transactions/lib/transaction-sort';
 import { TransactionTableHeader } from './TransactionTableHeader';
 import { TransactionTableBody } from './TransactionTableBody';
 import { SplitDetailsDialog } from './SplitDetailsDialog';
@@ -20,6 +24,8 @@ import {
 } from './useVirtualizedTransactionRows';
 import { useTransactionViewportHeight } from './useTransactionViewportHeight';
 import { InlineTransactionRow } from './InlineTransactionRow';
+
+const transactionKey = (transaction: GetTransactionsByAccountRow) => transaction.ID;
 
 export interface DesktopTransactionTableProps {
   transactions: GetTransactionsByAccountRow[];
@@ -54,6 +60,12 @@ export interface DesktopTransactionTableProps {
   showLabelColumn?: boolean;
   /** Show optional Exchange Rate column (for foreign-currency accounts). */
   showExchangeRateColumn?: boolean;
+  /** Show the Memo column (on by default; register column options). */
+  showMemoColumn?: boolean;
+  /** Show the Payee column (on by default; register column options). */
+  showPayeeColumn?: boolean;
+  /** Memos wrap onto several lines; rows grow to fit. */
+  wrapMemo?: boolean;
   editorDirectories: TransactionEditorDirectories;
   budgetId: number;
   scrollResetKey: string;
@@ -68,6 +80,9 @@ export interface DesktopTransactionTableProps {
     accountId?: number;
     onClose: () => void;
   };
+  /** Active column sort; null = default (date) order. */
+  sort?: TransactionSortState;
+  onSortChange?: (column: TransactionSortColumn) => void;
 }
 
 export function DesktopTransactionTable({
@@ -90,6 +105,9 @@ export function DesktopTransactionTable({
   showBalanceColumn = false,
   showLabelColumn = true,
   showExchangeRateColumn = false,
+  showMemoColumn = true,
+  showPayeeColumn = true,
+  wrapMemo = false,
   editorDirectories,
   budgetId,
   scrollResetKey,
@@ -99,6 +117,8 @@ export function DesktopTransactionTable({
   compact = false,
   onClearSelection,
   inlineAdd,
+  sort = null,
+  onSortChange,
 }: DesktopTransactionTableProps) {
   const textSize = useUiStore((state) => state.textSize);
   const [splitDialogState, setSplitDialogState] = useState<{
@@ -118,12 +138,14 @@ export function DesktopTransactionTable({
   );
   const handleDeactivateCell = useCallback(() => setEditingCell(null), []);
 
-  const { columnWidths, handleResize, totalWidth } = useColumnResize(
+  const { columnWidths, handleResize, totalWidth } = useColumnResize({
     hideAccountColumn,
     showBalanceColumn,
     showExchangeRateColumn,
-    showLabelColumn
-  );
+    showLabelColumn,
+    showMemoColumn,
+    showPayeeColumn,
+  });
 
   const {
     viewportRef,
@@ -137,7 +159,9 @@ export function DesktopTransactionTable({
   } = useVirtualizedTransactionRows(
     transactions,
     // Rows are h-16 / h-10 (rem), so they grow with the text size setting.
-    (compact ? COMPACT_TRANSACTION_ROW_HEIGHT : TRANSACTION_ROW_HEIGHT) * TEXT_SIZE_SCALE[textSize]
+    (compact ? COMPACT_TRANSACTION_ROW_HEIGHT : TRANSACTION_ROW_HEIGHT) * TEXT_SIZE_SCALE[textSize],
+    // Wrapped memos make rows taller than the base height: measure them.
+    { dynamic: wrapMemo && showMemoColumn, getKey: transactionKey }
   );
 
   useTransactionViewportHeight(viewportRef, transactions.length > 0);
@@ -217,7 +241,9 @@ export function DesktopTransactionTable({
   });
 
   const columnCount =
-    8 +
+    6 +
+    (showMemoColumn ? 1 : 0) +
+    (showPayeeColumn ? 1 : 0) +
     (hideAccountColumn ? 0 : 1) +
     (showLabelColumn ? 1 : 0) +
     (showExchangeRateColumn ? 1 : 0) +
@@ -267,11 +293,15 @@ export function DesktopTransactionTable({
               showBalanceColumn={showBalanceColumn}
               showLabelColumn={showLabelColumn}
               showExchangeRateColumn={showExchangeRateColumn}
+              showMemoColumn={showMemoColumn}
+              showPayeeColumn={showPayeeColumn}
               allPageRowsSelected={allRowsSelected}
               somePageRowsSelected={someRowsSelected}
               onToggleSelectPage={handleToggleSelectAll}
               columnWidths={columnWidths}
               onResize={handleResize}
+              sort={sort}
+              onSortChange={onSortChange}
             />
             <TransactionTableBody
               transactions={visibleItems}
@@ -287,8 +317,12 @@ export function DesktopTransactionTable({
               hideAccountColumn={hideAccountColumn}
               hideSecondaryAmounts={hideSecondaryAmounts}
               showBalanceColumn={showBalanceColumn}
+              hideRunningBalance={sort !== null}
               showLabelColumn={showLabelColumn}
               showExchangeRateColumn={showExchangeRateColumn}
+              showMemoColumn={showMemoColumn}
+              showPayeeColumn={showPayeeColumn}
+              wrapMemo={wrapMemo}
               editorDirectories={editorDirectories}
               editingCell={editingCell}
               currentFormatter={currentFormatter}
@@ -316,6 +350,8 @@ export function DesktopTransactionTable({
                     showLabelColumn={showLabelColumn}
                     showExchangeRateColumn={showExchangeRateColumn}
                     showBalanceColumn={showBalanceColumn}
+                    showMemoColumn={showMemoColumn}
+                    showPayeeColumn={showPayeeColumn}
                     columnCount={columnCount}
                     editorDirectories={editorDirectories}
                     onClose={inlineAdd.onClose}

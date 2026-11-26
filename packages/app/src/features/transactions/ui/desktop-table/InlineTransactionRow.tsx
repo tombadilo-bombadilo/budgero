@@ -57,6 +57,9 @@ interface InlineTransactionRowProps {
   showLabelColumn: boolean;
   showExchangeRateColumn: boolean;
   showBalanceColumn: boolean;
+  /** Memo and Payee can be hidden (register column options); hidden cells aren't entered here either. */
+  showMemoColumn?: boolean;
+  showPayeeColumn?: boolean;
   columnCount: number;
   editorDirectories: TransactionEditorDirectories;
   onClose: () => void;
@@ -81,6 +84,8 @@ export function InlineTransactionRow({
   showLabelColumn,
   showExchangeRateColumn,
   showBalanceColumn,
+  showMemoColumn = true,
+  showPayeeColumn = true,
   columnCount,
   editorDirectories,
   onClose,
@@ -409,7 +414,12 @@ export function InlineTransactionRow({
 
   // Cells before the Inflow column, and after the Outflow column, so detail rows
   // can line up with the register's columns.
-  const leadingColumns = 5 + (hideAccountColumn ? 0 : 1) + (showLabelColumn ? 1 : 0);
+  const leadingColumns =
+    3 +
+    (showMemoColumn ? 1 : 0) +
+    (showPayeeColumn ? 1 : 0) +
+    (hideAccountColumn ? 0 : 1) +
+    (showLabelColumn ? 1 : 0);
   const trailingCells = (
     <>
       {showExchangeRateColumn && <TableCell />}
@@ -490,15 +500,17 @@ export function InlineTransactionRow({
           )}
         </TableCell>
 
-        <TableCell className="max-w-[220px]">
-          <Input
-            value={form.memo}
-            onChange={(e) => form.setMemo(e.target.value)}
-            placeholder={t`Memo`}
-            aria-label={t`Memo`}
-            className="h-8 text-xs xl:text-sm"
-          />
-        </TableCell>
+        {showMemoColumn && (
+          <TableCell className="max-w-[220px]">
+            <Input
+              value={form.memo}
+              onChange={(e) => form.setMemo(e.target.value)}
+              placeholder={t`Memo`}
+              aria-label={t`Memo`}
+              className="h-8 text-xs xl:text-sm"
+            />
+          </TableCell>
+        )}
 
         {!hideAccountColumn && (
           <TableCell className="max-w-[200px]">
@@ -514,31 +526,33 @@ export function InlineTransactionRow({
           </TableCell>
         )}
 
-        <TableCell className="max-w-[200px]">
-          <PayeeCombobox
-            budgetId={budgetId}
-            value={form.payee}
-            payees={editorDirectories.payees}
-            onChange={(payee) => {
-              form.setPayee(payee);
-              // Leaving a transfer drops its other-account amount; a typed
-              // budget-currency amount on a plain transaction stays.
-              if (transferAccount) setOtherAmount(null);
-              setTransferAccount('');
-            }}
-            transferAccounts={isSplit ? undefined : transferTargets}
-            onSelectTransfer={(id) => {
-              form.setPayee('');
-              setTransferAccount(String(id));
-              setOtherAmount(null);
-            }}
-            displayValue={
-              transferAccountRecord ? t`Transfer: ${transferAccountRecord.Name}` : undefined
-            }
-            placeholder={t`Payee`}
-            triggerClassName={cellTrigger}
-          />
-        </TableCell>
+        {showPayeeColumn && (
+          <TableCell className="max-w-[200px]">
+            <PayeeCombobox
+              budgetId={budgetId}
+              value={form.payee}
+              payees={editorDirectories.payees}
+              onChange={(payee) => {
+                form.setPayee(payee);
+                // Leaving a transfer drops its other-account amount; a typed
+                // budget-currency amount on a plain transaction stays.
+                if (transferAccount) setOtherAmount(null);
+                setTransferAccount('');
+              }}
+              transferAccounts={isSplit ? undefined : transferTargets}
+              onSelectTransfer={(id) => {
+                form.setPayee('');
+                setTransferAccount(String(id));
+                setOtherAmount(null);
+              }}
+              displayValue={
+                transferAccountRecord ? t`Transfer: ${transferAccountRecord.Name}` : undefined
+              }
+              placeholder={t`Payee`}
+              triggerClassName={cellTrigger}
+            />
+          </TableCell>
+        )}
 
         {showLabelColumn && (
           <TableCell className="max-w-[180px]">
@@ -679,35 +693,39 @@ export function InlineTransactionRow({
               <TableCell className="py-1 text-right text-muted-foreground">
                 <CornerDownRight className="ml-auto h-4 w-4" />
               </TableCell>
-              <TableCell className="max-w-[220px] py-1">
-                <Input
-                  value={line.memo ?? ''}
-                  onChange={(e) => updateSplitLine(line.id, { memo: e.target.value })}
-                  placeholder={t`Memo`}
-                  aria-label={t`Split memo`}
-                  className="h-8 text-xs xl:text-sm"
-                />
-              </TableCell>
+              {showMemoColumn && (
+                <TableCell className="max-w-[220px] py-1">
+                  <Input
+                    value={line.memo ?? ''}
+                    onChange={(e) => updateSplitLine(line.id, { memo: e.target.value })}
+                    placeholder={t`Memo`}
+                    aria-label={t`Split memo`}
+                    className="h-8 text-xs xl:text-sm"
+                  />
+                </TableCell>
+              )}
               {!hideAccountColumn && <TableCell />}
-              <TableCell className="max-w-[200px] py-1">
-                <PayeeSelectCell
-                  budgetId={budgetId}
-                  value={line.payee ?? ''}
-                  payees={editorDirectories.payees}
-                  onCommit={(payee) =>
-                    updateSplitLine(line.id, splitPayeeUpdate(payee, transferTargets))
-                  }
-                  transferAccounts={transferTargets}
-                  onSelectTransfer={(id) => updateSplitLine(line.id, splitTransferUpdate(id))}
-                  selectedTransferAccountId={line.transferAccountId ?? null}
-                  displayValue={
-                    line.transferAccountId
-                      ? t`Transfer: ${accountById(String(line.transferAccountId))?.Name ?? ''}`
-                      : undefined
-                  }
-                  triggerClassName={cellTrigger}
-                />
-              </TableCell>
+              {showPayeeColumn && (
+                <TableCell className="max-w-[200px] py-1">
+                  <PayeeSelectCell
+                    budgetId={budgetId}
+                    value={line.payee ?? ''}
+                    payees={editorDirectories.payees}
+                    onCommit={(payee) =>
+                      updateSplitLine(line.id, splitPayeeUpdate(payee, transferTargets))
+                    }
+                    transferAccounts={transferTargets}
+                    onSelectTransfer={(id) => updateSplitLine(line.id, splitTransferUpdate(id))}
+                    selectedTransferAccountId={line.transferAccountId ?? null}
+                    displayValue={
+                      line.transferAccountId
+                        ? t`Transfer: ${accountById(String(line.transferAccountId))?.Name ?? ''}`
+                        : undefined
+                    }
+                    triggerClassName={cellTrigger}
+                  />
+                </TableCell>
+              )}
               {showLabelColumn && <TableCell />}
               <TableCell className="max-w-[240px] overflow-hidden py-1">
                 <div className="min-w-0 text-xs [&>div]:w-full xl:text-sm">

@@ -247,7 +247,11 @@ function pinnedToOriginClock(entry: OpCodeEntry): OpCodeEntry {
     prepare: async (args) => {
       const prepared = entry.prepare ? await entry.prepare(args) : args;
       if (isClockValue(prepared[OP_CLOCK_ARG])) return prepared;
-      return { ...prepared, [OP_CLOCK_ARG]: servicesClock()?.now?.() ?? Date.now() };
+      // The unpinned clock: a remote op being applied right now must not lend
+      // its instant to a new local op.
+      const c = servicesClock();
+      const now = c?.unpinnedNow?.() ?? c?.now?.() ?? Date.now();
+      return { ...prepared, [OP_CLOCK_ARG]: now };
     },
     execute: (args, context) => {
       const at = args[OP_CLOCK_ARG];
@@ -295,6 +299,37 @@ export function isUnrecordedOp(op: string): boolean {
 }
 
 /**
+ * The IDs among `ids` of transactions this device had and no longer has: no
+ * row, but at or below the transactions AUTOINCREMENT counter, which only
+ * moves when this device allocates an ID (the same way on every device that
+ * applied the same log). An ID above the counter was never created here, so
+ * a missing row then means the local DB diverged; those are not returned.
+ */
+function deletedTransactionIds(ids: unknown[]): Set<number> {
+  const deleted = new Set<number>();
+  const candidates = ids.filter(
+    (id): id is number => typeof id === 'number' && Number.isSafeInteger(id) && id > 0
+  );
+  if (!candidates.length) return deleted;
+  let counter: number | undefined;
+  try {
+    counter = S().mutationHistory?.idCounters?.().transactions;
+  } catch {
+    counter = undefined;
+  }
+  if (typeof counter !== 'number') return deleted;
+  for (const id of candidates) {
+    if (id > counter) continue;
+    try {
+      S().transactions!.getTransactionByID(id);
+    } catch (error) {
+      if ((error as { name?: unknown } | null)?.name === 'NotFoundError') deleted.add(id);
+    }
+  }
+  return deleted;
+}
+
+/**
  * Execute a mutation operation using the registered op code.
  * Used by MutationManager for both local and remote mutations.
  */
@@ -309,10 +344,29 @@ export async function executeMutationOp(
     throw new UnknownOpCodeError(op);
   }
 
-  const entry = opCodeRegistry[op];
+  const entry: OpCodeEntry = opCodeRegistry[op];
+
+  let runArgs = args;
+  if (context?.isReceiver && entry.editsTransactions) {
+    const { ids, without } = entry.editsTransactions;
+    const targets = ids(args);
+    const deleted = deletedTransactionIds(targets);
+    if (deleted.size > 0) {
+      const all = targets.every((id) => deleted.has(id as number));
+      if (all || without) {
+        console.info(`[OpCodeRegistry] ${op}: transactions deleted earlier in the log`, {
+          mutationId: context.mutationId,
+          deleted: deleted.size,
+          skipped: all,
+        });
+        if (all) return undefined;
+        runArgs = without!(args, deleted);
+      }
+    }
+  }
 
   try {
-    return await entry.execute(args, context);
+    return await entry.execute(runArgs, context);
   } catch (error) {
     console.error(`[OpCodeRegistry] Failed to apply mutation: ${op}`, error);
     throw error;

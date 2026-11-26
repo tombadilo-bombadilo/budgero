@@ -1,6 +1,25 @@
 import { Trans, useLingui } from '@lingui/react/macro';
 import { useMemo, useState } from 'react';
-import { toDecimal, ZERO_MILLI } from '@budgero/core/browser';
+import {
+  toDecimal,
+  ZERO_MILLI,
+  goalTargetCurrency,
+  type MilliUnits,
+  type Goal,
+  GoalCalculations,
+  GoalType,
+  GoalPurpose,
+  getCycleMonths,
+  isValidCycleMonths,
+  MIN_GOAL_CYCLE_MONTHS,
+  MAX_GOAL_CYCLE_MONTHS,
+  GOAL_CYCLE_MONTHS_ERROR,
+  applyGoalTimeframePlan,
+  describeGoalTimeframeChange,
+  goalTimeframeSpan,
+  planGoalTimeframeChange,
+  validateGoalTimeframeChange,
+} from '@budgero/core/browser';
 import { Button } from '@shared/ui/button';
 import { Label } from '@shared/ui/label';
 import { CalculatorCell } from '@shared/ui/calculator-cell';
@@ -22,23 +41,8 @@ import {
 import { Input } from '@shared/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
 import { format } from 'date-fns';
-import {
-  type Goal,
-  GoalCalculations,
-  GoalType,
-  GoalPurpose,
-  getCycleMonths,
-  isValidCycleMonths,
-  MIN_GOAL_CYCLE_MONTHS,
-  MAX_GOAL_CYCLE_MONTHS,
-  GOAL_CYCLE_MONTHS_ERROR,
-  applyGoalTimeframePlan,
-  describeGoalTimeframeChange,
-  goalTimeframeSpan,
-  planGoalTimeframeChange,
-  validateGoalTimeframeChange,
-} from '@budgero/core/browser';
 import { cn } from '@shared/lib/utils';
+import { CurrencySelector } from '@features/currencies/ui/CurrencySelector';
 import { describeLocalizedGoalCycle } from '../lib/goal-cycle-label';
 import {
   defaultGoalTimeframe,
@@ -47,6 +51,7 @@ import {
   type GoalTimeframeChoice,
 } from '../lib/goal-timeframe';
 import { GoalTimeframeFields, GoalTimeframeNotices } from './GoalTimeframeFields';
+import { goalCurrencyFormatter } from '../lib/goal-currency';
 
 interface GoalFormProps {
   /** The goal of the viewed month (currentMonth), when editing. */
@@ -65,6 +70,15 @@ interface GoalFormProps {
   isDeleting?: boolean;
   /** One line pinned above the form (the first-steps walkthrough hint). */
   notice?: React.ReactNode;
+  /** The budget's currency (default: the formatter's). */
+  budgetCurrency?: string;
+  /** The budget's number format, for amounts in another currency. */
+  numberFormat?: string;
+  /**
+   * Shows what a target in another currency is in the budget currency
+   * (needs the runtime; GoalSection passes it, plain renders go without).
+   */
+  ConversionPreview?: React.ComponentType<{ target: MilliUnits; currency: string }>;
 }
 
 /**
@@ -133,8 +147,21 @@ export function GoalForm({
   isSaving = false,
   isDeleting = false,
   notice,
+  budgetCurrency: budgetCurrencyProp,
+  numberFormat,
+  ConversionPreview,
 }: GoalFormProps) {
   const { t } = useLingui();
+  const budgetCurrency = budgetCurrencyProp ?? formatter.resolvedOptions().currency ?? 'USD';
+  // The target's currency: the budget's unless the goal was set in another one.
+  const [targetCurrency, setTargetCurrency] = useState(
+    () => goalTargetCurrency(goal, budgetCurrency) ?? budgetCurrency
+  );
+  const isForeignTarget = targetCurrency !== budgetCurrency;
+  const targetFormatter = useMemo(
+    () => (isForeignTarget ? goalCurrencyFormatter(targetCurrency, numberFormat) : formatter),
+    [isForeignTarget, targetCurrency, numberFormat, formatter]
+  );
 
   const GOAL_PRESETS: {
     key: GoalPreset;
@@ -378,6 +405,7 @@ export function GoalForm({
       Target: target,
       StartDate: effectiveStartDate,
       BudgetID: budgetId,
+      TargetCurrency: isForeignTarget ? targetCurrency : null,
     };
 
     if (preset.needsDate || isPeriodic) {
@@ -395,7 +423,7 @@ export function GoalForm({
   };
 
   const example = activePreset.buildExample(
-    target > 0 ? formatter.format(toDecimal(target)) : 'X',
+    target > 0 ? targetFormatter.format(toDecimal(target)) : 'X',
     format(targetDate, 'MMM d, yyyy')
   );
 
@@ -509,8 +537,8 @@ export function GoalForm({
             <CalculatorCell
               value={target}
               onCommit={setTarget}
-              formatter={formatter.format}
-              localizer={formatter}
+              formatter={targetFormatter.format}
+              localizer={targetFormatter}
               inputAlign="center"
               placeholder={t`Enter amount`}
               zeroAsEmpty
@@ -534,6 +562,43 @@ export function GoalForm({
               {selectedPreset === 'target-balance' &&
                 t`The balance you want to build up in this category. Spending lowers it again.`}
             </p>
+            <div className="flex flex-wrap items-end gap-x-3 gap-y-1">
+              <div className="w-36 shrink-0">
+                <CurrencySelector
+                  value={targetCurrency}
+                  onValueChange={setTargetCurrency}
+                  label={t`Goal currency`}
+                  kind="fiat"
+                  compact
+                  needsConnection={false}
+                  data-testid="goal-currency-select"
+                />
+              </div>
+              {isForeignTarget ? (
+                <div className="min-w-0 flex-1 space-y-0.5 pb-1 text-xs text-muted-foreground">
+                  {ConversionPreview && target > 0 && (
+                    <ConversionPreview target={target} currency={targetCurrency} />
+                  )}
+                  <p>
+                    <Trans>
+                      Funding and progress use this amount in {budgetCurrency}, at the current rate.
+                    </Trans>{' '}
+                    <button
+                      type="button"
+                      className="underline underline-offset-2 hover:text-foreground"
+                      onClick={() => setTargetCurrency(budgetCurrency)}
+                      data-testid="goal-currency-reset"
+                    >
+                      <Trans>Use {budgetCurrency}</Trans>
+                    </button>
+                  </p>
+                </div>
+              ) : (
+                <p className="min-w-0 flex-1 pb-1 text-xs text-muted-foreground">
+                  <Trans>Saving for something priced in another currency? Pick it here.</Trans>
+                </p>
+              )}
+            </div>
           </div>
 
           {/* ── Target Date (yearly goals only) ── */}

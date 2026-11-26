@@ -6,6 +6,7 @@ import { Download, Database, FileText, AlertTriangle, Inbox, Upload, BellRing } 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useRuntime, useActiveSpace } from '@shared/runtime/runtime-provider';
+import { syncBudgetStateFromRuntime } from '@shared/runtime/budget-gate';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ConfirmDialog } from '@shared/ui/confirm-dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
@@ -235,19 +236,16 @@ export default function DataManagementPage() {
       const arrayBuffer = await selectedFile.arrayBuffer();
       const data = new Uint8Array(arrayBuffer);
 
-      const db = runtime.getDatabase();
-      if (!db) {
-        throw new Error('Database is not available');
-      }
-
-      // Hot swap the database, then bring an older backup up to the current
-      // schema (raw restore would leave the app operating on a stale schema).
-      if (!db.restoreAndMigrate) {
-        throw new Error('This build cannot migrate restored backups');
-      }
-      await db.restoreAndMigrate(data);
+      // Hot swap the database, bring an older backup up to the current schema
+      // and stamp its budgets with this workspace.
+      await runtime.restoreBackup(data);
 
       await queryClient.invalidateQueries();
+      // The backup's budgets replace the open one: select one of them.
+      const activeSpaceId = runtime.getActiveSpaceId();
+      if (activeSpaceId) {
+        syncBudgetStateFromRuntime({ runtime, queryClient, spaceId: activeSpaceId });
+      }
 
       // Finalize restore as out-of-band snapshot replacement.
       try {

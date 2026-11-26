@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import AppRouter from '@/app/router';
 import { Toaster as SonnerToaster } from '@shared/ui/sonner';
 import {
@@ -34,7 +34,8 @@ import { useSelfHostAuth } from '@shared/model/useSelfHostAuth';
 import { setGlobalTokenGetter } from '@shared/lib/clerk-token-manager';
 import { getRuntime } from '@shared/runtime/global';
 import { ChatBubble } from '@features/chat/ui/ChatBubble';
-import { ChatPanel } from '@features/chat/ui/chat-panel';
+import { useChatStore } from '@features/chat/model/useChatStore';
+import { lazyPage } from '@/app/lazy-page';
 import { TooltipProvider } from '@shared/ui/tooltip';
 import { UserPreferencesSync } from '@app/system/UserPreferencesSync';
 import { SyncedPreferencesSync } from '@app/system/SyncedPreferencesSync';
@@ -44,6 +45,24 @@ import { UndatedTransactionsCheck } from '@app/system/UndatedTransactionsCheck';
 import { STARTUP_INTENT_KEY } from '@shared/lib/pwa-constants';
 import { PersistedCalendarPreferencesProvider } from '@app/system/PersistedCalendarPreferencesProvider';
 import { PersistedAppearanceProvider } from '@app/system/PersistedAppearanceProvider';
+
+// The chat panel pulls in the AI SDK, DuckDB, charts and markdown: load it on
+// first open, then keep it mounted so a reply keeps streaming while closed.
+const ChatPanel = lazyPage(() =>
+  import('@features/chat/ui/chat-panel/ChatPanel').then((m) => ({ default: m.ChatPanel }))
+);
+
+function LazyChatPanel() {
+  const isOpen = useChatStore((state) => state.isOpen);
+  const [opened, setOpened] = useState(isOpen);
+  if (isOpen && !opened) setOpened(true);
+  if (!opened) return null;
+  return (
+    <React.Suspense fallback={null}>
+      <ChatPanel />
+    </React.Suspense>
+  );
+}
 
 const PWA_SHORTCUT_CHANNEL = 'budgero-pwa-shortcut-intent-v1';
 const PWA_SHORTCUT_HANDOFF_TIMEOUT_MS = 250;
@@ -324,7 +343,7 @@ function AppContentBase({ topSlot }: { topSlot?: React.ReactNode }) {
       <AppRouter />
       <AppErrorBoundary name="chat" variant="hidden">
         <ChatBubble />
-        <ChatPanel />
+        <LazyChatPanel />
       </AppErrorBoundary>
       <ReconnectionOverlay isVisible={isVisible} phase={phase} onComplete={hideOverlay} />
       <CurrencyConversionOverlay

@@ -217,7 +217,15 @@ export {
   MIN_GOAL_CYCLE_MONTHS,
   MAX_GOAL_CYCLE_MONTHS,
   GOAL_CYCLE_MONTHS_ERROR,
+  GOAL_CURRENCY_ERROR,
   GoalCalculations,
+  COMPUTED_GOAL_FIELDS,
+  goalRow,
+  isValidGoalCurrencyCode,
+  goalTargetCurrency,
+  goalTargetInBudgetCurrency,
+  goalInBudgetCurrency,
+  type GoalRateSource,
 } from './services/goals/index.js';
 export {
   FALLBACK_EFFECTIVE_FROM,

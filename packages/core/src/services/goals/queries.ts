@@ -24,14 +24,15 @@ export class GoalQueries {
     recurring = false,
     cycleMonths: number | null = null,
     effectiveFrom: string | null = null,
-    effectiveTo: string | null = null
+    effectiveTo: string | null = null,
+    targetCurrency: string | null = null
   ): number {
     const result = run(
       this.db,
       `
       INSERT INTO goals (Type, Purpose, CategoryID, Target, StartDate, TargetDate, Recurring, CycleMonths,
-                         EffectiveFrom, EffectiveTo)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                         EffectiveFrom, EffectiveTo, TargetCurrency)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
       type,
       purpose,
@@ -43,7 +44,8 @@ export class GoalQueries {
       // Never bind undefined — sql.js throws on unknown bind types.
       cycleMonths ?? null,
       effectiveFrom ?? null,
-      effectiveTo ?? null
+      effectiveTo ?? null,
+      targetCurrency ?? null
     );
     return Number(result.lastInsertRowid);
   }
@@ -90,6 +92,8 @@ export class GoalQueries {
       startDate: string;
       effectiveFrom: string | null;
       effectiveTo: string | null;
+      /** Null = the budget currency. */
+      targetCurrency: string | null;
     }
   ): void {
     run(
@@ -97,7 +101,7 @@ export class GoalQueries {
       `
       UPDATE goals
       SET Type = ?, Purpose = ?, Target = ?, TargetDate = ?, Recurring = ?, CycleMonths = ?,
-          StartDate = ?, EffectiveFrom = ?, EffectiveTo = ?
+          StartDate = ?, EffectiveFrom = ?, EffectiveTo = ?, TargetCurrency = ?
       WHERE ID = ?
     `,
       fields.type,
@@ -109,6 +113,7 @@ export class GoalQueries {
       fields.startDate,
       fields.effectiveFrom ?? null,
       fields.effectiveTo ?? null,
+      fields.targetCurrency ?? null,
       id
     );
   }

@@ -1267,6 +1267,8 @@ export function realize(device: Device, intent: Intent): OpCall | null {
           purpose: type === 'monthly' || type === 'yearly' ? 'spending' : 'savings',
           recurring: false,
           cycleMonths: null,
+          // Some goals target another currency (format 8).
+          ...(d % 3 === 0 ? { targetCurrency: 'GBP' } : {}),
         },
       };
     }
@@ -1287,6 +1289,7 @@ export function realize(device: Device, intent: Intent): OpCall | null {
               goalType: goal.Type,
               endDate: goal.Type === 'target-date' ? dateOf(d, 0) : '',
               purpose: goal.Purpose,
+              ...(b % 2 === 0 ? { targetCurrency: 'CHF' } : {}),
             },
           }
         : null;
@@ -1307,6 +1310,7 @@ export function realize(device: Device, intent: Intent): OpCall | null {
           purpose: 'spending',
           recurring: false,
           cycleMonths: null,
+          ...(d % 4 === 0 ? { targetCurrency: 'GBP' } : {}),
         },
       };
     }

@@ -156,7 +156,11 @@ export function runtimeMessageCode(message: string | undefined, event: string): 
   if (/constraint/i.test(text)) return 'db_constraint';
   if (/database is locked|sqlite_busy/i.test(text)) return 'db_locked';
   if (/malformed|not a database/i.test(text)) return 'db_corrupt';
-  if (/unauthori[sz]ed|\b401\b|session expired|accept this session/i.test(text))
+  if (
+    /unauthori[sz]ed|\b401\b|session expired|accept this session|valid_session|handshake rejected/i.test(
+      text
+    )
+  )
     return 'unauthorized';
   if (/forbidden|\b403\b/i.test(text)) return 'forbidden';
   if (/\b404\b|not found/i.test(text)) return 'not_found';
@@ -166,7 +170,12 @@ export function runtimeMessageCode(message: string | undefined, event: string): 
   if (/failed to fetch|network|websocket|connection|load failed/i.test(text)) return 'network';
   if (/snapshot_unavailable|no snapshot|snapshot.*(missing|unavailable)/i.test(text))
     return 'snapshot_unavailable';
-  if (/snapshot|blob|download|upload/i.test(text)) return 'snapshot_upload_failed';
+  // A replay that fell back to restoring a snapshot: a recovery, not a failed
+  // transfer (the event name says "snapshot", nothing was uploaded).
+  if (/fallback_snapshot|falling_back_to_full_snapshot/i.test(text)) return 'snapshot_fallback';
+  if (/upload/i.test(text)) return 'snapshot_upload_failed';
+  if (/re[-_ ]?apply/i.test(text)) return 'mutation_error';
+  if (/snapshot|blob|download|restore/i.test(text)) return 'snapshot_download_failed';
   if (/format|op code|opcode|newer than/i.test(text)) return 'format_too_new';
   if (/apply|mutation/i.test(text)) return 'mutation_error';
   return 'unknown';

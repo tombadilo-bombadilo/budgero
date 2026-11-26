@@ -565,10 +565,14 @@ export class DatabaseSync {
     }
   }
 
-  /** No sent-but-unconfirmed mutation and the cursor covers our own acks. */
+  /**
+   * No sent-but-unconfirmed mutation, the cursor covers our own acks, and the
+   * log is not being replayed or recovered right now.
+   */
   private isCaptureSafe(): boolean {
     if (this.deps.hasUnackedMutations?.()) return false;
     if (this.deps.isCursorBehindAcks?.()) return false;
+    if (this.deps.isReplayingLog?.()) return false;
     return true;
   }
 

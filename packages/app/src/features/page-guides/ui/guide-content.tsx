@@ -221,9 +221,10 @@ export function usePageGuideCards(id: PageGuideId): GuideCard[] {
         title: t`Search in plain words`,
         body: (
           <Trans>
-            Type in the search box above the list. Words like last month, outflows, uncleared or
-            over 50 and a category name become filters (these words are English); anything else is
-            looked up in payee, memo, category, label and account.
+            Type in the search box above the list. Words like last month, march, outflows, uncleared
+            or over 50 and a category name become filters (these words are English). Other words
+            must all appear in the payee, memo, category, label or account; put a minus in front to
+            leave something out. The (i) in the search box has examples.
           </Trans>
         ),
         visual: <SearchVisual />,

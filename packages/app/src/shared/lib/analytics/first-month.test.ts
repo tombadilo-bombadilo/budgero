@@ -16,6 +16,7 @@ vi.mock('@shared/runtime/global', () => ({
 type Modules = {
   track: typeof import('./track');
   fm: typeof import('./first-month');
+  timing: typeof import('./startup-timing');
 };
 
 let current: Modules | null = null;
@@ -26,7 +27,8 @@ async function load(): Promise<Modules> {
   vi.stubEnv('VITE_POSTHOG_KEY', 'phc_test');
   const track = await import('./track');
   const fm = await import('./first-month');
-  current = { track, fm };
+  const timing = await import('./startup-timing');
+  current = { track, fm, timing };
   return current;
 }
 
@@ -67,10 +69,58 @@ afterEach(() => {
 describe('first-month analytics', () => {
   it('reports app_opened once per day with days since signup', async () => {
     const m = await load();
+    m.timing.markAppUsable(1500);
     await signIn(m, new Date(Date.now() - 2 * DAY));
     m.fm.setFirstMonthUser('user_1', new Date(Date.now() - 2 * DAY).toISOString());
     await settle();
-    expect(captured('app_opened').map((c) => c.props.day)).toEqual(['2']);
+    expect(captured('app_opened').map((c) => c.props)).toEqual([
+      expect.objectContaining({ day: '2', usable_bucket: '1-3s' }),
+    ]);
+  });
+
+  it('holds the first app_opened until the app is usable', async () => {
+    const m = await load();
+    await signIn(m, new Date());
+    expect(captured('app_opened')).toHaveLength(0);
+    m.timing.markAppUsable(400);
+    m.timing.markAppUsable(9000);
+    await settle();
+    expect(captured('app_opened').map((c) => c.props.usable_bucket)).toEqual(['<1s']);
+  });
+
+  it('marks a load that waited on a sign-in or password screen as prompted', async () => {
+    const m = await load();
+    m.timing.noteStartupPrompt();
+    await signIn(m, new Date());
+    m.timing.markAppUsable(25_000);
+    await settle();
+    expect(captured('app_opened').map((c) => c.props.usable_bucket)).toEqual(['prompted']);
+  });
+
+  it('sends left_before when the tab is hidden before the app is usable', async () => {
+    const m = await load();
+    await signIn(m, new Date());
+    setVisibility('hidden');
+    m.timing.markAppUsable(2000);
+    setVisibility('visible');
+    await settle();
+    expect(captured('app_opened').map((c) => c.props.usable_bucket)).toEqual(['left_before']);
+  });
+
+  it('sends already_open for a later open in the same page load', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const m = await load();
+    m.timing.markAppUsable(5000);
+    await signIn(m, new Date());
+    // The next day, after a long break with the tab hidden.
+    setVisibility('hidden');
+    vi.setSystemTime(Date.now() + DAY);
+    setVisibility('visible');
+    await settle();
+    expect(captured('app_opened').map((c) => c.props.usable_bucket)).toEqual([
+      '3-10s',
+      'already_open',
+    ]);
   });
 
   it('sends nothing after the first month', async () => {
@@ -125,7 +175,7 @@ describe('first-month analytics', () => {
       outcome: 'ok',
       error_code: 'none',
       rows_bucket: '10-100',
-      duration_bucket: '<10s',
+      duration_bucket: '<1s',
     });
     window.dispatchEvent(new Event('pagehide'));
     window.dispatchEvent(new Event('pagehide'));

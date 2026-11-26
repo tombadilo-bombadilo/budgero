@@ -407,3 +407,81 @@ describe('GoalForm — timeframes', () => {
     expect(onSave.mock.calls[0][1]).toEqual({ from: '2026-08', to: '2026-08' });
   });
 });
+
+describe('GoalForm — goal currency', () => {
+  const monthlyEur: Goal = {
+    ID: 9,
+    Type: GoalType.MONTHLY,
+    Purpose: GoalPurpose.SPENDING,
+    CategoryID: 3,
+    Target: asMilli(250_000),
+    StartDate: '2026-01-01',
+    TargetCurrency: 'EUR',
+    TargetConverted: asMilli(270_000),
+    TargetRateSource: 'official',
+  };
+
+  const Preview = ({ target, currency }: { target: number; currency: string }) => (
+    <p data-testid="preview">
+      {currency} {target}
+    </p>
+  );
+
+  function renderWithCurrency(goal: Goal | null, onSave = vi.fn().mockResolvedValue(undefined)) {
+    render(
+      <GoalForm
+        goal={goal}
+        categoryId={3}
+        categoryName="Trip"
+        budgetId={1}
+        currentMonth="2026-08"
+        formatter={formatter}
+        budgetCurrency="USD"
+        numberFormat="$1,096.56"
+        ConversionPreview={Preview}
+        onSave={onSave}
+        onCancel={() => {}}
+      />
+    );
+    return onSave;
+  }
+
+  it('a new goal is in the budget currency and saves no currency', async () => {
+    const user = userEvent.setup();
+    const onSave = renderWithCurrency(null);
+    expect(screen.getByTestId('goal-currency-select')).toHaveTextContent('USD');
+    await user.click(screen.getByText('Enter amount'));
+    await user.keyboard('3{Enter}');
+    expect(screen.queryByTestId('preview')).not.toBeInTheDocument();
+    await submit(user);
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0][0]).toMatchObject({ Target: 3_000, TargetCurrency: null });
+  });
+
+  it('picking another currency formats the amount in it, previews it and saves it', async () => {
+    const user = userEvent.setup();
+    const onSave = renderWithCurrency(null);
+    await user.click(screen.getByTestId('goal-currency-select'));
+    await user.click(await screen.findByRole('option', { name: /GBP/ }));
+    expect(screen.getByTestId('goal-currency-select')).toHaveTextContent('GBP');
+    await user.click(screen.getByText('Enter amount'));
+    await user.keyboard('9{Enter}');
+    expect(screen.getByText('£9.00')).toBeInTheDocument();
+    expect(screen.getByTestId('preview')).toHaveTextContent('GBP 9000');
+    await submit(user);
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0][0]).toMatchObject({ Target: 9_000, TargetCurrency: 'GBP' });
+  });
+
+  it('editing a goal in another currency keeps it, and "Use" switches back', async () => {
+    const user = userEvent.setup();
+    const onSave = renderWithCurrency(monthlyEur);
+    expect(screen.getByTestId('goal-currency-select')).toHaveTextContent('EUR');
+    expect(screen.getByText('€250.00')).toBeInTheDocument();
+    await user.click(screen.getByTestId('goal-currency-reset'));
+    expect(screen.getByTestId('goal-currency-select')).toHaveTextContent('USD');
+    await submit(user);
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onSave.mock.calls[0][0]).toMatchObject({ Target: 250_000, TargetCurrency: null });
+  });
+});

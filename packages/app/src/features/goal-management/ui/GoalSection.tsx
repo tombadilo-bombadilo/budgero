@@ -18,7 +18,7 @@ import { RadioGroup, RadioGroupItem } from '@shared/ui/radio-group';
 import { Label } from '@shared/ui/label';
 import { GoalCard } from '@features/goal-management/ui/GoalCard';
 import { GoalForm } from '@features/goal-management/ui/GoalForm';
-import type { Goal } from '@budgero/core/browser';
+import type { Goal, MilliUnits } from '@budgero/core/browser';
 import {
   dispatchGoalWalkthrough,
   useGoalWalkthroughFormHint,
@@ -33,6 +33,7 @@ import {
 } from '../lib/goal-timeframe';
 import { goalMonthLabel, useGoalRangeLabel } from '../lib/goal-timeframe-labels';
 import { GoalTimeframeNotices } from './GoalTimeframeFields';
+import { GoalConversionPreview } from './GoalConversionPreview';
 
 interface GoalSectionProps {
   categoryId: number;
@@ -99,6 +100,26 @@ export function GoalSection({
   const deleteGoalMutation = useDeleteGoal();
 
   const currencyCode = formatter.resolvedOptions().currency;
+  const selectedBudget = useUiStore((state) => state.selectedBudget);
+  const budgetCurrency = selectedBudget?.DisplayCurrency ?? currencyCode ?? 'USD';
+  const numberFormat = selectedBudget?.NumberFormat;
+  // Stable per category/budget, so the form doesn't remount its preview on every render.
+  const ConversionPreview = useMemo(
+    () =>
+      function Preview({ target, currency }: { target: MilliUnits; currency: string }) {
+        return (
+          <GoalConversionPreview
+            target={target}
+            currency={currency}
+            categoryId={categoryId}
+            budgetId={budgetId}
+            budgetCurrency={budgetCurrency}
+            formatter={formatter}
+          />
+        );
+      },
+    [categoryId, budgetId, budgetCurrency, formatter]
+  );
   const financialsWithCurrency = categoryFinancials
     ? { ...categoryFinancials, currencyCode }
     : { ...finances, currencyCode };
@@ -114,6 +135,7 @@ export function GoalSection({
       targetDate: goalData.TargetDate || new Date().toISOString(),
       recurring: goalData.Recurring,
       cycleMonths: goalData.CycleMonths,
+      targetCurrency: goalData.TargetCurrency ?? null,
     };
     const action = goalSaveAction(goal, timeframes, timeframe, currentMonth);
     try {
@@ -260,6 +282,9 @@ export function GoalSection({
             budgetId={budgetId}
             currentMonth={currentMonth}
             formatter={formatter}
+            budgetCurrency={budgetCurrency}
+            numberFormat={numberFormat}
+            ConversionPreview={ConversionPreview}
             onSave={handleSave}
             onCancel={() => {
               setFormOpen(false);

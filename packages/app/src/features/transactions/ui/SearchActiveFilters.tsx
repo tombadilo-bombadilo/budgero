@@ -7,17 +7,20 @@ import {
   ArrowUpRight,
   ArrowLeftRight,
   Tag,
-  Tags,
+  Folder,
+  Store,
+  StickyNote,
+  Wallet,
   Search,
+  SearchX,
   Coins,
   CircleCheck,
+  ListFilter,
 } from 'lucide-react';
 import { Button } from '@shared/ui/button';
 import { Badge } from '@shared/ui/badge';
 import {
-  getTransactionTypeLabel,
   getAmountFilterLabel,
-  getClearedStatusLabel,
   type ParsedSearchQuery,
   type MatchedToken,
 } from '@shared/lib/search-query-parser';
@@ -44,103 +47,97 @@ export const SearchActiveFilters = React.memo(function SearchActiveFilters({
     return null;
   }
 
-  const getTokenIcon = (type: MatchedToken['type']) => {
-    switch (type) {
+  const getTokenIcon = (token: MatchedToken) => {
+    switch (token.type) {
       case 'date':
         return Calendar;
       case 'transactionType':
-        return parsed.transactionType === 'outflows'
+        return token.transactionType === 'outflows'
           ? ArrowDownRight
-          : parsed.transactionType === 'inflows'
+          : token.transactionType === 'inflows'
             ? ArrowUpRight
             : ArrowLeftRight;
+      // Same icons as the suggestions list and the Label column toggle.
       case 'category':
-        return Tag;
+        return Folder;
       case 'label':
-        return Tags;
+        return Tag;
       case 'amount':
         return Coins;
       case 'status':
         return CircleCheck;
+      case 'state':
+        return ListFilter;
+      case 'text':
+        switch (token.field) {
+          case 'category':
+            return Folder;
+          case 'label':
+            return Tag;
+          case 'payee':
+            return Store;
+          case 'memo':
+            return StickyNote;
+          case 'account':
+            return Wallet;
+          default:
+            return token.negated ? SearchX : Search;
+        }
     }
   };
 
   const getTokenLabel = (token: MatchedToken) => {
-    switch (token.type) {
-      case 'date':
-        return parsed.dateLabel || token.text;
-      case 'transactionType':
-        return parsed.transactionType
-          ? getTransactionTypeLabel(parsed.transactionType)
-          : token.text;
-      case 'category': {
-        const matchedCategory = parsed.categoryMatches.find(
-          (cat) =>
-            cat.toLowerCase().includes(token.text.toLowerCase()) ||
-            token.text.toLowerCase().startsWith(cat.toLowerCase().substring(0, 3))
-        );
-        return matchedCategory || token.text;
-      }
-      case 'label': {
-        const raw = token.text.replace(/^label:/i, '').trim();
-        const matchedLabel = parsed.labelMatches.find(
-          (label) =>
-            label.toLowerCase().includes(raw.toLowerCase()) ||
-            raw.toLowerCase().includes(label.toLowerCase())
-        );
-        return matchedLabel ? t`Label: ${matchedLabel}` : t`Label: ${raw}`;
-      }
-      case 'amount':
-        // Use the token's own amountFilter data
-        return token.amountFilter
-          ? getAmountFilterLabel(token.amountFilter, currencyFormatter)
-          : token.text;
-      case 'status':
-        return parsed.clearedStatus ? getClearedStatusLabel(parsed.clearedStatus) : token.text;
+    if (token.type === 'amount' && token.amountFilter) {
+      return getAmountFilterLabel(token.amountFilter, currencyFormatter);
     }
+    return token.label ?? token.text;
   };
 
-  const getTokenStyles = (type: MatchedToken['type']) => {
-    switch (type) {
+  const getTokenStyles = (token: MatchedToken) => {
+    if (token.negated) {
+      return 'bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20 hover:bg-red-500/20';
+    }
+    switch (token.type) {
       case 'date':
         return 'bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20 hover:bg-blue-500/20';
       case 'transactionType':
-        if (parsed.transactionType === 'outflows') {
+        if (token.transactionType === 'outflows') {
           return 'bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/20 hover:bg-orange-500/20';
         }
-        if (parsed.transactionType === 'inflows') {
+        if (token.transactionType === 'inflows') {
           return 'bg-green-500/10 text-green-700 dark:text-green-300 border-green-500/20 hover:bg-green-500/20';
         }
         return 'bg-purple-500/10 text-purple-700 dark:text-purple-300 border-purple-500/20 hover:bg-purple-500/20';
-      case 'category':
-        return 'bg-muted text-foreground border-border hover:bg-muted/80';
       case 'label':
         return 'bg-teal-500/10 text-teal-700 dark:text-teal-300 border-teal-500/20 hover:bg-teal-500/20';
       case 'amount':
         return 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-300 border-yellow-500/20 hover:bg-yellow-500/20';
+      default:
+        return 'bg-muted text-foreground border-border hover:bg-muted/80';
     }
   };
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       {parsed.matchedTokens.map((token, index) => {
-        const Icon = getTokenIcon(token.type);
+        const Icon = getTokenIcon(token);
+        const label = getTokenLabel(token);
         return (
           <Badge
-            key={`${token.type}-${token.text}-${index}`}
+            key={`${token.type}-${token.start}-${index}`}
             variant="outline"
             className={cn(
               'flex items-center gap-1.5 pr-1 text-xs font-medium',
-              getTokenStyles(token.type)
+              getTokenStyles(token)
             )}
           >
             <Icon className="h-3 w-3" />
-            <span>{getTokenLabel(token)}</span>
+            <span>{label}</span>
             <button
               type="button"
               onClick={() => onRemoveToken(token)}
               className="ml-0.5 rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
-              aria-label={t`Remove ${getTokenLabel(token)} filter`}
+              aria-label={t`Remove ${label} filter`}
             >
               <X className="h-3 w-3" />
             </button>

@@ -20,6 +20,30 @@ export type CountBucket = (typeof COUNT_BUCKETS)[number];
 export const DURATION_BUCKETS = ['<10s', '10-60s', '1-5m', '5-15m', '15m+'] as const;
 export type DurationBucket = (typeof DURATION_BUCKETS)[number];
 
+/**
+ * DURATION_BUCKETS with '<10s' split into '<1s', '1-3s' and '3-10s', for
+ * things that usually take seconds (workspace open, imports, startup). The
+ * three add up to the old '<10s', so charts across the switch (v1.23) still
+ * compare: events before it only have '<10s'.
+ */
+export const TIMING_BUCKETS = ['<1s', '1-3s', '3-10s', '10-60s', '1-5m', '5-15m', '15m+'] as const;
+export type TimingBucket = (typeof TIMING_BUCKETS)[number];
+
+/**
+ * app_opened's time until the app is usable (startup-timing.ts): a
+ * TIMING_BUCKETS value, or why there is none. 'prompted': a screen waited on
+ * the person first (sign-in, onboarding, master password, workspace/budget
+ * choice, error); 'already_open': not this page load's first app_opened;
+ * 'left_before': hidden or closed before it was usable.
+ */
+export const USABLE_BUCKETS = [
+  ...TIMING_BUCKETS,
+  'prompted',
+  'already_open',
+  'left_before',
+] as const;
+export type UsableBucket = (typeof USABLE_BUCKETS)[number];
+
 export const AGE_BUCKETS = ['<1h', '1-24h', '1d+'] as const;
 export type AgeBucket = (typeof AGE_BUCKETS)[number];
 
@@ -76,6 +100,9 @@ export const ERROR_CODES = [
   'mutation_quarantined',
   'snapshot_unavailable',
   'snapshot_upload_failed',
+  'snapshot_download_failed',
+  // a catch-up replay fell back to restoring a server snapshot
+  'snapshot_fallback',
   'queue_persist_failed',
   // local database (SQLite failure class, never the message)
   'db_constraint',
@@ -465,7 +492,9 @@ export const EVENT_SCHEMA = {
   demo_start_own_clicked: NONE,
 
   // First month (first-month.ts)
-  app_opened: { day: SIGNUP_DAY_BUCKETS },
+  // usable_bucket: time from navigation start until the first screen's data
+  // is shown (see USABLE_BUCKETS), since v1.23.
+  app_opened: { day: SIGNUP_DAY_BUCKETS, usable_bucket: USABLE_BUCKETS },
   activation_milestone: { milestone: ACTIVATION_MILESTONES, day: SIGNUP_DAY_BUCKETS },
   session_summary: {
     day: SIGNUP_DAY_BUCKETS,
@@ -498,7 +527,7 @@ export const EVENT_SCHEMA = {
     outcome: OUTCOMES,
     error_code: ERROR_CODES,
     rows_bucket: COUNT_BUCKETS,
-    duration_bucket: DURATION_BUCKETS,
+    duration_bucket: TIMING_BUCKETS,
   },
 
   // A YNAB import whose verification found differences: the review screen's
@@ -626,7 +655,7 @@ export const EVENT_SCHEMA = {
     outcome: OK_ERROR,
     path: ACTIVATION_PATHS,
     error_code: ERROR_CODES,
-    duration_bucket: DURATION_BUCKETS,
+    duration_bucket: TIMING_BUCKETS,
   },
   update_required_shown: NONE,
   money_integrity_warning_shown: { kind: MONEY_INTEGRITY_KINDS },
@@ -702,6 +731,14 @@ export function durationBucket(ms: number): DurationBucket {
   if (s < 300) return '1-5m';
   if (s < 900) return '5-15m';
   return '15m+';
+}
+
+export function timingBucket(ms: number): TimingBucket {
+  const s = Number.isFinite(ms) ? ms / 1000 : 0;
+  if (s < 1) return '<1s';
+  if (s < 3) return '1-3s';
+  if (s < 10) return '3-10s';
+  return durationBucket(ms) as Exclude<DurationBucket, '<10s'>;
 }
 
 export function ageBucket(ms: number): AgeBucket {

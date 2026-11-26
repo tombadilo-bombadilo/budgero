@@ -22,6 +22,8 @@ interface Account {
   Name?: string;
   Type?: string;
   Currency?: string;
+  /** Native balance as shown on the page (scheduled future rows removed). */
+  Balance?: number;
   BalanceNative?: number;
   BalanceConverted?: number;
   Metadata?: string | Record<string, unknown>;
@@ -42,7 +44,12 @@ interface AccountGroupSectionProps {
   periodMonths: number;
   chartColor: string;
   isLiability?: boolean;
+  /** Formats a budget-currency milliunit amount (totals, same-currency accounts). */
   formatCurrency: (value: number) => string;
+  /** The budget's currency; accounts in another currency show their own balance first. */
+  budgetCurrency?: string;
+  /** Formats a milliunit amount in `currency` (the account's own format). */
+  formatInCurrency?: (currency: string, value: number) => string;
 }
 
 function getAccountTypeStyle(acc: {
@@ -85,6 +92,8 @@ export function AccountGroupSection({
   chartColor,
   isLiability = false,
   formatCurrency,
+  budgetCurrency,
+  formatInCurrency,
 }: AccountGroupSectionProps) {
   if (accounts.length === 0) return null;
 
@@ -121,7 +130,10 @@ export function AccountGroupSection({
                   </div>
                 </div>
               </div>
-              <div className="text-sm sm:text-xl font-bold tabular-nums shrink-0">
+              <div
+                className="text-sm sm:text-xl font-bold tabular-nums shrink-0"
+                data-testid="account-group-total"
+              >
                 {formatCurrency(isLiability ? Math.abs(total) : total)}
               </div>
             </div>
@@ -132,6 +144,14 @@ export function AccountGroupSection({
             {accounts.map((account) => {
               const { bgColor, Icon } = getAccountTypeStyle(account);
               const balance = account.BalanceConverted ?? account.BalanceNative ?? 0;
+              const nativeBalance = account.Balance ?? account.BalanceNative ?? 0;
+              // Foreign-currency accounts lead with their own balance (what the
+              // bank shows); the budget-currency value is what totals add up.
+              const showNative =
+                !!formatInCurrency &&
+                !!budgetCurrency &&
+                !!account.Currency &&
+                account.Currency !== budgetCurrency;
 
               return (
                 <Link key={account.ID} to={`/accounts/${account.ID}`}>
@@ -172,9 +192,29 @@ export function AccountGroupSection({
                         />
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-xs sm:text-base tabular-nums">
-                          {formatCurrency(isLiability ? Math.abs(balance) : balance)}
-                        </div>
+                        {showNative ? (
+                          <>
+                            <div
+                              className="font-bold text-xs sm:text-base tabular-nums"
+                              data-testid="account-native-balance"
+                            >
+                              {formatInCurrency(
+                                account.Currency!,
+                                isLiability ? Math.abs(nativeBalance) : nativeBalance
+                              )}
+                            </div>
+                            <div
+                              className="text-[0.625rem] sm:text-xs text-muted-foreground tabular-nums"
+                              data-testid="account-converted-balance"
+                            >
+                              ≈ {formatCurrency(isLiability ? Math.abs(balance) : balance)}
+                            </div>
+                          </>
+                        ) : (
+                          <div className="font-bold text-xs sm:text-base tabular-nums">
+                            {formatCurrency(isLiability ? Math.abs(balance) : balance)}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

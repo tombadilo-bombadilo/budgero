@@ -92,6 +92,15 @@ const AUTH_RETRY_BASE_MS = 2_000;
 
 const AUTH_RETRY_MAX_MS = 5 * 60_000;
 
+/**
+ * How long sync may wait for a session before it is reported as an error.
+ * Shorter waits are routine: the token getter is not registered yet during
+ * startup, a token refresh or the API health check is still in flight after
+ * a wake from sleep, or the network is briefly gone. They recover on their
+ * own (retryNow on auth change, backoff), so they are only logged.
+ */
+const AUTH_STUCK_REPORT_MS = 2 * 60_000;
+
 function isPageHidden(): boolean {
   return typeof document !== 'undefined' && document.visibilityState === 'hidden';
 }
@@ -140,6 +149,16 @@ export class SyncTransport {
 
   /** Which syncError (if any) this transport set for an auth problem. */
   private authErrorShown: SyncError | null = null;
+
+  /**
+   * Clock for the stuck-session report: when it started and the failures
+   * counted since. Restarted when the page becomes visible again, so time
+   * spent hidden or asleep (no retries) does not count as being stuck.
+   */
+  private authStuckClock = { since: 0, failures: 0 };
+
+  /** The current run of auth failures was already reported as stuck. */
+  private authStuckReported = false;
 
   /** A reconnect was wanted while the page was hidden; run it on visible. */
   private reconnectDeferredWhileHidden = false;
@@ -283,6 +302,16 @@ export class SyncTransport {
 
   isCatchUpInProgress(): boolean {
     return this.catchUpInProgress;
+  }
+
+  /**
+   * Replaying the log or recovering from a replay that failed (snapshot
+   * restore running). The local DB is mid-way between two log positions, or
+   * known to be inconsistent and about to be replaced: not something to
+   * publish as a snapshot.
+   */
+  isReplayingLog(): boolean {
+    return this.catchUpInProgress || this.catchUpRecoveryInProgress;
   }
 
   hasInitialCatchUpSettled(): boolean {
@@ -752,6 +781,8 @@ export class SyncTransport {
   // ---- Internals ----
 
   private resumeAfterHidden(): void {
+    // Hidden time had no retries: start the stuck-session clock over.
+    this.authStuckClock = { since: 0, failures: 0 };
     if (!this.reconnectDeferredWhileHidden && !this.reconnectTimer) return;
     // Back in the foreground: try now (with a fresh token) rather than
     // waiting out a backoff that grew while nobody was looking.
@@ -760,8 +791,28 @@ export class SyncTransport {
 
   private noteAuthFailure(error: SyncError, reason: string): void {
     this.authFailures += 1;
-    if (this.authFailures === 1 || this.authFailures === AUTH_FAILURES_BEFORE_SURFACING) {
-      this.log('warn', 'Sync connection waiting for a valid session', {
+    const now = Date.now();
+    if (this.authStuckClock.failures === 0) this.authStuckClock.since = now;
+    this.authStuckClock.failures += 1;
+    const waitedMs = now - this.authStuckClock.since;
+    const visible = !isPageHidden();
+    if (
+      !this.authStuckReported &&
+      visible &&
+      this.authStuckClock.failures >= AUTH_FAILURES_BEFORE_SURFACING &&
+      waitedMs >= AUTH_STUCK_REPORT_MS
+    ) {
+      // Still no usable session after minutes of retries while someone is
+      // looking: real auth breakage, worth an error report (once per run).
+      this.authStuckReported = true;
+      this.log('warn', 'Sync still waiting for a valid session', {
+        reason,
+        attempts: this.authFailures,
+        waitedMs,
+        spaceId: this.spaceId,
+      });
+    } else if (this.authFailures === 1 || this.authFailures === AUTH_FAILURES_BEFORE_SURFACING) {
+      this.log('info', 'Sync connection waiting for a valid session', {
         reason,
         attempts: this.authFailures,
         spaceId: this.spaceId,
@@ -771,7 +822,7 @@ export class SyncTransport {
     if (
       this.authFailures >= AUTH_FAILURES_BEFORE_SURFACING &&
       this.authErrorShown?.code !== error.code &&
-      !isPageHidden()
+      visible
     ) {
       this.authErrorShown = error;
       this.updateSyncStatus({ isSyncing: false, syncError: error });
@@ -780,6 +831,8 @@ export class SyncTransport {
 
   private clearAuthFailures(): void {
     this.authFailures = 0;
+    this.authStuckClock = { since: 0, failures: 0 };
+    this.authStuckReported = false;
     if (this.authErrorShown) {
       if (this.syncStatus.syncError?.code === this.authErrorShown.code) {
         this.updateSyncStatus({ syncError: null });

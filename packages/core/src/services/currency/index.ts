@@ -1080,6 +1080,19 @@ export class CurrencyService {
         this.pruneRateCache(budgetId);
       },
     });
+    // Split lines are not re-converted with their parents: rescale them, or
+    // they keep amounts in the old currency.
+    this.resyncBudgetSplitLines(budgetId);
+  }
+
+  /** Rescale every split parent's lines in the budget onto the parent's amounts. */
+  private resyncBudgetSplitLines(budgetId: number): void {
+    const accounts = allRows<{ ID: number }>(
+      this.db,
+      'SELECT ID FROM accounts WHERE BudgetID = ?',
+      budgetId
+    );
+    this.transactionQueries.resyncSplitLinesForAccounts(accounts.map((a) => a.ID));
   }
 
   /**
@@ -1103,9 +1116,11 @@ export class CurrencyService {
     });
     if (lookups.length === 0) return 0;
     await resolveLookups(lookups, book, this.rateSource(budgetId));
-    return this.db.transaction(() =>
-      repairBudgetCurrencyConversions(this.db, budgetId, toCurrency, book)
-    );
+    return this.db.transaction(() => {
+      const repaired = repairBudgetCurrencyConversions(this.db, budgetId, toCurrency, book);
+      this.resyncBudgetSplitLines(budgetId);
+      return repaired;
+    });
   }
 
   /**

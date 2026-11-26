@@ -1,4 +1,4 @@
-import { currencyDisplayFor } from '@shared/lib/number-format';
+import { currencyDisplayFor, numberFormatLike } from '@shared/lib/number-format';
 import { AccountTypeLabel } from '@entities/account/ui/AccountTypeLabel';
 import { Trans, useLingui } from '@lingui/react/macro';
 import React, { useState } from 'react';
@@ -78,7 +78,7 @@ export function AddAccountDialog({
   const accountCurrencyFormatter = React.useMemo(() => {
     const resolvedOptions = globalLocalizer.resolvedOptions();
     try {
-      return new Intl.NumberFormat(resolvedOptions.locale, {
+      return numberFormatLike(globalLocalizer, {
         style: 'currency',
         currency,
         currencyDisplay: currencyDisplayFor(currency),
@@ -87,7 +87,7 @@ export function AddAccountDialog({
       });
     } catch {
       // Non-ISO codes (crypto tickers) — plain decimals with a code suffix.
-      const base = new Intl.NumberFormat(resolvedOptions.locale, {
+      const base = numberFormatLike(globalLocalizer, {
         maximumFractionDigits: 8,
       });
       return {

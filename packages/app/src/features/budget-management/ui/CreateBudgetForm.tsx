@@ -684,18 +684,10 @@ const CreateBudgetForm: React.FC<CreateBudgetFormProps> = ({
     try {
       const arrayBuffer = await coreFile.arrayBuffer();
       const data = new Uint8Array(arrayBuffer);
-      const db = runtime.getDatabase();
-      if (!db) {
-        throw new Error('Database not initialized');
-      }
-
-      // Hot swap the database, then bring an older backup up to the current
-      // schema — including the float → integer-milliunit money migration
-      // (raw restore would leave stale float amounts that fail validation).
-      if (!db.restoreAndMigrate) {
-        throw new Error('This build cannot migrate restored backups');
-      }
-      await db.restoreAndMigrate(data);
+      // Hot swap the database, bring an older backup up to the current schema
+      // (including the float → integer-milliunit money migration) and stamp
+      // its budgets with this workspace.
+      await runtime.restoreBackup(data);
       await queryClient.invalidateQueries();
       const activeSpaceId = runtime.getActiveSpaceId();
       if (activeSpaceId) {

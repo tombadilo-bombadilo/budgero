@@ -47,12 +47,23 @@ const MIN_WIDTHS: ColumnWidths = {
 
 const STORAGE_KEY = 'transaction-table-column-widths';
 
-export function useColumnResize(
-  hideAccountColumn: boolean,
+export interface ColumnVisibility {
+  hideAccountColumn: boolean;
+  showBalanceColumn?: boolean;
+  showExchangeRateColumn?: boolean;
+  showLabelColumn?: boolean;
+  showMemoColumn?: boolean;
+  showPayeeColumn?: boolean;
+}
+
+export function useColumnResize({
+  hideAccountColumn,
   showBalanceColumn = false,
   showExchangeRateColumn = false,
-  showLabelColumn = true
-) {
+  showLabelColumn = true,
+  showMemoColumn = true,
+  showPayeeColumn = true,
+}: ColumnVisibility) {
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -94,9 +105,9 @@ export function useColumnResize(
   const totalWidth =
     columnWidths.checkbox +
     columnWidths.date +
-    columnWidths.memo +
+    (showMemoColumn ? columnWidths.memo : 0) +
     (hideAccountColumn ? 0 : columnWidths.account) +
-    columnWidths.payee +
+    (showPayeeColumn ? columnWidths.payee : 0) +
     (showLabelColumn ? columnWidths.label : 0) +
     columnWidths.category +
     columnWidths.inflow +

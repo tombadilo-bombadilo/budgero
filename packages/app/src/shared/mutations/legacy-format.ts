@@ -86,6 +86,32 @@ const carriesGoalTimeframeColumns = (args: Args): boolean =>
   });
 
 /**
+ * Format 8: the first format v1.22 builds reject. A goal's target can be in
+ * another currency than the budget's (goals.TargetCurrency, migration 083);
+ * v1.22 would store such a target as a budget-currency amount.
+ */
+const GOAL_CURRENCIES = 8;
+
+/** Goal ops whose `targetCurrency` arg sets the target's currency. */
+const GOAL_CURRENCY_OPS = new Set(['goals.create', 'goals.update', 'goals.setFrom']);
+
+/**
+ * Format 8 when a call sets a goal target in another currency, restores a
+ * goal row that has one, or carries undo data with the column (v1.22 row
+ * journal restores refuse unknown columns; journals leave the column out of
+ * deleted rows while it is NULL, so plain goal deletes stay restorable there).
+ */
+const needsGoalCurrencyFormat = (op: string, args: Args): boolean => {
+  if (GOAL_CURRENCY_OPS.has(op) && typeof args.targetCurrency === 'string' && args.targetCurrency) {
+    return true;
+  }
+  if (args.journal && typeof args.journal === 'object') {
+    if (JSON.stringify(args.journal).includes('"TargetCurrency":')) return true;
+  }
+  return JSON.stringify(args).includes('"TargetCurrency":"');
+};
+
+/**
  * Format 7: the first format builds without transaction times (v1.21.x)
  * reject. Only calls that write a time of day need it (see TIME_FORMAT_RULES).
  */
@@ -712,7 +738,8 @@ export function withLegacyFormat(op: string, args: Args): Args {
   }
   const rule = LEGACY_FORMAT_RULES[op] as LegacyRule | undefined;
   const timeRule = TIME_FORMAT_RULES[op];
-  if (!rule && !timeRule && !carriesGoalTimeframeColumns(rest)) {
+  const goalCurrency = needsGoalCurrencyFormat(op, rest);
+  if (!rule && !timeRule && !carriesGoalTimeframeColumns(rest) && !goalCurrency) {
     return Array.isArray(rest.ops) || REQUIRES_FORMAT_ARG in args ? rest : args;
   }
   let needed: boolean | number = false;
@@ -723,6 +750,7 @@ export function withLegacyFormat(op: string, args: Args): Args {
   }
   let wanted = needed === true ? NEWER_THAN_V1_18 : typeof needed === 'number' ? needed : 0;
   if (carriesGoalTimeframeColumns(rest)) wanted = Math.max(wanted, GOAL_TIMEFRAMES);
+  if (goalCurrency) wanted = Math.max(wanted, GOAL_CURRENCIES);
   try {
     if (timeRule?.(rest)) wanted = Math.max(wanted, NEWER_THAN_V1_22);
   } catch {

@@ -607,6 +607,30 @@ describe('DatabaseSync', () => {
       expect(deps.uploadBlob).toHaveBeenCalledTimes(1);
     });
 
+    it('waits while the log is being replayed or recovered', async () => {
+      // 2026-11-24: the startup rate refresh uploaded an out-of-band snapshot
+      // one second after a catch-up replay had failed, while the snapshot
+      // restore was still running: the DB the replay could not apply to was
+      // published, bound to a lower log position than the blob before it.
+      encrypt();
+      const { db, deps } = createDeps();
+      let replaying = true;
+      const sync = new DatabaseSync('s1', {
+        ...deps,
+        isReplayingLog: () => replaying,
+        uploadPolicy: { outOfBandPollMs: 1, outOfBandWaitMs: 1_000 },
+      } as never);
+      const done = sync.upload({ outOfBand: true });
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      expect(deps.uploadBlob).not.toHaveBeenCalled();
+      await expect(sync.upload()).rejects.toBeInstanceOf(UploadDeferredError);
+      expect(db.backup).not.toHaveBeenCalled();
+      replaying = false;
+      await done;
+      expect(deps.uploadBlob).toHaveBeenCalledTimes(1);
+      expect(deps.uploadBlob.mock.calls[0][5]).toBe(true);
+    });
+
     it('gives up instead of uploading a mislabelled snapshot', async () => {
       encrypt();
       const { deps } = createDeps();

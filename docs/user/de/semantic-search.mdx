@@ -1,19 +1,223 @@
 ---
 title: "Transaktionen durchsuchen"
-summary: "Finde jede Transaktion, indem du einfach eintippst, was du meinst. Die Suche im Register versteht Datumsangaben, Einnahmen und Ausgaben, den Buchungsstatus, Kategorien, Labels und Beträge – und durchsucht alles andere als Freitext."
+summary: "Finde jede Transaktion, indem du einfach eintippst, was du meinst. Die Suche im Register versteht Datumsangaben, Einnahmen und Ausgaben, den Buchungsstatus, Kategorien, Labels, Empfänger, Beträge und Zustände wie aufgeteilt oder anstehend, schlägt beim Tippen Namen vor, durchsucht auf Wunsch nur ein Feld oder lässt etwas weg und gleicht alles andere Wort für Wort ab."
 section: getting-started
 topicId: semantic-search
 takeaways:
-  - "Welche Wörter das Suchfeld in Filter umwandelt und wie sie sich kombinieren."
-  - "Transaktionen nach Betrag finden mit over, under und exactly (oder >, <, =)."
-  - "Wie Freitext, Kategorien und Labels abgeglichen werden, plus die Schnellfilter Nicht gebucht und Ohne Kategorie."
+  - "Welche Wörter das Suchfeld in Filter umwandelt, wie sie sich kombinieren, und eine Tabelle mit Beispielsuchen nach Aufgabe."
+  - "Jede Datumsform (today, last 30 days, march 2025, 2026-10, since/after/before, between … and …) und jede Betragsform (over 50, < 20, =42.50, between 20 and 50)."
+  - "Ein einzelnes Feld durchsuchen mit payee:, memo:, account:, category: und label:, genaue Ausdrücke in Anführungszeichen, etwas weglassen mit einem Minus oder not und Namen aus den Vorschlägen wählen, damit die Anführungszeichen automatisch gesetzt werden."
 ---
 
-Jedes Kontoregister und **Alle Transaktionen** haben über der Tabelle ein Suchfeld. Tippe ein, wonach du suchst – `groceries last month`, `outflows over 100`, `uncleared` – und Budgero wandelt die Wörter, die es erkennt, in Filter um. Jeder erkannte Filter erscheint als Chip unter dem Feld; klicke auf sein **×**, um ihn zu entfernen. Alles, was übrig bleibt, wird als Freitext gesucht.
+Jedes Kontoregister und **Alle Transaktionen** haben über der Tabelle ein Suchfeld. Tippe ein, wonach du suchst – `groceries last month`, `outflows over 100`, `uncleared` – und Budgero wandelt die Wörter, die es erkennt, in Filter um. Jeder erkannte Filter erscheint als Chip unter dem Feld; klicke auf sein **×**, um ihn zu entfernen. Die übrigen Wörter werden als Freitext gesucht.
 
-Alle Filter lassen sich kombinieren: `Dining out last month over 30` zeigt Transaktionen der Kategorie Dining out aus dem letzten Monat, die über 30 liegen.
+Du weißt nicht, was du eintippen sollst? Wähle das **(i)** rechts im Suchfeld. Es erklärt die Suche in wenigen Zeilen und hat Beispiele, die du mit einem Klick ausprobieren kannst, dazu einen Link auf diese Seite.
 
-Die Filterwörter sind englische Schlüsselwörter – ganz gleich, in welcher Sprache die App eingestellt ist.
+Alle Filter kombinieren sich, und jeder davon muss zutreffen: `Dining out last month over 30` zeigt Transaktionen der Kategorie Dining out aus dem letzten Monat über 30.
+
+Die Filterwörter sind vorerst Englisch, egal in welcher Sprache die App läuft. Groß- und Kleinschreibung spielen nie eine Rolle: `Last Month`, `LAST MONTH` und `last month` sind dasselbe.
+
+## Beispiele nach Aufgabe
+
+### Ausgaben finden
+
+<table>
+  <thead>
+    <tr>
+      <th>Eingabe</th>
+      <th>Findet</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>groceries last month</code></td><td>Transaktionen des letzten Monats in der Kategorie Groceries</td></tr>
+    <tr><td><code>outflows this month over 100</code></td><td>Geld, das diesen Monat hinausging, in Beträgen über 100</td></tr>
+    <tr><td><code>"Dining out" last 30 days</code></td><td>Die Kategorie Dining out in den letzten 30 Tagen</td></tr>
+    <tr><td><code>outflows -category:rent -category:"Car loan" this year</code></td><td>Die Ausgaben dieses Jahres ohne Miete und Autokredit</td></tr>
+    <tr><td><code>payee:amazon 2025</code></td><td>Alles, was 2025 bei Amazon gekauft wurde</td></tr>
+    <tr><td><code>groceries -payee:costco</code></td><td>Lebensmitteleinkäufe überall außer bei Costco</td></tr>
+  </tbody>
+</table>
+
+### Einnahmen finden
+
+<table>
+  <thead>
+    <tr>
+      <th>Eingabe</th>
+      <th>Findet</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>inflows this year</code></td><td>Geld, das dieses Jahr hereinkam, ohne Umbuchungen</td></tr>
+    <tr><td><code>income payee:employer since 2026-05</code></td><td>Gehalt von deinem Arbeitgeber seit Mai 2026</td></tr>
+  </tbody>
+</table>
+
+### Nach Betrag suchen
+
+<table>
+  <thead>
+    <tr>
+      <th>Eingabe</th>
+      <th>Findet</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>=42.50</code></td><td>Transaktionen über genau 42,50</td></tr>
+    <tr><td><code>between 20 and 50 outflows</code></td><td>Zahlungen von 20 bis 50</td></tr>
+    <tr><td><code>&gt; 1000 since january</code></td><td>Große Transaktionen seit Anfang Januar</td></tr>
+    <tr><td><code>under 5 memo:coffee</code></td><td>Kleine Beträge mit „coffee“ im Memo</td></tr>
+  </tbody>
+</table>
+
+### Aufräumen
+
+<table>
+  <thead>
+    <tr>
+      <th>Eingabe</th>
+      <th>Findet</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>uncategorized</code></td><td>Transaktionen, die noch eine Kategorie brauchen</td></tr>
+    <tr><td><code>uncleared before this month</code></td><td>Ältere Transaktionen, die du noch nicht als gebucht markiert hast</td></tr>
+    <tr><td><code>no:memo over 200</code></td><td>Große Transaktionen ohne Memo</td></tr>
+    <tr><td><code>no:payee</code></td><td>Transaktionen ohne Empfänger</td></tr>
+    <tr><td><code>split last month</code></td><td>Aufgeteilte Transaktionen des letzten Monats</td></tr>
+    <tr><td><code>has:label -label:trip</code></td><td>Transaktionen mit einem beliebigen Label außer Trip</td></tr>
+  </tbody>
+</table>
+
+### Umbuchungen und Konten finden
+
+<table>
+  <thead>
+    <tr>
+      <th>Eingabe</th>
+      <th>Findet</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>transfers savings</code></td><td>Umbuchungen auf oder von einem Konto mit „savings“ im Namen</td></tr>
+    <tr><td><code>-transfers last week</code></td><td>Die letzte Woche ohne Umbuchungen</td></tr>
+    <tr><td><code>account:visa outflows this month</code></td><td>In Alle Transaktionen: die Ausgaben dieses Monats auf Konten mit „visa“ im Namen</td></tr>
+  </tbody>
+</table>
+
+### Nach Datum suchen
+
+<table>
+  <thead>
+    <tr>
+      <th>Eingabe</th>
+      <th>Findet</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>yesterday</code>, <code>today</code>, <code>tomorrow</code></td><td>Einen Tag</td></tr>
+    <tr><td><code>march 2025</code>, <code>2025-03</code></td><td>März 2025</td></tr>
+    <tr><td><code>between 2026-01-15 and 2026-02-10</code></td><td>Diesen Zeitraum, beide Tage eingeschlossen</td></tr>
+    <tr><td><code>since 2026 before june</code></td><td>Januar bis Mai 2026</td></tr>
+    <tr><td><code>upcoming next month</code></td><td>Geplante Transaktionen für den nächsten Monat (Kontoregister)</td></tr>
+  </tbody>
+</table>
+
+### Text finden
+
+<table>
+  <thead>
+    <tr>
+      <th>Eingabe</th>
+      <th>Findet</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>"corner shop"</code></td><td>Den genauen Ausdruck „corner shop“ in einem beliebigen Feld</td></tr>
+    <tr><td><code>coffee -starbucks</code></td><td>„coffee“ irgendwo, aber nichts, das Starbucks erwähnt</td></tr>
+    <tr><td><code>memo:"birthday gift"</code></td><td>Den Ausdruck nur im Memo</td></tr>
+    <tr><td><code>payee:may</code> oder <code>"may"</code></td><td>Einen Empfänger namens „May“ (nicht den Monat)</td></tr>
+  </tbody>
+</table>
+
+## Vorschläge beim Tippen
+
+Während du einen Namen tippst, schlägt eine Liste unter dem Feld passende **Kategorien, Labels, Empfänger und Konten** vor. Jede Zeile sagt, um welche Art von Namen es sich handelt. Wähle einen mit den Pfeiltasten und <Keys>Enter</Keys> (oder <Keys>Tab</Keys>) oder per Klick aus.
+
+Wählst du einen Vorschlag, wird das Wort, das du gerade tippst, durch den vollständigen Namen ersetzt, mit Feld und Anführungszeichen:
+
+- `Hra` + Kategorie „Hrana i Piće“ wählen → `category:"Hrana i Piće"`
+- `-Hra` + dieselbe Kategorie wählen → `-category:"Hrana i Piće"` (weggelassen)
+- `amaz` + Empfänger „Amazon“ wählen → `payee:Amazon`
+
+Vorschläge funktionieren auch nach einem Feldpräfix, schon bevor du etwas tippst: `category:`, `-category:`, `label:`, `-label:`, `payee:` und `account:` listen nur Namen dieser Art auf. Sie funktionieren auch in einem offenen Anführungszeichen (`-"Hrana i`), nach `not` und mitten in einer Suche, wenn du den Cursor zurückbewegst. Ohne Präfix tippe mindestens zwei Buchstaben. Akzente spielen keine Rolle: `pice` findet „Piće“. Kontonamen werden nur in Alle Transaktionen vorgeschlagen.
+
+Die Überschrift der Liste sagt dir, was eine Auswahl bewirkt: „Wähle einen Eintrag, um nur seine Transaktionen zu zeigen“ oder, nach einem Minus oder `not`, „Wähle einen Eintrag, um seine Transaktionen auszublenden“.
+
+## Freitext
+
+Wörter, die die Suche nicht erkennt, werden mit **Empfänger, Memo, Kategorie, Label und Konto** jeder Transaktion abgeglichen, wobei Groß- und Kleinschreibung keine Rolle spielt. Jedes Wort wird für sich gesucht, und **jedes Wort muss irgendwo vorkommen**: `corner shop` findet „Corner Shop“ und auch „Shop on the corner“, aber keine Transaktion, in der nur „shop“ steht. Ein Wort muss nur Teil eines Feldes sein: `shop` findet auch „Workshop“.
+
+- **Genauer Ausdruck:** Setze Wörter in doppelte Anführungszeichen, um sie zusammen und in dieser Reihenfolge zu finden: `"corner shop"`. Einfache Anführungszeichen gehen auch: `'corner shop'`. Ein noch nicht geschlossenes Anführungszeichen reicht bis zum Ende der Suche.
+- **Empfänger von Umbuchungen und Aufteilungen:** Eine Umbuchung wird auch über das Konto auf der anderen Seite gefunden (`savings`), eine aufgeteilte Transaktion über die Empfänger ihrer Zeilen.
+- Freitextwörter erscheinen unter dem Feld als „Suche: …“ statt als Chips.
+
+## Nur ein Feld
+
+Setze einen Feldnamen und einen Doppelpunkt vor ein Wort, um nur dieses Feld zu durchsuchen:
+
+<table>
+  <thead>
+    <tr>
+      <th>Eingabe</th>
+      <th>Findet</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>payee:amazon</code></td><td>„amazon“ im Empfänger (auch im Gegenkonto einer Umbuchung und in den Empfängern aufgeteilter Zeilen)</td></tr>
+    <tr><td><code>memo:refund</code></td><td>„refund“ im Memo</td></tr>
+    <tr><td><code>account:visa</code></td><td>Transaktionen in einem Konto, dessen Name „visa“ enthält (nützlich in Alle Transaktionen)</td></tr>
+    <tr><td><code>category:groceries</code></td><td>Genau diese Kategorie, wenn der Name zu einer passt; ein Teil des Namens (<code>category:groc</code>) findet jede Kategorie, die ihn enthält</td></tr>
+    <tr><td><code>label:trip</code></td><td>Genau dieses Label, wenn der Name zu einem passt; ein Teil des Namens findet jedes Label, das ihn enthält</td></tr>
+  </tbody>
+</table>
+
+Werte mit Leerzeichen gehören in Anführungszeichen: `payee:"Whole Foods"`, `label:"Work trip"`, `category:"Hrana i Piće"`. Wählst du einen Vorschlag, werden die Anführungszeichen für dich gesetzt. Feldnamen dürfen beliebig groß oder klein geschrieben werden (`Payee:`). Ein Wort mit einem anderen Doppelpunkt, etwa `http://…` oder `re:`, wird als Freitext gesucht.
+
+Der Chip zeigt dir, welchen Filter du bekommen hast: **Kategorie: “Groceries”** ist genau diese Kategorie, **Kategorie enthält “groc”** ist jede Kategorie mit „groc“ im Namen. Chips für Empfänger, Memo und Konto bedeuten immer „enthält“.
+
+## Etwas weglassen
+
+Setze ein Minus vor etwas, um es wegzulassen, oder schreibe `not` davor:
+
+<table>
+  <thead>
+    <tr>
+      <th>Eingabe</th>
+      <th>Lässt weg</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>-amazon</code></td><td>Transaktionen, die in irgendeinem Feld „amazon“ enthalten (Chip: Ohne “amazon”)</td></tr>
+    <tr><td><code>-"gift card"</code></td><td>Transaktionen mit genau diesem Ausdruck</td></tr>
+    <tr><td><code>-payee:amazon</code>, <code>-memo:refund</code>, <code>-account:visa</code></td><td>Nur Treffer in diesem Feld</td></tr>
+    <tr><td><code>-groceries</code>, <code>not groceries</code></td><td>Die Kategorie Groceries, wenn eine Kategorie so heißt; sonst jede Transaktion, die das Wort enthält</td></tr>
+    <tr><td><code>-category:"Hrana i Piće"</code>, <code>-"Hrana i Piće"</code></td><td>Eine Kategorie, deren Name Leerzeichen enthält</td></tr>
+    <tr><td><code>-label:trip</code>, <code>-label:"Work trip"</code></td><td>Ein Label</td></tr>
+    <tr><td><code>-transfers</code>, <code>-inflows</code>, <code>-outflows</code></td><td>Umbuchungen, Einnahmen oder Ausgaben</td></tr>
+    <tr><td><code>-uncleared</code>, <code>not reconciled</code>, <code>-is:cleared</code></td><td>Einen Buchungsstatus</td></tr>
+    <tr><td><code>-split</code>, <code>not upcoming</code>, <code>-uncategorized</code></td><td>Einen Zustand (<code>-uncategorized</code> behält nur Transaktionen mit Kategorie)</td></tr>
+    <tr><td><code>-has:memo</code></td><td>Transaktionen mit Memo (wie <code>no:memo</code>)</td></tr>
+  </tbody>
+</table>
+
+Die Anführungszeichen musst du nicht selbst tippen: Tippe `-` und den Anfang des Namens und wähle ihn dann aus den Vorschlägen.
+
+Einige Details:
+
+- Ein Minus vor einer Zahl ist keine Verneinung: `-5` wird als Text gesucht, und ein Minus allein wird ignoriert.
+- `not` vor einem Datum oder Betrag ist nur ein Wort: `not last month` lässt den letzten Monat nicht weg (nutze stattdessen `before` oder `since`).
+- Geplante Zeilen (anstehend) haben keinen Buchungsstatus und passen daher nie zu einem Statusfilter, auch nicht zu `not uncleared`.
 
 ## Datumsangaben
 
@@ -25,15 +229,37 @@ Die Filterwörter sind englische Schlüsselwörter – ganz gleich, in welcher S
     </tr>
   </thead>
   <tbody>
-    <tr><td><code>today</code>, <code>yesterday</code></td><td>Den jeweiligen Tag</td></tr>
-    <tr><td><code>this week</code>, <code>last week</code></td><td>Die bisherige Woche oder die gesamte letzte Woche</td></tr>
-    <tr><td><code>this month</code>, <code>last month</code></td><td>Den bisherigen Monat oder den gesamten letzten Monat</td></tr>
-    <tr><td><code>this year</code>, <code>last year</code></td><td>Das bisherige Jahr oder das gesamte letzte Jahr</td></tr>
-    <tr><td><code>last 30 days</code> (beliebige Zahl)</td><td>Die letzten N Tage bis heute</td></tr>
+    <tr><td><code>today</code>, <code>yesterday</code>, <code>tomorrow</code></td><td>Diesen Tag</td></tr>
+    <tr><td><code>this week</code>, <code>last week</code>, <code>next week</code></td><td>Die Woche bis heute, die ganze letzte oder die ganze nächste Woche</td></tr>
+    <tr><td><code>this month</code>, <code>last month</code>, <code>next month</code></td><td>Den Monat bis heute oder den ganzen letzten oder nächsten Monat</td></tr>
+    <tr><td><code>this year</code>, <code>last year</code>, <code>next year</code></td><td>Das Jahr bis heute oder das ganze letzte oder nächste Jahr</td></tr>
+    <tr><td><code>last 30 days</code>, <code>last 7 days</code>, <code>last 1 day</code> (beliebige Zahl)</td><td>So viele Tage zurück, bis einschließlich heute</td></tr>
+    <tr><td><code>next 30 days</code> (beliebige Zahl)</td><td>Heute und so viele Tage voraus</td></tr>
+    <tr><td><code>january</code> … <code>december</code> oder <code>jan</code>, <code>feb</code>, <code>mar</code>, <code>apr</code>, <code>may</code>, <code>jun</code>, <code>jul</code>, <code>aug</code>, <code>sep</code>, <code>sept</code>, <code>oct</code>, <code>nov</code>, <code>dec</code></td><td>Diesen Monat: den letzten, der schon begonnen hat (dieses Jahr oder letztes Jahr, wenn er noch bevorsteht)</td></tr>
+    <tr><td><code>march 2025</code>, <code>mar 2025</code></td><td>Diesen Monat in diesem Jahr</td></tr>
+    <tr><td><code>2025</code> (1970 bis 2099)</td><td>Das ganze Jahr</td></tr>
+    <tr><td><code>2026-10-01</code>, <code>2026-1-5</code></td><td>Diesen Tag (Jahr-Monat-Tag)</td></tr>
+    <tr><td><code>2026-10</code></td><td>Diesen Monat (Jahr-Monat)</td></tr>
+    <tr><td><code>since march</code>, <code>since 2026-10-01</code>, <code>since last month</code></td><td>Ab dem Beginn dieses Datums bis heute</td></tr>
+    <tr><td><code>after march</code>, <code>after 2026-10-01</code></td><td>Ab dem Tag nach seinem Ende bis heute: <code>after march</code> beginnt am 1. April</td></tr>
+    <tr><td><code>before 2025</code>, <code>before 2026-10-01</code>, <code>before this month</code></td><td>Alles vor seinem Beginn</td></tr>
+    <tr><td><code>between march and may</code>, <code>between 2026-01-15 and 2026-02-10</code>, <code>between 2024 and 2025</code></td><td>Vom Anfang des früheren bis zum Ende des späteren, in beliebiger Reihenfolge</td></tr>
   </tbody>
 </table>
 
-Ein Datumswort verschiebt außerdem den Datumsbereich des Registers oben auf der Seite, damit die Tabelle den richtigen Zeitraum lädt. Wochen beginnen an dem Tag, der unter **Einstellungen → Budget-Einstellungen → Erster Wochentag** festgelegt ist.
+So kombinieren sich Datumsangaben:
+
+- `since`, `after`, `before` und `between` nehmen jede der Datumsangaben oben: einen Tag, einen Monat, ein Jahr oder eine relative Angabe wie `last month`.
+- `since`, `after` und `before` schränken sich gegenseitig und eine einfache Datumsangabe ein: `since 2026 before june` ist Januar bis Mai 2026, `2025 after 2025-06` ist Juli bis Dezember 2025.
+- Tippst du zwei einfache Datumsangaben, gilt die letzte.
+- `this week`, `this month` und `this year` enden heute. Nutze `next week` oder `next 30 days`, um zu sehen, was geplant ist.
+- `since` oder `after` mit einem Datum in der Zukunft reicht bis zum Ende dieses Tages.
+
+Eine Datumsangabe verschiebt außerdem den Datumsbereich des Registers oben auf der Seite, damit die Tabelle den richtigen Zeitraum lädt. Entfernst du den Datums-Chip, bleibt dieser Bereich bestehen; ändere ihn mit der Datumsauswahl. Wochen beginnen an dem Tag, der unter **Einstellungen → Budget-Einstellungen → Erster Wochentag** festgelegt ist.
+
+### Wörter, die wie ein Datum aussehen
+
+Monatsnamen (auch kurze wie `mar` oder `may`) und vierstellige Jahreszahlen von 1970 bis 2099 werden immer als Datum gelesen. Um sie als Text zu suchen, etwa einen Empfänger namens „May“ oder „2025“ in einem Memo, setze sie in Anführungszeichen: `"may"`, `"2025"`, oder nutze ein Feld: `payee:may`. Was in Anführungszeichen steht, wird nie als Datum, Betrag oder Schlüsselwort gelesen.
 
 ## Einnahmen, Ausgaben und Umbuchungen
 
@@ -41,17 +267,43 @@ Ein Datumswort verschiebt außerdem den Datumsbereich des Registers oben auf der
 - `outflows`, `outflow`, `expenses`, `expense` oder `spending` – ausgehendes Geld (ohne Umbuchungen).
 - `transfers` oder `transfer` – nur Umbuchungen zwischen deinen Konten.
 
+Du kannst sie auch mit `is:` schreiben (`is:transfer`, `is:income`) und mit einem Minus weglassen (`-transfers`). Tippst du zwei davon, gilt das letzte.
+
 ## Buchungsstatus
 
 - `cleared` – gebuchte Transaktionen, einschließlich abgeglichener.
-- `uncleared` – Transaktionen, die du noch nicht gebucht hast.
+- `uncleared` – Transaktionen, die du noch nicht als gebucht markiert hast.
 - `reconciled` – nur abgeglichene Transaktionen.
 
-Du kannst sie auch als `is:cleared`, `is:uncleared` und `is:reconciled` schreiben. Geplante wiederkehrende Zeilen (die projizierten) werden von keinem Status erfasst.
+Du kannst sie auch als `is:cleared`, `is:uncleared` und `is:reconciled` schreiben. Geplante wiederkehrende Zeilen (die projizierten) passen nie zu einem Status, auch nicht zu `not uncleared`.
+
+## Weitere Zustände
+
+<table>
+  <thead>
+    <tr>
+      <th>Eingabe</th>
+      <th>Zeigt</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>uncategorized</code>, <code>uncategorised</code>, <code>is:uncategorized</code>, <code>no:category</code></td><td>Transaktionen ohne Kategorie (aufgeteilte Transaktionen gelten als kategorisiert)</td></tr>
+    <tr><td><code>has:category</code>, <code>-uncategorized</code></td><td>Transaktionen mit Kategorie</td></tr>
+    <tr><td><code>split</code>, <code>splits</code>, <code>is:split</code></td><td>Aufgeteilte Transaktionen</td></tr>
+    <tr><td><code>upcoming</code>, <code>scheduled</code>, <code>is:upcoming</code></td><td>Geplante wiederkehrende Zeilen, die noch nicht stattgefunden haben</td></tr>
+    <tr><td><code>has:memo</code>, <code>no:memo</code> (auch <code>has:memos</code>)</td><td>Transaktionen mit Memo oder ohne</td></tr>
+    <tr><td><code>has:label</code>, <code>no:label</code> (auch <code>has:labels</code>)</td><td>Transaktionen mit Label oder ohne</td></tr>
+    <tr><td><code>has:payee</code>, <code>no:payee</code></td><td>Transaktionen mit Empfänger oder ohne</td></tr>
+  </tbody>
+</table>
+
+Anstehende Zeilen erscheinen nur im Register eines Kontos und nur, wenn der Datumsbereich ihr Datum erreicht. Deshalb setzt `upcoming` allein den Bereich auch auf heute und die nächsten 30 Tage. Füge ein Datum hinzu, um weiter zu schauen: `upcoming next month`.
+
+Ein `is:`, `has:` oder `no:` mit einem Wort, das Budgero nicht kennt (`is:pending`), wird als Freitext gesucht.
 
 ## Beträge
 
-Suche nach einem Betrag, indem du ein Vergleichswort oder -symbol vor die Zahl setzt:
+Suche nach Betrag mit einem Vergleichswort oder -zeichen vor der Zahl:
 
 <table>
   <thead>
@@ -61,26 +313,27 @@ Suche nach einem Betrag, indem du ein Vergleichswort oder -symbol vor die Zahl s
     </tr>
   </thead>
   <tbody>
-    <tr><td><code>over 50</code>, <code>above 50</code>, <code>&gt;50</code></td><td>Größer als 50</td></tr>
-    <tr><td><code>under 20</code>, <code>below 20</code>, <code>&lt;20</code></td><td>Kleiner als 20</td></tr>
-    <tr><td><code>exactly 42.50</code>, <code>equal 42.50</code>, <code>=42.50</code></td><td>42.50 (auf den Cent genau)</td></tr>
+    <tr><td><code>over 50</code>, <code>above 50</code>, <code>more than 50</code>, <code>&gt;50</code>, <code>&gt; 50</code></td><td>Größer als 50</td></tr>
+    <tr><td><code>under 20</code>, <code>below 20</code>, <code>less than 20</code>, <code>&lt;20</code>, <code>&lt; 20</code></td><td>Kleiner als 20 (Zeilen mit Betrag null werden weggelassen)</td></tr>
+    <tr><td><code>exactly 42.50</code>, <code>equal 42.50</code>, <code>equals 42.50</code>, <code>equal to 42.50</code>, <code>=42.50</code>, <code>= 42.50</code></td><td>42,50 (auf den Cent genau)</td></tr>
+    <tr><td><code>between 20 and 50</code> (oder <code>between 50 and 20</code>)</td><td>Von 20 bis 50, beide eingeschlossen</td></tr>
   </tbody>
 </table>
 
-- **Bereiche:** Kombiniere beide Grenzen – `over 20 under 50`.
-- **Die Richtung spielt keine Rolle:** Ein Betragsfilter vergleicht die Höhe der Transaktion, egal ob Geld eingeht oder ausgeht. Füge `outflows` oder `inflows` hinzu, um die Auswahl einzugrenzen.
-- **Währung:** Beträge werden in der Währung verglichen, die das Register anzeigt (Kontowährung oder Budget-Währung, über den Umschalter oberhalb der Tabelle). Ein vorangestelltes `$`, `€` oder `£` ist erlaubt: `over €100`.
-- **Zahlenformat:** Verwende einen Punkt als Dezimaltrennzeichen und keine Tausendertrennzeichen – `=1250.50`, nicht `=1.250,50` oder `=1,250.50`.
-- **Eine Zahl allein ist Text,** kein Betrag: `42.50` sucht nach „42.50“ in Memos und Empfängern. Verwende `=42.50`, um den Betrag zu finden.
+- **Bereiche:** `between 20 and 50`, oder kombiniere beide Grenzen: `over 20 under 50`. Jeder Betragsfilter, den du eintippst, muss zutreffen.
+- **Die Richtung spielt keine Rolle:** Ein Betragsfilter vergleicht die Größe der Transaktion, egal ob Geld hereinkommt oder hinausgeht. Füge `outflows` oder `inflows` hinzu, um einzugrenzen.
+- **Währung:** Beträge werden in der Währung verglichen, die die Tabelle anzeigt. In einem Kontoregister ist das die Währung des Kontos, wenn der Umschalter über der Tabelle **Kontowährung** zeigt, und die Budgetwährung, wenn er **Budget-Währung** zeigt. Alle Transaktionen zeigt immer die Budgetwährung. Der Betrags-Chip nennt diese Währung, zum Beispiel **Über 200,00 €**.
+- **Währungszeichen:** Ein Währungssymbol vor oder nach der Zahl ist erlaubt: `over €100`, `over 100€`, `over 100 €`, `<$50`. Währungscodes wie EUR werden nicht als Teil des Betrags gelesen.
+- **Zahlenformat:** Für Dezimalstellen gehen Punkt und Komma, für Tausender Punkte, Kommas, Leerzeichen oder Apostrophe: `=1250.50`, `=1.250,50`, `=1,250.50`, `=1 250,50` und `=1'250.50` finden alle 1.250,50. Hat eine Zahl nur ein Trennzeichen, gefolgt von genau drei Ziffern (`1.000` oder `1,000`), liest Budgero sie so wie das Zahlenformat deines Budgets: als Dezimalstellen, wenn das sein Dezimalzeichen ist, sonst als Tausender.
+- **Eine Zahl allein ist Text,** kein Betrag: `42.50` sucht „42.50“ in Memos und Empfängern. Mit `=42.50` findest du den Betrag. Auch `more 50` (ohne „than“) ist Text.
+- **Jahre und Beträge:** `between 2020 and 2025` wird als Jahre gelesen. Für Beträge, die wie Jahre aussehen, füge ein Währungszeichen hinzu: `between $2020 and $2025`.
 
 ## Kategorien und Labels
 
-- Tippe einen **Kategorienamen** ein, um nur diese Kategorie anzuzeigen. Namen mit Leerzeichen gehören in Anführungszeichen: `"Dining out"`. Während du tippst, schlägt Budgero passende Kategorien vor; wähle eine aus, um sie hinzuzufügen. Füge mehrere Kategorien hinzu, um Transaktionen aus jeder davon zu sehen.
-- Verwende `label:` für **Labels**: `label:Vacation` oder `label:"Work trip"` für Namen mit Leerzeichen.
-
-## Freitext
-
-Alles, was die Suche nicht erkennt, wird mit **Memo, Empfänger, Kategorie, Label und Konto** jeder Transaktion abgeglichen, wobei Groß- und Kleinschreibung keine Rolle spielt. `pharmacy` findet „City Pharmacy“ als Empfänger oder im Memo.
+- Tippe einen **Kategorienamen** ein, um nur diese Kategorie anzuzeigen: `groceries`. Namen mit Leerzeichen gehören in Anführungszeichen, `"Dining out"`, oder nutze `category:"Dining out"`. Ein Name in Anführungszeichen, der zu einer Kategorie passt, wählt diese Kategorie aus, statt den Ausdruck zu suchen.
+- Verwende `label:` für **Labels**: `label:Vacation` oder `label:"Work trip"` für Namen mit Leerzeichen. Ein Labelname ohne `label:` wird als Freitext gesucht (der auch in Labels sucht).
+- Füge mehrere Kategorien (oder mehrere Labels) hinzu, um Transaktionen in **einer beliebigen** davon zu sehen: `groceries "Dining out"`.
+- Am einfachsten: Tippe den Anfang des Namens und wähle ihn aus den Vorschlägen. Budgero ergänzt `category:` oder `label:` und die Anführungszeichen.
 
 ## Schnellfilter
 

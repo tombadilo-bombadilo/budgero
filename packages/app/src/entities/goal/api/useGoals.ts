@@ -10,10 +10,40 @@ import {
   GoalType,
   resolveGoalsForMonth,
   type Goal,
+  type GoalRateSource,
+  type MilliUnits,
+  type Services,
   CategoryFinancials,
 } from '@budgero/core/browser';
+import { getTodayISO } from '@shared/lib/date-utils';
 
 const NO_GOALS: Goal[] = [];
+
+/** How often goal reads may try to fetch a missing exchange rate (per space). */
+const RATE_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+const lastRateRefresh = new Map<string, number>();
+
+/**
+ * Goals with a target in another currency convert at today's rate from the
+ * budget's rate cache. Before reading them, fetch today's rate for each such
+ * currency when the cache has none from the last week (at most every few
+ * minutes; offline it simply keeps the rates it has).
+ */
+async function refreshGoalRates(services: Services, spaceId: string): Promise<void> {
+  const pairs = services.goals.getForeignGoalCurrencies?.() ?? [];
+  if (pairs.length === 0) return;
+  const now = Date.now();
+  if (now - (lastRateRefresh.get(spaceId) ?? 0) < RATE_REFRESH_INTERVAL_MS) return;
+  lastRateRefresh.set(spaceId, now);
+  const today = getTodayISO();
+  await Promise.all(
+    pairs.map((pair) =>
+      services.currency
+        .getOrFetchRate(pair.currency, pair.budgetCurrency, today, pair.budgetId)
+        .catch(() => null)
+    )
+  );
+}
 
 /**
  * Fetch every goal row of a budget: all timeframes of every category. A
@@ -24,7 +54,8 @@ export function useGoals(budgetId: number) {
   return useSpaceQuery<Goal[]>({
     key: ['goals', budgetId],
     enabled: budgetId > 0,
-    queryFn: (services) => {
+    queryFn: async (services, spaceId) => {
+      await refreshGoalRates(services, spaceId);
       try {
         return services.goals.getAllGoals();
       } catch (error) {
@@ -48,7 +79,8 @@ export function useGoalTimeframes(categoryId: number) {
   return useSpaceQuery<Goal[]>({
     key: ['goalTimeframes', categoryId],
     enabled: Boolean(categoryId),
-    queryFn: (services) => {
+    queryFn: async (services, spaceId) => {
+      await refreshGoalRates(services, spaceId);
       try {
         return services.goals.getGoalTimeframes(categoryId);
       } catch {
@@ -72,6 +104,8 @@ export type CreateGoalInput = {
   effectiveFrom?: string | null;
   /** Last month (inclusive); omitted = ongoing. */
   effectiveTo?: string | null;
+  /** Currency of `target`; null/omitted = the budget currency. */
+  targetCurrency?: string | null;
   budgetId: number; // Added for invalidation
 };
 
@@ -80,7 +114,8 @@ export function useGoalsByCategories(categoryIds: number[], month: string) {
   return useSpaceQuery<Goal[] | null>({
     key: ['goals', 'list', categoryIds.join('_'), month],
     enabled: categoryIds.length > 0,
-    queryFn: (services) => {
+    queryFn: async (services, spaceId) => {
+      await refreshGoalRates(services, spaceId);
       try {
         return services.goals.getGoalsByCategoryIDs(categoryIds, month);
       } catch (error) {
@@ -109,6 +144,7 @@ export function useCreateGoal() {
           cycleMonths: input.cycleMonths ?? null,
           ...(input.effectiveFrom ? { effectiveFrom: input.effectiveFrom } : {}),
           ...(input.effectiveTo ? { effectiveTo: input.effectiveTo } : {}),
+          targetCurrency: input.targetCurrency ?? null,
           budgetId: input.budgetId,
         },
         meta: { label: 'useCreateGoal' },
@@ -194,7 +230,8 @@ export function useGoalByCategory(categoryId: number, month: string) {
   return useSpaceQuery<Goal | null>({
     key: ['goal', categoryId, month],
     enabled: Boolean(categoryId),
-    queryFn: (services) => {
+    queryFn: async (services, spaceId) => {
+      await refreshGoalRates(services, spaceId);
       try {
         return services.goals.getGoalByCategoryID(categoryId, month);
       } catch {
@@ -221,6 +258,8 @@ export type UpdateGoalInput = {
   startDate?: string | null;
   /** The timeframe to update (its first month). */
   effectiveFrom: string;
+  /** Currency of `target`; null/omitted = the budget currency. */
+  targetCurrency?: string | null;
   budgetId: number; // Added for invalidation
 };
 
@@ -241,6 +280,7 @@ export function useUpdateGoal() {
           cycleMonths: input.cycleMonths,
           startDate: input.startDate ?? null,
           effectiveFrom: input.effectiveFrom,
+          targetCurrency: input.targetCurrency ?? null,
           budgetId: input.budgetId,
         },
         meta: { label: 'useUpdateGoal' },
@@ -299,6 +339,8 @@ export type SetGoalFromInput = {
   targetDate: string;
   recurring?: boolean;
   cycleMonths?: number | null;
+  /** Currency of `target`; null/omitted = the budget currency. */
+  targetCurrency?: string | null;
   budgetId: number;
 };
 
@@ -321,9 +363,55 @@ export function useSetGoalFrom() {
           endDate: input.targetDate,
           recurring: input.recurring ?? false,
           cycleMonths: input.cycleMonths ?? null,
+          targetCurrency: input.targetCurrency ?? null,
           budgetId: input.budgetId,
         },
         meta: { label: 'useSetGoalFrom' },
       }),
+  });
+}
+
+export interface GoalTargetPreview {
+  /** The target in the budget currency at today's rate. */
+  converted: MilliUnits;
+  source: GoalRateSource;
+}
+
+/**
+ * The goal editor's "≈ in budget currency" line: `target` in `currency`
+ * converted the way the saved goal will be (fetching today's rate first when
+ * the cache has none). Null for the budget currency.
+ */
+export function useGoalTargetPreview(
+  categoryId: number,
+  budgetId: number,
+  budgetCurrency: string | undefined,
+  target: number,
+  currency: string
+) {
+  const foreign = Boolean(budgetCurrency) && currency !== budgetCurrency;
+  return useSpaceQuery<GoalTargetPreview | null>({
+    key: ['goalTargetPreview', categoryId, currency, target],
+    enabled: foreign && categoryId > 0,
+    queryFn: async (services) => {
+      const today = getTodayISO();
+      await services.currency
+        .getOrFetchRate(currency, budgetCurrency as string, today, budgetId)
+        .catch(() => null);
+      const [goal] = services.goals.withBudgetCurrencyTargets([
+        {
+          ID: 0,
+          Type: GoalType.MONTHLY,
+          Purpose: GoalPurpose.SPENDING,
+          CategoryID: categoryId,
+          Target: target as MilliUnits,
+          StartDate: today,
+          TargetCurrency: currency,
+        },
+      ]);
+      return typeof goal?.TargetConverted === 'number'
+        ? { converted: goal.TargetConverted, source: goal.TargetRateSource ?? 'missing' }
+        : null;
+    },
   });
 }

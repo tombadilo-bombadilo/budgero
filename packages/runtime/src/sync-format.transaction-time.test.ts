@@ -10,7 +10,7 @@ describe('transaction time (format 7)', () => {
     expect(
       normalizeMutationPayload({ v: 7, op: 'transactions.add', args: { time: '14:30' } }).args
     ).toEqual({ time: '14:30' });
-    expect(() => normalizeMutationPayload({ v: 8, op: 'transactions.add', args: {} })).toThrow(
+    expect(() => normalizeMutationPayload({ v: 9, op: 'transactions.add', args: {} })).toThrow(
       FormatTooNewError
     );
   });

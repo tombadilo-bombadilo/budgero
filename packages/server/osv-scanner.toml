@@ -25,8 +25,3 @@ reason = "echo v4 has no fix (fixed in v5). Only affects echo.New() without Echo
 id = "GHSA-99jh-6h7p-pp36"
 ignoreUntil = 2026-12-10T00:00:00Z
 reason = "echo v4 has no fix (fixed in v5). Only affects echo's proxy middleware, which the server does not use"
-
-[[IgnoredVulns]]
-id = "GHSA-w67g-5rqw-f597"
-ignoreUntil = 2026-12-10T00:00:00Z
-reason = "Weak mask key only matters for a WebSocket client behind a caching proxy. The server only accepts connections (Upgrader) and never dials one, and servers do not mask frames. Fix exists only as an untagged commit after v1.5.3"

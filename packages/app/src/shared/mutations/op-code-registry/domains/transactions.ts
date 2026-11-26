@@ -1087,6 +1087,7 @@ export const transactionOps = {
         typeof args.exchangeRateOverride === 'boolean' ? args.exchangeRateOverride : undefined
       );
     },
+    editsTransactions: { ids: (args) => [args.id] },
     invalidates: TX_UPDATE_COLUMN_INVALIDATION_KEYS,
     invalidatesFor: updateColumnInvalidations,
     undo: {
@@ -1169,6 +1170,7 @@ export const transactionOps = {
         args.amounts as TransactionAmountsSnapshot
       );
     },
+    editsTransactions: { ids: (args) => [args.id] },
     invalidates: TX_VALUE_UPDATE_INVALIDATION_KEYS,
   },
 
@@ -1341,6 +1343,7 @@ export const transactionOps = {
         splits: normalizeSplitLines(args.splits),
       });
     },
+    editsTransactions: { ids: (args) => [args.transactionId] },
     invalidates: [...TX_WRITE_INVALIDATION_KEYS, ...SPLIT_INVALIDATION_KEYS],
     undo: {
       capture: async (args) => {
@@ -1367,6 +1370,13 @@ export const transactionOps = {
         throw new Error('edits must list transaction ids.');
       }
       return S().transactions!.editTransactions(edits);
+    },
+    editsTransactions: {
+      ids: (args) => (Array.isArray(args.edits) ? args.edits : []).map((edit) => edit?.id),
+      without: (args, deleted) => ({
+        ...args,
+        edits: (args.edits as TransactionBatchEdit[]).filter((edit) => !deleted.has(edit.id)),
+      }),
     },
     invalidates: [
       ...TX_UPDATE_COLUMN_INVALIDATION_KEYS,
@@ -1721,6 +1731,7 @@ export const transactionOps = {
       const normalized = normalizeSplitLines(args.splits);
       return S().splits.upsertSplits(args.transactionId as number, normalized);
     },
+    editsTransactions: { ids: (args) => [args.transactionId] },
     invalidates: SPLIT_INVALIDATION_KEYS,
     undo: splitsUndo,
   },
@@ -1728,6 +1739,7 @@ export const transactionOps = {
     execute: async (args) => {
       return await S().splits.clearSplits(args.transactionId as number);
     },
+    editsTransactions: { ids: (args) => [args.transactionId] },
     invalidates: SPLIT_INVALIDATION_KEYS,
     undo: splitsUndo,
   },

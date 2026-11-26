@@ -170,6 +170,7 @@ export class RuntimeContextFactory {
       getMutationCursor: () => syncRef?.getLocalVersion() ?? 0,
       hasUnackedMutations: () => (offlineQueueRef?.peekQueueLength() ?? 0) > 0,
       isCursorBehindAcks: () => syncRef?.isCursorBehindAcks() ?? false,
+      isReplayingLog: () => syncRef?.isReplayingLog() ?? false,
       canUploadSnapshot: () =>
         (syncRef?.hasInitialCatchUpSettled() ?? false) && !(syncRef?.isCursorBehindAcks() ?? false),
       flushLocalPersistence,

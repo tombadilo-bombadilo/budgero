@@ -104,6 +104,12 @@ export function SearchableCategorySelect({
 
   const canOfferCreate = normalizedSearch.length > 0 && noMatchesForSearch;
   const isMobile = useIsMobile();
+  const isCoarsePointer = useCoarsePointer();
+  // Phones, and touch screens in the wide layout (unfolded foldables, tablets):
+  // pin the list under the top of the screen. Anchored to the cell, the list
+  // flips above it when the on-screen keyboard shrinks the page, and a cell in
+  // the lower half ends up under the keyboard with the list.
+  const pinToTop = isMobile || isCoarsePointer;
   const triggerRef = React.useRef<HTMLButtonElement | null>(null);
   const popoverContentRef = React.useRef<HTMLDivElement | null>(null);
   const headerAnchorRef = React.useRef<VirtualElement | null>(null);
@@ -139,8 +145,8 @@ export function SearchableCategorySelect({
 
   const popoverSide = 'bottom';
   const popoverCollisionPadding = React.useMemo(() => {
-    return isMobile ? { top: 12, bottom: 12 } : 12;
-  }, [isMobile]);
+    return pinToTop ? { top: 12, bottom: 12 } : 12;
+  }, [pinToTop]);
 
   const updateMobileLayoutMetrics = React.useCallback(() => {
     if (typeof document === 'undefined') {
@@ -150,8 +156,15 @@ export function SearchableCategorySelect({
     }
 
     const mobileTopBar = document.querySelector<HTMLElement>('[data-mobile-top-bar]');
-    if (!mobileTopBar) {
-      headerAnchorRef.current = null;
+    if (!mobileTopBar || mobileTopBar.getClientRects().length === 0) {
+      // Wide layout on a touch screen: no top bar, so anchor to the top edge
+      // of the screen, centred.
+      headerAnchorRef.current = {
+        getBoundingClientRect: () => {
+          const x = window.innerWidth / 2;
+          return DOMRect.fromRect({ x, y: 0, width: 0, height: 0 });
+        },
+      };
       forceVirtualAnchorUpdate();
       return;
     }
@@ -166,7 +179,7 @@ export function SearchableCategorySelect({
   }, [forceVirtualAnchorUpdate]);
 
   React.useEffect(() => {
-    if (!isMobile) {
+    if (!pinToTop) {
       headerAnchorRef.current = null;
       forceVirtualAnchorUpdate();
       return;
@@ -191,7 +204,7 @@ export function SearchableCategorySelect({
       window.removeEventListener('resize', handleResizeOrScroll);
       window.removeEventListener('scroll', handleResizeOrScroll, true);
     };
-  }, [isMobile, open, updateMobileLayoutMetrics]);
+  }, [pinToTop, open, updateMobileLayoutMetrics]);
 
   React.useEffect(() => {
     if (!open) {
@@ -384,7 +397,7 @@ export function SearchableCategorySelect({
   return (
     <>
       <Popover open={open} onOpenChange={setOpen} modal>
-        {isMobile ? <PopoverAnchor virtualRef={headerAnchorRef} /> : null}
+        {pinToTop ? <PopoverAnchor virtualRef={headerAnchorRef} /> : null}
         <PopoverTrigger asChild>
           <Button
             ref={triggerRef}
@@ -410,15 +423,15 @@ export function SearchableCategorySelect({
           ref={popoverContentRef}
           className={cn(
             'p-0 max-h-[50dvh] overflow-hidden',
-            isMobile
+            pinToTop
               ? 'w-full max-w-[22.5rem] rounded-xl border shadow-lg'
               : 'w-[--radix-popover-trigger-width]',
             popoverContentClassName
           )}
           align="center"
-          side={isMobile ? undefined : popoverSide}
-          sideOffset={isMobile ? 8 : 6}
-          avoidCollisions={!isMobile}
+          side={pinToTop ? undefined : popoverSide}
+          sideOffset={pinToTop ? 8 : 6}
+          avoidCollisions={!pinToTop}
           collisionPadding={popoverCollisionPadding}
         >
           <Command className="h-full" filter={commandFilter}>
@@ -436,7 +449,7 @@ export function SearchableCategorySelect({
             <CommandList
               className={cn(
                 'category-selector-scrollbar overflow-y-auto overscroll-contain touch-pan-y',
-                isMobile ? 'max-h-[55dvh]' : 'max-h-[44dvh]'
+                pinToTop ? 'max-h-[55dvh]' : 'max-h-[44dvh]'
               )}
             >
               <CommandEmpty>
@@ -544,4 +557,22 @@ export function SearchableCategorySelect({
       />
     </>
   );
+}
+
+/** True on touch-first screens (no hover, coarse pointer), at any width. */
+function coarsePointerQuery(): MediaQueryList | null {
+  if (typeof window === 'undefined' || !window.matchMedia) return null;
+  return window.matchMedia('(hover: none) and (pointer: coarse)');
+}
+
+function useCoarsePointer(): boolean {
+  const [coarse, setCoarse] = React.useState(() => !!coarsePointerQuery()?.matches);
+  React.useEffect(() => {
+    const mql = coarsePointerQuery();
+    if (!mql) return;
+    const update = () => setCoarse(mql.matches);
+    mql.addEventListener?.('change', update);
+    return () => mql.removeEventListener?.('change', update);
+  }, []);
+  return coarse;
 }

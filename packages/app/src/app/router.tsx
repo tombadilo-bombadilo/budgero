@@ -6,50 +6,101 @@ import { IS_SELF_HOSTABLE_BUILD } from '@shared/lib/env';
 import { useUiStore } from '@shared/store/useUiStore';
 import { GlobalImportDropHandler } from '@features/import/ui/GlobalImportDropHandler';
 import DashboardLayout from '@/app/layout/DashboardLayout';
-import AdminLayout from '@/app/layout/AdminLayout';
-import AccountPage from '@pages/accounts/AccountPage';
-import AccountsPage from '@pages/accounts/AccountsPage';
-import AllTransactionsPage from '@pages/accounts/AllTransactionsPage';
-import PrebuiltReportPage from '@pages/analytics/PrebuiltReportPage';
-import ReportsHomePage from '@pages/reports/ReportsHomePage';
-import QuestionPage from '@pages/reports/question/QuestionPage';
-import LegacyExplorerRedirect from '@pages/reports/LegacyExplorerRedirect';
-import CustomDashboardsPage from '@pages/custom-dashboards/CustomDashboardsPage';
-import AppearancePage from '@pages/settings/AppearancePage';
-import AccountSettingsPage from '@pages/settings/AccountSettingsPage';
-import { SubscriptionPage } from '@pages/settings/subscription';
-import SecurityPage from '@pages/settings/SecurityPage';
-import WorkspaceSettingsPage from '@pages/settings/WorkspaceSettingsPage';
-import DataManagementPage from '@pages/settings/DataManagementPage';
-import BudgetSettingsPage from '@pages/settings/BudgetSettingsPage';
-import CurrencySettingsPage from '@pages/settings/CurrencySettingsPage';
-import ImportsPage from '@pages/settings/ImportsPage';
-import PayeesPage from '@pages/settings/PayeesPage';
-import LabelsPage from '@pages/settings/LabelsPage';
-import AutomationRulesPage from '@pages/settings/AutomationRulesPage';
-import RecurringTransactionsPage from '@pages/settings/RecurringTransactionsPage';
-import AboutPage from '@pages/settings/AboutPage';
-import PushApiPage from '@pages/settings/push-api';
-import AuditLogPage from '@pages/settings/AuditLogPage';
-import AISettingsPage from '@pages/settings/ai';
-import BankSyncPage from '@pages/settings/bank-sync';
-import BankSyncCallbackPage from '@pages/settings/bank-sync/BankSyncCallbackPage';
-import SyncStatusPage from '@pages/settings/SyncStatusPage';
-import SnapshotHistoryPage from '@pages/settings/SnapshotHistoryPage';
-import { DashboardPage } from '@pages/dashboard/DashboardPage';
-import { BudgetingPage } from '@pages/budgeting/BudgetingPage';
-import SubscriptionSuccess from '@features/subscription/ui/SubscriptionSuccess';
-import JoinWorkspacePage from '@pages/JoinWorkspacePage';
-import StartOwnBudgetPage from '@pages/StartOwnBudgetPage';
-import AuthPage from '@pages/auth/AuthPage';
-import AdminDashboard from '@pages/admin/AdminDashboard';
-import { AdminUsers } from '@pages/admin/admin-users';
-import AdminSqlExplorer from '@pages/admin/sql-explorer';
-import WarrantiesPage from '@pages/warranties/WarrantiesPage';
 import { hideStartupPreload } from '@/app/startup/preload';
 import { trackPageView } from '@shared/lib/analytics/analytics';
 import { addBreadcrumb } from '@shared/lib/analytics/error-capture';
 import { trackFeatureRoute } from '@shared/lib/analytics/feature-usage';
+import { noteStartupPrompt } from '@shared/lib/analytics/startup-timing';
+import { CenteredLoader } from '@shared/ui/CenteredLoader';
+import { lazyPage } from '@/app/lazy-page';
+
+// Every page is its own chunk: the first screen loads the app shell plus that
+// one page, and the page for the current URL starts loading during startup
+// (preloadFirstScreen). The service worker precaches every chunk for offline.
+const AdminLayout = lazyPage(() => import('@/app/layout/AdminLayout'));
+const AccountPage = lazyPage(() => import('@pages/accounts/AccountPage'));
+const AccountsPage = lazyPage(() => import('@pages/accounts/AccountsPage'));
+const AllTransactionsPage = lazyPage(() => import('@pages/accounts/AllTransactionsPage'));
+const PrebuiltReportPage = lazyPage(() => import('@pages/analytics/PrebuiltReportPage'));
+const ReportsHomePage = lazyPage(() => import('@pages/reports/ReportsHomePage'));
+const QuestionPage = lazyPage(() => import('@pages/reports/question/QuestionPage'));
+const LegacyExplorerRedirect = lazyPage(() => import('@pages/reports/LegacyExplorerRedirect'));
+const CustomDashboardsPage = lazyPage(
+  () => import('@pages/custom-dashboards/CustomDashboardsPage')
+);
+const AppearancePage = lazyPage(() => import('@pages/settings/AppearancePage'));
+const AccountSettingsPage = lazyPage(() => import('@pages/settings/AccountSettingsPage'));
+const SubscriptionPage = lazyPage(() =>
+  import('@pages/settings/subscription').then((m) => ({ default: m.SubscriptionPage }))
+);
+const SecurityPage = lazyPage(() => import('@pages/settings/SecurityPage'));
+const WorkspaceSettingsPage = lazyPage(() => import('@pages/settings/WorkspaceSettingsPage'));
+const DataManagementPage = lazyPage(() => import('@pages/settings/DataManagementPage'));
+const BudgetSettingsPage = lazyPage(() => import('@pages/settings/BudgetSettingsPage'));
+const CurrencySettingsPage = lazyPage(() => import('@pages/settings/CurrencySettingsPage'));
+const ImportsPage = lazyPage(() => import('@pages/settings/ImportsPage'));
+const PayeesPage = lazyPage(() => import('@pages/settings/PayeesPage'));
+const LabelsPage = lazyPage(() => import('@pages/settings/LabelsPage'));
+const AutomationRulesPage = lazyPage(() => import('@pages/settings/AutomationRulesPage'));
+const RecurringTransactionsPage = lazyPage(
+  () => import('@pages/settings/RecurringTransactionsPage')
+);
+const AboutPage = lazyPage(() => import('@pages/settings/AboutPage'));
+const PushApiPage = lazyPage(() => import('@pages/settings/push-api'));
+const AuditLogPage = lazyPage(() => import('@pages/settings/AuditLogPage'));
+const AISettingsPage = lazyPage(() => import('@pages/settings/ai'));
+const BankSyncPage = lazyPage(() => import('@pages/settings/bank-sync'));
+const BankSyncCallbackPage = lazyPage(
+  () => import('@pages/settings/bank-sync/BankSyncCallbackPage')
+);
+const SyncStatusPage = lazyPage(() => import('@pages/settings/SyncStatusPage'));
+const SnapshotHistoryPage = lazyPage(() => import('@pages/settings/SnapshotHistoryPage'));
+const DashboardPage = lazyPage(() =>
+  import('@pages/dashboard/DashboardPage').then((m) => ({ default: m.DashboardPage }))
+);
+const BudgetingPage = lazyPage(() =>
+  import('@pages/budgeting/BudgetingPage').then((m) => ({ default: m.BudgetingPage }))
+);
+const SubscriptionSuccess = lazyPage(() => import('@features/subscription/ui/SubscriptionSuccess'));
+const JoinWorkspacePage = lazyPage(() => import('@pages/JoinWorkspacePage'));
+const StartOwnBudgetPage = lazyPage(() => import('@pages/StartOwnBudgetPage'));
+const AuthPage = lazyPage(() => import('@pages/auth/AuthPage'));
+const AdminDashboard = lazyPage(() => import('@pages/admin/AdminDashboard'));
+const AdminUsers = lazyPage(() =>
+  import('@pages/admin/admin-users').then((m) => ({ default: m.AdminUsers }))
+);
+const AdminSqlExplorer = lazyPage(() => import('@pages/admin/sql-explorer'));
+const WarrantiesPage = lazyPage(() => import('@pages/warranties/WarrantiesPage'));
+
+/** The page chunk for a path the app may open on, for preloading. */
+function firstScreenPage(pathname: string) {
+  if (pathname.startsWith('/dashboard')) return DashboardPage;
+  if (pathname.startsWith('/budgeting')) return BudgetingPage;
+  if (pathname === '/accounts') return AccountsPage;
+  if (pathname === '/accounts/all') return AllTransactionsPage;
+  if (pathname.startsWith('/accounts/')) return AccountPage;
+  if (pathname === '/reports') return ReportsHomePage;
+  if (pathname.startsWith('/auth')) return AuthPage;
+  return null;
+}
+
+/**
+ * Fetch the first screen's chunk while startup (runtime, database) is still
+ * running, instead of after it: React.lazy alone would only start loading
+ * when the page renders.
+ */
+function preloadFirstScreen(pathname: string, homePath: string): void {
+  void firstScreenPage(pathname === '/' ? homePath : pathname)?.preload();
+}
+
+/** <Routes> under a Suspense boundary for the lazy pages outside DashboardLayout. */
+function SuspenseRoutes({ children }: { children: React.ReactNode }) {
+  return (
+    <React.Suspense fallback={<CenteredLoader className="min-h-screen" />}>
+      <Routes>{children}</Routes>
+    </React.Suspense>
+  );
+}
 
 function PreloadRouteBridge() {
   const location = useLocation();
@@ -61,6 +112,9 @@ function PreloadRouteBridge() {
       location.pathname.startsWith('/admin')
     ) {
       hideStartupPreload();
+      // Sign-in, invite and admin screens: the time until the budget is
+      // usable would include the person's own steps.
+      noteStartupPrompt();
     }
   }, [location.pathname]);
 
@@ -89,12 +143,18 @@ function AppRouter() {
         : homePage === 'analytics'
           ? '/reports'
           : '/dashboard';
+  const preloadedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (preloadedRef.current) return;
+    preloadedRef.current = true;
+    preloadFirstScreen(window.location.pathname, homePath);
+  }, [homePath]);
   return (
     <BrowserRouter>
       <PreloadRouteBridge />
       <PageviewTracker />
       <GlobalImportDropHandler />
-      <Routes>
+      <SuspenseRoutes>
         {/* Public auth route wrapping Clerk SignIn/SignUp per docs (must include wildcard for substeps like /auth/factor-one) */}
         <Route path="/auth/*" element={<AuthPage />} />
 
@@ -161,7 +221,7 @@ function AppRouter() {
             <Route path="database" element={<AdminSqlExplorer />} />
           </Route>
         </Route>
-      </Routes>
+      </SuspenseRoutes>
     </BrowserRouter>
   );
 }

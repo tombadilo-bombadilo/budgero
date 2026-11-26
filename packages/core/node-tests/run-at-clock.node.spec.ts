@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import { serviceClock } from '../src/utils/clock';
 import { asMilli, clock, NodeSqlJsAdapter, runAtClock, ServiceManager, setClock } from '../src';
 
 const AT = Date.UTC(2026, 0, 15, 12);
@@ -40,6 +41,28 @@ describe('runAtClock', () => {
   it('nests: the inner pin wins and the outer one comes back', () => {
     const inner = runAtClock(AT, () => [runAtClock(LATER, () => clock.now()), clock.now()]);
     expect(inner).toEqual([LATER, AT]);
+  });
+
+  it('overlapping async pins never leave the clock pinned', async () => {
+    setClock(LATER);
+    const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+    // A starts first and ends first; B starts inside A and ends after it.
+    const a = runAtClock(AT, async () => {
+      await wait(5);
+    });
+    const b = runAtClock(AT + 1, async () => {
+      await wait(15);
+      return clock.now();
+    });
+    await a;
+    // A's end removes only A's pin: B still reads its own instant.
+    expect(await b).toBe(AT + 1);
+    expect(clock.now()).toBe(LATER);
+  });
+
+  it('serviceClock.unpinnedNow ignores op pins', () => {
+    setClock(LATER);
+    expect(runAtClock(AT, () => serviceClock.unpinnedNow())).toBe(LATER);
   });
 });
 

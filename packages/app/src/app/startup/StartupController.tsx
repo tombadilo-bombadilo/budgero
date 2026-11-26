@@ -15,6 +15,7 @@ import {
 } from '@shared/runtime/budget-gate';
 import { BUDGET_SPACES_QUERY_KEY } from '@features/budget-sharing/lib/workspaces/queries';
 import { toast } from 'sonner';
+import { noteStartupPrompt } from '@shared/lib/analytics/startup-timing';
 import BackupReminderManager from './BackupReminderManager';
 import { isDecryptionFailure, isRecoveryRoute, isSecureContextFailure } from './policy';
 import { hideStartupPreload } from './preload';
@@ -157,6 +158,17 @@ export default function StartupController() {
       hideStartupPreload();
     }
   }, [machineState.stablePublished]);
+
+  // A screen that waits on the person (sign-in, onboarding, master password,
+  // workspace or budget choice, an error) keeps app_opened's startup time out
+  // of the timing buckets (startup-timing.ts).
+  const shownScreen = introFlowPinned ? 'intro' : machineState.resolution.screen;
+  const waitsOnPerson =
+    machineState.resolution.state === 'auth_required' ||
+    (shownScreen !== 'splash' && shownScreen !== 'app');
+  useEffect(() => {
+    if (waitsOnPerson) noteStartupPrompt();
+  }, [waitsOnPerson]);
 
   useEffect(() => {
     const markers: [boolean, string][] = [
