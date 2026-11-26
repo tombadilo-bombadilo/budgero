@@ -40,6 +40,7 @@ import {
   TransactionRule,
   MarkOccurrenceReadyResult,
   MutationErrorCode,
+  reconcileSpaceScope,
 } from '@budgero/core/browser';
 import type { QueryClient } from '@tanstack/react-query';
 import type { SyncStatus } from '@shared/lib/utils';
@@ -307,6 +308,24 @@ export class AppRuntime {
 
   getDatabase(): WebDatabaseInstance | null {
     return this.coordinator.getDatabase() as WebDatabaseInstance | null;
+  }
+
+  /**
+   * Replace the active workspace's database with a backup file (.db restore),
+   * migrated to the current schema. A backup keeps the SpaceID of the
+   * workspace it was exported from, and budgets are read per SpaceID, so the
+   * restored rows are stamped with the active workspace (what opening the
+   * workspace does) — otherwise the budget stays invisible until a reload.
+   */
+  async restoreBackup(data: Uint8Array): Promise<void> {
+    const db = this.getDatabase();
+    if (!db) throw new Error('Database is not available');
+    if (!db.restoreAndMigrate) throw new Error('This build cannot migrate restored backups');
+    await db.restoreAndMigrate(data);
+    const spaceId = this.getActiveSpaceId();
+    if (spaceId) {
+      reconcileSpaceScope(db as unknown as Parameters<typeof reconcileSpaceScope>[0], spaceId);
+    }
   }
 
   /**
