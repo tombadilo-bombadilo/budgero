@@ -3267,6 +3267,7 @@ msgstr "Toegang tot:"
 #: src/features/rules/ui/RuleSummary.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Account"
 msgstr "Rekening"
 
@@ -5736,11 +5737,6 @@ msgstr "Categorieën voor <0>{budgetName}</0>"
 msgid "Categories managed per split line"
 msgstr "Categorieën beheerd per splitregel"
 
-#. placeholder {0}: parsedQuery.textQuery
-#: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "Categories matching \"{0}\""
-msgstr "Categorieën die overeenkomen met \"{0}\""
-
 #: src/widgets/dashboard/builtin/builtin-cards.ts
 msgid "Categories that spent more than they have this month."
 msgstr "Categorieën die deze maand meer hebben uitgegeven dan ze hebben."
@@ -5759,6 +5755,7 @@ msgstr "Gecategoriseerd"
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 #: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
@@ -5775,6 +5772,10 @@ msgstr "Categorie / Overboeking"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Category #{0}"
 msgstr "Categorie #{0}"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Category contains {shown}"
+msgstr "Categorie bevat {shown}"
 
 #: src/features/budget-planning/ui/budget-table/useCategoryOperations.ts
 msgid "Category deleted"
@@ -11783,6 +11784,7 @@ msgstr "Weet wat je kunt uitgeven. Houd je budget privé. Maak je account aan om
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Label"
 msgstr "Label"
 
@@ -11801,6 +11803,10 @@ msgstr "Labelkleur"
 #: src/pages/settings/LabelsPage.tsx
 msgid "Label color hex"
 msgstr "Labelkleur hex"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Label contains {shown}"
+msgstr "Label bevat {shown}"
 
 #: src/pages/settings/LabelsPage.tsx
 msgid "Label name cannot be empty."
@@ -11821,10 +11827,6 @@ msgstr "Label:"
 #: src/features/transactions/ui/TransactionLabelBadge.tsx
 msgid "Label: {label}"
 msgstr "Label: {label}"
-
-#: src/shared/lib/search-query-parser.ts
-msgid "Label: {name}"
-msgstr "Label: {name}"
 
 #: src/shared/lib/search-query-parser.ts
 msgid "Label: {shown}"
@@ -15381,6 +15383,7 @@ msgstr "Betalen"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Payee"
 msgstr "Begunstigde"
 
@@ -15650,6 +15653,14 @@ msgstr "Kies hoe je begint"
 #: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
 msgid "Pick an account"
 msgstr "Kies een rekening"
+
+#: src/features/transactions/ui/TransactionsToolbar.tsx
+msgid "Pick one to hide its transactions"
+msgstr "Kies er een om de transacties ervan te verbergen"
+
+#: src/features/transactions/ui/TransactionsToolbar.tsx
+msgid "Pick one to show only its transactions"
+msgstr "Kies er een om alleen de transacties ervan te tonen"
 
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "Pick range"
@@ -18171,6 +18182,10 @@ msgstr "Rapporten zoeken"
 msgid "Search reports…"
 msgstr "Rapporten zoeken…"
 
+#: src/features/transactions/ui/TransactionsToolbar.tsx
+msgid "Search suggestions"
+msgstr "Zoeksuggesties"
+
 #: src/pages/explorer-page/components/SchemaSidebar.tsx
 msgid "Search tables, views, columns..."
 msgstr "Zoek in tabellen, weergaven, kolommen..."
@@ -19660,6 +19675,10 @@ msgstr "Begin deze maand met sparen van {monthlyTarget}"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Start this month's savings - aim for {target}"
 msgstr "Begin deze maand met sparen - streef naar {target}"
+
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "Start typing a category, label, payee or account name, also after a minus, and pick it from the list. Budgero adds the field and the quotes for you."
+msgstr "Begin de naam van een categorie, label, begunstigde of rekening te typen, ook na een min, en kies hem uit de lijst. Budgero voegt het veld en de aanhalingstekens voor je toe."
 
 #: src/features/subscription/ui/SubscriptionSuccess.tsx
 msgid "Start Using Budgero"
@@ -23107,6 +23126,10 @@ msgstr "Met je huidige instellingen:"
 #: src/pages/settings/components/DuplicateHintSettingsCard.tsx
 msgid "Within {tolerance}"
 msgstr "Binnen {tolerance}"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Without {shown}"
+msgstr "Zonder {shown}"
 
 #: src/app/startup/StartupController.tsx
 msgid "Working from local data while sync reconnects."

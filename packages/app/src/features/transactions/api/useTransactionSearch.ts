@@ -5,9 +5,9 @@ import type { GetTransactionsByAccountRow } from '@budgero/core/browser';
 import {
   parseSearchQuery,
   removeTokenFromQuery,
-  replaceFreeText,
-  quoteSearchValue,
-  getCategorySuggestions,
+  getSearchSuggestionsAt,
+  applySearchSuggestion,
+  type SearchSuggestion,
   type ClearedStatusFilter,
   type ParsedSearchQuery,
   type MatchedToken,
@@ -238,23 +238,48 @@ export function decimalSeparatorOf(formatter: Intl.NumberFormat): '.' | ',' {
   return decimal?.value === ',' ? ',' : '.';
 }
 
+export interface TransactionSearchOptions {
+  /** Payee names offered as suggestions. */
+  payeeNames?: string[];
+  /** Account names offered as suggestions (empty on a single account's register). */
+  accountNames?: string[];
+  /**
+   * Formatter of the currency the table shows; typed amounts use its decimal separator.
+   * Defaults to the budget currency's formatter.
+   */
+  amountFormatter?: Intl.NumberFormat;
+}
+
+const NO_NAMES: string[] = [];
+
 /**
  * Owns the transactions table's semantic search box: the query string, its
- * parsed structured filters, the category-suggestions dropdown, and syncing a
- * detected date range up to the parent.
+ * parsed structured filters, the suggestions dropdown (categories, labels,
+ * payees, accounts for the term at the caret), and syncing a detected date
+ * range up to the parent.
  */
 export function useTransactionSearch(
   categoryNames: string[],
   labelNames: string[],
-  onDateRangeChange?: (range: DateRange | undefined) => void
+  onDateRangeChange?: (range: DateRange | undefined) => void,
+  options: TransactionSearchOptions = {}
 ) {
+  const { payeeNames = NO_NAMES, accountNames = NO_NAMES, amountFormatter } = options;
   const weekStartsOn = useWeekStartsOn();
   const globalLocalizer = useUiStore((state) => state.globalLocalizer);
+  const numberFormatter = amountFormatter ?? globalLocalizer;
   const decimalSeparator = React.useMemo(
-    () => decimalSeparatorOf(globalLocalizer),
-    [globalLocalizer]
+    () => decimalSeparatorOf(numberFormatter),
+    [numberFormatter]
   );
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchQuery, setSearchQueryState] = React.useState('');
+  // Caret position in the search box; suggestions are for the term it is in.
+  const [caret, setCaret] = React.useState(0);
+
+  const setSearchQuery = React.useCallback((value: string, nextCaret?: number) => {
+    setSearchQueryState(value);
+    setCaret(nextCaret ?? value.length);
+  }, []);
 
   const parsedQuery = React.useMemo(() => {
     return parseSearchQuery(searchQuery, categoryNames, labelNames, {
@@ -287,53 +312,62 @@ export function useTransactionSearch(
         lastSyncedDateRange.current = null;
       }
     },
-    [searchQuery, parsedQuery]
+    [searchQuery, parsedQuery, setSearchQuery]
   );
 
   const handleClearAll = React.useCallback(() => {
     setSearchQuery('');
     lastSyncedDateRange.current = null;
-  }, []);
+  }, [setSearchQuery]);
 
   // Search input focus state for suggestions dropdown
   const [isSearchFocused, setIsSearchFocused] = React.useState(false);
   const [highlightedIndex, setHighlightedIndex] = React.useState(0);
 
-  const categorySuggestions = React.useMemo(() => {
-    if (!isSearchFocused || !parsedQuery.textQuery.trim()) {
-      return [];
-    }
-    // Don't show suggestions for categories that are already matched
-    const alreadyMatched = new Set(parsedQuery.categoryMatches.map((c) => c.toLowerCase()));
-    return getCategorySuggestions(parsedQuery.textQuery, categoryNames).filter(
-      (suggestion) => !alreadyMatched.has(suggestion.toLowerCase())
-    );
-  }, [isSearchFocused, parsedQuery.textQuery, parsedQuery.categoryMatches, categoryNames]);
+  const sources = React.useMemo(
+    () => ({
+      categories: categoryNames,
+      labels: labelNames,
+      payees: payeeNames,
+      accounts: accountNames,
+    }),
+    [categoryNames, labelNames, payeeNames, accountNames]
+  );
 
+  const { term: activeTerm, suggestions } = React.useMemo(() => {
+    if (!isSearchFocused) return { term: null, suggestions: [] as SearchSuggestion[] };
+    return getSearchSuggestionsAt(searchQuery, caret, parsedQuery, sources);
+  }, [isSearchFocused, searchQuery, caret, parsedQuery, sources]);
+
+  const suggestionsKey = suggestions.map((s) => `${s.kind}:${s.name}`).join('|');
   React.useEffect(() => {
     setHighlightedIndex(0);
-  }, [categorySuggestions.length]);
+  }, [suggestionsKey]);
 
-  const handleSelectCategory = React.useCallback(
-    (categoryName: string) => {
-      // Keep every filter; the typed free text becomes the picked category.
-      setSearchQuery(replaceFreeText(searchQuery, parsedQuery, quoteSearchValue(categoryName)));
-      setIsSearchFocused(false);
+  /** Puts the picked name in place of the term being typed; returns the new caret. */
+  const handleSelectSuggestion = React.useCallback(
+    (suggestion: SearchSuggestion): number | null => {
+      if (!activeTerm) return null;
+      const next = applySearchSuggestion(searchQuery, activeTerm, suggestion);
+      setSearchQuery(next.query, next.caret);
+      return next.caret;
     },
-    [searchQuery, parsedQuery]
+    [activeTerm, searchQuery, setSearchQuery]
   );
 
   return {
     searchQuery,
     setSearchQuery,
+    setCaret,
     parsedQuery,
     isSearchFocused,
     setIsSearchFocused,
     highlightedIndex,
     setHighlightedIndex,
-    categorySuggestions,
+    activeTerm,
+    suggestions,
     handleRemoveToken,
     handleClearAll,
-    handleSelectCategory,
+    handleSelectSuggestion,
   };
 }

@@ -1,11 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { format } from 'date-fns';
 import {
+  applySearchSuggestion,
+  getActiveSearchTerm,
+  getSearchSuggestions,
+  getSearchSuggestionsAt,
   parseAmountNumber,
   parseSearchQuery,
   quoteSearchValue,
   removeTokenFromQuery,
-  replaceFreeText,
+  type SearchSuggestionSources,
 } from './search-query-parser';
 
 describe('search-query-parser label support', () => {
@@ -194,7 +198,7 @@ describe('negation', () => {
     ]);
     expect(parsed.textQuery).toBe('');
     expect(parsed.matchedTokens.every((token) => token.negated)).toBe(true);
-    expect(parsed.matchedTokens[0].label).toBe('Not “coffee”');
+    expect(parsed.matchedTokens[0].label).toBe('Without “coffee”');
   });
 
   it('negates categories and labels', () => {
@@ -515,16 +519,6 @@ describe('combinations and chip removal', () => {
     }
   });
 
-  it('replaces only the free text when a category suggestion is picked', () => {
-    const typed = 'last month -coffee din';
-    const parsed = parseSearchQuery(typed, categories, labels);
-    expect(replaceFreeText(typed, parsed, quoteSearchValue('Dining Out'))).toBe(
-      'last month -coffee "Dining Out"'
-    );
-    const next = parseSearchQuery('last month -coffee "Dining Out"', categories, labels);
-    expect(next.categoryMatches).toEqual(['Dining Out']);
-  });
-
   it('keeps the last positive type and status, like before', () => {
     const parsed = parseSearchQuery('inflows outflows cleared uncleared', [], []);
     expect(parsed.transactionType).toBe('outflows');
@@ -535,5 +529,171 @@ describe('combinations and chip removal', () => {
     const parsed = parseSearchQuery('groceries Groceries', categories, []);
     expect(parsed.categoryMatches).toEqual(['Groceries']);
     expect(parsed.matchedTokens).toHaveLength(1);
+  });
+});
+
+describe('chip labels say what the filter does', () => {
+  it('names a quoted category phrase as a category, and a negated word as excluded text', () => {
+    const parsed = parseSearchQuery('last month -Hrana "Hrana i Pice"', ['Hrana i Pice'], []);
+    expect(parsed.matchedTokens.map((token) => [token.type, token.label])).toEqual([
+      ['date', 'Last month'],
+      ['text', 'Without “Hrana”'],
+      ['category', 'Category: “Hrana i Pice”'],
+    ]);
+    expect(parsed.categoryMatches).toEqual(['Hrana i Pice']);
+    expect(parsed.labelMatches).toEqual([]);
+  });
+
+  it('tells exact category and label filters from "contains" ones', () => {
+    const parsed = parseSearchQuery(
+      'category:groc label:tr -category:Rent label:Trip',
+      ['Rent'],
+      ['Trip']
+    );
+    expect(parsed.matchedTokens.map((token) => token.label)).toEqual([
+      'Category contains “groc”',
+      'Label contains “tr”',
+      'Not Category: “Rent”',
+      'Label: “Trip”',
+    ]);
+    expect(parsed.matchedTokens.slice(0, 2).map((token) => token.field)).toEqual([
+      'category',
+      'label',
+    ]);
+  });
+});
+
+describe('suggestions', () => {
+  const sources: SearchSuggestionSources = {
+    categories: ['Hrana i Piće', 'Hrana', 'Rent', 'Dining Out'],
+    labels: ['Trip', 'Hranarina'],
+    payees: ['Hranko doo', 'Amazon', 'Mrs "Ana" shop'],
+    accounts: ['Yettel EUR', 'Cash'],
+  };
+  const names = (query: string, caret?: number) =>
+    getSearchSuggestions(getActiveSearchTerm(query, caret), sources).map(
+      (s) => `${s.kind}:${s.name}`
+    );
+
+  it('finds the term at the caret, with its minus, field and open quote', () => {
+    expect(getActiveSearchTerm('last month -Hra')).toMatchObject({
+      start: 11,
+      end: 15,
+      negated: true,
+      excludes: true,
+      field: null,
+      value: 'Hra',
+    });
+    expect(getActiveSearchTerm('-category:"Hrana i P')).toMatchObject({
+      negated: true,
+      field: 'category',
+      value: 'Hrana i P',
+      quoted: true,
+      closed: false,
+    });
+    expect(getActiveSearchTerm('-category:')).toMatchObject({ field: 'category', value: '' });
+    expect(getActiveSearchTerm('not Hra')).toMatchObject({ negated: false, excludes: true });
+    expect(getActiveSearchTerm('coffee ')).toBeNull();
+    expect(getActiveSearchTerm('coffee tea', 3)).toMatchObject({ start: 0, end: 6 });
+  });
+
+  it('suggests every kind for a bare or negated word, best match first', () => {
+    expect(names('Hra')).toEqual([
+      'category:Hrana i Piće',
+      'category:Hrana',
+      'label:Hranarina',
+      'payee:Hranko doo',
+    ]);
+    expect(names('-Hra')).toEqual(names('Hra'));
+    expect(names('out')).toEqual(['category:Dining Out']);
+    // Accents don't matter: "pice" finds "Piće".
+    expect(names('pice')).toEqual(['category:Hrana i Piće']);
+    // One letter is not enough without a field.
+    expect(names('H')).toEqual([]);
+  });
+
+  it('limits a field prefix to its kind and lists names before anything is typed', () => {
+    expect(names('-category:')).toEqual([
+      'category:Hrana i Piće',
+      'category:Hrana',
+      'category:Rent',
+      'category:Dining Out',
+    ]);
+    expect(names('label:hr')).toEqual(['label:Hranarina']);
+    expect(names('payee:"Hranko')).toEqual(['payee:Hranko doo']);
+    expect(names('account:y')).toEqual(['account:Yettel EUR']);
+    expect(names('memo:hr')).toEqual([]);
+    expect(names('is:spl')).toEqual([]);
+  });
+
+  it('suggests inside an open quote', () => {
+    expect(names('-"Hrana i')).toEqual(['category:Hrana i Piće']);
+  });
+
+  it('hides a name that is already typed out in full', () => {
+    expect(names('category:Rent')).toEqual([]);
+    expect(names('category:"Hrana"')).toEqual(['category:Hrana i Piće']);
+  });
+
+  it('skips dates, amounts and keywords', () => {
+    const at = (query: string) =>
+      getSearchSuggestionsAt(
+        query,
+        query.length,
+        parseSearchQuery(query, sources.categories, sources.labels),
+        { ...sources, categories: ['Monthly bills', 'Overhead', 'Split rent'] }
+      ).suggestions;
+    expect(at('last month')).toEqual([]);
+    expect(at('over 20')).toEqual([]);
+    expect(at('split')).toEqual([]);
+    expect(at('overh').map((s) => s.name)).toEqual(['Overhead']);
+  });
+
+  it('inserts the picked name quoted, with its field and minus', () => {
+    const pick = (query: string, kind: 'category' | 'payee' | 'label', name: string) =>
+      applySearchSuggestion(query, getActiveSearchTerm(query)!, { kind, name });
+    expect(pick('last month -Hra', 'category', 'Hrana i Piće')).toEqual({
+      query: 'last month -category:"Hrana i Piće" ',
+      caret: 36,
+    });
+    expect(pick('Hra', 'category', 'Hrana')).toEqual({ query: 'category:Hrana ', caret: 15 });
+    expect(pick('-category:"Hrana i', 'category', 'Hrana i Piće').query).toBe(
+      '-category:"Hrana i Piće" '
+    );
+    expect(pick('not amaz', 'payee', 'Amazon').query).toBe('not payee:Amazon ');
+    expect(pick('mrs', 'payee', 'Mrs "Ana" shop').query).toBe(`payee:'Mrs "Ana" shop' `);
+    // A term in the middle keeps the rest of the query.
+    const middle = 'over 20 -Hra outflows';
+    expect(
+      applySearchSuggestion(middle, getActiveSearchTerm(middle, 12)!, {
+        kind: 'category',
+        name: 'Hrana i Piće',
+      })
+    ).toEqual({ query: 'over 20 -category:"Hrana i Piće" outflows', caret: 33 });
+  });
+
+  it('parses every inserted suggestion back to the same filter', () => {
+    const categories = ['Hrana i Piće'];
+    const labels = ['Summer trip'];
+    expect(parseSearchQuery('-category:"Hrana i Piće" ', categories, labels)).toMatchObject({
+      excludedCategories: ['Hrana i Piće'],
+    });
+    expect(parseSearchQuery('label:"Summer trip" ', categories, labels)).toMatchObject({
+      labelMatches: ['Summer trip'],
+    });
+    expect(
+      parseSearchQuery(`-payee:'Mrs "Ana" shop'`, [], []).textTerms.map((term) => [
+        term.field,
+        term.value,
+        term.negated,
+      ])
+    ).toEqual([['payee', 'mrs "ana" shop', true]]);
+  });
+
+  it('quotes values that would not survive as one word', () => {
+    expect(quoteSearchValue('Rent')).toBe('Rent');
+    expect(quoteSearchValue('Dining Out')).toBe('"Dining Out"');
+    expect(quoteSearchValue('-Minus')).toBe('"-Minus"');
+    expect(quoteSearchValue('Say "hi"')).toBe(`'Say "hi"'`);
   });
 });

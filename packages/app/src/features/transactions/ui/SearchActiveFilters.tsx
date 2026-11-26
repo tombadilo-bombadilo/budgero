@@ -7,7 +7,10 @@ import {
   ArrowUpRight,
   ArrowLeftRight,
   Tag,
-  Tags,
+  Folder,
+  Store,
+  StickyNote,
+  Wallet,
   Search,
   SearchX,
   Coins,
@@ -54,10 +57,11 @@ export const SearchActiveFilters = React.memo(function SearchActiveFilters({
           : token.transactionType === 'inflows'
             ? ArrowUpRight
             : ArrowLeftRight;
+      // Same icons as the suggestions list and the Label column toggle.
       case 'category':
-        return Tag;
+        return Folder;
       case 'label':
-        return Tags;
+        return Tag;
       case 'amount':
         return Coins;
       case 'status':
@@ -65,7 +69,20 @@ export const SearchActiveFilters = React.memo(function SearchActiveFilters({
       case 'state':
         return ListFilter;
       case 'text':
-        return token.negated ? SearchX : Search;
+        switch (token.field) {
+          case 'category':
+            return Folder;
+          case 'label':
+            return Tag;
+          case 'payee':
+            return Store;
+          case 'memo':
+            return StickyNote;
+          case 'account':
+            return Wallet;
+          default:
+            return token.negated ? SearchX : Search;
+        }
     }
   };
 

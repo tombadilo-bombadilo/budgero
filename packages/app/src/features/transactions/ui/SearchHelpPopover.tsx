@@ -8,10 +8,17 @@ import { docsUrl } from '@shared/lib/docs-url';
 const EXAMPLES = [
   'groceries last month',
   'outflows over 100',
+  '> 50 this week',
+  'between 20 and 50',
   'uncleared',
+  'uncategorized last 30 days',
   'label:trip',
   '-payee:amazon',
+  '-category:"Dining Out"',
+  'no:memo',
+  'split since 2026-01-01',
   '"coffee shop" since march',
+  'transfers 2025',
 ] as const;
 
 interface SearchHelpPopoverProps {
@@ -49,6 +56,12 @@ export function SearchHelpPopover({ onPickExample }: SearchHelpPopoverProps) {
             Other words must all appear in the payee, memo, category, label or account. Use quotes
             for an exact phrase, a minus to leave something out, and payee:, memo:, account:,
             category: or label: to search one field.
+          </Trans>
+        </p>
+        <p className="text-muted-foreground">
+          <Trans>
+            Start typing a category, label, payee or account name, also after a minus, and pick it
+            from the list. Budgero adds the field and the quotes for you.
           </Trans>
         </p>
         <div className="space-y-1.5">

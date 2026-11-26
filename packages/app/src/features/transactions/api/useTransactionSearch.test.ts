@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
 import type { GetTransactionsByAccountRow } from '@budgero/core/browser';
 import { parseSearchQuery } from '@shared/lib/search-query-parser';
 import { asMilli } from '@shared/lib/currency/milli';
-import { filterTransactions } from './useTransactionSearch';
+import {
+  decimalSeparatorOf,
+  filterTransactions,
+  useTransactionSearch,
+} from './useTransactionSearch';
+import { displayCurrencyFormatter, makeAmountAccessors } from '../lib/amount-accessors';
 
 const row = (ID: number, extra: Partial<GetTransactionsByAccountRow>) =>
   ({
@@ -166,5 +172,89 @@ describe('filterTransactions search terms', () => {
 
   it('combines everything with AND', () => {
     expect(find('groceries outflows over 10 under 30 -memo:coffee')).toEqual([9]);
+  });
+});
+
+describe('amount search follows the currency the table shows', () => {
+  // A EUR account in an RSD budget: €250 is about RSD 29,300.
+  const eurRows = [
+    row(1, {
+      OutflowConverted: asMilli(29_300_000),
+      OutflowNative: asMilli(250_000),
+    }),
+    row(2, {
+      OutflowConverted: asMilli(11_700_000),
+      OutflowNative: asMilli(100_000),
+    }),
+  ];
+  const find = (query: string, display: 'budget' | 'account') => {
+    const { getPrimaryInflow, getPrimaryOutflow } = makeAmountAccessors(display);
+    return filterTransactions(
+      eurRows,
+      parseSearchQuery(query, [], []),
+      { uncategorized: false, uncleared: false },
+      getPrimaryInflow,
+      getPrimaryOutflow
+    ).map((tx) => tx.ID);
+  };
+
+  it('compares account-currency amounts when the Account Currency toggle is on', () => {
+    expect(find('> 200', 'account')).toEqual([1]);
+    expect(find('between 50 and 150', 'account')).toEqual([2]);
+  });
+
+  it('compares budget-currency amounts otherwise', () => {
+    expect(find('> 200', 'budget')).toEqual([1, 2]);
+    expect(find('> 20000', 'budget')).toEqual([1]);
+  });
+
+  it('labels and reads amounts with the formatter of the shown currency', () => {
+    const budget = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'RSD' });
+    const account = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+    expect(displayCurrencyFormatter('account', budget, account)).toBe(account);
+    expect(displayCurrencyFormatter('budget', budget, account)).toBe(budget);
+    expect(decimalSeparatorOf(displayCurrencyFormatter('account', budget, account))).toBe(',');
+  });
+});
+
+describe('useTransactionSearch suggestions', () => {
+  const categories = ['Hrana i Piće', 'Hrana', 'Rent'];
+  const labels = ['Hranarina'];
+  const options = { payeeNames: ['Hranko doo', 'Maxi'], accountNames: [] };
+
+  const setup = () =>
+    renderHook(() => useTransactionSearch(categories, labels, undefined, options));
+
+  it('suggests after a minus and inserts the quoted, negated name', () => {
+    const { result } = setup();
+    act(() => {
+      result.current.setIsSearchFocused(true);
+      result.current.setSearchQuery('last month -Hra');
+    });
+    expect(result.current.suggestions.map((s) => `${s.kind}:${s.name}`)).toEqual([
+      'category:Hrana i Piće',
+      'category:Hrana',
+      'label:Hranarina',
+      'payee:Hranko doo',
+    ]);
+    expect(result.current.activeTerm?.excludes).toBe(true);
+    let caret: number | null = null;
+    act(() => {
+      caret = result.current.handleSelectSuggestion(result.current.suggestions[0]);
+    });
+    expect(result.current.searchQuery).toBe('last month -category:"Hrana i Piće" ');
+    expect(caret).toBe(result.current.searchQuery.length);
+    expect(result.current.parsedQuery.excludedCategories).toEqual(['Hrana i Piće']);
+    // The caret is now after a space: nothing is being typed, so no list.
+    expect(result.current.suggestions).toEqual([]);
+  });
+
+  it('reads typed amounts with the decimal mark of the shown currency', () => {
+    const account = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+    const { result } = renderHook(() =>
+      useTransactionSearch([], [], undefined, { amountFormatter: account })
+    );
+    act(() => result.current.setSearchQuery('> 1.500'));
+    expect(result.current.parsedQuery.amountFilters).toEqual([{ operator: 'over', amount: 1500 }]);
   });
 });

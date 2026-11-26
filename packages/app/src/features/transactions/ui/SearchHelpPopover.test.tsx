@@ -51,7 +51,7 @@ describe('SearchActiveFilters', () => {
       'Between 20 and 50',
       'No memo',
       'Split',
-      'Not Label: Trip',
+      'Not Label: “Trip”',
     ]) {
       expect(screen.getByText(label)).toBeInTheDocument();
     }

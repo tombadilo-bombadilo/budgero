@@ -38,6 +38,10 @@ import {
  *
  * Quoted text is never read as a keyword, date or amount (a quoted category name still
  * selects that category), which is how a payee called "May" or a memo "2025" is searched.
+ *
+ * Suggestions (getSearchSuggestions) offer category, label, payee and account names for the
+ * term at the caret, also after "-", a field prefix or an open quote; a picked name is
+ * inserted as `[-]<field>:"<name>"` (applySearchSuggestion).
  */
 
 export type TransactionTypeFilter = 'inflows' | 'outflows' | 'transfers';
@@ -76,6 +80,8 @@ export interface MatchedToken {
   amountFilter?: AmountFilter;
   /** For transactionType tokens. */
   transactionType?: TransactionTypeFilter;
+  /** For text tokens: the field searched ('any' = every field). */
+  field?: SearchTextField;
   /** Span of the filter in the query, used to remove it. */
   start: number;
   end: number;
@@ -133,8 +139,21 @@ interface Token {
 
 const TOKEN_BODY = /(?:([A-Za-z]+):)?(?:"([^"]*)(?:"|$)|'([^']*)'(?=\s|$)|(\S+))/y;
 
-function tokenize(query: string): Token[] {
-  const tokens: Token[] = [];
+interface RawToken {
+  /** Unquoted value as typed (empty for a field prefix with nothing after it yet). */
+  value: string;
+  quoted: boolean;
+  /** For quoted values: whether the closing quote was typed. */
+  closed: boolean;
+  negated: boolean;
+  field: Field | null;
+  start: number;
+  end: number;
+}
+
+/** Splits a query into terms, keeping spans; also returns terms still being typed. */
+function scanTokens(query: string): RawToken[] {
+  const tokens: RawToken[] = [];
   let pos = 0;
   const len = query.length;
   while (pos < len) {
@@ -158,6 +177,8 @@ function tokenize(query: string): Token[] {
     const rawField = match[1]?.toLowerCase();
     const quotedValue = match[2] ?? match[3];
     const quoted = quotedValue !== undefined;
+    const body = match[1] ? match[0].slice(match[1].length + 1) : match[0];
+    const closed = match[3] !== undefined || (match[2] !== undefined && /^".*"$/.test(body));
     let value = quoted ? quotedValue : (match[4] ?? '');
     let field: Field | null = null;
     if (rawField) {
@@ -175,10 +196,20 @@ function tokenize(query: string): Token[] {
       FIELDS.has(value.slice(0, -1).toLowerCase())
     ) {
       // "payee:" with nothing after it yet: still being typed.
-      continue;
+      field = value.slice(0, -1).toLowerCase() as Field;
+      value = '';
     }
-    value = value.trim();
+    tokens.push({ value, quoted, closed, negated, field, start, end });
+  }
+  return tokens;
+}
+
+function tokenize(query: string): Token[] {
+  const tokens: Token[] = [];
+  for (const raw of scanTokens(query)) {
+    const value = raw.value.trim();
     if (!value) continue;
+    const { quoted, negated, field, start, end } = raw;
     tokens.push({ value, lower: value.toLowerCase(), quoted, negated, field, start, end });
   }
   return tokens;
@@ -731,8 +762,19 @@ function negatedLabel(label: string, negated: boolean): string {
   return negated ? t`Not ${label}` : label;
 }
 
-function textTermLabel(field: SearchTextField, value: string, negated: boolean): string {
+/**
+ * Chip text for a text filter. `exact` is a known category or label picked by name;
+ * otherwise the field only has to contain the value.
+ */
+function textTermLabel(
+  field: SearchTextField,
+  value: string,
+  negated: boolean,
+  exact = false
+): string {
   const shown = `“${value}”`;
+  // A word or phrase that no field may contain.
+  if (field === 'any' && negated) return t`Without ${shown}`;
   let label: string;
   switch (field) {
     case 'payee':
@@ -745,10 +787,10 @@ function textTermLabel(field: SearchTextField, value: string, negated: boolean):
       label = t`Account: ${shown}`;
       break;
     case 'category':
-      label = t`Category: ${shown}`;
+      label = exact ? t`Category: ${shown}` : t`Category contains ${shown}`;
       break;
     case 'label':
-      label = t`Label: ${shown}`;
+      label = exact ? t`Label: ${shown}` : t`Label contains ${shown}`;
       break;
     default:
       label = shown;
@@ -840,7 +882,7 @@ export function parseSearchQuery(
       ...span(start, end),
       type: 'category',
       negated,
-      label: negatedLabel(name, negated),
+      label: textTermLabel('category', name, negated, true),
     });
     return true;
   };
@@ -854,7 +896,7 @@ export function parseSearchQuery(
       ...span(start, end),
       type: 'label',
       negated,
-      label: negatedLabel(t`Label: ${name}`, negated),
+      label: textTermLabel('label', name, negated, true),
     });
     return true;
   };
@@ -880,6 +922,7 @@ export function parseSearchQuery(
       result.matchedTokens.push({
         ...span(start, token.end),
         type: 'text',
+        field,
         negated,
         label: textTermLabel(field, token.value, negated),
       });
@@ -1119,61 +1162,197 @@ export function removeTokenFromQuery(
 }
 
 /**
- * Replace the free text (positive words and phrases matched against every field) with
- * `insert`, keeping every filter. Used when a category suggestion is picked.
+ * Quote a value for the query when it would not survive as one bare word: spaces, a
+ * leading quote or minus. Double quotes are used unless the value contains one.
  */
-export function replaceFreeText(query: string, parsed: ParsedSearchQuery, insert: string): string {
-  const spans = parsed.textTerms
-    .filter((term) => term.field === 'any' && !term.negated)
-    .sort((a, b) => b.start - a.start);
-  let next = query;
-  for (const term of spans) {
-    next = cutSpan(next, term.start, term.end);
-  }
-  next = next.trim();
-  return next ? `${next} ${insert}` : insert;
+export function quoteSearchValue(value: string): string {
+  if (!/[\s"']|^-/.test(value)) return value;
+  return value.includes('"') && !value.includes("'") ? `'${value}'` : `"${value}"`;
 }
 
-/** Quote a value for the query if it contains spaces. */
-export function quoteSearchValue(value: string): string {
-  return /\s/.test(value) ? `"${value}"` : value;
+// ---------------------------------------------------------------------------
+// Suggestions
+
+export type SearchSuggestionKind = 'category' | 'label' | 'payee' | 'account';
+
+export interface SearchSuggestion {
+  kind: SearchSuggestionKind;
+  /** The name as stored (inserted as typed here). */
+  name: string;
+}
+
+export interface SearchSuggestionSources {
+  categories: string[];
+  labels: string[];
+  payees: string[];
+  accounts: string[];
+}
+
+/** The term under the caret, which a picked suggestion replaces. */
+export interface ActiveSearchTerm {
+  /** Span of the whole term, including a leading "-" and a field prefix. */
+  start: number;
+  end: number;
+  negated: boolean;
+  field: string | null;
+  /** The value typed so far (inside an open quote it may contain spaces). */
+  value: string;
+  quoted: boolean;
+  /** A quoted value whose closing quote is typed. */
+  closed: boolean;
+  /** The picked name will be excluded ("-" or a "not" before the term). */
+  excludes: boolean;
+}
+
+const SUGGESTION_KINDS: SearchSuggestionKind[] = ['category', 'label', 'payee', 'account'];
+
+/** Lower case without accents, so "pice" finds "Piće". */
+function foldForMatch(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .replace(/đ/g, 'd')
+    .replace(/ł/g, 'l')
+    .replace(/ø/g, 'o')
+    .replace(/ß/g, 'ss');
 }
 
 /**
- * Get category suggestions based on partial input
- * Returns categories that start with or contain the search term
+ * The term the caret is in or right after ("-Hra", "-category:", `label:"Summer tr`), or
+ * null when the caret is in the space between terms.
  */
-export function getCategorySuggestions(
+export function getActiveSearchTerm(
   query: string,
-  categoryNames: string[],
-  maxResults = 5
-): string[] {
-  const trimmed = query.trim().replace(/^"|"$/g, '').toLowerCase();
+  caret: number = query.length
+): ActiveSearchTerm | null {
+  const tokens = scanTokens(query);
+  for (let index = 0; index < tokens.length; index++) {
+    const token = tokens[index];
+    if (caret <= token.start) break;
+    if (caret > token.end) continue;
+    const previous = tokens[index - 1];
+    const afterNot =
+      !!previous &&
+      !previous.quoted &&
+      !previous.negated &&
+      !previous.field &&
+      previous.value.toLowerCase() === 'not';
+    return {
+      excludes: token.negated || afterNot,
+      start: token.start,
+      end: token.end,
+      negated: token.negated,
+      field: token.field,
+      value: token.value,
+      quoted: token.quoted,
+      closed: token.closed,
+    };
+  }
+  return null;
+}
 
-  if (trimmed.length < 2) {
+/** The text a picked suggestion becomes, e.g. `-category:"Food and Drink"`. */
+export function suggestionToken(suggestion: SearchSuggestion, negated: boolean): string {
+  return `${negated ? '-' : ''}${suggestion.kind}:${quoteSearchValue(suggestion.name)}`;
+}
+
+/**
+ * Categories, labels, payees and accounts whose name matches the term being typed.
+ * A field prefix (category:, label:, payee:, account:) limits the kinds and lists names
+ * even before anything is typed; without one, at least two letters are needed.
+ */
+export function getSearchSuggestions(
+  term: ActiveSearchTerm | null,
+  sources: SearchSuggestionSources,
+  maxResults = 8
+): SearchSuggestion[] {
+  if (!term) return [];
+  let kinds: SearchSuggestionKind[];
+  if (term.field === null) {
+    kinds = SUGGESTION_KINDS;
+  } else if ((SUGGESTION_KINDS as string[]).includes(term.field)) {
+    kinds = [term.field as SearchSuggestionKind];
+  } else {
     return [];
   }
+  const needle = foldForMatch(term.value.trim());
+  if (term.field === null && needle.length < 2) return [];
 
-  const suggestions: string[] = [];
-  const seen = new Set<string>();
+  const listFor = (kind: SearchSuggestionKind) =>
+    kind === 'category'
+      ? sources.categories
+      : kind === 'label'
+        ? sources.labels
+        : kind === 'payee'
+          ? sources.payees
+          : sources.accounts;
 
-  // First: categories that start with the query (higher priority)
-  for (const name of categoryNames) {
-    if (name.toLowerCase().startsWith(trimmed) && !seen.has(name)) {
-      suggestions.push(name);
-      seen.add(name);
-      if (suggestions.length >= maxResults) return suggestions;
-    }
-  }
+  // Rank: name starts with the text, then a word starts with it, then it is anywhere.
+  const ranked: { rank: number; kindOrder: number; order: number; suggestion: SearchSuggestion }[] =
+    [];
+  kinds.forEach((kind, kindOrder) => {
+    const seen = new Set<string>();
+    listFor(kind).forEach((name, order) => {
+      const trimmed = name.trim();
+      const folded = foldForMatch(trimmed);
+      if (!trimmed || seen.has(folded)) return;
+      let rank: number;
+      if (folded.startsWith(needle)) rank = 0;
+      else if (needle && folded.split(/[\s\-/&,.()]+/).some((w) => w.startsWith(needle))) rank = 1;
+      else if (folded.includes(needle)) rank = 2;
+      else return;
+      seen.add(folded);
+      ranked.push({ rank, kindOrder, order, suggestion: { kind, name: trimmed } });
+    });
+  });
+  ranked.sort((a, b) => a.rank - b.rank || a.kindOrder - b.kindOrder || a.order - b.order);
 
-  // Second: categories that contain the query
-  for (const name of categoryNames) {
-    if (name.toLowerCase().includes(trimmed) && !seen.has(name)) {
-      suggestions.push(name);
-      seen.add(name);
-      if (suggestions.length >= maxResults) return suggestions;
-    }
-  }
+  // Hide a suggestion that is already typed out in full.
+  const complete = term.field !== null && (!term.quoted || term.closed);
+  return ranked
+    .map((entry) => entry.suggestion)
+    .filter(
+      (suggestion) =>
+        !(complete && suggestion.kind === term.field && foldForMatch(suggestion.name) === needle)
+    )
+    .slice(0, maxResults);
+}
 
-  return suggestions;
+/** Suggestions for the term at the caret, unless it was read as a date, amount or state. */
+export function getSearchSuggestionsAt(
+  query: string,
+  caret: number,
+  parsed: ParsedSearchQuery,
+  sources: SearchSuggestionSources,
+  maxResults = 8
+): { term: ActiveSearchTerm | null; suggestions: SearchSuggestion[] } {
+  const term = getActiveSearchTerm(query, caret);
+  if (!term) return { term: null, suggestions: [] };
+  const isKeyword = parsed.matchedTokens.some(
+    (token) =>
+      token.type !== 'text' &&
+      token.type !== 'category' &&
+      token.type !== 'label' &&
+      token.start <= term.start &&
+      term.end <= token.end
+  );
+  if (isKeyword) return { term, suggestions: [] };
+  return { term, suggestions: getSearchSuggestions(term, sources, maxResults) };
+}
+
+/**
+ * Replaces the term being typed with a picked suggestion, quoted and with its field and
+ * minus, and puts the caret after it (followed by one space).
+ */
+export function applySearchSuggestion(
+  query: string,
+  term: ActiveSearchTerm,
+  suggestion: SearchSuggestion
+): { query: string; caret: number } {
+  const text = suggestionToken(suggestion, term.negated);
+  const before = query.slice(0, term.start);
+  const after = query.slice(term.end).replace(/^\s+/, '');
+  const caret = before.length + text.length + 1;
+  return { query: `${before}${text} ${after}`, caret };
 }

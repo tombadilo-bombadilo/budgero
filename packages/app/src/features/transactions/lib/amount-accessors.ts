@@ -46,3 +46,16 @@ export function makeAmountAccessors(display: CurrencyDisplay): AmountAccessors {
     getSecondaryOutflow: makeFlowAccessor(outflowBudget, outflowOriginal, !preferOriginal),
   };
 }
+
+/**
+ * The formatter of the currency a register shows: the account's currency when the
+ * "Account Currency" toggle is on, otherwise the budget's. Amount search uses it too, so
+ * a typed amount is read and labelled in the currency of the amounts on screen.
+ */
+export function displayCurrencyFormatter(
+  display: CurrencyDisplay,
+  budgetFormatter: Intl.NumberFormat,
+  accountFormatter: Intl.NumberFormat
+): Intl.NumberFormat {
+  return display === 'budget' ? budgetFormatter : accountFormatter;
+}

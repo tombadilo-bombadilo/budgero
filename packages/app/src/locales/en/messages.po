@@ -3269,6 +3269,7 @@ msgstr "Access until:"
 #: src/features/rules/ui/RuleSummary.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Account"
 msgstr "Account"
 
@@ -5738,11 +5739,6 @@ msgstr "Categories for <0>{budgetName}</0>"
 msgid "Categories managed per split line"
 msgstr "Categories managed per split line"
 
-#. placeholder {0}: parsedQuery.textQuery
-#: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "Categories matching \"{0}\""
-msgstr "Categories matching \"{0}\""
-
 #: src/widgets/dashboard/builtin/builtin-cards.ts
 msgid "Categories that spent more than they have this month."
 msgstr "Categories that spent more than they have this month."
@@ -5761,6 +5757,7 @@ msgstr "Categorized"
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 #: src/pages/analytics/components/TargetTable.tsx
 #: src/pages/analytics/reports/PlanRealityReport.tsx
 #: src/pages/analytics/reports/VsExpenseReport.tsx
@@ -5777,6 +5774,10 @@ msgstr "Category / Transfer"
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 msgid "Category #{0}"
 msgstr "Category #{0}"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Category contains {shown}"
+msgstr "Category contains {shown}"
 
 #: src/features/budget-planning/ui/budget-table/useCategoryOperations.ts
 msgid "Category deleted"
@@ -11785,6 +11786,7 @@ msgstr "Know what you can spend. Keep your budget private. Create your account t
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Label"
 msgstr "Label"
 
@@ -11803,6 +11805,10 @@ msgstr "Label color"
 #: src/pages/settings/LabelsPage.tsx
 msgid "Label color hex"
 msgstr "Label color hex"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Label contains {shown}"
+msgstr "Label contains {shown}"
 
 #: src/pages/settings/LabelsPage.tsx
 msgid "Label name cannot be empty."
@@ -11823,10 +11829,6 @@ msgstr "Label:"
 #: src/features/transactions/ui/TransactionLabelBadge.tsx
 msgid "Label: {label}"
 msgstr "Label: {label}"
-
-#: src/shared/lib/search-query-parser.ts
-msgid "Label: {name}"
-msgstr "Label: {name}"
 
 #: src/shared/lib/search-query-parser.ts
 msgid "Label: {shown}"
@@ -15383,6 +15385,7 @@ msgstr "Pay"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Payee"
 msgstr "Payee"
 
@@ -15652,6 +15655,14 @@ msgstr "Pick a way to start"
 #: src/features/import/ui/steps/configure/AccountsInFilePanel.tsx
 msgid "Pick an account"
 msgstr "Pick an account"
+
+#: src/features/transactions/ui/TransactionsToolbar.tsx
+msgid "Pick one to hide its transactions"
+msgstr "Pick one to hide its transactions"
+
+#: src/features/transactions/ui/TransactionsToolbar.tsx
+msgid "Pick one to show only its transactions"
+msgstr "Pick one to show only its transactions"
 
 #: src/pages/analytics/components/AnalyticsFilterBar.tsx
 msgid "Pick range"
@@ -18173,6 +18184,10 @@ msgstr "Search reports"
 msgid "Search reports…"
 msgstr "Search reports…"
 
+#: src/features/transactions/ui/TransactionsToolbar.tsx
+msgid "Search suggestions"
+msgstr "Search suggestions"
+
 #: src/pages/explorer-page/components/SchemaSidebar.tsx
 msgid "Search tables, views, columns..."
 msgstr "Search tables, views, columns..."
@@ -19662,6 +19677,10 @@ msgstr "Start saving {monthlyTarget} this month"
 #: src/features/goal-management/lib/core-goal-text.ts
 msgid "Start this month's savings - aim for {target}"
 msgstr "Start this month's savings - aim for {target}"
+
+#: src/features/transactions/ui/SearchHelpPopover.tsx
+msgid "Start typing a category, label, payee or account name, also after a minus, and pick it from the list. Budgero adds the field and the quotes for you."
+msgstr "Start typing a category, label, payee or account name, also after a minus, and pick it from the list. Budgero adds the field and the quotes for you."
 
 #: src/features/subscription/ui/SubscriptionSuccess.tsx
 msgid "Start Using Budgero"
@@ -23109,6 +23128,10 @@ msgstr "With your current settings:"
 #: src/pages/settings/components/DuplicateHintSettingsCard.tsx
 msgid "Within {tolerance}"
 msgstr "Within {tolerance}"
+
+#: src/shared/lib/search-query-parser.ts
+msgid "Without {shown}"
+msgstr "Without {shown}"
 
 #: src/app/startup/StartupController.tsx
 msgid "Working from local data while sync reconnects."

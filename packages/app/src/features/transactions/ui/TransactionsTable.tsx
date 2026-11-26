@@ -21,7 +21,10 @@ import {
   isUncategorized,
   isUncleared,
 } from '@features/transactions/api/useTransactionSearch';
-import { makeAmountAccessors } from '@features/transactions/lib/amount-accessors';
+import {
+  displayCurrencyFormatter,
+  makeAmountAccessors,
+} from '@features/transactions/lib/amount-accessors';
 import {
   nextTransactionSort,
   sortTransactions,
@@ -259,8 +262,11 @@ export function TransactionsTable({
   );
 
   // Currency display helper - use the correct formatter AND values
-  const currentFormatter =
-    transactionCurrencyDisplay === 'budget' ? globalLocalizer : accountLocalizer;
+  const currentFormatter = displayCurrencyFormatter(
+    transactionCurrencyDisplay,
+    globalLocalizer,
+    accountLocalizer
+  );
   const currencyLabel =
     transactionCurrencyDisplay === 'budget'
       ? selectedBudget?.DisplayCurrency || t`Budget Currency`
@@ -289,18 +295,31 @@ export function TransactionsTable({
     return labels.map((label) => label.Name);
   }, [labels]);
 
+  // On one account's register, suggesting account names adds nothing.
+  const accountNames = React.useMemo(
+    () => (hideAccountColumn ? [] : accounts.map((account) => account.Name)),
+    [accounts, hideAccountColumn]
+  );
+
   const {
     searchQuery,
     setSearchQuery,
+    setCaret,
     parsedQuery,
     setIsSearchFocused,
     highlightedIndex,
     setHighlightedIndex,
-    categorySuggestions,
+    suggestions,
+    activeTerm,
     handleRemoveToken,
     handleClearAll,
-    handleSelectCategory,
-  } = useTransactionSearch(categoryNames, labelNames, onDateRangeChange);
+    handleSelectSuggestion,
+  } = useTransactionSearch(categoryNames, labelNames, onDateRangeChange, {
+    payeeNames: payees,
+    accountNames,
+    // Typed amounts are in the currency the table shows.
+    amountFormatter: currentFormatter,
+  });
 
   const isFilterModeActive =
     searchQuery.trim().length > 0 || showOnlyUncategorized || showOnlyUncleared;
@@ -544,15 +563,17 @@ export function TransactionsTable({
             onInlineAdd={inlineEntry ? openInlineAdd : undefined}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+            setCaret={setCaret}
             setIsSearchFocused={setIsSearchFocused}
-            categorySuggestions={categorySuggestions}
+            suggestions={suggestions}
+            suggestionsNegated={activeTerm?.excludes ?? false}
             highlightedIndex={highlightedIndex}
             setHighlightedIndex={setHighlightedIndex}
-            handleSelectCategory={handleSelectCategory}
+            handleSelectSuggestion={handleSelectSuggestion}
             parsedQuery={parsedQuery}
             handleRemoveToken={handleRemoveToken}
             handleClearAll={handleClearAll}
-            globalLocalizer={globalLocalizer}
+            amountFormatter={currentFormatter}
             forceBudgetCurrency={forceBudgetCurrency}
             selectedBudget={selectedBudget}
             selectedAccount={selectedAccount}
