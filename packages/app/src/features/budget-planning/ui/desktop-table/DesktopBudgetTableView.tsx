@@ -66,7 +66,10 @@ export function DesktopBudgetTableView({
   const headClass = 'h-8 text-xs font-medium uppercase tracking-wide text-muted-foreground';
   // Sticks right below the sticky toolbar (offset set by BudgetTable).
   const tableHeader = (
-    <TableHeader className="sticky top-[var(--budget-toolbar-offset,0px)] z-20 bg-background shadow-[0_1px_0_var(--border)]">
+    <TableHeader
+      data-budget-sticky-header
+      className="sticky top-[var(--budget-toolbar-offset,0px)] z-20 bg-background shadow-[0_1px_0_var(--border)]"
+    >
       <TableRow>
         <TableHead className={cn(headClass, 'w-[48px]')} />
         <TableHead className={cn(headClass, 'w-auto')}>

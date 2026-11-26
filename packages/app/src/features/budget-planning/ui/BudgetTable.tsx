@@ -28,6 +28,7 @@ import {
   useCategorySelection,
   useCategoryOperations,
   useSwipeMonth,
+  useStickyHeaderHeight,
   useStickyToolbarOffset,
   type BudgetTableProps,
   type BudgetTableToolbarControls,
@@ -80,6 +81,7 @@ export function BudgetTable({
   sharedExpandedCategories,
   onSharedExpandedCategoriesChange,
   renderToolbar,
+  onStickyInsetChange,
   enableLongPressSelection = false,
   longPressDuration = 500,
   onCategoryPress,
@@ -251,6 +253,11 @@ export function BudgetTable({
 
   // The column header sticks right below the sticky toolbar.
   const { slotRef: toolbarSlotRef, offset: toolbarOffset } = useStickyToolbarOffset();
+  const { rootRef: stickyRootRef, height: stickyHeaderHeight } = useStickyHeaderHeight();
+  const stickyInset = toolbarOffset + stickyHeaderHeight;
+  useEffect(() => {
+    onStickyInsetChange?.(stickyInset);
+  }, [onStickyInsetChange, stickyInset]);
 
   const { enableSwipe, swipeHandlers } = useSwipeMonth({
     currentMonth,
@@ -511,6 +518,7 @@ export function BudgetTable({
 
   return (
     <div
+      ref={stickyRootRef}
       data-budget-categories
       className={cn('flex flex-col relative', layoutVariant !== 'desktop-table' && 'select-none')}
       style={{ '--budget-toolbar-offset': `${toolbarOffset}px` } as CSSProperties}

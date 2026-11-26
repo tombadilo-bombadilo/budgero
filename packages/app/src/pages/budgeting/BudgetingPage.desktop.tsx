@@ -1,5 +1,12 @@
 import { Trans, useLingui } from '@lingui/react/macro';
-import { useEffect, useMemo, useState, useCallback, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  type CSSProperties,
+  type ReactNode,
+} from 'react';
 import { Card, CardContent } from '@shared/ui/card';
 import { ScrollArea } from '@shared/ui/scroll-area';
 import { BudgetTable } from '@features/budget-planning/ui/BudgetTable';
@@ -92,6 +99,8 @@ export function BudgetingPageDesktop() {
   const { hideCategory, hasHiddenCategories } = useHideCategory(budgetId);
 
   const [multiMonthOpen, setMultiMonthOpen] = useState(false);
+  // Height of the table's sticky toolbar + header: the scrollbar starts below it.
+  const [stickyInset, setStickyInset] = useState(0);
   const [multiMonthSearchTerm, setMultiMonthSearchTerm] = useState('');
   const [globalCollapsed, setGlobalCollapsed] = useState(false);
   const [monthCount, setMonthCount] = useState<number>(3);
@@ -302,8 +311,17 @@ export function BudgetingPageDesktop() {
           )}
           <Card className="min-w-0 flex flex-col min-h-0 flex-1 overflow-hidden pt-0 pb-2">
             <CardContent className="px-0 flex-1 min-h-0 h-full overflow-hidden">
-              <ScrollArea className="h-full">
+              {/* The scrollbar stays inside the table frame: below the sticky
+                  toolbar and column header, inside the table's right border,
+                  clear of its rounded bottom corner. Radix positions it with
+                  inline styles, hence the !important insets. */}
+              <ScrollArea
+                className="h-full"
+                style={{ '--budget-sticky-inset': `${stickyInset}px` } as CSSProperties}
+                scrollbarClassName="!top-[var(--budget-sticky-inset,0px)] !right-px !bottom-1.5 h-auto w-2"
+              >
                 <BudgetTable
+                  onStickyInsetChange={setStickyInset}
                   rawRows={budgetData || []}
                   goals={goalsData || []}
                   globalLocalizer={globalLocalizer}
