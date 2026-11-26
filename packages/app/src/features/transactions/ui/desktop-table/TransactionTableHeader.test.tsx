@@ -83,13 +83,23 @@ describe('TransactionTableHeader sorting', () => {
   it('resizing a column never starts a sort', () => {
     const { onSortChange, onResize } = renderHeader();
     const handle = header('Payee').querySelector('[aria-label="Resize column"]')!;
-    fireEvent.mouseDown(handle, { clientX: 100 });
-    fireEvent.mouseMove(document, { clientX: 140 });
-    fireEvent.mouseUp(document);
+    fireEvent.pointerDown(handle, { pointerId: 1, pointerType: 'mouse', button: 0, clientX: 100 });
+    fireEvent.pointerMove(handle, { pointerId: 1, clientX: 140 });
+    fireEvent.pointerUp(handle, { pointerId: 1 });
     fireEvent.click(handle);
     fireEvent.keyDown(handle, { key: 'ArrowRight' });
     expect(onResize).toHaveBeenCalledWith('payee', 40);
     expect(onResize).toHaveBeenCalledWith('payee', 10);
     expect(onSortChange).not.toHaveBeenCalled();
+  });
+
+  it('hides the Memo and Payee columns when they are switched off', () => {
+    renderHeader(null, { showMemoColumn: false });
+    expect(screen.queryByRole('button', { name: /^Memo/ })).toBeNull();
+    expect(sortButton('Payee')).toBeInTheDocument();
+    cleanup();
+    renderHeader(null, { showPayeeColumn: false });
+    expect(screen.queryByRole('button', { name: /^Payee/ })).toBeNull();
+    expect(sortButton('Memo')).toBeInTheDocument();
   });
 });

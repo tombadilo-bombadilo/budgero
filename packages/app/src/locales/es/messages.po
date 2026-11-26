@@ -6158,6 +6158,10 @@ msgstr "Elige categoría"
 msgid "Choose Change Master Password and enter the current and the new one (at least 8 characters). Your other devices then ask for the new one; people you share a workspace with keep their own."
 msgstr "Elige «Cambiar contraseña maestra» e introduce la actual y la nueva (al menos 8 caracteres). Tus otros dispositivos pedirán la nueva; quienes comparten un espacio de trabajo contigo mantienen la suya."
 
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
+msgid "Choose columns and memo wrapping"
+msgstr "Elegir columnas y ajuste de notas"
+
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Choose Customize to add, move, resize or remove cards; Reset to default in the ⋯ menu brings the original back. To open Budgero on another page, change Default Home in Settings → Appearance."
 msgstr "Elige «Personalizar» para añadir, mover, cambiar de tamaño o quitar tarjetas; «Restablecer predeterminada» en el menú ⋯ recupera el original. Para abrir Budgero en otra página, cambia «Inicio predeterminado» en Ajustes → Apariencia."
@@ -6550,6 +6554,7 @@ msgstr "Columna {0}"
 msgid "Column Mapping"
 msgstr "Asignación de columnas"
 
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Columns"
 msgstr "Columnas"
@@ -12757,6 +12762,7 @@ msgstr "Registros de membresía"
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
 msgid "Memo"
 msgstr "Nota"
 
@@ -15403,6 +15409,7 @@ msgstr "Pagar"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Payee"
 msgstr "Beneficiario"
@@ -18925,6 +18932,10 @@ msgstr "Mostrar columna de saldo"
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 msgid "Show Budget, Account, Category & Payee IDs"
 msgstr "Mostrar IDs de Presupuesto, Cuenta, Categoría y Beneficiario"
+
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
+msgid "Show columns"
+msgstr "Mostrar columnas"
 
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "Show compact view"
@@ -23245,6 +23256,10 @@ msgstr "Espacios de trabajo y compartir"
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Workspaces hold budgets"
 msgstr "Los espacios de trabajo contienen presupuestos"
+
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
+msgid "Wrap long memos"
+msgstr "Ajustar notas largas"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Write a formula, e.g. Spending / Income * 100"

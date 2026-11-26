@@ -32,6 +32,8 @@ import {
   type TransactionSortState,
 } from '@features/transactions/lib/transaction-sort';
 import { useTransactionSort } from '@features/transactions/api/useTransactionSort';
+import { useTransactionTableColumns } from '@features/transactions/api/useTransactionTableColumns';
+import { visibleColumnSort } from '@features/transactions/lib/table-columns';
 import { MobileTransactionSortControl } from '@features/transactions/ui/MobileTransactionSortControl';
 import { MobileTransactionList } from '@features/transactions/ui/MobileTransactionList';
 import { DesktopTransactionTable } from '@features/transactions/ui/desktop-table';
@@ -328,7 +330,11 @@ export function TransactionsTable({
   const registerSortKey = preselectedAccountId
     ? `account:${preselectedAccountId}`
     : `all:${budgetId}`;
-  const { sort, setSort } = useTransactionSort(registerSortKey);
+  const { sort: storedSort, setSort } = useTransactionSort(registerSortKey);
+  // Desktop column options (synced per user). A sort on a column the desktop
+  // table hides falls back to date order there; mobile cards show every field.
+  const { columns: tableColumns, update: updateTableColumns } = useTransactionTableColumns();
+  const sort = isMobile ? storedSort : visibleColumnSort(storedSort, tableColumns);
   const handleSortChange = React.useCallback(
     (next: TransactionSortState) => {
       setSort(next);
@@ -586,6 +592,8 @@ export function TransactionsTable({
             handleToggleBalanceColumn={handleToggleBalanceColumn}
             showLabelColumn={showLabelColumn}
             handleToggleLabelColumn={handleToggleLabelColumn}
+            tableColumns={tableColumns}
+            onTableColumnsChange={updateTableColumns}
             pageSize={pageSize}
             handlePageSizeChange={handlePageSizeChange}
             mobileSortControl={
@@ -690,6 +698,9 @@ export function TransactionsTable({
               hideSecondaryAmounts={hideSecondaryAmounts}
               showBalanceColumn={showBalanceColumn}
               showLabelColumn={showLabelColumn}
+              showMemoColumn={tableColumns.showMemo}
+              showPayeeColumn={tableColumns.showPayee}
+              wrapMemo={tableColumns.wrapMemo}
               showExchangeRateColumn={
                 hideAccountColumn &&
                 !!selectedAccount?.Currency &&

@@ -25,6 +25,8 @@ import type {
   SearchSuggestionKind,
 } from '@shared/lib/search-query-parser';
 import type { Account, Budget } from '@budgero/core/browser';
+import type { TransactionTableColumns } from '@features/transactions/lib/table-columns';
+import { TransactionColumnsMenu } from '@features/transactions/ui/TransactionColumnsMenu';
 
 // Currency → flag country code, derived from the canonical currency list.
 const currencyCountryMap: Record<string, string> = Object.fromEntries(
@@ -89,6 +91,9 @@ interface TransactionsToolbarProps {
   handleToggleBalanceColumn: () => void;
   showLabelColumn: boolean;
   handleToggleLabelColumn: () => void;
+  /** Desktop column options (Memo, Payee, memo wrapping). */
+  tableColumns: TransactionTableColumns;
+  onTableColumnsChange: (patch: Partial<TransactionTableColumns>) => void;
   // Page size
   pageSize: number;
   handlePageSizeChange: (value: string) => void;
@@ -133,6 +138,8 @@ export function TransactionsToolbar({
   handleToggleBalanceColumn,
   showLabelColumn,
   handleToggleLabelColumn,
+  tableColumns,
+  onTableColumnsChange,
   pageSize,
   handlePageSizeChange,
   mobileSortControl,
@@ -370,6 +377,11 @@ export function TransactionsToolbar({
               Label
             </Trans>
           </Button>
+        )}
+
+        {/* Memo / Payee columns and memo wrapping - desktop only */}
+        {!isMobile && (
+          <TransactionColumnsMenu columns={tableColumns} onChange={onTableColumnsChange} />
         )}
 
         {/* Mobile cards retain paging; the desktop register is virtualized. */}

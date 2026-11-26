@@ -26,6 +26,10 @@ interface TransactionTableBodyProps {
   hideRunningBalance?: boolean;
   showLabelColumn?: boolean;
   showExchangeRateColumn?: boolean;
+  showMemoColumn?: boolean;
+  showPayeeColumn?: boolean;
+  /** Memos wrap onto several lines instead of being cut off. */
+  wrapMemo?: boolean;
   editorDirectories: TransactionEditorDirectories;
   editingCell: { transactionId: number; column: TransactionEditableColumn } | null;
   currentFormatter: Intl.NumberFormat;
@@ -75,6 +79,9 @@ export const TransactionTableBody = React.memo(function TransactionTableBody({
   hideRunningBalance = false,
   showLabelColumn = true,
   showExchangeRateColumn = false,
+  showMemoColumn = true,
+  showPayeeColumn = true,
+  wrapMemo = false,
   editorDirectories,
   editingCell,
   currentFormatter,
@@ -168,6 +175,9 @@ export const TransactionTableBody = React.memo(function TransactionTableBody({
             hideRunningBalance={hideRunningBalance}
             showLabelColumn={showLabelColumn}
             showExchangeRateColumn={showExchangeRateColumn}
+            showMemoColumn={showMemoColumn}
+            showPayeeColumn={showPayeeColumn}
+            wrapMemo={wrapMemo}
             editorDirectories={editorDirectories}
             editingColumn={
               editingCell?.transactionId === transaction.ID ? editingCell.column : null

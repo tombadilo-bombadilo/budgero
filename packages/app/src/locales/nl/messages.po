@@ -6158,6 +6158,10 @@ msgstr "Kies categorie"
 msgid "Choose Change Master Password and enter the current and the new one (at least 8 characters). Your other devices then ask for the new one; people you share a workspace with keep their own."
 msgstr "Kies ‘Hoofdwachtwoord wijzigen’ en vul het huidige en het nieuwe in (minstens 8 tekens). Je andere apparaten vragen daarna om het nieuwe; wie een werkruimte met je deelt, houdt zijn eigen."
 
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
+msgid "Choose columns and memo wrapping"
+msgstr "Kolommen en memo-terugloop kiezen"
+
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Choose Customize to add, move, resize or remove cards; Reset to default in the ⋯ menu brings the original back. To open Budgero on another page, change Default Home in Settings → Appearance."
 msgstr "Kies ‘Aanpassen’ om kaarten toe te voegen, te verplaatsen, van grootte te veranderen of te verwijderen; ‘Standaard herstellen’ in het ⋯-menu zet het origineel terug. Wil je Budgero op een andere pagina openen, wijzig dan ‘Standaard startpagina’ in Instellingen → Weergave."
@@ -6550,6 +6554,7 @@ msgstr "Kolom {0}"
 msgid "Column Mapping"
 msgstr "Kolomtoewijzing"
 
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
 #: src/pages/analytics/reports/SpendingReport.tsx
 msgid "Columns"
 msgstr "Kolommen"
@@ -12757,6 +12762,7 @@ msgstr "Lidmaatschapsgegevens"
 #: src/features/transactions/ui/form/SplitEditor.tsx
 #: src/features/transactions/ui/mobile-transaction-card/TransactionCardDetails.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
 msgid "Memo"
 msgstr "Memo"
 
@@ -15403,6 +15409,7 @@ msgstr "Betalen"
 #: src/features/transactions/ui/desktop-table/SplitDetailsDialog.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Payee"
 msgstr "Begunstigde"
@@ -18925,6 +18932,10 @@ msgstr "Saldo-kolom tonen"
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 msgid "Show Budget, Account, Category & Payee IDs"
 msgstr "Toon Budget-, Rekening-, Categorie- en Begunstigde-ID's"
+
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
+msgid "Show columns"
+msgstr "Kolommen tonen"
 
 #: src/features/goal-management/ui/GoalCard.tsx
 msgid "Show compact view"
@@ -23245,6 +23256,10 @@ msgstr "Werkruimtes & Delen"
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Workspaces hold budgets"
 msgstr "Werkruimtes bevatten budgetten"
+
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
+msgid "Wrap long memos"
+msgstr "Lange memo's laten teruglopen"
 
 #: src/features/reports/ui/notebook/NotebookEditor.tsx
 msgid "Write a formula, e.g. Spending / Income * 100"

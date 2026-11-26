@@ -53,16 +53,22 @@ interface CellDisplayButtonProps {
   title: string;
   onClick: () => void;
   className?: string;
+  /** Wrap long text onto several lines (the row grows) instead of cutting it off. */
+  wrap?: boolean;
 }
 
-function CellDisplayButton({ value, title, onClick, className }: CellDisplayButtonProps) {
+/** Memo text that wraps: breaks long words and links too, so nothing spills into the next cell. */
+const WRAPPED_TEXT = 'whitespace-normal break-words [overflow-wrap:anywhere]';
+
+function CellDisplayButton({ value, title, onClick, className, wrap }: CellDisplayButtonProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       title={title}
       className={cn(
-        'h-8 w-full min-w-0 truncate rounded-md px-2 text-left text-xs transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring xl:text-sm',
+        'w-full min-w-0 rounded-md px-2 text-left text-xs transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring xl:text-sm',
+        wrap ? `min-h-8 py-1.5 ${WRAPPED_TEXT}` : 'h-8 truncate',
         className
       )}
     >
@@ -87,6 +93,10 @@ interface TransactionRowProps {
   hideRunningBalance?: boolean;
   showLabelColumn?: boolean;
   showExchangeRateColumn?: boolean;
+  showMemoColumn?: boolean;
+  showPayeeColumn?: boolean;
+  /** Memos wrap onto several lines instead of being cut off. */
+  wrapMemo?: boolean;
   editorDirectories: TransactionEditorDirectories;
   editingColumn: TransactionEditableColumn | null;
   currentFormatter: Intl.NumberFormat;
@@ -128,6 +138,9 @@ export const TransactionRow = React.memo(function TransactionRow({
   hideRunningBalance = false,
   showLabelColumn = true,
   showExchangeRateColumn = false,
+  showMemoColumn = true,
+  showPayeeColumn = true,
+  wrapMemo = false,
   editorDirectories,
   editingColumn,
   currentFormatter,
@@ -305,6 +318,7 @@ export const TransactionRow = React.memo(function TransactionRow({
     return (
       <TableRow
         id={`transaction-${transaction.ID}`}
+        data-row-key={transaction.ID}
         data-cursor={isCursor || undefined}
         className={cn(
           compact ? 'h-10 [&>td]:py-0.5' : 'h-16',
@@ -341,22 +355,29 @@ export const TransactionRow = React.memo(function TransactionRow({
             )}
           </div>
         </TableCell>
-        <TableCell className="max-w-[220px] overflow-hidden">
-          <span
-            className="block w-full truncate px-2 text-xs xl:text-sm"
-            title={transaction.Memo || undefined}
-          >
-            {transaction.Memo}
-          </span>
-        </TableCell>
+        {showMemoColumn && (
+          <TableCell className="max-w-[220px] overflow-hidden">
+            <span
+              className={cn(
+                'block w-full px-2 text-xs xl:text-sm',
+                wrapMemo ? WRAPPED_TEXT : 'truncate'
+              )}
+              title={transaction.Memo || undefined}
+            >
+              {transaction.Memo}
+            </span>
+          </TableCell>
+        )}
         {!hideAccountColumn && (
           <TableCell className="max-w-[200px]">
             <span className="px-2 text-xs xl:text-sm">{transaction.Account}</span>
           </TableCell>
         )}
-        <TableCell className="max-w-[200px]">
-          <span className="px-2 text-xs xl:text-sm">{transaction.Payee || transferLabel}</span>
-        </TableCell>
+        {showPayeeColumn && (
+          <TableCell className="max-w-[200px]">
+            <span className="px-2 text-xs xl:text-sm">{transaction.Payee || transferLabel}</span>
+          </TableCell>
+        )}
         {showLabelColumn && (
           <TableCell className="max-w-[180px]">
             <span className="px-2 text-xs text-muted-foreground">—</span>
@@ -404,6 +425,7 @@ export const TransactionRow = React.memo(function TransactionRow({
   return (
     <TableRow
       id={`transaction-${transaction.ID}`}
+      data-row-key={transaction.ID}
       data-cursor={isCursor || undefined}
       className={cn(
         compact ? 'h-10 [&>td]:py-0.5' : 'h-16',
@@ -473,26 +495,29 @@ export const TransactionRow = React.memo(function TransactionRow({
         )}
       </TableCell>
 
-      {/* Memo */}
-      <TableCell className="max-w-[220px]">
-        {editingColumn === 'memo' ? (
-          <EditableCell
-            value={transaction.Memo || ''}
-            onCommit={(newVal) => onCellCommit(transaction.ID, 'Memo', newVal)}
-            inputClassName="h-8 text-xs xl:text-sm"
-            autoFocus
-            onEditingChange={(editing) => {
-              if (!editing) onDeactivateCell();
-            }}
-          />
-        ) : (
-          <CellDisplayButton
-            value={transaction.Memo || '—'}
-            title={transaction.Memo || t`Edit memo`}
-            onClick={() => activateCell('memo')}
-          />
-        )}
-      </TableCell>
+      {/* Memo (optional) */}
+      {showMemoColumn && (
+        <TableCell className="max-w-[220px]">
+          {editingColumn === 'memo' ? (
+            <EditableCell
+              value={transaction.Memo || ''}
+              onCommit={(newVal) => onCellCommit(transaction.ID, 'Memo', newVal)}
+              inputClassName="h-8 text-xs xl:text-sm"
+              autoFocus
+              onEditingChange={(editing) => {
+                if (!editing) onDeactivateCell();
+              }}
+            />
+          ) : (
+            <CellDisplayButton
+              value={transaction.Memo || '—'}
+              title={transaction.Memo || t`Edit memo`}
+              onClick={() => activateCell('memo')}
+              wrap={wrapMemo}
+            />
+          )}
+        </TableCell>
+      )}
 
       {/* Account (optional) */}
       {!hideAccountColumn && (
@@ -518,30 +543,32 @@ export const TransactionRow = React.memo(function TransactionRow({
         </TableCell>
       )}
 
-      {/* Payee */}
-      <TableCell className="max-w-[200px]">
-        {editingColumn === 'payee' ? (
-          <TransactionPayeeCell
-            budgetId={budgetId}
-            transaction={transaction}
-            accounts={editorDirectories.accounts}
-            payees={editorDirectories.payees}
-            onCommit={(newVal) => onCellCommit(transaction.ID, 'Payee', newVal)}
-            triggerClassName="h-8 text-xs xl:text-sm px-2 truncate"
-            defaultOpen
-            onOpenChange={(open) => {
-              if (!open) onDeactivateCell();
-            }}
-          />
-        ) : (
-          <CellDisplayButton
-            value={transaction.Payee || transferLabel || '—'}
-            title={transaction.Payee || transferLabel || t`Edit payee`}
-            onClick={() => activateCell('payee')}
-            className={transferLabel ? 'text-muted-foreground' : undefined}
-          />
-        )}
-      </TableCell>
+      {/* Payee (optional) */}
+      {showPayeeColumn && (
+        <TableCell className="max-w-[200px]">
+          {editingColumn === 'payee' ? (
+            <TransactionPayeeCell
+              budgetId={budgetId}
+              transaction={transaction}
+              accounts={editorDirectories.accounts}
+              payees={editorDirectories.payees}
+              onCommit={(newVal) => onCellCommit(transaction.ID, 'Payee', newVal)}
+              triggerClassName="h-8 text-xs xl:text-sm px-2 truncate"
+              defaultOpen
+              onOpenChange={(open) => {
+                if (!open) onDeactivateCell();
+              }}
+            />
+          ) : (
+            <CellDisplayButton
+              value={transaction.Payee || transferLabel || '—'}
+              title={transaction.Payee || transferLabel || t`Edit payee`}
+              onClick={() => activateCell('payee')}
+              className={transferLabel ? 'text-muted-foreground' : undefined}
+            />
+          )}
+        </TableCell>
+      )}
 
       {/* Label */}
       {showLabelColumn && (
