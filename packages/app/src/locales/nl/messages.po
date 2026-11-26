@@ -4811,6 +4811,10 @@ msgstr "Terug naar de vorige vraag"
 msgid "Backup"
 msgstr "Back-up"
 
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Backup downloaded"
+msgstr "{'de': 'Backup heruntergeladen', 'es': 'Copia descargada', 'fr': 'Sauvegarde téléchargée', 'nl': 'Back-up gedownload'}"
+
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Backup reminder updated"
 msgstr "Back-upherinnering bijgewerkt"
@@ -5551,6 +5555,7 @@ msgstr "Canadese dollar"
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 #: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
 #: src/features/budget-planning/ui/category-row/CoverOverspendingPopover.tsx
@@ -5866,6 +5871,7 @@ msgid "Change category, account, payee or label"
 msgstr "Categorie, rekening, begunstigde of label wijzigen"
 
 #: src/features/account-management/ui/AccountCurrencyChangeDialog.tsx
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 msgid "Change currency"
 msgstr "Valuta wijzigen"
 
@@ -5904,6 +5910,10 @@ msgstr "Plan wijzigen"
 #: src/pages/settings/subscription/PlanChangeDialog.tsx
 msgid "Change Subscription Plan"
 msgstr "Abonnement wijzigen"
+
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Change the budget currency from {fromCurrency} to {toCurrency}?"
+msgstr "{'de': 'Budgetwährung von {fromCurrency} auf {toCurrency} ändern?', 'es': '¿Cambiar la moneda del presupuesto de {fromCurrency} a {toCurrency}?', 'fr': 'Changer la devise du budget de {fromCurrency} à {toCurrency} ?', 'nl': 'Budgetvaluta wijzigen van {fromCurrency} naar {toCurrency}?'}"
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Change the master password"
@@ -7777,6 +7787,7 @@ msgid "Database"
 msgstr "Database"
 
 #: src/app/system/BackupReminderDialog.tsx
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 msgid "Database backup downloaded"
 msgstr "Database-back-up gedownload"
 
@@ -8409,6 +8420,10 @@ msgstr "Downloaden"
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Download a backup first if you are unsure."
 msgstr "Download eerst een back-up als je twijfelt."
+
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Download backup"
+msgstr "{'de': 'Backup herunterladen', 'es': 'Descargar copia de seguridad', 'fr': 'Télécharger une sauvegarde', 'nl': 'Back-up downloaden'}"
 
 #: src/features/reports/ui/notebook/viz/ExportMenu.tsx
 msgid "Download CSV"
@@ -9249,6 +9264,10 @@ msgstr "Elke geplande keer die nog niet is ingevoerd, op vervaldatum."
 msgid "Every transaction came across."
 msgstr "Alle transacties zijn overgenomen."
 
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Every transaction, account balance, assigned amount and goal target in this budget is converted to {toCurrency}, using the exchange rate of each transaction's date. Amounts in each account's own currency stay the same."
+msgstr "{'de': 'Jede Transaktion, jeder Kontostand, jeder zugewiesene Betrag und jeder Zielbetrag in diesem Budget wird in {toCurrency} umgerechnet, mit dem Wechselkurs des jeweiligen Transaktionsdatums. Beträge in der eigenen Währung jedes Kontos bleiben gleich.', 'es': 'Cada transacción, saldo de cuenta, importe asignado y objetivo de meta de este presupuesto se convierte a {toCurrency}, con el tipo de cambio de la fecha de cada transacción. Los importes en la moneda propia de cada cuenta no cambian.', 'fr': 'Chaque transaction, solde de compte, montant attribué et objectif de ce budget est converti en {toCurrency}, au taux de change de la date de chaque transaction. Les montants dans la devise propre de chaque compte restent les mêmes.', 'nl': 'Elke transactie, elk rekeningsaldo, elk toegewezen bedrag en elk doelbedrag in dit budget wordt omgerekend naar {toCurrency}, met de wisselkoers van de datum van elke transactie. Bedragen in de eigen valuta van elke rekening blijven gelijk.'}"
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Every transaction; split transactions count once per category."
 msgstr "Elke transactie; gesplitste transacties tellen één keer per categorie."
@@ -9650,6 +9669,7 @@ msgstr "Query uitvoeren mislukt"
 msgid "Failed to export CSV files"
 msgstr "CSV-bestanden konden niet worden geëxporteerd"
 
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Failed to export database"
 msgstr "Database kon niet worden geëxporteerd"
@@ -21047,6 +21067,10 @@ msgstr "Deze gedeelde werkruimte is vergrendeld totdat de eigenaar zijn of haar 
 #: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 msgid "This SQL question has no chart: the dashboard shows its rows as a table."
 msgstr "Deze SQL-vraag heeft geen grafiek: het dashboard toont de rijen als tabel."
+
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "This touches the whole budget and syncs to your other devices. Download a backup first, so you can restore it if something looks wrong."
+msgstr "{'de': 'Das betrifft das ganze Budget und wird mit deinen anderen Geräten synchronisiert. Lade zuerst ein Backup herunter, damit du es wiederherstellen kannst, falls etwas nicht stimmt.', 'es': 'Esto afecta a todo el presupuesto y se sincroniza con tus otros dispositivos. Descarga antes una copia de seguridad para poder restaurarla si algo no se ve bien.', 'fr': 'Cela touche tout le budget et se synchronise avec vos autres appareils. Téléchargez d’abord une sauvegarde pour pouvoir la restaurer si quelque chose semble incorrect.', 'nl': 'Dit raakt het hele budget en wordt gesynchroniseerd naar je andere apparaten. Download eerst een back-up, zodat je die kunt terugzetten als er iets niet klopt.'}"
 
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "This transaction has been reconciled and is locked as cleared."

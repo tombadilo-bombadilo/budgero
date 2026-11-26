@@ -4813,6 +4813,10 @@ msgstr "Back to the previous question"
 msgid "Backup"
 msgstr "Backup"
 
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Backup downloaded"
+msgstr "Backup downloaded"
+
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Backup reminder updated"
 msgstr "Backup reminder updated"
@@ -5553,6 +5557,7 @@ msgstr "Canadian Dollar"
 #: src/features/bank-sync/ui/BankFeedSettingsDialog.tsx
 #: src/features/bank-sync/ui/EnableBankingBanksCard.tsx
 #: src/features/bank-sync/ui/LinkAccountDialog.tsx
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 #: src/features/budget-planning/ui/budget-table/BudgetModals.tsx
 #: src/features/budget-planning/ui/category-row/CCPaymentCoverPopover.tsx
 #: src/features/budget-planning/ui/category-row/CoverOverspendingPopover.tsx
@@ -5868,6 +5873,7 @@ msgid "Change category, account, payee or label"
 msgstr "Change category, account, payee or label"
 
 #: src/features/account-management/ui/AccountCurrencyChangeDialog.tsx
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 msgid "Change currency"
 msgstr "Change currency"
 
@@ -5906,6 +5912,10 @@ msgstr "Change Plan"
 #: src/pages/settings/subscription/PlanChangeDialog.tsx
 msgid "Change Subscription Plan"
 msgstr "Change Subscription Plan"
+
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Change the budget currency from {fromCurrency} to {toCurrency}?"
+msgstr "Change the budget currency from {fromCurrency} to {toCurrency}?"
 
 #: src/features/page-guides/ui/guide-content.tsx
 msgid "Change the master password"
@@ -7779,6 +7789,7 @@ msgid "Database"
 msgstr "Database"
 
 #: src/app/system/BackupReminderDialog.tsx
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 msgid "Database backup downloaded"
 msgstr "Database backup downloaded"
 
@@ -8411,6 +8422,10 @@ msgstr "Download"
 #: src/features/snapshot-history/ui/SnapshotHistoryList.tsx
 msgid "Download a backup first if you are unsure."
 msgstr "Download a backup first if you are unsure."
+
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Download backup"
+msgstr "Download backup"
 
 #: src/features/reports/ui/notebook/viz/ExportMenu.tsx
 msgid "Download CSV"
@@ -9251,6 +9266,10 @@ msgstr "Every scheduled occurrence that hasn't been entered yet, by due date."
 msgid "Every transaction came across."
 msgstr "Every transaction came across."
 
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "Every transaction, account balance, assigned amount and goal target in this budget is converted to {toCurrency}, using the exchange rate of each transaction's date. Amounts in each account's own currency stay the same."
+msgstr "Every transaction, account balance, assigned amount and goal target in this budget is converted to {toCurrency}, using the exchange rate of each transaction's date. Amounts in each account's own currency stay the same."
+
 #: src/features/reports/ui/notebook/question-labels.ts
 msgid "Every transaction; split transactions count once per category."
 msgstr "Every transaction; split transactions count once per category."
@@ -9652,6 +9671,7 @@ msgstr "Failed to execute query"
 msgid "Failed to export CSV files"
 msgstr "Failed to export CSV files"
 
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
 #: src/pages/settings/DataManagementPage.tsx
 msgid "Failed to export database"
 msgstr "Failed to export database"
@@ -21049,6 +21069,10 @@ msgstr "This shared workspace is locked until the owner renews their plan."
 #: src/pages/custom-dashboards/components/AddToDashboardDialog.tsx
 msgid "This SQL question has no chart: the dashboard shows its rows as a table."
 msgstr "This SQL question has no chart: the dashboard shows its rows as a table."
+
+#: src/features/budget-management/ui/CurrencyChangeConfirmDialog.tsx
+msgid "This touches the whole budget and syncs to your other devices. Download a backup first, so you can restore it if something looks wrong."
+msgstr "This touches the whole budget and syncs to your other devices. Download a backup first, so you can restore it if something looks wrong."
 
 #: src/features/transactions/ui/StatusIndicatorPopover.tsx
 msgid "This transaction has been reconciled and is locked as cleared."
