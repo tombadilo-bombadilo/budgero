@@ -560,14 +560,16 @@ export function SearchableCategorySelect({
 }
 
 /** True on touch-first screens (no hover, coarse pointer), at any width. */
+function coarsePointerQuery(): MediaQueryList | null {
+  if (typeof window === 'undefined' || !window.matchMedia) return null;
+  return window.matchMedia('(hover: none) and (pointer: coarse)');
+}
+
 function useCoarsePointer(): boolean {
-  const query = '(hover: none) and (pointer: coarse)';
-  const [coarse, setCoarse] = React.useState(
-    () => typeof window !== 'undefined' && !!window.matchMedia?.(query).matches
-  );
+  const [coarse, setCoarse] = React.useState(() => !!coarsePointerQuery()?.matches);
   React.useEffect(() => {
-    if (typeof window === 'undefined' || !window.matchMedia) return;
-    const mql = window.matchMedia(query);
+    const mql = coarsePointerQuery();
+    if (!mql) return;
     const update = () => setCoarse(mql.matches);
     mql.addEventListener?.('change', update);
     return () => mql.removeEventListener?.('change', update);
