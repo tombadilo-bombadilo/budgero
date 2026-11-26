@@ -6,6 +6,7 @@ import { Label } from '@shared/ui/label';
 import { CurrencySelector } from '@features/currencies/ui/CurrencySelector';
 import { IconPicker } from '@features/budget-management/ui/IconPicker';
 import { FormatSelector } from '@features/budget-management/ui/FormatSelector';
+import { CurrencyChangeConfirmDialog } from '@features/budget-management/ui/CurrencyChangeConfirmDialog';
 import type { Budget } from '@budgero/core/browser';
 import { Spinner } from '@shared/ui/spinner';
 import { useUiStore } from '@shared/store/useUiStore';
@@ -45,6 +46,9 @@ export const EditBudgetForm: React.FC<EditBudgetFormProps> = ({
   const [displayCurrency, setDisplayCurrency] = useState(budget.DisplayCurrency || 'USD');
   const [badgeIcon, setBadgeIcon] = useState(budget.BadgeIcon);
   const [selectedFormat, setSelectedFormat] = useState<string>(budget.NumberFormat || '$1,096.56');
+  // A currency change converts the whole budget: confirm it (with a backup
+  // offer) before anything is saved.
+  const [confirmCurrencyOpen, setConfirmCurrencyOpen] = useState(false);
 
   useEffect(() => {
     void Promise.resolve().then(() => {
@@ -61,8 +65,16 @@ export const EditBudgetForm: React.FC<EditBudgetFormProps> = ({
     updateIconMutation.isPending ||
     updateFormatMutation.isPending;
 
-  const handleUpdate = async (e: React.FormEvent) => {
+  const handleUpdate = (e: React.FormEvent) => {
     e.preventDefault();
+    if (budget.DisplayCurrency !== displayCurrency) {
+      setConfirmCurrencyOpen(true);
+      return;
+    }
+    void applyUpdates();
+  };
+
+  const applyUpdates = async () => {
     onError(null);
 
     try {
@@ -148,6 +160,16 @@ export const EditBudgetForm: React.FC<EditBudgetFormProps> = ({
         currency={displayCurrency}
         onValueChange={setSelectedFormat}
         label={t`Number Format`}
+      />
+      <CurrencyChangeConfirmDialog
+        open={confirmCurrencyOpen}
+        fromCurrency={budget.DisplayCurrency || 'USD'}
+        toCurrency={displayCurrency}
+        onCancel={() => setConfirmCurrencyOpen(false)}
+        onConfirm={() => {
+          setConfirmCurrencyOpen(false);
+          void applyUpdates();
+        }}
       />
       {isLoading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
