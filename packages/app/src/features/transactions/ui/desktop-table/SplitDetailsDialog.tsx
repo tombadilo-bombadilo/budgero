@@ -356,12 +356,12 @@ export function SplitDetailsDialog({
           <DialogTitle>
             <Trans>Split details</Trans>
           </DialogTitle>
-          <DialogDescription className="truncate max-w-full" title={transaction?.Memo || ''}>
+          <DialogDescription className="min-w-0 whitespace-normal break-words [overflow-wrap:anywhere]">
             {transaction ? transaction.Memo || t`Transaction #${transaction.ID}` : ''}
           </DialogDescription>
         </DialogHeader>
         {transaction && (
-          <div className="space-y-4">
+          <div className="min-w-0 space-y-4">
             <div className="flex items-center justify-between gap-3 rounded-lg border border-border/70 bg-muted/20 px-3 py-2 text-sm">
               <div>
                 <div className="text-muted-foreground">
