@@ -1902,8 +1902,8 @@ msgid "<0/>Backup Reminders"
 msgstr "<0/>Recordatorios de copia de seguridad"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "<0/>Balance"
-msgstr "<0/>Saldo"
+#~ msgid "<0/>Balance"
+#~ msgstr "<0/>Saldo"
 
 #: src/widgets/dashboard/AtAGlance.tsx
 msgid "<0/>Biggest Transactions"
@@ -2245,8 +2245,8 @@ msgid "<0/>Joining…"
 msgstr "<0/>Uniéndose…"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "<0/>Label"
-msgstr "<0/>Etiqueta"
+#~ msgid "<0/>Label"
+#~ msgstr "<0/>Etiqueta"
 
 #: src/pages/settings/AppearancePage.tsx
 msgid "<0/>Language"
@@ -4826,6 +4826,7 @@ msgstr "Panadería"
 
 #: src/features/reports/ui/notebook/question-labels.ts
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
 #: src/pages/accounts/AccountPage.tsx
 #: src/pages/accounts/components/AccountSummaryCards.tsx
 #: src/pages/analytics/reports/ScenarioReport.tsx
@@ -10749,8 +10750,8 @@ msgid "Hide Archived"
 msgstr "Ocultar archivados"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "Hide balance column"
-msgstr "Ocultar columna de saldo"
+#~ msgid "Hide balance column"
+#~ msgstr "Ocultar columna de saldo"
 
 #: src/features/budget-management/ui/create-budget-form/YnabImportStatus.tsx
 #: src/pages/settings/automation-rules/RuleRow.tsx
@@ -10770,8 +10771,8 @@ msgid "Hide hidden categories"
 msgstr "Ocultar categorías ocultas"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "Hide label column"
-msgstr "Ocultar columna de etiquetas"
+#~ msgid "Hide label column"
+#~ msgstr "Ocultar columna de etiquetas"
 
 #: src/shared/ui/password-input.tsx
 msgid "Hide password"
@@ -11798,6 +11799,7 @@ msgstr "Ten claro cuánto puedes gastar. Mantén tu presupuesto privado. Crea tu
 #: src/features/rules/ui/rule-editor/RuleActionRow.tsx
 #: src/features/transactions/ui/desktop-table/TransactionTableHeader.tsx
 #: src/features/transactions/ui/MobileTransactionSortControl.tsx
+#: src/features/transactions/ui/TransactionColumnsMenu.tsx
 #: src/features/transactions/ui/TransactionsToolbar.tsx
 msgid "Label"
 msgstr "Etiqueta"
@@ -18909,8 +18911,8 @@ msgid "Show as"
 msgstr "Mostrar como"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "Show balance column"
-msgstr "Mostrar columna de saldo"
+#~ msgid "Show balance column"
+#~ msgstr "Mostrar columna de saldo"
 
 #: src/pages/settings/push-api/IdReferencePanel.tsx
 msgid "Show Budget, Account, Category & Payee IDs"
@@ -18951,8 +18953,8 @@ msgid "Show hidden categories"
 msgstr "Mostrar categorías ocultas"
 
 #: src/features/transactions/ui/TransactionsToolbar.tsx
-msgid "Show label column"
-msgstr "Mostrar columna de etiqueta"
+#~ msgid "Show label column"
+#~ msgstr "Mostrar columna de etiqueta"
 
 #: src/features/reports/ui/notebook/viz/ChartLegend.tsx
 msgid "Show less"

@@ -106,8 +106,9 @@ export function ResizeHandle({ column, onResize }: ResizeHandleProps) {
         aria-hidden="true"
         className={cn(
           'pointer-events-none absolute inset-y-0 right-0 w-1 group-hover:bg-border/50 group-hover/resize:bg-primary/50 group-active/resize:bg-primary',
-          'pointer-coarse:right-1/2 pointer-coarse:translate-x-1/2 pointer-coarse:bg-border/60',
-          dragging && 'bg-primary pointer-coarse:bg-primary'
+          // Touch: a thin 1px line (the 24px target stays invisible); 2px while dragging.
+          'pointer-coarse:inset-y-2 pointer-coarse:right-1/2 pointer-coarse:w-px pointer-coarse:translate-x-1/2 pointer-coarse:bg-border',
+          dragging && 'bg-primary pointer-coarse:w-0.5 pointer-coarse:bg-primary'
         )}
       />
     </div>

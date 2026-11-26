@@ -11,7 +11,7 @@ import { DialogTrigger } from '@shared/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@shared/ui/popover';
 import { Input } from '@shared/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/ui/select';
-import { PlusCircle, Search, Filter, Columns, Tag, Folder, Store, Wallet } from 'lucide-react';
+import { PlusCircle, Search, Filter, Tag, Folder, Store, Wallet } from 'lucide-react';
 import { CountryFlag } from '@shared/ui/country-flag';
 import { CryptoIcon } from '@entities/currency/ui/CryptoIcon';
 import { isCryptoCurrency } from '@budgero/core/browser';
@@ -347,41 +347,16 @@ export function TransactionsToolbar({
           <Trans>Showing amounts in {currencyLabel}</Trans>
         </span>
 
-        {/* Balance column toggle - desktop only */}
+        {/* Column visibility and memo wrapping - desktop only */}
         {!isMobile && (
-          <Button
-            variant={showBalanceColumn ? 'default' : 'outline'}
-            size="sm"
-            onClick={handleToggleBalanceColumn}
-            className="flex items-center gap-1.5 text-xs"
-            title={showBalanceColumn ? t`Hide balance column` : t`Show balance column`}
-          >
-            <Trans>
-              <Columns className="h-4 w-4" />
-              Balance
-            </Trans>
-          </Button>
-        )}
-
-        {/* Label column toggle - desktop only */}
-        {!isMobile && (
-          <Button
-            variant={showLabelColumn ? 'default' : 'outline'}
-            size="sm"
-            onClick={handleToggleLabelColumn}
-            className="flex items-center gap-1.5 text-xs"
-            title={showLabelColumn ? t`Hide label column` : t`Show label column`}
-          >
-            <Trans>
-              <Tag className="h-4 w-4" />
-              Label
-            </Trans>
-          </Button>
-        )}
-
-        {/* Memo / Payee columns and memo wrapping - desktop only */}
-        {!isMobile && (
-          <TransactionColumnsMenu columns={tableColumns} onChange={onTableColumnsChange} />
+          <TransactionColumnsMenu
+            columns={tableColumns}
+            onChange={onTableColumnsChange}
+            showLabelColumn={showLabelColumn}
+            onToggleLabelColumn={handleToggleLabelColumn}
+            showBalanceColumn={showBalanceColumn}
+            onToggleBalanceColumn={handleToggleBalanceColumn}
+          />
         )}
 
         {/* Mobile cards retain paging; the desktop register is virtualized. */}

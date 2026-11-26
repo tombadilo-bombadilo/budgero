@@ -14,16 +14,34 @@ import type { TransactionTableColumns } from '@features/transactions/lib/table-c
 interface TransactionColumnsMenuProps {
   columns: TransactionTableColumns;
   onChange: (patch: Partial<TransactionTableColumns>) => void;
+  /** Label column (on by default). */
+  showLabelColumn: boolean;
+  onToggleLabelColumn: () => void;
+  /** Running balance column (off by default). */
+  showBalanceColumn: boolean;
+  onToggleBalanceColumn: () => void;
 }
 
 /**
- * Desktop register "Columns" menu: show or hide Memo and Payee, and wrap long
- * memos. Stays open between choices so several can be changed in one go.
+ * Desktop register "Columns" menu: show or hide Payee, Memo, Label and the
+ * running Balance, and wrap long memos. Stays open between choices so several can be changed in one go.
  */
-export function TransactionColumnsMenu({ columns, onChange }: TransactionColumnsMenuProps) {
+export function TransactionColumnsMenu({
+  columns,
+  onChange,
+  showLabelColumn,
+  onToggleLabelColumn,
+  showBalanceColumn,
+  onToggleBalanceColumn,
+}: TransactionColumnsMenuProps) {
   const { t } = useLingui();
   const keepOpen = (event: Event) => event.preventDefault();
-  const changed = !columns.showMemo || !columns.showPayee || columns.wrapMemo;
+  const changed =
+    !columns.showMemo ||
+    !columns.showPayee ||
+    columns.wrapMemo ||
+    !showLabelColumn ||
+    showBalanceColumn;
 
   return (
     <DropdownMenu>
@@ -43,6 +61,13 @@ export function TransactionColumnsMenu({ columns, onChange }: TransactionColumns
           <Trans>Show columns</Trans>
         </DropdownMenuLabel>
         <DropdownMenuCheckboxItem
+          checked={columns.showPayee}
+          onCheckedChange={(checked) => onChange({ showPayee: checked === true })}
+          onSelect={keepOpen}
+        >
+          <Trans>Payee</Trans>
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
           checked={columns.showMemo}
           onCheckedChange={(checked) => onChange({ showMemo: checked === true })}
           onSelect={keepOpen}
@@ -50,11 +75,18 @@ export function TransactionColumnsMenu({ columns, onChange }: TransactionColumns
           <Trans>Memo</Trans>
         </DropdownMenuCheckboxItem>
         <DropdownMenuCheckboxItem
-          checked={columns.showPayee}
-          onCheckedChange={(checked) => onChange({ showPayee: checked === true })}
+          checked={showLabelColumn}
+          onCheckedChange={onToggleLabelColumn}
           onSelect={keepOpen}
         >
-          <Trans>Payee</Trans>
+          <Trans>Label</Trans>
+        </DropdownMenuCheckboxItem>
+        <DropdownMenuCheckboxItem
+          checked={showBalanceColumn}
+          onCheckedChange={onToggleBalanceColumn}
+          onSelect={keepOpen}
+        >
+          <Trans>Balance</Trans>
         </DropdownMenuCheckboxItem>
         <DropdownMenuSeparator />
         <DropdownMenuCheckboxItem
