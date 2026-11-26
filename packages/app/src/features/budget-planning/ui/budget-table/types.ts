@@ -31,6 +31,11 @@ export interface BudgetTableProps {
   sharedExpandedCategories?: Set<string>;
   onSharedExpandedCategoriesChange?: (categories: Set<string>) => void;
   renderToolbar?: (controls: BudgetTableToolbarControls) => ReactNode;
+  /**
+   * Height of everything that sticks to the top of the scroll area (toolbar
+   * plus column header), so the page can start its scrollbar below it.
+   */
+  onStickyInsetChange?: (px: number) => void;
   enableLongPressSelection?: boolean;
   longPressDuration?: number;
   onCategoryPress?: (row: BudgetRow) => void;
