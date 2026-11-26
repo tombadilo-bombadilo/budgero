@@ -21,11 +21,116 @@ export type ChangelogEntry = {
 
 export const changelogEntries: ChangelogEntry[] = [
   {
+    version: 'v1.23.0',
+    date: 'November 26, 2026',
+    summary:
+      'Expanded transaction search with live suggestions, column sorting, a register columns menu, goals with targets in another currency, calmer goal cards and faster first loads. Update all your devices before syncing, because a goal with a target in another currency requires this version on every device that syncs.',
+    isLatest: true,
+    items: [
+      {
+        type: 'new',
+        title: 'Goals in another currency',
+        description:
+          "When setting up or editing a category goal, you can now choose a target currency different from your budget currency, such as a EUR trip goal in a USD budget. Budgero displays the target converted at today's rate so you can track progress in your budget currency.",
+      },
+      {
+        type: 'new',
+        title: 'Expanded transaction search',
+        description:
+          'The register search box now matches each word independently and supports "quoted phrases", field filters (payee:, memo:, account:, category:, label:), and exclusions with a minus sign or "not". You can filter by dates (like march, march 2026, 2025, since 1 oct, before 2026-10-01, or between 1 oct and 15 oct) and amounts (over 100, between 20 and 50, or =1250,50 with a decimal comma). You can also match transaction states with uncategorized, split, upcoming, has:memo, and no:label.',
+      },
+      {
+        type: 'new',
+        title: 'Search suggestions and help',
+        description:
+          'As you type in the register search box, suggestions appear at your cursor for categories, labels, payees, and accounts, including after a minus sign or field prefix, with multi-word names quoted for you. Amount suggestions use the currency shown in the register. Click the info icon in the search box to view examples and open the search guide.',
+      },
+      {
+        type: 'new',
+        title: 'Sort transactions by column',
+        description:
+          'Click a column header (Date, Payee, Category, Memo, Amount, Cleared, or Account) in any register to sort ascending, descending, or back to date order, or use the Sort by control on phones. Each register remembers its sort order. Running balances show a dash while sorted by another column because a running balance only applies in date order.',
+      },
+      {
+        type: 'new',
+        title: 'Columns menu and memo wrapping',
+        description:
+          'Use the Columns menu in the register toolbar on desktop and tablet to show or hide Payee, Memo, Label, and Balance, and to wrap long memos across lines. Your Payee, Memo, and wrap settings sync across devices, while Label and Balance stay per device.',
+      },
+      {
+        type: 'new',
+        title: 'Space-separated number format',
+        description:
+          "You can now choose the \"1 000.35\" number format (spaces for thousands and a dot for decimals) as a budget's number format when you create or edit a budget.",
+      },
+      {
+        type: 'improved',
+        title: 'Foreign accounts shown in their own currency',
+        description:
+          'The Accounts page now shows accounts held in another currency in their own currency, making each foreign balance easier to read at a glance.',
+      },
+      {
+        type: 'improved',
+        title: 'Calmer goal card',
+        description:
+          'The goal card in the planning view has a simpler layout with one headline and progress bar, a single status line, shorter details, and the "How it works" section collapsed by default.',
+      },
+      {
+        type: 'improved',
+        title: 'Updated keyboard shortcuts',
+        description:
+          'Keyboard shortcuts no longer clash with browser shortcuts like Ctrl+B. Press [ to toggle the sidebar, use amount shortcuts without holding Ctrl, and press Shift+Cmd+Z to redo on Mac.',
+      },
+      {
+        type: 'improved',
+        title: 'Touch support in the register',
+        description:
+          'On tablets and touch screens, you can now resize register columns with a finger, and the column dividers are now thin lines. The category picker also opens at the top on touch screens so the on-screen keyboard does not cover it.',
+      },
+      {
+        type: 'improved',
+        title: 'Faster first load',
+        description:
+          'Pages, chat, and onboarding now load only when you open them, so the app downloads less up front and opens faster.',
+      },
+      {
+        type: 'fixed',
+        title: 'Split transactions when changing budget currency',
+        description:
+          "Changing a budget's currency now converts split transaction lines too, keeping category activity, Available, and Ready to Assign accurate. Budgets converted with an older version are repaired automatically when you update. The currency change now also asks you to confirm and offers to download a backup first.",
+      },
+      {
+        type: 'fixed',
+        title: 'Restoring a backup file',
+        description:
+          'Restoring a backup file now shows its budgets right away, instead of showing an empty budget until you reload the page.',
+      },
+      {
+        type: 'fixed',
+        title: 'Bank sync when a bank leaves out an account',
+        description:
+          'When your bank leaves out an account during bank sync, Budgero still links the accounts that were returned and tells you which one is missing.',
+      },
+      {
+        type: 'fixed',
+        title: 'Fewer full re-downloads during sync',
+        description:
+          'Syncing an edit to a transaction that was already deleted on another device no longer forces a full re-download of your budget.',
+      },
+      {
+        type: 'fixed',
+        title: 'Planning table scrollbar',
+        description:
+          'The scrollbar on the planning table now stays inside the table instead of sticking out past its border.',
+      },
+    ],
+  },
+  {
     version: 'v1.22.1',
     date: 'November 23, 2026',
     summary:
       'Fixes a transaction losing its date, which hid it from the account and threw off Ready to Assign, and helps you put the date back.',
-    isLatest: true,
+    isLatest: false,
     items: [
       {
         type: 'fixed',
