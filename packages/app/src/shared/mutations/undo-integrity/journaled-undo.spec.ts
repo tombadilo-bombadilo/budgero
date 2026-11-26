@@ -213,6 +213,15 @@ describe('ops carry the clock they ran at (A25)', () => {
     expect(again[OP_CLOCK_ARG]).toBe(Date.UTC(2026, 2, 10, 9));
   });
 
+  it('a local op prepared while a remote op runs gets the local time', async () => {
+    const local = Date.UTC(2026, 4, 20, 18);
+    setClock(local);
+    const prepared = await h.services.clock.runAt(Date.UTC(2026, 2, 10, 9), () =>
+      prepareMutationArgs('transactions.reconcile', { accountId: 1 })
+    );
+    expect(prepared[OP_CLOCK_ARG]).toBe(local);
+  });
+
   it('a receiver applies the op at the sender’s clock, not its own', async () => {
     const sent = Date.UTC(2026, 2, 10, 9);
     setClock(Date.UTC(2026, 4, 20, 18)); // the receiver is two months later

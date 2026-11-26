@@ -247,7 +247,11 @@ function pinnedToOriginClock(entry: OpCodeEntry): OpCodeEntry {
     prepare: async (args) => {
       const prepared = entry.prepare ? await entry.prepare(args) : args;
       if (isClockValue(prepared[OP_CLOCK_ARG])) return prepared;
-      return { ...prepared, [OP_CLOCK_ARG]: servicesClock()?.now?.() ?? Date.now() };
+      // The unpinned clock: a remote op being applied right now must not lend
+      // its instant to a new local op.
+      const c = servicesClock();
+      const now = c?.unpinnedNow?.() ?? c?.now?.() ?? Date.now();
+      return { ...prepared, [OP_CLOCK_ARG]: now };
     },
     execute: (args, context) => {
       const at = args[OP_CLOCK_ARG];
