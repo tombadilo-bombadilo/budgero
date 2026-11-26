@@ -15143,7 +15143,7 @@ msgstr "Restant dû"
 #: src/features/page-guides/ui/guide-visuals.tsx
 #: src/shared/lib/search-query-parser.ts
 msgid "Over"
-msgstr "Dépassé"
+msgstr "Plus de"
 
 #. placeholder {0}: formatMilli(globalLocalizer, asMilli(0 - goalStatus.remaining))
 #: src/features/budget-planning/ui/spending-drawer-mobile/CategoryHeader.tsx
