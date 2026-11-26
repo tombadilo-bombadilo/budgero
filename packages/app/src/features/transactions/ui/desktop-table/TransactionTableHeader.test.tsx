@@ -92,4 +92,14 @@ describe('TransactionTableHeader sorting', () => {
     expect(onResize).toHaveBeenCalledWith('payee', 10);
     expect(onSortChange).not.toHaveBeenCalled();
   });
+
+  it('hides the Memo and Payee columns when they are switched off', () => {
+    renderHeader(null, { showMemoColumn: false });
+    expect(screen.queryByRole('button', { name: /^Memo/ })).toBeNull();
+    expect(sortButton('Payee')).toBeInTheDocument();
+    cleanup();
+    renderHeader(null, { showPayeeColumn: false });
+    expect(screen.queryByRole('button', { name: /^Payee/ })).toBeNull();
+    expect(sortButton('Memo')).toBeInTheDocument();
+  });
 });

@@ -251,6 +251,21 @@ describe('InlineTransactionRow', () => {
     expect(screen.getAllByTestId('inline-split-line')).toHaveLength(2);
   });
 
+  it('keeps every row aligned with Memo and Payee hidden', () => {
+    const row = renderRow({ showMemoColumn: false, showPayeeColumn: false, columnCount: 6 });
+    expect(screen.queryByLabelText('Memo')).toBeNull();
+    expect(screen.queryByPlaceholderText('Payee')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Split' }));
+    row.rerender();
+    expect(screen.queryByLabelText('Split memo')).toBeNull();
+    const rows = document.querySelectorAll('tbody tr');
+    expect(rows.length).toBeGreaterThan(2);
+    for (const tr of rows) {
+      const span = Array.from(tr.querySelectorAll('td')).reduce((sum, td) => sum + td.colSpan, 0);
+      expect(span).toBe(6);
+    }
+  });
+
   it('refuses both an inflow and an outflow', () => {
     const row = renderRow();
     fireEvent.change(screen.getByLabelText('inflow'), { target: { value: '1000' } });

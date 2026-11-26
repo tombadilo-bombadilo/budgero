@@ -16,6 +16,10 @@ interface TransactionTableHeaderProps {
   showBalanceColumn?: boolean;
   showLabelColumn?: boolean;
   showExchangeRateColumn?: boolean;
+  /** Show the Memo column (on by default). */
+  showMemoColumn?: boolean;
+  /** Show the Payee column (on by default). */
+  showPayeeColumn?: boolean;
   allPageRowsSelected: boolean;
   somePageRowsSelected: boolean;
   onToggleSelectPage: (checked: boolean) => void;
@@ -103,6 +107,8 @@ export const TransactionTableHeader = React.memo(function TransactionTableHeader
   showBalanceColumn = false,
   showLabelColumn = true,
   showExchangeRateColumn = false,
+  showMemoColumn = true,
+  showPayeeColumn = true,
   allPageRowsSelected,
   somePageRowsSelected,
   onToggleSelectPage,
@@ -138,13 +144,15 @@ export const TransactionTableHeader = React.memo(function TransactionTableHeader
           resizeColumn="date"
           {...sortProps}
         />
-        <SortableHead
-          label={t`Memo`}
-          width={columnWidths.memo}
-          sortColumn="memo"
-          resizeColumn="memo"
-          {...sortProps}
-        />
+        {showMemoColumn && (
+          <SortableHead
+            label={t`Memo`}
+            width={columnWidths.memo}
+            sortColumn="memo"
+            resizeColumn="memo"
+            {...sortProps}
+          />
+        )}
         {!hideAccountColumn && (
           <SortableHead
             label={t`Account`}
@@ -154,13 +162,15 @@ export const TransactionTableHeader = React.memo(function TransactionTableHeader
             {...sortProps}
           />
         )}
-        <SortableHead
-          label={t`Payee`}
-          width={columnWidths.payee}
-          sortColumn="payee"
-          resizeColumn="payee"
-          {...sortProps}
-        />
+        {showPayeeColumn && (
+          <SortableHead
+            label={t`Payee`}
+            width={columnWidths.payee}
+            sortColumn="payee"
+            resizeColumn="payee"
+            {...sortProps}
+          />
+        )}
         {showLabelColumn && (
           <SortableHead
             label={t`Label`}
