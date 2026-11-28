@@ -143,13 +143,15 @@ export async function enableBankingRequest<T>(
   for (let attempt = 0; !response; attempt++) {
     try {
       const tunnel = await openTunnel();
-      if (psu) {
-        headers['Psu-User-Agent'] = navigator.userAgent;
-        if (tunnel.clientIp) headers['Psu-Ip-Address'] = tunnel.clientIp;
+      // A partial PSU header set can be rejected when the relay has no public IP.
+      const requestHeaders = { ...headers };
+      if (psu && tunnel.clientIp) {
+        requestHeaders['Psu-User-Agent'] = navigator.userAgent;
+        requestHeaders['Psu-Ip-Address'] = tunnel.clientIp;
       }
       response = await tunnel.fetch(url.toString(), {
         method,
-        headers,
+        headers: requestHeaders,
         body: body === undefined ? undefined : JSON.stringify(body),
       });
     } catch (error) {
